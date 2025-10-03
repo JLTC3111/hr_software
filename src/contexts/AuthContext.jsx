@@ -105,9 +105,6 @@ export const AuthProvider = ({ children }) => {
           hireDate: data.hire_date,
           employmentStatus: data.employment_status,
           salary: data.salary,
-          mustChangePassword: data.must_change_password,
-          temporaryPasswordSetAt: data.temporary_password_set_at,
-          passwordChangedAt: data.password_changed_at,
           permissions: hasPermission(data.role)
         });
         setIsAuthenticated(true);
@@ -215,40 +212,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Change password function
-  const changePassword = async (currentPassword, newPassword) => {
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (error) throw error;
-
-      // Clear temporary password requirement
-      if (user?.id) {
-        const { error: clearError } = await supabase.rpc('clear_temp_password_requirement', {
-          user_id: user.id
-        });
-
-        if (clearError) {
-          console.warn('Failed to clear temp password requirement:', clearError);
-        } else {
-          // Update user state to reflect password change
-          setUser(prev => ({
-            ...prev,
-            mustChangePassword: false,
-            passwordChangedAt: new Date().toISOString()
-          }));
-        }
-      }
-
-      return { success: true };
-    } catch (error) {
-      console.error('Password change error:', error);
-      return { success: false, error: error.message };
-    }
-  };
-
   // Check if user has specific permission
   const checkPermission = (permission) => {
     if (!user || !user.role) return false;
@@ -263,7 +226,6 @@ export const AuthProvider = ({ children }) => {
     login,
     loginWithGithub,
     logout,
-    changePassword,
     checkPermission
   };
 

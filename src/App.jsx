@@ -5,7 +5,7 @@ import { Award, FileText } from 'lucide-react'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { LanguageProvider } from './contexts/LanguageContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
-import { Activity, AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking } from './components/index.jsx';
+import { Activity, AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry } from './components/index.jsx';
 
 const Employees = [
   {
@@ -244,7 +244,7 @@ const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmpl
       <Routes>
         {/* Public Route - Login */}
         <Route path="/login" element={
-          isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
+          isAuthenticated ? <Navigate to="/time-clock" replace /> : <Login />
         } />
         
         {/* Protected Routes */}
@@ -258,7 +258,7 @@ const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmpl
                 
                 <div className="flex-1 p-8">
                   <Routes>
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="/" element={<Navigate to="/time-clock" replace />} />
                     <Route 
                       path="/dashboard" 
                       element={<Dashboard employees={employees} applications={applications} />} 
@@ -270,6 +270,10 @@ const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmpl
                     <Route 
                       path="/time-tracking" 
                       element={<TimeTracking employees={employees} />} 
+                    />
+                    <Route 
+                      path="/time-clock" 
+                      element={<TimeClockEntry />} 
                     />
                     <Route 
                       path="/performance" 

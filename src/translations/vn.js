@@ -23,7 +23,7 @@ export default {
     subtitle: 'Đăng nhập để truy cập bảng điều khiển',
     email: 'Địa chỉ Email',
     password: 'Mật khẩu',
-    emailPlaceholder: 'ban@example.com',
+    emailPlaceholder: 'emailcuaban@example.com',
     passwordPlaceholder: '••••••••',
     emailRequired: 'Email là bắt buộc',
     emailInvalid: 'Email không hợp lệ',
@@ -370,35 +370,91 @@ export default {
     customRange: 'Phạm vi tùy chỉnh',
   },
 
+  // Time Clock Entry
+  timeClock: {
+    title: 'Chấm công',
+    date: 'Ngày',
+    clockIn: 'Giờ vào',
+    clockOut: 'Giờ ra',
+    workType: 'Loại ca làm việc',
+    proof: 'Bằng chứng công việc (Tùy chọn)',
+    notes: 'Ghi chú (Tùy chọn)',
+    notesPlaceholder: 'Thêm thông tin bổ sung...',
+    uploadPrompt: 'Nhấp để tải lên PDF hoặc hình ảnh (tối đa 5MB)',
+    submit: 'Gửi bảng chấm công',
+    hoursWorked: 'Số giờ làm việc',
+    effective: 'Hiệu quả',
+    weeklyTotal: 'Tuần này',
+    monthlyTotal: 'Tháng này',
+    allTime: 'Tất cả thời gian',
+    export: 'Xuất CSV',
+    history: 'Lịch sử chấm công',
+    showHistory: 'Hiện lịch sử',
+    hideHistory: 'Ẩn lịch sử',
+    noEntries: 'Chưa có bản ghi chấm công',
+    types: {
+      regular: 'Giờ thường',
+      weekend: 'Cuối tuần',
+      bonus: 'Giờ thưởng',
+      holiday: 'Ngày lễ'
+    },
+    status: {
+      pending: 'Chờ duyệt',
+      approved: 'Đã duyệt',
+      rejected: 'Từ chối'
+    },
+    table: {
+      date: 'Ngày',
+      clockIn: 'Giờ vào',
+      clockOut: 'Giờ ra',
+      hours: 'Số giờ',
+      type: 'Loại',
+      status: 'Trạng thái',
+      actions: 'Hành động'
+    },
+    errors: {
+      dateRequired: 'Ngày là bắt buộc',
+      clockInRequired: 'Giờ vào là bắt buộc',
+      clockOutRequired: 'Giờ ra là bắt buộc',
+      clockOutBeforeIn: 'Giờ ra phải sau giờ vào',
+      exceedsMaxHours: 'Không thể vượt quá 24 giờ trong một ngày',
+      overlappingShift: 'Thời gian trùng lặp với bản ghi hiện có',
+      invalidFileType: 'Chỉ chấp nhận PDF và hình ảnh',
+      fileTooLarge: 'Kích thước file phải nhỏ hơn 5MB'
+    },
+    success: {
+      entrySaved: 'Đã lưu bản ghi chấm công thành công!'
+    }
+  },
+
   // Common
   common: {
-    search: 'Tìm kiếm',
-    filter: 'Lọc',
-    sort: 'Sắp xếp',
     save: 'Lưu',
     cancel: 'Hủy',
     delete: 'Xóa',
-    edit: 'Chỉnh sửa',
+    edit: 'Sửa',
     view: 'Xem',
-    add: 'Thêm',
+    search: 'Tìm kiếm',
+    filter: 'Lọc',
+    export: 'Xuất',
+    print: 'In',
     close: 'Đóng',
+    submit: 'Gửi',
     loading: 'Đang tải...',
     noData: 'Không có dữ liệu',
-    error: 'Đã xảy ra lỗi',
-    success: 'Thao tác thành công',
-    confirm: 'Bạn có chắc chắn?',
+    confirm: 'Xác nhận',
+    back: 'Quay lại',
+    next: 'Tiếp theo',
+    previous: 'Trước',
     yes: 'Có',
-    no: 'Không'
+    no: 'Không',
+    all: 'Tất cả'
   },
-
-  // Theme
   theme: {
     light: 'Chế độ sáng',
     dark: 'Chế độ tối',
     toggle: 'Chuyển đổi chủ đề'
   },
-
-  // Language
   language: {
     select: 'Chọn ngôn ngữ',
     current: 'Ngôn ngữ hiện tại'

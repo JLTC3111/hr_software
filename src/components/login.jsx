@@ -23,11 +23,11 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
 
-  // Redirect to dashboard when authenticated and user profile is loaded
+  // Redirect to time clock when authenticated and user profile is loaded
   useEffect(() => {
     if (isAuthenticated && user) {
-      console.log('User authenticated and profile loaded, redirecting to dashboard...');
-      navigate('/dashboard', { replace: true });
+      console.log('User authenticated and profile loaded, redirecting to time clock...');
+      navigate('/time-clock', { replace: true });
     }
   }, [isAuthenticated, user, navigate]);
 

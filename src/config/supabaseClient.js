@@ -13,11 +13,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-const { data, error } = await supabase.auth.signInWithPassword({
-    email: "test@example.com",
-    password: "password123"
-  })
-
 // HR-specific user roles for the HR management system
 export const UserRoles = {
   HR_ADMIN: 'hr_admin',        // Full system administrator

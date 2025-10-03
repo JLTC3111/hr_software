@@ -329,39 +329,94 @@ export default {
     employeeTurnover: 'Employee Turnover',
     analyzeRetentionRates: 'Analyze retention and turnover rates',
     trainingEffectiveness: 'Training Effectiveness',
-    measureTrainingSuccess: 'Measure training program success',
-    generate: 'Generate →',
-    fromLastPeriod: 'from last period'
+  },
+
+  // Time Clock Entry
+  timeClock: {
+    title: 'Time Clock Entry',
+    date: 'Date',
+    clockIn: 'Clock In',
+    clockOut: 'Clock Out',
+    workType: 'Work Type',
+    proof: 'Proof of Work (Optional)',
+    notes: 'Notes (Optional)',
+    notesPlaceholder: 'Add any additional context...',
+    uploadPrompt: 'Click to upload PDF or image (max 5MB)',
+    submit: 'Submit Time Entry',
+    hoursWorked: 'Hours Worked',
+    effective: 'Effective',
+    weeklyTotal: 'This Week',
+    monthlyTotal: 'This Month',
+    allTime: 'All Time',
+    export: 'Export CSV',
+    history: 'Time Entry History',
+    showHistory: 'Show History',
+    hideHistory: 'Hide History',
+    noEntries: 'No time entries yet',
+    types: {
+      regular: 'Regular Hours',
+      weekend: 'Weekend',
+      bonus: 'Bonus Hours',
+      holiday: 'Holiday'
+    },
+    status: {
+      pending: 'Pending',
+      approved: 'Approved',
+      rejected: 'Rejected'
+    },
+    table: {
+      date: 'Date',
+      clockIn: 'Clock In',
+      clockOut: 'Clock Out',
+      hours: 'Hours',
+      type: 'Type',
+      status: 'Status',
+      actions: 'Actions'
+    },
+    errors: {
+      dateRequired: 'Date is required',
+      clockInRequired: 'Clock-in time is required',
+      clockOutRequired: 'Clock-out time is required',
+      clockOutBeforeIn: 'Clock-out must be after clock-in',
+      exceedsMaxHours: 'Cannot exceed 24 hours in one day',
+      overlappingShift: 'Time overlaps with existing entry on this date',
+      invalidFileType: 'Only PDF and images allowed',
+      fileTooLarge: 'File size must be less than 5MB'
+    },
+    success: {
+      entrySaved: 'Time entry saved successfully!'
+    }
   },
 
   // Common
   common: {
-    search: 'Search',
-    filter: 'Filter',
-    sort: 'Sort',
     save: 'Save',
     cancel: 'Cancel',
     delete: 'Delete',
     edit: 'Edit',
     view: 'View',
-    add: 'Add',
+    search: 'Search',
+    filter: 'Filter',
+    export: 'Export',
+    print: 'Print',
     close: 'Close',
+    submit: 'Submit',
     loading: 'Loading...',
     noData: 'No data available',
-    error: 'An error occurred',
-    success: 'Operation successful',
-    confirm: 'Are you sure?',
+    confirm: 'Confirm',
+    back: 'Back',
+    next: 'Next',
+    previous: 'Previous',
     yes: 'Yes',
-    no: 'No'
+    no: 'No',
+    all: 'All'
   },
-
   // Theme
   theme: {
     light: 'Light Mode',
     dark: 'Dark Mode',
     toggle: 'Toggle Theme'
   },
-
   // Language
   language: {
     select: 'Select Language',
