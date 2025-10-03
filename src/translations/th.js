@@ -28,9 +28,9 @@ export default {
     quickStats: 'สถิติด่วน',
     viewAll: 'ดูทั้งหมด',
     activities: {
-      newEmployee: "เพิ่มพนักงานใหม่: Lisa Rodriguez",
-      interviewScheduled: "นัดสัมภาษณ์กับ Alex Thompson",
-      performanceReview: "การประเมินผลงานของ Mike Chen เสร็จสิ้น"
+      newEmployee: "เพิ่มพนักงานใหม่: ",
+      interviewScheduled: "นัดสัมภาษณ์กับ ",
+      performanceReview: "การประเมินผลงานของ เสร็จสิ้น"
     },
     timeAgo: {
       twoHours: "2 ชั่วโมงที่แล้ว",
@@ -150,23 +150,6 @@ export default {
     technical: 'เทคนิค',
     offer: 'ข้อเสนอ',
     years: 'ปี'
-  },
-
-  // Time Tracking
-  timeTracking: {
-    title: 'แดชบอร์ดติดตามเวลา',
-    summary: 'สรุป',
-    quickActions: 'การดำเนินการด่วน',
-    workDays: 'วันทำงาน',
-    leaveDays: 'วันลา',
-    overtime: 'ชั่วโมงล่วงเวลา',
-    holidayOvertime: 'ล่วงเวลาวันหยุด',
-    hours: 'ชั่วโมง',
-    days: 'วัน',
-    thisMonth: 'เดือนนี้',
-    totalHours: 'ชั่วโมงรวม',
-    regularHours: 'ชั่วโมงปกติ',
-    overtimeHours: 'ชั่วโมงล่วงเวลา'
   },
 
   // Performance Appraisal
@@ -299,7 +282,12 @@ export default {
     trainingEffectiveness: 'ประสิทธิภาพการฝึกอบรม',
     measureTrainingSuccess: 'วัดความสำเร็จของโปรแกรมการฝึกอบรม',
     generate: 'สร้าง →',
-    fromLastPeriod: 'จากงวดก่อน'
+    fromLastPeriod: 'จากงวดก่อน',
+    lastWeek:	'สัปดาห์ที่แล้ว (Sapdāh thī̂ læ̂w)',
+    lastMonth:	'เดือนที่แล้ว (Dư̄an thī̂ læ̂w)',
+    lastQuarter:	'ไตรมาสที่แล้ว (Traimāt thī̂ læ̂w)',
+    lastYear:	'ปีที่แล้ว (Pī thī̂ læ̂w)',
+    customRange:	'ช่วงเวลาที่กำหนดเอง (Chûang welā thī̂ kamnot ē ng)',
   },
 
   // Common

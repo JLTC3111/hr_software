@@ -54,9 +54,9 @@ export default {
     quickStats: 'Thống kê nhanh',
     viewAll: 'Xem tất cả',
     activities: {
-      newEmployee: "Nhân viên mới được thêm: Lisa Rodriguez",
-      interviewScheduled: "Cuộc phỏng vấn đã được lên lịch với Alex Thompson",
-      performanceReview: "Đánh giá hiệu suất đã hoàn thành cho Mike Chen"
+      newEmployee: "Nhân viên mới được thêm: ",
+      interviewScheduled: "Cuộc phỏng vấn đã được lên lịch với ",
+      performanceReview: "Đánh giá hiệu suất đã hoàn thành cho "
     },
     timeAgo: {
       twoHours: "2 giờ trước",
@@ -232,23 +232,6 @@ export default {
     years: 'năm'
   },
 
-  // Time Tracking
-  timeTracking: {
-    title: 'Bảng điều khiển theo dõi thời gian',
-    summary: 'Tóm tắt',
-    quickActions: 'Hành động nhanh',
-    workDays: 'Ngày làm việc',
-    leaveDays: 'Ngày nghỉ phép',
-    overtime: 'Giờ làm thêm',
-    holidayOvertime: 'Làm thêm ngày lễ',
-    hours: 'giờ',
-    days: 'ngày',
-    thisMonth: 'Tháng này',
-    totalHours: 'Tổng số giờ',
-    regularHours: 'Giờ thường',
-    overtimeHours: 'Giờ làm thêm'
-  },
-
   // Performance Appraisal
   performance: {
     title: 'Đánh giá hiệu suất',
@@ -379,7 +362,12 @@ export default {
     trainingEffectiveness: 'Hiệu quả đào tạo',
     measureTrainingSuccess: 'Đo lường thành công chương trình đào tạo',
     generate: 'Tạo →',
-    fromLastPeriod: 'từ kỳ trước'
+    fromLastPeriod: 'từ kỳ trước',
+    lastWeek: 'tuần trước',
+    lastMonth: 'tháng trước',
+    lastQuarter: 'quý trước',
+    lastYear: 'năm ngoái',
+    customRange: 'Phạm vi tùy chỉnh',
   },
 
   // Common

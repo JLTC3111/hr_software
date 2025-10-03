@@ -28,9 +28,9 @@ export default {
     quickStats: 'クイック統計',
     viewAll: 'すべて表示',
     activities: {
-      newEmployee: "新しい従業員が追加されました: Lisa Rodriguez",
-      interviewScheduled: "Alex Thompsonとの面接が予定されました",
-      performanceReview: "Mike Chenのパフォーマンスレビューが完了しました"
+      newEmployee: "新しい従業員が追加されました: ",
+      interviewScheduled: "との面接が予定されました",
+      performanceReview: "のパフォーマンスレビューが完了しました"
     },
     timeAgo: {
       twoHours: "2時間前",
@@ -150,23 +150,6 @@ export default {
     technical: '技術面接',
     offer: 'オファー',
     years: '年'
-  },
-
-  // Time Tracking
-  timeTracking: {
-    title: '勤怠管理ダッシュボード',
-    summary: '概要',
-    quickActions: 'クイックアクション',
-    workDays: '勤務日数',
-    leaveDays: '休暇日数',
-    overtime: '残業時間',
-    holidayOvertime: '休日残業',
-    hours: '時間',
-    days: '日',
-    thisMonth: '今月',
-    totalHours: '総時間',
-    regularHours: '通常時間',
-    overtimeHours: '残業時間'
   },
 
   // Performance Appraisal
@@ -299,7 +282,12 @@ export default {
     trainingEffectiveness: '研修効果',
     measureTrainingSuccess: '研修プログラムの成功測定',
     generate: '生成 →',
-    fromLastPeriod: '前期から'
+    fromLastPeriod: '前期から',
+    lastWeek:	'先週 (Senshū)',
+    lastMonth:	'先月 (Sengetsu)',
+    lastQuarter:	'前四半期 (Zen shihanki)',
+    lastYear:	'昨年 (Sakunen)',
+    customRange:	'カスタム範囲',
   },
 
   // Common

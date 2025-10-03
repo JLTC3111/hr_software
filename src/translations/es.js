@@ -46,9 +46,9 @@ login: {
     quickStats: 'Estadísticas Rápidas',
     viewAll: 'Ver Todo',
     activities: {
-      newEmployee: "Nuevo empleado agregado: Lisa Rodriguez",
-      interviewScheduled: "Entrevista programada con Alex Thompson",
-      performanceReview: "Evaluación de rendimiento completada para Mike Chen"
+      newEmployee: "Nuevo empleado agregado: ",
+      interviewScheduled: "Entrevista programada con ",
+      performanceReview: "Evaluación de rendimiento completada para "
     },
     timeAgo: {
       twoHours: "hace 2 horas",
@@ -190,23 +190,6 @@ login: {
     years: 'años'
   },
 
-  // Time Tracking
-  timeTracking: {
-    title: 'Tablero de Control de Tiempo',
-    summary: 'Resumen',
-    quickActions: 'Acciones Rápidas',
-    workDays: 'Días de Trabajo',
-    leaveDays: 'Días de Licencia',
-    overtime: 'Horas Extra',
-    holidayOvertime: 'Horas Extra Festivas',
-    hours: 'horas',
-    days: 'días',
-    thisMonth: 'Este Mes',
-    totalHours: 'Horas Totales',
-    regularHours: 'Horas Regulares',
-    overtimeHours: 'Horas Extra'
-  },
-
   // Performance Appraisal
   performance: {
     title: 'Evaluación del Rendimiento',
@@ -337,7 +320,12 @@ login: {
     trainingEffectiveness: 'Efectividad de Capacitación',
     measureTrainingSuccess: 'Medir el éxito del programa de capacitación',
     generate: 'Generar →',
-    fromLastPeriod: 'del período anterior'
+    fromLastPeriod: 'del período anterior',
+    lastWeek:	'La semana pasada',
+    lastMonth:	'El mes pasado',
+    lastQuarter:	'El último trimestre',
+    lastYear:	'El año pasado',
+    customRange:	'Rango personalizado',
   },
 
   // Common

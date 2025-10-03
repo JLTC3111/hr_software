@@ -28,9 +28,9 @@ export default {
     quickStats: 'Быстрая статистика',
     viewAll: 'Посмотреть всё',
     activities: {
-      newEmployee: "Новый сотрудник добавлен: Lisa Rodriguez",
-      interviewScheduled: "Собеседование запланировано с Alex Thompson",
-      performanceReview: "Оценка эффективности завершена для Mike Chen"
+      newEmployee: "Новый сотрудник добавлен: ",
+      interviewScheduled: "Собеседование запланировано с ",
+      performanceReview: "Оценка эффективности завершена для "
     },
     timeAgo: {
       twoHours: "2 часа назад",
@@ -150,23 +150,6 @@ export default {
     technical: 'Техническое',
     offer: 'Предложение',
     years: 'лет'
-  },
-
-  // Time Tracking
-  timeTracking: {
-    title: 'Панель учёта времени',
-    summary: 'Сводка',
-    quickActions: 'Быстрые действия',
-    workDays: 'Рабочие дни',
-    leaveDays: 'Дни отпуска',
-    overtime: 'Сверхурочные часы',
-    holidayOvertime: 'Сверхурочные в праздники',
-    hours: 'часов',
-    days: 'дней',
-    thisMonth: 'В этом месяце',
-    totalHours: 'Всего часов',
-    regularHours: 'Обычные часы',
-    overtimeHours: 'Сверхурочные часы'
   },
 
   // Performance Appraisal
@@ -299,7 +282,12 @@ export default {
     trainingEffectiveness: 'Эффективность обучения',
     measureTrainingSuccess: 'Измерение успеха программы обучения',
     generate: 'Создать →',
-    fromLastPeriod: 'с прошлого периода'
+    fromLastPeriod: 'с прошлого периода',
+    lastWeek:	'Прошлая неделя (Proshlaya nedelya)',	
+    lastMonth:	'Прошлый месяц (Proshlyy mesyats)',
+    lastQuarter:	'Прошлый квартал (Proshlyy kvartal)',
+    lastYear:	'Прошлый год (Proshlyy god)',
+    customRange:	'Пользовательский диапазон',	
   },
 
   // Common

@@ -54,9 +54,9 @@ export default {
     quickStats: 'Quick Stats',
     viewAll: 'View All',
     activities: {
-      newEmployee: "New employee added: Lisa Rodriguez",
-      interviewScheduled: "Interview scheduled with Alex Thompson",
-      performanceReview: "Performance review completed for Mike Chen"
+      newEmployee: "New employee added: ",
+      interviewScheduled: "Interview scheduled with ",
+      performanceReview: "Performance review completed for "
     },
     timeAgo: {
       twoHours: "2 hours ago",

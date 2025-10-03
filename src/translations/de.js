@@ -50,9 +50,9 @@ export default {
     quickStats: 'Schnellstatistiken',
     viewAll: 'Alle anzeigen',
     activities: {
-      newEmployee: "Neuer Mitarbeiter hinzugefügt: Lisa Rodriguez",
-      interviewScheduled: "Vorstellungsgespräch geplant mit Alex Thompson",
-      performanceReview: "Leistungsbeurteilung abgeschlossen für Mike Chen"
+      newEmployee: "Neuer Mitarbeiter hinzugefügt: ",
+      interviewScheduled: "Vorstellungsgespräch geplant mit ",
+      performanceReview: "Leistungsbeurteilung abgeschlossen für "
     },
     timeAgo: {
       twoHours: "vor 2 Stunden",
@@ -227,25 +227,6 @@ export default {
     years: 'Jahre'
   },
 
-  // Time Tracking
-  timeTracking: {
-    title: 'Zeiterfassungs-Dashboard',
-    summary: 'Zusammenfassung',
-    quickActions: 'Schnellaktionen',
-    workDays: 'Arbeitstage',
-    leaveDays: 'Urlaubstage',
-    overtime: 'Überstunden',
-    holidayOvertime: 'Feiertagsüberstunden',
-    hours: 'Stunden',
-    days: 'Tage',
-    thisMonth: 'Diesen Monat',
-    totalHours: 'Gesamtstunden',
-    regularHours: 'Reguläre Stunden',
-    overtimeHours: 'Überstunden',
-    hrs: 'Std.',
-    attendanceRate: 'Anwesenheitsrate'
-  },
-
   // Performance Appraisal
   performance: {
     title: 'Leistungsbeurteilung',
@@ -376,7 +357,12 @@ export default {
     trainingEffectiveness: 'Trainingseffektivität',
     measureTrainingSuccess: 'Erfolg des Trainingsprogramms messen',
     generate: 'Erstellen →',
-    fromLastPeriod: 'vom letzten Zeitraum'
+    fromLastPeriod: 'vom letzten Zeitraum',
+    lastWeek:	'Letzte Woche',
+    lastMonth:	'Letzten Monat',
+    lastQuarter:	'Letztes Quartal',
+    lastYear:	'Letztes Jahr',
+    customRange:	'Benutzerdefinierter Bereich',
   },
 
   // Common

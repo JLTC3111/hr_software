@@ -28,9 +28,9 @@ export default {
     quickStats: '빠른 통계',
     viewAll: '모두 보기',
     activities: {
-      newEmployee: "새로운 직원이 추가되었습니다: Lisa Rodriguez",
-      interviewScheduled: "Alex Thompson과의 면접이 예정되었습니다",
-      performanceReview: "Mike Chen의 성과 평가가 완료되었습니다"
+      newEmployee: "새로운 직원이 추가되었습니다: ",
+      interviewScheduled: " 과의 면접이 예정되었습니다",
+      performanceReview: " 의 성과 평가가 완료되었습니다"
     },
     timeAgo: {
       twoHours: "2시간 전",
@@ -150,23 +150,6 @@ export default {
     technical: '기술면접',
     offer: '제안',
     years: '년'
-  },
-
-  // Time Tracking
-  timeTracking: {
-    title: '근태 관리 대시보드',
-    summary: '요약',
-    quickActions: '빠른 작업',
-    workDays: '근무일',
-    leaveDays: '휴가일',
-    overtime: '초과근무 시간',
-    holidayOvertime: '휴일 초과근무',
-    hours: '시간',
-    days: '일',
-    thisMonth: '이번 달',
-    totalHours: '총 시간',
-    regularHours: '정규 시간',
-    overtimeHours: '초과근무 시간'
   },
 
   // Performance Appraisal
@@ -299,7 +282,12 @@ export default {
     trainingEffectiveness: '교육 효과',
     measureTrainingSuccess: '교육 프로그램 성공 측정',
     generate: '생성 →',
-    fromLastPeriod: '이전 기간 대비'
+    fromLastPeriod: '이전 기간 대비',
+    lastWeek:	'지난주 (Jinanju)',
+    lastMonth:	'지난달 (Jinandal)',
+    lastQuarter:	'지난 분기 (Jinan bungi)',
+    lastYear:	'작년 (Jaknyeon)',
+    customRange:	'사용자 지정 범위 (Sayongja jijeong beomwi)',
   },
 
   // Common

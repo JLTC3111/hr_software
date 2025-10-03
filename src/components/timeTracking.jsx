@@ -10,7 +10,6 @@ const TimeTracking = ({ employees }) => {
   const { isDarkMode, toggleTheme, button, bg, text, border, hover, input } = useTheme();
   const { t } = useLanguage();
 
-  // Sample time tracking data - in a real app, this would come from API
   const timeTrackingData = {
     [employees[0]?.id]: {
       daysWorked: 22,
