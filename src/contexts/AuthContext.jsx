@@ -55,18 +55,18 @@ export const AuthProvider = ({ children }) => {
       
       // Fetch user from hr_users table
       let { data, error } = await supabase
-      .from('hr_users')
-      .select(`
-        *,
-        manager:hr_users!manager_id(
-          id,
-          full_name,
-          email,
-          position
-        )
-      `)
-      .eq('id', userId)
-      .single();
+        .from('hr_users')
+        .select(`
+          *,
+          manager:hr_users!manager_id(
+            id,
+            full_name,
+            email,
+            position
+          )
+        `)
+        .eq('id', userId)
+        .single();
 
       if (error) {
         console.error('Database error:', error);

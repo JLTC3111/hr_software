@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Lock, Mail, Building2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -8,7 +8,7 @@ import LanguageSelector from './LanguageSelector';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-  const { login, loginWithGithub } = useAuth();
+  const { login, loginWithGithub, isAuthenticated, user } = useAuth();
   const { isDarkMode, bg, text, input } = useTheme();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -22,6 +22,14 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
+
+  // Redirect to dashboard when authenticated and user profile is loaded
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log('User authenticated and profile loaded, redirecting to dashboard...');
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -66,16 +74,11 @@ const Login = () => {
     
     const result = await login(formData.email, formData.password);
     
-    if (result.success) {
-      // Wait a bit for the auth state to update and user profile to load
-      console.log('Login successful, waiting for profile load...');
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1000);
-    } else {
+    if (!result.success) {
       setLoginError(result.error || t('login.invalidCredentials', 'Invalid email or password'));
       setIsLoading(false);
     }
+    // Note: Redirect happens automatically via useEffect when user profile loads
   };
 
   const handleGithubLogin = async () => {
