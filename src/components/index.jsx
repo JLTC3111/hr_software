@@ -1,0 +1,20 @@
+// Export all components from a single file for easier imports
+export { default as Activity } from './activity.jsx';
+export { default as AddEmployeeModal } from './addEmployeeModal.jsx';
+export { default as Dashboard } from './dashboard.jsx';
+export { default as Employee } from './employee.jsx';
+export { default as EmployeeCard } from './employeeCard.jsx';
+export { default as EmployeeModal } from './employeeModal.jsx';
+export { default as Header } from './header.jsx';
+export { default as LanguageSelector } from './LanguageSelector.jsx';
+export { default as Login } from './login.jsx';
+export { default as PerformanceAppraisal } from './performanceAppraisal.jsx';
+export { default as PlaceHolder } from './placeHolder.jsx';
+export { default as Recruitment } from './recruitment.jsx';
+export { default as Reports } from './reports.jsx';
+export { default as SearchAndFilter } from './search.jsx';
+export { default as Sidebar } from './sidebar.jsx';
+export { default as StatsCard } from './statsCard.jsx';
+export { default as ThemeToggle } from './themeToggle.jsx';
+export { default as TimeTracking } from './timeTracking.jsx';
+export { default as Search } from './search.jsx';
