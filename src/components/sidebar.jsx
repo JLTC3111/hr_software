@@ -9,7 +9,7 @@ const Sidebar = () => {
   const { t } = useLanguage();
   
   const menuItems = [
-    { path: '/time-clock', name: t('nav.timeClock', 'Time Clock'), icon: ClipboardList },
+    { path: '/time-clock', name: t('nav.timeClock'), icon: ClipboardList },
     { path: '/dashboard', name: t('nav.dashboard'), icon: TrendingUp },
     { path: '/employees', name: t('nav.employees'), icon: Users },
     { path: '/time-tracking', name: t('nav.timeTracking'), icon: Clock },

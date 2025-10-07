@@ -1,13 +1,15 @@
 export default {
   // Navigation
   nav: {
+    timeClock: 'タイムクロック',
     dashboard: 'ダッシュボード',
     employees: '従業員',
     recruitment: '採用',
     timeTracking: '勤怠管理',
-    performance: 'パフォーマンス',
+    performance: '業績評価',
     reports: 'レポート'
-  },
+  }
+  ,
 
   // Header
   header: {
@@ -93,6 +95,52 @@ export default {
     years: '年'
   },
 
+  timeClock: {
+    title: '勤怠記録',
+    subtitle: '勤務時間を記録し、証明書を提出します',
+    newEntry: '新しい勤怠入力',
+    date: '日付',
+    clockIn: '出勤時間',
+    clockOut: '退勤時間',
+    hourType: '勤務時間の種類',
+    proof: '勤怠証明',
+    notes: 'メモ',
+    optional: '任意',
+    submit: '勤怠を送信',
+    submitting: '送信中...',
+    success: '勤怠記録が正常に送信されました！',
+    confirmDelete: 'この記録を削除してもよろしいですか？',
+    delete: '削除',
+    history: '勤怠履歴',
+    noEntries: '記録がありません。最初の記録を送信してください！',
+    time: '時間',
+    hours: '時間数',
+    type: '種類',
+    status: 'ステータス',
+    actions: '操作',
+    weeklySummary: '今週',
+    monthlySummary: '今月',
+    total: '合計',
+    notesPlaceholder: 'メモや追加情報を入力...',
+    fileHelp: 'スクリーンショット、写真、またはPDFをアップロード（最大5MB）',
+    hourTypes: {
+      regular: '通常勤務',
+      holiday: '祝日勤務',
+      weekend: '週末勤務',
+      bonus: '特別勤務'
+    },
+    errors: {
+      dateRequired: '日付を選択してください',
+      clockInRequired: '出勤時間を入力してください',
+      clockOutRequired: '退勤時間を入力してください',
+      clockOutAfterClockIn: '退勤時間は出勤時間の後でなければなりません',
+      tooManyHours: '1件の記録で24時間を超えることはできません',
+      overlapping: 'この時間帯は同日の他の記録と重複しています',
+      fileTooLarge: 'ファイルサイズは5MB未満である必要があります',
+      invalidFileType: 'JPG、PNG、PDFファイルのみアップロード可能です'
+    }
+  },
+  
   // Time Tracking
   timeTracking: {
     title: '時間追跡ダッシュボード',

@@ -1,11 +1,12 @@
 export default {
   // Navigation
   nav: {
+    timeClock: 'Табель учёта рабочего времени',
     dashboard: 'Панель управления',
     employees: 'Сотрудники',
-    recruitment: 'Набор персонала',
-    timeTracking: 'Учёт времени',
-    performance: 'Производительность',
+    recruitment: 'Найм персонала',
+    timeTracking: 'Отслеживание времени',
+    performance: 'Оценка эффективности',
     reports: 'Отчёты'
   },
 
@@ -92,6 +93,52 @@ export default {
     offer: 'Предложение',
     years: 'лет'
   },
+  
+  timeClock: {
+    title: 'Учёт рабочего времени',
+    subtitle: 'Записывайте рабочие часы и отправляйте подтверждения',
+    newEntry: 'Новая запись времени',
+    date: 'Дата',
+    clockIn: 'Время начала',
+    clockOut: 'Время окончания',
+    hourType: 'Тип часов',
+    proof: 'Подтверждение присутствия',
+    notes: 'Заметки',
+    optional: 'Необязательно',
+    submit: 'Отправить запись времени',
+    submitting: 'Отправка...',
+    success: 'Запись времени успешно отправлена!',
+    confirmDelete: 'Вы уверены, что хотите удалить эту запись?',
+    delete: 'Удалить',
+    history: 'История учёта времени',
+    noEntries: 'Нет записей. Добавьте первую!',
+    time: 'Время',
+    hours: 'Часы',
+    type: 'Тип',
+    status: 'Статус',
+    actions: 'Действия',
+    weeklySummary: 'На этой неделе',
+    monthlySummary: 'В этом месяце',
+    total: 'Итого',
+    notesPlaceholder: 'Добавьте заметки или дополнительную информацию...',
+    fileHelp: 'Загрузите скриншот, фото или PDF (до 5 МБ)',
+    hourTypes: {
+      regular: 'Обычные часы',
+      holiday: 'Праздничные дни',
+      weekend: 'Выходные',
+      bonus: 'Дополнительные часы'
+    },
+    errors: {
+      dateRequired: 'Пожалуйста, выберите дату',
+      clockInRequired: 'Введите время начала',
+      clockOutRequired: 'Введите время окончания',
+      clockOutAfterClockIn: 'Время окончания должно быть позже начала',
+      tooManyHours: 'Нельзя указать более 24 часов в одной записи',
+      overlapping: 'Этот период пересекается с другой записью за тот же день',
+      fileTooLarge: 'Размер файла должен быть меньше 5 МБ',
+      invalidFileType: 'Разрешены только файлы JPG, PNG и PDF'
+    }
+  },  
 
   // Time Tracking
   timeTracking: {

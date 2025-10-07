@@ -4,6 +4,7 @@ export default {
     timeClock: 'Time Clock',
     dashboard: 'Dashboard',
     employees: 'Employees',
+    recruitment: "Recruitment",
     timeTracking: 'Time Tracking',
     performance: 'Performance',
     reports: 'Reports'

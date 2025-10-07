@@ -1,11 +1,12 @@
 export default {
   // Navigation
   nav: {
+    timeClock: 'บันทึกเวลา',
     dashboard: 'แดชบอร์ด',
     employees: 'พนักงาน',
-    recruitment: 'การรับสมัคร',
+    recruitment: 'การสรรหา',
     timeTracking: 'การติดตามเวลา',
-    performance: 'ประสิทธิภาพ',
+    performance: 'การประเมินผลการทำงาน',
     reports: 'รายงาน'
   },
 
@@ -92,6 +93,52 @@ export default {
     offer: 'ข้อเสนอ',
     years: 'ปี'
   },
+  
+  timeClock: {
+    title: 'บันทึกเวลา',
+    subtitle: 'บันทึกชั่วโมงการทำงานและส่งหลักฐานการเข้างาน',
+    newEntry: 'เพิ่มรายการเวลาใหม่',
+    date: 'วันที่',
+    clockIn: 'เวลาเข้า',
+    clockOut: 'เวลาออก',
+    hourType: 'ประเภทชั่วโมงทำงาน',
+    proof: 'หลักฐานการเข้างาน',
+    notes: 'บันทึก',
+    optional: 'ตัวเลือกเพิ่มเติม',
+    submit: 'ส่งบันทึกเวลา',
+    submitting: 'กำลังส่ง...',
+    success: 'ส่งบันทึกเวลาสำเร็จแล้ว!',
+    confirmDelete: 'คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?',
+    delete: 'ลบ',
+    history: 'ประวัติการบันทึกเวลา',
+    noEntries: 'ยังไม่มีรายการ กรุณาส่งรายการแรก!',
+    time: 'เวลา',
+    hours: 'ชั่วโมง',
+    type: 'ประเภท',
+    status: 'สถานะ',
+    actions: 'การดำเนินการ',
+    weeklySummary: 'สัปดาห์นี้',
+    monthlySummary: 'เดือนนี้',
+    total: 'รวม',
+    notesPlaceholder: 'เพิ่มบันทึกหรือรายละเอียดเพิ่มเติม...',
+    fileHelp: 'อัปโหลดภาพหน้าจอ รูปภาพ หรือ PDF (ขนาดไม่เกิน 5MB)',
+    hourTypes: {
+      regular: 'เวลาปกติ',
+      holiday: 'วันหยุดนักขัตฤกษ์',
+      weekend: 'วันหยุดสุดสัปดาห์',
+      bonus: 'ชั่วโมงพิเศษ'
+    },
+    errors: {
+      dateRequired: 'กรุณาเลือกวันที่',
+      clockInRequired: 'กรุณากรอกเวลาเข้า',
+      clockOutRequired: 'กรุณากรอกเวลาออก',
+      clockOutAfterClockIn: 'เวลาออกต้องอยู่หลังเวลาเข้า',
+      tooManyHours: 'ไม่สามารถเกิน 24 ชั่วโมงในหนึ่งรายการได้',
+      overlapping: 'เวลานี้ซ้ำกับรายการอื่นในวันเดียวกัน',
+      fileTooLarge: 'ขนาดไฟล์ต้องไม่เกิน 5MB',
+      invalidFileType: 'อนุญาตเฉพาะไฟล์ JPG, PNG และ PDF เท่านั้น'
+    }
+  },  
 
   // Time Tracking
   timeTracking: {

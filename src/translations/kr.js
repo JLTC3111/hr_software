@@ -1,11 +1,12 @@
 export default {
   // Navigation
   nav: {
+    timeClock: '근태 기록',
     dashboard: '대시보드',
     employees: '직원',
     recruitment: '채용',
-    timeTracking: '근태 관리',
-    performance: '성과',
+    timeTracking: '근무 시간 추적',
+    performance: '성과 평가',
     reports: '보고서'
   },
 
@@ -92,7 +93,53 @@ export default {
     offer: '제안',
     years: '년'
   },
-
+  
+  timeClock: {
+    title: '근태 기록',
+    subtitle: '근무 시간을 기록하고 증빙 자료를 제출하세요',
+    newEntry: '새 근무 기록',
+    date: '날짜',
+    clockIn: '출근 시간',
+    clockOut: '퇴근 시간',
+    hourType: '근무 유형',
+    proof: '근태 증빙',
+    notes: '메모',
+    optional: '선택 사항',
+    submit: '근무 기록 제출',
+    submitting: '제출 중...',
+    success: '근무 기록이 성공적으로 제출되었습니다!',
+    confirmDelete: '이 기록을 삭제하시겠습니까?',
+    delete: '삭제',
+    history: '근무 기록 내역',
+    noEntries: '아직 기록이 없습니다. 첫 번째 기록을 추가하세요!',
+    time: '시간',
+    hours: '근무 시간',
+    type: '유형',
+    status: '상태',
+    actions: '작업',
+    weeklySummary: '이번 주',
+    monthlySummary: '이번 달',
+    total: '총합',
+    notesPlaceholder: '추가 메모나 내용을 입력하세요...',
+    fileHelp: '스크린샷, 사진 또는 PDF 업로드 (최대 5MB)',
+    hourTypes: {
+      regular: '일반 근무',
+      holiday: '공휴일 근무',
+      weekend: '주말 근무',
+      bonus: '보너스 근무'
+    },
+    errors: {
+      dateRequired: '날짜를 선택하세요',
+      clockInRequired: '출근 시간을 입력하세요',
+      clockOutRequired: '퇴근 시간을 입력하세요',
+      clockOutAfterClockIn: '퇴근 시간은 출근 시간 이후여야 합니다',
+      tooManyHours: '한 기록에서 24시간을 초과할 수 없습니다',
+      overlapping: '이 시간은 같은 날 다른 기록과 겹칩니다',
+      fileTooLarge: '파일 크기는 5MB 미만이어야 합니다',
+      invalidFileType: 'JPG, PNG, PDF 파일만 허용됩니다'
+    }
+  },
+  
   // Time Tracking
   timeTracking: {
     title: '시간 추적 대시보드',

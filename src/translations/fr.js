@@ -1,14 +1,15 @@
 export default {
   // Navigation
   nav: {
+    timeClock: 'Pointage',
     dashboard: 'Tableau de bord',
     employees: 'Employés',
     recruitment: 'Recrutement',
     timeTracking: 'Suivi du temps',
-    performance: 'Performance',
-    reports: 'Rapports'
+    performance: 'Évaluation des performances',
+    reports: 'Rapports',
   },
-
+  
   // Header
   header: {
     title: 'Gestionnaire RH',
@@ -91,6 +92,52 @@ export default {
     technical: 'Technique',
     offer: 'Offre',
     years: 'ans'
+  },
+  
+  timeClock: {
+    title: 'Pointage',
+    subtitle: 'Enregistrez vos heures de travail et soumettez une preuve',
+    newEntry: 'Nouvelle saisie de temps',
+    date: 'Date',
+    clockIn: 'Heure d’entrée',
+    clockOut: 'Heure de sortie',
+    hourType: 'Type d’heure',
+    proof: 'Preuve de présence',
+    notes: 'Notes',
+    optional: 'Optionnel',
+    submit: 'Soumettre le temps',
+    submitting: 'Soumission...',
+    success: 'Heures enregistrées avec succès !',
+    confirmDelete: 'Voulez-vous vraiment supprimer cet enregistrement ?',
+    delete: 'Supprimer',
+    history: 'Historique de pointage',
+    noEntries: 'Aucun enregistrement pour le moment. Soumettez-en un premier !',
+    time: 'Heure',
+    hours: 'Heures',
+    type: 'Type',
+    status: 'Statut',
+    actions: 'Actions',
+    weeklySummary: 'Cette semaine',
+    monthlySummary: 'Ce mois-ci',
+    total: 'Total',
+    notesPlaceholder: 'Ajoutez des notes ou un contexte supplémentaire...',
+    fileHelp: 'Téléversez une capture, une photo ou un PDF (max 5 Mo)',
+    hourTypes: {
+      regular: 'Heures normales',
+      holiday: 'Jour férié',
+      weekend: 'Week-end',
+      bonus: 'Heures supplémentaires'
+    },
+    errors: {
+      dateRequired: 'Veuillez sélectionner une date',
+      clockInRequired: 'Veuillez saisir l’heure d’entrée',
+      clockOutRequired: 'Veuillez saisir l’heure de sortie',
+      clockOutAfterClockIn: 'L’heure de sortie doit être après l’entrée',
+      tooManyHours: 'Impossible de dépasser 24 heures par enregistrement',
+      overlapping: 'Cet horaire chevauche un autre enregistrement',
+      fileTooLarge: 'Le fichier doit être inférieur à 5 Mo',
+      invalidFileType: 'Seuls les fichiers JPG, PNG et PDF sont autorisés'
+    }
   },
 
   // Time Tracking

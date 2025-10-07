@@ -325,13 +325,12 @@ const TimeClockEntry = () => {
                 {formData.proofFile && (
                   <p className="text-sm text-green-600 dark:text-green-400 mt-1 flex items-center">
                     <FileText className="w-4 h-4 mr-1" />
-                    {formData.proofFile.name}
+                    {formData.proofFile
+                      ? formData.proofFile.name
+                      : t('timeClock.chooseFile', '파일 선택')}
                   </p>
                 )}
                 {errors.proofFile && <p className="text-red-500 text-sm mt-1">{errors.proofFile}</p>}
-                <p className="text-xs text-gray-500 mt-1">
-                  {t('timeClock.fileHelp')}
-                </p>
               </div>
 
               {/* Notes */}
