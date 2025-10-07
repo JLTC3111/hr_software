@@ -1,9 +1,9 @@
 export default {
   // Navigation
   nav: {
-    dashboard: 'Tổng Quát',
-    employees: 'Hồ Sơ',
-    recruitment: 'Tuyển dụng',
+    timeClock: 'Chấm công',
+    dashboard: 'Tổng quan',
+    employees: 'Nhân viên',
     timeTracking: 'Theo dõi thời gian',
     performance: 'Hiệu suất',
     reports: 'Báo cáo'
@@ -373,88 +373,79 @@ export default {
   // Time Clock Entry
   timeClock: {
     title: 'Chấm công',
+    subtitle: 'Ghi lại giờ làm việc và gửi chứng từ',
+    newEntry: 'Nhập giờ công mới',
     date: 'Ngày',
     clockIn: 'Giờ vào',
     clockOut: 'Giờ ra',
-    workType: 'Loại ca làm việc',
-    proof: 'Bằng chứng công việc (Tùy chọn)',
-    notes: 'Ghi chú (Tùy chọn)',
-    notesPlaceholder: 'Thêm thông tin bổ sung...',
-    uploadPrompt: 'Nhấp để tải lên PDF hoặc hình ảnh (tối đa 5MB)',
-    submit: 'Gửi bảng chấm công',
-    hoursWorked: 'Số giờ làm việc',
-    effective: 'Hiệu quả',
-    weeklyTotal: 'Tuần này',
-    monthlyTotal: 'Tháng này',
-    allTime: 'Tất cả thời gian',
-    export: 'Xuất CSV',
+    hourType: 'Loại giờ công',
+    proof: 'Chứng từ chấm công',
+    notes: 'Ghi chú',
+    optional: 'Tùy chọn',
+    submit: 'Gửi giờ công',
+    submitting: 'Đang gửi...',
+    success: 'Đã gửi giờ công thành công!',
+    confirmDelete: 'Bạn có chắc muốn xóa bản ghi này?',
+    delete: 'Xóa',
     history: 'Lịch sử chấm công',
-    showHistory: 'Hiện lịch sử',
-    hideHistory: 'Ẩn lịch sử',
-    noEntries: 'Chưa có bản ghi chấm công',
-    types: {
+    noEntries: 'Chưa có bản ghi nào. Hãy gửi bản ghi đầu tiên!',
+    time: 'Thời gian',
+    hours: 'Giờ',
+    type: 'Loại',
+    status: 'Trạng thái',
+    actions: 'Thao tác',
+    weeklySummary: 'Tuần này',
+    monthlySummary: 'Tháng này',
+    total: 'Tổng cộng',
+    notesPlaceholder: 'Thêm ghi chú hoặc nội dung bổ sung...',
+    fileHelp: 'Tải lên ảnh chụp màn hình, ảnh hoặc PDF (tối đa 5MB)',
+    hourTypes: {
       regular: 'Giờ thường',
+      holiday: 'Ngày lễ',
       weekend: 'Cuối tuần',
-      bonus: 'Giờ thưởng',
-      holiday: 'Ngày lễ'
-    },
-    status: {
-      pending: 'Chờ duyệt',
-      approved: 'Đã duyệt',
-      rejected: 'Từ chối'
-    },
-    table: {
-      date: 'Ngày',
-      clockIn: 'Giờ vào',
-      clockOut: 'Giờ ra',
-      hours: 'Số giờ',
-      type: 'Loại',
-      status: 'Trạng thái',
-      actions: 'Hành động'
+      bonus: 'Giờ thưởng'
     },
     errors: {
-      dateRequired: 'Ngày là bắt buộc',
-      clockInRequired: 'Giờ vào là bắt buộc',
-      clockOutRequired: 'Giờ ra là bắt buộc',
-      clockOutBeforeIn: 'Giờ ra phải sau giờ vào',
-      exceedsMaxHours: 'Không thể vượt quá 24 giờ trong một ngày',
-      overlappingShift: 'Thời gian trùng lặp với bản ghi hiện có',
-      invalidFileType: 'Chỉ chấp nhận PDF và hình ảnh',
-      fileTooLarge: 'Kích thước file phải nhỏ hơn 5MB'
-    },
-    success: {
-      entrySaved: 'Đã lưu bản ghi chấm công thành công!'
+      dateRequired: 'Vui lòng chọn ngày',
+      clockInRequired: 'Vui lòng nhập giờ vào',
+      clockOutRequired: 'Vui lòng nhập giờ ra',
+      clockOutAfterClockIn: 'Giờ ra phải sau giờ vào',
+      tooManyHours: 'Không thể vượt quá 24 giờ trong một bản ghi',
+      overlapping: 'Thời gian này trùng với bản ghi khác trong cùng ngày',
+      fileTooLarge: 'Kích thước tệp phải nhỏ hơn 5MB',
+      invalidFileType: 'Chỉ cho phép tệp JPG, PNG và PDF'
     }
   },
 
   // Common
   common: {
+    search: 'Tìm kiếm',
+    filter: 'Lọc',
+    sort: 'Sắp xếp',
     save: 'Lưu',
     cancel: 'Hủy',
     delete: 'Xóa',
-    edit: 'Sửa',
+    edit: 'Chỉnh sửa',
     view: 'Xem',
-    search: 'Tìm kiếm',
-    filter: 'Lọc',
-    export: 'Xuất',
-    print: 'In',
+    add: 'Thêm',
     close: 'Đóng',
-    submit: 'Gửi',
     loading: 'Đang tải...',
     noData: 'Không có dữ liệu',
-    confirm: 'Xác nhận',
-    back: 'Quay lại',
-    next: 'Tiếp theo',
-    previous: 'Trước',
+    error: 'Đã xảy ra lỗi',
+    success: 'Thao tác thành công',
+    confirm: 'Bạn có chắc chắn?',
     yes: 'Có',
-    no: 'Không',
-    all: 'Tất cả'
+    no: 'Không'
   },
+
+  // Theme
   theme: {
     light: 'Chế độ sáng',
     dark: 'Chế độ tối',
     toggle: 'Chuyển đổi chủ đề'
   },
+
+  // Language
   language: {
     select: 'Chọn ngôn ngữ',
     current: 'Ngôn ngữ hiện tại'

@@ -16,6 +16,6 @@ export { default as SearchAndFilter } from './search.jsx';
 export { default as Sidebar } from './sidebar.jsx';
 export { default as StatsCard } from './statsCard.jsx';
 export { default as ThemeToggle } from './themeToggle.jsx';
-export { default as TimeTracking } from './timeTracking';
+export { default as TimeTracking } from './timeTracking.jsx';
 export { default as TimeClockEntry } from './timeClockEntry.jsx';
 export { default as Search } from './search.jsx';

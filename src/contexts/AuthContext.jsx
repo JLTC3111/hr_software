@@ -14,32 +14,91 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [session, setSession] = useState(null);
 
-  // Check for existing session on mount
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) {
-        fetchUserProfile(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
 
-    // Listen for auth changes
+Object.keys(localStorage).forEach((key) => {
+  if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+    console.log('🧨 Clearing stale Supabase session:', key);
+    localStorage.removeItem(key);
+  }
+});
+
+
+  const clearAuthState = async () => {
+    console.log('🧹 Clearing auth state and setting loading = false');
+    setUser(null);
+    setIsAuthenticated(false);
+    setSession(null);
+    setLoading(false);
+    
+    // Sign out from Supabase to clear any lingering session
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error during sign out:', error);
+    }
+  };
+
+  useEffect(() => {
+    // Initialize session on mount
+    const initializeAuth = async () => {
+      try {
+        // Get the session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          await clearAuthState();
+          return;
+        }
+
+        if (!session) {
+          console.log('✅ No session found on mount - setting loading = false');
+          setLoading(false);
+          return;
+        }
+
+        // Verify the session is valid by calling getUser()
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError || !user) {
+          console.error('Invalid or expired session:', userError);
+          // Session is invalid - sign out and clear everything
+          await clearAuthState();
+          return;
+        }
+
+        // Session is valid - fetch user profile
+        console.log('✅ Valid session found, fetching profile...');
+        setSession(session);
+        await fetchUserProfile(user.id);
+        
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        await clearAuthState();
+      }
+    };
+
+    initializeAuth();
+
+    // Listen for auth state changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      if (session) {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+
+      if (event === 'SIGNED_IN' && session) {
+        // User just logged in
+        setSession(session);
         await fetchUserProfile(session.user.id);
-      } else {
-        setUser(null);
-        setIsAuthenticated(false);
-        setLoading(false);
+      } else if (event === 'SIGNED_OUT' || !session) {
+        // User logged out or session expired
+        await clearAuthState();
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        // Token was refreshed, update session
+        setSession(session);
       }
     });
 
@@ -108,20 +167,22 @@ export const AuthProvider = ({ children }) => {
           permissions: hasPermission(data.role)
         });
         setIsAuthenticated(true);
+        console.log('✅ Profile loaded successfully, setting loading = false');
         setLoading(false);
       } else if (shouldCreateProfile) {
         console.log('User not found, attempting to create profile...');
         await createUserProfile(userId);
       } else if (data && !data.is_active) {
         console.warn('User account is inactive');
-        setLoading(false);
+        await clearAuthState();
       } else {
         console.warn('No user data found and cannot create profile');
         setLoading(false);
       }
     } catch (error) {
-      console.error('Critical error fetching user profile:', error);
-      setLoading(false);
+      console.error('Error fetching user profile:', error);
+      // On error, clear auth state to force re-login (includes setLoading(false))
+      await clearAuthState();
     }
   };
 
@@ -198,17 +259,24 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout
   const logout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      console.log('Logging out...');
+      await clearAuthState();
+      
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+        console.log('🧹 Removing stale token:', key);
+        localStorage.removeItem(key);
+      }
+    });
 
-      setUser(null);
-      setIsAuthenticated(false);
-      setSession(null);
+      // Navigate to login page
+      window.location.href = '/login';
     } catch (error) {
       console.error('Logout error:', error);
+      await clearAuthState();
+      window.location.href = '/login';
     }
   };
 

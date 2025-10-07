@@ -5,15 +5,6 @@ import { useTheme } from '../contexts/ThemeContext';
 const ThemeToggle = () => {
   const { isDarkMode, toggleTheme, bg, text, border, hover, button } = useTheme();
 
-  // Debug logging
-  console.log('ThemeToggle Debug:', { 
-    isDarkMode, 
-    bgSecondary: bg.secondary,
-    textPrimary: text.primary,
-    documentHasDarkClass: document.documentElement.classList.contains('dark'),
-    documentClasses: document.documentElement.className
-  });
-
   return (
     <button
       onClick={toggleTheme}

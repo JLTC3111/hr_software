@@ -1,6 +1,6 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
-import { TrendingUp, Users, Briefcase, Award, FileText, Clock } from 'lucide-react'
+import { TrendingUp, Users, Briefcase, Award, FileText, Clock, ClipboardList } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 
@@ -9,6 +9,7 @@ const Sidebar = () => {
   const { t } = useLanguage();
   
   const menuItems = [
+    { path: '/time-clock', name: t('nav.timeClock', 'Time Clock'), icon: ClipboardList },
     { path: '/dashboard', name: t('nav.dashboard'), icon: TrendingUp },
     { path: '/employees', name: t('nav.employees'), icon: Users },
     { path: '/time-tracking', name: t('nav.timeTracking'), icon: Clock },

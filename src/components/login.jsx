@@ -8,7 +8,7 @@ import LanguageSelector from './LanguageSelector';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-  const { login, loginWithGithub, isAuthenticated, user } = useAuth();
+  const { login, loginWithGithub, isAuthenticated, user, loading } = useAuth();
   const { isDarkMode, bg, text, input } = useTheme();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -23,13 +23,20 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
 
-  // Redirect to time clock when authenticated and user profile is loaded
   useEffect(() => {
-    if (isAuthenticated && user) {
-      console.log('User authenticated and profile loaded, redirecting to time clock...');
+    console.log('🔍 Redirect condition check:', {
+      loading,
+      isAuthenticated,
+      userExists: !!user,
+    });
+  
+    if (!loading && isAuthenticated && user) {
+      console.log('✅ All conditions met - Redirecting to /time-clock');
       navigate('/time-clock', { replace: true });
+    } else if (!loading && !isAuthenticated) {
+      console.log('✅ Loading complete - User can login');
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, loading, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -37,8 +44,7 @@ const Login = () => {
       ...prev,
       [name]: value
     }));
-    
-    // Clear error when user starts typing
+  
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -78,7 +84,6 @@ const Login = () => {
       setLoginError(result.error || t('login.invalidCredentials', 'Invalid email or password'));
       setIsLoading(false);
     }
-    // Note: Redirect happens automatically via useEffect when user profile loads
   };
 
   const handleGithubLogin = async () => {
@@ -90,8 +95,7 @@ const Login = () => {
     if (!result.success) {
       setLoginError(result.error || t('login.githubError', 'Failed to login with GitHub'));
       setIsLoading(false);
-    }
-    // Note: GitHub OAuth will redirect, so no need to navigate manually
+    }    
   };
 
   return (

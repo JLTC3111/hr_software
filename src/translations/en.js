@@ -1,14 +1,13 @@
 export default {
   // Navigation
   nav: {
-    dashboard: 'Summary',
-    employees: 'Profiles',
-    recruitment: 'Recruitment',
+    timeClock: 'Time Clock',
+    dashboard: 'Dashboard',
+    employees: 'Employees',
     timeTracking: 'Time Tracking',
     performance: 'Performance',
     reports: 'Reports'
   },
-
   // Header
   header: {
     title: 'HR Manager',
@@ -329,98 +328,90 @@ export default {
     employeeTurnover: 'Employee Turnover',
     analyzeRetentionRates: 'Analyze retention and turnover rates',
     trainingEffectiveness: 'Training Effectiveness',
-  },
-
-  // Time Clock Entry
-  timeClock: {
-    title: 'Time Clock Entry',
-    date: 'Date',
-    clockIn: 'Clock In',
-    clockOut: 'Clock Out',
-    workType: 'Work Type',
-    proof: 'Proof of Work (Optional)',
-    notes: 'Notes (Optional)',
-    notesPlaceholder: 'Add any additional context...',
-    uploadPrompt: 'Click to upload PDF or image (max 5MB)',
-    submit: 'Submit Time Entry',
-    hoursWorked: 'Hours Worked',
-    effective: 'Effective',
-    weeklyTotal: 'This Week',
-    monthlyTotal: 'This Month',
-    allTime: 'All Time',
-    export: 'Export CSV',
-    history: 'Time Entry History',
-    showHistory: 'Show History',
-    hideHistory: 'Hide History',
-    noEntries: 'No time entries yet',
-    types: {
-      regular: 'Regular Hours',
-      weekend: 'Weekend',
-      bonus: 'Bonus Hours',
-      holiday: 'Holiday'
-    },
-    status: {
-      pending: 'Pending',
-      approved: 'Approved',
-      rejected: 'Rejected'
-    },
-    table: {
-      date: 'Date',
-      clockIn: 'Clock In',
-      clockOut: 'Clock Out',
-      hours: 'Hours',
-      type: 'Type',
-      status: 'Status',
-      actions: 'Actions'
-    },
-    errors: {
-      dateRequired: 'Date is required',
-      clockInRequired: 'Clock-in time is required',
-      clockOutRequired: 'Clock-out time is required',
-      clockOutBeforeIn: 'Clock-out must be after clock-in',
-      exceedsMaxHours: 'Cannot exceed 24 hours in one day',
-      overlappingShift: 'Time overlaps with existing entry on this date',
-      invalidFileType: 'Only PDF and images allowed',
-      fileTooLarge: 'File size must be less than 5MB'
-    },
-    success: {
-      entrySaved: 'Time entry saved successfully!'
-    }
+    measureTrainingSuccess: 'Measure training program success',
+    generate: 'Generate →',
+    fromLastPeriod: 'from last period'
   },
 
   // Common
   common: {
+    search: 'Search',
+    filter: 'Filter',
+    sort: 'Sort',
     save: 'Save',
     cancel: 'Cancel',
     delete: 'Delete',
     edit: 'Edit',
     view: 'View',
-    search: 'Search',
-    filter: 'Filter',
-    export: 'Export',
-    print: 'Print',
+    add: 'Add',
     close: 'Close',
-    submit: 'Submit',
     loading: 'Loading...',
     noData: 'No data available',
-    confirm: 'Confirm',
-    back: 'Back',
-    next: 'Next',
-    previous: 'Previous',
+    error: 'An error occurred',
+    success: 'Operation successful',
+    confirm: 'Are you sure?',
     yes: 'Yes',
-    no: 'No',
-    all: 'All'
+    no: 'No'
   },
+
   // Theme
   theme: {
     light: 'Light Mode',
     dark: 'Dark Mode',
     toggle: 'Toggle Theme'
   },
+
   // Language
   language: {
     select: 'Select Language',
     current: 'Current Language'
+  },
+
+  // Time Clock Entry
+  timeClock: {
+    title: 'Time Clock Entry',
+    subtitle: 'Log your work hours and submit proof of attendance',
+    newEntry: 'New Time Entry',
+    date: 'Date',
+    clockIn: 'Clock In',
+    clockOut: 'Clock Out',
+    hourType: 'Hour Type',
+    proof: 'Proof of Attendance',
+    notes: 'Notes',
+    optional: 'Optional',
+    submit: 'Submit Time Entry',
+    submitting: 'Submitting...',
+    success: 'Time entry submitted successfully!',
+    confirmDelete: 'Are you sure you want to delete this entry?',
+    delete: 'Delete',
+    history: 'Time Entry History',
+    noEntries: 'No time entries yet. Submit your first entry above!',
+    time: 'Time',
+    hours: 'Hours',
+    type: 'Type',
+    status: 'Status',
+    actions: 'Actions',
+    weeklySummary: 'This Week',
+    monthlySummary: 'This Month',
+    total: 'Total',
+    notesPlaceholder: 'Add any additional context or notes...',
+    fileHelp: 'Upload screenshot, photo, or PDF (max 5MB)',
+    hourTypes: {
+      regular: 'Regular Hours',
+      holiday: 'Holiday',
+      weekend: 'Weekend',
+      bonus: 'Bonus Hours'
+    },
+    errors: {
+      dateRequired: 'Date is required',
+      clockInRequired: 'Clock-in time is required',
+      clockOutRequired: 'Clock-out time is required',
+      clockOutAfterClockIn: 'Clock-out must be after clock-in',
+      tooManyHours: 'Cannot exceed 24 hours in a single entry',
+      overlapping: 'This time overlaps with an existing entry for this date',
+      fileTooLarge: 'File size must be less than 5MB',
+      invalidFileType: 'Only JPG, PNG, and PDF files are allowed'
+    }
   },
 
   // Time Tracking Actions

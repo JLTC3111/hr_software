@@ -260,6 +260,10 @@ const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmpl
                   <Routes>
                     <Route path="/" element={<Navigate to="/time-clock" replace />} />
                     <Route 
+                      path="/time-clock" 
+                      element={<TimeClockEntry />} 
+                    />
+                    <Route 
                       path="/dashboard" 
                       element={<Dashboard employees={employees} applications={applications} />} 
                     />
@@ -270,10 +274,6 @@ const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmpl
                     <Route 
                       path="/time-tracking" 
                       element={<TimeTracking employees={employees} />} 
-                    />
-                    <Route 
-                      path="/time-clock" 
-                      element={<TimeClockEntry />} 
                     />
                     <Route 
                       path="/performance" 

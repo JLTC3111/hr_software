@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Calendar, Upload, X, AlertCircle, CheckCircle, Download, FileText } from 'lucide-react';
+import { Clock, Upload, Calendar, AlertCircle, Check, X, FileText, Download } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 
 const TimeClockEntry = () => {
-  const { isDarkMode, bg, text, border, button } = useTheme();
+  const { isDarkMode, bg, text, button, input, border } = useTheme();
   const { t } = useLanguage();
   const { user } = useAuth();
 
@@ -14,12 +14,12 @@ const TimeClockEntry = () => {
     date: new Date().toISOString().split('T')[0],
     clockIn: '',
     clockOut: '',
-    workType: 'regular',
+    hourType: 'regular',
     notes: '',
     proofFile: null
   });
 
-  // Time entries history
+  // Time entries state
   const [timeEntries, setTimeEntries] = useState(() => {
     const saved = localStorage.getItem(`timeEntries_${user?.id}`);
     return saved ? JSON.parse(saved) : [];
@@ -27,18 +27,17 @@ const TimeClockEntry = () => {
 
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
-  const [showHistory, setShowHistory] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Work type multipliers for pay calculation
-  const workTypeMultipliers = {
-    regular: 1.0,
-    holiday: 2.0,
-    weekend: 1.5,
-    bonus: 1.75
-  };
+  // Save entries to localStorage whenever they change
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`timeEntries_${user?.id}`, JSON.stringify(timeEntries));
+    }
+  }, [timeEntries, user]);
 
-  // Validate time entry
-  const validateEntry = () => {
+  // Validation
+  const validateForm = () => {
     const newErrors = {};
 
     if (!formData.date) {
@@ -53,36 +52,40 @@ const TimeClockEntry = () => {
       newErrors.clockOut = t('timeClock.errors.clockOutRequired', 'Clock-out time is required');
     }
 
-    // Validate clock-out > clock-in
+    // Check if clock-out is after clock-in
     if (formData.clockIn && formData.clockOut) {
       const clockInTime = new Date(`${formData.date}T${formData.clockIn}`);
       const clockOutTime = new Date(`${formData.date}T${formData.clockOut}`);
       
       if (clockOutTime <= clockInTime) {
-        newErrors.clockOut = t('timeClock.errors.clockOutBeforeIn', 'Clock-out must be after clock-in');
+        newErrors.clockOut = t('timeClock.errors.clockOutAfterClockIn', 'Clock-out must be after clock-in');
       }
 
-      // Cap total hours at 24
+      // Check for reasonable hours (max 24 hours in a day)
       const hoursDiff = (clockOutTime - clockInTime) / (1000 * 60 * 60);
       if (hoursDiff > 24) {
-        newErrors.clockOut = t('timeClock.errors.exceedsMaxHours', 'Cannot exceed 24 hours in one day');
+        newErrors.clockOut = t('timeClock.errors.tooManyHours', 'Cannot exceed 24 hours in a single entry');
       }
     }
 
     // Check for overlapping shifts on the same day
-    const overlapping = timeEntries.find(entry => {
+    const overlapping = timeEntries.some(entry => {
       if (entry.date !== formData.date) return false;
       
-      const existingIn = new Date(`${entry.date}T${entry.clockIn}`);
-      const existingOut = new Date(`${entry.date}T${entry.clockOut}`);
-      const newIn = new Date(`${formData.date}T${formData.clockIn}`);
-      const newOut = new Date(`${formData.date}T${formData.clockOut}`);
+      const existingClockIn = new Date(`${entry.date}T${entry.clockIn}`);
+      const existingClockOut = new Date(`${entry.date}T${entry.clockOut}`);
+      const newClockIn = new Date(`${formData.date}T${formData.clockIn}`);
+      const newClockOut = new Date(`${formData.date}T${formData.clockOut}`);
 
-      return (newIn < existingOut && newOut > existingIn);
+      return (
+        (newClockIn >= existingClockIn && newClockIn < existingClockOut) ||
+        (newClockOut > existingClockIn && newClockOut <= existingClockOut) ||
+        (newClockIn <= existingClockIn && newClockOut >= existingClockOut)
+      );
     });
 
     if (overlapping) {
-      newErrors.date = t('timeClock.errors.overlappingShift', 'Time overlaps with existing entry on this date');
+      newErrors.general = t('timeClock.errors.overlapping', 'This time overlaps with an existing entry for this date');
     }
 
     setErrors(newErrors);
@@ -91,33 +94,33 @@ const TimeClockEntry = () => {
 
   // Calculate hours worked
   const calculateHours = (clockIn, clockOut, date) => {
-    const inTime = new Date(`${date}T${clockIn}`);
-    const outTime = new Date(`${date}T${clockOut}`);
-    return ((outTime - inTime) / (1000 * 60 * 60)).toFixed(2);
+    const start = new Date(`${date}T${clockIn}`);
+    const end = new Date(`${date}T${clockOut}`);
+    return ((end - start) / (1000 * 60 * 60)).toFixed(2);
   };
 
   // Handle file upload
-  const handleFileUpload = (e) => {
+  const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file type
-      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-      if (!allowedTypes.includes(file.type)) {
-        setErrors({ ...errors, file: t('timeClock.errors.invalidFileType', 'Only PDF and images allowed') });
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors({ ...errors, proofFile: t('timeClock.errors.fileTooLarge', 'File size must be less than 5MB') });
         return;
       }
 
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors({ ...errors, file: t('timeClock.errors.fileTooLarge', 'File size must be less than 5MB') });
+      // Check file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        setErrors({ ...errors, proofFile: t('timeClock.errors.invalidFileType', 'Only JPG, PNG, and PDF files are allowed') });
         return;
       }
 
       // Convert to base64 for storage
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData({ ...formData, proofFile: { name: file.name, data: reader.result } });
-        setErrors({ ...errors, file: null });
+        setFormData({ ...formData, proofFile: { name: file.name, type: file.type, data: reader.result } });
+        setErrors({ ...errors, proofFile: null });
       };
       reader.readAsDataURL(file);
     }
@@ -127,408 +130,390 @@ const TimeClockEntry = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    if (!validateEntry()) return;
+    if (!validateForm()) return;
 
-    const hours = calculateHours(formData.clockIn, formData.clockOut, formData.date);
-    const multiplier = workTypeMultipliers[formData.workType];
-    
+    setIsSubmitting(true);
+
     const newEntry = {
       id: Date.now(),
+      ...formData,
+      hours: calculateHours(formData.clockIn, formData.clockOut, formData.date),
       userId: user?.id,
       userName: user?.name,
-      ...formData,
-      hours: parseFloat(hours),
-      multiplier,
-      effectiveHours: (parseFloat(hours) * multiplier).toFixed(2),
-      submittedAt: new Date().toISOString(),
-      status: 'pending' // Can be: pending, approved, rejected
+      status: 'pending', // pending, approved, rejected
+      submittedAt: new Date().toISOString()
     };
 
-    const updatedEntries = [...timeEntries, newEntry];
-    setTimeEntries(updatedEntries);
-    localStorage.setItem(`timeEntries_${user?.id}`, JSON.stringify(updatedEntries));
-
-    setSuccessMessage(t('timeClock.success.entrySaved', 'Time entry saved successfully!'));
-    setTimeout(() => setSuccessMessage(''), 3000);
-
+    setTimeEntries([newEntry, ...timeEntries]);
+    
     // Reset form
     setFormData({
       date: new Date().toISOString().split('T')[0],
       clockIn: '',
       clockOut: '',
-      workType: 'regular',
+      hourType: 'regular',
       notes: '',
       proofFile: null
     });
+
+    setSuccessMessage(t('timeClock.success', 'Time entry submitted successfully!'));
+    setTimeout(() => setSuccessMessage(''), 3000);
+    setIsSubmitting(false);
   };
 
   // Delete entry
   const handleDelete = (id) => {
-    const updated = timeEntries.filter(entry => entry.id !== id);
-    setTimeEntries(updated);
-    localStorage.setItem(`timeEntries_${user?.id}`, JSON.stringify(updated));
+    if (window.confirm(t('timeClock.confirmDelete', 'Are you sure you want to delete this entry?'))) {
+      setTimeEntries(timeEntries.filter(entry => entry.id !== id));
+    }
   };
 
   // Calculate totals
-  const calculateTotals = () => {
+  const calculateTotals = (filterType = 'all', period = 'week') => {
     const now = new Date();
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const monthAgo = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
 
-    const totals = {
-      weekly: { regular: 0, holiday: 0, weekend: 0, bonus: 0, total: 0 },
-      monthly: { regular: 0, holiday: 0, weekend: 0, bonus: 0, total: 0 },
-      all: { regular: 0, holiday: 0, weekend: 0, bonus: 0, total: 0 }
-    };
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    timeEntries.forEach(entry => {
+    return timeEntries.reduce((acc, entry) => {
       const entryDate = new Date(entry.date);
-      const hours = parseFloat(entry.hours);
+      
+      // Filter by period
+      if (period === 'week' && entryDate < startOfWeek) return acc;
+      if (period === 'month' && entryDate < startOfMonth) return acc;
 
-      totals.all[entry.workType] += hours;
-      totals.all.total += hours;
-
-      if (entryDate >= weekAgo) {
-        totals.weekly[entry.workType] += hours;
-        totals.weekly.total += hours;
+      // Filter by type
+      if (filterType === 'all' || entry.hourType === filterType) {
+        acc += parseFloat(entry.hours || 0);
       }
 
-      if (entryDate >= monthAgo) {
-        totals.monthly[entry.workType] += hours;
-        totals.monthly.total += hours;
-      }
-    });
-
-    return totals;
+      return acc;
+    }, 0);
   };
 
-  // Export to CSV
-  const exportToCSV = () => {
-    const headers = ['Date', 'Clock In', 'Clock Out', 'Hours', 'Type', 'Multiplier', 'Effective Hours', 'Status', 'Notes'];
-    const csvData = timeEntries.map(entry => [
-      entry.date,
-      entry.clockIn,
-      entry.clockOut,
-      entry.hours,
-      entry.workType,
-      entry.multiplier,
-      entry.effectiveHours,
-      entry.status,
-      entry.notes || ''
-    ]);
+  const hourTypes = [
+    { value: 'regular', label: t('timeClock.hourTypes.regular', 'Regular Hours'), color: 'blue' },
+    { value: 'holiday', label: t('timeClock.hourTypes.holiday', 'Holiday'), color: 'purple' },
+    { value: 'weekend', label: t('timeClock.hourTypes.weekend', 'Weekend'), color: 'green' },
+    { value: 'bonus', label: t('timeClock.hourTypes.bonus', 'Bonus Hours'), color: 'yellow' }
+  ];
 
-    const csv = [
-      headers.join(','),
-      ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `timesheet_${user?.name}_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'approved': return 'text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400';
+      case 'rejected': return 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400';
+      default: return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400';
+    }
   };
-
-  const totals = calculateTotals();
 
   return (
-    <div className={`${bg.secondary} rounded-lg shadow-lg p-6`}>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className={`text-2xl font-bold ${text.primary}`}>
-          <Clock className="inline mr-2" />
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className={`text-3xl font-bold ${text.primary}`}>
           {t('timeClock.title', 'Time Clock Entry')}
-        </h2>
-        <button
-          onClick={() => setShowHistory(!showHistory)}
-          className={`px-4 py-2 rounded-lg ${button.primary} transition-colors`}
-        >
-          {showHistory ? t('timeClock.hideHistory', 'Hide History') : t('timeClock.showHistory', 'Show History')}
-        </button>
+        </h1>
+        <p className={`${text.secondary} mt-2`}>
+          {t('timeClock.subtitle', 'Log your work hours and submit proof of attendance')}
+        </p>
       </div>
 
       {/* Success Message */}
       {successMessage && (
-        <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-700 rounded-lg flex items-center space-x-2 text-green-700 dark:text-green-400">
-          <CheckCircle className="w-5 h-5" />
-          <span>{successMessage}</span>
+        <div className="p-4 bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-700 rounded-lg flex items-center space-x-2">
+          <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
+          <span className="text-green-700 dark:text-green-400">{successMessage}</span>
         </div>
       )}
 
-      {/* Entry Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Date Picker */}
-          <div>
-            <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-              <Calendar className="inline w-4 h-4 mr-1" />
-              {t('timeClock.date', 'Date')}
-            </label>
-            <input
-              type="date"
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              max={new Date().toISOString().split('T')[0]}
-              className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} ${errors.date ? 'border-red-500' : ''}`}
-            />
-            {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date}</p>}
-          </div>
-
-          {/* Work Type */}
-          <div>
-            <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-              {t('timeClock.workType', 'Work Type')}
-            </label>
-            <select
-              value={formData.workType}
-              onChange={(e) => setFormData({ ...formData, workType: e.target.value })}
-              className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
-            >
-              <option value="regular">{t('timeClock.types.regular', 'Regular Hours')} (1.0x)</option>
-              <option value="weekend">{t('timeClock.types.weekend', 'Weekend')} (1.5x)</option>
-              <option value="bonus">{t('timeClock.types.bonus', 'Bonus Hours')} (1.75x)</option>
-              <option value="holiday">{t('timeClock.types.holiday', 'Holiday')} (2.0x)</option>
-            </select>
-          </div>
-
-          {/* Clock In */}
-          <div>
-            <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-              {t('timeClock.clockIn', 'Clock In')}
-            </label>
-            <input
-              type="time"
-              value={formData.clockIn}
-              onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
-              className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} ${errors.clockIn ? 'border-red-500' : ''}`}
-            />
-            {errors.clockIn && <p className="text-red-500 text-sm mt-1">{errors.clockIn}</p>}
-          </div>
-
-          {/* Clock Out */}
-          <div>
-            <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-              {t('timeClock.clockOut', 'Clock Out')}
-            </label>
-            <input
-              type="time"
-              value={formData.clockOut}
-              onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
-              className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'} ${errors.clockOut ? 'border-red-500' : ''}`}
-            />
-            {errors.clockOut && <p className="text-red-500 text-sm mt-1">{errors.clockOut}</p>}
-          </div>
+      {/* General Error */}
+      {errors.general && (
+        <div className="p-4 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 rounded-lg flex items-center space-x-2">
+          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+          <span className="text-red-700 dark:text-red-400">{errors.general}</span>
         </div>
+      )}
 
-        {/* File Upload */}
-        <div>
-          <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-            <Upload className="inline w-4 h-4 mr-1" />
-            {t('timeClock.proof', 'Proof of Work (Optional)')}
-          </label>
-          <div className={`border-2 border-dashed ${border.primary} rounded-lg p-4`}>
-            <input
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              onChange={handleFileUpload}
-              className="hidden"
-              id="proof-upload"
-            />
-            <label htmlFor="proof-upload" className="cursor-pointer flex flex-col items-center">
-              {formData.proofFile ? (
-                <div className="flex items-center space-x-2">
-                  <FileText className="w-5 h-5 text-blue-500" />
-                  <span className={text.primary}>{formData.proofFile.name}</span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setFormData({ ...formData, proofFile: null });
-                    }}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Entry Form */}
+        <div className="lg:col-span-2">
+          <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>
+            <h2 className={`text-xl font-semibold ${text.primary} mb-6 flex items-center`}>
+              <Clock className="w-5 h-5 mr-2" />
+              {t('timeClock.newEntry', 'New Time Entry')}
+            </h2>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Date */}
+              <div>
+                <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                  <Calendar className="w-4 h-4 inline mr-1" />
+                  {t('timeClock.date', 'Date')}
+                </label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  max={new Date().toISOString().split('T')[0]}
+                  className={`w-full px-4 py-2 rounded-lg border ${input.className} ${errors.date ? 'border-red-500' : ''}`}
+                />
+                {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date}</p>}
+              </div>
+
+              {/* Clock In/Out Times */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                    {t('timeClock.clockIn', 'Clock In')}
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.clockIn}
+                    onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-lg border ${input.className} ${errors.clockIn ? 'border-red-500' : ''}`}
+                  />
+                  {errors.clockIn && <p className="text-red-500 text-sm mt-1">{errors.clockIn}</p>}
                 </div>
-              ) : (
-                <>
-                  <Upload className={`w-8 h-8 ${text.secondary} mb-2`} />
-                  <span className={`text-sm ${text.secondary}`}>
-                    {t('timeClock.uploadPrompt', 'Click to upload PDF or image (max 5MB)')}
+
+                <div>
+                  <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                    {t('timeClock.clockOut', 'Clock Out')}
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.clockOut}
+                    onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-lg border ${input.className} ${errors.clockOut ? 'border-red-500' : ''}`}
+                  />
+                  {errors.clockOut && <p className="text-red-500 text-sm mt-1">{errors.clockOut}</p>}
+                </div>
+              </div>
+
+              {/* Hour Type */}
+              <div>
+                <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                  {t('timeClock.hourType', 'Hour Type')}
+                </label>
+                <select
+                  value={formData.hourType}
+                  onChange={(e) => setFormData({ ...formData, hourType: e.target.value })}
+                  className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                >
+                  {hourTypes.map(type => (
+                    <option key={type.value} value={type.value}>{type.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* File Upload */}
+              <div>
+                <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                  <Upload className="w-4 h-4 inline mr-1" />
+                  {t('timeClock.proof', 'Proof of Attendance')}
+                  <span className="text-sm text-gray-500 ml-2">
+                    ({t('timeClock.optional', 'Optional')})
                   </span>
-                </>
-              )}
-            </label>
+                </label>
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.pdf"
+                  onChange={handleFileChange}
+                  className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                />
+                {formData.proofFile && (
+                  <p className="text-sm text-green-600 dark:text-green-400 mt-1 flex items-center">
+                    <FileText className="w-4 h-4 mr-1" />
+                    {formData.proofFile.name}
+                  </p>
+                )}
+                {errors.proofFile && <p className="text-red-500 text-sm mt-1">{errors.proofFile}</p>}
+                <p className="text-xs text-gray-500 mt-1">
+                  {t('timeClock.fileHelp', 'Upload screenshot, photo, or PDF (max 5MB)')}
+                </p>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                  {t('timeClock.notes', 'Notes')}
+                  <span className="text-sm text-gray-500 ml-2">
+                    ({t('timeClock.optional', 'Optional')})
+                  </span>
+                </label>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  rows="3"
+                  placeholder={t('timeClock.notesPlaceholder', 'Add any additional context or notes...')}
+                  className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                />
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`w-full py-3 px-6 rounded-lg font-medium text-white transition-colors ${
+                  isSubmitting
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.98]'
+                }`}
+              >
+                {isSubmitting
+                  ? t('timeClock.submitting', 'Submitting...')
+                  : t('timeClock.submit', 'Submit Time Entry')}
+              </button>
+            </form>
           </div>
-          {errors.file && <p className="text-red-500 text-sm mt-1">{errors.file}</p>}
         </div>
 
-        {/* Notes */}
-        <div>
-          <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-            {t('timeClock.notes', 'Notes (Optional)')}
-          </label>
-          <textarea
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            rows={3}
-            placeholder={t('timeClock.notesPlaceholder', 'Add any additional context...')}
-            className={`w-full px-4 py-2 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
-          />
-        </div>
-
-        {/* Hours Preview */}
-        {formData.clockIn && formData.clockOut && !errors.clockOut && (
-          <div className={`p-4 ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'} rounded-lg`}>
-            <p className={`text-sm ${text.primary}`}>
-              <strong>{t('timeClock.hoursWorked', 'Hours Worked')}:</strong> {calculateHours(formData.clockIn, formData.clockOut, formData.date)} hrs
-              {formData.workType !== 'regular' && (
-                <span className="ml-2">
-                  ({t('timeClock.effective', 'Effective')}: {(calculateHours(formData.clockIn, formData.clockOut, formData.date) * workTypeMultipliers[formData.workType]).toFixed(2)} hrs)
+        {/* Summary Stats */}
+        <div className="space-y-6">
+          {/* Weekly Summary */}
+          <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>
+            <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
+              {t('timeClock.weeklySummary', 'This Week')}
+            </h3>
+            <div className="space-y-3">
+              {hourTypes.map(type => (
+                <div key={type.value} className="flex justify-between items-center">
+                  <span className={`text-sm ${text.secondary}`}>{type.label}</span>
+                  <span className={`font-semibold ${text.primary}`}>
+                    {calculateTotals(type.value, 'week').toFixed(2)} hrs
+                  </span>
+                </div>
+              ))}
+              <div className={`pt-3 border-t ${border.primary} flex justify-between items-center`}>
+                <span className={`font-semibold ${text.primary}`}>
+                  {t('timeClock.total', 'Total')}
                 </span>
-              )}
-            </p>
+                <span className={`font-bold text-lg ${text.primary}`}>
+                  {calculateTotals('all', 'week').toFixed(2)} hrs
+                </span>
+              </div>
+            </div>
           </div>
-        )}
 
-        {/* Submit Button */}
-        <button
-          type="submit"
-          className={`w-full py-3 px-6 rounded-lg font-medium ${button.primary} transition-colors`}
-        >
-          {t('timeClock.submit', 'Submit Time Entry')}
-        </button>
-      </form>
-
-      {/* Summary Stats */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className={`p-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} rounded-lg`}>
-          <h3 className={`text-sm font-medium ${text.secondary} mb-2`}>
-            {t('timeClock.weeklyTotal', 'This Week')}
-          </h3>
-          <p className={`text-2xl font-bold ${text.primary}`}>{totals.weekly.total.toFixed(1)} hrs</p>
-          <div className={`text-xs ${text.secondary} mt-2 space-y-1`}>
-            <p>{t('timeClock.types.regular', 'Regular')}: {totals.weekly.regular.toFixed(1)} hrs</p>
-            <p>{t('timeClock.types.weekend', 'Weekend')}: {totals.weekly.weekend.toFixed(1)} hrs</p>
-            <p>{t('timeClock.types.holiday', 'Holiday')}: {totals.weekly.holiday.toFixed(1)} hrs</p>
+          {/* Monthly Summary */}
+          <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>
+            <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
+              {t('timeClock.monthlySummary', 'This Month')}
+            </h3>
+            <div className="space-y-3">
+              {hourTypes.map(type => (
+                <div key={type.value} className="flex justify-between items-center">
+                  <span className={`text-sm ${text.secondary}`}>{type.label}</span>
+                  <span className={`font-semibold ${text.primary}`}>
+                    {calculateTotals(type.value, 'month').toFixed(2)} hrs
+                  </span>
+                </div>
+              ))}
+              <div className={`pt-3 border-t ${border.primary} flex justify-between items-center`}>
+                <span className={`font-semibold ${text.primary}`}>
+                  {t('timeClock.total', 'Total')}
+                </span>
+                <span className={`font-bold text-lg ${text.primary}`}>
+                  {calculateTotals('all', 'month').toFixed(2)} hrs
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
-
-        <div className={`p-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} rounded-lg`}>
-          <h3 className={`text-sm font-medium ${text.secondary} mb-2`}>
-            {t('timeClock.monthlyTotal', 'This Month')}
-          </h3>
-          <p className={`text-2xl font-bold ${text.primary}`}>{totals.monthly.total.toFixed(1)} hrs</p>
-          <div className={`text-xs ${text.secondary} mt-2 space-y-1`}>
-            <p>{t('timeClock.types.regular', 'Regular')}: {totals.monthly.regular.toFixed(1)} hrs</p>
-            <p>{t('timeClock.types.weekend', 'Weekend')}: {totals.monthly.weekend.toFixed(1)} hrs</p>
-            <p>{t('timeClock.types.holiday', 'Holiday')}: {totals.monthly.holiday.toFixed(1)} hrs</p>
-          </div>
-        </div>
-
-        <div className={`p-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} rounded-lg`}>
-          <h3 className={`text-sm font-medium ${text.secondary} mb-2`}>
-            {t('timeClock.allTime', 'All Time')}
-          </h3>
-          <p className={`text-2xl font-bold ${text.primary}`}>{totals.all.total.toFixed(1)} hrs</p>
-          <button
-            onClick={exportToCSV}
-            className="mt-2 text-sm text-blue-500 hover:text-blue-700 flex items-center"
-          >
-            <Download className="w-4 h-4 mr-1" />
-            {t('timeClock.export', 'Export CSV')}
-          </button>
         </div>
       </div>
 
-      {/* History Table */}
-      {showHistory && (
-        <div className="mt-8">
-          <h3 className={`text-xl font-bold ${text.primary} mb-4`}>
-            {t('timeClock.history', 'Time Entry History')}
-          </h3>
+      {/* Time Entries History */}
+      <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>
+        <h2 className={`text-xl font-semibold ${text.primary} mb-6`}>
+          {t('timeClock.history', 'Time Entry History')}
+        </h2>
+
+        {timeEntries.length === 0 ? (
+          <div className="text-center py-12">
+            <Clock className={`w-16 h-16 mx-auto ${text.secondary} opacity-50 mb-4`} />
+            <p className={`${text.secondary}`}>
+              {t('timeClock.noEntries', 'No time entries yet. Submit your first entry above!')}
+            </p>
+          </div>
+        ) : (
           <div className="overflow-x-auto">
-            <table className={`w-full ${isDarkMode ? 'bg-gray-700' : 'bg-white'} rounded-lg overflow-hidden`}>
-              <thead className={isDarkMode ? 'bg-gray-600' : 'bg-gray-100'}>
-                <tr>
-                  <th className={`px-4 py-3 text-left text-sm font-medium ${text.primary}`}>
-                    {t('timeClock.table.date', 'Date')}
+            <table className="w-full">
+              <thead>
+                <tr className={`border-b ${border.primary}`}>
+                  <th className={`text-left p-3 ${text.primary} font-semibold`}>
+                    {t('timeClock.date', 'Date')}
                   </th>
-                  <th className={`px-4 py-3 text-left text-sm font-medium ${text.primary}`}>
-                    {t('timeClock.table.clockIn', 'Clock In')}
+                  <th className={`text-left p-3 ${text.primary} font-semibold`}>
+                    {t('timeClock.time', 'Time')}
                   </th>
-                  <th className={`px-4 py-3 text-left text-sm font-medium ${text.primary}`}>
-                    {t('timeClock.table.clockOut', 'Clock Out')}
+                  <th className={`text-left p-3 ${text.primary} font-semibold`}>
+                    {t('timeClock.hours', 'Hours')}
                   </th>
-                  <th className={`px-4 py-3 text-left text-sm font-medium ${text.primary}`}>
-                    {t('timeClock.table.hours', 'Hours')}
+                  <th className={`text-left p-3 ${text.primary} font-semibold`}>
+                    {t('timeClock.type', 'Type')}
                   </th>
-                  <th className={`px-4 py-3 text-left text-sm font-medium ${text.primary}`}>
-                    {t('timeClock.table.type', 'Type')}
+                  <th className={`text-left p-3 ${text.primary} font-semibold`}>
+                    {t('timeClock.status', 'Status')}
                   </th>
-                  <th className={`px-4 py-3 text-left text-sm font-medium ${text.primary}`}>
-                    {t('timeClock.table.status', 'Status')}
+                  <th className={`text-left p-3 ${text.primary} font-semibold`}>
+                    {t('timeClock.proof', 'Proof')}
                   </th>
-                  <th className={`px-4 py-3 text-left text-sm font-medium ${text.primary}`}>
-                    {t('timeClock.table.actions', 'Actions')}
+                  <th className={`text-right p-3 ${text.primary} font-semibold`}>
+                    {t('timeClock.actions', 'Actions')}
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-                {timeEntries.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" className={`px-4 py-8 text-center ${text.secondary}`}>
-                      {t('timeClock.noEntries', 'No time entries yet')}
+              <tbody>
+                {timeEntries.map(entry => (
+                  <tr key={entry.id} className={`border-b ${border.primary} hover:bg-gray-50 dark:hover:bg-gray-800`}>
+                    <td className={`p-3 ${text.primary}`}>
+                      {new Date(entry.date).toLocaleDateString()}
+                    </td>
+                    <td className={`p-3 ${text.secondary}`}>
+                      {entry.clockIn} - {entry.clockOut}
+                    </td>
+                    <td className={`p-3 ${text.primary} font-semibold`}>
+                      {entry.hours} hrs
+                    </td>
+                    <td className="p-3">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        entry.hourType === 'regular' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                        entry.hourType === 'holiday' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
+                        entry.hourType === 'weekend' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      }`}>
+                        {hourTypes.find(t => t.value === entry.hourType)?.label}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(entry.status)}`}>
+                        {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      {entry.proofFile ? (
+                        <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
+                      ) : (
+                        <span className={`text-xs ${text.secondary}`}>-</span>
+                      )}
+                    </td>
+                    <td className="p-3 text-right">
+                      <button
+                        onClick={() => handleDelete(entry.id)}
+                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                        title={t('timeClock.delete', 'Delete')}
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
                     </td>
                   </tr>
-                ) : (
-                  timeEntries.slice().reverse().map((entry) => (
-                    <tr key={entry.id} className={`${isDarkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-50'}`}>
-                      <td className={`px-4 py-3 text-sm ${text.primary}`}>{entry.date}</td>
-                      <td className={`px-4 py-3 text-sm ${text.primary}`}>{entry.clockIn}</td>
-                      <td className={`px-4 py-3 text-sm ${text.primary}`}>{entry.clockOut}</td>
-                      <td className={`px-4 py-3 text-sm ${text.primary}`}>
-                        {entry.hours} hrs
-                        {entry.workType !== 'regular' && (
-                          <div className="text-xs text-blue-500">({entry.effectiveHours} eff.)</div>
-                        )}
-                      </td>
-                      <td className={`px-4 py-3 text-sm ${text.primary}`}>
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          entry.workType === 'holiday' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                          entry.workType === 'weekend' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                          entry.workType === 'bonus' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
-                          'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                        }`}>
-                          {t(`timeClock.types.${entry.workType}`, entry.workType)}
-                        </span>
-                      </td>
-                      <td className={`px-4 py-3 text-sm`}>
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          entry.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                          entry.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                          'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                        }`}>
-                          {t(`timeClock.status.${entry.status}`, entry.status)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        <button
-                          onClick={() => handleDelete(entry.id)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                ))}
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
