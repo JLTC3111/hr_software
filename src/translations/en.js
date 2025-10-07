@@ -145,15 +145,20 @@ export default {
     placeholder: 'Search employees...'
   },
 
-  // Departments
+  // Filter Departments
   departments: {
     all: 'All',
+    legal_compliance: 'Legal Compliance',
+    internal_affairs: 'Internal Affairs',
+    human_resources: 'Human Resources',
+    humanresources: 'Human Resources',
+    office_unit: 'Office Unit',
+    board_of_directors: 'Board of Directors',
+    finance: 'Finance',
     engineering: 'Engineering',
     sales: 'Sales',
     marketing: 'Marketing',
-    humanresources: 'Human Resources',
     design: 'Design',
-    finance: 'Finance'
   },
 
   // Months

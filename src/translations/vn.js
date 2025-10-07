@@ -44,48 +44,48 @@ export default {
 
   // Dashboard
   dashboard: {
-    title: 'Tổng quan bảng điều khiển',
-    totalEmployees: 'Tổng số nhân viên',
-    activeEmployees: 'Nhân viên hoạt động',
-    newHires: 'Nhân viên mới tháng này',
-    pendingApplications: 'Đơn ứng tuyển chờ xử lý',
-    avgPerformance: 'Hiệu suất trung bình',
-    totalOvertime: 'Tổng giờ làm thêm',
-    totalLeave: 'Tổng ngày nghỉ phép',
-    employeePerformance: 'Hiệu suất nhân viên',
-    departmentDist: 'Phân bố phòng ban',
-    workLeaveComp: 'So sánh ngày làm vs nghỉ',
-    topPerformers: 'Nhân viên xuất sắc',
-    overtime: 'Thêm giờ',
-    totalWorkDays: 'Tổng ngày làm việc',
-    acrossEmployees: 'Tất cả nhân viên trong tháng',
-    activeApplications: 'Đơn ứng tuyển đang xử lý',
-    pendingReview: 'Chờ duyệt',
-    pendingRequests: 'Yêu cầu chờ xử lý',
-    leaveRequests: 'Đơn xin nghỉ phép chờ duyệt',
-    recentActivity: 'Hoạt động gần đây',
-    quickStats: 'Thống kê nhanh',
-    viewAll: 'Xem tất cả',
+    title: 'Tổng Quan Bảng Điều Khiển',
+    totalEmployees: 'Tổng Số Nhân Viên',
+    activeEmployees: 'Nhân Viên Hoạt Động',
+    newHires: 'Nhân Viên Mới Tháng Này',
+    pendingApplications: 'Đơn Ứng Tuyển Chờ Xử Lý',
+    avgPerformance: 'Hiệu Suất Trung Bình',
+    totalOvertime: 'Tổng Giờ Làm Thêm',
+    totalLeave: 'Tổng Ngày Nghỉ Phép',
+    employeePerformance: 'Hiệu Suất Nhân Viên',
+    departmentDist: 'Phân Bố Phòng Ban',
+    workLeaveComp: 'So Sánh Ngày Làm và Nghỉ',
+    topPerformers: 'Nhân Viên XuấtSắc',
+    overtime: 'Thêm Giờ',
+    totalWorkDays: 'Tổng Ngày Làm Việc',
+    acrossEmployees: 'Tất Cả Nhân Viên Trong Tháng',
+    activeApplications: 'Đơn Ứng Tuyển Đang Xử Lý',
+    pendingReview: 'Chờ Duyệt',
+    pendingRequests: 'Yêu Cầu Chờ Xử Lý',
+    leaveRequests: 'Đơn Xin Nghỉ Phép Chờ Duyệt',
+    recentActivity: 'Hoạt Động Gần Đây',
+    quickStats: 'Thống Kê Nhanh',
+    viewAll: 'Xem Tất Cả',
     activities: {
-      newEmployee: "Nhân viên mới vào làm: ABC ",
-      interviewScheduled: "Lên lịch phỏng vấn với: XYZ",
-      performanceReview: "Đánh giá hiệu suất đã hoàn thành cho nhân viên: Đỗ Bảo Long"
+      newEmployee: "Nhân Viên Mới Vào Làm: ABC ",
+      interviewScheduled: "Lên Lịch Phỏng Vấn Với: XYZ",
+      performanceReview: "Đánh Giá Hiệu Suất Đã Hoàn Thành Cho Nhân Viên: Đỗ Bảo Long"
     },
     timeAgo: {
-      twoHours: "2 giờ trước",
-      fourHours: "4 giờ trước",
-      oneDay: "1 ngày trước"
+      twoHours: "2 Giờ Trước",
+      fourHours: "4 Giờ Trước",
+      oneDay: "1 Ngày Trước"
     }
   },
 
   // Search
   search: {
-    placeholder: 'Tìm kiếm nhân viên...'
+    placeholder: 'Tìm Kiếm Nhân Viên...'
   },
 
   // Filter Departments
   departments: {
-    all: 'Tất cả',
+    all: 'Tất Cả',
     legal_compliance: 'Pháp Lý',
     internal_affairs: 'Quản Lý Nội Bộ',
     human_resources: 'Nhân Sự',
@@ -100,7 +100,7 @@ export default {
   },
 
   employeeDepartment: {
-    all: 'Tất cả',
+    all: 'Tất Cả',
     legal_compliance: 'Pháp Lý',
     internal_affairs: 'Quản Lý Nội Bộ',
     human_resources: 'Nhân Sự',
@@ -127,15 +127,15 @@ export default {
 
   // Recruitment
   recruitment: {
-    title: 'Quy trình tuyển dụng',
-    postNewJob: 'Đăng việc làm mới',
-    applications: 'Đơn ứng tuyển',
-    candidate: 'Ứng viên',
-    position: 'Vị trí',
-    department: 'Phòng ban',
-    appliedDate: 'Ngày nộp đơn',
-    experience: 'Kinh nghiệm',
-    status: 'Trạng thái',
+    title: 'Quy Trình Tuyển Dụng',
+    postNewJob: 'Đăng Việc Làm Mới',
+    applications: 'Đơn Ứng Tuyển',
+    candidate: 'Ứng Viên',
+    position: 'Vị Trí',
+    department: 'Phòng Ban',
+    appliedDate: 'Ngày Nộp Đơn',
+    experience: 'Kinh Nghiệm',
+    status: 'Trạng Thái',
     actions: 'Hành động',
     stage: 'Giai đoạn',
     interviewScheduled: 'Phỏng vấn đã lên lịch',
@@ -149,12 +149,12 @@ export default {
 
   // Time Tracking
   timeTracking: {
-    title: 'Bảng điều khiển theo dõi thời gian',
-    summary: 'Tóm tắt',
+    title: 'Bảng Điều Khiển Theo Dõi Thời Gian',
+    summary: 'Tóm Tắt',
     quickActions: 'Chức Năng',
-    workDays: 'Ngày làm việc',
-    leaveDays: 'Ngày nghỉ phép',
-    overtime: 'Giờ làm thêm',
+    workDays: 'Ngày Làm Việc',
+    leaveDays: 'Ngày Nghỉ Phép',
+    overtime: 'Giờ Làm Thêm',
     holidayOvertime: 'Làm thêm ngày lễ',
     hours: 'giờ',
     days: 'ngày',
@@ -184,12 +184,12 @@ export default {
 
   // Employees
   employees: {
-    title: 'Quản lý nhân viên',
-    searchPlaceholder: 'Tìm kiếm nhân viên...',
-    addEmployee: 'Thêm nhân viên',
+    title: 'Quản Lý Nhân Viên',
+    searchPlaceholder: 'Tìm Kiếm Nhân Viên...',
+    addEmployee: 'Thêm Nhân Viên',
     name: 'Tên',
-    position: 'Vị trí',
-    department: 'Phòng ban',
+    position: 'Vị Trí',
+    department: 'Phòng Ban',
     email: 'Email',
     phone: 'Điện thoại',
     startDate: 'Ngày bắt đầu',

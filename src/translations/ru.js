@@ -19,24 +19,37 @@ export default {
 
   // Dashboard
   dashboard: {
-    title: 'Обзор панели управления',
-    totalEmployees: 'Всего сотрудников',
-    activeEmployees: 'Активные сотрудники',
-    newHires: 'Новые сотрудники в этом месяце',
-    pendingApplications: 'Заявки в ожидании',
-    avgPerformance: 'Средняя производительность',
-    recentActivity: 'Последняя активность',
-    quickStats: 'Быстрая статистика',
-    viewAll: 'Посмотреть всё',
+    title: 'Обзор Панели Управления',
+    totalEmployees: 'Всего Сотрудников',
+    activeEmployees: 'Активные Сотрудники',
+    newHires: 'Новые Сотрудники в Этом Месяце',
+    pendingApplications: 'Заявки в Ожидании',
+    avgPerformance: 'Средняя Эффективность',
+    totalOvertime: 'Общее Количество Сверхурочных',
+    totalLeave: 'Всего Отпускных Дней',
+    employeePerformance: 'Производительность Сотрудников',
+    departmentDist: 'Распределение по Отделам',
+    workLeaveComp: 'Сравнение Рабочих и Выходных Дней',
+    topPerformers: 'Лучшие Сотрудники',
+    overtime: 'Сверхурочная Работа',
+    totalWorkDays: 'Общее Количество Рабочих Дней',
+    acrossEmployees: 'Среди Всех Сотрудников за Месяц',
+    activeApplications: 'Активные Заявки',
+    pendingReview: 'Ожидает Проверки',
+    pendingRequests: 'Ожидающие Запросы',
+    leaveRequests: 'Заявки на Отпуск в Ожидании',
+    recentActivity: 'Недавняя Активность',
+    quickStats: 'Быстрая Статистика',
+    viewAll: 'Посмотреть Все',
     activities: {
-      newEmployee: "Новый сотрудник добавлен: ",
-      interviewScheduled: "Собеседование запланировано с ",
-      performanceReview: "Оценка эффективности завершена для "
+      newEmployee: 'Новый сотрудник принят: ABC',
+      interviewScheduled: 'Назначено интервью с: XYZ',
+      performanceReview: 'Оценка эффективности завершена для: Đỗ Bảo Long'
     },
     timeAgo: {
-      twoHours: "2 часа назад",
-      fourHours: "4 часа назад",
-      oneDay: "1 день назад"
+      twoHours: '2 часа назад',
+      fourHours: '4 часа назад',
+      oneDay: '1 день назад'
     }
   },
 
@@ -93,7 +106,7 @@ export default {
     offer: 'Предложение',
     years: 'лет'
   },
-  
+
   timeClock: {
     title: 'Учёт рабочего времени',
     subtitle: 'Записывайте рабочие часы и отправляйте подтверждения',

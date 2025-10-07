@@ -21,23 +21,36 @@ export default {
   // Dashboard
   dashboard: {
     title: 'ダッシュボード概要',
-    totalEmployees: '総従業員数',
-    activeEmployees: 'アクティブ従業員',
-    newHires: '今月の新規採用',
+    totalEmployees: '従業員総数',
+    activeEmployees: '在籍従業員',
+    newHires: '今月の新入社員',
     pendingApplications: '保留中の応募',
     avgPerformance: '平均パフォーマンス',
-    recentActivity: '最近のアクティビティ',
+    totalOvertime: '総残業時間',
+    totalLeave: '総休暇日数',
+    employeePerformance: '従業員のパフォーマンス',
+    departmentDist: '部署別構成',
+    workLeaveComp: '勤務日と休暇日の比較',
+    topPerformers: '優秀な従業員',
+    overtime: '残業時間',
+    totalWorkDays: '総勤務日数',
+    acrossEmployees: '今月の全従業員',
+    activeApplications: '進行中の応募',
+    pendingReview: 'レビュー待ち',
+    pendingRequests: '保留中のリクエスト',
+    leaveRequests: '休暇申請（承認待ち）',
+    recentActivity: '最近の活動',
     quickStats: 'クイック統計',
     viewAll: 'すべて表示',
     activities: {
-      newEmployee: "新しい従業員が追加されました: ",
-      interviewScheduled: "との面接が予定されました",
-      performanceReview: "のパフォーマンスレビューが完了しました"
+      newEmployee: '新入社員が入社しました：ABC',
+      interviewScheduled: 'XYZとの面接を予定しています',
+      performanceReview: 'Đỗ Bảo Longの業績評価が完了しました'
     },
     timeAgo: {
-      twoHours: "2時間前",
-      fourHours: "4時間前",
-      oneDay: "1日前"
+      twoHours: '2時間前',
+      fourHours: '4時間前',
+      oneDay: '1日前'
     }
   },
 

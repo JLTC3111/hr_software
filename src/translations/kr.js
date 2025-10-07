@@ -19,24 +19,37 @@ export default {
 
   // Dashboard
   dashboard: {
-    title: '대시보드 개요',
-    totalEmployees: '총 직원 수',
-    activeEmployees: '활성 직원',
-    newHires: '이번 달 신입사원',
+    title: '대시보드 요약',
+    totalEmployees: '전체 직원 수',
+    activeEmployees: '활동 중인 직원',
+    newHires: '이번 달 신규 입사자',
     pendingApplications: '대기 중인 지원서',
     avgPerformance: '평균 성과',
+    totalOvertime: '총 초과 근무 시간',
+    totalLeave: '총 휴가 일수',
+    employeePerformance: '직원 성과',
+    departmentDist: '부서별 분포',
+    workLeaveComp: '근무일 vs 휴가 비교',
+    topPerformers: '우수 직원',
+    overtime: '초과 근무',
+    totalWorkDays: '총 근무일',
+    acrossEmployees: '이달의 전체 직원 기준',
+    activeApplications: '진행 중인 지원서',
+    pendingReview: '검토 대기 중',
+    pendingRequests: '대기 중인 요청',
+    leaveRequests: '승인 대기 중인 휴가 신청',
     recentActivity: '최근 활동',
     quickStats: '빠른 통계',
     viewAll: '모두 보기',
     activities: {
-      newEmployee: "새로운 직원이 추가되었습니다: ",
-      interviewScheduled: " 과의 면접이 예정되었습니다",
-      performanceReview: " 의 성과 평가가 완료되었습니다"
+      newEmployee: '신규 입사자: ABC',
+      interviewScheduled: 'XYZ와의 인터뷰 일정 등록',
+      performanceReview: 'Đỗ Bảo Long의 성과 평가 완료'
     },
     timeAgo: {
-      twoHours: "2시간 전",
-      fourHours: "4시간 전",
-      oneDay: "1일 전"
+      twoHours: '2시간 전',
+      fourHours: '4시간 전',
+      oneDay: '1일 전'
     }
   },
 
@@ -93,7 +106,7 @@ export default {
     offer: '제안',
     years: '년'
   },
-  
+
   timeClock: {
     title: '근태 기록',
     subtitle: '근무 시간을 기록하고 증빙 자료를 제출하세요',

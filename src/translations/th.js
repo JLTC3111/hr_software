@@ -20,23 +20,36 @@ export default {
   // Dashboard
   dashboard: {
     title: 'ภาพรวมแดชบอร์ด',
-    totalEmployees: 'พนักงานทั้งหมด',
-    activeEmployees: 'พนักงานที่ปฏิบัติงาน',
-    newHires: 'พนักงานใหม่เดือนนี้',
-    pendingApplications: 'ใบสมัครที่รอดำเนินการ',
-    avgPerformance: 'ผลงานเฉลี่ย',
+    totalEmployees: 'จำนวนพนักงานทั้งหมด',
+    activeEmployees: 'พนักงานที่ทำงานอยู่',
+    newHires: 'พนักงานใหม่ประจำเดือนนี้',
+    pendingApplications: 'ใบสมัครที่รอการดำเนินการ',
+    avgPerformance: 'ประสิทธิภาพเฉลี่ย',
+    totalOvertime: 'ชั่วโมงทำงานล่วงเวลารวม',
+    totalLeave: 'วันลารวมทั้งหมด',
+    employeePerformance: 'ประสิทธิภาพของพนักงาน',
+    departmentDist: 'การกระจายตามแผนก',
+    workLeaveComp: 'เปรียบเทียบวันทำงานและวันลา',
+    topPerformers: 'พนักงานยอดเยี่ยม',
+    overtime: 'ทำงานล่วงเวลา',
+    totalWorkDays: 'จำนวนวันทำงานทั้งหมด',
+    acrossEmployees: 'ในบรรดาพนักงานทั้งหมดของเดือน',
+    activeApplications: 'ใบสมัครที่กำลังดำเนินการ',
+    pendingReview: 'รอการตรวจสอบ',
+    pendingRequests: 'คำขอที่รอดำเนินการ',
+    leaveRequests: 'คำขอลาที่รออนุมัติ',
     recentActivity: 'กิจกรรมล่าสุด',
-    quickStats: 'สถิติด่วน',
+    quickStats: 'สถิติอย่างรวดเร็ว',
     viewAll: 'ดูทั้งหมด',
     activities: {
-      newEmployee: "เพิ่มพนักงานใหม่: ",
-      interviewScheduled: "นัดสัมภาษณ์กับ ",
-      performanceReview: "การประเมินผลงานของ เสร็จสิ้น"
+      newEmployee: 'พนักงานใหม่เข้าร่วม: ABC',
+      interviewScheduled: 'กำหนดสัมภาษณ์กับ: XYZ',
+      performanceReview: 'เสร็จสิ้นการประเมินผลของ: Đỗ Bảo Long'
     },
     timeAgo: {
-      twoHours: "2 ชั่วโมงที่แล้ว",
-      fourHours: "4 ชั่วโมงที่แล้ว",
-      oneDay: "1 วันที่แล้ว"
+      twoHours: '2 ชั่วโมงที่แล้ว',
+      fourHours: '4 ชั่วโมงที่แล้ว',
+      oneDay: '1 วันที่แล้ว'
     }
   },
 
@@ -93,7 +106,7 @@ export default {
     offer: 'ข้อเสนอ',
     years: 'ปี'
   },
-  
+
   timeClock: {
     title: 'บันทึกเวลา',
     subtitle: 'บันทึกชั่วโมงการทำงานและส่งหลักฐานการเข้างาน',

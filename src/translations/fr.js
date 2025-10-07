@@ -19,26 +19,39 @@ export default {
 
   // Dashboard
   dashboard: {
-    title: 'Aperçu du tableau de bord',
-    totalEmployees: 'Total des employés',
-    activeEmployees: 'Employés actifs',
-    newHires: 'Nouvelles embauches ce mois',
-    pendingApplications: 'Candidatures en attente',
-    avgPerformance: 'Performance moyenne',
-    recentActivity: 'Activité récente',
-    quickStats: 'Statistiques rapides',
-    viewAll: 'Voir tout',
+    title: 'Vue d’Ensemble du Tableau de Bord',
+    totalEmployees: 'Nombre Total d’Employés',
+    activeEmployees: 'Employés Actifs',
+    newHires: 'Nouvelles Recrues Ce Mois-ci',
+    pendingApplications: 'Candidatures en Attente',
+    avgPerformance: 'Performance Moyenne',
+    totalOvertime: 'Heures Supplémentaires Totales',
+    totalLeave: 'Jours de Congé Totaux',
+    employeePerformance: 'Performance des Employés',
+    departmentDist: 'Répartition par Département',
+    workLeaveComp: 'Comparaison Travail / Congés',
+    topPerformers: 'Meilleurs Employés',
+    overtime: 'Heures Supplémentaires',
+    totalWorkDays: 'Jours de Travail Totaux',
+    acrossEmployees: 'Tous les Employés du Mois',
+    activeApplications: 'Candidatures Actives',
+    pendingReview: 'En Attente de Révision',
+    pendingRequests: 'Demandes en Attente',
+    leaveRequests: 'Demandes de Congé en Attente',
+    recentActivity: 'Activité Récente',
+    quickStats: 'Statistiques Rapides',
+    viewAll: 'Voir Tout',
     activities: {
-      newEmployee: "Nouvel employé ajouté : ",
-      interviewScheduled: "Entretien programmé avec ",
-      performanceReview: "Évaluation de performance terminée pour "
+      newEmployee: 'Nouvel employé embauché : ABC',
+      interviewScheduled: 'Entretien prévu avec : XYZ',
+      performanceReview: 'Évaluation terminée pour : Đỗ Bảo Long'
     },
     timeAgo: {
-      twoHours: "il y a 2 heures",
-      fourHours: "il y a 4 heures",
-      oneDay: "il y a 1 jour"
+      twoHours: 'Il y a 2 heures',
+      fourHours: 'Il y a 4 heures',
+      oneDay: 'Il y a 1 jour'
     }
-  },
+  },  
 
   // Search
   search: {
@@ -93,7 +106,7 @@ export default {
     offer: 'Offre',
     years: 'ans'
   },
-  
+
   timeClock: {
     title: 'Pointage',
     subtitle: 'Enregistrez vos heures de travail et soumettez une preuve',

@@ -65,6 +65,41 @@ login: {
     placeholder: 'Buscar empleados...'
   },
 
+  dashboard: {
+    title: 'Resumen del Panel de Control',
+    totalEmployees: 'Total de Empleados',
+    activeEmployees: 'Empleados Activos',
+    newHires: 'Nuevas Contrataciones Este Mes',
+    pendingApplications: 'Solicitudes Pendientes',
+    avgPerformance: 'Rendimiento Promedio',
+    totalOvertime: 'Horas Extra Totales',
+    totalLeave: 'Días de Vacaciones Totales',
+    employeePerformance: 'Rendimiento de los Empleados',
+    departmentDist: 'Distribución por Departamento',
+    workLeaveComp: 'Comparación de Trabajo y Vacaciones',
+    topPerformers: 'Mejores Empleados',
+    overtime: 'Horas Extra',
+    totalWorkDays: 'Días Totales de Trabajo',
+    acrossEmployees: 'Entre Todos los Empleados del Mes',
+    activeApplications: 'Solicitudes Activas',
+    pendingReview: 'Pendiente de Revisión',
+    pendingRequests: 'Solicitudes Pendientes',
+    leaveRequests: 'Solicitudes de Permiso Pendientes',
+    recentActivity: 'Actividad Reciente',
+    quickStats: 'Estadísticas Rápidas',
+    viewAll: 'Ver Todo',
+    activities: {
+      newEmployee: 'Nuevo empleado incorporado: ABC',
+      interviewScheduled: 'Entrevista programada con: XYZ',
+      performanceReview: 'Revisión de rendimiento completada para: Đỗ Bảo Long'
+    },
+    timeAgo: {
+      twoHours: 'Hace 2 horas',
+      fourHours: 'Hace 4 horas',
+      oneDay: 'Hace 1 día'
+    }
+  },  
+
   // Filter Departments
   departments: {
     all: 'Todos',
