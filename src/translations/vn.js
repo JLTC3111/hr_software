@@ -54,9 +54,9 @@ export default {
     quickStats: 'Thống kê nhanh',
     viewAll: 'Xem tất cả',
     activities: {
-      newEmployee: "Nhân viên mới được thêm: ",
-      interviewScheduled: "Cuộc phỏng vấn đã được lên lịch với ",
-      performanceReview: "Đánh giá hiệu suất đã hoàn thành cho "
+      newEmployee: "Nhân viên mới vào làm: ABC ",
+      interviewScheduled: "Lên lịch phỏng vấn với: XYZ",
+      performanceReview: "Đánh giá hiệu suất đã hoàn thành cho nhân viên: Đỗ Bảo Long"
     },
     timeAgo: {
       twoHours: "2 giờ trước",
@@ -138,7 +138,7 @@ export default {
   timeTracking: {
     title: 'Bảng điều khiển theo dõi thời gian',
     summary: 'Tóm tắt',
-    quickActions: 'Hành động nhanh',
+    quickActions: 'Chức Năng',
     workDays: 'Ngày làm việc',
     leaveDays: 'Ngày nghỉ phép',
     overtime: 'Giờ làm thêm',
@@ -147,10 +147,26 @@ export default {
     days: 'ngày',
     thisMonth: 'Tháng này',
     totalHours: 'Tổng số giờ',
-    regularHours: 'Giờ làm việc thường',
+    regularHours: 'Giờ thường',
     overtimeHours: 'Giờ làm thêm',
     hrs: 'giờ',
-    attendanceRate: 'Tỷ lệ tham dự'
+    attendanceRate: 'Tỷ lệ chuyên cần',
+    requestLeave: 'Xin nghỉ phép',
+    logOvertime: 'Ghi nhận làm thêm',
+    leaveType: 'Loại nghỉ phép',
+    vacation: 'Nghỉ phép thường',
+    sickLeave: 'Nghỉ ốm',
+    personal: 'Nghỉ cá nhân',
+    unpaid: 'Nghỉ không lương',
+    startDate: 'Ngày bắt đầu',
+    endDate: 'Ngày kết thúc',
+    reason: 'Lý do',
+    reasonPlaceholder: 'Giải thích ngắn gọn lý do xin nghỉ...',
+    overtimePlaceholder: 'Mô tả công việc thực hiện trong giờ làm thêm...',
+    date: 'Ngày',
+    leaveSuccess: 'Đã gửi đơn xin nghỉ phép thành công!',
+    overtimeSuccess: 'Đã ghi nhận giờ làm thêm thành công!',
+    exportSuccess: 'Đã xuất báo cáo thành công!'
   },
 
   // Employees

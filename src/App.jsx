@@ -5,7 +5,7 @@ import { Award, FileText } from 'lucide-react'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { LanguageProvider } from './contexts/LanguageContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
-import { Activity, AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry } from './components/index.jsx';
+import { AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry } from './components/index.jsx';
 
 const Employees = [
   {
@@ -93,7 +93,7 @@ const Employees = [
     photo: 'employeeProfilePhotos/nguyenhonghanh.jpg'
   },
   {
-    id: 6,
+    id: 7,
     name: 'Đinh Tùng Dương',
     position: 'support_staff',
     department: 'office_unit',

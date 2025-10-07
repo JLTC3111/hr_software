@@ -197,7 +197,23 @@ export default {
     regularHours: 'Regular Hours',
     overtimeHours: 'Overtime Hours',
     hrs: 'hrs',
-    attendanceRate: 'Attendance Rate'
+    attendanceRate: 'Attendance Rate',
+    requestLeave: 'Request Leave',
+    logOvertime: 'Log Overtime',
+    leaveType: 'Leave Type',
+    vacation: 'Vacation',
+    sickLeave: 'Sick Leave',
+    personal: 'Personal Leave',
+    unpaid: 'Unpaid Leave',
+    startDate: 'Start Date',
+    endDate: 'End Date',
+    reason: 'Reason',
+    reasonPlaceholder: 'Briefly explain your leave request...',
+    overtimePlaceholder: 'Describe the work performed during overtime...',
+    date: 'Date',
+    leaveSuccess: 'Leave request submitted successfully!',
+    overtimeSuccess: 'Overtime logged successfully!',
+    exportSuccess: 'Report exported successfully!'
   },
 
   // Performance Appraisal
