@@ -404,7 +404,7 @@ const TimeClockEntry = () => {
                 />
                 <CustomClockIcon 
                   isDarkMode={isDarkMode}
-                  className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none" 
+                  className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none scale-x-[-1]" 
                 />
               </div>
               {errors.clockIn && <p className="text-red-500 text-sm mt-1">{errors.clockIn}</p>}
