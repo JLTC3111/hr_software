@@ -108,6 +108,37 @@ const TimeClockEntry = () => {
     </svg>
   );
 
+  const CustomClockIcon = ({ className }) => {
+    return (
+      <svg
+        width="23.5px"
+        height="23.5px"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={className}
+      >
+        <g strokeWidth="0"></g>
+        <g strokeLinecap="round" strokeLinejoin="round"></g>
+        <g>
+          <path
+            d="M12 8V12L14.5 14.5"
+            stroke="#6580d7"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          ></path>
+          <path
+            d="M22 12C22 16.714 22 19.0711 20.5355 20.5355C19.0711 22 16.714 22 12 22C7.28595 22 4.92893 22 3.46447 20.5355C2 19.0711 2 16.714 2 12C2 7.28595 2 4.92893 3.46447 3.46447C4.92893 2 7.28595 2 12 2C16.714 2 19.0711 2 20.5355 3.46447C21.5093 4.43821 21.8356 5.80655 21.9449 8"
+            stroke="#6580d7"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          ></path>
+        </g>
+      </svg>
+    );
+  };
+  
   // Calculate hours worked
   const calculateHours = (clockIn, clockOut, date) => {
     const start = new Date(`${date}T${clockIn}`);
@@ -227,6 +258,8 @@ const TimeClockEntry = () => {
   return (
     <div className="space-y-6">
         <style>{`
+        #clock-in-input::-webkit-calendar-picker-indicator,
+        #clock-out-input::-webkit-calendar-picker-indicator,
         #date-input::-webkit-calendar-picker-indicator {
             opacity: 0;
             position: absolute; 
@@ -316,33 +349,64 @@ const TimeClockEntry = () => {
                 )}
 
               {/* Clock In/Out Times */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-black'} mb-2`}>
-                    {t('timeClock.clockIn')}
-                  </label>
-                  <input
-                    type="time"
-                    value={formData.clockIn}
-                    onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
-                    className={`w-full px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : ''} ${errors.clockIn ? 'border-red-500' : ''}`}
-                  />
-                  {errors.clockIn && <p className="text-red-500 text-sm mt-1">{errors.clockIn}</p>}
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-black'} mb-2`}>
-                    {t('timeClock.clockOut')}
-                  </label>
-                  <input
-                    type="time"
-                    value={formData.clockOut}
-                    onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
-                    className={`w-full px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : ''} ${errors.clockOut ? 'border-red-500' : ''}`}
-                  />
-                  {errors.clockOut && <p className="text-red-500 text-sm mt-1">{errors.clockOut}</p>}
-                </div>
+              <div>
+              <label htmlFor="clock-in-input" className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'} mb-2`}>
+                {t('timeClock.clockIn')}
+              </label>
+              
+              {/* IMPORTANT: Must be relative to position the icon inside */}
+              <div className="relative">
+                <input
+                  id="clock-in-input"
+                  type="time"
+                  value={formData.clockIn}
+                  onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
+                  // KEY: pr-10 for icon space, appearance-none for hiding native icon
+                  className={`
+                    w-full px-4 py-2 rounded-lg border 
+                    ${input.className} 
+                    ${isDarkMode ? 'text-white bg-gray-700 border-gray-600' : 'text-gray-900 bg-white border-gray-300'} 
+                    ${errors.clockIn ? 'border-red-500' : ''}
+                    pr-10 appearance-none
+                  `}
+                />
+                <CustomClockIcon 
+                  // KEY: Absolute positioning and pointer-events-none to let clicks pass through
+                  className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none" 
+                />
               </div>
+              {errors.clockIn && <p className="text-red-500 text-sm mt-1">{errors.clockIn}</p>}
+            </div>
+
+            {/* Clock Out */}
+            <div>
+              <label htmlFor="clock-out-input" className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'} mb-2`}>
+                {t('timeClock.clockOut')}
+              </label>
+              
+              {/* IMPORTANT: Must be relative to position the icon inside */}
+              <div className="relative">
+                <input
+                  id="clock-out-input"
+                  type="time"
+                  value={formData.clockOut}
+                  onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
+                  // KEY: pr-10 for icon space, appearance-none for hiding native icon
+                  className={`
+                    w-full px-4 py-2 rounded-lg border 
+                    ${input.className} 
+                    ${isDarkMode ? 'text-white bg-gray-700 border-gray-600' : 'text-gray-900 bg-white border-gray-300'} 
+                    ${errors.clockOut ? 'border-red-500' : ''}
+                    pr-10 appearance-none
+                  `}
+                />
+                <CustomClockIcon 
+                  // KEY: Absolute positioning and pointer-events-none to let clicks pass through
+                  className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none" 
+                />
+              </div>
+              {errors.clockOut && <p className="text-red-500 text-sm mt-1">{errors.clockOut}</p>}
+            </div>
 
               {/* Hour Type */}
               <div>
