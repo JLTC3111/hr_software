@@ -4,6 +4,15 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
+if (typeof window !== 'undefined') {
+    for (const storage of [localStorage, sessionStorage]) {
+      for (let i = storage.length - 1; i >= 0; i--) {
+        const k = storage.key(i);
+        if (k && k.startsWith('sb-') && k.includes('auth')) storage.removeItem(k);
+      }
+    }
+  }
+  
 // Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

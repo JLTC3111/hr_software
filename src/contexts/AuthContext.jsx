@@ -14,17 +14,8 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
-
-
-Object.keys(localStorage).forEach((key) => {
-  if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
-    console.log('🧨 Clearing stale Supabase session:', key);
-    localStorage.removeItem(key);
-  }
-});
-
 
   const clearAuthState = async () => {
     console.log('🧹 Clearing auth state and setting loading = false');
@@ -40,10 +31,18 @@ Object.keys(localStorage).forEach((key) => {
       console.error('Error during sign out:', error);
     }
   };
-
+  
   useEffect(() => {
     // Initialize session on mount
     const initializeAuth = async () => {
+
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+        console.log('🧨 Removing stale Supabase session:', key);
+        localStorage.removeItem(key);
+      }
+    });
+
       try {
         // Get the session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -90,15 +89,36 @@ Object.keys(localStorage).forEach((key) => {
       console.log('Auth state changed:', event);
 
       if (event === 'SIGNED_IN' && session) {
-        // User just logged in
+        console.log('🔐 SIGNED_IN event triggered, waiting for Supabase to hydrate...');
+        
+        setLoading(true);
         setSession(session);
-        await fetchUserProfile(session.user.id);
-      } else if (event === 'SIGNED_OUT' || !session) {
-        // User logged out or session expired
-        await clearAuthState();
-      } else if (event === 'TOKEN_REFRESHED' && session) {
-        // Token was refreshed, update session
-        setSession(session);
+      
+        // Wait until Supabase confirms the session is accessible
+        const confirmSession = async () => {
+          for (let i = 0; i < 5; i++) {
+            const { data } = await supabase.auth.getSession();
+            if (data.session?.user) {
+              console.log('✅ Supabase session hydrated.');
+              return data.session.user;
+            }
+            console.log('⏳ Waiting for Supabase session to hydrate...');
+            await new Promise((r) => setTimeout(r, 300)); // wait 300ms
+          }
+          throw new Error('Supabase session not hydrated in time');
+        };
+      
+        try {
+          const user = await confirmSession();
+          await fetchUserProfile(user.id);
+          setIsAuthenticated(true);
+          console.log('✅ SIGNED_IN flow complete, setting loading = false');
+        } catch (error) {
+          console.error('❌ Error completing SIGNED_IN flow:', error);
+          await clearAuthState();
+        } finally {
+          setLoading(false);
+        }
       }
     });
 
@@ -260,23 +280,21 @@ Object.keys(localStorage).forEach((key) => {
   };
 
   const logout = async () => {
-    try {
-      console.log('Logging out...');
-      await clearAuthState();
-      
-    Object.keys(localStorage).forEach((key) => {
+
+    Object.keys(localStorage, sessionStorage).forEach((key) => {
       if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
-        console.log('🧹 Removing stale token:', key);
+        console.log('🧨 Clearing stale Supabase session:', key);
         localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
       }
     });
 
-      // Navigate to login page
-      window.location.href = '/login';
+    try {
+      console.log('Logging out...');
+      await clearAuthState();
     } catch (error) {
       console.error('Logout error:', error);
       await clearAuthState();
-      window.location.href = '/login';
     }
   };
 
