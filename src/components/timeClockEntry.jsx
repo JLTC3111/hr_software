@@ -272,10 +272,31 @@ const TimeClockEntry = () => {
             background: transparent;
         }
 
-        #date-input {
+        #date-input, #clock-in-input, #clock-out-input {
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
+        }
+
+        #notes-textarea::placeholder,
+        #notes-textarea::-webkit-input-placeholder {
+            color: ${isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.45)'};
+            font-style: italic;
+            opacity: 1; 
+        }
+        
+        /* Firefox requires the 'moz' prefix */
+        #notes-textarea::-moz-placeholder {
+            color: ${isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.45)'};
+            font-style: italic;
+            opacity: 1;
+        }
+
+        /* IE/Edge require the 'ms' prefix */
+        #notes-textarea:-ms-input-placeholder {
+            color: ${isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.45)'};
+            font-style: italic;
+            opacity: 1;
         }
       `}</style>
       {/* Header */}
@@ -416,7 +437,7 @@ const TimeClockEntry = () => {
                 <select
                   value={formData.hourType}
                   onChange={(e) => setFormData({ ...formData, hourType: e.target.value })}
-                  className={`w-full px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : ''}`}
+                  className={`w-full px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : 'text-black'}`}
                 >
                   {hourTypes.map(type => (
                     <option key={type.value} value={type.value}>{type.label}</option>
@@ -437,7 +458,7 @@ const TimeClockEntry = () => {
                   type="file"
                   accept=".jpg,.jpeg,.png,.pdf"
                   onChange={handleFileChange}
-                  className={`w-full px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : ''}`}
+                  className={`w-full px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : 'text-black'}`}
                 />
                 {formData.proofFile && (
                   <p className="text-sm text-green-600 dark:text-green-400 mt-1 flex items-center">
@@ -452,13 +473,14 @@ const TimeClockEntry = () => {
 
               {/* Notes */}
               <div>
-                <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-black'} mb-2`}>
                   {t('timeClock.notes')}
                   <span className="text-sm text-gray-500 ml-2">
                     ({t('timeClock.optional')})
                   </span>
                 </label>
                 <textarea
+                  id="notes-textarea"
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows="3"
