@@ -100,13 +100,11 @@ const Login = () => {
 
   return (
     <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-transparent' : 'bg-transparent'} transition-colors duration-200`}>
-      {/* Background Pattern */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full opacity-10 ${isDarkMode ? 'bg-white' : 'bg-blue-300'} blur-3xl`}></div>
         <div className={`absolute -bottom-40 -left-40 w-80 h-80 rounded-full opacity-10 ${isDarkMode ? 'bg-white' : 'bg-purple-300'} blur-3xl`}></div>
       </div>
 
-      {/* Theme and Language Controls */}
       <div className="absolute top-6 right-6 flex items-center space-x-4 z-10">
         <LanguageSelector />
         <ThemeToggle />
@@ -117,7 +115,7 @@ const Login = () => {
         <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-2xl p-8 transition-colors duration-200`}>
           {/* Logo and Title */}
           <div className="text-center mb-8">
-            <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${isDarkMode ? 'bg-blue-600' : 'bg-blue-500'}`}>
+            <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${isDarkMode ? 'bg-transparent' : 'bg-blue-500'}`}>
               <Building2 className="w-8 h-8 text-white" />
             </div>
             <h1 className={`text-3xl font-bold ${text.primary} mb-2`}>
@@ -216,22 +214,42 @@ const Login = () => {
 
             {/* Remember Me & Forgot Password */}
             <div className="flex items-center justify-between">
+            <style>{`
+                #custom-checkbox {
+                    -webkit-appearance: none;
+                    -moz-appearance: none;
+                    appearance: none;
+                    border-color: ${isDarkMode ? '#525252' : '#9CA3AF'};
+                    border-width: 2px;
+                    border-radius: 0.25rem;
+                }
+
+                #custom-checkbox:checked {
+                    border-color: ${isDarkMode ? '#FFF' : '#000'};
+                    background-size: 100%;
+                    background-color: ${isDarkMode ? '#transparent' : '#000'};
+                    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L6.5 9.086l4.293-4.293a1 1 0 0 1 1.414 0z'/%3e%3c/svg%3e");
+                    background-repeat: no-repeat;
+                    background-position: center;
+                }
+            `}</style>
               <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  disabled={isLoading}
-                />
-                <span className={`ml-2 text-sm ${text.secondary}`}>
-                  {t('login.rememberMe', 'Remember me')}
+              <input
+                id="custom-checkbox"
+                type="checkbox"
+                className="w-4 h-4 accent-blue-600 border-gray-900 rounded focus:ring-blue-500 cursor-pointer"
+                disabled={isLoading}
+              />
+                <span className={`ml-2 text-sm ${text.secondary} cursor-pointer`}>
+                  {t('login.rememberMe')}
                 </span>
               </label>
               <button
                 type="button"
-                className="text-sm text-blue-600 hover:text-blue-500 font-medium"
+                className="text-sm text-blue-600 hover:text-blue-500 font-medium cursor-pointer"
                 disabled={isLoading}
               >
-                {t('login.forgotPassword', 'Forgot password?')}
+                {t('login.forgotPassword')}
               </button>
             </div>
 
@@ -239,7 +257,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className={`w-full py-3 px-4 rounded-lg font-medium bg-blue-300 text-white transition-all duration-200 ${
+              className={`w-full py-3 px-4 rounded-lg font-medium bg-blue-300 text-white transition-all duration-200 cursor-pointer ${
                 isLoading 
                   ? 'bg-blue-400 cursor-not-allowed' 
                   : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.98]'
@@ -275,7 +293,7 @@ const Login = () => {
           <button
             type="button"
             onClick={handleGithubLogin}
-            className={`w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 ${
+            className={`w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 cursor-pointer ${
               isDarkMode 
                 ? 'bg-gray-900 hover:bg-gray-600 text-white border border-gray-600' 
                 : 'bg-white hover:bg-gray-100 text-gray-900 border border-gray-900'

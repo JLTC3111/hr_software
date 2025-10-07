@@ -375,7 +375,6 @@ const TimeClockEntry = () => {
                 {t('timeClock.clockIn')}
               </label>
               
-              {/* IMPORTANT: Must be relative to position the icon inside */}
               <div className="relative">
                 <input
                   id="clock-in-input"
@@ -405,7 +404,6 @@ const TimeClockEntry = () => {
                 {t('timeClock.clockOut')}
               </label>
               
-              {/* IMPORTANT: Must be relative to position the icon inside */}
               <div className="relative">
                 <input
                   id="clock-out-input"
@@ -422,7 +420,6 @@ const TimeClockEntry = () => {
                   `}
                 />
                 <CustomClockIcon 
-                  // KEY: Absolute positioning and pointer-events-none to let clicks pass through
                   className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none" 
                 />
               </div>
@@ -465,7 +462,7 @@ const TimeClockEntry = () => {
                     <FileText className="w-4 h-4 mr-1" />
                     {formData.proofFile
                       ? formData.proofFile.name
-                      : t('timeClock.chooseFile', '파일 선택')}
+                      : t('timeClock.chooseFile')}
                   </p>
                 )}
                 {errors.proofFile && <p className="text-red-500 text-sm mt-1">{errors.proofFile}</p>}
