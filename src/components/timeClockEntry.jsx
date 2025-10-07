@@ -431,42 +431,73 @@ const TimeClockEntry = () => {
                 <label className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-black'} mb-2`}>
                   {t('timeClock.hourType')}
                 </label>
-                <select
-                  value={formData.hourType}
-                  onChange={(e) => setFormData({ ...formData, hourType: e.target.value })}
-                  className={`w-full px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : 'text-black'}`}
-                >
-                  {hourTypes.map(type => (
-                    <option key={type.value} value={type.value}>{type.label}</option>
-                  ))}
-                </select>
+                <div className="relative w-full">
+                    <select
+                        value={formData.hourType}
+                        onChange={(e) => setFormData({ ...formData, hourType: e.target.value })}
+                        className={`
+                            w-full px-4 py-2 rounded-lg border 
+                            ${input.className} 
+                            ${isDarkMode ? 'text-white' : 'text-black'}
+                            cursor-pointer
+                            appearance-none 
+                            pr-10 
+                        `}
+                    >
+                        {hourTypes.map(type => (
+                            <option key={type.value} value={type.value}>{type.label}</option>
+                        ))}
+                    </select>
+                    
+                    <div className={`
+                        pointer-events-none 
+                        absolute inset-y-0 right-0 
+                        flex items-center 
+                        mr-4
+                    `}>
+                        <svg 
+                            className={`h-5 w-5 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`} 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            viewBox="0 0 20 20" 
+                            fill="currentColor"
+                        >
+                            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                        </svg>
+                    </div>
+                </div>
               </div>
 
               {/* File Upload */}
               <div>
-                <label className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-black'} mb-2`}>
-                  <Upload className="w-4 h-4 inline mr-1" />
-                  {t('timeClock.proof')}
-                  <span className="text-sm text-gray-500 ml-2">
-                    ({t('timeClock.optional')})
-                  </span>
+                <label 
+                    htmlFor="proof-file-upload"
+                    className={`
+                        block text-sm font-medium mb-2
+                        ${isDarkMode ? 'bg-transparent text-white' : 'bg-transparent text-black'} 
+                        cursor-pointer
+                        
+                        w-full px-4 py-2 
+                        rounded-lg border 
+                        text-left
+                    `}
+                >
+                    <Upload className="w-4 h-4 inline mb-1 mr-2" />
+                    {t('timeClock.proof')}
+                    <span className="text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-500'} ml-2">
+                        ({t('timeClock.optional')})
+                    </span>
                 </label>
+
                 <input
-                  type="file"
-                  accept=".jpg,.jpeg,.png,.pdf"
-                  onChange={handleFileChange}
-                  className={`w-full px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : 'text-black'}`}
+                    id="proof-file-upload"
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                    onChange={handleFileChange}
+                    className="sr-only"
                 />
-                {formData.proofFile && (
-                  <p className="text-sm text-green-600 dark:text-green-400 mt-1 flex items-center">
-                    <FileText className="w-4 h-4 mr-1" />
-                    {formData.proofFile
-                      ? formData.proofFile.name
-                      : t('timeClock.chooseFile')}
-                  </p>
-                )}
+                
                 {errors.proofFile && <p className="text-red-500 text-sm mt-1">{errors.proofFile}</p>}
-              </div>
+            </div>
 
               {/* Notes */}
               <div>
