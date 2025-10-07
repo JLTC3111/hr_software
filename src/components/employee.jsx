@@ -36,11 +36,11 @@ const Employees = ({ employees, onViewEmployee, onPhotoUpdate, onAddEmployeeClic
         <h2 className="text-2xl font-bold text-gray-900">{t('employees.title')}</h2>
         <button 
           onClick={onAddEmployeeClick}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 cursor-pointer"
           style={{
-            backgroundColor: isDarkMode ? '#374151' : '#ffffff', // gray-700 : white
-            borderColor: isDarkMode ? '#4b5563' : '#d1d5db', // gray-600 : gray-300
-            color: isDarkMode ? '#ffffff' : '#111827' // white : gray-900
+            backgroundColor: isDarkMode ? '#374151' : '#ffffff', 
+            borderColor: isDarkMode ? '#4b5563' : '#d1d5db', 
+            color: isDarkMode ? '#ffffff' : '#111827' 
           }}>
           <Plus className="h-4 w-4" />
           <span>{t('employees.addEmployee')}</span>
@@ -54,9 +54,9 @@ const Employees = ({ employees, onViewEmployee, onPhotoUpdate, onAddEmployeeClic
         setFilterDepartment={setFilterDepartment}
         departments={departments}
         style={{
-            backgroundColor: isDarkMode ? '#374151' : '#ffffff', // gray-700 : white
-            borderColor: isDarkMode ? '#4b5563' : '#d1d5db', // gray-600 : gray-300
-            color: isDarkMode ? '#ffffff' : '#111827' // white : gray-900
+            backgroundColor: isDarkMode ? '#374151' : '#ffffff', 
+            borderColor: isDarkMode ? '#4b5563' : '#d1d5db', 
+            color: isDarkMode ? '#ffffff' : '#111827',
           }}
       />
 

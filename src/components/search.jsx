@@ -2,7 +2,7 @@ import React from 'react'
 import { Search, Filter } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 
-const SearchAndFilter = ({ searchTerm, setSearchTerm, filterDepartment, setFilterDepartment, departments, style }) => {
+const SearchAndFilter = ({ searchTerm, setSearchTerm, filterDepartment, setFilterDepartment, departments, style, className }) => {
   const { t } = useLanguage();
   
   return (
