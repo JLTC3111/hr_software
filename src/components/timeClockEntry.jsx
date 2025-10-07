@@ -96,7 +96,7 @@ const TimeClockEntry = () => {
   const calculateHours = (clockIn, clockOut, date) => {
     const start = new Date(`${date}T${clockIn}`);
     const end = new Date(`${date}T${clockOut}`);
-    return ((end - start) / (1000 * 60 * 60)).toFixed(2);
+    return ((end - start) / (1000 * 60 * 60)).toFixed(1);
   };
 
   // Handle file upload
@@ -213,10 +213,10 @@ const TimeClockEntry = () => {
       {/* Header */}
       <div>
         <h1 className={`text-3xl font-bold ${text.primary}`}>
-          {t('timeClock.title', 'Time Clock Entry')}
+          {t('timeClock.title')}
         </h1>
         <p className={`${text.secondary} mt-2`}>
-          {t('timeClock.subtitle', 'Log your work hours and submit proof of attendance')}
+          {t('timeClock.subtitle')}
         </p>
       </div>
 
@@ -242,7 +242,7 @@ const TimeClockEntry = () => {
           <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>
             <h2 className={`text-xl font-semibold ${text.primary} mb-6 flex items-center`}>
               <Clock className="w-5 h-5 mr-2" />
-              {t('timeClock.newEntry', 'New Time Entry')}
+              {t('timeClock.newEntry')}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -250,14 +250,14 @@ const TimeClockEntry = () => {
               <div>
                 <label className={`block text-sm font-medium ${text.primary} mb-2`}>
                   <Calendar className="w-4 h-4 inline mr-1" />
-                  {t('timeClock.date', 'Date')}
+                  {t('timeClock.date')}
                 </label>
                 <input
                   type="date"
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                   max={new Date().toISOString().split('T')[0]}
-                  className={`w-full px-4 py-2 rounded-lg border ${input.className} ${errors.date ? 'border-red-500' : ''}`}
+                  className={`w-full px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : ''} ${errors.date ? 'border-red-500' : ''}`}
                 />
                 {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date}</p>}
               </div>
@@ -266,26 +266,26 @@ const TimeClockEntry = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                    {t('timeClock.clockIn', 'Clock In')}
+                    {t('timeClock.clockIn')}
                   </label>
                   <input
                     type="time"
                     value={formData.clockIn}
                     onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
-                    className={`w-full px-4 py-2 rounded-lg border ${input.className} ${errors.clockIn ? 'border-red-500' : ''}`}
+                    className={`w-full px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : ''} ${errors.clockIn ? 'border-red-500' : ''}`}
                   />
                   {errors.clockIn && <p className="text-red-500 text-sm mt-1">{errors.clockIn}</p>}
                 </div>
 
                 <div>
                   <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                    {t('timeClock.clockOut', 'Clock Out')}
+                    {t('timeClock.clockOut')}
                   </label>
                   <input
                     type="time"
                     value={formData.clockOut}
                     onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
-                    className={`w-full px-4 py-2 rounded-lg border ${input.className} ${errors.clockOut ? 'border-red-500' : ''}`}
+                    className={`w-full px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : ''} ${errors.clockOut ? 'border-red-500' : ''}`}
                   />
                   {errors.clockOut && <p className="text-red-500 text-sm mt-1">{errors.clockOut}</p>}
                 </div>
@@ -294,12 +294,12 @@ const TimeClockEntry = () => {
               {/* Hour Type */}
               <div>
                 <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                  {t('timeClock.hourType', 'Hour Type')}
+                  {t('timeClock.hourType')}
                 </label>
                 <select
                   value={formData.hourType}
                   onChange={(e) => setFormData({ ...formData, hourType: e.target.value })}
-                  className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                  className={`w-full px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : ''}`}
                 >
                   {hourTypes.map(type => (
                     <option key={type.value} value={type.value}>{type.label}</option>
@@ -311,16 +311,16 @@ const TimeClockEntry = () => {
               <div>
                 <label className={`block text-sm font-medium ${text.primary} mb-2`}>
                   <Upload className="w-4 h-4 inline mr-1" />
-                  {t('timeClock.proof', 'Proof of Attendance')}
+                  {t('timeClock.proof')}
                   <span className="text-sm text-gray-500 ml-2">
-                    ({t('timeClock.optional', 'Optional')})
+                    ({t('timeClock.optional')})
                   </span>
                 </label>
                 <input
                   type="file"
                   accept=".jpg,.jpeg,.png,.pdf"
                   onChange={handleFileChange}
-                  className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                  className={`w-full px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : ''}`}
                 />
                 {formData.proofFile && (
                   <p className="text-sm text-green-600 dark:text-green-400 mt-1 flex items-center">
@@ -330,16 +330,16 @@ const TimeClockEntry = () => {
                 )}
                 {errors.proofFile && <p className="text-red-500 text-sm mt-1">{errors.proofFile}</p>}
                 <p className="text-xs text-gray-500 mt-1">
-                  {t('timeClock.fileHelp', 'Upload screenshot, photo, or PDF (max 5MB)')}
+                  {t('timeClock.fileHelp')}
                 </p>
               </div>
 
               {/* Notes */}
               <div>
                 <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                  {t('timeClock.notes', 'Notes')}
+                  {t('timeClock.notes')}
                   <span className="text-sm text-gray-500 ml-2">
-                    ({t('timeClock.optional', 'Optional')})
+                    ({t('timeClock.optional')})
                   </span>
                 </label>
                 <textarea
@@ -347,7 +347,7 @@ const TimeClockEntry = () => {
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows="3"
                   placeholder={t('timeClock.notesPlaceholder', 'Add any additional context or notes...')}
-                  className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                  className={`w-full px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : ''}`}
                 />
               </div>
 
@@ -362,8 +362,8 @@ const TimeClockEntry = () => {
                 }`}
               >
                 {isSubmitting
-                  ? t('timeClock.submitting', 'Submitting...')
-                  : t('timeClock.submit', 'Submit Time Entry')}
+                  ? t('timeClock.submitting')
+                  : t('timeClock.submit')}
               </button>
             </form>
           </div>
@@ -374,14 +374,14 @@ const TimeClockEntry = () => {
           {/* Weekly Summary */}
           <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>
             <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-              {t('timeClock.weeklySummary', 'This Week')}
+              {t('timeClock.weeklySummary')}
             </h3>
             <div className="space-y-3">
               {hourTypes.map(type => (
                 <div key={type.value} className="flex justify-between items-center">
                   <span className={`text-sm ${text.secondary}`}>{type.label}</span>
                   <span className={`font-semibold ${text.primary}`}>
-                    {calculateTotals(type.value, 'week').toFixed(2)} hrs
+                    {calculateTotals(type.value, 'week').toFixed(1)} hrs
                   </span>
                 </div>
               ))}
@@ -390,7 +390,7 @@ const TimeClockEntry = () => {
                   {t('timeClock.total', 'Total')}
                 </span>
                 <span className={`font-bold text-lg ${text.primary}`}>
-                  {calculateTotals('all', 'week').toFixed(2)} hrs
+                  {calculateTotals('all', 'week').toFixed(1)} hrs
                 </span>
               </div>
             </div>
@@ -399,14 +399,14 @@ const TimeClockEntry = () => {
           {/* Monthly Summary */}
           <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>
             <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-              {t('timeClock.monthlySummary', 'This Month')}
+              {t('timeClock.monthlySummary')}
             </h3>
             <div className="space-y-3">
               {hourTypes.map(type => (
                 <div key={type.value} className="flex justify-between items-center">
                   <span className={`text-sm ${text.secondary}`}>{type.label}</span>
                   <span className={`font-semibold ${text.primary}`}>
-                    {calculateTotals(type.value, 'month').toFixed(2)} hrs
+                    {calculateTotals(type.value, 'month').toFixed(1)} hrs
                   </span>
                 </div>
               ))}
@@ -415,7 +415,7 @@ const TimeClockEntry = () => {
                   {t('timeClock.total', 'Total')}
                 </span>
                 <span className={`font-bold text-lg ${text.primary}`}>
-                  {calculateTotals('all', 'month').toFixed(2)} hrs
+                  {calculateTotals('all', 'month').toFixed(1)} hrs
                 </span>
               </div>
             </div>
@@ -426,14 +426,14 @@ const TimeClockEntry = () => {
       {/* Time Entries History */}
       <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>
         <h2 className={`text-xl font-semibold ${text.primary} mb-6`}>
-          {t('timeClock.history', 'Time Entry History')}
+          {t('timeClock.history')}
         </h2>
 
         {timeEntries.length === 0 ? (
           <div className="text-center py-12">
             <Clock className={`w-16 h-16 mx-auto ${text.secondary} opacity-50 mb-4`} />
             <p className={`${text.secondary}`}>
-              {t('timeClock.noEntries', 'No time entries yet. Submit your first entry above!')}
+              {t('timeClock.noEntries')}
             </p>
           </div>
         ) : (

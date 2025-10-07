@@ -46,21 +46,32 @@ export default {
     title: 'Dashboard Overview',
     totalEmployees: 'Total Employees',
     activeEmployees: 'Active Employees',
-    newHires: 'New Hires This Month',
     pendingApplications: 'Pending Applications',
-    avgPerformance: 'Avg Performance',
+    avgPerformance: 'Average Performance',
+    totalOvertime: 'Total Overtime',
+    totalLeave: 'Total Leave Days',
+    employeePerformance: 'Employee Performance',
+    departmentDist: 'Department Distribution',
+    workLeaveComp: 'Work vs Leave Days',
+    topPerformers: 'Top Performers',
+    totalWorkDays: 'Total Work Days',
+    acrossEmployees: 'Across all employees this month',
+    activeApplications: 'Active Applications',
+    pendingReview: 'Pending review',
+    pendingRequests: 'Pending Requests',
+    leaveRequests: 'Leave requests to review',
     recentActivity: 'Recent Activity',
     quickStats: 'Quick Stats',
     viewAll: 'View All',
     activities: {
       newEmployee: "New employee added: ",
-      interviewScheduled: "Interview scheduled with ",
-      performanceReview: "Performance review completed for "
+      interviewScheduled: "Interview scheduled with: ",
+      performanceReview: "Performance review completed for: "
     },
     timeAgo: {
-      twoHours: "2 hours ago",
-      fourHours: "4 hours ago",
-      oneDay: "1 day ago"
+      twoHours: '2 hours ago',
+      fourHours: '4 hours ago',
+      oneDay: '1 day ago'
     }
   },
 
