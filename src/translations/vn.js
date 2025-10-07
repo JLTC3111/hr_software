@@ -56,6 +56,7 @@ export default {
     departmentDist: 'Phân bố phòng ban',
     workLeaveComp: 'So sánh ngày làm vs nghỉ',
     topPerformers: 'Nhân viên xuất sắc',
+    overtime: 'Thêm giờ',
     totalWorkDays: 'Tổng ngày làm việc',
     acrossEmployees: 'Tất cả nhân viên trong tháng',
     activeApplications: 'Đơn ứng tuyển đang xử lý',

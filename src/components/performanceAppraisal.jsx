@@ -10,7 +10,6 @@ const PerformanceAppraisal = ({ employees }) => {
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
 
-  // Sample performance data - in a real app, this would come from your API
   const performanceData = {
     [employees[0]?.id]: {
       overallRating: 4.5,

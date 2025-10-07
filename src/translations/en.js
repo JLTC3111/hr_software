@@ -54,6 +54,7 @@ export default {
     departmentDist: 'Department Distribution',
     workLeaveComp: 'Work vs Leave Days',
     topPerformers: 'Top Performers',
+    overtime: 'OT',
     totalWorkDays: 'Total Work Days',
     acrossEmployees: 'Across all employees this month',
     activeApplications: 'Active Applications',

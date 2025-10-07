@@ -75,19 +75,19 @@ const Dashboard = ({ employees, applications }) => {
           color="text-blue-600" 
         />
         <StatsCard 
-          title={t('dashboard.avgPerformance', 'Avg Performance')} 
+          title={t('dashboard.avgPerformance')} 
           value={avgPerformance} 
           icon={Award} 
           color="text-purple-600" 
         />
         <StatsCard 
-          title={t('dashboard.totalOvertime', 'Total Overtime')} 
+          title={t('dashboard.totalOvertime')} 
           value={`${totalOvertime}h`} 
           icon={Clock} 
           color="text-orange-600" 
         />
         <StatsCard 
-          title={t('dashboard.totalLeave', 'Total Leave Days')} 
+          title={t('dashboard.totalLeave')} 
           value={totalLeaveDays} 
           icon={Calendar} 
           color="text-green-600" 
@@ -99,7 +99,7 @@ const Dashboard = ({ employees, applications }) => {
         {/* Employee Performance Chart */}
         <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
           <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-            {t('dashboard.employeePerformance', 'Employee Performance')}
+            {t('dashboard.employeePerformance')}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={performanceData}>
@@ -128,7 +128,7 @@ const Dashboard = ({ employees, applications }) => {
         {/* Department Distribution */}
         <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
           <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-            {t('dashboard.departmentDist', 'Department Distribution')}
+            {t('dashboard.departmentDist')}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
@@ -169,7 +169,7 @@ const Dashboard = ({ employees, applications }) => {
         {/* Work & Leave Days Comparison */}
         <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
           <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-            {t('dashboard.workLeaveComp', 'Work vs Leave Days')}
+            {t('dashboard.workLeaveComp')}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={leaveData}>
@@ -199,30 +199,38 @@ const Dashboard = ({ employees, applications }) => {
         {/* Top Performers */}
         <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
           <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-            {t('dashboard.topPerformers', 'Top Performers')}
+            {t('dashboard.topPerformers')}
           </h3>
           <div className="space-y-3">
             {topPerformers.map((emp, index) => (
               <div key={emp.id} className={`flex items-center justify-between p-3 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                 <div className="flex items-center space-x-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                    index === 0 ? 'bg-yellow-500 text-white' :
-                    index === 1 ? 'bg-gray-400 text-white' :
-                    index === 2 ? 'bg-orange-600 text-white' :
-                    'bg-blue-500 text-white'
-                  }`}>
-                    {index + 1}
-                  </div>
+                  {emp.photo ? (
+                    <img 
+                      src={emp.photo} 
+                      alt={emp.name}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
+                    />
+                  ) : (
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
+                      index === 0 ? 'bg-yellow-500' :
+                      index === 1 ? 'bg-gray-400' :
+                      index === 2 ? 'bg-orange-600' :
+                      'bg-blue-500'
+                    }`}>
+                      {emp.name.charAt(0)}
+                    </div>
+                  )}
                   <div>
                     <p className={`font-medium ${text.primary}`}>{emp.name}</p>
                     <p className={`text-sm ${text.secondary}`}>
-                      {t(`positions.${emp.position}`, emp.position)}
+                      {t(`positions.${emp.position}`)}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className={`font-bold text-lg ${text.primary}`}>{emp.performance}</p>
-                  <p className={`text-xs ${text.secondary}`}>{emp.overtime}h OT</p>
+                  <p className={`text-xs ${text.secondary}`}>{emp.overtime}h {t('dashboard.overtime')}</p>
                 </div>
               </div>
             ))}
@@ -236,12 +244,12 @@ const Dashboard = ({ employees, applications }) => {
           <div className="flex items-center space-x-3 mb-2">
             <Clock className="w-5 h-5 text-blue-600" />
             <h4 className={`font-semibold ${text.primary}`}>
-              {t('dashboard.totalWorkDays', 'Total Work Days')}
+              {t('dashboard.totalWorkDays')}
             </h4>
           </div>
           <p className={`text-3xl font-bold ${text.primary}`}>{totalWorkDays}</p>
           <p className={`text-sm ${text.secondary} mt-1`}>
-            {t('dashboard.acrossEmployees', 'Across all employees this month')}
+            {t('dashboard.acrossEmployees')}
           </p>
         </div>
 
@@ -249,12 +257,12 @@ const Dashboard = ({ employees, applications }) => {
           <div className="flex items-center space-x-3 mb-2">
             <Briefcase className="w-5 h-5 text-green-600" />
             <h4 className={`font-semibold ${text.primary}`}>
-              {t('dashboard.activeApplications', 'Active Applications')}
+              {t('dashboard.activeApplications')}
             </h4>
           </div>
           <p className={`text-3xl font-bold ${text.primary}`}>{applications.length}</p>
           <p className={`text-sm ${text.secondary} mt-1`}>
-            {t('dashboard.pendingReview', 'Pending review')}
+            {t('dashboard.pendingReview')}
           </p>
         </div>
 
@@ -262,12 +270,12 @@ const Dashboard = ({ employees, applications }) => {
           <div className="flex items-center space-x-3 mb-2">
             <AlertCircle className="w-5 h-5 text-orange-600" />
             <h4 className={`font-semibold ${text.primary}`}>
-              {t('dashboard.pendingRequests', 'Pending Requests')}
+              {t('dashboard.pendingRequests')}
             </h4>
           </div>
           <p className={`text-3xl font-bold ${text.primary}`}>{totalLeaveDays}</p>
           <p className={`text-sm ${text.secondary} mt-1`}>
-            {t('dashboard.leaveRequests', 'Leave requests to review')}
+            {t('dashboard.leaveRequests')}
           </p>
         </div>
       </div>

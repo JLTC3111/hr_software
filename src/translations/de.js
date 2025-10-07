@@ -45,13 +45,26 @@ export default {
     activeEmployees: 'Aktive Mitarbeiter',
     newHires: 'Neueinstellungen diesen Monat',
     pendingApplications: 'Ausstehende Bewerbungen',
-    avgPerformance: 'Durchschnittliche Leistung',
+    avgPerformance: 'Durchschn. Leistung',
+    totalOvertime: 'Gesamte Überstunden',
+    totalLeave: 'Gesamte Urlaubstage',
+    employeePerformance: 'Mitarbeiterleistung',
+    departmentDist: 'Abteilungsverteilung',
+    workLeaveComp: 'Arbeit vs. Urlaub',
+    topPerformers: 'Top-Performer',
+    overtime: 'ÜS',
+    totalWorkDays: 'Gesamte Arbeitstage',
+    acrossEmployees: 'Alle Mitarbeiter diesen Monat',
+    activeApplications: 'Aktive Bewerbungen',
+    pendingReview: 'Ausstehende Prüfung',
+    pendingRequests: 'Ausstehende Anfragen',
+    leaveRequests: 'Zu prüfende Urlaubsanträge',
     recentActivity: 'Letzte Aktivität',
     quickStats: 'Schnellstatistiken',
-    viewAll: 'Alle anzeigen',
+    viewAll: 'Alle ansehen',
     activities: {
       newEmployee: "Neuer Mitarbeiter hinzugefügt: ",
-      interviewScheduled: "Vorstellungsgespräch geplant mit ",
+      interviewScheduled: "Interview geplant mit ",
       performanceReview: "Leistungsbeurteilung abgeschlossen für "
     },
     timeAgo: {
@@ -395,8 +408,55 @@ export default {
 
   // Language
   language: {
-    select: 'Sprache auswählen',
+    select: 'Sprache wählen',
     current: 'Aktuelle Sprache'
+  },
+
+  // Time Clock Entry
+  timeClock: {
+    title: 'Zeiterfassung',
+    subtitle: 'Erfassen Sie Ihre Arbeitszeiten und laden Sie Anwesenheitsnachweise hoch',
+    newEntry: 'Neuer Zeiteintrag',
+    date: 'Datum',
+    clockIn: 'Einstempeln',
+    clockOut: 'Ausstempeln',
+    hourType: 'Stundentyp',
+    proof: 'Anwesenheitsnachweis',
+    notes: 'Notizen',
+    optional: 'Optional',
+    submit: 'Zeiteintrag senden',
+    submitting: 'Wird gesendet...',
+    success: 'Zeiteintrag erfolgreich gesendet!',
+    confirmDelete: 'Möchten Sie diesen Eintrag wirklich löschen?',
+    delete: 'Löschen',
+    history: 'Zeiterfassungs-Verlauf',
+    noEntries: 'Noch keine Einträge. Senden Sie Ihren ersten Eintrag oben!',
+    time: 'Zeit',
+    hours: 'Stunden',
+    type: 'Typ',
+    status: 'Status',
+    actions: 'Aktionen',
+    weeklySummary: 'Diese Woche',
+    monthlySummary: 'Dieser Monat',
+    total: 'Gesamt',
+    notesPlaceholder: 'Fügen Sie zusätzliche Notizen hinzu...',
+    fileHelp: 'Screenshot, Foto oder PDF hochladen (max. 5MB)',
+    hourTypes: {
+      regular: 'Reguläre Stunden',
+      holiday: 'Feiertag',
+      weekend: 'Wochenende',
+      bonus: 'Bonusstunden'
+    },
+    errors: {
+      dateRequired: 'Datum ist erforderlich',
+      clockInRequired: 'Einstempelzeit ist erforderlich',
+      clockOutRequired: 'Ausstempelzeit ist erforderlich',
+      clockOutAfterClockIn: 'Ausstempeln muss nach Einstempeln erfolgen',
+      tooManyHours: 'Kann 24 Stunden in einem Eintrag nicht überschreiten',
+      overlapping: 'Diese Zeit überschneidet sich mit einem vorhandenen Eintrag für dieses Datum',
+      fileTooLarge: 'Dateigröße muss kleiner als 5MB sein',
+      invalidFileType: 'Nur JPG-, PNG- und PDF-Dateien sind erlaubt'
+    }
   },
 
   // Time Tracking Actions

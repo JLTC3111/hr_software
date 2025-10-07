@@ -41,15 +41,15 @@ const TimeClockEntry = () => {
     const newErrors = {};
 
     if (!formData.date) {
-      newErrors.date = t('timeClock.errors.dateRequired', 'Date is required');
+      newErrors.date = t('timeClock.errors.dateRequired');
     }
 
     if (!formData.clockIn) {
-      newErrors.clockIn = t('timeClock.errors.clockInRequired', 'Clock-in time is required');
+      newErrors.clockIn = t('timeClock.errors.clockInRequired');
     }
 
     if (!formData.clockOut) {
-      newErrors.clockOut = t('timeClock.errors.clockOutRequired', 'Clock-out time is required');
+      newErrors.clockOut = t('timeClock.errors.clockOutRequired');
     }
 
     // Check if clock-out is after clock-in
@@ -58,13 +58,13 @@ const TimeClockEntry = () => {
       const clockOutTime = new Date(`${formData.date}T${formData.clockOut}`);
       
       if (clockOutTime <= clockInTime) {
-        newErrors.clockOut = t('timeClock.errors.clockOutAfterClockIn', 'Clock-out must be after clock-in');
+        newErrors.clockOut = t('timeClock.errors.clockOutAfterClockIn');
       }
 
       // Check for reasonable hours (max 24 hours in a day)
       const hoursDiff = (clockOutTime - clockInTime) / (1000 * 60 * 60);
       if (hoursDiff > 24) {
-        newErrors.clockOut = t('timeClock.errors.tooManyHours', 'Cannot exceed 24 hours in a single entry');
+        newErrors.clockOut = t('timeClock.errors.tooManyHours');
       }
     }
 
@@ -85,7 +85,7 @@ const TimeClockEntry = () => {
     });
 
     if (overlapping) {
-      newErrors.general = t('timeClock.errors.overlapping', 'This time overlaps with an existing entry for this date');
+      newErrors.general = t('timeClock.errors.overlapping');
     }
 
     setErrors(newErrors);
@@ -105,14 +105,14 @@ const TimeClockEntry = () => {
     if (file) {
       // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        setErrors({ ...errors, proofFile: t('timeClock.errors.fileTooLarge', 'File size must be less than 5MB') });
+        setErrors({ ...errors, proofFile: t('timeClock.errors.fileTooLarge') });
         return;
       }
 
       // Check file type
       const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
       if (!allowedTypes.includes(file.type)) {
-        setErrors({ ...errors, proofFile: t('timeClock.errors.invalidFileType', 'Only JPG, PNG, and PDF files are allowed') });
+        setErrors({ ...errors, proofFile: t('timeClock.errors.invalidFileType') });
         return;
       }
 
@@ -156,14 +156,14 @@ const TimeClockEntry = () => {
       proofFile: null
     });
 
-    setSuccessMessage(t('timeClock.success', 'Time entry submitted successfully!'));
+    setSuccessMessage(t('timeClock.success'));
     setTimeout(() => setSuccessMessage(''), 3000);
     setIsSubmitting(false);
   };
 
   // Delete entry
   const handleDelete = (id) => {
-    if (window.confirm(t('timeClock.confirmDelete', 'Are you sure you want to delete this entry?'))) {
+    if (window.confirm(t('timeClock.confirmDelete'))) {
       setTimeEntries(timeEntries.filter(entry => entry.id !== id));
     }
   };
@@ -194,10 +194,10 @@ const TimeClockEntry = () => {
   };
 
   const hourTypes = [
-    { value: 'regular', label: t('timeClock.hourTypes.regular', 'Regular Hours'), color: 'blue' },
-    { value: 'holiday', label: t('timeClock.hourTypes.holiday', 'Holiday'), color: 'purple' },
-    { value: 'weekend', label: t('timeClock.hourTypes.weekend', 'Weekend'), color: 'green' },
-    { value: 'bonus', label: t('timeClock.hourTypes.bonus', 'Bonus Hours'), color: 'yellow' }
+    { value: 'regular', label: t('timeClock.hourTypes.regular'), color: 'blue' },
+    { value: 'holiday', label: t('timeClock.hourTypes.holiday'), color: 'purple' },
+    { value: 'weekend', label: t('timeClock.hourTypes.weekend'), color: 'green' },
+    { value: 'bonus', label: t('timeClock.hourTypes.bonus'), color: 'yellow' }
   ];
 
   const getStatusColor = (status) => {
@@ -346,7 +346,7 @@ const TimeClockEntry = () => {
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows="3"
-                  placeholder={t('timeClock.notesPlaceholder', 'Add any additional context or notes...')}
+                  placeholder={t('timeClock.notesPlaceholder')}
                   className={`w-full px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : ''}`}
                 />
               </div>
@@ -387,7 +387,7 @@ const TimeClockEntry = () => {
               ))}
               <div className={`pt-3 border-t ${border.primary} flex justify-between items-center`}>
                 <span className={`font-semibold ${text.primary}`}>
-                  {t('timeClock.total', 'Total')}
+                  {t('timeClock.total')}
                 </span>
                 <span className={`font-bold text-lg ${text.primary}`}>
                   {calculateTotals('all', 'week').toFixed(1)} hrs
@@ -412,7 +412,7 @@ const TimeClockEntry = () => {
               ))}
               <div className={`pt-3 border-t ${border.primary} flex justify-between items-center`}>
                 <span className={`font-semibold ${text.primary}`}>
-                  {t('timeClock.total', 'Total')}
+                  {t('timeClock.total')}
                 </span>
                 <span className={`font-bold text-lg ${text.primary}`}>
                   {calculateTotals('all', 'month').toFixed(1)} hrs
