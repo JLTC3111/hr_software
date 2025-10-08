@@ -33,7 +33,7 @@ const Employees = [
     phone: '+84 375889900',
     startDate: '2017-08-20',
     status: 'onLeave',
-    performance: 3.8,
+    performance: 4.6,
     photo: 'employeeProfilePhotos/longdo.jpg'
   },
   {
@@ -47,7 +47,7 @@ const Employees = [
     phone: '+84 909 999 999',
     startDate: '2023-03-10',
     status: 'Active',
-    performance: 4.2,
+    performance: 4.1,
     photo: 'employeeProfilePhotos/lyly.png'
   },
   {
@@ -61,7 +61,7 @@ const Employees = [
     phone: '+84 909 999 999',
     startDate: '2021-11-05',
     status: 'Active',
-    performance: 4.6,
+    performance: 4.3,
     photo: 'employeeProfilePhotos/hien.png'
   },
   {
@@ -75,7 +75,7 @@ const Employees = [
     phone: '+84 909 999 999',
     startDate: '2023-06-01',
     status: 'Active',
-    performance: 4.4,
+    performance: 3.4,
     photo: 'employeeProfilePhotos/quynhly.png'
   },
   {
@@ -89,7 +89,7 @@ const Employees = [
     phone: '+84 909 999 999',
     startDate: '2017-08-20',
     status: 'Active',
-    performance: 4.9,
+    performance: 4.4,
     photo: 'employeeProfilePhotos/nguyenhonghanh.jpg'
   },
   {
@@ -103,7 +103,7 @@ const Employees = [
     phone: '+84 909 999 999',
     startDate: '2017-08-20',
     status: 'Inactive',
-    performance: 4.7,
+    performance: 3.0,
     photo: 'employeeProfilePhotos/duong.png'
   },
 ];

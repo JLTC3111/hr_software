@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Upload, Calendar, AlertCircle, Check, X, FileText, Download } from 'lucide-react';
+import { Clock, Upload, Calendar, AlertCircle, Check, X, FileText, Download, Loader } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
+import * as timeTrackingService from '../services/timeTrackingService';
 
 const TimeClockEntry = () => {
   const { isDarkMode, bg, text, button, input, border } = useTheme();
@@ -20,21 +21,33 @@ const TimeClockEntry = () => {
   });
 
   // Time entries state
-  const [timeEntries, setTimeEntries] = useState(() => {
-    const saved = localStorage.getItem(`timeEntries_${user?.id}`);
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [timeEntries, setTimeEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Save entries to localStorage whenever they change
+  // Fetch time entries from Supabase
   useEffect(() => {
-    if (user?.id) {
-      localStorage.setItem(`timeEntries_${user?.id}`, JSON.stringify(timeEntries));
-    }
-  }, [timeEntries, user]);
+    const fetchTimeEntries = async () => {
+      if (!user?.id) return;
+      
+      setLoading(true);
+      try {
+        const result = await timeTrackingService.getTimeEntries(user.id);
+        if (result.success) {
+          setTimeEntries(result.data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching time entries:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchTimeEntries();
+  }, [user]);
 
   // Validation
   const validateForm = () => {
@@ -186,44 +199,100 @@ const TimeClockEntry = () => {
   };
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) return;
 
     setIsSubmitting(true);
 
-    const newEntry = {
-      id: Date.now(),
-      ...formData,
-      hours: calculateHours(formData.clockIn, formData.clockOut, formData.date),
-      userId: user?.id,
-      userName: user?.name,
-      status: 'pending', // pending, approved, rejected
-      submittedAt: new Date().toISOString()
-    };
+    try {
+      const hours = calculateHours(formData.clockIn, formData.clockOut, formData.date);
+      
+      // Upload proof file if exists
+      let proofFileUrl = null;
+      let proofFileName = null;
+      let proofFileType = null;
+      
+      if (formData.proofFile) {
+        // Convert base64 back to file for upload
+        const base64Data = formData.proofFile.data;
+        const byteCharacters = atob(base64Data.split(',')[1]);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const file = new File([byteArray], formData.proofFile.name, { type: formData.proofFile.type });
+        
+        const uploadResult = await timeTrackingService.uploadProofFile(file, user?.id);
+        if (uploadResult.success) {
+          proofFileUrl = uploadResult.url;
+          proofFileName = uploadResult.fileName;
+          proofFileType = uploadResult.fileType;
+        }
+      }
+      
+      // Create time entry in Supabase
+      const result = await timeTrackingService.createTimeEntry({
+        employeeId: user?.id,
+        date: formData.date,
+        clockIn: formData.clockIn,
+        clockOut: formData.clockOut,
+        hours: parseFloat(hours),
+        hourType: formData.hourType,
+        notes: formData.notes,
+        proofFileUrl,
+        proofFileName,
+        proofFileType
+      });
+      
+      if (result.success) {
+        // Refresh time entries
+        const entriesResult = await timeTrackingService.getTimeEntries(user.id);
+        if (entriesResult.success) {
+          setTimeEntries(entriesResult.data || []);
+        }
+        
+        // Reset form
+        setFormData({
+          date: new Date().toISOString().split('T')[0],
+          clockIn: '',
+          clockOut: '',
+          hourType: 'regular',
+          notes: '',
+          proofFile: null
+        });
 
-    setTimeEntries([newEntry, ...timeEntries]);
-    
-    // Reset form
-    setFormData({
-      date: new Date().toISOString().split('T')[0],
-      clockIn: '',
-      clockOut: '',
-      hourType: 'regular',
-      notes: '',
-      proofFile: null
-    });
-
-    setSuccessMessage(t('timeClock.success'));
-    setTimeout(() => setSuccessMessage(''), 3000);
-    setIsSubmitting(false);
+        setSuccessMessage(t('timeClock.success'));
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setErrors({ general: result.error || t('timeClock.errors.submitFailed') });
+      }
+    } catch (error) {
+      console.error('Error submitting time entry:', error);
+      setErrors({ general: t('timeClock.errors.submitFailed') });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Delete entry
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm(t('timeClock.confirmDelete'))) {
-      setTimeEntries(timeEntries.filter(entry => entry.id !== id));
+      try {
+        const result = await timeTrackingService.deleteTimeEntry(id);
+        if (result.success) {
+          setTimeEntries(timeEntries.filter(entry => entry.id !== id));
+          setSuccessMessage(t('timeClock.deleteSuccess', 'Time entry deleted successfully'));
+          setTimeout(() => setSuccessMessage(''), 3000);
+        } else {
+          setErrors({ general: t('timeClock.errors.deleteFailed') });
+        }
+      } catch (error) {
+        console.error('Error deleting time entry:', error);
+        setErrors({ general: t('timeClock.errors.deleteFailed') });
+      }
     }
   };
 
@@ -243,8 +312,9 @@ const TimeClockEntry = () => {
       if (period === 'week' && entryDate < startOfWeek) return acc;
       if (period === 'month' && entryDate < startOfMonth) return acc;
 
-      // Filter by type
-      if (filterType === 'all' || entry.hourType === filterType) {
+      // Filter by type (using hour_type from Supabase)
+      const entryType = entry.hour_type || entry.hourType;
+      if (filterType === 'all' || entryType === filterType) {
         acc += parseFloat(entry.hours || 0);
       }
 
@@ -268,7 +338,16 @@ const TimeClockEntry = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-[1480px] w-full mx-auto"> 
+    <div className="space-y-6 max-w-[1480px] w-full mx-auto">
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className={`${bg.secondary} rounded-lg p-6 flex items-center space-x-3`}>
+            <Loader className="w-6 h-6 animate-spin text-blue-600" />
+            <span className={text.primary}>{t('common.loading', 'Loading...')}</span>
+          </div>
+        </div>
+      )} 
         <style>{`
         #clock-in-input::-webkit-calendar-picker-indicator,
         #clock-out-input::-webkit-calendar-picker-indicator,
@@ -649,19 +728,19 @@ const TimeClockEntry = () => {
                       {new Date(entry.date).toLocaleDateString()}
                     </td>
                     <td className={`p-3 ${text.secondary}`}>
-                      {entry.clockIn} - {entry.clockOut}
+                      {entry.clock_in || entry.clockIn} - {entry.clock_out || entry.clockOut}
                     </td>
                     <td className={`p-3 ${text.primary} font-semibold`}>
                       {entry.hours} hrs
                     </td>
                     <td className="p-3">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        entry.hourType === 'regular' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
-                        entry.hourType === 'holiday' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
-                        entry.hourType === 'weekend' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                        (entry.hour_type || entry.hourType) === 'regular' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                        (entry.hour_type || entry.hourType) === 'holiday' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
+                        (entry.hour_type || entry.hourType) === 'weekend' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
                         'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
                       }`}>
-                        {hourTypes.find(t => t.value === entry.hourType)?.label}
+                        {hourTypes.find(t => t.value === (entry.hour_type || entry.hourType))?.label}
                       </span>
                     </td>
                     <td className="p-3">
@@ -670,8 +749,14 @@ const TimeClockEntry = () => {
                       </span>
                     </td>
                     <td className="p-3">
-                      {entry.proofFile ? (
-                        <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
+                      {(entry.proof_file_url || entry.proofFile) ? (
+                        entry.proof_file_url ? (
+                          <a href={entry.proof_file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center">
+                            <FileText className="w-5 h-5 text-green-600 dark:text-green-400 hover:text-green-700" />
+                          </a>
+                        ) : (
+                          <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
+                        )
                       ) : (
                         <span className={`text-xs ${text.secondary}`}>-</span>
                       )}

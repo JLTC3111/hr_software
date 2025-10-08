@@ -4,14 +4,14 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 const PerformanceAppraisal = ({ employees }) => {
-  const [selectedEmployee, setSelectedEmployee] = useState(employees[0]?.id || null);
+  const [selectedEmployee, setSelectedEmployee] = useState(employees[0]?.id ? String(employees[0].id) : null);
   const [selectedPeriod, setSelectedPeriod] = useState('2024-q4');
   const [activeTab, setActiveTab] = useState('overview');
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
 
   const performanceData = {
-    [employees[0]?.id]: {
+    [String(employees[0]?.id)]: {
       overallRating: 4.5,
       goals: [
         { id: 1, title: t('goals.completeReactProject'), status: 'completed', progress: 100, deadline: '2024-09-30' },
@@ -29,7 +29,7 @@ const PerformanceAppraisal = ({ employees }) => {
         { name: t('performance.problemSolving'), rating: 4.8, category: 'technical' }
       ]
     },
-    [employees[1]?.id]: {
+    [String(employees[1]?.id)]: {
       overallRating: 4.2,
       goals: [
         { id: 1, title: t('goals.apiDevelopment'), status: 'completed', progress: 100, deadline: '2024-08-30' },
@@ -615,7 +615,7 @@ const PerformanceAppraisal = ({ employees }) => {
           {/* Employee Selector */}
           <select
             value={selectedEmployee}
-            onChange={(e) => setSelectedEmployee(e.target.value)}
+            onChange={(e) => setSelectedEmployee(String(e.target.value))}
             className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             style={{
               backgroundColor: isDarkMode ? '#374151' : '#ffffff',
@@ -624,7 +624,7 @@ const PerformanceAppraisal = ({ employees }) => {
             }}
           >
             {employees.map(employee => (
-              <option key={employee.id} value={employee.id}>
+              <option key={employee.id} value={String(employee.id)}>
                 {employee.name}
               </option>
             ))}

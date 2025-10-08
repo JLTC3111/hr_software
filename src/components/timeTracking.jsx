@@ -1,16 +1,25 @@
-import React, { useState } from 'react'
-import { Clock, Calendar, TrendingUp, Users, X, Check, Download, FileText, Coffee, Zap } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Clock, Calendar, TrendingUp, Users, X, Check, Download, FileText, Coffee, Zap, Loader } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import * as timeTrackingService from '../services/timeTrackingService'
 
 const TimeTracking = ({ employees }) => {
-  const [selectedEmployee, setSelectedEmployee] = useState(employees[0]?.id || null);
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedEmployee, setSelectedEmployee] = useState(employees[0]?.id ? String(employees[0].id) : null);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // 1-indexed for Supabase
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const { isDarkMode, toggleTheme, button, bg, text, border, hover, input } = useTheme();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // Loading and data states
+  const [loading, setLoading] = useState(true);
+  const [summaryData, setSummaryData] = useState(null);
+  const [leaveRequests, setLeaveRequests] = useState([]);
+  const [overtimeLogs, setOvertimeLogs] = useState([]);
   
   // Modal states
   const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -32,40 +41,61 @@ const TimeTracking = ({ employees }) => {
     reason: ''
   });
 
-  const timeTrackingData = {
-    [employees[0]?.id]: {
-      daysWorked: 22,
-      leaveDays: 3,
-      overtime: 15.5,
-      holidayOvertime: 8,
-      regularHours: 176,
-      totalHours: 185,
-    },
-    [employees[1]?.id]: {
-      daysWorked: 20,
-      leaveDays: 5,
-      overtime: 12,
-      holidayOvertime: 4,
-      regularHours: 160,
-      totalHours: 175,
-    },
-    [employees[2]?.id]: {
-      daysWorked: 23,
-      leaveDays: 2,
-      overtime: 18,
-      holidayOvertime: 6,
-      regularHours: 184,
-      totalHours: 200,
-    }
-  };
-
-  const currentData = timeTrackingData[selectedEmployee] || {
-    daysWorked: 0,
-    leaveDays: 0,
-    overtime: 0,
-    holidayOvertime: 0,
-    regularHours: 0,
-    totalHours: 0
+  // Fetch data from Supabase when employee or period changes
+  useEffect(() => {
+    const fetchTimeTrackingData = async () => {
+      if (!selectedEmployee) return;
+      
+      setLoading(true);
+      try {
+        // Fetch summary data
+        const summaryResult = await timeTrackingService.getTimeTrackingSummary(
+          selectedEmployee,
+          selectedMonth,
+          selectedYear
+        );
+        
+        if (summaryResult.success) {
+          setSummaryData(summaryResult.data);
+        }
+        
+        // Fetch leave requests
+        const leaveResult = await timeTrackingService.getLeaveRequests(selectedEmployee, {
+          year: selectedYear
+        });
+        
+        if (leaveResult.success) {
+          setLeaveRequests(leaveResult.data);
+        }
+        
+        // Fetch overtime logs
+        const overtimeResult = await timeTrackingService.getOvertimeLogs(selectedEmployee, {
+          month: selectedMonth,
+          year: selectedYear
+        });
+        
+        if (overtimeResult.success) {
+          setOvertimeLogs(overtimeResult.data);
+        }
+      } catch (error) {
+        console.error('Error fetching time tracking data:', error);
+        setSuccessMessage('');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchTimeTrackingData();
+  }, [selectedEmployee, selectedMonth, selectedYear]);
+  
+  const currentData = summaryData || {
+    days_worked: 0,
+    leave_days: 0,
+    overtime_hours: 0,
+    holiday_overtime_hours: 0,
+    regular_hours: 0,
+    total_hours: 0,
+    attendance_rate: 0
   };
 
   const months = [
@@ -73,6 +103,10 @@ const TimeTracking = ({ employees }) => {
     t('months.may'), t('months.june'), t('months.july'), t('months.august'), 
     t('months.september'), t('months.october'), t('months.november'), t('months.december')
   ];
+  
+  const getMonthName = (monthIndex) => {
+    return months[monthIndex - 1] || months[0];
+  };
 
   const years = [2023, 2024, 2025];
 
@@ -94,61 +128,110 @@ const TimeTracking = ({ employees }) => {
   );
 
   // Handler functions
-  const handleLeaveSubmit = (e) => {
+  const handleLeaveSubmit = async (e) => {
     e.preventDefault();
-    console.log('Leave request submitted:', leaveForm);
+    setLoading(true);
     
-    // In production, this would submit to the database
-    setSuccessMessage(t('timeTracking.leaveSuccess', 'Leave request submitted successfully!'));
-    setShowLeaveModal(false);
-    
-    // Reset form
-    setLeaveForm({
-      type: 'vacation',
-      startDate: '',
-      endDate: '',
-      reason: ''
-    });
-    
-    // Clear success message after 3 seconds
-    setTimeout(() => setSuccessMessage(''), 3000);
+    try {
+      const result = await timeTrackingService.createLeaveRequest({
+        employeeId: selectedEmployee,
+        type: leaveForm.type,
+        startDate: leaveForm.startDate,
+        endDate: leaveForm.endDate,
+        reason: leaveForm.reason
+      });
+      
+      if (result.success) {
+        setSuccessMessage(t('timeTracking.leaveSuccess', 'Leave request submitted successfully!'));
+        setShowLeaveModal(false);
+        
+        // Refresh data
+        const leaveResult = await timeTrackingService.getLeaveRequests(selectedEmployee, {
+          year: selectedYear
+        });
+        if (leaveResult.success) {
+          setLeaveRequests(leaveResult.data);
+        }
+        
+        // Reset form
+        setLeaveForm({
+          type: 'vacation',
+          startDate: '',
+          endDate: '',
+          reason: ''
+        });
+      } else {
+        setSuccessMessage(t('timeTracking.leaveError', 'Error submitting leave request'));
+      }
+    } catch (error) {
+      console.error('Error submitting leave:', error);
+      setSuccessMessage(t('timeTracking.leaveError', 'Error submitting leave request'));
+    } finally {
+      setLoading(false);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
   };
 
-  const handleOvertimeSubmit = (e) => {
+  const handleOvertimeSubmit = async (e) => {
     e.preventDefault();
-    console.log('Overtime logged:', overtimeForm);
+    setLoading(true);
     
-    // In production, this would submit to the database
-    setSuccessMessage(t('timeTracking.overtimeSuccess', 'Overtime logged successfully!'));
-    setShowOvertimeModal(false);
-    
-    // Reset form
-    setOvertimeForm({
-      date: new Date().toISOString().split('T')[0],
-      hours: '',
-      reason: ''
-    });
-    
-    // Clear success message after 3 seconds
-    setTimeout(() => setSuccessMessage(''), 3000);
+    try {
+      const result = await timeTrackingService.createOvertimeLog({
+        employeeId: selectedEmployee,
+        date: overtimeForm.date,
+        hours: parseFloat(overtimeForm.hours),
+        reason: overtimeForm.reason,
+        overtimeType: 'regular'
+      });
+      
+      if (result.success) {
+        setSuccessMessage(t('timeTracking.overtimeSuccess', 'Overtime logged successfully!'));
+        setShowOvertimeModal(false);
+        
+        // Refresh data
+        const overtimeResult = await timeTrackingService.getOvertimeLogs(selectedEmployee, {
+          month: selectedMonth,
+          year: selectedYear
+        });
+        if (overtimeResult.success) {
+          setOvertimeLogs(overtimeResult.data);
+        }
+        
+        // Reset form
+        setOvertimeForm({
+          date: new Date().toISOString().split('T')[0],
+          hours: '',
+          reason: ''
+        });
+      } else {
+        setSuccessMessage(t('timeTracking.overtimeError', 'Error logging overtime'));
+      }
+    } catch (error) {
+      console.error('Error submitting overtime:', error);
+      setSuccessMessage(t('timeTracking.overtimeError', 'Error logging overtime'));
+    } finally {
+      setLoading(false);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
   };
 
   const handleExportReport = () => {
     // Generate CSV data
-    const employee = employees.find(emp => emp.id === selectedEmployee);
+    const employee = employees.find(emp => String(emp.id) === selectedEmployee);
     const csvData = [
       ['Time Tracking Report'],
       ['Employee', employee?.name || 'Unknown'],
-      ['Period', `${months[selectedMonth]} ${selectedYear}`],
+      ['Period', `${getMonthName(selectedMonth)} ${selectedYear}`],
       [''],
       ['Metric', 'Value'],
-      ['Days Worked', currentData.daysWorked],
-      ['Leave Days', currentData.leaveDays],
-      ['Overtime Hours', currentData.overtime],
-      ['Holiday Overtime', currentData.holidayOvertime],
-      ['Regular Hours', currentData.regularHours],
-      ['Total Hours', currentData.totalHours],
-      ['Attendance Rate', `${((currentData.daysWorked / 25) * 100).toFixed(1)}%`]
+      ['Days Worked', currentData.days_worked || 0],
+      ['Leave Days', currentData.leave_days || 0],
+      ['Overtime Hours', currentData.overtime_hours || 0],
+      ['Holiday Overtime', currentData.holiday_overtime_hours || 0],
+      ['Regular Hours', currentData.regular_hours || 0],
+      ['Total Hours', currentData.total_hours || 0],
+      ['Attendance Rate', `${(currentData.attendance_rate || 0).toFixed(1)}%`]
     ];
 
     // Convert to CSV string
@@ -160,7 +243,7 @@ const TimeTracking = ({ employees }) => {
     const url = URL.createObjectURL(blob);
     
     link.setAttribute('href', url);
-    link.setAttribute('download', `timetracking_${employee?.name}_${months[selectedMonth]}_${selectedYear}.csv`);
+    link.setAttribute('download', `timetracking_${employee?.name}_${getMonthName(selectedMonth)}_${selectedYear}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -172,6 +255,16 @@ const TimeTracking = ({ employees }) => {
 
   return (
     <div className="space-y-6">
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className={`${bg.secondary} rounded-lg p-6 flex items-center space-x-3`}>
+            <Loader className="w-6 h-6 animate-spin text-blue-600" />
+            <span className={text.primary}>{t('common.loading', 'Loading...')}</span>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex justify-between items-center">
         <h2 className={`text-2xl font-bold ${text.primary}`}>{t('timeTracking.title')}</h2>
@@ -179,11 +272,11 @@ const TimeTracking = ({ employees }) => {
           {/* Employee Selector */}
           <select
             value={selectedEmployee}
-            onChange={(e) => setSelectedEmployee(e.target.value)}
+            onChange={(e) => setSelectedEmployee(String(e.target.value))}
             className={`${input.bg} ${input.text} px-4 py-2 border ${input.border} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
           >
             {employees.map(employee => (
-              <option key={employee.id} value={employee.id}>
+              <option key={employee.id} value={String(employee.id)}>
                 {employee.name}
               </option>
             ))}
@@ -196,7 +289,7 @@ const TimeTracking = ({ employees }) => {
             className={`${input.bg} ${input.text} px-4 py-2 border ${input.border} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
           >
             {months.map((month, index) => (
-              <option key={index} value={index}>
+              <option key={index + 1} value={index + 1}>
                 {month}
               </option>
             ))}
@@ -221,7 +314,7 @@ const TimeTracking = ({ employees }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <TimeCard
           title={t('timeTracking.workDays')}
-          value={currentData.daysWorked}
+          value={currentData.days_worked || 0}
           unit={t('timeTracking.days')}
           icon={Calendar}
           color="text-blue-600"
@@ -229,7 +322,7 @@ const TimeTracking = ({ employees }) => {
         />
         <TimeCard
           title={t('timeTracking.leaveDays')}
-          value={currentData.leaveDays}
+          value={currentData.leave_days || 0}
           unit={t('timeTracking.days')}
           icon={Coffee}
           color="text-orange-600"
@@ -237,7 +330,7 @@ const TimeTracking = ({ employees }) => {
         />
         <TimeCard
           title={t('timeTracking.overtime')}
-          value={currentData.overtime}
+          value={currentData.overtime_hours || 0}
           unit={t('timeTracking.hours')}
           icon={Clock}
           color="text-purple-600"
@@ -245,7 +338,7 @@ const TimeTracking = ({ employees }) => {
         />
         <TimeCard
           title={t('timeTracking.holidayOvertime')}
-          value={currentData.holidayOvertime}
+          value={currentData.holiday_overtime_hours || 0}
           unit={t('timeTracking.hours')}
           icon={Zap}
           color="text-green-600"
@@ -256,42 +349,42 @@ const TimeTracking = ({ employees }) => {
       {/* Detailed Summary */}
       <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
         <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-          {t('timeTracking.summary', `Summary for ${employees.find(emp => emp.id == selectedEmployee)?.name} - ${months[selectedMonth]} ${selectedYear}`)}
+          {t('timeTracking.summary', `Summary for ${employees.find(emp => String(emp.id) === selectedEmployee)?.name} - ${getMonthName(selectedMonth)} ${selectedYear}`)}
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className={text.secondary}>{t('timeTracking.regularHours')}:</span>
-              <span className={`font-medium ${text.primary}`}>{currentData.regularHours} {t('timeTracking.hrs')}</span>
+              <span className={`font-medium ${text.primary}`}>{currentData.regular_hours || 0} {t('timeTracking.hrs')}</span>
             </div>
             <div className="flex justify-between">
               <span className={text.secondary}>{t('timeTracking.overtimeHours')}:</span>
-              <span className={`font-medium ${text.primary}`}>{currentData.overtime} {t('timeTracking.hrs')}</span>
+              <span className={`font-medium ${text.primary}`}>{currentData.overtime_hours || 0} {t('timeTracking.hrs')}</span>
             </div>
             <div className="flex justify-between">
               <span className={text.secondary}>{t('timeTracking.totalHours')}:</span>
-              <span className={`font-medium ${text.primary}`}>{currentData.totalHours} {t('timeTracking.hrs')}</span>
+              <span className={`font-medium ${text.primary}`}>{currentData.total_hours || 0} {t('timeTracking.hrs')}</span>
             </div>
           </div>
           
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className={text.secondary}>{t('timeTracking.workDays')}:</span>
-              <span className={`font-medium ${text.primary}`}>{currentData.daysWorked} {t('timeTracking.days')}</span>
+              <span className={`font-medium ${text.primary}`}>{currentData.days_worked || 0} {t('timeTracking.days')}</span>
             </div>
             <div className="flex justify-between">
               <span className={text.secondary}>{t('timeTracking.leaveDays')}:</span>
-              <span className={`font-medium ${text.primary}`}>{currentData.leaveDays} {t('timeTracking.days')}</span>
+              <span className={`font-medium ${text.primary}`}>{currentData.leave_days || 0} {t('timeTracking.days')}</span>
             </div>
             <div className="flex justify-between">
               <span className={text.secondary}>{t('timeTracking.holidayOvertime')}:</span>
-              <span className={`font-medium ${text.primary}`}>{currentData.holidayOvertime} {t('timeTracking.hrs')}</span>
+              <span className={`font-medium ${text.primary}`}>{currentData.holiday_overtime_hours || 0} {t('timeTracking.hrs')}</span>
             </div>
             <div className={`flex justify-between border-t ${border.primary} pt-3`}>
               <span className={`${text.primary} font-semibold`}>{t('timeTracking.attendanceRate')}:</span>
               <span className={`font-bold ${text.primary}`}>
-                {((currentData.daysWorked / 25) * 100).toFixed(1)}%
+                {(currentData.attendance_rate || 0).toFixed(1)}%
               </span>
             </div>
           </div>

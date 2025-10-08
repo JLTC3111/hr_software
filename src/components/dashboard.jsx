@@ -1,36 +1,99 @@
-import React from 'react'
-import { Users, Briefcase, FileText, TrendingUp, Clock, Calendar, Award, AlertCircle } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Users, Briefcase, Clock, Calendar, AlertCircle, DatabaseZap, Loader } from 'lucide-react'
 import StatsCard from './statsCard.jsx'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
-import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import * as timeTrackingService from '../services/timeTrackingService'
 
 const Dashboard = ({ employees, applications }) => {
   const { isDarkMode, bg, text, border } = useTheme();
   const { t } = useLanguage();
-
-  // Mock time tracking data for employees
-  const timeTrackingData = {
-    1: { workDays: 22, leaveDays: 3, overtime: 15.5, performance: 4.8 },
-    2: { workDays: 20, leaveDays: 5, overtime: 12, performance: 4.5 },
-    3: { workDays: 23, leaveDays: 2, overtime: 18, performance: 4.9 },
-    4: { workDays: 21, leaveDays: 4, overtime: 10, performance: 4.3 },
-    5: { workDays: 22, leaveDays: 3, overtime: 14, performance: 4.6 },
-    6: { workDays: 24, leaveDays: 1, overtime: 20, performance: 4.9 },
-    7: { workDays: 19, leaveDays: 6, overtime: 8, performance: 4.0 }
-  };
+  
+  // State for real-time data
+  const [loading, setLoading] = useState(true);
+  const [timeTrackingData, setTimeTrackingData] = useState({});
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
+  
+  // Get current month and year
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth() + 1;
+  const currentYear = currentDate.getFullYear();
+  
+  // Fetch real data from Supabase
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      try {
+        // Fetch time tracking summaries for all employees for current month
+        const summariesPromises = employees.map(emp => 
+          timeTrackingService.getTimeTrackingSummary(String(emp.id), currentMonth, currentYear)
+        );
+        
+        const summariesResults = await Promise.all(summariesPromises);
+        
+        // Build timeTrackingData object - use string IDs for consistency with TEXT type
+        const trackingData = {};
+        summariesResults.forEach((result, index) => {
+          if (result.success && result.data) {
+            const emp = employees[index];
+            const empId = String(emp.id); // Ensure ID is string for TEXT type
+            trackingData[empId] = {
+              workDays: result.data.days_worked || 0,
+              leaveDays: result.data.leave_days || 0,
+              overtime: result.data.overtime_hours || 0,
+              performance: emp.performance || 4.0 // Use employee's base performance
+            };
+          } else {
+            // Fallback to defaults if no data
+            const emp = employees[index];
+            const empId = String(emp.id); // Ensure ID is string for TEXT type
+            trackingData[empId] = {
+              workDays: 0,
+              leaveDays: 0,
+              overtime: 0,
+              performance: emp.performance || 4.0
+            };
+          }
+        });
+        
+        setTimeTrackingData(trackingData);
+        
+        // Fetch pending approvals count
+        const approvalsResult = await timeTrackingService.getPendingApprovalsCount();
+        if (approvalsResult.success) {
+          setPendingApprovalsCount(approvalsResult.data.total || 0);
+        }
+        
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (employees.length > 0) {
+      fetchDashboardData();
+    }
+  }, [employees, currentMonth, currentYear]);
 
   // Calculate aggregate stats
-  const totalWorkDays = Object.values(timeTrackingData).reduce((sum, emp) => sum + emp.workDays, 0);
-  const totalLeaveDays = Object.values(timeTrackingData).reduce((sum, emp) => sum + emp.leaveDays, 0);
-  const totalOvertime = Object.values(timeTrackingData).reduce((sum, emp) => sum + emp.overtime, 0);
-  const avgPerformance = (Object.values(timeTrackingData).reduce((sum, emp) => sum + emp.performance, 0) / Object.keys(timeTrackingData).length).toFixed(1);
+  const trackingDataValues = Object.values(timeTrackingData);
+  const totalWorkDays = trackingDataValues.reduce((sum, emp) => sum + (emp?.workDays || 0), 0);
+  const totalLeaveDays = trackingDataValues.reduce((sum, emp) => sum + (emp?.leaveDays || 0), 0);
+  const totalOvertime = trackingDataValues.reduce((sum, emp) => sum + (emp?.overtime || 0), 0).toFixed(1);
+  const avgPerformance = trackingDataValues.length > 0 
+    ? (trackingDataValues.reduce((sum, emp) => sum + (emp?.performance || 0), 0) / trackingDataValues.length).toFixed(1)
+    : '0.0';
+  
+  // Check if we have any real data
+  const hasRealData = trackingDataValues.some(emp => emp?.workDays > 0 || emp?.overtime > 0);
 
   // Performance data for bar chart
   const performanceData = employees.map(emp => ({
     name: emp.name.split(' ').slice(-1)[0], // Last name only
-    performance: timeTrackingData[emp.id]?.performance || 4.0,
-    overtime: timeTrackingData[emp.id]?.overtime || 0
+    performance: timeTrackingData[String(emp.id)]?.performance || 4.0,
+    overtime: timeTrackingData[String(emp.id)]?.overtime || 0
   }));
 
   // Department distribution for pie chart
@@ -47,8 +110,8 @@ const Dashboard = ({ employees, applications }) => {
   // Leave requests summary
   const leaveData = employees.slice(0, 5).map(emp => ({
     name: emp.name.split(' ').slice(-1)[0],
-    leaveDays: timeTrackingData[emp.id]?.leaveDays || 0,
-    workDays: timeTrackingData[emp.id]?.workDays || 0
+    leaveDays: timeTrackingData[String(emp.id)]?.leaveDays || 0,
+    workDays: timeTrackingData[String(emp.id)]?.workDays || 0
   }));
 
   // Chart colors
@@ -58,39 +121,66 @@ const Dashboard = ({ employees, applications }) => {
   const topPerformers = employees
     .map(emp => ({
       ...emp,
-      performance: timeTrackingData[emp.id]?.performance || 4.0,
-      overtime: timeTrackingData[emp.id]?.overtime || 0
+      performance: timeTrackingData[String(emp.id)]?.performance || 4.0,
+      overtime: timeTrackingData[String(emp.id)]?.overtime || 0
     }))
     .sort((a, b) => b.performance - a.performance)
     .slice(0, 5);
 
   return (
     <div className="space-y-6">
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className={`${bg.secondary} rounded-lg p-6 flex items-center space-x-3`}>
+            <Loader className="w-6 h-6 animate-spin text-blue-600" />
+            <span className={text.primary}>{t('common.loading', 'Loading dashboard...')}</span>
+          </div>
+        </div>
+      )}
+      <div className={`${bg.secondary} rounded-lg border ${border.primary} p-3 flex items-center justify-between`}>
+        <div className="flex items-center space-x-2">
+          <DatabaseZap className={`w-4 h-4 ${hasRealData ? 'text-green-600' : 'text-yellow-600'}`} />
+          <span className={`text-sm ${text.secondary}`}>
+            {hasRealData 
+              ? `${t('dashboard.liveData', 'Live data from Supabase')} • ${t('dashboard.currentMonth', 'Current month')}: ${currentMonth}/${currentYear}`
+              : `${t('dashboard.noData', 'No time tracking data yet')} • ${t('dashboard.currentMonth', 'Current month')}: ${currentMonth}/${currentYear}`
+            }
+          </span>
+        </div>
+        <button
+          onClick={() => window.location.reload()}
+          className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+        >
+          {t('common.refresh', 'Refresh')}
+        </button>
+      </div>
+      
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard 
           title={t('dashboard.totalEmployees')} 
           value={employees.length} 
           icon={Users} 
-          color="text-blue-600" 
+          color={isDarkMode ? "#ffffff" : "#1f1f1f"}
+          size={12}
         />
         <StatsCard 
           title={t('dashboard.avgPerformance')} 
           value={avgPerformance} 
-          icon={Award} 
-          color="text-purple-600" 
+          icon={DatabaseZap} 
+          color={isDarkMode ? "#ffffff" : "#1f1f1f"}
         />
         <StatsCard 
           title={t('dashboard.totalOvertime')} 
           value={`${totalOvertime}h`} 
           icon={Clock} 
-          color="text-orange-600" 
+          color={isDarkMode ? "#ffffff" : "#1f1f1f"}
         />
         <StatsCard 
           title={t('dashboard.totalLeave')} 
           value={totalLeaveDays} 
           icon={Calendar} 
-          color="text-green-600" 
+          color={isDarkMode ? "#ffffff" : "#1f1f1f"}
         />
       </div>
 
@@ -273,9 +363,9 @@ const Dashboard = ({ employees, applications }) => {
               {t('dashboard.pendingRequests')}
             </h4>
           </div>
-          <p className={`text-3xl font-bold ${text.primary}`}>{totalLeaveDays}</p>
+          <p className={`text-3xl font-bold ${text.primary}`}>{pendingApprovalsCount}</p>
           <p className={`text-sm ${text.secondary} mt-1`}>
-            {t('dashboard.leaveRequests')}
+            {t('dashboard.pendingApprovals', 'Pending approvals')}
           </p>
         </div>
       </div>
