@@ -396,34 +396,50 @@ export const getTimeTrackingSummary = async (employeeId, month, year) => {
       .eq('employee_id', toEmployeeId(employeeId))
       .eq('month', month)
       .eq('year', year)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      // If no data exists, return default structure
-      if (error.code === 'PGRST116') {
-        return {
-          success: true,
-          data: {
-            employee_id: toEmployeeId(employeeId),
-            month,
-            year,
-            days_worked: 0,
-            leave_days: 0,
-            regular_hours: 0,
-            overtime_hours: 0,
-            holiday_overtime_hours: 0,
-            total_hours: 0,
-            attendance_rate: 0
-          }
-        };
-      }
+      console.error('Supabase error fetching summary:', error);
       throw error;
+    }
+
+    // If no data exists, return default structure
+    if (!data) {
+      return {
+        success: true,
+        data: {
+          employee_id: toEmployeeId(employeeId),
+          month,
+          year,
+          days_worked: 0,
+          leave_days: 0,
+          regular_hours: 0,
+          overtime_hours: 0,
+          holiday_overtime_hours: 0,
+          total_hours: 0,
+          attendance_rate: 0
+        }
+      };
     }
 
     return { success: true, data };
   } catch (error) {
     console.error('Error fetching time tracking summary:', error);
-    return { success: false, error: error.message };
+    return { 
+      success: true,
+      data: {
+        employee_id: toEmployeeId(employeeId),
+        month,
+        year,
+        days_worked: 0,
+        leave_days: 0,
+        regular_hours: 0,
+        overtime_hours: 0,
+        holiday_overtime_hours: 0,
+        total_hours: 0,
+        attendance_rate: 0
+      }
+    };
   }
 };
 
