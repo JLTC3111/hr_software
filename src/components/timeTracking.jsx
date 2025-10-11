@@ -352,37 +352,37 @@ const TimeTracking = ({ employees }) => {
           {t('timeTracking.summary', `Summary for ${employees.find(emp => String(emp.id) === selectedEmployee)?.name} - ${getMonthName(selectedMonth)} ${selectedYear}`)}
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-3">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(380px,1fr))] gap-6">
+          <div className="space-y-3 ">
             <div className="flex justify-between">
-              <span className={text.secondary}>{t('timeTracking.regularHours')}:</span>
+              <span className={`${text.secondary} mr-12`}>{t('timeTracking.regularHours')}:</span>
               <span className={`font-medium ${text.primary}`}>{currentData.regular_hours || 0} {t('timeTracking.hrs')}</span>
             </div>
             <div className="flex justify-between">
-              <span className={text.secondary}>{t('timeTracking.overtimeHours')}:</span>
+              <span className={`${text.secondary} mr-12`}>{t('timeTracking.overtimeHours')}:</span>
               <span className={`font-medium ${text.primary}`}>{currentData.overtime_hours || 0} {t('timeTracking.hrs')}</span>
             </div>
             <div className="flex justify-between">
-              <span className={text.secondary}>{t('timeTracking.totalHours')}:</span>
+              <span className={`${text.secondary} mr-12`}>{t('timeTracking.totalHours')}:</span>
               <span className={`font-medium ${text.primary}`}>{currentData.total_hours || 0} {t('timeTracking.hrs')}</span>
             </div>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-3 ">
             <div className="flex justify-between">
-              <span className={text.secondary}>{t('timeTracking.workDays')}:</span>
+              <span className={`${text.secondary} ml-12`}>{t('timeTracking.workDays')}:</span>
               <span className={`font-medium ${text.primary}`}>{currentData.days_worked || 0} {t('timeTracking.days')}</span>
             </div>
             <div className="flex justify-between">
-              <span className={text.secondary}>{t('timeTracking.leaveDays')}:</span>
+              <span className={`${text.secondary} ml-12`}>{t('timeTracking.leaveDays')}:</span>
               <span className={`font-medium ${text.primary}`}>{currentData.leave_days || 0} {t('timeTracking.days')}</span>
             </div>
             <div className="flex justify-between">
-              <span className={text.secondary}>{t('timeTracking.holidayOvertime')}:</span>
+              <span className={`${text.secondary} ml-12`}>{t('timeTracking.holidayOvertime')}:</span>
               <span className={`font-medium ${text.primary}`}>{currentData.holiday_overtime_hours || 0} {t('timeTracking.hrs')}</span>
             </div>
             <div className={`flex justify-between border-t ${border.primary} pt-3`}>
-              <span className={`${text.primary} font-semibold`}>{t('timeTracking.attendanceRate')}:</span>
+              <span className={`${text.primary} font-semibold ml-12`}>{t('timeTracking.attendanceRate')}:</span>
               <span className={`font-bold ${text.primary}`}>
                 {(currentData.attendance_rate || 0).toFixed(1)}%
               </span>

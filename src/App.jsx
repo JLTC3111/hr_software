@@ -256,7 +256,7 @@ const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmpl
               <div className="flex">
                 <Sidebar />
                 
-                <div className="flex-1 p-8">
+                <div className="flex-1 p-8 min-w-[768px] mx-auto">
                   <Routes>
                     <Route path="/" element={<Navigate to="/time-clock" replace />} />
                     <Route 

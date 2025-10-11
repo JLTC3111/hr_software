@@ -404,7 +404,7 @@ export const getTimeTrackingSummary = async (employeeId, month, year) => {
         return {
           success: true,
           data: {
-            employee_id: employeeId,
+            employee_id: toEmployeeId(employeeId),
             month,
             year,
             days_worked: 0,
@@ -584,7 +584,7 @@ export const getPendingApprovalsCount = async () => {
 export const syncEmployeesToSupabase = async (employees) => {
   try {
     const employeesData = employees.map(emp => ({
-      id: emp.id,
+      id: toEmployeeId(emp.id),
       name: emp.name,
       position: emp.position,
       department: emp.department,

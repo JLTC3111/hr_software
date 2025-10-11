@@ -70,7 +70,33 @@ Updated all components to consistently use TEXT employee IDs for database compat
 
 ---
 
-## Service Layer Protection
+### ✅ 8. timeTrackingService.js
+**Changes:**
+- Line 407: `employee_id: toEmployeeId(employeeId)` in default fallback data
+- Line 587: `id: toEmployeeId(emp.id)` in syncEmployeesToSupabase
+
+**Impact:** Service layer now has 100% coverage - every database operation converts IDs to TEXT.
+
+**Functions using `toEmployeeId()` helper:**
+- createTimeEntry (line 27)
+- getTimeEntries (line 58)
+- updateTimeEntryStatus (line 124)
+- uploadProofFile (line 163)
+- createLeaveRequest (line 201)
+- getLeaveRequests (line 227)
+- updateLeaveRequestStatus (line 284)
+- createOvertimeLog (line 312)
+- getOvertimeLogs (line 338)
+- updateOvertimeStatus (line 369)
+- getTimeTrackingSummary (line 396, 407)
+- updateSummary (line 437)
+- calculateHourTotals (line 524)
+- syncEmployeesToSupabase (line 587) ⬅️ **NEW**
+- getEmployeeById (line 640)
+
+---
+
+## Service Layer Protection ✅
 
 The `timeTrackingService.js` file includes a helper function that ensures all IDs are converted:
 
@@ -80,7 +106,11 @@ const toEmployeeId = (id) => {
 };
 ```
 
-This function is used in ALL service methods, providing a safety net for ID type consistency.
+This function is now used in **ALL service methods** (updated 2 missed locations):
+- ✅ Line 407: Default employee_id in getTimeTrackingSummary fallback
+- ✅ Line 587: Employee ID in syncEmployeesToSupabase
+
+The service layer now provides **100% TEXT ID conversion** for all database operations.
 
 ---
 
@@ -150,8 +180,9 @@ Conversion to TEXT happens at the API boundary.
 1. `/src/components/dashboard.jsx` - 5 changes
 2. `/src/components/timeTracking.jsx` - 4 changes
 3. `/src/components/performanceAppraisal.jsx` - 4 changes
+4. `/src/services/timeTrackingService.js` - 2 changes
 
-**Total: 3 files, 13 changes**
+**Total: 4 files, 15 changes**
 
 ---
 
