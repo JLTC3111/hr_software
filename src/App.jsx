@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { Award, FileText } from 'lucide-react'
+import { Award, FileText, Loader } from 'lucide-react'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { LanguageProvider } from './contexts/LanguageContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry } from './components/index.jsx';
+import * as employeeService from './services/employeeService';
+import * as recruitmentService from './services/recruitmentService';
 
 const Employees = [
   {
@@ -145,74 +147,109 @@ const Applications = [
 ];
 
 const HRManagementApp = () => {
-  const [employees, setEmployees] = useState(() => {
-    // Load saved employees and photos from localStorage
-    const savedEmployees = localStorage.getItem('employees');
-    const savedPhotos = localStorage.getItem('employeePhotos');
-    
-    let employeesList = Employees;
-    
-    // Load saved employees if available
-    if (savedEmployees) {
-      try {
-        employeesList = JSON.parse(savedEmployees);
-      } catch (error) {
-        console.error('Error loading saved employees:', error);
-      }
-    }
-    
-    // Apply saved photos
-    if (savedPhotos) {
-      try {
-        const photosMap = JSON.parse(savedPhotos);
-        employeesList = employeesList.map(emp => ({
-          ...emp,
-          photo: photosMap[emp.id] || emp.photo
-        }));
-      } catch (error) {
-        console.error('Error loading saved photos:', error);
-      }
-    }
-    
-    return employeesList;
-  });
-  const [applications, setApplications] = useState(Applications);
+  const [employees, setEmployees] = useState([]);
+  const [applications, setApplications] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const handlePhotoUpdate = (employeeId, photoData) => {
-    setEmployees(prevEmployees => {
-      const updatedEmployees = prevEmployees.map(emp => 
-        emp.id === employeeId ? { ...emp, photo: photoData } : emp
-      );
-      
-      // Save to localStorage
-      try {
-        const savedPhotos = localStorage.getItem('employeePhotos');
-        const photosMap = savedPhotos ? JSON.parse(savedPhotos) : {};
-        photosMap[employeeId] = photoData;
-        localStorage.setItem('employeePhotos', JSON.stringify(photosMap));
-      } catch (error) {
-        console.error('Error saving photo:', error);
+  // Fetch employees from Supabase on mount
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      setLoading(true);
+      const result = await employeeService.getAllEmployees();
+      if (result.success) {
+        setEmployees(result.data);
+        
+        // If no employees exist, seed with initial data
+        if (result.data.length === 0) {
+          console.log('No employees found, seeding initial data...');
+          // Create employees one by one to avoid bulk upsert issues
+          const createdEmployees = [];
+          for (const emp of Employees) {
+            const seedResult = await employeeService.createEmployee(emp);
+            if (seedResult.success) {
+              createdEmployees.push(seedResult.data);
+            } else {
+              console.error('Error seeding employee:', emp.name, seedResult.error);
+            }
+          }
+          if (createdEmployees.length > 0) {
+            setEmployees(createdEmployees);
+          }
+        }
+      } else {
+        setError(result.error);
+        console.error('Error fetching employees:', result.error);
+        // Fallback to hardcoded data if Supabase fails
+        setEmployees(Employees);
       }
-      
-      return updatedEmployees;
-    });
+      setLoading(false);
+    };
+
+    fetchEmployees();
+  }, []);
+
+  // Fetch applications from Supabase on mount
+  useEffect(() => {
+    const fetchApplications = async () => {
+      // Check if recruitment tables exist (migration 005 has been run)
+      const result = await recruitmentService.getAllApplications();
+      if (result.success) {
+        // Transform data to match expected format
+        const transformedData = result.data.map(app => ({
+          id: app.id,
+          candidateName: app.candidate_name,
+          position: app.job_posting?.title || 'N/A',
+          department: app.job_posting?.department || 'N/A',
+          status: app.status,
+          appliedDate: app.applied_date,
+          email: app.email,
+          experience: `${app.experience_years} years`,
+          stage: app.stage
+        }));
+        setApplications(transformedData);
+      } else {
+        // Tables don't exist yet or other error - use fallback data
+        console.warn('Recruitment tables not found. Please run migration 005_recruitment_tables.sql');
+        console.warn('Using fallback mock data for applications.');
+        setApplications(Applications);
+      }
+    };
+
+    fetchApplications();
+  }, []);
+
+  const handlePhotoUpdate = async (employeeId, photoData) => {
+    // Update employee photo in Supabase
+    const result = await employeeService.updateEmployee(employeeId, { photo: photoData });
+    
+    if (result.success) {
+      // Update local state
+      setEmployees(prevEmployees => 
+        prevEmployees.map(emp => 
+          emp.id === employeeId ? { ...emp, photo: photoData } : emp
+        )
+      );
+    } else {
+      console.error('Error updating photo:', result.error);
+      alert('Failed to update photo. Please try again.');
+    }
   };
 
-  const handleAddEmployee = (newEmployee) => {
-    setEmployees(prevEmployees => {
-      const updatedEmployees = [...prevEmployees, newEmployee];
-      
-      // Save to localStorage
-      try {
-        localStorage.setItem('employees', JSON.stringify(updatedEmployees));
-      } catch (error) {
-        console.error('Error saving employees:', error);
-      }
-      
-      return updatedEmployees;
-    });
+  const handleAddEmployee = async (newEmployee) => {
+    // Create employee in Supabase
+    const result = await employeeService.createEmployee(newEmployee);
+    
+    if (result.success) {
+      // Add to local state
+      setEmployees(prevEmployees => [...prevEmployees, result.data]);
+      setIsAddEmployeeModalOpen(false);
+    } else {
+      console.error('Error adding employee:', result.error);
+      alert('Failed to add employee. Please try again.');
+    }
   };
 
   return (
@@ -228,6 +265,8 @@ const HRManagementApp = () => {
             isAddEmployeeModalOpen={isAddEmployeeModalOpen}
             setIsAddEmployeeModalOpen={setIsAddEmployeeModalOpen}
             onAddEmployee={handleAddEmployee}
+            loading={loading}
+            error={error}
           />
         </ThemeProvider>
       </LanguageProvider>
@@ -235,9 +274,38 @@ const HRManagementApp = () => {
   );
 };
 
-const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmployee, onPhotoUpdate, isAddEmployeeModalOpen, setIsAddEmployeeModalOpen, onAddEmployee }) => {
-  const { bg } = useTheme();
+const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmployee, onPhotoUpdate, isAddEmployeeModalOpen, setIsAddEmployeeModalOpen, onAddEmployee, loading, error }) => {
+  const { bg, text } = useTheme();
   const { isAuthenticated } = useAuth();
+
+  // Show loading state while fetching data
+  if (loading && isAuthenticated) {
+    return (
+      <div className={`min-h-screen ${bg.primary} flex items-center justify-center`}>
+        <div className="text-center">
+          <Loader className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className={`text-lg ${text.primary}`}>Loading HR Management System...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if data fetch failed
+  if (error && isAuthenticated) {
+    return (
+      <div className={`min-h-screen ${bg.primary} flex items-center justify-center`}>
+        <div className="text-center">
+          <p className={`text-lg ${text.primary} mb-4`}>Error loading data: {error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Router>
