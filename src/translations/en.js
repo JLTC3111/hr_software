@@ -1,13 +1,16 @@
 export default {
   // Navigation
   nav: {
+    menu: 'Menu',
     timeClock: 'Time Clock',
     dashboard: 'Dashboard',
     employees: 'Employees',
     recruitment: "Recruitment",
     timeTracking: 'Time Tracking',
     performance: 'Performance',
-    reports: 'Reports'
+    reports: 'Reports',
+    notifications: 'Notifications',
+    settings: 'Settings'
   },
   // Header
   header: {
@@ -81,6 +84,8 @@ export default {
   // Employees
   employees: {
     title: 'Employee Management',
+    directory: 'Directory',
+    addNew: 'Add New',
     searchPlaceholder: 'Search employees...',
     addEmployee: 'Add Employee',
     name: 'Name',
@@ -218,6 +223,8 @@ export default {
   // Time Tracking
   timeTracking: {
     title: 'Time Tracking Dashboard',
+    overview: 'Overview',
+    clockIn: 'Clock In/Out',
     summary: 'Summary',
     quickActions: 'Quick Actions',
     workDays: 'Work Days',

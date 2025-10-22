@@ -1,12 +1,15 @@
 export default {
   // Navigation
   nav: {
+    menu: 'Menu',
     timeClock: 'Chấm công',
     dashboard: 'Tổng quan',
     employees: 'Nhân viên',
     timeTracking: 'Theo dõi thời gian',
     performance: 'Hiệu suất',
-    reports: 'Báo cáo'
+    reports: 'Báo cáo',
+    notifications: 'Thông báo',
+    settings: 'Cài đặt'
   },
 
   // Header
@@ -151,6 +154,8 @@ export default {
   // Time Tracking
   timeTracking: {
     title: 'Bảng Điều Khiển Theo Dõi Thời Gian',
+    overview: 'Tổng quan',
+    clockIn: 'Chấm công',
     summary: 'Tóm Tắt',
     quickActions: 'Chức Năng',
     workDays: 'Ngày Làm Việc',
@@ -190,6 +195,8 @@ export default {
   // Employees
   employees: {
     title: 'Quản Lý Nhân Viên',
+    directory: 'Danh sách',
+    addNew: 'Thêm mới',
     searchPlaceholder: 'Tìm Kiếm Nhân Viên...',
     addEmployee: 'Thêm Nhân Viên',
     name: 'Tên',

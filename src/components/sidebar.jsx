@@ -1,67 +1,281 @@
 import React, { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { TrendingUp, Users, Briefcase, Award, FileText, Clock, ClipboardList, ChevronLeft, ChevronRight } from 'lucide-react'
+import { TrendingUp, Users, Briefcase, Award, FileText, Clock, ClipboardList, ChevronLeft, ChevronRight, Menu, X, ChevronDown, Building2, Bell, Settings } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { bg, text, hover } = useTheme();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState({});
+  const [hoveredItem, setHoveredItem] = useState(null);
+  const { bg, text, hover, isDarkMode } = useTheme();
   const { t } = useLanguage();
   
-  const menuItems = [
-    { path: '/time-clock', name: t('nav.timeClock'), icon: ClipboardList },
-    { path: '/dashboard', name: t('nav.dashboard'), icon: TrendingUp },
-    { path: '/employees', name: t('nav.employees'), icon: Users },
-    { path: '/time-tracking', name: t('nav.timeTracking'), icon: Clock },
-    { path: '/performance', name: t('nav.performance'), icon: Award },
-    { path: '/reports', name: t('nav.reports'), icon: FileText },
+  const menuStructure = [
+    {
+      section: 'MAIN',
+      items: [
+        { path: '/time-clock', name: t('nav.timeClock'), icon: ClipboardList },
+        { path: '/dashboard', name: t('nav.dashboard'), icon: TrendingUp },
+        { 
+          path: '/employees', 
+          name: t('nav.employees'), 
+          icon: Users,
+          subItems: [
+            { path: '/employees', name: t('employees.directory', 'Directory') },
+            { path: '/employees/add', name: t('employees.addNew', 'Add New') },
+          ]
+        },
+        { 
+          path: '/time-tracking', 
+          name: t('nav.timeTracking'), 
+          icon: Clock,
+          subItems: [
+            { path: '/time-tracking', name: t('timeTracking.overview', 'Overview') },
+            { path: '/time-clock', name: t('timeTracking.clockIn', 'Clock In/Out') },
+          ]
+        },
+      ]
+    },
+    {
+      section: 'ANALYTICS',
+      items: [
+        { path: '/performance', name: t('nav.performance'), icon: Award },
+        { path: '/reports', name: t('nav.reports'), icon: FileText },
+      ]
+    },
+    {
+      section: 'SETTINGS',
+      items: [
+        { path: '/notifications', name: t('nav.notifications', 'Notifications'), icon: Bell },
+        { path: '/settings', name: t('nav.settings', 'Settings'), icon: Settings },
+      ]
+    }
   ];
 
+  const handleMobileMenuToggle = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
+  const toggleSubmenu = (itemName) => {
+    setExpandedMenus(prev => ({
+      ...prev,
+      [itemName]: !prev[itemName]
+    }));
+  };
+
   return (
-    <div 
-      className={`${isCollapsed ? 'w-16' : 'w-64'} ${bg.secondary} shadow-sm h-screen sticky top-0 transition-all duration-300 ease-in-out`}
-    >
-      {/* Toggle Button */}
+    <>
+      {/* Hamburger Menu Button - Mobile Only */}
       <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className={`absolute -right-3 top-20 z-10 ${bg.secondary} rounded-full p-1 shadow-md border ${hover.bg} transition-colors`}
-        aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        onClick={handleMobileMenuToggle}
+        className={`lg:hidden fixed top-4 left-4 z-50 ${bg.secondary} p-2 rounded-lg shadow-lg border ${hover.bg} transition-all duration-200 hover:scale-110`}
+        aria-label="Toggle menu"
       >
-        {isCollapsed ? (
-          <ChevronRight className={`h-4 w-4 ${text.primary}`} />
+        {isMobileMenuOpen ? (
+          <X className={`h-6 w-6 ${text.primary}`} />
         ) : (
-          <ChevronLeft className={`h-4 w-4 ${text.primary}`} />
+          <Menu className={`h-6 w-6 ${text.primary}`} />
         )}
       </button>
 
-      <nav className="mt-8 px-4">
-        <div className="space-y-2">
-          {menuItems.map(item => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  `w-full text-left px-4 py-2 rounded-lg flex items-center ${
-                    isCollapsed ? 'justify-center' : 'space-x-3'
-                  } transition-all duration-300 ${
-                    isActive
-                      ? 'bg-blue-600 text-[#fff] font-medium'
-                      : `${text.secondary} ${hover.bg} hover:${text.primary}`
-                  }`
-                }
-                title={isCollapsed ? item.name : ''}
+      {/* Backdrop Overlay - Mobile Only */}
+      {isMobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40 fade-in"
+          onClick={closeMobileMenu}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar */}
+      <div 
+        className={`
+          ${isCollapsed ? 'w-16' : 'w-64'} 
+          ${bg.secondary} 
+          shadow-sm 
+          h-screen 
+          sticky 
+          top-0 
+          transition-all 
+          duration-300 
+          ease-in-out
+          
+          /* Mobile: Fixed positioning with slide-in animation */
+          fixed lg:sticky
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          z-40
+        `}
+      >
+        {/* Desktop Toggle Button - Hidden on Mobile */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className={`hidden lg:block absolute -right-3 top-20 z-10 ${bg.secondary} rounded-full p-1 shadow-md border ${hover.bg} transition-colors`}
+          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {isCollapsed ? (
+            <ChevronRight className={`h-4 w-4 ${text.primary}`} />
+          ) : (
+            <ChevronLeft className={`h-4 w-4 ${text.primary}`} />
+          )}
+        </button>
+
+        {/* Logo / Branding */}
+        <div className={`p-4 border-b flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`} style={{ borderColor: isDarkMode ? '#4b5563' : '#d1d5db' }}>
+          {!isCollapsed ? (
+            <>
+              <div className="flex items-center space-x-2">
+                <Building2 className={`h-8 w-8 text-blue-600`} />
+                <span className={`text-xl font-bold ${text.primary}`}>HR Manager</span>
+              </div>
+              <button
+                onClick={closeMobileMenu}
+                className={`lg:hidden p-1 rounded-lg ${hover.bg} transition-colors`}
+                aria-label="Close menu"
               >
-                <Icon className="h-5 w-5 flex-shrink-0" />
-                {!isCollapsed && <span className="whitespace-nowrap">{item.name}</span>}
-              </NavLink>
-            );
-          })}
+                <X className={`h-5 w-5 ${text.primary}`} />
+              </button>
+            </>
+          ) : (
+            <Building2 className={`h-6 w-6 text-blue-600`} />
+          )}
         </div>
-      </nav>
-    </div>
+
+        {/* Navigation */}
+        <nav className="mt-4 px-3 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 100px)' }}>
+          {menuStructure.map((section, sectionIndex) => (
+            <div key={section.section} className={sectionIndex > 0 ? 'mt-6' : ''}>
+              {/* Section Header */}
+              {!isCollapsed && (
+                <h3 className={`px-3 mb-2 text-xs font-semibold uppercase tracking-wider ${text.secondary} opacity-60`}>
+                  {section.section}
+                </h3>
+              )}
+              
+              {/* Menu Items */}
+              <div className="space-y-1">
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  const hasSubItems = item.subItems && item.subItems.length > 0;
+                  const isExpanded = expandedMenus[item.name];
+                  
+                  return (
+                    <div key={item.name}>
+                      {/* Main Menu Item */}
+                      {hasSubItems && !isCollapsed ? (
+                        <button
+                          onClick={() => toggleSubmenu(item.name)}
+                          onMouseEnter={() => setHoveredItem(item.name)}
+                          onMouseLeave={() => setHoveredItem(null)}
+                          className={`
+                            w-full text-left px-3 py-2.5 rounded-lg flex items-center justify-between
+                            transition-all duration-200
+                            ${isExpanded ? `${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}` : `${hover.bg}`}
+                            ${text.secondary} hover:${text.primary}
+                          `}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <Icon className="h-5 w-5 flex-shrink-0" />
+                            <span className="font-medium">{item.name}</span>
+                          </div>
+                          <ChevronDown 
+                            className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} 
+                          />
+                        </button>
+                      ) : (
+                        <NavLink
+                          to={item.path}
+                          onClick={closeMobileMenu}
+                          onMouseEnter={() => setHoveredItem(item.name)}
+                          onMouseLeave={() => setHoveredItem(null)}
+                          className={({ isActive }) =>
+                            `w-full text-left px-3 py-2.5 rounded-lg flex items-center relative
+                            ${isCollapsed ? 'justify-center' : 'space-x-3'}
+                            transition-all duration-200 ${
+                              isActive
+                                ? 'bg-blue-600 text-white font-medium shadow-md'
+                                : `${text.secondary} ${hover.bg} hover:${text.primary}`
+                            }`
+                          }
+                          title={isCollapsed ? item.name : ''}
+                        >
+                          <Icon className="h-5 w-5 flex-shrink-0" />
+                          {!isCollapsed && <span className="font-medium">{item.name}</span>}
+                          
+                          {/* Tooltip for collapsed state */}
+                          {isCollapsed && hoveredItem === item.name && (
+                            <div className={`absolute left-full ml-2 px-3 py-2 ${bg.secondary} border rounded-lg shadow-lg whitespace-nowrap z-50 scale-in`}
+                                 style={{ borderColor: isDarkMode ? '#4b5563' : '#d1d5db' }}>
+                              <span className={`text-sm font-medium ${text.primary}`}>{item.name}</span>
+                            </div>
+                          )}
+                        </NavLink>
+                      )}
+                      
+                      {/* Sub Menu Items */}
+                      {hasSubItems && isExpanded && !isCollapsed && (
+                        <div className="mt-1 ml-8 space-y-1 slide-in-up">
+                          {item.subItems.map((subItem) => (
+                            <NavLink
+                              key={subItem.path}
+                              to={subItem.path}
+                              onClick={closeMobileMenu}
+                              className={({ isActive }) =>
+                                `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                  isActive
+                                    ? 'bg-blue-600 text-white font-medium'
+                                    : `${text.secondary} ${hover.bg} hover:${text.primary}`
+                                }`
+                              }
+                            >
+                              {subItem.name}
+                            </NavLink>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Popover for collapsed state with sub-items */}
+                      {hasSubItems && isCollapsed && hoveredItem === item.name && (
+                        <div 
+                          className={`absolute left-full ml-2 top-0 ${bg.secondary} border rounded-lg shadow-xl p-2 min-w-[160px] z-50 scale-in`}
+                          style={{ borderColor: isDarkMode ? '#4b5563' : '#d1d5db' }}
+                        >
+                          <div className={`px-2 py-1 text-xs font-semibold ${text.primary} border-b mb-1`}
+                               style={{ borderColor: isDarkMode ? '#4b5563' : '#d1d5db' }}>
+                            {item.name}
+                          </div>
+                          {item.subItems.map((subItem) => (
+                            <NavLink
+                              key={subItem.path}
+                              to={subItem.path}
+                              onClick={closeMobileMenu}
+                              className={({ isActive }) =>
+                                `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                  isActive
+                                    ? 'bg-blue-600 text-white'
+                                    : `${text.secondary} ${hover.bg} hover:${text.primary}`
+                                }`
+                              }
+                            >
+                              {subItem.name}
+                            </NavLink>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+      </div>
+    </>
   );
 };
 

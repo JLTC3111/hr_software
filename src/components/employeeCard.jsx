@@ -34,7 +34,7 @@ const EmployeeCard = ({ employee, onViewDetails, onPhotoUpdate, style }) => {
   };
   
   return (
-    <div className="rounded-lg shadow-sm border hover:shadow-md transition-shadow" style={style}>
+    <div className="rounded-lg shadow-sm border hover:shadow-lg transition-all duration-300 hover:-translate-y-1 slide-in-up group" style={style}>
     <div className="p-6">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">
@@ -101,14 +101,21 @@ const EmployeeCard = ({ employee, onViewDetails, onPhotoUpdate, style }) => {
       <div className="flex justify-space-between space-x-2 mt-4 pt-4 border-t border-gray-200">
         <button
           onClick={() => onViewDetails(employee)}
-          className="text-blue-600 hover:text-blue-800 p-1"
+          className="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition-all duration-200"
+          title={t('employees.view', 'View Details')}
         >
           <Eye className="h-4 w-4" />
         </button>
-        <button className="text-gray-600 hover:text-gray-800 p-1">
+        <button 
+          className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
+          title={t('employees.edit', 'Edit')}
+        >
           <Edit className="h-4 w-4" />
         </button>
-        <button className="text-red-600 hover:text-red-800 p-1">
+        <button 
+          className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition-all duration-200"
+          title={t('employees.delete', 'Delete')}
+        >
           <Trash2 className="h-4 w-4" />
         </button>
       </div>

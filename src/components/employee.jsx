@@ -32,11 +32,11 @@ const Employees = ({ employees, onViewEmployee, onPhotoUpdate, onAddEmployeeClic
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 slide-in-left">
         <h2 className="text-2xl font-bold text-gray-900">{t('employees.title')}</h2>
         <button 
           onClick={onAddEmployeeClick}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 cursor-pointer"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg"
           style={{
             backgroundColor: isDarkMode ? '#374151' : '#ffffff', 
             borderColor: isDarkMode ? '#4b5563' : '#d1d5db', 
@@ -47,33 +47,36 @@ const Employees = ({ employees, onViewEmployee, onPhotoUpdate, onAddEmployeeClic
         </button>
       </div>
 
-      <SearchAndFilter 
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        filterDepartment={filterDepartment}
-        setFilterDepartment={setFilterDepartment}
-        departments={departments}
-        style={{
-            backgroundColor: isDarkMode ? '#374151' : '#ffffff', 
-            borderColor: isDarkMode ? '#4b5563' : '#d1d5db', 
-            color: isDarkMode ? '#ffffff' : '#111827',
-          }}
-      />
+      <div className="fade-in">
+        <SearchAndFilter 
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          filterDepartment={filterDepartment}
+          setFilterDepartment={setFilterDepartment}
+          departments={departments}
+          style={{
+              backgroundColor: isDarkMode ? '#374151' : '#ffffff', 
+              borderColor: isDarkMode ? '#4b5563' : '#d1d5db', 
+              color: isDarkMode ? '#ffffff' : '#111827',
+            }}
+        />
+      </div>
 
       {/* Employee Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredEmployees.map(employee => (
-          <EmployeeCard 
-            key={employee.id} 
-            employee={employee} 
-            onViewDetails={onViewEmployee}
-            onPhotoUpdate={onPhotoUpdate}
-            style={{
-              backgroundColor: isDarkMode ? '#374151' : '#ffffff', // gray-700 : white
-              borderColor: isDarkMode ? '#4b5563' : '#d1d5db', // gray-600 : gray-300
-              color: isDarkMode ? '#ffffff' : '#111827' // white : gray-900
-            }}
-          />
+        {filteredEmployees.map((employee, index) => (
+          <div key={employee.id} className={`stagger-item slide-in-up`} style={{ animationDelay: `${index * 0.05}s` }}>
+            <EmployeeCard 
+              employee={employee} 
+              onViewDetails={onViewEmployee}
+              onPhotoUpdate={onPhotoUpdate}
+              style={{
+                backgroundColor: isDarkMode ? '#374151' : '#ffffff', // gray-700 : white
+                borderColor: isDarkMode ? '#4b5563' : '#d1d5db', // gray-600 : gray-300
+                color: isDarkMode ? '#ffffff' : '#111827' // white : gray-900
+              }}
+            />
+          </div>
         ))}
       </div>
     </div>

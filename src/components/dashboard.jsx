@@ -131,13 +131,13 @@ const Dashboard = ({ employees, applications }) => {
     <div className="space-y-6">
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className={`${bg.secondary} rounded-lg p-6 flex items-center space-x-3`}>
+          <div className={`${bg.secondary} rounded-lg p-6 flex items-center space-x-3 scale-in`}>
             <Loader className="w-6 h-6 animate-spin text-blue-600" />
             <span className={text.primary}>{t('common.loading', 'Loading dashboard...')}</span>
           </div>
         </div>
       )}
-      <div className={`${bg.secondary} rounded-lg border ${border.primary} p-3 flex items-center justify-between`}>
+      <div className={`${bg.secondary} rounded-lg border ${border.primary} p-3 flex items-center justify-between slide-in-left`}>
         <div className="flex items-center space-x-2">
           <DatabaseZap className={`w-4 h-4 ${hasRealData ? 'text-green-600' : 'text-yellow-600'}`} />
           <span className={`text-sm ${text.secondary}`}>
@@ -149,7 +149,7 @@ const Dashboard = ({ employees, applications }) => {
         </div>
         <button
           onClick={() => window.location.reload()}
-          className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+          className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-all duration-200 hover:scale-105"
         >
           {t('common.refresh', 'Refresh')}
         </button>
@@ -157,37 +157,45 @@ const Dashboard = ({ employees, applications }) => {
       
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard 
-          title={t('dashboard.totalEmployees')} 
-          value={employees.length} 
-          icon={Users} 
-          color={isDarkMode ? "#ffffff" : "#1f1f1f"}
-          size={12}
-        />
-        <StatsCard 
-          title={t('dashboard.avgPerformance')} 
-          value={avgPerformance} 
-          icon={DatabaseZap} 
-          color={isDarkMode ? "#ffffff" : "#1f1f1f"}
-        />
-        <StatsCard 
-          title={t('dashboard.totalOvertime')} 
-          value={`${totalOvertime}h`} 
-          icon={Clock} 
-          color={isDarkMode ? "#ffffff" : "#1f1f1f"}
-        />
-        <StatsCard 
-          title={t('dashboard.totalLeave')} 
-          value={totalLeaveDays} 
-          icon={Calendar} 
-          color={isDarkMode ? "#ffffff" : "#1f1f1f"}
-        />
+        <div className="stagger-item">
+          <StatsCard 
+            title={t('dashboard.totalEmployees')} 
+            value={employees.length} 
+            icon={Users} 
+            color={isDarkMode ? "#ffffff" : "#1f1f1f"}
+            size={12}
+          />
+        </div>
+        <div className="stagger-item">
+          <StatsCard 
+            title={t('dashboard.avgPerformance')} 
+            value={avgPerformance} 
+            icon={DatabaseZap} 
+            color={isDarkMode ? "#ffffff" : "#1f1f1f"}
+          />
+        </div>
+        <div className="stagger-item">
+          <StatsCard 
+            title={t('dashboard.totalOvertime')} 
+            value={`${totalOvertime}h`} 
+            icon={Clock} 
+            color={isDarkMode ? "#ffffff" : "#1f1f1f"}
+          />
+        </div>
+        <div className="stagger-item">
+          <StatsCard 
+            title={t('dashboard.totalLeave')} 
+            value={totalLeaveDays} 
+            icon={Calendar} 
+            color={isDarkMode ? "#ffffff" : "#1f1f1f"}
+          />
+        </div>
       </div>
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Employee Performance Chart */}
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
+        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 slide-in-up transition-all duration-300 hover:shadow-lg`}>
           <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
             {t('dashboard.employeePerformance')}
           </h3>
@@ -216,7 +224,7 @@ const Dashboard = ({ employees, applications }) => {
         </div>
 
         {/* Department Distribution */}
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
+        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 slide-in-up transition-all duration-300 hover:shadow-lg`} style={{ animationDelay: '0.1s' }}>
           <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
             {t('dashboard.departmentDist')}
           </h3>

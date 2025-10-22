@@ -67,7 +67,7 @@ const Reports = ({ employees, applications }) => {
 
   const StatCard = ({ title, value, subtitle, icon: Icon, color, trend }) => (
     <div 
-      className="rounded-lg shadow-sm border p-6"
+      className="rounded-lg shadow-sm border p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer group scale-in"
       style={{
         backgroundColor: isDarkMode ? '#374151' : '#ffffff',
         color: isDarkMode ? '#ffffff' : '#111827',
@@ -77,7 +77,7 @@ const Reports = ({ employees, applications }) => {
       <div className="flex items-center justify-between">
         <div>
           <p 
-            className="text-sm font-medium"
+            className="text-sm font-medium transition-colors duration-200"
             style={{
               backgroundColor: 'transparent',
               color: isDarkMode ? '#d1d5db' : '#4b5563',
@@ -87,7 +87,7 @@ const Reports = ({ employees, applications }) => {
             {title}
           </p>
           <p 
-            className={`text-2xl font-bold ${color} mt-1`}
+            className={`text-2xl font-bold ${color} mt-1 transition-all duration-200 group-hover:scale-105`}
             style={{
               backgroundColor: 'transparent',
               borderColor: 'transparent'
@@ -108,7 +108,7 @@ const Reports = ({ employees, applications }) => {
             </p>
           )}
         </div>
-        <div className={`p-3 rounded-full ${color.replace('text-', 'bg-').replace('-600', '-100')}`}>
+        <div className={`p-3 rounded-full ${color.replace('text-', 'bg-').replace('-600', '-100')} transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}>
           <Icon className={`h-6 w-6 ${color}`} />
         </div>
       </div>
@@ -383,7 +383,7 @@ const Reports = ({ employees, applications }) => {
   );
 
   const OverviewTab = () => (
-    <div className="space-y-6">
+    <div className="space-y-6 fade-in">
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard
@@ -661,7 +661,7 @@ const Reports = ({ employees, applications }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 slide-in-left">
         <h2 
           className="text-2xl font-bold"
           style={{
@@ -674,7 +674,7 @@ const Reports = ({ employees, applications }) => {
         </h2>
         <div className="flex space-x-4">
           <button 
-            className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2"
+            className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2 transition-all duration-200 hover:scale-105 hover:shadow-md"
             style={{
               backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
               color: isDarkMode ? '#d1d5db' : '#374151',
@@ -685,7 +685,7 @@ const Reports = ({ employees, applications }) => {
             <span>{t('reports.filters')}</span>
           </button>
           <button 
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 transition-all duration-200 hover:scale-105 hover:shadow-lg"
             style={{
               backgroundColor: '#2563eb',
               color: '#ffffff',
@@ -712,8 +712,10 @@ const Reports = ({ employees, applications }) => {
           ].map(tab => (
             <button
               key={tab.id}
+              role="tab"
+              aria-selected={selectedReport === tab.id}
               onClick={() => setSelectedReport(tab.id)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2`}
+              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 transition-all duration-300 hover:scale-105`}
               style={{
                 backgroundColor: 'transparent',
                 color: selectedReport === tab.id 

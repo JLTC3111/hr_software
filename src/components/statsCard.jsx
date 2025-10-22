@@ -5,13 +5,15 @@ const StatsCard = ({ title, value, icon: Icon, color, size }) => {
   const { bg, text, border } = useTheme();
   
   return (
-    <div className={`${bg.secondary} p-6 rounded-lg shadow-sm border ${border.primary}`}>
+    <div className={`${bg.secondary} p-6 rounded-lg shadow-sm border ${border.primary} transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer group scale-in`}>
       <div className="flex items-center justify-between">
         <div>
-          <p className={`text-sm font-medium ${text.secondary}`}>{title}</p>
-          <p className={`text-2xl font-bold ${text.primary}`}>{value}</p>
+          <p className={`text-sm font-medium ${text.secondary} transition-colors duration-200`}>{title}</p>
+          <p className={`text-2xl font-bold ${text.primary} transition-all duration-200 group-hover:scale-105`}>{value}</p>
         </div>
-        <Icon className="h-6 w-6 m-2" color={color} size={size} />
+        <div className="transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
+          <Icon className="h-6 w-6 m-2" color={color} size={size} />
+        </div>
       </div>
     </div>
   );
