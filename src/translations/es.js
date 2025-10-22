@@ -35,6 +35,9 @@ login: {
   forgotPassword: '¿Olvidaste tu contraseña?',
   signIn: 'Iniciar Sesión',
   signingIn: 'Iniciando sesión...',
+  continueWithGithub: 'Continuar con GitHub',
+  redirecting: 'Redirigiendo a GitHub...',
+  githubError: 'Error al iniciar sesión con GitHub',
   orContinueWith: 'O continuar con',
   noAccount: '¿No tienes una cuenta?',
   signUp: 'Registrarse',
@@ -85,6 +88,11 @@ login: {
     pendingReview: 'Pendiente de Revisión',
     pendingRequests: 'Solicitudes Pendientes',
     leaveRequests: 'Solicitudes de Permiso Pendientes',
+    leaveSuccess: '¡Solicitud de permiso enviada exitosamente!',
+    leaveError: 'Error al enviar solicitud de permiso',
+    overtimeSuccess: '¡Horas extra registradas exitosamente!',
+    overtimeError: 'Error al registrar horas extra',
+    exportSuccess: '¡Informe exportado exitosamente!',
     recentActivity: 'Actividad Reciente',
     quickStats: 'Estadísticas Rápidas',
     viewAll: 'Ver Todo',
@@ -206,7 +214,9 @@ login: {
       tooManyHours: 'No se pueden registrar más de 24 horas',
       overlapping: 'El horario se superpone con otro registro del mismo día',
       fileTooLarge: 'El archivo debe ser menor de 5 MB',
-      invalidFileType: 'Solo se permiten archivos JPG, PNG o PDF'
+      invalidFileType: 'Solo se permiten archivos JPG, PNG o PDF',
+      submitFailed: 'Error al enviar el registro de tiempo. Por favor, inténtelo de nuevo.',
+      deleteFailed: 'Error al eliminar el registro de tiempo. Por favor, inténtelo de nuevo.'
     }
   },
   

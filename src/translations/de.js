@@ -36,9 +36,12 @@ export default {
     signIn: 'Anmelden',
     signingIn: 'Anmeldung läuft...',
     orContinueWith: 'Oder fortfahren mit',
+    continueWithGithub: 'Mit GitHub fortfahren',
+    redirecting: 'Weiterleitung zu GitHub...',
+    githubError: 'Anmeldung mit GitHub fehlgeschlagen',
     noAccount: 'Sie haben noch kein Konto?',
     signUp: 'Registrieren',
-    footer: '© 2024 HR-Manager. Alle Rechte vorbehalten.'
+    footer: ' 2024 HR-Manager. Alle Rechte vorbehalten.'
   },
 
   // Dashboard
@@ -550,13 +553,20 @@ export default {
       tooManyHours: 'Kann 24 Stunden in einem Eintrag nicht überschreiten',
       overlapping: 'Diese Zeit überschneidet sich mit einem vorhandenen Eintrag für dieses Datum',
       fileTooLarge: 'Dateigröße muss kleiner als 5MB sein',
-      invalidFileType: 'Nur JPG-, PNG- und PDF-Dateien sind erlaubt'
+      invalidFileType: 'Nur JPG-, PNG- und PDF-Dateien sind erlaubt',
+      submitFailed: 'Zeiteintrag konnte nicht übermittelt werden. Bitte versuchen Sie es erneut.',
+      deleteFailed: 'Zeiteintrag konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.'
     }
   },
 
   // Time Tracking Actions
   timeTrackingActions: {
     recordTime: 'Zeit erfassen',
+    leaveSuccess: 'Urlaubsantrag erfolgreich eingereicht!',
+    leaveError: 'Fehler beim Einreichen des Urlaubsantrags',
+    overtimeSuccess: 'Überstunden erfolgreich protokolliert!',
+    overtimeError: 'Fehler beim Protokollieren der Überstunden',
+    exportSuccess: 'Bericht erfolgreich exportiert!',
     requestLeave: 'Urlaub beantragen',
     logOvertime: 'Überstunden erfassen',
     exportReport: 'Bericht exportieren'

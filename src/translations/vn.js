@@ -36,6 +36,7 @@ export default {
     signingIn: 'Đang đăng nhập...',
     orContinueWith: 'Hoặc tiếp tục với',
     continueWithGithub: 'Tiếp tục với GitHub',
+    redirecting: 'Đang chuyển hướng đến GitHub...',
     githubError: 'Đăng nhập với GitHub thất bại',
     noAccount: 'Chưa có tài khoản?',
     signUp: 'Đăng ký',
@@ -177,9 +178,13 @@ export default {
     reasonPlaceholder: 'Giải thích ngắn gọn lý do xin nghỉ...',
     overtimePlaceholder: 'Mô tả công việc thực hiện trong giờ làm thêm...',
     date: 'Ngày',
-    leaveSuccess: 'Đã gửi đơn xin nghỉ phép thành công!',
-    overtimeSuccess: 'Đã ghi nhận giờ làm thêm thành công!',
-    exportSuccess: 'Đã xuất báo cáo thành công!'
+    leaveSuccess: 'Yêu cầu nghỉ phép đã được gửi thành công!',
+    leaveError: 'Lỗi khi gửi yêu cầu nghỉ phép',
+    overtimeSuccess: 'Đã ghi nhận tăng ca thành công!',
+    overtimeError: 'Lỗi khi ghi nhận tăng ca',
+    exportSuccess: 'Báo cáo đã được xuất thành công!',
+    timeClockError: 'Lỗi chấm công',
+    timeClockSuccess: 'Chấm công thành công!'
   },
 
   // Employees
@@ -442,7 +447,9 @@ export default {
       tooManyHours: 'Không thể vượt quá 24 giờ trong một bản ghi',
       overlapping: 'Thời gian này trùng với bản ghi khác trong cùng ngày',
       fileTooLarge: 'Kích thước tệp phải nhỏ hơn 5MB',
-      invalidFileType: 'Chỉ cho phép tệp JPG, PNG và PDF'
+      invalidFileType: 'Chỉ cho phép tệp JPG, PNG và PDF',
+      submitFailed: 'Gửi giờ công thất bại. Vui lòng thử lại.',
+      deleteFailed: 'Xóa giờ công thất bại. Vui lòng thử lại.'
     }
   },
 
@@ -493,6 +500,21 @@ export default {
     view: 'Xem',
     schedule: 'Lên lịch',
     reject: 'Từ chối'
+  },
+
+  // Employee Department (for display in cards)
+  employeeDepartment: {
+    legal_compliance: 'Tuân thủ pháp luật',
+    'internal_ affairs': 'Nội vụ',
+    internal_affairs: 'Nội vụ',
+    human_resources: 'Nhân sự',
+    office_unit: 'Đơn vị văn phòng',
+    board_of_directors: 'Hội đồng quản trị',
+    finance: 'Tài chính',
+    engineering: 'Kỹ thuật',
+    sales: 'Bán hàng',
+    marketing: 'Tiếp thị',
+    design: 'Thiết kế',
   },
 
   // Employee Status

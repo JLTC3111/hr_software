@@ -8,6 +8,9 @@ export default {
     timeTracking: 'Suivi du temps',
     performance: 'Évaluation des performances',
     reports: 'Rapports',
+    continueWithGithub: 'Continuer avec GitHub',
+    redirecting: 'Redirection vers GitHub...',
+    githubError: 'Échec de la connexion avec GitHub',
   },
   
   // Header
@@ -126,7 +129,7 @@ export default {
     history: 'Historique de pointage',
     noEntries: 'Aucun enregistrement pour le moment. Soumettez-en un premier !',
     time: 'Heure',
-    hours: 'Heures',
+    hours: 'heures',
     type: 'Type',
     status: 'Statut',
     actions: 'Actions',
@@ -149,7 +152,9 @@ export default {
       tooManyHours: 'Impossible de dépasser 24 heures par enregistrement',
       overlapping: 'Cet horaire chevauche un autre enregistrement',
       fileTooLarge: 'Le fichier doit être inférieur à 5 Mo',
-      invalidFileType: 'Seuls les fichiers JPG, PNG et PDF sont autorisés'
+      invalidFileType: 'Seuls les fichiers JPG, PNG et PDF sont autorisés',
+      submitFailed: 'Échec de la soumission. Veuillez réessayer.',
+      deleteFailed: 'Échec de la suppression. Veuillez réessayer.'
     }
   },
 
@@ -169,7 +174,12 @@ export default {
     regularHours: 'Heures régulières',
     overtimeHours: 'Heures supplémentaires',
     hrs: 'h',
-    attendanceRate: 'Taux de présence'
+    attendanceRate: 'Taux de présence',
+    leaveSuccess: 'Demande de congé soumise avec succès!',
+    leaveError: 'Erreur lors de la soumission de la demande de congé',
+    overtimeSuccess: 'Heures supplémentaires enregistrées avec succès!',
+    overtimeError: 'Erreur lors de l\'enregistrement des heures supplémentaires',
+    exportSuccess: 'Rapport exporté avec succès!'
   },
 
   // Employees

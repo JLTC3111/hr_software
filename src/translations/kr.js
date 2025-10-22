@@ -25,8 +25,9 @@ export default {
     newHires: '이번 달 신규 입사자',
     pendingApplications: '대기 중인 지원서',
     avgPerformance: '평균 성과',
-    totalOvertime: '총 초과 근무 시간',
-    totalLeave: '총 휴가 일수',
+    continueWithGithub: 'GitHub로 계속하기',
+    redirecting: 'GitHub로 리디렉션 중...',
+    githubError: 'GitHub 로그인 실패',
     employeePerformance: '직원 성과',
     departmentDist: '부서별 분포',
     workLeaveComp: '근무일 vs 휴가 비교',
@@ -149,7 +150,9 @@ export default {
       tooManyHours: '한 기록에서 24시간을 초과할 수 없습니다',
       overlapping: '이 시간은 같은 날 다른 기록과 겹칩니다',
       fileTooLarge: '파일 크기는 5MB 미만이어야 합니다',
-      invalidFileType: 'JPG, PNG, PDF 파일만 허용됩니다'
+      invalidFileType: 'JPG, PNG, PDF 파일만 허용됩니다',
+      submitFailed: '시간 기록 제출에 실패했습니다. 다시 시도해 주세요.',
+      deleteFailed: '시간 기록 삭제에 실패했습니다. 다시 시도해 주세요.'
     }
   },
   
@@ -388,8 +391,13 @@ export default {
   timeTrackingActions: {
     recordTime: '시간 기록',
     requestLeave: '휴가 신청',
+    leaveSuccess: '휴가 신청이 성공적으로 제출되었습니다!',
+    leaveError: '휴가 신청 제출 중 오류 발생',
     logOvertime: '초과근무 기록',
-    exportReport: '보고서 내보내기'
+    overtimeSuccess: '초과 근무가 성공적으로 기록되었습니다!',
+    overtimeError: '초과 근무 기록 중 오류 발생',
+    exportReport: '보고서 내보내기',
+    exportSuccess: '보고서가 성공적으로 내보내기되었습니다!'
   },
 
   // Recruitment Actions

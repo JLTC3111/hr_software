@@ -150,7 +150,9 @@ export default {
       tooManyHours: '1件の記録で24時間を超えることはできません',
       overlapping: 'この時間帯は同日の他の記録と重複しています',
       fileTooLarge: 'ファイルサイズは5MB未満である必要があります',
-      invalidFileType: 'JPG、PNG、PDFファイルのみアップロード可能です'
+      invalidFileType: 'JPG、PNG、PDFファイルのみアップロード可能です',
+      submitFailed: '時間記録の送信に失敗しました。もう一度お試しください。',
+      deleteFailed: '時間記録の削除に失敗しました。もう一度お試しください。'
     }
   },
   
@@ -364,8 +366,9 @@ export default {
     add: '追加',
     close: '閉じる',
     loading: '読み込み中...',
-    noData: 'データがありません',
-    error: 'エラーが発生しました',
+    continueWithGithub: 'GitHubで続ける',
+    redirecting: 'GitHubにリダイレクト中...',
+    githubError: 'GitHubログインに失敗しました',
     success: '操作が成功しました',
     confirm: '本当によろしいですか？',
     yes: 'はい',
@@ -388,6 +391,11 @@ export default {
   // Time Tracking Actions
   timeTrackingActions: {
     recordTime: '時間記録',
+    leaveSuccess: '休暇申請が正常に送信されました！',
+    leaveError: '休暇申請の送信中にエラーが発生しました',
+    overtimeSuccess: '残業が正常に記録されました！',
+    overtimeError: '残業の記録中にエラーが発生しました',
+    exportSuccess: 'レポートが正常にエクスポートされました！',
     requestLeave: '休暇申請',
     logOvertime: '残業記録',
     exportReport: 'レポート出力'

@@ -36,6 +36,7 @@ export default {
     signingIn: 'Signing in...',
     orContinueWith: 'Or continue with',
     continueWithGithub: 'Continue with GitHub',
+    redirecting: 'Redirecting to GitHub...',
     githubError: 'Failed to login with GitHub',
     noAccount: "Don't have an account?",
     signUp: 'Sign up',
@@ -161,6 +162,21 @@ export default {
     design: 'Design',
   },
 
+  // Employee Department (for display in cards)
+  employeeDepartment: {
+    legal_compliance: 'Legal Compliance',
+    'internal_ affairs': 'Internal Affairs',
+    internal_affairs: 'Internal Affairs',
+    human_resources: 'Human Resources',
+    office_unit: 'Office Unit',
+    board_of_directors: 'Board of Directors',
+    finance: 'Finance',
+    engineering: 'Engineering',
+    sales: 'Sales',
+    marketing: 'Marketing',
+    design: 'Design',
+  },
+
   // Months
   months: {
     january: 'January',
@@ -230,7 +246,9 @@ export default {
     overtimePlaceholder: 'Describe the work performed during overtime...',
     date: 'Date',
     leaveSuccess: 'Leave request submitted successfully!',
+    leaveError: 'Error submitting leave request',
     overtimeSuccess: 'Overtime logged successfully!',
+    overtimeError: 'Error logging overtime',
     exportSuccess: 'Report exported successfully!'
   },
 
@@ -444,7 +462,9 @@ export default {
       tooManyHours: 'Cannot exceed 24 hours in a single entry',
       overlapping: 'This time overlaps with an existing entry for this date',
       fileTooLarge: 'File size must be less than 5MB',
-      invalidFileType: 'Only JPG, PNG, and PDF files are allowed'
+      invalidFileType: 'Only JPG, PNG, and PDF files are allowed',
+      submitFailed: 'Failed to submit time entry. Please try again.',
+      deleteFailed: 'Failed to delete time entry. Please try again.'
     }
   },
 

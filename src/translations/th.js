@@ -149,7 +149,9 @@ export default {
       tooManyHours: 'ไม่สามารถเกิน 24 ชั่วโมงในหนึ่งรายการได้',
       overlapping: 'เวลานี้ซ้ำกับรายการอื่นในวันเดียวกัน',
       fileTooLarge: 'ขนาดไฟล์ต้องไม่เกิน 5MB',
-      invalidFileType: 'อนุญาตเฉพาะไฟล์ JPG, PNG และ PDF เท่านั้น'
+      invalidFileType: 'อนุญาตเฉพาะไฟล์ JPG, PNG และ PDF เท่านั้น',
+      submitFailed: 'ไม่สามารถส่งบันทึกเวลาได้ กรุณาลองอีกครั้ง',
+      deleteFailed: 'ไม่สามารถลบบันทึกเวลาได้ กรุณาลองอีกครั้ง'
     }
   },  
 
@@ -245,9 +247,9 @@ export default {
     avgSkillRating: 'คะแนนทักษะเฉลี่ย',
     completed: 'เสร็จสิ้น',
     inProgress: 'กำลังดำเนินการ',
-    pending: 'รอดำเนินการ',
-    // Tabs
-    overview: 'ภาพรวม',
+    continueWithGithub: 'ดำเนินการต่อด้วย GitHub',
+    redirecting: 'กำลังเปลี่ยนเส้นทางไปยัง GitHub...',
+    githubError: 'เข้าสู่ระบบด้วย GitHub ล้มเหลว',
     goalsTab: 'เป้าหมาย',
     reviewsTab: 'การทบทวน',
     // Goals section
@@ -388,8 +390,13 @@ export default {
   timeTrackingActions: {
     recordTime: 'บันทึกเวลา',
     requestLeave: 'ขอลาพัก',
+    leaveSuccess: 'ส่งคำขอลาสำเร็จแล้ว!',
+    leaveError: 'เกิดข้อผิดพลาดในการส่งคำขอลา',
     logOvertime: 'บันทึกเวลาเกิน',
-    exportReport: 'ส่งออกรายงาน'
+    overtimeSuccess: 'บันทึกการทำงานล่วงเวลาสำเร็จแล้ว!',
+    overtimeError: 'เกิดข้อผิดพลาดในการบันทึกการทำงานล่วงเวลา',
+    exportReport: 'ส่งออกรายงาน',
+    exportSuccess: 'ส่งออกรายงานสำเร็จแล้ว!'
   },
 
   // Recruitment Actions
