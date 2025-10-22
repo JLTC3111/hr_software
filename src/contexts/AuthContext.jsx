@@ -86,7 +86,7 @@ export const AuthProvider = ({ children }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event);
+      console.log('Auth state changed:', event, session ? 'with session' : 'no session');
 
       if (event === 'SIGNED_IN' && session) {
         console.log('🔐 SIGNED_IN event triggered, waiting for Supabase to hydrate...');
@@ -118,6 +118,19 @@ export const AuthProvider = ({ children }) => {
           await clearAuthState();
         } finally {
           setLoading(false);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        console.log('🚪 SIGNED_OUT event triggered');
+        await clearAuthState();
+      } else if (event === 'TOKEN_REFRESHED') {
+        console.log('🔄 TOKEN_REFRESHED event triggered');
+        if (session) {
+          setSession(session);
+        }
+      } else if (event === 'USER_UPDATED') {
+        console.log('👤 USER_UPDATED event triggered');
+        if (session?.user) {
+          await fetchUserProfile(session.user.id);
         }
       }
     });
@@ -266,16 +279,28 @@ export const AuthProvider = ({ children }) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo: `${window.location.origin}/time-clock`,
+          skipBrowserRedirect: false
         }
       });
 
       if (error) throw error;
 
+      // OAuth will redirect the browser, so we don't need to do anything else
+      // The success is about initiating the OAuth flow, not completing it
       return { success: true };
     } catch (error) {
       console.error('GitHub login error:', error);
-      return { success: false, error: error.message };
+      
+      // Provide more helpful error messages
+      let errorMessage = error.message;
+      if (error.message?.includes('popup')) {
+        errorMessage = 'Please allow popups for this site to login with GitHub';
+      } else if (error.message?.includes('network')) {
+        errorMessage = 'Network error. Please check your connection and try again';
+      }
+      
+      return { success: false, error: errorMessage };
     }
   };
 
