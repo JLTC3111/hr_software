@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react'
-import { Mail, Phone, MapPin, Briefcase, Calendar, DollarSign, Award, Edit2, Save, X } from 'lucide-react'
+import { Mail, Phone, MapPin, Briefcase, Calendar, Award, Edit2, Save, X } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useTheme } from '../contexts/ThemeContext'
 import * as employeeService from '../services/employeeService'
@@ -376,25 +376,24 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                     )}
                   </div>
                   
-                  {/* Salary - REMOVED FROM DISPLAY, KEPT IN EDIT MODE */}
-                  {isEditing && (
-                    <div>
-                      <div className="flex items-center space-x-2 mb-1">
-                        <DollarSign className={`h-4 w-4 ${textSecondary}`} />
-                        <span className={`text-xs ${textSecondary}`}>{t('employees.salary', 'Salary')}</span>
-                      </div>
-                      <input
-                        type="number"
-                        name="salary"
-                        value={formData.salary}
-                        onChange={handleChange}
-                        min="0"
-                        step="1000"
-                        className={`w-full px-3 py-2 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
-                        placeholder="50000"
-                      />
+                  {/* Date of Birth */}
+                  <div>
+                    <div className="flex items-center space-x-2 mb-1">
+                      <Calendar className={`h-4 w-4 ${textSecondary}`} />
+                      <span className={`text-xs ${textSecondary}`}>{t('addEmployee.dob', 'Date of Birth')}</span>
                     </div>
-                  )}
+                    {isEditing ? (
+                      <input
+                        type="date"
+                        name="dob"
+                        value={formData.dob}
+                        onChange={handleChange}
+                        className={`w-full px-3 py-2 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
+                      />
+                    ) : (
+                      <span className={textPrimary}>{currentEmployee?.dob || 'N/A'}</span>
+                    )}
+                  </div>
                   
                   {/* Performance */}
                   <div>
