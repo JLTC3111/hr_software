@@ -1,16 +1,26 @@
-import React from 'react'
-import { useState } from 'react';
-import { Plus } from 'lucide-react'
-import { useLanguage } from '../contexts/LanguageContext'
-import { useTheme } from '../contexts/ThemeContext'
-import SearchAndFilter from './search.jsx'
-import EmployeeCard from './employeeCard.jsx'
+import React, { useState, useEffect } from 'react';
+import { Plus } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
+import SearchAndFilter from './search.jsx';
+import EmployeeCard from './employeeCard.jsx';
 
-const Employees = ({ employees, onViewEmployee, onPhotoUpdate, onAddEmployeeClick }) => {
+const Employees = ({ employees, onViewEmployee, onPhotoUpdate, onAddEmployeeClick, refetchEmployees }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('all');
+  const location = useLocation();
   const { t } = useLanguage();
   const { isDarkMode, bg, text, border } = useTheme();
+  
+  // Refetch employees if coming from add employee page with refresh flag
+  useEffect(() => {
+    if (location.state?.refresh && refetchEmployees) {
+      refetchEmployees();
+      // Clear the state to prevent refetching on every render
+      window.history.replaceState({}, document.title);
+    }
+  }, [location, refetchEmployees]);
   
   const departments = [
     t('departments.all'), 

@@ -216,35 +216,86 @@ export const getEmployeesByStatus = async (status) => {
 
 /**
  * Upload employee photo to Supabase Storage
+ * Supports both File objects and base64 strings
  */
-export const uploadEmployeePhoto = async (file, employeeId) => {
+export const uploadEmployeePhoto = async (fileData, employeeId) => {
   try {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${toEmployeeId(employeeId)}_${Date.now()}.${fileExt}`;
+    let file = fileData;
+    let fileName;
+    let fileExt;
+    
+    // Handle base64 strings
+    if (typeof fileData === 'string' && fileData.startsWith('data:')) {
+      // Convert base64 to Blob
+      const base64Data = fileData.split(',')[1];
+      const mimeType = fileData.match(/data:(.*?);/)[1];
+      fileExt = mimeType.split('/')[1];
+      
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      file = new Blob([byteArray], { type: mimeType });
+      fileName = `${toEmployeeId(employeeId)}_${Date.now()}.${fileExt}`;
+    } else {
+      // Handle File objects
+      fileExt = file.name.split('.').pop();
+      fileName = `${toEmployeeId(employeeId)}_${Date.now()}.${fileExt}`;
+    }
+
     const filePath = `employee-photos/${fileName}`;
 
+    // Try to upload to storage (will fail gracefully if bucket doesn't exist)
     const { data, error } = await supabase.storage
-      .from('hr-documents')
+      .from('employee-photos')
       .upload(filePath, file, {
         cacheControl: '3600',
-        upsert: false
+        upsert: true
       });
 
-    if (error) throw error;
+    if (error) {
+      console.warn('Storage upload failed, using base64 fallback:', error.message);
+      // Fallback to base64 if storage is not configured
+      if (typeof fileData === 'string' && fileData.startsWith('data:')) {
+        return {
+          success: true,
+          url: fileData,
+          fileName: fileName,
+          fileType: file.type || 'image/jpeg',
+          storage: 'base64'
+        };
+      }
+      throw error;
+    }
 
     // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('hr-documents')
+    const { data: publicUrlData } = supabase.storage
+      .from('employee-photos')
       .getPublicUrl(filePath);
 
     return {
       success: true,
-      url: publicUrl,
-      fileName: file.name,
-      fileType: file.type
+      url: publicUrlData.publicUrl,
+      fileName: fileName,
+      fileType: file.type || 'image/jpeg',
+      storage: 'supabase'
     };
   } catch (error) {
     console.error('Error uploading employee photo:', error);
+    
+    // Ultimate fallback - return base64 if it's a data URL
+    if (typeof fileData === 'string' && fileData.startsWith('data:')) {
+      return {
+        success: true,
+        url: fileData,
+        fileName: 'photo.jpg',
+        fileType: 'image/jpeg',
+        storage: 'base64'
+      };
+    }
+    
     return { success: false, error: error.message };
   }
 };

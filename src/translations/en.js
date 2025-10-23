@@ -110,7 +110,8 @@ export default {
     contactInformation: 'Contact Information',
     employmentDetails: 'Employment Details',
     started: 'Started',
-    editEmployee: 'Edit Employee'
+    editEmployee: 'Edit Employee',
+    uploadPhoto: 'Upload photo'
   },
 
   // Add Employee Modal
@@ -487,6 +488,7 @@ export default {
       overlapping: 'This time overlaps with an existing entry for this date',
       fileTooLarge: 'File size must be less than 5MB',
       invalidFileType: 'Only JPG, PNG, and PDF files are allowed',
+      fileReadError: 'Error reading file. Please try again.',
       submitFailed: 'Failed to submit time entry. Please try again.',
       deleteFailed: 'Failed to delete time entry. Please try again.'
     }
@@ -582,6 +584,8 @@ export default {
   // Notifications
   notifications: {
     title: 'Notifications',
+    employeeAdded: 'Employee Added',
+    addedTo: 'added to',
     unreadCount: '{0} unread',
     allCaughtUp: 'You\'re all caught up!',
     filters: 'Filters',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Briefcase, Building2, DollarSign, Save, X, Upload, Check, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
@@ -6,7 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import * as employeeService from '../services/employeeService';
 
-const AddNewEmployee = () => {
+const AddNewEmployee = ({ refetchEmployees }) => {
   const navigate = useNavigate();
   const { bg, text, border, hover } = useTheme();
   const { t } = useLanguage();
@@ -44,12 +44,12 @@ const AddNewEmployee = () => {
     { value: 'hr_specialist', label: t('employeePosition.hr_specialist', 'HR Specialist') }
   ];
 
-  const handleChange = (e) => {
+  const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     setTouched(prev => ({ ...prev, [name]: true }));
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
-  };
+  }, [errors]);
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
@@ -92,28 +92,64 @@ const AddNewEmployee = () => {
   const handleBack = () => step > 1 && setStep(step - 1);
 
   const handleSubmit = async () => {
-    if (!validateStep1() || !validateStep2()) return;
+    if (!validateStep1() || !validateStep2()) {
+      setErrors({ submit: 'Please fill in all required fields correctly.' });
+      return;
+    }
 
     setSaving(true);
-    const result = await employeeService.createEmployee({
-      ...formData,
-      performance: parseFloat(formData.performance),
-      salary: parseFloat(formData.salary)
-    });
     
-    if (result.success) {
-      await createNotification({
-        userId: result.data.id,
-        title: 'Employee Added',
-        message: `${formData.name} added to ${formData.department}`,
-        type: 'success',
-        category: 'employee'
-      });
-      navigate('/employees');
-    } else {
-      setErrors({ submit: result.error });
+    try {
+      // Create employee with properly formatted data
+      const employeeData = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        dob: formData.dob,
+        address: formData.address.trim(),
+        position: formData.position,
+        department: formData.department,
+        startDate: formData.startDate,
+        status: formData.status || 'Active',
+        performance: parseFloat(formData.performance) || 3.0,
+        salary: parseFloat(formData.salary),
+        photo: formData.photo
+      };
+      
+      const result = await employeeService.createEmployee(employeeData);
+      
+      if (result.success) {
+        // Create success notification
+        try {
+          await createNotification({
+            userId: result.data.id,
+            title: t('notifications.employeeAdded', 'Employee Added'),
+            message: `${formData.name} ${t('notifications.addedTo', 'added to')} ${formData.department}`,
+            type: 'success',
+            category: 'employee'
+          });
+        } catch (notifError) {
+          console.error('Notification error:', notifError);
+          // Continue even if notification fails
+        }
+        
+        // Refetch employees list to include the new employee
+        if (refetchEmployees) {
+          await refetchEmployees();
+        }
+        
+        // Navigate back to employees page
+        navigate('/employees');
+      } else {
+        setErrors({ submit: result.error || 'Failed to create employee. Please try again.' });
+        console.error('Error creating employee:', result.error);
+      }
+    } catch (error) {
+      setErrors({ submit: error.message || 'An unexpected error occurred.' });
+      console.error('Unexpected error:', error);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const InputField = ({ name, label, icon: Icon, type = 'text', required, ...props }) => (

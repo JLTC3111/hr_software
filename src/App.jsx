@@ -191,6 +191,16 @@ const HRManagementApp = () => {
 
     fetchEmployees();
   }, []);
+  
+  // Refetch employees (expose this to child components)
+  const refetchEmployees = async () => {
+    const result = await employeeService.getAllEmployees();
+    if (result.success) {
+      setEmployees(result.data);
+      return { success: true };
+    }
+    return { success: false, error: result.error };
+  };
 
   // Fetch applications from Supabase on mount
   useEffect(() => {
@@ -222,20 +232,42 @@ const HRManagementApp = () => {
     fetchApplications();
   }, []);
 
-  const handlePhotoUpdate = async (employeeId, photoData) => {
-    // Update employee photo in Supabase
-    const result = await employeeService.updateEmployee(employeeId, { photo: photoData });
-    
-    if (result.success) {
-      // Update local state
-      setEmployees(prevEmployees => 
-        prevEmployees.map(emp => 
-          emp.id === employeeId ? { ...emp, photo: photoData } : emp
-        )
-      );
-    } else {
-      console.error('Error updating photo:', result.error);
-      alert('Failed to update photo. Please try again.');
+  const handlePhotoUpdate = async (employeeId, photoData, useStorage = false) => {
+    try {
+      let photoUrl = photoData;
+      
+      // Optionally upload to Supabase Storage
+      if (useStorage && photoData) {
+        const uploadResult = await employeeService.uploadEmployeePhoto(photoData, employeeId);
+        if (uploadResult.success) {
+          photoUrl = uploadResult.url;
+          console.log(`Photo uploaded to ${uploadResult.storage}:`, uploadResult.url);
+        } else {
+          console.warn('Photo upload failed, using base64:', uploadResult.error);
+          // Continue with base64 if storage fails
+        }
+      }
+      
+      // Update employee photo in Supabase database
+      const result = await employeeService.updateEmployee(employeeId, { photo: photoUrl });
+      
+      if (result.success) {
+        // Update local state
+        setEmployees(prevEmployees => 
+          prevEmployees.map(emp => 
+            emp.id === employeeId ? { ...emp, photo: photoUrl } : emp
+          )
+        );
+        return { success: true, url: photoUrl };
+      } else {
+        console.error('Error updating photo in database:', result.error);
+        alert('Failed to update photo. Please try again.');
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('Error in handlePhotoUpdate:', error);
+      alert('An error occurred while updating the photo.');
+      return { success: false, error: error.message };
     }
   };
 
@@ -266,6 +298,7 @@ const HRManagementApp = () => {
             isAddEmployeeModalOpen={isAddEmployeeModalOpen}
             setIsAddEmployeeModalOpen={setIsAddEmployeeModalOpen}
             onAddEmployee={handleAddEmployee}
+            refetchEmployees={refetchEmployees}
             loading={loading}
             error={error}
           />
@@ -275,7 +308,7 @@ const HRManagementApp = () => {
   );
 };
 
-const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmployee, onPhotoUpdate, isAddEmployeeModalOpen, setIsAddEmployeeModalOpen, onAddEmployee, loading, error }) => {
+const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmployee, onPhotoUpdate, isAddEmployeeModalOpen, setIsAddEmployeeModalOpen, onAddEmployee, refetchEmployees, loading, error }) => {
   const { bg, text } = useTheme();
   const { isAuthenticated } = useAuth();
 
@@ -340,11 +373,11 @@ const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmpl
                     />
                     <Route 
                       path="/employees" 
-                      element={<Employee employees={employees} onViewEmployee={setSelectedEmployee} onPhotoUpdate={onPhotoUpdate} onAddEmployeeClick={() => setIsAddEmployeeModalOpen(true)} />} 
+                      element={<Employee employees={employees} onViewEmployee={setSelectedEmployee} onPhotoUpdate={onPhotoUpdate} onAddEmployeeClick={() => setIsAddEmployeeModalOpen(true)} refetchEmployees={refetchEmployees} />} 
                     />
                     <Route 
                       path="/employees/add" 
-                      element={<AddNewEmployee />} 
+                      element={<AddNewEmployee refetchEmployees={refetchEmployees} />} 
                     />
                     <Route 
                       path="/time-tracking" 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { Phone, MapPin, Mail, Award, Eye, Edit, Trash2, User, Camera, Calendar, Network } from 'lucide-react'
+import { Phone, MapPin, Mail, Award, Eye, Edit, Trash2, User, Camera, Calendar, Network, Loader } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useTheme } from '../contexts/ThemeContext'
 
 const getStatusColor = (status) => {
   switch (status.toLowerCase()) {
@@ -19,17 +20,45 @@ const getStatusColor = (status) => {
 
 const EmployeeCard = ({ employee, onViewDetails, onPhotoUpdate, style }) => {
   const { t } = useLanguage();
+  const { isDarkMode } = useTheme();
   const [photoError, setPhotoError] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
-    if (file && onPhotoUpdate) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        onPhotoUpdate(employee.id, reader.result);
-        setPhotoError(false);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      alert(t('errors.invalidFileType', 'Please select an image file'));
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      alert(t('errors.fileTooLarge', 'File size must be less than 5MB'));
+      return;
+    }
+    
+    if (onPhotoUpdate) {
+      setUploading(true);
+      try {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const result = await onPhotoUpdate(employee.id, reader.result, true); // true = use storage
+          if (result?.success) {
+            setPhotoError(false);
+          }
+          setUploading(false);
+        };
+        reader.onerror = () => {
+          alert(t('errors.fileReadError', 'Error reading file'));
+          setUploading(false);
+        };
+        reader.readAsDataURL(file);
+      } catch (error) {
+        console.error('Photo upload error:', error);
+        setUploading(false);
+      }
     }
   };
   
@@ -39,8 +68,10 @@ const EmployeeCard = ({ employee, onViewDetails, onPhotoUpdate, style }) => {
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">
           <div className="relative group">
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
-              {employee.photo && !photoError ? (
+            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-blue-500 transition-all">
+              {uploading ? (
+                <Loader className="w-6 h-6 text-blue-600 animate-spin" />
+              ) : employee.photo && !photoError ? (
                 <img 
                   src={employee.photo} 
                   alt={employee.name}
@@ -51,15 +82,20 @@ const EmployeeCard = ({ employee, onViewDetails, onPhotoUpdate, style }) => {
                 <User className="w-6 h-6 text-gray-400" />
               )}
             </div>
-            <label className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-              <Camera className="w-4 h-4 text-white" />
-              <input 
-                type="file" 
-                accept="image/*" 
-                onChange={handlePhotoUpload}
-                className="hidden"
-              />
-            </label>
+            {!uploading && (
+              <label 
+                className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                title={t('employees.uploadPhoto', 'Upload photo')}
+              >
+                <Camera className="w-4 h-4 text-white" />
+                <input 
+                  type="file" 
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" 
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+              </label>
+            )}
           </div>
           <div>
             <h3 className="text-sm md:text-base font-semibold" style={{ color: style?.color }}>{employee.name}</h3>
