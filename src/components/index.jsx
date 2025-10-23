@@ -18,3 +18,5 @@ export { default as ThemeToggle } from './themeToggle.jsx';
 export { default as TimeTracking } from './timeTracking.jsx';
 export { default as TimeClockEntry } from './timeClockEntry.jsx';
 export { default as Search } from './search.jsx';
+export { default as Notifications } from './notifications.jsx';
+export { default as Settings } from './settings.jsx';

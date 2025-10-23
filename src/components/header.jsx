@@ -1,8 +1,9 @@
 import React from 'react'
-import { Users, LogOut } from 'lucide-react'
+import { Users, LogOut, Bell } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
+import { useNotifications } from '../contexts/NotificationContext'
 import { useNavigate } from 'react-router-dom'
 import ThemeToggle from './themeToggle'
 import LanguageSelector from './LanguageSelector'
@@ -11,6 +12,7 @@ const Header = () => {
   const { bg, text, border, isDarkMode } = useTheme();
   const { t } = useLanguage();
   const { user, logout } = useAuth();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   
   const handleLogout = () => {
@@ -24,21 +26,33 @@ const Header = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center">
-              <Users className="h-8 w-8 text-blue-600" />
-              <span className={`ml-2 text-xl font-bold ${text.primary}`}>{t('header.title')}</span>
+              <img src="logoIcons/logo.png" alt="Logo" className="h-8 w-8" />
             </div>
           </div>
           <div className="flex items-center space-x-4">
             <div className={`${bg.secondary} text-sm ${text.secondary}`}>
-              {t('header.welcome')} {user?.name || ''}
+              {t('header.welcome')} 
             </div>
             <LanguageSelector />
             <ThemeToggle />
-            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                {user?.name?.substring(0, 2).toUpperCase() || 'HR'}
-              </span>
-            </div>
+            
+            {/* Notification Bell */}
+            <button
+              onClick={() => navigate('/notifications')}
+              className={`relative p-2 rounded-lg transition-colors ${
+                isDarkMode 
+                  ? 'hover:bg-gray-700 text-gray-300' 
+                  : 'hover:bg-gray-200 text-gray-700'
+              }`}
+              title={t('header.notifications', 'Notifications')}
+            >
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
             <button
               onClick={handleLogout}
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${

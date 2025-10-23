@@ -15,9 +15,10 @@ export default {
   // Header
   header: {
     title: 'HR Manager',
-    welcome: 'Welcome back',
+    welcome: 'Welcome Back',
     user: 'HR Team',
-    logout: 'Logout'
+    logout: 'Logout',
+    notifications: 'Notifications'
   },
 
   // Login
@@ -560,5 +561,123 @@ export default {
     attendance: 'Attendance',
     recruitment: 'Recruitment',
     performance: 'Performance'
+  },
+
+  // Notifications
+  notifications: {
+    title: 'Notifications',
+    unreadCount: '{0} unread',
+    allCaughtUp: 'You\'re all caught up!',
+    filters: 'Filters',
+    markAllRead: 'Mark all as read',
+    deleteAll: 'Delete all',
+    confirmDeleteAll: 'Are you sure you want to delete all notifications?',
+    total: 'Total',
+    unread: 'Unread',
+    errors: 'Errors',
+    warnings: 'Warnings',
+    filterBy: 'Filter By',
+    status: 'Status',
+    type: 'Type',
+    category: 'Category',
+    allNotifications: 'All Notifications',
+    unreadOnly: 'Unread Only',
+    readOnly: 'Read Only',
+    allTypes: 'All Types',
+    info: 'Info',
+    success: 'Success',
+    warning: 'Warning',
+    error: 'Error',
+    allCategories: 'All Categories',
+    general: 'General',
+    timeTracking: 'Time Tracking',
+    performance: 'Performance',
+    employee: 'Employee',
+    recruitment: 'Recruitment',
+    system: 'System',
+    noNotifications: 'No notifications',
+    noNotificationsFilter: 'No notifications match your filters',
+    noNotificationsYet: 'You don\'t have any notifications yet',
+    justNow: 'Just now',
+    minutesAgo: '{0}m ago',
+    hoursAgo: '{0}h ago',
+    daysAgo: '{0}d ago',
+    markAsRead: 'Mark as read',
+    delete: 'Delete'
+  },
+
+  // Settings
+  settings: {
+    title: 'Settings',
+    subtitle: 'Manage your preferences and account settings',
+    saved: 'Saved!',
+    export: 'Export',
+    import: 'Import',
+    reset: 'Reset',
+    saveChanges: 'Save Changes',
+    confirmReset: 'Are you sure you want to reset all settings to default?',
+    importSuccess: 'Settings imported successfully!',
+    importError: 'Failed to import settings',
+    
+    // Tabs
+    notifications: 'Notifications',
+    appearance: 'Appearance',
+    language: 'Language & Region',
+    privacy: 'Privacy',
+    work: 'Work Preferences',
+    
+    // Notification Settings
+    notificationPreferences: 'Notification Preferences',
+    emailNotifications: 'Email Notifications',
+    emailNotificationsDesc: 'Receive notifications via email',
+    pushNotifications: 'Push Notifications',
+    pushNotificationsDesc: 'Receive push notifications in the app',
+    desktopNotifications: 'Desktop Notifications',
+    desktopNotificationsDesc: 'Show browser notifications on desktop',
+    notificationFrequency: 'Notification Frequency',
+    realtime: 'Real-time',
+    daily: 'Daily Digest',
+    weekly: 'Weekly Summary',
+    notifyMeAbout: 'Notify me about',
+    timeTrackingNotifications: 'Time Tracking',
+    performanceNotifications: 'Performance Reviews',
+    employeeNotifications: 'Employee Updates',
+    recruitmentNotifications: 'Recruitment',
+    systemNotifications: 'System Updates',
+    
+    // Appearance Settings
+    appearanceSettings: 'Appearance Settings',
+    theme: 'Theme',
+    dateFormat: 'Date Format',
+    timeFormat: 'Time Format',
+    itemsPerPage: 'Items Per Page',
+    
+    // Language & Region
+    languageRegion: 'Language & Region',
+    timezone: 'Timezone',
+    timezoneNote: 'Currently showing first 50 timezones',
+    
+    // Privacy Settings
+    privacySettings: 'Privacy Settings',
+    profileVisibility: 'Profile Visibility',
+    visibilityAll: 'Everyone',
+    visibilityTeam: 'My Team',
+    visibilityManagers: 'Managers Only',
+    visibilityPrivate: 'Private',
+    contactVisibility: 'Contact Information Visibility',
+    showEmail: 'Show Email Address',
+    showPhone: 'Show Phone Number',
+    
+    // Work Preferences
+    workPreferences: 'Work Preferences',
+    defaultDashboard: 'Default Dashboard View',
+    overviewView: 'Overview',
+    detailedView: 'Detailed',
+    compactView: 'Compact',
+    autoClockOut: 'Auto Clock Out',
+    autoClockOutDesc: 'Automatically clock out at a specific time',
+    autoClockOutTime: 'Auto Clock Out Time',
+    weeklyReport: 'Weekly Report',
+    weeklyReportDesc: 'Receive a weekly summary of your work activities'
   }
 };

@@ -5,7 +5,8 @@ import { Award, FileText, Loader } from 'lucide-react'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { LanguageProvider } from './contexts/LanguageContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
-import { AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry } from './components/index.jsx';
+import { NotificationProvider } from './contexts/NotificationContext'
+import { AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings } from './components/index.jsx';
 import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
 
@@ -308,18 +309,19 @@ const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmpl
   }
 
   return (
-    <Router>
-      <Routes>
-        {/* Public Route - Login */}
-        <Route path="/login" element={
-          isAuthenticated ? <Navigate to="/time-clock" replace /> : <Login />
-        } />
-        
-        {/* Protected Routes */}
-        <Route path="/*" element={
-          isAuthenticated ? (
-            <div className={`min-h-screen ${bg.primary}`}>
-              <Header />
+    <NotificationProvider>
+      <Router>
+        <Routes>
+          {/* Public Route - Login */}
+          <Route path="/login" element={
+            isAuthenticated ? <Navigate to="/time-clock" replace /> : <Login />
+          } />
+          
+          {/* Protected Routes */}
+          <Route path="/*" element={
+            isAuthenticated ? (
+              <div className={`min-h-screen ${bg.primary}`}>
+                <Header />
               
               <div className="flex">
                 <Sidebar />
@@ -352,6 +354,14 @@ const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmpl
                       path="/reports" 
                       element={<Reports employees={employees} applications={applications} />} 
                     />
+                    <Route 
+                      path="/notifications" 
+                      element={<Notifications />} 
+                    />
+                    <Route 
+                      path="/settings" 
+                      element={<Settings />} 
+                    />
                   </Routes>
                 </div>
               </div>
@@ -373,6 +383,7 @@ const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmpl
         } />
       </Routes>
     </Router>
+    </NotificationProvider>
   );
 };
 
