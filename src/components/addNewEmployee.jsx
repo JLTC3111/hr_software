@@ -1,0 +1,271 @@
+import React, { useState } from 'react';
+import { User, Mail, Phone, MapPin, Calendar, Briefcase, Building2, DollarSign, Save, X, Upload, Check, AlertCircle, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useNotifications } from '../contexts/NotificationContext';
+import * as employeeService from '../services/employeeService';
+
+const AddNewEmployee = () => {
+  const navigate = useNavigate();
+  const { bg, text, border, hover } = useTheme();
+  const { t } = useLanguage();
+  const { createNotification } = useNotifications();
+  
+  const [step, setStep] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  
+  const [formData, setFormData] = useState({
+    name: '', email: '', phone: '', dob: '', address: '', photo: null,
+    position: '', department: '', startDate: '', employmentStatus: 'active',
+    salary: '', status: 'Active', performance: 3.0
+  });
+
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  const steps = [
+    { number: 1, title: t('addEmployee.personalInfo', 'Personal Info'), icon: User },
+    { number: 2, title: t('addEmployee.employmentInfo', 'Employment'), icon: Briefcase },
+    { number: 3, title: t('addEmployee.review', 'Review'), icon: Check }
+  ];
+
+  const departments = [
+    { value: 'legal_compliance', label: t('departments.legal_compliance', 'Legal') },
+    { value: 'human_resources', label: t('departments.human_resources', 'HR') },
+    { value: 'finance', label: t('departments.finance', 'Finance') },
+    { value: 'engineering', label: t('departments.engineering', 'Engineering') }
+  ];
+
+  const positions = [
+    { value: 'general_manager', label: t('employeePosition.general_manager', 'Manager') },
+    { value: 'senior_developer', label: t('employeePosition.senior_developer', 'Developer') },
+    { value: 'hr_specialist', label: t('employeePosition.hr_specialist', 'HR Specialist') }
+  ];
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    setTouched(prev => ({ ...prev, [name]: true }));
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+  };
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file && file.size <= 5 * 1024 * 1024 && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result);
+        setFormData(prev => ({ ...prev, photo: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const validateStep1 = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = t('addEmployee.nameRequired');
+    if (!formData.email.trim() || !/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = t('addEmployee.emailInvalid');
+    if (!formData.phone.trim()) newErrors.phone = t('addEmployee.phoneRequired');
+    if (!formData.dob) newErrors.dob = t('addEmployee.dobRequired');
+    if (!formData.address.trim()) newErrors.address = t('addEmployee.addressRequired');
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateStep2 = () => {
+    const newErrors = {};
+    if (!formData.position) newErrors.position = t('addEmployee.positionRequired');
+    if (!formData.department) newErrors.department = t('addEmployee.departmentRequired');
+    if (!formData.startDate) newErrors.startDate = t('addEmployee.startDateRequired');
+    if (!formData.salary || parseFloat(formData.salary) <= 0) newErrors.salary = t('addEmployee.salaryRequired');
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleNext = () => {
+    if (step === 1 && validateStep1()) setStep(2);
+    else if (step === 2 && validateStep2()) setStep(3);
+  };
+
+  const handleBack = () => step > 1 && setStep(step - 1);
+
+  const handleSubmit = async () => {
+    if (!validateStep1() || !validateStep2()) return;
+
+    setSaving(true);
+    const result = await employeeService.createEmployee({
+      ...formData,
+      performance: parseFloat(formData.performance),
+      salary: parseFloat(formData.salary)
+    });
+    
+    if (result.success) {
+      await createNotification({
+        userId: result.data.id,
+        title: 'Employee Added',
+        message: `${formData.name} added to ${formData.department}`,
+        type: 'success',
+        category: 'employee'
+      });
+      navigate('/employees');
+    } else {
+      setErrors({ submit: result.error });
+    }
+    setSaving(false);
+  };
+
+  const InputField = ({ name, label, icon: Icon, type = 'text', required, ...props }) => (
+    <div>
+      <label className={`block text-sm font-medium ${text.secondary} mb-2`}>
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      <div className="relative">
+        {Icon && <Icon className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${text.secondary}`} />}
+        <input
+          type={type}
+          name={name}
+          value={formData[name]}
+          onChange={handleChange}
+          className={`w-full ${Icon ? 'pl-10' : 'pl-4'} pr-4 py-2 ${bg.primary} ${text.primary} border ${errors[name] && touched[name] ? 'border-red-500' : border.primary} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none`}
+          {...props}
+        />
+      </div>
+      {errors[name] && touched[name] && (
+        <p className="text-red-500 text-sm mt-1">{errors[name]}</p>
+      )}
+    </div>
+  );
+
+  return (
+    <div className={`min-h-screen ${bg.primary} p-4 md:p-8`}>
+      <div className="max-w-4xl mx-auto">
+        <button onClick={() => navigate('/employees')} className={`flex items-center space-x-2 ${text.secondary} ${hover.bg} px-4 py-2 rounded-lg mb-6`}>
+          <ArrowLeft className="h-4 w-4" />
+          <span>{t('common.back', 'Back')}</span>
+        </button>
+
+        {/* Progress */}
+        <div className={`${bg.secondary} rounded-lg shadow border ${border.primary} p-6 mb-6`}>
+          <div className="flex items-center justify-between">
+            {steps.map((s, i) => {
+              const StepIcon = s.icon;
+              const isActive = step === s.number;
+              const isCompleted = step > s.number;
+              return (
+                <React.Fragment key={s.number}>
+                  <div className="flex flex-col items-center flex-1">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 ${isActive ? 'bg-blue-600 border-blue-600 text-white' : isCompleted ? 'bg-green-600 border-green-600 text-white' : `border-gray-300 ${text.secondary}`}`}>
+                      {isCompleted ? <Check className="h-6 w-6" /> : <StepIcon className="h-6 w-6" />}
+                    </div>
+                    <span className={`mt-2 text-xs font-medium ${isActive ? 'text-blue-600' : text.secondary}`}>{s.title}</span>
+                  </div>
+                  {i < steps.length - 1 && <div className={`flex-1 h-0.5 mx-4 mt-6 ${isCompleted ? 'bg-green-600' : 'bg-gray-300'}`} />}
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Form */}
+        <div className={`${bg.secondary} rounded-lg shadow border ${border.primary} p-6`}>
+          {step === 1 && (
+            <div className="space-y-6">
+              <h2 className={`text-2xl font-bold ${text.primary}`}>{t('addEmployee.personalInformation', 'Personal Information')}</h2>
+              <div className="flex flex-col items-center mb-6">
+                <div className={`w-32 h-32 rounded-full ${bg.primary} border-2 ${border.primary} flex items-center justify-center overflow-hidden relative`}>
+                  {photoPreview ? <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" /> : <User className={`h-16 w-16 ${text.secondary}`} />}
+                  <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer">
+                    <Upload className="h-4 w-4" />
+                    <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+                  </label>
+                </div>
+              </div>
+              <InputField name="name" label={t('employees.name')} icon={User} required />
+              <InputField name="email" label={t('employees.email')} type="email" icon={Mail} required />
+              <InputField name="phone" label={t('employees.phone')} type="tel" icon={Phone} required />
+              <InputField name="dob" label={t('addEmployee.dob')} type="date" icon={Calendar} required />
+              <div>
+                <label className={`block text-sm font-medium ${text.secondary} mb-2`}>{t('addEmployee.address')} <span className="text-red-500">*</span></label>
+                <div className="relative">
+                  <MapPin className={`absolute left-3 top-3 h-5 w-5 ${text.secondary}`} />
+                  <textarea name="address" value={formData.address} onChange={handleChange} rows="3" className={`w-full pl-10 pr-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:ring-2 focus:ring-blue-500`} />
+                </div>
+                {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-6">
+              <h2 className={`text-2xl font-bold ${text.primary}`}>{t('addEmployee.employmentInformation', 'Employment Information')}</h2>
+              <div>
+                <label className={`block text-sm font-medium ${text.secondary} mb-2`}>{t('employees.position')} *</label>
+                <div className="relative">
+                  <Briefcase className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${text.secondary}`} />
+                  <select name="position" value={formData.position} onChange={handleChange} className={`w-full pl-10 pr-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg`}>
+                    <option value="">Select Position</option>
+                    {positions.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                  </select>
+                </div>
+                {errors.position && <p className="text-red-500 text-sm mt-1">{errors.position}</p>}
+              </div>
+              <div>
+                <label className={`block text-sm font-medium ${text.secondary} mb-2`}>{t('employees.department')} *</label>
+                <div className="relative">
+                  <Building2 className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${text.secondary}`} />
+                  <select name="department" value={formData.department} onChange={handleChange} className={`w-full pl-10 pr-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg`}>
+                    <option value="">Select Department</option>
+                    {departments.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                  </select>
+                </div>
+                {errors.department && <p className="text-red-500 text-sm mt-1">{errors.department}</p>}
+              </div>
+              <InputField name="startDate" label={t('employees.startDate')} type="date" icon={Calendar} required />
+              <InputField name="salary" label={t('employees.salary')} type="number" icon={DollarSign} min="0" step="1000" required />
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-6">
+              <h2 className={`text-2xl font-bold ${text.primary}`}>{t('addEmployee.reviewAndSubmit', 'Review & Submit')}</h2>
+              <div className={`${bg.primary} rounded-lg p-6`}>
+                <div className="flex items-center space-x-4 mb-6">
+                  {photoPreview ? <img src={photoPreview} alt={formData.name} className="w-20 h-20 rounded-full object-cover" /> : <div className={`w-20 h-20 rounded-full ${bg.secondary} flex items-center justify-center`}><User className={`h-10 w-10 ${text.secondary}`} /></div>}
+                  <div>
+                    <h3 className={`text-xl font-bold ${text.primary}`}>{formData.name}</h3>
+                    <p className={text.secondary}>{positions.find(p => p.value === formData.position)?.label}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><p className={`text-sm ${text.secondary}`}>Email</p><p className={text.primary}>{formData.email}</p></div>
+                  <div><p className={`text-sm ${text.secondary}`}>Phone</p><p className={text.primary}>{formData.phone}</p></div>
+                  <div><p className={`text-sm ${text.secondary}`}>Department</p><p className={text.primary}>{departments.find(d => d.value === formData.department)?.label}</p></div>
+                  <div><p className={`text-sm ${text.secondary}`}>Salary</p><p className={text.primary}>${parseFloat(formData.salary).toLocaleString()}</p></div>
+                </div>
+              </div>
+              {errors.submit && <div className="bg-red-100 border border-red-500 text-red-700 px-4 py-3 rounded flex items-start space-x-2"><AlertCircle className="h-5 w-5" /><span>{errors.submit}</span></div>}
+            </div>
+          )}
+
+          <div className="flex justify-between mt-8 pt-6 border-t">
+            <button onClick={step === 1 ? () => navigate('/employees') : handleBack} className={`px-6 py-2 rounded-lg ${hover.bg} ${text.secondary}`}>
+              <X className="h-4 w-4 inline mr-2" />
+              {step === 1 ? t('common.cancel') : t('common.back')}
+            </button>
+            {step < 3 ? (
+              <button onClick={handleNext} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{t('common.next', 'Next')}</button>
+            ) : (
+              <button onClick={handleSubmit} disabled={saving} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
+                {saving ? <span>Saving...</span> : <><Save className="h-4 w-4 inline mr-2" />{t('common.submit', 'Submit')}</>}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AddNewEmployee;

@@ -1,7 +1,24 @@
+-- ============================================
+-- DROP EXISTING TABLES (for recreation)
+-- ============================================
+DROP TABLE IF EXISTS hr_notifications CASCADE;
+DROP TABLE IF EXISTS hr_user_settings CASCADE;
+DROP VIEW IF EXISTS notification_stats CASCADE;
+DROP FUNCTION IF EXISTS create_notification CASCADE;
+DROP FUNCTION IF EXISTS mark_notification_read CASCADE;
+DROP FUNCTION IF EXISTS mark_all_notifications_read CASCADE;
+DROP FUNCTION IF EXISTS cleanup_old_notifications CASCADE;
+DROP FUNCTION IF EXISTS create_user_settings CASCADE;
+DROP FUNCTION IF EXISTS update_updated_at_column CASCADE;
+
+-- ============================================
+-- CREATE TABLES
+-- ============================================
+
 -- Create notifications table
 CREATE TABLE IF NOT EXISTS hr_notifications (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES hr_users(id) ON DELETE CASCADE,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,  -- Changed to UUID
+  user_id UUID NOT NULL REFERENCES hr_users(id) ON DELETE CASCADE,  -- Changed to UUID
   title VARCHAR(255) NOT NULL,
   message TEXT NOT NULL,
   type VARCHAR(50) NOT NULL DEFAULT 'info', -- info, success, warning, error
@@ -10,9 +27,9 @@ CREATE TABLE IF NOT EXISTS hr_notifications (
   action_url VARCHAR(500),
   action_label VARCHAR(100),
   metadata JSONB DEFAULT '{}'::jsonb,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  read_at TIMESTAMPTZ,
-  expires_at TIMESTAMPTZ
+  created_at TIMESTAMPTZ DEFAULT NOW(),  -- Changed to TIMESTAMPTZ
+  read_at TIMESTAMPTZ,  -- Changed to TIMESTAMPTZ
+  expires_at TIMESTAMPTZ  -- Changed to TIMESTAMPTZ
 );
 
 -- Create indexes for better query performance
@@ -24,8 +41,8 @@ CREATE INDEX IF NOT EXISTS idx_notifications_category ON hr_notifications(catego
 
 -- Create user settings table
 CREATE TABLE IF NOT EXISTS hr_user_settings (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL UNIQUE REFERENCES hr_users(id) ON DELETE CASCADE,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,  -- Changed to UUID
+  user_id UUID NOT NULL UNIQUE REFERENCES hr_users(id) ON DELETE CASCADE,  -- Changed to UUID
   
   -- Notification preferences
   email_notifications BOOLEAN DEFAULT TRUE,
@@ -61,12 +78,16 @@ CREATE TABLE IF NOT EXISTS hr_user_settings (
   auto_clock_out_time TIME DEFAULT '18:00:00',
   weekly_report BOOLEAN DEFAULT TRUE,
   
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),  -- Changed to TIMESTAMPTZ
+  updated_at TIMESTAMPTZ DEFAULT NOW()  -- Changed to TIMESTAMPTZ
 );
 
 -- Create index on user_id for settings
 CREATE INDEX IF NOT EXISTS idx_user_settings_user_id ON hr_user_settings(user_id);
+
+-- ============================================
+-- FUNCTIONS
+-- ============================================
 
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -113,7 +134,7 @@ EXECUTE FUNCTION create_user_settings();
 
 -- Create function to send notification
 CREATE OR REPLACE FUNCTION create_notification(
-  p_user_id UUID,
+  p_user_id UUID,  -- Changed to UUID
   p_title VARCHAR,
   p_message TEXT,
   p_type VARCHAR DEFAULT 'info',
@@ -121,11 +142,11 @@ CREATE OR REPLACE FUNCTION create_notification(
   p_action_url VARCHAR DEFAULT NULL,
   p_action_label VARCHAR DEFAULT NULL,
   p_metadata JSONB DEFAULT '{}'::jsonb,
-  p_expires_at TIMESTAMPTZ DEFAULT NULL
+  p_expires_at TIMESTAMPTZ DEFAULT NULL  -- Changed to TIMESTAMPTZ
 )
-RETURNS UUID AS $$
+RETURNS UUID AS $$  -- Changed to UUID
 DECLARE
-  v_notification_id UUID;
+  v_notification_id UUID;  -- Changed to UUID
 BEGIN
   INSERT INTO hr_notifications (
     user_id, title, message, type, category, 
@@ -142,7 +163,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create function to mark notification as read
-CREATE OR REPLACE FUNCTION mark_notification_read(p_notification_id UUID)
+CREATE OR REPLACE FUNCTION mark_notification_read(p_notification_id UUID)  -- Changed to UUID
 RETURNS BOOLEAN AS $$
 BEGIN
   UPDATE hr_notifications
@@ -154,7 +175,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create function to mark all notifications as read for a user
-CREATE OR REPLACE FUNCTION mark_all_notifications_read(p_user_id UUID)
+CREATE OR REPLACE FUNCTION mark_all_notifications_read(p_user_id UUID)  -- Changed to UUID
 RETURNS INTEGER AS $$
 DECLARE
   v_count INTEGER;
@@ -183,14 +204,26 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- ============================================
+-- SECURITY
+-- ============================================
+
 -- Disable RLS for development (consistent with other tables)
 ALTER TABLE hr_notifications DISABLE ROW LEVEL SECURITY;
 ALTER TABLE hr_user_settings DISABLE ROW LEVEL SECURITY;
+
+-- ============================================
+-- INITIAL DATA
+-- ============================================
 
 -- Insert default settings for existing users
 INSERT INTO hr_user_settings (user_id)
 SELECT id FROM hr_users
 ON CONFLICT (user_id) DO NOTHING;
+
+-- ============================================
+-- COMMENTS
+-- ============================================
 
 COMMENT ON TABLE hr_notifications IS 'Stores user notifications for various system events';
 COMMENT ON TABLE hr_user_settings IS 'Stores user-specific preferences and settings';

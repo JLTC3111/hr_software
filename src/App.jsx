@@ -6,7 +6,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { LanguageProvider } from './contexts/LanguageContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
-import { AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings } from './components/index.jsx';
+import { AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee } from './components/index.jsx';
 import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
 
@@ -341,6 +341,10 @@ const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmpl
                     <Route 
                       path="/employees" 
                       element={<Employee employees={employees} onViewEmployee={setSelectedEmployee} onPhotoUpdate={onPhotoUpdate} onAddEmployeeClick={() => setIsAddEmployeeModalOpen(true)} />} 
+                    />
+                    <Route 
+                      path="/employees/add" 
+                      element={<AddNewEmployee />} 
                     />
                     <Route 
                       path="/time-tracking" 

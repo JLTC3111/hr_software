@@ -146,7 +146,7 @@ const Settings = () => {
   const tabs = [
     { id: 'notifications', label: t('settings.notifications', 'Notifications'), icon: Bell },
     { id: 'appearance', label: t('settings.appearance', 'Appearance'), icon: Palette },
-    { id: 'language', label: t('settings.language', 'Language & Region'), icon: Globe },
+    { id: 'language', label: t('settings.language', 'Language'), icon: Globe },
     { id: 'privacy', label: t('settings.privacy', 'Privacy'), icon: Shield },
     { id: 'work', label: t('settings.work', 'Work Preferences'), icon: Briefcase }
   ];
@@ -237,34 +237,8 @@ const Settings = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar Tabs */}
-          <div className={`lg:col-span-1`}>
-            <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-2`}>
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`
-                      w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 transition-all duration-200
-                      ${activeTab === tab.id 
-                        ? 'bg-blue-600 text-white shadow-md' 
-                        : `${text.secondary} ${hover.bg}`
-                      }
-                    `}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span className="font-medium">{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Content Area */}
-          <div className={`lg:col-span-3 ${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
+        {/* Content Area - Full Width */}
+        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-4 md:p-6 mb-6`}>
             {/* Notifications Settings */}
             {activeTab === 'notifications' && (
               <div className="space-y-6">
@@ -592,6 +566,31 @@ const Settings = () => {
                 />
               </div>
             )}
+        </div>
+
+        {/* Navigation Tabs - Bottom Section for All Screen Sizes */}
+        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-4`}>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`
+                    flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200
+                    ${isActive
+                      ? 'bg-blue-600 text-white shadow-md transform scale-105'
+                      : `${text.secondary} ${hover.bg} hover:scale-102`
+                    }
+                  `}
+                >
+                  <Icon className="h-5 w-5 flex-shrink-0" />
+                  <span className="font-medium text-sm">{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

@@ -126,6 +126,7 @@ export default {
     dobRequired: 'Date of birth is required',
     addressRequired: 'Address is required',
     startDateRequired: 'Start date is required',
+    salaryRequired: 'Salary is required',
     performanceInvalid: 'Performance must be between 0 and 5',
     namePlaceholder: 'Enter employee name',
     positionPlaceholder: 'e.g., senior_developer',
@@ -134,7 +135,19 @@ export default {
     phonePlaceholder: '+84 909 999 999',
     addressPlaceholder: 'City, Country',
     dob: 'Date of Birth',
-    address: 'Address'
+    address: 'Address',
+    personalInfo: 'Personal Information',
+    employmentInfo: 'Employment Information',
+    review: 'Review & Submit',
+    personalInformation: 'Personal Information',
+    employmentInformation: 'Employment Information',
+    reviewAndSubmit: 'Review & Submit',
+    selectPosition: 'Select Position',
+    selectDepartment: 'Select Department',
+    photoTooLarge: 'Photo must be less than 5MB',
+    invalidPhotoType: 'Only image files are allowed',
+    successMessage: 'Employee added successfully!',
+    submitError: 'Failed to add employee'
   },
 
   // Common
@@ -144,7 +157,10 @@ export default {
     save: 'Save',
     delete: 'Delete',
     edit: 'Edit',
-    view: 'View'
+    view: 'View',
+    back: 'Back',
+    next: 'Next',
+    submit: 'Submit'
   },
 
   // Search
