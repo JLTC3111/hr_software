@@ -26,14 +26,16 @@ const Header = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center">
-              <img src="logoIcons/logo.png" alt="Logo" className="h-8 w-8" />
+              <img src="logoIcons/logo.png" alt="Logo" className="h-8 w-auto object-cover" />
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <div className={`${bg.secondary} text-sm ${text.secondary}`}>
+            <div className={`hidden lg:block ${bg.secondary} text-sm ${text.secondary}`}>
               {t('header.welcome')} 
             </div>
-            <LanguageSelector />
+            <div className="hidden md:block">
+              <LanguageSelector />
+            </div>
             <ThemeToggle />
             
             {/* Notification Bell */}

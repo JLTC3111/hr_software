@@ -250,7 +250,7 @@ const AddNewEmployee = () => {
           )}
 
           <div className="flex justify-between mt-8 pt-6 border-t">
-            <button onClick={step === 1 ? () => navigate('/employees') : handleBack} className={`px-6 py-2 rounded-lg ${hover.bg} ${text.secondary}`}>
+            <button onClick={step === 1 ? () => navigate('/employees') : handleBack} className={`px-6 py-2 rounded-lg border-2 ${border.primary} ${text.primary} ${hover.bg} font-medium transition-all hover:scale-105 hover:shadow-md`}>
               <X className="h-4 w-4 inline mr-2" />
               {step === 1 ? t('common.cancel') : t('common.back')}
             </button>

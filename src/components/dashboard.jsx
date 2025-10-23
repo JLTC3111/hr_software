@@ -128,7 +128,7 @@ const Dashboard = ({ employees, applications }) => {
     .slice(0, 5);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 px-2 sm:px-0">
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
           <div className={`${bg.secondary} rounded-lg p-6 flex items-center space-x-3 scale-in`}>
@@ -195,8 +195,8 @@ const Dashboard = ({ employees, applications }) => {
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Employee Performance Chart */}
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 slide-in-up transition-all duration-300 hover:shadow-lg`}>
-          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
+        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-4 md:p-6 slide-in-up transition-all duration-300 hover:shadow-lg`}>
+          <h3 className={`font-semibold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.125rem)'}}>
             {t('dashboard.employeePerformance')}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -224,8 +224,8 @@ const Dashboard = ({ employees, applications }) => {
         </div>
 
         {/* Department Distribution */}
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 slide-in-up transition-all duration-300 hover:shadow-lg`} style={{ animationDelay: '0.1s' }}>
-          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
+        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-4 md:p-6 slide-in-up transition-all duration-300 hover:shadow-lg`} style={{ animationDelay: '0.1s' }}>
+          <h3 className={`font-semibold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.125rem)'}}>
             {t('dashboard.departmentDist')}
           </h3>
           <ResponsiveContainer width="100%" height={300}>

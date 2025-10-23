@@ -172,7 +172,7 @@ const Settings = () => {
             <div className="flex items-center space-x-3">
               <SettingsIcon className="h-8 w-8 text-blue-600" />
               <div>
-                <h1 className={`text-2xl font-bold ${text.primary}`}>
+                <h1 className={`font-bold ${text.primary}`} style={{fontSize: 'clamp(1.25rem, 3.5vw, 1.5rem)'}}>
                   {t('settings.title', 'Settings')}
                 </h1>
                 <p className={`text-sm ${text.secondary}`}>
@@ -243,7 +243,7 @@ const Settings = () => {
             {activeTab === 'notifications' && (
               <div className="space-y-6">
                 <div>
-                  <h2 className={`text-xl font-bold ${text.primary} mb-4`}>
+                  <h2 className={`font-bold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.25rem)'}}>
                     {t('settings.notificationPreferences', 'Notification Preferences')}
                   </h2>
                   
@@ -336,7 +336,7 @@ const Settings = () => {
             {/* Appearance Settings */}
             {activeTab === 'appearance' && (
               <div className="space-y-6">
-                <h2 className={`text-xl font-bold ${text.primary} mb-4`}>
+                <h2 className={`font-bold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.25rem)'}}>
                   {t('settings.appearanceSettings', 'Appearance Settings')}
                 </h2>
 
@@ -420,7 +420,7 @@ const Settings = () => {
             {/* Language & Region Settings */}
             {activeTab === 'language' && (
               <div className="space-y-6">
-                <h2 className={`text-xl font-bold ${text.primary} mb-4`}>
+                <h2 className={`font-bold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.25rem)'}}>
                   {t('settings.languageRegion', 'Language & Region')}
                 </h2>
 
@@ -468,7 +468,7 @@ const Settings = () => {
             {/* Privacy Settings */}
             {activeTab === 'privacy' && (
               <div className="space-y-6">
-                <h2 className={`text-xl font-bold ${text.primary} mb-4`}>
+                <h2 className={`font-bold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.25rem)'}}>
                   {t('settings.privacySettings', 'Privacy Settings')}
                 </h2>
 
@@ -513,7 +513,7 @@ const Settings = () => {
             {/* Work Preferences */}
             {activeTab === 'work' && (
               <div className="space-y-6">
-                <h2 className={`text-xl font-bold ${text.primary} mb-4`}>
+                <h2 className={`font-bold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.25rem)'}}>
                   {t('settings.workPreferences', 'Work Preferences')}
                 </h2>
 

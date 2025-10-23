@@ -598,15 +598,16 @@ const PerformanceAppraisal = ({ employees }) => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 px-2 sm:px-0">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
         <h2 
-          className="text-2xl font-bold"
+          className="font-bold"
           style={{
             backgroundColor: 'transparent',
             color: isDarkMode ? '#ffffff' : '#111827',
-            borderColor: 'transparent'
+            borderColor: 'transparent',
+            fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'
           }}
         >
           {t('performance.title')}

@@ -326,8 +326,8 @@ const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmpl
               <div className="flex">
                 <Sidebar />
                 
-                {/* Main Content - Add padding-top on mobile for hamburger button */}
-                <div className="flex-1 p-4 lg:p-8 pt-20 lg:pt-8 w-full lg:min-w-[768px] mx-auto">
+                {/* Main Content - Full width utilization */}
+                <div className="flex-1 p-3 sm:p-4 lg:p-8 w-full mx-auto">
                   <Routes>
                     <Route path="/" element={<Navigate to="/time-clock" replace />} />
                     <Route 

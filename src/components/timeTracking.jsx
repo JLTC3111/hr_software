@@ -254,7 +254,7 @@ const TimeTracking = ({ employees }) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 px-2 sm:px-0">
       {/* Loading Overlay */}
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
@@ -266,8 +266,8 @@ const TimeTracking = ({ employees }) => {
       )}
       
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className={`text-2xl font-bold ${text.primary}`}>{t('timeTracking.title')}</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className={`font-bold ${text.primary}`} style={{fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'}}>{t('timeTracking.title')}</h2>
         <div className="flex space-x-4">
           {/* Employee Selector */}
           <select

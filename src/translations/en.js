@@ -638,7 +638,7 @@ export default {
     // Tabs
     notifications: 'Notifications',
     appearance: 'Appearance',
-    language: 'Language & Region',
+    language: 'Language',
     privacy: 'Privacy',
     work: 'Work Preferences',
     

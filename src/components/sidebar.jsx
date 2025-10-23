@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { TrendingUp, Users, Briefcase, Award, FileText, Clock, ClipboardList, ChevronLeft, ChevronRight, Menu, X, ChevronDown, Building2, Bell, Settings } from 'lucide-react'
+import { TrendingUp, Users, Award, FileText, Clock, ClipboardList, ChevronLeft, ChevronRight, Menu, X, ChevronDown, Building2, Bell, Settings } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 
@@ -71,10 +71,10 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* Hamburger Menu Button - Mobile Only */}
+      {/* Hamburger Menu Button - Hidden (sidebar always visible) */}
       <button
         onClick={handleMobileMenuToggle}
-        className={`lg:hidden fixed top-4 left-4 z-50 ${bg.secondary} p-2 rounded-lg shadow-lg border ${hover.bg} transition-all duration-200 hover:scale-110`}
+        className={`hidden lg:hidden fixed top-4 left-4 z-50 ${bg.secondary} p-2 rounded-lg shadow-lg border ${hover.bg} transition-all duration-200 hover:scale-110`}
         aria-label="Toggle menu"
       >
         {isMobileMenuOpen ? (
@@ -129,10 +129,6 @@ const Sidebar = () => {
         <div className={`p-4 border-b flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`} style={{ borderColor: isDarkMode ? '#4b5563' : '#d1d5db' }}>
           {!isCollapsed ? (
             <>
-              <div className="flex items-center space-x-2">
-                <Building2 className={`h-8 w-8 text-blue-600`} />
-                <span className={`text-xl font-bold ${text.primary}`}>HR Manager</span>
-              </div>
               <button
                 onClick={closeMobileMenu}
                 className={`lg:hidden p-1 rounded-lg ${hover.bg} transition-colors`}
@@ -190,6 +186,7 @@ const Sidebar = () => {
                       ) : (
                         <NavLink
                           to={item.path}
+                          end={hasSubItems}
                           onClick={closeMobileMenu}
                           onMouseEnter={() => setHoveredItem(item.name)}
                           onMouseLeave={() => setHoveredItem(null)}
@@ -224,6 +221,7 @@ const Sidebar = () => {
                             <NavLink
                               key={subItem.path}
                               to={subItem.path}
+                              end
                               onClick={closeMobileMenu}
                               className={({ isActive }) =>
                                 `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
