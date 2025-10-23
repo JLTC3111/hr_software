@@ -23,29 +23,110 @@
 --   - Allowed MIME types: application/pdf, image/*
 
 -- ============================================
--- STORAGE POLICIES
+-- SUPABASE STORAGE BUCKET SETUP
 -- ============================================
-
--- Allow public read access to employee photos
--- CREATE POLICY "Public can view employee photos"
--- ON storage.objects FOR SELECT
--- USING (bucket_id = 'employee-photos');
-
--- Allow authenticated users to upload employee photos
--- CREATE POLICY "Authenticated users can upload employee photos"
--- ON storage.objects FOR INSERT
--- WITH CHECK (bucket_id = 'employee-photos' AND auth.role() = 'authenticated');
-
--- Allow authenticated users to update employee photos
--- CREATE POLICY "Authenticated users can update employee photos"
--- ON storage.objects FOR UPDATE
--- USING (bucket_id = 'employee-photos' AND auth.role() = 'authenticated');
-
--- Allow authenticated users to delete employee photos
--- CREATE POLICY "Authenticated users can delete employee photos"
--- ON storage.objects FOR DELETE
--- USING (bucket_id = 'employee-photos' AND auth.role() = 'authenticated');
-
+-- 
+-- ⚠️ IMPORTANT: Storage buckets cannot be created via SQL migrations.
+-- You must create them manually through the Supabase Dashboard.
+-- 
+-- MANUAL SETUP STEPS:
+-- 
+-- 1. Go to Supabase Dashboard: https://app.supabase.com
+-- 2. Select your project
+-- 3. Navigate to Storage → Buckets
+-- 4. Click "New Bucket"
+-- 5. Configure the bucket:
+--    - Name: employee-photos
+--    - Public: ✅ YES (for public access to photos)
+--    - File size limit: 5MB (5242880 bytes)
+--    - Allowed MIME types: image/jpeg, image/png, image/gif, image/webp
+-- 
+-- 6. After creating, set up Storage Policies (see below)
+-- 
+-- ============================================
+-- RECOMMENDED FOLDER STRUCTURE IN BUCKET
+-- ============================================
+-- 
+-- employee-photos/
+--   ├── originals/           # Full-size uploaded images
+--   │   ├── {employeeId}_{timestamp}.jpg
+--   │   └── {employeeId}_{timestamp}.png
+--   ├── thumbnails/          # Auto-generated thumbnails (150x150)
+--   │   ├── {employeeId}_{timestamp}_thumb.jpg
+--   │   └── {employeeId}_{timestamp}_thumb.png
+--   └── archives/            # Archived/replaced photos
+--       └── {employeeId}_{timestamp}_archived.jpg
+-- 
+-- ============================================
+-- STORAGE POLICIES (Applied via Dashboard)
+-- ============================================
+-- 
+-- Policy 1: Public Read Access to Current Photos
+-- Name: "Public Read Access"
+-- Operation: SELECT
+-- Target roles: public
+-- Policy Definition: 
+--   bucket_id = 'employee-photos' AND (storage.foldername(name))[1] = 'originals'
+-- 
+-- Policy 2: Public Read Access to Thumbnails
+-- Name: "Public Read Thumbnails"
+-- Operation: SELECT
+-- Target roles: public
+-- Policy Definition: 
+--   bucket_id = 'employee-photos' AND (storage.foldername(name))[1] = 'thumbnails'
+-- 
+-- Policy 3: Authenticated Upload to Originals
+-- Name: "Authenticated users can upload originals"
+-- Operation: INSERT
+-- Target roles: authenticated
+-- Policy Definition: 
+--   bucket_id = 'employee-photos' AND (storage.foldername(name))[1] = 'originals'
+-- 
+-- Policy 4: Authenticated Upload to Thumbnails
+-- Name: "Authenticated users can upload thumbnails"
+-- Operation: INSERT
+-- Target roles: authenticated
+-- Policy Definition: 
+--   bucket_id = 'employee-photos' AND (storage.foldername(name))[1] = 'thumbnails'
+-- 
+-- Policy 5: Authenticated Update
+-- Name: "Authenticated users can update"
+-- Operation: UPDATE
+-- Target roles: authenticated
+-- Policy Definition: 
+--   bucket_id = 'employee-photos' AND auth.role() = 'authenticated'
+-- 
+-- Policy 6: Authenticated Delete (Admins Only - Optional)
+-- Name: "Admins can delete"
+-- Operation: DELETE
+-- Target roles: authenticated
+-- Policy Definition: 
+--   bucket_id = 'employee-photos' AND auth.jwt()->>'role' = 'admin'
+-- 
+-- ============================================
+-- IMAGE OPTIMIZATION RECOMMENDATIONS
+-- ============================================
+-- 
+-- 1. Client-side resize before upload:
+--    - Max dimensions: 800x800px for originals
+--    - Thumbnails: 150x150px
+--    - Use canvas API or libraries like 'browser-image-compression'
+-- 
+-- 2. Compress images before upload:
+--    - JPEG quality: 85%
+--    - PNG: Use lossy compression if possible
+--    - Convert to WebP for better compression
+-- 
+-- 3. File naming convention:
+--    - Format: {employeeId}_{timestamp}.{ext}
+--    - Example: 123_1704123456789.jpg
+--    - Ensures uniqueness and easy sorting
+-- 
+-- 4. Cleanup strategy:
+--    - Move old photos to archives/ folder instead of deleting
+--    - Run periodic cleanup job (monthly) to remove orphaned files
+--    - Use employee_photos table to track active files
+-- 
 -- ============================================
 -- HELPER FUNCTIONS
 -- ============================================

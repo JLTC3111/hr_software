@@ -156,40 +156,41 @@ const HRManagementApp = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch employees from Supabase on mount
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      setLoading(true);
-      const result = await employeeService.getAllEmployees();
-      if (result.success) {
-        setEmployees(result.data);
-        
-        // If no employees exist, seed with initial data
-        if (result.data.length === 0) {
-          console.log('No employees found, seeding initial data...');
-          // Create employees one by one to avoid bulk upsert issues
-          const createdEmployees = [];
-          for (const emp of Employees) {
-            const seedResult = await employeeService.createEmployee(emp);
-            if (seedResult.success) {
-              createdEmployees.push(seedResult.data);
-            } else {
-              console.error('Error seeding employee:', emp.name, seedResult.error);
-            }
-          }
-          if (createdEmployees.length > 0) {
-            setEmployees(createdEmployees);
+  // Fetch employees from Supabase
+  const fetchEmployees = async () => {
+    setLoading(true);
+    const result = await employeeService.getAllEmployees();
+    if (result.success) {
+      setEmployees(result.data);
+      
+      // If no employees exist, seed with initial data
+      if (result.data.length === 0) {
+        console.log('No employees found, seeding initial data...');
+        // Create employees one by one to avoid bulk upsert issues
+        const createdEmployees = [];
+        for (const emp of Employees) {
+          const seedResult = await employeeService.createEmployee(emp);
+          if (seedResult.success) {
+            createdEmployees.push(seedResult.data);
+          } else {
+            console.error('Error seeding employee:', emp.name, seedResult.error);
           }
         }
-      } else {
-        setError(result.error);
-        console.error('Error fetching employees:', result.error);
-        // Fallback to hardcoded data if Supabase fails
-        setEmployees(Employees);
+        if (createdEmployees.length > 0) {
+          setEmployees(createdEmployees);
+        }
       }
-      setLoading(false);
-    };
+    } else {
+      setError(result.error);
+      console.error('Error fetching employees:', result.error);
+      // Fallback to hardcoded data if Supabase fails
+      setEmployees(Employees);
+    }
+    setLoading(false);
+  };
 
+  // Fetch employees on mount
+  useEffect(() => {
     fetchEmployees();
   }, []);
   
@@ -435,8 +436,6 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
                 onUpdate={async (updatedEmployee) => {
                   // Refetch employees to get latest data
                   await refetchEmployees();
-                  // Update selected employee with new data
-                  setSelectedEmployee(updatedEmployee);
                 }}
               />
               

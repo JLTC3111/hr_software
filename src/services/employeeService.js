@@ -245,7 +245,8 @@ export const uploadEmployeePhoto = async (fileData, employeeId) => {
       fileName = `${toEmployeeId(employeeId)}_${Date.now()}.${fileExt}`;
     }
 
-    const filePath = `employee-photos/${fileName}`;
+    // Path within the bucket (no need to include bucket name)
+    const filePath = `${fileName}`;
 
     // Try to upload to storage (will fail gracefully if bucket doesn't exist)
     const { data, error } = await supabase.storage
@@ -305,13 +306,13 @@ export const uploadEmployeePhoto = async (fileData, employeeId) => {
  */
 export const deleteEmployeePhoto = async (photoUrl) => {
   try {
-    // Extract file path from URL
+    // Extract file path from URL (just the filename)
     const urlParts = photoUrl.split('/');
-    const filePath = `employee-photos/${urlParts[urlParts.length - 1]}`;
+    const fileName = urlParts[urlParts.length - 1];
 
     const { error } = await supabase.storage
-      .from('hr-documents')
-      .remove([filePath]);
+      .from('employee-photos')
+      .remove([fileName]);
 
     if (error) throw error;
     return { success: true };
