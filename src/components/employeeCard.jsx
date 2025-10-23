@@ -18,7 +18,7 @@ const getStatusColor = (status) => {
   }
 };
 
-const EmployeeCard = ({ employee, onViewDetails, onPhotoUpdate, style }) => {
+const EmployeeCard = ({ employee, onViewDetails, onEdit, onPhotoUpdate, style }) => {
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
   const [photoError, setPhotoError] = useState(false);
@@ -137,19 +137,20 @@ const EmployeeCard = ({ employee, onViewDetails, onPhotoUpdate, style }) => {
       <div className="flex justify-space-between space-x-2 mt-4 pt-4 border-t border-gray-200">
         <button
           onClick={() => onViewDetails(employee)}
-          className="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition-all duration-200"
+          className="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900 transition-all duration-200"
           title={t('employees.view', 'View Details')}
         >
           <Eye className="h-4 w-4" />
         </button>
         <button 
-          className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
+          onClick={() => onEdit && onEdit(employee)}
+          className="text-green-600 hover:text-green-800 p-2 rounded-lg hover:bg-green-50 dark:hover:bg-green-900 transition-all duration-200"
           title={t('employees.edit', 'Edit')}
         >
           <Edit className="h-4 w-4" />
         </button>
         <button 
-          className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition-all duration-200"
+          className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 transition-all duration-200"
           title={t('employees.delete', 'Delete')}
         >
           <Trash2 className="h-4 w-4" />

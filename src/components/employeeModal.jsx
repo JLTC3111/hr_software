@@ -17,11 +17,11 @@ const getStatusColor = (status) => {
   }
 }
 
-const EmployeeModal = ({ employee, onClose, onUpdate }) => {
+const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false }) => {
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
   
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(initialEditMode);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({

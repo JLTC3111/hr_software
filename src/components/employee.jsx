@@ -6,7 +6,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import SearchAndFilter from './search.jsx';
 import EmployeeCard from './employeeCard.jsx';
 
-const Employees = ({ employees, onViewEmployee, onPhotoUpdate, onAddEmployeeClick, refetchEmployees }) => {
+const Employees = ({ employees, onViewEmployee, onEditEmployee, onPhotoUpdate, onAddEmployeeClick, refetchEmployees }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('all');
   const location = useLocation();
@@ -79,6 +79,7 @@ const Employees = ({ employees, onViewEmployee, onPhotoUpdate, onAddEmployeeClic
             <EmployeeCard 
               employee={employee} 
               onViewDetails={onViewEmployee}
+              onEdit={onEditEmployee}
               onPhotoUpdate={onPhotoUpdate}
               style={{
                 backgroundColor: isDarkMode ? '#374151' : '#ffffff', // gray-700 : white

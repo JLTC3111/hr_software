@@ -151,6 +151,7 @@ const HRManagementApp = () => {
   const [employees, setEmployees] = useState([]);
   const [applications, setApplications] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -291,6 +292,21 @@ const HRManagementApp = () => {
     }
   };
 
+  const handleEditEmployee = (employee) => {
+    setSelectedEmployee(employee);
+    setIsEditMode(true);
+  };
+
+  const handleViewEmployee = (employee) => {
+    setSelectedEmployee(employee);
+    setIsEditMode(false);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedEmployee(null);
+    setIsEditMode(false);
+  };
+
   return (
     <AuthProvider>
       <LanguageProvider>
@@ -299,7 +315,10 @@ const HRManagementApp = () => {
             employees={employees}
             applications={applications}
             selectedEmployee={selectedEmployee}
-            setSelectedEmployee={setSelectedEmployee}
+            isEditMode={isEditMode}
+            onViewEmployee={handleViewEmployee}
+            onEditEmployee={handleEditEmployee}
+            onCloseModal={handleCloseModal}
             onPhotoUpdate={handlePhotoUpdate}
             isAddEmployeeModalOpen={isAddEmployeeModalOpen}
             setIsAddEmployeeModalOpen={setIsAddEmployeeModalOpen}
@@ -314,7 +333,7 @@ const HRManagementApp = () => {
   );
 };
 
-const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmployee, onPhotoUpdate, isAddEmployeeModalOpen, setIsAddEmployeeModalOpen, onAddEmployee, refetchEmployees, loading, error }) => {
+const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onViewEmployee, onEditEmployee, onCloseModal, onPhotoUpdate, isAddEmployeeModalOpen, setIsAddEmployeeModalOpen, onAddEmployee, refetchEmployees, loading, error }) => {
   const { bg, text } = useTheme();
   const { isAuthenticated } = useAuth();
 
@@ -379,7 +398,7 @@ const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmpl
                     />
                     <Route 
                       path="/employees" 
-                      element={<Employee employees={employees} onViewEmployee={setSelectedEmployee} onPhotoUpdate={onPhotoUpdate} onAddEmployeeClick={() => setIsAddEmployeeModalOpen(true)} refetchEmployees={refetchEmployees} />} 
+                      element={<Employee employees={employees} onViewEmployee={onViewEmployee} onEditEmployee={onEditEmployee} onPhotoUpdate={onPhotoUpdate} onAddEmployeeClick={() => setIsAddEmployeeModalOpen(true)} refetchEmployees={refetchEmployees} />} 
                     />
                     <Route 
                       path="/employees/add" 
@@ -410,11 +429,12 @@ const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmpl
               </div>
 
               <EmployeeModal 
-                employee={selectedEmployee} 
-                onClose={() => setSelectedEmployee(null)}
+                employee={selectedEmployee}
+                initialEditMode={isEditMode}
+                onClose={onCloseModal}
                 onUpdate={async (updatedEmployee) => {
                   // Refetch employees to get latest data
-                  await fetchEmployees();
+                  await refetchEmployees();
                   // Update selected employee with new data
                   setSelectedEmployee(updatedEmployee);
                 }}
