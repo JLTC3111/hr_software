@@ -24,6 +24,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
   const [isEditing, setIsEditing] = useState(initialEditMode);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState({});
+  const [currentEmployee, setCurrentEmployee] = useState(employee); // Track current employee data
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -41,6 +42,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
   // Initialize form data when employee changes
   useEffect(() => {
     if (employee) {
+      setCurrentEmployee(employee);
       setFormData({
         name: employee.name || '',
         email: employee.email || '',
@@ -124,6 +126,8 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
       const result = await employeeService.updateEmployee(employee.id, updates);
       
       if (result.success) {
+        // Update current employee data with saved changes
+        setCurrentEmployee(result.data);
         setIsEditing(false);
         if (onUpdate) {
           onUpdate(result.data);
@@ -170,6 +174,11 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
   const inputBg = isDarkMode ? 'bg-gray-700' : 'bg-white';
   const inputBorder = isDarkMode ? 'border-gray-600' : 'border-gray-300';
 
+  // Guard clause: Don't render if no employee
+  if (!employee || !currentEmployee) {
+    return null;
+  }
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className={`${bgColor} rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto ${textPrimary}`}>
@@ -191,7 +200,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
             {/* Profile Section */}
             <div className="flex items-center space-x-4">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-lg font-medium text-blue-600">{employee.avatar}</span>
+                <span className="text-lg font-medium text-blue-600">{currentEmployee?.avatar || currentEmployee?.name?.charAt(0) || '?'}</span>
               </div>
               <div className="flex-1">
                 {isEditing ? (
@@ -207,7 +216,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                     {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
                   </div>
                 ) : (
-                  <h4 className={`text-lg font-semibold ${textPrimary}`}>{employee.name}</h4>
+                  <h4 className={`text-lg font-semibold ${textPrimary}`}>{currentEmployee?.name || 'N/A'}</h4>
                 )}
                 
                 {isEditing ? (
@@ -223,7 +232,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                     {errors.position && <p className="text-red-500 text-sm mt-1">{errors.position}</p>}
                   </div>
                 ) : (
-                  <p className={textSecondary}>{employee.position}</p>
+                  <p className={textSecondary}>{currentEmployee?.position || 'N/A'}</p>
                 )}
                 
                 {isEditing ? (
@@ -240,8 +249,8 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                     </select>
                   </div>
                 ) : (
-                  <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full mt-1 ${getStatusColor(employee.status)}`}>
-                    {t(`employeeStatus.${employee.status.toLowerCase().replace(' ', '')}`, employee.status)}
+                  <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full mt-1 ${getStatusColor(currentEmployee?.status || 'Active')}`}>
+                    {t(`employeeStatus.${(currentEmployee?.status || 'Active').toLowerCase().replace(' ', '')}`, currentEmployee?.status || 'Active')}
                   </span>
                 )}
               </div>
@@ -272,7 +281,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                         {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                       </div>
                     ) : (
-                      <span className={textPrimary}>{employee.email}</span>
+                      <span className={textPrimary}>{currentEmployee?.email || 'N/A'}</span>
                     )}
                   </div>
                   
@@ -295,7 +304,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                         {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
                       </div>
                     ) : (
-                      <span className={textPrimary}>{employee.phone}</span>
+                      <span className={textPrimary}>{currentEmployee?.phone || 'N/A'}</span>
                     )}
                   </div>
                   
@@ -315,7 +324,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                         placeholder="City, Country"
                       />
                     ) : (
-                      <span className={textPrimary}>{employee.location || employee.address || 'N/A'}</span>
+                      <span className={textPrimary}>{currentEmployee.address || currentEmployee.location || 'N/A'}</span>
                     )}
                   </div>
                 </div>
@@ -344,7 +353,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                         {errors.department && <p className="text-red-500 text-xs mt-1">{errors.department}</p>}
                       </div>
                     ) : (
-                      <span className={textPrimary}>{employee.department}</span>
+                      <span className={textPrimary}>{currentEmployee?.department || 'N/A'}</span>
                     )}
                   </div>
                   
@@ -363,17 +372,17 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                         className={`w-full px-3 py-2 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
                       />
                     ) : (
-                      <span className={textPrimary}>{employee.startDate || employee.start_date || 'N/A'}</span>
+                      <span className={textPrimary}>{currentEmployee.startDate || currentEmployee.start_date || 'N/A'}</span>
                     )}
                   </div>
                   
-                  {/* Salary */}
-                  <div>
-                    <div className="flex items-center space-x-2 mb-1">
-                      <DollarSign className={`h-4 w-4 ${textSecondary}`} />
-                      <span className={`text-xs ${textSecondary}`}>{t('employees.salary', 'Salary')}</span>
-                    </div>
-                    {isEditing ? (
+                  {/* Salary - REMOVED FROM DISPLAY, KEPT IN EDIT MODE */}
+                  {isEditing && (
+                    <div>
+                      <div className="flex items-center space-x-2 mb-1">
+                        <DollarSign className={`h-4 w-4 ${textSecondary}`} />
+                        <span className={`text-xs ${textSecondary}`}>{t('employees.salary', 'Salary')}</span>
+                      </div>
                       <input
                         type="number"
                         name="salary"
@@ -384,10 +393,8 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                         className={`w-full px-3 py-2 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
                         placeholder="50000"
                       />
-                    ) : (
-                      <span className={textPrimary}>${employee.salary ? employee.salary.toLocaleString() : 'N/A'}</span>
-                    )}
-                  </div>
+                    </div>
+                  )}
                   
                   {/* Performance */}
                   <div>
@@ -411,7 +418,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                         {errors.performance && <p className="text-red-500 text-xs mt-1">{errors.performance}</p>}
                       </div>
                     ) : (
-                      <span className={textPrimary}>{employee.performance || 'N/A'}/5.0</span>
+                      <span className={textPrimary}>{currentEmployee?.performance || 'N/A'}/5.0</span>
                     )}
                   </div>
                 </div>
