@@ -79,11 +79,11 @@ const EmployeeModal = ({ employee, onClose }) => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <DollarSign className="h-4 w-4 text-gray-400" />
-                    <span>${employee.salary.toLocaleString()}</span>
+                    <span>${employee.salary ? employee.salary.toLocaleString() : 'N/A'}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Award className="h-4 w-4 text-gray-400" />
-                    <span>{t('employees.performance')}: {employee.performance}/5.0</span>
+                    <span>{t('employees.performance')}: {employee.performance || 'N/A'}/5.0</span>
                   </div>
                 </div>
               </div>

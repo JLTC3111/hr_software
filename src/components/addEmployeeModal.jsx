@@ -41,8 +41,6 @@ const AddEmployeeModal = ({ isOpen, onClose, onAddEmployee }) => {
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -112,7 +110,9 @@ const AddEmployeeModal = ({ isOpen, onClose, onAddEmployee }) => {
     onClose();
   }, [onClose]);
 
-  return (
+  // Always render, but return null content if not open
+  // This ensures hooks are always called in the same order
+  return !isOpen ? null : (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={handleCancel}>
       <div 
         className={`rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}
