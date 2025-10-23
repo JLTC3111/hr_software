@@ -411,7 +411,13 @@ const AppContent = ({ employees, applications, selectedEmployee, setSelectedEmpl
 
               <EmployeeModal 
                 employee={selectedEmployee} 
-                onClose={() => setSelectedEmployee(null)} 
+                onClose={() => setSelectedEmployee(null)}
+                onUpdate={async (updatedEmployee) => {
+                  // Refetch employees to get latest data
+                  await fetchEmployees();
+                  // Update selected employee with new data
+                  setSelectedEmployee(updatedEmployee);
+                }}
               />
               
               <AddEmployeeModal 

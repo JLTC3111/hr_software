@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Phone, MapPin, Mail, Award, Eye, Edit, Trash2, User, Camera, Calendar, Network, Loader } from 'lucide-react'
+import { Phone, MapPin, Mail, Award, Eye, Edit, Trash2, User, Camera, Cake, Network, Loader } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -113,7 +113,7 @@ const EmployeeCard = ({ employee, onViewDetails, onPhotoUpdate, style }) => {
           <span>{t(`employeeDepartment.${employee.department.toLowerCase().replace(' ', '')}`, employee.department)}</span>
         </div>
         <div className="flex items-center space-x-2">
-          <Calendar className="h-4 w-4" />
+          <Cake className="h-4 w-4" />
           <span>{employee.dob}</span>
         </div>
         <div className="flex items-center space-x-2">

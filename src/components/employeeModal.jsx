@@ -1,6 +1,8 @@
-import React from 'react'
-import { Mail, Phone, MapPin, Briefcase, Calendar, DollarSign, Award } from 'lucide-react'
+import React, { useState, useCallback, useEffect } from 'react'
+import { Mail, Phone, MapPin, Briefcase, Calendar, DollarSign, Award, Edit2, Save, X } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useTheme } from '../contexts/ThemeContext'
+import * as employeeService from '../services/employeeService'
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -15,91 +17,446 @@ const getStatusColor = (status) => {
   }
 }
 
-const EmployeeModal = ({ employee, onClose }) => {
+const EmployeeModal = ({ employee, onClose, onUpdate }) => {
   const { t } = useLanguage();
+  const { isDarkMode } = useTheme();
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    position: '',
+    department: '',
+    startDate: '',
+    status: 'Active',
+    performance: '',
+    salary: '',
+    dob: ''
+  });
+
+  // Initialize form data when employee changes
+  useEffect(() => {
+    if (employee) {
+      setFormData({
+        name: employee.name || '',
+        email: employee.email || '',
+        phone: employee.phone || '',
+        address: employee.address || employee.location || '',
+        position: employee.position || '',
+        department: employee.department || '',
+        startDate: employee.startDate || employee.start_date || '',
+        status: employee.status || 'Active',
+        performance: employee.performance || '',
+        salary: employee.salary || '',
+        dob: employee.dob || ''
+      });
+    }
+  }, [employee]);
+
+  const handleChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    setErrors(prev => {
+      if (prev[name]) {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      }
+      return prev;
+    });
+  }, []);
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.name.trim()) {
+      newErrors.name = t('addEmployee.nameRequired', 'Name is required');
+    }
+    if (!formData.email.trim()) {
+      newErrors.email = t('addEmployee.emailRequired', 'Email is required');
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = t('addEmployee.emailInvalid', 'Email is invalid');
+    }
+    if (!formData.phone.trim()) {
+      newErrors.phone = t('addEmployee.phoneRequired', 'Phone is required');
+    }
+    if (!formData.position.trim()) {
+      newErrors.position = t('addEmployee.positionRequired', 'Position is required');
+    }
+    if (!formData.department.trim()) {
+      newErrors.department = t('addEmployee.departmentRequired', 'Department is required');
+    }
+    
+    if (formData.performance && (parseFloat(formData.performance) < 0 || parseFloat(formData.performance) > 5)) {
+      newErrors.performance = t('addEmployee.performanceInvalid', 'Performance must be between 0 and 5');
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const updates = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        position: formData.position,
+        department: formData.department,
+        startDate: formData.startDate,
+        status: formData.status,
+        performance: formData.performance ? parseFloat(formData.performance) : null,
+        salary: formData.salary ? parseFloat(formData.salary) : null,
+        dob: formData.dob
+      };
+
+      const result = await employeeService.updateEmployee(employee.id, updates);
+      
+      if (result.success) {
+        setIsEditing(false);
+        if (onUpdate) {
+          onUpdate(result.data);
+        }
+        alert(t('employees.updateSuccess', 'Employee updated successfully!'));
+      } else {
+        alert(t('employees.updateError', 'Failed to update employee: ') + result.error);
+      }
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      alert(t('employees.updateError', 'An error occurred while updating the employee.'));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    // Reset form data to original employee data
+    if (employee) {
+      setFormData({
+        name: employee.name || '',
+        email: employee.email || '',
+        phone: employee.phone || '',
+        address: employee.address || employee.location || '',
+        position: employee.position || '',
+        department: employee.department || '',
+        startDate: employee.startDate || employee.start_date || '',
+        status: employee.status || 'Active',
+        performance: employee.performance || '',
+        salary: employee.salary || '',
+        dob: employee.dob || ''
+      });
+    }
+    setErrors({});
+    setIsEditing(false);
+  };
+
   if (!employee) return null;
+
+  const bgColor = isDarkMode ? 'bg-gray-800' : 'bg-white';
+  const textPrimary = isDarkMode ? 'text-white' : 'text-gray-900';
+  const textSecondary = isDarkMode ? 'text-gray-300' : 'text-gray-600';
+  const borderColor = isDarkMode ? 'border-gray-700' : 'border-gray-200';
+  const inputBg = isDarkMode ? 'bg-gray-700' : 'bg-white';
+  const inputBorder = isDarkMode ? 'border-gray-600' : 'border-gray-300';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
+      <div className={`${bgColor} rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto ${textPrimary}`}>
         <div className="p-6">
+          {/* Header */}
           <div className="flex justify-between items-start mb-6">
-            <h3 className="text-xl font-bold text-gray-900">{t('employees.employeeDetails')}</h3>
+            <h3 className={`text-xl font-bold ${textPrimary}`}>
+              {isEditing ? t('employees.editEmployee', 'Edit Employee') : t('employees.employeeDetails', 'Employee Details')}
+            </h3>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className={`${textSecondary} hover:${textPrimary}`}
             >
-              ×
+              <X className="h-6 w-6" />
             </button>
           </div>
           
           <div className="space-y-6">
+            {/* Profile Section */}
             <div className="flex items-center space-x-4">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
                 <span className="text-lg font-medium text-blue-600">{employee.avatar}</span>
               </div>
-              <div>
-                <h4 className="text-lg font-semibold text-gray-900">{employee.name}</h4>
-                <p className="text-gray-600">{employee.position}</p>
-                <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full mt-1 ${getStatusColor(employee.status)}`}>
-                  {t(`employeeStatus.${employee.status.toLowerCase().replace(' ', '')}`, employee.status)}
-                </span>
+              <div className="flex-1">
+                {isEditing ? (
+                  <div>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className={`w-full px-3 py-2 ${inputBg} border ${errors.name ? 'border-red-500' : inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
+                      placeholder={t('employees.name', 'Name')}
+                    />
+                    {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+                  </div>
+                ) : (
+                  <h4 className={`text-lg font-semibold ${textPrimary}`}>{employee.name}</h4>
+                )}
+                
+                {isEditing ? (
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      name="position"
+                      value={formData.position}
+                      onChange={handleChange}
+                      className={`w-full px-3 py-2 ${inputBg} border ${errors.position ? 'border-red-500' : inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
+                      placeholder={t('employees.position', 'Position')}
+                    />
+                    {errors.position && <p className="text-red-500 text-sm mt-1">{errors.position}</p>}
+                  </div>
+                ) : (
+                  <p className={textSecondary}>{employee.position}</p>
+                )}
+                
+                {isEditing ? (
+                  <div className="mt-2">
+                    <select
+                      name="status"
+                      value={formData.status}
+                      onChange={handleChange}
+                      className={`px-3 py-1 text-sm ${inputBg} border ${inputBorder} rounded-full focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
+                    >
+                      <option value="Active">{t('employeeStatus.active', 'Active')}</option>
+                      <option value="Inactive">{t('employeeStatus.inactive', 'Inactive')}</option>
+                      <option value="On Leave">{t('employeeStatus.onleave', 'On Leave')}</option>
+                    </select>
+                  </div>
+                ) : (
+                  <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full mt-1 ${getStatusColor(employee.status)}`}>
+                    {t(`employeeStatus.${employee.status.toLowerCase().replace(' ', '')}`, employee.status)}
+                  </span>
+                )}
               </div>
             </div>
             
+            {/* Details Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Contact Information */}
               <div className="space-y-4">
-                <h5 className="font-medium text-gray-900">{t('employees.contactInformation')}</h5>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center space-x-2">
-                    <Mail className="h-4 w-4 text-gray-400" />
-                    <span>{employee.email}</span>
+                <h5 className={`font-medium ${textPrimary}`}>{t('employees.contactInformation', 'Contact Information')}</h5>
+                <div className="space-y-3 text-sm">
+                  {/* Email */}
+                  <div>
+                    <div className="flex items-center space-x-2 mb-1">
+                      <Mail className={`h-4 w-4 ${textSecondary}`} />
+                      <span className={`text-xs ${textSecondary}`}>{t('employees.email', 'Email')}</span>
+                    </div>
+                    {isEditing ? (
+                      <div>
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          className={`w-full px-3 py-2 ${inputBg} border ${errors.email ? 'border-red-500' : inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
+                          placeholder="email@example.com"
+                        />
+                        {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                      </div>
+                    ) : (
+                      <span className={textPrimary}>{employee.email}</span>
+                    )}
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Phone className="h-4 w-4 text-gray-400" />
-                    <span>{employee.phone}</span>
+                  
+                  {/* Phone */}
+                  <div>
+                    <div className="flex items-center space-x-2 mb-1">
+                      <Phone className={`h-4 w-4 ${textSecondary}`} />
+                      <span className={`text-xs ${textSecondary}`}>{t('employees.phone', 'Phone')}</span>
+                    </div>
+                    {isEditing ? (
+                      <div>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          className={`w-full px-3 py-2 ${inputBg} border ${errors.phone ? 'border-red-500' : inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
+                          placeholder="+1 234 567 8900"
+                        />
+                        {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+                      </div>
+                    ) : (
+                      <span className={textPrimary}>{employee.phone}</span>
+                    )}
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="h-4 w-4 text-gray-400" />
-                    <span>{employee.location}</span>
+                  
+                  {/* Address */}
+                  <div>
+                    <div className="flex items-center space-x-2 mb-1">
+                      <MapPin className={`h-4 w-4 ${textSecondary}`} />
+                      <span className={`text-xs ${textSecondary}`}>{t('addEmployee.address', 'Address')}</span>
+                    </div>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        name="address"
+                        value={formData.address}
+                        onChange={handleChange}
+                        className={`w-full px-3 py-2 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
+                        placeholder="City, Country"
+                      />
+                    ) : (
+                      <span className={textPrimary}>{employee.location || employee.address || 'N/A'}</span>
+                    )}
                   </div>
                 </div>
               </div>
               
+              {/* Employment Details */}
               <div className="space-y-4">
-                <h5 className="font-medium text-gray-900">{t('employees.employmentDetails')}</h5>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center space-x-2">
-                    <Briefcase className="h-4 w-4 text-gray-400" />
-                    <span>{employee.department}</span>
+                <h5 className={`font-medium ${textPrimary}`}>{t('employees.employmentDetails', 'Employment Details')}</h5>
+                <div className="space-y-3 text-sm">
+                  {/* Department */}
+                  <div>
+                    <div className="flex items-center space-x-2 mb-1">
+                      <Briefcase className={`h-4 w-4 ${textSecondary}`} />
+                      <span className={`text-xs ${textSecondary}`}>{t('employees.department', 'Department')}</span>
+                    </div>
+                    {isEditing ? (
+                      <div>
+                        <input
+                          type="text"
+                          name="department"
+                          value={formData.department}
+                          onChange={handleChange}
+                          className={`w-full px-3 py-2 ${inputBg} border ${errors.department ? 'border-red-500' : inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
+                          placeholder="Engineering, HR, etc."
+                        />
+                        {errors.department && <p className="text-red-500 text-xs mt-1">{errors.department}</p>}
+                      </div>
+                    ) : (
+                      <span className={textPrimary}>{employee.department}</span>
+                    )}
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <span>{t('employees.started')}: {employee.startDate}</span>
+                  
+                  {/* Start Date */}
+                  <div>
+                    <div className="flex items-center space-x-2 mb-1">
+                      <Calendar className={`h-4 w-4 ${textSecondary}`} />
+                      <span className={`text-xs ${textSecondary}`}>{t('employees.startDate', 'Start Date')}</span>
+                    </div>
+                    {isEditing ? (
+                      <input
+                        type="date"
+                        name="startDate"
+                        value={formData.startDate}
+                        onChange={handleChange}
+                        className={`w-full px-3 py-2 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
+                      />
+                    ) : (
+                      <span className={textPrimary}>{employee.startDate || employee.start_date || 'N/A'}</span>
+                    )}
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <DollarSign className="h-4 w-4 text-gray-400" />
-                    <span>${employee.salary ? employee.salary.toLocaleString() : 'N/A'}</span>
+                  
+                  {/* Salary */}
+                  <div>
+                    <div className="flex items-center space-x-2 mb-1">
+                      <DollarSign className={`h-4 w-4 ${textSecondary}`} />
+                      <span className={`text-xs ${textSecondary}`}>{t('employees.salary', 'Salary')}</span>
+                    </div>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        name="salary"
+                        value={formData.salary}
+                        onChange={handleChange}
+                        min="0"
+                        step="1000"
+                        className={`w-full px-3 py-2 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
+                        placeholder="50000"
+                      />
+                    ) : (
+                      <span className={textPrimary}>${employee.salary ? employee.salary.toLocaleString() : 'N/A'}</span>
+                    )}
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Award className="h-4 w-4 text-gray-400" />
-                    <span>{t('employees.performance')}: {employee.performance || 'N/A'}/5.0</span>
+                  
+                  {/* Performance */}
+                  <div>
+                    <div className="flex items-center space-x-2 mb-1">
+                      <Award className={`h-4 w-4 ${textSecondary}`} />
+                      <span className={`text-xs ${textSecondary}`}>{t('employees.performance', 'Performance')}</span>
+                    </div>
+                    {isEditing ? (
+                      <div>
+                        <input
+                          type="number"
+                          name="performance"
+                          value={formData.performance}
+                          onChange={handleChange}
+                          min="0"
+                          max="5"
+                          step="0.1"
+                          className={`w-full px-3 py-2 ${inputBg} border ${errors.performance ? 'border-red-500' : inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
+                          placeholder="3.5"
+                        />
+                        {errors.performance && <p className="text-red-500 text-xs mt-1">{errors.performance}</p>}
+                      </div>
+                    ) : (
+                      <span className={textPrimary}>{employee.performance || 'N/A'}/5.0</span>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           </div>
           
-          <div className="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
-            >
-              {t('common.close')}
-            </button>
-            <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-              {t('employees.editEmployee')}
-            </button>
+          {/* Action Buttons */}
+          <div className={`flex justify-end space-x-3 mt-8 pt-6 border-t ${borderColor}`}>
+            {isEditing ? (
+              <>
+                <button
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                  className={`px-4 py-2 ${textSecondary} hover:${textPrimary} disabled:opacity-50`}
+                >
+                  <X className="h-4 w-4 inline mr-2" />
+                  {t('common.cancel', 'Cancel')}
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 flex items-center"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {isSaving ? t('common.saving', 'Saving...') : t('common.save', 'Save')}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={onClose}
+                  className={`px-4 py-2 ${textSecondary} hover:${textPrimary}`}
+                >
+                  {t('common.close', 'Close')}
+                </button>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center"
+                >
+                  <Edit2 className="h-4 w-4 mr-2" />
+                  {t('employees.editEmployee', 'Edit Employee')}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
