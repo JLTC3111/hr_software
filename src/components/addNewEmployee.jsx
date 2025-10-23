@@ -1,10 +1,35 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Briefcase, Building2, DollarSign, Save, X, Upload, Check, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import * as employeeService from '../services/employeeService';
+
+// InputField component outside to prevent recreation
+const InputField = React.memo(({ name, label, icon: Icon, type = 'text', required, value, onChange, error, touched, textSecondary, bgPrimary, textPrimary, borderPrimary, ...props }) => (
+  <div>
+    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    <div className="relative">
+      {Icon && <Icon className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${textSecondary}`} />}
+      <input
+        type={type}
+        name={name}
+        value={value || ''}
+        onChange={onChange}
+        className={`w-full ${Icon ? 'pl-10' : 'pl-4'} pr-4 py-2 ${bgPrimary} ${textPrimary} border ${error && touched ? 'border-red-500' : borderPrimary} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none`}
+        {...props}
+      />
+    </div>
+    {error && touched && (
+      <p className="text-red-500 text-sm mt-1">{error}</p>
+    )}
+  </div>
+));
+
+InputField.displayName = 'InputField';
 
 const AddNewEmployee = ({ refetchEmployees }) => {
   const navigate = useNavigate();
@@ -48,8 +73,16 @@ const AddNewEmployee = ({ refetchEmployees }) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     setTouched(prev => ({ ...prev, [name]: true }));
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
-  }, [errors]);
+    // Clear error for this field without depending on errors state
+    setErrors(prev => {
+      if (prev[name]) {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      }
+      return prev;
+    });
+  }, []); // No dependencies - function is stable
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
@@ -152,28 +185,6 @@ const AddNewEmployee = ({ refetchEmployees }) => {
     }
   };
 
-  const InputField = ({ name, label, icon: Icon, type = 'text', required, ...props }) => (
-    <div>
-      <label className={`block text-sm font-medium ${text.secondary} mb-2`}>
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <div className="relative">
-        {Icon && <Icon className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${text.secondary}`} />}
-        <input
-          type={type}
-          name={name}
-          value={formData[name]}
-          onChange={handleChange}
-          className={`w-full ${Icon ? 'pl-10' : 'pl-4'} pr-4 py-2 ${bg.primary} ${text.primary} border ${errors[name] && touched[name] ? 'border-red-500' : border.primary} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none`}
-          {...props}
-        />
-      </div>
-      {errors[name] && touched[name] && (
-        <p className="text-red-500 text-sm mt-1">{errors[name]}</p>
-      )}
-    </div>
-  );
-
   return (
     <div className={`min-h-screen ${bg.primary} p-4 md:p-8`}>
       <div className="max-w-4xl mx-auto">
@@ -218,17 +229,78 @@ const AddNewEmployee = ({ refetchEmployees }) => {
                   </label>
                 </div>
               </div>
-              <InputField name="name" label={t('employees.name')} icon={User} required />
-              <InputField name="email" label={t('employees.email')} type="email" icon={Mail} required />
-              <InputField name="phone" label={t('employees.phone')} type="tel" icon={Phone} required />
-              <InputField name="dob" label={t('addEmployee.dob')} type="date" icon={Calendar} required />
+              <InputField 
+                name="name" 
+                label={t('employees.name')} 
+                icon={User} 
+                required 
+                value={formData.name}
+                onChange={handleChange}
+                error={errors.name}
+                touched={touched.name}
+                textSecondary={text.secondary}
+                bgPrimary={bg.primary}
+                textPrimary={text.primary}
+                borderPrimary={border.primary}
+              />
+              <InputField 
+                name="email" 
+                label={t('employees.email')} 
+                type="email" 
+                icon={Mail} 
+                required 
+                value={formData.email}
+                onChange={handleChange}
+                error={errors.email}
+                touched={touched.email}
+                textSecondary={text.secondary}
+                bgPrimary={bg.primary}
+                textPrimary={text.primary}
+                borderPrimary={border.primary}
+              />
+              <InputField 
+                name="phone" 
+                label={t('employees.phone')} 
+                type="tel" 
+                icon={Phone} 
+                required 
+                value={formData.phone}
+                onChange={handleChange}
+                error={errors.phone}
+                touched={touched.phone}
+                textSecondary={text.secondary}
+                bgPrimary={bg.primary}
+                textPrimary={text.primary}
+                borderPrimary={border.primary}
+              />
+              <InputField 
+                name="dob" 
+                label={t('addEmployee.dob')} 
+                type="date" 
+                icon={Calendar} 
+                required 
+                value={formData.dob}
+                onChange={handleChange}
+                error={errors.dob}
+                touched={touched.dob}
+                textSecondary={text.secondary}
+                bgPrimary={bg.primary}
+                textPrimary={text.primary}
+                borderPrimary={border.primary}
+              />
               <div>
                 <label className={`block text-sm font-medium ${text.secondary} mb-2`}>{t('addEmployee.address')} <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <MapPin className={`absolute left-3 top-3 h-5 w-5 ${text.secondary}`} />
-                  <textarea name="address" value={formData.address} onChange={handleChange} rows="3" className={`w-full pl-10 pr-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:ring-2 focus:ring-blue-500`} />
+                  <textarea 
+                    name="address" 
+                    value={formData.address || ''} 
+                    onChange={handleChange} 
+                    rows="3" 
+                    className={`w-full pl-10 pr-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none`} 
+                  />
                 </div>
-                {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
+                {errors.address && touched.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
               </div>
             </div>
           )}
@@ -258,8 +330,38 @@ const AddNewEmployee = ({ refetchEmployees }) => {
                 </div>
                 {errors.department && <p className="text-red-500 text-sm mt-1">{errors.department}</p>}
               </div>
-              <InputField name="startDate" label={t('employees.startDate')} type="date" icon={Calendar} required />
-              <InputField name="salary" label={t('employees.salary')} type="number" icon={DollarSign} min="0" step="1000" required />
+              <InputField 
+                name="startDate" 
+                label={t('employees.startDate')} 
+                type="date" 
+                icon={Calendar} 
+                required 
+                value={formData.startDate}
+                onChange={handleChange}
+                error={errors.startDate}
+                touched={touched.startDate}
+                textSecondary={text.secondary}
+                bgPrimary={bg.primary}
+                textPrimary={text.primary}
+                borderPrimary={border.primary}
+              />
+              <InputField 
+                name="salary" 
+                label={t('employees.salary')} 
+                type="number" 
+                icon={DollarSign} 
+                min="0" 
+                step="1000" 
+                required 
+                value={formData.salary}
+                onChange={handleChange}
+                error={errors.salary}
+                touched={touched.salary}
+                textSecondary={text.secondary}
+                bgPrimary={bg.primary}
+                textPrimary={text.primary}
+                borderPrimary={border.primary}
+              />
             </div>
           )}
 

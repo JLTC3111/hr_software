@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { X, User } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useTheme } from '../contexts/ThemeContext'
@@ -22,19 +22,43 @@ const AddEmployeeModal = ({ isOpen, onClose, onAddEmployee }) => {
 
   const [errors, setErrors] = useState({});
 
+  // Reset form when modal is opened/closed
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData({
+        name: '',
+        position: '',
+        department: '',
+        email: '',
+        dob: '',
+        address: '',
+        phone: '',
+        startDate: '',
+        status: 'Active',
+        performance: '3.0'
+      });
+      setErrors({});
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  const handleChange = (e) => {
+  const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
     // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
+    setErrors(prev => {
+      if (prev[name]) {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      }
+      return prev;
+    });
+  }, []);
 
   const validateForm = () => {
     const newErrors = {};
@@ -61,53 +85,32 @@ const AddEmployeeModal = ({ isOpen, onClose, onAddEmployee }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (validateForm()) {
       const newEmployee = {
-        id: Date.now(), // Generate unique ID
-        ...formData,
+        name: formData.name,
+        position: formData.position,
+        department: formData.department,
+        email: formData.email,
+        dob: formData.dob,
+        address: formData.address,
+        phone: formData.phone,
+        startDate: formData.startDate,
+        status: formData.status,
         performance: parseFloat(formData.performance),
         photo: null // Default to no photo, user can upload later
       };
       
-      onAddEmployee(newEmployee);
-      
-      // Reset form
-      setFormData({
-        name: '',
-        position: '',
-        department: '',
-        email: '',
-        dob: '',
-        address: '',
-        phone: '',
-        startDate: '',
-        status: 'Active',
-        performance: '3.0'
-      });
-      setErrors({});
+      await onAddEmployee(newEmployee);
       onClose();
     }
   };
 
-  const handleCancel = () => {
-    setFormData({
-      name: '',
-      position: '',
-      department: '',
-      email: '',
-      dob: '',
-      address: '',
-      phone: '',
-      startDate: '',
-      status: 'Active',
-      performance: '3.0'
-    });
-    setErrors({});
+  const handleCancel = useCallback(() => {
     onClose();
-  };
+  }, [onClose]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={handleCancel}>

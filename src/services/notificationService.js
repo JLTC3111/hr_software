@@ -225,13 +225,14 @@ export const getNotificationStats = async (userId) => {
       .from('notification_stats')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle(); // Changed from .single() to .maybeSingle() to handle cases where no stats exist
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error) throw error;
 
     return { 
       success: true, 
       data: data || {
+        user_id: userId,
         total_notifications: 0,
         unread_count: 0,
         error_count: 0,
@@ -241,7 +242,18 @@ export const getNotificationStats = async (userId) => {
     };
   } catch (error) {
     console.error('Error fetching notification stats:', error);
-    return { success: false, error: error.message };
+    return { 
+      success: false, 
+      error: error.message,
+      data: {
+        user_id: userId,
+        total_notifications: 0,
+        unread_count: 0,
+        error_count: 0,
+        warning_count: 0,
+        latest_notification_at: null
+      }
+    };
   }
 };
 

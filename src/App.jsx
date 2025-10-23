@@ -272,16 +272,22 @@ const HRManagementApp = () => {
   };
 
   const handleAddEmployee = async (newEmployee) => {
-    // Create employee in Supabase
-    const result = await employeeService.createEmployee(newEmployee);
-    
-    if (result.success) {
-      // Add to local state
-      setEmployees(prevEmployees => [...prevEmployees, result.data]);
-      setIsAddEmployeeModalOpen(false);
-    } else {
-      console.error('Error adding employee:', result.error);
-      alert('Failed to add employee. Please try again.');
+    try {
+      // Create employee in Supabase
+      const result = await employeeService.createEmployee(newEmployee);
+      
+      if (result.success) {
+        // Refetch all employees to ensure we have the latest data from the database
+        await fetchEmployees();
+        setIsAddEmployeeModalOpen(false);
+        alert('Employee added successfully!');
+      } else {
+        console.error('Error adding employee:', result.error);
+        alert(`Failed to add employee: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error in handleAddEmployee:', error);
+      alert('An unexpected error occurred while adding employee.');
     }
   };
 

@@ -52,11 +52,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   global: {
     headers: {
       'Accept': 'application/json',
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
     }
   },
   db: {
     schema: 'public'
+  },
+  // Ensure proper content negotiation
+  realtime: {
+    headers: {
+      'Accept': 'application/json'
+    }
   }
 });
 
