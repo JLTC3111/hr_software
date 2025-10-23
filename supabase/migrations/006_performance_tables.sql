@@ -6,8 +6,8 @@
 -- ============================================
 CREATE TABLE IF NOT EXISTS performance_reviews (
   id BIGSERIAL PRIMARY KEY,
-  employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
-  reviewer_id INTEGER REFERENCES employees(id),
+  employee_id TEXT NOT NULL REFERENCES employees(id) ON DELETE CASCADE,  -- Changed to TEXT
+  reviewer_id TEXT REFERENCES employees(id),  -- Changed to TEXT
   review_period VARCHAR(50) NOT NULL, -- Q1-2024, Q2-2024, Annual-2024, etc.
   review_type VARCHAR(50) NOT NULL DEFAULT 'quarterly', -- quarterly, annual, mid-year, probation, project
   overall_rating DECIMAL(3,2) CHECK (overall_rating >= 1.0 AND overall_rating <= 5.0),
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS performance_reviews (
 -- ============================================
 CREATE TABLE IF NOT EXISTS performance_goals (
   id BIGSERIAL PRIMARY KEY,
-  employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+  employee_id TEXT NOT NULL REFERENCES employees(id) ON DELETE CASCADE,  -- Changed to TEXT
   title VARCHAR(255) NOT NULL,
   description TEXT,
   category VARCHAR(50) DEFAULT 'general', -- technical, leadership, project, learning, process_improvement, personal_development
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS performance_goals (
   status VARCHAR(50) DEFAULT 'pending', -- pending, in_progress, completed, cancelled, blocked
   progress_percentage INTEGER DEFAULT 0 CHECK (progress_percentage >= 0 AND progress_percentage <= 100),
   priority VARCHAR(50) DEFAULT 'medium', -- low, medium, high, critical
-  assigned_by INTEGER REFERENCES employees(id),
+  assigned_by TEXT REFERENCES employees(id),  -- Changed to TEXT
   assigned_date DATE DEFAULT CURRENT_DATE,
   started_date DATE,
   completed_date DATE,
@@ -79,13 +79,13 @@ CREATE TABLE IF NOT EXISTS goal_milestones (
 -- ============================================
 CREATE TABLE IF NOT EXISTS skills_assessments (
   id BIGSERIAL PRIMARY KEY,
-  employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+  employee_id TEXT NOT NULL REFERENCES employees(id) ON DELETE CASCADE,  -- Changed to TEXT
   skill_name VARCHAR(255) NOT NULL,
   skill_category VARCHAR(50) DEFAULT 'technical', -- technical, soft_skill, leadership, domain_knowledge, tool, language
   rating DECIMAL(3,2) NOT NULL CHECK (rating >= 1.0 AND rating <= 5.0),
   proficiency_level VARCHAR(50), -- beginner, intermediate, advanced, expert
   years_experience DECIMAL(4,1),
-  assessed_by INTEGER REFERENCES employees(id),
+  assessed_by TEXT REFERENCES employees(id),  -- Changed to TEXT
   assessment_date DATE DEFAULT CURRENT_DATE,
   notes TEXT,
   certification_url TEXT,
@@ -100,8 +100,8 @@ CREATE TABLE IF NOT EXISTS skills_assessments (
 -- ============================================
 CREATE TABLE IF NOT EXISTS employee_feedback (
   id BIGSERIAL PRIMARY KEY,
-  employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
-  feedback_from INTEGER REFERENCES employees(id),
+  employee_id TEXT NOT NULL REFERENCES employees(id) ON DELETE CASCADE,  -- Changed to TEXT
+  feedback_from TEXT REFERENCES employees(id),  -- Changed to TEXT
   feedback_type VARCHAR(50) DEFAULT 'peer', -- peer, manager, subordinate, self, client
   rating DECIMAL(3,2) CHECK (rating >= 1.0 AND rating <= 5.0),
   feedback_text TEXT NOT NULL,
@@ -263,13 +263,14 @@ ALTER TABLE skills_assessments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE employee_feedback ENABLE ROW LEVEL SECURITY;
 
 -- Performance Reviews Policies
+-- Performance Reviews Policies
 CREATE POLICY "Employees can view their own reviews" ON performance_reviews
     FOR SELECT USING (
-        employee_id = (current_setting('app.current_user_id')::INTEGER)
-        OR reviewer_id = (current_setting('app.current_user_id')::INTEGER)
+        employee_id = current_setting('app.current_user_id')
+        OR reviewer_id = current_setting('app.current_user_id')
         OR EXISTS (
             SELECT 1 FROM employees 
-            WHERE id = (current_setting('app.current_user_id')::INTEGER)
+            WHERE id = current_setting('app.current_user_id')
             AND position IN ('hr_specialist', 'general_manager', 'managing_director')
         )
     );
@@ -278,17 +279,17 @@ CREATE POLICY "Managers and HR can create reviews" ON performance_reviews
     FOR INSERT WITH CHECK (
         EXISTS (
             SELECT 1 FROM employees 
-            WHERE id = (current_setting('app.current_user_id')::INTEGER)
+            WHERE id = current_setting('app.current_user_id')
             AND position IN ('hr_specialist', 'general_manager', 'managing_director', 'senior_developer')
         )
     );
 
 CREATE POLICY "Reviewers can update their reviews" ON performance_reviews
     FOR UPDATE USING (
-        reviewer_id = (current_setting('app.current_user_id')::INTEGER)
+        reviewer_id = current_setting('app.current_user_id')
         OR EXISTS (
             SELECT 1 FROM employees 
-            WHERE id = (current_setting('app.current_user_id')::INTEGER)
+            WHERE id = current_setting('app.current_user_id')
             AND position IN ('hr_specialist', 'general_manager', 'managing_director')
         )
     );
@@ -296,11 +297,11 @@ CREATE POLICY "Reviewers can update their reviews" ON performance_reviews
 -- Performance Goals Policies
 CREATE POLICY "Employees can view their own goals" ON performance_goals
     FOR SELECT USING (
-        employee_id = (current_setting('app.current_user_id')::INTEGER)
-        OR assigned_by = (current_setting('app.current_user_id')::INTEGER)
+        employee_id = current_setting('app.current_user_id')
+        OR assigned_by = current_setting('app.current_user_id')
         OR EXISTS (
             SELECT 1 FROM employees 
-            WHERE id = (current_setting('app.current_user_id')::INTEGER)
+            WHERE id = current_setting('app.current_user_id')
             AND position IN ('hr_specialist', 'general_manager', 'managing_director')
         )
     );
@@ -309,18 +310,18 @@ CREATE POLICY "Managers can assign goals" ON performance_goals
     FOR INSERT WITH CHECK (
         EXISTS (
             SELECT 1 FROM employees 
-            WHERE id = (current_setting('app.current_user_id')::INTEGER)
+            WHERE id = current_setting('app.current_user_id')
             AND position IN ('hr_specialist', 'general_manager', 'managing_director', 'senior_developer')
         )
     );
 
 CREATE POLICY "Employees can update their goal progress" ON performance_goals
     FOR UPDATE USING (
-        employee_id = (current_setting('app.current_user_id')::INTEGER)
-        OR assigned_by = (current_setting('app.current_user_id')::INTEGER)
+        employee_id = current_setting('app.current_user_id')
+        OR assigned_by = current_setting('app.current_user_id')
         OR EXISTS (
             SELECT 1 FROM employees 
-            WHERE id = (current_setting('app.current_user_id')::INTEGER)
+            WHERE id = current_setting('app.current_user_id')
             AND position IN ('hr_specialist', 'general_manager', 'managing_director')
         )
     );
@@ -332,13 +333,13 @@ CREATE POLICY "Employees can view milestones for their goals" ON goal_milestones
             SELECT 1 FROM performance_goals 
             WHERE id = goal_milestones.goal_id 
             AND (
-                employee_id = (current_setting('app.current_user_id')::INTEGER)
-                OR assigned_by = (current_setting('app.current_user_id')::INTEGER)
+                employee_id = current_setting('app.current_user_id')
+                OR assigned_by = current_setting('app.current_user_id')
             )
         )
         OR EXISTS (
             SELECT 1 FROM employees 
-            WHERE id = (current_setting('app.current_user_id')::INTEGER)
+            WHERE id = current_setting('app.current_user_id')
             AND position IN ('hr_specialist', 'general_manager', 'managing_director')
         )
     );
@@ -348,11 +349,11 @@ CREATE POLICY "Employees can manage milestones for their goals" ON goal_mileston
         EXISTS (
             SELECT 1 FROM performance_goals 
             WHERE id = goal_milestones.goal_id 
-            AND employee_id = (current_setting('app.current_user_id')::INTEGER)
+            AND employee_id = current_setting('app.current_user_id')
         )
         OR EXISTS (
             SELECT 1 FROM employees 
-            WHERE id = (current_setting('app.current_user_id')::INTEGER)
+            WHERE id = current_setting('app.current_user_id')
             AND position IN ('hr_specialist', 'general_manager', 'managing_director')
         )
     );
@@ -360,20 +361,20 @@ CREATE POLICY "Employees can manage milestones for their goals" ON goal_mileston
 -- Skills Assessments Policies
 CREATE POLICY "Employees can view their own skills" ON skills_assessments
     FOR SELECT USING (
-        employee_id = (current_setting('app.current_user_id')::INTEGER)
+        employee_id = current_setting('app.current_user_id')
         OR EXISTS (
             SELECT 1 FROM employees 
-            WHERE id = (current_setting('app.current_user_id')::INTEGER)
+            WHERE id = current_setting('app.current_user_id')
             AND position IN ('hr_specialist', 'general_manager', 'managing_director')
         )
     );
 
 CREATE POLICY "Employees can manage their own skills" ON skills_assessments
     FOR ALL USING (
-        employee_id = (current_setting('app.current_user_id')::INTEGER)
+        employee_id = current_setting('app.current_user_id')
         OR EXISTS (
             SELECT 1 FROM employees 
-            WHERE id = (current_setting('app.current_user_id')::INTEGER)
+            WHERE id = current_setting('app.current_user_id')
             AND position IN ('hr_specialist', 'general_manager', 'managing_director')
         )
     );
@@ -381,21 +382,21 @@ CREATE POLICY "Employees can manage their own skills" ON skills_assessments
 -- Employee Feedback Policies
 CREATE POLICY "Employees can view feedback about them" ON employee_feedback
     FOR SELECT USING (
-        employee_id = (current_setting('app.current_user_id')::INTEGER)
-        OR (feedback_from = (current_setting('app.current_user_id')::INTEGER) AND NOT is_anonymous)
+        employee_id = current_setting('app.current_user_id')
+        OR (feedback_from = current_setting('app.current_user_id') AND NOT is_anonymous)
         OR EXISTS (
             SELECT 1 FROM employees 
-            WHERE id = (current_setting('app.current_user_id')::INTEGER)
+            WHERE id = current_setting('app.current_user_id')
             AND position IN ('hr_specialist', 'general_manager', 'managing_director')
         )
     );
 
 CREATE POLICY "Employees can give feedback" ON employee_feedback
     FOR INSERT WITH CHECK (
-        feedback_from = (current_setting('app.current_user_id')::INTEGER)
+        feedback_from = current_setting('app.current_user_id')
         OR EXISTS (
             SELECT 1 FROM employees 
-            WHERE id = (current_setting('app.current_user_id')::INTEGER)
+            WHERE id = current_setting('app.current_user_id')
             AND position IN ('hr_specialist', 'general_manager', 'managing_director')
         )
     );

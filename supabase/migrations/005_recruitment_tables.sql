@@ -8,14 +8,14 @@ CREATE TABLE IF NOT EXISTS job_postings (
   id BIGSERIAL PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
   department VARCHAR(100) NOT NULL,
-  position_type VARCHAR(50) NOT NULL DEFAULT 'full-time', -- full-time, part-time, contract, internship
+  position_type VARCHAR(50) NOT NULL DEFAULT 'full-time',
   description TEXT,
   requirements TEXT,
   responsibilities TEXT,
   salary_range VARCHAR(100),
   location VARCHAR(255) DEFAULT 'Office',
-  posted_by INTEGER REFERENCES employees(id),
-  status VARCHAR(50) DEFAULT 'active', -- active, paused, closed, filled
+  posted_by TEXT REFERENCES employees(id),  -- Changed to TEXT
+  status VARCHAR(50) DEFAULT 'active',
   posted_date DATE DEFAULT CURRENT_DATE,
   closing_date DATE,
   openings INTEGER DEFAULT 1,
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS job_applications (
 CREATE TABLE IF NOT EXISTS interview_schedules (
   id BIGSERIAL PRIMARY KEY,
   application_id BIGINT NOT NULL REFERENCES job_applications(id) ON DELETE CASCADE,
-  interviewer_id INTEGER REFERENCES employees(id),
+  interviewer_id TEXT REFERENCES employees(id),
   interview_type VARCHAR(50) NOT NULL, -- phone, video, technical, hr, panel, final
   scheduled_time TIMESTAMP WITH TIME ZONE NOT NULL,
   duration_minutes INTEGER DEFAULT 60,
@@ -167,7 +167,7 @@ CREATE POLICY "HR can manage job postings" ON job_postings
     FOR ALL USING (
         EXISTS (
             SELECT 1 FROM employees 
-            WHERE id = (current_setting('app.current_user_id')::INTEGER)
+            WHERE id = current_setting('app.current_user_id')  -- Removed ::INTEGER cast
             AND position IN ('hr_specialist', 'general_manager', 'managing_director')
         )
     );
@@ -177,7 +177,7 @@ CREATE POLICY "HR can view all applications" ON job_applications
     FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM employees 
-            WHERE id = (current_setting('app.current_user_id')::INTEGER)
+            WHERE id = current_setting('app.current_user_id')  -- Removed ::INTEGER
             AND position IN ('hr_specialist', 'general_manager', 'managing_director')
         )
     );
@@ -186,7 +186,7 @@ CREATE POLICY "HR can manage applications" ON job_applications
     FOR ALL USING (
         EXISTS (
             SELECT 1 FROM employees 
-            WHERE id = (current_setting('app.current_user_id')::INTEGER)
+            WHERE id = (current_setting('app.current_user_id'))
             AND position IN ('hr_specialist', 'general_manager', 'managing_director')
         )
     );
@@ -194,10 +194,10 @@ CREATE POLICY "HR can manage applications" ON job_applications
 -- Interview Schedules Policies
 CREATE POLICY "Interviewers can view their interviews" ON interview_schedules
     FOR SELECT USING (
-        interviewer_id = (current_setting('app.current_user_id')::INTEGER)
+        interviewer_id = (current_setting('app.current_user_id'))
         OR EXISTS (
             SELECT 1 FROM employees 
-            WHERE id = (current_setting('app.current_user_id')::INTEGER)
+            WHERE id = (current_setting('app.current_user_id'))
             AND position IN ('hr_specialist', 'general_manager', 'managing_director')
         )
     );

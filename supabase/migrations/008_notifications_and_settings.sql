@@ -192,22 +192,6 @@ INSERT INTO hr_user_settings (user_id)
 SELECT id FROM hr_users
 ON CONFLICT (user_id) DO NOTHING;
 
--- Create some sample notifications for testing (optional)
--- Uncomment the lines below if you want sample data
-/*
-INSERT INTO hr_notifications (user_id, title, message, type, category, action_url, action_label)
-SELECT 
-  id,
-  'Welcome to HR Manager',
-  'Your account has been successfully created. Explore all the features available to you.',
-  'success',
-  'system',
-  '/settings',
-  'View Settings'
-FROM hr_users
-LIMIT 3;
-*/
-
 COMMENT ON TABLE hr_notifications IS 'Stores user notifications for various system events';
 COMMENT ON TABLE hr_user_settings IS 'Stores user-specific preferences and settings';
 COMMENT ON VIEW notification_stats IS 'Aggregated notification statistics per user';
