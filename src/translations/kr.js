@@ -197,7 +197,12 @@ export default {
     edit: '편집',
     delete: '삭제',
     active: '활성',
-    inactive: '비활성'
+    inactive: '비활성',
+    namePlaceholder: '이름',
+    emailPlaceholder: '이메일',
+    phonePlaceholder: '전화번호',
+    dobPlaceholder: '생년월일',
+    addressPlaceholder: '주소',
   },
 
   // Recruitment

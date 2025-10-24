@@ -191,7 +191,12 @@ export default {
     delete: 'Löschen',
     active: 'Aktiv',
     inactive: 'Inaktiv',
-    onLeave: 'Im Urlaub'
+    onLeave: 'Im Urlaub',
+    namePlaceholder: 'Name',
+    emailPlaceholder: 'E-Mail',
+    phonePlaceholder: 'Telefonnummer',
+    dobPlaceholder: 'Geburtsdatum',
+    addressPlaceholder: 'Adresse',
   },
 
   // Search

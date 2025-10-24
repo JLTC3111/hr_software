@@ -261,7 +261,12 @@ login: {
     edit: 'Editar',
     delete: 'Eliminar',
     active: 'Activo',
-    inactive: 'Inactivo'
+    inactive: 'Inactivo',
+    namePlaceholder: 'Nombre',
+    emailPlaceholder: 'Correo electrónico',
+    phonePlaceholder: 'Número de teléfono',
+    dobPlaceholder: 'Fecha de nacimiento',
+    addressPlaceholder: 'Dirección',
   },
 
   // Recruitment

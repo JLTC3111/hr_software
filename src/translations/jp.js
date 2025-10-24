@@ -197,7 +197,12 @@ export default {
     edit: '編集',
     delete: '削除',
     active: 'アクティブ',
-    inactive: '非アクティブ'
+    inactive: '非アクティブ',
+    namePlaceholder: '氏名',
+    emailPlaceholder: 'Eメール',
+    phonePlaceholder: '電話番号',
+    dobPlaceholder: '生年月日',
+    addressPlaceholder: '住所',
   },
 
   // Recruitment

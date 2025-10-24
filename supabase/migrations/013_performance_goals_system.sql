@@ -240,6 +240,7 @@ CREATE POLICY "Allow authenticated users to insert employee feedback"
     WITH CHECK (true);
 
 -- Create goal milestones table
+DROP TABLE IF EXISTS public.goal_milestones CASCADE;
 CREATE TABLE IF NOT EXISTS public.goal_milestones (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     goal_id UUID NOT NULL REFERENCES public.performance_goals(id) ON DELETE CASCADE,
@@ -257,6 +258,7 @@ CREATE TABLE IF NOT EXISTS public.goal_milestones (
 );
 
 -- Create employee feedback table
+DROP TABLE IF EXISTS public.employee_feedback CASCADE;
 CREATE TABLE IF NOT EXISTS public.employee_feedback (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     employee_id TEXT NOT NULL REFERENCES public.employees(id) ON DELETE CASCADE,
@@ -274,6 +276,10 @@ CREATE TABLE IF NOT EXISTS public.employee_feedback (
 );
 
 -- Create view for employee performance summary
+DROP VIEW IF EXISTS public.employee_performance_summary CASCADE;
+DROP VIEW IF EXISTS public.goals_with_progress CASCADE;
+DROP VIEW IF EXISTS public.skills_matrix CASCADE;
+
 CREATE OR REPLACE VIEW public.employee_performance_summary AS
 SELECT 
     e.id AS employee_id,

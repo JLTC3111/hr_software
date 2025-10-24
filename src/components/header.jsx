@@ -26,7 +26,14 @@ const Header = () => {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center">
-              <img src="logoIcons/logo.png" alt="Logo" onClick={() => window.open('https://icue.vn', '_blank')} className="h-8 w-auto object-cover cursor-pointer" />
+              <img 
+                src="/logoIcons/logo.png" 
+                alt="Logo" 
+                onClick={() => window.open('https://icue.vn', '_blank')} 
+                className="h-8 w-auto object-cover cursor-pointer"
+                loading="eager"
+                key="header-logo"
+              />
             </div>
           </div>
           <div className="flex items-center space-x-4">

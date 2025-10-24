@@ -196,7 +196,12 @@ export default {
     edit: 'แก้ไข',
     delete: 'ลบ',
     active: 'ใช้งาน',
-    inactive: 'ไม่ใช้งาน'
+    inactive: 'ไม่ใช้งาน',
+    namePlaceholder: 'ชื่อ',
+    emailPlaceholder: 'อีเมล',
+    phonePlaceholder: 'เบอร์โทรศัพท์',
+    dobPlaceholder: 'วันเกิด',
+    addressPlaceholder: 'ที่อยู่',
   },
 
   // Recruitment

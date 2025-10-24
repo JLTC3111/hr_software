@@ -219,7 +219,12 @@ export default {
     contactInformation: 'Thông tin liên hệ',
     employmentDetails: 'Chi tiết công việc',
     started: 'Bắt đầu',
-    editEmployee: 'Chỉnh sửa nhân viên'
+    editEmployee: 'Chỉnh sửa nhân viên',
+    namePlaceholder: 'Họ & tên',
+    emailPlaceholder: 'Email',
+    phonePlaceholder: 'Số điện thoại',
+    dobPlaceholder: 'Ngày sinh',
+    addressPlaceholder: 'Địa chỉ',
   },
 
   // Add Employee Modal

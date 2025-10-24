@@ -204,7 +204,12 @@ export default {
     edit: 'Редактировать',
     delete: 'Удалить',
     active: 'Активный',
-    inactive: 'Неактивный'
+    inactive: 'Неактивный',
+    namePlaceholder: 'Имя',
+    emailPlaceholder: 'Эл. почта',
+    phonePlaceholder: 'Телефон',
+    dobPlaceholder: 'Дата рождения',
+    addressPlaceholder: 'Адрес',
   },
 
   // Recruitment

@@ -3,6 +3,7 @@ import { BarChart3, PieChart, TrendingUp, Download, Calendar, Users, DollarSign,
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import * as timeTrackingService from '../services/timeTrackingService';
+import * as reportService from '../services/reportService';
 import MetricDetailModal from './metricDetailModal.jsx';
 
 const Reports = ({ employees, applications }) => {
@@ -13,6 +14,9 @@ const Reports = ({ employees, applications }) => {
   const [timeTrackingData, setTimeTrackingData] = useState({});
   const [modalOpen, setModalOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState({ type: '', data: [], title: '' });
+  const [reportType, setReportType] = useState('performance');
+  const [generatedReport, setGeneratedReport] = useState(null);
+  const [generating, setGenerating] = useState(false);
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
   
@@ -216,6 +220,151 @@ const Reports = ({ employees, applications }) => {
     
     setModalConfig({ type: metricType, data, title });
     setModalOpen(true);
+  };
+
+  // Get date range for filters
+  const getDateRangeFilters = () => {
+    const today = new Date();
+    let dateFrom, dateTo = today.toISOString().split('T')[0];
+    
+    switch(dateRange) {
+      case 'last-week':
+        dateFrom = new Date(today.setDate(today.getDate() - 7)).toISOString().split('T')[0];
+        break;
+      case 'last-month':
+        dateFrom = new Date(today.setMonth(today.getMonth() - 1)).toISOString().split('T')[0];
+        break;
+      case 'last-quarter':
+        dateFrom = new Date(today.setMonth(today.getMonth() - 3)).toISOString().split('T')[0];
+        break;
+      case 'last-year':
+        dateFrom = new Date(today.setFullYear(today.getFullYear() - 1)).toISOString().split('T')[0];
+        break;
+      default:
+        dateFrom = null;
+    }
+    
+    return { dateFrom, dateTo };
+  };
+
+  // Handle report generation
+  const handleGenerateReport = async () => {
+    setGenerating(true);
+    const { dateFrom, dateTo } = getDateRangeFilters();
+    const filters = {
+      department,
+      dateFrom,
+      dateTo,
+      month: currentMonth,
+      year: currentYear
+    };
+
+    try {
+      let result;
+      
+      switch(reportType) {
+        case 'performance':
+          result = await reportService.generatePerformanceReport(filters);
+          break;
+        case 'salary':
+          result = await reportService.generateSalaryReport(filters);
+          break;
+        case 'attendance':
+          result = await reportService.generateAttendanceReport(filters);
+          break;
+        case 'recruitment':
+          result = await reportService.generateRecruitmentReport(filters);
+          break;
+        case 'department':
+          result = await reportService.generateDepartmentReport(filters);
+          break;
+        default:
+          result = await reportService.generatePerformanceReport(filters);
+      }
+
+      if (result.success) {
+        setGeneratedReport(result.data);
+        alert(t('reports.reportGenerated', 'Report generated successfully!'));
+      } else {
+        alert(t('reports.reportError', 'Error generating report: ') + result.error);
+      }
+    } catch (error) {
+      console.error('Error generating report:', error);
+      alert(t('reports.reportError', 'Error generating report'));
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // Handle pre-built report generation
+  const handlePrebuiltReport = async (reportName) => {
+    setGenerating(true);
+    const { dateFrom, dateTo } = getDateRangeFilters();
+    
+    try {
+      let result;
+      
+      switch(reportName) {
+        case 'performance':
+          result = await reportService.generatePerformanceReport({ dateFrom, dateTo });
+          break;
+        case 'salary':
+          result = await reportService.generateSalaryReport({ dateFrom, dateTo });
+          break;
+        case 'attendance':
+          result = await reportService.generateAttendanceReport({
+            month: currentMonth,
+            year: currentYear
+          });
+          break;
+        case 'recruitment':
+          result = await reportService.generateRecruitmentReport({ dateFrom, dateTo });
+          break;
+        case 'turnover':
+          result = await reportService.generateTurnoverReport({ dateFrom, dateTo });
+          break;
+        case 'department':
+          result = await reportService.generateDepartmentReport({ dateFrom, dateTo });
+          break;
+        default:
+          return;
+      }
+
+      if (result.success) {
+        setGeneratedReport(result.data);
+        alert(t('reports.reportGenerated', 'Report generated successfully!'));
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // Handle export to CSV
+  const handleExportCSV = (data, filename) => {
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      alert(t('reports.noDataToExport', 'No data to export'));
+      return;
+    }
+    
+    reportService.exportToCSV(data, filename);
+  };
+
+  // Handle export all data
+  const handleExportAll = () => {
+    const exportData = employees.map(emp => ({
+      Name: emp.name,
+      Department: emp.department,
+      Position: emp.position,
+      Email: emp.email,
+      Phone: emp.phone,
+      Status: emp.status,
+      Salary: emp.salary,
+      StartDate: emp.start_date || emp.startDate
+    }));
+    
+    handleExportCSV(exportData, 'all_employees');
   };
   
   const StatCard = ({ title, value, subtitle, icon: Icon, color, trend, onClick }) => (
@@ -632,18 +781,20 @@ const Reports = ({ employees, applications }) => {
               {t('reports.reportType')}
             </label>
             <select 
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              value={reportType}
+              onChange={(e) => setReportType(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
               style={{
                 backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
                 color: isDarkMode ? '#ffffff' : '#111827',
                 borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
               }}
             >
-              <option>{t('reports.employeePerformance')}</option>
-              <option>{t('reports.salaryAnalysis')}</option>
-              <option>{t('reports.attendanceReport')}</option>
-              <option>{t('reports.recruitmentMetrics')}</option>
-              <option>{t('reports.departmentComparison')}</option>
+              <option value="performance">{t('reports.employeePerformance')}</option>
+              <option value="salary">{t('reports.salaryAnalysis')}</option>
+              <option value="attendance">{t('reports.attendanceReport')}</option>
+              <option value="recruitment">{t('reports.recruitmentMetrics')}</option>
+              <option value="department">{t('reports.departmentComparison')}</option>
             </select>
           </div>
           
@@ -708,18 +859,25 @@ const Reports = ({ employees, applications }) => {
 
         <div className="flex space-x-4">
           <button 
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+            onClick={handleGenerateReport}
+            disabled={generating}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all"
             style={{
               backgroundColor: '#2563eb',
               color: '#ffffff',
               borderColor: '#2563eb'
             }}
           >
-            <BarChart3 className="h-4 w-4" />
-            <span>{t('reports.generateReport')}</span>
+            {generating ? <Loader className="h-4 w-4 animate-spin" /> : <BarChart3 className="h-4 w-4" />}
+            <span>{generating ? t('common.generating', 'Generating...') : t('reports.generateReport')}</span>
           </button>
           <button 
-            className="px-6 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2"
+            onClick={() => generatedReport && handleExportCSV(
+              Array.isArray(generatedReport) ? generatedReport : (generatedReport.employees || generatedReport.reviews || generatedReport.summaries || []),
+              `${reportType}_report`
+            )}
+            disabled={!generatedReport}
+            className="px-6 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all"
             style={{
               backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
               color: isDarkMode ? '#d1d5db' : '#374151',
@@ -727,10 +885,11 @@ const Reports = ({ employees, applications }) => {
             }}
           >
             <Download className="h-4 w-4" />
-            <span>{t('reports.exportToPDF')}</span>
+            <span>{t('reports.exportToCSV', 'Export to CSV')}</span>
           </button>
           <button 
-            className="px-6 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2"
+            onClick={handleExportAll}
+            className="px-6 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2 cursor-pointer transition-all"
             style={{
               backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
               color: isDarkMode ? '#d1d5db' : '#374151',
@@ -738,7 +897,7 @@ const Reports = ({ employees, applications }) => {
             }}
           >
             <Download className="h-4 w-4" />
-            <span>{t('reports.exportToExcel')}</span>
+            <span>{t('reports.exportAllData', 'Export All Data')}</span>
           </button>
         </div>
       </div>
@@ -765,16 +924,16 @@ const Reports = ({ employees, applications }) => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
-            { name: t('reports.monthlyPerformanceReview'), description: t('reports.comprehensivePerformanceAnalysis'), icon: Award },
-            { name: t('reports.salaryBenchmarking'), description: t('reports.compareSalariesAcrossDepartments'), icon: DollarSign },
-            { name: t('reports.attendanceAnalytics'), description: t('reports.trackAttendancePatterns'), icon: Calendar },
-            { name: t('reports.recruitmentPipeline'), description: t('reports.monitorHiringProcess'), icon: Users },
-            { name: t('reports.employeeTurnover'), description: t('reports.analyzeRetentionRates'), icon: TrendingUp },
-            { name: t('reports.trainingEffectiveness'), description: t('reports.measureTrainingSuccess'), icon: Award }
+            { name: t('reports.monthlyPerformanceReview'), description: t('reports.comprehensivePerformanceAnalysis'), icon: Award, type: 'performance' },
+            { name: t('reports.salaryBenchmarking'), description: t('reports.compareSalariesAcrossDepartments'), icon: DollarSign, type: 'salary' },
+            { name: t('reports.attendanceAnalytics'), description: t('reports.trackAttendancePatterns'), icon: Calendar, type: 'attendance' },
+            { name: t('reports.recruitmentPipeline'), description: t('reports.monitorHiringProcess'), icon: Users, type: 'recruitment' },
+            { name: t('reports.employeeTurnover'), description: t('reports.analyzeRetentionRates'), icon: TrendingUp, type: 'turnover' },
+            { name: t('reports.trainingEffectiveness'), description: t('reports.measureTrainingSuccess'), icon: Award, type: 'department' }
           ].map((report, index) => (
             <div 
               key={index} 
-              className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+              className="border rounded-lg p-4 hover:shadow-md transition-shadow"
               style={{
                 backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
                 color: isDarkMode ? '#ffffff' : '#111827',
@@ -804,8 +963,12 @@ const Reports = ({ employees, applications }) => {
               >
                 {report.description}
               </p>
-              <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                {t('reports.generate')}
+              <button 
+                onClick={() => handlePrebuiltReport(report.type)}
+                disabled={generating}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all"
+              >
+                {generating ? t('common.generating', 'Generating...') : t('reports.generate')}
               </button>
             </div>
           ))}
@@ -859,7 +1022,8 @@ const Reports = ({ employees, applications }) => {
             <span>{t('reports.filters')}</span>
           </button>
           <button 
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 transition-all duration-200 hover:scale-105 hover:shadow-lg"
+            onClick={handleExportAll}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 transition-all duration-200 hover:scale-105 hover:shadow-lg cursor-pointer"
             style={{
               backgroundColor: '#2563eb',
               color: '#ffffff',
