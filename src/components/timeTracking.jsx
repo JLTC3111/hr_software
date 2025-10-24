@@ -170,8 +170,8 @@ const TimeTracking = ({ employees }) => {
             <span className={`text-sm font-normal ${text.secondary} ml-1`}>{unit}</span>
           </p>
         </div>
-        <div className={`p-3 rounded-full ${color.replace('text-', 'bg-').replace('-600', '-100')}`}>
-          <Icon className={`h-6 w-6 ${color}`} />
+        <div>
+          <Icon className={`h-8 w-8 ${color}`} />
         </div>
       </div>
     </div>

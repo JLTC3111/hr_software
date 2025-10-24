@@ -64,6 +64,18 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
     setIsEditing(initialEditMode);
   }, [initialEditMode]);
 
+  // Handle ESC key press to close modal
+  useEffect(() => {
+    const handleEscKey = (e) => {
+      if (e.key === 'Escape' && !isSaving) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => document.removeEventListener('keydown', handleEscKey);
+  }, [onClose, isSaving]);
+
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -185,7 +197,14 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !isSaving) {
+          onClose();
+        }
+      }}
+    >
       <div className={`${bgColor} rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto ${textPrimary}`}>
         <div className="p-6">
           {/* Header */}

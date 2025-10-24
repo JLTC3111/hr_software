@@ -41,6 +41,18 @@ const AddEmployeeModal = ({ isOpen, onClose, onAddEmployee }) => {
     }
   }, [isOpen]);
 
+  // Handle ESC key press to close modal
+  useEffect(() => {
+    const handleEscKey = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => document.removeEventListener('keydown', handleEscKey);
+  }, [onClose, isOpen]);
+
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData(prev => ({

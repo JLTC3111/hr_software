@@ -101,44 +101,13 @@ const Dashboard = ({ employees, applications }) => {
   // Check if we have any real data
   const hasRealData = trackingDataValues.some(emp => emp?.workDays > 0 || emp?.overtime > 0);
 
-  // Helper function to generate unique display names for charts
+  // Helper function to generate display names for charts - always use last name
   const getUniqueDisplayName = (employee, allEmployees) => {
     const nameParts = employee.name.trim().split(/\s+/).filter(part => part.length > 0);
     if (nameParts.length === 0) return `Employee #${employee.id}`;
     
+    // Always use last name for cleaner, more compact display
     const lastName = nameParts[nameParts.length - 1];
-    const firstName = nameParts[0];
-    const fullName = employee.name.trim();
-    
-    // Check if there are other employees with same last name
-    const sameLastName = allEmployees.filter(emp => {
-      if (emp.id === employee.id) return false;
-      const empParts = emp.name.trim().split(/\s+/).filter(part => part.length > 0);
-      return empParts.length > 0 && empParts[empParts.length - 1] === lastName;
-    });
-    
-    if (sameLastName.length > 0) {
-      // If duplicate last names, check first names too
-      const sameFirstName = sameLastName.filter(emp => {
-        const empParts = emp.name.trim().split(/\s+/).filter(part => part.length > 0);
-        return empParts.length > 0 && empParts[0] === firstName;
-      });
-      
-      if (sameFirstName.length > 0) {
-        // Check if full names are also identical
-        const identicalFullName = sameFirstName.filter(emp => 
-          emp.name.trim() === fullName
-        );
-        
-        // Always use full name + ID when first names match to ensure uniqueness
-        return `${fullName} (#${employee.id})`;
-      }
-      
-      // Different first names - use full name to distinguish
-      return fullName;
-    }
-    
-    // No duplicates, use last name only for brevity
     return lastName;
   };
 
