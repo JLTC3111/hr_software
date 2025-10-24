@@ -6,7 +6,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
-import { AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee } from './components/index.jsx';
+import { AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager } from './components/index.jsx';
 import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
 
@@ -100,7 +100,7 @@ const Employees = [
     name: 'Đinh Tùng Dương',
     position: 'support_staff',
     department: 'office_unit',
-    email: 'support@icue.vn',
+    email: 'duong@icue.vn',
     dob: '2000-01-01',
     address: 'Hà Nội',
     phone: '+84 909 999 999',
@@ -303,6 +303,31 @@ const HRManagementApp = () => {
     setIsEditMode(false);
   };
 
+  const handleSoftDeleteEmployee = async (employee) => {
+    if (window.confirm(`Are you sure you want to mark ${employee.name} as inactive? This will hide the employee from the active list but keep their data.`)) {
+      try {
+        // Soft delete by updating status to 'Inactive'
+        const result = await employeeService.updateEmployee(employee.id, {
+          status: 'Inactive'
+        });
+
+        if (result.success) {
+          // Update local state immediately for better UX
+          setEmployees(employees.map(emp => 
+            emp.id === employee.id ? { ...emp, status: 'Inactive' } : emp
+          ));
+          alert(`${employee.name} has been marked as inactive.`);
+        } else {
+          console.error('Error updating employee status:', result.error);
+          alert(`Failed to update employee: ${result.error}`);
+        }
+      } catch (error) {
+        console.error('Error in handleSoftDeleteEmployee:', error);
+        alert('An unexpected error occurred.');
+      }
+    }
+  };
+
   const handleCloseModal = () => {
     setSelectedEmployee(null);
     setIsEditMode(false);
@@ -319,6 +344,7 @@ const HRManagementApp = () => {
             isEditMode={isEditMode}
             onViewEmployee={handleViewEmployee}
             onEditEmployee={handleEditEmployee}
+            onDeleteEmployee={handleSoftDeleteEmployee}
             onCloseModal={handleCloseModal}
             onPhotoUpdate={handlePhotoUpdate}
             isAddEmployeeModalOpen={isAddEmployeeModalOpen}
@@ -334,7 +360,7 @@ const HRManagementApp = () => {
   );
 };
 
-const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onViewEmployee, onEditEmployee, onCloseModal, onPhotoUpdate, isAddEmployeeModalOpen, setIsAddEmployeeModalOpen, onAddEmployee, refetchEmployees, loading, error }) => {
+const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onViewEmployee, onEditEmployee, onDeleteEmployee, onCloseModal, onPhotoUpdate, isAddEmployeeModalOpen, setIsAddEmployeeModalOpen, onAddEmployee, refetchEmployees, loading, error }) => {
   const { bg, text } = useTheme();
   const { isAuthenticated } = useAuth();
   const { currentLanguage } = useLanguage();
@@ -400,7 +426,7 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
                     />
                     <Route 
                       path="/employees" 
-                      element={<Employee employees={employees} onViewEmployee={onViewEmployee} onEditEmployee={onEditEmployee} onPhotoUpdate={onPhotoUpdate} onAddEmployeeClick={() => setIsAddEmployeeModalOpen(true)} refetchEmployees={refetchEmployees} />} 
+                      element={<Employee employees={employees} onViewEmployee={onViewEmployee} onEditEmployee={onEditEmployee} onDeleteEmployee={onDeleteEmployee} onPhotoUpdate={onPhotoUpdate} onAddEmployeeClick={() => setIsAddEmployeeModalOpen(true)} refetchEmployees={refetchEmployees} />} 
                     />
                     <Route 
                       path="/employees/add" 
@@ -425,6 +451,10 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
                     <Route 
                       path="/settings" 
                       element={<Settings />} 
+                    />
+                    <Route 
+                      path="/delete-manager" 
+                      element={<DeleteEmployeeManager />} 
                     />
                   </Routes>
                 </div>

@@ -6,7 +6,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import SearchAndFilter from './search.jsx';
 import EmployeeCard from './employeeCard.jsx';
 
-const Employees = ({ employees, onViewEmployee, onEditEmployee, onPhotoUpdate, onAddEmployeeClick, refetchEmployees }) => {
+const Employees = ({ employees, onViewEmployee, onEditEmployee, onDeleteEmployee, onPhotoUpdate, onAddEmployeeClick, refetchEmployees }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('all');
   const location = useLocation();
@@ -43,7 +43,7 @@ const Employees = ({ employees, onViewEmployee, onEditEmployee, onPhotoUpdate, o
   return (
     <div className="space-y-4 md:space-y-6 px-2 sm:px-0">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 slide-in-left">
-        <h2 className="font-bold text-gray-900" style={{fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'}}>{t('employees.title')}</h2>
+        <h2 className={`font-bold ${text.primary}`} style={{fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'}}>{t('employees.title')}</h2>
         <button 
           onClick={onAddEmployeeClick}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg"
@@ -80,6 +80,7 @@ const Employees = ({ employees, onViewEmployee, onEditEmployee, onPhotoUpdate, o
               employee={employee} 
               onViewDetails={onViewEmployee}
               onEdit={onEditEmployee}
+              onDelete={onDeleteEmployee}
               onPhotoUpdate={onPhotoUpdate}
               style={{
                 backgroundColor: isDarkMode ? '#374151' : '#ffffff', // gray-700 : white

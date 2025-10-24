@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react'
-import { Mail, Phone, MapPin, Briefcase, Calendar, Award, Edit2, Save, X } from 'lucide-react'
+import { Mail, Phone, MapPin, Briefcase, Calendar, Award, Edit2, Save, X, User } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useTheme } from '../contexts/ThemeContext'
 import * as employeeService from '../services/employeeService'
@@ -58,6 +58,11 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
       });
     }
   }, [employee]);
+
+  // Handle initialEditMode changes
+  useEffect(() => {
+    setIsEditing(initialEditMode);
+  }, [initialEditMode]);
 
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -199,8 +204,21 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
           <div className="space-y-6">
             {/* Profile Section */}
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-lg font-medium text-blue-600">{currentEmployee?.avatar || currentEmployee?.name?.charAt(0) || '?'}</span>
+              <div className="w-16 h-16 bg-blue-100 dark:bg-gray-700 rounded-full flex items-center justify-center overflow-hidden border-2 border-gray-200 dark:border-gray-600">
+                {currentEmployee?.photo ? (
+                  <img 
+                    src={currentEmployee.photo} 
+                    alt={currentEmployee.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div className={currentEmployee?.photo ? 'hidden' : 'flex'} style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+                  <User className="w-8 h-8 text-gray-400" />
+                </div>
               </div>
               <div className="flex-1">
                 {isEditing ? (

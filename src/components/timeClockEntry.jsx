@@ -233,6 +233,24 @@ const TimeClockEntry = ({ currentLanguage }) => {
         }
       }
       
+      // Ensure employee exists in database before creating time entry
+      const employeeCheck = await timeTrackingService.ensureEmployeeExists(user?.id, {
+        name: user?.user_metadata?.name || user?.email?.split('@')[0] || 'User',
+        email: user?.email,
+        position: user?.user_metadata?.position,
+        department: user?.user_metadata?.department
+      });
+
+      if (!employeeCheck.success) {
+        setErrors({ general: employeeCheck.error || 'Employee record not found. Please contact HR.' });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (employeeCheck.created) {
+        console.log('Employee record created automatically for user:', user?.id);
+      }
+      
       // Create time entry in Supabase
       const result = await timeTrackingService.createTimeEntry({
         employeeId: user?.id,

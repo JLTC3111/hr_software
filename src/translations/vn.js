@@ -3,7 +3,7 @@ export default {
   nav: {
     menu: 'Menu',
     timeClock: 'Chấm công',
-    dashboard: 'Tổng quan',
+    dashboard: 'Chỉ Số Thống Kê',
     employees: 'Nhân viên',
     timeTracking: 'Theo dõi thời gian',
     performance: 'Hiệu suất',

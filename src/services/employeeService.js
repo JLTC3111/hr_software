@@ -71,6 +71,26 @@ export const getEmployeeById = async (employeeId) => {
  */
 export const createEmployee = async (employeeData) => {
   try {
+    // Check if email already exists
+    if (employeeData.email) {
+      const { data: existingEmployee, error: checkError } = await supabase
+        .from('employees')
+        .select('id, email')
+        .eq('email', employeeData.email)
+        .maybeSingle();
+      
+      if (checkError) {
+        console.error('Error checking existing email:', checkError);
+      }
+      
+      if (existingEmployee) {
+        return {
+          success: false,
+          error: `Email ${employeeData.email} is already registered to another employee (ID: ${existingEmployee.id}). Please use a unique email.`
+        };
+      }
+    }
+
     const { data, error } = await supabase
       .from('employees')
       .insert([{
@@ -89,7 +109,22 @@ export const createEmployee = async (employeeData) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      // Handle duplicate key constraint errors with user-friendly messages
+      if (error.code === '23505') {
+        if (error.message.includes('email')) {
+          return {
+            success: false,
+            error: `Email ${employeeData.email} is already registered. Please use a unique email.`
+          };
+        }
+        return {
+          success: false,
+          error: 'A duplicate entry was detected. Please check your data and try again.'
+        };
+      }
+      throw error;
+    }
     return { success: true, data };
   } catch (error) {
     console.error('Error creating employee:', error);
@@ -116,6 +151,26 @@ export const updateEmployee = async (employeeId, updates) => {
     if (updates.performance !== undefined) updateData.performance = updates.performance;
     if (updates.photo !== undefined) updateData.photo = updates.photo;
 
+    // If updating email, check if it's already in use by another employee
+    if (updates.email !== undefined) {
+      const { data: existingEmployee, error: checkError } = await supabase
+        .from('employees')
+        .select('id, email')
+        .eq('email', updates.email)
+        .maybeSingle();
+      
+      if (checkError) {
+        console.error('Error checking existing email:', checkError);
+      }
+      
+      if (existingEmployee && existingEmployee.id !== toEmployeeId(employeeId)) {
+        return {
+          success: false,
+          error: `Email ${updates.email} is already registered to another employee (ID: ${existingEmployee.id}). Please use a unique email.`
+        };
+      }
+    }
+
     const { data, error } = await supabase
       .from('employees')
       .update(updateData)
@@ -123,7 +178,22 @@ export const updateEmployee = async (employeeId, updates) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      // Handle duplicate key constraint errors with user-friendly messages
+      if (error.code === '23505') {
+        if (error.message.includes('email')) {
+          return {
+            success: false,
+            error: `Email ${updates.email} is already registered. Please use a unique email.`
+          };
+        }
+        return {
+          success: false,
+          error: 'A duplicate entry was detected. Please check your data and try again.'
+        };
+      }
+      throw error;
+    }
     return { success: true, data };
   } catch (error) {
     console.error('Error updating employee:', error);

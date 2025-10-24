@@ -159,7 +159,7 @@ const TimeTracking = ({ employees }) => {
   
   const TimeCard = ({ title, value, unit, icon: Icon, color, bgColor, onClick }) => (
     <div 
-      className={`${bg.secondary} rounded-lg p-6 border ${border.primary} ${onClick ? 'cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1' : ''}`}
+      className={`rounded-lg p-6 border ${border.primary} ${onClick ? 'cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1' : ''}`}
       onClick={onClick}
     >
       <div className="flex items-center justify-between">

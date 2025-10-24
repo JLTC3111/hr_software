@@ -21,10 +21,29 @@ const toEmployeeId = (id) => {
  */
 export const createTimeEntry = async (timeEntryData) => {
   try {
+    const employeeId = toEmployeeId(timeEntryData.employeeId);
+    
+    // Validate employee exists first
+    const { data: employee, error: employeeError } = await supabase
+      .from('employees')
+      .select('id')
+      .eq('id', employeeId)
+      .maybeSingle();
+
+    if (employeeError) {
+      console.error('Error checking employee:', employeeError);
+      throw new Error('Failed to validate employee');
+    }
+
+    if (!employee) {
+      throw new Error(`Employee with ID ${employeeId} does not exist. Please make sure the employee is registered in the system before creating time entries.`);
+    }
+
+    // Create time entry
     const { data, error } = await supabase
       .from('time_entries')
       .insert([{
-        employee_id: toEmployeeId(timeEntryData.employeeId),
+        employee_id: employeeId,
         date: timeEntryData.date,
         clock_in: timeEntryData.clockIn,
         clock_out: timeEntryData.clockOut,
@@ -39,11 +58,21 @@ export const createTimeEntry = async (timeEntryData) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      // Provide user-friendly error messages
+      if (error.code === '23503') {
+        throw new Error('Employee not found. Please ensure the employee exists before creating time entries.');
+      }
+      throw error;
+    }
+    
     return { success: true, data };
   } catch (error) {
     console.error('Error creating time entry:', error);
-    return { success: false, error: error.message };
+    return { 
+      success: false, 
+      error: error.message || 'Failed to create time entry'
+    };
   }
 };
 
@@ -195,10 +224,28 @@ export const uploadProofFile = async (file, employeeId) => {
  */
 export const createLeaveRequest = async (leaveData) => {
   try {
+    const employeeId = toEmployeeId(leaveData.employeeId);
+    
+    // Validate employee exists first
+    const { data: employee, error: employeeError } = await supabase
+      .from('employees')
+      .select('id')
+      .eq('id', employeeId)
+      .maybeSingle();
+
+    if (employeeError) {
+      console.error('Error checking employee:', employeeError);
+      throw new Error('Failed to validate employee');
+    }
+
+    if (!employee) {
+      throw new Error(`Employee with ID ${employeeId} does not exist. Please make sure the employee is registered in the system.`);
+    }
+
     const { data, error } = await supabase
       .from('leave_requests')
       .insert([{
-        employee_id: toEmployeeId(leaveData.employeeId),
+        employee_id: employeeId,
         leave_type: leaveData.type,
         start_date: leaveData.startDate,
         end_date: leaveData.endDate,
@@ -208,7 +255,13 @@ export const createLeaveRequest = async (leaveData) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (error.code === '23503') {
+        throw new Error('Employee not found. Please ensure the employee exists.');
+      }
+      throw error;
+    }
+    
     return { success: true, data };
   } catch (error) {
     console.error('Error creating leave request:', error);
@@ -306,10 +359,28 @@ export const updateLeaveRequestStatus = async (requestId, status, approverId, re
  */
 export const createOvertimeLog = async (overtimeData) => {
   try {
+    const employeeId = toEmployeeId(overtimeData.employeeId);
+    
+    // Validate employee exists first
+    const { data: employee, error: employeeError } = await supabase
+      .from('employees')
+      .select('id')
+      .eq('id', employeeId)
+      .maybeSingle();
+
+    if (employeeError) {
+      console.error('Error checking employee:', employeeError);
+      throw new Error('Failed to validate employee');
+    }
+
+    if (!employee) {
+      throw new Error(`Employee with ID ${employeeId} does not exist. Please make sure the employee is registered in the system.`);
+    }
+
     const { data, error } = await supabase
       .from('overtime_logs')
       .insert([{
-        employee_id: toEmployeeId(overtimeData.employeeId),
+        employee_id: employeeId,
         date: overtimeData.date,
         hours: overtimeData.hours,
         reason: overtimeData.reason,
@@ -319,7 +390,13 @@ export const createOvertimeLog = async (overtimeData) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (error.code === '23503') {
+        throw new Error('Employee not found. Please ensure the employee exists.');
+      }
+      throw error;
+    }
+    
     return { success: true, data };
   } catch (error) {
     console.error('Error creating overtime log:', error);
@@ -617,6 +694,129 @@ export const getPendingApprovals = async () => {
 // ============================================
 
 /**
+ * Ensure employee exists in database, create if not
+ * This is useful for auth users who haven't been added to employees table
+ */
+export const ensureEmployeeExists = async (employeeId, employeeData = {}) => {
+  try {
+    const id = toEmployeeId(employeeId);
+    
+    // Check if employee exists by ID first
+    const { data: existingById, error: checkError } = await supabase
+      .from('employees')
+      .select('id, name, email')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('Error checking employee by ID:', checkError);
+      throw checkError;
+    }
+
+    // If employee exists by ID, return it
+    if (existingById) {
+      return { success: true, data: existingById, created: false };
+    }
+
+    // If employee doesn't exist and we have data, check email then create/upsert
+    if (employeeData.email || employeeData.name) {
+      let email = employeeData.email || `user${id}@company.com`;
+      
+      // Check if employee with this email already exists
+      const { data: existingByEmail, error: emailCheckError } = await supabase
+        .from('employees')
+        .select('id, name, email')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (emailCheckError) {
+        console.error('Error checking employee by email:', emailCheckError);
+        throw emailCheckError;
+      }
+
+      // If email exists but different ID, generate a unique email instead of failing
+      if (existingByEmail && existingByEmail.id !== id) {
+        console.warn(`Email ${email} is already used by employee ${existingByEmail.id}. Generating unique email for employee ${id}.`);
+        // Generate a unique email by appending the employee ID
+        email = employeeData.email 
+          ? `${employeeData.email.split('@')[0]}_${id}@${employeeData.email.split('@')[1]}`
+          : `user${id}@company.com`;
+      }
+
+      // Use upsert to handle race conditions and duplicates
+      const { data: newEmployee, error: createError } = await supabase
+        .from('employees')
+        .upsert([{
+          id: id,
+          name: employeeData.name || 'Unknown User',
+          email: email,
+          position: employeeData.position || 'Employee',
+          department: employeeData.department || 'General',
+          status: 'Active',
+          start_date: new Date().toISOString().split('T')[0]
+        }], {
+          onConflict: 'id',
+          ignoreDuplicates: false
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        // Handle specific error codes
+        if (createError.code === '23505') {
+          // Duplicate key error - fetch the existing employee
+          const { data: existing } = await supabase
+            .from('employees')
+            .select('id, name, email')
+            .eq('id', id)
+            .maybeSingle();
+          
+          if (existing) {
+            return { success: true, data: existing, created: false };
+          }
+        }
+        console.error('Error creating employee:', createError);
+        throw createError;
+      }
+
+      return { success: true, data: newEmployee, created: true };
+    }
+
+    // Employee doesn't exist and no data provided
+    return { 
+      success: false, 
+      error: `Employee with ID ${id} not found. Please contact HR to register.` 
+    };
+  } catch (error) {
+    console.error('Error in ensureEmployeeExists:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get or create employee from auth user
+ */
+export const getOrCreateEmployeeFromAuth = async (authUser) => {
+  try {
+    if (!authUser || !authUser.id) {
+      throw new Error('Invalid auth user');
+    }
+
+    const result = await ensureEmployeeExists(authUser.id, {
+      name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+      email: authUser.email,
+      position: authUser.user_metadata?.position || 'Employee',
+      department: authUser.user_metadata?.department || 'General'
+    });
+
+    return result;
+  } catch (error) {
+    console.error('Error getting/creating employee from auth:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
  * Sync local employees to Supabase
  */
 export const syncEmployeesToSupabase = async (employees) => {
@@ -716,6 +916,8 @@ export default {
   getPendingApprovals,
   
   // Employee Management
+  ensureEmployeeExists,
+  getOrCreateEmployeeFromAuth,
   syncEmployeesToSupabase,
   getAllEmployees,
   getEmployeeById

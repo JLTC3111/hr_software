@@ -18,7 +18,7 @@ const getStatusColor = (status) => {
   }
 };
 
-const EmployeeCard = ({ employee, onViewDetails, onEdit, onPhotoUpdate, style }) => {
+const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate, style }) => {
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
   const [photoError, setPhotoError] = useState(false);
@@ -161,7 +161,10 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onPhotoUpdate, style })
           <Edit className="h-4 w-4" />
         </button>
         <button 
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete && onDelete(employee);
+          }}
           className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 transition-all duration-200 cursor-pointer"
           title={t('employees.delete', 'Delete')}
         >

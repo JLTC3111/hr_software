@@ -101,9 +101,52 @@ const Dashboard = ({ employees, applications }) => {
   // Check if we have any real data
   const hasRealData = trackingDataValues.some(emp => emp?.workDays > 0 || emp?.overtime > 0);
 
+  // Helper function to generate unique display names for charts
+  const getUniqueDisplayName = (employee, allEmployees) => {
+    const nameParts = employee.name.trim().split(/\s+/).filter(part => part.length > 0);
+    if (nameParts.length === 0) return `Employee #${employee.id}`;
+    
+    const lastName = nameParts[nameParts.length - 1];
+    const firstName = nameParts[0];
+    const fullName = employee.name.trim();
+    
+    // Check if there are other employees with same last name
+    const sameLastName = allEmployees.filter(emp => {
+      if (emp.id === employee.id) return false;
+      const empParts = emp.name.trim().split(/\s+/).filter(part => part.length > 0);
+      return empParts.length > 0 && empParts[empParts.length - 1] === lastName;
+    });
+    
+    if (sameLastName.length > 0) {
+      // If duplicate last names, check first names too
+      const sameFirstName = sameLastName.filter(emp => {
+        const empParts = emp.name.trim().split(/\s+/).filter(part => part.length > 0);
+        return empParts.length > 0 && empParts[0] === firstName;
+      });
+      
+      if (sameFirstName.length > 0) {
+        // Check if full names are also identical
+        const identicalFullName = sameFirstName.filter(emp => 
+          emp.name.trim() === fullName
+        );
+        
+        // Always use full name + ID when first names match to ensure uniqueness
+        return `${fullName} (#${employee.id})`;
+      }
+      
+      // Different first names - use full name to distinguish
+      return fullName;
+    }
+    
+    // No duplicates, use last name only for brevity
+    return lastName;
+  };
+
   // Performance data for bar chart
   const performanceData = employees.map(emp => ({
-    name: emp.name.split(' ').slice(-1)[0], // Last name only
+    name: getUniqueDisplayName(emp, employees),
+    fullName: emp.name, // Keep full name for tooltip
+    id: emp.id,
     performance: timeTrackingData[String(emp.id)]?.performance || 4.0,
     overtime: timeTrackingData[String(emp.id)]?.overtime || 0
   }));
@@ -119,9 +162,11 @@ const Dashboard = ({ employees, applications }) => {
     value: count
   }));
 
-  // Leave requests summary
-  const leaveData = employees.slice(0, 5).map(emp => ({
-    name: emp.name.split(' ').slice(-1)[0],
+  // Leave requests summary - use ALL employees, not just top 5
+  const leaveData = employees.map(emp => ({
+    name: getUniqueDisplayName(emp, employees),
+    fullName: emp.name, // Keep full name for tooltip
+    id: emp.id,
     leaveDays: timeTrackingData[String(emp.id)]?.leaveDays || 0,
     workDays: timeTrackingData[String(emp.id)]?.workDays || 0
   }));
@@ -295,21 +340,44 @@ const Dashboard = ({ employees, applications }) => {
             {t('dashboard.employeePerformance')}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={performanceData}>
+            <BarChart data={performanceData} margin={{ top: 5, right: 10, left: 10, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
-              <XAxis dataKey="name" stroke={isDarkMode ? '#9CA3AF' : '#6B7280'} />
+              <XAxis 
+                dataKey="name" 
+                stroke={isDarkMode ? '#9CA3AF' : '#6B7280'}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+                interval={0}
+                tick={{ fontSize: 11 }}
+              />
               <YAxis stroke={isDarkMode ? '#9CA3AF' : '#6B7280'} domain={[0, 5]} />
               <Tooltip
                   contentStyle={{
                     backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
                     border: `1px solid ${isDarkMode ? '#374151' : '#E5E7EB'}`,
-                    borderRadius: '8px',
-                  }}
-                  itemStyle={{
-                    color: isDarkMode ? '#FFFFFF' : '#111827',
+                    borderRadius: '0.5rem',
+                    color: isDarkMode ? '#F9FAFB' : '#111827',
                   }}
                   labelStyle={{
-                    color: isDarkMode ? '#FFFFFF' : '#111827',
+                    color: isDarkMode ? '#F9FAFB' : '#111827',
+                  }}
+                  itemStyle={{
+                    color: isDarkMode ? '#F9FAFB' : '#111827',
+                  }}
+                  formatter={(value, name, props) => {
+                    // Show full name in tooltip
+                    if (props.payload.fullName) {
+                      return [value, name];
+                    }
+                    return [value, name];
+                  }}
+                  labelFormatter={(label, payload) => {
+                    // Show full employee name as tooltip label
+                    if (payload && payload.length > 0 && payload[0].payload.fullName) {
+                      return `Employee: ${payload[0].payload.fullName}`;
+                    }
+                    return label;
                   }}
                 />
               <Legend />
@@ -323,7 +391,7 @@ const Dashboard = ({ employees, applications }) => {
           <h3 className={`font-semibold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.125rem)'}}>
             {t('dashboard.departmentDist')}
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={350}>
             <PieChart>
               <Pie
                 data={departmentData}
@@ -331,9 +399,10 @@ const Dashboard = ({ employees, applications }) => {
                 cy="50%"
                 labelLine={false}
                 label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                outerRadius={100}
+                outerRadius={80}
                 fill="#8884d8"
                 dataKey="value"
+                style={{ fontSize: '13px' }}
               >
                 {departmentData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -343,7 +412,8 @@ const Dashboard = ({ employees, applications }) => {
                   contentStyle={{
                     backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
                     border: `1px solid ${isDarkMode ? '#374151' : '#E5E7EB'}`,
-                    borderRadius: '8px',
+                    borderRadius: '0.5rem',
+                    color: isDarkMode ? '#F9FAFB' : '#111827',
                   }}
                   itemStyle={{
                     color: isDarkMode ? '#FFFFFF' : '#111827',
@@ -365,21 +435,37 @@ const Dashboard = ({ employees, applications }) => {
             {t('dashboard.workLeaveComp')}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={leaveData}>
+            <BarChart data={leaveData} margin={{ top: 5, right: 10, left: 10, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
-              <XAxis dataKey="name" stroke={isDarkMode ? '#9CA3AF' : '#6B7280'} />
+              <XAxis 
+                dataKey="name" 
+                stroke={isDarkMode ? '#9CA3AF' : '#6B7280'}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+                interval={0}
+                tick={{ fontSize: 11 }}
+              />
               <YAxis stroke={isDarkMode ? '#9CA3AF' : '#6B7280'} />
               <Tooltip
                   contentStyle={{
                     backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
                     border: `1px solid ${isDarkMode ? '#374151' : '#E5E7EB'}`,
-                    borderRadius: '8px',
-                  }}
-                  itemStyle={{
-                    color: isDarkMode ? '#FFFFFF' : '#111827',
+                    borderRadius: '0.5rem',
+                    color: isDarkMode ? '#F9FAFB' : '#111827',
                   }}
                   labelStyle={{
-                    color: isDarkMode ? '#FFFFFF' : '#111827',
+                    color: isDarkMode ? '#F9FAFB' : '#111827',
+                  }}
+                  itemStyle={{
+                    color: isDarkMode ? '#F9FAFB' : '#111827',
+                  }}
+                  labelFormatter={(label, payload) => {
+                    // Show full employee name as tooltip label
+                    if (payload && payload.length > 0 && payload[0].payload.fullName) {
+                      return `Employee: ${payload[0].payload.fullName}`;
+                    }
+                    return label;
                   }}
                 />
               <Legend />
