@@ -7,7 +7,9 @@ export default {
     recruitment: 'การสรรหา',
     timeTracking: 'การติดตามเวลา',
     performance: 'การประเมินผลการทำงาน',
-    reports: 'รายงาน'
+    reports: 'รายงาน',
+    notifications: 'การแจ้งเตือน',
+    settings: 'การตั้งค่า',
   },
 
   // Header
@@ -461,6 +463,51 @@ export default {
     managing_director: 'ผู้อำนวยการ',
     support_staff: 'เจ้าหน้าที่สนับสนุน',
   }, 
+
+  // Notifications
+  notifications: {
+    title: 'การแจ้งเตือน',
+    employeeAdded: 'เพิ่มพนักงานแล้ว',
+    addedTo: 'เพิ่มไปที่',
+    unreadCount: '{0} ยังไม่ได้อ่าน',
+    allCaughtUp: 'คุณอ่านครบแล้ว!',
+    filters: 'ตัวกรอง',
+    markAllRead: 'ทำเครื่องหมายทั้งหมดว่าอ่านแล้ว',
+    deleteAll: 'ลบทั้งหมด',
+    confirmDeleteAll: 'คุณแน่ใจหรือไม่ว่าต้องการลบการแจ้งเตือนทั้งหมด?',
+    total: 'ทั้งหมด',
+    unread: 'ยังไม่ได้อ่าน',
+    errors: 'ข้อผิดพลาด',
+    warnings: 'คำเตือน',
+    filterBy: 'กรองตาม',
+    status: 'สถานะ',
+    type: 'ประเภท',
+    category: 'หมวดหมู่',
+    allNotifications: 'การแจ้งเตือนทั้งหมด',
+    unreadOnly: 'ยังไม่ได้อ่านเท่านั้น',
+    readOnly: 'อ่านแล้วเท่านั้น',
+    allTypes: 'ทุกประเภท',
+    info: 'ข้อมูล',
+    success: 'สำเร็จ',
+    warning: 'คำเตือน',
+    error: 'ข้อผิดพลาด',
+    allCategories: 'ทุกหมวดหมู่',
+    general: 'ทั่วไป',
+    timeTracking: 'การติดตามเวลา',
+    performance: 'ผลการปฏิบัติงาน',
+    employee: 'พนักงาน',
+    recruitment: 'การสรรหา',
+    system: 'ระบบ',
+    noNotifications: 'ไม่มีการแจ้งเตือน',
+    noNotificationsFilter: 'ไม่มีการแจ้งเตือนที่ตรงกับตัวกรองของคุณ',
+    noNotificationsYet: 'คุณยังไม่มีการแจ้งเตือน',
+    justNow: 'เมื่อสักครู่',
+    minutesAgo: '{0} นาทีที่แล้ว',
+    hoursAgo: '{0} ชั่วโมงที่แล้ว',
+    daysAgo: '{0} วันที่แล้ว',
+    markAsRead: 'ทำเครื่องหมายว่าอ่านแล้ว',
+    delete: 'ลบ'
+  },
 
   // Settings
   settings: {

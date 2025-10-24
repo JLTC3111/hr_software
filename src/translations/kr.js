@@ -7,7 +7,9 @@ export default {
     recruitment: '채용',
     timeTracking: '근무 시간 추적',
     performance: '성과 평가',
-    reports: '보고서'
+    reports: '보고서',
+    notifications: '알림',
+    settings: '설정',
   },
 
   // Header
@@ -462,6 +464,51 @@ export default {
     managing_director: '원장',
     support_staff: '지원팀',
   }, 
+
+  // Notifications
+  notifications: {
+    title: '알림',
+    employeeAdded: '직원 추가됨',
+    addedTo: '에 추가됨',
+    unreadCount: '{0}개 읽지 않음',
+    allCaughtUp: '모두 확인했습니다!',
+    filters: '필터',
+    markAllRead: '모두 읽음으로 표시',
+    deleteAll: '모두 삭제',
+    confirmDeleteAll: '모든 알림을 삭제하시겠습니까?',
+    total: '전체',
+    unread: '읽지 않음',
+    errors: '오류',
+    warnings: '경고',
+    filterBy: '필터링',
+    status: '상태',
+    type: '유형',
+    category: '카테고리',
+    allNotifications: '모든 알림',
+    unreadOnly: '읽지 않은 것만',
+    readOnly: '읽은 것만',
+    allTypes: '모든 유형',
+    info: '정보',
+    success: '성공',
+    warning: '경고',
+    error: '오류',
+    allCategories: '모든 카테고리',
+    general: '일반',
+    timeTracking: '근태 관리',
+    performance: '성과',
+    employee: '직원',
+    recruitment: '채용',
+    system: '시스템',
+    noNotifications: '알림 없음',
+    noNotificationsFilter: '필터와 일치하는 알림이 없습니다',
+    noNotificationsYet: '아직 알림이 없습니다',
+    justNow: '방금',
+    minutesAgo: '{0}분 전',
+    hoursAgo: '{0}시간 전',
+    daysAgo: '{0}일 전',
+    markAsRead: '읽음으로 표시',
+    delete: '삭제'
+  },
 
   // Settings
   settings: {

@@ -7,7 +7,9 @@ export default {
     recruitment: 'Найм персонала',
     timeTracking: 'Отслеживание времени',
     performance: 'Оценка эффективности',
-    reports: 'Отчёты'
+    reports: 'Отчёты',
+    notifications: 'Уведомления',
+    settings: 'Настройки',
   },
 
   // Header
@@ -464,6 +466,51 @@ export default {
     managing_director: 'Исполнительный директор',
     support_staff: 'Вспомогательный персонал',
   }, 
+
+  // Notifications
+  notifications: {
+    title: 'Уведомления',
+    employeeAdded: 'Добавлен сотрудник',
+    addedTo: 'добавлен в',
+    unreadCount: '{0} непрочитанных',
+    allCaughtUp: 'Все прочитано!',
+    filters: 'Фильтры',
+    markAllRead: 'Отметить все как прочитанные',
+    deleteAll: 'Удалить все',
+    confirmDeleteAll: 'Вы уверены, что хотите удалить все уведомления?',
+    total: 'Всего',
+    unread: 'Непрочитанные',
+    errors: 'Ошибки',
+    warnings: 'Предупреждения',
+    filterBy: 'Фильтровать по',
+    status: 'Статус',
+    type: 'Тип',
+    category: 'Категория',
+    allNotifications: 'Все уведомления',
+    unreadOnly: 'Только непрочитанные',
+    readOnly: 'Только прочитанные',
+    allTypes: 'Все типы',
+    info: 'Инфо',
+    success: 'Успех',
+    warning: 'Предупреждение',
+    error: 'Ошибка',
+    allCategories: 'Все категории',
+    general: 'Общие',
+    timeTracking: 'Учет времени',
+    performance: 'Производительность',
+    employee: 'Сотрудник',
+    recruitment: 'Набор персонала',
+    system: 'Система',
+    noNotifications: 'Нет уведомлений',
+    noNotificationsFilter: 'Нет уведомлений, соответствующих фильтрам',
+    noNotificationsYet: 'У вас пока нет уведомлений',
+    justNow: 'Только что',
+    minutesAgo: '{0} мин. назад',
+    hoursAgo: '{0} ч. назад',
+    daysAgo: '{0} дн. назад',
+    markAsRead: 'Отметить как прочитанное',
+    delete: 'Удалить'
+  },
 
   // Settings
   settings: {

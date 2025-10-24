@@ -7,7 +7,9 @@ export default {
     recruitment: '採用',
     timeTracking: '勤怠管理',
     performance: '業績評価',
-    reports: 'レポート'
+    reports: 'レポート',
+    notifications: '通知',
+    settings: '設定',
   }
   ,
 
@@ -463,6 +465,51 @@ export default {
     managing_director: '所長 / 院長',
     support_staff: 'サポートスタッフ',
   }, 
+
+  // Notifications
+  notifications: {
+    title: '通知',
+    employeeAdded: '従業員が追加されました',
+    addedTo: 'に追加されました',
+    unreadCount: '{0}件の未読',
+    allCaughtUp: 'すべて確認済みです！',
+    filters: 'フィルター',
+    markAllRead: 'すべて既読にする',
+    deleteAll: 'すべて削除',
+    confirmDeleteAll: 'すべての通知を削除してもよろしいですか？',
+    total: '合計',
+    unread: '未読',
+    errors: 'エラー',
+    warnings: '警告',
+    filterBy: 'フィルター条件',
+    status: 'ステータス',
+    type: 'タイプ',
+    category: 'カテゴリ',
+    allNotifications: 'すべての通知',
+    unreadOnly: '未読のみ',
+    readOnly: '既読のみ',
+    allTypes: 'すべてのタイプ',
+    info: '情報',
+    success: '成功',
+    warning: '警告',
+    error: 'エラー',
+    allCategories: 'すべてのカテゴリ',
+    general: '一般',
+    timeTracking: '勤怠管理',
+    performance: 'パフォーマンス',
+    employee: '従業員',
+    recruitment: '採用',
+    system: 'システム',
+    noNotifications: '通知なし',
+    noNotificationsFilter: 'フィルター条件に一致する通知がありません',
+    noNotificationsYet: 'まだ通知がありません',
+    justNow: 'たった今',
+    minutesAgo: '{0}分前',
+    hoursAgo: '{0}時間前',
+    daysAgo: '{0}日前',
+    markAsRead: '既読にする',
+    delete: '削除'
+  },
 
   // Settings
   settings: {

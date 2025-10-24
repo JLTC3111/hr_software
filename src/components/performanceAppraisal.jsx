@@ -7,8 +7,19 @@ const PerformanceAppraisal = ({ employees }) => {
   const [selectedEmployee, setSelectedEmployee] = useState(employees[0]?.id ? String(employees[0].id) : null);
   const [selectedPeriod, setSelectedPeriod] = useState('2024-q4');
   const [activeTab, setActiveTab] = useState('overview');
+  const [showAddGoalModal, setShowAddGoalModal] = useState(false);
+  const [showAddReviewModal, setShowAddReviewModal] = useState(false);
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
+
+  // Handlers for modals
+  const handleAddGoal = () => {
+    setShowAddGoalModal(true);
+  };
+
+  const handleAddReview = () => {
+    setShowAddReviewModal(true);
+  };
 
   const performanceData = {
     [String(employees[0]?.id)]: {
@@ -298,7 +309,8 @@ const PerformanceAppraisal = ({ employees }) => {
             {t('performance.currentGoals')}
           </h3>
           <button 
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+            onClick={handleAddGoal}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 cursor-pointer transition-colors"
             style={{
               backgroundColor: '#2563eb',
               color: '#ffffff',
@@ -379,7 +391,8 @@ const PerformanceAppraisal = ({ employees }) => {
           {t('performance.performanceGoals')}
         </h3>
         <button 
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+          onClick={handleAddGoal}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 cursor-pointer transition-colors"
           style={{
             backgroundColor: '#2563eb',
             color: '#ffffff',
@@ -504,7 +517,8 @@ const PerformanceAppraisal = ({ employees }) => {
           {t('performance.performanceReviews')}
         </h3>
         <button 
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+          onClick={handleAddReview}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 cursor-pointer transition-colors"
           style={{
             backgroundColor: '#2563eb',
             color: '#ffffff',
@@ -691,6 +705,80 @@ const PerformanceAppraisal = ({ employees }) => {
       {activeTab === 'overview' && <OverviewTab />}
       {activeTab === 'goals' && <GoalsTab />}
       {activeTab === 'reviews' && <ReviewsTab />}
+
+      {/* Add Goal Modal */}
+      {showAddGoalModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowAddGoalModal(false);
+            }
+          }}
+        >
+          <div 
+            className="rounded-lg shadow-xl max-w-2xl w-full p-6"
+            style={{
+              backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+              color: isDarkMode ? '#ffffff' : '#111827'
+            }}
+          >
+            <h2 className="text-2xl font-bold mb-4">{t('performance.addNewGoal', 'Add New Goal')}</h2>
+            <p className="mb-4" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+              {t('performance.addGoalComingSoon', 'Goal creation functionality will be fully integrated with the backend soon. The database schema is ready in migration 013_performance_goals_system.sql')}
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowAddGoalModal(false)}
+                className="px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                style={{
+                  backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+                  color: isDarkMode ? '#ffffff' : '#111827'
+                }}
+              >
+                {t('common.close', 'Close')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Review Modal */}
+      {showAddReviewModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowAddReviewModal(false);
+            }
+          }}
+        >
+          <div 
+            className="rounded-lg shadow-xl max-w-2xl w-full p-6"
+            style={{
+              backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+              color: isDarkMode ? '#ffffff' : '#111827'
+            }}
+          >
+            <h2 className="text-2xl font-bold mb-4">{t('performance.newReview', 'New Review')}</h2>
+            <p className="mb-4" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+              {t('performance.addReviewComingSoon', 'Performance review creation functionality will be fully integrated with the backend soon. The database schema is ready in migration 013_performance_goals_system.sql')}
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowAddReviewModal(false)}
+                className="px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                style={{
+                  backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+                  color: isDarkMode ? '#ffffff' : '#111827'
+                }}
+              >
+                {t('common.close', 'Close')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

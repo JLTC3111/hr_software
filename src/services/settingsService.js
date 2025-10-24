@@ -263,11 +263,124 @@ export const importSettings = async (userId, settingsJson) => {
 };
 
 /**
- * Get all available timezones
- * @returns {array} List of timezones
+ * Get all available timezones organized by region
+ * @returns {array} List of timezones grouped by region
  */
 export const getTimezones = () => {
-  return Intl.supportedValuesOf('timeZone');
+  const timezones = {
+    'Americas': [
+      'America/New_York',
+      'America/Chicago',
+      'America/Denver',
+      'America/Los_Angeles',
+      'America/Anchorage',
+      'America/Phoenix',
+      'America/Toronto',
+      'America/Vancouver',
+      'America/Mexico_City',
+      'America/Bogota',
+      'America/Lima',
+      'America/Santiago',
+      'America/Buenos_Aires',
+      'America/Sao_Paulo',
+      'America/Caracas',
+      'America/Halifax',
+      'America/Montevideo'
+    ],
+    'Europe': [
+      'Europe/London',
+      'Europe/Paris',
+      'Europe/Berlin',
+      'Europe/Madrid',
+      'Europe/Rome',
+      'Europe/Amsterdam',
+      'Europe/Brussels',
+      'Europe/Vienna',
+      'Europe/Stockholm',
+      'Europe/Oslo',
+      'Europe/Copenhagen',
+      'Europe/Helsinki',
+      'Europe/Athens',
+      'Europe/Istanbul',
+      'Europe/Moscow',
+      'Europe/Warsaw',
+      'Europe/Prague',
+      'Europe/Budapest',
+      'Europe/Bucharest',
+      'Europe/Zurich',
+      'Europe/Dublin',
+      'Europe/Lisbon'
+    ],
+    'Asia': [
+      'Asia/Tokyo',
+      'Asia/Shanghai',
+      'Asia/Hong_Kong',
+      'Asia/Singapore',
+      'Asia/Seoul',
+      'Asia/Bangkok',
+      'Asia/Dubai',
+      'Asia/Kolkata',
+      'Asia/Manila',
+      'Asia/Jakarta',
+      'Asia/Ho_Chi_Minh',
+      'Asia/Kuala_Lumpur',
+      'Asia/Taipei',
+      'Asia/Karachi',
+      'Asia/Dhaka',
+      'Asia/Tehran',
+      'Asia/Baghdad',
+      'Asia/Riyadh',
+      'Asia/Jerusalem',
+      'Asia/Yangon',
+      'Asia/Kathmandu',
+      'Asia/Colombo',
+      'Asia/Tashkent'
+    ],
+    'Australia & Pacific': [
+      'Australia/Sydney',
+      'Australia/Melbourne',
+      'Australia/Brisbane',
+      'Australia/Perth',
+      'Australia/Adelaide',
+      'Australia/Darwin',
+      'Pacific/Auckland',
+      'Pacific/Fiji',
+      'Pacific/Honolulu',
+      'Pacific/Guam',
+      'Pacific/Port_Moresby',
+      'Pacific/Tahiti',
+      'Pacific/Noumea'
+    ],
+    'Africa': [
+      'Africa/Cairo',
+      'Africa/Johannesburg',
+      'Africa/Lagos',
+      'Africa/Nairobi',
+      'Africa/Casablanca',
+      'Africa/Tunis',
+      'Africa/Algiers',
+      'Africa/Accra',
+      'Africa/Addis_Ababa',
+      'Africa/Dar_es_Salaam'
+    ],
+    'UTC': [
+      'UTC'
+    ]
+  };
+
+  // Flatten into a single array with region labels
+  const flattenedTimezones = [];
+  Object.entries(timezones).forEach(([region, zones]) => {
+    zones.forEach(zone => {
+      flattenedTimezones.push({
+        value: zone,
+        label: `${zone.replace(/_/g, ' ')} (${region})`,
+        region: region
+      });
+    });
+  });
+
+  return flattenedTimezones;
 };
 
 /**

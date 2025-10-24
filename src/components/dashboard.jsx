@@ -304,12 +304,12 @@ const Dashboard = ({ employees, applications }) => {
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Employee Performance Chart */}
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-4 md:p-6 slide-in-up transition-all duration-300 hover:shadow-lg`}>
-          <h3 className={`font-semibold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.125rem)'}}>
+        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-3 md:p-4 slide-in-up transition-all duration-300 hover:shadow-lg`}>
+          <h3 className={`font-semibold ${text.primary} mb-3`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.125rem)'}}>
             {t('dashboard.employeePerformance')}
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={performanceData} margin={{ top: 5, right: 10, left: 10, bottom: 60 }}>
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart data={performanceData} margin={{ top: 5, right: 5, left: 0, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
               <XAxis 
                 dataKey="name" 
@@ -403,8 +403,8 @@ const Dashboard = ({ employees, applications }) => {
           <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
             {t('dashboard.workLeaveComp')}
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={leaveData} margin={{ top: 5, right: 10, left: 10, bottom: 60 }}>
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart data={leaveData} margin={{ top: 5, right: 5, left: 0, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
               <XAxis 
                 dataKey="name" 

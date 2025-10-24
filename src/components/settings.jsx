@@ -350,13 +350,17 @@ const Settings = () => {
                       <button
                         key={theme.value}
                         onClick={() => handleSettingChange('theme', theme.value)}
-                        className={`
-                          p-4 rounded-lg border-2 transition-all cursor-pointer
-                          ${settings?.theme === theme.value 
-                            ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30' 
-                            : `border-gray-300 dark:border-gray-600 ${hover.bg}`
-                          }
-                        `}
+                        className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                          settings?.theme !== theme.value ? hover.bg : ''
+                        }`}
+                        style={{
+                          borderColor: settings?.theme === theme.value 
+                            ? (isDarkMode ? '#60a5fa' : '#2563eb')
+                            : (isDarkMode ? '#4b5563' : '#d1d5db'),
+                          backgroundColor: settings?.theme === theme.value
+                            ? (isDarkMode ? 'rgba(30, 58, 138, 0.3)' : '#eff6ff')
+                            : 'transparent'
+                        }}
                       >
                         <div className={`font-medium ${text.primary}`}>{theme.label}</div>
                       </button>
@@ -452,14 +456,14 @@ const Settings = () => {
                     onChange={(e) => handleSettingChange('timezone', e.target.value)}
                     className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
                   >
-                    {settingsService.getTimezones().slice(0, 50).map((tz) => (
-                      <option key={tz} value={tz}>
-                        {tz}
+                    {settingsService.getTimezones().map((tz) => (
+                      <option key={tz.value} value={tz.value}>
+                        {tz.label}
                       </option>
                     ))}
                   </select>
                   <p className={`text-xs ${text.secondary} mt-1`}>
-                    {t('settings.timezoneNote', 'Currently showing first 50 timezones')}
+                    {t('settings.timezoneNote', 'Timezones organized by region (Americas, Europe, Asia, Australia & Pacific, Africa)')}
                   </p>
                 </div>
               </div>

@@ -7,7 +7,9 @@ export default {
     recruitment: 'Personalbeschaffung',
     timeTracking: 'Zeiterfassung',
     performance: 'Leistungsbeurteilung',
-    reports: 'Berichte'
+    reports: 'Berichte',
+    notifications: 'Benachrichtigungen',
+    settings: 'Einstellungen',
   },
 
   // Header
