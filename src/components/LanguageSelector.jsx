@@ -42,8 +42,9 @@ const LanguageSelector = () => {
         aria-haspopup="listbox"
       >
         <Globe className="w-4 h-4" />
-        <span className={`text-sm font-medium`}>
-          {currentLangData?.flag} {currentLangData?.name}
+        <span className={`text-sm font-medium flex items-center space-x-2`}>
+          <img src={currentLangData?.flag} alt={currentLangData?.name} className="w-5 h-5 rounded" />
+          <span>{currentLangData?.name}</span>
         </span>
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
@@ -82,7 +83,7 @@ const LanguageSelector = () => {
                 role="option"
                 aria-selected={currentLanguage === language.code}
               >
-                <span className="text-lg">{language.flag}</span>
+                <img src={language.flag} alt={language.name} className="w-5 h-5 rounded" />
                 <span>{language.name}</span>
                 {currentLanguage === language.code && (
                   <span className="ml-auto" style={{ color: '#60a5fa' }}>✓</span>

@@ -349,9 +349,9 @@ const TimeClockEntry = ({ currentLanguage }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'approved': return 'text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400';
-      case 'rejected': return 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400';
-      default: return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400';
+      case 'approved': return 'text-green-800 bg-green-200 dark:bg-green-900/30 dark:text-green-400 font-semibold';
+      case 'rejected': return 'text-red-800 bg-red-200 dark:bg-red-900/30 dark:text-red-400 font-semibold';
+      default: return 'text-yellow-800 bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 font-semibold';
     }
   };
 
@@ -741,22 +741,22 @@ const TimeClockEntry = ({ currentLanguage }) => {
               </thead>
               <tbody>
                 {timeEntries.map(entry => (
-                  <tr key={entry.id} className={`border-b ${border.primary} hover:bg-gray-50 dark:hover:bg-gray-800`}>
-                    <td className={`p-3 ${text.primary}`}>
+                  <tr key={entry.id} className={`border-b ${border.primary} hover:bg-blue-600 dark:hover:bg-gray-800 group transition-colors cursor-pointer`}>
+                    <td className={`p-3 ${text.primary} group-hover:text-white`}>
                       {new Date(entry.date).toLocaleDateString()}
                     </td>
-                    <td className={`p-3 ${text.secondary}`}>
+                    <td className={`p-3 ${text.secondary} group-hover:text-white`}>
                       {entry.clock_in || entry.clockIn} - {entry.clock_out || entry.clockOut}
                     </td>
-                    <td className={`p-3 ${text.primary} font-semibold`}>
+                    <td className={`p-3 ${text.primary} font-semibold group-hover:text-white`}>
                       {entry.hours} hrs
                     </td>
                     <td className="p-3">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        (entry.hour_type || entry.hourType) === 'regular' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
-                        (entry.hour_type || entry.hourType) === 'holiday' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
-                        (entry.hour_type || entry.hourType) === 'weekend' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                        (entry.hour_type || entry.hourType) === 'regular' ? 'bg-blue-200 text-blue-900 dark:bg-blue-900/30 dark:text-blue-400' :
+                        (entry.hour_type || entry.hourType) === 'holiday' ? 'bg-purple-200 text-purple-900 dark:bg-purple-900/30 dark:text-purple-400' :
+                        (entry.hour_type || entry.hourType) === 'weekend' ? 'bg-green-200 text-green-900 dark:bg-green-900/30 dark:text-green-400' :
+                        'bg-yellow-200 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-400'
                       }`}>
                         {hourTypes.find(t => t.value === (entry.hour_type || entry.hourType))?.label}
                       </span>
@@ -770,19 +770,22 @@ const TimeClockEntry = ({ currentLanguage }) => {
                       {(entry.proof_file_url || entry.proofFile) ? (
                         entry.proof_file_url ? (
                           <a href={entry.proof_file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center">
-                            <FileText className="w-5 h-5 text-green-600 dark:text-green-400 hover:text-green-700" />
+                            <FileText className="w-5 h-5 text-green-600 dark:text-green-400 group-hover:text-white" />
                           </a>
                         ) : (
-                          <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
+                          <FileText className="w-5 h-5 text-green-600 dark:text-green-400 group-hover:text-white" />
                         )
                       ) : (
-                        <span className={`text-xs ${text.secondary}`}>-</span>
+                        <span className={`text-xs ${text.secondary} group-hover:text-white`}>-</span>
                       )}
                     </td>
                     <td className="p-3 text-right">
                       <button
-                        onClick={() => handleDelete(entry.id)}
-                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(entry.id);
+                        }}
+                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 group-hover:text-white"
                         title={t('timeClock.delete', 'Delete')}
                       >
                         <X className="w-5 h-5" />

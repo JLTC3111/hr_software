@@ -72,7 +72,13 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">
           <div className="relative group/avatar">
-            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center overflow-hidden border-2 border-transparent group-hover/avatar:border-blue-500 transition-all">
+            <div 
+              className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center overflow-hidden border-2 transition-all"
+              style={{
+                borderColor: isDarkMode ? '#ffffff' : 'transparent',
+                boxShadow: isDarkMode ? '0 0 0 2px rgba(255, 255, 255, 0.3)' : 'none'
+              }}
+            >
               {uploading ? (
                 <Loader className="w-6 h-6 text-blue-600 animate-spin" />
               ) : employee.photo && !photoError ? (

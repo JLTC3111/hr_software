@@ -10,7 +10,8 @@ export default {
     performance: 'Performance',
     reports: 'Reports',
     notifications: 'Notifications',
-    settings: 'Settings'
+    settings: 'Settings',
+    controlPanel: 'Control Panel'
   },
   // Header
   header: {
@@ -111,7 +112,13 @@ export default {
     employmentDetails: 'Employment Details',
     started: 'Started',
     editEmployee: 'Edit Employee',
-    uploadPhoto: 'Upload photo'
+    uploadPhoto: 'Upload photo',
+    viewDeleted: 'Restore',
+    deletedEmployees: 'Deleted Employees',
+    restore: 'Restore',
+    confirmRestore: 'Are you sure you want to restore this employee?',
+    restoreSuccess: 'Employee restored successfully!',
+    restoreError: 'Failed to restore employee'
   },
 
   // Add Employee Modal
@@ -688,5 +695,32 @@ export default {
     autoClockOutTime: 'Auto Clock Out Time',
     weeklyReport: 'Weekly Report',
     weeklyReportDesc: 'Receive a weekly summary of your work activities'
+  },
+
+  // Control Panel
+  controlPanel: {
+    role: 'Role',
+    changePassword: 'Change Password',
+    readManual: 'Read Manual',
+    logout: 'Log Out',
+    confirmLogout: 'Are you sure you want to log out?',
+    allFieldsRequired: 'All fields are required',
+    passwordTooShort: 'Password must be at least 6 characters',
+    passwordsDontMatch: 'Passwords do not match',
+    passwordChanged: 'Password changed successfully!',
+    passwordChangeError: 'Error changing password',
+    currentPassword: 'Current Password',
+    newPassword: 'New Password',
+    confirmPassword: 'Confirm Password',
+    needHelp: 'Need Help?',
+    helpText: 'Check out the manual for detailed instructions on using the system.',
+    standardAccess: 'Standard user access',
+    roleDesc: {
+      admin: 'Full system access with all administrative privileges',
+      hrManager: 'Manage employees, performance reviews, and HR operations',
+      manager: 'Supervise team members and approve time tracking',
+      employee: 'Access personal information and submit time entries',
+      viewer: 'View-only access to reports and dashboards'
+    }
   }
 };

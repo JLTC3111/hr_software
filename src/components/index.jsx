@@ -23,3 +23,4 @@ export { default as Settings } from './settings.jsx';
 export { default as AddNewEmployee } from './addNewEmployee.jsx';
 export { default as MetricDetailModal } from './metricDetailModal.jsx';
 export { default as DeleteEmployeeManager } from './deleteEmployeeManager.jsx';
+export { default as ControlPanel } from './controlPanel.jsx';

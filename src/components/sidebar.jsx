@@ -33,7 +33,7 @@ const Sidebar = () => {
           icon: Clock,
           subItems: [
             { path: '/time-tracking', name: t('timeTracking.overview', 'Overview') },
-            { path: '/time-clock', name: t('timeTracking.clockIn', 'Clock In/Out') },
+            { path: '/control-panel', name: t('nav.controlPanel', 'Control Panel') },
           ]
         },
       ]
@@ -143,7 +143,7 @@ const Sidebar = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="mt-4 px-3 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 100px)' }}>
+        <nav className="mt-4 px-3 overflow-y-auto flex-1" style={{ maxHeight: 'calc(100vh - 200px)' }}>
           {menuStructure.map((section, sectionIndex) => (
             <div key={section.section} className={sectionIndex > 0 ? 'mt-6' : ''}>
               {/* Section Header */}

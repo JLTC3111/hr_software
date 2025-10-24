@@ -12,15 +12,15 @@ export const useLanguage = () => {
 
 // Supported languages
 export const SUPPORTED_LANGUAGES = {
-  en: { code: 'en', name: 'English', flag: '🇺🇸' },
-  de: { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-  fr: { code: 'fr', name: 'Français', flag: '🇫🇷' },
-  jp: { code: 'jp', name: '日本語', flag: '🇯🇵' },
-  kr: { code: 'kr', name: '한국어', flag: '🇰🇷' },
-  th: { code: 'th', name: 'ไทย', flag: '🇹🇭' },
-  vn: { code: 'vn', name: 'Tiếng Việt', flag: '🇻🇳' },
-  ru: { code: 'ru', name: 'Русский', flag: '🇷🇺' },
-  es: { code: 'es', name: 'Español', flag: '🇪🇸' }
+  en: { code: 'en', name: 'English', flag: '/flags/us.svg' },
+  de: { code: 'de', name: 'Deutsch', flag: '/flags/de.svg' },
+  fr: { code: 'fr', name: 'Français', flag: '/flags/fr.svg' },
+  jp: { code: 'jp', name: '日本語', flag: '/flags/jp.svg' },
+  kr: { code: 'kr', name: '한국어', flag: '/flags/kr.svg' },
+  th: { code: 'th', name: 'ไทย', flag: '/flags/th.svg' },
+  vn: { code: 'vn', name: 'Tiếng Việt', flag: '/flags/vn.svg' },
+  ru: { code: 'ru', name: 'Русский', flag: '/flags/ru.svg' },
+  es: { code: 'es', name: 'Español', flag: '/flags/es.svg' }
 };
 
 export const LanguageProvider = ({ children }) => {

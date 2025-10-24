@@ -6,7 +6,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
-import { AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager } from './components/index.jsx';
+import { AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager, ControlPanel } from './components/index.jsx';
 import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
 
@@ -422,7 +422,7 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
                     />
                     <Route 
                       path="/dashboard" 
-                      element={<Dashboard employees={employees} applications={applications} />} 
+                      element={<Dashboard employees={employees.filter(emp => emp.status !== 'Inactive' && emp.status !== 'inactive')} applications={applications} />} 
                     />
                     <Route 
                       path="/employees" 
@@ -435,6 +435,10 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
                     <Route 
                       path="/time-tracking" 
                       element={<TimeTracking employees={employees} />} 
+                    />
+                    <Route 
+                      path="/control-panel" 
+                      element={<ControlPanel />} 
                     />
                     <Route 
                       path="/performance" 
