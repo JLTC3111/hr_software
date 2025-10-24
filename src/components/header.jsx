@@ -26,7 +26,7 @@ const Header = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center">
-              <img src="logoIcons/logo.png" alt="Logo" className="h-8 w-auto object-cover" />
+              <img src="logoIcons/logo.png" alt="Logo" onClick={() => window.open('https://icue.vn', '_blank')} className="h-8 w-auto object-cover cursor-pointer" />
             </div>
           </div>
           <div className="flex items-center space-x-4">
@@ -41,7 +41,7 @@ const Header = () => {
             {/* Notification Bell */}
             <button
               onClick={() => navigate('/notifications')}
-              className={`relative p-2 rounded-lg transition-colors ${
+              className={`relative p-2 rounded-lg transition-colors cursor-pointer ${
                 isDarkMode 
                   ? 'hover:bg-gray-700 text-gray-300' 
                   : 'hover:bg-gray-200 text-gray-700'
@@ -57,7 +57,7 @@ const Header = () => {
             </button>
             <button
               onClick={handleLogout}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+              className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${
                 isDarkMode 
                   ? 'hover:bg-gray-700 text-gray-300' 
                   : 'hover:bg-gray-200 text-gray-700'

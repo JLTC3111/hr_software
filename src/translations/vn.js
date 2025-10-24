@@ -578,5 +578,80 @@ export default {
     soft: 'Kỹ năng mềm',
     leadership: 'Lãnh đạo',
     communication: 'Giao tiếp'
+  },
+
+  // Settings
+  settings: {
+    title: 'Cài Đặt',
+    subtitle: 'Quản lý tùy chọn và cài đặt tài khoản của bạn',
+    saved: 'Đã lưu!',
+    export: 'Xuất',
+    import: 'Nhập',
+    reset: 'Đặt lại',
+    saveChanges: 'Lưu Thay Đổi',
+    confirmReset: 'Bạn có chắc chắn muốn đặt lại tất cả cài đặt về mặc định không?',
+    importSuccess: 'Đã nhập cài đặt thành công!',
+    importError: 'Không thể nhập cài đặt',
+    
+    // Tabs
+    notifications: 'Thông Báo',
+    appearance: 'Giao Diện',
+    language: 'Ngôn Ngữ',
+    privacy: 'Riêng Tư',
+    work: 'Tùy Chọn Công Việc',
+    
+    // Notification Settings
+    notificationPreferences: 'Tùy Chọn Thông Báo',
+    emailNotifications: 'Thông Báo Email',
+    emailNotificationsDesc: 'Nhận thông báo qua email',
+    pushNotifications: 'Thông Báo Đẩy',
+    pushNotificationsDesc: 'Nhận thông báo đẩy trong ứng dụng',
+    desktopNotifications: 'Thông Báo Trên Desktop',
+    desktopNotificationsDesc: 'Hiển thị thông báo trình duyệt trên desktop',
+    notificationFrequency: 'Tần Suất Thông Báo',
+    realtime: 'Thời gian thực',
+    daily: 'Tổng hợp hàng ngày',
+    weekly: 'Tóm tắt hàng tuần',
+    notifyMeAbout: 'Thông báo cho tôi về',
+    timeTrackingNotifications: 'Theo dõi thời gian',
+    performanceNotifications: 'Đánh giá hiệu suất',
+    employeeNotifications: 'Cập nhật nhân viên',
+    recruitmentNotifications: 'Tuyển dụng',
+    systemNotifications: 'Cập nhật hệ thống',
+    
+    // Appearance Settings
+    appearanceSettings: 'Cài Đặt Giao Diện',
+    theme: 'Chủ đề',
+    dateFormat: 'Định dạng ngày',
+    timeFormat: 'Định dạng giờ',
+    itemsPerPage: 'Số mục trên mỗi trang',
+    
+    // Language & Region
+    languageRegion: 'Ngôn ngữ & Khu vực',
+    timezone: 'Múi giờ',
+    timezoneNote: 'Hiện đang hiển thị 50 múi giờ đầu tiên',
+    
+    // Privacy Settings
+    privacySettings: 'Cài Đặt Riêng Tư',
+    profileVisibility: 'Hiển thị hồ sơ',
+    visibilityAll: 'Mọi người',
+    visibilityTeam: 'Nhóm của tôi',
+    visibilityManagers: 'Chỉ quản lý',
+    visibilityPrivate: 'Riêng tư',
+    contactVisibility: 'Hiển thị thông tin liên hệ',
+    showEmail: 'Hiển thị địa chỉ email',
+    showPhone: 'Hiển thị số điện thoại',
+    
+    // Work Preferences
+    workPreferences: 'Tùy Chọn Công Việc',
+    defaultDashboard: 'Chế độ xem bảng điều khiển mặc định',
+    overviewView: 'Tổng quan',
+    detailedView: 'Chi tiết',
+    compactView: 'Nhỏ gọn',
+    autoClockOut: 'Tự động chấm công ra',
+    autoClockOutDesc: 'Tự động chấm công ra vào một thời điểm cụ thể',
+    autoClockOutTime: 'Thời gian tự động chấm công ra',
+    weeklyReport: 'Báo cáo hàng tuần',
+    weeklyReportDesc: 'Nhận tóm tắt hàng tuần về các hoạt động công việc của bạn'
   }
 };

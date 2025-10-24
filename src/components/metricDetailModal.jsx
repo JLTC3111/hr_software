@@ -401,7 +401,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
             </div>
             <button
               onClick={onClose}
-              className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors`}
+              className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer`}
             >
               <X className={`w-6 h-6 ${text.primary}`} />
             </button>
@@ -439,7 +439,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
               {/* Export Button */}
               <button
                 onClick={handleExport}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium cursor-pointer"
               >
                 <Download className="w-4 h-4" />
                 <span>{t('reports.exportExcel', 'Export')}</span>

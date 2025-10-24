@@ -63,12 +63,16 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onPhotoUpdate, style })
   };
   
   return (
-    <div className="rounded-lg shadow-sm border onClick={(e) => e.stopPropagation() hover:shadow-lg transition-all duration-300 hover:-translate-y-1 slide-in-up group cursor-pointer" style={style}>
+    <div 
+      className="rounded-lg shadow-sm border hover:shadow-lg transition-all duration-300 hover:-translate-y-1 slide-in-up cursor-pointer" 
+      style={style}
+      onClick={() => onViewDetails && onViewDetails(employee)}
+    >
     <div className="p-6">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">
-          <div className="relative group">
-            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-blue-500 transition-all">
+          <div className="relative group/avatar">
+            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center overflow-hidden border-2 border-transparent group-hover/avatar:border-blue-500 transition-all">
               {uploading ? (
                 <Loader className="w-6 h-6 text-blue-600 animate-spin" />
               ) : employee.photo && !photoError ? (
@@ -84,8 +88,9 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onPhotoUpdate, style })
             </div>
             {!uploading && (
               <label 
-                className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer"
                 title={t('employees.uploadPhoto', 'Upload photo')}
+                onClick={(e) => e.stopPropagation()}
               >
                 <Camera className="w-4 h-4 text-white" />
                 <input 
@@ -136,21 +141,28 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onPhotoUpdate, style })
       
       <div className="flex justify-space-between space-x-2 mt-4 pt-4 border-t border-gray-200">
         <button
-          onClick={() => onViewDetails(employee)}
-          className="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900 transition-all duration-200"
+          onClick={(e) => {
+            e.stopPropagation();
+            onViewDetails(employee);
+          }}
+          className="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900 transition-all duration-200 cursor-pointer"
           title={t('employees.view', 'View Details')}
         >
           <Eye className="h-4 w-4" />
         </button>
         <button 
-          onClick={() => onEdit && onEdit(employee)}
-          className="text-green-600 hover:text-green-800 p-2 rounded-lg hover:bg-green-50 dark:hover:bg-green-900 transition-all duration-200"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit && onEdit(employee);
+          }}
+          className="text-green-600 hover:text-green-800 p-2 rounded-lg hover:bg-green-50 dark:hover:bg-green-900 transition-all duration-200 cursor-pointer"
           title={t('employees.edit', 'Edit')}
         >
           <Edit className="h-4 w-4" />
         </button>
         <button 
-          className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 transition-all duration-200"
+          onClick={(e) => e.stopPropagation()}
+          className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 transition-all duration-200 cursor-pointer"
           title={t('employees.delete', 'Delete')}
         >
           <Trash2 className="h-4 w-4" />

@@ -137,7 +137,7 @@ const Notifications = () => {
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors`}
+                className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer`}
                 title={t('notifications.filters', 'Filters')}
               >
                 <Filter className="h-4 w-4" />
@@ -147,7 +147,7 @@ const Notifications = () => {
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
-                  className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors`}
+                  className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer`}
                   title={t('notifications.markAllRead', 'Mark all as read')}
                 >
                   <CheckCheck className="h-4 w-4" />
@@ -162,7 +162,7 @@ const Notifications = () => {
                       deleteAllNotifications();
                     }
                   }}
-                  className={`px-4 py-2 rounded-lg ${hover.bg} text-red-600 flex items-center space-x-2 transition-colors`}
+                  className={`px-4 py-2 rounded-lg ${hover.bg} text-red-600 flex items-center space-x-2 transition-colors cursor-pointer`}
                   title={t('notifications.deleteAll', 'Delete all')}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -209,7 +209,7 @@ const Notifications = () => {
                 <select
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
-                  className={`w-full px-3 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  className={`w-full px-3 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
                 >
                   <option value="all">{t('notifications.allNotifications', 'All Notifications')}</option>
                   <option value="unread">{t('notifications.unreadOnly', 'Unread Only')}</option>
@@ -225,7 +225,7 @@ const Notifications = () => {
                 <select
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
-                  className={`w-full px-3 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  className={`w-full px-3 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
                 >
                   <option value="all">{t('notifications.allTypes', 'All Types')}</option>
                   <option value="info">{t('notifications.info', 'Info')}</option>
@@ -243,7 +243,7 @@ const Notifications = () => {
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  className={`w-full px-3 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  className={`w-full px-3 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
                 >
                   <option value="all">{t('notifications.allCategories', 'All Categories')}</option>
                   <option value="general">{t('notifications.general', 'General')}</option>
@@ -326,7 +326,7 @@ const Notifications = () => {
                         {!notification.is_read && (
                           <button
                             onClick={(e) => handleMarkAsRead(e, notification.id)}
-                            className={`p-2 rounded-lg ${hover.bg} ${text.secondary} transition-colors`}
+                            className={`p-2 rounded-lg ${hover.bg} ${text.secondary} transition-colors cursor-pointer`}
                             title={t('notifications.markAsRead', 'Mark as read')}
                           >
                             <CheckCheck className="h-4 w-4" />
@@ -334,7 +334,7 @@ const Notifications = () => {
                         )}
                         <button
                           onClick={(e) => handleDelete(e, notification.id)}
-                          className={`p-2 rounded-lg ${hover.bg} text-red-600 transition-colors`}
+                          className={`p-2 rounded-lg ${hover.bg} text-red-600 transition-colors cursor-pointer`}
                           title={t('notifications.delete', 'Delete')}
                         >
                           <Trash2 className="h-4 w-4" />

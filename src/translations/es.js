@@ -515,5 +515,90 @@ login: {
     soft: 'Habilidades Blandas',
     leadership: 'Liderazgo',
     communication: 'Comunicación'
+  },
+
+  employeePosition: {
+    general_manager: 'Gerente general',
+    senior_developer: 'Desarrollador sénior',
+    hr_specialist: 'Especialista de RR.HH.',
+    accountant: 'Contador principal',
+    contract_manager: 'Gerente de contratos',
+    managing_director: 'Director Gerente',
+    support_staff: 'Personal de apoyo',
+  }, 
+
+  // Settings
+  settings: {
+    title: 'Configuración',
+    subtitle: 'Administra tus preferencias y configuración de cuenta',
+    saved: '¡Guardado!',
+    export: 'Exportar',
+    import: 'Importar',
+    reset: 'Restablecer',
+    saveChanges: 'Guardar Cambios',
+    confirmReset: '¿Está seguro de que desea restablecer todas las configuraciones a los valores predeterminados?',
+    importSuccess: '¡Configuración importada exitosamente!',
+    importError: 'Error al importar la configuración',
+    
+    // Tabs
+    notifications: 'Notificaciones',
+    appearance: 'Apariencia',
+    language: 'Idioma',
+    privacy: 'Privacidad',
+    work: 'Preferencias de Trabajo',
+    
+    // Notification Settings
+    notificationPreferences: 'Preferencias de Notificación',
+    emailNotifications: 'Notificaciones por Correo',
+    emailNotificationsDesc: 'Recibir notificaciones por correo electrónico',
+    pushNotifications: 'Notificaciones Push',
+    pushNotificationsDesc: 'Recibir notificaciones push en la aplicación',
+    desktopNotifications: 'Notificaciones de Escritorio',
+    desktopNotificationsDesc: 'Mostrar notificaciones del navegador en el escritorio',
+    notificationFrequency: 'Frecuencia de Notificación',
+    realtime: 'Tiempo Real',
+    daily: 'Resumen Diario',
+    weekly: 'Resumen Semanal',
+    notifyMeAbout: 'Notificarme sobre',
+    timeTrackingNotifications: 'Seguimiento de Tiempo',
+    performanceNotifications: 'Evaluaciones de Rendimiento',
+    employeeNotifications: 'Actualizaciones de Empleados',
+    recruitmentNotifications: 'Reclutamiento',
+    systemNotifications: 'Actualizaciones del Sistema',
+    
+    // Appearance Settings
+    appearanceSettings: 'Configuración de Apariencia',
+    theme: 'Tema',
+    dateFormat: 'Formato de Fecha',
+    timeFormat: 'Formato de Hora',
+    itemsPerPage: 'Elementos por Página',
+    
+    // Language & Region
+    languageRegion: 'Idioma y Región',
+    timezone: 'Zona Horaria',
+    timezoneNote: 'Mostrando actualmente las primeras 50 zonas horarias',
+    
+    // Privacy Settings
+    privacySettings: 'Configuración de Privacidad',
+    profileVisibility: 'Visibilidad del Perfil',
+    visibilityAll: 'Todos',
+    visibilityTeam: 'Mi Equipo',
+    visibilityManagers: 'Solo Gerentes',
+    visibilityPrivate: 'Privado',
+    contactVisibility: 'Visibilidad de Información de Contacto',
+    showEmail: 'Mostrar Dirección de Correo',
+    showPhone: 'Mostrar Número de Teléfono',
+    
+    // Work Preferences
+    workPreferences: 'Preferencias de Trabajo',
+    defaultDashboard: 'Vista de Panel Predeterminada',
+    overviewView: 'Resumen',
+    detailedView: 'Detallado',
+    compactView: 'Compacto',
+    autoClockOut: 'Salida Automática',
+    autoClockOutDesc: 'Registrar salida automáticamente a una hora específica',
+    autoClockOutTime: 'Hora de Salida Automática',
+    weeklyReport: 'Informe Semanal',
+    weeklyReportDesc: 'Recibir un resumen semanal de sus actividades laborales'
   }
 };

@@ -192,7 +192,7 @@ const Settings = () => {
               
               <button
                 onClick={exportSettings}
-                className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors`}
+                className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer`}
                 title={t('settings.export', 'Export settings')}
               >
                 <Download className="h-4 w-4" />
@@ -212,7 +212,7 @@ const Settings = () => {
 
               <button
                 onClick={resetSettings}
-                className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors`}
+                className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer`}
                 title={t('settings.reset', 'Reset to defaults')}
               >
                 <RotateCcw className="h-4 w-4" />
@@ -223,7 +223,7 @@ const Settings = () => {
                 <button
                   onClick={saveSettings}
                   disabled={saving}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 transition-colors disabled:opacity-50"
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   {saving ? (
                     <Loader className="h-4 w-4 animate-spin" />
@@ -288,7 +288,7 @@ const Settings = () => {
                     <select
                       value={settings?.notification_frequency || 'realtime'}
                       onChange={(e) => handleSettingChange('notification_frequency', e.target.value)}
-                      className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
                     >
                       <option value="realtime">{t('settings.realtime', 'Real-time')}</option>
                       <option value="daily">{t('settings.daily', 'Daily Digest')}</option>
@@ -351,7 +351,7 @@ const Settings = () => {
                         key={theme.value}
                         onClick={() => handleSettingChange('theme', theme.value)}
                         className={`
-                          p-4 rounded-lg border-2 transition-all
+                          p-4 rounded-lg border-2 transition-all cursor-pointer
                           ${settings?.theme === theme.value 
                             ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30' 
                             : `border-gray-300 dark:border-gray-600 ${hover.bg}`
@@ -372,7 +372,7 @@ const Settings = () => {
                   <select
                     value={settings?.date_format || 'MM/DD/YYYY'}
                     onChange={(e) => handleSettingChange('date_format', e.target.value)}
-                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
                   >
                     {settingsService.getDateFormats().map((format) => (
                       <option key={format.value} value={format.value}>
@@ -390,7 +390,7 @@ const Settings = () => {
                   <select
                     value={settings?.time_format || '12h'}
                     onChange={(e) => handleSettingChange('time_format', e.target.value)}
-                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
                   >
                     {settingsService.getTimeFormats().map((format) => (
                       <option key={format.value} value={format.value}>
@@ -432,7 +432,7 @@ const Settings = () => {
                   <select
                     value={settings?.language || 'en'}
                     onChange={(e) => handleSettingChange('language', e.target.value)}
-                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
                   >
                     {settingsService.getAvailableLanguages().map((lang) => (
                       <option key={lang.code} value={lang.code}>
@@ -450,7 +450,7 @@ const Settings = () => {
                   <select
                     value={settings?.timezone || 'UTC'}
                     onChange={(e) => handleSettingChange('timezone', e.target.value)}
-                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
                   >
                     {settingsService.getTimezones().slice(0, 50).map((tz) => (
                       <option key={tz} value={tz}>
@@ -480,7 +480,7 @@ const Settings = () => {
                   <select
                     value={settings?.profile_visibility || 'all'}
                     onChange={(e) => handleSettingChange('profile_visibility', e.target.value)}
-                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
                   >
                     <option value="all">{t('settings.visibilityAll', 'Everyone')}</option>
                     <option value="team">{t('settings.visibilityTeam', 'My Team')}</option>
@@ -525,7 +525,7 @@ const Settings = () => {
                   <select
                     value={settings?.default_dashboard_view || 'overview'}
                     onChange={(e) => handleSettingChange('default_dashboard_view', e.target.value)}
-                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
                   >
                     <option value="overview">{t('settings.overviewView', 'Overview')}</option>
                     <option value="detailed">{t('settings.detailedView', 'Detailed')}</option>
@@ -579,7 +579,7 @@ const Settings = () => {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`
-                    flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200
+                    flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 cursor-pointer
                     ${isActive
                       ? 'bg-blue-600 text-white shadow-md transform scale-105'
                       : `${text.secondary} ${hover.bg} hover:scale-102`
@@ -616,7 +616,7 @@ const SettingToggle = ({ label, description, checked, onChange, icon }) => {
       <button
         onClick={() => onChange(!checked)}
         className={`
-          relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+          relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer
           ${checked ? 'bg-blue-600' : isDarkMode ? 'bg-gray-700' : 'bg-gray-300'}
         `}
       >
