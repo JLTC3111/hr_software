@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as timeTrackingService from '../services/timeTrackingService';
 
-const TimeClockEntry = () => {
+const TimeClockEntry = ({ currentLanguage }) => {
   const { isDarkMode, bg, text, button, input, border } = useTheme();
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -338,7 +338,7 @@ const TimeClockEntry = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-[1480px] w-full mx-auto">
+    <div key={currentLanguage} className="space-y-6 max-w-[1480px] w-full mx-auto">
       {/* Loading Overlay */}
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">

@@ -21,3 +21,4 @@ export { default as Search } from './search.jsx';
 export { default as Notifications } from './notifications.jsx';
 export { default as Settings } from './settings.jsx';
 export { default as AddNewEmployee } from './addNewEmployee.jsx';
+export { default as MetricDetailModal } from './metricDetailModal.jsx';

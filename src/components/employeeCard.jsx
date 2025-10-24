@@ -63,7 +63,7 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onPhotoUpdate, style })
   };
   
   return (
-    <div className="rounded-lg shadow-sm border hover:shadow-lg transition-all duration-300 hover:-translate-y-1 slide-in-up group" style={style}>
+    <div className="rounded-lg shadow-sm border onClick={(e) => e.stopPropagation() hover:shadow-lg transition-all duration-300 hover:-translate-y-1 slide-in-up group cursor-pointer" style={style}>
     <div className="p-6">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">

@@ -1,52 +1,165 @@
-import React, { useState } from 'react';
-import { BarChart3, PieChart, TrendingUp, Download, Calendar, Users, DollarSign, Award, Clock, Filter, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { BarChart3, PieChart, TrendingUp, Download, Calendar, Users, DollarSign, Award, Clock, Filter, RefreshCw, Loader } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import * as timeTrackingService from '../services/timeTrackingService';
+import MetricDetailModal from './metricDetailModal.jsx';
 
 const Reports = ({ employees, applications }) => {
   const [selectedReport, setSelectedReport] = useState('overview');
   const [dateRange, setDateRange] = useState('last-quarter');
   const [department, setDepartment] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [timeTrackingData, setTimeTrackingData] = useState({});
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalConfig, setModalConfig] = useState({ type: '', data: [], title: '' });
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
+  
+  // Get current month and year
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth() + 1;
+  const currentYear = currentDate.getFullYear();
+  
+  // Fetch time tracking data from backend
+  useEffect(() => {
+    const fetchTimeTrackingData = async () => {
+      setLoading(true);
+      try {
+        const summariesPromises = employees.map(emp => 
+          timeTrackingService.getTimeTrackingSummary(String(emp.id), currentMonth, currentYear)
+        );
+        
+        const summariesResults = await Promise.all(summariesPromises);
+        
+        const trackingData = {};
+        summariesResults.forEach((result, index) => {
+          if (result.success && result.data) {
+            const emp = employees[index];
+            const empId = String(emp.id);
+            trackingData[empId] = {
+              workDays: result.data.days_worked || 0,
+              totalHours: result.data.total_hours || 0,
+              regularHours: result.data.regular_hours || 0,
+              overtimeHours: result.data.overtime_hours || 0,
+              attendanceRate: result.data.attendance_rate || 0
+            };
+          }
+        });
+        
+        setTimeTrackingData(trackingData);
+      } catch (error) {
+        console.error('Error fetching time tracking data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (employees.length > 0) {
+      fetchTimeTrackingData();
+    } else {
+      setLoading(false);
+    }
+  }, [employees, currentMonth, currentYear]);
 
-  // Sample report data - in a real app, this would come from your API
-  const reportData = {
-    overview: {
-      totalEmployees: employees.length,
-      newHires: 5,
-      turnoverRate: 8.5,
-      avgSalary: 78000,
-      satisfaction: 4.2,
-      productivity: 92
-    },
-    departmentStats: [
-      { name: 'Engineering', employees: 25, avgSalary: 95000, performance: 4.5, color: 'bg-blue-500' },
-      { name: 'Sales', employees: 15, avgSalary: 70000, performance: 4.2, color: 'bg-green-500' },
-      { name: 'Marketing', employees: 12, avgSalary: 65000, performance: 4.0, color: 'bg-purple-500' },
-      { name: 'HR', employees: 8, avgSalary: 60000, performance: 4.3, color: 'bg-orange-500' },
-      { name: 'Design', employees: 10, avgSalary: 72000, performance: 4.4, color: 'bg-pink-500' }
-    ],
-    attendance: {
-      present: 85,
-      absent: 8,
-      leave: 7
-    },
-    recruitment: {
-      totalApplications: 150,
-      interviewed: 45,
-      hired: 8,
-      rejected: 97
-    },
-    performance: [
+  // Calculate real report data from employees and applications
+  const reportData = React.useMemo(() => {
+    // Count employees by department
+    const deptCounts = {};
+    const deptPerformance = {};
+    const deptSalaries = {};
+    
+    employees.forEach(emp => {
+      const dept = emp.department;
+      deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+      deptPerformance[dept] = (deptPerformance[dept] || []).concat(emp.performance || 0);
+      deptSalaries[dept] = (deptSalaries[dept] || []).concat(emp.salary || 0);
+    });
+    
+    // Build department stats
+    const departmentStats = Object.keys(deptCounts).map((dept, index) => {
+      const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-indigo-500'];
+      const avgPerf = deptPerformance[dept].reduce((a, b) => a + b, 0) / deptPerformance[dept].length;
+      const avgSal = deptSalaries[dept].reduce((a, b) => a + b, 0) / deptSalaries[dept].length;
+      
+      return {
+        name: dept,
+        employees: deptCounts[dept],
+        avgSalary: Math.round(avgSal) || 0,
+        performance: avgPerf.toFixed(1),
+        color: colors[index % colors.length]
+      };
+    });
+    
+    // Calculate new hires (employees who started in last 3 months)
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    const newHires = employees.filter(emp => {
+      const startDate = new Date(emp.start_date || emp.startDate);
+      return startDate >= threeMonthsAgo;
+    }).length;
+    
+    // Calculate average salary
+    const avgSalary = employees.length > 0 
+      ? Math.round(employees.reduce((sum, emp) => sum + (emp.salary || 0), 0) / employees.length)
+      : 0;
+    
+    // Calculate average performance
+    const avgPerformance = employees.length > 0
+      ? (employees.reduce((sum, emp) => sum + (emp.performance || 0), 0) / employees.length).toFixed(1)
+      : 0;
+    
+    // Calculate real attendance from time tracking data
+    const totalWorkDays = Object.values(timeTrackingData).reduce((sum, data) => sum + (data?.workDays || 0), 0);
+    const avgAttendanceRate = Object.values(timeTrackingData).length > 0
+      ? Object.values(timeTrackingData).reduce((sum, data) => sum + (data?.attendanceRate || 0), 0) / Object.values(timeTrackingData).length
+      : 0;
+    
+    // Count attendance (active employees)
+    const activeCount = employees.filter(emp => emp.status === 'Active' || emp.status === 'active').length;
+    const onLeaveCount = employees.filter(emp => emp.status === 'On Leave' || emp.status === 'onLeave').length;
+    const inactiveCount = employees.filter(emp => emp.status === 'Inactive' || emp.status === 'inactive').length;
+    
+    // Calculate productivity from real time tracking data (attendance rate as productivity metric)
+    const productivityScore = Math.round(avgAttendanceRate);
+    
+    // Count recruitment stats
+    const recruitmentStats = {
+      totalApplications: applications.length,
+      interviewed: applications.filter(app => app.status === 'Interview Scheduled').length,
+      hired: applications.filter(app => app.status === 'Offer Extended').length,
+      rejected: applications.filter(app => app.status === 'Rejected').length
+    };
+    
+    // Mock performance trend - in real app, would come from historical data
+    const performance = [
       { month: 'Jan', rating: 4.1 },
       { month: 'Feb', rating: 4.2 },
       { month: 'Mar', rating: 4.0 },
       { month: 'Apr', rating: 4.3 },
       { month: 'May', rating: 4.4 },
-      { month: 'Jun', rating: 4.2 }
-    ]
-  };
+      { month: 'Jun', rating: parseFloat(avgPerformance) }
+    ];
+    
+    return {
+      overview: {
+        totalEmployees: employees.length,
+        newHires,
+        turnoverRate: 8.5, // Would need historical data to calculate
+        avgSalary,
+        satisfaction: parseFloat(avgPerformance),
+        productivity: productivityScore || 92 // Real data from time tracking
+      },
+      departmentStats,
+      attendance: {
+        present: activeCount,
+        absent: inactiveCount,
+        leave: onLeaveCount
+      },
+      recruitment: recruitmentStats,
+      performance
+    };
+  }, [employees, applications, timeTrackingData]);
 
   const dateRanges = [
     { value: 'last-week', label: t('reports.lastWeek') },
@@ -62,10 +175,50 @@ const Reports = ({ employees, applications }) => {
     t('departments.sales'), 
     t('departments.marketing'), 
     t('departments.humanresources'), 
-    t('departments.design')
+    t('departments.design'),
+    t('departments.legal_compliance'),
+    t('departments.internal_affairs'),
+    t('departments.office_unit'),
+    t('departments.board_of_directors')
   ];
 
-  const StatCard = ({ title, value, subtitle, icon: Icon, color, trend }) => (
+  const handleMetricClick = (metricType) => {
+    let data = [];
+    let title = '';
+    
+    switch(metricType) {
+      case 'employees':
+        data = employees.map(emp => ({
+          employeeName: emp.name,
+          department: emp.department,
+          position: emp.position,
+          status: emp.status
+        }));
+        title = t('reports.totalEmployees');
+        break;
+      case 'newHires':
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        data = employees.filter(emp => {
+          const startDate = new Date(emp.start_date || emp.startDate);
+          return startDate >= threeMonthsAgo;
+        }).map(emp => ({
+          employeeName: emp.name,
+          department: emp.department,
+          position: emp.position,
+          startDate: emp.start_date || emp.startDate
+        }));
+        title = t('reports.newHires');
+        break;
+      default:
+        return;
+    }
+    
+    setModalConfig({ type: metricType, data, title });
+    setModalOpen(true);
+  };
+  
+  const StatCard = ({ title, value, subtitle, icon: Icon, color, trend, onClick }) => (
     <div 
       className="rounded-lg shadow-sm border p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer group scale-in"
       style={{
@@ -73,6 +226,7 @@ const Reports = ({ employees, applications }) => {
         color: isDarkMode ? '#ffffff' : '#111827',
         borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
       }}
+      onClick={onClick}
     >
       <div className="flex items-center justify-between">
         <div>
@@ -180,7 +334,7 @@ const Reports = ({ employees, applications }) => {
                   borderColor: 'transparent'
                 }}
               >
-                {dept.name}
+                {t(`departments.${dept.name.toLowerCase().replace(/\s+/g, '_')}`, dept.name)}
               </span>
             </div>
             <div 
@@ -392,6 +546,7 @@ const Reports = ({ employees, applications }) => {
           icon={Users}
           color="text-blue-600"
           trend="+5.2"
+          onClick={() => handleMetricClick('employees')}
         />
         <StatCard
           title={t('reports.newHires')}
@@ -400,6 +555,7 @@ const Reports = ({ employees, applications }) => {
           icon={TrendingUp}
           color="text-green-600"
           trend="+12.5"
+          onClick={() => handleMetricClick('newHires')}
         />
         <StatCard
           title={t('reports.turnoverRate')}
@@ -660,6 +816,23 @@ const Reports = ({ employees, applications }) => {
 
   return (
     <div className="space-y-4 md:space-y-6 px-2 sm:px-0">
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div 
+            className="rounded-lg p-6 flex items-center space-x-3 scale-in"
+            style={{
+              backgroundColor: isDarkMode ? '#374151' : '#ffffff'
+            }}
+          >
+            <Loader className="w-6 h-6 animate-spin text-blue-600" />
+            <span style={{ color: isDarkMode ? '#ffffff' : '#111827' }}>
+              {t('common.loading', 'Loading reports...')}
+            </span>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 slide-in-left">
         <h2 
@@ -735,6 +908,15 @@ const Reports = ({ employees, applications }) => {
       {/* Tab Content */}
       {selectedReport === 'overview' && <OverviewTab />}
       {selectedReport === 'detailed' && <DetailedReportsTab />}
+      
+      {/* Metric Detail Modal */}
+      <MetricDetailModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        metricType={modalConfig.type}
+        data={modalConfig.data}
+        title={modalConfig.title}
+      />
     </div>
   );
 };

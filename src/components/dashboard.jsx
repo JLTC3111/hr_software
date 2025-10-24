@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Users, Briefcase, Clock, Calendar, AlertCircle, DatabaseZap, Loader } from 'lucide-react'
 import StatsCard from './statsCard.jsx'
+import MetricDetailModal from './metricDetailModal.jsx'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
@@ -14,6 +15,11 @@ const Dashboard = ({ employees, applications }) => {
   const [loading, setLoading] = useState(true);
   const [timeTrackingData, setTimeTrackingData] = useState({});
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
+  const [pendingApprovals, setPendingApprovals] = useState([]);
+  
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalConfig, setModalConfig] = useState({ type: '', data: [], title: '' });
   
   // Get current month and year
   const currentDate = new Date();
@@ -59,10 +65,16 @@ const Dashboard = ({ employees, applications }) => {
         
         setTimeTrackingData(trackingData);
         
-        // Fetch pending approvals count
+        // Fetch pending approvals count and details
         const approvalsResult = await timeTrackingService.getPendingApprovalsCount();
         if (approvalsResult.success) {
           setPendingApprovalsCount(approvalsResult.data.total || 0);
+        }
+        
+        // Fetch pending approvals details
+        const approvalsDetailResult = await timeTrackingService.getPendingApprovals();
+        if (approvalsDetailResult.success) {
+          setPendingApprovals(approvalsDetailResult.data || []);
         }
         
       } catch (error) {
@@ -127,6 +139,85 @@ const Dashboard = ({ employees, applications }) => {
     .sort((a, b) => b.performance - a.performance)
     .slice(0, 5);
 
+  // Handle metric click - prepare data and open modal
+  const handleMetricClick = (metricType) => {
+    let data = [];
+    let title = '';
+    
+    switch(metricType) {
+      case 'employees':
+        data = employees.map(emp => ({
+          employeeName: emp.name,
+          department: emp.department,
+          position: emp.position,
+          status: emp.status
+        }));
+        title = t('dashboard.totalEmployees');
+        break;
+        
+      case 'performance':
+        data = employees.map(emp => ({
+          employeeName: emp.name,
+          department: emp.department,
+          performance: timeTrackingData[String(emp.id)]?.performance || emp.performance || 0,
+          overtime: timeTrackingData[String(emp.id)]?.overtime || 0
+        }));
+        title = t('dashboard.avgPerformance');
+        break;
+        
+      case 'overtime':
+        data = employees.map(emp => ({
+          employeeName: emp.name,
+          department: emp.department,
+          overtime: timeTrackingData[String(emp.id)]?.overtime || 0,
+          workDays: timeTrackingData[String(emp.id)]?.workDays || 0
+        }));
+        title = t('dashboard.totalOvertime');
+        break;
+        
+      case 'leave':
+        data = employees.map(emp => ({
+          employeeName: emp.name,
+          department: emp.department,
+          leaveDays: timeTrackingData[String(emp.id)]?.leaveDays || 0,
+          workDays: timeTrackingData[String(emp.id)]?.workDays || 0
+        }));
+        title = t('dashboard.totalLeave');
+        break;
+      
+      case 'workDays':
+        data = employees.map(emp => ({
+          employeeName: emp.name,
+          department: emp.department,
+          workDays: timeTrackingData[String(emp.id)]?.workDays || 0,
+          overtime: timeTrackingData[String(emp.id)]?.overtime || 0
+        }));
+        title = t('dashboard.totalWorkDays');
+        break;
+        
+      case 'pendingRequests':
+        data = pendingApprovals.map(approval => ({
+          employeeName: approval.employee?.name || 'Unknown',
+          requestType: approval.hour_type || 'Regular',
+          date: approval.date,
+          status: approval.status || 'pending'
+        }));
+        title = t('dashboard.pendingRequests');
+        break;
+        
+      case 'applications':
+        data = applications;
+        title = t('dashboard.activeApplications');
+        break;
+        
+      default:
+        return;
+    }
+    
+    setModalConfig({ type: metricType, data, title });
+    setModalOpen(true);
+  };
+
   return (
     <div className="space-y-4 md:space-y-6 px-2 sm:px-0">
       {loading && (
@@ -164,6 +255,7 @@ const Dashboard = ({ employees, applications }) => {
             icon={Users} 
             color={isDarkMode ? "#ffffff" : "#1f1f1f"}
             size={12}
+            onClick={() => handleMetricClick('employees')}
           />
         </div>
         <div className="stagger-item">
@@ -172,6 +264,7 @@ const Dashboard = ({ employees, applications }) => {
             value={avgPerformance} 
             icon={DatabaseZap} 
             color={isDarkMode ? "#ffffff" : "#1f1f1f"}
+            onClick={() => handleMetricClick('performance')}
           />
         </div>
         <div className="stagger-item">
@@ -180,6 +273,7 @@ const Dashboard = ({ employees, applications }) => {
             value={`${totalOvertime}h`} 
             icon={Clock} 
             color={isDarkMode ? "#ffffff" : "#1f1f1f"}
+            onClick={() => handleMetricClick('overtime')}
           />
         </div>
         <div className="stagger-item">
@@ -188,6 +282,7 @@ const Dashboard = ({ employees, applications }) => {
             value={totalLeaveDays} 
             icon={Calendar} 
             color={isDarkMode ? "#ffffff" : "#1f1f1f"}
+            onClick={() => handleMetricClick('leave')}
           />
         </div>
       </div>
@@ -322,7 +417,7 @@ const Dashboard = ({ employees, applications }) => {
                   <div>
                     <p className={`font-medium ${text.primary}`}>{emp.name}</p>
                     <p className={`text-sm ${text.secondary}`}>
-                      {t(`positions.${emp.position}`)}
+                      {t(`employeePosition.${emp.position}`)}
                     </p>
                   </div>
                 </div>
@@ -338,7 +433,10 @@ const Dashboard = ({ employees, applications }) => {
 
       {/* Additional Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
+        <div 
+          onClick={() => handleMetricClick('workDays')}
+          className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
+        >
           <div className="flex items-center space-x-3 mb-2">
             <Clock className="w-5 h-5 text-blue-600" />
             <h4 className={`font-semibold ${text.primary}`}>
@@ -351,7 +449,10 @@ const Dashboard = ({ employees, applications }) => {
           </p>
         </div>
 
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
+        <div 
+          onClick={() => handleMetricClick('applications')}
+          className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
+        >
           <div className="flex items-center space-x-3 mb-2">
             <Briefcase className="w-5 h-5 text-green-600" />
             <h4 className={`font-semibold ${text.primary}`}>
@@ -364,7 +465,10 @@ const Dashboard = ({ employees, applications }) => {
           </p>
         </div>
 
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
+        <div 
+          onClick={() => handleMetricClick('pendingRequests')}
+          className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
+        >
           <div className="flex items-center space-x-3 mb-2">
             <AlertCircle className="w-5 h-5 text-orange-600" />
             <h4 className={`font-semibold ${text.primary}`}>
@@ -377,6 +481,15 @@ const Dashboard = ({ employees, applications }) => {
           </p>
         </div>
       </div>
+
+      {/* Metric Detail Modal */}
+      <MetricDetailModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        metricType={modalConfig.type}
+        data={modalConfig.data}
+        title={modalConfig.title}
+      />
     </div>
   );
 };

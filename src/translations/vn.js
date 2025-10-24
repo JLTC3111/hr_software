@@ -512,8 +512,7 @@ export default {
   // Employee Department (for display in cards)
   employeeDepartment: {
     legal_compliance: 'Tuân thủ pháp luật',
-    'internal_ affairs': 'Nội vụ',
-    internal_affairs: 'Nội vụ',
+    internal_affairs: 'Quản Lý Nội Bộ',
     human_resources: 'Nhân sự',
     office_unit: 'Đơn vị văn phòng',
     board_of_directors: 'Hội đồng quản trị',
@@ -535,7 +534,7 @@ export default {
   //Employee Position 
   employeePosition: {
     general_manager: 'Quản Lý Chung',
-    senior_developer: 'Quản Lý Nội Bộ',
+    senior_developer: 'Lập Trình Viên Cao Cấp',
     hr_specialist: 'Điều Hành Nhân Sự',
     accountant: 'Kế Toán Trưởng',
     contract_manager: 'Phụ Trách Đấu Thầu',

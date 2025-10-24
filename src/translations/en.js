@@ -188,7 +188,6 @@ export default {
   // Employee Department (for display in cards)
   employeeDepartment: {
     legal_compliance: 'Legal Compliance',
-    'internal_ affairs': 'Internal Affairs',
     internal_affairs: 'Internal Affairs',
     human_resources: 'Human Resources',
     office_unit: 'Office Unit',
@@ -407,7 +406,12 @@ export default {
     trainingEffectiveness: 'Training Effectiveness',
     measureTrainingSuccess: 'Measure training program success',
     generate: 'Generate →',
-    fromLastPeriod: 'from last period'
+    fromLastPeriod: 'from last period',
+    lastWeek:	'Last Week',
+    lastMonth:	'Last Month',
+    lastQuarter:	'Last Quarter',
+    lastYear:	'Last Year',
+    customRange: 'Custom Range',
   },
 
   // Common
@@ -564,21 +568,6 @@ export default {
     soft: 'Soft Skills',
     leadership: 'Leadership',
     communication: 'Communication'
-  },
-
-  // Reports
-  reports: {
-    title: 'Reports & Analytics',
-    lastWeek: 'Last Week',
-    lastMonth: 'Last Month',
-    lastQuarter: 'Last Quarter',
-    lastYear: 'Last Year',
-    customRange: 'Custom Range',
-    overview: 'Overview',
-    departmentStats: 'Department Statistics',
-    attendance: 'Attendance',
-    recruitment: 'Recruitment',
-    performance: 'Performance'
   },
 
   // Notifications

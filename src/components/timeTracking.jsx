@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import * as timeTrackingService from '../services/timeTrackingService'
+import MetricDetailModal from './metricDetailModal.jsx'
 
 const TimeTracking = ({ employees }) => {
   const [selectedEmployee, setSelectedEmployee] = useState(employees[0]?.id ? String(employees[0].id) : null);
@@ -25,6 +26,8 @@ const TimeTracking = ({ employees }) => {
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showOvertimeModal, setShowOvertimeModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalConfig, setModalConfig] = useState({ type: '', data: [], title: '' });
   
   // Leave request form
   const [leaveForm, setLeaveForm] = useState({
@@ -110,8 +113,55 @@ const TimeTracking = ({ employees }) => {
 
   const years = [2023, 2024, 2025];
 
-  const TimeCard = ({ title, value, unit, icon: Icon, color, bgColor }) => (
-    <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
+  const handleMetricClick = (metricType) => {
+    let data = [];
+    let title = '';
+    
+    const selectedEmp = employees.find(emp => String(emp.id) === selectedEmployee);
+    if (!selectedEmp) return;
+    
+    switch(metricType) {
+      case 'workDays':
+        data = [{
+          employeeName: selectedEmp.name,
+          department: selectedEmp.department,
+          workDays: currentData.days_worked,
+          overtime: currentData.overtime_hours
+        }];
+        title = t('timeTracking.workDays');
+        break;
+      case 'leaveDays':
+        data = leaveRequests.map(req => ({
+          employeeName: selectedEmp.name,
+          requestType: req.leave_type,
+          date: req.start_date,
+          status: req.status
+        }));
+        title = t('timeTracking.leaveDays');
+        break;
+      case 'overtime':
+        data = overtimeLogs.map(log => ({
+          employeeName: selectedEmp.name,
+          requestType: log.overtime_type,
+          date: log.date,
+          status: log.status,
+          hours: log.hours
+        }));
+        title = t('timeTracking.overtime');
+        break;
+      default:
+        return;
+    }
+    
+    setModalConfig({ type: metricType === 'leaveDays' || metricType === 'overtime' ? 'pendingRequests' : metricType, data, title });
+    setModalOpen(true);
+  };
+  
+  const TimeCard = ({ title, value, unit, icon: Icon, color, bgColor, onClick }) => (
+    <div 
+      className={`${bg.secondary} rounded-lg p-6 border ${border.primary} ${onClick ? 'cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1' : ''}`}
+      onClick={onClick}
+    >
       <div className="flex items-center justify-between">
         <div>
           <p className={`text-sm font-medium ${text.secondary}`}>{title}</p>
@@ -319,6 +369,7 @@ const TimeTracking = ({ employees }) => {
           icon={Calendar}
           color="text-blue-600"
           bgColor="bg-white"
+          onClick={() => handleMetricClick('workDays')}
         />
         <TimeCard
           title={t('timeTracking.leaveDays')}
@@ -327,6 +378,7 @@ const TimeTracking = ({ employees }) => {
           icon={Coffee}
           color="text-orange-600"
           bgColor="bg-white"
+          onClick={() => handleMetricClick('leaveDays')}
         />
         <TimeCard
           title={t('timeTracking.overtime')}
@@ -335,6 +387,7 @@ const TimeTracking = ({ employees }) => {
           icon={Clock}
           color="text-purple-600"
           bgColor="bg-white"
+          onClick={() => handleMetricClick('overtime')}
         />
         <TimeCard
           title={t('timeTracking.holidayOvertime')}
@@ -606,6 +659,15 @@ const TimeTracking = ({ employees }) => {
           </div>
         </div>
       )}
+      
+      {/* Metric Detail Modal */}
+      <MetricDetailModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        metricType={modalConfig.type}
+        data={modalConfig.data}
+        title={modalConfig.title}
+      />
     </div>
   );
 };

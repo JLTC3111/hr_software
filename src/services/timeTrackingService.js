@@ -590,6 +590,28 @@ export const getPendingApprovalsCount = async () => {
   }
 };
 
+/**
+ * Get detailed pending approvals (for managers/HR)
+ */
+export const getPendingApprovals = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('time_entries')
+      .select(`
+        *,
+        employee:employees(id, name, department, position)
+      `)
+      .eq('status', 'pending')
+      .order('date', { ascending: false });
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error fetching pending approvals:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 // ============================================
 // EMPLOYEE MANAGEMENT
 // ============================================
@@ -691,6 +713,7 @@ export default {
   getMonthlyAttendanceSummary,
   calculateHourTotals,
   getPendingApprovalsCount,
+  getPendingApprovals,
   
   // Employee Management
   syncEmployeesToSupabase,

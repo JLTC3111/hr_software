@@ -3,7 +3,7 @@ import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Award, FileText, Loader } from 'lucide-react'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
-import { LanguageProvider } from './contexts/LanguageContext'
+import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee } from './components/index.jsx';
@@ -337,6 +337,7 @@ const HRManagementApp = () => {
 const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onViewEmployee, onEditEmployee, onCloseModal, onPhotoUpdate, isAddEmployeeModalOpen, setIsAddEmployeeModalOpen, onAddEmployee, refetchEmployees, loading, error }) => {
   const { bg, text } = useTheme();
   const { isAuthenticated } = useAuth();
+  const { currentLanguage } = useLanguage();
 
   // Show loading state while fetching data
   if (loading && isAuthenticated) {
@@ -380,10 +381,10 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
           <Route path="/*" element={
             isAuthenticated ? (
               <div className={`min-h-screen ${bg.primary}`}>
-                <Header />
+                <Header key={currentLanguage} />
               
               <div className="flex">
-                <Sidebar />
+                <Sidebar key={currentLanguage} />
                 
                 {/* Main Content - Full width utilization */}
                 <div className="flex-1 p-3 sm:p-4 lg:p-8 w-full mx-auto">
@@ -391,7 +392,7 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
                     <Route path="/" element={<Navigate to="/time-clock" replace />} />
                     <Route 
                       path="/time-clock" 
-                      element={<TimeClockEntry />} 
+                      element={<TimeClockEntry currentLanguage={currentLanguage} />} 
                     />
                     <Route 
                       path="/dashboard" 

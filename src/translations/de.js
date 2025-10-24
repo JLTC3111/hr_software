@@ -1,7 +1,7 @@
 export default {
   // Navigation
   nav: {
-    timeClock: 'Zeiterfassung',
+    timeClock: 'Stempeluhr',
     dashboard: 'Dashboard',
     employees: 'Mitarbeiter',
     recruitment: 'Personalbeschaffung',
@@ -148,99 +148,7 @@ export default {
     offer: 'Angebot',
     years: 'Jahre'
   },
-
-  timeClock: {
-    title: 'บันทึกเวลา',
-    subtitle: 'บันทึกชั่วโมงการทำงานและส่งหลักฐานการเข้างาน',
-    newEntry: 'เพิ่มรายการเวลาใหม่',
-    date: 'วันที่',
-    clockIn: 'เวลาเข้า',
-    clockOut: 'เวลาออก',
-    hourType: 'ประเภทชั่วโมงทำงาน',
-    proof: 'หลักฐานการเข้างาน',
-    notes: 'บันทึก',
-    optional: 'ตัวเลือกเพิ่มเติม',
-    submit: 'ส่งบันทึกเวลา',
-    submitting: 'กำลังส่ง...',
-    success: 'ส่งบันทึกเวลาสำเร็จแล้ว!',
-    confirmDelete: 'คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?',
-    delete: 'ลบ',
-    history: 'ประวัติการบันทึกเวลา',
-    noEntries: 'ยังไม่มีรายการ กรุณาส่งรายการแรก!',
-    time: 'เวลา',
-    hours: 'ชั่วโมง',
-    type: 'ประเภท',
-    status: 'สถานะ',
-    actions: 'การดำเนินการ',
-    weeklySummary: 'สัปดาห์นี้',
-    monthlySummary: 'เดือนนี้',
-    total: 'รวม',
-    notesPlaceholder: 'เพิ่มบันทึกหรือรายละเอียดเพิ่มเติม...',
-    fileHelp: 'อัปโหลดภาพหน้าจอ รูปภาพ หรือ PDF (ขนาดไม่เกิน 5MB)',
-    hourTypes: {
-      regular: 'เวลาปกติ',
-      holiday: 'วันหยุดนักขัตฤกษ์',
-      weekend: 'วันหยุดสุดสัปดาห์',
-      bonus: 'ชั่วโมงพิเศษ'
-    },
-    errors: {
-      dateRequired: 'กรุณาเลือกวันที่',
-      clockInRequired: 'กรุณากรอกเวลาเข้า',
-      clockOutRequired: 'กรุณากรอกเวลาออก',
-      clockOutAfterClockIn: 'เวลาออกต้องอยู่หลังเวลาเข้า',
-      tooManyHours: 'ไม่สามารถเกิน 24 ชั่วโมงในหนึ่งรายการได้',
-      overlapping: 'เวลานี้ซ้ำกับรายการอื่นในวันเดียวกัน',
-      fileTooLarge: 'ขนาดไฟล์ต้องไม่เกิน 5MB',
-      invalidFileType: 'อนุญาตเฉพาะไฟล์ JPG, PNG และ PDF เท่านั้น'
-    }
-  },  
   
-  timeClock: {
-    title: 'Zeiterfassung',
-    subtitle: 'Arbeitszeiten erfassen und Nachweise einreichen',
-    newEntry: 'Neue Zeiteingabe',
-    date: 'Datum',
-    clockIn: 'Arbeitsbeginn',
-    clockOut: 'Arbeitsende',
-    hourType: 'Stundentyp',
-    proof: 'Nachweis der Anwesenheit',
-    notes: 'Notizen',
-    optional: 'Optional',
-    submit: 'Zeiteintrag senden',
-    submitting: 'Wird gesendet...',
-    success: 'Zeiteintrag erfolgreich übermittelt!',
-    confirmDelete: 'Möchten Sie diesen Eintrag wirklich löschen?',
-    delete: 'Löschen',
-    history: 'Zeitaufzeichnungshistorie',
-    noEntries: 'Noch keine Einträge vorhanden. Reichen Sie den ersten ein!',
-    time: 'Zeit',
-    hours: 'Stunden',
-    type: 'Typ',
-    status: 'Status',
-    actions: 'Aktionen',
-    weeklySummary: 'Diese Woche',
-    monthlySummary: 'Diesen Monat',
-    total: 'Gesamt',
-    notesPlaceholder: 'Fügen Sie Notizen oder zusätzliche Informationen hinzu...',
-    fileHelp: 'Screenshot, Foto oder PDF hochladen (max. 5 MB)',
-    hourTypes: {
-      regular: 'Reguläre Stunden',
-      holiday: 'Feiertag',
-      weekend: 'Wochenende',
-      bonus: 'Bonusstunden'
-    },
-    errors: {
-      dateRequired: 'Bitte wählen Sie ein Datum aus',
-      clockInRequired: 'Bitte geben Sie die Startzeit ein',
-      clockOutRequired: 'Bitte geben Sie die Endzeit ein',
-      clockOutAfterClockIn: 'Die Endzeit muss nach der Startzeit liegen',
-      tooManyHours: 'Ein Eintrag darf nicht mehr als 24 Stunden enthalten',
-      overlapping: 'Dieser Zeitraum überschneidet sich mit einem anderen Eintrag desselben Tages',
-      fileTooLarge: 'Die Datei darf nicht größer als 5 MB sein',
-      invalidFileType: 'Nur JPG-, PNG- und PDF-Dateien sind erlaubt'
-    }
-  },
-
   // Time Tracking
   timeTracking: {
     title: 'Zeiterfassungs-Dashboard',
@@ -512,7 +420,7 @@ export default {
 
   // Time Clock Entry
   timeClock: {
-    title: 'Zeiterfassung',
+    title: 'Stempeluhr',
     subtitle: 'Erfassen Sie Ihre Arbeitszeiten und laden Sie Anwesenheitsnachweise hoch',
     newEntry: 'Neuer Zeiteintrag',
     date: 'Datum',
