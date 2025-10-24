@@ -6,7 +6,7 @@
 -- =====================================================
 
 -- Create performance_goals table (matching performanceService.js expectations)
-DROP TABLE IF EXISTS public.performance_goals;
+DROP TABLE IF EXISTS public.performance_goals CASCADE;
 CREATE TABLE IF NOT EXISTS public.performance_goals (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     employee_id TEXT NOT NULL REFERENCES public.employees(id) ON DELETE CASCADE,
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS public.performance_goals (
 );
 
 -- Create performance_reviews table (matching performanceService.js expectations)
-DROP TABLE IF EXISTS public.performance_reviews;
+DROP TABLE IF EXISTS public.performance_reviews CASCADE;
 CREATE TABLE IF NOT EXISTS public.performance_reviews (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     employee_id TEXT NOT NULL REFERENCES public.employees(id) ON DELETE CASCADE,
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS public.performance_reviews (
 );
 
 -- Create performance_skills table
-DROP TABLE IF EXISTS public.performance_skills;
+DROP TABLE IF EXISTS public.performance_skills CASCADE;
 CREATE TABLE IF NOT EXISTS public.performance_skills (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     employee_id TEXT NOT NULL REFERENCES public.employees(id) ON DELETE CASCADE,
@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS public.performance_skills (
 );
 
 -- Now create performance_comments
-DROP TABLE IF EXISTS public.performance_comments;
+DROP TABLE IF EXISTS public.performance_comments CASCADE;
 CREATE TABLE IF NOT EXISTS public.performance_comments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   goal_id UUID REFERENCES public.performance_goals(id) ON DELETE CASCADE,
@@ -240,7 +240,6 @@ CREATE POLICY "Allow authenticated users to insert employee feedback"
     WITH CHECK (true);
 
 -- Create goal milestones table
-DROP TABLE IF EXISTS public.goal_milestones CASCADE;
 CREATE TABLE IF NOT EXISTS public.goal_milestones (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     goal_id UUID NOT NULL REFERENCES public.performance_goals(id) ON DELETE CASCADE,

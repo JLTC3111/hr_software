@@ -232,6 +232,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
               <InputField 
                 name="name" 
                 label={t('employees.name')} 
+                placeholder={t('employees.namePlaceholder', 'Enter employee name')}
                 icon={User} 
                 required 
                 value={formData.name}
@@ -246,6 +247,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
               <InputField 
                 name="email" 
                 label={t('employees.email')} 
+                placeholder={t('employees.emailPlaceholder', 'Enter employee email')}
                 type="email" 
                 icon={Mail} 
                 required 
@@ -261,6 +263,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
               <InputField 
                 name="phone" 
                 label={t('employees.phone')} 
+                placeholder={t('employees.phonePlaceholder', 'Enter employee phone')}
                 type="tel" 
                 icon={Phone} 
                 required 
@@ -276,6 +279,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
               <InputField 
                 name="dob" 
                 label={t('addEmployee.dob')} 
+                placeholder={t('addEmployee.dobPlaceholder', 'Enter employee dob')}
                 type="date" 
                 icon={Calendar} 
                 required 
@@ -294,6 +298,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
                   <MapPin className={`absolute left-3 top-3 h-5 w-5 ${text.secondary}`} />
                   <textarea 
                     name="address" 
+                    placeholder={t('employees.addressPlaceholder', 'Enter employee address')}
                     value={formData.address || ''} 
                     onChange={handleChange} 
                     rows="3" 
@@ -333,6 +338,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
               <InputField 
                 name="startDate" 
                 label={t('employees.startDate')} 
+                placeholder={t('employees.startDatePlaceholder', 'Enter employee start date')}
                 type="date" 
                 icon={Calendar} 
                 required 
@@ -348,6 +354,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
               <InputField 
                 name="salary" 
                 label={t('employees.salary')} 
+                placeholder={t('employees.salaryPlaceholder', 'Enter employee salary')}
                 type="number" 
                 icon={DollarSign} 
                 min="0" 

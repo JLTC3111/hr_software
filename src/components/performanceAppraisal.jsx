@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Star, TrendingUp, Calendar, User, Award, Target, MessageSquare, Plus, Edit, Eye } from 'lucide-react';
+import { Star, Sparkle, TrendingUp, Calendar, User, Award, Goal, MessageSquare, Plus, Edit, Eye } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -182,8 +182,8 @@ const PerformanceAppraisal = ({ employees }) => {
           }}
         >
           <div className="flex items-center space-x-3">
-            <div className="p-3 bg-blue-100 rounded-full">
-              <Target className="h-6 w-6 text-blue-600" />
+            <div className="p-3 bg-transparent rounded-full">
+              <Goal className="h-6 w-6 text-red-600" />
             </div>
             <div>
               <p 
@@ -219,7 +219,7 @@ const PerformanceAppraisal = ({ employees }) => {
           }}
         >
           <div className="flex items-center space-x-3">
-            <div className="p-3 bg-green-100 rounded-full">
+            <div className="p-3 bg-transparent rounded-full">
               <Award className="h-6 w-6 text-green-600" />
             </div>
             <div>
@@ -256,8 +256,8 @@ const PerformanceAppraisal = ({ employees }) => {
           }}
         >
           <div className="flex items-center space-x-3">
-            <div className="p-3 bg-purple-100 rounded-full">
-              <Star className="h-6 w-6 text-purple-600" />
+            <div className="p-3 bg-transparent rounded-full">
+              <Sparkle className="h-6 w-6 text-blue-600" />
             </div>
             <div>
               <p 
@@ -417,7 +417,7 @@ const PerformanceAppraisal = ({ employees }) => {
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
-                <Target className="h-5 w-5 text-blue-600" />
+                <Goal className="h-5 w-5 text-blue-600" />
                 <h4 
                   className="font-semibold"
                   style={{
