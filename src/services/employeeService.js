@@ -308,16 +308,41 @@ export const updateEmployee = async (employeeId, updates) => {
 };
 
 /**
- * Delete an employee
+ * Delete an employee permanently from the database
+ * This will also delete all related data (time entries, leave requests, overtime logs)
+ * Due to CASCADE constraints in the database
  */
 export const deleteEmployee = async (employeeId) => {
   try {
-    const { error } = await supabase
+    const id = toEmployeeId(employeeId);
+    
+    console.log(`Permanently deleting employee ${id} and all related data...`);
+    
+    // Delete employee (CASCADE will handle related records)
+    // time_entries, leave_requests, overtime_logs have CASCADE on employee_id
+    const { error: deleteError } = await supabase
       .from('employees')
       .delete()
-      .eq('id', toEmployeeId(employeeId));
+      .eq('id', id);
 
-    if (error) throw error;
+    if (deleteError) {
+      console.error('Error deleting employee:', deleteError);
+      throw deleteError;
+    }
+    
+    // Also update hr_users to remove employee_id link (if exists)
+    // This is SET NULL by foreign key constraint
+    const { error: unlinkError } = await supabase
+      .from('hr_users')
+      .update({ employee_id: null })
+      .eq('employee_id', id);
+    
+    if (unlinkError) {
+      console.warn('Error unlinking hr_users:', unlinkError);
+      // Don't fail if this doesn't work
+    }
+    
+    console.log(`✅ Successfully deleted employee ${id}`);
     return { success: true };
   } catch (error) {
     console.error('Error deleting employee:', error);

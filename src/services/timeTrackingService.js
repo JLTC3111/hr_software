@@ -463,10 +463,127 @@ export const updateOvertimeStatus = async (logId, status, approverId) => {
 // ============================================
 
 /**
+ * Calculate summary directly from time_entries, leave_requests, and overtime_logs
+ */
+const calculateSummaryFromRawData = async (employeeId, month, year) => {
+  try {
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+    
+    // Get time entries
+    const { data: timeEntries, error: timeError } = await supabase
+      .from('time_entries')
+      .select('*')
+      .eq('employee_id', toEmployeeId(employeeId))
+      .gte('date', startDate)
+      .lte('date', endDate);
+    
+    if (timeError) throw timeError;
+    
+    // Get leave requests
+    const { data: leaveRequests, error: leaveError } = await supabase
+      .from('leave_requests')
+      .select('*')
+      .eq('employee_id', toEmployeeId(employeeId))
+      .gte('start_date', startDate)
+      .lte('end_date', endDate)
+      .eq('status', 'approved');
+    
+    if (leaveError) throw leaveError;
+    
+    // Get overtime logs
+    const { data: overtimeLogs, error: overtimeError } = await supabase
+      .from('overtime_logs')
+      .select('*')
+      .eq('employee_id', toEmployeeId(employeeId))
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .eq('status', 'approved');
+    
+    if (overtimeError) throw overtimeError;
+    
+    // Calculate metrics
+    const uniqueDays = new Set();
+    let regularHours = 0;
+    let holidayHours = 0;
+    let weekendHours = 0;
+    let bonusHours = 0;
+    
+    (timeEntries || []).forEach(entry => {
+      uniqueDays.add(entry.date);
+      const hours = parseFloat(entry.hours || 0);
+      
+      switch (entry.hour_type) {
+        case 'regular':
+          regularHours += hours;
+          break;
+        case 'holiday':
+          holidayHours += hours;
+          break;
+        case 'weekend':
+          weekendHours += hours;
+          break;
+        case 'bonus':
+          bonusHours += hours;
+          break;
+        default:
+          regularHours += hours;
+      }
+    });
+    
+    const daysWorked = uniqueDays.size;
+    
+    // Calculate leave days
+    let leaveDays = 0;
+    (leaveRequests || []).forEach(req => {
+      const start = new Date(req.start_date);
+      const end = new Date(req.end_date);
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      leaveDays += diffDays;
+    });
+    
+    // Calculate overtime hours
+    let overtimeHours = 0;
+    let holidayOvertimeHours = 0;
+    (overtimeLogs || []).forEach(log => {
+      const hours = parseFloat(log.hours || 0);
+      if (log.overtime_type === 'holiday') {
+        holidayOvertimeHours += hours;
+      } else {
+        overtimeHours += hours;
+      }
+    });
+    
+    const totalHours = regularHours + holidayHours + weekendHours + bonusHours;
+    const totalDays = daysWorked + leaveDays;
+    const workingDaysInMonth = 22; // Approximate
+    const attendanceRate = totalDays > 0 ? (totalDays / workingDaysInMonth) * 100 : 0;
+    
+    return {
+      employee_id: toEmployeeId(employeeId),
+      month,
+      year,
+      days_worked: daysWorked,
+      leave_days: leaveDays,
+      regular_hours: regularHours,
+      overtime_hours: overtimeHours,
+      holiday_overtime_hours: holidayOvertimeHours,
+      total_hours: totalHours,
+      attendance_rate: Math.min(attendanceRate, 100)
+    };
+  } catch (error) {
+    console.error('Error calculating summary from raw data:', error);
+    throw error;
+  }
+};
+
+/**
  * Get time tracking summary for an employee
  */
 export const getTimeTrackingSummary = async (employeeId, month, year) => {
   try {
+    // Try to get from summary table first
     const { data, error } = await supabase
       .from('time_tracking_summary')
       .select('*')
@@ -475,14 +592,24 @@ export const getTimeTrackingSummary = async (employeeId, month, year) => {
       .eq('year', year)
       .maybeSingle();
 
-    if (error) {
-      console.error('Supabase error fetching summary:', error);
-      throw error;
+    // If summary table has data, return it
+    if (!error && data && data.total_hours > 0) {
+      return { success: true, data };
     }
 
-    // If no data exists, return default structure
-    if (!data) {
-      return {
+    // Otherwise, calculate from raw data
+    console.log('Summary table empty, calculating from time_entries...');
+    const calculatedData = await calculateSummaryFromRawData(employeeId, month, year);
+    return { success: true, data: calculatedData };
+  } catch (error) {
+    console.error('Error fetching time tracking summary:', error);
+    // Return calculated data as fallback
+    try {
+      const calculatedData = await calculateSummaryFromRawData(employeeId, month, year);
+      return { success: true, data: calculatedData };
+    } catch (calcError) {
+      // Ultimate fallback - return zeros
+      return { 
         success: true,
         data: {
           employee_id: toEmployeeId(employeeId),
@@ -498,25 +625,6 @@ export const getTimeTrackingSummary = async (employeeId, month, year) => {
         }
       };
     }
-
-    return { success: true, data };
-  } catch (error) {
-    console.error('Error fetching time tracking summary:', error);
-    return { 
-      success: true,
-      data: {
-        employee_id: toEmployeeId(employeeId),
-        month,
-        year,
-        days_worked: 0,
-        leave_days: 0,
-        regular_hours: 0,
-        overtime_hours: 0,
-        holiday_overtime_hours: 0,
-        total_hours: 0,
-        attendance_rate: 0
-      }
-    };
   }
 };
 

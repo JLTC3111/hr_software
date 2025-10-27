@@ -202,27 +202,34 @@ const HRManagementApp = () => {
     setIsEditMode(false);
   };
 
-  const handleSoftDeleteEmployee = async (employee) => {
-    if (window.confirm(`Are you sure you want to mark ${employee.name} as inactive? This will hide the employee from the active list but keep their data.`)) {
+  const handleDeleteEmployee = async (employee) => {
+    const confirmMessage = `⚠️ WARNING: This will PERMANENTLY delete ${employee.name} and ALL their data including:\n\n` +
+                          `• Time entries\n` +
+                          `• Leave requests\n` +
+                          `• Overtime logs\n` +
+                          `• Performance records\n\n` +
+                          `This action CANNOT be undone!\n\n` +
+                          `Are you absolutely sure you want to proceed?`;
+    
+    if (window.confirm(confirmMessage)) {
       try {
-        // Soft delete by updating status to 'Inactive'
-        const result = await employeeService.updateEmployee(employee.id, {
-          status: 'Inactive'
-        });
+        // Permanently delete the employee and all related data
+        const result = await employeeService.deleteEmployee(employee.id);
 
         if (result.success) {
-          // Update local state immediately for better UX
-          setEmployees(employees.map(emp => 
-            emp.id === employee.id ? { ...emp, status: 'Inactive' } : emp
-          ));
-          alert(`${employee.name} has been marked as inactive.`);
+          // Remove from local state immediately
+          setEmployees(employees.filter(emp => emp.id !== employee.id));
+          alert(`${employee.name} has been permanently deleted.`);
+          
+          // Refresh the employee list from server
+          await refetchEmployees();
         } else {
-          console.error('Error updating employee status:', result.error);
-          alert(`Failed to update employee: ${result.error}`);
+          console.error('Error deleting employee:', result.error);
+          alert(`Failed to delete employee: ${result.error}`);
         }
       } catch (error) {
-        console.error('Error in handleSoftDeleteEmployee:', error);
-        alert('An unexpected error occurred.');
+        console.error('Error in handleDeleteEmployee:', error);
+        alert('An unexpected error occurred while deleting the employee.');
       }
     }
   };
@@ -243,7 +250,7 @@ const HRManagementApp = () => {
             isEditMode={isEditMode}
             onViewEmployee={handleViewEmployee}
             onEditEmployee={handleEditEmployee}
-            onDeleteEmployee={handleSoftDeleteEmployee}
+            onDeleteEmployee={handleDeleteEmployee}
             onCloseModal={handleCloseModal}
             onPhotoUpdate={handlePhotoUpdate}
             isAddEmployeeModalOpen={isAddEmployeeModalOpen}

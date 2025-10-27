@@ -7,7 +7,19 @@
 -- STEP 1: CLEAN UP INVALID HR_USERS ENTRIES
 -- Remove entries where id is not a valid UUID or doesn't exist in auth.users
 -- ============================================================
-
+SELECT 
+    au.id,
+    au.email,
+    -- Get data from hr_users if it exists
+    hu.position,
+    hu.employee_id,
+    CASE 
+        WHEN hu.id IS NOT NULL THEN '✅ HR User Exists'
+        ELSE '❌ Missing HR User Entry' -- This is the status for your business logic
+    END as status
+FROM auth.users au -- Start from the AUTH table to get all 9 users
+LEFT JOIN hr_users hu ON au.id = hu.id -- Join to hr_users
+ORDER BY au.created_at;
 -- First, let's see what we have
 SELECT 
     hu.id,
