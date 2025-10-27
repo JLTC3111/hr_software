@@ -5,11 +5,12 @@ export default {
     timeClock: 'Chấm công',
     dashboard: 'Chỉ Số Thống Kê',
     employees: 'Nhân viên',
-    timeTracking: 'Tổng Kết',
+    timeTracking: 'Báo Cáo Cá Nhân',
     performance: 'Hiệu suất',
     reports: 'Báo cáo',
     notifications: 'Thông báo',
-    settings: 'Cài đặt'
+    settings: 'Cài đặt',
+    controlPanel: 'Bảng Điều Khiển'
   },
 
   // Header
@@ -49,6 +50,7 @@ export default {
   // Dashboard
   dashboard: {
     title: 'Tổng Quan Bảng Điều Khiển',
+    overview: 'Tổng Quan Tổ Chức',
     totalEmployees: 'Tổng Số Nhân Viên',
     activeEmployees: 'Nhân Viên Hoạt Động',
     newHires: 'Nhân Viên Mới Tháng Này',

@@ -27,3 +27,4 @@ export { default as ControlPanel } from './controlPanel.jsx';
 export { default as UserEmployeeCard } from './userEmployeeCard.jsx';
 export { default as UserManagement } from './userManagement.jsx';
 export { default as WorkloadManagement } from './workloadManagement.jsx';
+export { default as EmployeeDetailModal } from './employeeDetailModal.jsx';

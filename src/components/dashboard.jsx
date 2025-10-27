@@ -432,7 +432,14 @@ const Dashboard = ({ employees, applications }) => {
                   }}
                 />
               <Legend />
-              <Bar dataKey="performance" fill="#3B82F6" name="Performance Rating" radius={[8, 8, 0, 0]} />
+              <defs>
+                <linearGradient id="performanceGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#DC2626" stopOpacity={0.95} />
+                  <stop offset="50%" stopColor="#7C2D12" stopOpacity={0.9} />
+                  <stop offset="100%" stopColor="#000000" stopOpacity={0.85} />
+                </linearGradient>
+              </defs>
+              <Bar dataKey="performance" fill="url(#performanceGradient)" name="Performance Rating" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -524,7 +531,14 @@ const Dashboard = ({ employees, applications }) => {
                 }}
               />
               <Legend />
-              <Bar dataKey="regularHours" fill="#3B82F6" name="Regular Hours" radius={[8, 8, 0, 0]} />
+              <defs>
+                <linearGradient id="regularHoursGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#2563EB" stopOpacity={0.95} />
+                  <stop offset="50%" stopColor="#1E3A8A" stopOpacity={0.9} />
+                  <stop offset="100%" stopColor="#000000" stopOpacity={0.85} />
+                </linearGradient>
+              </defs>
+              <Bar dataKey="regularHours" fill="url(#regularHoursGradient)" name="Regular Hours" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -145,36 +145,36 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
         </div>
       </div>
       
-      <div className="flex justify-space-between space-x-2 mt-4 pt-4 border-t border-gray-200">
+      <div className="flex justify-space-between space-x-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <button
           onClick={(e) => {
             e.stopPropagation();
             onViewDetails(employee);
           }}
-          className="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900 transition-all duration-200 cursor-pointer"
+          className="p-2 rounded-lg transition-all duration-200 cursor-pointer"
           title={t('employees.view', 'View Details')}
         >
-          <Eye className="h-4 w-4" />
+          <Eye className="h-4 w-4" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
         </button>
         <button 
           onClick={(e) => {
             e.stopPropagation();
             onEdit && onEdit(employee);
           }}
-          className="text-green-600 hover:text-green-800 p-2 rounded-lg hover:bg-green-50 dark:hover:bg-green-900 transition-all duration-200 cursor-pointer"
+          className="p-2 rounded-lg transition-all duration-200 cursor-pointer"
           title={t('employees.edit', 'Edit')}
         >
-          <Edit className="h-4 w-4" />
+          <Edit className="h-4 w-4" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
         </button>
         <button 
           onClick={(e) => {
             e.stopPropagation();
             onDelete && onDelete(employee);
           }}
-          className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900 transition-all duration-200 cursor-pointer"
+          className="p-2 rounded-lg transition-all duration-200 cursor-pointer"
           title={t('employees.delete', 'Delete')}
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-4 w-4" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
         </button>
       </div>
     </div>

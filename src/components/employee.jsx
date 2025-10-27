@@ -5,13 +5,32 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import SearchAndFilter from './search.jsx';
 import EmployeeCard from './employeeCard.jsx';
+import EmployeeDetailModal from './employeeDetailModal.jsx';
 
 const Employees = ({ employees, onViewEmployee, onEditEmployee, onDeleteEmployee, onPhotoUpdate, onAddEmployeeClick, refetchEmployees }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('all');
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const location = useLocation();
   const { t } = useLanguage();
   const { isDarkMode, bg, text, border } = useTheme();
+
+  const handleCardClick = (employee) => {
+    setSelectedEmployee(employee);
+    setShowDetailModal(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedEmployee(null);
+  };
+
+  const handleDetailModalUpdate = () => {
+    if (refetchEmployees) {
+      refetchEmployees();
+    }
+  };
   
   // Refetch employees if coming from add employee page with refresh flag
   useEffect(() => {
@@ -79,7 +98,7 @@ const Employees = ({ employees, onViewEmployee, onEditEmployee, onDeleteEmployee
           <div key={employee.id} className={`stagger-item slide-in-up`} style={{ animationDelay: `${index * 0.05}s` }}>
             <EmployeeCard 
               employee={employee} 
-              onViewDetails={onViewEmployee}
+              onViewDetails={handleCardClick}
               onEdit={onEditEmployee}
               onDelete={onDeleteEmployee}
               onPhotoUpdate={onPhotoUpdate}
@@ -92,6 +111,15 @@ const Employees = ({ employees, onViewEmployee, onEditEmployee, onDeleteEmployee
           </div>
         ))}
       </div>
+
+      {/* Employee Detail Modal */}
+      {showDetailModal && (
+        <EmployeeDetailModal
+          employee={selectedEmployee}
+          onClose={handleCloseDetailModal}
+          onUpdate={handleDetailModalUpdate}
+        />
+      )}
     </div>
   );
 };

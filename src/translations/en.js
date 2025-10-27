@@ -6,8 +6,8 @@ export default {
     dashboard: 'Dashboard',
     employees: 'Employees',
     recruitment: "Recruitment",
-    timeTracking: 'Summary',
-    performance: 'Performance',
+    timeTracking: 'Individual Summary',
+    performance: 'Performance Appraisal',
     reports: 'Reports',
     notifications: 'Notifications',
     settings: 'Settings',
@@ -58,7 +58,7 @@ export default {
   // Dashboard
   dashboard: {
     title: 'Dashboard Overview',
-    overview: 'Overview',
+    overview: 'Organization Overview',
     totalEmployees: 'Total Employees',
     activeEmployees: 'Active Employees',
     pendingApplications: 'Pending Applications',
