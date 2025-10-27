@@ -15,6 +15,7 @@ const Dashboard = ({ employees, applications }) => {
   const [loading, setLoading] = useState(true);
   const [timeTrackingData, setTimeTrackingData] = useState({});
   const [allEmployeesData, setAllEmployeesData] = useState([]);
+  const [leaveRequestsData, setLeaveRequestsData] = useState({});
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
   const [pendingApprovals, setPendingApprovals] = useState([]);
   
@@ -39,6 +40,44 @@ const Dashboard = ({ employees, applications }) => {
         
         const summariesResults = await Promise.all(summariesPromises);
         
+        // Fetch leave requests for all employees
+        const leavePromises = employees.map(emp => 
+          timeTrackingService.getLeaveRequests(String(emp.id), {
+            year: currentYear
+          })
+        );
+        const leaveResults = await Promise.all(leavePromises);
+        
+        // Calculate leave days from leave_requests (pending + approved)
+        const leaveData = {};
+        leaveResults.forEach((result, index) => {
+          const emp = employees[index];
+          const empId = String(emp.id);
+          
+          if (result.success && result.data) {
+            // Calculate leave days for current month (pending + approved)
+            const leaveDays = result.data.reduce((total, req) => {
+              if (req.status === 'rejected') return total;
+              
+              const startDate = new Date(req.start_date);
+              const reqMonth = startDate.getMonth() + 1;
+              const reqYear = startDate.getFullYear();
+              
+              // Only count if within current month/year
+              if (reqYear === currentYear && reqMonth === currentMonth) {
+                return total + (req.days_count || 0);
+              }
+              return total;
+            }, 0);
+            
+            leaveData[empId] = leaveDays;
+          } else {
+            leaveData[empId] = 0;
+          }
+        });
+        
+        setLeaveRequestsData(leaveData);
+        
         // Build timeTrackingData object - use string IDs for consistency with TEXT type
         const trackingData = {};
         const employeesDataArray = [];
@@ -49,7 +88,7 @@ const Dashboard = ({ employees, applications }) => {
           if (result.success && result.data) {
             trackingData[empId] = {
               workDays: result.data.days_worked || 0,
-              leaveDays: result.data.leave_days || 0,
+              leaveDays: leaveData[empId] || 0, // Use calculated leave days
               overtime: result.data.overtime_hours || 0,
               holidayOvertime: result.data.holiday_overtime_hours || 0,
               regularHours: result.data.regular_hours || 0,
@@ -64,7 +103,7 @@ const Dashboard = ({ employees, applications }) => {
             // Fallback to defaults if no data
             trackingData[empId] = {
               workDays: 0,
-              leaveDays: 0,
+              leaveDays: leaveData[empId] || 0, // Use calculated leave days
               overtime: 0,
               holidayOvertime: 0,
               regularHours: 0,
@@ -150,13 +189,16 @@ const Dashboard = ({ employees, applications }) => {
   }));
 
   // Leave requests summary - use ALL employees, not just top 5
-  const leaveData = employees.map(emp => ({
-    name: getUniqueDisplayName(emp, employees),
-    fullName: emp.name, // Keep full name for tooltip
-    id: emp.id,
-    leaveDays: timeTrackingData[String(emp.id)]?.leaveDays || 0,
-    workDays: timeTrackingData[String(emp.id)]?.workDays || 0
-  }));
+  const leaveData = employees.map(emp => {
+    const empId = String(emp.id);
+    return {
+      name: getUniqueDisplayName(emp, employees),
+      fullName: emp.name, // Keep full name for tooltip
+      id: emp.id,
+      leaveDays: leaveRequestsData[empId] || timeTrackingData[empId]?.leaveDays || 0,
+      workDays: timeTrackingData[empId]?.workDays || 0
+    };
+  });
 
   // Chart colors
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
@@ -218,12 +260,15 @@ const Dashboard = ({ employees, applications }) => {
         break;
         
       case 'leave':
-        data = employees.map(emp => ({
-          employeeName: emp.name,
-          department: emp.department,
-          leaveDays: timeTrackingData[String(emp.id)]?.leaveDays || 0,
-          workDays: timeTrackingData[String(emp.id)]?.workDays || 0
-        }));
+        data = employees.map(emp => {
+          const empId = String(emp.id);
+          return {
+            employeeName: emp.name,
+            department: emp.department,
+            leaveDays: leaveRequestsData[empId] || timeTrackingData[empId]?.leaveDays || 0,
+            workDays: timeTrackingData[empId]?.workDays || 0
+          };
+        });
         title = t('dashboard.totalLeave');
         break;
       

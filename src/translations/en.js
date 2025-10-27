@@ -545,7 +545,7 @@ export default {
   // Time Tracking Actions
   timeTrackingActions: {
     recordTime: 'Record Time',
-    requestLeave: 'Request Leave',
+    requestLeave: 'Enter Leave Days',
     logOvertime: 'Log Overtime',
     exportReport: 'Export Report'
   },

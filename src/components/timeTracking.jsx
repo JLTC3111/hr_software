@@ -31,7 +31,7 @@ const TimeTracking = ({ employees }) => {
   const [loading, setLoading] = useState(true);
   const [summaryData, setSummaryData] = useState(null);
   const [leaveRequests, setLeaveRequests] = useState([]);
-  const [overtimeLogs, setOvertimeLogs] = useState([]);
+  const [timeEntries, setTimeEntries] = useState([]);
   const [allEmployeesData, setAllEmployeesData] = useState([]);
   
   // Modal states
@@ -90,14 +90,16 @@ const TimeTracking = ({ employees }) => {
           setLeaveRequests(leaveResult.data);
         }
         
-        // Fetch overtime logs
-        const overtimeResult = await timeTrackingService.getOvertimeLogs(selectedEmployee, {
-          month: selectedMonth,
-          year: selectedYear
+        // Fetch time entries (includes overtime)
+        const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
+        const endDate = new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0];
+        const entriesResult = await timeTrackingService.getTimeEntries(selectedEmployee, {
+          startDate: startDate,
+          endDate: endDate
         });
         
-        if (overtimeResult.success) {
-          setOvertimeLogs(overtimeResult.data);
+        if (entriesResult.success) {
+          setTimeEntries(entriesResult.data);
         }
       } catch (error) {
         console.error('Error fetching time tracking data:', error);
@@ -138,6 +140,29 @@ const TimeTracking = ({ employees }) => {
     }
   }, [activeTab, selectedMonth, selectedYear, employees]);
   
+  // Calculate leave days from leave_requests (including pending)
+  const calculateLeaveDays = () => {
+    if (!leaveRequests || leaveRequests.length === 0) return 0;
+    
+    return leaveRequests.reduce((total, req) => {
+      // Include pending and approved, exclude rejected
+      if (req.status === 'rejected') return total;
+      
+      const startDate = new Date(req.start_date);
+      const endDate = new Date(req.end_date);
+      const reqMonth = startDate.getMonth() + 1;
+      const reqYear = startDate.getFullYear();
+      
+      // Only count if within selected month/year
+      if (reqYear === selectedYear && reqMonth === selectedMonth) {
+        return total + (req.days_count || 0);
+      }
+      return total;
+    }, 0);
+  };
+  
+  const calculatedLeaveDays = calculateLeaveDays();
+  
   const currentData = summaryData || {
     days_worked: 0,
     leave_days: 0,
@@ -147,6 +172,9 @@ const TimeTracking = ({ employees }) => {
     total_hours: 0,
     attendance_rate: 0
   };
+  
+  // Override leave_days with calculated value (includes pending)
+  currentData.leave_days = calculatedLeaveDays;
 
   const months = [
     t('months.january'), t('months.february'), t('months.march'), t('months.april'), 
@@ -187,12 +215,16 @@ const TimeTracking = ({ employees }) => {
         title = t('timeTracking.leaveDays');
         break;
       case 'overtime':
-        data = overtimeLogs.map(log => ({
+        // Filter time entries for overtime types (weekend, holiday, bonus)
+        const overtimeEntries = timeEntries.filter(entry => 
+          ['weekend', 'holiday', 'bonus'].includes(entry.hour_type)
+        );
+        data = overtimeEntries.map(entry => ({
           employeeName: selectedEmp.name,
-          requestType: log.overtime_type,
-          date: log.date,
-          status: log.status,
-          hours: log.hours
+          requestType: entry.hour_type,
+          date: entry.date,
+          status: entry.status,
+          hours: entry.hours
         }));
         title = t('timeTracking.overtime');
         break;
@@ -242,12 +274,22 @@ const TimeTracking = ({ employees }) => {
         setSuccessMessage(t('timeTracking.leaveSuccess', 'Leave request submitted successfully!'));
         setShowLeaveModal(false);
         
-        // Refresh data
+        // Refresh leave requests and summary data
         const leaveResult = await timeTrackingService.getLeaveRequests(selectedEmployee, {
           year: selectedYear
         });
         if (leaveResult.success) {
           setLeaveRequests(leaveResult.data);
+        }
+        
+        // Refresh summary to update leave days count
+        const summaryResult = await timeTrackingService.getTimeTrackingSummary(
+          selectedEmployee,
+          selectedMonth,
+          selectedYear
+        );
+        if (summaryResult.success) {
+          setSummaryData(summaryResult.data);
         }
         
         // Reset form
@@ -274,25 +316,37 @@ const TimeTracking = ({ employees }) => {
     setLoading(true);
     
     try {
-      const result = await timeTrackingService.createOvertimeLog({
+      // Log overtime as a time_entry (same table as timeClock.jsx)
+      // Calculate clock in/out times for the overtime hours
+      const overtimeHours = parseFloat(overtimeForm.hours);
+      const clockIn = '17:00'; // Default start time for overtime
+      const clockOutTime = new Date(`${overtimeForm.date}T${clockIn}`);
+      clockOutTime.setHours(clockOutTime.getHours() + Math.floor(overtimeHours));
+      clockOutTime.setMinutes(clockOutTime.getMinutes() + Math.round((overtimeHours % 1) * 60));
+      const clockOut = clockOutTime.toTimeString().slice(0, 5);
+      
+      const result = await timeTrackingService.createTimeEntry({
         employeeId: selectedEmployee,
         date: overtimeForm.date,
-        hours: parseFloat(overtimeForm.hours),
-        reason: overtimeForm.reason,
-        overtimeType: 'regular'
+        clockIn: clockIn,
+        clockOut: clockOut,
+        hours: overtimeHours,
+        hourType: 'weekend', // Log as weekend overtime (goes to overtime_hours in summary)
+        notes: overtimeForm.reason || 'Overtime work'
       });
       
       if (result.success) {
         setSuccessMessage(t('timeTracking.overtimeSuccess', 'Overtime logged successfully!'));
         setShowOvertimeModal(false);
         
-        // Refresh data
-        const overtimeResult = await timeTrackingService.getOvertimeLogs(selectedEmployee, {
-          month: selectedMonth,
-          year: selectedYear
-        });
-        if (overtimeResult.success) {
-          setOvertimeLogs(overtimeResult.data);
+        // Refresh summary data to reflect new overtime
+        const summaryResult = await timeTrackingService.getTimeTrackingSummary(
+          selectedEmployee,
+          selectedMonth,
+          selectedYear
+        );
+        if (summaryResult.success) {
+          setSummaryData(summaryResult.data);
         }
         
         // Reset form
@@ -420,7 +474,7 @@ const TimeTracking = ({ employees }) => {
         />
         <TimeCard
           title={t('timeTracking.leaveDays')}
-          value={currentData.leave_days || 0}
+          value={calculatedLeaveDays.toFixed(1)}
           unit={t('timeTracking.days')}
           icon={Coffee}
           color={isDarkMode ? "text-white" : "text-black"}
@@ -489,7 +543,9 @@ const TimeTracking = ({ employees }) => {
             </div>
             <div className="flex justify-between">
               <span className={`${text.secondary} mr-12`}>{t('timeTracking.overtimeHours')}:</span>
-              <span className={`font-medium ${text.primary}`}>{currentData.overtime_hours || 0} {t('timeTracking.hrs')}</span>
+              <span className={`font-medium ${text.primary}`}>
+                {((currentData.overtime_hours || 0) + (currentData.holiday_overtime_hours || 0)).toFixed(1)} {t('timeTracking.hrs')}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className={`${text.secondary} mr-12`}>{t('timeTracking.totalHours')}:</span>
@@ -504,7 +560,10 @@ const TimeTracking = ({ employees }) => {
             </div>
             <div className="flex justify-between">
               <span className={`${text.secondary} ml-12`}>{t('timeTracking.leaveDays')}:</span>
-              <span className={`font-medium ${text.primary}`}>{currentData.leave_days || 0} {t('timeTracking.days')}</span>
+              <span className={`font-medium ${text.primary}`}>
+                {calculatedLeaveDays.toFixed(1)} {t('timeTracking.days')}
+                <span className="text-xs text-gray-500 ml-1">({t('timeTracking.includesPending', '*incl. pending')})</span>
+              </span>
             </div>
             <div className={`flex justify-between border-t ${border.primary} pt-3`}>
               <span className={`${text.primary} font-semibold ml-12`}>{t('timeTracking.attendanceRate')}:</span>
