@@ -318,7 +318,18 @@ export const deleteEmployee = async (employeeId) => {
     
     console.log(`Permanently deleting employee ${id} and all related data...`);
     
-    // Delete employee (CASCADE will handle related records)
+    // Manually delete time_tracking_summary records (in case CASCADE not set up)
+    const { error: summaryError } = await supabase
+      .from('time_tracking_summary')
+      .delete()
+      .eq('employee_id', id);
+    
+    if (summaryError) {
+      console.warn('Error deleting time tracking summary:', summaryError);
+      // Don't fail - might not exist or CASCADE might handle it
+    }
+    
+    // Delete employee (CASCADE will handle other related records)
     // time_entries, leave_requests, overtime_logs have CASCADE on employee_id
     const { error: deleteError } = await supabase
       .from('employees')

@@ -464,23 +464,25 @@ export const updateOvertimeStatus = async (logId, status, approverId) => {
 
 /**
  * Calculate summary directly from time_entries, leave_requests, and overtime_logs
+ * Matches database function logic exactly
  */
 const calculateSummaryFromRawData = async (employeeId, month, year) => {
   try {
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
     const endDate = new Date(year, month, 0).toISOString().split('T')[0];
     
-    // Get time entries
+    // Get time entries (INCLUDE PENDING AND APPROVED)
     const { data: timeEntries, error: timeError } = await supabase
       .from('time_entries')
       .select('*')
       .eq('employee_id', toEmployeeId(employeeId))
       .gte('date', startDate)
-      .lte('date', endDate);
+      .lte('date', endDate)
+      .in('status', ['pending', 'approved']);  // CHANGED: include pending
     
     if (timeError) throw timeError;
     
-    // Get leave requests
+    // Get leave requests (only approved)
     const { data: leaveRequests, error: leaveError } = await supabase
       .from('leave_requests')
       .select('*')
@@ -491,18 +493,18 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
     
     if (leaveError) throw leaveError;
     
-    // Get overtime logs
+    // Get overtime logs (INCLUDE PENDING AND APPROVED)
     const { data: overtimeLogs, error: overtimeError } = await supabase
       .from('overtime_logs')
       .select('*')
       .eq('employee_id', toEmployeeId(employeeId))
       .gte('date', startDate)
       .lte('date', endDate)
-      .eq('status', 'approved');
+      .in('status', ['pending', 'approved']);  // CHANGED: include pending
     
     if (overtimeError) throw overtimeError;
     
-    // Calculate metrics
+    // Calculate metrics by hour type
     const uniqueDays = new Set();
     let regularHours = 0;
     let holidayHours = 0;
@@ -510,30 +512,33 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
     let bonusHours = 0;
     
     (timeEntries || []).forEach(entry => {
-      uniqueDays.add(entry.date);
-      const hours = parseFloat(entry.hours || 0);
-      
-      switch (entry.hour_type) {
-        case 'regular':
-          regularHours += hours;
-          break;
-        case 'holiday':
-          holidayHours += hours;
-          break;
-        case 'weekend':
-          weekendHours += hours;
-          break;
-        case 'bonus':
-          bonusHours += hours;
-          break;
-        default:
-          regularHours += hours;
+      // Only count pending or approved
+      if (entry.status === 'pending' || entry.status === 'approved') {
+        uniqueDays.add(entry.date);
+        const hours = parseFloat(entry.hours || 0);
+        
+        switch (entry.hour_type) {
+          case 'regular':
+            regularHours += hours;
+            break;
+          case 'holiday':
+            holidayHours += hours;
+            break;
+          case 'weekend':
+            weekendHours += hours;
+            break;
+          case 'bonus':
+            bonusHours += hours;
+            break;
+          default:
+            regularHours += hours;
+        }
       }
     });
     
     const daysWorked = uniqueDays.size;
     
-    // Calculate leave days
+    // Calculate leave days (only approved)
     let leaveDays = 0;
     (leaveRequests || []).forEach(req => {
       const start = new Date(req.start_date);
@@ -543,21 +548,31 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
       leaveDays += diffDays;
     });
     
-    // Calculate overtime hours
-    let overtimeHours = 0;
-    let holidayOvertimeHours = 0;
+    // Calculate overtime from overtime_logs
+    let overtimeRegular = 0;
+    let overtimeHoliday = 0;
     (overtimeLogs || []).forEach(log => {
       const hours = parseFloat(log.hours || 0);
       if (log.overtime_type === 'holiday') {
-        holidayOvertimeHours += hours;
+        overtimeHoliday += hours;
       } else {
-        overtimeHours += hours;
+        overtimeRegular += hours;
       }
     });
     
-    const totalHours = regularHours + holidayHours + weekendHours + bonusHours;
+    // AGGREGATE INTO SUMMARY COLUMNS (matching database logic)
+    // overtime_hours = weekend + bonus + overtime_logs.regular
+    const overtimeHours = weekendHours + bonusHours + overtimeRegular;
+    
+    // holiday_overtime_hours = holiday + overtime_logs.holiday
+    const holidayOvertimeHours = holidayHours + overtimeHoliday;
+    
+    // total_hours = ALL hours from all sources
+    const totalHours = regularHours + weekendHours + holidayHours + 
+                       bonusHours + overtimeRegular + overtimeHoliday;
+    
     const totalDays = daysWorked + leaveDays;
-    const workingDaysInMonth = 22; // Approximate
+    const workingDaysInMonth = 22;
     const attendanceRate = totalDays > 0 ? (totalDays / workingDaysInMonth) * 100 : 0;
     
     return {
