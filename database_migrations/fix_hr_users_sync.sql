@@ -122,7 +122,7 @@ ORDER BY e.id;
 -- Check for email mismatches
 SELECT 
     'Auth User' as source,
-    au.id,
+    au.id::text, -- <--- FIX: Explicitly cast UUID to TEXT
     au.email,
     au.created_at
 FROM auth.users au

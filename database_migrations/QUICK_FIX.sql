@@ -1,15 +1,4 @@
 -- ============================================================
--- QUICK FIX FOR USER SYNC ISSUES
--- Run this immediately in Supabase SQL Editor
--- ============================================================
-
--- ============================================================
--- BEFORE YOU RUN THIS:
--- 1. Go to Supabase Dashboard → Authentication → Users
--- 2. Find user ID: 01616081-0a99-48c9-94e8-f6e57d8c2946
--- 3. Change email from "dev@email.com" to "dev@icue.vn"
--- 4. Then come back and run this script
--- ============================================================
 
 BEGIN;
 
