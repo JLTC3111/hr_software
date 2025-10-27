@@ -35,7 +35,9 @@ const TimeClockEntry = ({ currentLanguage }) => {
       
       setLoading(true);
       try {
-        const result = await timeTrackingService.getTimeEntries(user.id);
+        // Use employeeId from user profile to link with employees table
+        const employeeId = user.employeeId || user.id;
+        const result = await timeTrackingService.getTimeEntries(employeeId);
         if (result.success) {
           setTimeEntries(result.data || []);
         }
@@ -252,8 +254,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
       }
       
       // Create time entry in Supabase
+      // Use employeeId from user profile to link with employees table
+      const employeeId = user?.employeeId || user?.id;
       const result = await timeTrackingService.createTimeEntry({
-        employeeId: user?.id,
+        employeeId: employeeId,
         date: formData.date,
         clockIn: formData.clockIn,
         clockOut: formData.clockOut,
@@ -267,7 +271,8 @@ const TimeClockEntry = ({ currentLanguage }) => {
       
       if (result.success) {
         // Refresh time entries
-        const entriesResult = await timeTrackingService.getTimeEntries(user.id);
+        const employeeId = user.employeeId || user.id;
+        const entriesResult = await timeTrackingService.getTimeEntries(employeeId);
         if (entriesResult.success) {
           setTimeEntries(entriesResult.data || []);
         }

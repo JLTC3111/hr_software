@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { TrendingUp, Users, Award, FileText, Clock, ClipboardList, ChevronLeft, ChevronRight, Menu, X, ChevronDown, Building2, Bell, Settings } from 'lucide-react'
+import { TrendingUp, Users, Award, FileText, Clock, AlarmClock, ChevronLeft, ChevronRight, Menu, X, ChevronDown, Building2, Bell, Settings } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 
@@ -16,24 +16,24 @@ const Sidebar = () => {
     {
       section: 'MAIN',
       items: [
-        { path: '/time-clock', name: t('nav.timeClock'), icon: ClipboardList },
-        { path: '/dashboard', name: t('nav.dashboard'), icon: TrendingUp },
+        { path: '/time-clock', name: t('nav.timeClock'), icon: AlarmClock },
+        { 
+          path: '/dashboard', 
+          name: t('nav.dashboard'), 
+          icon: TrendingUp,
+          subItems: [
+            { path: '/dashboard', name: t('dashboard.overview', 'Overview') },
+            { path: '/control-panel', name: t('nav.controlPanel', 'Control Panel') },
+          ]
+        },
         { 
           path: '/employees', 
           name: t('nav.employees'), 
           icon: Users,
           subItems: [
+            { path: '/time-tracking', name: t('nav.timeTracking', 'Time Tracking') },
             { path: '/employees', name: t('employees.directory', 'Directory') },
             { path: '/employees/add', name: t('employees.addNew', 'Add New') },
-          ]
-        },
-        { 
-          path: '/time-tracking', 
-          name: t('nav.timeTracking'), 
-          icon: Clock,
-          subItems: [
-            { path: '/time-tracking', name: t('timeTracking.overview', 'Overview') },
-            { path: '/control-panel', name: t('nav.controlPanel', 'Control Panel') },
           ]
         },
       ]
@@ -126,19 +126,18 @@ const Sidebar = () => {
         </button>
 
         {/* Logo / Branding */}
-        <div className={`p-4 border-b flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`} style={{ borderColor: isDarkMode ? '#4b5563' : '#d1d5db' }}>
-          {!isCollapsed ? (
-            <>
-              <button
-                onClick={closeMobileMenu}
-                className={`lg:hidden p-1 rounded-lg ${hover.bg} transition-colors`}
-                aria-label="Close menu"
-              >
-                <X className={`h-5 w-5 ${text.primary}`} />
-              </button>
-            </>
-          ) : (
-            <Building2 className={`h-6 w-6 text-blue-600`} />
+        <div
+          className={`p-4 border-b flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}
+          style={{ borderColor: isDarkMode ? '#4b5563' : '#d1d5db' }}
+        >
+          {!isCollapsed && (
+            <button
+              onClick={closeMobileMenu}
+              className={`lg:hidden p-1 rounded-lg ${hover.bg} transition-colors`}
+              aria-label="Close menu"
+            >
+              <X className={`h-5 w-5 ${text.primary}`} />
+            </button>
           )}
         </div>
 

@@ -6,7 +6,7 @@ export default {
     dashboard: 'Dashboard',
     employees: 'Employees',
     recruitment: "Recruitment",
-    timeTracking: 'Time Tracking',
+    timeTracking: 'Summary',
     performance: 'Performance',
     reports: 'Reports',
     notifications: 'Notifications',
@@ -48,9 +48,17 @@ export default {
     footer: '© 2024 HR Manager. All rights reserved.'
   },
 
+  // Global Errors
+  errors: {
+    invalidFileType: 'Please select an image file',
+    fileTooLarge: 'File size must be less than 5MB',
+    fileReadError: 'Error reading file. Please try again.'
+  },
+
   // Dashboard
   dashboard: {
     title: 'Dashboard Overview',
+    overview: 'Overview',
     totalEmployees: 'Total Employees',
     activeEmployees: 'Active Employees',
     pendingApplications: 'Pending Applications',
@@ -163,12 +171,16 @@ export default {
     cancel: 'Cancel',
     close: 'Close',
     save: 'Save',
+    saving: 'Saving...',
+    update: 'Update',
+    updating: 'Updating...',
     delete: 'Delete',
     edit: 'Edit',
     view: 'View',
     back: 'Back',
     next: 'Next',
-    submit: 'Submit'
+    submit: 'Submit',
+    loading: 'Loading...'
   },
 
   // Search
@@ -340,7 +352,32 @@ export default {
     status: 'Status',
     actions: 'Actions',
     edit: 'Edit',
-    view: 'View'
+    view: 'View',
+    editGoal: 'Edit Goal',
+    goalUpdatedSuccess: 'Goal updated successfully!',
+    goalUpdatedError: 'Failed to update goal',
+    progressPercentage: 'Progress',
+    goalCreatedSuccess: 'Goal created successfully!',
+    goalCreatedError: 'Failed to create goal',
+    reviewCreatedSuccess: 'Review created successfully!',
+    reviewCreatedError: 'Failed to create review',
+    // Goal Form Fields
+    goalTitle: 'Goal Title',
+    goalTitlePlaceholder: 'Enter goal title',
+    goalDescription: 'Description',
+    goalDescriptionPlaceholder: 'Describe the goal objectives',
+    category: 'Category',
+    general: 'General',
+    project: 'Project',
+    professionalDevelopment: 'Professional Development',
+    priority: 'Priority',
+    low: 'Low',
+    medium: 'Medium',
+    high: 'High',
+    critical: 'Critical',
+    targetDate: 'Target Date',
+    cancelled: 'Cancelled',
+    onHold: 'On Hold'
   },
 
   // Reports
@@ -721,6 +758,9 @@ export default {
       manager: 'Supervise team members and approve time tracking',
       employee: 'Access personal information and submit time entries',
       viewer: 'View-only access to reports and dashboards'
-    }
+    },
+    uploadAvatar: 'Upload avatar',
+    avatarUpdated: 'Avatar updated successfully!',
+    avatarError: 'Error uploading avatar'
   }
 };

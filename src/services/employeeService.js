@@ -18,12 +18,19 @@ const toEmployeeId = (id) => {
 
 /**
  * Get all employees
+ * Joins with hr_users to get avatar URLs from auth profiles
  */
 export const getAllEmployees = async (filters = {}) => {
   try {
     let query = supabase
       .from('employees')
-      .select('*')
+      .select(`
+        *,
+        hr_user:hr_users!employee_id(
+          avatar_url,
+          id
+        )
+      `)
       .order('name');
 
     // Apply filters
@@ -40,7 +47,14 @@ export const getAllEmployees = async (filters = {}) => {
     const { data, error } = await query;
 
     if (error) throw error;
-    return { success: true, data };
+    
+    // Map avatar_url from hr_users to photo field if available
+    const enrichedData = data.map(emp => ({
+      ...emp,
+      photo: emp.hr_user?.avatar_url || emp.photo || null
+    }));
+    
+    return { success: true, data: enrichedData };
   } catch (error) {
     console.error('Error fetching employees:', error);
     return { success: false, error: error.message };

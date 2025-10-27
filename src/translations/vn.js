@@ -5,7 +5,7 @@ export default {
     timeClock: 'Chấm công',
     dashboard: 'Chỉ Số Thống Kê',
     employees: 'Nhân viên',
-    timeTracking: 'Theo dõi thời gian',
+    timeTracking: 'Tổng Kết',
     performance: 'Hiệu suất',
     reports: 'Báo cáo',
     notifications: 'Thông báo',

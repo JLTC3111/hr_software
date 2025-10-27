@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { User, LogOut, Key, BookOpen, Shield, Info } from 'lucide-react';
+import { User, LogOut, Key, BookOpen, Shield, Info, Camera, Loader } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../config/supabaseClient';
 
 const ControlPanel = () => {
   const { isDarkMode, bg, text, border } = useTheme();
@@ -18,10 +19,13 @@ const ControlPanel = () => {
   });
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || null);
+  const [avatarSuccess, setAvatarSuccess] = useState('');
 
   // Get user role and info
   const userRole = user?.user_metadata?.role || user?.role || 'Employee';
-  const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
+  const userName = user?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
   const userEmail = user?.email || '';
 
   // Role descriptions
@@ -80,6 +84,82 @@ const ControlPanel = () => {
     window.open('https://icue.vn/hr-manual', '_blank');
   };
 
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      alert(t('errors.invalidFileType', 'Please select an image file'));
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert(t('errors.fileTooLarge', 'File size must be less than 5MB'));
+      return;
+    }
+
+    setUploadingAvatar(true);
+
+    try {
+      // For now, convert to base64 data URL instead of using storage
+      // This avoids the storage bucket requirement
+      const reader = new FileReader();
+      
+      reader.onloadend = async () => {
+        const base64Data = reader.result;
+        
+        try {
+          // Update user profile with avatar data URL
+          const { error: updateError } = await supabase
+            .from('hr_users')
+            .update({ avatar_url: base64Data })
+            .eq('id', user.id);
+
+          if (updateError) throw updateError;
+
+          // Also update employee photo if user has an employee_id
+          if (user.employeeId) {
+            const { error: empUpdateError } = await supabase
+              .from('employees')
+              .update({ photo: base64Data })
+              .eq('id', user.employeeId);
+
+            if (empUpdateError) {
+              console.warn('Could not update employee photo:', empUpdateError);
+            }
+          }
+
+          setAvatarUrl(base64Data);
+          setAvatarSuccess(t('controlPanel.avatarUpdated', 'Avatar updated successfully!'));
+          setUploadingAvatar(false);
+          
+          // Clear success message after 5 seconds
+          setTimeout(() => {
+            setAvatarSuccess('');
+          }, 5000);
+        } catch (error) {
+          console.error('Error updating avatar:', error);
+          alert(t('controlPanel.avatarError', 'Error uploading avatar'));
+          setUploadingAvatar(false);
+        }
+      };
+      
+      reader.onerror = () => {
+        setAvatarSuccess('');
+        alert(t('errors.fileReadError', 'Error reading file'));
+        setUploadingAvatar(false);
+      };
+      
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      setAvatarSuccess('');
+      alert(t('controlPanel.avatarError', 'Error uploading avatar'));
+      setUploadingAvatar(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* User Info Card */}
@@ -92,13 +172,40 @@ const ControlPanel = () => {
         }}
       >
         <div className="flex items-center space-x-3 mb-4">
-          <div 
-            className="w-12 h-12 rounded-full flex items-center justify-center"
-            style={{
-              backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6'
-            }}
-          >
-            <User className="w-6 h-6" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }} />
+          <div className="relative group">
+            <div 
+              className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden border-2"
+              style={{
+                backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6',
+                borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
+              }}
+            >
+              {uploadingAvatar ? (
+                <Loader className="w-6 h-6 animate-spin" style={{ color: '#3b82f6' }} />
+              ) : avatarUrl ? (
+                <img 
+                  src={avatarUrl} 
+                  alt={userName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="w-8 h-8" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }} />
+              )}
+            </div>
+            {!uploadingAvatar && (
+              <label 
+                className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                title={t('controlPanel.uploadAvatar', 'Upload avatar')}
+              >
+                <Camera className="w-5 h-5 text-white" />
+                <input 
+                  type="file" 
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" 
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
+              </label>
+            )}
           </div>
           <div className="flex-1">
             <h3 
@@ -115,6 +222,26 @@ const ControlPanel = () => {
             </p>
           </div>
         </div>
+
+        {/* Avatar Success Message */}
+        {avatarSuccess && (
+          <div 
+            className="mb-3 p-3 rounded-lg text-sm animate-fade-in"
+            style={{
+              backgroundColor: isDarkMode ? '#14532d' : '#dcfce7',
+              color: isDarkMode ? '#86efac' : '#166534',
+              border: '1px solid',
+              borderColor: isDarkMode ? '#166534' : '#86efac'
+            }}
+          >
+            <div className="flex items-center space-x-2">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span className="font-medium">{avatarSuccess}</span>
+            </div>
+          </div>
+        )}
 
         {/* Role Info */}
         <div 

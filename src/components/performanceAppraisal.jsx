@@ -10,6 +10,8 @@ const PerformanceAppraisal = ({ employees }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
   const [showAddReviewModal, setShowAddReviewModal] = useState(false);
+  const [showEditGoalModal, setShowEditGoalModal] = useState(false);
+  const [editingGoal, setEditingGoal] = useState(null);
   const [loading, setLoading] = useState(false);
   const [goals, setGoals] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -147,6 +149,46 @@ const PerformanceAppraisal = ({ employees }) => {
     setLoading(false);
   };
 
+  const handleEditGoal = (goal) => {
+    // Find the original goal from goals array to get all fields
+    const originalGoal = goals.find(g => g.id === goal.id);
+    if (originalGoal) {
+      setEditingGoal(originalGoal);
+      setGoalForm({
+        title: originalGoal.title,
+        description: originalGoal.description,
+        category: originalGoal.category,
+        targetDate: originalGoal.target_date,
+        priority: originalGoal.priority,
+        status: originalGoal.status,
+        progressPercentage: originalGoal.progress_percentage || 0
+      });
+      setShowEditGoalModal(true);
+    }
+  };
+
+  const handleUpdateGoal = async (e) => {
+    e.preventDefault();
+    if (!editingGoal) return;
+    
+    setLoading(true);
+    
+    const result = await performanceService.updatePerformanceGoal(editingGoal.id, {
+      ...goalForm,
+      progress_percentage: goalForm.progressPercentage
+    });
+
+    if (result.success) {
+      setShowEditGoalModal(false);
+      setEditingGoal(null);
+      fetchGoalsAndReviews(); // Refresh data
+      alert(t('performance.goalUpdatedSuccess', 'Goal updated successfully!'));
+    } else {
+      alert(t('performance.goalUpdatedError', 'Failed to update goal: ') + result.error);
+    }
+    setLoading(false);
+  };
+
   // Calculate overall rating from reviews
   const calculateOverallRating = () => {
     if (reviews.length === 0) return 0;
@@ -211,11 +253,15 @@ const PerformanceAppraisal = ({ employees }) => {
     );
   };
 
-  const ProgressBar = ({ progress, color = 'bg-blue-600' }) => (
-    <div className="w-full bg-gray-200 rounded-full h-2">
+  const ProgressBar = ({ progress }) => (
+    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
       <div
-        className={`h-2 rounded-full ${color}`}
-        style={{ width: `${progress}%` }}
+        className="h-2 rounded-full transition-all"
+        style={{ 
+          width: `${progress}%`,
+          background: `linear-gradient(to right, #000000, #c40000ff)`,
+          boxShadow: '0 0 4px rgba(220, 38, 38, 0.4)'
+        }}
       ></div>
     </div>
   );
@@ -459,9 +505,26 @@ const PerformanceAppraisal = ({ employees }) => {
                 >
                   {goal.title}
                 </h4>
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(goal.status)}`}>
-                  {getStatusText(goal.status)}
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(goal.status)}`}>
+                    {getStatusText(goal.status)}
+                  </span>
+                  <button 
+                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors border"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditGoal(goal);
+                    }}
+                    title={t('performance.editGoal', 'Edit goal')}
+                    style={{
+                      backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+                      color: isDarkMode ? '#ffffff' : '#111827',
+                      borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
+                    }}
+                  >
+                    <Edit className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
               <div className="mb-2">
                 <ProgressBar progress={goal.progress} />
@@ -550,11 +613,16 @@ const PerformanceAppraisal = ({ employees }) => {
                   {getStatusText(goal.status)}
                 </span>
                 <button 
-                  className="p-2 hover:bg-gray-100 rounded"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors border"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditGoal(goal);
+                  }}
+                  title={t('performance.editGoal', 'Edit goal')}
                   style={{
-                    backgroundColor: 'transparent',
-                    color: isDarkMode ? '#9ca3af' : '#6b7280',
-                    borderColor: 'transparent'
+                    backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+                    color: isDarkMode ? '#ffffff' : '#111827',
+                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
                   }}
                 >
                   <Edit className="h-4 w-4" />
@@ -999,6 +1067,225 @@ const PerformanceAppraisal = ({ employees }) => {
                 >
                   <Save className="h-4 w-4" />
                   <span>{loading ? t('common.saving', 'Saving...') : t('common.save', 'Save')}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Goal Modal */}
+      {showEditGoalModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowEditGoalModal(false);
+              setEditingGoal(null);
+            }
+          }}
+        >
+          <div 
+            className="rounded-lg shadow-xl max-w-3xl w-full p-6 my-8"
+            style={{
+              backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+              color: isDarkMode ? '#ffffff' : '#111827'
+            }}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">{t('performance.editGoal', 'Edit Goal')}</h2>
+              <button
+                onClick={() => {
+                  setShowEditGoalModal(false);
+                  setEditingGoal(null);
+                }}
+                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateGoal} className="space-y-4">
+              {/* Title */}
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  {t('performance.goalTitle', 'Goal Title')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={goalForm.title}
+                  onChange={(e) => setGoalForm({...goalForm, title: e.target.value})}
+                  className="w-full px-4 py-2 rounded-lg border transition-colors"
+                  style={{
+                    backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                    color: isDarkMode ? '#ffffff' : '#111827'
+                  }}
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  {t('performance.goalDescription', 'Description')}
+                </label>
+                <textarea
+                  rows="3"
+                  value={goalForm.description}
+                  onChange={(e) => setGoalForm({...goalForm, description: e.target.value})}
+                  className="w-full px-4 py-2 rounded-lg border transition-colors"
+                  style={{
+                    backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                    color: isDarkMode ? '#ffffff' : '#111827'
+                  }}
+                />
+              </div>
+
+              {/* Progress Percentage Slider */}
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  {t('performance.progressPercentage', 'Progress')} 
+                  <span className="ml-2 font-bold text-red-600">{goalForm.progressPercentage}%</span>
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={goalForm.progressPercentage}
+                  onChange={(e) => setGoalForm({...goalForm, progressPercentage: parseInt(e.target.value)})}
+                  className="w-full h-3 rounded-lg appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, 
+                      #000000 0%, 
+                      #4a0000 ${goalForm.progressPercentage * 0.5}%,
+                      #dc2626 ${goalForm.progressPercentage}%, 
+                      ${isDarkMode ? '#4b5563' : '#d1d5db'} ${goalForm.progressPercentage}%, 
+                      ${isDarkMode ? '#4b5563' : '#d1d5db'} 100%)`
+                  }}
+                />
+                <div className="flex justify-between text-xs mt-1" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                  <span>0%</span>
+                  <span>50%</span>
+                  <span>100%</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Category */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {t('performance.category', 'Category')}
+                  </label>
+                  <select
+                    value={goalForm.category}
+                    onChange={(e) => setGoalForm({...goalForm, category: e.target.value})}
+                    className="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer"
+                    style={{
+                      backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+                      borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                      color: isDarkMode ? '#ffffff' : '#111827'
+                    }}
+                  >
+                    <option value="general">{t('performance.general', 'General')}</option>
+                    <option value="technical">{t('performance.technical', 'Technical')}</option>
+                    <option value="leadership">{t('performance.leadership', 'Leadership')}</option>
+                    <option value="project">{t('performance.project', 'Project')}</option>
+                    <option value="professional_development">{t('performance.professionalDevelopment', 'Professional Development')}</option>
+                  </select>
+                </div>
+
+                {/* Priority */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {t('performance.priority', 'Priority')}
+                  </label>
+                  <select
+                    value={goalForm.priority}
+                    onChange={(e) => setGoalForm({...goalForm, priority: e.target.value})}
+                    className="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer"
+                    style={{
+                      backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+                      borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                      color: isDarkMode ? '#ffffff' : '#111827'
+                    }}
+                  >
+                    <option value="low">{t('performance.low', 'Low')}</option>
+                    <option value="medium">{t('performance.medium', 'Medium')}</option>
+                    <option value="high">{t('performance.high', 'High')}</option>
+                    <option value="critical">{t('performance.critical', 'Critical')}</option>
+                  </select>
+                </div>
+
+                {/* Target Date */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {t('performance.targetDate', 'Target Date')}
+                  </label>
+                  <input
+                    type="date"
+                    value={goalForm.targetDate}
+                    onChange={(e) => setGoalForm({...goalForm, targetDate: e.target.value})}
+                    className="w-full px-4 py-2 rounded-lg border transition-colors"
+                    style={{
+                      backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+                      borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                      color: isDarkMode ? '#ffffff' : '#111827'
+                    }}
+                  />
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {t('performance.status', 'Status')}
+                  </label>
+                  <select
+                    value={goalForm.status}
+                    onChange={(e) => setGoalForm({...goalForm, status: e.target.value})}
+                    className="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer"
+                    style={{
+                      backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+                      borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                      color: isDarkMode ? '#ffffff' : '#111827'
+                    }}
+                  >
+                    <option value="pending">{t('performance.pending', 'Pending')}</option>
+                    <option value="in_progress">{t('performance.inProgress', 'In Progress')}</option>
+                    <option value="completed">{t('performance.completed', 'Completed')}</option>
+                    <option value="cancelled">{t('performance.cancelled', 'Cancelled')}</option>
+                    <option value="on_hold">{t('performance.onHold', 'On Hold')}</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-4 border-t"
+                style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditGoalModal(false);
+                    setEditingGoal(null);
+                  }}
+                  className="px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  style={{
+                    backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+                    color: isDarkMode ? '#ffffff' : '#111827'
+                  }}
+                >
+                  {t('common.cancel', 'Cancel')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Save className="h-4 w-4" />
+                  <span>{loading ? t('common.updating', 'Updating...') : t('common.update', 'Update')}</span>
                 </button>
               </div>
             </form>

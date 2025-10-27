@@ -367,7 +367,7 @@ const TimeTracking = ({ employees }) => {
           value={currentData.days_worked || 0}
           unit={t('timeTracking.days')}
           icon={Calendar}
-          color="text-blue-600"
+          color={isDarkMode ? "text-white" : "text-black"}
           bgColor="bg-white"
           onClick={() => handleMetricClick('workDays')}
         />
@@ -376,7 +376,7 @@ const TimeTracking = ({ employees }) => {
           value={currentData.leave_days || 0}
           unit={t('timeTracking.days')}
           icon={Coffee}
-          color="text-orange-600"
+          color={isDarkMode ? "text-white" : "text-black"}
           bgColor="bg-white"
           onClick={() => handleMetricClick('leaveDays')}
         />
@@ -385,7 +385,7 @@ const TimeTracking = ({ employees }) => {
           value={currentData.overtime_hours || 0}
           unit={t('timeTracking.hours')}
           icon={Clock}
-          color="text-purple-600"
+          color={isDarkMode ? "text-white" : "text-black"}
           bgColor="bg-white"
           onClick={() => handleMetricClick('overtime')}
         />
@@ -394,7 +394,7 @@ const TimeTracking = ({ employees }) => {
           value={currentData.holiday_overtime_hours || 0}
           unit={t('timeTracking.hours')}
           icon={Zap}
-          color="text-green-600"
+          color={isDarkMode ? "text-white" : "text-black"}
           bgColor="bg-white"
         />
       </div>
@@ -458,28 +458,28 @@ const TimeTracking = ({ employees }) => {
         <div className="flex flex-wrap gap-3">
           <button 
             onClick={() => navigate('/time-clock')}
-            className={`px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center space-x-2`}
+            className={`cursor-pointer px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center space-x-2`}
           >
             <Clock className="w-4 h-4" />
             <span>{t('timeTrackingActions.recordTime')}</span>
           </button>
           <button 
             onClick={() => setShowLeaveModal(true)}
-            className={`px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors flex items-center space-x-2`}
+            className={`cursor-pointer px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors flex items-center space-x-2`}
           >
             <Calendar className="w-4 h-4" />
             <span>{t('timeTrackingActions.requestLeave')}</span>
           </button>
           <button 
             onClick={() => setShowOvertimeModal(true)}
-            className={`px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-colors flex items-center space-x-2`}
+            className={`cursor-pointer px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors flex items-center space-x-2`}
           >
             <TrendingUp className="w-4 h-4" />
             <span>{t('timeTrackingActions.logOvertime')}</span>
           </button>
           <button 
             onClick={handleExportReport}
-            className={`px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2`}
+            className={`cursor-pointer px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2`}
           style={{
             backgroundColor: isDarkMode ? '#374151' : '#ffffff', // gray-700 : white
             borderColor: isDarkMode ? '#4b5563' : '#d1d5db', // gray-600 : gray-300
