@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Clock, Calendar, TrendingUp, Users, X, Check, Download, FileText, Coffee, Zap, Loader } from 'lucide-react'
+import { Clock, Calendar, TrendingUp, Users, X, Check, Download, FileText, Coffee, Zap, Loader, BarChart3, PieChart } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
@@ -8,19 +8,31 @@ import * as timeTrackingService from '../services/timeTrackingService'
 import MetricDetailModal from './metricDetailModal.jsx'
 
 const TimeTracking = ({ employees }) => {
-  const [selectedEmployee, setSelectedEmployee] = useState(employees[0]?.id ? String(employees[0].id) : null);
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // 1-indexed for Supabase
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const { user } = useAuth();
   const { isDarkMode, toggleTheme, button, bg, text, border, hover, input } = useTheme();
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  
+  // Auto-detect current logged-in user's employee_id
+  const getCurrentEmployeeId = () => {
+    if (user?.employeeId) {
+      const userEmployee = employees.find(emp => emp.id === user.employeeId);
+      if (userEmployee) return String(user.employeeId);
+    }
+    return employees[0]?.id ? String(employees[0].id) : null;
+  };
+  
+  const [selectedEmployee, setSelectedEmployee] = useState(getCurrentEmployeeId());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // 1-indexed for Supabase
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [activeTab, setActiveTab] = useState('summary'); // 'summary' or 'overview'
   
   // Loading and data states
   const [loading, setLoading] = useState(true);
   const [summaryData, setSummaryData] = useState(null);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [overtimeLogs, setOvertimeLogs] = useState([]);
+  const [allEmployeesData, setAllEmployeesData] = useState([]);
   
   // Modal states
   const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -44,6 +56,13 @@ const TimeTracking = ({ employees }) => {
     reason: ''
   });
 
+  // Auto-select current user on mount
+  useEffect(() => {
+    if (user?.employeeId && !selectedEmployee) {
+      setSelectedEmployee(String(user.employeeId));
+    }
+  }, [user]);
+  
   // Fetch data from Supabase when employee or period changes
   useEffect(() => {
     const fetchTimeTrackingData = async () => {
@@ -90,6 +109,34 @@ const TimeTracking = ({ employees }) => {
     
     fetchTimeTrackingData();
   }, [selectedEmployee, selectedMonth, selectedYear]);
+  
+  // Fetch all employees data for Overview
+  useEffect(() => {
+    const fetchAllEmployeesData = async () => {
+      try {
+        const results = await Promise.all(
+          employees.map(async (emp) => {
+            const result = await timeTrackingService.getTimeTrackingSummary(
+              String(emp.id),
+              selectedMonth,
+              selectedYear
+            );
+            return {
+              employee: emp,
+              data: result.success ? result.data : null
+            };
+          })
+        );
+        setAllEmployeesData(results);
+      } catch (error) {
+        console.error('Error fetching all employees data:', error);
+      }
+    };
+    
+    if (activeTab === 'overview') {
+      fetchAllEmployeesData();
+    }
+  }, [activeTab, selectedMonth, selectedYear, employees]);
   
   const currentData = summaryData || {
     days_worked: 0,
@@ -382,7 +429,7 @@ const TimeTracking = ({ employees }) => {
         />
         <TimeCard
           title={t('timeTracking.overtime')}
-          value={currentData.overtime_hours || 0}
+          value={(currentData.overtime_hours || 0) + (currentData.holiday_overtime_hours || 0)}
           unit={t('timeTracking.hours')}
           icon={Clock}
           color={isDarkMode ? "text-white" : "text-black"}
@@ -390,16 +437,45 @@ const TimeTracking = ({ employees }) => {
           onClick={() => handleMetricClick('overtime')}
         />
         <TimeCard
-          title={t('timeTracking.holidayOvertime')}
-          value={currentData.holiday_overtime_hours || 0}
+          title={t('timeTracking.regularHours')}
+          value={currentData.regular_hours || 0}
           unit={t('timeTracking.hours')}
-          icon={Zap}
+          icon={TrendingUp}
           color={isDarkMode ? "text-white" : "text-black"}
           bgColor="bg-white"
         />
       </div>
 
-      {/* Detailed Summary */}
+      {/* Tab Navigation */}
+      <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-2`}>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setActiveTab('summary')}
+            className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 ${
+              activeTab === 'summary'
+                ? 'bg-blue-600 text-white'
+                : `${text.secondary} hover:${bg.primary}`
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            <span>{t('timeTracking.summary', 'Summary')}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 ${
+              activeTab === 'overview'
+                ? 'bg-blue-600 text-white'
+                : `${text.secondary} hover:${bg.primary}`
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>{t('timeTracking.overview', 'Overview')}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Summary Tab */}
+      {activeTab === 'summary' && (
       <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
         <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
           {t('timeTracking.summary', `Summary for ${employees.find(emp => String(emp.id) === selectedEmployee)?.name} - ${getMonthName(selectedMonth)} ${selectedYear}`)}
@@ -430,10 +506,6 @@ const TimeTracking = ({ employees }) => {
               <span className={`${text.secondary} ml-12`}>{t('timeTracking.leaveDays')}:</span>
               <span className={`font-medium ${text.primary}`}>{currentData.leave_days || 0} {t('timeTracking.days')}</span>
             </div>
-            <div className="flex justify-between">
-              <span className={`${text.secondary} ml-12`}>{t('timeTracking.holidayOvertime')}:</span>
-              <span className={`font-medium ${text.primary}`}>{currentData.holiday_overtime_hours || 0} {t('timeTracking.hrs')}</span>
-            </div>
             <div className={`flex justify-between border-t ${border.primary} pt-3`}>
               <span className={`${text.primary} font-semibold ml-12`}>{t('timeTracking.attendanceRate')}:</span>
               <span className={`font-bold ${text.primary}`}>
@@ -443,6 +515,157 @@ const TimeTracking = ({ employees }) => {
           </div>
         </div>
       </div>
+      )}
+
+      {/* Overview Tab */}
+      {activeTab === 'overview' && (
+      <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
+        <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
+          {t('timeTracking.overviewTitle', `Company Overview - ${getMonthName(selectedMonth)} ${selectedYear}`)}
+        </h3>
+        
+        {/* Total Regular Hours for All Employees */}
+        <div className="mb-6">
+          <div className={`${bg.primary} rounded-lg p-4 border ${border.primary}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Clock className={`w-6 h-6 ${text.primary}`} />
+                <span className={`text-lg font-semibold ${text.primary}`}>
+                  {t('timeTracking.totalRegularHours', 'Total Regular Hours (All Employees)')}
+                </span>
+              </div>
+              <span className={`text-2xl font-bold ${text.primary}`}>
+                {allEmployeesData.reduce((sum, item) => sum + (item.data?.regular_hours || 0), 0).toFixed(1)}
+                <span className={`text-sm ${text.secondary} ml-1`}>{t('timeTracking.hrs', 'hrs')}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Total Regular Hours Chart */}
+          <div className={`${bg.primary} rounded-lg p-4 border ${border.primary}`}>
+            <div className="flex items-center space-x-2 mb-4">
+              <BarChart3 className={`w-5 h-5 ${text.primary}`} />
+              <h4 className={`font-semibold ${text.primary}`}>
+                {t('timeTracking.regularHoursChart', 'Regular Hours by Employee')}
+              </h4>
+            </div>
+            <div className="space-y-3">
+              {allEmployeesData
+                .filter(item => item.data)
+                .sort((a, b) => (b.data?.regular_hours || 0) - (a.data?.regular_hours || 0))
+                .slice(0, 10)
+                .map((item, index) => {
+                  const maxHours = Math.max(...allEmployeesData.map(i => i.data?.regular_hours || 0));
+                  const percentage = maxHours > 0 ? ((item.data?.regular_hours || 0) / maxHours) * 100 : 0;
+                  return (
+                    <div key={index} className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className={text.secondary}>{item.employee.name}</span>
+                        <span className={text.primary}>{item.data?.regular_hours || 0} hrs</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+
+          {/* Total Overtime Hours Chart */}
+          <div className={`${bg.primary} rounded-lg p-4 border ${border.primary}`}>
+            <div className="flex items-center space-x-2 mb-4">
+              <PieChart className={`w-5 h-5 ${text.primary}`} />
+              <h4 className={`font-semibold ${text.primary}`}>
+                {t('timeTracking.overtimeHoursChart', 'Overtime Hours by Employee')}
+              </h4>
+            </div>
+            <div className="space-y-3">
+              {allEmployeesData
+                .filter(item => item.data)
+                .sort((a, b) => {
+                  const aTotal = (b.data?.overtime_hours || 0) + (b.data?.holiday_overtime_hours || 0);
+                  const bTotal = (a.data?.overtime_hours || 0) + (a.data?.holiday_overtime_hours || 0);
+                  return aTotal - bTotal;
+                })
+                .slice(0, 10)
+                .map((item, index) => {
+                  const overtimeTotal = (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0);
+                  const maxOT = Math.max(...allEmployeesData.map(i => 
+                    (i.data?.overtime_hours || 0) + (i.data?.holiday_overtime_hours || 0)
+                  ));
+                  const percentage = maxOT > 0 ? (overtimeTotal / maxOT) * 100 : 0;
+                  return (
+                    <div key={index} className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className={text.secondary}>{item.employee.name}</span>
+                        <span className={text.primary}>{overtimeTotal.toFixed(1)} hrs</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className="bg-orange-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
+
+        {/* All Employees Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className={`border-b ${border.primary}`}>
+                <th className={`text-left py-3 px-4 ${text.primary} font-semibold`}>Employee</th>
+                <th className={`text-right py-3 px-4 ${text.primary} font-semibold`}>Days Worked</th>
+                <th className={`text-right py-3 px-4 ${text.primary} font-semibold`}>Regular Hours</th>
+                <th className={`text-right py-3 px-4 ${text.primary} font-semibold`}>Overtime</th>
+                <th className={`text-right py-3 px-4 ${text.primary} font-semibold`}>Total Hours</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allEmployeesData.map((item, index) => (
+                <tr key={index} className={`border-b ${border.primary} hover:${bg.primary} transition-colors`}>
+                  <td className={`py-3 px-4 ${text.primary}`}>{item.employee.name}</td>
+                  <td className={`text-right py-3 px-4 ${text.secondary}`}>{item.data?.days_worked || 0}</td>
+                  <td className={`text-right py-3 px-4 ${text.secondary}`}>{item.data?.regular_hours || 0}</td>
+                  <td className={`text-right py-3 px-4 ${text.secondary}`}>
+                    {((item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0)).toFixed(1)}
+                  </td>
+                  <td className={`text-right py-3 px-4 font-semibold ${text.primary}`}>{item.data?.total_hours || 0}</td>
+                </tr>
+              ))}
+              <tr className={`border-t-2 ${border.primary} font-bold`}>
+                <td className={`py-3 px-4 ${text.primary}`}>Total</td>
+                <td className={`text-right py-3 px-4 ${text.primary}`}>
+                  {allEmployeesData.reduce((sum, item) => sum + (item.data?.days_worked || 0), 0)}
+                </td>
+                <td className={`text-right py-3 px-4 ${text.primary}`}>
+                  {allEmployeesData.reduce((sum, item) => sum + (item.data?.regular_hours || 0), 0).toFixed(1)}
+                </td>
+                <td className={`text-right py-3 px-4 ${text.primary}`}>
+                  {allEmployeesData.reduce((sum, item) => 
+                    sum + (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0), 0
+                  ).toFixed(1)}
+                </td>
+                <td className={`text-right py-3 px-4 ${text.primary}`}>
+                  {allEmployeesData.reduce((sum, item) => sum + (item.data?.total_hours || 0), 0).toFixed(1)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      )}
 
       {/* Success Message */}
       {successMessage && (

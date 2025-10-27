@@ -14,6 +14,7 @@ const Dashboard = ({ employees, applications }) => {
   // State for real-time data
   const [loading, setLoading] = useState(true);
   const [timeTrackingData, setTimeTrackingData] = useState({});
+  const [allEmployeesData, setAllEmployeesData] = useState([]);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
   const [pendingApprovals, setPendingApprovals] = useState([]);
   
@@ -40,28 +41,44 @@ const Dashboard = ({ employees, applications }) => {
         
         // Build timeTrackingData object - use string IDs for consistency with TEXT type
         const trackingData = {};
+        const employeesDataArray = [];
         summariesResults.forEach((result, index) => {
+          const emp = employees[index];
+          const empId = String(emp.id); // Ensure ID is string for TEXT type
+          
           if (result.success && result.data) {
-            const emp = employees[index];
-            const empId = String(emp.id); // Ensure ID is string for TEXT type
             trackingData[empId] = {
               workDays: result.data.days_worked || 0,
               leaveDays: result.data.leave_days || 0,
               overtime: result.data.overtime_hours || 0,
-              performance: emp.performance || 4.0 // Use employee's base performance
+              holidayOvertime: result.data.holiday_overtime_hours || 0,
+              regularHours: result.data.regular_hours || 0,
+              totalHours: result.data.total_hours || 0,
+              performance: emp.performance || 4.0
             };
+            employeesDataArray.push({
+              employee: emp,
+              data: result.data
+            });
           } else {
             // Fallback to defaults if no data
-            const emp = employees[index];
-            const empId = String(emp.id); // Ensure ID is string for TEXT type
             trackingData[empId] = {
               workDays: 0,
               leaveDays: 0,
               overtime: 0,
+              holidayOvertime: 0,
+              regularHours: 0,
+              totalHours: 0,
               performance: emp.performance || 4.0
             };
+            employeesDataArray.push({
+              employee: emp,
+              data: null
+            });
           }
         });
+        
+        setAllEmployeesData(employeesDataArray);
         
         setTimeTrackingData(trackingData);
         
@@ -93,7 +110,8 @@ const Dashboard = ({ employees, applications }) => {
   const trackingDataValues = Object.values(timeTrackingData);
   const totalWorkDays = trackingDataValues.reduce((sum, emp) => sum + (emp?.workDays || 0), 0);
   const totalLeaveDays = trackingDataValues.reduce((sum, emp) => sum + (emp?.leaveDays || 0), 0);
-  const totalOvertime = trackingDataValues.reduce((sum, emp) => sum + (emp?.overtime || 0), 0).toFixed(1);
+  const totalOvertime = trackingDataValues.reduce((sum, emp) => sum + (emp?.overtime || 0) + (emp?.holidayOvertime || 0), 0).toFixed(1);
+  const totalRegularHours = trackingDataValues.reduce((sum, emp) => sum + (emp?.regularHours || 0), 0).toFixed(1);
   const avgPerformance = trackingDataValues.length > 0 
     ? (trackingDataValues.reduce((sum, emp) => sum + (emp?.performance || 0), 0) / trackingDataValues.length).toFixed(1)
     : '0.0';
@@ -179,11 +197,21 @@ const Dashboard = ({ employees, applications }) => {
         title = t('dashboard.avgPerformance');
         break;
         
+      case 'regularHours':
+        data = employees.map(emp => ({
+          employeeName: emp.name,
+          department: emp.department,
+          regularHours: timeTrackingData[String(emp.id)]?.regularHours || 0,
+          totalHours: timeTrackingData[String(emp.id)]?.totalHours || 0
+        }));
+        title = t('dashboard.totalRegularHours', 'Total Regular Hours');
+        break;
+        
       case 'overtime':
         data = employees.map(emp => ({
           employeeName: emp.name,
           department: emp.department,
-          overtime: timeTrackingData[String(emp.id)]?.overtime || 0,
+          overtime: (timeTrackingData[String(emp.id)]?.overtime || 0) + (timeTrackingData[String(emp.id)]?.holidayOvertime || 0),
           workDays: timeTrackingData[String(emp.id)]?.workDays || 0
         }));
         title = t('dashboard.totalOvertime');
@@ -261,7 +289,7 @@ const Dashboard = ({ employees, applications }) => {
       </div>
       
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <div className="stagger-item">
           <StatsCard 
             title={t('dashboard.totalEmployees')} 
@@ -270,6 +298,15 @@ const Dashboard = ({ employees, applications }) => {
             color={isDarkMode ? "#ffffff" : "#1f1f1f"}
             size={12}
             onClick={() => handleMetricClick('employees')}
+          />
+        </div>
+        <div className="stagger-item">
+          <StatsCard 
+            title={t('dashboard.totalRegularHours', 'Total Regular Hours')} 
+            value={`${totalRegularHours}h`} 
+            icon={Clock} 
+            color={isDarkMode ? "#ffffff" : "#1f1f1f"}
+            onClick={() => handleMetricClick('regularHours')}
           />
         </div>
         <div className="stagger-item">
@@ -396,7 +433,112 @@ const Dashboard = ({ employees, applications }) => {
         </div>
       </div>
 
-      {/* Charts Row 2 */}
+      {/* Charts Row 2 - Regular Hours and Overtime Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Regular Hours by Employee */}
+        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
+          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
+            {t('dashboard.regularHoursByEmployee', 'Regular Hours by Employee')}
+          </h3>
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart 
+              data={allEmployeesData
+                .filter(item => item.data)
+                .sort((a, b) => (b.data?.regular_hours || 0) - (a.data?.regular_hours || 0))
+                .slice(0, 10)
+                .map(item => ({
+                  name: getUniqueDisplayName(item.employee, employees),
+                  fullName: item.employee.name,
+                  regularHours: item.data?.regular_hours || 0
+                }))}
+              margin={{ top: 5, right: 5, left: 0, bottom: 60 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
+              <XAxis 
+                dataKey="name" 
+                stroke={isDarkMode ? '#9CA3AF' : '#6B7280'}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+                interval={0}
+                tick={{ fontSize: 11 }}
+              />
+              <YAxis stroke={isDarkMode ? '#9CA3AF' : '#6B7280'} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
+                  border: `1px solid ${isDarkMode ? '#374151' : '#E5E7EB'}`,
+                  borderRadius: '0.5rem',
+                  color: isDarkMode ? '#F9FAFB' : '#111827',
+                }}
+                labelFormatter={(label, payload) => {
+                  if (payload && payload.length > 0 && payload[0].payload.fullName) {
+                    return `Employee: ${payload[0].payload.fullName}`;
+                  }
+                  return label;
+                }}
+              />
+              <Legend />
+              <Bar dataKey="regularHours" fill="#3B82F6" name="Regular Hours" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Overtime Hours by Employee */}
+        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
+          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
+            {t('dashboard.overtimeHoursByEmployee', 'Overtime Hours by Employee')}
+          </h3>
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart 
+              data={allEmployeesData
+                .filter(item => item.data)
+                .sort((a, b) => {
+                  const aTotal = (b.data?.overtime_hours || 0) + (b.data?.holiday_overtime_hours || 0);
+                  const bTotal = (a.data?.overtime_hours || 0) + (a.data?.holiday_overtime_hours || 0);
+                  return aTotal - bTotal;
+                })
+                .slice(0, 10)
+                .map(item => ({
+                  name: getUniqueDisplayName(item.employee, employees),
+                  fullName: item.employee.name,
+                  overtimeHours: ((item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0)).toFixed(1)
+                }))}
+              margin={{ top: 5, right: 5, left: 0, bottom: 60 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
+              <XAxis 
+                dataKey="name" 
+                stroke={isDarkMode ? '#9CA3AF' : '#6B7280'}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+                interval={0}
+                tick={{ fontSize: 11 }}
+              />
+              <YAxis stroke={isDarkMode ? '#9CA3AF' : '#6B7280'} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
+                  border: `1px solid ${isDarkMode ? '#374151' : '#E5E7EB'}`,
+                  borderRadius: '0.5rem',
+                  color: isDarkMode ? '#F9FAFB' : '#111827',
+                }}
+                labelFormatter={(label, payload) => {
+                  if (payload && payload.length > 0 && payload[0].payload.fullName) {
+                    return `Employee: ${payload[0].payload.fullName}`;
+                  }
+                  return label;
+                }}
+              />
+              <Legend />
+              <Bar dataKey="overtimeHours" fill="#F59E0B" name="Total Overtime" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Charts Row 3 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Work & Leave Days Comparison */}
         <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>

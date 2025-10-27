@@ -22,13 +22,23 @@ const TimeClockEntry = ({ currentLanguage }) => {
 
   // Time entries state
   const [timeEntries, setTimeEntries] = useState([]);
+  const [leaveRequests, setLeaveRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Leave request form
+  const [leaveForm, setLeaveForm] = useState({
+    type: 'vacation',
+    startDate: '',
+    endDate: '',
+    reason: ''
+  });
 
-  // Fetch time entries from Supabase
+  // Fetch time entries and leave requests from Supabase
   useEffect(() => {
     const fetchTimeEntries = async () => {
       if (!user?.id) return;
@@ -40,6 +50,14 @@ const TimeClockEntry = ({ currentLanguage }) => {
         const result = await timeTrackingService.getTimeEntries(employeeId);
         if (result.success) {
           setTimeEntries(result.data || []);
+        }
+        
+        // Fetch leave requests (including pending)
+        const leaveResult = await timeTrackingService.getLeaveRequests(employeeId, {
+          year: new Date().getFullYear()
+        });
+        if (leaveResult.success) {
+          setLeaveRequests(leaveResult.data || []);
         }
       } catch (error) {
         console.error('Error fetching time entries:', error);
@@ -319,7 +337,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
     }
   };
 
-  // Calculate totals
+  // Calculate totals (including pending and approved time entries)
   const calculateTotals = (filterType = 'all', period = 'week') => {
     const now = new Date();
     const startOfWeek = new Date(now);
@@ -328,6 +346,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
 
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
+    // Count pending and approved entries
     return timeEntries.reduce((acc, entry) => {
       const entryDate = new Date(entry.date);
       
@@ -335,12 +354,39 @@ const TimeClockEntry = ({ currentLanguage }) => {
       if (period === 'week' && entryDate < startOfWeek) return acc;
       if (period === 'month' && entryDate < startOfMonth) return acc;
 
+      // Include pending and approved entries (not rejected)
+      if (entry.status === 'rejected') return acc;
+
       // Filter by type (using hour_type from Supabase)
       const entryType = entry.hour_type || entry.hourType;
       if (filterType === 'all' || entryType === filterType) {
         acc += parseFloat(entry.hours || 0);
       }
 
+      return acc;
+    }, 0);
+  };
+  
+  // Calculate leave days (including pending and approved)
+  const calculateLeaveDays = (period = 'week') => {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    return leaveRequests.reduce((acc, req) => {
+      const startDate = new Date(req.start_date);
+      
+      // Filter by period
+      if (period === 'week' && startDate < startOfWeek) return acc;
+      if (period === 'month' && startDate < startOfMonth) return acc;
+
+      // Include pending and approved (not rejected)
+      if (req.status === 'rejected') return acc;
+
+      acc += parseFloat(req.days_count || 0);
       return acc;
     }, 0);
   };
@@ -646,6 +692,17 @@ const TimeClockEntry = ({ currentLanguage }) => {
                   : t('timeClock.submit')}
               </button>
             </form>
+            
+            {/* Request Leave Button */}
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setShowLeaveModal(true)}
+                className="w-full py-3 px-6 rounded-lg font-medium text-white bg-green-600 hover:bg-green-700 active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
+              >
+                <Calendar className="w-5 h-5" />
+                <span>{t('timeClock.requestLeave', 'Request Leave')}</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -700,8 +757,175 @@ const TimeClockEntry = ({ currentLanguage }) => {
               </div>
             </div>
           </div>
+          
+          {/* Leave Days Summary */}
+          <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>
+            <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
+              {t('timeClock.leaveDays', 'Leave Days')}
+            </h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className={`text-sm ${text.secondary}`}>{t('timeClock.thisWeek', 'This Week')}</span>
+                <span className={`font-semibold ${text.primary}`}>
+                  {calculateLeaveDays('week').toFixed(1)} days
+                </span>
+              </div>
+              <div className={`pt-3 border-t ${border.primary} flex justify-between items-center`}>
+                <span className={`font-semibold ${text.primary}`}>
+                  {t('timeClock.thisMonth', 'This Month')}
+                </span>
+                <span className={`font-bold text-lg ${text.primary}`}>
+                  {calculateLeaveDays('month').toFixed(1)} days
+                </span>
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                {t('timeClock.includesPending', '* Includes pending & approved')}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+      
+      {/* Leave Request Modal */}
+      {showLeaveModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={`${bg.secondary} rounded-lg shadow-xl max-w-md w-full p-6`}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className={`text-xl font-semibold ${text.primary}`}>
+                {t('timeClock.requestLeave', 'Request Leave')}
+              </h3>
+              <button onClick={() => setShowLeaveModal(false)} className={`${text.secondary} hover:${text.primary}`}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setIsSubmitting(true);
+              
+              try {
+                const employeeId = user.employeeId || user.id;
+                const result = await timeTrackingService.createLeaveRequest({
+                  employeeId: employeeId,
+                  type: leaveForm.type,
+                  startDate: leaveForm.startDate,
+                  endDate: leaveForm.endDate,
+                  reason: leaveForm.reason
+                });
+                
+                if (result.success) {
+                  setSuccessMessage(t('timeClock.leaveSuccess', 'Leave request submitted successfully!'));
+                  setShowLeaveModal(false);
+                  
+                  // Refresh leave requests
+                  const leaveResult = await timeTrackingService.getLeaveRequests(employeeId, {
+                    year: new Date().getFullYear()
+                  });
+                  if (leaveResult.success) {
+                    setLeaveRequests(leaveResult.data || []);
+                  }
+                  
+                  // Reset form
+                  setLeaveForm({
+                    type: 'vacation',
+                    startDate: '',
+                    endDate: '',
+                    reason: ''
+                  });
+                  
+                  setTimeout(() => setSuccessMessage(''), 3000);
+                } else {
+                  setErrors({ general: result.error || t('timeClock.leaveError', 'Error submitting leave request') });
+                }
+              } catch (error) {
+                console.error('Error submitting leave:', error);
+                setErrors({ general: t('timeClock.leaveError', 'Error submitting leave request') });
+              } finally {
+                setIsSubmitting(false);
+              }
+            }} className="space-y-4">
+              <div>
+                <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                  {t('timeClock.leaveType', 'Leave Type')}
+                </label>
+                <select
+                  value={leaveForm.type}
+                  onChange={(e) => setLeaveForm({ ...leaveForm, type: e.target.value })}
+                  required
+                  className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                >
+                  <option value="vacation">{t('timeClock.vacation', 'Vacation')}</option>
+                  <option value="sick">{t('timeClock.sick', 'Sick Leave')}</option>
+                  <option value="personal">{t('timeClock.personal', 'Personal')}</option>
+                  <option value="unpaid">{t('timeClock.unpaid', 'Unpaid Leave')}</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                  {t('timeClock.startDate', 'Start Date')}
+                </label>
+                <input
+                  type="date"
+                  value={leaveForm.startDate}
+                  onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
+                  min={new Date().toISOString().split('T')[0]}
+                  required
+                  className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                  {t('timeClock.endDate', 'End Date')}
+                </label>
+                <input
+                  type="date"
+                  value={leaveForm.endDate}
+                  onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
+                  min={leaveForm.startDate || new Date().toISOString().split('T')[0]}
+                  required
+                  className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                  {t('timeClock.reason', 'Reason')}
+                </label>
+                <textarea
+                  value={leaveForm.reason}
+                  onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })}
+                  rows="3"
+                  placeholder={t('timeClock.leaveReason', 'Brief reason for leave...')}
+                  className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                />
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowLeaveModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  {t('common.cancel', 'Cancel')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+                    isSubmitting
+                      ? 'bg-gray-400 cursor-not-allowed text-white'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
+                >
+                  {isSubmitting ? t('common.submitting', 'Submitting...') : t('common.submit', 'Submit Request')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Time Entries History */}
       <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>

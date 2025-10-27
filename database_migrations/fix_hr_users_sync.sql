@@ -20,6 +20,7 @@ SELECT
 FROM auth.users au -- Start from the AUTH table to get all 9 users
 LEFT JOIN hr_users hu ON au.id = hu.id -- Join to hr_users
 ORDER BY au.created_at;
+
 -- First, let's see what we have
 SELECT 
     hu.id,
@@ -45,6 +46,71 @@ WHERE id NOT IN (
 -- ============================================================
 -- STEP 2: CREATE OR UPDATE HR_USERS FOR ALL EMPLOYEES WITH AUTH ACCOUNTS
 -- ============================================================
+
+WITH DedupedEmployees AS (
+    SELECT
+        e.*,
+        au.id AS auth_id,
+        -- Assign a rank to employee records based on the auth user ID
+        -- PRIORITIZE employees with a later start_date (or use created_at)
+        ROW_NUMBER() OVER (
+            PARTITION BY au.id 
+            ORDER BY e.start_date DESC -- You can change this to prioritize another column
+        ) as rn
+    FROM employees e
+    INNER JOIN auth.users au 
+        -- This join creates the potential duplicates because one au.email can be in multiple e.email strings
+        ON POSITION(au.email IN e.email) > 0 
+)
+INSERT INTO hr_users (
+    id, email, first_name, last_name, phone, avatar_url, role, department, position, employee_id, hire_date, employment_status, is_active, created_at
+)
+SELECT 
+    de.auth_id as id,
+    SPLIT_PART(de.email, ',', 1) as email,
+    split_part(de.name, ' ', 1) as first_name,
+    substring(de.name from length(split_part(de.name, ' ', 1)) + 2) as last_name,
+    de.phone,
+    de.photo as avatar_url,
+    -- NOTE: Ensure 'manager' is used instead of 'hr_manager' if the 'valid_role' constraint forbids 'hr_manager'
+    CASE 
+        WHEN de.position = 'general_manager' THEN 'admin'
+        WHEN de.position = 'managing_director' THEN 'admin'
+        WHEN de.position = 'hr_specialist' THEN 'manager' -- Changed to 'manager' to satisfy the CHECK constraint
+        WHEN de.position IN ('senior_developer', 'contract_manager') THEN 'manager'
+        ELSE 'employee'
+    END as role,
+    de.department,
+    de.position,
+    de.id as employee_id,
+    de.start_date as hire_date,
+    CASE 
+        WHEN de.status = 'Active' THEN 'active'
+        WHEN de.status = 'onLeave' THEN 'on_leave'
+        WHEN de.status = 'Inactive' THEN 'terminated'
+        ELSE 'active'
+    END as employment_status,
+    CASE 
+        WHEN de.status = 'Inactive' THEN false
+        ELSE true
+    END as is_active,
+    COALESCE(de.created_at, now()) as created_at
+FROM DedupedEmployees de
+WHERE de.rn = 1 -- <--- CRITICAL FIX: Only select the first, non-duplicate match
+ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    first_name = EXCLUDED.first_name,
+    last_name = EXCLUDED.last_name,
+    phone = EXCLUDED.phone,
+    avatar_url = EXCLUDED.avatar_url,
+    role = EXCLUDED.role,
+    department = EXCLUDED.department,
+    position = EXCLUDED.position,
+    employee_id = EXCLUDED.employee_id,
+    hire_date = EXCLUDED.hire_date,
+    employment_status = EXCLUDED.employment_status,
+    is_active = EXCLUDED.is_active,
+    updated_at = now();
 
 -- Sync employees to hr_users where auth users exist
 INSERT INTO hr_users (
