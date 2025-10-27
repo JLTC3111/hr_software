@@ -26,3 +26,4 @@ export { default as DeleteEmployeeManager } from './deleteEmployeeManager.jsx';
 export { default as ControlPanel } from './controlPanel.jsx';
 export { default as UserEmployeeCard } from './userEmployeeCard.jsx';
 export { default as UserManagement } from './userManagement.jsx';
+export { default as WorkloadManagement } from './workloadManagement.jsx';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { TrendingUp, Users, Award, FileText, Clock, AlarmClock, ChevronLeft, ChevronRight, Menu, X, ChevronDown, Building2, Bell, Settings } from 'lucide-react'
+import { TrendingUp, Users, Award, FileText, Clock, AlarmClock, ChevronLeft, ChevronRight, Menu, X, ChevronDown, Building2, Bell, Settings, CheckSquare } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 
@@ -36,6 +36,7 @@ const Sidebar = () => {
             { path: '/employees/add', name: t('employees.addNew', 'Add New') },
           ]
         },
+        { path: '/workload', name: t('nav.workload', 'Workload Management'), icon: CheckSquare },
       ]
     },
     {

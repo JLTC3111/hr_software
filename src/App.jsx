@@ -6,7 +6,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
-import { AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager, ControlPanel } from './components/index.jsx';
+import { AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager, ControlPanel, WorkloadManagement } from './components/index.jsx';
 import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
 
@@ -341,6 +341,10 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
                     <Route 
                       path="/time-tracking" 
                       element={<TimeTracking employees={employees} />} 
+                    />
+                    <Route 
+                      path="/workload" 
+                      element={<WorkloadManagement employees={employees} />} 
                     />
                     <Route 
                       path="/control-panel" 
