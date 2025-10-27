@@ -13,6 +13,98 @@ const toEmployeeId = (id) => {
 };
 
 // ============================================
+// USER-EMPLOYEE LINKING
+// ============================================
+
+/**
+ * Link hr_user to employee by matching email addresses
+ * This function finds the employee record matching the user's email
+ * and updates the hr_users table with the employee_id
+ */
+export const linkUserToEmployee = async (userId, userEmail) => {
+  try {
+    console.log(`Linking user ${userId} (${userEmail}) to employee record...`);
+    
+    // Find employee with matching email
+    const { data: employee, error: employeeError } = await supabase
+      .from('employees')
+      .select('id, name, email, department, position')
+      .eq('email', userEmail)
+      .maybeSingle();
+
+    if (employeeError) {
+      console.error('Error finding employee by email:', employeeError);
+      return { success: false, error: employeeError.message };
+    }
+
+    if (!employee) {
+      console.log(`No employee found with email ${userEmail}`);
+      return { success: false, error: 'No employee record found with this email' };
+    }
+
+    // Update hr_users table with employee_id
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('hr_users')
+      .update({ employee_id: employee.id })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating hr_users with employee_id:', updateError);
+      return { success: false, error: updateError.message };
+    }
+
+    console.log(`✅ Successfully linked user ${userId} to employee ${employee.id}`);
+    return { 
+      success: true, 
+      data: {
+        employeeId: employee.id,
+        employeeName: employee.name,
+        department: employee.department,
+        position: employee.position
+      }
+    };
+  } catch (error) {
+    console.error('Error linking user to employee:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get employee data for a logged-in user
+ * Fetches the employee record linked to the user's account
+ */
+export const getEmployeeByUserId = async (userId) => {
+  try {
+    // First get the employee_id from hr_users
+    const { data: hrUser, error: hrUserError } = await supabase
+      .from('hr_users')
+      .select('employee_id, email')
+      .eq('id', userId)
+      .single();
+
+    if (hrUserError) throw hrUserError;
+
+    if (!hrUser.employee_id) {
+      // Try to auto-link if employee_id is missing
+      const linkResult = await linkUserToEmployee(userId, hrUser.email);
+      if (!linkResult.success) {
+        return { success: false, error: 'No employee record linked to this user' };
+      }
+      // Fetch the employee data after linking
+      return await getEmployeeById(linkResult.data.employeeId);
+    }
+
+    // Fetch employee data
+    return await getEmployeeById(hrUser.employee_id);
+  } catch (error) {
+    console.error('Error fetching employee by user ID:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// ============================================
 // EMPLOYEE CRUD OPERATIONS
 // ============================================
 
@@ -577,6 +669,10 @@ export const unsubscribeFromEmployees = (subscription) => {
 // ============================================
 
 export default {
+  // User-Employee Linking
+  linkUserToEmployee,
+  getEmployeeByUserId,
+  
   // CRUD
   getAllEmployees,
   getEmployeeById,

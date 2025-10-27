@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, hasPermission } from '../config/supabaseClient';
+import { linkUserToEmployee } from '../services/employeeService';
 
 const AuthContext = createContext();
 
@@ -33,50 +34,50 @@ export const AuthProvider = ({ children }) => {
   };
   
   useEffect(() => {
+    let mounted = true;
+    
     // Initialize session on mount
     const initializeAuth = async () => {
-
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
-        console.log('🧨 Removing stale Supabase session:', key);
-        localStorage.removeItem(key);
-      }
-    });
-
       try {
-        // Get the session
+        console.log('🔍 Initializing auth...');
+        
+        // Get the current session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
         
         if (sessionError) {
           console.error('Session error:', sessionError);
-          await clearAuthState();
-          return;
-        }
-
-        if (!session) {
-          console.log('✅ No session found on mount - setting loading = false');
           setLoading(false);
           return;
         }
 
-        // Verify the session is valid by calling getUser()
+        if (!session) {
+          console.log('✅ No session found on mount');
+          setLoading(false);
+          return;
+        }
+
+        // Verify the session is valid
         const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (!mounted) return;
         
         if (userError || !user) {
           console.error('Invalid or expired session:', userError);
-          // Session is invalid - sign out and clear everything
-          await clearAuthState();
+          await supabase.auth.signOut();
+          setLoading(false);
           return;
         }
 
         // Session is valid - fetch user profile
-        console.log('✅ Valid session found, fetching profile...');
+        console.log('✅ Valid session found, loading profile...');
         setSession(session);
         await fetchUserProfile(user.id);
         
       } catch (error) {
         console.error('Auth initialization error:', error);
-        await clearAuthState();
+        if (mounted) setLoading(false);
       }
     };
 
@@ -86,56 +87,44 @@ export const AuthProvider = ({ children }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session ? 'with session' : 'no session');
+      if (!mounted) return;
+      
+      console.log('🔔 Auth event:', event);
 
       if (event === 'SIGNED_IN' && session) {
-        console.log('🔐 SIGNED_IN event triggered, waiting for Supabase to hydrate...');
-        
-        setLoading(true);
+        console.log('🔐 User signed in');
         setSession(session);
-      
-        // Wait until Supabase confirms the session is accessible
-        const confirmSession = async () => {
-          for (let i = 0; i < 5; i++) {
-            const { data } = await supabase.auth.getSession();
-            if (data.session?.user) {
-              console.log('✅ Supabase session hydrated.');
-              return data.session.user;
-            }
-            console.log('⏳ Waiting for Supabase session to hydrate...');
-            await new Promise((r) => setTimeout(r, 300)); // wait 300ms
-          }
-          throw new Error('Supabase session not hydrated in time');
-        };
-      
+        setLoading(true);
+        
         try {
-          const user = await confirmSession();
-          await fetchUserProfile(user.id);
+          // Fetch profile immediately
+          await fetchUserProfile(session.user.id);
           setIsAuthenticated(true);
-          console.log('✅ SIGNED_IN flow complete, setting loading = false');
         } catch (error) {
-          console.error('❌ Error completing SIGNED_IN flow:', error);
-          await clearAuthState();
+          console.error('Error loading profile after sign in:', error);
         } finally {
-          setLoading(false);
+          if (mounted) setLoading(false);
         }
       } else if (event === 'SIGNED_OUT') {
-        console.log('🚪 SIGNED_OUT event triggered');
-        await clearAuthState();
-      } else if (event === 'TOKEN_REFRESHED') {
-        console.log('🔄 TOKEN_REFRESHED event triggered');
-        if (session) {
-          setSession(session);
-        }
-      } else if (event === 'USER_UPDATED') {
-        console.log('👤 USER_UPDATED event triggered');
-        if (session?.user) {
-          await fetchUserProfile(session.user.id);
-        }
+        console.log('🚪 User signed out');
+        setUser(null);
+        setIsAuthenticated(false);
+        setSession(null);
+        setLoading(false);
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        console.log('🔄 Token refreshed');
+        setSession(session);
+        // Don't reload profile, just update session
+      } else if (event === 'USER_UPDATED' && session) {
+        console.log('👤 User updated');
+        await fetchUserProfile(session.user.id);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Fetch user profile with role from database
@@ -146,19 +135,25 @@ export const AuthProvider = ({ children }) => {
       console.log('Fetching user profile for ID:', userId);
       
       // Fetch user from hr_users table
+      // Try with manager relationship first, fallback if constraint doesn't exist
       let { data, error } = await supabase
         .from('hr_users')
-        .select(`
-          *,
-          manager:hr_users!manager_id(
-            id,
-            full_name,
-            email,
-            position
-          )
-        `)
+        .select('*')
         .eq('id', userId)
         .single();
+      
+      // If successful and has manager_id, try to fetch manager separately
+      if (data && data.manager_id && !error) {
+        const { data: managerData } = await supabase
+          .from('hr_users')
+          .select('id, full_name, email, position')
+          .eq('id', data.manager_id)
+          .maybeSingle();
+        
+        if (managerData) {
+          data.manager = managerData;
+        }
+      }
 
       if (error) {
         console.error('Database error:', error);
@@ -173,6 +168,19 @@ export const AuthProvider = ({ children }) => {
 
       if (data && data.is_active) {
         console.log('User profile found:', data);
+        
+        // Auto-link user to employee if employee_id is missing
+        let employeeId = data.employee_id;
+        if (!employeeId && data.email) {
+          console.log('🔗 No employee_id found, attempting to auto-link...');
+          const linkResult = await linkUserToEmployee(userId, data.email);
+          if (linkResult.success) {
+            employeeId = linkResult.data.employeeId;
+            console.log(`✅ Auto-linked to employee ${employeeId}`);
+          } else {
+            console.log('⚠️ Could not auto-link user to employee:', linkResult.error);
+          }
+        }
         
         // Update last_login timestamp
         await supabase
@@ -191,7 +199,7 @@ export const AuthProvider = ({ children }) => {
           avatar_url: data.avatar_url,
           department: data.department,
           position: data.position,
-          employeeId: data.employee_id,
+          employeeId: employeeId,
           managerId: data.manager_id,
           manager: data.manager,
           hireDate: data.hire_date,
@@ -230,6 +238,35 @@ export const AuthProvider = ({ children }) => {
       const firstName = userMetadata.first_name || fullName?.split(' ')[0];
       const lastName = userMetadata.last_name || fullName?.split(' ').slice(1).join(' ');
       
+      // CRITICAL: Check if there's an existing employee with this email
+      const { data: existingEmployee } = await supabase
+        .from('employees')
+        .select('id, name, position, department, email')
+        .eq('email', authData.user.email)
+        .maybeSingle();
+      
+      let employeeId = null;
+      let employeeName = null;
+      let position = null;
+      let department = null;
+      
+      if (existingEmployee) {
+        console.log(`Found existing employee record for ${authData.user.email}:`, existingEmployee);
+        employeeId = existingEmployee.id;
+        employeeName = existingEmployee.name;
+        position = existingEmployee.position;
+        department = existingEmployee.department;
+        
+        // Extract first and last name from employee name if not provided
+        if (!firstName && employeeName) {
+          const nameParts = employeeName.split(' ');
+          firstName = nameParts[0];
+          lastName = nameParts.slice(1).join(' ');
+        }
+      } else {
+        console.log(`No existing employee found for ${authData.user.email}, creating standalone user`);
+      }
+      
       const { error } = await supabase
         .from('hr_users')
         .insert([
@@ -238,16 +275,21 @@ export const AuthProvider = ({ children }) => {
             email: authData.user.email,
             first_name: firstName || authData.user.email.split('@')[0],
             last_name: lastName || null,
+            full_name: employeeName || fullName || `${firstName || ''} ${lastName || ''}`.trim(),
             avatar_url: userMetadata.avatar_url || null,
-            role: 'employee', // Default role for new users
+            role: position === 'general_manager' ? 'admin' : 
+                  position === 'hr_specialist' ? 'hr_manager' : 'employee',
             employment_status: 'active',
+            employee_id: employeeId, // Link to existing employee if found
+            position: position,
+            department: department,
             created_at: new Date().toISOString()
           }
         ]);
 
       if (error) throw error;
       
-      console.log('User profile created successfully');
+      console.log(`User profile created successfully${employeeId ? ' and linked to employee ' + employeeId : ''}`);
       // Fetch the newly created profile
       await fetchUserProfile(userId);
     } catch (error) {
@@ -305,21 +347,30 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-
-    Object.keys(localStorage, sessionStorage).forEach((key) => {
-      if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
-        console.log('🧨 Clearing stale Supabase session:', key);
-        localStorage.removeItem(key);
-        sessionStorage.removeItem(key);
-      }
-    });
-
     try {
-      console.log('Logging out...');
-      await clearAuthState();
+      console.log('🚪 Logging out...');
+      
+      // Sign out from Supabase (this will trigger SIGNED_OUT event)
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Logout error:', error);
+      }
+      
+      // Clear state immediately
+      setUser(null);
+      setIsAuthenticated(false);
+      setSession(null);
+      setLoading(false);
+      
+      console.log('✅ Logged out successfully');
     } catch (error) {
       console.error('Logout error:', error);
-      await clearAuthState();
+      // Force clear state even on error
+      setUser(null);
+      setIsAuthenticated(false);
+      setSession(null);
+      setLoading(false);
     }
   };
 
@@ -337,6 +388,7 @@ export const AuthProvider = ({ children }) => {
     login,
     loginWithGithub,
     logout,
+    signOut: logout, // Alias for backward compatibility
     checkPermission
   };
 

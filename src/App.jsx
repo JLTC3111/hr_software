@@ -29,7 +29,7 @@ const Employees = [
     id: 2,
     name: ' Đỗ Bảo Long',
     position: 'senior_developer',
-    department: 'internal_ affairs',
+    department: 'technology',
     email: 'dev@icue.vn',
     dob: '2000-01-01',
     address: 'Hà Nội',
