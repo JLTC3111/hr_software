@@ -141,7 +141,7 @@ const AdminTimeEntry = () => {
   return (
     <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
       <div className="flex items-center space-x-3 mb-6">
-        <UserPlus className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+        <UserPlus className={`w-6 h-6 ${isDarkMode ? 'text-white' : 'text-black'}`} />
         <h3 className={`text-xl font-bold ${text.primary}`}>
           {t('adminTimeEntry.title', 'Admin Time Entry')}
         </h3>

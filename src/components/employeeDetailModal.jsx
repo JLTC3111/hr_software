@@ -291,17 +291,45 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
           <div className="flex justify-center space-x-3">
             <a
               href={`mailto:${employee.email}`}
-              className="p-3 bg-blue-50 dark:bg-gray-700 text-blue-600 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-gray-600 transition-colors"
+              style={{
+                padding: '12px',
+                backgroundColor: isDarkMode ? '#transparent' : '#eff6ff',
+                color: isDarkMode ? '#93c5fd' : '#2563eb',
+                borderRadius: '8px',
+                transition: 'all 0.3s',
+                display: 'inline-flex',
+                cursor: 'pointer'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = isDarkMode ? '#4b5563' : '#dbeafe';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = isDarkMode ? 'transparent' : '#eff6ff';
+              }}
               title={t('employees.sendEmail', 'Send Email')}
             >
-              <Mail className="w-5 h-5" />
+              <Mail className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
             </a>
             <a
               href={`tel:${employee.phone}`}
-              className="p-3 bg-blue-50 dark:bg-gray-700 text-blue-600 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-gray-600 transition-colors"
+              style={{
+                padding: '12px',
+                backgroundColor: isDarkMode ? '#transparent' : '#eff6ff',
+                color: isDarkMode ? '#93c5fd' : '#2563eb',
+                borderRadius: '8px',
+                transition: 'all 0.3s',
+                display: 'inline-flex',
+                cursor: 'pointer'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = isDarkMode ? '#4b5563' : '#dbeafe';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = isDarkMode ? 'transparent' : '#eff6ff';
+              }}
               title={t('employees.call', 'Call')}
             >
-              <Phone className="w-5 h-5" />
+              <Phone className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
             </a>
             <button
               onClick={(e) => {
@@ -311,10 +339,24 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                   onClose();
                 }
               }}
-              className="p-3 bg-blue-50 dark:bg-gray-700 text-blue-600 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-gray-600 transition-colors"
+              style={{
+                padding: '12px',
+                backgroundColor: isDarkMode ? '#transparent' : '#eff6ff',
+                color: isDarkMode ? '#93c5fd' : '#2563eb',
+                borderRadius: '8px',
+                transition: 'all 0.3s',
+                display: 'inline-flex',
+                cursor: 'pointer'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = isDarkMode ? '#4b5563' : '#dbeafe';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = isDarkMode ? 'transparent' : '#eff6ff';
+              }}
               title={t('employees.edit', 'Edit')}
             >
-              <Edit2 className="w-5 h-5" />
+              <Edit2 className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
             </button>
           </div>
         </div>
@@ -322,7 +364,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
         {/* Quick Stats Card */}
         <div className={`mx-6 -mt-6 mb-4 ${bg.secondary} border ${border.primary} rounded-lg p-4 shadow-lg`}>
           <div className="flex items-center space-x-2 mb-3">
-            <Briefcase className="w-5 h-5 text-blue-600 dark:text-white" />
+            <Briefcase className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gray-600'}`} />
             <h3 className={`font-semibold ${text.primary}`}>
               {t('employees.quickStats', 'Quick Stats')}
             </h3>
@@ -387,7 +429,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                 : `${text.secondary} hover:${text.primary}`
             }`}
           >
-            <FileText className="w-4 h-4" />
+            <FileText className={`w-4 h-4 ${isDarkMode ? 'text-white' : 'text-gray-600'}`} />
             <span>{t('employeeDetailModal.documents', 'Documents')}</span>
           </button>
         </div>
@@ -421,11 +463,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
           {activeTab === 'documents' && (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  <FileText className="w-5 h-5 text-blue-600" />
-                  <h3 className={`font-semibold ${text.primary}`}>
-                    {t('employeeDetailModal.documentsTitle', 'Documents')}
-                  </h3>
+                <div className="flex items-center space-x-3">
                 </div>
                 <div className="flex space-x-2">
                   {pdfUrl && (
@@ -533,7 +571,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                       // PDF.js Viewer
                       pdfError ? (
                         <div className="flex flex-col items-center justify-center h-64 text-red-500">
-                          <FileText className="w-16 h-16 mb-4" />
+                          <FileText className={`w-16 h-16 mb-4 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
                           <p className={`text-center ${text.secondary} font-semibold`}>{pdfError}</p>
                           <button
                             onClick={() => setUseIframe(true)}
@@ -588,7 +626,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                    <FileText className="w-16 h-16 mb-4" />
+                    <FileText className={`w-16 h-16 mb-4 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
                     <p className={`text-center ${text.secondary} font-semibold`}>
                       {t('employees.noPdfDocument', 'Chưa có tài liệu')}
                     </p>
@@ -612,7 +650,7 @@ const InfoItem = ({ icon: Icon, label, value }) => {
   
   return (
     <div className={`flex items-start space-x-3 p-3 rounded-lg border ${border.primary} hover:bg-transparent dark:hover:bg-transparent transition-colors`}>
-      <Icon className={`w-5 h-5 mt-0.5 ${isDarkMode ? text.primary : 'text-blue-600'}`} />
+      <Icon className={`w-5 h-5 mt-0.5 ${isDarkMode ? text.primary : 'text-gray-600'}`} />
       <div className="flex-1">
         <p className={`text-sm ${text.secondary} mb-1`}>{label}</p>
         <p className={`font-medium ${text.primary}`}>{value}</p>
