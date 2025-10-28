@@ -422,14 +422,6 @@ export const getEmployeesByStatus = async (status) => {
   }
 };
 
-// ============================================
-// PHOTO/FILE MANAGEMENT
-// ============================================
-
-/**
- * Upload employee photo to Supabase Storage
- * Supports both File objects and base64 strings
- */
 export const uploadEmployeePhoto = async (fileData, employeeId) => {
   try {
     let file = fileData;
@@ -534,13 +526,184 @@ export const deleteEmployeePhoto = async (photoUrl) => {
   }
 };
 
-// ============================================
-// STATISTICS AND ANALYTICS
-// ============================================
+export const uploadEmployeePdf = async (file, employeeId, onProgress = null) => {
+  try {
+    console.log('📁 Starting PDF upload:', file.name, 'Type:', file.type, 'Size:', file.size);
+
+    // Validate file type
+    if (file.type !== 'application/pdf') {
+      throw new Error('Invalid file type. Only PDF files are allowed.');
+    }
+
+    // Validate file size (50MB max)
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (file.size > maxSize) {
+      throw new Error('File size exceeds 50MB limit.');
+    }
+
+    // Generate unique file path
+    const timestamp = Date.now();
+    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const filePath = `${toEmployeeId(employeeId)}_${timestamp}.pdf`;
+
+    console.log('📋 File path:', filePath);
+
+    // Delete old PDF if exists
+    const { data: employeeData } = await supabase
+      .from('employees')
+      .select('pdf_document_url')
+      .eq('id', toEmployeeId(employeeId))
+      .single();
+
+    if (employeeData?.pdf_document_url) {
+      console.log('🗑️ Deleting old PDF:', employeeData.pdf_document_url);
+      await supabase.storage
+        .from('employee-documents')
+        .remove([employeeData.pdf_document_url]);
+    }
+
+    // ✅ Use signed upload URL to avoid multipart form-data wrapping
+    console.log('🔐 Getting signed upload URL...');
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      .from('employee-documents')
+      .createSignedUploadUrl(filePath);
+
+    if (signedUrlError) {
+      console.error('❌ Signed URL error:', signedUrlError);
+      throw signedUrlError;
+    }
+
+    console.log('✅ Got signed URL, uploading file directly...');
+
+    // Upload file using XMLHttpRequest to PUT raw binary to signed URL
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', signedUrlData.signedUrl, true);
+      xhr.setRequestHeader('Content-Type', 'application/pdf');
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && onProgress) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          onProgress(percent);
+          console.log(`📈 Upload progress: ${percent}%`);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          console.log('✅ File uploaded successfully via signed URL');
+          resolve();
+        } else {
+          console.error('❌ Upload failed:', xhr.status, xhr.responseText);
+          reject(new Error(`Upload failed with status ${xhr.status}`));
+        }
+      };
+
+      xhr.onerror = () => {
+        console.error('❌ Network error during upload');
+        reject(new Error('Network error during upload'));
+      };
+
+      // Send raw file - NO multipart wrapping!
+      xhr.send(file);
+    });
+
+    console.log('✅ Upload complete, updating database...');
+
+    // Update employee record with file path
+    const { error: updateError } = await supabase
+      .from('employees')
+      .update({ pdf_document_url: filePath })
+      .eq('id', toEmployeeId(employeeId));
+
+    if (updateError) {
+      console.error('❌ Database update error:', updateError);
+      throw updateError;
+    }
+
+    console.log('✅ Database updated with path:', filePath);
+
+    // Generate public URL
+    const { data: publicUrlData } = supabase.storage
+      .from('employee-documents')
+      .getPublicUrl(filePath);
+
+    console.log('✅ PDF upload complete! URL:', publicUrlData.publicUrl);
+
+    return {
+      success: true,
+      path: filePath,
+      url: publicUrlData.publicUrl
+    };
+  } catch (error) {
+    console.error('❌ Error uploading PDF:', error);
+    return { 
+      success: false, 
+      error: error.message || 'Failed to upload PDF document'
+    };
+  }
+};
 
 /**
- * Get employee statistics
+ * Delete employee PDF document from Supabase Storage
  */
+export const deleteEmployeePdf = async (pdfPath) => {
+  try {
+    const { error } = await supabase.storage
+      .from('employee-documents')
+      .remove([pdfPath]);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting employee PDF:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get employee PDF URL (public or signed)
+ */
+export const getEmployeePdfUrl = async (pdfPath) => {
+  try {
+    if (!pdfPath) {
+      return { success: false, error: 'No PDF path provided' };
+    }
+
+    // Try public URL first
+    const { data: publicData } = supabase.storage
+      .from('employee-documents')
+      .getPublicUrl(pdfPath);
+
+    // Test if URL is accessible
+    const testResponse = await fetch(publicData.publicUrl, { method: 'HEAD' });
+    
+    if (testResponse.ok) {
+      return {
+        success: true,
+        url: publicData.publicUrl,
+        type: 'public'
+      };
+    }
+
+    // Fallback to signed URL
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from('employee-documents')
+      .createSignedUrl(pdfPath, 31536000);
+
+    if (signedError) throw signedError;
+
+    return {
+      success: true,
+      url: signedData.signedUrl,
+      type: 'signed'
+    };
+  } catch (error) {
+    console.error('Error getting PDF URL:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 export const getEmployeeStats = async () => {
   try {
     const [totalResult, activeResult, onLeaveResult, inactiveResult] = await Promise.all([
@@ -590,9 +753,6 @@ export const getDepartmentDistribution = async () => {
   }
 };
 
-/**
- * Get top performers
- */
 export const getTopPerformers = async (limit = 5) => {
   try {
     const { data, error } = await supabase
@@ -610,13 +770,6 @@ export const getTopPerformers = async (limit = 5) => {
   }
 };
 
-// ============================================
-// BULK OPERATIONS
-// ============================================
-
-/**
- * Bulk import employees
- */
 export const bulkImportEmployees = async (employeesArray) => {
   try {
     const formattedData = employeesArray.map(emp => ({
@@ -646,9 +799,6 @@ export const bulkImportEmployees = async (employeesArray) => {
   }
 };
 
-/**
- * Bulk update employee status
- */
 export const bulkUpdateStatus = async (employeeIds, newStatus) => {
   try {
     const { data, error } = await supabase
@@ -665,13 +815,6 @@ export const bulkUpdateStatus = async (employeeIds, newStatus) => {
   }
 };
 
-// ============================================
-// REAL-TIME SUBSCRIPTIONS
-// ============================================
-
-/**
- * Subscribe to employee changes
- */
 export const subscribeToEmployees = (callback) => {
   const subscription = supabase
     .channel('employees-changes')
@@ -691,9 +834,6 @@ export const subscribeToEmployees = (callback) => {
   return subscription;
 };
 
-/**
- * Unsubscribe from employee changes
- */
 export const unsubscribeFromEmployees = (subscription) => {
   if (subscription) {
     supabase.removeChannel(subscription);
@@ -724,6 +864,11 @@ export default {
   // Photo Management
   uploadEmployeePhoto,
   deleteEmployeePhoto,
+  
+  // PDF Document Management
+  uploadEmployeePdf,
+  deleteEmployeePdf,
+  getEmployeePdfUrl,
   
   // Statistics
   getEmployeeStats,

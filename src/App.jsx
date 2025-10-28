@@ -6,6 +6,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
+import { UploadProvider } from './contexts/UploadContext'
 import { AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager, ControlPanel, WorkloadManagement } from './components/index.jsx';
 import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
@@ -243,9 +244,10 @@ const HRManagementApp = () => {
     <AuthProvider>
       <LanguageProvider>
         <ThemeProvider>
-          <AppContent 
-            employees={employees}
-            applications={applications}
+          <UploadProvider>
+            <AppContent 
+              employees={employees}
+              applications={applications}
             selectedEmployee={selectedEmployee}
             isEditMode={isEditMode}
             onViewEmployee={handleViewEmployee}
@@ -260,6 +262,7 @@ const HRManagementApp = () => {
             loading={loading}
             error={error}
           />
+          </UploadProvider>
         </ThemeProvider>
       </LanguageProvider>
     </AuthProvider>

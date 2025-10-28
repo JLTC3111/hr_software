@@ -77,7 +77,20 @@ export const UserRoles = {
 
 // Access level permissions for HR management system
 export const Permissions = {
-  // HR Admin - Full system access
+  // HR Admin - Full system access (also supports 'admin' alias)
+  'admin': {
+    canManageUsers: true,
+    canManageEmployees: true,
+    canViewReports: true,
+    canManageRecruitment: true,
+    canManagePerformance: true,
+    canManageTimeTracking: true,
+    canExportData: true,
+    canViewSalaries: true,
+    canManageDepartments: true,
+    canManageRoles: true,
+    canViewAuditLogs: true
+  },
   [UserRoles.HR_ADMIN]: {
     canManageUsers: true,
     canManageEmployees: true,
@@ -149,5 +162,7 @@ export const Permissions = {
 
 // Helper function to check user permissions
 export const hasPermission = (userRole, permission) => {
-  return Permissions[userRole]?.[permission] || false;
+  // Support both 'admin' and 'hr_admin' for admin role
+  const normalizedRole = userRole === 'admin' ? 'hr_admin' : userRole;
+  return Permissions[normalizedRole]?.[permission] || Permissions[userRole]?.[permission] || false;
 };

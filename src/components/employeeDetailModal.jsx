@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Phone, Mail, MapPin, Award, Cake, Network, Calendar, DollarSign, User, FileText, Download, Upload, Loader, Edit2, Briefcase, Clock } from 'lucide-react';
+import { X, Phone, Mail, MapPin, Award, Cake, Network, Calendar, DollarSign, User, FileText, Download, Upload, Loader, Edit2, Briefcase } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { supabase } from '../config/supabaseClient';
-import { Document, Page, pdfjs } from "react-pdf";
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
+import { useUpload } from '../contexts/UploadContext';
+import { getEmployeePdfUrl } from '../services/employeeService';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 
 // Set PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -13,8 +14,8 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/$
 const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
   const { bg, text, border, isDarkMode } = useTheme();
   const { t } = useLanguage();
+  const { startPdfUpload, getUploadStatus } = useUpload();
   const [activeTab, setActiveTab] = useState('info'); // 'info', 'contact', 'documents'
-  const [uploading, setUploading] = useState(false);
   const [pdfPath, setPdfPath] = useState(employee?.pdf_document_url || null);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [numPages, setNumPages] = useState(null);
@@ -25,6 +26,9 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
   const [useIframe, setUseIframe] = useState(true); // Use iframe by default
   const modalRef = useRef(null);
   const resizeRef = useRef(null);
+  
+  // Get upload status from context
+  const uploadStatus = getUploadStatus(employee?.id);
 
   if (!employee) return null;
 
@@ -36,53 +40,37 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
       console.log('🔍 Generating PDF URL for path:', pdfPath);
 
       try {
-        // Try public URL first
-        const { data: publicData } = supabase.storage
-          .from('employee-documents')
-          .getPublicUrl(pdfPath);
-
-        if (publicData?.publicUrl) {
-          console.log('✅ Public URL generated:', publicData.publicUrl);
-          
-          // Test if URL is accessible
-          try {
-            const testResponse = await fetch(publicData.publicUrl, { method: 'HEAD' });
-            console.log('📡 URL test response:', testResponse.status, testResponse.headers.get('content-type'));
-            
-            if (testResponse.ok) {
-              setPdfUrl(publicData.publicUrl);
-              console.log('✅ Public URL is accessible');
-              return;
-            }
-          } catch (fetchError) {
-            console.warn('⚠️ Public URL not accessible, trying signed URL...', fetchError);
-          }
-        }
-
-        // Fallback to signed URL if public fails
-        console.log('🔄 Falling back to signed URL...');
-        const { data: signedData, error: signedError } = await supabase.storage
-          .from('employee-documents')
-          .createSignedUrl(pdfPath, 31536000); // 1 year
-
-        if (signedError) {
-          console.error('❌ Signed URL error:', signedError);
-          setPdfError('Failed to generate PDF URL. File may not exist.');
-          return;
-        }
-
-        if (signedData?.signedUrl) {
-          console.log('✅ Signed URL generated:', signedData.signedUrl);
-          setPdfUrl(signedData.signedUrl);
+        // Use service function to get URL
+        const result = await getEmployeePdfUrl(pdfPath);
+        
+        if (result.success) {
+          console.log('✅ PDF URL generated:', result.url, 'Type:', result.type);
+          setPdfUrl(result.url);
+          setPdfError(null);
+        } else {
+          console.error('❌ Failed to get PDF URL:', result.error);
+          setPdfError(result.error);
         }
       } catch (error) {
         console.error('❌ Error generating PDF URL:', error);
-        setPdfError(`Error loading PDF: ${error.message}`);
+        setPdfError('Failed to load PDF document');
       }
     };
 
     generatePdfUrl();
-  }, [pdfPath, employee?.id]);
+  }, [pdfPath]);
+  
+  // Update PDF path when upload completes
+  useEffect(() => {
+    if (uploadStatus?.status === 'completed' && uploadStatus.result) {
+      console.log('✅ Upload completed, updating PDF view');
+      setPdfPath(uploadStatus.result.path);
+      setPdfUrl(uploadStatus.result.url);
+      setPageNumber(1);
+      setNumPages(null);
+      setPdfError(null);
+    }
+  }, [uploadStatus]);
 
   // ESC key handler
   useEffect(() => {
@@ -99,6 +87,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (!isResizing) return;
+      e.preventDefault();
       e.stopPropagation();
       const newWidth = e.clientX - modalRef.current.getBoundingClientRect().left;
       if (newWidth >= 600 && newWidth <= 1400) {
@@ -108,23 +97,27 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
 
     const handleMouseUp = (e) => {
       if (isResizing) {
+        e.preventDefault();
         e.stopPropagation();
-        setIsResizing(false);
+        // Small delay to prevent backdrop click from triggering
+        setTimeout(() => {
+          setIsResizing(false);
+        }, 50);
       }
     };
 
     if (isResizing) {
-      window.addEventListener('mousemove', handleMouseMove, true);
-      window.addEventListener('mouseup', handleMouseUp, true);
+      window.addEventListener('mousemove', handleMouseMove, { capture: true, passive: false });
+      window.addEventListener('mouseup', handleMouseUp, { capture: true, passive: false });
     }
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove, true);
-      window.removeEventListener('mouseup', handleMouseUp, true);
+      window.removeEventListener('mousemove', handleMouseMove, { capture: true });
+      window.removeEventListener('mouseup', handleMouseUp, { capture: true });
     };
   }, [isResizing]);
 
-  const handlePdfUpload = async (e) => {
+  const handlePdfUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -135,99 +128,21 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
       return;
     }
 
-    setUploading(true);
-    try {
-      const fileName = `${employee.id}_${Date.now()}.pdf`;
-      const filePath = fileName;
-
-      // Delete old file if exists
-      if (pdfPath) {
-        console.log('🗑️ Deleting old file:', pdfPath);
-        await supabase.storage
-          .from('employee-documents')
-          .remove([pdfPath]);
+    // Start background upload using context
+    // This will continue even if modal closes!
+    startPdfUpload(file, employee.id, (result) => {
+      if (result.success) {
+        console.log('🎉 Upload completed successfully!');
+        if (onUpdate) onUpdate();
+        alert(t('success.pdfUploaded', 'PDF document uploaded successfully!'));
+      } else {
+        console.error('❌ Upload failed:', result.error);
+        alert(t('errors.uploadFailed', 'Failed to upload PDF: ') + result.error);
       }
+    });
 
-      // Read file as ArrayBuffer to ensure clean binary upload
-      console.log('📖 Reading file as ArrayBuffer...');
-      const arrayBuffer = await file.arrayBuffer();
-      const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
-      
-      console.log('📤 Uploading blob:', blob.size, 'bytes, type:', blob.type);
-
-      // Upload the blob with proper content type
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('employee-documents')
-        .upload(filePath, blob, {
-          contentType: 'application/pdf',
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        throw uploadError;
-      }
-
-      console.log('✅ Upload successful:', uploadData);
-
-      // Update employee record with just the file path
-      const { error: updateError } = await supabase
-        .from('employees')
-        .update({ pdf_document_url: filePath })
-        .eq('id', employee.id);
-
-      if (updateError) throw updateError;
-
-      console.log('✅ Database updated with path:', filePath);
-
-      // Try public URL first
-      const { data: { publicUrl } } = supabase.storage
-        .from('employee-documents')
-        .getPublicUrl(filePath);
-
-      console.log('📎 Public URL:', publicUrl);
-
-      // Verify URL works
-      try {
-        const testResponse = await fetch(publicUrl, { method: 'HEAD' });
-        console.log('✅ URL accessible, Content-Type:', testResponse.headers.get('content-type'));
-        
-        if (testResponse.ok) {
-          setPdfPath(filePath);
-          setPdfUrl(publicUrl);
-          setPageNumber(1);
-          setNumPages(null);
-          setPdfError(null);
-        } else {
-          throw new Error('Public URL not accessible');
-        }
-      } catch (fetchError) {
-        console.warn('⚠️ Public URL failed, using signed URL...', fetchError);
-        
-        // Fallback to signed URL
-        const { data: signedData, error: signedError } = await supabase.storage
-          .from('employee-documents')
-          .createSignedUrl(filePath, 31536000);
-
-        if (signedError) throw signedError;
-        
-        console.log('✅ Using signed URL instead');
-        setPdfPath(filePath);
-        setPdfUrl(signedData.signedUrl);
-        setPageNumber(1);
-        setNumPages(null);
-        setPdfError(null);
-      }
-
-      if (onUpdate) onUpdate();
-      alert(t('success.pdfUploaded', 'PDF document uploaded successfully!'));
-    } catch (error) {
-      console.error('Error uploading PDF:', error);
-      alert(t('errors.uploadFailed', `Failed to upload PDF document: ${error.message}`));
-    } finally {
-      setUploading(false);
-    }
+    // Reset file input
+    e.target.value = '';
   };
 
   const handlePdfDownload = () => {
@@ -257,10 +172,25 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
     if (!employee.start_date && !employee.startDate) return 'N/A';
     const startDate = new Date(employee.start_date || employee.startDate);
     const now = new Date();
-    const years = now.getFullYear() - startDate.getFullYear();
-    const months = now.getMonth() - startDate.getMonth();
+    
+    let years = now.getFullYear() - startDate.getFullYear();
+    let months = now.getMonth() - startDate.getMonth();
+    
+    // Adjust for negative months
+    if (months < 0) {
+      years -= 1;
+      months += 12;
+    }
+    
     const totalMonths = years * 12 + months;
-    return totalMonths >= 12 ? `${years}.${months} năm` : `${totalMonths} tháng`;
+    
+    if (totalMonths >= 12) {
+      if (months === 0) {
+        return `${years} năm`;
+      }
+      return `${years} năm ${months} tháng`;
+    }
+    return `${totalMonths} tháng`;
   };
 
   return (
@@ -475,28 +405,44 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                       <span>{t('common.download', 'Tải xuống')}</span>
                     </button>
                   )}
-                  <label className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2 cursor-pointer text-sm">
-                    {uploading ? (
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={handlePdfUpload}
+                    disabled={uploadStatus?.status === 'uploading'}
+                    className="hidden"
+                    id="pdf-upload"
+                  />
+                  <label
+                    htmlFor="pdf-upload"
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${border.primary} cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                      uploadStatus?.status === 'uploading' ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    {uploadStatus?.status === 'uploading' ? (
                       <>
-                        <Loader className="w-4 h-4 animate-spin" />
-                        <span>{t('common.uploading', 'Đang tải...')}</span>
+                        <Loader className="w-5 h-5 animate-spin" />
+                        <span>{t('uploading', 'Uploading...')}</span>
                       </>
                     ) : (
                       <>
-                        <Upload className="w-4 h-4" />
-                        <span>{t('common.upload', 'Tải lên')}</span>
+                        <Upload className="w-5 h-5" />
+                        <span>{t('uploadPdf', 'Upload PDF')}</span>
                       </>
                     )}
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      onChange={handlePdfUpload}
-                      className="hidden"
-                      disabled={uploading}
-                    />
                   </label>
                 </div>
               </div>
+              
+              {/* Background Upload Indicator */}
+              {uploadStatus?.status === 'uploading' && (
+                <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
+                  <div className="flex items-center space-x-2 text-sm text-blue-700 dark:text-blue-300">
+                    <Loader className="w-4 h-4 animate-spin" />
+                    <span>⚡ Upload continues in background - you can close this window safely</span>
+                  </div>
+                </div>
+              )}
 
               {/* PDF Viewer Mode Toggle */}
               <div className="flex justify-end mb-2 space-x-2">
