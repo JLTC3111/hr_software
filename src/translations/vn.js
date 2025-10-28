@@ -518,16 +518,16 @@ export default {
 
   // Employee Department (for display in cards)
   employeeDepartment: {
-    legal_compliance: 'Tuân thủ pháp luật',
+    legal_compliance: 'Pháp Lý',
     internal_affairs: 'Quản Lý Nội Bộ',
-    human_resources: 'Nhân sự',
-    office_unit: 'Đơn vị văn phòng',
-    board_of_directors: 'Hội đồng quản trị',
-    finance: 'Tài chính',
-    engineering: 'Kỹ thuật',
-    sales: 'Bán hàng',
-    marketing: 'Tiếp thị',
-    design: 'Thiết kế',
+    human_resources: 'Nhân Sự',
+    office_unit: 'Đơn Vị Văn Phòng',
+    board_of_directors: 'Hội Đồng Quản Trị',
+    finance: 'Tài Chính',
+    engineering: 'Kỹ Thuật',
+    sales: 'Bán Hàng',
+    marketing: 'Tiếp Thị',
+    design: 'Thiết Kế',
   },
 
   // Employee Status

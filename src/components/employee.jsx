@@ -118,6 +118,7 @@ const Employees = ({ employees, onViewEmployee, onEditEmployee, onDeleteEmployee
           employee={selectedEmployee}
           onClose={handleCloseDetailModal}
           onUpdate={handleDetailModalUpdate}
+          onEdit={onEditEmployee}
         />
       )}
     </div>

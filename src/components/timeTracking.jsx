@@ -740,7 +740,7 @@ const TimeTracking = ({ employees }) => {
         <div className="flex flex-wrap gap-3">
           <button 
             onClick={() => navigate('/time-clock')}
-            className="cursor-pointer px-4 py-2 rounded-lg border transition-colors flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="cursor-pointer px-4 py-2 rounded-lg border transition-colors flex items-center space-x-2 hover:bg-gray-300 dark:hover:bg-white dark:hover:text-black"
             style={{
               backgroundColor: isDarkMode ? 'transparent' : '#ffffff',
               borderColor: isDarkMode ? '#ffffff' : '#000000',
@@ -752,7 +752,7 @@ const TimeTracking = ({ employees }) => {
           </button>
           <button 
             onClick={() => setShowLeaveModal(true)}
-            className="cursor-pointer px-4 py-2 rounded-lg border transition-colors flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="cursor-pointer px-4 py-2 rounded-lg border transition-colors flex items-center space-x-2 hover:bg-gray-300 dark:hover:bg-white dark:hover:text-black"
             style={{
               backgroundColor: isDarkMode ? 'transparent' : '#ffffff',
               borderColor: isDarkMode ? '#ffffff' : '#000000',
@@ -764,7 +764,7 @@ const TimeTracking = ({ employees }) => {
           </button>
           <button 
             onClick={() => setShowOvertimeModal(true)}
-            className="cursor-pointer px-4 py-2 rounded-lg border transition-colors flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="cursor-pointer px-4 py-2 rounded-lg border transition-colors flex items-center space-x-2 hover:bg-gray-300 dark:hover:bg-white dark:hover:text-black"
             style={{
               backgroundColor: isDarkMode ? 'transparent' : '#ffffff',
               borderColor: isDarkMode ? '#ffffff' : '#000000',
@@ -776,7 +776,7 @@ const TimeTracking = ({ employees }) => {
           </button>
           <button 
             onClick={handleExportReport}
-            className="cursor-pointer px-4 py-2 rounded-lg border transition-colors flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="cursor-pointer px-4 py-2 rounded-lg border transition-colors flex items-center space-x-2 hover:bg-gray-300 dark:hover:bg-white dark:hover:text-black"
             style={{
               backgroundColor: isDarkMode ? 'transparent' : '#ffffff',
               borderColor: isDarkMode ? '#ffffff' : '#000000',
