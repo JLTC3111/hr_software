@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Upload, Calendar, AlertCircle, Check, X, FileText, AlarmClockPlus, Loader } from 'lucide-react';
-import { PhotoProvider, PhotoView } from 'react-photo-view';
-import 'react-photo-view/dist/react-photo-view.css';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -36,6 +34,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
   // State for uploading proof to existing entries
   const [uploadingProofId, setUploadingProofId] = useState(null);
   const [uploadToast, setUploadToast] = useState({ show: false, message: '', type: '' });
+  const [uploadProgress, setUploadProgress] = useState({});
+  
+  // State for image preview modal
+  const [imagePreview, setImagePreview] = useState({ show: false, url: '' });
   
   // Leave request form
   const [leaveForm, setLeaveForm] = useState({
@@ -243,7 +245,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
       let proofFilePath = null;
       
       if (formData.proofFile) {
-        // Convert base64 back to file for upload
+        // Convert base64 back to file for upload (as a complete single file)
         const base64Data = formData.proofFile.data;
         const byteCharacters = atob(base64Data.split(',')[1]);
         const byteNumbers = new Array(byteCharacters.length);
@@ -251,7 +253,12 @@ const TimeClockEntry = ({ currentLanguage }) => {
           byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
         const byteArray = new Uint8Array(byteNumbers);
-        const file = new File([byteArray], formData.proofFile.name, { type: formData.proofFile.type });
+        
+        // Create File object with complete byte array (ensures single-part upload)
+        const file = new File([byteArray], formData.proofFile.name, { 
+          type: formData.proofFile.type,
+          lastModified: Date.now()
+        });
         
         const uploadResult = await timeTrackingService.uploadProofFile(file, user?.id);
         if (uploadResult.success) {
@@ -329,9 +336,20 @@ const TimeClockEntry = ({ currentLanguage }) => {
   };
 
   // Helper function to check if file is an image
-  const isImageFile = (fileType) => {
-    if (!fileType) return false;
-    return fileType.startsWith('image/');
+  const isImageFile = (fileType, fileUrl) => {
+    // First check MIME type
+    if (fileType && fileType.startsWith('image/')) {
+      return true;
+    }
+    
+    // Fallback: check file extension from URL
+    if (fileUrl) {
+      const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+      const urlLower = fileUrl.toLowerCase();
+      return imageExtensions.some(ext => urlLower.includes(ext));
+    }
+    
+    return false;
   };
 
   // Delete entry
@@ -358,10 +376,25 @@ const TimeClockEntry = ({ currentLanguage }) => {
     if (!file) return;
 
     setUploadingProofId(entryId);
+    setUploadProgress({ [file.name]: 0 });
+    
     try {
-      const result = await timeTrackingService.updateTimeEntryProof(entryId, file, user?.id);
+      const result = await timeTrackingService.updateTimeEntryProof(
+        entryId, 
+        file, 
+        user?.id,
+        (percent) => {
+          // Update progress
+          setUploadProgress({ [file.name]: percent });
+        }
+      );
       
       if (result.success) {
+        // Clear progress after completion
+        setTimeout(() => {
+          setUploadProgress({});
+        }, 2000);
+        
         // Update the time entry in local state
         setTimeEntries(prevEntries =>
           prevEntries.map(entry =>
@@ -385,6 +418,9 @@ const TimeClockEntry = ({ currentLanguage }) => {
         });
         setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 3000);
       } else {
+        // Clear progress on error
+        setUploadProgress({});
+        
         // Show error toast
         setUploadToast({
           show: true,
@@ -1055,8 +1091,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
             </p>
           </div>
         ) : (
-          <PhotoProvider>
-            <div className="overflow-x-auto">
+          <div className="overflow-x-auto">
               <table className="w-full items-center table-auto border-collapse">
                 <thead className=" text-center">
                   <tr className={`border-b ${border.primary}`}>
@@ -1114,17 +1149,19 @@ const TimeClockEntry = ({ currentLanguage }) => {
                       <div className="flex items-center justify-center gap-2">
                         {(entry.proof_file_url || entry.proofFile) ? (
                           entry.proof_file_url ? (
-                            isImageFile(entry.proof_file_type) ? (
-                              // Use PhotoView for images
-                              <PhotoView src={entry.proof_file_url}>
-                                <button
-                                  type="button"
-                                  className="inline-flex cursor-pointer hover:scale-110 transition-transform"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <FileText className="w-5 h-5 text-green-600 dark:text-green-400 group-hover:text-white" />
-                                </button>
-                              </PhotoView>
+                            isImageFile(entry.proof_file_type, entry.proof_file_url) ? (
+                              // Image preview button
+                              <button
+                                type="button"
+                                className="inline-flex cursor-pointer hover:scale-110 transition-transform"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setImagePreview({ show: true, url: entry.proof_file_url });
+                                }}
+                                aria-label="View proof image"
+                              >
+                                <FileText className="w-5 h-5 text-green-600 dark:text-green-400 group-hover:text-white" />
+                              </button>
                             ) : (
                               // Use regular link for PDFs and other files
                               <a 
@@ -1141,36 +1178,45 @@ const TimeClockEntry = ({ currentLanguage }) => {
                             <FileText className="w-5 h-5 text-green-600 dark:text-green-400 group-hover:text-white" />
                           )
                         ) : (
-                          <span className={`text-xs ${text.secondary} group-hover:text-white`}></span>
+                          <span className={`text-xs ${text.secondary} group-hover:text-white`}>-</span>
                         )}
                         
                         {/* Upload button for entries without proof */}
                         {!entry.proof_file_url && (
-                          <label 
-                            htmlFor={`proof-upload-${entry.id}`}
-                            className="cursor-pointer inline-flex items-center"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {uploadingProofId === entry.id ? (
-                              <Loader className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:text-white animate-spin" />
-                            ) : (
-                              <Upload className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:text-white hover:text-blue-800 dark:hover:text-blue-300" />
-                            )}
-                            <input
-                              id={`proof-upload-${entry.id}`}
-                              type="file"
-                              accept="image/*,application/pdf"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  handleUploadProof(entry.id, file);
-                                  e.target.value = ''; // Reset input
-                                }
-                              }}
-                              className="hidden"
-                              disabled={uploadingProofId === entry.id}
-                            />
-                          </label>
+                          <div className="flex items-center gap-2">
+                            <label 
+                              htmlFor={`proof-upload-${entry.id}`}
+                              className="cursor-pointer inline-flex items-center"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {uploadingProofId === entry.id ? (
+                                <div className="flex items-center gap-2">
+                                  <Loader className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:text-white animate-spin" />
+                                  {Object.values(uploadProgress)[0] > 0 && Object.values(uploadProgress)[0] < 100 && (
+                                    <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                      {Object.values(uploadProgress)[0]}%
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <Upload className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:text-white hover:text-blue-800 dark:hover:text-blue-300" />
+                              )}
+                              <input
+                                id={`proof-upload-${entry.id}`}
+                                type="file"
+                                accept="image/*,application/pdf,.doc,.docx,.txt"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    handleUploadProof(entry.id, file);
+                                    e.target.value = ''; // Reset input
+                                  }
+                                }}
+                                className="hidden"
+                                disabled={uploadingProofId === entry.id}
+                              />
+                            </label>
+                          </div>
                         )}
                       </div>
                     </td>
@@ -1191,9 +1237,56 @@ const TimeClockEntry = ({ currentLanguage }) => {
               </tbody>
             </table>
           </div>
-          </PhotoProvider>
         )}
       </div>
+
+      {/* Image Preview Modal */}
+      {imagePreview.show && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm"
+          onClick={() => setImagePreview({ show: false, url: '' })}
+        >
+          <div 
+            className="relative max-w-7xl max-h-[90vh] bg-white dark:bg-gray-800 rounded-lg shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setImagePreview({ show: false, url: '' })}
+              className="absolute top-4 right-4 z-10 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors"
+              aria-label="Close preview"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <div className="p-4">
+              <img
+                src={imagePreview.url}
+                alt="Proof Preview"
+                className="max-w-full max-h-[80vh] rounded-lg object-contain"
+                style={{
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                }}
+                onError={(e) => {
+                  console.error('Failed to load image:', imagePreview.url);
+                  e.target.style.display = 'none';
+                  const errorDiv = e.target.nextElementSibling;
+                  if (errorDiv) errorDiv.style.display = 'block';
+                }}
+              />
+              <div 
+                style={{ 
+                  display: 'none', 
+                  textAlign: 'center',
+                  padding: '2rem'
+                }}
+                className="text-gray-600 dark:text-gray-400"
+              >
+                <p className="text-lg font-medium">Failed to load image</p>
+                <p className="text-sm mt-2">The image may be corrupted or in an unsupported format.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

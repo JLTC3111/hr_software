@@ -328,6 +328,7 @@ export default {
     selectDate: 'Select Date',
     newEntry: 'New Entry',
     history: 'History',
+    subtitle: 'Enter hours and upload attendance proof',
     selectDate: 'Select Date',
     clockIn: 'Clock In',
     clockOut: 'Clock Out',

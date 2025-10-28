@@ -164,12 +164,13 @@ export const updateTimeEntryStatus = async (entryId, status, approverId) => {
  * @param {number} entryId - Time entry ID
  * @param {File} file - Proof file to upload
  * @param {string|number} employeeId - Employee ID
+ * @param {Function} onProgress - Progress callback function
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
-export const updateTimeEntryProof = async (entryId, file, employeeId) => {
+export const updateTimeEntryProof = async (entryId, file, employeeId, onProgress = null) => {
   try {
-    // Upload the proof file
-    const uploadResult = await uploadProofFile(file, employeeId);
+    // Upload the proof file with progress tracking
+    const uploadResult = await uploadProofFile(file, employeeId, onProgress);
     
     if (!uploadResult.success) {
       throw new Error(uploadResult.error || 'Failed to upload proof file');
@@ -227,52 +228,114 @@ export const deleteTimeEntry = async (entryId) => {
  * @param {string|number} employeeId - Employee ID
  * @returns {Promise<{success: boolean, url?: string, fileName?: string, fileType?: string, storagePath?: string, error?: string}>}
  */
-export const uploadProofFile = async (file, employeeId) => {
+// Sanitize filename to remove special characters
+const sanitizeFileName = (name) =>
+  name.normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, '-')
+    .replace(/[^a-zA-Z0-9.\-_]/g, '');
+
+// Enhanced file validation
+const validateProofFile = (file) => {
+  const maxSize = 50 * 1024 * 1024; // 50MB limit
+  const allowedTypes = [
+    // Images
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/gif',
+    'image/bmp',
+    'image/webp',
+    'image/svg+xml',
+    // PDF
+    'application/pdf',
+    // Documents (optional - for proof of work documents)
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/msword',
+    'text/plain'
+  ];
+
+  if (file.size > maxSize) {
+    return { valid: false, error: `File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (50MB)` };
+  }
+
+  if (!allowedTypes.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|gif|bmp|webp|svg|pdf|docx?|txt)$/i)) {
+    return { valid: false, error: 'File type not supported. Please upload an image, PDF, or document file.' };
+  }
+
+  return { valid: true };
+};
+
+export const uploadProofFile = async (file, employeeId, onProgress = null) => {
   try {
     if (!file) {
       throw new Error('No file provided');
     }
 
-    // Validate file size (50MB max - matching bucket configuration)
-    const maxSize = 50 * 1024 * 1024; // 50MB in bytes
-    if (file.size > maxSize) {
-      throw new Error(`File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (50MB)`);
+    // Validate file
+    const validation = validateProofFile(file);
+    if (!validation.valid) {
+      throw new Error(validation.error);
     }
 
-    // Note: All MIME types are allowed as per bucket configuration
-    
-    // Generate unique filename: {employeeId}_{timestamp}.{extension}
-    const timestamp = Date.now();
-    const extension = file.name.split('.').pop();
-    const fileName = `${employeeId}_${timestamp}.${extension}`;
+    // Sanitize and generate unique filename
+    const sanitizedFileName = sanitizeFileName(file.name);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `${employeeId}_${timestamp}_${sanitizedFileName}`;
     const filePath = `time-proofs/${fileName}`;
 
-    // Upload to Supabase Storage (employee-documents bucket is public)
-    const { data, error } = await supabase.storage
+    // Get signed upload URL from Supabase
+    const { data: signedUrlData, error: signedUrlError } = await supabase
+      .storage
       .from('employee-documents')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: true,
-        contentType: file.type // Explicitly set MIME type (image/png, image/jpeg, application/pdf, etc.)
-      });
+      .createSignedUploadUrl(filePath);
 
-    if (error) {
-      console.error('Storage upload error:', error);
-      throw new Error(error.message || 'Failed to upload file to storage');
+    if (signedUrlError) {
+      console.error('Error getting signed URL:', signedUrlError);
+      throw new Error('Failed to get upload URL');
     }
 
-    // Get public URL (bucket is public, no need for signed URLs)
-    const { data: publicUrlData } = supabase.storage
-      .from('employee-documents')
-      .getPublicUrl(filePath);
+    // Upload using XMLHttpRequest with progress tracking
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', signedUrlData.signedUrl, true);
+      xhr.setRequestHeader('Content-Type', file.type);
 
-    return {
-      success: true,
-      url: publicUrlData.publicUrl,
-      fileName: file.name,
-      fileType: file.type,
-      storagePath: filePath
-    };
+      // Track upload progress
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && onProgress) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          onProgress(percent);
+        }
+      };
+
+      xhr.onload = async () => {
+        if (xhr.status === 200) {
+          // Get public URL
+          const { data: publicUrlData } = supabase.storage
+            .from('employee-documents')
+            .getPublicUrl(filePath);
+
+          resolve({
+            success: true,
+            url: publicUrlData.publicUrl,
+            fileName: file.name,
+            fileType: file.type,
+            storagePath: filePath
+          });
+        } else {
+          console.error(`Failed to upload file:`, xhr.responseText);
+          reject(new Error('Failed to upload file to storage'));
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new Error('Network error during upload'));
+      };
+
+      // Send the file
+      xhr.send(file);
+    });
   } catch (error) {
     console.error('Error uploading proof file:', error);
     return { 
