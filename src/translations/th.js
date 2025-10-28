@@ -148,9 +148,12 @@ export default {
     weeklySummary: 'สัปดาห์นี้',
     monthlySummary: 'เดือนนี้',
     leaveDays: 'วันลา',
+    requestLeave: 'ขอลา',
     thisWeek: 'สัปดาห์นี้',
     thisMonth: 'เดือนนี้',
     total: 'รวม',
+    hrs: 'ชม.',
+    days: 'วัน',
     includesPending: '* รวมที่รอดำเนินการและอนุมัติแล้ว',
     notesPlaceholder: 'เพิ่มบันทึกหรือรายละเอียดเพิ่มเติม...',
     fileHelp: 'อัปโหลดภาพหน้าจอ รูปภาพ หรือ PDF (ขนาดไม่เกิน 5MB)',
@@ -171,7 +174,9 @@ export default {
       invalidFileType: 'อนุญาตเฉพาะไฟล์ JPG, PNG และ PDF เท่านั้น',
       submitFailed: 'ไม่สามารถส่งบันทึกเวลาได้ กรุณาลองอีกครั้ง',
       deleteFailed: 'ไม่สามารถลบบันทึกเวลาได้ กรุณาลองอีกครั้ง'
-    }
+    },
+    proofUploadSuccess: 'อัปโหลดไฟล์หลักฐานสำเร็จ',
+    proofUploadError: 'ไม่สามารถอัปโหลดไฟล์หลักฐานได้'
   },  
 
   // Time Tracking

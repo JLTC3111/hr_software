@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Upload, Calendar, AlertCircle, Check, X, FileText, Download, Loader } from 'lucide-react';
+import { Clock, Upload, Calendar, AlertCircle, Check, X, FileText, AlarmClockPlus, Loader } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -30,6 +30,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // State for uploading proof to existing entries
+  const [uploadingProofId, setUploadingProofId] = useState(null);
+  const [uploadToast, setUploadToast] = useState({ show: false, message: '', type: '' });
   
   // Leave request form
   const [leaveForm, setLeaveForm] = useState({
@@ -234,6 +238,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
       let proofFileUrl = null;
       let proofFileName = null;
       let proofFileType = null;
+      let proofFilePath = null;
       
       if (formData.proofFile) {
         // Convert base64 back to file for upload
@@ -251,6 +256,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
           proofFileUrl = uploadResult.url;
           proofFileName = uploadResult.fileName;
           proofFileType = uploadResult.fileType;
+          proofFilePath = uploadResult.storagePath;
         }
       }
       
@@ -285,7 +291,8 @@ const TimeClockEntry = ({ currentLanguage }) => {
         notes: formData.notes,
         proofFileUrl,
         proofFileName,
-        proofFileType
+        proofFileType,
+        proofFilePath
       });
       
       if (result.success) {
@@ -335,6 +342,59 @@ const TimeClockEntry = ({ currentLanguage }) => {
         console.error('Error deleting time entry:', error);
         setErrors({ general: t('timeClock.errors.deleteFailed') });
       }
+    }
+  };
+
+  // Handle uploading proof to existing time entry
+  const handleUploadProof = async (entryId, file) => {
+    if (!file) return;
+
+    setUploadingProofId(entryId);
+    try {
+      const result = await timeTrackingService.updateTimeEntryProof(entryId, file, user?.id);
+      
+      if (result.success) {
+        // Update the time entry in local state
+        setTimeEntries(prevEntries =>
+          prevEntries.map(entry =>
+            entry.id === entryId
+              ? {
+                  ...entry,
+                  proof_file_url: result.data.proof_file_url,
+                  proof_file_name: result.data.proof_file_name,
+                  proof_file_type: result.data.proof_file_type,
+                  proof_file_path: result.data.proof_file_path
+                }
+              : entry
+          )
+        );
+
+        // Show success toast
+        setUploadToast({
+          show: true,
+          message: t('timeClock.proofUploadSuccess', 'Proof file uploaded successfully'),
+          type: 'success'
+        });
+        setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 3000);
+      } else {
+        // Show error toast
+        setUploadToast({
+          show: true,
+          message: result.error || t('timeClock.proofUploadError', 'Failed to upload proof file'),
+          type: 'error'
+        });
+        setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 5000);
+      }
+    } catch (error) {
+      console.error('Error uploading proof:', error);
+      setUploadToast({
+        show: true,
+        message: t('timeClock.proofUploadError', 'Failed to upload proof file'),
+        type: 'error'
+      });
+      setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 5000);
+    } finally {
+      setUploadingProofId(null);
     }
   };
 
@@ -417,8 +477,50 @@ const TimeClockEntry = ({ currentLanguage }) => {
             <span className={text.primary}>{t('common.loading', 'Loading...')}</span>
           </div>
         </div>
-      )} 
+      )}
+
+      {/* Toast Notification for Upload */}
+      {uploadToast.show && (
+        <div className="fixed top-4 right-4 z-50 animate-fade-in">
+          <div className={`
+            rounded-lg p-4 shadow-lg flex items-center space-x-3
+            ${uploadToast.type === 'success' 
+              ? 'bg-green-100 dark:bg-green-900/30 border-l-4 border-green-600' 
+              : 'bg-red-100 dark:bg-red-900/30 border-l-4 border-red-600'}
+          `}>
+            {uploadToast.type === 'success' ? (
+              <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+            )}
+            <span className={`
+              font-medium
+              ${uploadToast.type === 'success' 
+                ? 'text-green-800 dark:text-green-200' 
+                : 'text-red-800 dark:text-red-200'}
+            `}>
+              {uploadToast.message}
+            </span>
+          </div>
+        </div>
+      )}
+      
         <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-out;
+        }
+
         #clock-in-input::-webkit-calendar-picker-indicator,
         #clock-out-input::-webkit-calendar-picker-indicator,
         #date-input::-webkit-calendar-picker-indicator {
@@ -490,11 +592,11 @@ const TimeClockEntry = ({ currentLanguage }) => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Entry Form */}
+        {/* New Entry Form */}
         <div className="lg:col-span-2">
           <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>
             <h2 className={`text-xl font-semibold ${text.primary} mb-6 flex items-center`}>
-              <Clock className="w-5 h-5 mr-2" />
+              <AlarmClockPlus className="w-5 h-5 mr-2" />
               {t('timeClock.newEntry')}
             </h2>
 
@@ -600,7 +702,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                         value={formData.hourType}
                         onChange={(e) => setFormData({ ...formData, hourType: e.target.value })}
                         className={`
-                            w-full px-4 py-2 rounded-lg border 
+                            w-full px-4 py-2 rounded-lg border mr-2
                             ${input.className} 
                             ${isDarkMode ? 'text-white' : 'text-black'}
                             cursor-pointer
@@ -722,7 +824,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                 <div key={type.value} className="flex justify-between items-center">
                   <span className={`text-sm ${text.secondary}`}>{type.label}</span>
                   <span className={`font-semibold ${text.primary}`}>
-                    {calculateTotals(type.value, 'week').toFixed(1)} hrs
+                    {calculateTotals(type.value, 'week').toFixed(1)} {t('timeClock.hrs')}
                   </span>
                 </div>
               ))}
@@ -731,7 +833,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                   {t('timeClock.total')}
                 </span>
                 <span className={`font-bold text-lg ${text.primary}`}>
-                  {calculateTotals('all', 'week').toFixed(1)} hrs
+                  {calculateTotals('all', 'week').toFixed(1)} {t('timeClock.hrs')}
                 </span>
               </div>
             </div>
@@ -747,7 +849,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                 <div key={type.value} className="flex justify-between items-center">
                   <span className={`text-sm ${text.secondary}`}>{type.label}</span>
                   <span className={`font-semibold ${text.primary}`}>
-                    {calculateTotals(type.value, 'month').toFixed(1)} hrs
+                    {calculateTotals(type.value, 'month').toFixed(1)} {t('timeClock.hrs')}
                   </span>
                 </div>
               ))}
@@ -756,7 +858,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                   {t('timeClock.total')}
                 </span>
                 <span className={`font-bold text-lg ${text.primary}`}>
-                  {calculateTotals('all', 'month').toFixed(1)} hrs
+                  {calculateTotals('all', 'month').toFixed(1)} {t('timeClock.hrs')}
                 </span>
               </div>
             </div>
@@ -771,7 +873,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
               <div className="flex justify-between items-center">
                 <span className={`text-sm ${text.secondary}`}>{t('timeClock.thisWeek', 'This Week')}</span>
                 <span className={`font-semibold ${text.primary}`}>
-                  {calculateLeaveDays('week').toFixed(1)} days
+                  {calculateLeaveDays('week').toFixed(1)} {t('timeClock.days')}
                 </span>
               </div>
               <div className={`pt-3 border-t ${border.primary} flex justify-between items-center`}>
@@ -779,7 +881,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                   {t('timeClock.thisMonth', 'This Month')}
                 </span>
                 <span className={`font-bold text-lg ${text.primary}`}>
-                  {calculateLeaveDays('month').toFixed(1)} days
+                  {calculateLeaveDays('month').toFixed(1)} {t('timeClock.days')}
                 </span>
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
@@ -946,28 +1048,28 @@ const TimeClockEntry = ({ currentLanguage }) => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
+            <table className="w-full items-center table-auto border-collapse">
+              <thead className=" text-center">
                 <tr className={`border-b ${border.primary}`}>
-                  <th className={`text-left p-3 ${text.primary} font-semibold`}>
+                  <th className={`text-center p-3 ${text.primary} font-semibold`}>
                     {t('timeClock.date', 'Date')}
                   </th>
-                  <th className={`text-left p-3 ${text.primary} font-semibold`}>
+                  <th className={`text-center p-3 ${text.primary} font-semibold`}>
                     {t('timeClock.time', 'Time')}
                   </th>
-                  <th className={`text-left p-3 ${text.primary} font-semibold`}>
+                  <th className={`text-center p-3 ${text.primary} font-semibold`}>
                     {t('timeClock.hours', 'Hours')}
                   </th>
-                  <th className={`text-left p-3 ${text.primary} font-semibold`}>
+                  <th className={`text-center p-3 ${text.primary} font-semibold`}>
                     {t('timeClock.type', 'Type')}
                   </th>
-                  <th className={`text-left p-3 ${text.primary} font-semibold`}>
+                  <th className={`text-center p-3 ${text.primary} font-semibold`}>
                     {t('timeClock.status', 'Status')}
                   </th>
-                  <th className={`text-left p-3 ${text.primary} font-semibold`}>
+                  <th className={`text-center p-3 ${text.primary} font-semibold`}>
                     {t('timeClock.proof', 'Proof')}
                   </th>
-                  <th className={`text-right p-3 ${text.primary} font-semibold`}>
+                  <th className={`text-center p-3 ${text.primary} font-semibold`}>
                     {t('timeClock.actions', 'Actions')}
                   </th>
                 </tr>
@@ -982,7 +1084,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                       {entry.clock_in || entry.clockIn} - {entry.clock_out || entry.clockOut}
                     </td>
                     <td className={`p-3 ${text.primary} font-semibold group-hover:text-white`}>
-                      {entry.hours} hrs
+                      {entry.hours} {t('timeClock.hrs')}
                     </td>
                     <td className="p-3">
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${
@@ -1000,25 +1102,62 @@ const TimeClockEntry = ({ currentLanguage }) => {
                       </span>
                     </td>
                     <td className="p-3">
-                      {(entry.proof_file_url || entry.proofFile) ? (
-                        entry.proof_file_url ? (
-                          <a href={entry.proof_file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center">
+                      <div className="flex items-center justify-center gap-2">
+                        {(entry.proof_file_url || entry.proofFile) ? (
+                          entry.proof_file_url ? (
+                            <a 
+                              href={entry.proof_file_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="inline-flex"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <FileText className="w-5 h-5 text-green-600 dark:text-green-400 group-hover:text-white" />
+                            </a>
+                          ) : (
                             <FileText className="w-5 h-5 text-green-600 dark:text-green-400 group-hover:text-white" />
-                          </a>
+                          )
                         ) : (
-                          <FileText className="w-5 h-5 text-green-600 dark:text-green-400 group-hover:text-white" />
-                        )
-                      ) : (
-                        <span className={`text-xs ${text.secondary} group-hover:text-white`}>-</span>
-                      )}
+                          <span className={`text-xs ${text.secondary} group-hover:text-white`}>-</span>
+                        )}
+                        
+                        {/* Upload button for entries without proof */}
+                        {!entry.proof_file_url && (
+                          <label 
+                            htmlFor={`proof-upload-${entry.id}`}
+                            className="cursor-pointer inline-flex items-center"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {uploadingProofId === entry.id ? (
+                              <Loader className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:text-white animate-spin" />
+                            ) : (
+                              <Upload className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:text-white hover:text-blue-800 dark:hover:text-blue-300" />
+                            )}
+                            <input
+                              id={`proof-upload-${entry.id}`}
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  handleUploadProof(entry.id, file);
+                                  e.target.value = ''; // Reset input
+                                }
+                              }}
+                              className="hidden"
+                              disabled={uploadingProofId === entry.id}
+                            />
+                          </label>
+                        )}
+                      </div>
                     </td>
-                    <td className="p-3 text-right">
+                    <td className="p-3 text-center">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDelete(entry.id);
                         }}
-                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 group-hover:text-white"
+                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 group-hover:text-white transition-colors justify-center items-center inline-flex"
                         title={t('timeClock.delete', 'Delete')}
                       >
                         <X className="w-5 h-5" />

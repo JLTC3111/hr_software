@@ -145,16 +145,19 @@ export default {
     history: 'Historique de pointage',
     noEntries: 'Aucun enregistrement pour le moment. Soumettez-en un premier !',
     time: 'Heure',
-    hours: 'heures',
+    hours: 'Heures',
     type: 'Type',
     status: 'Statut',
     actions: 'Actions',
     weeklySummary: 'Cette semaine',
     monthlySummary: 'Ce mois-ci',
     leaveDays: 'Jours de congé',
+    requestLeave: 'Demande de congé',
     thisWeek: 'Cette semaine',
     thisMonth: 'Ce mois-ci',
     total: 'Total',
+    hrs: 'hrs',
+    days: 'jours',
     includesPending: '* Inclut les demandes en attente et approuvées',
     notesPlaceholder: 'Ajoutez des notes ou un contexte supplémentaire...',
     fileHelp: 'Téléversez une capture, une photo ou un PDF (max 5 Mo)',
@@ -175,7 +178,9 @@ export default {
       invalidFileType: 'Seuls les fichiers JPG, PNG et PDF sont autorisés',
       submitFailed: 'Échec de la soumission. Veuillez réessayer.',
       deleteFailed: 'Échec de la suppression. Veuillez réessayer.'
-    }
+    },
+    proofUploadSuccess: 'Fichier de preuve téléchargé avec succès',
+    proofUploadError: 'Échec du téléchargement du fichier de preuve'
   },
 
   // Time Tracking

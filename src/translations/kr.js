@@ -151,10 +151,13 @@ export default {
     weeklySummary: '이번 주',
     monthlySummary: '이번 달',
     leaveDays: '휴가 일수',
+    requestLeave: '휴가 신청',
     thisWeek: '이번 주',
     thisMonth: '이번 달',
-    total: '총계',
-    includesPending: '* 보류 및 승인 포함',
+    total: '합계',
+    hrs: '시간',
+    days: '일',
+    includesPending: '* 대기 중 및 승인된 항목 포함',
     notesPlaceholder: '추가 메모나 내용을 입력하세요...',
     fileHelp: '스크린샷, 사진 또는 PDF 업로드 (최대 5MB)',
     hourTypes: {
@@ -174,7 +177,9 @@ export default {
       invalidFileType: 'JPG, PNG, PDF 파일만 허용됩니다',
       submitFailed: '시간 기록 제출에 실패했습니다. 다시 시도해 주세요.',
       deleteFailed: '시간 기록 삭제에 실패했습니다. 다시 시도해 주세요.'
-    }
+    },
+    proofUploadSuccess: '증명 파일이 성공적으로 업로드되었습니다',
+    proofUploadError: '증명 파일 업로드에 실패했습니다'
   },
   
   // Time Tracking
@@ -193,7 +198,7 @@ export default {
     regularHours: '정규 시간',
     overtimeHours: '초과 근무 시간',
     hrs: '시간',
-    attendanceRate: '출석률'
+    attendanceRate: '출석률',
   },
 
   // Employees

@@ -348,6 +348,8 @@ export default {
     thisWeek: 'This Week',
     thisMonth: 'This Month',
     total: 'Total',
+    hrs: 'hrs',
+    days: 'days',
     includesPending: '* Includes pending & approved',
     hourTypes: {
       regular: 'Regular Hours',
@@ -362,7 +364,9 @@ export default {
       clockOutAfterClockIn: 'Clock out must be after clock in',
       submitFailed: 'Failed to submit time entry',
       deleteFailed: 'Failed to delete time entry'
-    }
+    },
+    proofUploadSuccess: 'Proof file uploaded successfully',
+    proofUploadError: 'Failed to upload proof file'
   },
 
   // Performance Appraisal

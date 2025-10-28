@@ -12,13 +12,6 @@ const toEmployeeId = (id) => {
   return id ? String(id) : null;
 };
 
-// ============================================
-// TIME ENTRIES
-// ============================================
-
-/**
- * Create a new time entry
- */
 export const createTimeEntry = async (timeEntryData) => {
   try {
     const employeeId = toEmployeeId(timeEntryData.employeeId);
@@ -53,6 +46,7 @@ export const createTimeEntry = async (timeEntryData) => {
         proof_file_url: timeEntryData.proofFileUrl || null,
         proof_file_name: timeEntryData.proofFileName || null,
         proof_file_type: timeEntryData.proofFileType || null,
+        proof_file_path: timeEntryData.proofFilePath || null,
         status: 'pending'
       }])
       .select()
@@ -166,6 +160,47 @@ export const updateTimeEntryStatus = async (entryId, status, approverId) => {
 };
 
 /**
+ * Update proof file for an existing time entry
+ * @param {number} entryId - Time entry ID
+ * @param {File} file - Proof file to upload
+ * @param {string|number} employeeId - Employee ID
+ * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+ */
+export const updateTimeEntryProof = async (entryId, file, employeeId) => {
+  try {
+    // Upload the proof file
+    const uploadResult = await uploadProofFile(file, employeeId);
+    
+    if (!uploadResult.success) {
+      throw new Error(uploadResult.error || 'Failed to upload proof file');
+    }
+
+    // Update the time entry with proof file information
+    const { data, error } = await supabase
+      .from('time_entries')
+      .update({
+        proof_file_url: uploadResult.url,
+        proof_file_name: uploadResult.fileName,
+        proof_file_type: uploadResult.fileType,
+        proof_file_path: uploadResult.storagePath
+      })
+      .eq('id', entryId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error updating time entry proof:', error);
+    return { 
+      success: false, 
+      error: error.message || 'Failed to update proof file'
+    };
+  }
+};
+
+/**
  * Delete a time entry
  */
 export const deleteTimeEntry = async (entryId) => {
@@ -186,32 +221,119 @@ export const deleteTimeEntry = async (entryId) => {
 /**
  * Upload proof file to Supabase Storage
  */
+/**
+ * Upload proof file to Supabase Storage
+ * @param {File} file - File to upload
+ * @param {string|number} employeeId - Employee ID
+ * @returns {Promise<{success: boolean, url?: string, fileName?: string, fileType?: string, storagePath?: string, error?: string}>}
+ */
 export const uploadProofFile = async (file, employeeId) => {
   try {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${toEmployeeId(employeeId)}_${Date.now()}.${fileExt}`;
+    if (!file) {
+      throw new Error('No file provided');
+    }
+
+    // Validate file size (50MB max - matching bucket configuration)
+    const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+    if (file.size > maxSize) {
+      throw new Error(`File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (50MB)`);
+    }
+
+    // Note: All MIME types are allowed as per bucket configuration
+    
+    // Generate unique filename: {employeeId}_{timestamp}.{extension}
+    const timestamp = Date.now();
+    const extension = file.name.split('.').pop();
+    const fileName = `${employeeId}_${timestamp}.${extension}`;
     const filePath = `time-proofs/${fileName}`;
 
+    // Upload to Supabase Storage (employee-documents bucket is public)
     const { data, error } = await supabase.storage
-      .from('hr-documents')
-      .upload(filePath, file);
+      .from('employee-documents')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true
+      });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Storage upload error:', error);
+      throw new Error(error.message || 'Failed to upload file to storage');
+    }
 
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('hr-documents')
+    // Get public URL (bucket is public, no need for signed URLs)
+    const { data: publicUrlData } = supabase.storage
+      .from('employee-documents')
       .getPublicUrl(filePath);
 
     return {
       success: true,
-      url: publicUrl,
+      url: publicUrlData.publicUrl,
       fileName: file.name,
-      fileType: file.type
+      fileType: file.type,
+      storagePath: filePath
     };
   } catch (error) {
     console.error('Error uploading proof file:', error);
-    return { success: false, error: error.message };
+    return { 
+      success: false, 
+      error: error.message || 'Failed to upload proof file'
+    };
+  }
+};
+
+/**
+ * Get public URL for an existing proof file
+ * @param {string} filePath - Path to file in storage (e.g., 'time-proofs/123_1234567890.jpg')
+ * @returns {Promise<{success: boolean, url?: string, error?: string}>}
+ * @note Bucket is public, so this returns a permanent public URL
+ */
+export const getProofFileSignedUrl = async (filePath) => {
+  try {
+    if (!filePath) {
+      throw new Error('File path is required');
+    }
+
+    const { data } = supabase.storage
+      .from('employee-documents')
+      .getPublicUrl(filePath);
+
+    return {
+      success: true,
+      url: data.publicUrl
+    };
+  } catch (error) {
+    console.error('Error getting public URL:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to generate public URL'
+    };
+  }
+};
+
+/**
+ * Delete proof file from storage
+ * @param {string} filePath - Path to file in storage
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const deleteProofFile = async (filePath) => {
+  try {
+    if (!filePath) {
+      throw new Error('File path is required');
+    }
+
+    const { error } = await supabase.storage
+      .from('employee-documents')
+      .remove([filePath]);
+
+    if (error) throw error;
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting proof file:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to delete proof file'
+    };
   }
 };
 
@@ -686,13 +808,6 @@ export const getAllEmployeesSummary = async (month, year) => {
   }
 };
 
-// ============================================
-// ANALYTICS & REPORTS
-// ============================================
-
-/**
- * Get monthly attendance summary view
- */
 export const getMonthlyAttendanceSummary = async (filters = {}) => {
   try {
     let query = supabase
@@ -812,14 +927,6 @@ export const getPendingApprovals = async () => {
   }
 };
 
-// ============================================
-// EMPLOYEE MANAGEMENT
-// ============================================
-
-/**
- * Ensure employee exists in database, create if not
- * This is useful for auth users who haven't been added to employees table
- */
 export const ensureEmployeeExists = async (employeeId, employeeData = {}) => {
   try {
     const id = toEmployeeId(employeeId);
@@ -1015,8 +1122,11 @@ export default {
   getTimeEntries,
   getAllTimeEntriesDetailed,
   updateTimeEntryStatus,
+  updateTimeEntryProof,
   deleteTimeEntry,
   uploadProofFile,
+  getProofFileSignedUrl,
+  deleteProofFile,
   
   // Leave Requests
   createLeaveRequest,

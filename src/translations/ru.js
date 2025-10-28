@@ -167,9 +167,12 @@ export default {
     weeklySummary: 'На этой неделе',
     monthlySummary: 'В этом месяце',
     leaveDays: "Дни отпуска",
+    requestLeave: 'Заявка на отпуск',
     thisWeek: "На этой неделе",
     thisMonth: "В этом месяце",
     total: "Всего",
+    hrs: 'час',
+    days: 'дн',
     includesPending: "* Включая ожидающие и утвержденные",
     notesPlaceholder: 'Добавьте заметки или дополнительную информацию...',
     fileHelp: 'Загрузите скриншот, фото или PDF (до 5 МБ)',
@@ -190,7 +193,9 @@ export default {
       invalidFileType: 'Разрешены только файлы JPG, PNG и PDF',
       submitFailed: 'Не удалось отправить запись времени. Пожалуйста, попробуйте ещё раз.',
       deleteFailed: 'Не удалось удалить запись времени. Пожалуйста, попробуйте ещё раз.'
-    }
+    },
+    proofUploadSuccess: 'Файл подтверждения успешно загружен',
+    proofUploadError: 'Не удалось загрузить файл подтверждения'
   },  
 
   // Time Tracking

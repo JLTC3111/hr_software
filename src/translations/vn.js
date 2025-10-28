@@ -476,9 +476,12 @@ export default {
     weeklySummary: 'Tuần này',
     monthlySummary: 'Tháng này',
     leaveDays: 'Ngày nghỉ phép',
+    requestLeave: 'Yêu cầu nghỉ phép',
     thisWeek: 'Tuần này',
     thisMonth: 'Tháng này',
     total: 'Tổng cộng',
+    hrs: 'giờ',
+    days: 'ngày',
     includesPending: '* Bao gồm đang chờ và đã duyệt',
     notesPlaceholder: 'Thêm ghi chú hoặc nội dung bổ sung...',
     fileHelp: 'Tải lên ảnh chụp màn hình, ảnh hoặc PDF (tối đa 5MB)',
@@ -499,7 +502,9 @@ export default {
       invalidFileType: 'Chỉ cho phép tệp JPG, PNG và PDF',
       submitFailed: 'Gửi giờ công thất bại. Vui lòng thử lại.',
       deleteFailed: 'Xóa giờ công thất bại. Vui lòng thử lại.'
-    }
+    },
+    proofUploadSuccess: 'Tải lên tệp chứng minh thành công',
+    proofUploadError: 'Tải lên tệp chứng minh thất bại'
   },
 
   // Common

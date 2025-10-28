@@ -453,7 +453,10 @@ export default {
     leaveDays: 'Urlaubstage',
     thisWeek: 'Diese Woche',
     thisMonth: 'Dieser Monat',
+    requestLeave: 'Urlaub beantragen',
     total: 'Gesamt',
+    hrs: 'Std',
+    days: 'Tage',
     includesPending: '* Beinhaltet ausstehende und genehmigte',
     notesPlaceholder: 'Fügen Sie zusätzliche Notizen hinzu...',
     fileHelp: 'Screenshot, Foto oder PDF hochladen (max. 5MB)',
@@ -474,7 +477,9 @@ export default {
       invalidFileType: 'Nur JPG-, PNG- und PDF-Dateien sind erlaubt',
       submitFailed: 'Zeiteintrag konnte nicht übermittelt werden. Bitte versuchen Sie es erneut.',
       deleteFailed: 'Zeiteintrag konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.'
-    }
+    },
+    proofUploadSuccess: 'Nachweisdatei erfolgreich hochgeladen',
+    proofUploadError: 'Fehler beim Hochladen der Nachweisdatei'
   },
 
   // Time Tracking Actions

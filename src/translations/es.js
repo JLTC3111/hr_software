@@ -160,6 +160,11 @@ login: {
     history: 'Historial',
     selectDate: 'Seleccionar Fecha',
     clockIn: 'Entrada',
+    date: 'Fecha',
+    time: 'Hora',
+    hours: 'Horas',
+    status: 'Estado',
+    actions: 'Acciones',
     clockOut: 'Salida',
     hourType: 'Tipo de Hora',
     proof: 'Prueba de Trabajo',
@@ -178,6 +183,8 @@ login: {
     thisWeek: 'Esta Semana',
     thisMonth: 'Este Mes',
     total: 'Total',
+    hrs: 'hrs',
+    days: 'días',
     includesPending: '* Incluye pendientes y aprobados',
     hourTypes: {
       regular: 'Horas Regulares',
@@ -192,7 +199,9 @@ login: {
       clockOutAfterClockIn: 'La hora de salida debe ser después de la entrada',
       submitFailed: 'Error al enviar entrada de tiempo',
       deleteFailed: 'Error al eliminar entrada de tiempo'
-    }
+    },
+    proofUploadSuccess: 'Archivo de prueba cargado exitosamente',
+    proofUploadError: 'Error al cargar archivo de prueba'
   },
 
   employeeDepartment: {

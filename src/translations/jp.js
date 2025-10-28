@@ -149,10 +149,13 @@ export default {
     weeklySummary: '今週',
     monthlySummary: '今月',
     leaveDays: '休暇日数',
+    requestLeave: '休暇申請',
     thisWeek: '今週',
     thisMonth: '今月',
     total: '合計',
-    includesPending: '* 保留中と承認済みを含む',
+    hrs: '時間',
+    days: '日',
+    includesPending: '* 保留中および承認済みを含む',
     notesPlaceholder: 'メモや追加情報を入力...',
     fileHelp: 'スクリーンショット、写真、またはPDFをアップロード（最大5MB）',
     hourTypes: {
@@ -172,7 +175,9 @@ export default {
       invalidFileType: 'JPG、PNG、PDFファイルのみアップロード可能です',
       submitFailed: '時間記録の送信に失敗しました。もう一度お試しください。',
       deleteFailed: '時間記録の削除に失敗しました。もう一度お試しください。'
-    }
+    },
+    proofUploadSuccess: '証明ファイルが正常にアップロードされました',
+    proofUploadError: '証明ファイルのアップロードに失敗しました'
   },
   
   // Time Tracking
