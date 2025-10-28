@@ -252,7 +252,8 @@ export const uploadProofFile = async (file, employeeId) => {
       .from('employee-documents')
       .upload(filePath, file, {
         cacheControl: '3600',
-        upsert: true
+        upsert: true,
+        contentType: file.type // Explicitly set MIME type (image/png, image/jpeg, application/pdf, etc.)
       });
 
     if (error) {

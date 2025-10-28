@@ -309,3 +309,49 @@ h1 {
     }
   }
 }
+
+/* React Photo View custom styles for dark mode support */
+.PhotoView-Portal {
+  z-index: 9999 !important;
+}
+
+/* Dark mode overlay */
+.dark .PhotoView-Portal .PhotoView__PhotoWrap {
+  background: rgba(0, 0, 0, 0.95) !important;
+}
+
+/* Light mode overlay */
+.PhotoView-Portal .PhotoView__PhotoWrap {
+  background: rgba(0, 0, 0, 0.9) !important;
+}
+
+/* Toolbar buttons styling */
+.PhotoView-Portal .PhotoView__Toolbar {
+  background: transparent !important;
+}
+
+.PhotoView-Portal .PhotoView__Toolbar button {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+}
+
+.PhotoView-Portal .PhotoView__Toolbar button:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: scale(1.1);
+}
+
+/* Image container */
+.PhotoView-Portal .PhotoView-Slider__ArrowLeft,
+.PhotoView-Portal .PhotoView-Slider__ArrowRight {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+}
+
+.PhotoView-Portal .PhotoView-Slider__ArrowLeft:hover,
+.PhotoView-Portal .PhotoView-Slider__ArrowRight:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: scale(1.1);
+}
+

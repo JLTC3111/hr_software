@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Upload, Calendar, AlertCircle, Check, X, FileText, AlarmClockPlus, Loader } from 'lucide-react';
+import { PhotoProvider, PhotoView } from 'react-photo-view';
+import 'react-photo-view/dist/react-photo-view.css';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -324,6 +326,12 @@ const TimeClockEntry = ({ currentLanguage }) => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Helper function to check if file is an image
+  const isImageFile = (fileType) => {
+    if (!fileType) return false;
+    return fileType.startsWith('image/');
   };
 
   // Delete entry
@@ -1047,19 +1055,20 @@ const TimeClockEntry = ({ currentLanguage }) => {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full items-center table-auto border-collapse">
-              <thead className=" text-center">
-                <tr className={`border-b ${border.primary}`}>
-                  <th className={`text-center p-3 ${text.primary} font-semibold`}>
-                    {t('timeClock.date', 'Date')}
-                  </th>
-                  <th className={`text-center p-3 ${text.primary} font-semibold`}>
-                    {t('timeClock.time', 'Time')}
-                  </th>
-                  <th className={`text-center p-3 ${text.primary} font-semibold`}>
-                    {t('timeClock.hours', 'Hours')}
-                  </th>
+          <PhotoProvider>
+            <div className="overflow-x-auto">
+              <table className="w-full items-center table-auto border-collapse">
+                <thead className=" text-center">
+                  <tr className={`border-b ${border.primary}`}>
+                    <th className={`text-center p-3 ${text.primary} font-semibold`}>
+                      {t('timeClock.date', 'Date')}
+                    </th>
+                    <th className={`text-center p-3 ${text.primary} font-semibold`}>
+                      {t('timeClock.time', 'Time')}
+                    </th>
+                    <th className={`text-center p-3 ${text.primary} font-semibold`}>
+                      {t('timeClock.hours', 'Hours')}
+                    </th>
                   <th className={`text-center p-3 ${text.primary} font-semibold`}>
                     {t('timeClock.type', 'Type')}
                   </th>
@@ -1105,20 +1114,34 @@ const TimeClockEntry = ({ currentLanguage }) => {
                       <div className="flex items-center justify-center gap-2">
                         {(entry.proof_file_url || entry.proofFile) ? (
                           entry.proof_file_url ? (
-                            <a 
-                              href={entry.proof_file_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="inline-flex"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <FileText className="w-5 h-5 text-green-600 dark:text-green-400 group-hover:text-white" />
-                            </a>
+                            isImageFile(entry.proof_file_type) ? (
+                              // Use PhotoView for images
+                              <PhotoView src={entry.proof_file_url}>
+                                <button
+                                  type="button"
+                                  className="inline-flex cursor-pointer hover:scale-110 transition-transform"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <FileText className="w-5 h-5 text-green-600 dark:text-green-400 group-hover:text-white" />
+                                </button>
+                              </PhotoView>
+                            ) : (
+                              // Use regular link for PDFs and other files
+                              <a 
+                                href={entry.proof_file_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="inline-flex hover:scale-110 transition-transform"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <FileText className="w-5 h-5 text-green-600 dark:text-green-400 group-hover:text-white" />
+                              </a>
+                            )
                           ) : (
                             <FileText className="w-5 h-5 text-green-600 dark:text-green-400 group-hover:text-white" />
                           )
                         ) : (
-                          <span className={`text-xs ${text.secondary} group-hover:text-white`}>-</span>
+                          <span className={`text-xs ${text.secondary} group-hover:text-white`}></span>
                         )}
                         
                         {/* Upload button for entries without proof */}
@@ -1168,6 +1191,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
               </tbody>
             </table>
           </div>
+          </PhotoProvider>
         )}
       </div>
     </div>
