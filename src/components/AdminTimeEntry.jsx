@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, UserPlus, Save, X, Search, AlertCircle, Calendar, LogIn, LogOut, Check } from 'lucide-react';
+import { Clock, UserPlus, Save, X, Search, AlertCircle, Calendar, LogIn, LogOut, Check, Upload, FileText } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,7 +23,8 @@ const AdminTimeEntry = () => {
     clockIn: '',
     clockOut: '',
     hourType: 'regular',
-    notes: ''
+    notes: '',
+    proofFile: null
   });
 
   // Check if user has permission
@@ -49,6 +50,38 @@ const AdminTimeEntry = () => {
       console.error('Error fetching employees:', error);
       setErrorMessage(t('adminTimeEntry.errorLoadEmployees', 'Failed to load employees'));
     }
+  };
+
+  // Handle file upload
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Check file size (max 50MB to match service configuration)
+      if (file.size > 50 * 1024 * 1024) {
+        setErrorMessage(t('timeClock.errors.fileTooLarge', 'File size must be less than 50MB'));
+        return;
+      }
+
+      // Check file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+      if (!allowedTypes.includes(file.type)) {
+        setErrorMessage(t('timeClock.errors.invalidFileType', 'Only images, PDF, and document files are allowed'));
+        return;
+      }
+
+      // Convert to base64 for storage
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, proofFile: { name: file.name, type: file.type, data: reader.result } });
+        setErrorMessage('');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Remove uploaded file
+  const handleRemoveFile = () => {
+    setFormData({ ...formData, proofFile: null });
   };
 
   const handleSubmit = async (e) => {
@@ -85,6 +118,41 @@ const AdminTimeEntry = () => {
         return;
       }
 
+      // Upload proof file if exists
+      let proofFileUrl = null;
+      let proofFileName = null;
+      let proofFileType = null;
+      let proofFilePath = null;
+      
+      if (formData.proofFile) {
+        // Convert base64 back to file for upload
+        const base64Data = formData.proofFile.data;
+        const byteCharacters = atob(base64Data.split(',')[1]);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        
+        // Create File object
+        const file = new File([byteArray], formData.proofFile.name, { 
+          type: formData.proofFile.type,
+          lastModified: Date.now()
+        });
+        
+        const uploadResult = await timeTrackingService.uploadProofFile(file, selectedEmployee.id);
+        if (uploadResult.success) {
+          proofFileUrl = uploadResult.url;
+          proofFileName = uploadResult.fileName;
+          proofFileType = uploadResult.fileType;
+          proofFilePath = uploadResult.storagePath;
+        } else {
+          setErrorMessage(`Failed to upload proof file: ${uploadResult.error}`);
+          setLoading(false);
+          return;
+        }
+      }
+
       const entry = {
         employeeId: selectedEmployee.id,
         date: formData.date,
@@ -93,7 +161,11 @@ const AdminTimeEntry = () => {
         hours: parseFloat(hours.toFixed(2)),
         hourType: formData.hourType,
         notes: formData.notes || `Entered by admin: ${user.full_name || user.email}`,
-        status: 'approved' // Admin entries are auto-approved
+        status: 'approved', // Admin entries are auto-approved
+        proofFileUrl,
+        proofFileName,
+        proofFileType,
+        proofFilePath
       };
 
       const result = await timeTrackingService.createTimeEntry(entry);
@@ -106,7 +178,8 @@ const AdminTimeEntry = () => {
           clockIn: '',
           clockOut: '',
           hourType: 'regular',
-          notes: ''
+          notes: '',
+          proofFile: null
         });
         setSelectedEmployee(null);
         setSearchTerm('');
@@ -318,6 +391,56 @@ const AdminTimeEntry = () => {
             placeholder={t('adminTimeEntry.notesPlaceholder', 'Add any notes about this time entry...')}
             className={`w-full px-4 py-2 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
           />
+        </div>
+
+        {/* Proof of Work File Upload */}
+        <div>
+          <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+            {t('timeClock.proof', 'Proof of Work')} ({t('timeClock.optional', 'Optional')})
+          </label>
+          
+          {!formData.proofFile ? (
+            <div className={`border-2 border-dashed ${border.primary} rounded-lg p-6 text-center hover:border-blue-500 transition-colors`}>
+              <input
+                type="file"
+                id="admin-proof-file"
+                accept="image/*,application/pdf,.doc,.docx,.txt"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <label
+                htmlFor="admin-proof-file"
+                className="cursor-pointer flex flex-col items-center"
+              >
+                <Upload className={`w-8 h-8 ${text.secondary} mb-2`} />
+                <span className={`text-sm ${text.primary} font-medium`}>
+                  {t('timeClock.uploadFile', 'Click to upload proof of work')}
+                </span>
+                <span className={`text-xs ${text.secondary} mt-1`}>
+                  {t('timeClock.fileTypes', 'Supports: Images, PDF, Documents (Max 50MB)')}
+                </span>
+              </label>
+            </div>
+          ) : (
+            <div className={`border ${border.primary} rounded-lg p-4 flex items-center justify-between ${bg.primary}`}>
+              <div className="flex items-center space-x-3">
+                <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
+                <div>
+                  <div className={`text-sm font-medium ${text.primary}`}>{formData.proofFile.name}</div>
+                  <div className={`text-xs ${text.secondary}`}>
+                    {(formData.proofFile.data.length / 1024 / 1024).toFixed(2)} MB
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleRemoveFile}
+                className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Submit Button */}

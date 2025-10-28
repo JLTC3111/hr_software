@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Upload, Calendar, AlertCircle, Check, X, FileText, AlarmClockPlus, Loader } from 'lucide-react';
+import { Clock, Upload, Calendar, AlertCircle, Check, X, FileText, AlarmClockPlus, Loader, Loader2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -891,16 +891,30 @@ const TimeClockEntry = ({ currentLanguage }) => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`w-full py-3 px-6 rounded-lg font-medium text-white transition-colors ${
-                  isSubmitting
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.98]'
-                }`}
-              >
-                {isSubmitting
-                  ? t('timeClock.submitting')
-                  : t('timeClock.submit')}
-              </button>
+                // Add flex, items-center, justify-center, and space-x-2 for icon alignment
+                className={`
+                    w-full py-3 px-6 rounded-lg font-medium text-white transition-colors 
+                    flex items-center justify-center space-x-2 
+                    ${isSubmitting
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.98]'
+                    }
+                `}
+            >
+                {isSubmitting ? (
+                    // Option 1: Show a loading spinner/icon when submitting
+                    <>
+                        <Loader2 className="w-5 h-5 animate-spin" /> {/* Example loading icon */}
+                        <span>{t('timeClock.submitting')}</span>
+                    </>
+                ) : (
+                    // Option 2: Show the Clock icon when ready to submit
+                    <>
+                        <Clock className="w-5 h-5" />
+                        <span>{t('timeClock.submit')}</span>
+                    </>
+                )}
+            </button>
             </form>
             
             {/* Request Leave Button */}
