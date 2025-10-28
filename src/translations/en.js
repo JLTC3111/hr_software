@@ -68,6 +68,11 @@ export default {
     totalLeave: 'Total Leave Days',
     employeePerformance: 'Employee Performance',
     departmentDist: 'Department Distribution',
+    regularHoursByEmployee: 'Regular Hours by Employee',
+    overtimeHoursByEmployee: 'Overtime Hours by Employee',
+    performanceRating: 'Performance Rating',
+    regularHoursLegend: 'Regular Hours',
+    totalOvertimeLegend: 'Total Overtime',
     workLeaveComp: 'Work vs Leave Days',
     topPerformers: 'Top Performers',
     overtime: 'OT',
@@ -189,25 +194,11 @@ export default {
     placeholder: 'Search employees...'
   },
 
-  // Filter Departments
-  departments: {
-    all: 'All',
-    legal_compliance: 'Legal Compliance',
-    internal_affairs: 'Internal Affairs',
-    human_resources: 'Human Resources',
-    humanresources: 'Human Resources',
-    office_unit: 'Office Unit',
-    board_of_directors: 'Board of Directors',
-    finance: 'Finance',
-    engineering: 'Engineering',
-    sales: 'Sales',
-    marketing: 'Marketing',
-    design: 'Design',
-  },
-
   // Employee Department (for display in cards)
   employeeDepartment: {
+    all: 'All',
     legal_compliance: 'Legal Compliance',
+    technology: 'Technology',
     internal_affairs: 'Internal Affairs',
     human_resources: 'Human Resources',
     office_unit: 'Office Unit',
@@ -686,18 +677,6 @@ export default {
     speichern: 'Save',
   },
 
-  // Department Names
-  departments: {
-    engineering: 'Engineering',
-    technology: 'Technology',
-    hr: 'Human Resources',
-    finance: 'Finance',
-    marketing: 'Marketing',
-    sales: 'Sales',
-    operations: 'Operations',
-    support: 'Support',
-  },
-
   employeePosition: {
     general_manager: 'General Manager',
     senior_developer: 'Senior Developer',
@@ -965,15 +944,19 @@ export default {
     speichern: 'Save',
   },
 
-  // Department Names
+  // Department Pie Chart Names
   departments: {
-    engineering: 'Engineering',
+    all: 'All',
+    legal_compliance: 'Legal Compliance',
     technology: 'Technology',
-    hr: 'Human Resources',
+    internal_affairs: 'Internal Affairs',
+    human_resources: 'Human Resources',
+    office_unit: 'Office Unit',
+    board_of_directors: 'Board of Directors',
     finance: 'Finance',
-    marketing: 'Marketing',
+    engineering: 'Engineering',
     sales: 'Sales',
-    operations: 'Operations',
-    support: 'Support',
+    marketing: 'Marketing',
+    design: 'Design',
   },
 };

@@ -61,6 +61,11 @@ export default {
     totalLeave: 'Gesamte Urlaubstage',
     employeePerformance: 'Mitarbeiterleistung',
     departmentDist: 'Abteilungsverteilung',
+    regularHoursByEmployee: 'Reguläre Stunden nach Mitarbeiter',
+    overtimeHoursByEmployee: 'Überstunden nach Mitarbeiter',
+    performanceRating: 'Leistungsbewertung',
+    regularHoursLegend: 'Reguläre Stunden',
+    totalOvertimeLegend: 'Gesamte Überstunden',
     workLeaveComp: 'Arbeit vs. Urlaub',
     topPerformers: 'Spitzenleister',
     overtime: 'ÜS',
@@ -89,30 +94,19 @@ export default {
     placeholder: 'Mitarbeiter suchen...'
   },
 
-  // Filter Departments
-  departments: {
-    all: 'Alle',
-    legal_compliance: 'Rechtliche Einhaltung',
-    internal_affairs: 'Innere Angelegenheiten',
-    human_resources: 'Mitarbeiterwesen',
-    humanresources: 'Mitarbeiterwesen',
-    office_unit: 'Büros',
-    board_of_directors: 'Vorsitzender',
-    finance: 'Finanzen',
-    engineering: 'Technik',
-    sales: 'Vertrieb',
-    marketing: 'Marketing',
-    design: 'Design',
-  },
-
   employeeDepartment: {
     all: 'Alle',
     legal_compliance: 'Rechtliche Einhaltung',
+    technology: 'Technologie',
     internal_affairs: 'Innere Angelegenheiten',
     human_resources: 'Mitarbeiterwesen',
     office_unit: 'Büros',
     board_of_directors: 'Vorsitzender',
-    finance: 'Finanzen'
+    finance: 'Finanzen',
+    engineering: 'Ingenieurwesen',
+    sales: 'Vertrieb',
+    marketing: 'Marketing',
+    design: 'Design',
   },
 
   // Months
@@ -217,17 +211,6 @@ export default {
   // Search
   search: {
     placeholder: 'Mitarbeiter suchen...'
-  },
-
-  // Departments
-  departments: {
-    all: 'Alle',
-    engineering: 'Technik',
-    sales: 'Vertrieb',
-    marketing: 'Marketing',
-    humanresources: 'Personalwesen',
-    design: 'Design',
-    finance: 'Finanzen'
   },
 
   // Months
@@ -624,17 +607,6 @@ export default {
     speichern: 'Speichern',
   },
 
-  departments: {
-    engineering: 'Technik',
-    technology: 'Technologie',
-    hr: 'Personalwesen',
-    finance: 'Finanzen',
-    marketing: 'Marketing',
-    sales: 'Vertrieb',
-    operations: 'Betrieb',
-    support: 'Support',
-  },
-
   // Recruitment Status
   recruitmentStatus: {
     active: 'Aktiv',
@@ -872,15 +844,19 @@ export default {
     speichern: 'Speichern',
   },
 
-  // Department Names
+  // Department Pie Chart Names
   departments: {
-    engineering: 'Technik',
+    all: 'Alle',
+    legal_compliance: 'Rechtliche Einhaltung',
     technology: 'Technologie',
-    hr: 'Personalwesen',
+    internal_affairs: 'Innere Angelegenheiten',
+    human_resources: 'Mitarbeiterwesen',
+    office_unit: 'Büros',
+    board_of_directors: 'Vorsitzender',
     finance: 'Finanzen',
-    marketing: 'Marketing',
+    engineering: 'Ingenieurwesen',
     sales: 'Vertrieb',
-    operations: 'Betrieb',
-    support: 'Support',
+    marketing: 'Marketing',
+    design: 'Design',
   },
 };

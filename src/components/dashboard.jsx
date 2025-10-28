@@ -439,7 +439,7 @@ const Dashboard = ({ employees, applications }) => {
                   <stop offset="100%" stopColor="#000000" stopOpacity={0.85} />
                 </linearGradient>
               </defs>
-              <Bar dataKey="performance" fill="url(#performanceGradient)" name="Performance Rating" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="performance" fill="url(#performanceGradient)" name={t('dashboard.performanceRating', 'Performance Rating')} radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -539,7 +539,7 @@ const Dashboard = ({ employees, applications }) => {
                   <stop offset="100%" stopColor="#000000" stopOpacity={0.85} />
                 </linearGradient>
               </defs>
-              <Bar dataKey="regularHours" fill="url(#regularHoursGradient)" name="Regular Hours" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="regularHours" fill="url(#regularHoursGradient)" name={t('dashboard.regularHoursLegend', 'Regular Hours')} radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -592,7 +592,7 @@ const Dashboard = ({ employees, applications }) => {
                 }}
               />
               <Legend />
-              <Bar dataKey="overtimeHours" fill="#F59E0B" name="Total Overtime" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="overtimeHours" fill="#F59E0B" name={t('dashboard.totalOvertimeLegend', 'Total Overtime')} radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -640,8 +640,8 @@ const Dashboard = ({ employees, applications }) => {
                   }}
                 />
               <Legend />
-              <Bar dataKey="workDays" fill="#10B981" name="Work Days" radius={[8, 8, 0, 0]} />
-              <Bar dataKey="leaveDays" fill="#EF4444" name="Leave Days" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="workDays" fill="#10B981" name={t('dashboard.totalWorkDays', 'Total Work Days')} radius={[8, 8, 0, 0]} />
+              <Bar dataKey="leaveDays" fill="#EF4444" name={t('dashboard.totalLeave', 'Total Leave')} radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

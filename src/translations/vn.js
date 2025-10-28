@@ -61,6 +61,11 @@ export default {
     totalLeave: 'Tổng Ngày Nghỉ Phép',
     employeePerformance: 'Hiệu Suất Nhân Viên',
     departmentDist: 'Phân Bố Phòng Ban',
+    regularHoursByEmployee: 'Giờ Làm Chính Thức',
+    overtimeHoursByEmployee: 'Giờ Làm Thêm',
+    performanceRating: 'Đánh Giá Hiệu Suất',
+    regularHoursLegend: 'Giờ Làm Chính Thức',
+    totalOvertimeLegend: 'Tổng Giờ Làm Thêm',
     workLeaveComp: 'So Sánh Ngày Làm và Nghỉ',
     topPerformers: 'Nhân Viên XuấtSắc',
     overtime: 'Thêm Giờ',
@@ -89,30 +94,19 @@ export default {
     placeholder: 'Tìm Kiếm Nhân Viên...'
   },
 
-  // Filter Departments
-  departments: {
-    all: 'Tất Cả',
-    legal_compliance: 'Pháp Lý',
-    internal_affairs: 'Quản Lý Nội Bộ',
-    human_resources: 'Nhân Sự',
-    humanresources: 'Nhân Sự',
-    office_unit: 'Khối Văn Phòng',
-    board_of_directors: 'Chủ Tịch',
-    finance: 'Tài Chính',
-    engineering: 'Kỹ thuật',
-    sales: 'Bán hàng',
-    marketing: 'Tiếp thị',
-    design: 'Thiết kế',
-  },
-
   employeeDepartment: {
     all: 'Tất Cả',
     legal_compliance: 'Pháp Lý',
+    technology: 'Công Nghệ',
     internal_affairs: 'Quản Lý Nội Bộ',
     human_resources: 'Nhân Sự',
     office_unit: 'Khối Văn Phòng',
     board_of_directors: 'Chủ Tịch',
-    finance: 'Tài Chính'
+    finance: 'Tài Chính',
+    engineering: 'Kỹ Thuật',
+    sales: 'Bán Hàng',
+    marketing: 'Tiếp Thị',
+    design: 'Thiết Kế',
   },
 
   // Months
@@ -555,6 +549,7 @@ export default {
   // Employee Department (for display in cards)
   employeeDepartment: {
     legal_compliance: 'Pháp Lý',
+    technology: 'Công Nghệ',
     internal_affairs: 'Quản Lý Nội Bộ',
     human_resources: 'Nhân Sự',
     office_unit: 'Đơn Vị Văn Phòng',
@@ -672,18 +667,6 @@ export default {
     abbrechen: 'Hủy Bỏ',
     save: 'Lưu',
     speichern: 'Lưu',
-  },
-
-  // Department Names
-  departments: {
-    engineering: 'Kỹ Thuật',
-    technology: 'Công Nghệ',
-    hr: 'Nhân Sự',
-    finance: 'Tài Chính',
-    marketing: 'Tiếp Thị',
-    sales: 'Bán Hàng',
-    operations: 'Vận Hành',
-    support: 'Hỗ Trợ',
   },
 
   // Recruitment Status
@@ -868,15 +851,19 @@ export default {
     speichern: 'Lưu',
   },
 
-  // Department Names
+  // Department Pie Chart Names
   departments: {
-    engineering: 'Kỹ Thuật',
+    all: 'Tất Cả',
+    legal_compliance: 'Pháp Lý',
     technology: 'Công Nghệ',
-    hr: 'Nhân Sự',
+    internal_affairs: 'Quản Lý Nội Bộ',
+    human_resources: 'Nhân Sự',
+    office_unit: 'Khối Văn Phòng',
+    board_of_directors: 'Chủ Tịch',
     finance: 'Tài Chính',
-    marketing: 'Tiếp Thị',
+    engineering: 'Kỹ Thuật',
     sales: 'Bán Hàng',
-    operations: 'Vận Hành',
-    support: 'Hỗ Trợ',
+    marketing: 'Tiếp Thị',
+    design: 'Thiết Kế',
   },
 };

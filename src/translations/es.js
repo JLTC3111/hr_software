@@ -19,7 +19,7 @@ header: {
   title: 'Gerente de RH',
   welcome: 'Bienvenido de nuevo',
   user: 'Equipo de RH',
-  logout: 'Cerrar sesión'
+  logout: 'Cerrar sesión',
 },
 
 // Login
@@ -84,6 +84,11 @@ login: {
     totalLeave: 'Días de Vacaciones Totales',
     employeePerformance: 'Rendimiento de los Empleados',
     departmentDist: 'Distribución por Departamento',
+    regularHoursByEmployee: 'Horas Regulares por Empleado',
+    overtimeHoursByEmployee: 'Horas Extra por Empleado',
+    performanceRating: 'Calificación de Rendimiento',
+    regularHoursLegend: 'Horas Regulares',
+    totalOvertimeLegend: 'Total de Horas Extra',
     workLeaveComp: 'Comparación de Trabajo y Vacaciones',
     topPerformers: 'Mejores Empleados',
     overtime: 'Horas Extra',
@@ -188,13 +193,12 @@ login: {
     }
   },
 
-  // Filter Departments
-  departments: {
+  employeeDepartment: {
     all: 'Todos',
     legal_compliance: 'Cumplimiento Legal',
+    technology: 'Tecnología',
     internal_affairs: 'Asuntos Internos',
     human_resources: 'Recursos Humanos',
-    humanresources: 'Recursos Humanos',
     office_unit: 'Oficinas',
     board_of_directors: 'Junta Directiva',
     finance: 'Finanzas',
@@ -202,16 +206,6 @@ login: {
     sales: 'Ventas',
     marketing: 'Marketing',
     design: 'Diseño',
-  },
-  
-  employeeDepartment: {
-    all: 'Todos',
-    legal_compliance: 'Cumplimiento Legal',
-    internal_affairs: 'Asuntos Internos',
-    human_resources: 'Recursos Humanos',
-    office_unit: 'Oficinas',
-    board_of_directors: 'Junta Directiva',
-    finance: 'Finanzas'
   },
 
   // Months
@@ -804,15 +798,19 @@ login: {
     speichern: 'Guardar',
   },
 
-  // Department Names
+  // Department Pie Chart Names
   departments: {
-    engineering: 'Ingeniería',
+    all: 'Todos',
+    legal_compliance: 'Cumplimiento Legal',
     technology: 'Tecnología',
-    hr: 'Recursos Humanos',
+    internal_affairs: 'Asuntos Internos',
+    human_resources: 'Recursos Humanos',
+    office_unit: 'Oficinas',
+    board_of_directors: 'Junta Directiva',
     finance: 'Finanzas',
-    marketing: 'Marketing',
+    engineering: 'Ingeniería',
     sales: 'Ventas',
-    operations: 'Operaciones',
-    support: 'Soporte',
+    marketing: 'Marketing',
+    design: 'Diseño',
   },
 };

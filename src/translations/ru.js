@@ -18,7 +18,8 @@ export default {
   header: {
     title: 'HR Менеджер',
     welcome: 'Добро пожаловать, HR команда',
-    user: 'HR команда'
+    user: 'HR команда',
+    logout: 'Выход',
   },
 
   // Dashboard
@@ -34,6 +35,11 @@ export default {
     totalLeave: 'Всего Отпускных Дней',
     employeePerformance: 'Производительность Сотрудников',
     departmentDist: 'Распределение по Отделам',
+    regularHoursByEmployee: 'Обычные Часы по Сотрудникам',
+    overtimeHoursByEmployee: 'Сверхурочные Часы по Сотрудникам',
+    performanceRating: 'Оценка Эффективности',
+    regularHoursLegend: 'Обычные Часы',
+    totalOvertimeLegend: 'Всего Сверхурочных',
     workLeaveComp: 'Сравнение Рабочих и Выходных Дней',
     topPerformers: 'Лучшие Сотрудники',
     overtime: 'Сверхурочная Работа',
@@ -63,14 +69,34 @@ export default {
   },
 
   // Departments
-  departments: {
+  departmentDist: {
     all: 'Все',
+    legal_compliance: 'Юридическое Соответствие',
+    technology: 'Технологии',
+    internal_affairs: 'Внутренние Дела',
+    human_resources: 'Кадры',
+    office_unit: 'Офисный Отдел',
+    board_of_directors: 'Совет Директоров',
+    finance: 'Финансы',
     engineering: 'Инженерия',
     sales: 'Продажи',
     marketing: 'Маркетинг',
-    humanresources: 'Кадры',
     design: 'Дизайн',
-    finance: 'Финансы'
+  },
+
+  employeeDepartment: {
+    all: 'Все',
+    legal_compliance: 'Юридическое Соответствие',
+    technology: 'Технологии',
+    internal_affairs: 'Внутренние Дела',
+    human_resources: 'Кадры',
+    office_unit: 'Офисный Отдел',
+    board_of_directors: 'Совет Директоров',
+    finance: 'Финансы',
+    engineering: 'Инженерия',
+    sales: 'Продажи',
+    marketing: 'Маркетинг',
+    design: 'Дизайн',
   },
 
   // Months
@@ -735,15 +761,19 @@ export default {
     speichern: 'Сохранить',
   },
 
-  // Department Names
+  // Department Pie Chart Names
   departments: {
-    engineering: 'Инженерия',
+    all: 'Все',
+    legal_compliance: 'Юридическое Соответствие',
     technology: 'Технологии',
-    hr: 'Кадры',
+    internal_affairs: 'Внутренние Дела',
+    human_resources: 'Кадры',
+    office_unit: 'Офисный Отдел',
+    board_of_directors: 'Совет Директоров',
     finance: 'Финансы',
-    marketing: 'Маркетинг',
+    engineering: 'Инженерия',
     sales: 'Продажи',
-    operations: 'Операции',
-    support: 'Поддержка',
+    marketing: 'Маркетинг',
+    design: 'Дизайн',
   },
 };

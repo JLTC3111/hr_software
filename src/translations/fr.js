@@ -21,7 +21,8 @@ export default {
   header: {
     title: 'Gestionnaire RH',
     welcome: 'Bon retour, équipe RH',
-    user: 'Équipe RH'
+    user: 'Équipe RH',
+    logout: 'Se deconnecter',
   },
 
   // Dashboard
@@ -37,6 +38,11 @@ export default {
     totalLeave: 'Jours de Congé Totaux',
     employeePerformance: 'Performance des Employés',
     departmentDist: 'Répartition par Département',
+    regularHoursByEmployee: 'Heures Régulières par Employé',
+    overtimeHoursByEmployee: 'Heures Supplémentaires par Employé',
+    performanceRating: 'Évaluation de Performance',
+    regularHoursLegend: 'Heures Régulières',
+    totalOvertimeLegend: 'Total des Heures Supplémentaires',
     workLeaveComp: 'Comparaison Travail / Congés',
     topPerformers: 'Meilleurs Employés',
     overtime: 'Heures Supplémentaires',
@@ -65,15 +71,19 @@ export default {
     placeholder: 'Rechercher des employés...'
   },
 
-  // Departments
-  departments: {
+  employeeDepartment: {
     all: 'Tous',
+    legal_compliance: 'Conformité Juridique',
+    technology: 'Technologie',
+    internal_affairs: 'Affaires Internes',
+    human_resources: 'Ressources Humaines',
+    office_unit: 'Unité de Bureau',
+    board_of_directors: 'Conseil d\'Administration',
+    finance: 'Finance',
     engineering: 'Ingénierie',
     sales: 'Ventes',
     marketing: 'Marketing',
-    humanresources: 'Ressources humaines',
     design: 'Design',
-    finance: 'Finance'
   },
 
   // Months
@@ -296,17 +306,6 @@ export default {
   // Search
   search: {
     placeholder: 'Rechercher des employés...'
-  },
-
-  // Departments
-  departments: {
-    all: 'Tous',
-    engineering: 'Ingénierie',
-    sales: 'Ventes',
-    marketing: 'Marketing',
-    humanresources: 'Ressources Humaines',
-    design: 'Design',
-    finance: 'Finance'
   },
 
   // Months
@@ -582,17 +581,6 @@ export default {
     speichern: 'Enregistrer',
   },
 
-  departments: {
-    engineering: 'Ingénierie',
-    technology: 'Technologie',
-    hr: 'Ressources Humaines',
-    finance: 'Finance',
-    marketing: 'Marketing',
-    sales: 'Ventes',
-    operations: 'Opérations',
-    support: 'Support',
-  },
-
   // Recruitment Status
   recruitmentStatus: {
     active: 'Actif',
@@ -824,15 +812,19 @@ export default {
     speichern: 'Enregistrer',
   },
 
-  // Department Names
+  // Department Pie Chart Names
   departments: {
-    engineering: 'Ingénierie',
+    all: 'Tous',
+    legal_compliance: 'Conformité Juridique',
     technology: 'Technologie',
-    hr: 'Ressources Humaines',
+    internal_affairs: 'Affaires Internes',
+    human_resources: 'Ressources Humaines',
+    office_unit: 'Unité de Bureau',
+    board_of_directors: 'Conseil d\'Administration',
     finance: 'Finance',
-    marketing: 'Marketing',
+    engineering: 'Ingénierie',
     sales: 'Ventes',
-    operations: 'Opérations',
-    support: 'Support',
+    marketing: 'Marketing',
+    design: 'Design',
   },
 };

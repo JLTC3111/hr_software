@@ -18,7 +18,8 @@ export default {
   header: {
     title: 'HR 매니저',
     welcome: '다시 오신 것을 환영합니다, HR팀',
-    user: 'HR팀'
+    user: 'HR팀',
+    logout: '로그아웃',
   },
 
   // Dashboard
@@ -26,6 +27,8 @@ export default {
     title: '대시보드 요약',
     overview: '조직 개요',
     totalEmployees: '전체 직원 수',
+    totalOvertime: '총 초과 근무 시간',
+    totalLeave: '총 휴가 일수',
     activeEmployees: '활동 중인 직원',
     newHires: '이번 달 신규 입사자',
     pendingApplications: '대기 중인 지원서',
@@ -35,6 +38,11 @@ export default {
     githubError: 'GitHub 로그인 실패',
     employeePerformance: '직원 성과',
     departmentDist: '부서별 분포',
+    regularHoursByEmployee: '직원별 정규 근무 시간',
+    overtimeHoursByEmployee: '직원별 초과 근무 시간',
+    performanceRating: '성과 평가',
+    regularHoursLegend: '정규 근무 시간',
+    totalOvertimeLegend: '총 초과 근무 시간',
     workLeaveComp: '근무일 vs 휴가 비교',
     topPerformers: '우수 직원',
     overtime: '초과 근무',
@@ -63,15 +71,19 @@ export default {
     placeholder: '직원 검색...'
   },
 
-  // Departments
-  departments: {
+  employeeDepartment: {
     all: '모두',
+    legal_compliance: '법적 준수',
+    technology: '기술',
+    internal_affairs: '내부 업무',
+    human_resources: '인사',
+    office_unit: '사무 부서',
+    board_of_directors: '이사회',
+    finance: '재무',
     engineering: '엔지니어링',
     sales: '영업',
     marketing: '마케팅',
-    humanresources: '인사',
     design: '디자인',
-    finance: '재무'
   },
 
   // Months
@@ -734,15 +746,19 @@ export default {
     speichern: '저장',
   },
 
-  // Department Names
+  // Department Pie Chart Names
   departments: {
-    engineering: '엔지니어링',
+    all: '모두',
+    legal_compliance: '법적 준수',
     technology: '기술',
-    hr: '인사',
+    internal_affairs: '내부 업무',
+    human_resources: '인사',
+    office_unit: '사무 부서',
+    board_of_directors: '이사회',
     finance: '재무',
-    marketing: '마케팅',
+    engineering: '엔지니어링',
     sales: '영업',
-    operations: '운영',
-    support: '지원',
+    marketing: '마케팅',
+    design: '디자인',
   },
 };

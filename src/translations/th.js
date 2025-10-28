@@ -18,7 +18,8 @@ export default {
   header: {
     title: 'ผู้จัดการ HR',
     welcome: 'ยินดีต้อนรับกลับ ทีม HR',
-    user: 'ทีม HR'
+    user: 'ทีม HR',
+    logout: 'ออกจากระบบ',
   },
 
   // Dashboard
@@ -34,6 +35,11 @@ export default {
     totalLeave: 'วันลารวมทั้งหมด',
     employeePerformance: 'ประสิทธิภาพของพนักงาน',
     departmentDist: 'การกระจายตามแผนก',
+    regularHoursByEmployee: 'ชั่วโมงทำงานปกติตามพนักงาน',
+    overtimeHoursByEmployee: 'ชั่วโมงทำงานล่วงเวลาตามพนักงาน',
+    performanceRating: 'การประเมินประสิทธิภาพ',
+    regularHoursLegend: 'ชั่วโมงทำงานปกติ',
+    totalOvertimeLegend: 'ชั่วโมงทำงานล่วงเวลารวม',
     workLeaveComp: 'เปรียบเทียบวันทำงานและวันลา',
     topPerformers: 'พนักงานยอดเยี่ยม',
     overtime: 'ทำงานล่วงเวลา',
@@ -62,15 +68,19 @@ export default {
     placeholder: 'ค้นหาพนักงาน...'
   },
 
-  // Departments
-  departments: {
+  employeeDepartment: {
     all: 'ทั้งหมด',
+    legal_compliance: 'การปฏิบัติตามกฎหมาย',
+    technology: 'เทคโนโลยี',
+    internal_affairs: 'กิจการภายใน',
+    human_resources: 'ทรัพยากรมนุษย์',
+    office_unit: 'หน่วยงานสำนักงาน',
+    board_of_directors: 'คณะกรรมการบริหาร',
+    finance: 'การเงิน',
     engineering: 'วิศวกรรม',
     sales: 'ขาย',
     marketing: 'การตลาด',
-    humanresources: 'ทรัพยากรมนุษย์',
     design: 'ดีไซน์',
-    finance: 'การเงิน'
   },
 
   // Months
@@ -733,15 +743,19 @@ export default {
     speichern: 'บันทึก',
   },
 
-  // Department Names
+  // Department Pie Chart Names
   departments: {
-    engineering: 'วิศวกรรม',
+    all: 'ทั้งหมด',
+    legal_compliance: 'การปฏิบัติตามกฎหมาย',
     technology: 'เทคโนโลยี',
-    hr: 'ทรัพยากรบุคคล',
+    internal_affairs: 'กิจการภายใน',
+    human_resources: 'ทรัพยากรมนุษย์',
+    office_unit: 'หน่วยงานสำนักงาน',
+    board_of_directors: 'คณะกรรมการบริหาร',
     finance: 'การเงิน',
-    marketing: 'การตลาด',
+    engineering: 'วิศวกรรม',
     sales: 'การขาย',
-    operations: 'การดำเนินงาน',
-    support: 'สนับสนุน',
+    marketing: 'การตลาด',
+    design: 'ดีไซน์',
   },
 };

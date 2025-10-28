@@ -19,7 +19,8 @@ export default {
   header: {
     title: 'HRマネージャー',
     welcome: 'おかえりなさい、HRチーム',
-    user: 'HRチーム'
+    user: 'HRチーム',
+    logout: 'ログアウト',
   },
 
   // Dashboard
@@ -35,6 +36,11 @@ export default {
     totalLeave: '総休暇日数',
     employeePerformance: '従業員のパフォーマンス',
     departmentDist: '部署別構成',
+    regularHoursByEmployee: '従業員別の通常勤務時間',
+    overtimeHoursByEmployee: '従業員別の残業時間',
+    performanceRating: 'パフォーマンス評価',
+    regularHoursLegend: '通常勤務時間',
+    totalOvertimeLegend: '総残業時間',
     workLeaveComp: '勤務日と休暇日の比較',
     topPerformers: '優秀な従業員',
     overtime: '残業時間',
@@ -49,7 +55,7 @@ export default {
     activities: {
       newEmployee: '新入社員が入社しました：ABC',
       interviewScheduled: 'XYZとの面接を予定しています',
-      performanceReview: 'Đỗ Bảo Longの業績評価が完了しました'
+      performanceReview: 'の業績評価が完了しました'
     },
     timeAgo: {
       twoHours: '2時間前',
@@ -63,15 +69,19 @@ export default {
     placeholder: '従業員を検索...'
   },
 
-  // Departments
-  departments: {
+  employeeDepartment: {
     all: 'すべて',
+    legal_compliance: '法令遵守',
+    technology: 'テクノロジー',
+    internal_affairs: '内部業務',
+    human_resources: '人事',
+    office_unit: '事務部門',
+    board_of_directors: '取締役会',
+    finance: '財務',
     engineering: 'エンジニアリング',
     sales: '営業',
     marketing: 'マーケティング',
-    humanresources: '人事',
     design: 'デザイン',
-    finance: '財務'
   },
 
   // Months
@@ -735,15 +745,19 @@ export default {
     speichern: '保存',
   },
 
-  // Department Names
+  // Department Pie Chart Names
   departments: {
-    engineering: 'エンジニアリング',
+    all: 'すべて',
+    legal_compliance: '法令遵守',
     technology: 'テクノロジー',
-    hr: '人事',
+    internal_affairs: '内部業務',
+    human_resources: '人事',
+    office_unit: '事務部門',
+    board_of_directors: '取締役会',
     finance: '財務',
-    marketing: 'マーケティング',
+    engineering: 'エンジニアリング',
     sales: '営業',
-    operations: '運営',
-    support: 'サポート',
+    marketing: 'マーケティング',
+    design: 'デザイン',
   },
 };
