@@ -150,6 +150,7 @@ login: {
   // Time Clock Entry
   timeClock: {
     title: 'Nueva Entrada de Tiempo',
+    subtitle: 'Escribe tus horas de trabajo y sube pruebas de asistencia',
     selectDate: 'Seleccionar Fecha',
     clockIn: 'Entrada',
     clockOut: 'Salida',

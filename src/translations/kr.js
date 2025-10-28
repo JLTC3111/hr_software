@@ -450,6 +450,7 @@ export default {
   // Time Clock Entry
   timeClock: {
     title: '새 근무 입력',
+    subtitle: '작업 시간과 증거를 기록하고 제출하세요',
     selectDate: '날짜 선택',
     clockIn: '출근',
     clockOut: '퇴근',

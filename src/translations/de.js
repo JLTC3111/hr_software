@@ -169,7 +169,17 @@ export default {
     regularHours: 'Reguläre Stunden',
     overtimeHours: 'Überstunden',
     hrs: 'Std',
-    attendanceRate: 'Anwesenheitsrate'
+    attendanceRate: 'Anwesenheitsrate',
+    includesPending: '*inkl. ausstehend',
+    totalRegularHours: 'Gesamte reguläre Arbeitsstunden (Alle Mitarbeiter)',
+    regularHoursChart: 'Reguläre Arbeitsstunden nach Mitarbeiter',
+    overtimeHoursChart: 'Überstunden nach Mitarbeiter',
+    overviewTitle: 'Unternehmensübersicht',
+    regularHoursLegend: 'Reguläre Stunden',
+    totalOvertimeLegend: 'Gesamte Überstunden',
+    employee: 'Mitarbeiter',
+    daysWorked: 'Arbeitstage',
+    totalHoursLabel: 'Gesamtstunden'
   },
 
   // Employees
@@ -489,17 +499,7 @@ export default {
     exportSuccess: 'Bericht erfolgreich exportiert!',
     requestLeave: 'Urlaub beantragen',
     logOvertime: 'Überstunden erfassen',
-    exportReport: 'Bericht exportieren',
-    includesPending: '*inkl. ausstehend',
-    totalRegularHours: 'Gesamte reguläre Arbeitsstunden (Alle Mitarbeiter)',
-    regularHoursChart: 'Reguläre Arbeitsstunden nach Mitarbeiter',
-    overtimeHoursChart: 'Überstunden nach Mitarbeiter',
-    overviewTitle: 'Unternehmensübersicht',
-    regularHoursLegend: 'Reguläre Stunden',
-    totalOvertimeLegend: 'Gesamte Überstunden',
-    employee: 'Mitarbeiter',
-    daysWorked: 'Arbeitstage',
-    totalHoursLabel: 'Gesamtstunden'
+    exportReport: 'Bericht exportieren'
   },
 
   // Admin Time Entry
@@ -530,6 +530,7 @@ export default {
   // Time Clock Entry
   timeClock: {
     title: 'Neuer Zeiteintrag',
+    subtitle: 'Erfassen Sie Ihre Arbeitszeiten und laden Sie Anwesenheitsnachweise hoch',
     selectDate: 'Datum Auswählen',
     clockIn: 'Einstempeln',
     clockOut: 'Ausstempeln',

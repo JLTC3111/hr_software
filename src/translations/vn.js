@@ -229,46 +229,6 @@ export default {
     error: 'Không thể tạo mục nhập giờ'
   },
 
-  // Time Clock Entry
-  timeClock: {
-    title: 'Nhập Giờ Mới',
-    selectDate: 'Chọn Ngày',
-    clockIn: 'Giờ Vào',
-    clockOut: 'Giờ Ra',
-    hourType: 'Loại Giờ',
-    proof: 'Chứng Minh Công Việc',
-    optional: 'Tùy Chọn',
-    notes: 'Ghi Chú',
-    notesPlaceholder: 'Thêm ghi chú về công việc của bạn...',
-    submit: 'Gửi Mục Nhập Giờ',
-    submitting: 'Đang gửi...',
-    success: 'Đã gửi mục nhập giờ thành công!',
-    confirmDelete: 'Bạn có chắc chắn muốn xóa mục nhập giờ này?',
-    deleteSuccess: 'Đã xóa mục nhập giờ thành công',
-    requestLeave: 'Yêu Cầu Nghỉ Phép',
-    weeklySummary: 'Tuần Này',
-    monthlySummary: 'Tháng Này',
-    leaveDays: 'Ngày Nghỉ',
-    thisWeek: 'Tuần Này',
-    thisMonth: 'Tháng Này',
-    total: 'Tổng Cộng',
-    includesPending: '* Bao gồm đang chờ & đã phê duyệt',
-    hourTypes: {
-      regular: 'Giờ Làm Thường',
-      holiday: 'Ngày Lễ',
-      weekend: 'Cuối Tuần/Tăng Ca',
-      bonus: 'Giờ Thưởng'
-    },
-    errors: {
-      dateRequired: 'Ngày là bắt buộc',
-      clockInRequired: 'Giờ vào là bắt buộc',
-      clockOutRequired: 'Giờ ra là bắt buộc',
-      clockOutAfterClockIn: 'Giờ ra phải sau giờ vào',
-      submitFailed: 'Không thể gửi mục nhập giờ',
-      deleteFailed: 'Không thể xóa mục nhập giờ'
-    }
-  },
-
   // Employees
   employees: {
     title: 'Quản Lý Nhân Viên',

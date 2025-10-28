@@ -451,6 +451,7 @@ export default {
   // Time Clock Entry
   timeClock: {
     title: '新しい勤怠入力',
+    subtitle: "作業時間と証拠を記録して送信",
     selectDate: '日付を選択',
     clockIn: '出勤',
     clockOut: '退勤',

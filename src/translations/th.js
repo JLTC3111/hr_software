@@ -449,6 +449,7 @@ export default {
   // Time Clock Entry
   timeClock: {
     title: 'บันทึกเวลาใหม่',
+    subtitle: 'บันทึกชั่วโมงการทำงานและส่งหลักฐานการเข้างาน',
     selectDate: 'เลือกวันที่',
     clockIn: 'เข้างาน',
     clockOut: 'ออกงาน',

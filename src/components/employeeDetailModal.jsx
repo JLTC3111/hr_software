@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Phone, Mail, MapPin, Award, Cake, Network, Calendar, DollarSign, User, ClipboardList, FileText, Download, Upload, Loader, Edit2, Briefcase } from 'lucide-react';
+import { X, Phone, Mail, MapPin, Award, Cake, Network, Calendar, DollarSign, User, ClipboardList, FileText, Download, Upload, Loader, Edit2, Briefcase, Trash2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useUpload } from '../contexts/UploadContext';
-import { getEmployeePdfUrl } from '../services/employeeService';
+import { getEmployeePdfUrl, deleteEmployeePdf } from '../services/employeeService';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -148,6 +148,40 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
   const handlePdfDownload = () => {
     if (pdfUrl) {
       window.open(pdfUrl, '_blank');
+    }
+  };
+
+  const handlePdfDelete = async () => {
+    if (!pdfPath) return;
+
+    const confirmDelete = window.confirm(
+      t('employeeDetailModal.confirmDeletePdf', 'Are you sure you want to delete this PDF document? This action cannot be undone.')
+    );
+
+    if (!confirmDelete) return;
+
+    console.log('🗑️ Deleting PDF:', pdfPath);
+
+    try {
+      const result = await deleteEmployeePdf(employee.id, pdfPath);
+      
+      if (result.success) {
+        console.log('✅ PDF deleted successfully');
+        setPdfPath(null);
+        setPdfUrl(null);
+        setNumPages(null);
+        setPageNumber(1);
+        setPdfError(null);
+        
+        if (onUpdate) onUpdate();
+        alert(t('success.pdfDeleted', 'PDF document deleted successfully!'));
+      } else {
+        console.error('❌ Delete failed:', result.error);
+        alert(t('errors.deleteFailed', 'Failed to delete PDF: ') + result.error);
+      }
+    } catch (error) {
+      console.error('❌ Error deleting PDF:', error);
+      alert(t('errors.deleteFailed', 'Failed to delete PDF: ') + error.message);
     }
   };
 
@@ -395,13 +429,22 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                 </div>
                 <div className="flex space-x-2">
                   {pdfUrl && (
-                    <button
-                      onClick={handlePdfDownload}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>{t('employeeDetailModal.download', 'Download')}</span>
-                    </button>
+                    <>
+                      <button
+                        onClick={handlePdfDownload}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>{t('employeeDetailModal.download', 'Download')}</span>
+                      </button>
+                      <button
+                        onClick={handlePdfDelete}
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>{t('employeeDetailModal.delete', 'Delete')}</span>
+                      </button>
+                    </>
                   )}
                   <input
                     type="file"

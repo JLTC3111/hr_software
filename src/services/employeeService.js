@@ -645,18 +645,34 @@ export const uploadEmployeePdf = async (file, employeeId, onProgress = null) => 
 };
 
 /**
- * Delete employee PDF document from Supabase Storage
+ * Delete employee PDF document from Supabase Storage and database
  */
-export const deleteEmployeePdf = async (pdfPath) => {
+export const deleteEmployeePdf = async (employeeId, pdfPath) => {
   try {
-    const { error } = await supabase.storage
+    console.log('🗑️ Deleting PDF:', pdfPath, 'for employee:', employeeId);
+    
+    // Delete from storage
+    const { error: storageError } = await supabase.storage
       .from('employee-documents')
       .remove([pdfPath]);
 
-    if (error) throw error;
+    if (storageError) {
+      console.warn('⚠️ Storage deletion warning:', storageError.message);
+      // Continue even if storage deletion fails (file might not exist)
+    }
+
+    // Clear database field
+    const { error: dbError } = await supabase
+      .from('employees')
+      .update({ pdf_document_url: null })
+      .eq('id', toEmployeeId(employeeId));
+
+    if (dbError) throw dbError;
+
+    console.log('✅ PDF deleted successfully');
     return { success: true };
   } catch (error) {
-    console.error('Error deleting employee PDF:', error);
+    console.error('❌ Error deleting employee PDF:', error);
     return { success: false, error: error.message };
   }
 };
