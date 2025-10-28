@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Viewer Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    .input-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #333;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+    .viewer-container {
+      margin-top: 30px;
+      border: 2px dashed #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      background: #fafafa;
+    }
+    iframe {
+      width: 100%;
+      height: 600px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: white;
+    }
+    .log {
+      margin-top: 20px;
+      padding: 15px;
+      background: #1f2937;
+      color: #f3f4f6;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .log-entry {
+      margin: 5px 0;
+      padding: 5px;
+      border-left: 3px solid #3b82f6;
+      padding-left: 10px;
+    }
+    .log-entry.error {
+      border-left-color: #ef4444;
+      color: #fca5a5;
+    }
+    .log-entry.success {
+      border-left-color: #10b981;
+      color: #86efac;
+    }
+    .log-entry.warning {
+      border-left-color: #f59e0b;
+      color: #fcd34d;
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    .status.success { background: #10b981; color: white; }
+    .status.error { background: #ef4444; color: white; }
+    .status.pending { background: #f59e0b; color: white; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 PDF Viewer Test Tool</h1>
+    <p class="subtitle">Test your Supabase PDF storage configuration</p>
+
+    <div class="input-group">
+      <label for="pdfUrl">
+        PDF URL (from Supabase Storage):
+        <span class="status pending" id="urlStatus">Not Tested</span>
+      </label>
+      <input 
+        type="text" 
+        id="pdfUrl" 
+        placeholder="https://xxx.supabase.co/storage/v1/object/public/employee-documents/file.pdf"
+        value=""
+      >
+    </div>
+
+    <div>
+      <button onclick="testUrl()">🧪 Test URL</button>
+      <button onclick="loadIframe()">📄 Load in Iframe</button>
+      <button onclick="openNewTab()">🔗 Open in New Tab</button>
+      <button onclick="clearLog()">🗑️ Clear Log</button>
+    </div>
+
+    <div class="viewer-container" id="viewerContainer" style="display: none;">
+      <h3>PDF Preview:</h3>
+      <iframe id="pdfFrame" title="PDF Viewer"></iframe>
+    </div>
+
+    <div class="log" id="logContainer">
+      <div class="log-entry">Console output will appear here...</div>
+    </div>
+  </div>
+
+  <script>
+    function log(message, type = 'info') {
+      const logContainer = document.getElementById('logContainer');
+      const timestamp = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${timestamp}] ${message}`;
+      logContainer.appendChild(entry);
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    function clearLog() {
+      document.getElementById('logContainer').innerHTML = '<div class="log-entry">Console cleared...</div>';
+    }
+
+    function updateStatus(text, type) {
+      const status = document.getElementById('urlStatus');
+      status.textContent = text;
+      status.className = `status ${type}`;
+    }
+
+    async function testUrl() {
+      const url = document.getElementById('pdfUrl').value.trim();
+      
+      if (!url) {
+        log('❌ Please enter a PDF URL', 'error');
+        updateStatus('No URL', 'error');
+        return;
+      }
+
+      log('🔍 Testing URL: ' + url, 'info');
+      updateStatus('Testing...', 'pending');
+
+      try {
+        // Test with HEAD request
+        log('📡 Sending HEAD request...', 'info');
+        const response = await fetch(url, { method: 'HEAD' });
+        
+        log(`📊 Response Status: ${response.status} ${response.statusText}`, 
+            response.ok ? 'success' : 'error');
+
+        // Check headers
+        const contentType = response.headers.get('content-type');
+        const contentLength = response.headers.get('content-length');
+        
+        log(`📄 Content-Type: ${contentType || 'NOT SET'}`, 
+            contentType === 'application/pdf' ? 'success' : 'warning');
+        
+        if (contentLength) {
+          const sizeMB = (parseInt(contentLength) / 1024 / 1024).toFixed(2);
+          log(`📦 File Size: ${sizeMB} MB`, 'info');
+        }
+
+        // Check CORS
+        const accessControl = response.headers.get('access-control-allow-origin');
+        log(`🌐 CORS: ${accessControl || 'Not configured'}`, 
+            accessControl ? 'success' : 'warning');
+
+        if (response.ok) {
+          log('✅ URL is accessible!', 'success');
+          updateStatus('✅ Accessible', 'success');
+          
+          if (contentType === 'application/pdf') {
+            log('✅ Content-Type is correct!', 'success');
+          } else {
+            log('⚠️ Content-Type should be application/pdf', 'warning');
+          }
+        } else {
+          log(`❌ URL returned error: ${response.status}`, 'error');
+          updateStatus('❌ Error', 'error');
+        }
+
+      } catch (error) {
+        log(`❌ Error: ${error.message}`, 'error');
+        updateStatus('❌ Failed', 'error');
+        
+        if (error.message.includes('CORS')) {
+          log('⚠️ CORS error detected. Configure CORS in Supabase.', 'warning');
+        }
+      }
+    }
+
+    function loadIframe() {
+      const url = document.getElementById('pdfUrl').value.trim();
+      
+      if (!url) {
+        log('❌ Please enter a PDF URL', 'error');
+        return;
+      }
+
+      log('📄 Loading PDF in iframe...', 'info');
+      
+      const viewerContainer = document.getElementById('viewerContainer');
+      const iframe = document.getElementById('pdfFrame');
+      
+      viewerContainer.style.display = 'block';
+      iframe.src = url;
+
+      iframe.onload = () => {
+        log('✅ Iframe loaded successfully!', 'success');
+      };
+
+      iframe.onerror = (e) => {
+        log('❌ Iframe failed to load', 'error');
+        console.error('Iframe error:', e);
+      };
+    }
+
+    function openNewTab() {
+      const url = document.getElementById('pdfUrl').value.trim();
+      
+      if (!url) {
+        log('❌ Please enter a PDF URL', 'error');
+        return;
+      }
+
+      log('🔗 Opening PDF in new tab...', 'info');
+      window.open(url, '_blank');
+    }
+
+    // Auto-detect URL from query parameter
+    window.addEventListener('load', () => {
+      const params = new URLSearchParams(window.location.search);
+      const url = params.get('url');
+      
+      if (url) {
+        document.getElementById('pdfUrl').value = url;
+        log('📎 URL loaded from query parameter', 'info');
+        testUrl();
+      }
+    });
+  </script>
+</body>
+</html>

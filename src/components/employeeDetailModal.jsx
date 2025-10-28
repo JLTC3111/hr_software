@@ -15,43 +15,74 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('info'); // 'info', 'contact', 'documents'
   const [uploading, setUploading] = useState(false);
-  const [pdfUrl, setPdfUrl] = useState(employee?.pdf_document_url || null);
+  const [pdfPath, setPdfPath] = useState(employee?.pdf_document_url || null);
+  const [pdfUrl, setPdfUrl] = useState(null);
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [modalWidth, setModalWidth] = useState(900);
   const [isResizing, setIsResizing] = useState(false);
   const [pdfError, setPdfError] = useState(null);
-  const [pdfLoading, setPdfLoading] = useState(false);
+  const [useIframe, setUseIframe] = useState(true); // Use iframe by default
   const modalRef = useRef(null);
   const resizeRef = useRef(null);
 
   if (!employee) return null;
 
-  // Fetch signed URL for existing PDF on mount
+  // Generate URL from file path on mount with fallback
   useEffect(() => {
-    const fetchSignedUrl = async () => {
-      if (pdfUrl && pdfUrl.includes('employee-documents')) {
-        try {
-          // Extract filename from URL
-          const urlParts = pdfUrl.split('/');
-          const fileName = urlParts[urlParts.length - 1].split('?')[0]; // Remove query params
+    const generatePdfUrl = async () => {
+      if (!pdfPath) return;
+
+      console.log('🔍 Generating PDF URL for path:', pdfPath);
+
+      try {
+        // Try public URL first
+        const { data: publicData } = supabase.storage
+          .from('employee-documents')
+          .getPublicUrl(pdfPath);
+
+        if (publicData?.publicUrl) {
+          console.log('✅ Public URL generated:', publicData.publicUrl);
           
-          // Get signed URL
-          const { data, error } = await supabase.storage
-            .from('employee-documents')
-            .createSignedUrl(fileName, 31536000); // 1 year
-          
-          if (!error && data?.signedUrl) {
-            setPdfUrl(data.signedUrl);
+          // Test if URL is accessible
+          try {
+            const testResponse = await fetch(publicData.publicUrl, { method: 'HEAD' });
+            console.log('📡 URL test response:', testResponse.status, testResponse.headers.get('content-type'));
+            
+            if (testResponse.ok) {
+              setPdfUrl(publicData.publicUrl);
+              console.log('✅ Public URL is accessible');
+              return;
+            }
+          } catch (fetchError) {
+            console.warn('⚠️ Public URL not accessible, trying signed URL...', fetchError);
           }
-        } catch (error) {
-          console.error('Error fetching signed URL:', error);
         }
+
+        // Fallback to signed URL if public fails
+        console.log('🔄 Falling back to signed URL...');
+        const { data: signedData, error: signedError } = await supabase.storage
+          .from('employee-documents')
+          .createSignedUrl(pdfPath, 31536000); // 1 year
+
+        if (signedError) {
+          console.error('❌ Signed URL error:', signedError);
+          setPdfError('Failed to generate PDF URL. File may not exist.');
+          return;
+        }
+
+        if (signedData?.signedUrl) {
+          console.log('✅ Signed URL generated:', signedData.signedUrl);
+          setPdfUrl(signedData.signedUrl);
+        }
+      } catch (error) {
+        console.error('❌ Error generating PDF URL:', error);
+        setPdfError(`Error loading PDF: ${error.message}`);
       }
     };
-    
-    fetchSignedUrl();
-  }, [employee?.id]);
+
+    generatePdfUrl();
+  }, [pdfPath, employee?.id]);
 
   // ESC key handler
   useEffect(() => {
@@ -97,6 +128,8 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    console.log('📁 File selected:', file.name, 'Type:', file.type, 'Size:', file.size);
+
     if (file.type !== 'application/pdf') {
       alert(t('errors.invalidFileType', 'Please select a PDF file'));
       return;
@@ -108,17 +141,25 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
       const filePath = fileName;
 
       // Delete old file if exists
-      if (pdfUrl) {
-        const oldPath = pdfUrl.split('/').pop();
+      if (pdfPath) {
+        console.log('🗑️ Deleting old file:', pdfPath);
         await supabase.storage
           .from('employee-documents')
-          .remove([oldPath]);
+          .remove([pdfPath]);
       }
 
-      // Upload new file with upsert: false to avoid conflicts
+      // Read file as ArrayBuffer to ensure clean binary upload
+      console.log('📖 Reading file as ArrayBuffer...');
+      const arrayBuffer = await file.arrayBuffer();
+      const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+      
+      console.log('📤 Uploading blob:', blob.size, 'bytes, type:', blob.type);
+
+      // Upload the blob with proper content type
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('employee-documents')
-        .upload(filePath, file, {
+        .upload(filePath, blob, {
+          contentType: 'application/pdf',
           cacheControl: '3600',
           upsert: false
         });
@@ -128,27 +169,57 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
         throw uploadError;
       }
 
-      // Get signed URL (valid for 1 year)
-      const { data: signedUrlData, error: urlError } = await supabase.storage
-        .from('employee-documents')
-        .createSignedUrl(filePath, 31536000); // 1 year in seconds
+      console.log('✅ Upload successful:', uploadData);
 
-      if (urlError) throw urlError;
-
-      const signedUrl = signedUrlData.signedUrl;
-
-      // Update employee record
+      // Update employee record with just the file path
       const { error: updateError } = await supabase
         .from('employees')
-        .update({ pdf_document_url: signedUrl })
+        .update({ pdf_document_url: filePath })
         .eq('id', employee.id);
 
       if (updateError) throw updateError;
 
-      setPdfUrl(signedUrl);
-      setPageNumber(1);
-      setNumPages(null);
-      setPdfError(null);
+      console.log('✅ Database updated with path:', filePath);
+
+      // Try public URL first
+      const { data: { publicUrl } } = supabase.storage
+        .from('employee-documents')
+        .getPublicUrl(filePath);
+
+      console.log('📎 Public URL:', publicUrl);
+
+      // Verify URL works
+      try {
+        const testResponse = await fetch(publicUrl, { method: 'HEAD' });
+        console.log('✅ URL accessible, Content-Type:', testResponse.headers.get('content-type'));
+        
+        if (testResponse.ok) {
+          setPdfPath(filePath);
+          setPdfUrl(publicUrl);
+          setPageNumber(1);
+          setNumPages(null);
+          setPdfError(null);
+        } else {
+          throw new Error('Public URL not accessible');
+        }
+      } catch (fetchError) {
+        console.warn('⚠️ Public URL failed, using signed URL...', fetchError);
+        
+        // Fallback to signed URL
+        const { data: signedData, error: signedError } = await supabase.storage
+          .from('employee-documents')
+          .createSignedUrl(filePath, 31536000);
+
+        if (signedError) throw signedError;
+        
+        console.log('✅ Using signed URL instead');
+        setPdfPath(filePath);
+        setPdfUrl(signedData.signedUrl);
+        setPageNumber(1);
+        setNumPages(null);
+        setPdfError(null);
+      }
+
       if (onUpdate) onUpdate();
       alert(t('success.pdfUploaded', 'PDF document uploaded successfully!'));
     } catch (error) {
@@ -167,14 +238,18 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
 
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
-    setPdfLoading(false);
     setPdfError(null);
   };
 
   const onDocumentLoadError = (error) => {
-    console.error('PDF load error:', error);
-    setPdfError('Failed to load PDF. The file may be corrupted or inaccessible.');
-    setPdfLoading(false);
+    console.error('❌ PDF.js load error:', error);
+    console.error('PDF URL:', pdfUrl);
+    setPdfError('Failed to load PDF with pdf.js. Switching to iframe viewer...');
+    // Auto-switch to iframe on error
+    setTimeout(() => {
+      setUseIframe(true);
+      setPdfError(null);
+    }, 1500);
   };
 
   // Calculate work duration
@@ -423,55 +498,78 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                 </div>
               </div>
 
+              {/* PDF Viewer Mode Toggle */}
+              <div className="flex justify-end mb-2 space-x-2">
+                <button
+                  onClick={() => setUseIframe(false)}
+                  className={`px-3 py-1 text-xs rounded ${!useIframe ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+                >
+                  PDF.js
+                </button>
+                <button
+                  onClick={() => setUseIframe(true)}
+                  className={`px-3 py-1 text-xs rounded ${useIframe ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+                >
+                  Iframe
+                </button>
+              </div>
+
               {/* PDF Viewer */}
               <div className={`border-2 border-dashed ${border.primary} rounded-lg p-4 bg-gray-50 dark:bg-gray-800 min-h-[400px]`}>
                 {pdfUrl ? (
                   <div className="flex flex-col items-center">
-                    {pdfError ? (
-                      <div className="flex flex-col items-center justify-center h-64 text-red-500">
-                        <FileText className="w-16 h-16 mb-4" />
-                        <p className={`text-center ${text.secondary} font-semibold`}>{pdfError}</p>
-                        <button
-                          onClick={() => {
-                            setPdfError(null);
-                            setPdfLoading(true);
+                    {useIframe ? (
+                      // Iframe Viewer (More reliable)
+                      <div className="w-full" style={{ height: '600px' }}>
+                        <iframe
+                          src={pdfUrl}
+                          type="application/pdf"
+                          className="w-full h-full border-0 rounded"
+                          title="PDF Viewer"
+                          onLoad={() => console.log('✅ Iframe loaded successfully')}
+                          onError={(e) => {
+                            console.error('❌ Iframe error:', e);
+                            console.error('PDF URL:', pdfUrl);
+                            setPdfError('Failed to load PDF in iframe. Check console for details.');
                           }}
-                          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                        >
-                          Retry
-                        </button>
+                        />
                       </div>
                     ) : (
-                      <Document
-                        key={pdfUrl}
-                        file={{
-                          url: pdfUrl,
-                          httpHeaders: {},
-                          withCredentials: false
-                        }}
-                        onLoadSuccess={onDocumentLoadSuccess}
-                        onLoadError={onDocumentLoadError}
-                        loading={
-                          <div className="flex flex-col items-center justify-center h-64">
-                            <Loader className="w-8 h-8 animate-spin text-blue-600" />
-                            <p className={`mt-4 ${text.secondary}`}>Loading PDF...</p>
-                          </div>
-                        }
-                        options={{
-                          cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
-                          cMapPacked: true,
-                          standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
-                        }}
-                      >
-                      <Page 
-                        pageNumber={pageNumber} 
-                        width={Math.min(modalWidth - 100, 800)}
-                        renderTextLayer={true}
-                        renderAnnotationLayer={true}
-                      />
-                      </Document>
+                      // PDF.js Viewer
+                      pdfError ? (
+                        <div className="flex flex-col items-center justify-center h-64 text-red-500">
+                          <FileText className="w-16 h-16 mb-4" />
+                          <p className={`text-center ${text.secondary} font-semibold`}>{pdfError}</p>
+                          <button
+                            onClick={() => setUseIframe(true)}
+                            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          >
+                            Switch to Iframe Viewer
+                          </button>
+                        </div>
+                      ) : (
+                        <Document
+                          key={pdfUrl}
+                          file={pdfUrl}
+                          onLoadSuccess={onDocumentLoadSuccess}
+                          onLoadError={onDocumentLoadError}
+                          loading={
+                            <div className="flex flex-col items-center justify-center h-64">
+                              <Loader className="w-8 h-8 animate-spin text-blue-600" />
+                              <p className={`mt-4 ${text.secondary}`}>Loading PDF...</p>
+                            </div>
+                          }
+                        >
+                          <Page 
+                            pageNumber={pageNumber} 
+                            width={Math.min(modalWidth - 100, 800)}
+                            renderTextLayer={false}
+                            renderAnnotationLayer={false}
+                          />
+                        </Document>
+                      )
                     )}
-                    {!pdfError && numPages && numPages > 1 && (
+                    {!useIframe && !pdfError && numPages && numPages > 1 && (
                       <div className="flex items-center space-x-4 mt-4">
                         <button
                           onClick={() => setPageNumber(Math.max(1, pageNumber - 1))}

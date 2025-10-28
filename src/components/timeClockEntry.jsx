@@ -4,6 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as timeTrackingService from '../services/timeTrackingService';
+import AdminTimeEntry from './AdminTimeEntry';
 
 const TimeClockEntry = ({ currentLanguage }) => {
   const { isDarkMode, bg, text, button, input, border } = useTheme();
@@ -468,6 +469,9 @@ const TimeClockEntry = ({ currentLanguage }) => {
           {t('timeClock.subtitle')}
         </p>
       </div>
+
+      {/* Admin Time Entry Section (Only for admin/manager roles) */}
+      <AdminTimeEntry />
 
       {/* Success Message */}
       {successMessage && (
