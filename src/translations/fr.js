@@ -13,6 +13,7 @@ export default {
     githubError: 'Échec de la connexion avec GitHub',
     notifications: 'Notifications',
     settings: 'Paramètres',
+    workload: 'Charge de travail',
   },
   
   // Header
@@ -42,9 +43,8 @@ export default {
     activeApplications: 'Candidatures Actives',
     pendingReview: 'En Attente de Révision',
     pendingRequests: 'Demandes en Attente',
-    leaveRequests: 'Demandes de Congé en Attente',
+    leaveRequests: 'Demandes de Congé à Examiner',
     recentActivity: 'Activité Récente',
-    quickStats: 'Statistiques Rapides',
     viewAll: 'Voir Tout',
     activities: {
       newEmployee: 'Nouvel employé embauché : ABC',
@@ -188,6 +188,7 @@ export default {
   employees: {
     title: 'Gestion des employés',
     searchPlaceholder: 'Rechercher des employés...',
+    quickStats: 'Statistiques Rapides',
     addEmployee: 'Ajouter un employé',
     name: 'Nom',
     position: 'Poste',
@@ -622,5 +623,30 @@ export default {
     autoClockOutTime: 'Heure de déconnexion automatique',
     weeklyReport: 'Rapport hebdomadaire',
     weeklyReportDesc: 'Recevoir un résumé hebdomadaire de vos activités professionnelles'
+  },
+
+  // Workload Management
+  workload: {
+    title: 'Gestion de la Charge de Travail',
+    individual: 'Individuel',
+    organization: 'Organisation',
+    totalTasks: 'Tâches totales',
+    completed: 'Terminé',
+    progress: 'Progrès',
+    avgQuality: 'Qualité moy.',
+    avgProgress: 'Progrès moy.',
+    myTasks: 'Mes tâches',
+    addTask: 'Ajouter une tâche',
+    editTask: 'Modifier la tâche',
+    taskTitle: 'Titre de la tâche',
+    description: 'Description',
+    priority: 'Priorité',
+    status: 'Statut',
+    selfAssessment: 'Auto-évaluation',
+    selfAssessmentPlaceholder: 'Comment avez-vous effectué cette tâche?',
+    qualityRating: 'Évaluation de la qualité',
+    noTasks: 'Aucune tâche pour le moment. Ajoutez votre première tâche!',
+    employeeProgress: 'Progrès des employés',
+    confirmDelete: 'Êtes-vous sûr de vouloir supprimer cette tâche?'
   }
 };

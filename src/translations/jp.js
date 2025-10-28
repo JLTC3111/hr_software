@@ -10,6 +10,7 @@ export default {
     reports: 'レポート',
     notifications: '通知',
     settings: '設定',
+    workload: '作業量',
   }
   ,
 
@@ -42,7 +43,6 @@ export default {
     pendingRequests: '保留中のリクエスト',
     leaveRequests: '休暇申請（承認待ち）',
     recentActivity: '最近の活動',
-    quickStats: 'クイック統計',
     viewAll: 'すべて表示',
     activities: {
       newEmployee: '新入社員が入社しました：ABC',
@@ -181,6 +181,7 @@ export default {
   employees: {
     title: '従業員管理',
     searchPlaceholder: '従業員を検索...',
+    quickStats: 'クイック統計',
     addEmployee: '従業員を追加',
     name: '名前',
     position: '役職',
@@ -583,5 +584,30 @@ export default {
     autoClockOutTime: '自動退勤時間',
     weeklyReport: '週次レポート',
     weeklyReportDesc: '作業活動の週次まとめを受け取る'
+  },
+
+  // Workload Management
+  workload: {
+    title: '仕事量管理',
+    individual: '個人',
+    organization: '組織',
+    totalTasks: '総タスク数',
+    completed: '完了',
+    progress: '進捗',
+    avgQuality: '平均品質',
+    avgProgress: '平均進捗',
+    myTasks: 'マイタスク',
+    addTask: 'タスクを追加',
+    editTask: 'タスクを編集',
+    taskTitle: 'タスクタイトル',
+    description: '説明',
+    priority: '優先度',
+    status: 'ステータス',
+    selfAssessment: '自己評価',
+    selfAssessmentPlaceholder: 'このタスクをどのように実行しましたか？',
+    qualityRating: '品質評価',
+    noTasks: 'タスクがありません。最初のタスクを追加しましょう！',
+    employeeProgress: '従業員の進捗',
+    confirmDelete: 'このタスクを削除してもよろしいですか？'
   }
 };

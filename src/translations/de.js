@@ -10,6 +10,7 @@ export default {
     reports: 'Berichte',
     notifications: 'Benachrichtigungen',
     settings: 'Einstellungen',
+    workload: 'Arbeitsbelastung'
   },
 
   // Header
@@ -66,9 +67,8 @@ export default {
     activeApplications: 'Aktive Bewerbungen',
     pendingReview: 'Ausstehende Prüfung',
     pendingRequests: 'Ausstehende Anfragen',
-    leaveRequests: 'Zu prüfende Urlaubsanträge',
-    recentActivity: 'Letzte Aktivität',
-    quickStats: 'Schnellstatistiken',
+    leaveRequests: 'Urlaubsanträge zu prüfen',
+    recentActivity: 'Neueste Aktivitäten',
     viewAll: 'Alle ansehen',
     activities: {
       newEmployee: "Neuer Mitarbeiter hinzugefügt: ",
@@ -174,6 +174,7 @@ export default {
   employees: {
     title: 'Mitarbeiterverwaltung',
     searchPlaceholder: 'Mitarbeiter suchen...',
+    quickStats: 'Schnellstatistik',
     addEmployee: 'Mitarbeiter hinzufügen',
     name: 'Name',
     position: 'Position',
@@ -668,5 +669,30 @@ export default {
     autoClockOutTime: 'Zeit für automatisches Ausstempeln',
     weeklyReport: 'Wochenbericht',
     weeklyReportDesc: 'Wöchentliche Zusammenfassung Ihrer Arbeitsaktivitäten erhalten'
+  },
+
+  // Workload Management
+  workload: {
+    title: 'Arbeitsbelastungsverwaltung',
+    individual: 'Individuell',
+    organization: 'Organisation',
+    totalTasks: 'Gesamtaufgaben',
+    completed: 'Abgeschlossen',
+    progress: 'Fortschritt',
+    avgQuality: 'Durchschn. Qualität',
+    avgProgress: 'Durchschn. Fortschritt',
+    myTasks: 'Meine Aufgaben',
+    addTask: 'Aufgabe hinzufügen',
+    editTask: 'Aufgabe bearbeiten',
+    taskTitle: 'Aufgabentitel',
+    description: 'Beschreibung',
+    priority: 'Priorität',
+    status: 'Status',
+    selfAssessment: 'Selbstbewertung',
+    selfAssessmentPlaceholder: 'Wie haben Sie diese Aufgabe ausgeführt?',
+    qualityRating: 'Qualitätsbewertung',
+    noTasks: 'Noch keine Aufgaben. Fügen Sie Ihre erste Aufgabe hinzu!',
+    employeeProgress: 'Mitarbeiterfortschritt',
+    confirmDelete: 'Möchten Sie diese Aufgabe wirklich löschen?'
   }
 };

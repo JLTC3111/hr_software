@@ -223,7 +223,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          className="absolute top-4 right-4 z-10 p-2 rounded-lg hover:bg-transparent dark:hover:bg-transparent transition-colors"
         >
           <X className="w-5 h-5" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
         </button>
@@ -257,14 +257,14 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
           <div className="flex justify-center space-x-3">
             <a
               href={`mailto:${employee.email}`}
-              className="p-3 bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
+              className="p-3 bg-blue-50 dark:bg-gray-700 text-blue-600 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-gray-600 transition-colors"
               title={t('employees.sendEmail', 'Send Email')}
             >
               <Mail className="w-5 h-5" />
             </a>
             <a
               href={`tel:${employee.phone}`}
-              className="p-3 bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
+              className="p-3 bg-blue-50 dark:bg-gray-700 text-blue-600 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-gray-600 transition-colors"
               title={t('employees.call', 'Call')}
             >
               <Phone className="w-5 h-5" />
@@ -277,7 +277,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                   onClose();
                 }
               }}
-              className="p-3 bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
+              className="p-3 bg-blue-50 dark:bg-gray-700 text-blue-600 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-gray-600 transition-colors"
               title={t('employees.edit', 'Edit')}
             >
               <Edit2 className="w-5 h-5" />
@@ -290,21 +290,21 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
           <div className="flex items-center space-x-2 mb-3">
             <Briefcase className="w-5 h-5 text-blue-600" />
             <h3 className={`font-semibold ${text.primary}`}>
-              {t('employees.quickStats', 'Thông kê nhanh')}
+              {t('employees.quickStats', 'Quick Stats')}
             </h3>
           </div>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className={`text-sm ${text.secondary}`}>
-                {t('employees.status', 'Trạng thái')}
+                {t('employeeDetailModal.status', 'Status')}
               </span>
-              <span className="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full">
+              <span className="px-3 py-1 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full">
                 {t(`employeeStatus.${employee.status.toLowerCase().replace(' ', '')}`, employee.status)}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className={`text-sm ${text.secondary}`}>
-                {t('employees.workDuration', 'Thời gian làm việc')}
+                {t('employeeDetailModal.workDuration', 'Work Duration')}
               </span>
               <span className={`text-sm font-semibold ${text.primary}`}>
                 {calculateWorkDuration()}
@@ -312,7 +312,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
             </div>
             <div className="flex justify-between items-center">
               <span className={`text-sm ${text.secondary}`}>
-                {t('employees.performance', 'Hiệu suất')}
+                {t('employeeDetailModal.performance', 'Performance')}
               </span>
               <span className="text-sm font-semibold text-yellow-600 flex items-center">
                 {employee.performance}/5.0 ⭐
@@ -321,7 +321,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Basic Information */}
         <div className={`flex border-b ${border.primary} px-6`}>
           <button
             onClick={() => setActiveTab('info')}
@@ -332,7 +332,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
             }`}
           >
             <User className="w-4 h-4" />
-            <span>{t('employees.basicInfo', 'Thông tin cơ bản')}</span>
+            <span>{t('employeeDetailModal.basicInfo', 'Basic Information')}</span>
           </button>
           <button
             onClick={() => setActiveTab('contact')}
@@ -343,7 +343,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
             }`}
           >
             <Phone className="w-4 h-4" />
-            <span>{t('employees.contact', 'Liên hệ')}</span>
+            <span>{t('employeeDetailModal.contact', 'Contact')}</span>
           </button>
           <button
             onClick={() => setActiveTab('documents')}
@@ -354,24 +354,22 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
             }`}
           >
             <FileText className="w-4 h-4" />
-            <span>{t('employees.documents', 'Tài liệu')}</span>
+            <span>{t('employeeDetailModal.documents', 'Documents')}</span>
           </button>
         </div>
-
-        {/* Tab Content */}
         <div className="flex-1 overflow-y-auto p-6">
           {/* Basic Info Tab */}
           {activeTab === 'info' && (
             <div className="space-y-4">
-              <InfoItem icon={User} label={t('employees.fullName', 'Họ và tên')} value={employee.name} />
-              <InfoItem icon={Network} label={t('employees.department', 'Phòng ban')} 
+              <InfoItem icon={User} label={t('employeeDetailModal.fullName', 'Full Name')} value={employee.name} />
+              <InfoItem icon={Network} label={t('employeeDetailModal.department', 'Department')} 
                 value={t(`employeeDepartment.${employee.department?.toLowerCase().replace(' ', '')}`, employee.department)} />
-              <InfoItem icon={Award} label={t('employees.position', 'Chức vụ')} 
+              <InfoItem icon={Award} label={t('employeeDetailModal.position', 'Position')} 
                 value={t(`employeePosition.${employee.position?.toLowerCase().replace(' ', '')}`, employee.position)} />
-              <InfoItem icon={Cake} label={t('employees.dob', 'Ngày sinh')} value={employee.dob} />
-              <InfoItem icon={Calendar} label={t('employees.startDate', 'Ngày vào làm')} 
+              <InfoItem icon={Cake} label={t('employeeDetailModal.dateOfBirth', 'Date of Birth')} value={employee.dob} />
+              <InfoItem icon={Calendar} label={t('employeeDetailModal.startDate', 'Start Date')} 
                 value={employee.start_date || employee.startDate || 'N/A'} />
-              <InfoItem icon={DollarSign} label={t('employees.salary', 'Lương')} 
+              <InfoItem icon={DollarSign} label={t('employeeDetailModal.salary', 'Salary')} 
                 value={`$${employee.salary?.toLocaleString() || 'N/A'}`} />
             </div>
           )}
@@ -379,9 +377,9 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
           {/* Contact Tab */}
           {activeTab === 'contact' && (
             <div className="space-y-4">
-              <InfoItem icon={Mail} label={t('employees.email', 'Email')} value={employee.email} />
-              <InfoItem icon={Phone} label={t('employees.phone', 'Số điện thoại')} value={employee.phone} />
-              <InfoItem icon={MapPin} label={t('employees.address', 'Địa chỉ')} value={employee.address || 'N/A'} />
+              <InfoItem icon={Mail} label={t('employeeDetailModal.email', 'Email')} value={employee.email} />
+              <InfoItem icon={Phone} label={t('employeeDetailModal.phone', 'Phone Number')} value={employee.phone} />
+              <InfoItem icon={MapPin} label={t('employeeDetailModal.address', 'Address')} value={employee.address || 'N/A'} />
             </div>
           )}
 
@@ -392,17 +390,17 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                 <div className="flex items-center space-x-2">
                   <FileText className="w-5 h-5 text-blue-600" />
                   <h3 className={`font-semibold ${text.primary}`}>
-                    {t('employees.documents', 'Tài liệu')}
+                    {t('employeeDetailModal.documentsTitle', 'Documents')}
                   </h3>
                 </div>
                 <div className="flex space-x-2">
                   {pdfUrl && (
                     <button
                       onClick={handlePdfDownload}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 text-sm"
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg"
                     >
                       <Download className="w-4 h-4" />
-                      <span>{t('common.download', 'Tải xuống')}</span>
+                      <span>{t('employeeDetailModal.download', 'Download')}</span>
                     </button>
                   )}
                   <input
@@ -415,19 +413,19 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                   />
                   <label
                     htmlFor="pdf-upload"
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${border.primary} cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${border.primary} ${bg.primary} cursor-pointer hover:bg-transparent dark:hover:bg-transparent transition-all shadow-sm hover:shadow-md ${
                       uploadStatus?.status === 'uploading' ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
                     {uploadStatus?.status === 'uploading' ? (
                       <>
                         <Loader className="w-5 h-5 animate-spin" />
-                        <span>{t('uploading', 'Uploading...')}</span>
+                        <span className={text.primary}>{t('employeeDetailModal.uploading', 'Uploading...')}</span>
                       </>
                     ) : (
                       <>
-                        <Upload className="w-5 h-5" />
-                        <span>{t('uploadPdf', 'Upload PDF')}</span>
+                        <Upload className={`w-5 h-5 ${text.primary}`} />
+                        <span className={text.primary}>{t('employeeDetailModal.uploadPdf', 'Upload PDF')}</span>
                       </>
                     )}
                   </label>
@@ -439,7 +437,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                 <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
                   <div className="flex items-center space-x-2 text-sm text-blue-700 dark:text-blue-300">
                     <Loader className="w-4 h-4 animate-spin" />
-                    <span>⚡ Upload continues in background - you can close this window safely</span>
+                    <span>{t('employeeDetailModal.uploadBackground', '⚡ Upload continues in background - you can close this window safely')}</span>
                   </div>
                 </div>
               )}
@@ -448,13 +446,21 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
               <div className="flex justify-end mb-2 space-x-2">
                 <button
                   onClick={() => setUseIframe(false)}
-                  className={`px-3 py-1 text-xs rounded ${!useIframe ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                    !useIframe 
+                      ? 'bg-blue-600 text-white shadow-lg hover:bg-blue-700' 
+                      : `${bg.secondary} ${text.primary} border ${border.primary} hover:bg-blue-50 dark:hover:bg-gray-700`
+                  }`}
                 >
                   PDF.js
                 </button>
                 <button
                   onClick={() => setUseIframe(true)}
-                  className={`px-3 py-1 text-xs rounded ${useIframe ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                    useIframe 
+                      ? 'bg-blue-600 text-white shadow-lg hover:bg-blue-700' 
+                      : `${bg.secondary} ${text.primary} border ${border.primary} hover:bg-blue-50 dark:hover:bg-gray-700`
+                  }`}
                 >
                   Iframe
                 </button>
@@ -488,9 +494,9 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                           <p className={`text-center ${text.secondary} font-semibold`}>{pdfError}</p>
                           <button
                             onClick={() => setUseIframe(true)}
-                            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                            className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition-all shadow-md hover:shadow-lg"
                           >
-                            Switch to Iframe Viewer
+                            {t('employeeDetailModal.switchToIframe', 'Switch to Iframe Viewer')}
                           </button>
                         </div>
                       ) : (
@@ -562,8 +568,8 @@ const InfoItem = ({ icon: Icon, label, value }) => {
   const { text, border, isDarkMode } = useTheme();
   
   return (
-    <div className={`flex items-start space-x-3 p-3 rounded-lg border ${border.primary} hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors`}>
-      <Icon className="w-5 h-5 mt-0.5 text-blue-600 dark:text-blue-400" />
+    <div className={`flex items-start space-x-3 p-3 rounded-lg border ${border.primary} hover:bg-transparent dark:hover:bg-transparent transition-colors`}>
+      <Icon className={`w-5 h-5 mt-0.5 ${isDarkMode ? text.primary : 'text-blue-600'}`} />
       <div className="flex-1">
         <p className={`text-sm ${text.secondary} mb-1`}>{label}</p>
         <p className={`font-medium ${text.primary}`}>{value}</p>

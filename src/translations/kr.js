@@ -10,6 +10,7 @@ export default {
     reports: '보고서',
     notifications: '알림',
     settings: '설정',
+    workload: '업무량',
   },
 
   // Header
@@ -42,7 +43,6 @@ export default {
     pendingRequests: '대기 중인 요청',
     leaveRequests: '승인 대기 중인 휴가 신청',
     recentActivity: '최근 활동',
-    quickStats: '빠른 통계',
     viewAll: '모두 보기',
     activities: {
       newEmployee: '신규 입사자: ABC',
@@ -181,6 +181,7 @@ export default {
   employees: {
     title: '직원 관리',
     searchPlaceholder: '직원 검색...',
+    quickStats: '빠른 통계',
     addEmployee: '직원 추가',
     name: '이름',
     position: '직책',
@@ -582,5 +583,30 @@ export default {
     autoClockOutTime: '자동 퇴근 시간',
     weeklyReport: '주간 보고서',
     weeklyReportDesc: '작업 활동에 대한 주간 요약 받기'
+  },
+
+  // Workload Management
+  workload: {
+    title: '업무량 관리',
+    individual: '개인',
+    organization: '조직',
+    totalTasks: '총 작업',
+    completed: '완료됨',
+    progress: '진행률',
+    avgQuality: '평균 품질',
+    avgProgress: '평균 진행률',
+    myTasks: '내 작업',
+    addTask: '작업 추가',
+    editTask: '작업 편집',
+    taskTitle: '작업 제목',
+    description: '설명',
+    priority: '우선순위',
+    status: '상태',
+    selfAssessment: '자체 평가',
+    selfAssessmentPlaceholder: '이 작업을 어떻게 수행하셨나요?',
+    qualityRating: '품질 평가',
+    noTasks: '작업이 없습니다. 첫 번째 작업을 추가하세요!',
+    employeeProgress: '직원 진행률',
+    confirmDelete: '이 작업을 삭제하시겠습니까?'
   }
 };

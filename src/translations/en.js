@@ -11,7 +11,8 @@ export default {
     reports: 'Reports',
     notifications: 'Notifications',
     settings: 'Settings',
-    controlPanel: 'Control Panel'
+    controlPanel: 'Control Panel',
+    workload: 'Load Management',
   },
   // Header
   header: {
@@ -77,7 +78,6 @@ export default {
     pendingRequests: 'Pending Requests',
     leaveRequests: 'Leave requests to review',
     recentActivity: 'Recent Activity',
-    quickStats: 'Quick Stats',
     viewAll: 'View All',
     activities: {
       newEmployee: "New employee added: ",
@@ -96,6 +96,7 @@ export default {
     title: 'Employee Management',
     directory: 'Directory',
     addNew: 'Add New',
+    quickStats: 'Quick Stats',
     searchPlaceholder: 'Search employees...',
     addEmployee: 'Add Employee',
     name: 'Name',
@@ -762,5 +763,30 @@ export default {
     uploadAvatar: 'Upload avatar',
     avatarUpdated: 'Avatar updated successfully!',
     avatarError: 'Error uploading avatar'
+  },
+
+  // Workload Management
+  workload: {
+    title: 'Workload Management',
+    individual: 'Individual',
+    organization: 'Organization',
+    totalTasks: 'Total Tasks',
+    completed: 'Completed',
+    progress: 'Progress',
+    avgQuality: 'Avg Quality',
+    avgProgress: 'Avg Progress',
+    myTasks: 'My Tasks',
+    addTask: 'Add Task',
+    editTask: 'Edit Task',
+    taskTitle: 'Task Title',
+    description: 'Description',
+    priority: 'Priority',
+    status: 'Status',
+    selfAssessment: 'Self Assessment',
+    selfAssessmentPlaceholder: 'How did you perform on this task?',
+    qualityRating: 'Quality Rating',
+    noTasks: 'No tasks yet. Add your first task!',
+    employeeProgress: 'Employee Progress',
+    confirmDelete: 'Are you sure you want to delete this task?'
   }
 };

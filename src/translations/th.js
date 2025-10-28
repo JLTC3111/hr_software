@@ -10,6 +10,7 @@ export default {
     reports: 'รายงาน',
     notifications: 'การแจ้งเตือน',
     settings: 'การตั้งค่า',
+    workload: 'ปริมาณงาน',
   },
 
   // Header
@@ -41,7 +42,6 @@ export default {
     pendingRequests: 'คำขอที่รอดำเนินการ',
     leaveRequests: 'คำขอลาที่รออนุมัติ',
     recentActivity: 'กิจกรรมล่าสุด',
-    quickStats: 'สถิติอย่างรวดเร็ว',
     viewAll: 'ดูทั้งหมด',
     activities: {
       newEmployee: 'พนักงานใหม่เข้าร่วม: ABC',
@@ -180,6 +180,7 @@ export default {
   employees: {
     title: 'การจัดการพนักงาน',
     searchPlaceholder: 'ค้นหาพนักงาน...',
+    quickStats: 'สถิติอย่างรวดเร็ว',
     addEmployee: 'เพิ่มพนักงาน',
     name: 'ชื่อ',
     position: 'ตำแหน่ง',
@@ -581,5 +582,30 @@ export default {
     autoClockOutTime: 'เวลาลงเวลาออกอัตโนมัติ',
     weeklyReport: 'รายงานรายสัปดาห์',
     weeklyReportDesc: 'รับสรุปกิจกรรมการทำงานรายสัปดาห์'
+  },
+
+  // Workload Management
+  workload: {
+    title: 'การจัดการภาระงาน',
+    individual: 'บุคคล',
+    organization: 'องค์กร',
+    totalTasks: 'งานทั้งหมด',
+    completed: 'เสร็จสมบูรณ์',
+    progress: 'ความคืบหน้า',
+    avgQuality: 'คุณภาพเฉลี่ย',
+    avgProgress: 'ความคืบหน้าเฉลี่ย',
+    myTasks: 'งานของฉัน',
+    addTask: 'เพิ่มงาน',
+    editTask: 'แก้ไขงาน',
+    taskTitle: 'ชื่องาน',
+    description: 'คำอธิบาย',
+    priority: 'ความสำคัญ',
+    status: 'สถานะ',
+    selfAssessment: 'การประเมินตนเอง',
+    selfAssessmentPlaceholder: 'คุณทำงานนี้ได้อย่างไร?',
+    qualityRating: 'การประเมินคุณภาพ',
+    noTasks: 'ยังไม่มีงาน เพิ่มงานแรกของคุณ!',
+    employeeProgress: 'ความคืบหน้าของพนักงาน',
+    confirmDelete: 'คุณแน่ใจว่าต้องการลบงานนี้หรือไม่?'
   }
 };

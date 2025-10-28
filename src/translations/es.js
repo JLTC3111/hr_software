@@ -10,6 +10,7 @@ export default {
     reports: 'Informes',
     notifications: 'Notificaciones',
     settings: 'Configuración',
+    workload: 'Carga de trabajo',
   },
 
 // Header
@@ -96,7 +97,6 @@ login: {
     overtimeError: 'Error al registrar horas extra',
     exportSuccess: '¡Informe exportado exitosamente!',
     recentActivity: 'Actividad Reciente',
-    quickStats: 'Estadísticas Rápidas',
     viewAll: 'Ver Todo',
     activities: {
       newEmployee: 'Nuevo empleado incorporado: ABC',
@@ -246,6 +246,7 @@ login: {
     title: 'Gestión de Empleados',
     searchPlaceholder: 'Buscar empleados...',
     addEmployee: 'Agregar Empleado',
+    quickStats: 'Estadísticas Rápidas',
     name: 'Nombre',
     position: 'Posición',
     department: 'Departamento',
@@ -652,5 +653,30 @@ login: {
     autoClockOutTime: 'Hora de Salida Automática',
     weeklyReport: 'Informe Semanal',
     weeklyReportDesc: 'Recibir un resumen semanal de sus actividades laborales'
+  },
+
+  // Workload Management
+  workload: {
+    title: 'Gestión de Carga de Trabajo',
+    individual: 'Individual',
+    organization: 'Organización',
+    totalTasks: 'Tareas totales',
+    completed: 'Completado',
+    progress: 'Progreso',
+    avgQuality: 'Calidad prom.',
+    avgProgress: 'Progreso prom.',
+    myTasks: 'Mis tareas',
+    addTask: 'Agregar tarea',
+    editTask: 'Editar tarea',
+    taskTitle: 'Título de la tarea',
+    description: 'Descripción',
+    priority: 'Prioridad',
+    status: 'Estado',
+    selfAssessment: 'Autoevaluación',
+    selfAssessmentPlaceholder: '¿Cómo realizaste esta tarea?',
+    qualityRating: 'Calificación de calidad',
+    noTasks: 'Aún no hay tareas. ¡Agrega tu primera tarea!',
+    employeeProgress: 'Progreso del empleado',
+    confirmDelete: '¿Estás seguro de que quieres eliminar esta tarea?'
   }
 };

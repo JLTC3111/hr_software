@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, UserPlus, Save, X, Search, AlertCircle } from 'lucide-react';
+import { Clock, UserPlus, Save, X, Search, AlertCircle, Calendar, LogIn, LogOut, Check } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -39,15 +39,15 @@ const AdminTimeEntry = () => {
     try {
       const { data, error } = await supabase
         .from('employees')
-        .select('id, name, email, position, department, employment_status')
-        .eq('employment_status', 'active')
+        .select('id, name, email, position, department, status')
+        .in('status', ['Active', 'active'])
         .order('name');
 
       if (error) throw error;
       setEmployees(data || []);
     } catch (error) {
       console.error('Error fetching employees:', error);
-      setErrorMessage('Failed to load employees');
+      setErrorMessage(t('adminTimeEntry.errorLoadEmployees', 'Failed to load employees'));
     }
   };
 
@@ -69,11 +69,14 @@ const AdminTimeEntry = () => {
     setSuccessMessage('');
 
     try {
-      const clockInTime = new Date(`${formData.date}T${formData.clockIn}`);
-      const clockOutTime = new Date(`${formData.date}T${formData.clockOut}`);
+      // Format times as HH:MM:SS for PostgreSQL time type
+      const clockInTime = `${formData.clockIn}:00`;
+      const clockOutTime = `${formData.clockOut}:00`;
 
-      // Calculate hours
-      const diffMs = clockOutTime - clockInTime;
+      // Calculate hours using Date objects for validation
+      const clockInDate = new Date(`${formData.date}T${formData.clockIn}`);
+      const clockOutDate = new Date(`${formData.date}T${formData.clockOut}`);
+      const diffMs = clockOutDate - clockInDate;
       const hours = diffMs / (1000 * 60 * 60);
 
       if (hours <= 0) {
@@ -85,8 +88,8 @@ const AdminTimeEntry = () => {
       const entry = {
         employeeId: selectedEmployee.id,
         date: formData.date,
-        clockIn: clockInTime.toISOString(),
-        clockOut: clockOutTime.toISOString(),
+        clockIn: clockInTime,
+        clockOut: clockOutTime,
         hours: parseFloat(hours.toFixed(2)),
         hourType: formData.hourType,
         notes: formData.notes || `Entered by admin: ${user.full_name || user.email}`,
@@ -127,9 +130,9 @@ const AdminTimeEntry = () => {
   if (!canManageTimeTracking) {
     return (
       <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
-        <div className="flex items-center space-x-3 text-red-600">
+        <div className="flex items-center space-x-3 text-red-600 dark:text-red-400">
           <AlertCircle className="w-6 h-6" />
-          <p className="font-medium">Access Denied: You don't have permission to manage time entries for other employees.</p>
+          <p className="font-medium">{t('adminTimeEntry.accessDenied', 'Access Denied: You don\'t have permission to manage time entries for other employees.')}</p>
         </div>
       </div>
     );
@@ -138,14 +141,14 @@ const AdminTimeEntry = () => {
   return (
     <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
       <div className="flex items-center space-x-3 mb-6">
-        <UserPlus className="w-6 h-6 text-blue-600" />
+        <UserPlus className="w-6 h-6 text-blue-600 dark:text-blue-400" />
         <h3 className={`text-xl font-bold ${text.primary}`}>
-          Admin Time Entry
+          {t('adminTimeEntry.title', 'Admin Time Entry')}
         </h3>
       </div>
 
       <p className={`${text.secondary} mb-6`}>
-        Enter time entries for employees (Admin/Manager only)
+        {t('adminTimeEntry.description', 'Enter time entries for employees (Admin/Manager only)')}
       </p>
 
       {/* Success Message */}
@@ -168,7 +171,7 @@ const AdminTimeEntry = () => {
         {/* Employee Selection */}
         <div>
           <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-            Select Employee *
+            {t('adminTimeEntry.selectEmployee', 'Select Employee')} *
           </label>
           
           {/* Search Input */}
@@ -176,10 +179,10 @@ const AdminTimeEntry = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search employees..."
+              placeholder={t('adminTimeEntry.searchEmployees', 'Search employees...')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2 border ${border.primary} rounded-lg ${bg.primary} ${text.primary}`}
+              className={`w-full pl-10 pr-4 py-2 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
             />
           </div>
 
@@ -205,7 +208,7 @@ const AdminTimeEntry = () => {
                   </div>
                 ))
               ) : (
-                <div className="p-4 text-center text-gray-500">No employees found</div>
+                <div className={`p-4 text-center ${text.secondary}`}>{t('adminTimeEntry.noEmployees', 'No employees found')}</div>
               )}
             </div>
           )}
@@ -222,7 +225,7 @@ const AdminTimeEntry = () => {
               <button
                 type="button"
                 onClick={() => setSelectedEmployee(null)}
-                className="text-red-600 hover:text-red-800"
+                className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -233,75 +236,87 @@ const AdminTimeEntry = () => {
         {/* Date */}
         <div>
           <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-            Date *
+            {t('adminTimeEntry.date', 'Date')} *
           </label>
-          <input
-            type="date"
-            value={formData.date}
-            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-            max={new Date().toISOString().split('T')[0]}
-            className={`w-full px-4 py-2 border ${border.primary} rounded-lg ${bg.primary} ${text.primary}`}
-            required
-          />
+          <div className="relative">
+            <input
+              id="admin-date-input"
+              type="date"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              max={new Date().toISOString().split('T')[0]}
+              className={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
+              required
+            />
+            <Calendar className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none`} />
+          </div>
         </div>
 
         {/* Clock In & Clock Out */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-              Clock In *
+              {t('adminTimeEntry.clockIn', 'Clock In')} *
             </label>
-            <input
-              type="time"
-              value={formData.clockIn}
-              onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
-              className={`w-full px-4 py-2 border ${border.primary} rounded-lg ${bg.primary} ${text.primary}`}
-              required
-            />
+            <div className="relative">
+              <input
+                id="admin-clockin-input"
+                type="time"
+                value={formData.clockIn}
+                onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
+                className={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
+                required
+              />
+              <LogIn className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transform rotate-180 ${text.secondary} pointer-events-none`} />
+            </div>
           </div>
           <div>
             <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-              Clock Out *
+              {t('adminTimeEntry.clockOut', 'Clock Out')} *
             </label>
-            <input
-              type="time"
-              value={formData.clockOut}
-              onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
-              className={`w-full px-4 py-2 border ${border.primary} rounded-lg ${bg.primary} ${text.primary}`}
-              required
-            />
+            <div className="relative">
+              <input
+                id="admin-clockout-input"
+                type="time"
+                value={formData.clockOut}
+                onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
+                className={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
+                required
+              />
+              <LogOut className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none`} />
+            </div>
           </div>
         </div>
 
         {/* Hour Type */}
         <div>
           <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-            Hour Type *
+            {t('adminTimeEntry.hourType', 'Hour Type')} *
           </label>
           <select
             value={formData.hourType}
             onChange={(e) => setFormData({ ...formData, hourType: e.target.value })}
-            className={`w-full px-4 py-2 border ${border.primary} rounded-lg ${bg.primary} ${text.primary}`}
+            className={`w-full px-4 py-2 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
             required
           >
-            <option value="regular">Regular Hours</option>
-            <option value="weekend">Weekend/Overtime</option>
-            <option value="holiday">Holiday</option>
-            <option value="bonus">Bonus Hours</option>
+            <option value="regular">{t('adminTimeEntry.regularHours', 'Regular Hours')}</option>
+            <option value="weekend">{t('adminTimeEntry.weekendOvertime', 'Weekend/Overtime')}</option>
+            <option value="holiday">{t('adminTimeEntry.holiday', 'Holiday')}</option>
+            <option value="bonus">{t('adminTimeEntry.bonusHours', 'Bonus Hours')}</option>
           </select>
         </div>
 
         {/* Notes */}
         <div>
           <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-            Notes (Optional)
+            {t('adminTimeEntry.notes', 'Notes')} ({t('common.optional', 'Optional')})
           </label>
           <textarea
             value={formData.notes}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             rows={3}
-            placeholder="Add any notes about this time entry..."
-            className={`w-full px-4 py-2 border ${border.primary} rounded-lg ${bg.primary} ${text.primary}`}
+            placeholder={t('adminTimeEntry.notesPlaceholder', 'Add any notes about this time entry...')}
+            className={`w-full px-4 py-2 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
           />
         </div>
 
@@ -309,17 +324,17 @@ const AdminTimeEntry = () => {
         <button
           type="submit"
           disabled={loading || !selectedEmployee}
-          className={`w-full flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed`}
+          className={`w-full flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition-colors disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed shadow-lg hover:shadow-xl`}
         >
           {loading ? (
             <>
               <Clock className="w-5 h-5 animate-spin" />
-              <span>Submitting...</span>
+              <span>{t('adminTimeEntry.submitting', 'Submitting...')}</span>
             </>
           ) : (
             <>
               <Save className="w-5 h-5" />
-              <span>Submit Time Entry</span>
+              <span>{t('adminTimeEntry.submitButton', 'Submit Time Entry')}</span>
             </>
           )}
         </button>

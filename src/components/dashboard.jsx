@@ -390,19 +390,19 @@ const Dashboard = ({ employees, applications }) => {
           <h3 className={`font-semibold ${text.primary} mb-3`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.125rem)'}}>
             {t('dashboard.employeePerformance')}
           </h3>
-          <ResponsiveContainer width="100%" height={350}>
+          <ResponsiveContainer width="100%" height={400}>
             <BarChart data={performanceData} margin={{ top: 5, right: 5, left: 0, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
               <XAxis 
                 dataKey="name" 
-                stroke={isDarkMode ? '#9CA3AF' : '#6B7280'}
+                stroke={isDarkMode ? '#FFFFFF' : '#6B7280'}
                 angle={-45}
                 textAnchor="end"
                 height={80}
                 interval={0}
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: 13, fill: isDarkMode ? '#FFFFFF' : '#374151' }}
               />
-              <YAxis stroke={isDarkMode ? '#9CA3AF' : '#6B7280'} domain={[0, 5]} />
+              <YAxis stroke={isDarkMode ? '#FFFFFF' : '#6B7280'} domain={[0, 5]} tick={{ fill: isDarkMode ? '#FFFFFF' : '#374151' }} />
               <Tooltip
                   contentStyle={{
                     backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
@@ -431,7 +431,7 @@ const Dashboard = ({ employees, applications }) => {
                     return label;
                   }}
                 />
-              <Legend />
+              <Legend wrapperStyle={{ color: isDarkMode ? '#FFFFFF' : '#111827' }} />
               <defs>
                 <linearGradient id="performanceGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#DC2626" stopOpacity={0.95} />
@@ -449,7 +449,7 @@ const Dashboard = ({ employees, applications }) => {
           <h3 className={`font-semibold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.125rem)'}}>
             {t('dashboard.departmentDist')}
           </h3>
-          <ResponsiveContainer width="100%" height={350}>
+          <ResponsiveContainer width="100%" height={400}>
             <PieChart>
               <Pie
                 data={departmentData}
@@ -457,6 +457,7 @@ const Dashboard = ({ employees, applications }) => {
                 cy="50%"
                 labelLine={false}
                 label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                labelStyle={{ fill: isDarkMode ? '#FFFFFF' : '#111827', fontSize: 14 }}
                 outerRadius={80}
                 fill="#8884d8"
                 dataKey="value"
@@ -492,7 +493,7 @@ const Dashboard = ({ employees, applications }) => {
           <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
             {t('dashboard.regularHoursByEmployee', 'Regular Hours by Employee')}
           </h3>
-          <ResponsiveContainer width="100%" height={350}>
+          <ResponsiveContainer width="100%" height={400}>
             <BarChart 
               data={allEmployeesData
                 .filter(item => item.data)
@@ -508,14 +509,14 @@ const Dashboard = ({ employees, applications }) => {
               <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
               <XAxis 
                 dataKey="name" 
-                stroke={isDarkMode ? '#9CA3AF' : '#6B7280'}
+                stroke={isDarkMode ? '#FFFFFF' : '#6B7280'}
                 angle={-45}
                 textAnchor="end"
                 height={80}
                 interval={0}
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: 13, fill: isDarkMode ? '#FFFFFF' : '#374151' }}
               />
-              <YAxis stroke={isDarkMode ? '#9CA3AF' : '#6B7280'} />
+              <YAxis stroke={isDarkMode ? '#FFFFFF' : '#6B7280'} tick={{ fill: isDarkMode ? '#FFFFFF' : '#374151' }} />
               <Tooltip
                 contentStyle={{
                   backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
@@ -530,7 +531,7 @@ const Dashboard = ({ employees, applications }) => {
                   return label;
                 }}
               />
-              <Legend />
+              <Legend wrapperStyle={{ color: isDarkMode ? '#FFFFFF' : '#111827' }} />
               <defs>
                 <linearGradient id="regularHoursGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#2563EB" stopOpacity={0.95} />
@@ -548,7 +549,7 @@ const Dashboard = ({ employees, applications }) => {
           <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
             {t('dashboard.overtimeHoursByEmployee', 'Overtime Hours by Employee')}
           </h3>
-          <ResponsiveContainer width="100%" height={350}>
+          <ResponsiveContainer width="100%" height={400}>
             <BarChart 
               data={allEmployeesData
                 .filter(item => item.data)
@@ -568,14 +569,14 @@ const Dashboard = ({ employees, applications }) => {
               <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
               <XAxis 
                 dataKey="name" 
-                stroke={isDarkMode ? '#9CA3AF' : '#6B7280'}
+                stroke={isDarkMode ? '#FFFFFF' : '#6B7280'}
                 angle={-45}
                 textAnchor="end"
                 height={80}
                 interval={0}
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: 13, fill: isDarkMode ? '#FFFFFF' : '#374151' }}
               />
-              <YAxis stroke={isDarkMode ? '#9CA3AF' : '#6B7280'} />
+              <YAxis stroke={isDarkMode ? '#FFFFFF' : '#6B7280'} tick={{ fill: isDarkMode ? '#FFFFFF' : '#374151' }} />
               <Tooltip
                 contentStyle={{
                   backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',

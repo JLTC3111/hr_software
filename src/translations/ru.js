@@ -10,6 +10,7 @@ export default {
     reports: 'Отчёты',
     notifications: 'Уведомления',
     settings: 'Настройки',
+    workload: 'Рабочая нагрузка'
   },
 
   // Header
@@ -41,7 +42,6 @@ export default {
     pendingRequests: 'Ожидающие Запросы',
     leaveRequests: 'Заявки на Отпуск в Ожидании',
     recentActivity: 'Недавняя Активность',
-    quickStats: 'Быстрая Статистика',
     viewAll: 'Посмотреть Все',
     activities: {
       newEmployee: 'Новый сотрудник принят: ABC',
@@ -188,6 +188,7 @@ export default {
   employees: {
     title: 'Управление сотрудниками',
     searchPlaceholder: 'Поиск сотрудников...',
+    quickStats: 'Быстрая Статистика',
     addEmployee: 'Добавить сотрудника',
     name: 'Имя',
     position: 'Должность',
@@ -584,5 +585,30 @@ export default {
     autoClockOutTime: 'Время автовыхода',
     weeklyReport: 'Еженедельный отчет',
     weeklyReportDesc: 'Получать еженедельную сводку рабочих активностей'
+  },
+
+  // Workload Management
+  workload: {
+    title: 'Управление рабочей нагрузкой',
+    individual: 'Индивидуальный',
+    organization: 'Организация',
+    totalTasks: 'Всего задач',
+    completed: 'Завершено',
+    progress: 'Прогресс',
+    avgQuality: 'Сред. качество',
+    avgProgress: 'Сред. прогресс',
+    myTasks: 'Мои задачи',
+    addTask: 'Добавить задачу',
+    editTask: 'Редактировать задачу',
+    taskTitle: 'Название задачи',
+    description: 'Описание',
+    priority: 'Приоритет',
+    status: 'Статус',
+    selfAssessment: 'Самооценка',
+    selfAssessmentPlaceholder: 'Как вы выполнили эту задачу?',
+    qualityRating: 'Оценка качества',
+    noTasks: 'Задач пока нет. Добавьте свою первую задачу!',
+    employeeProgress: 'Прогресс сотрудников',
+    confirmDelete: 'Вы уверены, что хотите удалить эту задачу?'
   }
 };

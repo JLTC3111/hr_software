@@ -10,7 +10,8 @@ export default {
     reports: 'Báo cáo',
     notifications: 'Thông báo',
     settings: 'Cài đặt',
-    controlPanel: 'Bảng Điều Khiển'
+    controlPanel: 'Bảng Điều Khiển',
+    workload: 'Khối Lượng Công Việc',
   },
 
   // Header
@@ -70,7 +71,6 @@ export default {
     pendingRequests: 'Yêu Cầu Chờ Xử Lý',
     leaveRequests: 'Đơn Xin Nghỉ Phép Chờ Duyệt',
     recentActivity: 'Hoạt Động Gần Đây',
-    quickStats: 'Thống Kê Nhanh',
     viewAll: 'Xem Tất Cả',
     activities: {
       newEmployee: "Nhân Viên Mới Vào Làm: ABC ",
@@ -198,6 +198,7 @@ export default {
   employees: {
     title: 'Quản Lý Nhân Viên',
     directory: 'Danh sách',
+    quickStats: 'Thống Kê Nhanh',
     addNew: 'Thêm mới',
     searchPlaceholder: 'Tìm Kiếm Nhân Viên...',
     addEmployee: 'Thêm Nhân Viên',
@@ -705,5 +706,30 @@ export default {
     autoClockOutTime: 'Thời gian tự động chấm công ra',
     weeklyReport: 'Báo cáo hàng tuần',
     weeklyReportDesc: 'Nhận tóm tắt hàng tuần về các hoạt động công việc của bạn'
+  },
+
+  // Workload Management
+  workload: {
+    title: 'Quản Lý Khối Lượng Công Việc',
+    individual: 'Cá nhân',
+    organization: 'Tổ chức',
+    totalTasks: 'Tổng số nhiệm vụ',
+    completed: 'Đã hoàn thành',
+    progress: 'Tiến độ',
+    avgQuality: 'Chất lượng TB',
+    avgProgress: 'Tiến độ TB',
+    myTasks: 'Nhiệm vụ của tôi',
+    addTask: 'Thêm nhiệm vụ',
+    editTask: 'Chỉnh sửa nhiệm vụ',
+    taskTitle: 'Tiêu đề nhiệm vụ',
+    description: 'Mô tả',
+    priority: 'Ưu tiên',
+    status: 'Trạng thái',
+    selfAssessment: 'Tự đánh giá',
+    selfAssessmentPlaceholder: 'Bạn đã thực hiện nhiệm vụ này như thế nào?',
+    qualityRating: 'Đánh giá chất lượng',
+    noTasks: 'Chưa có nhiệm vụ nào. Thêm nhiệm vụ đầu tiên của bạn!',
+    employeeProgress: 'Tiến độ nhân viên',
+    confirmDelete: 'Bạn có chắc chắn muốn xóa nhiệm vụ này?'
   }
 };
