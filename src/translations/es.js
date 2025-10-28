@@ -200,6 +200,13 @@ login: {
       submitFailed: 'Error al enviar entrada de tiempo',
       deleteFailed: 'Error al eliminar entrada de tiempo'
     },
+    deleteOptions: 'Elegir opción de eliminación',
+    deleteEntry: 'Eliminar entrada de tiempo completa',
+    deleteProofOnly: 'Eliminar solo archivo de prueba',
+    enterChoice: 'Ingrese 1 o 2',
+    invalidChoice: 'Opción inválida. Por favor ingrese 1 o 2.',
+    proofDeleteSuccess: 'Archivo de prueba eliminado exitosamente',
+    proofDeleteError: 'Error al eliminar archivo de prueba',
     proofUploadSuccess: 'Archivo de prueba cargado exitosamente',
     proofUploadError: 'Error al cargar archivo de prueba'
   },

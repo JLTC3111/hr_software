@@ -175,6 +175,13 @@ export default {
       submitFailed: 'ไม่สามารถส่งบันทึกเวลาได้ กรุณาลองอีกครั้ง',
       deleteFailed: 'ไม่สามารถลบบันทึกเวลาได้ กรุณาลองอีกครั้ง'
     },
+    deleteOptions: 'เลือกตัวเลือกการลบ',
+    deleteEntry: 'ลบบันทึกเวลาทั้งหมด',
+    deleteProofOnly: 'ลบเฉพาะไฟล์หลักฐาน',
+    enterChoice: 'กรอก 1 หรือ 2',
+    invalidChoice: 'ตัวเลือกไม่ถูกต้อง กรุณากรอก 1 หรือ 2',
+    proofDeleteSuccess: 'ลบไฟล์หลักฐานสำเร็จ',
+    proofDeleteError: 'ไม่สามารถลบไฟล์หลักฐานได้',
     proofUploadSuccess: 'อัปโหลดไฟล์หลักฐานสำเร็จ',
     proofUploadError: 'ไม่สามารถอัปโหลดไฟล์หลักฐานได้'
   },  

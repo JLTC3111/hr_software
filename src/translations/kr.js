@@ -178,6 +178,13 @@ export default {
       submitFailed: '시간 기록 제출에 실패했습니다. 다시 시도해 주세요.',
       deleteFailed: '시간 기록 삭제에 실패했습니다. 다시 시도해 주세요.'
     },
+    deleteOptions: '삭제 옵션 선택',
+    deleteEntry: '전체 시간 기록 삭제',
+    deleteProofOnly: '증명 파일만 삭제',
+    enterChoice: '1 또는 2를 입력하세요',
+    invalidChoice: '잘못된 선택입니다. 1 또는 2를 입력하세요.',
+    proofDeleteSuccess: '증명 파일이 성공적으로 삭제되었습니다',
+    proofDeleteError: '증명 파일 삭제에 실패했습니다',
     proofUploadSuccess: '증명 파일이 성공적으로 업로드되었습니다',
     proofUploadError: '증명 파일 업로드에 실패했습니다'
   },

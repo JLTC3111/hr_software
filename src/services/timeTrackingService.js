@@ -202,6 +202,51 @@ export const updateTimeEntryProof = async (entryId, file, employeeId, onProgress
 };
 
 /**
+ * Delete proof file from storage and update time entry
+ * @param {number} entryId - Time entry ID
+ * @param {string} filePath - Storage file path
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export const deleteProofFile = async (entryId, filePath) => {
+  try {
+    // Delete file from storage if path exists
+    if (filePath) {
+      const { error: storageError } = await supabase.storage
+        .from('employee-documents')
+        .remove([filePath]);
+
+      if (storageError) {
+        console.error('Error deleting file from storage:', storageError);
+        // Continue to update database even if storage deletion fails
+      }
+    }
+
+    // Update the time entry to remove proof file references
+    const { data, error } = await supabase
+      .from('time_entries')
+      .update({
+        proof_file_url: null,
+        proof_file_name: null,
+        proof_file_type: null,
+        proof_file_path: null
+      })
+      .eq('id', entryId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error deleting proof file:', error);
+    return { 
+      success: false, 
+      error: error.message || 'Failed to delete proof file'
+    };
+  }
+};
+
+/**
  * Delete a time entry
  */
 export const deleteTimeEntry = async (entryId) => {
@@ -370,33 +415,6 @@ export const getProofFileSignedUrl = async (filePath) => {
     return {
       success: false,
       error: error.message || 'Failed to generate public URL'
-    };
-  }
-};
-
-/**
- * Delete proof file from storage
- * @param {string} filePath - Path to file in storage
- * @returns {Promise<{success: boolean, error?: string}>}
- */
-export const deleteProofFile = async (filePath) => {
-  try {
-    if (!filePath) {
-      throw new Error('File path is required');
-    }
-
-    const { error } = await supabase.storage
-      .from('employee-documents')
-      .remove([filePath]);
-
-    if (error) throw error;
-
-    return { success: true };
-  } catch (error) {
-    console.error('Error deleting proof file:', error);
-    return {
-      success: false,
-      error: error.message || 'Failed to delete proof file'
     };
   }
 };

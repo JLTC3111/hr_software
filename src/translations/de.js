@@ -478,6 +478,13 @@ export default {
       submitFailed: 'Zeiteintrag konnte nicht übermittelt werden. Bitte versuchen Sie es erneut.',
       deleteFailed: 'Zeiteintrag konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.'
     },
+    deleteOptions: 'Löschoption wählen',
+    deleteEntry: 'Gesamten Zeiteintrag löschen',
+    deleteProofOnly: 'Nur Nachweisdatei löschen',
+    enterChoice: 'Geben Sie 1 oder 2 ein',
+    invalidChoice: 'Ungültige Auswahl. Bitte geben Sie 1 oder 2 ein.',
+    proofDeleteSuccess: 'Nachweisdatei erfolgreich gelöscht',
+    proofDeleteError: 'Fehler beim Löschen der Nachweisdatei',
     proofUploadSuccess: 'Nachweisdatei erfolgreich hochgeladen',
     proofUploadError: 'Fehler beim Hochladen der Nachweisdatei'
   },

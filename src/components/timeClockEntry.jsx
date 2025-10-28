@@ -352,10 +352,70 @@ const TimeClockEntry = ({ currentLanguage }) => {
     return false;
   };
 
-  // Delete entry
-  const handleDelete = async (id) => {
-    if (window.confirm(t('timeClock.confirmDelete'))) {
-      try {
+  // Delete entry or proof file
+  const handleDelete = async (id, entry) => {
+    // Check if entry has a proof file
+    const hasProof = entry?.proof_file_url;
+    
+    let deleteChoice;
+    if (hasProof) {
+      // Show custom confirmation with two options
+      const message = `${t('timeClock.deleteOptions', 'Choose delete option')}:\n\n1 - ${t('timeClock.deleteEntry', 'Delete entire time entry')}\n2 - ${t('timeClock.deleteProofOnly', 'Delete proof file only')}\n\n${t('timeClock.enterChoice', 'Enter 1 or 2')}:`;
+      deleteChoice = window.prompt(message);
+      
+      if (!deleteChoice) return; // User cancelled
+      
+      deleteChoice = deleteChoice.trim();
+      
+      if (deleteChoice !== '1' && deleteChoice !== '2') {
+        alert(t('timeClock.invalidChoice', 'Invalid choice. Please enter 1 or 2.'));
+        return;
+      }
+    } else {
+      // No proof file, just confirm deletion of entry
+      if (!window.confirm(t('timeClock.confirmDelete'))) {
+        return;
+      }
+      deleteChoice = '1';
+    }
+    
+    try {
+      if (deleteChoice === '2') {
+        // Delete only the proof file
+        const result = await timeTrackingService.deleteProofFile(id, entry.proof_file_path);
+        
+        if (result.success) {
+          // Update local state to remove proof file info
+          setTimeEntries(prevEntries =>
+            prevEntries.map(e =>
+              e.id === id
+                ? {
+                    ...e,
+                    proof_file_url: null,
+                    proof_file_name: null,
+                    proof_file_type: null,
+                    proof_file_path: null
+                  }
+                : e
+            )
+          );
+          
+          setUploadToast({
+            show: true,
+            message: t('timeClock.proofDeleteSuccess', 'Proof file deleted successfully'),
+            type: 'success'
+          });
+          setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 3000);
+        } else {
+          setUploadToast({
+            show: true,
+            message: result.error || t('timeClock.proofDeleteError', 'Failed to delete proof file'),
+            type: 'error'
+          });
+          setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 5000);
+        }
+      } else {
+        // Delete entire entry
         const result = await timeTrackingService.deleteTimeEntry(id);
         if (result.success) {
           setTimeEntries(timeEntries.filter(entry => entry.id !== id));
@@ -364,10 +424,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
         } else {
           setErrors({ general: t('timeClock.errors.deleteFailed') });
         }
-      } catch (error) {
-        console.error('Error deleting time entry:', error);
-        setErrors({ general: t('timeClock.errors.deleteFailed') });
       }
+    } catch (error) {
+      console.error('Error deleting:', error);
+      setErrors({ general: t('timeClock.errors.deleteFailed') });
     }
   };
 
@@ -1178,7 +1238,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                             <FileText className="w-5 h-5 text-green-600 dark:text-green-400 group-hover:text-white" />
                           )
                         ) : (
-                          <span className={`text-xs ${text.secondary} group-hover:text-white`}>-</span>
+                          <span className={`text-xs ${text.secondary} group-hover:text-white`}></span>
                         )}
                         
                         {/* Upload button for entries without proof */}
@@ -1199,7 +1259,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                   )}
                                 </div>
                               ) : (
-                                <Upload className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:text-white hover:text-blue-800 dark:hover:text-blue-300" />
+                                <Upload className="w-5 h-5 mr-1.75 text-blue-600 dark:text-blue-400 group-hover:text-white hover:text-blue-800 dark:hover:text-blue-300" />
                               )}
                               <input
                                 id={`proof-upload-${entry.id}`}
@@ -1224,10 +1284,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDelete(entry.id);
+                          handleDelete(entry.id, entry);
                         }}
                         className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 group-hover:text-white transition-colors justify-center items-center inline-flex"
-                        title={t('timeClock.delete', 'Delete')}
+                        title={entry.proof_file_url ? t('timeClock.deleteOptions', 'Delete options') : t('timeClock.delete', 'Delete')}
                       >
                         <X className="w-5 h-5" />
                       </button>

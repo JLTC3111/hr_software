@@ -179,6 +179,13 @@ export default {
       submitFailed: 'Échec de la soumission. Veuillez réessayer.',
       deleteFailed: 'Échec de la suppression. Veuillez réessayer.'
     },
+    deleteOptions: 'Choisir l\'option de suppression',
+    deleteEntry: 'Supprimer l\'entrée de temps complète',
+    deleteProofOnly: 'Supprimer uniquement le fichier de preuve',
+    enterChoice: 'Entrez 1 ou 2',
+    invalidChoice: 'Choix invalide. Veuillez entrer 1 ou 2.',
+    proofDeleteSuccess: 'Fichier de preuve supprimé avec succès',
+    proofDeleteError: 'Échec de la suppression du fichier de preuve',
     proofUploadSuccess: 'Fichier de preuve téléchargé avec succès',
     proofUploadError: 'Échec du téléchargement du fichier de preuve'
   },

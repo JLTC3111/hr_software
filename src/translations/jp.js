@@ -176,6 +176,13 @@ export default {
       submitFailed: '時間記録の送信に失敗しました。もう一度お試しください。',
       deleteFailed: '時間記録の削除に失敗しました。もう一度お試しください。'
     },
+    deleteOptions: '削除オプションを選択',
+    deleteEntry: '時間記録全体を削除',
+    deleteProofOnly: '証明ファイルのみを削除',
+    enterChoice: '1または2を入力してください',
+    invalidChoice: '無効な選択です。1または2を入力してください。',
+    proofDeleteSuccess: '証明ファイルが正常に削除されました',
+    proofDeleteError: '証明ファイルの削除に失敗しました',
     proofUploadSuccess: '証明ファイルが正常にアップロードされました',
     proofUploadError: '証明ファイルのアップロードに失敗しました'
   },
