@@ -595,6 +595,62 @@ export default {
     delete: 'Xóa'
   },
 
+  // Performance Appraisal Translation
+  performanceAppraisalPage: {
+    title: 'Đánh Giá Hiệu Suất',
+    overallPerformance: 'Hiệu Suất Tổng Thể',
+    goalsAchieved: 'Mục Tiêu Đạt Được',
+    reviewsThisPeriod: 'Đánh Giá Trong Kỳ Này',
+    avgSkillRating: 'Đánh Giá Kỹ Năng TB',
+    currentGoals: 'Mục Tiêu Hiện Tại',
+    addGoal: 'Thêm Mục Tiêu',
+    // Tabs
+    overview: 'Tổng Quan',
+    goals: 'Mục Tiêu',
+    reviews: 'Đánh Giá',
+  },
+
+  // Employee Details Tabs
+  employeeDetailTabs: {
+    basicInformation: 'Thông Tin Cơ Bản',
+    contact: 'Liên Hệ',
+    documents: 'Tài Liệu',
+  },
+
+  // Employee Edit Form
+  employeeEditForm: {
+    editEmployee: 'Chỉnh Sửa Nhân Viên',
+    contactInformation: 'Thông Tin Liên Hệ',
+    employmentDetails: 'Chi Tiết Việc Làm',
+    email: 'E-Mail',
+    phone: 'Điện Thoại',
+    telephone: 'Số Điện Thoại',
+    address: 'Địa Chỉ',
+    department: 'Phòng Ban',
+    abteilung: 'Phòng Ban',
+    startDate: 'Ngày Bắt Đầu',
+    startdatum: 'Ngày Bắt Đầu',
+    dateOfBirth: 'Ngày Sinh',
+    performance: 'Hiệu Suất',
+    leistung: 'Hiệu Suất',
+    cancel: 'Hủy Bỏ',
+    abbrechen: 'Hủy Bỏ',
+    save: 'Lưu',
+    speichern: 'Lưu',
+  },
+
+  // Department Names
+  departments: {
+    engineering: 'Kỹ Thuật',
+    technology: 'Công Nghệ',
+    hr: 'Nhân Sự',
+    finance: 'Tài Chính',
+    marketing: 'Tiếp Thị',
+    sales: 'Bán Hàng',
+    operations: 'Vận Hành',
+    support: 'Hỗ Trợ',
+  },
+
   // Recruitment Status
   recruitmentStatus: {
     active: 'Hoạt động',
@@ -731,5 +787,61 @@ export default {
     noTasks: 'Chưa có nhiệm vụ nào. Thêm nhiệm vụ đầu tiên của bạn!',
     employeeProgress: 'Tiến độ nhân viên',
     confirmDelete: 'Bạn có chắc chắn muốn xóa nhiệm vụ này?'
-  }
+  },
+
+  // Performance Appraisal Translation
+  performanceAppraisalPage: {
+    title: 'Đánh Giá Hiệu Suất',
+    overallPerformance: 'Hiệu Suất Tổng Thể',
+    goalsAchieved: 'Mục Tiêu Đạt Được',
+    reviewsThisPeriod: 'Đánh Giá Trong Kỳ Này',
+    avgSkillRating: 'Đánh Giá Kỹ Năng TB',
+    currentGoals: 'Mục Tiêu Hiện Tại',
+    addGoal: 'Thêm Mục Tiêu',
+    // Tabs
+    overview: 'Tổng Quan',
+    goals: 'Mục Tiêu',
+    reviews: 'Đánh Giá',
+  },
+
+  // Employee Details Tabs
+  employeeDetailTabs: {
+    basicInformation: 'Thông Tin Cơ Bản',
+    contact: 'Liên Hệ',
+    documents: 'Tài Liệu',
+  },
+
+  // Employee Edit Form
+  employeeEditForm: {
+    editEmployee: 'Chỉnh Sửa Nhân Viên',
+    contactInformation: 'Thông Tin Liên Hệ',
+    employmentDetails: 'Chi Tiết Việc Làm',
+    email: 'E-Mail',
+    phone: 'Điện Thoại',
+    telephone: 'Số Điện Thoại',
+    address: 'Địa Chỉ',
+    department: 'Phòng Ban',
+    abteilung: 'Phòng Ban',
+    startDate: 'Ngày Bắt Đầu',
+    startdatum: 'Ngày Bắt Đầu',
+    dateOfBirth: 'Ngày Sinh',
+    performance: 'Hiệu Suất',
+    leistung: 'Hiệu Suất',
+    cancel: 'Hủy Bỏ',
+    abbrechen: 'Hủy Bỏ',
+    save: 'Lưu',
+    speichern: 'Lưu',
+  },
+
+  // Department Names
+  departments: {
+    engineering: 'Kỹ Thuật',
+    technology: 'Công Nghệ',
+    hr: 'Nhân Sự',
+    finance: 'Tài Chính',
+    marketing: 'Tiếp Thị',
+    sales: 'Bán Hàng',
+    operations: 'Vận Hành',
+    support: 'Hỗ Trợ',
+  },
 };

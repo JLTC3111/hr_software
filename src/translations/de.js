@@ -503,6 +503,58 @@ export default {
     pending: 'Ausstehend'
   },
 
+  // Performance Appraisal Translation
+  performanceAppraisalPage: {
+    title: 'Leistungsbeurteilung',
+    overallPerformance: 'Gesamtleistung',
+    goalsAchieved: 'Ziele erreicht',
+    reviewsThisPeriod: 'Bewertungen in diesem Zeitraum',
+    avgSkillRating: 'Durchschn. Fähigkeitsbewertung',
+    currentGoals: 'Aktuelle Ziele',
+    addGoal: 'Ziel hinzufügen',
+    overview: 'Übersicht',
+    goals: 'Ziele',
+    reviews: 'Bewertungen',
+  },
+
+  employeeDetailTabs: {
+    basicInformation: 'Grundinformationen',
+    contact: 'Kontakt',
+    documents: 'Dokumente',
+  },
+
+  employeeEditForm: {
+    editEmployee: 'Mitarbeiter bearbeiten',
+    contactInformation: 'Kontaktinformationen',
+    employmentDetails: 'Beschäftigungsdetails',
+    email: 'E-Mail',
+    phone: 'Telefon',
+    telephone: 'Telefonnummer',
+    address: 'Adresse',
+    department: 'Abteilung',
+    abteilung: 'Abteilung',
+    startDate: 'Startdatum',
+    startdatum: 'Startdatum',
+    dateOfBirth: 'Geburtsdatum',
+    performance: 'Leistung',
+    leistung: 'Leistung',
+    cancel: 'Abbrechen',
+    abbrechen: 'Abbrechen',
+    save: 'Speichern',
+    speichern: 'Speichern',
+  },
+
+  departments: {
+    engineering: 'Technik',
+    technology: 'Technologie',
+    hr: 'Personalwesen',
+    finance: 'Finanzen',
+    marketing: 'Marketing',
+    sales: 'Vertrieb',
+    operations: 'Betrieb',
+    support: 'Support',
+  },
+
   // Recruitment Status
   recruitmentStatus: {
     active: 'Aktiv',
@@ -694,5 +746,61 @@ export default {
     noTasks: 'Noch keine Aufgaben. Fügen Sie Ihre erste Aufgabe hinzu!',
     employeeProgress: 'Mitarbeiterfortschritt',
     confirmDelete: 'Möchten Sie diese Aufgabe wirklich löschen?'
-  }
+  },
+
+  // Performance Appraisal Translation
+  performanceAppraisalPage: {
+    title: 'Leistungsbeurteilung',
+    overallPerformance: 'Gesamtleistung',
+    goalsAchieved: 'Erreichte Ziele',
+    reviewsThisPeriod: 'Bewertungen in diesem Zeitraum',
+    avgSkillRating: 'Durchschn. Kompetenzbewertung',
+    currentGoals: 'Aktuelle Ziele',
+    addGoal: 'Ziel hinzufügen',
+    // Tabs
+    overview: 'Übersicht',
+    goals: 'Ziele',
+    reviews: 'Bewertungen',
+  },
+
+  // Employee Details Tabs
+  employeeDetailTabs: {
+    basicInformation: 'Grundinformationen',
+    contact: 'Kontakt',
+    documents: 'Dokumente',
+  },
+
+  // Employee Edit Form
+  employeeEditForm: {
+    editEmployee: 'Mitarbeiter bearbeiten',
+    contactInformation: 'Kontaktinformationen',
+    employmentDetails: 'Beschäftigungsdetails',
+    email: 'E-Mail',
+    phone: 'Telefon',
+    telephone: 'Telefonnummer',
+    address: 'Adresse',
+    department: 'Abteilung',
+    abteilung: 'Abteilung',
+    startDate: 'Startdatum',
+    startdatum: 'Startdatum',
+    dateOfBirth: 'Geburtsdatum',
+    performance: 'Leistung',
+    leistung: 'Leistung',
+    cancel: 'Abbrechen',
+    abbrechen: 'Abbrechen',
+    save: 'Speichern',
+    speichern: 'Speichern',
+  },
+
+  // Department Names
+  departments: {
+    engineering: 'Technik',
+    technology: 'Technologie',
+    hr: 'Personalwesen',
+    finance: 'Finanzen',
+    marketing: 'Marketing',
+    sales: 'Vertrieb',
+    operations: 'Betrieb',
+    support: 'Support',
+  },
 };

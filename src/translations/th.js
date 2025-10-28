@@ -607,5 +607,61 @@ export default {
     noTasks: 'ยังไม่มีงาน เพิ่มงานแรกของคุณ!',
     employeeProgress: 'ความคืบหน้าของพนักงาน',
     confirmDelete: 'คุณแน่ใจว่าต้องการลบงานนี้หรือไม่?'
-  }
+  },
+
+  // Performance Appraisal Translation
+  performanceAppraisalPage: {
+    title: 'การประเมินผลการปฏิบัติงาน',
+    overallPerformance: 'ผลการปฏิบัติงานโดยรวม',
+    goalsAchieved: 'เป้าหมายที่บรรลุ',
+    reviewsThisPeriod: 'การทบทวนช่วงนี้',
+    avgSkillRating: 'คะแนนทักษะเฉลี่ย',
+    currentGoals: 'เป้าหมายปัจจุบัน',
+    addGoal: 'เพิ่มเป้าหมาย',
+    // Tabs
+    overview: 'ภาพรวม',
+    goals: 'เป้าหมาย',
+    reviews: 'การทบทวน',
+  },
+
+  // Employee Details Tabs
+  employeeDetailTabs: {
+    basicInformation: 'ข้อมูลพื้นฐาน',
+    contact: 'ติดต่อ',
+    documents: 'เอกสาร',
+  },
+
+  // Employee Edit Form
+  employeeEditForm: {
+    editEmployee: 'แก้ไขพนักงาน',
+    contactInformation: 'ข้อมูลติดต่อ',
+    employmentDetails: 'รายละเอียดการจ้างงาน',
+    email: 'อีเมล',
+    phone: 'โทรศัพท์',
+    telephone: 'หมายเลขโทรศัพท์',
+    address: 'ที่อยู่',
+    department: 'แผนก',
+    abteilung: 'แผนก',
+    startDate: 'วันที่เริ่มงาน',
+    startdatum: 'วันที่เริ่มงาน',
+    dateOfBirth: 'วันเกิด',
+    performance: 'ผลการปฏิบัติงาน',
+    leistung: 'ผลการปฏิบัติงาน',
+    cancel: 'ยกเลิก',
+    abbrechen: 'ยกเลิก',
+    save: 'บันทึก',
+    speichern: 'บันทึก',
+  },
+
+  // Department Names
+  departments: {
+    engineering: 'วิศวกรรม',
+    technology: 'เทคโนโลยี',
+    hr: 'ทรัพยากรบุคคล',
+    finance: 'การเงิน',
+    marketing: 'การตลาด',
+    sales: 'การขาย',
+    operations: 'การดำเนินงาน',
+    support: 'สนับสนุน',
+  },
 };

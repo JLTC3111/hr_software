@@ -608,5 +608,61 @@ export default {
     noTasks: '작업이 없습니다. 첫 번째 작업을 추가하세요!',
     employeeProgress: '직원 진행률',
     confirmDelete: '이 작업을 삭제하시겠습니까?'
-  }
+  },
+
+  // Performance Appraisal Translation
+  performanceAppraisalPage: {
+    title: '성과 평가',
+    overallPerformance: '전체 성과',
+    goalsAchieved: '달성한 목표',
+    reviewsThisPeriod: '이번 기간 리뷰',
+    avgSkillRating: '평균 기술 평가',
+    currentGoals: '현재 목표',
+    addGoal: '목표 추가',
+    // Tabs
+    overview: '개요',
+    goals: '목표',
+    reviews: '리뷰',
+  },
+
+  // Employee Details Tabs
+  employeeDetailTabs: {
+    basicInformation: '기본 정보',
+    contact: '연락처',
+    documents: '문서',
+  },
+
+  // Employee Edit Form
+  employeeEditForm: {
+    editEmployee: '직원 수정',
+    contactInformation: '연락처 정보',
+    employmentDetails: '고용 세부정보',
+    email: '이메일',
+    phone: '전화',
+    telephone: '전화번호',
+    address: '주소',
+    department: '부서',
+    abteilung: '부서',
+    startDate: '시작일',
+    startdatum: '시작일',
+    dateOfBirth: '생년월일',
+    performance: '성과',
+    leistung: '성과',
+    cancel: '취소',
+    abbrechen: '취소',
+    save: '저장',
+    speichern: '저장',
+  },
+
+  // Department Names
+  departments: {
+    engineering: '엔지니어링',
+    technology: '기술',
+    hr: '인사',
+    finance: '재무',
+    marketing: '마케팅',
+    sales: '영업',
+    operations: '운영',
+    support: '지원',
+  },
 };

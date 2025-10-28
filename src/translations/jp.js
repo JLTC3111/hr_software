@@ -609,5 +609,61 @@ export default {
     noTasks: 'タスクがありません。最初のタスクを追加しましょう！',
     employeeProgress: '従業員の進捗',
     confirmDelete: 'このタスクを削除してもよろしいですか？'
-  }
+  },
+
+  // Performance Appraisal Translation
+  performanceAppraisalPage: {
+    title: '業績評価',
+    overallPerformance: '総合パフォーマンス',
+    goalsAchieved: '達成目標',
+    reviewsThisPeriod: '今期のレビュー',
+    avgSkillRating: '平均スキル評価',
+    currentGoals: '現在の目標',
+    addGoal: '目標を追加',
+    // Tabs
+    overview: '概要',
+    goals: '目標',
+    reviews: 'レビュー',
+  },
+
+  // Employee Details Tabs
+  employeeDetailTabs: {
+    basicInformation: '基本情報',
+    contact: '連絡先',
+    documents: '書類',
+  },
+
+  // Employee Edit Form
+  employeeEditForm: {
+    editEmployee: '従業員編集',
+    contactInformation: '連絡先情報',
+    employmentDetails: '雇用詳細',
+    email: 'メール',
+    phone: '電話',
+    telephone: '電話番号',
+    address: '住所',
+    department: '部門',
+    abteilung: '部門',
+    startDate: '開始日',
+    startdatum: '開始日',
+    dateOfBirth: '生年月日',
+    performance: 'パフォーマンス',
+    leistung: 'パフォーマンス',
+    cancel: 'キャンセル',
+    abbrechen: 'キャンセル',
+    save: '保存',
+    speichern: '保存',
+  },
+
+  // Department Names
+  departments: {
+    engineering: 'エンジニアリング',
+    technology: 'テクノロジー',
+    hr: '人事',
+    finance: '財務',
+    marketing: 'マーケティング',
+    sales: '営業',
+    operations: '運営',
+    support: 'サポート',
+  },
 };

@@ -610,5 +610,61 @@ export default {
     noTasks: 'Задач пока нет. Добавьте свою первую задачу!',
     employeeProgress: 'Прогресс сотрудников',
     confirmDelete: 'Вы уверены, что хотите удалить эту задачу?'
-  }
+  },
+
+  // Performance Appraisal Translation
+  performanceAppraisalPage: {
+    title: 'Оценка Эффективности',
+    overallPerformance: 'Общая Эффективность',
+    goalsAchieved: 'Достигнутые Цели',
+    reviewsThisPeriod: 'Отзывы За Этот Период',
+    avgSkillRating: 'Средняя Оценка Навыков',
+    currentGoals: 'Текущие Цели',
+    addGoal: 'Добавить Цель',
+    // Tabs
+    overview: 'Обзор',
+    goals: 'Цели',
+    reviews: 'Отзывы',
+  },
+
+  // Employee Details Tabs
+  employeeDetailTabs: {
+    basicInformation: 'Основная Информация',
+    contact: 'Контакт',
+    documents: 'Документы',
+  },
+
+  // Employee Edit Form
+  employeeEditForm: {
+    editEmployee: 'Редактировать Сотрудника',
+    contactInformation: 'Контактная Информация',
+    employmentDetails: 'Подробности Занятости',
+    email: 'Электронная Почта',
+    phone: 'Телефон',
+    telephone: 'Номер Телефона',
+    address: 'Адрес',
+    department: 'Отдел',
+    abteilung: 'Отдел',
+    startDate: 'Дата Начала',
+    startdatum: 'Дата Начала',
+    dateOfBirth: 'Дата Рождения',
+    performance: 'Эффективность',
+    leistung: 'Эффективность',
+    cancel: 'Отмена',
+    abbrechen: 'Отмена',
+    save: 'Сохранить',
+    speichern: 'Сохранить',
+  },
+
+  // Department Names
+  departments: {
+    engineering: 'Инженерия',
+    technology: 'Технологии',
+    hr: 'Кадры',
+    finance: 'Финансы',
+    marketing: 'Маркетинг',
+    sales: 'Продажи',
+    operations: 'Операции',
+    support: 'Поддержка',
+  },
 };

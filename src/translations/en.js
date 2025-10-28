@@ -567,6 +567,62 @@ export default {
   },
 
   //Employee Position 
+  // Performance Appraisal Translation
+  performanceAppraisalPage: {
+    title: 'Performance Appraisal',
+    overallPerformance: 'Overall Performance',
+    goalsAchieved: 'Goals Achieved',
+    reviewsThisPeriod: 'Reviews This Period',
+    avgSkillRating: 'Avg. Skill Rating',
+    currentGoals: 'Current Goals',
+    addGoal: 'Add Goal',
+    // Tabs
+    overview: 'Overview',
+    goals: 'Goals',
+    reviews: 'Reviews',
+  },
+
+  // Employee Details Tabs
+  employeeDetailTabs: {
+    basicInformation: 'Basic Information',
+    contact: 'Contact',
+    documents: 'Documents',
+  },
+
+  // Employee Edit Form
+  employeeEditForm: {
+    editEmployee: 'Edit Employee',
+    contactInformation: 'Contact Information',
+    employmentDetails: 'Employment Details',
+    email: 'E-Mail',
+    phone: 'Phone',
+    telephone: 'Telephone',
+    address: 'Address',
+    department: 'Department',
+    abteilung: 'Department',
+    startDate: 'Start Date',
+    startdatum: 'Start Date',
+    dateOfBirth: 'Date of Birth',
+    performance: 'Performance',
+    leistung: 'Performance',
+    cancel: 'Cancel',
+    abbrechen: 'Cancel',
+    save: 'Save',
+    speichern: 'Save',
+  },
+
+  // Department Names
+  departments: {
+    engineering: 'Engineering',
+    technology: 'Technology',
+    hr: 'Human Resources',
+    finance: 'Finance',
+    marketing: 'Marketing',
+    sales: 'Sales',
+    operations: 'Operations',
+    support: 'Support',
+  },
+
   employeePosition: {
     general_manager: 'General Manager',
     senior_developer: 'Senior Developer',
@@ -788,5 +844,61 @@ export default {
     noTasks: 'No tasks yet. Add your first task!',
     employeeProgress: 'Employee Progress',
     confirmDelete: 'Are you sure you want to delete this task?'
-  }
+  },
+
+  // Performance Appraisal Translation
+  performanceAppraisalPage: {
+    title: 'Performance Appraisal',
+    overallPerformance: 'Overall Performance',
+    goalsAchieved: 'Goals Achieved',
+    reviewsThisPeriod: 'Reviews This Period',
+    avgSkillRating: 'Avg Skill Rating',
+    currentGoals: 'Current Goals',
+    addGoal: 'Add Goal',
+    // Tabs
+    overview: 'Overview',
+    goals: 'Goals',
+    reviews: 'Reviews',
+  },
+
+  // Employee Details Tabs
+  employeeDetailTabs: {
+    basicInformation: 'Basic Information',
+    contact: 'Contact',
+    documents: 'Documents',
+  },
+
+  // Employee Edit Form
+  employeeEditForm: {
+    editEmployee: 'Edit Employee',
+    contactInformation: 'Contact Information',
+    employmentDetails: 'Employment Details',
+    email: 'Email',
+    phone: 'Phone',
+    telephone: 'Telephone',
+    address: 'Address',
+    department: 'Department',
+    abteilung: 'Department',
+    startDate: 'Start Date',
+    startdatum: 'Start Date',
+    dateOfBirth: 'Date of Birth',
+    performance: 'Performance',
+    leistung: 'Performance',
+    cancel: 'Cancel',
+    abbrechen: 'Cancel',
+    save: 'Save',
+    speichern: 'Save',
+  },
+
+  // Department Names
+  departments: {
+    engineering: 'Engineering',
+    technology: 'Technology',
+    hr: 'Human Resources',
+    finance: 'Finance',
+    marketing: 'Marketing',
+    sales: 'Sales',
+    operations: 'Operations',
+    support: 'Support',
+  },
 };

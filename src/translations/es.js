@@ -678,5 +678,61 @@ login: {
     noTasks: 'Aún no hay tareas. ¡Agrega tu primera tarea!',
     employeeProgress: 'Progreso del empleado',
     confirmDelete: '¿Estás seguro de que quieres eliminar esta tarea?'
-  }
+  },
+
+  // Performance Appraisal Translation
+  performanceAppraisalPage: {
+    title: 'Evaluación de Desempeño',
+    overallPerformance: 'Rendimiento General',
+    goalsAchieved: 'Objetivos Alcanzados',
+    reviewsThisPeriod: 'Revisiones Este Período',
+    avgSkillRating: 'Calificación Promedio de Habilidades',
+    currentGoals: 'Objetivos Actuales',
+    addGoal: 'Agregar Objetivo',
+    // Tabs
+    overview: 'Resumen',
+    goals: 'Objetivos',
+    reviews: 'Revisiones',
+  },
+
+  // Employee Details Tabs
+  employeeDetailTabs: {
+    basicInformation: 'Información Básica',
+    contact: 'Contacto',
+    documents: 'Documentos',
+  },
+
+  // Employee Edit Form
+  employeeEditForm: {
+    editEmployee: 'Editar Empleado',
+    contactInformation: 'Información de Contacto',
+    employmentDetails: 'Detalles de Empleo',
+    email: 'Correo Electrónico',
+    phone: 'Teléfono',
+    telephone: 'Número de Teléfono',
+    address: 'Dirección',
+    department: 'Departamento',
+    abteilung: 'Departamento',
+    startDate: 'Fecha de Inicio',
+    startdatum: 'Fecha de Inicio',
+    dateOfBirth: 'Fecha de Nacimiento',
+    performance: 'Rendimiento',
+    leistung: 'Rendimiento',
+    cancel: 'Cancelar',
+    abbrechen: 'Cancelar',
+    save: 'Guardar',
+    speichern: 'Guardar',
+  },
+
+  // Department Names
+  departments: {
+    engineering: 'Ingeniería',
+    technology: 'Tecnología',
+    hr: 'Recursos Humanos',
+    finance: 'Finanzas',
+    marketing: 'Marketing',
+    sales: 'Ventas',
+    operations: 'Operaciones',
+    support: 'Soporte',
+  },
 };

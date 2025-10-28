@@ -77,6 +77,32 @@ const PerformanceAppraisal = ({ employees }) => {
     }
   };
 
+  // Handler to update employee performance rating
+  const handleUpdatePerformanceRating = async (newRating) => {
+    if (!selectedEmployee) return;
+    
+    try {
+      // Import employeeService
+      const { updateEmployee } = await import('../services/employeeService');
+      
+      const result = await updateEmployee(selectedEmployee, {
+        performance: newRating
+      });
+      
+      if (result.success) {
+        // Show success notification
+        alert(t('performance.ratingUpdated', 'Performance rating updated successfully!'));
+        // Optionally refresh the employee data
+        fetchGoalsAndReviews();
+      } else {
+        alert(t('performance.ratingUpdateError', 'Failed to update performance rating'));
+      }
+    } catch (error) {
+      console.error('Error updating performance rating:', error);
+      alert(t('performance.ratingUpdateError', 'Failed to update performance rating'));
+    }
+  };
+
   // Handlers for modals
   const handleAddGoal = () => {
     setGoalForm({
@@ -228,15 +254,36 @@ const PerformanceAppraisal = ({ employees }) => {
     { value: '2024-q1', label: t('performance.q1_2024') }
   ];
 
-  const StarRating = ({ rating, size = 'w-5 h-5' }) => {
+  const StarRating = ({ rating, size = 'w-5 h-5', editable = false, onRatingChange }) => {
+    const [hoverRating, setHoverRating] = useState(0);
+    const [isEditing, setIsEditing] = useState(false);
+    const [newRating, setNewRating] = useState(rating);
+
+    const handleStarClick = (starValue) => {
+      if (!editable) return;
+      setNewRating(starValue);
+      if (onRatingChange) {
+        onRatingChange(starValue);
+      }
+    };
+
+    const handleStarHover = (starValue) => {
+      if (editable) {
+        setHoverRating(starValue);
+      }
+    };
+
     return (
       <div className="flex items-center space-x-1">
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
             className={`${size} ${
-              star <= rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-            }`}
+              star <= (hoverRating || newRating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
+            } ${editable ? 'cursor-pointer hover:scale-110 transition-transform' : ''}`}
+            onClick={() => handleStarClick(star)}
+            onMouseEnter={() => handleStarHover(star)}
+            onMouseLeave={() => setHoverRating(0)}
           />
         ))}
         <span 
@@ -247,7 +294,7 @@ const PerformanceAppraisal = ({ employees }) => {
             borderColor: 'transparent'
           }}
         >
-          {rating.toFixed(1)}
+          {newRating.toFixed(1)}
         </span>
       </div>
     );
@@ -330,7 +377,15 @@ const PerformanceAppraisal = ({ employees }) => {
             </span>
           </div>
         </div>
-        <StarRating rating={currentData.overallRating} size="w-6 h-6" />
+        <StarRating 
+          rating={currentData.overallRating} 
+          size="w-6 h-6" 
+          editable={true}
+          onRatingChange={handleUpdatePerformanceRating}
+        />
+        <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">
+          {t('performance.clickToRate', 'Click stars to update employee rating')}
+        </p>
       </div>
 
       {/* Quick Stats */}
