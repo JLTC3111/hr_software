@@ -89,7 +89,7 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
                   onError={() => setPhotoError(true)}
                 />
               ) : (
-                <User className="w-6 h-6 text-gray-400" />
+                <User className="w-6 h-6" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
               )}
             </div>
             {!uploading && (

@@ -261,6 +261,7 @@ export default {
   timeTracking: {
     title: 'Time Tracking Dashboard',
     overview: 'Overview',
+    overviewTitle: 'Company Overview',
     clockIn: 'Clock In/Out',
     summary: 'Summary',
     quickActions: 'Quick Actions',
@@ -293,7 +294,81 @@ export default {
     leaveError: 'Error submitting leave request',
     overtimeSuccess: 'Overtime logged successfully!',
     overtimeError: 'Error logging overtime',
-    exportSuccess: 'Report exported successfully!'
+    exportSuccess: 'Report exported successfully!',
+    includesPending: '*incl. pending',
+    totalRegularHours: 'Total Regular Hours (All Employees)',
+    regularHoursChart: 'Regular Hours by Employee',
+    overtimeHoursChart: 'Overtime Hours by Employee',
+    regularHoursLegend: 'Regular Hours',
+    totalOvertimeLegend: 'Total Overtime',
+    employee: 'Employee',
+    daysWorked: 'Days Worked',
+    totalHoursLabel: 'Total Hours'
+  },
+
+  // Admin Time Entry
+  adminTimeEntry: {
+    title: 'Admin Time Entry',
+    description: 'Enter time entries for employees (Admin/Manager only)',
+    selectEmployee: 'Select Employee',
+    searchEmployees: 'Search employees...',
+    noEmployees: 'No employees found',
+    date: 'Date',
+    clockIn: 'Clock In',
+    clockOut: 'Clock Out',
+    hourType: 'Hour Type',
+    regularHours: 'Regular Hours',
+    weekendOvertime: 'Weekend/Overtime',
+    holiday: 'Holiday',
+    bonusHours: 'Bonus Hours',
+    notes: 'Notes',
+    notesPlaceholder: 'Add any notes about this time entry...',
+    submitButton: 'Submit Time Entry',
+    submitting: 'Submitting...',
+    accessDenied: 'Access Denied: You don\'t have permission to manage time entries for other employees.',
+    errorLoadEmployees: 'Failed to load employees',
+    success: 'Time entry added successfully',
+    error: 'Failed to create time entry'
+  },
+
+  // Time Clock Entry
+  timeClock: {
+    title: 'New Time Entry',
+    selectDate: 'Select Date',
+    clockIn: 'Clock In',
+    clockOut: 'Clock Out',
+    hourType: 'Hour Type',
+    proof: 'Proof of Work',
+    optional: 'Optional',
+    notes: 'Notes',
+    notesPlaceholder: 'Add any notes about your work...',
+    submit: 'Submit Time Entry',
+    submitting: 'Submitting...',
+    success: 'Time entry submitted successfully!',
+    confirmDelete: 'Are you sure you want to delete this time entry?',
+    deleteSuccess: 'Time entry deleted successfully',
+    requestLeave: 'Request Leave',
+    weeklySummary: 'This Week',
+    monthlySummary: 'This Month',
+    leaveDays: 'Leave Days',
+    thisWeek: 'This Week',
+    thisMonth: 'This Month',
+    total: 'Total',
+    includesPending: '* Includes pending & approved',
+    hourTypes: {
+      regular: 'Regular Hours',
+      holiday: 'Holiday',
+      weekend: 'Weekend/Overtime',
+      bonus: 'Bonus Hours'
+    },
+    errors: {
+      dateRequired: 'Date is required',
+      clockInRequired: 'Clock in time is required',
+      clockOutRequired: 'Clock out time is required',
+      clockOutAfterClockIn: 'Clock out must be after clock in',
+      submitFailed: 'Failed to submit time entry',
+      deleteFailed: 'Failed to delete time entry'
+    }
   },
 
   // Performance Appraisal

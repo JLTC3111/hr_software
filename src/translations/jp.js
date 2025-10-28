@@ -11,6 +11,7 @@ export default {
     notifications: '通知',
     settings: '設定',
     workload: '作業量',
+    controlPanel: 'コントロールパネル',
   }
   ,
 
@@ -24,6 +25,7 @@ export default {
   // Dashboard
   dashboard: {
     title: 'ダッシュボード概要',
+    overview: '組織の概要',
     totalEmployees: '従業員総数',
     activeEmployees: '在籍従業員',
     newHires: '今月の新入社員',
@@ -180,6 +182,8 @@ export default {
   // Employees
   employees: {
     title: '従業員管理',
+    directory: 'ディレクトリ',
+    addNew: '新規追加',
     searchPlaceholder: '従業員を検索...',
     quickStats: 'クイック統計',
     addEmployee: '従業員を追加',
@@ -406,7 +410,82 @@ export default {
     exportSuccess: 'レポートが正常にエクスポートされました！',
     requestLeave: '休暇申請',
     logOvertime: '残業記録',
-    exportReport: 'レポート出力'
+    exportReport: 'レポート出力',
+    includesPending: '*保留中を含む',
+    totalRegularHours: '通常勤務時間合計（全従業員）',
+    regularHoursChart: '従業員別通常勤務時間',
+    overtimeHoursChart: '従業員別残業時間',
+    overviewTitle: '会社概要',
+    regularHoursLegend: '通常勤務時間',
+    totalOvertimeLegend: '残業時間合計',
+    employee: '従業員',
+    daysWorked: '出勤日数',
+    totalHoursLabel: '総勤務時間'
+  },
+
+  // Admin Time Entry
+  adminTimeEntry: {
+    title: '管理者勤怠入力',
+    description: '従業員の勤怠を入力（管理者/マネージャーのみ）',
+    selectEmployee: '従業員を選択',
+    searchEmployees: '従業員を検索...',
+    noEmployees: '従業員が見つかりません',
+    date: '日付',
+    clockIn: '出勤',
+    clockOut: '退勤',
+    hourType: '時間タイプ',
+    regularHours: '通常勤務',
+    weekendOvertime: '週末/残業',
+    holiday: '祝日',
+    bonusHours: 'ボーナス時間',
+    notes: 'メモ',
+    notesPlaceholder: 'この勤怠入力についてのメモを追加...',
+    submitButton: '勤怠入力を送信',
+    submitting: '送信中...',
+    accessDenied: 'アクセス拒否：他の従業員の勤怠入力を管理する権限がありません。',
+    errorLoadEmployees: '従業員の読み込みに失敗しました',
+    success: '勤怠入力が正常に追加されました',
+    error: '勤怠入力の作成に失敗しました'
+  },
+
+  // Time Clock Entry
+  timeClock: {
+    title: '新しい勤怠入力',
+    selectDate: '日付を選択',
+    clockIn: '出勤',
+    clockOut: '退勤',
+    hourType: '時間タイプ',
+    proof: '作業証明',
+    optional: 'オプション',
+    notes: 'メモ',
+    notesPlaceholder: '作業についてのメモを追加...',
+    submit: '勤怠入力を送信',
+    submitting: '送信中...',
+    success: '勤怠入力が正常に送信されました！',
+    confirmDelete: 'この勤怠入力を削除してもよろしいですか？',
+    deleteSuccess: '勤怠入力が正常に削除されました',
+    requestLeave: '休暇申請',
+    weeklySummary: '今週',
+    monthlySummary: '今月',
+    leaveDays: '休暇日数',
+    thisWeek: '今週',
+    thisMonth: '今月',
+    total: '合計',
+    includesPending: '* 保留中と承認済みを含む',
+    hourTypes: {
+      regular: '通常勤務',
+      holiday: '祝日',
+      weekend: '週末/残業',
+      bonus: 'ボーナス時間'
+    },
+    errors: {
+      dateRequired: '日付は必須です',
+      clockInRequired: '出勤時間は必須です',
+      clockOutRequired: '退勤時間は必須です',
+      clockOutAfterClockIn: '退勤時間は出勤時間より後でなければなりません',
+      submitFailed: '勤怠入力の送信に失敗しました',
+      deleteFailed: '勤怠入力の削除に失敗しました'
+    }
   },
 
   // Recruitment Actions

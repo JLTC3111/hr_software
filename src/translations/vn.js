@@ -191,7 +191,82 @@ export default {
     overtimeError: 'Lỗi khi ghi nhận tăng ca',
     exportSuccess: 'Báo cáo đã được xuất thành công!',
     timeClockError: 'Lỗi chấm công',
-    timeClockSuccess: 'Chấm công thành công!'
+    timeClockSuccess: 'Chấm công thành công!',
+    includesPending: '*bao gồm đang chờ',
+    totalRegularHours: 'Tổng giờ làm việc thường (Tất cả nhân viên)',
+    regularHoursChart: 'Giờ làm việc thường theo nhân viên',
+    overtimeHoursChart: 'Giờ làm thêm theo nhân viên',
+    overviewTitle: 'Tổng quan công ty',
+    regularHoursLegend: 'Giờ Làm Việc Thường',
+    totalOvertimeLegend: 'Tổng Giờ Tăng Ca',
+    employee: 'Nhân Viên',
+    daysWorked: 'Ngày Làm Việc',
+    totalHoursLabel: 'Tổng Số Giờ'
+  },
+
+  // Admin Time Entry
+  adminTimeEntry: {
+    title: 'Nhập Giờ Làm Việc (Quản Trị)',
+    description: 'Nhập giờ làm việc cho nhân viên (Chỉ Quản trị/Quản lý)',
+    selectEmployee: 'Chọn Nhân Viên',
+    searchEmployees: 'Tìm kiếm nhân viên...',
+    noEmployees: 'Không tìm thấy nhân viên',
+    date: 'Ngày',
+    clockIn: 'Giờ Vào',
+    clockOut: 'Giờ Ra',
+    hourType: 'Loại Giờ',
+    regularHours: 'Giờ Làm Thường',
+    weekendOvertime: 'Cuối Tuần/Tăng Ca',
+    holiday: 'Ngày Lễ',
+    bonusHours: 'Giờ Thưởng',
+    notes: 'Ghi Chú',
+    notesPlaceholder: 'Thêm ghi chú về mục nhập giờ này...',
+    submitButton: 'Gửi Mục Nhập Giờ',
+    submitting: 'Đang gửi...',
+    accessDenied: 'Truy cập bị từ chối: Bạn không có quyền quản lý mục nhập giờ của nhân viên khác.',
+    errorLoadEmployees: 'Không thể tải danh sách nhân viên',
+    success: 'Đã thêm mục nhập giờ thành công',
+    error: 'Không thể tạo mục nhập giờ'
+  },
+
+  // Time Clock Entry
+  timeClock: {
+    title: 'Nhập Giờ Mới',
+    selectDate: 'Chọn Ngày',
+    clockIn: 'Giờ Vào',
+    clockOut: 'Giờ Ra',
+    hourType: 'Loại Giờ',
+    proof: 'Chứng Minh Công Việc',
+    optional: 'Tùy Chọn',
+    notes: 'Ghi Chú',
+    notesPlaceholder: 'Thêm ghi chú về công việc của bạn...',
+    submit: 'Gửi Mục Nhập Giờ',
+    submitting: 'Đang gửi...',
+    success: 'Đã gửi mục nhập giờ thành công!',
+    confirmDelete: 'Bạn có chắc chắn muốn xóa mục nhập giờ này?',
+    deleteSuccess: 'Đã xóa mục nhập giờ thành công',
+    requestLeave: 'Yêu Cầu Nghỉ Phép',
+    weeklySummary: 'Tuần Này',
+    monthlySummary: 'Tháng Này',
+    leaveDays: 'Ngày Nghỉ',
+    thisWeek: 'Tuần Này',
+    thisMonth: 'Tháng Này',
+    total: 'Tổng Cộng',
+    includesPending: '* Bao gồm đang chờ & đã phê duyệt',
+    hourTypes: {
+      regular: 'Giờ Làm Thường',
+      holiday: 'Ngày Lễ',
+      weekend: 'Cuối Tuần/Tăng Ca',
+      bonus: 'Giờ Thưởng'
+    },
+    errors: {
+      dateRequired: 'Ngày là bắt buộc',
+      clockInRequired: 'Giờ vào là bắt buộc',
+      clockOutRequired: 'Giờ ra là bắt buộc',
+      clockOutAfterClockIn: 'Giờ ra phải sau giờ vào',
+      submitFailed: 'Không thể gửi mục nhập giờ',
+      deleteFailed: 'Không thể xóa mục nhập giờ'
+    }
   },
 
   // Employees

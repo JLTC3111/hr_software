@@ -11,6 +11,7 @@ export default {
     notifications: 'Notificaciones',
     settings: 'Configuración',
     workload: 'Carga de trabajo',
+    controlPanel: 'Panel de control'
   },
 
 // Header
@@ -73,6 +74,7 @@ login: {
 
   dashboard: {
     title: 'Resumen del Panel de Control',
+    overview: 'Descripción general de la organización',
     totalEmployees: 'Total de Empleados',
     activeEmployees: 'Empleados Activos',
     newHires: 'Nuevas Contrataciones Este Mes',
@@ -96,6 +98,16 @@ login: {
     overtimeSuccess: '¡Horas extra registradas exitosamente!',
     overtimeError: 'Error al registrar horas extra',
     exportSuccess: '¡Informe exportado exitosamente!',
+    includesPending: '*incluye pendiente',
+    totalRegularHours: 'Total de Horas Regulares (Todos los Empleados)',
+    regularHoursChart: 'Horas Regulares por Empleado',
+    overtimeHoursChart: 'Horas Extra por Empleado',
+    overviewTitle: 'Vista General de la Empresa',
+    regularHoursLegend: 'Horas Regulares',
+    totalOvertimeLegend: 'Total de Horas Extra',
+    employee: 'Empleado',
+    daysWorked: 'Días Trabajados',
+    totalHoursLabel: 'Total de Horas',
     recentActivity: 'Actividad Reciente',
     viewAll: 'Ver Todo',
     activities: {
@@ -109,6 +121,71 @@ login: {
       oneDay: 'Hace 1 día'
     }
   },  
+
+  // Admin Time Entry
+  adminTimeEntry: {
+    title: 'Entrada de Tiempo Admin',
+    description: 'Ingresar entradas de tiempo para empleados (Solo Admin/Gerente)',
+    selectEmployee: 'Seleccionar Empleado',
+    searchEmployees: 'Buscar empleados...',
+    noEmployees: 'No se encontraron empleados',
+    date: 'Fecha',
+    clockIn: 'Entrada',
+    clockOut: 'Salida',
+    hourType: 'Tipo de Hora',
+    regularHours: 'Horas Regulares',
+    weekendOvertime: 'Fin de Semana/Horas Extra',
+    holiday: 'Festivo',
+    bonusHours: 'Horas Bonus',
+    notes: 'Notas',
+    notesPlaceholder: 'Agregar notas sobre esta entrada de tiempo...',
+    submitButton: 'Enviar Entrada de Tiempo',
+    submitting: 'Enviando...',
+    accessDenied: 'Acceso Denegado: No tienes permiso para gestionar entradas de tiempo de otros empleados.',
+    errorLoadEmployees: 'Error al cargar empleados',
+    success: 'Entrada de tiempo agregada exitosamente',
+    error: 'Error al crear entrada de tiempo'
+  },
+
+  // Time Clock Entry
+  timeClock: {
+    title: 'Nueva Entrada de Tiempo',
+    selectDate: 'Seleccionar Fecha',
+    clockIn: 'Entrada',
+    clockOut: 'Salida',
+    hourType: 'Tipo de Hora',
+    proof: 'Prueba de Trabajo',
+    optional: 'Opcional',
+    notes: 'Notas',
+    notesPlaceholder: 'Agregar notas sobre tu trabajo...',
+    submit: 'Enviar Entrada de Tiempo',
+    submitting: 'Enviando...',
+    success: '¡Entrada de tiempo enviada exitosamente!',
+    confirmDelete: '¿Estás seguro de que quieres eliminar esta entrada de tiempo?',
+    deleteSuccess: 'Entrada de tiempo eliminada exitosamente',
+    requestLeave: 'Solicitar Permiso',
+    weeklySummary: 'Esta Semana',
+    monthlySummary: 'Este Mes',
+    leaveDays: 'Días de Permiso',
+    thisWeek: 'Esta Semana',
+    thisMonth: 'Este Mes',
+    total: 'Total',
+    includesPending: '* Incluye pendientes y aprobados',
+    hourTypes: {
+      regular: 'Horas Regulares',
+      holiday: 'Festivo',
+      weekend: 'Fin de Semana/Horas Extra',
+      bonus: 'Horas Bonus'
+    },
+    errors: {
+      dateRequired: 'La fecha es requerida',
+      clockInRequired: 'La hora de entrada es requerida',
+      clockOutRequired: 'La hora de salida es requerida',
+      clockOutAfterClockIn: 'La hora de salida debe ser después de la entrada',
+      submitFailed: 'Error al enviar entrada de tiempo',
+      deleteFailed: 'Error al eliminar entrada de tiempo'
+    }
+  },
 
   // Filter Departments
   departments: {
@@ -244,8 +321,10 @@ login: {
   // Employees
   employees: {
     title: 'Gestión de Empleados',
+    directory: 'Directorio',
+    addNew: 'Añadir nuevo',
     searchPlaceholder: 'Buscar empleados...',
-    addEmployee: 'Agregar Empleado',
+    addEmployee: 'Añadir Empleado',
     quickStats: 'Estadísticas Rápidas',
     name: 'Nombre',
     position: 'Posición',

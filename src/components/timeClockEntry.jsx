@@ -504,7 +504,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                 htmlFor="date-input" 
                 className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'} mb-2`}
                 >
-                Select Date 
+                {t('timeClock.selectDate', 'Select Date')}
                 </label>
                 
                 <div className="relative">

@@ -580,7 +580,7 @@ const TimeTracking = ({ employees }) => {
       {activeTab === 'overview' && (
       <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
         <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-          {t('timeTracking.overviewTitle', `Company Overview - ${getMonthName(selectedMonth)} ${selectedYear}`)}
+          {t('timeTracking.overviewTitle', 'Company Overview')} - {getMonthName(selectedMonth)} {selectedYear}
         </h3>
         
         {/* Total Regular Hours for All Employees */}
@@ -635,6 +635,13 @@ const TimeTracking = ({ employees }) => {
                   );
                 })}
             </div>
+            {/* Chart Legend */}
+            <div className="mt-4 flex items-center justify-center space-x-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-blue-600 rounded"></div>
+                <span className={`text-sm ${text.secondary}`}>{t('timeTracking.regularHoursLegend', 'Regular Hours')}</span>
+              </div>
+            </div>
           </div>
 
           {/* Total Overtime Hours Chart */}
@@ -676,6 +683,13 @@ const TimeTracking = ({ employees }) => {
                   );
                 })}
             </div>
+            {/* Chart Legend */}
+            <div className="mt-4 flex items-center justify-center space-x-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-orange-600 rounded"></div>
+                <span className={`text-sm ${text.secondary}`}>{t('timeTracking.totalOvertimeLegend', 'Total Overtime')}</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -684,11 +698,11 @@ const TimeTracking = ({ employees }) => {
           <table className="w-full">
             <thead>
               <tr className={`border-b ${border.primary}`}>
-                <th className={`text-left py-3 px-4 ${text.primary} font-semibold`}>Employee</th>
-                <th className={`text-right py-3 px-4 ${text.primary} font-semibold`}>Days Worked</th>
-                <th className={`text-right py-3 px-4 ${text.primary} font-semibold`}>Regular Hours</th>
-                <th className={`text-right py-3 px-4 ${text.primary} font-semibold`}>Overtime</th>
-                <th className={`text-right py-3 px-4 ${text.primary} font-semibold`}>Total Hours</th>
+                <th className={`text-left py-3 px-4 ${text.primary} font-semibold`}>{t('timeTracking.employee', 'Employee')}</th>
+                <th className={`text-right py-3 px-4 ${text.primary} font-semibold`}>{t('timeTracking.daysWorked', 'Days Worked')}</th>
+                <th className={`text-right py-3 px-4 ${text.primary} font-semibold`}>{t('timeTracking.regularHours', 'Regular Hours')}</th>
+                <th className={`text-right py-3 px-4 ${text.primary} font-semibold`}>{t('timeTracking.overtime', 'Overtime')}</th>
+                <th className={`text-right py-3 px-4 ${text.primary} font-semibold`}>{t('timeTracking.totalHoursLabel', 'Total Hours')}</th>
               </tr>
             </thead>
             <tbody>

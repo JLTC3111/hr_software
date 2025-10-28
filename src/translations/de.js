@@ -10,7 +10,8 @@ export default {
     reports: 'Berichte',
     notifications: 'Benachrichtigungen',
     settings: 'Einstellungen',
-    workload: 'Arbeitsbelastung'
+    workload: 'Arbeitsbelastung',
+    controlPanel: 'Systemsteuerung',
   },
 
   // Header
@@ -50,6 +51,7 @@ export default {
   // Dashboard
   dashboard: {
     title: 'Dashboard-Übersicht',
+    overview: 'Unternehmensübersicht',
     totalEmployees: 'Gesamte Mitarbeiter',
     activeEmployees: 'Aktive Mitarbeiter',
     newHires: 'Neueinstellungen diesen Monat',
@@ -60,7 +62,7 @@ export default {
     employeePerformance: 'Mitarbeiterleistung',
     departmentDist: 'Abteilungsverteilung',
     workLeaveComp: 'Arbeit vs. Urlaub',
-    topPerformers: 'Top-Performer',
+    topPerformers: 'Spitzenleister',
     overtime: 'ÜS',
     totalWorkDays: 'Gesamte Arbeitstage',
     acrossEmployees: 'Alle Mitarbeiter diesen Monat',
@@ -173,6 +175,8 @@ export default {
   // Employees
   employees: {
     title: 'Mitarbeiterverwaltung',
+    directory: 'Verzeichnis',
+    addNew: 'Neu hinzufügen',
     searchPlaceholder: 'Mitarbeiter suchen...',
     quickStats: 'Schnellstatistik',
     addEmployee: 'Mitarbeiter hinzufügen',
@@ -485,7 +489,82 @@ export default {
     exportSuccess: 'Bericht erfolgreich exportiert!',
     requestLeave: 'Urlaub beantragen',
     logOvertime: 'Überstunden erfassen',
-    exportReport: 'Bericht exportieren'
+    exportReport: 'Bericht exportieren',
+    includesPending: '*inkl. ausstehend',
+    totalRegularHours: 'Gesamte reguläre Arbeitsstunden (Alle Mitarbeiter)',
+    regularHoursChart: 'Reguläre Arbeitsstunden nach Mitarbeiter',
+    overtimeHoursChart: 'Überstunden nach Mitarbeiter',
+    overviewTitle: 'Unternehmensübersicht',
+    regularHoursLegend: 'Reguläre Stunden',
+    totalOvertimeLegend: 'Gesamte Überstunden',
+    employee: 'Mitarbeiter',
+    daysWorked: 'Arbeitstage',
+    totalHoursLabel: 'Gesamtstunden'
+  },
+
+  // Admin Time Entry
+  adminTimeEntry: {
+    title: 'Admin-Zeiteintrag',
+    description: 'Zeiteinträge für Mitarbeiter eingeben (Nur Admin/Manager)',
+    selectEmployee: 'Mitarbeiter Auswählen',
+    searchEmployees: 'Mitarbeiter suchen...',
+    noEmployees: 'Keine Mitarbeiter gefunden',
+    date: 'Datum',
+    clockIn: 'Einstempeln',
+    clockOut: 'Ausstempeln',
+    hourType: 'Stundentyp',
+    regularHours: 'Reguläre Stunden',
+    weekendOvertime: 'Wochenende/Überstunden',
+    holiday: 'Feiertag',
+    bonusHours: 'Bonusstunden',
+    notes: 'Notizen',
+    notesPlaceholder: 'Notizen zu diesem Zeiteintrag hinzufügen...',
+    submitButton: 'Zeiteintrag Absenden',
+    submitting: 'Wird übermittelt...',
+    accessDenied: 'Zugriff verweigert: Sie haben keine Berechtigung, Zeiteinträge für andere Mitarbeiter zu verwalten.',
+    errorLoadEmployees: 'Fehler beim Laden der Mitarbeiter',
+    success: 'Zeiteintrag erfolgreich hinzugefügt',
+    error: 'Zeiteintrag konnte nicht erstellt werden'
+  },
+
+  // Time Clock Entry
+  timeClock: {
+    title: 'Neuer Zeiteintrag',
+    selectDate: 'Datum Auswählen',
+    clockIn: 'Einstempeln',
+    clockOut: 'Ausstempeln',
+    hourType: 'Stundentyp',
+    proof: 'Arbeitsnachweis',
+    optional: 'Optional',
+    notes: 'Notizen',
+    notesPlaceholder: 'Notizen zu Ihrer Arbeit hinzufügen...',
+    submit: 'Zeiteintrag Absenden',
+    submitting: 'Wird übermittelt...',
+    success: 'Zeiteintrag erfolgreich übermittelt!',
+    confirmDelete: 'Möchten Sie diesen Zeiteintrag wirklich löschen?',
+    deleteSuccess: 'Zeiteintrag erfolgreich gelöscht',
+    requestLeave: 'Urlaub Beantragen',
+    weeklySummary: 'Diese Woche',
+    monthlySummary: 'Dieser Monat',
+    leaveDays: 'Urlaubstage',
+    thisWeek: 'Diese Woche',
+    thisMonth: 'Dieser Monat',
+    total: 'Gesamt',
+    includesPending: '* Enthält ausstehende & genehmigte',
+    hourTypes: {
+      regular: 'Reguläre Stunden',
+      holiday: 'Feiertag',
+      weekend: 'Wochenende/Überstunden',
+      bonus: 'Bonusstunden'
+    },
+    errors: {
+      dateRequired: 'Datum ist erforderlich',
+      clockInRequired: 'Einstempelzeit ist erforderlich',
+      clockOutRequired: 'Ausstempelzeit ist erforderlich',
+      clockOutAfterClockIn: 'Ausstempelzeit muss nach Einstempelzeit liegen',
+      submitFailed: 'Zeiteintrag konnte nicht übermittelt werden',
+      deleteFailed: 'Zeiteintrag konnte nicht gelöscht werden'
+    }
   },
 
   // Recruitment Actions

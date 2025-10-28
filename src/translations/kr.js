@@ -11,6 +11,7 @@ export default {
     notifications: '알림',
     settings: '설정',
     workload: '업무량',
+    controlPanel: '제어판',
   },
 
   // Header
@@ -23,6 +24,7 @@ export default {
   // Dashboard
   dashboard: {
     title: '대시보드 요약',
+    overview: '조직 개요',
     totalEmployees: '전체 직원 수',
     activeEmployees: '활동 중인 직원',
     newHires: '이번 달 신규 입사자',
@@ -47,7 +49,7 @@ export default {
     activities: {
       newEmployee: '신규 입사자: ABC',
       interviewScheduled: 'XYZ와의 인터뷰 일정 등록',
-      performanceReview: 'Đỗ Bảo Long의 성과 평가 완료'
+      performanceReview: '의 성과 평가 완료'
     },
     timeAgo: {
       twoHours: '2시간 전',
@@ -180,6 +182,8 @@ export default {
   // Employees
   employees: {
     title: '직원 관리',
+    directory: '디렉토리',
+    addNew: '새로운 직원 추가',
     searchPlaceholder: '직원 검색...',
     quickStats: '빠른 통계',
     addEmployee: '직원 추가',
@@ -405,7 +409,82 @@ export default {
     overtimeSuccess: '초과 근무가 성공적으로 기록되었습니다!',
     overtimeError: '초과 근무 기록 중 오류 발생',
     exportReport: '보고서 내보내기',
-    exportSuccess: '보고서가 성공적으로 내보내기되었습니다!'
+    exportSuccess: '보고서가 성공적으로 내보내기되었습니다!',
+    includesPending: '*대기 중 포함',
+    totalRegularHours: '총 정규 근무 시간 (전체 직원)',
+    regularHoursChart: '직원별 정규 근무 시간',
+    overtimeHoursChart: '직원별 초과 근무 시간',
+    overviewTitle: '회사 개요',
+    regularHoursLegend: '정규 근무 시간',
+    totalOvertimeLegend: '총 초과 근무 시간',
+    employee: '직원',
+    daysWorked: '근무 일수',
+    totalHoursLabel: '총 근무 시간'
+  },
+
+  // Admin Time Entry
+  adminTimeEntry: {
+    title: '관리자 근무 입력',
+    description: '직원의 근무 시간 입력 (관리자/매니저 전용)',
+    selectEmployee: '직원 선택',
+    searchEmployees: '직원 검색...',
+    noEmployees: '직원을 찾을 수 없습니다',
+    date: '날짜',
+    clockIn: '출근',
+    clockOut: '퇴근',
+    hourType: '시간 유형',
+    regularHours: '정규 근무 시간',
+    weekendOvertime: '주말/초과 근무',
+    holiday: '휴일',
+    bonusHours: '보너스 시간',
+    notes: '메모',
+    notesPlaceholder: '이 근무 입력에 대한 메모 추가...',
+    submitButton: '근무 입력 제출',
+    submitting: '제출 중...',
+    accessDenied: '접근 거부됨: 다른 직원의 근무 입력을 관리할 권한이 없습니다.',
+    errorLoadEmployees: '직원 로드 실패',
+    success: '근무 입력이 성공적으로 추가되었습니다',
+    error: '근무 입력 생성 실패'
+  },
+
+  // Time Clock Entry
+  timeClock: {
+    title: '새 근무 입력',
+    selectDate: '날짜 선택',
+    clockIn: '출근',
+    clockOut: '퇴근',
+    hourType: '시간 유형',
+    proof: '업무 증명',
+    optional: '선택 사항',
+    notes: '메모',
+    notesPlaceholder: '업무에 대한 메모 추가...',
+    submit: '근무 입력 제출',
+    submitting: '제출 중...',
+    success: '근무 입력이 성공적으로 제출되었습니다!',
+    confirmDelete: '이 근무 입력을 삭제하시겠습니까?',
+    deleteSuccess: '근무 입력이 성공적으로 삭제되었습니다',
+    requestLeave: '휴가 신청',
+    weeklySummary: '이번 주',
+    monthlySummary: '이번 달',
+    leaveDays: '휴가 일수',
+    thisWeek: '이번 주',
+    thisMonth: '이번 달',
+    total: '합계',
+    includesPending: '* 대기 중 및 승인된 항목 포함',
+    hourTypes: {
+      regular: '정규 근무 시간',
+      holiday: '휴일',
+      weekend: '주말/초과 근무',
+      bonus: '보너스 시간'
+    },
+    errors: {
+      dateRequired: '날짜는 필수입니다',
+      clockInRequired: '출근 시간은 필수입니다',
+      clockOutRequired: '퇴근 시간은 필수입니다',
+      clockOutAfterClockIn: '퇴근 시간은 출근 시간 이후여야 합니다',
+      submitFailed: '근무 입력 제출 실패',
+      deleteFailed: '근무 입력 삭제 실패'
+    }
   },
 
   // Recruitment Actions

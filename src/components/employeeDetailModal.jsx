@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Phone, Mail, MapPin, Award, Cake, Network, Calendar, DollarSign, User, FileText, Download, Upload, Loader, Edit2, Briefcase } from 'lucide-react';
+import { X, Phone, Mail, MapPin, Award, Cake, Network, Calendar, DollarSign, User, ClipboardList, FileText, Download, Upload, Loader, Edit2, Briefcase } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useUpload } from '../contexts/UploadContext';
@@ -361,7 +361,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
           {/* Basic Info Tab */}
           {activeTab === 'info' && (
             <div className="space-y-4">
-              <InfoItem icon={User} label={t('employeeDetailModal.fullName', 'Full Name')} value={employee.name} />
+              <InfoItem icon={ClipboardList} label={t('employeeDetailModal.fullName', 'Full Name')} value={employee.name} />
               <InfoItem icon={Network} label={t('employeeDetailModal.department', 'Department')} 
                 value={t(`employeeDepartment.${employee.department?.toLowerCase().replace(' ', '')}`, employee.department)} />
               <InfoItem icon={Award} label={t('employeeDetailModal.position', 'Position')} 

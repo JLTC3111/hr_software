@@ -14,6 +14,7 @@ export default {
     notifications: 'Notifications',
     settings: 'Paramètres',
     workload: 'Charge de travail',
+    controlPanel: 'Panneau de configuration',
   },
   
   // Header
@@ -26,6 +27,7 @@ export default {
   // Dashboard
   dashboard: {
     title: 'Vue d’Ensemble du Tableau de Bord',
+    overview: 'Description Générale de l’Organisation',
     totalEmployees: 'Nombre Total d’Employés',
     activeEmployees: 'Employés Actifs',
     newHires: 'Nouvelles Recrues Ce Mois-ci',
@@ -181,12 +183,89 @@ export default {
     leaveError: 'Erreur lors de la soumission de la demande de congé',
     overtimeSuccess: 'Heures supplémentaires enregistrées avec succès!',
     overtimeError: 'Erreur lors de l\'enregistrement des heures supplémentaires',
-    exportSuccess: 'Rapport exporté avec succès!'
+    exportSuccess: 'Rapport exporté avec succès!',
+    includesPending: '*y compris en attente',
+    totalRegularHours: 'Total des Heures Régulières (Tous les Employés)',
+    regularHoursChart: 'Heures Régulières par Employé',
+    overtimeHoursChart: 'Heures Supplémentaires par Employé',
+    overviewTitle: 'Vue d\'Ensemble de l\'Entreprise',
+    regularHoursLegend: 'Heures Régulières',
+    totalOvertimeLegend: 'Total des Heures Supplémentaires',
+    employee: 'Employé',
+    daysWorked: 'Jours Travaillés',
+    totalHoursLabel: 'Total des Heures'
+  },
+
+  // Admin Time Entry
+  adminTimeEntry: {
+    title: 'Saisie du Temps Admin',
+    description: 'Saisir les heures pour les employés (Admin/Gestionnaire uniquement)',
+    selectEmployee: 'Sélectionner un Employé',
+    searchEmployees: 'Rechercher des employés...',
+    noEmployees: 'Aucun employé trouvé',
+    date: 'Date',
+    clockIn: 'Entrée',
+    clockOut: 'Sortie',
+    hourType: 'Type d\'Heure',
+    regularHours: 'Heures Régulières',
+    weekendOvertime: 'Week-end/Heures Supplémentaires',
+    holiday: 'Jour Férié',
+    bonusHours: 'Heures Bonus',
+    notes: 'Notes',
+    notesPlaceholder: 'Ajouter des notes sur cette saisie de temps...',
+    submitButton: 'Soumettre la Saisie du Temps',
+    submitting: 'Envoi en cours...',
+    accessDenied: 'Accès Refusé: Vous n\'avez pas la permission de gérer les saisies de temps pour d\'autres employés.',
+    errorLoadEmployees: 'Échec du chargement des employés',
+    success: 'Saisie du temps ajoutée avec succès',
+    error: 'Échec de la création de la saisie du temps'
+  },
+
+  // Time Clock Entry
+  timeClock: {
+    title: 'Nouvelle Saisie du Temps',
+    selectDate: 'Sélectionner une Date',
+    clockIn: 'Entrée',
+    clockOut: 'Sortie',
+    hourType: 'Type d\'Heure',
+    proof: 'Preuve de Travail',
+    optional: 'Optionnel',
+    notes: 'Notes',
+    notesPlaceholder: 'Ajouter des notes sur votre travail...',
+    submit: 'Soumettre la Saisie du Temps',
+    submitting: 'Envoi en cours...',
+    success: 'Saisie du temps soumise avec succès!',
+    confirmDelete: 'Êtes-vous sûr de vouloir supprimer cette saisie du temps?',
+    deleteSuccess: 'Saisie du temps supprimée avec succès',
+    requestLeave: 'Demander un Congé',
+    weeklySummary: 'Cette Semaine',
+    monthlySummary: 'Ce Mois-ci',
+    leaveDays: 'Jours de Congé',
+    thisWeek: 'Cette Semaine',
+    thisMonth: 'Ce Mois-ci',
+    total: 'Total',
+    includesPending: '* Inclut les en attente & approuvés',
+    hourTypes: {
+      regular: 'Heures Régulières',
+      holiday: 'Jour Férié',
+      weekend: 'Week-end/Heures Supplémentaires',
+      bonus: 'Heures Bonus'
+    },
+    errors: {
+      dateRequired: 'La date est requise',
+      clockInRequired: 'L\'heure d\'entrée est requise',
+      clockOutRequired: 'L\'heure de sortie est requise',
+      clockOutAfterClockIn: 'L\'heure de sortie doit être après l\'heure d\'entrée',
+      submitFailed: 'Échec de la soumission de la saisie du temps',
+      deleteFailed: 'Échec de la suppression de la saisie du temps'
+    }
   },
 
   // Employees
   employees: {
     title: 'Gestion des employés',
+    directory: 'Annuaire',
+    addNew: 'Ajouter nouveau',
     searchPlaceholder: 'Rechercher des employés...',
     quickStats: 'Statistiques Rapides',
     addEmployee: 'Ajouter un employé',

@@ -236,7 +236,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                   />
                 ) : null}
                 <div className={currentEmployee?.photo ? 'hidden' : 'flex'} style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
-                  <User className="w-8 h-8 text-gray-400" />
+                  <User className="w-8 h-8" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
                 </div>
               </div>
               <div className="flex-1">

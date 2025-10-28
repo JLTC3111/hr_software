@@ -10,7 +10,8 @@ export default {
     reports: 'Отчёты',
     notifications: 'Уведомления',
     settings: 'Настройки',
-    workload: 'Рабочая нагрузка'
+    workload: 'Рабочая нагрузка',
+    controlPanel: 'Панель управления',
   },
 
   // Header
@@ -23,6 +24,7 @@ export default {
   // Dashboard
   dashboard: {
     title: 'Обзор Панели Управления',
+    overview: 'Обзор организации',
     totalEmployees: 'Всего Сотрудников',
     activeEmployees: 'Активные Сотрудники',
     newHires: 'Новые Сотрудники в Этом Месяце',
@@ -174,6 +176,16 @@ export default {
     overtimeError: 'Ошибка при регистрации сверхурочных',
     holidayOvertime: 'Праздничные сверхурочные',
     exportSuccess: 'Отчет успешно экспортирован!',
+    includesPending: '*включая ожидающие',
+    totalRegularHours: 'Общее количество обычных часов (Все сотрудники)',
+    regularHoursChart: 'Обычные часы по сотрудникам',
+    overtimeHoursChart: 'Сверхурочные часы по сотрудникам',
+    overviewTitle: 'Обзор компании',
+    regularHoursLegend: 'Обычные Часы',
+    totalOvertimeLegend: 'Всего Сверхурочных',
+    employee: 'Сотрудник',
+    daysWorked: 'Рабочие Дни',
+    totalHoursLabel: 'Общее Количество Часов',
     hours: 'часы',
     days: 'дни',
     thisMonth: 'В этом месяце',
@@ -184,9 +196,76 @@ export default {
     attendanceRate: 'Посещаемость'
   },
 
+  // Admin Time Entry
+  adminTimeEntry: {
+    title: 'Ввод Времени Администратором',
+    description: 'Ввод времени для сотрудников (Только Администратор/Менеджер)',
+    selectEmployee: 'Выбрать Сотрудника',
+    searchEmployees: 'Поиск сотрудников...',
+    noEmployees: 'Сотрудники не найдены',
+    date: 'Дата',
+    clockIn: 'Вход',
+    clockOut: 'Выход',
+    hourType: 'Тип Часов',
+    regularHours: 'Обычные Часы',
+    weekendOvertime: 'Выходные/Сверхурочные',
+    holiday: 'Праздник',
+    bonusHours: 'Бонусные Часы',
+    notes: 'Заметки',
+    notesPlaceholder: 'Добавить заметки об этой записи времени...',
+    submitButton: 'Отправить Запись Времени',
+    submitting: 'Отправка...',
+    accessDenied: 'Доступ Запрещен: У вас нет разрешения на управление записями времени других сотрудников.',
+    errorLoadEmployees: 'Не удалось загрузить сотрудников',
+    success: 'Запись времени успешно добавлена',
+    error: 'Не удалось создать запись времени'
+  },
+
+  // Time Clock Entry
+  timeClock: {
+    title: 'Новая Запись Времени',
+    selectDate: 'Выбрать Дату',
+    clockIn: 'Вход',
+    clockOut: 'Выход',
+    hourType: 'Тип Часов',
+    proof: 'Подтверждение Работы',
+    optional: 'Необязательно',
+    notes: 'Заметки',
+    notesPlaceholder: 'Добавить заметки о вашей работе...',
+    submit: 'Отправить Запись Времени',
+    submitting: 'Отправка...',
+    success: 'Запись времени успешно отправлена!',
+    confirmDelete: 'Вы уверены, что хотите удалить эту запись времени?',
+    deleteSuccess: 'Запись времени успешно удалена',
+    requestLeave: 'Запросить Отпуск',
+    weeklySummary: 'Эта Неделя',
+    monthlySummary: 'Этот Месяц',
+    leaveDays: 'Дни Отпуска',
+    thisWeek: 'Эта Неделя',
+    thisMonth: 'Этот Месяц',
+    total: 'Всего',
+    includesPending: '* Включая ожидающие и одобренные',
+    hourTypes: {
+      regular: 'Обычные Часы',
+      holiday: 'Праздник',
+      weekend: 'Выходные/Сверхурочные',
+      bonus: 'Бонусные Часы'
+    },
+    errors: {
+      dateRequired: 'Дата обязательна',
+      clockInRequired: 'Время входа обязательно',
+      clockOutRequired: 'Время выхода обязательно',
+      clockOutAfterClockIn: 'Время выхода должно быть после времени входа',
+      submitFailed: 'Не удалось отправить запись времени',
+      deleteFailed: 'Не удалось удалить запись времени'
+    }
+  },
+
   // Employees
   employees: {
     title: 'Управление сотрудниками',
+    directory: 'Директория',
+    addNew: 'Добавить новый',
     searchPlaceholder: 'Поиск сотрудников...',
     quickStats: 'Быстрая Статистика',
     addEmployee: 'Добавить сотрудника',
