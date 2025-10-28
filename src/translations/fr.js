@@ -128,6 +128,8 @@ export default {
     title: 'Pointage',
     subtitle: 'Enregistrez vos heures de travail et soumettez une preuve',
     newEntry: 'Nouvelle saisie de temps',
+    history: 'Historique',
+    selectDate: 'Sélectionner une date',
     date: 'Date',
     clockIn: 'Heure d’entrée',
     clockOut: 'Heure de sortie',
@@ -149,7 +151,11 @@ export default {
     actions: 'Actions',
     weeklySummary: 'Cette semaine',
     monthlySummary: 'Ce mois-ci',
+    leaveDays: 'Jours de congé',
+    thisWeek: 'Cette semaine',
+    thisMonth: 'Ce mois-ci',
     total: 'Total',
+    includesPending: '* Inclut les demandes en attente et approuvées',
     notesPlaceholder: 'Ajoutez des notes ou un contexte supplémentaire...',
     fileHelp: 'Téléversez une capture, une photo ou un PDF (max 5 Mo)',
     hourTypes: {
@@ -229,46 +235,6 @@ export default {
     errorLoadEmployees: 'Échec du chargement des employés',
     success: 'Saisie du temps ajoutée avec succès',
     error: 'Échec de la création de la saisie du temps'
-  },
-
-  // Time Clock Entry
-  timeClock: {
-    title: 'Nouvelle Saisie du Temps',
-    selectDate: 'Sélectionner une Date',
-    clockIn: 'Entrée',
-    clockOut: 'Sortie',
-    hourType: 'Type d\'Heure',
-    proof: 'Preuve de Travail',
-    optional: 'Optionnel',
-    notes: 'Notes',
-    notesPlaceholder: 'Ajouter des notes sur votre travail...',
-    submit: 'Soumettre la Saisie du Temps',
-    submitting: 'Envoi en cours...',
-    success: 'Saisie du temps soumise avec succès!',
-    confirmDelete: 'Êtes-vous sûr de vouloir supprimer cette saisie du temps?',
-    deleteSuccess: 'Saisie du temps supprimée avec succès',
-    requestLeave: 'Demander un Congé',
-    weeklySummary: 'Cette Semaine',
-    monthlySummary: 'Ce Mois-ci',
-    leaveDays: 'Jours de Congé',
-    thisWeek: 'Cette Semaine',
-    thisMonth: 'Ce Mois-ci',
-    total: 'Total',
-    includesPending: '* Inclut les en attente & approuvés',
-    hourTypes: {
-      regular: 'Heures Régulières',
-      holiday: 'Jour Férié',
-      weekend: 'Week-end/Heures Supplémentaires',
-      bonus: 'Heures Bonus'
-    },
-    errors: {
-      dateRequired: 'La date est requise',
-      clockInRequired: 'L\'heure d\'entrée est requise',
-      clockOutRequired: 'L\'heure de sortie est requise',
-      clockOutAfterClockIn: 'L\'heure de sortie doit être après l\'heure d\'entrée',
-      submitFailed: 'Échec de la soumission de la saisie du temps',
-      deleteFailed: 'Échec de la suppression de la saisie du temps'
-    }
   },
 
   // Employees

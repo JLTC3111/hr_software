@@ -125,6 +125,8 @@ export default {
     title: 'บันทึกเวลา',
     subtitle: 'บันทึกชั่วโมงการทำงานและส่งหลักฐานการเข้างาน',
     newEntry: 'เพิ่มรายการเวลาใหม่',
+    history: 'ประวัติ',
+    selectDate: 'เลือกวันที่',
     date: 'วันที่',
     clockIn: 'เวลาเข้า',
     clockOut: 'เวลาออก',
@@ -137,7 +139,6 @@ export default {
     success: 'ส่งบันทึกเวลาสำเร็จแล้ว!',
     confirmDelete: 'คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?',
     delete: 'ลบ',
-    history: 'ประวัติการบันทึกเวลา',
     noEntries: 'ยังไม่มีรายการ กรุณาส่งรายการแรก!',
     time: 'เวลา',
     hours: 'ชั่วโมง',
@@ -146,7 +147,11 @@ export default {
     actions: 'การดำเนินการ',
     weeklySummary: 'สัปดาห์นี้',
     monthlySummary: 'เดือนนี้',
+    leaveDays: 'วันลา',
+    thisWeek: 'สัปดาห์นี้',
+    thisMonth: 'เดือนนี้',
     total: 'รวม',
+    includesPending: '* รวมที่รอดำเนินการและอนุมัติแล้ว',
     notesPlaceholder: 'เพิ่มบันทึกหรือรายละเอียดเพิ่มเติม...',
     fileHelp: 'อัปโหลดภาพหน้าจอ รูปภาพ หรือ PDF (ขนาดไม่เกิน 5MB)',
     hourTypes: {
@@ -454,47 +459,6 @@ export default {
     errorLoadEmployees: 'ไม่สามารถโหลดพนักงานได้',
     success: 'เพิ่มการบันทึกเวลาสำเร็จแล้ว',
     error: 'ไม่สามารถสร้างการบันทึกเวลาได้'
-  },
-
-  // Time Clock Entry
-  timeClock: {
-    title: 'บันทึกเวลาใหม่',
-    subtitle: 'บันทึกชั่วโมงการทำงานและส่งหลักฐานการเข้างาน',
-    selectDate: 'เลือกวันที่',
-    clockIn: 'เข้างาน',
-    clockOut: 'ออกงาน',
-    hourType: 'ประเภทชั่วโมง',
-    proof: 'หลักฐานการทำงาน',
-    optional: 'ไม่บังคับ',
-    notes: 'หมายเหตุ',
-    notesPlaceholder: 'เพิ่มหมายเหตุเกี่ยวกับงานของคุณ...',
-    submit: 'ส่งการบันทึกเวลา',
-    submitting: 'กำลังส่ง...',
-    success: 'ส่งการบันทึกเวลาสำเร็จแล้ว!',
-    confirmDelete: 'คุณแน่ใจหรือไม่ว่าต้องการลบการบันทึกเวลานี้?',
-    deleteSuccess: 'ลบการบันทึกเวลาสำเร็จแล้ว',
-    requestLeave: 'ขอลาพัก',
-    weeklySummary: 'สัปดาห์นี้',
-    monthlySummary: 'เดือนนี้',
-    leaveDays: 'วันลาพัก',
-    thisWeek: 'สัปดาห์นี้',
-    thisMonth: 'เดือนนี้',
-    total: 'รวม',
-    includesPending: '* รวมรอดำเนินการและอนุมัติแล้ว',
-    hourTypes: {
-      regular: 'ชั่วโมงปกติ',
-      holiday: 'วันหยุด',
-      weekend: 'สุดสัปดาห์/ล่วงเวลา',
-      bonus: 'ชั่วโมงโบนัส'
-    },
-    errors: {
-      dateRequired: 'ต้องระบุวันที่',
-      clockInRequired: 'ต้องระบุเวลาเข้างาน',
-      clockOutRequired: 'ต้องระบุเวลาออกงาน',
-      clockOutAfterClockIn: 'เวลาออกงานต้องหลังจากเวลาเข้างาน',
-      submitFailed: 'ไม่สามารถส่งการบันทึกเวลาได้',
-      deleteFailed: 'ไม่สามารถลบการบันทึกเวลาได้'
-    }
   },
 
   // Recruitment Actions

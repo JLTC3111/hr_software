@@ -326,6 +326,9 @@ export default {
   timeClock: {
     title: 'New Time Entry',
     selectDate: 'Select Date',
+    newEntry: 'New Entry',
+    history: 'History',
+    selectDate: 'Select Date',
     clockIn: 'Clock In',
     clockOut: 'Clock Out',
     hourType: 'Hour Type',
@@ -557,56 +560,6 @@ export default {
   language: {
     select: 'Select Language',
     current: 'Current Language'
-  },
-
-  // Time Clock Entry
-  timeClock: {
-    title: 'Time Clock Entry',
-    subtitle: 'Log your work hours and submit proof of attendance',
-    newEntry: 'New Time Entry',
-    date: 'Date',
-    clockIn: 'Clock In',
-    clockOut: 'Clock Out',
-    hourType: 'Hour Type',
-    proof: 'Proof of Attendance',
-    notes: 'Notes',
-    optional: 'Optional',
-    submit: 'Submit Time Entry',
-    submitting: 'Submitting...',
-    success: 'Time entry submitted successfully!',
-    confirmDelete: 'Are you sure you want to delete this entry?',
-    delete: 'Delete',
-    history: 'Time Entry History',
-    noEntries: 'No time entries yet. Submit your first entry above!',
-    time: 'Time',
-    hours: 'Hours',
-    type: 'Type',
-    status: 'Status',
-    actions: 'Actions',
-    weeklySummary: 'This Week',
-    monthlySummary: 'This Month',
-    total: 'Total',
-    notesPlaceholder: 'Add any additional context or notes...',
-    fileHelp: 'Upload screenshot, photo, or PDF (max 5MB)',
-    hourTypes: {
-      regular: 'Regular Hours',
-      holiday: 'Holiday',
-      weekend: 'Weekend',
-      bonus: 'Bonus Hours'
-    },
-    errors: {
-      dateRequired: 'Date is required',
-      clockInRequired: 'Clock-in time is required',
-      clockOutRequired: 'Clock-out time is required',
-      clockOutAfterClockIn: 'Clock-out must be after clock-in',
-      tooManyHours: 'Cannot exceed 24 hours in a single entry',
-      overlapping: 'This time overlaps with an existing entry for this date',
-      fileTooLarge: 'File size must be less than 5MB',
-      invalidFileType: 'Only JPG, PNG, and PDF files are allowed',
-      fileReadError: 'Error reading file. Please try again.',
-      submitFailed: 'Failed to submit time entry. Please try again.',
-      deleteFailed: 'Failed to delete time entry. Please try again.'
-    }
   },
 
   // Time Tracking Actions

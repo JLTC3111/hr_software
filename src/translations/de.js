@@ -428,6 +428,8 @@ export default {
     title: 'Stempeluhr',
     subtitle: 'Erfassen Sie Ihre Arbeitszeiten und laden Sie Anwesenheitsnachweise hoch',
     newEntry: 'Neuer Zeiteintrag',
+    history: 'Zeiterfassungs-Verlauf',
+    selectDate: 'Datum auswählen',
     date: 'Datum',
     clockIn: 'Einstempeln',
     clockOut: 'Ausstempeln',
@@ -440,7 +442,6 @@ export default {
     success: 'Zeiteintrag erfolgreich gesendet!',
     confirmDelete: 'Möchten Sie diesen Eintrag wirklich löschen?',
     delete: 'Löschen',
-    history: 'Zeiterfassungs-Verlauf',
     noEntries: 'Noch keine Einträge. Senden Sie Ihren ersten Eintrag oben!',
     time: 'Zeit',
     hours: 'Stunden',
@@ -449,7 +450,11 @@ export default {
     actions: 'Aktionen',
     weeklySummary: 'Diese Woche',
     monthlySummary: 'Dieser Monat',
+    leaveDays: 'Urlaubstage',
+    thisWeek: 'Diese Woche',
+    thisMonth: 'Dieser Monat',
     total: 'Gesamt',
+    includesPending: '* Beinhaltet ausstehende und genehmigte',
     notesPlaceholder: 'Fügen Sie zusätzliche Notizen hinzu...',
     fileHelp: 'Screenshot, Foto oder PDF hochladen (max. 5MB)',
     hourTypes: {
@@ -508,47 +513,6 @@ export default {
     errorLoadEmployees: 'Fehler beim Laden der Mitarbeiter',
     success: 'Zeiteintrag erfolgreich hinzugefügt',
     error: 'Zeiteintrag konnte nicht erstellt werden'
-  },
-
-  // Time Clock Entry
-  timeClock: {
-    title: 'Neuer Zeiteintrag',
-    subtitle: 'Erfassen Sie Ihre Arbeitszeiten und laden Sie Anwesenheitsnachweise hoch',
-    selectDate: 'Datum Auswählen',
-    clockIn: 'Einstempeln',
-    clockOut: 'Ausstempeln',
-    hourType: 'Stundentyp',
-    proof: 'Arbeitsnachweis',
-    optional: 'Optional',
-    notes: 'Notizen',
-    notesPlaceholder: 'Notizen zu Ihrer Arbeit hinzufügen...',
-    submit: 'Zeiteintrag Absenden',
-    submitting: 'Wird übermittelt...',
-    success: 'Zeiteintrag erfolgreich übermittelt!',
-    confirmDelete: 'Möchten Sie diesen Zeiteintrag wirklich löschen?',
-    deleteSuccess: 'Zeiteintrag erfolgreich gelöscht',
-    requestLeave: 'Urlaub Beantragen',
-    weeklySummary: 'Diese Woche',
-    monthlySummary: 'Dieser Monat',
-    leaveDays: 'Urlaubstage',
-    thisWeek: 'Diese Woche',
-    thisMonth: 'Dieser Monat',
-    total: 'Gesamt',
-    includesPending: '* Enthält ausstehende & genehmigte',
-    hourTypes: {
-      regular: 'Reguläre Stunden',
-      holiday: 'Feiertag',
-      weekend: 'Wochenende/Überstunden',
-      bonus: 'Bonusstunden'
-    },
-    errors: {
-      dateRequired: 'Datum ist erforderlich',
-      clockInRequired: 'Einstempelzeit ist erforderlich',
-      clockOutRequired: 'Ausstempelzeit ist erforderlich',
-      clockOutAfterClockIn: 'Ausstempelzeit muss nach Einstempelzeit liegen',
-      submitFailed: 'Zeiteintrag konnte nicht übermittelt werden',
-      deleteFailed: 'Zeiteintrag konnte nicht gelöscht werden'
-    }
   },
 
   // Recruitment Actions

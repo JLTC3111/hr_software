@@ -128,6 +128,8 @@ export default {
     title: '근태 기록',
     subtitle: '근무 시간을 기록하고 증빙 자료를 제출하세요',
     newEntry: '새 근무 기록',
+    history: '근무 기록 내역',
+    selectDate: '날짜 선택',
     date: '날짜',
     clockIn: '출근 시간',
     clockOut: '퇴근 시간',
@@ -140,7 +142,6 @@ export default {
     success: '근무 기록이 성공적으로 제출되었습니다!',
     confirmDelete: '이 기록을 삭제하시겠습니까?',
     delete: '삭제',
-    history: '근무 기록 내역',
     noEntries: '아직 기록이 없습니다. 첫 번째 기록을 추가하세요!',
     time: '시간',
     hours: '근무 시간',
@@ -149,7 +150,11 @@ export default {
     actions: '작업',
     weeklySummary: '이번 주',
     monthlySummary: '이번 달',
-    total: '총합',
+    leaveDays: '휴가 일수',
+    thisWeek: '이번 주',
+    thisMonth: '이번 달',
+    total: '총계',
+    includesPending: '* 보류 및 승인 포함',
     notesPlaceholder: '추가 메모나 내용을 입력하세요...',
     fileHelp: '스크린샷, 사진 또는 PDF 업로드 (최대 5MB)',
     hourTypes: {
@@ -457,47 +462,6 @@ export default {
     errorLoadEmployees: '직원 로드 실패',
     success: '근무 입력이 성공적으로 추가되었습니다',
     error: '근무 입력 생성 실패'
-  },
-
-  // Time Clock Entry
-  timeClock: {
-    title: '새 근무 입력',
-    subtitle: '작업 시간과 증거를 기록하고 제출하세요',
-    selectDate: '날짜 선택',
-    clockIn: '출근',
-    clockOut: '퇴근',
-    hourType: '시간 유형',
-    proof: '업무 증명',
-    optional: '선택 사항',
-    notes: '메모',
-    notesPlaceholder: '업무에 대한 메모 추가...',
-    submit: '근무 입력 제출',
-    submitting: '제출 중...',
-    success: '근무 입력이 성공적으로 제출되었습니다!',
-    confirmDelete: '이 근무 입력을 삭제하시겠습니까?',
-    deleteSuccess: '근무 입력이 성공적으로 삭제되었습니다',
-    requestLeave: '휴가 신청',
-    weeklySummary: '이번 주',
-    monthlySummary: '이번 달',
-    leaveDays: '휴가 일수',
-    thisWeek: '이번 주',
-    thisMonth: '이번 달',
-    total: '합계',
-    includesPending: '* 대기 중 및 승인된 항목 포함',
-    hourTypes: {
-      regular: '정규 근무 시간',
-      holiday: '휴일',
-      weekend: '주말/초과 근무',
-      bonus: '보너스 시간'
-    },
-    errors: {
-      dateRequired: '날짜는 필수입니다',
-      clockInRequired: '출근 시간은 필수입니다',
-      clockOutRequired: '퇴근 시간은 필수입니다',
-      clockOutAfterClockIn: '퇴근 시간은 출근 시간 이후여야 합니다',
-      submitFailed: '근무 입력 제출 실패',
-      deleteFailed: '근무 입력 삭제 실패'
-    }
   },
 
   // Recruitment Actions

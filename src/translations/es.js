@@ -156,6 +156,8 @@ login: {
   timeClock: {
     title: 'Nueva Entrada de Tiempo',
     subtitle: 'Escribe tus horas de trabajo y sube pruebas de asistencia',
+    newEntry: 'Nueva entrada de tiempo',
+    history: 'Historial',
     selectDate: 'Seleccionar Fecha',
     clockIn: 'Entrada',
     clockOut: 'Salida',
@@ -244,54 +246,6 @@ login: {
     technical: 'Técnico',
     offer: 'Oferta',
     years: 'años'
-  },
-
-  timeClock: {
-    title: 'Registro de tiempo',
-    subtitle: 'Registra tus horas de trabajo y envía comprobantes',
-    newEntry: 'Nueva entrada de tiempo',
-    date: 'Fecha',
-    clockIn: 'Hora de entrada',
-    clockOut: 'Hora de salida',
-    hourType: 'Tipo de hora',
-    proof: 'Comprobante de asistencia',
-    notes: 'Notas',
-    optional: 'Opcional',
-    submit: 'Enviar registro de tiempo',
-    submitting: 'Enviando...',
-    success: '¡Registro de tiempo enviado con éxito!',
-    confirmDelete: '¿Estás seguro de que deseas eliminar este registro?',
-    delete: 'Eliminar',
-    history: 'Historial de tiempo',
-    noEntries: 'Aún no hay registros. ¡Envía el primero!',
-    time: 'Hora',
-    hours: 'Horas',
-    type: 'Tipo',
-    status: 'Estado',
-    actions: 'Acciones',
-    weeklySummary: 'Esta semana',
-    monthlySummary: 'Este mes',
-    total: 'Total',
-    notesPlaceholder: 'Agrega notas o contexto adicional...',
-    fileHelp: 'Sube una captura, foto o PDF (máx. 5 MB)',
-    hourTypes: {
-      regular: 'Horas regulares',
-      holiday: 'Día festivo',
-      weekend: 'Fin de semana',
-      bonus: 'Horas extra'
-    },
-    errors: {
-      dateRequired: 'Por favor selecciona una fecha',
-      clockInRequired: 'Por favor ingresa la hora de entrada',
-      clockOutRequired: 'Por favor ingresa la hora de salida',
-      clockOutAfterClockIn: 'La hora de salida debe ser después de la entrada',
-      tooManyHours: 'No se pueden registrar más de 24 horas',
-      overlapping: 'El horario se superpone con otro registro del mismo día',
-      fileTooLarge: 'El archivo debe ser menor de 5 MB',
-      invalidFileType: 'Solo se permiten archivos JPG, PNG o PDF',
-      submitFailed: 'Error al enviar el registro de tiempo. Por favor, inténtelo de nuevo.',
-      deleteFailed: 'Error al eliminar el registro de tiempo. Por favor, inténtelo de nuevo.'
-    }
   },
   
   // Time Tracking

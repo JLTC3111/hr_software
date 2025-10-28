@@ -25,7 +25,7 @@ const Header = () => {
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
-            <div className="flex-shrink-0 flex items-center">
+            <div className="shrink-0 flex items-center">
               <img 
                 src="/logoIcons/logo.png" 
                 alt="Logo" 

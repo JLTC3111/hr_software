@@ -141,6 +141,8 @@ export default {
     title: 'Учёт рабочего времени',
     subtitle: 'Записывайте рабочие часы и отправляйте подтверждения',
     newEntry: 'Новая запись времени',
+    history: 'История',
+    selectDate: 'Выберите дату',
     date: 'Дата',
     clockIn: 'Время начала',
     clockOut: 'Время окончания',
@@ -161,11 +163,14 @@ export default {
     type: 'Тип',
     status: 'Статус',
     actions: 'Действия',
-    history: 'История учёта времени',
     delete: 'Удалить',
     weeklySummary: 'На этой неделе',
     monthlySummary: 'В этом месяце',
-    total: 'Итого',
+    leaveDays: "Дни отпуска",
+    thisWeek: "На этой неделе",
+    thisMonth: "В этом месяце",
+    total: "Всего",
+    includesPending: "* Включая ожидающие и утвержденные",
     notesPlaceholder: 'Добавьте заметки или дополнительную информацию...',
     fileHelp: 'Загрузите скриншот, фото или PDF (до 5 МБ)',
     hourTypes: {
@@ -245,46 +250,6 @@ export default {
     errorLoadEmployees: 'Не удалось загрузить сотрудников',
     success: 'Запись времени успешно добавлена',
     error: 'Не удалось создать запись времени'
-  },
-
-  // Time Clock Entry
-  timeClock: {
-    title: 'Новая Запись Времени',
-    selectDate: 'Выбрать Дату',
-    clockIn: 'Вход',
-    clockOut: 'Выход',
-    hourType: 'Тип Часов',
-    proof: 'Подтверждение Работы',
-    optional: 'Необязательно',
-    notes: 'Заметки',
-    notesPlaceholder: 'Добавить заметки о вашей работе...',
-    submit: 'Отправить Запись Времени',
-    submitting: 'Отправка...',
-    success: 'Запись времени успешно отправлена!',
-    confirmDelete: 'Вы уверены, что хотите удалить эту запись времени?',
-    deleteSuccess: 'Запись времени успешно удалена',
-    requestLeave: 'Запросить Отпуск',
-    weeklySummary: 'Эта Неделя',
-    monthlySummary: 'Этот Месяц',
-    leaveDays: 'Дни Отпуска',
-    thisWeek: 'Эта Неделя',
-    thisMonth: 'Этот Месяц',
-    total: 'Всего',
-    includesPending: '* Включая ожидающие и одобренные',
-    hourTypes: {
-      regular: 'Обычные Часы',
-      holiday: 'Праздник',
-      weekend: 'Выходные/Сверхурочные',
-      bonus: 'Бонусные Часы'
-    },
-    errors: {
-      dateRequired: 'Дата обязательна',
-      clockInRequired: 'Время входа обязательно',
-      clockOutRequired: 'Время выхода обязательно',
-      clockOutAfterClockIn: 'Время выхода должно быть после времени входа',
-      submitFailed: 'Не удалось отправить запись времени',
-      deleteFailed: 'Не удалось удалить запись времени'
-    }
   },
 
   // Employees

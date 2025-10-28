@@ -126,6 +126,8 @@ export default {
     title: '勤怠記録',
     subtitle: '勤務時間を記録し、証明書を提出します',
     newEntry: '新しい勤怠入力',
+    history: '勤怠履歴',
+    selectDate: '日付を選択',
     date: '日付',
     clockIn: '出勤時間',
     clockOut: '退勤時間',
@@ -138,7 +140,6 @@ export default {
     success: '勤怠記録が正常に送信されました！',
     confirmDelete: 'この記録を削除してもよろしいですか？',
     delete: '削除',
-    history: '勤怠履歴',
     noEntries: '記録がありません。最初の記録を送信してください！',
     time: '時間',
     hours: '時間数',
@@ -147,7 +148,11 @@ export default {
     actions: '操作',
     weeklySummary: '今週',
     monthlySummary: '今月',
+    leaveDays: '休暇日数',
+    thisWeek: '今週',
+    thisMonth: '今月',
     total: '合計',
+    includesPending: '* 保留中と承認済みを含む',
     notesPlaceholder: 'メモや追加情報を入力...',
     fileHelp: 'スクリーンショット、写真、またはPDFをアップロード（最大5MB）',
     hourTypes: {
@@ -456,47 +461,6 @@ export default {
     errorLoadEmployees: '従業員の読み込みに失敗しました',
     success: '勤怠入力が正常に追加されました',
     error: '勤怠入力の作成に失敗しました'
-  },
-
-  // Time Clock Entry
-  timeClock: {
-    title: '新しい勤怠入力',
-    subtitle: "作業時間と証拠を記録して送信",
-    selectDate: '日付を選択',
-    clockIn: '出勤',
-    clockOut: '退勤',
-    hourType: '時間タイプ',
-    proof: '作業証明',
-    optional: 'オプション',
-    notes: 'メモ',
-    notesPlaceholder: '作業についてのメモを追加...',
-    submit: '勤怠入力を送信',
-    submitting: '送信中...',
-    success: '勤怠入力が正常に送信されました！',
-    confirmDelete: 'この勤怠入力を削除してもよろしいですか？',
-    deleteSuccess: '勤怠入力が正常に削除されました',
-    requestLeave: '休暇申請',
-    weeklySummary: '今週',
-    monthlySummary: '今月',
-    leaveDays: '休暇日数',
-    thisWeek: '今週',
-    thisMonth: '今月',
-    total: '合計',
-    includesPending: '* 保留中と承認済みを含む',
-    hourTypes: {
-      regular: '通常勤務',
-      holiday: '祝日',
-      weekend: '週末/残業',
-      bonus: 'ボーナス時間'
-    },
-    errors: {
-      dateRequired: '日付は必須です',
-      clockInRequired: '出勤時間は必須です',
-      clockOutRequired: '退勤時間は必須です',
-      clockOutAfterClockIn: '退勤時間は出勤時間より後でなければなりません',
-      submitFailed: '勤怠入力の送信に失敗しました',
-      deleteFailed: '勤怠入力の削除に失敗しました'
-    }
   },
 
   // Recruitment Actions
