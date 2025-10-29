@@ -343,3 +343,67 @@ export const notifyUser = async (userId, title, message, options = {}) => {
     expiresAt: options.expiresAt
   });
 };
+
+/**
+ * Get count of pending time entry approvals
+ * @returns {Promise<object>} Result with count
+ */
+export const getPendingApprovalsCount = async () => {
+  try {
+    const { count, error } = await supabase
+      .from('time_entries')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending');
+
+    if (error) throw error;
+
+    return { success: true, count: count || 0 };
+  } catch (error) {
+    console.error('Error fetching pending approvals count:', error);
+    return { success: false, error: error.message, count: 0 };
+  }
+};
+
+/**
+ * Notify admins/managers about pending approvals
+ * @returns {Promise<object>} Result
+ */
+export const notifyPendingApprovals = async () => {
+  try {
+    // Get count of pending entries
+    const pendingResult = await getPendingApprovalsCount();
+    
+    if (!pendingResult.success || pendingResult.count === 0) {
+      return { success: true, message: 'No pending approvals' };
+    }
+
+    // Get all admins and managers
+    const { data: managers, error: managersError } = await supabase
+      .from('hr_users')
+      .select('id')
+      .in('role', ['admin', 'hr_admin', 'manager', 'hr_manager']);
+
+    if (managersError) throw managersError;
+
+    if (!managers || managers.length === 0) {
+      return { success: true, message: 'No managers found' };
+    }
+
+    // Create notifications for all managers
+    const notifications = managers.map(manager => ({
+      userId: manager.id,
+      title: 'Pending Approvals',
+      message: `You have ${pendingResult.count} time ${pendingResult.count === 1 ? 'entry' : 'entries'} awaiting approval`,
+      type: 'warning',
+      category: 'time_tracking',
+      actionUrl: '/time-clock',
+      actionLabel: 'Review Now',
+      metadata: { pendingCount: pendingResult.count }
+    }));
+
+    return await bulkCreateNotifications(notifications);
+  } catch (error) {
+    console.error('Error notifying pending approvals:', error);
+    return { success: false, error: error.message };
+  }
+};

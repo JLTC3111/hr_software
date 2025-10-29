@@ -1325,6 +1325,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                   setImagePreview({ show: true, url: entry.proof_file_url });
                                 }}
                                 aria-label="View proof image"
+                                title={t('timeClock.viewProof', 'View proof image')}
                                 onMouseEnter={(e) => {
                                   const el = e.currentTarget.querySelector('svg');
                                   if (el) {
@@ -1343,6 +1344,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                 rel="noopener noreferrer" 
                                 className="inline-flex hover:scale-110 transition-transform"
                                 onClick={(e) => e.stopPropagation()}
+                                title={t('timeClock.downloadProof', 'Download proof file')}
                               >
                                 <FileText className={`w-5 h-5 ${isDarkMode ? 'text-green-200' : 'text-green-600'} group-hover:text-white transition-all duration-500 hover:bg-gray-900`} />
                               </a>
@@ -1361,6 +1363,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                               htmlFor={`proof-upload-${entry.id}`}
                               className="cursor-pointer inline-flex items-center"
                               onClick={(e) => e.stopPropagation()}
+                              title={t('timeClock.uploadProof', 'Upload proof file')}
                               onMouseEnter={(e) => {
                                   const el = e.currentTarget.querySelector('svg');
                                   if (el) {

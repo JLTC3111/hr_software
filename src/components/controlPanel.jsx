@@ -27,9 +27,17 @@ const ControlPanel = () => {
   const userRole = user?.user_metadata?.role || user?.role || 'Employee';
   const userName = user?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
   const userEmail = user?.email || '';
+  const userId = user?.id || '';
+  const employeeId = user?.employee_id || user?.employeeId || null;
 
-  // Role descriptions
+  // Role descriptions with detailed permissions
   const roleDescriptions = {
+    'admin': t('controlPanel.roleDesc.admin', 'Full system access with all administrative privileges'),
+    'hr_admin': t('controlPanel.roleDesc.hrAdmin', 'Complete HR management with employee administration and system configuration'),
+    'hr_manager': t('controlPanel.roleDesc.hrManager', 'Manage employees, performance reviews, and HR operations'),
+    'manager': t('controlPanel.roleDesc.manager', 'Supervise team members and approve time tracking'),
+    'employee': t('controlPanel.roleDesc.employee', 'Access personal information and submit time entries'),
+    'viewer': t('controlPanel.roleDesc.viewer', 'View-only access to reports and dashboards'),
     'Admin': t('controlPanel.roleDesc.admin', 'Full system access with all administrative privileges'),
     'HR Manager': t('controlPanel.roleDesc.hrManager', 'Manage employees, performance reviews, and HR operations'),
     'Manager': t('controlPanel.roleDesc.manager', 'Supervise team members and approve time tracking'),
@@ -267,6 +275,59 @@ const ControlPanel = () => {
           >
             {roleDescriptions[userRole] || t('controlPanel.standardAccess', 'Standard user access')}
           </p>
+        </div>
+
+        {/* User IDs Section */}
+        <div 
+          className="p-3 rounded-lg mb-3 space-y-2"
+          style={{
+            backgroundColor: isDarkMode ? '#1f2937' : '#f9fafb',
+            border: '1px solid',
+            borderColor: isDarkMode ? '#374151' : '#e5e7eb'
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <span 
+              className="text-xs font-medium"
+              style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
+            >
+              {t('controlPanel.userUuid', 'User UUID')}:
+            </span>
+            <code 
+              className="text-xs px-2 py-1 rounded font-mono"
+              style={{
+                backgroundColor: isDarkMode ? '#111827' : '#f3f4f6',
+                color: isDarkMode ? '#60a5fa' : '#2563eb',
+                border: '1px solid',
+                borderColor: isDarkMode ? '#374151' : '#e5e7eb'
+              }}
+              title={userId}
+            >
+              {userId.substring(0, 8)}...
+            </code>
+          </div>
+          
+          {employeeId && (
+            <div className="flex items-center justify-between">
+              <span 
+                className="text-xs font-medium"
+                style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
+              >
+                {t('controlPanel.employeeId', 'Employee ID')}:
+              </span>
+              <code 
+                className="text-xs px-2 py-1 rounded font-mono"
+                style={{
+                  backgroundColor: isDarkMode ? '#111827' : '#f3f4f6',
+                  color: isDarkMode ? '#34d399' : '#059669',
+                  border: '1px solid',
+                  borderColor: isDarkMode ? '#374151' : '#e5e7eb'
+                }}
+              >
+                {employeeId}
+              </code>
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}

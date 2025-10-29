@@ -408,7 +408,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
             }`}
           >
             <User className="w-4 h-4" />
-            <span>{t('employeeDetailModal.basicInfo', 'Basic Information')}</span>
+            <span>{t('employeeDetailModal.basicInfo', '')}</span>
           </button>
           <button
             onClick={() => setActiveTab('contact')}
@@ -419,7 +419,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
             }`}
           >
             <Phone className="w-4 h-4" />
-            <span>{t('employeeDetailModal.contact', 'Contact')}</span>
+            <span>{t('employeeDetailModal.contact', '')}</span>
           </button>
           <button
             onClick={() => setActiveTab('documents')}
@@ -430,7 +430,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
             }`}
           >
             <FileText className={`w-4 h-4 ${isDarkMode ? 'text-white' : 'text-gray-600'}`} />
-            <span>{t('employeeDetailModal.documents', 'Documents')}</span>
+            <span>{t('employeeDetailModal.documents', '')}</span>
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-6">

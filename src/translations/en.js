@@ -169,7 +169,34 @@ export default {
     photoTooLarge: 'Photo must be less than 5MB',
     invalidPhotoType: 'Only image files are allowed',
     successMessage: 'Employee added successfully!',
-    submitError: 'Failed to add employee'
+    submitError: 'Failed to add employee',
+    dobPlaceholder: 'Select date of birth'
+  },
+
+  // Employee Detail Modal
+  employeeDetailModal: {
+    basicInfo: 'Basic Information',
+    contact: 'Contact',
+    documents: 'Documents',
+    fullName: 'Full Name',
+    department: 'Department',
+    position: 'Position',
+    dateOfBirth: 'Date of Birth',
+    startDate: 'Start Date',
+    salary: 'Salary',
+    email: 'Email',
+    phone: 'Phone',
+    address: 'Address',
+    uploadDocument: 'Upload Document',
+    downloading: 'Downloading...',
+    viewDocument: 'View Document',
+    deleteDocument: 'Delete Document',
+    confirmDelete: 'Are you sure you want to delete this document?',
+    documentDeleted: 'Document deleted successfully',
+    documentDeleteError: 'Failed to delete document',
+    noDocument: 'No document uploaded',
+    uploadInstructions: 'Click or drag a PDF file here to upload',
+    maxFileSize: 'Maximum file size: 10MB'
   },
 
   // Common
@@ -377,9 +404,12 @@ export default {
     },
     proofUploadSuccess: 'Proof file uploaded successfully',
     proofUploadError: 'Failed to upload proof file',
+    uploadProof: 'Upload proof file',
+    viewProof: 'View proof image',
+    downloadProof: 'Download proof file',
     approve: 'Approve',
     approvalSuccess: 'Time entry approved successfully',
-    approvalError: 'Failed to approve time entry',
+    approvalError: 'Failed to approve entry',
     viewEntries: 'View Entries',
     myEntries: 'My Entries',
     allEmployees: 'All Employees',
@@ -830,6 +860,8 @@ export default {
   // Control Panel
   controlPanel: {
     role: 'Role',
+    userUuid: 'User UUID',
+    employeeId: 'Employee ID',
     changePassword: 'Change Password',
     readManual: 'Read Manual',
     logout: 'Log Out',
@@ -846,11 +878,12 @@ export default {
     helpText: 'Check out the manual for detailed instructions on using the system.',
     standardAccess: 'Standard user access',
     roleDesc: {
-      admin: 'Full system access with all administrative privileges',
-      hrManager: 'Manage employees, performance reviews, and HR operations',
-      manager: 'Supervise team members and approve time tracking',
-      employee: 'Access personal information and submit time entries',
-      viewer: 'View-only access to reports and dashboards'
+      admin: 'Full system access with all administrative privileges including user management, system settings, and complete data control',
+      hrAdmin: 'Complete HR management with employee administration, payroll access, and system configuration',
+      hrManager: 'Manage employees, performance reviews, recruitment, and HR operations',
+      manager: 'Supervise team members, approve time tracking, and manage performance reviews',
+      employee: 'Access personal information, submit time entries, and view own performance data',
+      viewer: 'View-only access to reports, dashboards, and limited system information'
     },
     uploadAvatar: 'Upload avatar',
     avatarUpdated: 'Avatar updated successfully!',

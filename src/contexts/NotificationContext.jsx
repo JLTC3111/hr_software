@@ -69,12 +69,53 @@ export const NotificationProvider = ({ children }) => {
       fetchNotifications();
       fetchUnreadCount();
       fetchStats();
+      
+      // Check for pending approvals if user is admin/manager
+      if (user.role === 'admin' || user.role === 'hr_admin' || user.role === 'manager' || user.role === 'hr_manager') {
+        checkPendingApprovals();
+      }
     } else {
       setNotifications([]);
       setUnreadCount(0);
       setLoading(false);
     }
   }, [isAuthenticated, user?.id, fetchNotifications, fetchUnreadCount, fetchStats]);
+
+  // Check for pending approvals and create notification if needed
+  const checkPendingApprovals = useCallback(async () => {
+    if (!user?.id) return;
+
+    const result = await notificationService.getPendingApprovalsCount();
+    
+    if (result.success && result.count > 0) {
+      // Check if there's already a recent notification about pending approvals
+      const recentPendingNotification = notifications.find(n => 
+        n.category === 'time_tracking' && 
+        n.type === 'warning' &&
+        n.title === 'Pending Approvals' &&
+        !n.is_read &&
+        new Date(n.created_at) > new Date(Date.now() - 3600000) // Within last hour
+      );
+
+      // Only create notification if there isn't a recent one
+      if (!recentPendingNotification) {
+        await notificationService.notifyUser(
+          user.id,
+          'Pending Approvals',
+          `You have ${result.count} time ${result.count === 1 ? 'entry' : 'entries'} awaiting approval`,
+          {
+            type: 'warning',
+            category: 'time_tracking',
+            actionUrl: '/time-clock',
+            actionLabel: 'Review Now',
+            metadata: { pendingCount: result.count }
+          }
+        );
+        // Refresh notifications to show the new one
+        fetchNotifications();
+      }
+    }
+  }, [user?.id, user?.role, notifications, fetchNotifications]);
 
   // Subscribe to real-time updates
   useEffect(() => {
