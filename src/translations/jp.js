@@ -12,8 +12,7 @@ export default {
     settings: '設定',
     workload: '作業量',
     controlPanel: 'コントロールパネル',
-  }
-  ,
+  },
 
   // Header
   header: {
@@ -21,6 +20,32 @@ export default {
     welcome: 'おかえりなさい、HRチーム',
     user: 'HRチーム',
     logout: 'ログアウト',
+  },
+
+  // Login
+  login: {
+    title: 'HRマネージャー',
+    subtitle: 'ダッシュボードにアクセスするにはサインインしてください',
+    email: 'メールアドレス',
+    password: 'パスワード',
+    emailPlaceholder: 'you@example.com',
+    passwordPlaceholder: '••••••••',
+    emailRequired: 'メールアドレスは必須です',
+    emailInvalid: 'メールアドレスが無効です',
+    passwordRequired: 'パスワードは必須です',
+    passwordTooShort: 'パスワードは6文字以上である必要があります',
+    invalidCredentials: 'メールアドレスまたはパスワードが無効です',
+    rememberMe: 'ログイン状態を保持',
+    forgotPassword: 'パスワードをお忘れですか？',
+    signIn: 'サインイン',
+    signingIn: 'サインイン中...',
+    orContinueWith: 'または続ける',
+    continueWithGithub: 'GitHubで続ける',
+    redirecting: 'GitHubにリダイレクト中...',
+    githubError: 'GitHubでのログインに失敗しました',
+    noAccount: 'アカウントをお持ちでないですか？',
+    signUp: '新規登録',
+    footer: '© 2024 HRマネージャー. All rights reserved.'
   },
 
   // Dashboard
@@ -455,6 +480,10 @@ export default {
     basicInfo: '基本情報',
     contact: '連絡先',
     documents: '書類',
+    quickStats: 'クイック統計',
+    status: 'ステータス',
+    workDuration: '勤務期間',
+    performance: 'パフォーマンス',
     fullName: '氏名',
     department: '部署',
     position: '役職',
@@ -524,6 +553,7 @@ export default {
     exportReport: 'レポート出力',
     includesPending: '*保留中を含む',
     totalRegularHours: '通常勤務時間合計（全従業員）',
+    pendingApprovals: '承認待ち',
     regularHoursChart: '従業員別通常勤務時間',
     overtimeHoursChart: '従業員別残業時間',
     overviewTitle: '会社概要',

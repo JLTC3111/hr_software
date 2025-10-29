@@ -22,6 +22,32 @@ export default {
     logout: '로그아웃',
   },
 
+  // Login
+  login: {
+    title: 'HR 매니저',
+    subtitle: '대시보드에 액세스하려면 로그인하세요',
+    email: '이메일 주소',
+    password: '비밀번호',
+    emailPlaceholder: 'you@example.com',
+    passwordPlaceholder: '••••••••',
+    emailRequired: '이메일은 필수입니다',
+    emailInvalid: '이메일이 유효하지 않습니다',
+    passwordRequired: '비밀번호는 필수입니다',
+    passwordTooShort: '비밀번호는 최소 6자 이상이어야 합니다',
+    invalidCredentials: '이메일 또는 비밀번호가 잘못되었습니다',
+    rememberMe: '로그인 상태 유지',
+    forgotPassword: '비밀번호를 잊으셨나요?',
+    signIn: '로그인',
+    signingIn: '로그인 중...',
+    orContinueWith: '또는 다음으로 계속',
+    continueWithGithub: 'GitHub로 계속',
+    redirecting: 'GitHub로 리디렉션 중...',
+    githubError: 'GitHub 로그인에 실패했습니다',
+    noAccount: '계정이 없으신가요?',
+    signUp: '회원가입',
+    footer: '© 2024 HR 매니저. All rights reserved.'
+  },
+
   // Dashboard
   dashboard: {
     title: '대시보드 요약',
@@ -457,6 +483,10 @@ export default {
     basicInfo: '기본 정보',
     contact: '연락처',
     documents: '문서',
+    quickStats: '빠른 통계',
+    status: '상태',
+    workDuration: '근무 기간',
+    performance: '성과',
     fullName: '전체 이름',
     department: '부서',
     position: '직책',
@@ -525,6 +555,7 @@ export default {
     exportSuccess: '보고서가 성공적으로 내보내기되었습니다!',
     includesPending: '*대기 중 포함',
     totalRegularHours: '총 정규 근무 시간 (전체 직원)',
+    pendingApprovals: '승인 대기',
     regularHoursChart: '직원별 정규 근무 시간',
     overtimeHoursChart: '직원별 초과 근무 시간',
     overviewTitle: '회사 개요',

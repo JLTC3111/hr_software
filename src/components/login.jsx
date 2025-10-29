@@ -20,6 +20,7 @@ const Login = () => {
   
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true); // Default to true for better UX
   const [isLoading, setIsLoading] = useState(false);
   const [isGithubLoading, setIsGithubLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
@@ -79,7 +80,7 @@ const Login = () => {
     setIsLoading(true);
     setLoginError('');
     
-    const result = await login(formData.email, formData.password);
+    const result = await login(formData.email, formData.password, rememberMe);
     
     if (!result.success) {
       setLoginError(result.error || t('login.invalidCredentials', 'Invalid email or password'));
@@ -132,7 +133,7 @@ const Login = () => {
           {/* Login Error */}
           {loginError && (
             <div className="mb-6 p-3 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 rounded-lg flex items-center space-x-2 text-red-700 dark:text-red-400">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <AlertCircle className="w-5 h-5 shrink-0" />
               <span className="text-sm">{loginError}</span>
             </div>
           )}
@@ -240,6 +241,8 @@ const Login = () => {
               <input
                 id="custom-checkbox"
                 type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
                 className="w-4 h-4 accent-blue-600 border-gray-900 rounded focus:ring-blue-500 cursor-pointer"
                 disabled={isLoading}
               />

@@ -41,13 +41,42 @@ if (typeof window !== 'undefined') {
       }
     }
   }
+
+// Custom storage adapter that uses localStorage by default
+// This can be switched to sessionStorage when rememberMe is false
+class CustomStorage {
+  constructor() {
+    this.storage = typeof window !== 'undefined' ? window.localStorage : null;
+  }
+
+  setStorage(storage) {
+    this.storage = storage;
+  }
+
+  getItem(key) {
+    return this.storage?.getItem(key) || null;
+  }
+
+  setItem(key, value) {
+    this.storage?.setItem(key, value);
+  }
+
+  removeItem(key) {
+    this.storage?.removeItem(key);
+  }
+}
+
+export const customStorage = new CustomStorage();
   
 // Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
+    storage: customStorage,
+    storageKey: 'sb-auth-token',
+    flowType: 'pkce' // Use PKCE flow for better security
   },
   global: {
     headers: {

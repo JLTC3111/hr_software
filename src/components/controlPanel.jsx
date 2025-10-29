@@ -88,8 +88,8 @@ const ControlPanel = () => {
   };
 
   const openManual = () => {
-    // Open a new tab with the manual/documentation
-    window.open('https://icue.vn/hr-manual', '_blank');
+    // Open the local USER_MANUAL.md file
+    window.open('/USER_MANUAL.md', '_blank');
   };
 
   const handleAvatarUpload = async (e) => {

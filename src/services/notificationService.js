@@ -407,3 +407,71 @@ export const notifyPendingApprovals = async () => {
     return { success: false, error: error.message };
   }
 };
+
+/**
+ * Clean up duplicate notifications for a user
+ * Keeps only the most recent notification for each title/category combination
+ * @param {string} userId - User ID
+ * @param {string} title - Notification title to match
+ * @param {string} category - Notification category to match
+ * @returns {Promise<object>} Result with count of deleted notifications
+ */
+export const cleanupDuplicateNotifications = async (userId, title, category) => {
+  try {
+    // Get all matching notifications ordered by created date
+    const { data: notifications, error: fetchError } = await supabase
+      .from('hr_notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('title', title)
+      .eq('category', category)
+      .eq('is_read', false)
+      .order('created_at', { ascending: false });
+
+    if (fetchError) throw fetchError;
+
+    if (!notifications || notifications.length <= 1) {
+      return { success: true, deletedCount: 0, message: 'No duplicates found' };
+    }
+
+    // Keep the most recent, delete the rest
+    const toDelete = notifications.slice(1).map(n => n.id);
+
+    const { error: deleteError } = await supabase
+      .from('hr_notifications')
+      .delete()
+      .in('id', toDelete);
+
+    if (deleteError) throw deleteError;
+
+    return { success: true, deletedCount: toDelete.length };
+  } catch (error) {
+    console.error('Error cleaning up duplicate notifications:', error);
+    return { success: false, error: error.message, deletedCount: 0 };
+  }
+};
+
+/**
+ * Delete old notifications (older than specified days)
+ * @param {number} daysOld - Delete notifications older than this many days
+ * @returns {Promise<object>} Result with count of deleted notifications
+ */
+export const deleteOldNotifications = async (daysOld = 30) => {
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+
+    const { data, error } = await supabase
+      .from('hr_notifications')
+      .delete()
+      .lt('created_at', cutoffDate.toISOString())
+      .select('id');
+
+    if (error) throw error;
+
+    return { success: true, deletedCount: data?.length || 0 };
+  } catch (error) {
+    console.error('Error deleting old notifications:', error);
+    return { success: false, error: error.message, deletedCount: 0 };
+  }
+};

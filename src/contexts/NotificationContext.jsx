@@ -85,20 +85,26 @@ export const NotificationProvider = ({ children }) => {
   const checkPendingApprovals = useCallback(async () => {
     if (!user?.id) return;
 
+    // First, clean up any duplicate pending approval notifications
+    await notificationService.cleanupDuplicateNotifications(
+      user.id,
+      'Pending Approvals',
+      'time_tracking'
+    );
+
     const result = await notificationService.getPendingApprovalsCount();
     
     if (result.success && result.count > 0) {
-      // Check if there's already a recent notification about pending approvals
-      const recentPendingNotification = notifications.find(n => 
+      // Check if there's already ANY unread notification about pending approvals
+      const existingPendingNotifications = notifications.filter(n => 
         n.category === 'time_tracking' && 
         n.type === 'warning' &&
         n.title === 'Pending Approvals' &&
-        !n.is_read &&
-        new Date(n.created_at) > new Date(Date.now() - 3600000) // Within last hour
+        !n.is_read
       );
 
-      // Only create notification if there isn't a recent one
-      if (!recentPendingNotification) {
+      if (existingPendingNotifications.length === 0) {
+        // No existing notification, create new one
         await notificationService.notifyUser(
           user.id,
           'Pending Approvals',
@@ -113,9 +119,44 @@ export const NotificationProvider = ({ children }) => {
         );
         // Refresh notifications to show the new one
         fetchNotifications();
+      } else {
+        // Check if count has changed and update if needed
+        const currentCount = existingPendingNotifications[0].metadata?.pendingCount || 0;
+        if (currentCount !== result.count) {
+          // Delete old and create new with updated count
+          await notificationService.deleteNotification(existingPendingNotifications[0].id);
+          await notificationService.notifyUser(
+            user.id,
+            'Pending Approvals',
+            `You have ${result.count} time ${result.count === 1 ? 'entry' : 'entries'} awaiting approval`,
+            {
+              type: 'warning',
+              category: 'time_tracking',
+              actionUrl: '/time-clock',
+              actionLabel: 'Review Now',
+              metadata: { pendingCount: result.count }
+            }
+          );
+          fetchNotifications();
+        }
+      }
+    } else if (result.success && result.count === 0) {
+      // No pending approvals, delete any existing pending approval notifications
+      const existingPendingNotifications = notifications.filter(n => 
+        n.category === 'time_tracking' && 
+        n.type === 'warning' &&
+        n.title === 'Pending Approvals'
+      );
+      
+      for (const notification of existingPendingNotifications) {
+        await notificationService.deleteNotification(notification.id);
+      }
+      
+      if (existingPendingNotifications.length > 0) {
+        fetchNotifications();
       }
     }
-  }, [user?.id, user?.role, notifications, fetchNotifications]);
+  }, [user?.id, notifications, fetchNotifications]);
 
   // Subscribe to real-time updates
   useEffect(() => {
@@ -138,6 +179,7 @@ export const NotificationProvider = ({ children }) => {
           );
           if (payload.new.is_read !== payload.old.is_read) {
             fetchUnreadCount();
+            fetchStats();
           }
         } else if (payload.eventType === 'DELETE') {
           // Deleted notification
@@ -147,6 +189,7 @@ export const NotificationProvider = ({ children }) => {
           if (!payload.old.is_read) {
             setUnreadCount(prev => Math.max(0, prev - 1));
           }
+          fetchStats();
         }
       }
     );
@@ -155,6 +198,44 @@ export const NotificationProvider = ({ children }) => {
       subscription.unsubscribe();
     };
   }, [isAuthenticated, user?.id, fetchUnreadCount, fetchStats]);
+
+  // Subscribe to time entries changes to update pending approvals notification in real-time
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
+    
+    // Only subscribe if user is admin/manager
+    if (user.role !== 'admin' && user.role !== 'hr_admin' && user.role !== 'manager' && user.role !== 'hr_manager') {
+      return;
+    }
+
+    // Import supabase client dynamically to avoid circular dependencies
+    import('../config/supabaseClient').then(({ supabase }) => {
+      const channel = supabase
+        .channel('time_entries_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*', // Listen to INSERT, UPDATE, DELETE
+            schema: 'public',
+            table: 'time_entries',
+            filter: `approval_status=in.(pending,approved,rejected)`
+          },
+          (payload) => {
+            console.log('Time entry changed:', payload);
+            
+            // Debounce the check to avoid too many calls
+            setTimeout(() => {
+              checkPendingApprovals();
+            }, 500);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        channel.unsubscribe();
+      };
+    });
+  }, [isAuthenticated, user?.id, user?.role, checkPendingApprovals]);
 
   // Mark notification as read
   const markAsRead = async (notificationId) => {
@@ -169,6 +250,12 @@ export const NotificationProvider = ({ children }) => {
         )
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
+      
+      // Update stats immediately
+      setStats(prev => ({
+        ...prev,
+        unread_count: Math.max(0, prev.unread_count - 1)
+      }));
     }
     
     return result;
@@ -185,6 +272,12 @@ export const NotificationProvider = ({ children }) => {
         prev.map(n => ({ ...n, is_read: true, read_at: new Date().toISOString() }))
       );
       setUnreadCount(0);
+      
+      // Update stats immediately
+      setStats(prev => ({
+        ...prev,
+        unread_count: 0
+      }));
     }
     
     return result;
@@ -199,6 +292,23 @@ export const NotificationProvider = ({ children }) => {
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
       if (notification && !notification.is_read) {
         setUnreadCount(prev => Math.max(0, prev - 1));
+        
+        // Update stats immediately
+        setStats(prev => ({
+          ...prev,
+          total_notifications: Math.max(0, prev.total_notifications - 1),
+          unread_count: Math.max(0, prev.unread_count - 1),
+          error_count: notification.type === 'error' ? Math.max(0, prev.error_count - 1) : prev.error_count,
+          warning_count: notification.type === 'warning' ? Math.max(0, prev.warning_count - 1) : prev.warning_count
+        }));
+      } else if (notification) {
+        // Even if read, update total count
+        setStats(prev => ({
+          ...prev,
+          total_notifications: Math.max(0, prev.total_notifications - 1),
+          error_count: notification.type === 'error' ? Math.max(0, prev.error_count - 1) : prev.error_count,
+          warning_count: notification.type === 'warning' ? Math.max(0, prev.warning_count - 1) : prev.warning_count
+        }));
       }
     }
     
@@ -214,6 +324,15 @@ export const NotificationProvider = ({ children }) => {
     if (result.success) {
       setNotifications([]);
       setUnreadCount(0);
+      
+      // Reset stats immediately
+      setStats({
+        total_notifications: 0,
+        unread_count: 0,
+        error_count: 0,
+        warning_count: 0,
+        latest_notification_at: null
+      });
     }
     
     return result;

@@ -366,7 +366,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
           <div className="flex items-center space-x-2 mb-3">
             <Briefcase className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gray-600'}`} />
             <h3 className={`font-semibold ${text.primary}`}>
-              {t('employees.quickStats', 'Quick Stats')}
+              {t('employeeDetailModal.quickStats', 'Quick Stats')}
             </h3>
           </div>
           <div className="space-y-2">

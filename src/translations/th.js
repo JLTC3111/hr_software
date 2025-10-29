@@ -22,6 +22,32 @@ export default {
     logout: 'ออกจากระบบ',
   },
 
+  // Login
+  login: {
+    title: 'ผู้จัดการ HR',
+    subtitle: 'เข้าสู่ระบบเพื่อเข้าถึงแดชบอร์ดของคุณ',
+    email: 'ที่อยู่อีเมล',
+    password: 'รหัสผ่าน',
+    emailPlaceholder: 'you@example.com',
+    passwordPlaceholder: '••••••••',
+    emailRequired: 'จำเป็นต้องกรอกอีเมล',
+    emailInvalid: 'อีเมลไม่ถูกต้อง',
+    passwordRequired: 'จำเป็นต้องกรอกรหัสผ่าน',
+    passwordTooShort: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',
+    invalidCredentials: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+    rememberMe: 'จดจำฉัน',
+    forgotPassword: 'ลืมรหัสผ่าน?',
+    signIn: 'เข้าสู่ระบบ',
+    signingIn: 'กำลังเข้าสู่ระบบ...',
+    orContinueWith: 'หรือดำเนินการต่อด้วย',
+    continueWithGithub: 'ดำเนินการต่อด้วย GitHub',
+    redirecting: 'กำลังเปลี่ยนเส้นทางไปยัง GitHub...',
+    githubError: 'เข้าสู่ระบบด้วย GitHub ล้มเหลว',
+    noAccount: 'ยังไม่มีบัญชี?',
+    signUp: 'สมัครสมาชิก',
+    footer: '© 2024 ผู้จัดการ HR สงวนลิขสิทธิ์'
+  },
+
   // Dashboard
   dashboard: {
     title: 'ภาพรวมแดชบอร์ด',
@@ -454,6 +480,10 @@ export default {
     basicInfo: 'ข้อมูลพื้นฐาน',
     contact: 'ติดต่อ',
     documents: 'เอกสาร',
+    quickStats: 'สถิติด่วน',
+    status: 'สถานะ',
+    workDuration: 'ระยะเวลาทำงาน',
+    performance: 'ผลการปฏิบัติงาน',
     fullName: 'ชื่อเต็ม',
     department: 'แผนก',
     position: 'ตำแหน่ง',
@@ -522,6 +552,7 @@ export default {
     exportSuccess: 'ส่งออกรายงานสำเร็จแล้ว!',
     includesPending: '*รวมรอดำเนินการ',
     totalRegularHours: 'รวมชั่วโมงปกติ (พนักงานทั้งหมด)',
+    pendingApprovals: 'รออนุมัติ',
     regularHoursChart: 'ชั่วโมงปกติตามพนักงาน',
     overtimeHoursChart: 'ชั่วโมงล่วงเวลาตามพนักงาน',
     overviewTitle: 'ภาพรวมบริษัท',

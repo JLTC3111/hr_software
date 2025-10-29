@@ -25,6 +25,32 @@ export default {
     logout: 'Se deconnecter',
   },
 
+  // Login
+  login: {
+    title: 'Gestionnaire RH',
+    subtitle: 'Connectez-vous pour accéder à votre tableau de bord',
+    email: 'Adresse e-mail',
+    password: 'Mot de passe',
+    emailPlaceholder: 'you@example.com',
+    passwordPlaceholder: '••••••••',
+    emailRequired: 'L\'e-mail est requis',
+    emailInvalid: 'L\'e-mail est invalide',
+    passwordRequired: 'Le mot de passe est requis',
+    passwordTooShort: 'Le mot de passe doit contenir au moins 6 caractères',
+    invalidCredentials: 'E-mail ou mot de passe invalide',
+    rememberMe: 'Se souvenir de moi',
+    forgotPassword: 'Mot de passe oublié?',
+    signIn: 'Se connecter',
+    signingIn: 'Connexion en cours...',
+    orContinueWith: 'Ou continuer avec',
+    continueWithGithub: 'Continuer avec GitHub',
+    redirecting: 'Redirection vers GitHub...',
+    githubError: 'Échec de la connexion avec GitHub',
+    noAccount: 'Vous n\'avez pas de compte?',
+    signUp: 'S\'inscrire',
+    footer: '© 2024 Gestionnaire RH. Tous droits réservés.'
+  },
+
   // Dashboard
   dashboard: {
     title: 'Vue d’Ensemble du Tableau de Bord',
@@ -234,6 +260,7 @@ export default {
     exportSuccess: 'Rapport exporté avec succès!',
     includesPending: '*y compris en attente',
     totalRegularHours: 'Total des Heures Régulières (Tous les Employés)',
+    pendingApprovals: 'Approbations en Attente',
     regularHoursChart: 'Heures Régulières par Employé',
     overtimeHoursChart: 'Heures Supplémentaires par Employé',
     overviewTitle: 'Vue d\'Ensemble de l\'Entreprise',
@@ -525,6 +552,10 @@ export default {
     basicInfo: 'Informations de Base',
     contact: 'Contact',
     documents: 'Documents',
+    quickStats: 'Statistiques Rapides',
+    status: 'Statut',
+    workDuration: 'Durée du Travail',
+    performance: 'Performance',
     fullName: 'Nom Complet',
     department: 'Département',
     position: 'Poste',

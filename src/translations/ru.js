@@ -22,6 +22,32 @@ export default {
     logout: 'Выход',
   },
 
+  // Login
+  login: {
+    title: 'HR Менеджер',
+    subtitle: 'Войдите, чтобы получить доступ к панели управления',
+    email: 'Адрес электронной почты',
+    password: 'Пароль',
+    emailPlaceholder: 'you@example.com',
+    passwordPlaceholder: '••••••••',
+    emailRequired: 'Электронная почта обязательна',
+    emailInvalid: 'Неверный адрес электронной почты',
+    passwordRequired: 'Пароль обязателен',
+    passwordTooShort: 'Пароль должен содержать не менее 6 символов',
+    invalidCredentials: 'Неверный адрес электронной почты или пароль',
+    rememberMe: 'Запомнить меня',
+    forgotPassword: 'Забыли пароль?',
+    signIn: 'Войти',
+    signingIn: 'Вход...',
+    orContinueWith: 'Или продолжить с',
+    continueWithGithub: 'Продолжить с GitHub',
+    redirecting: 'Перенаправление на GitHub...',
+    githubError: 'Не удалось войти через GitHub',
+    noAccount: 'Нет аккаунта?',
+    signUp: 'Зарегистрироваться',
+    footer: '© 2024 HR Менеджер. Все права защищены.'
+  },
+
   // Dashboard
   dashboard: {
     title: 'Обзор Панели Управления',
@@ -241,6 +267,7 @@ export default {
     exportSuccess: 'Отчет успешно экспортирован!',
     includesPending: '*включая ожидающие',
     totalRegularHours: 'Общее количество обычных часов (Все сотрудники)',
+    pendingApprovals: 'Ожидающие Утверждения',
     regularHoursChart: 'Обычные часы по сотрудникам',
     overtimeHoursChart: 'Сверхурочные часы по сотрудникам',
     overviewTitle: 'Обзор компании',
@@ -513,6 +540,10 @@ export default {
     basicInfo: 'Основная Информация',
     contact: 'Контакт',
     documents: 'Документы',
+    quickStats: 'Быстрая Статистика',
+    status: 'Статус',
+    workDuration: 'Продолжительность Работы',
+    performance: 'Производительность',
     fullName: 'Полное Имя',
     department: 'Отдел',
     position: 'Должность',

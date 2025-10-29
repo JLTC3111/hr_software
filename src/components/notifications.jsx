@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, CheckCheck, Trash2, X, Filter, AlertCircle, Info, CheckCircle, AlertTriangle, Inbox, ExternalLink } from 'lucide-react';
+import { Bell, CheckCheck, Trash2, X, Filter, AlertCircle, Info, CheckCircle, AlertTriangle, Inbox, ExternalLink, RefreshCw } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -17,13 +17,34 @@ const Notifications = () => {
     markAsRead,
     markAllAsRead,
     deleteNotification,
-    deleteAllNotifications
+    deleteAllNotifications,
+    fetchNotifications
   } = useNotifications();
 
   const [filter, setFilter] = useState('all'); // all, unread, read
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [updatingNotifications, setUpdatingNotifications] = useState(new Set());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Track previous unread count to detect changes
+  const [prevUnreadCount, setPrevUnreadCount] = useState(unreadCount);
+
+  // Show a subtle animation when unread count changes
+  useEffect(() => {
+    if (prevUnreadCount !== unreadCount && !loading) {
+      console.log('📊 Unread count updated:', prevUnreadCount, '→', unreadCount);
+      setPrevUnreadCount(unreadCount);
+    }
+  }, [unreadCount, prevUnreadCount, loading]);
+
+  // Manual refresh function
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchNotifications();
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
 
   // Filter notifications based on selected filters
   const filteredNotifications = notifications.filter(notification => {
@@ -81,7 +102,13 @@ const Notifications = () => {
   const handleNotificationClick = async (notification) => {
     // Mark as read if unread
     if (!notification.is_read) {
+      setUpdatingNotifications(prev => new Set(prev).add(notification.id));
       await markAsRead(notification.id);
+      setUpdatingNotifications(prev => {
+        const next = new Set(prev);
+        next.delete(notification.id);
+        return next;
+      });
     }
 
     // Navigate if action URL exists
@@ -92,12 +119,20 @@ const Notifications = () => {
 
   const handleDelete = async (e, notificationId) => {
     e.stopPropagation();
+    setUpdatingNotifications(prev => new Set(prev).add(notificationId));
     await deleteNotification(notificationId);
+    // No need to remove from updatingNotifications as the notification is deleted
   };
 
   const handleMarkAsRead = async (e, notificationId) => {
     e.stopPropagation();
+    setUpdatingNotifications(prev => new Set(prev).add(notificationId));
     await markAsRead(notificationId);
+    setUpdatingNotifications(prev => {
+      const next = new Set(prev);
+      next.delete(notificationId);
+      return next;
+    });
   };
 
   if (loading && notifications.length === 0) {
@@ -135,6 +170,16 @@ const Notifications = () => {
             
             {/* Action Buttons */}
             <div className="flex items-center space-x-2">
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer disabled:opacity-50`}
+                title={t('notifications.refresh', 'Refresh')}
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">{t('notifications.refresh', 'Refresh')}</span>
+              </button>
+              
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer`}
@@ -285,13 +330,18 @@ const Notifications = () => {
                   ${getTypeColor(notification.type)}
                   ${notification.action_url ? 'cursor-pointer hover:shadow-md' : ''}
                   ${!notification.is_read ? 'border-l-blue-600' : border.primary}
+                  ${updatingNotifications.has(notification.id) ? 'opacity-50 pointer-events-none' : ''}
                   p-4 transition-all duration-200
                 `}
               >
                 <div className="flex items-start space-x-4">
                   {/* Icon */}
-                  <div className="flex-shrink-0 mt-1">
-                    {getTypeIcon(notification.type)}
+                  <div className="shrink-0 mt-1">
+                    {updatingNotifications.has(notification.id) ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                    ) : (
+                      getTypeIcon(notification.type)
+                    )}
                   </div>
 
                   {/* Content */}

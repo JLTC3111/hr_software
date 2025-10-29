@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase, hasPermission } from '../config/supabaseClient';
+import { supabase, hasPermission, customStorage } from '../config/supabaseClient';
 import { linkUserToEmployee } from '../services/employeeService';
 
 const AuthContext = createContext();
@@ -299,15 +299,29 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Email/Password login
-  const login = async (email, password) => {
+  const login = async (email, password, rememberMe = true) => {
     try {
+      console.log(`🔐 Logging in with rememberMe: ${rememberMe}`);
+      
+      // Set storage type based on rememberMe checkbox
+      if (typeof window !== 'undefined') {
+        if (rememberMe) {
+          customStorage.setStorage(window.localStorage);
+          console.log('✅ Using localStorage (persistent session)');
+        } else {
+          customStorage.setStorage(window.sessionStorage);
+          console.log('✅ Using sessionStorage (session-only)');
+        }
+      }
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password,
+        password
       });
 
       if (error) throw error;
 
+      console.log('✅ Login successful');
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
