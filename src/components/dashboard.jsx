@@ -4,7 +4,7 @@ import StatsCard from './statsCard.jsx'
 import MetricDetailModal from './metricDetailModal.jsx'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ReferenceLine, ComposedChart } from 'recharts'
 import * as timeTrackingService from '../services/timeTrackingService'
 
 const Dashboard = ({ employees, applications }) => {
@@ -391,7 +391,7 @@ const Dashboard = ({ employees, applications }) => {
             {t('dashboard.employeePerformance')}
           </h3>
           <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={performanceData} margin={{ top: 5, right: 5, left: 0, bottom: 60 }}>
+            <ComposedChart data={performanceData} margin={{ top: 5, right: 5, left: 0, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
               <XAxis 
                 dataKey="name" 
@@ -440,7 +440,15 @@ const Dashboard = ({ employees, applications }) => {
                 </linearGradient>
               </defs>
               <Bar dataKey="performance" fill="url(#performanceGradient)" name={t('dashboard.performanceRating', 'Performance Rating')} radius={[8, 8, 0, 0]} />
-            </BarChart>
+              <Line 
+                type="monotone" 
+                dataKey="performance" 
+                stroke="#10B981" 
+                strokeWidth={3}
+                dot={{ fill: '#10B981', r: 5 }}
+                name="Average Trend"
+              />
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
 
@@ -494,7 +502,7 @@ const Dashboard = ({ employees, applications }) => {
             {t('dashboard.regularHoursByEmployee', 'Regular Hours by Employee')}
           </h3>
           <ResponsiveContainer width="100%" height={400}>
-            <BarChart 
+            <ComposedChart 
               data={allEmployeesData
                 .filter(item => item.data)
                 .sort((a, b) => (b.data?.regular_hours || 0) - (a.data?.regular_hours || 0))
@@ -540,7 +548,15 @@ const Dashboard = ({ employees, applications }) => {
                 </linearGradient>
               </defs>
               <Bar dataKey="regularHours" fill="url(#regularHoursGradient)" name={t('dashboard.regularHoursLegend', 'Regular Hours')} radius={[8, 8, 0, 0]} />
-            </BarChart>
+              <Line 
+                type="monotone" 
+                dataKey="regularHours" 
+                stroke="#10B981" 
+                strokeWidth={3}
+                dot={{ fill: '#10B981', r: 5 }}
+                name="Average Trend"
+              />
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
 
@@ -550,7 +566,7 @@ const Dashboard = ({ employees, applications }) => {
             {t('dashboard.overtimeHoursByEmployee', 'Overtime Hours by Employee')}
           </h3>
           <ResponsiveContainer width="100%" height={400}>
-            <BarChart 
+            <ComposedChart 
               data={allEmployeesData
                 .filter(item => item.data)
                 .sort((a, b) => {
@@ -593,7 +609,15 @@ const Dashboard = ({ employees, applications }) => {
               />
               <Legend />
               <Bar dataKey="overtimeHours" fill="#F59E0B" name={t('dashboard.totalOvertimeLegend', 'Total Overtime')} radius={[8, 8, 0, 0]} />
-            </BarChart>
+              <Line 
+                type="monotone" 
+                dataKey="overtimeHours" 
+                stroke="#10B981" 
+                strokeWidth={3}
+                dot={{ fill: '#10B981', r: 5 }}
+                name="Average Trend"
+              />
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       </div>

@@ -332,6 +332,10 @@ export const AuthProvider = ({ children }) => {
   // GitHub OAuth login
   const loginWithGithub = async () => {
     try {
+      // CRITICAL: Ensure we use localStorage for OAuth so session persists after redirect
+      console.log('🔐 GitHub OAuth: Setting storage to localStorage for session persistence');
+      customStorage.setStorage(localStorage);
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
@@ -344,9 +348,10 @@ export const AuthProvider = ({ children }) => {
 
       // OAuth will redirect the browser, so we don't need to do anything else
       // The success is about initiating the OAuth flow, not completing it
+      console.log('✅ GitHub OAuth flow initiated successfully');
       return { success: true };
     } catch (error) {
-      console.error('GitHub login error:', error);
+      console.error('❌ GitHub login error:', error);
       
       // Provide more helpful error messages
       let errorMessage = error.message;
@@ -354,6 +359,64 @@ export const AuthProvider = ({ children }) => {
         errorMessage = 'Please allow popups for this site to login with GitHub';
       } else if (error.message?.includes('network')) {
         errorMessage = 'Network error. Please check your connection and try again';
+      } else if (error.message?.includes('not enabled')) {
+        errorMessage = 'GitHub login is not enabled. Please contact your administrator.';
+      }
+      
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  // Forgot password - send reset email
+  const forgotPassword = async (email) => {
+    try {
+      console.log('📧 Sending password reset email to:', email);
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      console.log('✅ Password reset email sent successfully');
+      return { success: true, message: 'Password reset email sent. Please check your inbox.' };
+    } catch (error) {
+      console.error('❌ Forgot password error:', error);
+      
+      let errorMessage = error.message;
+      if (error.message?.includes('User not found')) {
+        errorMessage = 'No account found with this email address';
+      } else if (error.message?.includes('rate limit')) {
+        errorMessage = 'Too many requests. Please try again later';
+      } else if (error.message?.includes('network')) {
+        errorMessage = 'Network error. Please check your connection';
+      }
+      
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  // Reset password with token (called on reset-password page)
+  const resetPassword = async (newPassword) => {
+    try {
+      console.log('🔐 Resetting password...');
+      
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      console.log('✅ Password reset successfully');
+      return { success: true, message: 'Password reset successfully. You can now login with your new password.' };
+    } catch (error) {
+      console.error('❌ Reset password error:', error);
+      
+      let errorMessage = error.message;
+      if (error.message?.includes('same as the old password')) {
+        errorMessage = 'New password must be different from the old password';
+      } else if (error.message?.includes('weak')) {
+        errorMessage = 'Password is too weak. Please use a stronger password';
       }
       
       return { success: false, error: errorMessage };
@@ -403,6 +466,8 @@ export const AuthProvider = ({ children }) => {
     loginWithGithub,
     logout,
     signOut: logout, // Alias for backward compatibility
+    forgotPassword,
+    resetPassword,
     checkPermission
   };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Lock, Mail, Building2, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Building2, AlertCircle, X, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -8,7 +8,7 @@ import LanguageSelector from './LanguageSelector';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-  const { login, loginWithGithub, isAuthenticated, user, loading } = useAuth();
+  const { login, loginWithGithub, forgotPassword, isAuthenticated, user, loading } = useAuth();
   const { isDarkMode, bg, text, input } = useTheme();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -24,6 +24,13 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGithubLoading, setIsGithubLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
+  
+  // Forgot password states
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordError, setForgotPasswordError] = useState('');
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState('');
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   useEffect(() => {
     console.log('🔍 Redirect condition check:', {
@@ -100,6 +107,54 @@ const Login = () => {
     }
     // Note: If successful, the browser will redirect to GitHub OAuth page
     // The loading state will remain true until redirect happens
+  };
+
+  const handleForgotPasswordClick = () => {
+    setShowForgotPasswordModal(true);
+    setForgotPasswordEmail(formData.email); // Pre-fill if email entered
+    setForgotPasswordError('');
+    setForgotPasswordSuccess('');
+  };
+
+  const handleForgotPasswordSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!forgotPasswordEmail.trim()) {
+      setForgotPasswordError(t('login.forgotPasswordModal.emailRequired', 'Email is required'));
+      return;
+    }
+    
+    if (!/\S+@\S+\.\S+/.test(forgotPasswordEmail)) {
+      setForgotPasswordError(t('login.forgotPasswordModal.emailInvalid', 'Please enter a valid email'));
+      return;
+    }
+    
+    setIsSendingReset(true);
+    setForgotPasswordError('');
+    setForgotPasswordSuccess('');
+    
+    const result = await forgotPassword(forgotPasswordEmail);
+    
+    setIsSendingReset(false);
+    
+    if (result.success) {
+      setForgotPasswordSuccess(result.message || t('login.forgotPasswordModal.success', 'Password reset email sent. Please check your inbox.'));
+      // Clear form after 3 seconds and close modal
+      setTimeout(() => {
+        setShowForgotPasswordModal(false);
+        setForgotPasswordEmail('');
+        setForgotPasswordSuccess('');
+      }, 3000);
+    } else {
+      setForgotPasswordError(result.error || t('login.forgotPasswordModal.error', 'Failed to send reset email. Please try again.'));
+    }
+  };
+
+  const closeForgotPasswordModal = () => {
+    setShowForgotPasswordModal(false);
+    setForgotPasswordEmail('');
+    setForgotPasswordError('');
+    setForgotPasswordSuccess('');
   };
 
   return (
@@ -252,6 +307,7 @@ const Login = () => {
               </label>
               <button
                 type="button"
+                onClick={handleForgotPasswordClick}
                 className="text-sm text-blue-600 hover:text-blue-500 font-medium cursor-pointer"
                 disabled={isLoading}
               >
@@ -342,6 +398,117 @@ const Login = () => {
           {t('login.footer', '© 2024 HR Manager. All rights reserved.')}
         </p>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-2xl p-8 max-w-md w-full relative`}>
+            {/* Close Button */}
+            <button
+              onClick={closeForgotPasswordModal}
+              className={`absolute top-4 right-4 ${text.secondary} hover:${text.primary}`}
+              disabled={isSendingReset}
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {/* Title */}
+            <div className="mb-6">
+              <h2 className={`text-2xl font-bold ${text.primary} mb-2`}>
+                {t('login.forgotPasswordModal.title', 'Reset Password')}
+              </h2>
+              <p className={`text-sm ${text.secondary}`}>
+                {t('login.forgotPasswordModal.description', 'Enter your email address and we\'ll send you a link to reset your password.')}
+              </p>
+            </div>
+
+            {/* Success Message */}
+            {forgotPasswordSuccess && (
+              <div className="mb-4 p-4 bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-700 rounded-lg flex items-start space-x-2">
+                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                <span className="text-sm text-green-700 dark:text-green-400">{forgotPasswordSuccess}</span>
+              </div>
+            )}
+
+            {/* Error Message */}
+            {forgotPasswordError && (
+              <div className="mb-4 p-4 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 rounded-lg flex items-start space-x-2">
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                <span className="text-sm text-red-700 dark:text-red-400">{forgotPasswordError}</span>
+              </div>
+            )}
+
+            {/* Form */}
+            {!forgotPasswordSuccess && (
+              <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
+                <div>
+                  <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                    {t('login.forgotPasswordModal.emailLabel', 'Email Address')}
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Mail className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`} />
+                    </div>
+                    <input
+                      type="email"
+                      value={forgotPasswordEmail}
+                      onChange={(e) => {
+                        setForgotPasswordEmail(e.target.value);
+                        setForgotPasswordError('');
+                      }}
+                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors ${
+                        isDarkMode 
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                      }`}
+                      placeholder={t('login.forgotPasswordModal.emailPlaceholder', 'you@example.com')}
+                      autoComplete="email"
+                      disabled={isSendingReset}
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                {/* Buttons */}
+                <div className="flex space-x-3">
+                  <button
+                    type="button"
+                    onClick={closeForgotPasswordModal}
+                    className={`flex-1 py-3 px-4 rounded-lg font-medium border transition-colors ${
+                      isDarkMode
+                        ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                    disabled={isSendingReset}
+                  >
+                    {t('login.forgotPasswordModal.cancel', 'Cancel')}
+                  </button>
+                  <button
+                    type="submit"
+                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
+                      isSendingReset
+                        ? 'bg-blue-400 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700'
+                    } text-white`}
+                    disabled={isSendingReset}
+                  >
+                    {isSendingReset ? (
+                      <div className="flex items-center justify-center">
+                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                      </div>
+                    ) : (
+                      t('login.forgotPasswordModal.sendReset', 'Send Reset Link')
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
