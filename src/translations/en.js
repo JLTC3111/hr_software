@@ -376,7 +376,22 @@ export default {
       deleteFailed: 'Failed to delete time entry'
     },
     proofUploadSuccess: 'Proof file uploaded successfully',
-    proofUploadError: 'Failed to upload proof file'
+    proofUploadError: 'Failed to upload proof file',
+    approve: 'Approve',
+    approvalSuccess: 'Time entry approved successfully',
+    approvalError: 'Failed to approve time entry',
+    viewEntries: 'View Entries',
+    myEntries: 'My Entries',
+    allEmployees: 'All Employees',
+    specificEmployee: 'Specific Employee',
+    employee: 'Employee',
+    date: 'Date',
+    time: 'Time',
+    hours: 'Hours',
+    type: 'Type',
+    status: 'Status',
+    actions: 'Actions',
+    noEntries: 'No time entries found'
   },
 
   // Performance Appraisal

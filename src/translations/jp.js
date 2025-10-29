@@ -186,7 +186,22 @@ export default {
     proofDeleteSuccess: '証明ファイルが正常に削除されました',
     proofDeleteError: '証明ファイルの削除に失敗しました',
     proofUploadSuccess: '証明ファイルが正常にアップロードされました',
-    proofUploadError: '証明ファイルのアップロードに失敗しました'
+    proofUploadError: '証明ファイルのアップロードに失敗しました',
+    approve: '承認',
+    approvalSuccess: '時間記録が正常に承認されました',
+    approvalError: '時間記録の承認に失敗しました',
+    viewEntries: 'エントリを表示',
+    myEntries: '自分のエントリ',
+    allEmployees: '全員',
+    specificEmployee: '特定の従業員',
+    employee: '従業員',
+    date: '日付',
+    time: '時間',
+    hours: '時間',
+    type: 'タイプ',
+    status: 'ステータス',
+    actions: 'アクション',
+    noEntries: 'エントリが見つかりません'
   },
   
   // Time Tracking

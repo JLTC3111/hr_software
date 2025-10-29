@@ -188,7 +188,22 @@ export default {
     proofDeleteSuccess: '증명 파일이 성공적으로 삭제되었습니다',
     proofDeleteError: '증명 파일 삭제에 실패했습니다',
     proofUploadSuccess: '증명 파일이 성공적으로 업로드되었습니다',
-    proofUploadError: '증명 파일 업로드에 실패했습니다'
+    proofUploadError: '증명 파일 업로드에 실패했습니다',
+    approve: '승인',
+    approvalSuccess: '근무 기록이 성공적으로 승인되었습니다',
+    approvalError: '근무 기록 승인에 실패했습니다',
+    viewEntries: '항목 보기',
+    myEntries: '내 항목',
+    allEmployees: '모든 직원',
+    specificEmployee: '특정 직원',
+    employee: '직원',
+    date: '날짜',
+    time: '시간',
+    hours: '시간',
+    type: '유형',
+    status: '상태',
+    actions: '동작',
+    noEntries: '항목을 찾을 수 없습니다'
   },
   
   // Time Tracking

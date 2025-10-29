@@ -210,7 +210,22 @@ login: {
     proofDeleteSuccess: 'Archivo de prueba eliminado exitosamente',
     proofDeleteError: 'Error al eliminar archivo de prueba',
     proofUploadSuccess: 'Archivo de prueba cargado exitosamente',
-    proofUploadError: 'Error al cargar archivo de prueba'
+    proofUploadError: 'Error al cargar archivo de prueba',
+    approve: 'Aprobar',
+    approvalSuccess: 'Entrada de tiempo aprobada exitosamente',
+    approvalError: 'Error al aprobar entrada de tiempo',
+    viewEntries: 'Ver Entradas',
+    myEntries: 'Mis Entradas',
+    allEmployees: 'Todos los Empleados',
+    specificEmployee: 'Empleado Específico',
+    employee: 'Empleado',
+    date: 'Fecha',
+    time: 'Hora',
+    hours: 'Horas',
+    type: 'Tipo',
+    status: 'Estado',
+    actions: 'Acciones',
+    noEntries: 'No se encontraron entradas'
   },
 
   employeeDepartment: {

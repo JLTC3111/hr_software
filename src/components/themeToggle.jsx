@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sun, Moon } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 
 const ThemeToggle = () => {
@@ -16,11 +17,29 @@ const ThemeToggle = () => {
       }}
       title={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
     >
+      <AnimatePresence mode="wait" initial={false}>
       {isDarkMode ? (
-        <Sun className="h-5 w-5" />
+        <motion.div
+          key="moon" // CRITICAL: Key allows AnimatePresence to track state change
+          initial={{ opacity: 0, rotate: -360 }} // Starts invisible and spun backwards
+          animate={{ opacity: 1, rotate: 0 }}   // Spins to normal and fades in
+          exit={{ opacity: 0, rotate: 360 }}    // Spins forward and fades out
+          transition={{ duration: 0.5, ease: "easeInOut" }}
+        >
+          <Moon className="h-5 w-5" />
+        </motion.div>
       ) : (
-        <Moon className="h-5 w-5" />
+        <motion.div
+          key="sun" // CRITICAL: Key allows AnimatePresence to track state change
+          initial={{ opacity: 0, rotate: 360 }} // Starts invisible and spun forwards
+          animate={{ opacity: 1, rotate: 0 }}   // Spins to normal and fades in
+          exit={{ opacity: 0, rotate: -360 }}   // Spins backward (your request) and fades out
+          transition={{ duration: 0.5, ease: "easeInOut" }}
+        >
+          <Sun className="h-5 w-5" />
+        </motion.div>
       )}
+    </AnimatePresence>
     </button>
   );
 };

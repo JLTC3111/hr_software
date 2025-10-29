@@ -185,7 +185,22 @@ export default {
     proofDeleteSuccess: 'ลบไฟล์หลักฐานสำเร็จ',
     proofDeleteError: 'ไม่สามารถลบไฟล์หลักฐานได้',
     proofUploadSuccess: 'อัปโหลดไฟล์หลักฐานสำเร็จ',
-    proofUploadError: 'ไม่สามารถอัปโหลดไฟล์หลักฐานได้'
+    proofUploadError: 'ไม่สามารถอัปโหลดไฟล์หลักฐานได้',
+    approve: 'อนุมัติ',
+    approvalSuccess: 'บันทึกเวลาได้รับการอนุมัติสำเร็จแล้ว',
+    approvalError: 'ไม่สามารถอนุมัติบันทึกเวลาได้',
+    viewEntries: 'ดูรายการ',
+    myEntries: 'รายการของฉัน',
+    allEmployees: 'พนักงานทั้งหมด',
+    specificEmployee: 'พนักงานเฉพาะ',
+    employee: 'พนักงาน',
+    date: 'วันที่',
+    time: 'เวลา',
+    hours: 'ชั่วโมง',
+    type: 'ประเภท',
+    status: 'สถานะ',
+    actions: 'การดำเนินการ',
+    noEntries: 'ไม่พบรายการ'
   },  
 
   // Time Tracking

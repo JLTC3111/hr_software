@@ -189,7 +189,22 @@ export default {
     proofDeleteSuccess: 'Fichier de preuve supprimé avec succès',
     proofDeleteError: 'Échec de la suppression du fichier de preuve',
     proofUploadSuccess: 'Fichier de preuve téléchargé avec succès',
-    proofUploadError: 'Échec du téléchargement du fichier de preuve'
+    proofUploadError: 'Échec du téléchargement du fichier de preuve',
+    approve: 'Approuver',
+    approvalSuccess: 'Saisie du temps approuvée avec succès',
+    approvalError: 'Échec de l\'approbation de la saisie du temps',
+    viewEntries: 'Voir les Entrées',
+    myEntries: 'Mes Entrées',
+    allEmployees: 'Tous les Employés',
+    specificEmployee: 'Employé Spécifique',
+    employee: 'Employé',
+    date: 'Date',
+    time: 'Heure',
+    hours: 'Heures',
+    type: 'Type',
+    status: 'Statut',
+    actions: 'Actions',
+    noEntries: 'Aucune entrée trouvée'
   },
 
   // Time Tracking

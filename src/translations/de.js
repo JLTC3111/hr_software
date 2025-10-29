@@ -488,7 +488,22 @@ export default {
     proofDeleteSuccess: 'Nachweisdatei erfolgreich gelöscht',
     proofDeleteError: 'Fehler beim Löschen der Nachweisdatei',
     proofUploadSuccess: 'Nachweisdatei erfolgreich hochgeladen',
-    proofUploadError: 'Fehler beim Hochladen der Nachweisdatei'
+    proofUploadError: 'Fehler beim Hochladen der Nachweisdatei',
+    approve: 'Genehmigen',
+    approvalSuccess: 'Zeiteintrag erfolgreich genehmigt',
+    approvalError: 'Fehler beim Genehmigen des Zeiteintrags',
+    viewEntries: 'Einträge Anzeigen',
+    myEntries: 'Meine Einträge',
+    allEmployees: 'Alle Mitarbeiter',
+    specificEmployee: 'Bestimmter Mitarbeiter',
+    employee: 'Mitarbeiter',
+    date: 'Datum',
+    time: 'Zeit',
+    hours: 'Stunden',
+    type: 'Typ',
+    status: 'Status',
+    actions: 'Aktionen',
+    noEntries: 'Keine Einträge gefunden'
   },
 
   // Time Tracking Actions

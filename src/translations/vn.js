@@ -515,7 +515,14 @@ export default {
       deleteFailed: 'Xóa giờ công thất bại. Vui lòng thử lại.'
     },
     proofUploadSuccess: 'Tải lên tệp chứng minh thành công',
-    proofUploadError: 'Tải lên tệp chứng minh thất bại'
+    proofUploadError: 'Tải lên tệp chứng minh thất bại',
+    approve: 'Phê Duyệt',
+    approvalSuccess: 'Phê duyệt giờ công thành công',
+    approvalError: 'Phê duyệt giờ công thất bại',
+    viewEntries: 'Xem Bản Ghi',
+    myEntries: 'Bản Ghi Của Tôi',
+    allEmployees: 'Tất Cả Nhân Viên',
+    specificEmployee: 'Nhân Viên Cụ Thể'
   },
 
   // Common

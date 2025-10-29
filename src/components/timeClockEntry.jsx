@@ -4,12 +4,17 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as timeTrackingService from '../services/timeTrackingService';
+import { supabase } from '../config/supabaseClient';
 import AdminTimeEntry from './AdminTimeEntry';
+import { motion } from 'framer-motion';
 
 const TimeClockEntry = ({ currentLanguage }) => {
   const { isDarkMode, bg, text, button, input, border } = useTheme();
   const { t } = useLanguage();
   const { user } = useAuth();
+  
+  // Check if user can manage time tracking (admin or manager)
+  const canManageTimeTracking = user && (user.role === 'admin' || user.role === 'hr_admin' || user.role === 'hr_manager' || user.role === 'manager');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -21,6 +26,24 @@ const TimeClockEntry = ({ currentLanguage }) => {
     proofFile: null
   });
 
+const MotionUpload = motion(Upload); 
+
+const uploadVariants = {
+      hover: {
+          opacity: 1,
+          transition: {
+              repeat: Infinity,
+              repeatType: 'reverse',
+              duration: 1.2,
+              ease: "easeInOut",
+              delay: 0.1, // Start animation slightly after hover
+          }
+      },
+      rest: {
+          opacity: 0.7, // Fade slightly when not hovering
+          transition: { duration: 0.3 }
+      }
+  };
   // Time entries state
   const [timeEntries, setTimeEntries] = useState([]);
   const [leaveRequests, setLeaveRequests] = useState([]);
@@ -39,6 +62,12 @@ const TimeClockEntry = ({ currentLanguage }) => {
   // State for image preview modal
   const [imagePreview, setImagePreview] = useState({ show: false, url: '' });
   
+  // State for employee filtering and approval
+  const [selectedEmployeeFilter, setSelectedEmployeeFilter] = useState('self'); // 'self' or employee ID or 'all'
+  const [allEmployees, setAllEmployees] = useState([]);
+  const [filteredEntries, setFilteredEntries] = useState([]);
+  const [approvingEntryId, setApprovingEntryId] = useState(null);
+  
   // Leave request form
   const [leaveForm, setLeaveForm] = useState({
     type: 'vacation',
@@ -47,36 +76,118 @@ const TimeClockEntry = ({ currentLanguage }) => {
     reason: ''
   });
 
-  // Fetch time entries and leave requests from Supabase
+  // Fetch time entries and employees when component mounts
   useEffect(() => {
-    const fetchTimeEntries = async () => {
-      if (!user?.id) return;
-      
-      setLoading(true);
-      try {
-        // Use employeeId from user profile to link with employees table
-        const employeeId = user.employeeId || user.id;
-        const result = await timeTrackingService.getTimeEntries(employeeId);
-        if (result.success) {
-          setTimeEntries(result.data || []);
+    const loadData = async () => {
+      if (user) {
+        setLoading(true);
+        try {
+          await fetchTimeEntries();
+          // Fetch all employees if user is admin or manager
+          if (canManageTimeTracking) {
+            await fetchAllEmployees();
+          }
+        } catch (error) {
+          console.error('Error loading data:', error);
+        } finally {
+          setLoading(false);
         }
-        
-        // Fetch leave requests (including pending)
-        const leaveResult = await timeTrackingService.getLeaveRequests(employeeId, {
-          year: new Date().getFullYear()
-        });
-        if (leaveResult.success) {
-          setLeaveRequests(leaveResult.data || []);
-        }
-      } catch (error) {
-        console.error('Error fetching time entries:', error);
-      } finally {
+      } else {
         setLoading(false);
       }
     };
     
-    fetchTimeEntries();
-  }, [user]);
+    loadData();
+  }, [user, canManageTimeTracking]);
+  
+  // Filter entries based on selected employee
+  useEffect(() => {
+    // Ensure timeEntries is an array before filtering
+    const entries = Array.isArray(timeEntries) ? timeEntries : [];
+    
+    console.log('Filtering entries - selectedEmployeeFilter:', selectedEmployeeFilter);
+    console.log('Total entries to filter:', entries.length);
+    
+    if (selectedEmployeeFilter === 'self') {
+      // Show only current user's entries
+      const employeeId = user?.employee_id || user?.id;
+      const filtered = entries.filter(entry => 
+        String(entry.employee_id) === String(employeeId)
+      );
+      console.log('Filtering for self (employee_id:', employeeId, ') - showing', filtered.length, 'entries');
+      setFilteredEntries(filtered);
+    } else if (selectedEmployeeFilter === 'all') {
+      // Show all entries (already loaded)
+      console.log('Showing all entries:', entries.length);
+      setFilteredEntries(entries);
+    } else {
+      // Filter by specific employee - compare as strings to handle both int and UUID
+      const filtered = entries.filter(entry => 
+        String(entry.employee_id) === String(selectedEmployeeFilter)
+      );
+      console.log('Filtering for employee:', selectedEmployeeFilter, '- showing', filtered.length, 'entries');
+      setFilteredEntries(filtered);
+    }
+  }, [selectedEmployeeFilter, timeEntries, user]);
+
+  // Fetch time entries and leave requests from Supabase
+  const fetchTimeEntries = async () => {
+    try {
+      let result;
+      
+      console.log('Fetching entries - selectedEmployeeFilter:', selectedEmployeeFilter);
+      console.log('User employee_id:', user?.employee_id, 'User id:', user?.id);
+      
+      // For admins/managers, always use detailed view to get employee names
+      if (canManageTimeTracking) {
+        // Always fetch ALL entries and let the useEffect filter them
+        result = await timeTrackingService.getAllTimeEntriesDetailed();
+        
+        console.log('Fetched all detailed entries:', result?.data?.length, 'entries');
+        
+        if (result?.success && Array.isArray(result.data)) {
+          setTimeEntries(result.data);
+        } else {
+          setTimeEntries([]);
+        }
+      } else {
+        // Regular users - fetch only their own entries
+        const employeeId = user?.employee_id || user?.id;
+        console.log('Regular user - fetching entries for employee ID:', employeeId);
+        if (employeeId) {
+          result = await timeTrackingService.getTimeEntries(employeeId);
+          if (result?.success && Array.isArray(result.data)) {
+            console.log('Fetched', result.data.length, 'entries for regular user');
+            setTimeEntries(result.data);
+          } else {
+            setTimeEntries([]);
+          }
+        } else {
+          console.warn('No employee ID found for user');
+          setTimeEntries([]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching time entries:', error);
+      setTimeEntries([]); // Ensure it's an empty array on error
+    }
+  };
+
+  // Fetch all employees for dropdown
+  const fetchAllEmployees = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('id, name, position, department')
+        .eq('status', 'Active')
+        .order('name');
+      
+      if (error) throw error;
+      setAllEmployees(data || []);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
 
   // Validation
   const validateForm = () => {
@@ -501,9 +612,72 @@ const TimeClockEntry = ({ currentLanguage }) => {
       setUploadingProofId(null);
     }
   };
+  
+  // Check if user can approve based on role and entry owner
+  const canApprove = (entry) => {
+    if (!user || !user.role) return false;
+    
+    // Get entry owner's role (assume from entry data or default to employee)
+    const entryOwnerRole = entry.employee_role || 'employee';
+    
+    // Admin can approve anyone
+    if (user.role === 'hr_admin') return true;
+    
+    // Manager can approve employees only
+    if (user.role === 'hr_manager' && entryOwnerRole === 'employee') return true;
+    
+    // Employee cannot approve
+    return false;
+  };
+  
+  // Handle approval of time entry
+  const handleApprove = async (entryId) => {
+    setApprovingEntryId(entryId);
+    
+    try {
+      const result = await timeTrackingService.updateTimeEntryStatus(entryId, 'approved');
+      
+      if (result.success) {
+        // Update local state
+        setTimeEntries(prevEntries =>
+          prevEntries.map(entry =>
+            entry.id === entryId
+              ? { ...entry, status: 'approved' }
+              : entry
+          )
+        );
+        
+        setUploadToast({
+          show: true,
+          message: t('timeClock.approvalSuccess', 'Time entry approved successfully'),
+          type: 'success'
+        });
+        setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 3000);
+      } else {
+        setUploadToast({
+          show: true,
+          message: result.error || t('timeClock.approvalError', 'Failed to approve entry'),
+          type: 'error'
+        });
+        setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 5000);
+      }
+    } catch (error) {
+      console.error('Error approving entry:', error);
+      setUploadToast({
+        show: true,
+        message: t('timeClock.approvalError', 'Failed to approve entry'),
+        type: 'error'
+      });
+      setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 5000);
+    } finally {
+      setApprovingEntryId(null);
+    }
+  };
 
   // Calculate totals (including pending and approved time entries)
   const calculateTotals = (filterType = 'all', period = 'week') => {
+    if (!Array.isArray(timeEntries)) return 0;
+    
     const now = new Date();
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
@@ -534,6 +708,8 @@ const TimeClockEntry = ({ currentLanguage }) => {
   
   // Calculate leave days (including pending and approved)
   const calculateLeaveDays = (period = 'week') => {
+    if (!Array.isArray(leaveRequests)) return 0;
+    
     const now = new Date();
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
@@ -572,7 +748,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
   };
 
   return (
-    <div key={currentLanguage} className="space-y-6 max-w-[1480px] w-full mx-auto">
+    <div key={currentLanguage} className="space-y-6 max-w-[1600px] w-full mx-auto">
       {/* Loading Overlay */}
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
@@ -836,13 +1012,21 @@ const TimeClockEntry = ({ currentLanguage }) => {
                         w-full px-4 py-2 
                         rounded-lg border 
                         text-left
+                        z-1
                     `}
                 >
-                    <Upload className="w-6 h-6 inline mr-6 p-0.25 border-2 border-dashed border-gray-500" />
-                    {t('timeClock.proof')}
-                    <span className="text-sm text-gray-500 ml-3">
-                        ({t('timeClock.optional')})
-                    </span>
+                   <div className="flex items-center">
+        <MotionUpload
+            initial="rest" // Initial state
+            whileHover="hover" // Triggers animation on hover
+            variants={uploadVariants} // Pass the variants to the SVG
+            className="upload-motion-target w-6 h-6 mr-6 p-0.5 border-2 border-dashed border-gray-500" 
+        />
+        {t('timeClock.proof')}
+        <span className="text-sm text-gray-500 ml-3">
+            ({t('timeClock.optional')})
+        </span>
+    </div>
                 </label>
 
                 <input
@@ -996,154 +1180,63 @@ const TimeClockEntry = ({ currentLanguage }) => {
         </div>
       </div>
       
-      {/* Leave Request Modal */}
-      {showLeaveModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className={`${bg.secondary} rounded-lg shadow-xl max-w-md w-full p-6`}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className={`text-xl font-semibold ${text.primary}`}>
-                {t('timeClock.requestLeave', 'Request Leave')}
-              </h3>
-              <button onClick={() => setShowLeaveModal(false)} className={`${text.secondary} hover:${text.primary}`}>
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              setIsSubmitting(true);
-              
-              try {
-                const employeeId = user.employeeId || user.id;
-                const result = await timeTrackingService.createLeaveRequest({
-                  employeeId: employeeId,
-                  type: leaveForm.type,
-                  startDate: leaveForm.startDate,
-                  endDate: leaveForm.endDate,
-                  reason: leaveForm.reason
-                });
-                
-                if (result.success) {
-                  setSuccessMessage(t('timeClock.leaveSuccess', 'Leave request submitted successfully!'));
-                  setShowLeaveModal(false);
-                  
-                  // Refresh leave requests
-                  const leaveResult = await timeTrackingService.getLeaveRequests(employeeId, {
-                    year: new Date().getFullYear()
-                  });
-                  if (leaveResult.success) {
-                    setLeaveRequests(leaveResult.data || []);
-                  }
-                  
-                  // Reset form
-                  setLeaveForm({
-                    type: 'vacation',
-                    startDate: '',
-                    endDate: '',
-                    reason: ''
-                  });
-                  
-                  setTimeout(() => setSuccessMessage(''), 3000);
-                } else {
-                  setErrors({ general: result.error || t('timeClock.leaveError', 'Error submitting leave request') });
-                }
-              } catch (error) {
-                console.error('Error submitting leave:', error);
-                setErrors({ general: t('timeClock.leaveError', 'Error submitting leave request') });
-              } finally {
-                setIsSubmitting(false);
-              }
-            }} className="space-y-4">
-              <div>
-                <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                  {t('timeClock.leaveType', 'Leave Type')}
-                </label>
-                <select
-                  value={leaveForm.type}
-                  onChange={(e) => setLeaveForm({ ...leaveForm, type: e.target.value })}
-                  required
-                  className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
-                >
-                  <option value="vacation">{t('timeClock.vacation', 'Vacation')}</option>
-                  <option value="sick">{t('timeClock.sick', 'Sick Leave')}</option>
-                  <option value="personal">{t('timeClock.personal', 'Personal')}</option>
-                  <option value="unpaid">{t('timeClock.unpaid', 'Unpaid Leave')}</option>
-                </select>
-              </div>
-
-              <div>
-                <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                  {t('timeClock.startDate', 'Start Date')}
-                </label>
-                <input
-                  type="date"
-                  value={leaveForm.startDate}
-                  onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
-                  min={new Date().toISOString().split('T')[0]}
-                  required
-                  className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
-                />
-              </div>
-
-              <div>
-                <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                  {t('timeClock.endDate', 'End Date')}
-                </label>
-                <input
-                  type="date"
-                  value={leaveForm.endDate}
-                  onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
-                  min={leaveForm.startDate || new Date().toISOString().split('T')[0]}
-                  required
-                  className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
-                />
-              </div>
-
-              <div>
-                <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                  {t('timeClock.reason', 'Reason')}
-                </label>
-                <textarea
-                  value={leaveForm.reason}
-                  onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })}
-                  rows="3"
-                  placeholder={t('timeClock.leaveReason', 'Brief reason for leave...')}
-                  className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
-                />
-              </div>
-
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowLeaveModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  {t('common.cancel', 'Cancel')}
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
-                    isSubmitting
-                      ? 'bg-gray-400 cursor-not-allowed text-white'
-                      : 'bg-green-600 hover:bg-green-700 text-white'
-                  }`}
-                >
-                  {isSubmitting ? t('common.submitting', 'Submitting...') : t('common.submit', 'Submit Request')}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Time Entries History */}
       <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>
-        <h2 className={`text-xl font-semibold ${text.primary} mb-6`}>
-          {t('timeClock.history')}
-        </h2>
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+          <h2 className={`text-xl font-semibold ${text.primary} flex items-center`}>
+            <Clock className="w-6 h-6 mr-2" />
+            {t('timeClock.history', 'Time Entry History')}
+          </h2>
+          
+          {/* Debug: Show user role */}
+          {user && (
+            <div className="text-xs text-gray-500">
+              Role: {user.role || 'No role'} | Can Manage: {canManageTimeTracking ? 'Yes' : 'No'}
+            </div>
+          )}
+          
+          {/* Employee Filter Dropdown (only for admin/manager) */}
+          {canManageTimeTracking && (
+            <div className="flex items-center gap-3">
+              <label className={`text-sm font-medium ${text.primary}`}>
+                {t('timeClock.viewEntries', 'View Entries')}:
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedEmployeeFilter}
+                  onChange={(e) => {
+                    setSelectedEmployeeFilter(e.target.value);
+                    // Refetch entries when filter changes
+                    setTimeout(() => fetchTimeEntries(), 100);
+                  }}
+                  className={`
+                    px-4 py-2 pr-10 rounded-lg border
+                    ${bg.primary}
+                    ${text.primary}
+                    ${border.primary}
+                    focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                    min-w-[200px]
+                  `}
+                >
+                  <option value="self">{t('timeClock.myEntries', 'My Entries')}</option>
+                  <option value="all">{t('timeClock.allEmployees', 'All Employees')}</option>
+                  {Array.isArray(allEmployees) && allEmployees.length > 0 && (
+                    <optgroup label={t('timeClock.specificEmployee', 'Specific Employee')}>
+                      {allEmployees.map(emp => (
+                        <option key={emp.id} value={emp.id}>
+                          {emp.name} - {emp.position}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+                <ChevronsUpDown className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none h-5 w-5 ${isDarkMode ? 'text-white' : 'text-gray-800'}`} />
+              </div>
+            </div>
+          )}
+        </div>
 
-        {timeEntries.length === 0 ? (
+        {!Array.isArray(filteredEntries) || filteredEntries.length === 0 ? (
           <div className="text-center py-12">
             <Clock className={`w-16 h-16 mx-auto ${text.secondary} opacity-50 mb-4`} />
             <p className={`${text.secondary}`}>
@@ -1158,6 +1251,12 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     <th className={`text-center p-3 ${text.primary} font-semibold`}>
                       {t('timeClock.date', 'Date')}
                     </th>
+                    {/* Show Name column only when NOT viewing "My Entries" */}
+                    {selectedEmployeeFilter !== 'self' && (
+                      <th className={`text-center p-3 ${text.primary} font-semibold`}>
+                        {t('timeClock.employee', 'Employee')}
+                      </th>
+                    )}
                     <th className={`text-center p-3 ${text.primary} font-semibold`}>
                       {t('timeClock.time', 'Time')}
                     </th>
@@ -1179,11 +1278,17 @@ const TimeClockEntry = ({ currentLanguage }) => {
                 </tr>
               </thead>
               <tbody>
-                {timeEntries.map(entry => (
+                {filteredEntries.map((entry, index) => (
                   <tr key={entry.id} className={`border-b ${border.primary} hover:bg-blue-600 dark:hover:bg-gray-800 group transition-colors cursor-pointer`}>
-                    <td className={`p-3 ${text.primary} group-hover:text-white`}>
-                      {new Date(entry.date).toLocaleDateString()}
+                    <td className={`p-3 ${text.primary} text-center`}>
+                      {entry.date || new Date(entry.created_at).toLocaleDateString()}
                     </td>
+                    {/* Show Name column only when NOT viewing "My Entries" */}
+                    {selectedEmployeeFilter !== 'self' && (
+                      <td className={`p-3 ${text.primary} text-center`}>
+                        {entry.employee_name || 'N/A'}
+                      </td>
+                    )}
                     <td className={`p-3 ${text.secondary} group-hover:text-white`}>
                       {entry.clock_in || entry.clockIn} - {entry.clock_out || entry.clockOut}
                     </td>
@@ -1281,16 +1386,38 @@ const TimeClockEntry = ({ currentLanguage }) => {
                       </div>
                     </td>
                     <td className="p-3 text-center">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(entry.id, entry);
-                        }}
-                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 group-hover:text-white transition-colors justify-center items-center inline-flex"
-                        title={entry.proof_file_url ? t('timeClock.deleteOptions', 'Delete options') : t('timeClock.delete', 'Delete')}
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
+                      <div className="flex items-center justify-center gap-2">
+                        {/* Approve Button (only for pending entries and if user has permission) */}
+                        {entry.status === 'pending' && canApprove(entry) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleApprove(entry.id);
+                            }}
+                            disabled={approvingEntryId === entry.id}
+                            className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 group-hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={t('timeClock.approve', 'Approve')}
+                          >
+                            {approvingEntryId === entry.id ? (
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                              <Check className="w-5 h-5" />
+                            )}
+                          </button>
+                        )}
+                        
+                        {/* Delete Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(entry.id, entry);
+                          }}
+                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 group-hover:text-white transition-colors"
+                          title={entry.proof_file_url ? t('timeClock.deleteOptions', 'Delete options') : t('timeClock.delete', 'Delete')}
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

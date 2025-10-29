@@ -204,7 +204,22 @@ export default {
     proofDeleteSuccess: 'Файл подтверждения успешно удален',
     proofDeleteError: 'Не удалось удалить файл подтверждения',
     proofUploadSuccess: 'Файл подтверждения успешно загружен',
-    proofUploadError: 'Не удалось загрузить файл подтверждения'
+    proofUploadError: 'Не удалось загрузить файл подтверждения',
+    approve: 'Одобрить',
+    approvalSuccess: 'Запись времени успешно одобрена',
+    approvalError: 'Не удалось одобрить запись времени',
+    viewEntries: 'Просмотр Записей',
+    myEntries: 'Мои Записи',
+    allEmployees: 'Все Сотрудники',
+    specificEmployee: 'Конкретный Сотрудник',
+    employee: 'Сотрудник',
+    date: 'Дата',
+    time: 'Время',
+    hours: 'Часы',
+    type: 'Тип',
+    status: 'Статус',
+    actions: 'Действия',
+    noEntries: 'Записи не найдены'
   },  
 
   // Time Tracking
