@@ -250,6 +250,8 @@ export default {
   // Time Tracking
   timeTracking: {
     title: 'แดชบอร์ดติดตามเวลา',
+    overview: 'ภาพรวม',
+    clockIn: 'เข้างาน',
     summary: 'สรุป',
     quickActions: 'การดำเนินการด่วน',
     workDays: 'วันทำงาน',
@@ -263,7 +265,16 @@ export default {
     regularHours: 'ชั่วโมงปกติ',
     overtimeHours: 'ชั่วโมงล่วงเวลา',
     hrs: 'ชม.',
-    attendanceRate: 'อัตราการเข้าร่วม'
+    attendanceRate: 'อัตราการเข้าร่วม',
+    totalRegularHours: 'รวมชั่วโมงปกติ (พนักงานทั้งหมด)',
+    regularHoursChart: 'ชั่วโมงปกติตามพนักงาน',
+    overtimeHoursChart: 'ชั่วโมงล่วงเวลาตามพนักงาน',
+    overviewTitle: 'ภาพรวมบริษัท',
+    regularHoursLegend: 'ชั่วโมงปกติ',
+    totalOvertimeLegend: 'รวมชั่วโมงล่วงเวลา',
+    employee: 'พนักงาน',
+    daysWorked: 'วันทำงาน',
+    totalHoursLabel: 'รวมชั่วโมง'
   },
 
   // Employees

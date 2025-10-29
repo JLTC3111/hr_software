@@ -85,46 +85,27 @@ export const NotificationProvider = ({ children }) => {
   const checkPendingApprovals = useCallback(async () => {
     if (!user?.id) return;
 
-    // First, clean up any duplicate pending approval notifications
-    await notificationService.cleanupDuplicateNotifications(
-      user.id,
-      'Pending Approvals',
-      'time_tracking'
-    );
-
-    const result = await notificationService.getPendingApprovalsCount();
-    
-    if (result.success && result.count > 0) {
-      // Check if there's already ANY unread notification about pending approvals
-      const existingPendingNotifications = notifications.filter(n => 
-        n.category === 'time_tracking' && 
-        n.type === 'warning' &&
-        n.title === 'Pending Approvals' &&
-        !n.is_read
+    try {
+      // First, clean up any duplicate pending approval notifications
+      await notificationService.cleanupDuplicateNotifications(
+        user.id,
+        'Pending Approvals',
+        'time_tracking'
       );
 
-      if (existingPendingNotifications.length === 0) {
-        // No existing notification, create new one
-        await notificationService.notifyUser(
-          user.id,
-          'Pending Approvals',
-          `You have ${result.count} time ${result.count === 1 ? 'entry' : 'entries'} awaiting approval`,
-          {
-            type: 'warning',
-            category: 'time_tracking',
-            actionUrl: '/time-clock',
-            actionLabel: 'Review Now',
-            metadata: { pendingCount: result.count }
-          }
+      const result = await notificationService.getPendingApprovalsCount();
+    
+      if (result.success && result.count > 0) {
+        // Check if there's already ANY unread notification about pending approvals
+        const existingPendingNotifications = notifications.filter(n => 
+          n.category === 'time_tracking' && 
+          n.type === 'warning' &&
+          n.title === 'Pending Approvals' &&
+          !n.is_read
         );
-        // Refresh notifications to show the new one
-        fetchNotifications();
-      } else {
-        // Check if count has changed and update if needed
-        const currentCount = existingPendingNotifications[0].metadata?.pendingCount || 0;
-        if (currentCount !== result.count) {
-          // Delete old and create new with updated count
-          await notificationService.deleteNotification(existingPendingNotifications[0].id);
+
+        if (existingPendingNotifications.length === 0) {
+          // No existing notification, create new one
           await notificationService.notifyUser(
             user.id,
             'Pending Approvals',
@@ -137,24 +118,48 @@ export const NotificationProvider = ({ children }) => {
               metadata: { pendingCount: result.count }
             }
           );
+          // Refresh notifications to show the new one
+          fetchNotifications();
+        } else {
+          // Check if count has changed and update if needed
+          const currentCount = existingPendingNotifications[0].metadata?.pendingCount || 0;
+          if (currentCount !== result.count) {
+            // Delete old and create new with updated count
+            await notificationService.deleteNotification(existingPendingNotifications[0].id);
+            await notificationService.notifyUser(
+              user.id,
+              'Pending Approvals',
+              `You have ${result.count} time ${result.count === 1 ? 'entry' : 'entries'} awaiting approval`,
+              {
+                type: 'warning',
+                category: 'time_tracking',
+                actionUrl: '/time-clock',
+                actionLabel: 'Review Now',
+                metadata: { pendingCount: result.count }
+              }
+            );
+            fetchNotifications();
+          }
+        }
+      } else if (result.success && result.count === 0) {
+        // No pending approvals, delete any existing pending approval notifications
+        const existingPendingNotifications = notifications.filter(n => 
+          n.category === 'time_tracking' && 
+          n.type === 'warning' &&
+          n.title === 'Pending Approvals'
+        );
+        
+        for (const notification of existingPendingNotifications) {
+          await notificationService.deleteNotification(notification.id);
+        }
+        
+        if (existingPendingNotifications.length > 0) {
           fetchNotifications();
         }
       }
-    } else if (result.success && result.count === 0) {
-      // No pending approvals, delete any existing pending approval notifications
-      const existingPendingNotifications = notifications.filter(n => 
-        n.category === 'time_tracking' && 
-        n.type === 'warning' &&
-        n.title === 'Pending Approvals'
-      );
-      
-      for (const notification of existingPendingNotifications) {
-        await notificationService.deleteNotification(notification.id);
-      }
-      
-      if (existingPendingNotifications.length > 0) {
-        fetchNotifications();
-      }
+    } catch (error) {
+      console.error('Error fetching pending approvals:', error);
+      // Silently fail - don't disrupt user experience
     }
   }, [user?.id, notifications, fetchNotifications]);
 

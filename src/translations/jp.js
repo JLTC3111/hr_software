@@ -250,6 +250,8 @@ export default {
   // Time Tracking
   timeTracking: {
     title: '時間追跡ダッシュボード',
+    overview: '概要',
+    clockIn: '出勤',
     summary: '概要',
     quickActions: 'クイックアクション',
     workDays: '勤務日',
@@ -260,10 +262,19 @@ export default {
     days: '日',
     thisMonth: '今月',
     totalHours: '総時間',
-    regularHours: '通常時間',
+    regularHours: '通常勤務時間',
     overtimeHours: '残業時間',
     hrs: '時間',
-    attendanceRate: '出勤率'
+    attendanceRate: '出勤率',
+    totalRegularHours: '通常勤務時間合計（全従業員）',
+    regularHoursChart: '従業員別通常勤務時間',
+    overtimeHoursChart: '従業員別残業時間',
+    overviewTitle: '会社概要',
+    regularHoursLegend: '通常勤務時間',
+    totalOvertimeLegend: '残業時間合計',
+    employee: '従業員',
+    daysWorked: '出勤日数',
+    totalHoursLabel: '総勤務時間'
   },
 
   // Employees

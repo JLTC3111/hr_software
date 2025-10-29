@@ -253,6 +253,8 @@ export default {
   // Time Tracking
   timeTracking: {
     title: '시간 추적 대시보드',
+    overview: '개요',
+    clockIn: '출근',
     summary: '요약',
     quickActions: '빠른 액션',
     workDays: '근무일',
@@ -263,10 +265,19 @@ export default {
     days: '일',
     thisMonth: '이번 달',
     totalHours: '총 시간',
-    regularHours: '정규 시간',
+    regularHours: '정규 근무 시간',
     overtimeHours: '초과 근무 시간',
     hrs: '시간',
     attendanceRate: '출석률',
+    totalRegularHours: '총 정규 근무 시간 (전체 직원)',
+    regularHoursChart: '직원별 정규 근무 시간',
+    overtimeHoursChart: '직원별 초과 근무 시간',
+    overviewTitle: '회사 개요',
+    regularHoursLegend: '정규 근무 시간',
+    totalOvertimeLegend: '총 초과 근무 시간',
+    employee: '직원',
+    daysWorked: '근무 일수',
+    totalHoursLabel: '총 근무 시간'
   },
 
   // Employees

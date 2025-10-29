@@ -125,12 +125,18 @@ const Dashboard = ({ employees, applications }) => {
         const approvalsResult = await timeTrackingService.getPendingApprovalsCount();
         if (approvalsResult.success) {
           setPendingApprovalsCount(approvalsResult.data.total || 0);
+        } else {
+          console.warn('Failed to fetch pending approvals count:', approvalsResult.error);
+          setPendingApprovalsCount(0);
         }
         
         // Fetch pending approvals details
         const approvalsDetailResult = await timeTrackingService.getPendingApprovals();
         if (approvalsDetailResult.success) {
           setPendingApprovals(approvalsDetailResult.data || []);
+        } else {
+          console.warn('Failed to fetch pending approvals details:', approvalsDetailResult.error);
+          setPendingApprovals([]);
         }
         
       } catch (error) {
@@ -459,6 +465,43 @@ const Dashboard = ({ employees, applications }) => {
           </h3>
           <ResponsiveContainer width="100%" height={400}>
             <PieChart>
+              <defs>
+                <linearGradient id="pieGradient0" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#60A5FA" stopOpacity={1} />
+                  <stop offset="50%" stopColor="#3B82F6" stopOpacity={0.95} />
+                  <stop offset="100%" stopColor="#1E3A8A" stopOpacity={0.9} />
+                </linearGradient>
+                <linearGradient id="pieGradient1" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#34D399" stopOpacity={1} />
+                  <stop offset="50%" stopColor="#10B981" stopOpacity={0.95} />
+                  <stop offset="100%" stopColor="#047857" stopOpacity={0.9} />
+                </linearGradient>
+                <linearGradient id="pieGradient2" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#FBBF24" stopOpacity={1} />
+                  <stop offset="50%" stopColor="#F59E0B" stopOpacity={0.95} />
+                  <stop offset="100%" stopColor="#B45309" stopOpacity={0.9} />
+                </linearGradient>
+                <linearGradient id="pieGradient3" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#F87171" stopOpacity={1} />
+                  <stop offset="50%" stopColor="#EF4444" stopOpacity={0.95} />
+                  <stop offset="100%" stopColor="#991B1B" stopOpacity={0.9} />
+                </linearGradient>
+                <linearGradient id="pieGradient4" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#A78BFA" stopOpacity={1} />
+                  <stop offset="50%" stopColor="#8B5CF6" stopOpacity={0.95} />
+                  <stop offset="100%" stopColor="#5B21B6" stopOpacity={0.9} />
+                </linearGradient>
+                <linearGradient id="pieGradient5" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#F472B6" stopOpacity={1} />
+                  <stop offset="50%" stopColor="#EC4899" stopOpacity={0.95} />
+                  <stop offset="100%" stopColor="#9F1239" stopOpacity={0.9} />
+                </linearGradient>
+                <linearGradient id="pieGradient6" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#22D3EE" stopOpacity={1} />
+                  <stop offset="50%" stopColor="#06B6D4" stopOpacity={0.95} />
+                  <stop offset="100%" stopColor="#155E75" stopOpacity={0.9} />
+                </linearGradient>
+              </defs>
               <Pie
                 data={departmentData}
                 cx="50%"
@@ -472,7 +515,7 @@ const Dashboard = ({ employees, applications }) => {
                 style={{ fontSize: '13px' }}
               >
                 {departmentData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  <Cell key={`cell-${index}`} fill={`url(#pieGradient${index % 7})`} />
                 ))}
               </Pie>
               <Tooltip
@@ -630,7 +673,7 @@ const Dashboard = ({ employees, applications }) => {
             {t('dashboard.workLeaveComp')}
           </h3>
           <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={leaveData} margin={{ top: 5, right: 5, left: 0, bottom: 60 }}>
+            <ComposedChart data={leaveData} margin={{ top: 5, right: 5, left: 0, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
               <XAxis 
                 dataKey="name" 
@@ -666,7 +709,23 @@ const Dashboard = ({ employees, applications }) => {
               <Legend />
               <Bar dataKey="workDays" fill="#10B981" name={t('dashboard.totalWorkDays', 'Total Work Days')} radius={[8, 8, 0, 0]} />
               <Bar dataKey="leaveDays" fill="#EF4444" name={t('dashboard.totalLeave', 'Total Leave')} radius={[8, 8, 0, 0]} />
-            </BarChart>
+              <Line 
+                type="monotone" 
+                dataKey="workDays" 
+                stroke="#059669" 
+                strokeWidth={3}
+                dot={{ fill: '#059669', r: 5 }}
+                name="Work Days Trend"
+              />
+              <Line 
+                type="monotone" 
+                dataKey="leaveDays" 
+                stroke="#DC2626" 
+                strokeWidth={3}
+                dot={{ fill: '#DC2626', r: 5 }}
+                name="Leave Days Trend"
+              />
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
 

@@ -972,6 +972,17 @@ export const getPendingApprovalsCount = async () => {
       supabase.from('overtime_logs').select('id', { count: 'exact' }).eq('status', 'pending')
     ]);
 
+    // Check for errors in any of the queries
+    if (timeEntries.error) {
+      console.error('Error fetching time_entries:', timeEntries.error);
+    }
+    if (leaveRequests.error) {
+      console.error('Error fetching leave_requests:', leaveRequests.error);
+    }
+    if (overtimeLogs.error) {
+      console.error('Error fetching overtime_logs:', overtimeLogs.error);
+    }
+
     return {
       success: true,
       data: {
@@ -983,7 +994,7 @@ export const getPendingApprovalsCount = async () => {
     };
   } catch (error) {
     console.error('Error fetching pending approvals:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error.message, data: { timeEntries: 0, leaveRequests: 0, overtimeLogs: 0, total: 0 } };
   }
 };
 
@@ -1001,11 +1012,14 @@ export const getPendingApprovals = async () => {
       .eq('status', 'pending')
       .order('date', { ascending: false });
 
-    if (error) throw error;
-    return { success: true, data };
+    if (error) {
+      console.error('Error in getPendingApprovals query:', error);
+      throw error;
+    }
+    return { success: true, data: data || [] };
   } catch (error) {
     console.error('Error fetching pending approvals:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error.message, data: [] };
   }
 };
 

@@ -303,6 +303,8 @@ login: {
   // Time Tracking
   timeTracking: {
     title: 'Panel de Seguimiento de Tiempo',
+    overview: 'Vista General',
+    clockIn: 'Entrada',
     summary: 'Resumen',
     quickActions: 'Acciones Rápidas',
     workDays: 'Días de Trabajo',
@@ -316,7 +318,16 @@ login: {
     regularHours: 'Horas Regulares',
     overtimeHours: 'Horas Extra',
     hrs: 'hrs',
-    attendanceRate: 'Tasa de Asistencia'
+    attendanceRate: 'Tasa de Asistencia',
+    totalRegularHours: 'Total de Horas Regulares (Todos los Empleados)',
+    regularHoursChart: 'Horas Regulares por Empleado',
+    overtimeHoursChart: 'Horas Extra por Empleado',
+    overviewTitle: 'Vista General de la Empresa',
+    regularHoursLegend: 'Horas Regulares',
+    totalOvertimeLegend: 'Total de Horas Extra',
+    employee: 'Empleado',
+    daysWorked: 'Días Trabajados',
+    totalHoursLabel: 'Total de Horas'
   },
 
   // Employees
