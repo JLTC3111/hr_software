@@ -290,12 +290,15 @@ const Dashboard = ({ employees, applications }) => {
         
       case 'pendingRequests':
         data = pendingApprovals.map(approval => ({
-          employeeName: approval.employee?.name || 'Unknown',
-          requestType: approval.hour_type || 'Regular',
-          date: approval.date,
-          status: approval.status || 'pending'
+          employeeName: approval.employee?.name || approval.employeeName || 'Unknown Employee',
+          department: approval.employee?.department || approval.department || 'N/A',
+          requestType: approval.hour_type || approval.requestType || 'Time Entry',
+          date: approval.date || approval.created_at || new Date().toISOString(),
+          status: approval.status || 'pending',
+          hours: approval.hours || 0
         }));
-        title = t('dashboard.pendingRequests');
+        console.log('Pending Approvals Data:', { pendingApprovals, mappedData: data });
+        title = t('dashboard.pendingRequests', 'Pending Requests');
         break;
         
       case 'applications':

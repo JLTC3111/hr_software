@@ -585,7 +585,28 @@ const TimeTracking = ({ employees }) => {
         
         {/* Total Regular Hours for All Employees */}
         <div className="mb-6">
-          <div className={`${bg.primary} rounded-lg p-4 border ${border.primary}`}>
+          <div 
+            className={`${bg.primary} rounded-lg p-4 border ${border.primary} cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
+            onClick={() => {
+              const data = allEmployeesData
+                .filter(item => item.data && item.data.regular_hours > 0)
+                .map(item => ({
+                  employee: item.employee?.name || 'Unknown',
+                  department: item.employee?.department || 'N/A',
+                  position: item.employee?.position || 'N/A',
+                  regularHours: item.data?.regular_hours?.toFixed(1) || '0.0',
+                  daysWorked: item.data?.days_worked || 0,
+                  overtime: item.data?.overtime_hours?.toFixed(1) || '0.0'
+                }));
+              console.log('Modal data:', data); // Debug log
+              setModalConfig({ 
+                type: 'regularHours', 
+                data, 
+                title: t('timeTracking.totalRegularHours', 'Total Regular Hours (All Employees)')
+              });
+              setModalOpen(true);
+            }}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <Clock className={`w-6 h-6 ${text.primary}`} />
