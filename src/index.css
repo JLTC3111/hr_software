@@ -75,27 +75,6 @@ select::-ms-expand {
    ANIMATIONS & TRANSITIONS
    ============================================ */
 
-@keyframes arrow-bob {
-    0%, 100% {
-        transform: translateY(0);
-        opacity: 0.8;
-    }
-    50% {
-        transform: translateY(-2px); 
-        opacity: 1;
-    }
-}
-
-/* 2. Apply Animation on Hover */
-.upload-icon-container:hover .upload-arrow-animation svg path:nth-child(2) {
-    opacity: 1; 
-    animation: arrow-bob 1s infinite ease-in-out; 
-}
-
-.upload-arrow-animation svg path:nth-child(2) {
-    transition: all 0.2s ease-out; 
-}
-
 /* Slide-in animations */
 @keyframes slideInUp {
   from {

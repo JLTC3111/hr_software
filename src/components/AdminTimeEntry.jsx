@@ -270,7 +270,7 @@ const AdminTimeEntry = () => {
                       setSelectedEmployee(emp);
                       setSearchTerm('');
                     }}
-                    className={`p-3 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 transition-colors ${
+                    className={`p-3 cursor-pointer  ${isDarkMode ? 'hover:bg-blue-800' : 'hover:bg-blue-50'} transition-colors ${
                       selectedEmployee?.id === emp.id ? 'bg-blue-100 dark:bg-blue-800' : ''
                     }`}
                   >

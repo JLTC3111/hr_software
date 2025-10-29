@@ -26,24 +26,21 @@ const TimeClockEntry = ({ currentLanguage }) => {
     proofFile: null
   });
 
-const MotionUpload = motion(Upload); 
-
-const uploadVariants = {
-      hover: {
-          opacity: 1,
-          transition: {
-              repeat: Infinity,
-              repeatType: 'reverse',
-              duration: 1.2,
-              ease: "easeInOut",
-              delay: 0.1, // Start animation slightly after hover
-          }
-      },
-      rest: {
-          opacity: 0.7, // Fade slightly when not hovering
-          transition: { duration: 0.3 }
+  // Animation variants for upload icon
+  const uploadVariants = {
+    rest: {
+      scale: 1,
+    },
+    hover: {
+      scale: [1, 1.1, 1],
+      transition: {
+        repeat: Infinity,
+        duration: 1.2,
+        ease: "easeInOut",
       }
+    }
   };
+  
   // Time entries state
   const [timeEntries, setTimeEntries] = useState([]);
   const [leaveRequests, setLeaveRequests] = useState([]);
@@ -1016,17 +1013,19 @@ const uploadVariants = {
                     `}
                 >
                    <div className="flex items-center">
-        <MotionUpload
-            initial="rest" // Initial state
-            whileHover="hover" // Triggers animation on hover
-            variants={uploadVariants} // Pass the variants to the SVG
-            className="upload-motion-target w-6 h-6 mr-6 p-0.5 border-2 border-dashed border-gray-500" 
-        />
-        {t('timeClock.proof')}
-        <span className="text-sm text-gray-500 ml-3">
-            ({t('timeClock.optional')})
-        </span>
-    </div>
+                    <motion.div
+                        initial="rest" 
+                        whileHover="hover" 
+                        variants={uploadVariants}
+                        className="flex items-center"
+                    >
+                      <Upload className="w-6 h-6 mr-6 p-0.5 border-2 border-dashed border-gray-500" />
+                    </motion.div>
+                    {t('timeClock.proof')}
+                    <span className="text-sm text-gray-500 ml-3">
+                        ({t('timeClock.optional')})
+                    </span>
+                </div>
                 </label>
 
                 <input
@@ -1183,7 +1182,7 @@ const uploadVariants = {
       {/* Time Entries History */}
       <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-          <h2 className={`text-xl font-semibold ${text.primary} flex items-center`}>
+          <h2 className={`text-xl text-center font-semibold ${text.primary} flex items-center`}>
             <Clock className="w-6 h-6 mr-2" />
             {t('timeClock.history', 'Time Entry History')}
           </h2>
@@ -1246,7 +1245,7 @@ const uploadVariants = {
         ) : (
           <div className="overflow-x-auto">
               <table className="w-full items-center table-auto border-collapse">
-                <thead className=" text-center">
+                <thead className="text-center">
                   <tr className={`border-b ${border.primary}`}>
                     <th className={`text-center p-3 ${text.primary} font-semibold`}>
                       {t('timeClock.date', 'Date')}
@@ -1277,15 +1276,15 @@ const uploadVariants = {
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="text-center">
                 {filteredEntries.map((entry, index) => (
                   <tr key={entry.id} className={`border-b ${border.primary} hover:bg-blue-600 dark:hover:bg-gray-800 group transition-colors cursor-pointer`}>
-                    <td className={`p-3 ${text.primary} text-center`}>
+                    <td className={`p-3 ${text.primary} text-center hover:text-white font-medium group-hover:text-white `}>
                       {entry.date || new Date(entry.created_at).toLocaleDateString()}
                     </td>
-                    {/* Show Name column only when NOT viewing "My Entries" */}
+                    
                     {selectedEmployeeFilter !== 'self' && (
-                      <td className={`p-3 ${text.primary} text-center`}>
+                      <td className={`p-3 ${text.primary} text-center hover:text-white font-medium group-hover:text-white`}>
                         {entry.employee_name || 'N/A'}
                       </td>
                     )}
@@ -1364,7 +1363,7 @@ const uploadVariants = {
                                   )}
                                 </div>
                               ) : (
-                                <Upload className="w-5 h-5 mr-1.75 text-blue-600 dark:text-blue-400 group-hover:text-white hover:text-blue-800 dark:hover:text-blue-300" />
+                                <Upload className={`w-5 h-5 mr-1.75 ${isDarkMode ? 'text-blue-100' : 'text-blue-600'} transform transition-all duration-500 group-hover:animate-bounce group-hover:text-white`} />
                               )}
                               <input
                                 id={`proof-upload-${entry.id}`}
@@ -1412,7 +1411,7 @@ const uploadVariants = {
                             e.stopPropagation();
                             handleDelete(entry.id, entry);
                           }}
-                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 group-hover:text-white transition-colors"
+                          className={`${isDarkMode ? 'text-red-400' : 'text-red-600'} group-hover:text-white group-hover:animate-spin transition-all duration-500`}
                           title={entry.proof_file_url ? t('timeClock.deleteOptions', 'Delete options') : t('timeClock.delete', 'Delete')}
                         >
                           <X className="w-5 h-5" />
