@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Upload, Calendar, AlertCircle, Check, X, FileText, AlarmClockPlus, Loader, Loader2 } from 'lucide-react';
+import { Clock, Upload, Calendar, AlertCircle, Check, X, FileText, AlarmClockPlus, Loader, Loader2, ChevronsUpDown } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -806,34 +806,19 @@ const TimeClockEntry = ({ currentLanguage }) => {
                         value={formData.hourType}
                         onChange={(e) => setFormData({ ...formData, hourType: e.target.value })}
                         className={`
-                            w-full px-4 py-2 rounded-lg border mr-2
-                            ${input.className} 
-                            ${isDarkMode ? 'text-white' : 'text-black'}
-                            cursor-pointer
-                            appearance-none 
-                            pr-10 
+                            w-full px-4 py-2 rounded-lg border
+                            ${bg.primary}
+                            ${text.primary}
+                            ${border.primary}
+                            focus:ring-2 focus:ring-blue-500 focus:border-transparent                        
+                            pr-10
                         `}
                     >
                         {hourTypes.map(type => (
                             <option key={type.value} value={type.value}>{type.label}</option>
                         ))}
                     </select>
-                    
-                    <div className={`
-                        pointer-events-none 
-                        absolute inset-y-0 right-0 
-                        flex items-center 
-                        mr-4
-                    `}>
-                        <svg 
-                            className={`h-5 w-5 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`} 
-                            xmlns="http://www.w3.org/2000/svg" 
-                            viewBox="0 0 20 20" 
-                            fill="currentColor"
-                        >
-                            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-                        </svg>
-                    </div>
+                    <ChevronsUpDown className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none h-5 w-5 text-gray-800`} />
                 </div>
               </div>
 

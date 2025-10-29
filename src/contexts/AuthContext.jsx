@@ -235,8 +235,8 @@ export const AuthProvider = ({ children }) => {
       // Extract name components from user metadata or email
       const userMetadata = authData.user.user_metadata || {};
       const fullName = userMetadata.full_name || userMetadata.name;
-      const firstName = userMetadata.first_name || fullName?.split(' ')[0];
-      const lastName = userMetadata.last_name || fullName?.split(' ').slice(1).join(' ');
+      let firstName = userMetadata.first_name || fullName?.split(' ')[0];
+      let lastName = userMetadata.last_name || fullName?.split(' ').slice(1).join(' ');
       
       // CRITICAL: Check if there's an existing employee with this email
       const { data: existingEmployee } = await supabase
