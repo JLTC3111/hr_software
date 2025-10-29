@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, UserPlus, Save, X, Search, AlertCircle, Calendar, LogIn, LogOut, Check, Upload, FileText } from 'lucide-react';
+import { Clock, UserPlus, Save, X, Search, AlertCircle, Calendar, LogIn, LogOut, Check, Upload, FileText, ChevronsUpDown } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -362,27 +362,34 @@ const AdminTimeEntry = () => {
         </div>
 
         {/* Hour Type */}
-        <div>
+        <div className="relative w-full">
           <label className={`block text-sm font-medium ${text.primary} mb-2`}>
             {t('adminTimeEntry.hourType', 'Hour Type')} *
           </label>
           <select
             value={formData.hourType}
-            onChange={(e) => setFormData({ ...formData, hourType: e.target.value })}
-            className={`w-full px-4 py-2 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-            required
+                        onChange={(e) => setFormData({ ...formData, hourType: e.target.value })}
+                        className={`
+                            w-full px-4 py-2 rounded-lg border
+                            ${bg.primary}
+                            ${text.primary}
+                            ${border.primary}
+                            focus:ring-2 focus:ring-blue-500 focus:border-transparent                        
+                            pr-10
+                        `}
           >
             <option value="regular">{t('adminTimeEntry.regularHours', 'Regular Hours')}</option>
             <option value="weekend">{t('adminTimeEntry.weekendOvertime', 'Weekend/Overtime')}</option>
             <option value="holiday">{t('adminTimeEntry.holiday', 'Holiday')}</option>
             <option value="bonus">{t('adminTimeEntry.bonusHours', 'Bonus Hours')}</option>
           </select>
+          <ChevronsUpDown className={`absolute top-[70%] right-3 transform -translate-y-1/2 pointer-events-none h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`} />
         </div>
 
         {/* Notes */}
         <div>
           <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-            {t('adminTimeEntry.notes', 'Notes')} ({t('common.optional', 'Optional')})
+            {t('adminTimeEntry.notes', 'Notes')} ({t('timeClock.optional', 'Optional')})
           </label>
           <textarea
             value={formData.notes}

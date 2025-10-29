@@ -157,6 +157,8 @@ login: {
     title: 'Nueva Entrada de Tiempo',
     subtitle: 'Escribe tus horas de trabajo y sube pruebas de asistencia',
     newEntry: 'Nueva entrada de tiempo',
+    uploadFile: 'Haz clic para subir el archivo',
+    fileTypes: 'Soporta: Imágenes, PDF, Documentos (Max 50MB)',
     history: 'Historial',
     selectDate: 'Seleccionar Fecha',
     clockIn: 'Entrada',
@@ -183,7 +185,7 @@ login: {
     thisWeek: 'Esta Semana',
     thisMonth: 'Este Mes',
     total: 'Total',
-    hrs: 'hrs',
+    hrs: 'Horas',
     days: 'días',
     includesPending: '* Incluye pendientes y aprobados',
     hourTypes: {

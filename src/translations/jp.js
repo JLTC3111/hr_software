@@ -126,6 +126,8 @@ export default {
     title: '勤怠記録',
     subtitle: '勤務時間を記録し、証明書を提出します',
     newEntry: '新しい勤怠入力',
+    uploadFile: 'ファイルをアップロード',
+    fileTypes: 'サポート: 画像、PDF、文書（最大50MB）',
     history: '勤怠履歴',
     selectDate: '日付を選択',
     date: '日付',

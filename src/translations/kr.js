@@ -128,6 +128,8 @@ export default {
     title: '근태 기록',
     subtitle: '근무 시간을 기록하고 증빙 자료를 제출하세요',
     newEntry: '새 근무 기록',
+    uploadFile: '증빙 자료 업로드',
+    fileTypes: '지원: 이미지, PDF, 문서 (최대 50MB)',
     history: '근무 기록 내역',
     selectDate: '날짜 선택',
     date: '날짜',

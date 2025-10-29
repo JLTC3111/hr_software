@@ -290,7 +290,8 @@ export default {
     save: 'Lưu',
     delete: 'Xóa',
     edit: 'Chỉnh sửa',
-    view: 'Xem'
+    view: 'Xem',
+    optional: 'Tùy chọn',
   },
 
   // Recruitment
@@ -454,6 +455,8 @@ export default {
     subtitle: 'Ghi lại giờ làm việc và gửi chứng từ',
     newEntry: 'Nhập giờ công mới',
     date: 'Ngày',
+    uploadFile: 'Tải Lên Tệp',
+    fileTypes: 'Hỗ trợ: Hình ảnh, PDF, Văn Bản (Kích thước tối đa 50MB)',
     selectDate: 'Chọn ngày',
     clockIn: 'Giờ vào',
     clockOut: 'Giờ ra',

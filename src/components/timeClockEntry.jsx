@@ -724,6 +724,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     className={`
                     w-full px-4 py-2 
                     rounded-lg border 
+                    ${bg.primary}
                     ${input.className} 
                     ${isDarkMode ? 'text-white bg-gray-700 border-gray-600' : 'text-gray-900 bg-white border-gray-300'} 
                     ${errors.date ? 'border-red-500' : ''}
@@ -754,6 +755,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                   onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
                   className={`
                     w-full px-4 py-2 rounded-lg border 
+                    ${bg.primary}
                     ${input.className} 
                     ${isDarkMode ? 'text-white bg-gray-700 border-gray-600' : 'text-gray-900 bg-white border-gray-300'} 
                     ${errors.clockIn ? 'border-red-500' : ''}
@@ -782,6 +784,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                   onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
                   className={`
                     w-full px-4 py-2 rounded-lg border 
+                    ${bg.primary}
                     ${input.className} 
                     ${isDarkMode ? 'text-white bg-gray-700 border-gray-600' : 'text-gray-900 bg-white border-gray-300'} 
                     ${errors.clockOut ? 'border-red-500' : ''}
@@ -818,7 +821,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                             <option key={type.value} value={type.value}>{type.label}</option>
                         ))}
                     </select>
-                    <ChevronsUpDown className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none h-5 w-5 text-gray-800`} />
+                    <ChevronsUpDown className={`absolute top-1/2 right-4 transform -translate-y-1/2 pointer-events-none h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`} />
                 </div>
               </div>
 
@@ -828,17 +831,16 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     htmlFor="proof-file-upload"
                     className={`
                         block text-sm font-medium mb-2
-                        ${isDarkMode ? 'bg-transparent text-white' : 'bg-transparent text-black'} 
+                        ${isDarkMode ? 'text-white' : 'text-black'} 
                         cursor-pointer
-                        
                         w-full px-4 py-2 
                         rounded-lg border 
                         text-left
                     `}
                 >
-                    <Upload className="w-4 h-4 inline mb-1 mr-2" />
+                    <Upload className="w-6 h-6 inline mr-6 p-0.25 border-2 border-dashed border-gray-500" />
                     {t('timeClock.proof')}
-                    <span className="text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-500'} ml-2">
+                    <span className="text-sm text-gray-500 ml-3">
                         ({t('timeClock.optional')})
                     </span>
                 </label>
@@ -850,7 +852,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     onChange={handleFileChange}
                     className="sr-only"
                 />
-                
                 {errors.proofFile && <p className="text-red-500 text-sm mt-1">{errors.proofFile}</p>}
             </div>
 
@@ -868,7 +869,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows="3"
                   placeholder={t('timeClock.notesPlaceholder')}
-                  className={`w-full px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : 'text-black'}`}
+                  className={`${bg.primary} w-full px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : 'text-black'}`}
                 />
               </div>
 

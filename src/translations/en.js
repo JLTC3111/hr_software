@@ -325,6 +325,8 @@ export default {
   // Time Clock Entry
   timeClock: {
     title: 'New Time Entry',
+    uploadFile: 'Click to upload File',
+    fileTypes: 'Supports: Images, PDF, Documents (Max 50MB)',
     selectDate: 'Select Date',
     newEntry: 'New Entry',
     history: 'History',

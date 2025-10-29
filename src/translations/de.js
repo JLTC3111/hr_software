@@ -428,6 +428,8 @@ export default {
     title: 'Stempeluhr',
     subtitle: 'Erfassen Sie Ihre Arbeitszeiten und laden Sie Anwesenheitsnachweise hoch',
     newEntry: 'Neuer Zeiteintrag',
+    uploadFile: 'Klicken Sie, um eine Datei hochzuladen',
+    fileTypes: 'Unterstützt: Bilder, PDF, Dokumente (Max 50MB)',
     history: 'Zeiterfassungs-Verlauf',
     selectDate: 'Datum auswählen',
     date: 'Datum',
