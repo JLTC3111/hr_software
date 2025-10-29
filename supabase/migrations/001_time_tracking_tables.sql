@@ -444,6 +444,7 @@ ON CONFLICT DO NOTHING;
 -- ============================================
 
 -- View: Time entries with employee details
+DROP VIEW IF EXISTS time_entries_detailed;
 CREATE OR REPLACE VIEW time_entries_detailed AS
 SELECT 
     te.id,
@@ -458,6 +459,10 @@ SELECT
     te.hour_type,
     te.status,
     te.notes,
+    te.proof_file_url,
+    te.proof_file_type,
+    te.proof_file_name,
+    te.proof_file_path,
     te.submitted_at,
     te.approved_at,
     approver.name as approved_by_name

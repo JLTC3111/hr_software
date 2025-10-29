@@ -617,22 +617,24 @@ const TimeClockEntry = ({ currentLanguage }) => {
     // Get entry owner's role (assume from entry data or default to employee)
     const entryOwnerRole = entry.employee_role || 'employee';
     
-    // Admin can approve anyone
-    if (user.role === 'hr_admin') return true;
+    // Admin can approve anyone (support both 'admin' and 'hr_admin' roles)
+    if (user.role === 'admin' || user.role === 'hr_admin') return true;
     
-    // Manager can approve employees only
-    if (user.role === 'hr_manager' && entryOwnerRole === 'employee') return true;
+    // Manager can approve employees only (support both 'manager' and 'hr_manager' roles)
+    if ((user.role === 'manager' || user.role === 'hr_manager') && entryOwnerRole === 'employee') return true;
     
     // Employee cannot approve
     return false;
   };
   
   // Handle approval of time entry
+  // Handle approval of time entry
   const handleApprove = async (entryId) => {
     setApprovingEntryId(entryId);
     
     try {
-      const result = await timeTrackingService.updateTimeEntryStatus(entryId, 'approved');
+      const approverId = user?.employee_id || user?.id;
+      const result = await timeTrackingService.updateTimeEntryStatus(entryId, 'approved', approverId);
       
       if (result.success) {
         // Update local state
@@ -1323,8 +1325,15 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                   setImagePreview({ show: true, url: entry.proof_file_url });
                                 }}
                                 aria-label="View proof image"
+                                onMouseEnter={(e) => {
+                                  const el = e.currentTarget.querySelector('svg');
+                                  if (el) {
+                                    el.style.animation = 'pingOnce .25s ease-in-out 1';
+                                    el.onanimationend = () => (el.style.animation = '');
+                                  }
+                                }}
                               >
-                                <FileText className="w-5 h-5 text-green-600 dark:text-green-400 group-hover:text-white" />
+                                <FileText className={`w-5 h-5 ${isDarkMode ? 'text-green-200' : 'text-green-600'} group-hover:text-white transition-all duration-500`} />
                               </button>
                             ) : (
                               // Use regular link for PDFs and other files
@@ -1335,11 +1344,11 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                 className="inline-flex hover:scale-110 transition-transform"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <FileText className="w-5 h-5 text-green-600 dark:text-green-400 group-hover:text-white" />
+                                <FileText className={`w-5 h-5 ${isDarkMode ? 'text-green-200' : 'text-green-600'} group-hover:text-white transition-all duration-500 hover:bg-gray-900`} />
                               </a>
                             )
                           ) : (
-                            <FileText className="w-5 h-5 text-green-600 dark:text-green-400 group-hover:text-white" />
+                            <FileText className={`w-5 h-5 ${isDarkMode ? 'text-green-200' : 'text-green-600'} group-hover:text-white transition-all duration-500 hover:bg-gray-900`} />
                           )
                         ) : (
                           <span className={`text-xs ${text.secondary} group-hover:text-white`}></span>
@@ -1352,6 +1361,13 @@ const TimeClockEntry = ({ currentLanguage }) => {
                               htmlFor={`proof-upload-${entry.id}`}
                               className="cursor-pointer inline-flex items-center"
                               onClick={(e) => e.stopPropagation()}
+                              onMouseEnter={(e) => {
+                                  const el = e.currentTarget.querySelector('svg');
+                                  if (el) {
+                                    el.style.animation = 'bounceOnce 1.25s ease-in-out 1';
+                                    el.onanimationend = () => (el.style.animation = '');
+                                  }
+                                }}
                             >
                               {uploadingProofId === entry.id ? (
                                 <div className="flex items-center gap-2">
@@ -1363,7 +1379,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                   )}
                                 </div>
                               ) : (
-                                <Upload className={`w-5 h-5 mr-1.75 ${isDarkMode ? 'text-blue-100' : 'text-blue-600'} transform transition-all duration-500 group-hover:animate-bounce group-hover:text-white`} />
+                                <Upload className={`w-5 h-5 mr-1.75 ${isDarkMode ? 'text-blue-100' : 'text-blue-600'} transform transition-all duration-500 group-hover:text-white`} />
                               )}
                               <input
                                 id={`proof-upload-${entry.id}`}
@@ -1394,13 +1410,20 @@ const TimeClockEntry = ({ currentLanguage }) => {
                               handleApprove(entry.id);
                             }}
                             disabled={approvingEntryId === entry.id}
-                            className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 group-hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className={`${isDarkMode ? 'text-green-200' : 'text-green-600'} hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-500`}
                             title={t('timeClock.approve', 'Approve')}
+                            onMouseEnter={(e) => {
+                              const el = e.currentTarget.querySelector('svg');
+                              if (el) {
+                                el.style.animation = 'pulseOnce 1.5s ease-in-out 1';
+                                el.onanimationend = () => (el.style.animation = '');
+                              }
+                            }}
                           >
                             {approvingEntryId === entry.id ? (
                               <Loader2 className="w-5 h-5 animate-spin" />
                             ) : (
-                              <Check className="w-5 h-5" />
+                              <Check className={`w-5 h-5 ${isDarkMode ? 'text-green-200' : 'text-green-600'} group-hover:text-white transition-all duration-500 hover:bg-gray-900 rounded-2xl`} />
                             )}
                           </button>
                         )}
@@ -1411,11 +1434,19 @@ const TimeClockEntry = ({ currentLanguage }) => {
                             e.stopPropagation();
                             handleDelete(entry.id, entry);
                           }}
-                          className={`${isDarkMode ? 'text-red-400' : 'text-red-600'} group-hover:text-white group-hover:animate-spin transition-all duration-500`}
+                          className={`${isDarkMode ? 'text-red-400' : 'text-red-600'} group-hover:text-white transition-all duration-500 hover:scale-110`}
                           title={entry.proof_file_url ? t('timeClock.deleteOptions', 'Delete options') : t('timeClock.delete', 'Delete')}
+                          onMouseEnter={(e) => {
+                            const el = e.currentTarget.querySelector('svg');
+                            if (el) {
+                              el.style.animation = 'spinOnce 1.5s ease-in-out 1';
+                              el.onanimationend = () => (el.style.animation = '');
+                            }
+                          }}
                         >
-                          <X className="w-5 h-5" />
+                          <X className="w-5 h-5 hover:bg-gray-900 rounded-2xl" />
                         </button>
+
                       </div>
                     </td>
                   </tr>
