@@ -72,25 +72,20 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* Hamburger Menu Button - Hidden (sidebar always visible) */}
-      <button
-        onClick={handleMobileMenuToggle}
-        className={`hidden lg:hidden fixed top-4 left-4 z-50 ${bg.secondary} p-2 rounded-lg shadow-lg border ${hover.bg} transition-all duration-200 hover:scale-110`}
-        aria-label="Toggle menu"
-      >
-        {isMobileMenuOpen ? (
-          <X className={`h-6 w-6 ${text.primary}`} />
-        ) : (
-          <Menu className={`h-6 w-6 ${text.primary}`} />
-        )}
-      </button>
-
-      {/* Backdrop Overlay - Mobile Only */}
+      {/* Mobile Menu Button */}
+      {!isMobileMenuOpen && (
+        <button
+          onClick={handleMobileMenuToggle}
+          className={`lg:hidden fixed top-11 left-75 z-50 p-2 rounded-lg shadow-lg ${hover.bg} transition-all duration-200`}
+          aria-label="Open menu"
+        >
+          <Menu className={`h-7 w-7 ${text.primary}`} />
+        </button>
+      )}
       {isMobileMenuOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40 fade-in"
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
           onClick={closeMobileMenu}
-          aria-hidden="true"
         />
       )}
 
@@ -100,20 +95,17 @@ const Sidebar = () => {
           ${isCollapsed ? 'w-16' : 'w-64'} 
           ${bg.secondary} 
           shadow-sm 
-          h-screen 
-          sticky 
+          h-screen  
           top-0 
           transition-all 
           duration-300 
           ease-in-out
-          
-          /* Mobile: Fixed positioning with slide-in animation */
           fixed lg:sticky
+          left-0
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           z-40
         `}
       >
-        {/* Desktop Toggle Button - Hidden on Mobile */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className={`hidden lg:block absolute -right-3 top-20 z-10 ${bg.secondary} rounded-full p-1 shadow-md border ${hover.bg} transition-colors`}

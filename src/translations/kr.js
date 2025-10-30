@@ -540,6 +540,7 @@ export default {
   common: {
     search: '검색',
     filter: '필터',
+    type: '유형',
     sort: '정렬',
     save: '저장',
     cancel: '취소',

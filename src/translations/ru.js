@@ -586,6 +586,9 @@ export default {
   common: {
     search: 'Поиск',
     filter: 'Фильтр',
+    type: 'Тип',
+    status: 'Статус',
+    actions: 'Действия',
     sort: 'Сортировка',
     save: 'Сохранить',
     cancel: 'Отмена',

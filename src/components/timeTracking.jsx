@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import * as timeTrackingService from '../services/timeTrackingService'
 import WorkDaysModal from './workDaysModal';
+import MetricDetailModal from './metricDetailModal';
 
 const TimeTracking = ({ employees }) => {
   const { user } = useAuth();
@@ -39,6 +40,7 @@ const TimeTracking = ({ employees }) => {
   const [showOvertimeModal, setShowOvertimeModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalConfig, setModalConfig] = useState({ type: '', data: [], title: '' });
   const [showWorkDaysModal, setShowWorkDaysModal] = useState(false);
   
   // Leave request form
@@ -215,7 +217,6 @@ const TimeTracking = ({ employees }) => {
         title = t('timeTracking.leaveDays');
         break;
       case 'overtime':
-        // Filter time entries for overtime types (weekend, holiday, bonus)
         const overtimeEntries = timeEntries.filter(entry => 
           ['weekend', 'holiday', 'bonus'].includes(entry.hour_type)
         );
@@ -227,6 +228,15 @@ const TimeTracking = ({ employees }) => {
           hours: entry.hours
         }));
         title = t('timeTracking.overtime');
+        break;
+      case 'regularHours':
+        data = [{
+          employeeName: selectedEmp.name,
+          department: selectedEmp.department,
+          regularHours: currentData.regular_hours,
+          totalHours: currentData.total_hours
+        }];
+        title = t('timeTracking.regularHours');
         break;
       default:
         return;
@@ -381,7 +391,7 @@ const TimeTracking = ({ employees }) => {
       ['Overtime Hours', currentData.overtime_hours || 0],
       ['Holiday Overtime', currentData.holiday_overtime_hours || 0],
       ['Regular Hours', currentData.regular_hours || 0],
-      ['Total Hours', currentData.total_hours || 0],
+      ['Total Hours', (currentData.total_hours || 0).toFixed(1)],
       ['Attendance Rate', `${(currentData.attendance_rate || 0).toFixed(1)}%`]
     ];
 
@@ -462,7 +472,7 @@ const TimeTracking = ({ employees }) => {
       </div>
 
       {/* Time Tracking Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <TimeCard
           title={t('timeTracking.workDays')}
           value={currentData.days_worked || 0}
@@ -470,11 +480,11 @@ const TimeTracking = ({ employees }) => {
           icon={Calendar}
           color={isDarkMode ? "text-white" : "text-black"}
           bgColor="bg-white"
-          onClick={() => handleMetricClick('workDays')}
+          onClick={() => setShowWorkDaysModal(true)}
         />
         <TimeCard
           title={t('timeTracking.leaveDays')}
-          value={calculatedLeaveDays.toFixed(1)}
+          value={calculatedLeaveDays.toFixed(0)}
           unit={t('timeTracking.days')}
           icon={Coffee}
           color={isDarkMode ? "text-white" : "text-black"}
@@ -489,14 +499,6 @@ const TimeTracking = ({ employees }) => {
           color={isDarkMode ? "text-white" : "text-black"}
           bgColor="bg-white"
           onClick={() => handleMetricClick('overtime')}
-        />
-        <TimeCard
-          title={t('timeTracking.regularHours')}
-          value={currentData.regular_hours || 0}
-          unit={t('timeTracking.hours')}
-          icon={TrendingUp}
-          color={isDarkMode ? "text-white" : "text-black"}
-          bgColor="bg-white"
         />
       </div>
 
@@ -549,7 +551,7 @@ const TimeTracking = ({ employees }) => {
             </div>
             <div className="flex justify-between">
               <span className={`${text.secondary} mr-12`}>{t('timeTracking.totalHours')}:</span>
-              <span className={`font-medium ${text.primary}`}>{currentData.total_hours || 0} {t('timeTracking.hrs')}</span>
+              <span className={`font-medium ${text.primary}`}>{parseFloat(currentData.total_hours || 0).toFixed(1)} {t('timeTracking.hrs')}</span>
             </div>
           </div>
           
@@ -717,7 +719,7 @@ const TimeTracking = ({ employees }) => {
                   <td className={`text-right py-3 px-4 ${text.secondary}`}>
                     {((item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0)).toFixed(1)}
                   </td>
-                  <td className={`text-right py-3 px-4 font-semibold ${text.primary}`}>{item.data?.total_hours?.toFixed(1) || '0.0'}</td>
+                  <td className={`text-right py-3 px-4 font-semibold ${text.primary}`}>{parseFloat(item.data?.total_hours || 0).toFixed(1)}</td>
                 </tr>
               ))}
               <tr className={`border-t-2 ${border.primary} font-bold`}>
@@ -981,6 +983,14 @@ const TimeTracking = ({ employees }) => {
         onClose={() => setShowWorkDaysModal(false)}
         employeeId={selectedEmployee}
         month={new Date(selectedYear, selectedMonth - 1)}
+      />
+      
+      <MetricDetailModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        metricType={modalConfig.type}
+        data={modalConfig.data}
+        title={modalConfig.title}
       />
     </div>
   );

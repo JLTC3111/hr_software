@@ -149,23 +149,15 @@ const Notifications = () => {
 
   return (
     <div className={`p-4 md:p-8 ${bg.primary} min-h-screen`}>
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 mb-6`}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
-              <Bell className="h-8 w-8 text-blue-600" />
-              <div>
-                <h1 className={`text-2xl font-bold ${text.primary}`}>
-                  {t('notifications.title', 'Notifications')}
-                </h1>
-                <p className={`text-sm ${text.secondary}`}>
-                  {unreadCount > 0 
-                    ? t('notifications.unreadCount', `${unreadCount} unread`).replace('{0}', unreadCount)
-                    : t('notifications.allCaughtUp', 'You\'re all caught up!')
-                  }
-                </p>
-              </div>
+              <Bell className={`h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`} />
+              <h1 className={`text-2xl font-bold ${text.primary}`}>
+                {t('notifications.title', 'Notifications')}
+              </h1>
             </div>
             
             {/* Action Buttons */}

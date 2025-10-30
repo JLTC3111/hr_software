@@ -1,36 +1,53 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Search, Download, ArrowUp, ArrowDown, Building, Calendar, Clock } from 'lucide-react';
+import { X, Search, Download, ArrowUp, ArrowDown, Calendar, Clock, Loader, Sunrise, Sunset, ClipboardCheck } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { getWorkDaysForMonth } from '../services/timeTrackingService';
-import { exportToExcel } from '../utils/exportUtils';
+import * as timeTrackingService from '../services/timeTrackingService';
 
 const WorkDaysModal = ({ isOpen, onClose, employeeId, month }) => {
-  const { isDarkMode, bg, text, input, primary, card } = useTheme();
+  const { isDarkMode, bg, text, input, border } = useTheme();
   const { t } = useLanguage();
 
-  const [workDays, setWorkDays] = useState([]);
+  const [timeEntries, setTimeEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'ascending' });
+  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'descending' });
 
   useEffect(() => {
-    if (isOpen) {
-      setLoading(true);
-      getWorkDaysForMonth(month, employeeId)
-        .then(data => {
-          setWorkDays(data);
+    const fetchTimeEntries = async () => {
+      if (isOpen && employeeId && month) {
+        setLoading(true);
+        try {
+          const year = month.getFullYear();
+          const monthNum = month.getMonth() + 1;
+          const startDate = `${year}-${String(monthNum).padStart(2, '0')}-01`;
+          const endDate = new Date(year, monthNum, 0).toISOString().split('T')[0];
+          
+          const result = await timeTrackingService.getTimeEntries(employeeId, {
+            startDate: startDate,
+            endDate: endDate
+          });
+          
+          if (result.success) {
+            // Filter only regular work hours (not weekend/holiday overtime)
+            const regularEntries = result.data.filter(entry => 
+              entry.hour_type === 'regular' && entry.status === 'approved'
+            );
+            setTimeEntries(regularEntries);
+          }
+        } catch (error) {
+          console.error("Error fetching time entries:", error);
+        } finally {
           setLoading(false);
-        })
-        .catch(error => {
-          console.error("Error fetching work days:", error);
-          setLoading(false);
-        });
-    }
+        }
+      }
+    };
+    
+    fetchTimeEntries();
   }, [isOpen, employeeId, month]);
 
-  const sortedWorkDays = useMemo(() => {
-    let sortableItems = [...workDays];
+  const sortedTimeEntries = useMemo(() => {
+    let sortableItems = [...timeEntries];
     if (sortConfig.key) {
       sortableItems.sort((a, b) => {
         if (a[sortConfig.key] < b[sortConfig.key]) {
@@ -43,12 +60,14 @@ const WorkDaysModal = ({ isOpen, onClose, employeeId, month }) => {
       });
     }
     return sortableItems;
-  }, [workDays, sortConfig]);
+  }, [timeEntries, sortConfig]);
 
-  const filteredWorkDays = sortedWorkDays.filter(day =>
-    day.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    day.department.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTimeEntries = sortedTimeEntries.filter(entry =>
+    entry.date.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (entry.notes && entry.notes.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+  
+  const totalHours = filteredTimeEntries.reduce((sum, entry) => sum + (entry.hours || 0), 0);
 
   const requestSort = (key) => {
     let direction = 'ascending';
@@ -59,13 +78,27 @@ const WorkDaysModal = ({ isOpen, onClose, employeeId, month }) => {
   };
 
   const handleExport = () => {
-    const dataToExport = filteredWorkDays.map(day => ({
-      [t('workDaysModal.name', 'Name')]: day.name,
-      [t('workDaysModal.department', 'Department')]: day.department,
-      [t('workDaysModal.totalWorkDays', 'Total Work Days')]: day.totalDays,
-      [t('workDaysModal.totalOvertime', 'Total Overtime (h)')]: day.totalOvertime.toFixed(1),
-    }));
-    exportToExcel(dataToExport, `Work_Days_${month.toISOString().slice(0, 7)}`, `Work Days - ${month.toLocaleString('default', { month: 'long', year: 'numeric' })}`);
+    const monthStr = month ? `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}` : 'data';
+    const csvContent = [
+      ['Date', 'Clock In', 'Clock Out', 'Hours', 'Notes'].join(','),
+      ...filteredTimeEntries.map(entry => [
+        entry.date,
+        entry.clock_in || '',
+        entry.clock_out || '',
+        entry.hours ? entry.hours.toFixed(1) : '0.0',
+        entry.notes || ''
+      ].join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `work_days_${monthStr}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (!isOpen) return null;
@@ -79,13 +112,13 @@ const WorkDaysModal = ({ isOpen, onClose, employeeId, month }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-      <div className={`rounded-lg shadow-xl w-full max-w-4xl flex flex-col ${card.bg} ${text.primary}`}>
+      <div className={`rounded-lg shadow-xl w-full max-w-4xl flex flex-col ${bg.secondary} ${text.primary}`}>
         {/* Header */}
-        <div className="p-4 border-b flex justify-between items-center">
+        <div className={`p-4 border-b ${border.primary} flex justify-between items-center`}>
           <div>
-            <h2 className="text-xl font-bold">{t('workDaysModal.title', 'Work Days')}</h2>
+            <h2 className={`text-xl font-bold ${text.primary}`}>{t('workDaysModal.title', 'Work Days Details')}</h2>
             <p className={`${text.secondary} text-sm`}>
-              {t('workDaysModal.results', '{count} results', { count: filteredWorkDays.length })} • {t('workDaysModal.currentMonth', 'Current month')}
+              {filteredTimeEntries.length} {t('workDaysModal.entries', 'entries')} • {totalHours.toFixed(1)} {t('workDaysModal.totalHours', 'total hours')}
             </p>
           </div>
           <button onClick={onClose} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'}`}>
@@ -107,7 +140,7 @@ const WorkDaysModal = ({ isOpen, onClose, employeeId, month }) => {
           </div>
           <button
             onClick={handleExport}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-white font-semibold transition-colors ${primary.bg} ${primary.hover_bg}`}
+            className="flex items-center space-x-2 px-4 py-2 rounded-lg text-white font-semibold transition-colors bg-blue-600 hover:bg-blue-700"
           >
             <Download size={18} />
             <span>{t('workDaysModal.exportExcel', 'Export Excel')}</span>
@@ -115,69 +148,87 @@ const WorkDaysModal = ({ isOpen, onClose, employeeId, month }) => {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
-          <div className="min-w-full">
-            {/* Table Header */}
-            <div className="grid grid-cols-4 gap-4 px-4 py-2 border-b">
-              <div
-                className="flex items-center space-x-2 cursor-pointer"
-                onClick={() => requestSort('name')}
-              >
-                <Building size={16} className={text.secondary} />
-                <span className="font-semibold">{t('workDaysModal.name', 'Name')}</span>
-                <SortIcon columnKey="name" />
-              </div>
-              <div
-                className="flex items-center space-x-2 cursor-pointer"
-                onClick={() => requestSort('department')}
-              >
-                <Building size={16} className={text.secondary} />
-                <span className="font-semibold">{t('workDaysModal.department', 'Department')}</span>
-                <SortIcon columnKey="department" />
-              </div>
-              <div
-                className="flex items-center space-x-2 cursor-pointer"
-                onClick={() => requestSort('totalDays')}
-              >
-                <Calendar size={16} className={text.secondary} />
-                <span className="font-semibold">{t('workDaysModal.totalWorkDays', 'Total Work Days')}</span>
-                <SortIcon columnKey="totalDays" />
-              </div>
-              <div
-                className="flex items-center space-x-2 cursor-pointer"
-                onClick={() => requestSort('totalOvertime')}
-              >
-                <Clock size={16} className={text.secondary} />
-                <span className="font-semibold">{t('workDaysModal.totalOvertime', 'Total Overtime')}</span>
-                <SortIcon columnKey="totalOvertime" />
-              </div>
-            </div>
-
-            {/* Table Body */}
-            {loading ? (
-              <div className="p-4 text-center">{t('workDaysModal.loading', 'Loading...')}</div>
-            ) : (
-              <div className="divide-y">
-                {filteredWorkDays.map((day, index) => (
-                  <div key={index} className="grid grid-cols-4 gap-4 px-4 py-3 items-center">
-                    <div className="font-medium">{day.name}</div>
-                    <div>
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                        {day.department}
-                      </span>
-                    </div>
-                    <div>{t('workDaysModal.days', '{count} days', { count: day.totalDays })}</div>
-                    <div>{day.totalOvertime.toFixed(1)}h</div>
+        <div className="overflow-x-auto text-center flex-1">
+          <table className="w-full">
+            <thead className={`border-b ${border.primary}`}>
+              <tr classname="flex items-center justify-center text-center"> 
+                <th 
+                  className={`py-3 px-4 ${text.primary} font-semibold cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700`}
+                  onClick={() => requestSort('date')}
+                >
+                  <div className="flex space-x-2 items-center justify-center">
+                    <Calendar size={16} />
+                    <span>{t('workDaysModal.date', 'Date')}</span>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="p-4 border-t text-center">
-          <p className={`${text.secondary} text-xs`}>
-            {t('workDaysModal.footer', 'Data for the current month')}
-          </p>
+                </th>
+                <th className={`py-3 px-4 ${text.primary} font-semibold`}>
+                  <div className="flex justify-center items-center space-x-2">
+                    <Sunrise size={16} />
+                    <span>{t('workDaysModal.clockIn', 'Clock In')}</span>
+                  </div>
+                </th>
+                <th className={`py-3 px-4 ${text.primary} font-semibold`}>
+                  <div className="flex justify-center items-center space-x-2">
+                    <Sunset size={16} />
+                    <span>{t('workDaysModal.clockOut', 'Clock Out')}</span>
+                  </div>
+                </th>
+                <th 
+                  className={`py-3 px-4 ${text.primary} font-semibold cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700`}
+                  onClick={() => requestSort('hours')}
+                >
+                  <div className="flex justify-center items-center space-x-2">
+                    <Clock size={16} />
+                    <span>{t('workDaysModal.hours', 'Hours')}</span>
+                  </div>
+                </th>
+                <th 
+                  className={`py-3 px-4 ${text.primary} font-semibold`}>
+                  <div className="flex justify-center items-center space-x-2">
+                    <ClipboardCheck size={16} />
+                    <span>{t('workDaysModal.notes', 'Notes')}</span>
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="5" className="p-8 text-center">
+                    <div className="flex items-center justify-center space-x-2">
+                      <Loader className="w-5 h-5 animate-spin text-blue-600" />
+                      <span className={text.secondary}>{t('common.loading', 'Loading...')}</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredTimeEntries.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="p-8 text-center">
+                    <span className={text.secondary}>{t('workDaysModal.noData', 'No work days recorded for this period')}</span>
+                  </td>
+                </tr>
+              ) : (
+                filteredTimeEntries.map((entry, index) => (
+                  <tr key={index} className={`border-b ${border.primary} hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors`}>
+                    <td className={`py-3 px-4 ${text.primary} font-medium`}>
+                      {new Date(entry.date).toLocaleDateString('en-US', { 
+                        weekday: 'short', 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                      })}
+                    </td>
+                    <td className={`py-3 px-4 ${text.secondary}`}>{entry.clock_in || '-'}</td>
+                    <td className={`py-3 px-4 ${text.secondary}`}>{entry.clock_out || '-'}</td>
+                    <td className={`py-3 px-4 ${text.primary} font-semibold`}>
+                      {entry.hours ? `${entry.hours.toFixed(1)}h` : '0.0h'}
+                    </td>
+                    <td className={`py-3 px-4 ${text.secondary} text-sm`}>{entry.notes || '-'}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

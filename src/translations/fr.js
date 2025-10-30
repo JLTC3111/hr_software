@@ -598,6 +598,7 @@ export default {
   common: {
     search: 'Rechercher',
     filter: 'Filtrer',
+    type: 'Type',
     sort: 'Trier',
     save: 'Sauvegarder',
     cancel: 'Annuler',

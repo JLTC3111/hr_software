@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { X, Search, Download, Filter, ArrowUpDown, Calendar, User, Briefcase, Clock } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -11,6 +11,8 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [filterStatus, setFilterStatus] = useState('all');
 
+  const modalContentRef = useRef(null);
+
   // Handle ESC key press to close modal
   useEffect(() => {
     const handleEscKey = (e) => {
@@ -19,8 +21,21 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
       }
     };
 
-    document.addEventListener('keydown', handleEscKey);
-    return () => document.removeEventListener('keydown', handleEscKey);
+    const handleClickOutside = (e) => {
+      if (modalContentRef.current && !modalContentRef.current.contains(e.target)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscKey);
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, [onClose, isOpen]);
 
   // Sort data
@@ -315,7 +330,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                 <td className={`p-3 ${text.primary} font-medium`}>{item.employeeName}</td>
                 <td className={`p-3 ${text.secondary}`}>
                   <span className="px-2 py-1 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400 text-xs">
-                    {item.requestType}
+                    {t(`timeTracking.${item.requestType}`, item.requestType)}
                   </span>
                 </td>
                 <td className={`p-3 ${text.primary}`}>{new Date(item.date).toLocaleDateString()}</td>
@@ -471,7 +486,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
       
       {/* Modal */}
       <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className={`relative ${bg.secondary} rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col`}>
+        <div ref={modalContentRef} className={`relative ${bg.secondary} rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col`}>
           {/* Header */}
           <div className={`flex items-center justify-between p-6 border-b ${border.primary}`}>
             <div>
@@ -502,20 +517,6 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                   className={`w-full pl-10 pr-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : 'text-black'}`}
                 />
               </div>
-
-              {/* Filter - Only show for pending requests */}
-              {metricType === 'pendingRequests' && (
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className={`px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : 'text-black'} cursor-pointer`}
-                >
-                  <option value="all">{t('common.all', 'All Status')}</option>
-                  <option value="pending">{t('timeClock.status', 'Pending')}</option>
-                  <option value="approved">{t('timeClock.status', 'Approved')}</option>
-                  <option value="rejected">{t('timeClock.status', 'Rejected')}</option>
-                </select>
-              )}
 
               {/* Export Button */}
               <button

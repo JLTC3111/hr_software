@@ -537,6 +537,11 @@ export default {
   common: {
     search: '検索',
     filter: 'フィルター',
+    type: 'タイプ',
+    status: 'ステータス',
+    actions: 'アクション',
+    back: '戻る',
+    submit: '送信',
     sort: 'ソート',
     save: '保存',
     cancel: 'キャンセル',

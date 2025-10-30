@@ -537,6 +537,7 @@ export default {
   common: {
     search: 'ค้นหา',
     filter: 'กรอง',
+    type: 'ประเภท',
     sort: 'เรียง',
     save: 'บันทึก',
     cancel: 'ยกเลิก',

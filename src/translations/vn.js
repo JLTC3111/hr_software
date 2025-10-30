@@ -166,7 +166,7 @@ export default {
 
   // Time Tracking
   timeTracking: {
-    title: 'Bảng Điều Khiển Theo Dõi Thời Gian',
+    title: 'Bảng Điều Khiển',
     overview: 'Tổng quan',
     clockIn: 'Chấm công',
     summary: 'Tóm Tắt',
@@ -190,6 +190,11 @@ export default {
     sickLeave: 'Nghỉ ốm',
     personal: 'Nghỉ cá nhân',
     unpaid: 'Nghỉ không lương',
+    // Hour types for overtime
+    weekend: 'Làm thêm cuối tuần',
+    holiday: 'Làm thêm ngày lễ',
+    bonus: 'Giờ thưởng',
+    regular: 'Giờ thường',
     startDate: 'Ngày bắt đầu',
     endDate: 'Ngày kết thúc',
     reason: 'Lý do',
@@ -214,6 +219,21 @@ export default {
     employee: 'Nhân Viên',
     daysWorked: 'Ngày Làm Việc',
     totalHoursLabel: 'Tổng Số Giờ'
+  },
+
+  // Work Days Modal
+  workDaysModal: {
+    title: 'Chi Tiết Ngày Làm Việc',
+    entries: 'mục',
+    totalHours: 'tổng giờ',
+    search: 'Tìm kiếm...',
+    exportExcel: 'Xuất Excel',
+    date: 'Ngày',
+    clockIn: 'Giờ Vào',
+    clockOut: 'Giờ Ra',
+    hours: 'Số Giờ',
+    notes: 'Ghi Chú',
+    noData: 'Không có dữ liệu ngày làm việc cho khoảng thời gian này'
   },
 
   // Admin Time Entry
@@ -343,17 +363,6 @@ export default {
     noDocument: 'Chưa có tài liệu',
     uploadInstructions: 'Nhấp hoặc kéo tệp PDF vào đây để tải lên',
     maxFileSize: 'Kích thước tệp tối đa: 10MB'
-  },
-
-  // Common
-  common: {
-    cancel: 'Hủy',
-    close: 'Đóng',
-    save: 'Lưu',
-    delete: 'Xóa',
-    edit: 'Chỉnh sửa',
-    view: 'Xem',
-    optional: 'Tùy chọn',
   },
 
   // Recruitment
@@ -595,6 +604,7 @@ export default {
     search: 'Tìm kiếm',
     filter: 'Lọc',
     sort: 'Sắp xếp',
+    type: 'Phân Loại',
     save: 'Lưu',
     cancel: 'Hủy',
     delete: 'Xóa',

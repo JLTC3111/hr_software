@@ -234,7 +234,8 @@ export default {
     back: 'Back',
     next: 'Next',
     submit: 'Submit',
-    loading: 'Loading...'
+    loading: 'Loading...',
+    type: 'Type'
   },
 
   // Search
@@ -323,6 +324,11 @@ export default {
     sickLeave: 'Sick Leave',
     personal: 'Personal Leave',
     unpaid: 'Unpaid Leave',
+    // Hour types for overtime
+    weekend: 'Weekend Overtime',
+    holiday: 'Holiday Overtime',
+    bonus: 'Bonus Hours',
+    regular: 'Regular Hours',
     startDate: 'Start Date',
     endDate: 'End Date',
     reason: 'Reason',
@@ -344,6 +350,21 @@ export default {
     employee: 'Employee',
     daysWorked: 'Days Worked',
     totalHoursLabel: 'Total Hours'
+  },
+
+  // Work Days Modal
+  workDaysModal: {
+    title: 'Work Days Details',
+    entries: 'entries',
+    totalHours: 'total hours',
+    search: 'Search...',
+    exportExcel: 'Export Excel',
+    date: 'Date',
+    clockIn: 'Clock In',
+    clockOut: 'Clock Out',
+    hours: 'Hours',
+    notes: 'Notes',
+    noData: 'No work days recorded for this period'
   },
 
   // Admin Time Entry

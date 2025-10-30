@@ -1,13 +1,5 @@
 import { supabase } from '../config/supabaseClient';
 
-/**
- * Time Tracking Service
- * Handles all Supabase operations for time tracking, leave requests, and overtime
- */
-
-/**
- * Helper: Ensure employee ID is a string (supports both integers and UUIDs)
- */
 const toEmployeeId = (id) => {
   return id ? String(id) : null;
 };
@@ -1212,6 +1204,74 @@ export const getEmployeeById = async (employeeId) => {
   }
 };
 
+export const getWorkDaysForMonth = async (month, employeeId = null) => {
+  try {
+    const year = month.getFullYear();
+    const monthIndex = month.getMonth();
+
+    const startDate = new Date(year, monthIndex, 1).toISOString().split('T')[0];
+    const endDate = new Date(year, monthIndex + 1, 0).toISOString().split('T')[0];
+
+    let query = supabase
+      .from('time_entries')
+      .select(`
+        date,
+        total_hours,
+        hour_type,
+        employee_id,
+        employees (
+          id,
+          name,
+          department
+        )
+      `)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .eq('status', 'approved');
+
+    if (employeeId) {
+      query = query.eq('employee_id', toEmployeeId(employeeId));
+    }
+
+    const { data: entries, error } = await query;
+
+    if (error) throw error;
+
+    const workData = entries.reduce((acc, entry) => {
+      if (!entry.employees) return acc;
+
+      const empId = entry.employees.id;
+      if (!acc[empId]) {
+        acc[empId] = {
+          id: empId,
+          name: entry.employees.name,
+          department: entry.employees.department,
+          workDates: new Set(),
+          totalOvertime: 0,
+        };
+      }
+
+      acc[empId].workDates.add(entry.date);
+      if (entry.hour_type === 'overtime' || entry.hour_type === 'holiday_overtime') {
+        acc[empId].totalOvertime += entry.total_hours;
+      }
+
+      return acc;
+    }, {});
+
+    const result = Object.values(workData).map(item => ({
+      ...item,
+      totalDays: item.workDates.size,
+    }));
+
+    return result;
+
+  } catch (error) {
+    console.error('Error fetching work days for month:', error);
+    return [];
+  }
+};
+
 export default {
   // Time Entries
   createTimeEntry,
@@ -1249,5 +1309,6 @@ export default {
   getOrCreateEmployeeFromAuth,
   syncEmployeesToSupabase,
   getAllEmployees,
-  getEmployeeById
+  getEmployeeById,
+  getWorkDaysForMonth
 };

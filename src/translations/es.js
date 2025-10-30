@@ -594,6 +594,7 @@ login: {
   common: {
     search: 'Buscar',
     filter: 'Filtrar',
+    type: 'Tipo',
     sort: 'Ordenar',
     save: 'Guardar',
     cancel: 'Cancelar',
