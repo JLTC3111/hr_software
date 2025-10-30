@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, PieChart, TrendingUp, Download, Calendar, Users, DollarSign, Award, Clock, Filter, RefreshCw, Loader } from 'lucide-react';
+import { BarChart3, PieChart, UserPlus, Download, Calendar, SquareSigma, PiggyBank, Award, Clock, Filter, HeartPulse, Loader } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import * as reportService from '../services/reportService';
@@ -617,25 +617,25 @@ const Reports = () => {
         <StatCard
           title={t('reports.totalEmployees')}
           value={reportData.overview.totalEmployees}
-          icon={Users}
+          icon={SquareSigma}
           onClick={() => handleMetricClick('employees')}
         />
         <StatCard
           title={t('reports.newHires')}
           value={reportData.overview.newHires}
           subtitle={t('reports.thisQuarter')}
-          icon={TrendingUp}
+          icon={UserPlus}
           onClick={() => handleMetricClick('newHires')}
         />
         <StatCard
           title={t('reports.avgSalary')}
           value={`$${reportData.overview.avgSalary.toLocaleString()}`}
-          icon={DollarSign}
+          icon={PiggyBank}
         />
         <StatCard
           title={t('reports.satisfaction')}
           value={`${reportData.overview.satisfaction}/5.0`}
-          icon={Award}
+          icon={HeartPulse}
         />
       </div>
 
