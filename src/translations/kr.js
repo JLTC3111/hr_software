@@ -69,6 +69,8 @@ export default {
     overview: '조직 개요',
     totalEmployees: '전체 직원 수',
     totalOvertime: '총 초과 근무 시간',
+    totalRegularHours: '총 정규 근무 시간',
+    pendingApprovals: '승인 대기 중',
     totalLeave: '총 휴가 일수',
     activeEmployees: '활동 중인 직원',
     newHires: '이번 달 신규 입사자',

@@ -71,6 +71,8 @@ export default {
     title: 'Vue d’Ensemble du Tableau de Bord',
     overview: 'Description Générale de l’Organisation',
     totalEmployees: 'Nombre Total d’Employés',
+    totalRegularHours: 'Total des Heures Régulières',
+    pendingApprovals: 'Approbations en Attente',
     activeEmployees: 'Employés Actifs',
     newHires: 'Nouvelles Recrues Ce Mois-ci',
     pendingApplications: 'Candidatures en Attente',

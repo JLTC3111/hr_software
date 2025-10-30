@@ -252,7 +252,7 @@ const Dashboard = ({ employees, applications }) => {
           regularHours: timeTrackingData[String(emp.id)]?.regularHours || 0,
           totalHours: timeTrackingData[String(emp.id)]?.totalHours || 0
         }));
-        title = t('dashboard.totalRegularHours', 'Total Regular Hours');
+        title = t('dashboard.totalRegularHours', '');
         break;
         
       case 'overtime':
@@ -356,7 +356,7 @@ const Dashboard = ({ employees, applications }) => {
         </div>
         <div className="stagger-item">
           <StatsCard 
-            title={t('dashboard.totalRegularHours', 'Total Regular Hours')} 
+            title={t('dashboard.totalRegularHours', '')} 
             value={`${totalRegularHours}h`} 
             icon={Clock} 
             color={isDarkMode ? "#ffffff" : "#1f1f1f"}
@@ -820,7 +820,7 @@ const Dashboard = ({ employees, applications }) => {
           </div>
           <p className={`text-3xl font-bold ${text.primary}`}>{pendingApprovalsCount}</p>
           <p className={`text-sm ${text.secondary} mt-1`}>
-            {t('dashboard.pendingApprovals', 'Pending approvals')}
+            {t('dashboard.pendingApprovals', '')}
           </p>
         </div>
       </div>

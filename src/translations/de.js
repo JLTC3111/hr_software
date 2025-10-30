@@ -75,6 +75,8 @@ export default {
     totalOvertime: 'Gesamte Überstunden',
     totalLeave: 'Gesamte Urlaubstage',
     employeePerformance: 'Mitarbeiterleistung',
+    totalRegularHours: 'Reguläre Stunden',
+    pendingApprovals: 'Ausstehende Genehmigungen',
     departmentDist: 'Abteilungsverteilung',
     regularHoursByEmployee: 'Reguläre Stunden nach Mitarbeiter',
     overtimeHoursByEmployee: 'Überstunden nach Mitarbeiter',

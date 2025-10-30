@@ -91,6 +91,7 @@ login: {
     title: 'Resumen del Panel de Control',
     overview: 'Descripción general de la organización',
     totalEmployees: 'Total de Empleados',
+    totalRegularHours: 'Total de Horas Regulares',
     activeEmployees: 'Empleados Activos',
     newHires: 'Nuevas Contrataciones Este Mes',
     pendingApplications: 'Solicitudes Pendientes',

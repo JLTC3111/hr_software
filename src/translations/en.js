@@ -74,8 +74,10 @@ export default {
   // Dashboard
   dashboard: {
     title: 'Dashboard Overview',
+    pendingApprovals: 'Pending Approvals',
     overview: 'Organization Overview',
     totalEmployees: 'Total Employees',
+    totalRegularHours: 'Total Regular Hours',
     activeEmployees: 'Active Employees',
     pendingApplications: 'Pending Applications',
     avgPerformance: 'Average Performance',

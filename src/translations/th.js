@@ -68,6 +68,8 @@ export default {
     title: 'ภาพรวมแดชบอร์ด',
     overview: 'ภาพรวมองค์กร',
     totalEmployees: 'จำนวนพนักงานทั้งหมด',
+    totalRegularHours: 'ชั่วโมงทำงานปกติรวม',
+    pendingApprovals: 'การอนุมัติที่รอดำเนินการ',
     activeEmployees: 'พนักงานที่ทำงานอยู่',
     newHires: 'พนักงานใหม่ประจำเดือนนี้',
     pendingApplications: 'ใบสมัครที่รอการดำเนินการ',

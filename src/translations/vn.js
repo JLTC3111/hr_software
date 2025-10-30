@@ -68,6 +68,8 @@ export default {
     title: 'Tổng Quan Bảng Điều Khiển',
     overview: 'Tổng Quan Tổ Chức',
     totalEmployees: 'Tổng Số Nhân Viên',
+    totalRegularHours: 'Tổng Giờ Làm Chính Thức',
+    pendingApprovals: 'Phê Duyệt Đang Chờ',
     activeEmployees: 'Nhân Viên Hoạt Động',
     newHires: 'Nhân Viên Mới Tháng Này',
     pendingApplications: 'Đơn Ứng Tuyển Chờ Xử Lý',

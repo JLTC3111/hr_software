@@ -68,6 +68,8 @@ export default {
     title: 'Обзор Панели Управления',
     overview: 'Обзор организации',
     totalEmployees: 'Всего Сотрудников',
+    totalRegularHours: 'Общее количество обычных часов',
+    pendingApprovals: 'Ожидающие утверждения',
     activeEmployees: 'Активные Сотрудники',
     newHires: 'Новые Сотрудники в Этом Месяце',
     pendingApplications: 'Заявки в Ожидании',

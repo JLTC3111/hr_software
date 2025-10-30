@@ -68,6 +68,8 @@ export default {
     title: 'ダッシュボード概要',
     overview: '組織の概要',
     totalEmployees: '従業員総数',
+    totalRegularHours: '通常勤務時間合計',
+    pendingApprovals: '承認待ち',
     activeEmployees: '在籍従業員',
     newHires: '今月の新入社員',
     pendingApplications: '保留中の応募',
