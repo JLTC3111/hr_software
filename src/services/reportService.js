@@ -665,7 +665,7 @@ export const getOverviewStats = async (filters = {}) => {
     });
     
     const departmentStats = Object.keys(deptCounts).map((dept, index) => {
-      const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-indigo-500'];
+      const colors = ['bg-slate-600', 'bg-teal-600', 'bg-cyan-700', 'bg-indigo-700', 'bg-violet-600', 'bg-sky-700'];
       const avgPerf = deptPerformance[dept].reduce((a, b) => a + b, 0) / deptPerformance[dept].length;
       const avgSal = deptSalaries[dept].reduce((a, b) => a + b, 0) / deptSalaries[dept].length;
       
@@ -681,6 +681,12 @@ export const getOverviewStats = async (filters = {}) => {
     // Attendance breakdown
     const activeCount = employees.filter(emp => emp.status === 'Active' || emp.status === 'active').length;
     const onLeaveCount = employees.filter(emp => emp.status === 'On Leave' || emp.status === 'onLeave').length;
+    
+    // Calculate percentages for attendance
+    const totalEmployees = employees.length;
+    const presentPercentage = totalEmployees > 0 ? Math.round((activeCount / totalEmployees) * 100) : 0;
+    const leavePercentage = totalEmployees > 0 ? Math.round((onLeaveCount / totalEmployees) * 100) : 0;
+    const absentPercentage = totalEmployees > 0 ? Math.round((inactiveCount / totalEmployees) * 100) : 0;
     
     // Recruitment stats
     const recruitmentStats = {
@@ -703,9 +709,12 @@ export const getOverviewStats = async (filters = {}) => {
         },
         departmentStats,
         attendance: {
-          present: activeCount,
-          absent: inactiveCount,
-          leave: onLeaveCount
+          present: presentPercentage,
+          absent: absentPercentage,
+          leave: leavePercentage,
+          presentCount: activeCount,
+          absentCount: inactiveCount,
+          leaveCount: onLeaveCount
         },
         recruitment: recruitmentStats
       }

@@ -398,7 +398,7 @@ const Reports = () => {
     >
       <div className="space-y-4">
         {reportData.departmentStats.map((dept, index) => (
-          <div key={dept.name} className="flex items-center justify-between">
+          <div key={dept.name} className="flex items-center justify-between gap-15">
             <div className="flex items-center space-x-3">
               <div className={`w-4 h-4 rounded ${dept.color}`}></div>
               <span 
@@ -422,7 +422,7 @@ const Reports = () => {
             >
               <span>{dept.employees} {t('reports.employees')}</span>
               <span>${dept.avgSalary.toLocaleString()}</span>
-              <span>{dept.performance}/5.0 ⭐</span>
+              <span>{dept.performance}</span>
             </div>
           </div>
         ))}
@@ -450,7 +450,7 @@ const Reports = () => {
                 backgroundColor: isDarkMode ? '#4b5563' : '#e5e7eb'
               }}
             >
-              <div className="bg-green-500 h-2 rounded-full" style={{ width: `${reportData.attendance.present}%` }}></div>
+              <div className="bg-emerald-600 h-2 rounded-full" style={{ width: `${reportData.attendance.present}%` }}></div>
             </div>
             <span 
               className="text-sm font-medium"
@@ -460,7 +460,7 @@ const Reports = () => {
                 borderColor: 'transparent'
               }}
             >
-              {reportData.attendance.present}%
+              {reportData.attendance.present}% ({reportData.attendance.presentCount})
             </span>
           </div>
         </div>
@@ -481,7 +481,7 @@ const Reports = () => {
                 backgroundColor: isDarkMode ? '#4b5563' : '#e5e7eb'
               }}
             >
-              <div className="bg-yellow-500 h-2 rounded-full" style={{ width: `${reportData.attendance.leave}%` }}></div>
+              <div className="bg-amber-600 h-2 rounded-full" style={{ width: `${reportData.attendance.leave}%` }}></div>
             </div>
             <span 
               className="text-sm font-medium"
@@ -491,7 +491,7 @@ const Reports = () => {
                 borderColor: 'transparent'
               }}
             >
-              {reportData.attendance.leave}%
+              {reportData.attendance.leave}% ({reportData.attendance.leaveCount})
             </span>
           </div>
         </div>
@@ -512,7 +512,7 @@ const Reports = () => {
                 backgroundColor: isDarkMode ? '#4b5563' : '#e5e7eb'
               }}
             >
-              <div className="bg-red-500 h-2 rounded-full" style={{ width: `${reportData.attendance.absent}%` }}></div>
+              <div className="bg-slate-600 h-2 rounded-full" style={{ width: `${reportData.attendance.absent}%` }}></div>
             </div>
             <span 
               className="text-sm font-medium"
@@ -522,7 +522,7 @@ const Reports = () => {
                 borderColor: 'transparent'
               }}
             >
-              {reportData.attendance.absent}%
+              {reportData.attendance.absent}% ({reportData.attendance.absentCount})
             </span>
           </div>
         </div>
@@ -534,10 +534,10 @@ const Reports = () => {
     <ChartContainer title={t('reports.recruitmentFunnel')}>
       <div className="space-y-4">
         {[
-          { label: t('reports.totalApplications'), value: reportData.recruitment.totalApplications, color: 'bg-blue-500' },
-          { label: t('reports.interviewed'), value: reportData.recruitment.interviewed, color: 'bg-yellow-500' },
-          { label: t('reports.hired'), value: reportData.recruitment.hired, color: 'bg-green-500' },
-          { label: t('reports.rejected'), value: reportData.recruitment.rejected, color: 'bg-red-500' }
+          { label: t('reports.totalApplications'), value: reportData.recruitment.totalApplications, color: 'bg-sky-700' },
+          { label: t('reports.interviewed'), value: reportData.recruitment.interviewed, color: 'bg-amber-600' },
+          { label: t('reports.hired'), value: reportData.recruitment.hired, color: 'bg-emerald-700' },
+          { label: t('reports.rejected'), value: reportData.recruitment.rejected, color: 'bg-rose-700' }
         ].map((item, index) => (
           <div key={item.label} className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -628,12 +628,6 @@ const Reports = () => {
           onClick={() => handleMetricClick('newHires')}
         />
         <StatCard
-          title={t('reports.turnoverRate')}
-          value={`${reportData.overview.turnoverRate}%`}
-          subtitle={t('reports.annualRate')}
-          icon={RefreshCw}
-        />
-        <StatCard
           title={t('reports.avgSalary')}
           value={`$${reportData.overview.avgSalary.toLocaleString()}`}
           icon={DollarSign}
@@ -642,11 +636,6 @@ const Reports = () => {
           title={t('reports.satisfaction')}
           value={`${reportData.overview.satisfaction}/5.0`}
           icon={Award}
-        />
-        <StatCard
-          title={t('reports.productivity')}
-          value={`${reportData.overview.productivity}%`}
-          icon={Clock}
         />
       </div>
 
