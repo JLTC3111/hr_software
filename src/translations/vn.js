@@ -11,7 +11,7 @@ export default {
     notifications: 'Thông báo',
     settings: 'Cài đặt',
     controlPanel: 'Bảng Điều Khiển',
-    workload: 'Việc Hàng Ngày',
+    workload: 'Việc Theo Tháng',
   },
 
   // Header
@@ -264,9 +264,9 @@ export default {
   // Employees
   employees: {
     title: 'Quản Lý Nhân Viên',
-    directory: 'Danh sách',
+    directory: 'Danh Sách',
     quickStats: 'Thống Kê Nhanh',
-    addNew: 'Thêm mới',
+    addNew: 'Thêm Người Mới',
     searchPlaceholder: 'Tìm Kiếm Nhân Viên...',
     addEmployee: 'Thêm Nhân Viên',
     name: 'Tên',
@@ -604,6 +604,7 @@ export default {
     search: 'Tìm kiếm',
     filter: 'Lọc',
     sort: 'Sắp xếp',
+    back: 'Quay lại',
     type: 'Phân Loại',
     save: 'Lưu',
     cancel: 'Hủy',

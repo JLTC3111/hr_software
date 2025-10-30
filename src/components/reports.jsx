@@ -17,6 +17,7 @@ const Reports = ({ employees, applications }) => {
   const [reportType, setReportType] = useState('performance');
   const [generatedReport, setGeneratedReport] = useState(null);
   const [generating, setGenerating] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
   
@@ -366,63 +367,64 @@ const Reports = ({ employees, applications }) => {
     
     handleExportCSV(exportData, 'all_employees');
   };
-  
-  const StatCard = ({ title, value, subtitle, icon: Icon, color, trend, onClick }) => (
-    <div 
-      className="rounded-lg shadow-sm border p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer group scale-in"
-      style={{
-        backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-        color: isDarkMode ? '#ffffff' : '#111827',
-        borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-      }}
-      onClick={onClick}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p 
-            className="text-sm font-medium transition-colors duration-200"
-            style={{
-              backgroundColor: 'transparent',
-              color: isDarkMode ? '#d1d5db' : '#4b5563',
-              borderColor: 'transparent'
-            }}
-          >
-            {title}
-          </p>
-          <p 
-            className={`text-2xl font-bold ${color} mt-1 transition-all duration-200 group-hover:scale-105`}
-            style={{
-              backgroundColor: 'transparent',
-              borderColor: 'transparent'
-            }}
-          >
-            {value}
-          </p>
-          {subtitle && (
+
+  const StatCard = ({
+      title,
+      value,
+      subtitle,
+      icon: Icon,
+      color = isDarkMode ? 'text-white' : 'text-gray-800',
+      bg = isDarkMode ? 'bg-gray-700' : 'bg-gray-100',
+      trend,
+      onClick
+    }) => (
+      <div 
+        className={`rounded-lg shadow-sm border p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer group scale-in 
+                    ${isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'}`}
+        onClick={onClick}
+      >
+        <div className="flex items-center justify-between">
+          <div>
             <p 
-              className="text-sm mt-1"
-              style={{
-                backgroundColor: 'transparent',
-                color: isDarkMode ? '#9ca3af' : '#6b7280',
-                borderColor: 'transparent'
-              }}
+              className={`text-sm font-medium transition-colors duration-200 
+                          ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}
             >
-              {subtitle}
+              {title}
             </p>
-          )}
+
+            <p 
+              className={`text-2xl font-bold mt-1 transition-all duration-200 group-hover:scale-105 ${color}`}
+            >
+              {value}
+            </p>
+
+            {subtitle && (
+              <p 
+                className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}
+              >
+                {subtitle}
+              </p>
+            )}
+          </div>
+
+          <div 
+            className={`p-3 rounded-full transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6 
+                        ${bg} flex items-center justify-center`}
+          >
+            <Icon className={`h-6 w-6 ${color}`} />
+          </div>
         </div>
-        <div className={`p-3 rounded-full ${color.replace('text-', 'bg-').replace('-600', '-100')} transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}>
-          <Icon className={`h-6 w-6 ${color}`} />
-        </div>
+
+        {trend && (
+          <div className="mt-4 flex items-center">
+            <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+            <span className="text-sm text-green-600">
+              {trend}% {t('reports.fromLastPeriod')}
+            </span>
+          </div>
+        )}
       </div>
-      {trend && (
-        <div className="mt-4 flex items-center">
-          <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-          <span className="text-sm text-green-600">{trend}% {t('reports.fromLastPeriod')}</span>
-        </div>
-      )}
-    </div>
-  );
+    );
 
   const ChartContainer = ({ title, children, actions }) => (
     <div 
@@ -687,14 +689,11 @@ const Reports = ({ employees, applications }) => {
 
   const OverviewTab = () => (
     <div className="space-y-6 fade-in">
-      {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard
           title={t('reports.totalEmployees')}
           value={reportData.overview.totalEmployees}
           icon={Users}
-          color="text-blue-600"
-          trend="+5.2"
           onClick={() => handleMetricClick('employees')}
         />
         <StatCard
@@ -702,8 +701,6 @@ const Reports = ({ employees, applications }) => {
           value={reportData.overview.newHires}
           subtitle={t('reports.thisQuarter')}
           icon={TrendingUp}
-          color="text-green-600"
-          trend="+12.5"
           onClick={() => handleMetricClick('newHires')}
         />
         <StatCard
@@ -711,29 +708,21 @@ const Reports = ({ employees, applications }) => {
           value={`${reportData.overview.turnoverRate}%`}
           subtitle={t('reports.annualRate')}
           icon={RefreshCw}
-          color="text-orange-600"
-          trend="-2.1"
         />
         <StatCard
           title={t('reports.avgSalary')}
           value={`$${reportData.overview.avgSalary.toLocaleString()}`}
           icon={DollarSign}
-          color="text-purple-600"
-          trend="+3.8"
         />
         <StatCard
           title={t('reports.satisfaction')}
           value={`${reportData.overview.satisfaction}/5.0`}
           icon={Award}
-          color="text-pink-600"
-          trend="+0.3"
         />
         <StatCard
           title={t('reports.productivity')}
           value={`${reportData.overview.productivity}%`}
           icon={Clock}
-          color="text-indigo-600"
-          trend="+1.5"
         />
       </div>
 
@@ -1011,11 +1000,12 @@ const Reports = ({ employees, applications }) => {
         </h2>
         <div className="flex space-x-4">
           <button 
-            className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2 transition-all duration-200 hover:scale-105 hover:shadow-md"
+            onClick={() => setShowFilters(!showFilters)}
+            className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2 transition-all duration-200 hover:scale-105 hover:shadow-md cursor-pointer"
             style={{
-              backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
-              color: isDarkMode ? '#d1d5db' : '#374151',
-              borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
+              backgroundColor: showFilters ? '#2563eb' : (isDarkMode ? '#4b5563' : '#ffffff'),
+              color: showFilters ? '#ffffff' : (isDarkMode ? '#d1d5db' : '#374151'),
+              borderColor: showFilters ? '#2563eb' : (isDarkMode ? '#6b7280' : '#d1d5db')
             }}
           >
             <Filter className="h-4 w-4" />
@@ -1035,6 +1025,101 @@ const Reports = ({ employees, applications }) => {
           </button>
         </div>
       </div>
+
+      {/* Filters Panel */}
+      {showFilters && (
+        <div 
+          className="rounded-lg shadow-sm border p-6"
+          style={{
+            backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+            borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
+          }}
+        >
+          <h3 
+            className="text-lg font-semibold mb-4"
+            style={{ color: isDarkMode ? '#ffffff' : '#111827' }}
+          >
+            {t('reports.filterBy', 'Filter By')}
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Date Range Filter */}
+            <div>
+              <label 
+                className="block text-sm font-medium mb-2"
+                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
+              >
+                {t('reports.dateRange', 'Date Range')}
+              </label>
+              <select
+                value={dateRange}
+                onChange={(e) => setDateRange(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                style={{
+                  backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
+                  color: isDarkMode ? '#ffffff' : '#111827',
+                  borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
+                }}
+              >
+                <option value="last-week">{t('reports.lastWeek', 'Last Week')}</option>
+                <option value="last-month">{t('reports.lastMonth', 'Last Month')}</option>
+                <option value="last-quarter">{t('reports.lastQuarter', 'Last Quarter')}</option>
+                <option value="last-year">{t('reports.lastYear', 'Last Year')}</option>
+              </select>
+            </div>
+
+            {/* Department Filter */}
+            <div>
+              <label 
+                className="block text-sm font-medium mb-2"
+                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
+              >
+                {t('reports.department', 'Department')}
+              </label>
+              <select
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                style={{
+                  backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
+                  color: isDarkMode ? '#ffffff' : '#111827',
+                  borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
+                }}
+              >
+                <option value="all">{t('reports.allDepartments', 'All Departments')}</option>
+                <option value="technology">{t('departments.technology', 'Technology')}</option>
+                <option value="legal_compliance">{t('departments.legal_compliance', 'Legal & Compliance')}</option>
+                <option value="internal_affairs">{t('departments.internal_affairs', 'Internal Affairs')}</option>
+              </select>
+            </div>
+
+            {/* Report Type Filter */}
+            <div>
+              <label 
+                className="block text-sm font-medium mb-2"
+                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
+              >
+                {t('reports.reportType', 'Report Type')}
+              </label>
+              <select
+                value={reportType}
+                onChange={(e) => setReportType(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                style={{
+                  backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
+                  color: isDarkMode ? '#ffffff' : '#111827',
+                  borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
+                }}
+              >
+                <option value="performance">{t('reports.performance', 'Performance')}</option>
+                <option value="salary">{t('reports.salary', 'Salary')}</option>
+                <option value="attendance">{t('reports.attendance', 'Attendance')}</option>
+                <option value="recruitment">{t('reports.recruitment', 'Recruitment')}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div 

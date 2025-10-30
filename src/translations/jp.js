@@ -537,6 +537,10 @@ export default {
   common: {
     search: '検索',
     filter: 'フィルター',
+    back: '戻る',
+    date: '日付',
+    time: '時間',
+    hours: '時間数',
     type: 'タイプ',
     status: 'ステータス',
     actions: 'アクション',

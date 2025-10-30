@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X, Search, Download, ArrowUp, ArrowDown, Calendar, Clock, Loader, Sunrise, Sunset, ClipboardCheck } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -12,6 +12,8 @@ const WorkDaysModal = ({ isOpen, onClose, employeeId, month }) => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'descending' });
+  
+  const modalContentRef = useRef(null);
 
   useEffect(() => {
     const fetchTimeEntries = async () => {
@@ -45,6 +47,31 @@ const WorkDaysModal = ({ isOpen, onClose, employeeId, month }) => {
     
     fetchTimeEntries();
   }, [isOpen, employeeId, month]);
+
+  // Handle ESC key press and click outside to close modal
+  useEffect(() => {
+    const handleEscKey = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    const handleClickOutside = (e) => {
+      if (modalContentRef.current && !modalContentRef.current.contains(e.target)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscKey);
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
 
   const sortedTimeEntries = useMemo(() => {
     let sortableItems = [...timeEntries];
@@ -112,7 +139,7 @@ const WorkDaysModal = ({ isOpen, onClose, employeeId, month }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-      <div className={`rounded-lg shadow-xl w-full max-w-4xl flex flex-col ${bg.secondary} ${text.primary}`}>
+      <div ref={modalContentRef} className={`rounded-lg shadow-xl w-full max-w-4xl flex flex-col ${bg.secondary} ${text.primary}`}>
         {/* Header */}
         <div className={`p-4 border-b ${border.primary} flex justify-between items-center`}>
           <div>

@@ -478,6 +478,7 @@ export default {
   // Common
   common: {
     search: 'Suchen',
+    back: 'Zurück',
     type: 'Typ',
     filter: 'Filter',
     sort: 'Sortieren',

@@ -33,9 +33,9 @@ InputField.displayName = 'InputField';
 
 const AddNewEmployee = ({ refetchEmployees }) => {
   const navigate = useNavigate();
-  const { bg, text, border, hover } = useTheme();
   const { t } = useLanguage();
   const { createNotification } = useNotifications();
+  const { isDarkMode, bg, text, border, hover } = useTheme();
   
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -222,9 +222,9 @@ const AddNewEmployee = ({ refetchEmployees }) => {
               <h2 className={`text-2xl font-bold ${text.primary}`}>{t('addEmployee.personalInformation', 'Personal Information')}</h2>
               <div className="flex flex-col items-center mb-6">
                 <div className={`w-32 h-32 rounded-full ${bg.primary} border-2 ${border.primary} flex items-center justify-center overflow-hidden relative`}>
-                  {photoPreview ? <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" /> : <User className={`h-16 w-16 ${text.secondary}`} />}
-                  <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer">
-                    <Upload className="h-4 w-4" />
+                  {photoPreview ? <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" /> : <User className={`h-0 w-0 ${text.secondary}`} />}
+                  <label className={`absolute top-[50%] left-[50%] transform -translate-x-1/2 -translate-y-1/2 ${isDarkMode ? 'text-white' : 'text-gray-700'} p-2 rounded-full cursor-pointer`}>
+                    <Upload className="h-10 w-10" />
                     <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
                   </label>
                 </div>

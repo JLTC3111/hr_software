@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Circle, Edit2, Trash2, Plus, Calendar, User, TrendingUp, BarChart3, MessageSquare } from 'lucide-react';
+import { CheckCircle, Circle, Edit2, Trash2, Plus, Calendar, User, TrendingUp, BarChart3, MessageSquare, Loader } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
+import * as workloadService from '../services/workloadService';
 
 const WorkloadManagement = ({ employees }) => {
   const { user } = useAuth();
@@ -10,10 +11,13 @@ const WorkloadManagement = ({ employees }) => {
   const { t } = useLanguage();
   
   const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showAddTask, setShowAddTask] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [viewMode, setViewMode] = useState('individual'); // 'individual' or 'organization'
   const [selectedEmployee, setSelectedEmployee] = useState(user?.employeeId || null);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   
   // Task form state
   const [taskForm, setTaskForm] = useState({
@@ -27,55 +31,150 @@ const WorkloadManagement = ({ employees }) => {
     comments: ''
   });
 
-  // Load tasks from localStorage (in production, use database)
+  // Load tasks from backend
   useEffect(() => {
-    const savedTasks = localStorage.getItem('hr_tasks');
-    if (savedTasks) {
-      setTasks(JSON.parse(savedTasks));
-    }
-  }, []);
-
-  // Save tasks to localStorage
-  useEffect(() => {
-    localStorage.setItem('hr_tasks', JSON.stringify(tasks));
-  }, [tasks]);
-
-  const handleAddTask = () => {
-    const newTask = {
-      id: Date.now(),
-      ...taskForm,
-      employeeId: selectedEmployee,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+    const fetchTasks = async () => {
+      setLoading(true);
+      try {
+        let result;
+        if (viewMode === 'individual' && selectedEmployee) {
+          result = await workloadService.getEmployeeTasks(selectedEmployee);
+        } else {
+          result = await workloadService.getAllTasks();
+        }
+        
+        if (result.success) {
+          setTasks(result.data);
+        } else {
+          setErrorMessage(result.error || 'Failed to load tasks');
+          setTimeout(() => setErrorMessage(''), 5000);
+        }
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+        setErrorMessage('Failed to load tasks');
+        setTimeout(() => setErrorMessage(''), 5000);
+      } finally {
+        setLoading(false);
+      }
     };
-    setTasks([...tasks, newTask]);
-    setTaskForm({
-      title: '',
-      description: '',
-      dueDate: '',
-      priority: 'medium',
-      status: 'pending',
-      selfAssessment: '',
-      qualityRating: 0,
-      comments: ''
-    });
-    setShowAddTask(false);
+
+    fetchTasks();
+  }, [viewMode, selectedEmployee]);
+
+  // Subscribe to real-time task updates
+  useEffect(() => {
+    const channel = workloadService.subscribeToTaskChanges(
+      viewMode === 'individual' ? selectedEmployee : null,
+      (payload) => {
+        console.log('Task change:', payload);
+        
+        if (payload.eventType === 'INSERT') {
+          setTasks(prev => [payload.new, ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          setTasks(prev => prev.map(task => 
+            task.id === payload.new.id ? payload.new : task
+          ));
+        } else if (payload.eventType === 'DELETE') {
+          setTasks(prev => prev.filter(task => task.id !== payload.old.id));
+        }
+      }
+    );
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [viewMode, selectedEmployee]);
+
+  const handleAddTask = async () => {
+    // Validate required fields
+    if (!taskForm.title || !taskForm.title.trim()) {
+      setErrorMessage('Task title is required');
+      setTimeout(() => setErrorMessage(''), 3000);
+      return;
+    }
+
+    try {
+      const result = await workloadService.createTask({
+        employeeId: selectedEmployee,
+        title: taskForm.title,
+        description: taskForm.description || null,
+        dueDate: taskForm.dueDate || null,
+        priority: taskForm.priority,
+        status: taskForm.status,
+        selfAssessment: taskForm.selfAssessment || null,
+        qualityRating: taskForm.qualityRating || 0,
+        comments: taskForm.comments || null,
+        createdBy: user?.employeeId
+      });
+      
+      if (result.success) {
+        setSuccessMessage('Task created successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        setTaskForm({
+          title: '',
+          description: '',
+          dueDate: '',
+          priority: 'medium',
+          status: 'pending',
+          selfAssessment: '',
+          qualityRating: 0,
+          comments: ''
+        });
+        setShowAddTask(false);
+        // Tasks will update via real-time subscription
+      } else {
+        setErrorMessage(result.error || 'Failed to create task');
+        setTimeout(() => setErrorMessage(''), 5000);
+      }
+    } catch (error) {
+      console.error('Error creating task:', error);
+      setErrorMessage('Failed to create task');
+      setTimeout(() => setErrorMessage(''), 5000);
+    }
   };
 
-  const handleUpdateTask = (taskId, updates) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId ? { ...task, ...updates, updatedAt: new Date().toISOString() } : task
-    ));
+  const handleUpdateTask = async (taskId, updates) => {
+    try {
+      const result = await workloadService.updateTask(taskId, updates);
+      
+      if (result.success) {
+        setSuccessMessage('Task updated successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        // Tasks will update via real-time subscription
+      } else {
+        setErrorMessage(result.error || 'Failed to update task');
+        setTimeout(() => setErrorMessage(''), 5000);
+      }
+    } catch (error) {
+      console.error('Error updating task:', error);
+      setErrorMessage('Failed to update task');
+      setTimeout(() => setErrorMessage(''), 5000);
+    }
   };
 
-  const handleDeleteTask = (taskId) => {
+  const handleDeleteTask = async (taskId) => {
     if (window.confirm(t('workload.confirmDelete', 'Delete this task?'))) {
-      setTasks(tasks.filter(task => task.id !== taskId));
+      try {
+        const result = await workloadService.deleteTask(taskId);
+        
+        if (result.success) {
+          setSuccessMessage('Task deleted successfully');
+          setTimeout(() => setSuccessMessage(''), 3000);
+          // Tasks will update via real-time subscription
+        } else {
+          setErrorMessage(result.error || 'Failed to delete task');
+          setTimeout(() => setErrorMessage(''), 5000);
+        }
+      } catch (error) {
+        console.error('Error deleting task:', error);
+        setErrorMessage('Failed to delete task');
+        setTimeout(() => setErrorMessage(''), 5000);
+      }
     }
   };
 
   const getEmployeeTasks = (empId) => {
-    return tasks.filter(task => task.employeeId === empId);
+    return tasks.filter(task => task.employee_id === empId);
   };
 
   const calculateProgress = (empTasks) => {
@@ -85,9 +184,9 @@ const WorkloadManagement = ({ employees }) => {
   };
 
   const calculateAvgQuality = (empTasks) => {
-    const rated = empTasks.filter(t => t.qualityRating > 0);
+    const rated = empTasks.filter(t => t.quality_rating > 0);
     if (rated.length === 0) return 0;
-    return (rated.reduce((sum, t) => sum + t.qualityRating, 0) / rated.length).toFixed(1);
+    return (rated.reduce((sum, t) => sum + t.quality_rating, 0) / rated.length).toFixed(1);
   };
 
   const getPriorityColor = (priority) => {
@@ -178,14 +277,14 @@ const WorkloadManagement = ({ employees }) => {
                       </span>
                     </div>
                     <p className={`text-sm ${text.secondary} mb-2`}>{task.description}</p>
-                    {task.selfAssessment && (
+                    {task.self_assessment && (
                       <div className={`mt-2 p-2 rounded ${bg.primary}`}>
                         <p className={`text-xs ${text.secondary} mb-1`}>
                           <MessageSquare className="w-3 h-3 inline mr-1" />
                           {t('workload.selfAssessment', 'Self Assessment')}:
                         </p>
-                        <p className={`text-sm ${text.primary}`}>{task.selfAssessment}</p>
-                        {task.qualityRating > 0 && (
+                        <p className={`text-sm ${text.primary}`}>{task.self_assessment}</p>
+                        {task.quality_rating > 0 && (
                           <p className={`text-sm ${text.secondary} mt-1`}>
                             Quality: {task.qualityRating}/5 ⭐
                           </p>
@@ -298,6 +397,21 @@ const WorkloadManagement = ({ employees }) => {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Success Message */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2 animate-fade-in">
+          <CheckCircle className="w-5 h-5" />
+          <span>{successMessage}</span>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {errorMessage && (
+        <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2 animate-fade-in">
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
       <div className="flex justify-between items-center">
         <h2 className={`text-2xl font-bold ${text.primary}`}>
           {t('workload.title', 'Workload Management')}
@@ -318,7 +432,14 @@ const WorkloadManagement = ({ employees }) => {
         </div>
       </div>
 
-      {viewMode === 'individual' ? <IndividualView /> : <OrganizationView />}
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      ) : (
+        viewMode === 'individual' ? <IndividualView /> : <OrganizationView />
+      )}
 
       {/* Add/Edit Task Modal */}
       {showAddTask && (
@@ -347,6 +468,17 @@ const WorkloadManagement = ({ employees }) => {
                   value={taskForm.description}
                   onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
                   rows="3"
+                  className={`w-full px-4 py-2 rounded-lg border ${border.primary}`}
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                  {t('workload.dueDate', 'Due Date')}
+                </label>
+                <input
+                  type="date"
+                  value={taskForm.dueDate}
+                  onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
                   className={`w-full px-4 py-2 rounded-lg border ${border.primary}`}
                 />
               </div>

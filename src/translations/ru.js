@@ -587,6 +587,7 @@ export default {
     search: 'Поиск',
     filter: 'Фильтр',
     type: 'Тип',
+    back: 'Назад',
     status: 'Статус',
     actions: 'Действия',
     sort: 'Сортировка',

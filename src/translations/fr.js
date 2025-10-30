@@ -598,6 +598,11 @@ export default {
   common: {
     search: 'Rechercher',
     filter: 'Filtrer',
+    back: 'Retour',
+    submit: 'Soumettre',
+    reset: 'Réinitialiser',
+    actions: 'Actions',
+    status: 'Statut',
     type: 'Type',
     sort: 'Trier',
     save: 'Sauvegarder',

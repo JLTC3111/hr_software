@@ -12,7 +12,7 @@ export default {
     notifications: 'Notifications',
     settings: 'Settings',
     controlPanel: 'Control Panel',
-    workload: 'Load Management',
+    workload: 'Work Management',
   },
   // Header
   header: {
@@ -117,7 +117,7 @@ export default {
   employees: {
     title: 'Employee Management',
     directory: 'Directory',
-    addNew: 'Add New',
+    addNew: 'Add New Employee',
     quickStats: 'Quick Stats',
     searchPlaceholder: 'Search employees...',
     addEmployee: 'Add Employee',
@@ -218,24 +218,6 @@ export default {
     noDocument: 'No document uploaded',
     uploadInstructions: 'Click or drag a PDF file here to upload',
     maxFileSize: 'Maximum file size: 10MB'
-  },
-
-  // Common
-  common: {
-    cancel: 'Cancel',
-    close: 'Close',
-    save: 'Save',
-    saving: 'Saving...',
-    update: 'Update',
-    updating: 'Updating...',
-    delete: 'Delete',
-    edit: 'Edit',
-    view: 'View',
-    back: 'Back',
-    next: 'Next',
-    submit: 'Submit',
-    loading: 'Loading...',
-    type: 'Type'
   },
 
   // Search
@@ -634,6 +616,7 @@ export default {
   common: {
     search: 'Search',
     filter: 'Filter',
+    back: 'Back',
     sort: 'Sort',
     save: 'Save',
     cancel: 'Cancel',
