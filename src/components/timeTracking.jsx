@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import * as timeTrackingService from '../services/timeTrackingService'
-import MetricDetailModal from './metricDetailModal.jsx'
+import WorkDaysModal from './workDaysModal';
 
 const TimeTracking = ({ employees }) => {
   const { user } = useAuth();
@@ -39,7 +39,7 @@ const TimeTracking = ({ employees }) => {
   const [showOvertimeModal, setShowOvertimeModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalConfig, setModalConfig] = useState({ type: '', data: [], title: '' });
+  const [showWorkDaysModal, setShowWorkDaysModal] = useState(false);
   
   // Leave request form
   const [leaveForm, setLeaveForm] = useState({
@@ -587,25 +587,7 @@ const TimeTracking = ({ employees }) => {
         <div className="mb-6">
           <div 
             className={`${bg.primary} rounded-lg p-4 border ${border.primary} cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
-            onClick={() => {
-              const data = allEmployeesData
-                .filter(item => item.data && item.data.regular_hours > 0)
-                .map(item => ({
-                  employee: item.employee?.name || 'Unknown',
-                  department: item.employee?.department || 'N/A',
-                  position: item.employee?.position || 'N/A',
-                  regularHours: item.data?.regular_hours?.toFixed(1) || '0.0',
-                  daysWorked: item.data?.days_worked || 0,
-                  overtime: item.data?.overtime_hours?.toFixed(1) || '0.0'
-                }));
-              console.log('Modal data:', data); // Debug log
-              setModalConfig({ 
-                type: 'regularHours', 
-                data, 
-                title: t('timeTracking.totalRegularHours', 'Total Regular Hours (All Employees)')
-              });
-              setModalOpen(true);
-            }}
+            onClick={() => setShowWorkDaysModal(true)}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -731,11 +713,11 @@ const TimeTracking = ({ employees }) => {
                 <tr key={index} className={`border-b ${border.primary} hover:${bg.primary} transition-colors`}>
                   <td className={`py-3 px-4 ${text.primary}`}>{item.employee.name}</td>
                   <td className={`text-right py-3 px-4 ${text.secondary}`}>{item.data?.days_worked || 0}</td>
-                  <td className={`text-right py-3 px-4 ${text.secondary}`}>{item.data?.regular_hours || 0}</td>
+                  <td className={`text-right py-3 px-4 ${text.secondary}`}>{item.data?.regular_hours?.toFixed(1) || '0.0'}</td>
                   <td className={`text-right py-3 px-4 ${text.secondary}`}>
                     {((item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0)).toFixed(1)}
                   </td>
-                  <td className={`text-right py-3 px-4 font-semibold ${text.primary}`}>{item.data?.total_hours || 0}</td>
+                  <td className={`text-right py-3 px-4 font-semibold ${text.primary}`}>{item.data?.total_hours?.toFixed(1) || '0.0'}</td>
                 </tr>
               ))}
               <tr className={`border-t-2 ${border.primary} font-bold`}>
@@ -993,13 +975,12 @@ const TimeTracking = ({ employees }) => {
         </div>
       )}
       
-      {/* Metric Detail Modal */}
-      <MetricDetailModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        metricType={modalConfig.type}
-        data={modalConfig.data}
-        title={modalConfig.title}
+      {/* Work Days Modal */}
+      <WorkDaysModal
+        isOpen={showWorkDaysModal}
+        onClose={() => setShowWorkDaysModal(false)}
+        employeeId={selectedEmployee}
+        month={new Date(selectedYear, selectedMonth - 1)}
       />
     </div>
   );
