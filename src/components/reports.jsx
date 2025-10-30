@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, PieChart, TrendingUp, Download, Calendar, Users, DollarSign, Award, Clock, Filter, RefreshCw, Loader } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
-import * as timeTrackingService from '../services/timeTrackingService';
 import * as reportService from '../services/reportService';
 import MetricDetailModal from './metricDetailModal.jsx';
 
-const Reports = ({ employees, applications }) => {
+const Reports = () => {
   const [selectedReport, setSelectedReport] = useState('overview');
   const [dateRange, setDateRange] = useState('last-quarter');
   const [department, setDepartment] = useState('all');
@@ -18,6 +17,8 @@ const Reports = ({ employees, applications }) => {
   const [generatedReport, setGeneratedReport] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [reportData, setReportData] = useState(null);
+  const [performanceTrend, setPerformanceTrend] = useState([]);
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
   
@@ -26,145 +27,35 @@ const Reports = ({ employees, applications }) => {
   const currentMonth = currentDate.getMonth() + 1;
   const currentYear = currentDate.getFullYear();
   
-  // Fetch time tracking data from backend
+  // Fetch all report data from backend
   useEffect(() => {
-    const fetchTimeTrackingData = async () => {
+    const fetchReportData = async () => {
       setLoading(true);
       try {
-        const summariesPromises = employees.map(emp => 
-          timeTrackingService.getTimeTrackingSummary(String(emp.id), currentMonth, currentYear)
-        );
+        // Fetch overview stats
+        const overviewResult = await reportService.getOverviewStats();
+        if (overviewResult.success) {
+          setReportData(overviewResult.data);
+        } else {
+          console.error('Error fetching overview stats:', overviewResult.error);
+        }
         
-        const summariesResults = await Promise.all(summariesPromises);
-        
-        const trackingData = {};
-        summariesResults.forEach((result, index) => {
-          if (result.success && result.data) {
-            const emp = employees[index];
-            const empId = String(emp.id);
-            trackingData[empId] = {
-              workDays: result.data.days_worked || 0,
-              totalHours: result.data.total_hours || 0,
-              regularHours: result.data.regular_hours || 0,
-              overtimeHours: result.data.overtime_hours || 0,
-              attendanceRate: result.data.attendance_rate || 0
-            };
-          }
-        });
-        
-        setTimeTrackingData(trackingData);
+        // Fetch performance trend
+        const trendResult = await reportService.getPerformanceTrend();
+        if (trendResult.success) {
+          setPerformanceTrend(trendResult.data);
+        } else {
+          console.error('Error fetching performance trend:', trendResult.error);
+        }
       } catch (error) {
-        console.error('Error fetching time tracking data:', error);
+        console.error('Error fetching report data:', error);
       } finally {
         setLoading(false);
       }
     };
     
-    if (employees.length > 0) {
-      fetchTimeTrackingData();
-    } else {
-      setLoading(false);
-    }
-  }, [employees, currentMonth, currentYear]);
-
-  // Calculate real report data from employees and applications
-  const reportData = React.useMemo(() => {
-    // Count employees by department
-    const deptCounts = {};
-    const deptPerformance = {};
-    const deptSalaries = {};
-    
-    employees.forEach(emp => {
-      const dept = emp.department;
-      deptCounts[dept] = (deptCounts[dept] || 0) + 1;
-      deptPerformance[dept] = (deptPerformance[dept] || []).concat(emp.performance || 0);
-      deptSalaries[dept] = (deptSalaries[dept] || []).concat(emp.salary || 0);
-    });
-    
-    // Build department stats
-    const departmentStats = Object.keys(deptCounts).map((dept, index) => {
-      const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-indigo-500'];
-      const avgPerf = deptPerformance[dept].reduce((a, b) => a + b, 0) / deptPerformance[dept].length;
-      const avgSal = deptSalaries[dept].reduce((a, b) => a + b, 0) / deptSalaries[dept].length;
-      
-      return {
-        name: dept,
-        employees: deptCounts[dept],
-        avgSalary: Math.round(avgSal) || 0,
-        performance: avgPerf.toFixed(1),
-        color: colors[index % colors.length]
-      };
-    });
-    
-    // Calculate new hires (employees who started in last 3 months)
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-    const newHires = employees.filter(emp => {
-      const startDate = new Date(emp.start_date || emp.startDate);
-      return startDate >= threeMonthsAgo;
-    }).length;
-    
-    // Calculate average salary
-    const avgSalary = employees.length > 0 
-      ? Math.round(employees.reduce((sum, emp) => sum + (emp.salary || 0), 0) / employees.length)
-      : 0;
-    
-    // Calculate average performance
-    const avgPerformance = employees.length > 0
-      ? (employees.reduce((sum, emp) => sum + (emp.performance || 0), 0) / employees.length).toFixed(1)
-      : 0;
-    
-    // Calculate real attendance from time tracking data
-    const totalWorkDays = Object.values(timeTrackingData).reduce((sum, data) => sum + (data?.workDays || 0), 0);
-    const avgAttendanceRate = Object.values(timeTrackingData).length > 0
-      ? Object.values(timeTrackingData).reduce((sum, data) => sum + (data?.attendanceRate || 0), 0) / Object.values(timeTrackingData).length
-      : 0;
-    
-    // Count attendance (active employees)
-    const activeCount = employees.filter(emp => emp.status === 'Active' || emp.status === 'active').length;
-    const onLeaveCount = employees.filter(emp => emp.status === 'On Leave' || emp.status === 'onLeave').length;
-    const inactiveCount = employees.filter(emp => emp.status === 'Inactive' || emp.status === 'inactive').length;
-    
-    // Calculate productivity from real time tracking data (attendance rate as productivity metric)
-    const productivityScore = Math.round(avgAttendanceRate);
-    
-    // Count recruitment stats
-    const recruitmentStats = {
-      totalApplications: applications.length,
-      interviewed: applications.filter(app => app.status === 'Interview Scheduled').length,
-      hired: applications.filter(app => app.status === 'Offer Extended').length,
-      rejected: applications.filter(app => app.status === 'Rejected').length
-    };
-    
-    // Mock performance trend - in real app, would come from historical data
-    const performance = [
-      { month: 'Jan', rating: 4.1 },
-      { month: 'Feb', rating: 4.2 },
-      { month: 'Mar', rating: 4.0 },
-      { month: 'Apr', rating: 4.3 },
-      { month: 'May', rating: 4.4 },
-      { month: 'Jun', rating: parseFloat(avgPerformance) }
-    ];
-    
-    return {
-      overview: {
-        totalEmployees: employees.length,
-        newHires,
-        turnoverRate: 8.5, // Would need historical data to calculate
-        avgSalary,
-        satisfaction: parseFloat(avgPerformance),
-        productivity: productivityScore || 92 // Real data from time tracking
-      },
-      departmentStats,
-      attendance: {
-        present: activeCount,
-        absent: inactiveCount,
-        leave: onLeaveCount
-      },
-      recruitment: recruitmentStats,
-      performance
-    };
-  }, [employees, applications, timeTrackingData]);
+    fetchReportData();
+  }, []);
 
   const dateRanges = [
     { value: 'last-week', label: t('reports.lastWeek') },
@@ -187,40 +78,60 @@ const Reports = ({ employees, applications }) => {
     t('departments.board_of_directors')
   ];
 
-  const handleMetricClick = (metricType) => {
+  const handleMetricClick = async (metricType) => {
     let data = [];
     let title = '';
     
-    switch(metricType) {
-      case 'employees':
-        data = employees.map(emp => ({
-          employeeName: emp.name,
-          department: emp.department,
-          position: emp.position,
-          status: emp.status
-        }));
-        title = t('reports.totalEmployees');
-        break;
-      case 'newHires':
-        const threeMonthsAgo = new Date();
-        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-        data = employees.filter(emp => {
-          const startDate = new Date(emp.start_date || emp.startDate);
-          return startDate >= threeMonthsAgo;
-        }).map(emp => ({
-          employeeName: emp.name,
-          department: emp.department,
-          position: emp.position,
-          startDate: emp.start_date || emp.startDate
-        }));
-        title = t('reports.newHires');
-        break;
-      default:
-        return;
+    try {
+      const { supabase } = await import('../config/supabaseClient');
+      
+      switch(metricType) {
+        case 'employees':
+          const { data: allEmployees, error: empError } = await supabase
+            .from('employees')
+            .select('name, department, position, status');
+          
+          if (empError) throw empError;
+          
+          data = allEmployees.map(emp => ({
+            employeeName: emp.name,
+            department: emp.department,
+            position: emp.position,
+            status: emp.status
+          }));
+          title = t('reports.totalEmployees');
+          break;
+          
+        case 'newHires':
+          const threeMonthsAgo = new Date();
+          threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+          
+          const { data: newHireData, error: hireError } = await supabase
+            .from('employees')
+            .select('name, department, position, start_date')
+            .gte('start_date', threeMonthsAgo.toISOString().split('T')[0]);
+          
+          if (hireError) throw hireError;
+          
+          data = newHireData.map(emp => ({
+            employeeName: emp.name,
+            department: emp.department,
+            position: emp.position,
+            startDate: emp.start_date
+          }));
+          title = t('reports.newHires');
+          break;
+          
+        default:
+          return;
+      }
+      
+      setModalConfig({ type: metricType, data, title });
+      setModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching metric data:', error);
+      alert(t('reports.errorFetchingData', 'Error fetching data'));
     }
-    
-    setModalConfig({ type: metricType, data, title });
-    setModalOpen(true);
   };
 
   // Get date range for filters
@@ -353,19 +264,32 @@ const Reports = ({ employees, applications }) => {
   };
 
   // Handle export all data
-  const handleExportAll = () => {
-    const exportData = employees.map(emp => ({
-      Name: emp.name,
-      Department: emp.department,
-      Position: emp.position,
-      Email: emp.email,
-      Phone: emp.phone,
-      Status: emp.status,
-      Salary: emp.salary,
-      StartDate: emp.start_date || emp.startDate
-    }));
-    
-    handleExportCSV(exportData, 'all_employees');
+  const handleExportAll = async () => {
+    try {
+      const { supabase } = await import('../config/supabaseClient');
+      
+      const { data: allEmployees, error } = await supabase
+        .from('employees')
+        .select('name, department, position, email, phone, status, salary, start_date');
+      
+      if (error) throw error;
+      
+      const exportData = allEmployees.map(emp => ({
+        Name: emp.name,
+        Department: emp.department,
+        Position: emp.position,
+        Email: emp.email,
+        Phone: emp.phone,
+        Status: emp.status,
+        Salary: emp.salary,
+        StartDate: emp.start_date
+      }));
+      
+      handleExportCSV(exportData, 'all_employees');
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      alert(t('reports.errorExporting', 'Error exporting data'));
+    }
   };
 
   const StatCard = ({
@@ -647,7 +571,7 @@ const Reports = ({ employees, applications }) => {
   const PerformanceTrend = () => (
     <ChartContainer title={t('reports.performanceTrend')}>
       <div className="space-y-4">
-        {reportData.performance.map((item, index) => (
+        {performanceTrend.map((item, index) => (
           <div key={item.month} className="flex items-center justify-between">
             <span 
               style={{
@@ -1155,8 +1079,22 @@ const Reports = ({ employees, applications }) => {
       </div>
 
       {/* Tab Content */}
-      {selectedReport === 'overview' && <OverviewTab />}
-      {selectedReport === 'detailed' && <DetailedReportsTab />}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      ) : !reportData ? (
+        <div className="text-center py-12">
+          <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+            {t('reports.noData', 'No data available')}
+          </p>
+        </div>
+      ) : (
+        <>
+          {selectedReport === 'overview' && <OverviewTab />}
+          {selectedReport === 'detailed' && <DetailedReportsTab />}
+        </>
+      )}
       
       {/* Metric Detail Modal */}
       <MetricDetailModal

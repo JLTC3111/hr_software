@@ -584,6 +584,196 @@ const calculateTurnoverMetrics = (employees, dateFrom, dateTo) => {
   };
 };
 
+// Get comprehensive overview statistics from database
+export const getOverviewStats = async (filters = {}) => {
+  try {
+    const { dateFrom, dateTo } = filters;
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1;
+    const currentYear = currentDate.getFullYear();
+    
+    // Get all employees
+    const { data: employees, error: empError } = await supabase
+      .from('employees')
+      .select('*');
+    
+    if (empError) throw empError;
+    
+    // Get time tracking summaries for current month
+    const { data: timeTracking, error: ttError } = await supabase
+      .from('time_tracking_summary')
+      .select('*')
+      .eq('month', currentMonth)
+      .eq('year', currentYear);
+    
+    if (ttError) throw ttError;
+    
+    // Get performance reviews for recent period (last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const { data: reviews, error: revError } = await supabase
+      .from('performance_reviews')
+      .select('overall_rating, review_date')
+      .gte('review_date', sixMonthsAgo.toISOString().split('T')[0]);
+    
+    if (revError) throw revError;
+    
+    // Get applications
+    const { data: applications, error: appError } = await supabase
+      .from('applications')
+      .select('*');
+    
+    if (appError) throw appError;
+    
+    // Calculate new hires (last 3 months)
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    const newHires = employees.filter(emp => {
+      const startDate = new Date(emp.start_date);
+      return startDate >= threeMonthsAgo;
+    }).length;
+    
+    // Calculate turnover rate
+    const inactiveCount = employees.filter(e => e.status === 'Inactive' || e.status === 'inactive').length;
+    const turnoverRate = employees.length > 0 ? ((inactiveCount / employees.length) * 100).toFixed(1) : 0;
+    
+    // Calculate average salary
+    const avgSalary = employees.length > 0
+      ? Math.round(employees.reduce((sum, emp) => sum + (emp.salary || 0), 0) / employees.length)
+      : 0;
+    
+    // Calculate satisfaction (from performance reviews)
+    const avgRating = reviews.length > 0
+      ? (reviews.reduce((sum, r) => sum + (r.overall_rating || 0), 0) / reviews.length).toFixed(1)
+      : 0;
+    
+    // Calculate productivity (from time tracking attendance)
+    const avgAttendance = timeTracking.length > 0
+      ? Math.round(timeTracking.reduce((sum, t) => sum + (t.attendance_rate || 0), 0) / timeTracking.length)
+      : 0;
+    
+    // Department statistics
+    const deptCounts = {};
+    const deptPerformance = {};
+    const deptSalaries = {};
+    
+    employees.forEach(emp => {
+      const dept = emp.department;
+      deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+      deptPerformance[dept] = (deptPerformance[dept] || []).concat(emp.performance || 0);
+      deptSalaries[dept] = (deptSalaries[dept] || []).concat(emp.salary || 0);
+    });
+    
+    const departmentStats = Object.keys(deptCounts).map((dept, index) => {
+      const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-indigo-500'];
+      const avgPerf = deptPerformance[dept].reduce((a, b) => a + b, 0) / deptPerformance[dept].length;
+      const avgSal = deptSalaries[dept].reduce((a, b) => a + b, 0) / deptSalaries[dept].length;
+      
+      return {
+        name: dept,
+        employees: deptCounts[dept],
+        avgSalary: Math.round(avgSal) || 0,
+        performance: avgPerf.toFixed(1),
+        color: colors[index % colors.length]
+      };
+    });
+    
+    // Attendance breakdown
+    const activeCount = employees.filter(emp => emp.status === 'Active' || emp.status === 'active').length;
+    const onLeaveCount = employees.filter(emp => emp.status === 'On Leave' || emp.status === 'onLeave').length;
+    
+    // Recruitment stats
+    const recruitmentStats = {
+      totalApplications: applications.length,
+      interviewed: applications.filter(app => app.status === 'Interview Scheduled').length,
+      hired: applications.filter(app => app.status === 'Offer Extended').length,
+      rejected: applications.filter(app => app.status === 'Rejected').length
+    };
+    
+    return {
+      success: true,
+      data: {
+        overview: {
+          totalEmployees: employees.length,
+          newHires,
+          turnoverRate: parseFloat(turnoverRate),
+          avgSalary,
+          satisfaction: parseFloat(avgRating),
+          productivity: avgAttendance
+        },
+        departmentStats,
+        attendance: {
+          present: activeCount,
+          absent: inactiveCount,
+          leave: onLeaveCount
+        },
+        recruitment: recruitmentStats
+      }
+    };
+  } catch (error) {
+    console.error('Error fetching overview stats:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+// Get performance trend (last 6 months)
+export const getPerformanceTrend = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('performance_reviews')
+      .select('overall_rating, review_date')
+      .order('review_date', { ascending: true });
+    
+    if (error) throw error;
+    
+    // Group by month
+    const monthlyData = {};
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    data.forEach(review => {
+      const date = new Date(review.review_date);
+      const monthKey = `${months[date.getMonth()]} ${date.getFullYear()}`;
+      
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = { total: 0, count: 0 };
+      }
+      
+      monthlyData[monthKey].total += review.overall_rating || 0;
+      monthlyData[monthKey].count += 1;
+    });
+    
+    // Get last 6 months
+    const trend = [];
+    const currentDate = new Date();
+    
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(currentDate);
+      date.setMonth(date.getMonth() - i);
+      const monthKey = `${months[date.getMonth()]} ${date.getFullYear()}`;
+      
+      const monthData = monthlyData[monthKey];
+      trend.push({
+        month: months[date.getMonth()],
+        rating: monthData ? (monthData.total / monthData.count).toFixed(1) : 0
+      });
+    }
+    
+    return {
+      success: true,
+      data: trend
+    };
+  } catch (error) {
+    console.error('Error fetching performance trend:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
 export default {
   generatePerformanceReport,
   generateSalaryReport,
@@ -592,5 +782,7 @@ export default {
   generateDepartmentReport,
   generateTurnoverReport,
   getPerformanceSummaries,
+  getOverviewStats,
+  getPerformanceTrend,
   exportToCSV
 };

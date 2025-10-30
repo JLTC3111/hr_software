@@ -359,7 +359,7 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
                     />
                     <Route 
                       path="/reports" 
-                      element={<Reports employees={employees} applications={applications} />} 
+                      element={<Reports />} 
                     />
                     <Route 
                       path="/notifications" 
