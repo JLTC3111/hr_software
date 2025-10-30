@@ -28,8 +28,12 @@ const WorkloadManagement = ({ employees }) => {
     status: 'pending',
     selfAssessment: '',
     qualityRating: 0,
-    comments: ''
+    comments: '',
+    assignedTo: selectedEmployee // For admin/manager task assignment
   });
+
+  // Check if user is admin or manager
+  const canAssignTasks = user?.role === 'admin' || user?.role === 'manager';
 
   // Load tasks from backend
   useEffect(() => {
@@ -93,9 +97,16 @@ const WorkloadManagement = ({ employees }) => {
       return;
     }
 
+    // Validate employee assignment for admin/manager
+    if (canAssignTasks && !taskForm.assignedTo) {
+      setErrorMessage('Please select an employee to assign this task to');
+      setTimeout(() => setErrorMessage(''), 3000);
+      return;
+    }
+
     try {
       const result = await workloadService.createTask({
-        employeeId: selectedEmployee,
+        employeeId: canAssignTasks ? taskForm.assignedTo : selectedEmployee,
         title: taskForm.title,
         description: taskForm.description || null,
         dueDate: taskForm.dueDate || null,
@@ -118,7 +129,8 @@ const WorkloadManagement = ({ employees }) => {
           status: 'pending',
           selfAssessment: '',
           qualityRating: 0,
-          comments: ''
+          comments: '',
+          assignedTo: selectedEmployee
         });
         setShowAddTask(false);
         // Tasks will update via real-time subscription
@@ -241,14 +253,27 @@ const WorkloadManagement = ({ employees }) => {
         <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
           <div className="flex justify-between items-center mb-4">
             <h3 className={`text-lg font-semibold ${text.primary}`}>
-              {t('workload.myTasks', 'My Tasks')}
+              {canAssignTasks ? t('workload.manageTasks', 'Manage Tasks') : t('workload.myTasks', 'My Tasks')}
             </h3>
             <button
-              onClick={() => setShowAddTask(true)}
+              onClick={() => {
+                setTaskForm({
+                  title: '',
+                  description: '',
+                  dueDate: '',
+                  priority: 'medium',
+                  status: 'pending',
+                  selfAssessment: '',
+                  qualityRating: 0,
+                  comments: '',
+                  assignedTo: canAssignTasks ? '' : selectedEmployee
+                });
+                setShowAddTask(true);
+              }}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
             >
               <Plus className="w-4 h-4" />
-              <span>{t('workload.addTask', 'Add Task')}</span>
+              <span>{canAssignTasks ? t('workload.assignTask', 'Assign Task') : t('workload.addTask', 'Add Task')}</span>
             </button>
           </div>
 
@@ -275,8 +300,19 @@ const WorkloadManagement = ({ employees }) => {
                       <span className={`px-2 py-1 rounded text-xs ${getStatusColor(task.status)}`}>
                         {task.status}
                       </span>
+                      {canAssignTasks && task.employee && (
+                        <span className={`px-2 py-1 rounded text-xs bg-blue-100 text-blue-800`}>
+                          👤 {task.employee.name}
+                        </span>
+                      )}
                     </div>
                     <p className={`text-sm ${text.secondary} mb-2`}>{task.description}</p>
+                    {task.due_date && (
+                      <p className={`text-xs ${text.secondary} flex items-center space-x-1 mb-2`}>
+                        <Calendar className="w-3 h-3" />
+                        <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
+                      </p>
+                    )}
                     {task.self_assessment && (
                       <div className={`mt-2 p-2 rounded ${bg.primary}`}>
                         <p className={`text-xs ${text.secondary} mb-1`}>
@@ -286,7 +322,7 @@ const WorkloadManagement = ({ employees }) => {
                         <p className={`text-sm ${text.primary}`}>{task.self_assessment}</p>
                         {task.quality_rating > 0 && (
                           <p className={`text-sm ${text.secondary} mt-1`}>
-                            Quality: {task.qualityRating}/5 ⭐
+                            Quality: {task.quality_rating}/5 ⭐
                           </p>
                         )}
                       </div>
@@ -296,7 +332,10 @@ const WorkloadManagement = ({ employees }) => {
                     <button 
                       onClick={() => {
                         setEditingTask(task);
-                        setTaskForm(task);
+                        setTaskForm({
+                          ...task,
+                          assignedTo: task.employee_id
+                        });
                         setShowAddTask(true);
                       }}
                       className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded`}
@@ -355,9 +394,33 @@ const WorkloadManagement = ({ employees }) => {
         </div>
 
         <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
-          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-            {t('workload.employeeProgress', 'Employee Progress')}
-          </h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className={`text-lg font-semibold ${text.primary}`}>
+              {t('workload.employeeProgress', 'Employee Progress')}
+            </h3>
+            {canAssignTasks && (
+              <button
+                onClick={() => {
+                  setTaskForm({
+                    title: '',
+                    description: '',
+                    dueDate: '',
+                    priority: 'medium',
+                    status: 'pending',
+                    selfAssessment: '',
+                    qualityRating: 0,
+                    comments: '',
+                    assignedTo: ''
+                  });
+                  setShowAddTask(true);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t('workload.assignTask', 'Assign Task')}</span>
+              </button>
+            )}
+          </div>
           <div className="space-y-3">
             {orgStats.map(({ employee, tasks, progress, avgQuality }) => (
               <div key={employee.id} className={`border ${border.primary} rounded-lg p-4`}>
@@ -412,20 +475,37 @@ const WorkloadManagement = ({ employees }) => {
         </div>
       )}
 
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-15">
         <h2 className={`text-2xl font-bold ${text.primary}`}>
-          {t('workload.title', 'Workload Management')}
+          {t('workload.title', '')}
         </h2>
         <div className="flex space-x-2">
           <button
             onClick={() => setViewMode('individual')}
-            className={`px-4 py-2 rounded-lg ${viewMode === 'individual' ? 'bg-blue-600 text-white' : bg.secondary}`}
+            className={`
+              px-4 py-2 rounded-lg transition-all duration-200
+              ${viewMode === 'individual'
+                ? 'bg-amber-600 text-white'
+                : isDarkMode
+                  ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+              }
+            `}
           >
             {t('workload.individual', 'Individual')}
           </button>
+
           <button
             onClick={() => setViewMode('organization')}
-            className={`px-4 py-2 rounded-lg ${viewMode === 'organization' ? 'bg-blue-600 text-white' : bg.secondary}`}
+            className={`
+              px-4 py-2 rounded-lg transition-all duration-200
+              ${viewMode === 'organization'
+                ? 'bg-green-600 text-white'
+                : isDarkMode
+                  ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+              }
+            `}
           >
             {t('workload.organization', 'Organization')}
           </button>
@@ -449,6 +529,26 @@ const WorkloadManagement = ({ employees }) => {
               {editingTask ? t('workload.editTask', 'Edit Task') : t('workload.addTask', 'Add Task')}
             </h3>
             <div className="space-y-4">
+              {/* Employee Selector - Only for Admin/Manager */}
+              {canAssignTasks && (
+                <div>
+                  <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                    {t('workload.assignTo', 'Assign To')} *
+                  </label>
+                  <select
+                    value={taskForm.assignedTo}
+                    onChange={(e) => setTaskForm({ ...taskForm, assignedTo: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-lg border ${border.primary}`}
+                  >
+                    <option value="">{t('workload.selectEmployee', 'Select Employee')}</option>
+                    {employees.map(emp => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.name} - {emp.department} ({emp.position})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className={`block text-sm font-medium ${text.primary} mb-2`}>
                   {t('workload.taskTitle', 'Task Title')}
@@ -550,7 +650,8 @@ const WorkloadManagement = ({ employees }) => {
                       status: 'pending',
                       selfAssessment: '',
                       qualityRating: 0,
-                      comments: ''
+                      comments: '',
+                      assignedTo: selectedEmployee
                     });
                   }}
                   className={`flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700`}
@@ -560,7 +661,24 @@ const WorkloadManagement = ({ employees }) => {
                 <button
                   onClick={() => {
                     if (editingTask) {
-                      handleUpdateTask(editingTask.id, taskForm);
+                      // When updating, include assignedTo if admin/manager changed it
+                      const updates = {
+                        title: taskForm.title,
+                        description: taskForm.description,
+                        dueDate: taskForm.dueDate,
+                        priority: taskForm.priority,
+                        status: taskForm.status,
+                        selfAssessment: taskForm.selfAssessment,
+                        qualityRating: taskForm.qualityRating,
+                        comments: taskForm.comments
+                      };
+                      
+                      // Only include assignedTo if user is admin/manager and it changed
+                      if (canAssignTasks && taskForm.assignedTo !== editingTask.employee_id) {
+                        updates.assignedTo = taskForm.assignedTo;
+                      }
+                      
+                      handleUpdateTask(editingTask.id, updates);
                       setEditingTask(null);
                     } else {
                       handleAddTask();

@@ -38,7 +38,7 @@ export const getAllTasks = async (filters = {}) => {
       .from('workload_tasks')
       .select(`
         *,
-        employee:employees(id, name, department, position)
+        employee:employee_id(id, name, department, position)
       `)
       .order('due_date', { ascending: true });
 
@@ -81,7 +81,7 @@ export const getTaskById = async (taskId) => {
       .from('workload_tasks')
       .select(`
         *,
-        employee:employees(id, name, department, position)
+        employee:employee_id(id, name, department, position)
       `)
       .eq('id', taskId)
       .single();
@@ -147,6 +147,7 @@ export const updateTask = async (taskId, updates) => {
     if (updates.selfAssessment !== undefined) updateData.self_assessment = updates.selfAssessment;
     if (updates.qualityRating !== undefined) updateData.quality_rating = updates.qualityRating;
     if (updates.comments !== undefined) updateData.comments = updates.comments;
+    if (updates.assignedTo !== undefined) updateData.employee_id = updates.assignedTo;
 
     const { data, error } = await supabase
       .from('workload_tasks')
