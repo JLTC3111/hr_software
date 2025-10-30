@@ -1066,7 +1066,7 @@ const Reports = () => {
               style={{
                 backgroundColor: 'transparent',
                 color: selectedReport === tab.id 
-                  ? '#2563eb' 
+                  ? (isDarkMode ? '#ffffff' : '#111827') 
                   : isDarkMode ? '#9ca3af' : '#6b7280',
                 borderColor: selectedReport === tab.id ? '#2563eb' : 'transparent'
               }}
