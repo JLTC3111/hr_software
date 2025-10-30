@@ -36,7 +36,15 @@ const Sidebar = () => {
             { path: '/employees/add', name: t('employees.addNew', 'Add New') },
           ]
         },
-        { path: '/workload', name: t('nav.workload', 'Workload Management'), icon: CheckSquare },
+        { 
+          path: '/workload', 
+          name: t('nav.workload', 'Workload Management'), 
+          icon: CheckSquare,
+          subItems: [
+            { path: '/workload', name: t('nav.taskManagement', 'Task Management') },
+            { path: '/task-performance', name: t('nav.taskPerformance', 'Performance Review') },
+          ]
+        },
       ]
     },
     {
