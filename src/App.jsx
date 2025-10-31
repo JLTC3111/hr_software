@@ -55,6 +55,7 @@ const HRManagementApp = () => {
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Fetch employees from Supabase
   const fetchEmployees = async () => {
@@ -68,7 +69,7 @@ const HRManagementApp = () => {
         console.log('No employees found, seeding initial data...');
         // Create employees one by one to avoid bulk upsert issues
         const createdEmployees = [];
-        for (const emp of Employees) {
+        for (const emp of employees) {
           const seedResult = await employeeService.createEmployee(emp);
           if (seedResult.success) {
             createdEmployees.push(seedResult.data);
@@ -84,7 +85,7 @@ const HRManagementApp = () => {
       setError(result.error);
       console.error('Error fetching employees:', result.error);
       // Fallback to hardcoded data if Supabase fails
-      setEmployees(Employees);
+      setEmployees(employees);
     }
     setLoading(false);
   };
@@ -248,20 +249,22 @@ const HRManagementApp = () => {
             <AppContent 
               employees={employees}
               applications={applications}
-            selectedEmployee={selectedEmployee}
-            isEditMode={isEditMode}
-            onViewEmployee={handleViewEmployee}
-            onEditEmployee={handleEditEmployee}
-            onDeleteEmployee={handleDeleteEmployee}
-            onCloseModal={handleCloseModal}
-            onPhotoUpdate={handlePhotoUpdate}
-            isAddEmployeeModalOpen={isAddEmployeeModalOpen}
-            setIsAddEmployeeModalOpen={setIsAddEmployeeModalOpen}
-            onAddEmployee={handleAddEmployee}
-            refetchEmployees={refetchEmployees}
-            loading={loading}
-            error={error}
-          />
+              selectedEmployee={selectedEmployee}
+              isEditMode={isEditMode}
+              onViewEmployee={handleViewEmployee}
+              onEditEmployee={handleEditEmployee}
+              onDeleteEmployee={handleDeleteEmployee}
+              onCloseModal={handleCloseModal}
+              onPhotoUpdate={handlePhotoUpdate}
+              isAddEmployeeModalOpen={isAddEmployeeModalOpen}
+              setIsAddEmployeeModalOpen={setIsAddEmployeeModalOpen}
+              onAddEmployee={handleAddEmployee}
+              refetchEmployees={refetchEmployees}
+              loading={loading}
+              error={error}
+              isMobileMenuOpen={isMobileMenuOpen}
+              setIsMobileMenuOpen={setIsMobileMenuOpen}
+            />
           </UploadProvider>
         </ThemeProvider>
       </LanguageProvider>
@@ -269,7 +272,7 @@ const HRManagementApp = () => {
   );
 };
 
-const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onViewEmployee, onEditEmployee, onDeleteEmployee, onCloseModal, onPhotoUpdate, isAddEmployeeModalOpen, setIsAddEmployeeModalOpen, onAddEmployee, refetchEmployees, loading, error }) => {
+const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onViewEmployee, onEditEmployee, onDeleteEmployee, onCloseModal, onPhotoUpdate, isAddEmployeeModalOpen, setIsAddEmployeeModalOpen, onAddEmployee, refetchEmployees, loading, error, isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const { bg, text } = useTheme();
   const { isAuthenticated } = useAuth();
   const { currentLanguage } = useLanguage();
@@ -316,10 +319,18 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
           <Route path="/*" element={
             isAuthenticated ? (
               <div className={`min-h-screen ${bg.primary}`}>
-                <Header key={currentLanguage} />
+                <Header 
+                  key={currentLanguage} 
+                  isMobileMenuOpen={isMobileMenuOpen}
+                  setIsMobileMenuOpen={setIsMobileMenuOpen}
+                />
               
               <div className="flex">
-                <Sidebar key={currentLanguage} />
+                <Sidebar 
+                  key={currentLanguage} 
+                  isMobileMenuOpen={isMobileMenuOpen}
+                  setIsMobileMenuOpen={setIsMobileMenuOpen}
+                />
                 
                 {/* Main Content - Full width utilization */}
                 <div className="flex-1 p-3 sm:p-4 lg:p-8 w-full mx-auto">

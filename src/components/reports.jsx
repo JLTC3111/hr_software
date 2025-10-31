@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, PieChart, UserPlus, Download, Calendar, SquareSigma, PiggyBank, Award, Clock, Filter, HeartPulse, Loader } from 'lucide-react';
+import { BarChart3, PieChart, UserPlus, Download, Calendar, SquareSigma, PiggyBank, Award, Clock, Filter, HeartPulse, Loader, DollarSign } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import * as reportService from '../services/reportService';

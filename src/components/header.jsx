@@ -1,5 +1,5 @@
 import React from 'react'
-import { Users, LogOut, Bell } from 'lucide-react'
+import { Users, LogOut, Bell, Menu, X } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -8,8 +8,8 @@ import { useNavigate } from 'react-router-dom'
 import ThemeToggle from './themeToggle'
 import LanguageSelector from './LanguageSelector'
 
-const Header = () => {
-  const { bg, text, border, isDarkMode } = useTheme();
+const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
+  const { bg, text, border, hover, isDarkMode } = useTheme();
   const { t } = useLanguage();
   const { user, logout } = useAuth();
   const { unreadCount } = useNotifications();
@@ -19,12 +19,29 @@ const Header = () => {
     logout();
     navigate('/login');
   };
+
+  const handleMobileMenuToggle = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
   
   return (
     <nav className={`${bg.secondary} shadow-sm border-b ${border.primary}`}>
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
+          <div className="flex items-center space-x-3">
+            {/* Mobile Menu Button */}
+            <button
+              onClick={handleMobileMenuToggle}
+              className={`lg:hidden p-2 rounded-lg transition-all duration-200 cursor-pointer ${hover.bg}`}
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            >
+              {isMobileMenuOpen ? (
+                <X className={`h-6 w-6 ${text.primary}`} />
+              ) : (
+                <Menu className={`h-6 w-6 ${text.primary}`} />
+              )}
+            </button>
+
             <div className="shrink-0 flex items-center">
               <img 
                 src="/logoIcons/logo.png" 

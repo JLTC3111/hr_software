@@ -323,9 +323,9 @@ const WorkloadManagement = ({ employees }) => {
                 });
                 setShowAddTask(true);
               }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 cursor-pointer" />
               <span>{canAssignTasks ? t('workload.assignTask', '') : t('workload.addTask', '')}</span>
             </button>
           </div>
@@ -392,13 +392,13 @@ const WorkloadManagement = ({ employees }) => {
                         });
                         setShowAddTask(true);
                       }}
-                      className={`p-2 rounded ${isDarkMode ? 'hover:bg-green-700' : 'hover:bg-green-100'}`}
+                      className={`p-2 rounded cursor-pointer ${isDarkMode ? 'hover:bg-green-700' : 'hover:bg-green-100'}`}
                     >
                       <Edit2 className={`w-4 h-4 ${text.primary}`} />
                     </button>
                     <button     
                       onClick={() => handleDeleteTask(task.id)}
-                      className={`p-2 rounded text-red-600 ${isDarkMode ? 'hover:bg-red-900' : 'hover:bg-red-100'}`}
+                      className={`p-2 rounded text-red-600 cursor-pointer ${isDarkMode ? 'hover:bg-red-900' : 'hover:bg-red-100'}`}
                     >
                       <Trash2 className={`w-4 h-4 ${text.primary}`} />
                     </button>
@@ -468,7 +468,7 @@ const WorkloadManagement = ({ employees }) => {
                   });
                   setShowAddTask(true);
                 }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>{t('workload.assignTask', 'Assign Task')}</span>
@@ -537,7 +537,7 @@ const WorkloadManagement = ({ employees }) => {
           <button
             onClick={() => setViewMode('individual')}
             className={`
-              px-4 py-2 rounded-lg transition-all duration-200
+              px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer
               ${viewMode === 'individual'
                 ? 'bg-amber-600 text-white'
                 : isDarkMode
@@ -552,7 +552,7 @@ const WorkloadManagement = ({ employees }) => {
           <button
             onClick={() => setViewMode('organization')}
             className={`
-              px-4 py-2 rounded-lg transition-all duration-200
+              px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer
               ${viewMode === 'organization'
                 ? 'bg-green-600 text-white'
                 : isDarkMode
@@ -587,7 +587,7 @@ const WorkloadManagement = ({ employees }) => {
               {canAssignTasks && (
                 <div>
                   <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                    {t('workload.assignTo', 'Assign To')} *
+                    {t('workload.assignTo', '')} *
                   </label>
                   <select
                     value={taskForm.assignedTo}
@@ -634,9 +634,9 @@ const WorkloadManagement = ({ employees }) => {
                     type="date"
                     value={taskForm.dueDate}
                     onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
-                    className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary} [&::-webkit-calendar-picker-indicator]:opacity-0`}
+                    className={`cursor-pointer w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary} [&::-webkit-calendar-picker-indicator]:opacity-0`}
                   />
-                  <Calendar className={`absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none`} />
+                  <Calendar className={`cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none`} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -697,7 +697,7 @@ const WorkloadManagement = ({ employees }) => {
               <div className="flex space-x-3 pt-4">
                 <button
                   onClick={closeModal}
-                  className={`flex-1 px-4 py-2 border rounded-lg ${text.secondary} ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
+                  className={`flex-1 px-4 py-2 border rounded-lg cursor-pointer ${text.secondary} ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
                 >
                   {t('common.cancel', 'Cancel')}
                 </button>
@@ -728,7 +728,7 @@ const WorkloadManagement = ({ employees }) => {
                     }
                     setShowAddTask(false);
                   }}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
                 >
                   {editingTask ? t('common.update', 'Update') : t('common.add', 'Add')}
                 </button>

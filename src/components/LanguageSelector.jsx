@@ -5,6 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 
 const LanguageSelector = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isChanging, setIsChanging] = useState(false);
   const { currentLanguage, changeLanguage, languages } = useLanguage();
   const { isDarkMode, bg, text, border, hover } = useTheme();
   const dropdownRef = useRef(null);
@@ -22,8 +23,10 @@ const LanguageSelector = () => {
   }, []);
 
   const handleLanguageChange = (languageCode) => {
+    setIsChanging(true);
     changeLanguage(languageCode);
     setIsOpen(false);
+    setTimeout(() => setIsChanging(false), 600);
   };
 
   const currentLangData = languages[currentLanguage];
@@ -32,7 +35,7 @@ const LanguageSelector = () => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 px-3 py-2 rounded-lg border hover:opacity-80 transition-opacity"
+        className="flex items-center space-x-2 px-3 py-2 rounded-lg border hover:opacity-80 transition-opacity cursor-pointer"
         style={{
           backgroundColor: isDarkMode ? '#374151' : '#f3f4f6', // gray-700 : gray-100
           color: isDarkMode ? '#ffffff' : '#111827', // white : gray-900
@@ -41,7 +44,7 @@ const LanguageSelector = () => {
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
-        <Globe className="w-4 h-4" />
+        <Globe className={`w-4 h-4 ${isChanging ? 'animate-spin' : ''}`} />
         <span className={`text-sm font-medium flex items-center space-x-2`}>
           <img src={currentLangData?.flag} alt={currentLangData?.name} className="w-5 h-5 rounded" />
           <span>{currentLangData?.name}</span>
@@ -62,7 +65,7 @@ const LanguageSelector = () => {
               <button
                 key={language.code}
                 onClick={() => handleLanguageChange(language.code)}
-                className="w-full text-left px-4 py-2 text-sm transition-colors flex items-center space-x-3"
+                className="w-full text-left px-4 py-2 text-sm transition-colors flex items-center space-x-3 cursor-pointer"
                 style={{
                   color: isDarkMode ? '#ffffff' : '#111827', // white : gray-900
                   backgroundColor: currentLanguage === language.code 

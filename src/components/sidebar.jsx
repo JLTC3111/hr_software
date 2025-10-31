@@ -1,12 +1,11 @@
 import React, { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { TrendingUp, Users, Award, FileText, Clock, AlarmClock, ChevronLeft, ChevronRight, Menu, X, ChevronDown, Building2, Bell, Settings, CheckSquare, Sparkles } from 'lucide-react'
+import { TrendingUp, Users, Award, FileText, Clock, AlarmClock, ChevronLeft, ChevronRight, ChevronDown, Building2, Bell, Cog, CheckSquare, Sparkles, X } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 
-const Sidebar = () => {
+const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({});
   const [hoveredItem, setHoveredItem] = useState(null);
   const { bg, text, hover, isDarkMode } = useTheme();
@@ -58,7 +57,7 @@ const Sidebar = () => {
       section: 'SETTINGS',
       items: [
         { path: '/notifications', name: t('nav.notifications', 'Notifications'), icon: Bell },
-        { path: '/settings', name: t('nav.settings', 'Settings'), icon: Settings },
+        { path: '/settings', name: t('nav.settings', 'Settings'), icon: Cog },
       ]
     },
     {
@@ -77,10 +76,6 @@ const Sidebar = () => {
     }
   ];
 
-  const handleMobileMenuToggle = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
   };
@@ -94,16 +89,7 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      {!isMobileMenuOpen && (
-        <button
-          onClick={handleMobileMenuToggle}
-          className={`lg:hidden fixed top-11 left-75 z-50 p-2 rounded-lg shadow-lg ${hover.bg} transition-all duration-200`}
-          aria-label="Open menu"
-        >
-          <Menu className={`h-7 w-7 ${text.primary}`} />
-        </button>
-      )}
+      {/* Mobile Menu Backdrop */}
       {isMobileMenuOpen && (
         <div
           className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
@@ -215,7 +201,7 @@ const Sidebar = () => {
                           }
                           title={isCollapsed ? item.name : ''}
                         >
-                          <Icon className="h-5 w-5 flex-shrink-0" />
+                          <Icon className="h-5 w-5 shrink-0" />
                           {!isCollapsed && <span className="font-medium">{item.name}</span>}
                           
                           {/* Tooltip for collapsed state */}
