@@ -429,6 +429,10 @@ export default {
     filterBy: 'กรองตาม',
     dateRange: 'ช่วงวันที่',
     allDepartments: 'ทุกแผนก',
+    performance: 'ประสิทธิภาพ',
+    salary: 'เงินเดือน',
+    attendance: 'การเข้าร่วม',
+    recruitment: 'การรับสมัคร',
     department: 'แผนก',
     all: 'ทั้งหมด',
     // Navigation

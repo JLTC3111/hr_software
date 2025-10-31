@@ -233,12 +233,8 @@ const PerformanceAppraisal = ({ employees }) => {
 
     setLoading(true);
     
-    const result = await performanceService.updatePerformanceGoal(goalId, {
-      progress_percentage: newProgress
-    });
-
-    if (result.success) {
-      // Update the goal status based on progress
+    try {
+      // Determine the new status based on progress
       let newStatus = 'pending';
       if (newProgress === 100) {
         newStatus = 'completed';
@@ -246,23 +242,30 @@ const PerformanceAppraisal = ({ employees }) => {
         newStatus = 'in_progress';
       }
       
-      // Update status if changed
-      await performanceService.updatePerformanceGoal(goalId, {
+      // Update both progress and status in a single call
+      const result = await performanceService.updatePerformanceGoal(goalId, {
+        progressPercentage: newProgress,
         status: newStatus
       });
 
-      // Clear the progress change for this goal
-      setProgressChanges(prev => {
-        const updated = { ...prev };
-        delete updated[goalId];
-        return updated;
-      });
-      
-      fetchGoalsAndReviews(); // Refresh data
-      alert(t('performance.progressSaved', 'Progress saved successfully!'));
-    } else {
-      alert(t('performance.progressSaveError', 'Failed to save progress: ') + result.error);
+      if (result.success) {
+        // Clear the progress change for this goal
+        setProgressChanges(prev => {
+          const updated = { ...prev };
+          delete updated[goalId];
+          return updated;
+        });
+        
+        fetchGoalsAndReviews(); // Refresh data
+        alert(t('performance.progressSaved', 'Progress saved successfully!'));
+      } else {
+        alert(t('performance.progressSaveError', 'Failed to save progress: ') + result.error);
+      }
+    } catch (error) {
+      console.error('Error saving progress:', error);
+      alert(t('performance.progressSaveError', 'Failed to save progress: ') + error.message);
     }
+    
     setLoading(false);
   };
 
@@ -288,7 +291,7 @@ const PerformanceAppraisal = ({ employees }) => {
     })),
     reviews: reviews.map(review => ({
       id: review.id,
-      reviewer: review.reviewer_id || 'Manager',
+      reviewer: review.reviewer?.name || 'Manager',
       rating: review.overall_rating || 0,
       date: review.review_date,
       type: review.review_type,
@@ -484,7 +487,7 @@ const PerformanceAppraisal = ({ employees }) => {
         >
           <div className="flex items-center space-x-3">
             <div className="p-3 bg-transparent rounded-full">
-              <Goal className="h-6 w-6 text-red-600" />
+              <Goal className={`h-6 w-6 ${text.primary}`} />
             </div>
             <div>
               <p 
@@ -521,7 +524,7 @@ const PerformanceAppraisal = ({ employees }) => {
         >
           <div className="flex items-center space-x-3">
             <div className="p-3 bg-transparent rounded-full">
-              <Award className="h-6 w-6 text-green-600" />
+              <Award className={`h-6 w-6 ${text.primary}`} />
             </div>
             <div>
               <p 
@@ -558,7 +561,7 @@ const PerformanceAppraisal = ({ employees }) => {
         >
           <div className="flex items-center space-x-3">
             <div className="p-3 bg-transparent rounded-full">
-              <Sparkle className="h-6 w-6 text-blue-600" />
+              <Sparkle className={`h-6 w-6 ${text.primary}`} />
             </div>
             <div>
               <p 
@@ -710,24 +713,6 @@ const PerformanceAppraisal = ({ employees }) => {
         </h3>
         <div className="flex items-center space-x-2">
           <button 
-            onClick={() => {
-              if (currentData.goals.length > 0) {
-                handleEditGoal(currentData.goals[0]);
-              }
-            }}
-            disabled={currentData.goals.length === 0}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center space-x-2 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: currentData.goals.length === 0 ? '#6b7280' : '#4b5563',
-              color: '#ffffff',
-              borderColor: currentData.goals.length === 0 ? '#6b7280' : '#4b5563'
-            }}
-            title={currentData.goals.length === 0 ? t('performance.noGoalsToEdit', 'No goals to edit') : t('performance.editGoal', 'Edit goal')}
-          >
-            <Edit className="h-4 w-4" />
-            <span>{t('performance.editGoal', 'Edit Goal')}</span>
-          </button>
-          <button 
             onClick={handleAddGoal}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 cursor-pointer transition-colors"
             style={{
@@ -862,7 +847,7 @@ const PerformanceAppraisal = ({ employees }) => {
                 </span>
               </div>
               <button 
-                className="flex items-center space-x-1 text-blue-600 hover:text-blue-800"
+                className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 hidden"
                 style={{
                   backgroundColor: 'transparent',
                   color: '#2563eb',
@@ -993,7 +978,7 @@ const PerformanceAppraisal = ({ employees }) => {
   return (
     <div className="space-y-4 md:space-y-6 px-2 sm:px-0">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 gap-15">
         <div className="flex items-center space-x-4">
           <h2 
             className="font-bold"

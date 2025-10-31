@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, PieChart, UserPlus, Download, Calendar, SquareSigma, PiggyBank, Award, User, Users, Filter, HeartPulse, Loader, DollarSign } from 'lucide-react';
+import { BarChart3, PieChart, UserPlus, Download, Calendar, SquareSigma, PiggyBank, Award, TrendingUp, Users, Filter, HeartPulse, Loader, DollarSign } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import * as reportService from '../services/reportService';
@@ -20,7 +20,7 @@ const Reports = () => {
   const [reportData, setReportData] = useState(null);
   const [performanceTrend, setPerformanceTrend] = useState([]);
   const { t } = useLanguage();
-  const { isDarkMode } = useTheme();
+  const { isDarkMode, text, bg, border } = useTheme();
   
   // Get current month and year
   const currentDate = new Date();
@@ -590,8 +590,11 @@ const Reports = () => {
                 }}
               >
                 <div 
-                  className="bg-blue-500 h-2 rounded-full" 
-                  style={{ width: `${(item.rating / 5) * 100}%` }}
+                  className={`${text.primary} h-2 rounded-full`}
+                  style={{ 
+                    width: `${(item.rating / 5) * 100}%`,
+                    backgroundColor: isDarkMode ? '#3b82f6' : '#2563eb'
+                  }}
                 ></div>
               </div>
               <span 
@@ -763,11 +766,11 @@ const Reports = () => {
           <button 
             onClick={handleGenerateReport}
             disabled={generating}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all"
+            className={`px-6 py-2 text-white rounded-lg flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all ${text.primary}`}
             style={{
-              backgroundColor: '#2563eb',
+              backgroundColor: isDarkMode ? '#3b82f6' : '#2563eb',
               color: '#ffffff',
-              borderColor: '#2563eb'
+              borderColor: isDarkMode ? '#3b82f6' : '#2563eb'
             }}
           >
             {generating ? <Loader className="h-4 w-4 animate-spin" /> : <BarChart3 className="h-4 w-4" />}
@@ -843,7 +846,7 @@ const Reports = () => {
               }}
             >
               <div className="flex items-center space-x-3 mb-2">
-                <report.icon className="h-5 w-5 text-blue-600" />
+                <report.icon className={`h-5 w-5 ${text.primary}`} style={{ color: isDarkMode ? '#3b82f6' : '#2563eb' }} />
                 <h4 
                   className="font-medium"
                   style={{
@@ -868,7 +871,8 @@ const Reports = () => {
               <button 
                 onClick={() => handlePrebuiltReport(report.type)}
                 disabled={generating}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all"
+                className="text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all"
+                style={{ color: isDarkMode ? '#3b82f6' : '#2563eb' }}
               >
                 {generating ? t('common.generating', 'Generating...') : t('reports.generate')}
               </button>
@@ -890,7 +894,7 @@ const Reports = () => {
               backgroundColor: isDarkMode ? '#374151' : '#ffffff'
             }}
           >
-            <Loader className="w-6 h-6 animate-spin text-blue-600" />
+            <Loader className={`w-6 h-6 animate-spin ${text.primary}`} style={{ color: isDarkMode ? '#3b82f6' : '#2563eb' }} />
             <span style={{ color: isDarkMode ? '#ffffff' : '#111827' }}>
               {t('common.loading', 'Loading reports...')}
             </span>
@@ -926,9 +930,9 @@ const Reports = () => {
           </button>
           <button 
             onClick={handleExportAll}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 transition-all duration-200 hover:scale-105 hover:shadow-lg cursor-pointer"
+            className="px-4 py-2 text-white rounded-lg flex items-center space-x-2 transition-all duration-200 hover:scale-105 hover:shadow-lg cursor-pointer"
             style={{
-              backgroundColor: '#2563eb',
+              backgroundColor: isDarkMode ? '#3b82f6' : '#2563eb',
               color: '#ffffff',
               borderColor: '#2563eb'
             }}
@@ -1024,10 +1028,10 @@ const Reports = () => {
                   borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
                 }}
               >
-                <option value="performance">{t('reports.performance', 'Performance')}</option>
-                <option value="salary">{t('reports.salary', 'Salary')}</option>
-                <option value="attendance">{t('reports.attendance', 'Attendance')}</option>
-                <option value="recruitment">{t('reports.recruitment', 'Recruitment')}</option>
+                <option value="performance">{t('reports.performance', '')}</option>
+                <option value="salary">{t('reports.salary', '')}</option>
+                <option value="attendance">{t('reports.attendance', '')}</option>
+                <option value="recruitment">{t('reports.recruitment', '')}</option>
               </select>
             </div>
           </div>
@@ -1070,7 +1074,7 @@ const Reports = () => {
       {/* Tab Content */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader className="w-8 h-8 animate-spin text-blue-600" />
+          <Loader className={`w-8 h-8 animate-spin ${text.primary}`} style={{ color: isDarkMode ? '#3b82f6' : '#2563eb' }} />
         </div>
       ) : !reportData ? (
         <div className="text-center py-12">

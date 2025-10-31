@@ -485,6 +485,10 @@ login: {
     filterBy: 'Filtrar Por',
     dateRange: 'Rango de Fechas',
     allDepartments: 'Todos los Departamentos',
+    performance: 'Rendimiento',
+    salary: 'Salario',
+    attendance: 'Asistencia',
+    recruitment: 'Reclutamiento',
     department: 'Departamento',
     all: 'Todos',
     // Navigation

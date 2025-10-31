@@ -369,7 +369,11 @@ export default {
     exportExcel: 'Excel exportieren',
     filterBy: 'Filtern nach',
     dateRange: 'Datumsbereich',
-    allDepartment: 'Alle Abteilungen',
+    allDepartments: 'Alle Abteilungen',
+    performance: 'Leistung',
+    salary: 'Gehalt',
+    attendance: 'Anwesenheit',
+    recruitment: 'Rekrutierung',
     department: 'Abteilung',
     all: 'Alle',
     // Navigation

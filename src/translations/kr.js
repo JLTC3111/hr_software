@@ -432,6 +432,10 @@ export default {
     filterBy: '필터링',
     dateRange: '날짜 범위',
     allDepartments: '모든 부서',
+    performance: '성과',
+    salary: '급여',
+    attendance: '출석',
+    recruitment: '채용',
     department: '부서',
     all: '모두',
     // Navigation

@@ -477,6 +477,10 @@ export default {
     dateRange: 'Диапазон дат',
     allDepartments: 'Все отделы',
     department: 'Отдел',
+    performance: 'Производительность',
+    salary: 'Зарплата',
+    attendance: 'Посещаемость',
+    recruitment: 'Набор персонала',
     all: 'Все',
     // Navigation
     overview: 'Обзор',

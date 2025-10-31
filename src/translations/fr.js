@@ -490,6 +490,10 @@ export default {
     filterBy: 'Filtrer par',
     dateRange: 'Plage de dates',
     allDepartments: 'Tous les départements',
+    performance: 'Performance',
+    salary: 'Salaire',
+    attendance: 'Présence',
+    recruitment: 'Recrutement',
     department: 'Département',
     all: 'Tous',
     // Navigation

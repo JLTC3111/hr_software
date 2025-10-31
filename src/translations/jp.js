@@ -430,6 +430,10 @@ export default {
     dateRange: '期間',
     department: '部署',
     allDepartments: 'すべての部署',
+    performance: 'パフォーマンス',
+    salary: '給与',
+    attendance: '出勤',
+    recruitment: '採用',
     all: 'すべて',
     // Navigation
     overview: '概要',

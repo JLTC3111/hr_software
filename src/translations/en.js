@@ -560,6 +560,10 @@ export default {
     filterBy: 'Filter By',
     dateRange: 'Date Range',
     allDepartments: 'All Departments',
+    performance: 'Performance',
+    salary: 'Salary',
+    attendance: 'Attendance',
+    recruitment: 'Recruitment',
     department: 'Department',
     all: 'All',
     // Navigation
