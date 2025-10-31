@@ -63,7 +63,7 @@ export const usePermissions = () => {
     
     // Role flags for easy checking
     isAdmin: user?.role === 'hr_admin',
-    isManager: user?.role === 'hr_manager',
+    isManager: user?.role === 'manager',
     isEmployee: user?.role === 'employee',
     isContractor: user?.role === 'contractor',
     
@@ -74,7 +74,7 @@ export const usePermissions = () => {
     // Helper function to check if user can perform action on resource
     canAccessResource: (resourceOwnerId) => {
       // Admin and Manager can access all resources
-      if (user?.role === 'hr_admin' || user?.role === 'hr_manager') {
+      if (user?.role === 'hr_admin' || user?.role === 'manager') {
         return true;
       }
       // Regular users can only access their own resources

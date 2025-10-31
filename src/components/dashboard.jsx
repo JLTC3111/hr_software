@@ -745,7 +745,7 @@ const Dashboard = ({ employees, applications }) => {
                     <img 
                       src={emp.photo} 
                       alt={emp.name}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
+                      className={`w-10 h-10 rounded-full object-cover border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}
                     />
                   ) : (
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Sparkle, TrendingUp, Calendar, User, Award, Goal, MessageSquare, Plus, Edit, Eye, X, Save } from 'lucide-react';
+import { Star, Sparkle, TrendingUp, Calendar, User, Award, Goal, MessageSquare, Plus, Edit, Eye, X, Save, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import * as performanceService from '../services/performanceService';
 
 const PerformanceAppraisal = ({ employees }) => {
@@ -16,7 +17,8 @@ const PerformanceAppraisal = ({ employees }) => {
   const [goals, setGoals] = useState([]);
   const [reviews, setReviews] = useState([]);
   const { t } = useLanguage();
-  const { isDarkMode } = useTheme();
+  const { isDarkMode, text, bg, border } = useTheme();
+  const { user } = useAuth();
 
   // Form state for new goal
   const [goalForm, setGoalForm] = useState({
@@ -300,18 +302,50 @@ const PerformanceAppraisal = ({ employees }) => {
     );
   };
 
-  const ProgressBar = ({ progress }) => (
-    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-      <div
-        className="h-2 rounded-full transition-all"
-        style={{ 
-          width: `${progress}%`,
-          background: `linear-gradient(to right, #000000, #c40000ff)`,
-          boxShadow: '0 0 4px rgba(220, 38, 38, 0.4)'
-        }}
-      ></div>
-    </div>
-  );
+  const ProgressBar = ({ progress, goalId, editable = false }) => {
+    const [localProgress, setLocalProgress] = useState(progress);
+    const [isHovering, setIsHovering] = useState(false);
+
+    const handleProgressClick = async (e) => {
+      if (!editable) return;
+      
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const newProgress = Math.round((x / rect.width) * 100);
+      
+      setLocalProgress(newProgress);
+      
+      // Update in database
+      if (goalId) {
+        const result = await performanceService.updatePerformanceGoal(goalId, {
+          progress_percentage: newProgress
+        });
+        
+        if (result.success) {
+          fetchGoalsAndReviews(); // Refresh data
+        }
+      }
+    };
+
+    return (
+      <div 
+        className={`w-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} rounded-full h-2 ${editable ? 'cursor-pointer' : ''}`}
+        onClick={handleProgressClick}
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+        title={editable ? t('performance.clickToUpdateProgress', 'Click to update progress') : ''}
+      >
+        <div
+          className="h-2 rounded-full transition-all"
+          style={{ 
+            width: `${localProgress}%`,
+            background: `linear-gradient(to right, #000000, #c40000ff)`,
+            boxShadow: isHovering && editable ? '0 0 6px rgba(220, 38, 38, 0.6)' : '0 0 4px rgba(220, 38, 38, 0.4)'
+          }}
+        ></div>
+      </div>
+    );
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -383,7 +417,7 @@ const PerformanceAppraisal = ({ employees }) => {
           editable={true}
           onRatingChange={handleUpdatePerformanceRating}
         />
-        <p className="text-xs mt-2 text-gray-500 dark:text-gray-400">
+        <p className={`text-xs mt-2 ${text.secondary}`}>
           {t('performance.clickToRate', 'Click stars to update employee rating')}
         </p>
       </div>
@@ -565,7 +599,7 @@ const PerformanceAppraisal = ({ employees }) => {
                     {getStatusText(goal.status)}
                   </span>
                   <button 
-                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors border"
+                    className={`p-1.5 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} rounded transition-colors border`}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleEditGoal(goal);
@@ -582,7 +616,7 @@ const PerformanceAppraisal = ({ employees }) => {
                 </div>
               </div>
               <div className="mb-2">
-                <ProgressBar progress={goal.progress} />
+                <ProgressBar progress={goal.progress} goalId={goal.id} editable={true} />
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span 
@@ -668,7 +702,7 @@ const PerformanceAppraisal = ({ employees }) => {
                   {getStatusText(goal.status)}
                 </span>
                 <button 
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors border"
+                  className={`p-2 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} rounded transition-colors border`}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleEditGoal(goal);
@@ -850,21 +884,42 @@ const PerformanceAppraisal = ({ employees }) => {
     </div>
   );
 
+  // Get current employee data
+  const currentEmployee = employees.find(emp => String(emp.id) === selectedEmployee);
+
   return (
     <div className="space-y-4 md:space-y-6 px-2 sm:px-0">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-        <h2 
-          className="font-bold"
-          style={{
-            backgroundColor: 'transparent',
-            color: isDarkMode ? '#ffffff' : '#111827',
-            borderColor: 'transparent',
-            fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'
-          }}
-        >
-          {t('performance.title')}
-        </h2>
+        <div className="flex items-center space-x-4">
+          <h2 
+            className="font-bold"
+            style={{
+              backgroundColor: 'transparent',
+              color: isDarkMode ? '#ffffff' : '#111827',
+              borderColor: 'transparent',
+              fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'
+            }}
+          >
+            {t('performance.title')}
+          </h2>
+          {currentEmployee && (
+            <div className="flex items-center space-x-3">
+              {currentEmployee.photo ? (
+                <img 
+                  src={currentEmployee.photo} 
+                  alt={currentEmployee.name}
+                  className={`w-10 h-10 rounded-full object-cover border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}
+                />
+              ) : (
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white bg-blue-500`}>
+                  {currentEmployee.name?.charAt(0) || 'U'}
+                </div>
+              )}
+              <span className={text.primary}>{currentEmployee.name}</span>
+            </div>
+          )}
+        </div>
         <div className="flex space-x-4">
           {/* Employee Selector */}
           <select
@@ -966,7 +1021,7 @@ const PerformanceAppraisal = ({ employees }) => {
               <h2 className="text-2xl font-bold">{t('performance.addNewGoal', 'Add New Goal')}</h2>
               <button
                 onClick={() => setShowAddGoalModal(false)}
-                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1107,7 +1162,7 @@ const PerformanceAppraisal = ({ employees }) => {
                 <button
                   type="button"
                   onClick={() => setShowAddGoalModal(false)}
-                  className="px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  className={`px-4 py-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors cursor-pointer`}
                   style={{
                     backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
                     color: isDarkMode ? '#ffffff' : '#111827'
@@ -1154,7 +1209,7 @@ const PerformanceAppraisal = ({ employees }) => {
                   setShowEditGoalModal(false);
                   setEditingGoal(null);
                 }}
-                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1326,7 +1381,7 @@ const PerformanceAppraisal = ({ employees }) => {
                     setShowEditGoalModal(false);
                     setEditingGoal(null);
                   }}
-                  className="px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  className={`px-4 py-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors cursor-pointer`}
                   style={{
                     backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
                     color: isDarkMode ? '#ffffff' : '#111827'
@@ -1369,7 +1424,7 @@ const PerformanceAppraisal = ({ employees }) => {
               <h2 className="text-2xl font-bold">{t('performance.newReview', 'New Performance Review')}</h2>
               <button
                 onClick={() => setShowAddReviewModal(false)}
-                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1540,7 +1595,7 @@ const PerformanceAppraisal = ({ employees }) => {
                 <button
                   type="button"
                   onClick={() => setShowAddReviewModal(false)}
-                  className="px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  className={`px-4 py-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors cursor-pointer`}
                   style={{
                     backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
                     color: isDarkMode ? '#ffffff' : '#111827'

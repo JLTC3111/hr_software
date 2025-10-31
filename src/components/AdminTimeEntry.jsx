@@ -203,7 +203,7 @@ const AdminTimeEntry = () => {
   if (!canManageTimeTracking) {
     return (
       <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
-        <div className="flex items-center space-x-3 text-red-600 dark:text-red-400">
+        <div className={`flex items-center space-x-3 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>
           <AlertCircle className="w-6 h-6" />
           <p className="font-medium">{t('adminTimeEntry.accessDenied', 'Access Denied: You don\'t have permission to manage time entries for other employees.')}</p>
         </div>
@@ -226,17 +226,17 @@ const AdminTimeEntry = () => {
 
       {/* Success Message */}
       {successMessage && (
-        <div className="mb-4 p-4 bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-lg flex items-center space-x-2">
-          <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
-          <span className="text-green-800 dark:text-green-200">{successMessage}</span>
+        <div className={`mb-4 p-4 border rounded-lg flex items-center space-x-2 ${isDarkMode ? 'bg-green-900 border-green-700' : 'bg-green-50 border-green-200'}`}>
+          <Check className={`w-5 h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+          <span className={isDarkMode ? 'text-green-200' : 'text-green-800'}>{successMessage}</span>
         </div>
       )}
 
       {/* Error Message */}
       {errorMessage && (
-        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg flex items-center space-x-2">
-          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-          <span className="text-red-800 dark:text-red-200">{errorMessage}</span>
+        <div className={`mb-4 p-4 border rounded-lg flex items-center space-x-2 ${isDarkMode ? 'bg-red-900 border-red-700' : 'bg-red-50 border-red-200'}`}>
+          <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
+          <span className={isDarkMode ? 'text-red-200' : 'text-red-800'}>{errorMessage}</span>
         </div>
       )}
 
@@ -271,7 +271,7 @@ const AdminTimeEntry = () => {
                       setSearchTerm('');
                     }}
                     className={`p-3 cursor-pointer  ${isDarkMode ? 'hover:bg-blue-800' : 'hover:bg-blue-50'} transition-colors ${
-                      selectedEmployee?.id === emp.id ? 'bg-blue-100 dark:bg-blue-800' : ''
+                      selectedEmployee?.id === emp.id ? (isDarkMode ? 'bg-blue-800' : 'bg-blue-100') : ''
                     }`}
                   >
                     <div className={`font-medium ${text.primary}`}>{emp.name}</div>
@@ -298,7 +298,7 @@ const AdminTimeEntry = () => {
               <button
                 type="button"
                 onClick={() => setSelectedEmployee(null)}
-                className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                className={`transition-colors ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-800'}`}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -431,7 +431,7 @@ const AdminTimeEntry = () => {
           ) : (
             <div className={`border ${border.primary} rounded-lg p-4 flex items-center justify-between ${bg.primary}`}>
               <div className="flex items-center space-x-3">
-                <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
+                <FileText className={`w-5 h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
                 <div>
                   <div className={`text-sm font-medium ${text.primary}`}>{formData.proofFile.name}</div>
                   <div className={`text-xs ${text.secondary}`}>
@@ -442,7 +442,7 @@ const AdminTimeEntry = () => {
               <button
                 type="button"
                 onClick={handleRemoveFile}
-                className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                className={`transition-colors ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-800'}`}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -454,7 +454,11 @@ const AdminTimeEntry = () => {
         <button
           type="submit"
           disabled={loading || !selectedEmployee}
-          className={`w-full flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition-colors disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed shadow-lg hover:shadow-xl`}
+          className={`w-full flex items-center justify-center space-x-2 px-6 py-3 text-white rounded-lg transition-colors shadow-lg hover:shadow-xl ${
+            isDarkMode 
+              ? 'bg-blue-700 hover:bg-blue-600 disabled:bg-gray-600' 
+              : 'bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400'
+          } disabled:cursor-not-allowed`}
         >
           {loading ? (
             <>

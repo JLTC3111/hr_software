@@ -381,7 +381,7 @@ export const notifyPendingApprovals = async () => {
     const { data: managers, error: managersError } = await supabase
       .from('hr_users')
       .select('id')
-      .in('role', ['admin', 'hr_admin', 'manager', 'hr_manager']);
+      .in('role', ['admin', 'hr_admin', 'manager']);
 
     if (managersError) throw managersError;
 

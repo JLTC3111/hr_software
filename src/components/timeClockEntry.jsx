@@ -14,7 +14,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
   const { user } = useAuth();
   
   // Check if user can manage time tracking (admin or manager)
-  const canManageTimeTracking = user && (user.role === 'admin' || user.role === 'hr_admin' || user.role === 'hr_manager' || user.role === 'manager');
+  const canManageTimeTracking = user && (user.role === 'admin' || user.role === 'hr_admin' || user.role === 'manager');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -620,8 +620,8 @@ const TimeClockEntry = ({ currentLanguage }) => {
     // Admin can approve anyone (support both 'admin' and 'hr_admin' roles)
     if (user.role === 'admin' || user.role === 'hr_admin') return true;
     
-    // Manager can approve employees only (support both 'manager' and 'hr_manager' roles)
-    if ((user.role === 'manager' || user.role === 'hr_manager') && entryOwnerRole === 'employee') return true;
+    // Manager can approve employees only
+    if (user.role === 'manager' && entryOwnerRole === 'employee') return true;
     
     // Employee cannot approve
     return false;

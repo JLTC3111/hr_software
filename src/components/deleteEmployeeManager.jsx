@@ -18,7 +18,7 @@ const DeleteEmployeeManager = () => {
   const [hasPermission, setHasPermission] = useState(false);
 
   // Define roles that have permission to permanently delete
-  const ALLOWED_ROLES = ['admin', 'hr_manager', 'general_manager'];
+  const ALLOWED_ROLES = ['admin', 'manager', 'general_manager'];
 
   useEffect(() => {
     // Check user permissions
@@ -167,17 +167,17 @@ const DeleteEmployeeManager = () => {
               <p className={text.secondary}>No employees found</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            <div className={`divide-y ${isDarkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
               {filteredEmployees.map((employee) => (
                 <div 
                   key={employee.id}
-                  className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+                  className={`p-4 transition-colors ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} ${
                     deleting === employee.id ? 'opacity-50' : ''
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4 flex-1">
-                      <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center overflow-hidden ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
                         {employee.photo ? (
                           <img 
                             src={employee.photo} 
@@ -196,9 +196,9 @@ const DeleteEmployeeManager = () => {
                           <span className={text.secondary}>ID: {employee.id}</span>
                           <span className={text.secondary}>•</span>
                           <span className={`px-2 py-0.5 rounded-full text-xs ${
-                            employee.status === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                            employee.status === 'Inactive' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                            'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                            employee.status === 'Active' ? (isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800') :
+                            employee.status === 'Inactive' ? (isDarkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-800') :
+                            (isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-800')
                           }`}>
                             {employee.status}
                           </span>
@@ -213,7 +213,7 @@ const DeleteEmployeeManager = () => {
                       disabled={deleting === employee.id}
                       className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 ${
                         deleting === employee.id
-                          ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
+                          ? isDarkMode ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-red-600 hover:bg-red-700 text-white hover:shadow-lg'
                       }`}
                     >

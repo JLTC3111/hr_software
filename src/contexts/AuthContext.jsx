@@ -278,7 +278,7 @@ export const AuthProvider = ({ children }) => {
             full_name: employeeName || fullName || `${firstName || ''} ${lastName || ''}`.trim(),
             avatar_url: userMetadata.avatar_url || null,
             role: position === 'general_manager' ? 'admin' : 
-                  position === 'hr_specialist' ? 'hr_manager' : 'employee',
+                  position === 'hr_specialist' ? 'manager' : 'employee',
             employment_status: 'active',
             employee_id: employeeId, // Link to existing employee if found
             position: position,

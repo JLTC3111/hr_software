@@ -228,7 +228,7 @@ const UserManagement = () => {
           >
             <option value="all">{t('userManagement.allRoles', 'All Roles')}</option>
             <option value="admin">{t('userManagement.admin', 'Admin')}</option>
-            <option value="hr_manager">{t('userManagement.hrManager', 'HR Manager')}</option>
+            <option value="manager">{t('userManagement.hrManager', 'Manager')}</option>
             <option value="manager">{t('userManagement.manager', 'Manager')}</option>
             <option value="employee">{t('userManagement.employee', 'Employee')}</option>
           </select>

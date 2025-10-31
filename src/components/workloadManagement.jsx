@@ -281,22 +281,22 @@ const WorkloadManagement = ({ employees }) => {
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <p className={`text-sm ${text.secondary}`}>{t('workload.totalTasks', 'Total Tasks')}</p>
-            <p className={`text-2xl font-bold ${text.primary}`}>{employeeTasks.length}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('workload.totalTasks', '')}</p>
+            <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{employeeTasks.length}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <p className={`text-sm ${text.secondary}`}>{t('workload.completed', 'Completed')}</p>
-            <p className={`text-2xl font-bold text-green-600`}>
+            <p className={`text-sm ${text.secondary}`}>{t('workload.completed', '')}</p>
+            <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               {employeeTasks.filter(t => t.status === 'completed').length}
             </p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <p className={`text-sm ${text.secondary}`}>{t('workload.progress', 'Progress')}</p>
-            <p className={`text-2xl font-bold text-blue-600`}>{progress}%</p>
+            <p className={`text-sm ${text.secondary}`}>{t('workload.progress', '')}</p>
+            <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{progress}%</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <p className={`text-sm ${text.secondary}`}>{t('workload.avgQuality', 'Avg Quality')}</p>
-            <p className={`text-2xl font-bold text-purple-600`}>{avgQuality}/5</p>
+            <p className={`text-sm ${text.secondary}`}>{t('workload.avgQuality', '')}</p>
+            <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{avgQuality}/5</p>
           </div>
         </div>
 
@@ -304,7 +304,7 @@ const WorkloadManagement = ({ employees }) => {
         <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
           <div className="flex justify-between items-center mb-4">
             <h3 className={`text-lg font-semibold ${text.primary}`}>
-              {canAssignTasks ? t('workload.manageTasks', 'Manage Tasks') : t('workload.myTasks', 'My Tasks')}
+              {canAssignTasks ? t('workload.manageTasks', '') : t('workload.myTasks', '')}
             </h3>
             <button
               onClick={() => {
@@ -324,7 +324,7 @@ const WorkloadManagement = ({ employees }) => {
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
             >
               <Plus className="w-4 h-4" />
-              <span>{canAssignTasks ? t('workload.assignTask', '') : t('workload.addTask', 'Add Task')}</span>
+              <span>{canAssignTasks ? t('workload.assignTask', '') : t('workload.addTask', '')}</span>
             </button>
           </div>
 
@@ -389,15 +389,15 @@ const WorkloadManagement = ({ employees }) => {
                         });
                         setShowAddTask(true);
                       }}
-                      className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded`}
+                      className={`p-2 rounded ${isDarkMode ? 'hover:bg-green-700' : 'hover:bg-green-100'}`}
                     >
-                      <Edit2 className="w-4 h-4" />
+                      <Edit2 className={`w-4 h-4 ${text.primary}`} />
                     </button>
-                    <button 
+                    <button     
                       onClick={() => handleDeleteTask(task.id)}
-                      className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded text-red-600"
+                      className={`p-2 rounded text-red-600 ${isDarkMode ? 'hover:bg-red-900' : 'hover:bg-red-100'}`}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className={`w-4 h-4 ${text.primary}`} />
                     </button>
                   </div>
                 </div>
@@ -439,7 +439,7 @@ const WorkloadManagement = ({ employees }) => {
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <p className={`text-sm ${text.secondary}`}>{t('workload.avgQuality', 'Avg Quality')}</p>
             <p className={`text-2xl font-bold text-purple-600`}>
-              {(orgStats.reduce((sum, s) => sum + parseFloat(s.avgQuality || 0), 0) / (orgStats.length || 1)).toFixed(1)}/5
+              {(orgStats.reduce((sum, s) => sum + parseFloat(s.avgQuality || 0), 0) / (orgStats.length || 0)).toFixed(0)}/5
             </p>
           </div>
         </div>
@@ -498,7 +498,7 @@ const WorkloadManagement = ({ employees }) => {
                     </div>
                   </div>
                 </div>
-                <div className="mt-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div className={`mt-3 w-full rounded-full h-2 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
                   <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${progress}%` }}></div>
                 </div>
               </div>
@@ -657,9 +657,9 @@ const WorkloadManagement = ({ employees }) => {
                     onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value })}
                     className={`w-full px-4 py-2 rounded-lg border ${border.primary}`}
                   >
-                    <option value="pending">{t('workload.statusPending', 'Pending')}</option>
-                    <option value="in-progress">{t('workload.statusInProgress', 'In Progress')}</option>
-                    <option value="completed">{t('workload.statusCompleted', 'Completed')}</option>
+                    <option value="pending">{t('workload.statusPending', '')}</option>
+                    <option value="in-progress">{t('workload.statusInProgress', '')}</option>
+                    <option value="completed">{t('workload.statusCompleted', '')}</option>
                   </select>
                 </div>
               </div>
@@ -691,7 +691,7 @@ const WorkloadManagement = ({ employees }) => {
               <div className="flex space-x-3 pt-4">
                 <button
                   onClick={closeModal}
-                  className={`flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700`}
+                  className={`flex-1 px-4 py-2 border rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
                 >
                   {t('common.cancel', 'Cancel')}
                 </button>

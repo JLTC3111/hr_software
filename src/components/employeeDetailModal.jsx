@@ -257,7 +257,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2 rounded-lg hover:bg-transparent dark:hover:bg-transparent transition-colors"
+          className="absolute top-4 right-4 z-10 p-2 rounded-lg hover:bg-transparent transition-colors"
         >
           <X className="w-5 h-5" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
         </button>
@@ -267,7 +267,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
           {/* Profile Photo */}
           <div className="flex justify-center mb-4">
             <div className="relative">
-              <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center border-4 border-white dark:border-gray-600 shadow-lg">
+              <div className={`w-24 h-24 rounded-full overflow-hidden flex items-center justify-center border-4 shadow-lg ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-200 border-white'}`}>
                 {employee.photo ? (
                   <img src={employee.photo} alt={employee.name} className="w-full h-full object-cover" />
                 ) : (
@@ -275,7 +275,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                 )}
               </div>
               {/* Online Status Indicator */}
-              <div className="absolute bottom-1 right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-600"></div>
+              <div className={`absolute bottom-1 right-1 w-5 h-5 bg-green-500 rounded-full border-2 ${isDarkMode ? 'border-gray-600' : 'border-white'}`}></div>
             </div>
           </div>
 
@@ -374,7 +374,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
               <span className={`text-sm ${text.secondary}`}>
                 {t('employeeDetailModal.status', 'Status')}
               </span>
-              <span className="px-3 py-1 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full">
+              <span className={`px-3 py-1 text-xs font-semibold rounded-full ${isDarkMode ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-700'}`}>
                 {t(`employeeStatus.${employee.status.toLowerCase().replace(' ', '')}`, employee.status)}
               </span>
             </div>
@@ -470,14 +470,14 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                     <>
                       <button
                         onClick={handlePdfDownload}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg"
+                        className={`px-4 py-2 text-white rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
                       >
                         <Download className="w-4 h-4" />
                         <span>{t('employeeDetailModal.download', 'Download')}</span>
                       </button>
                       <button
                         onClick={handlePdfDelete}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg"
+                        className={`px-4 py-2 text-white rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-red-700 hover:bg-red-600' : 'bg-red-600 hover:bg-red-700'}`}
                       >
                         <Trash2 className="w-4 h-4" />
                         <span>{t('employeeDetailModal.delete', 'Delete')}</span>
@@ -494,7 +494,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                   />
                   <label
                     htmlFor="pdf-upload"
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${border.primary} ${bg.primary} cursor-pointer hover:bg-transparent dark:hover:bg-transparent transition-all shadow-sm hover:shadow-md ${
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${border.primary} ${bg.primary} cursor-pointer hover:bg-transparent transition-all shadow-sm hover:shadow-md ${
                       uploadStatus?.status === 'uploading' ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
@@ -515,8 +515,8 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
               
               {/* Background Upload Indicator */}
               {uploadStatus?.status === 'uploading' && (
-                <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
-                  <div className="flex items-center space-x-2 text-sm text-blue-700 dark:text-blue-300">
+                <div className={`mt-2 p-3 border rounded-lg ${isDarkMode ? 'bg-blue-900/30 border-blue-700' : 'bg-blue-50 border-blue-200'}`}>
+                  <div className={`flex items-center space-x-2 text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
                     <Loader className="w-4 h-4 animate-spin" />
                     <span>{t('employeeDetailModal.uploadBackground', '⚡ Upload continues in background - you can close this window safely')}</span>
                   </div>
@@ -530,7 +530,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                   className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                     !useIframe 
                       ? 'bg-blue-600 text-white shadow-lg hover:bg-blue-700' 
-                      : `${bg.secondary} ${text.primary} border ${border.primary} hover:bg-blue-50 dark:hover:bg-gray-700`
+                      : `${bg.secondary} ${text.primary} border ${border.primary} ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-blue-50'}`
                   }`}
                 >
                   PDF.js
@@ -540,7 +540,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                   className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                     useIframe 
                       ? 'bg-blue-600 text-white shadow-lg hover:bg-blue-700' 
-                      : `${bg.secondary} ${text.primary} border ${border.primary} hover:bg-blue-50 dark:hover:bg-gray-700`
+                      : `${bg.secondary} ${text.primary} border ${border.primary} ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-blue-50'}`
                   }`}
                 >
                   Iframe
@@ -548,7 +548,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
               </div>
 
               {/* PDF Viewer */}
-              <div className={`border-2 border-dashed ${border.primary} rounded-lg p-4 bg-gray-50 dark:bg-gray-800 min-h-[400px]`}>
+              <div className={`border-2 border-dashed ${border.primary} rounded-lg p-4 min-h-[400px] ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                 {pdfUrl ? (
                   <div className="flex flex-col items-center">
                     {useIframe ? (
@@ -575,7 +575,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                           <p className={`text-center ${text.secondary} font-semibold`}>{pdfError}</p>
                           <button
                             onClick={() => setUseIframe(true)}
-                            className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition-all shadow-md hover:shadow-lg"
+                            className={`mt-4 px-4 py-2 text-white rounded-lg transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
                           >
                             {t('employeeDetailModal.switchToIframe', 'Switch to Iframe Viewer')}
                           </button>
@@ -649,7 +649,7 @@ const InfoItem = ({ icon: Icon, label, value }) => {
   const { text, border, isDarkMode } = useTheme();
   
   return (
-    <div className={`flex items-start space-x-3 p-3 rounded-lg border ${border.primary} hover:bg-transparent dark:hover:bg-transparent transition-colors`}>
+    <div className={`flex items-start space-x-3 p-3 rounded-lg border ${border.primary} hover:bg-transparent transition-colors`}>
       <Icon className={`w-5 h-5 mt-0.5 ${isDarkMode ? text.primary : 'text-gray-600'}`} />
       <div className="flex-1">
         <p className={`text-sm ${text.secondary} mb-1`}>{label}</p>

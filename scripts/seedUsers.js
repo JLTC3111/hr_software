@@ -125,7 +125,7 @@ const positionToRole = (position) => {
   const roleMap = {
     'general_manager': 'admin',
     'managing_director': 'admin',
-    'hr_specialist': 'hr_manager',
+    'hr_specialist': 'manager',
     'senior_developer': 'manager',
     'contract_manager': 'manager',
     'accountant': 'employee',

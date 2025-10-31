@@ -73,7 +73,7 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
         <div className="flex items-center space-x-3">
           <div className="relative group/avatar">
             <div 
-              className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center overflow-hidden border-2 transition-all"
+              className={`w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border-2 transition-all ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}
               style={{
                 borderColor: isDarkMode ? '#ffffff' : 'transparent',
                 boxShadow: isDarkMode ? '0 0 0 2px rgba(255, 255, 255, 0.3)' : 'none'
@@ -145,7 +145,7 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
         </div>
       </div>
       
-      <div className="flex justify-space-between space-x-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div className={`flex justify-space-between space-x-2 mt-4 pt-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         <button
           onClick={(e) => {
             e.stopPropagation();

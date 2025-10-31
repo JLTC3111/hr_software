@@ -99,7 +99,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // HR-specific user roles for the HR management system
 export const UserRoles = {
   HR_ADMIN: 'hr_admin',        // Full system administrator
-  HR_MANAGER: 'hr_manager',    // HR department manager
+  HR_MANAGER: 'manager',    // HR department manager
   EMPLOYEE: 'employee',        // Regular employee
   CONTRACTOR: 'contractor'     // Contract worker
 };
@@ -133,8 +133,8 @@ export const Permissions = {
     canManageRoles: true,
     canViewAuditLogs: true
   },
-  // HR Manager - HR department management capabilities
-  [UserRoles.HR_MANAGER]: {
+  // Manager - Department management capabilities
+  'manager': {
     canManageUsers: false,
     canManageEmployees: true,
     canViewReports: true,

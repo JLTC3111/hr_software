@@ -34,7 +34,7 @@ const ControlPanel = () => {
   const roleDescriptions = {
     'admin': t('controlPanel.roleDesc.admin', 'Full system access with all administrative privileges'),
     'hr_admin': t('controlPanel.roleDesc.hrAdmin', 'Complete HR management with employee administration and system configuration'),
-    'hr_manager': t('controlPanel.roleDesc.hrManager', 'Manage employees, performance reviews, and HR operations'),
+    'manager': t('controlPanel.roleDesc.hrManager', 'Manage employees, performance reviews, and HR operations'),
     'manager': t('controlPanel.roleDesc.manager', 'Supervise team members and approve time tracking'),
     'employee': t('controlPanel.roleDesc.employee', 'Access personal information and submit time entries'),
     'viewer': t('controlPanel.roleDesc.viewer', 'View-only access to reports and dashboards'),

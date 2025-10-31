@@ -2,13 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Calendar, 
   TrendingUp, 
-  TrendingDown, 
+  Pickaxe, 
   Award, 
   Star, 
   CheckCircle, 
   Clock, 
   AlertCircle,
-  User,
+  TimerOff,
   BarChart3,
   MessageSquare,
   Edit2,
@@ -103,7 +103,7 @@ const TaskPerformanceReview = ({ employees }) => {
 
     const ratedTasks = filteredTasks.filter(t => t.quality_rating > 0);
     const avgQuality = ratedTasks.length > 0
-      ? (ratedTasks.reduce((sum, t) => sum + t.quality_rating, 0) / ratedTasks.length).toFixed(1)
+      ? Math.round(ratedTasks.reduce((sum, t) => sum + t.quality_rating, 0) / ratedTasks.length)
       : 0;
 
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
@@ -257,20 +257,40 @@ const TaskPerformanceReview = ({ employees }) => {
   // Get status badge color
   const getStatusColor = (status) => {
     switch(status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'in-progress': return 'bg-blue-100 text-blue-800';
-      case 'pending': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'completed': return isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800';
+      case 'in-progress': return isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-800';
+      case 'pending': return isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800';
+      default: return isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Get status text (translated)
+  const getStatusText = (status) => {
+    switch(status) {
+      case 'completed': return t('taskPerformance.completed', 'Completed');
+      case 'in-progress': return t('taskPerformance.inProgress', 'In Progress');
+      case 'pending': return t('taskPerformance.pending', 'Pending');
+      default: return status;
     }
   };
 
   // Get priority badge color
   const getPriorityColor = (priority) => {
     switch(priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'high': return isDarkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-800';
+      case 'medium': return isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-800';
+      case 'low': return isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800';
+      default: return isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Get priority text (translated)
+  const getPriorityText = (priority) => {
+    switch(priority) {
+      case 'high': return t('workload.priorityHigh', 'High Priority');
+      case 'medium': return t('workload.priorityMedium', 'Medium Priority');
+      case 'low': return t('workload.priorityLow', 'Low Priority');
+      default: return priority;
     }
   };
 
@@ -287,7 +307,7 @@ const TaskPerformanceReview = ({ employees }) => {
       const total = empTasks.length;
       const rated = empTasks.filter(t => t.quality_rating > 0);
       const avgQuality = rated.length > 0
-        ? (rated.reduce((sum, t) => sum + t.quality_rating, 0) / rated.length).toFixed(1)
+        ? Math.round(rated.reduce((sum, t) => sum + t.quality_rating, 0) / rated.length)
         : 0;
 
       return {
@@ -305,12 +325,20 @@ const TaskPerformanceReview = ({ employees }) => {
           {teamStats.map(stat => (
             <div key={stat.employee.id} className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
               <div className="flex items-center space-x-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                  <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                </div>
+                {stat.employee.photo ? (
+                  <img 
+                    src={stat.employee.photo} 
+                    alt={stat.employee.name}
+                    className={`w-10 h-10 rounded-full object-cover border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}
+                  />
+                ) : (
+                  <div className={`w-10 h-10 rounded-full ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-100'} flex items-center justify-center font-bold text-white bg-blue-500`}>
+                    {stat.employee.name?.charAt(0) || 'U'}
+                  </div>
+                )}
                 <div>
                   <p className={`font-semibold ${text.primary}`}>{stat.employee.name}</p>
-                  <p className={`text-xs ${text.secondary}`}>{stat.employee.position}</p>
+                  <p className={`text-xs ${text.secondary}`}>{t(`employeePosition.${stat.employee.position}`, stat.employee.position)}</p>
                 </div>
               </div>
               
@@ -321,11 +349,11 @@ const TaskPerformanceReview = ({ employees }) => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className={`text-sm ${text.secondary}`}>{t('taskPerformance.completed', 'Completed')}</span>
-                  <span className="font-semibold text-green-600 dark:text-green-400">{stat.completedTasks}</span>
+                  <span className={`font-semibold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>{stat.completedTasks}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className={`text-sm ${text.secondary}`}>{t('taskPerformance.completionRate', 'Completion Rate')}</span>
-                  <span className="font-semibold text-blue-600 dark:text-blue-400">{stat.completionRate}%</span>
+                  <span className={`font-semibold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>{stat.completionRate}%</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className={`text-sm ${text.secondary}`}>{t('taskPerformance.avgQuality', 'Avg Quality')}</span>
@@ -336,9 +364,9 @@ const TaskPerformanceReview = ({ employees }) => {
               </div>
 
               <div className="mt-3">
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div className={`w-full rounded-full h-2 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
                   <div 
-                    className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all duration-300" 
+                    className={`h-2 rounded-full transition-all duration-300 shadow-sm ${isDarkMode ? 'bg-linear-to-r from-blue-600 to-blue-400' : 'bg-linear-to-r from-blue-500 to-blue-600'}`}
                     style={{ width: `${stat.completionRate}%` }}
                   ></div>
                 </div>
@@ -388,7 +416,7 @@ const TaskPerformanceReview = ({ employees }) => {
           <div className="flex space-x-2">
             <button
                 onClick={() => setViewMode('individual')}
-                className={`px-4 py-2 rounded-lg ${
+                className={`px-4 py-2 rounded-lg cursor-pointer ${text.primary} ${
                 viewMode === 'individual' ? 'bg-blue-600 text-white' : bg.secondary
                 }`}
             >
@@ -397,9 +425,7 @@ const TaskPerformanceReview = ({ employees }) => {
 
             <button
                 onClick={() => setViewMode('team')}
-                className={`px-4 py-2 rounded-lg ${
-                viewMode === 'team' ? 'bg-blue-600 text-white' : bg.secondary
-                }`}
+                className={`px-4 py-2 rounded-lg cursor-pointer ${text.primary} ${viewMode === 'team' ? 'bg-blue-600 text-white' : bg.secondary}`}
             >
                 {t('taskPerformance.team', '')}
             </button>
@@ -409,11 +435,11 @@ const TaskPerformanceReview = ({ employees }) => {
       </div>
 
       {/* Month Selector */}
-      <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
+      <div className={`cursor-pointer ${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
         <div className="flex justify-between items-center">
           <button
             onClick={() => navigateMonth(-1)}
-            className={`p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700`}
+            className={`p-2 rounded cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'}`}
           >
             <ChevronLeft className={`w-5 h-5 ${text.primary}`} />
           </button>
@@ -427,7 +453,7 @@ const TaskPerformanceReview = ({ employees }) => {
 
           <button
             onClick={() => navigateMonth(1)}
-            className={`p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700`}
+            className={`cursor-pointer p-2 rounded ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'}`}
             disabled={selectedMonth.getMonth() === new Date().getMonth() && selectedMonth.getFullYear() === new Date().getFullYear()}
           >
             <ChevronRight className={`w-5 h-5 ${text.primary}`} />
@@ -456,7 +482,7 @@ const TaskPerformanceReview = ({ employees }) => {
 
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
-              <Clock className={`w-5 h-5 ${text.secondary}`} />
+              <Pickaxe className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{monthlyStats.inProgressTasks}</span>
             </div>
             <p className={`text-sm ${text.secondary}`}>{t('taskPerformance.inProgress', '')}</p>
@@ -464,7 +490,7 @@ const TaskPerformanceReview = ({ employees }) => {
 
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
-              <AlertCircle className={`w-5 h-5 ${text.secondary}`} />
+              <TimerOff className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{monthlyStats.overdueTasks}</span>
             </div>
             <p className={`text-sm ${text.secondary}`}>{t('taskPerformance.overdue', '')}</p>
@@ -472,8 +498,8 @@ const TaskPerformanceReview = ({ employees }) => {
 
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
-              <TrendingUp className={`w-5 h-5 ${monthlyStats.completionRate >= 70 ? text.secondary : text.warning}`} />
-              <span className={`text-2xl font-bold ${monthlyStats.completionRate >= 70 ? text.primary : text.warning}`}>
+              <TrendingUp className={`w-5 h-5 ${text.secondary} ${monthlyStats.completionRate >= 70 ? text.secondary : text.warning}`} />
+              <span className={`text-2xl font-bold ${text.primary} ${monthlyStats.completionRate >= 70 ? text.primary : text.warning}`}>
                 {monthlyStats.completionRate}%
               </span>
             </div>
@@ -504,9 +530,9 @@ const TaskPerformanceReview = ({ employees }) => {
               </span>
             </div>
             <div className="mt-2">
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div className={`w-full rounded-full h-2 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
                 <div 
-                  className="bg-green-600 dark:bg-green-500 h-2 rounded-full" 
+                  className={`h-2 rounded-full shadow-sm ${isDarkMode ? 'bg-gradient-to-r from-green-600 to-green-400' : 'bg-gradient-to-r from-green-500 to-green-600'}`}
                   style={{ width: `${monthlyStats.onTimeRate}%` }}
                 ></div>
               </div>
@@ -518,15 +544,15 @@ const TaskPerformanceReview = ({ employees }) => {
             <h3 className={`text-sm font-semibold ${text.primary} mb-3`}>{t('taskPerformance.priorityDistribution', 'Priority Distribution')}</h3>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-red-600 dark:text-red-400">{t('workload.priorityHigh', 'High Priority')}</span>
+                <span className={`text-sm ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{t('workload.priorityHigh', 'High Priority')}</span>
                 <span className={`font-semibold ${text.primary}`}>{monthlyStats.highPriority}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-yellow-600 dark:text-yellow-400">{t('workload.priorityMedium', 'Medium Priority')}</span>
+                <span className={`text-sm ${isDarkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>{t('workload.priorityMedium', 'Medium Priority')}</span>
                 <span className={`font-semibold ${text.primary}`}>{monthlyStats.mediumPriority}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-green-600 dark:text-green-400">{t('workload.priorityLow', 'Low Priority')}</span>
+                <span className={`text-sm ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>{t('workload.priorityLow', 'Low Priority')}</span>
                 <span className={`font-semibold ${text.primary}`}>{monthlyStats.lowPriority}</span>
               </div>
             </div>
@@ -548,9 +574,15 @@ const TaskPerformanceReview = ({ employees }) => {
                 </span>
               </div>
               <div className="mt-2">
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div className={`w-full rounded-full h-2 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
                   <div 
-                    className={`h-2 rounded-full ${monthlyStats.avgQuality >= 4 ? 'bg-green-600 dark:bg-green-500' : monthlyStats.avgQuality >= 3 ? 'bg-blue-600 dark:bg-blue-500' : 'bg-yellow-600 dark:bg-yellow-500'}`}
+                    className={`h-2 rounded-full shadow-sm ${
+                      monthlyStats.avgQuality >= 4 
+                        ? isDarkMode ? 'bg-linear-to-r from-green-600 to-green-400' : 'bg-linear-to-r from-green-500 to-green-600'
+                        : monthlyStats.avgQuality >= 3 
+                        ? isDarkMode ? 'bg-linear-to-r from-blue-600 to-blue-400' : 'bg-linear-to-r from-blue-500 to-blue-600'
+                        : isDarkMode ? 'bg-linear-to-r from-yellow-600 to-yellow-400' : 'bg-linear-to-r from-yellow-500 to-yellow-600'
+                    }`}
                     style={{ width: `${(monthlyStats.avgQuality / 5) * 100}%` }}
                   ></div>
                 </div>
@@ -561,32 +593,32 @@ const TaskPerformanceReview = ({ employees }) => {
       )}
 
       {/* Filter Buttons */}
-      {viewMode === 'individual' && (
+      {viewMode === 'individual' && 'team' && (
         <div className="flex items-center space-x-2">
-          <Filter className={`w-4 h-4 ${text.secondary}`} />
+          <Filter className={`w-5 h-5 ${text.secondary}`} />
           <button
             onClick={() => setFilterStatus('all')}
-            className={`px-3 py-1 rounded-lg text-sm ${filterStatus === 'all' ? 'bg-blue-600 text-white' : bg.secondary}`}
+            className={`px-3 py-1 rounded-lg text-sm ${text.secondary} ${filterStatus === 'all' ? 'bg-blue-600 text-white' : bg.secondary}`}
           >
-            {t('taskPerformance.all', 'All')} ({tasks.length})
+            {t('taskPerformance.all', '')} ({tasks.length})
           </button>
           <button
             onClick={() => setFilterStatus('completed')}
-            className={`px-3 py-1 rounded-lg text-sm ${filterStatus === 'completed' ? 'bg-green-600 text-white' : bg.secondary}`}
+            className={`px-3 py-1 rounded-lg text-sm ${text.secondary} ${filterStatus === 'completed' ? 'bg-green-600 text-white' : bg.secondary}`}
           >
-            {t('taskPerformance.completed', 'Completed')} ({monthlyStats.completedTasks})
+            {t('taskPerformance.completed', '')} ({monthlyStats.completedTasks})
           </button>
           <button
             onClick={() => setFilterStatus('in-progress')}
-            className={`px-3 py-1 rounded-lg text-sm ${filterStatus === 'in-progress' ? 'bg-blue-600 text-white' : bg.secondary}`}
+            className={`px-3 py-1 rounded-lg text-sm ${text.secondary} ${filterStatus === 'in-progress' ? 'bg-blue-600 text-white' : bg.secondary}`}
           >
-            {t('taskPerformance.inProgress', 'In Progress')} ({monthlyStats.inProgressTasks})
+            {t('taskPerformance.inProgress', '')} ({monthlyStats.inProgressTasks})
           </button>
           <button
             onClick={() => setFilterStatus('pending')}
-            className={`px-3 py-1 rounded-lg text-sm ${filterStatus === 'pending' ? 'bg-gray-600 text-white' : bg.secondary}`}
+            className={`px-3 py-1 rounded-lg text-sm ${text.secondary} ${filterStatus === 'pending' ? 'bg-gray-600 text-white' : bg.secondary}`}
           >
-            {t('taskPerformance.pending', 'Pending')} ({monthlyStats.pendingTasks})
+            {t('taskPerformance.pending', '')} ({monthlyStats.pendingTasks})
           </button>
         </div>
       )}
@@ -600,21 +632,21 @@ const TaskPerformanceReview = ({ employees }) => {
         <TeamView />
       ) : (
         <div className={`${bg.secondary} rounded-lg border ${border.primary}`}>
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+          <div className={`divide-y ${isDarkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
             {displayTasks.map(task => (
-              <div key={task.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+              <div className={`p-4 ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
                       <h4 className={`font-semibold ${text.primary}`}>{task.title}</h4>
                       <span className={`px-2 py-1 rounded text-xs ${getStatusColor(task.status)}`}>
-                        {task.status}
+                        {getStatusText(task.status)}
                       </span>
                       <span className={`px-2 py-1 rounded text-xs ${getPriorityColor(task.priority)}`}>
-                        {task.priority}
+                        {getPriorityText(task.priority)}
                       </span>
                       {task.quality_rating > 0 && (
-                        <span className={`px-2 py-1 rounded text-xs bg-purple-100 text-purple-800`}>
+                        <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-800'}`}>
                           ⭐ {task.quality_rating}/5
                         </span>
                       )}
@@ -639,9 +671,9 @@ const TaskPerformanceReview = ({ employees }) => {
 
                     {/* Self Assessment */}
                     {task.self_assessment && (
-                      <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
+                      <div className={`mt-3 p-3 ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'} rounded`}>
                         <p className={`text-xs font-semibold ${text.primary} mb-1 flex items-center space-x-1`}>
-                          <MessageSquare className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                          <MessageSquare className={`w-3 h-3 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
                           <span>{t('taskPerformance.selfAssessment', 'Self Assessment')}:</span>
                         </p>
                         <p className={`text-sm ${text.secondary}`}>{task.self_assessment}</p>
@@ -650,9 +682,9 @@ const TaskPerformanceReview = ({ employees }) => {
 
                     {/* Manager Comments */}
                     {task.comments && (
-                      <div className="mt-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded">
+                      <div className={`mt-2 p-3 ${isDarkMode ? 'bg-purple-900/20' : 'bg-purple-50'} rounded`}>
                         <p className={`text-xs font-semibold ${text.primary} mb-1 flex items-center space-x-1`}>
-                          <Award className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                          <Award className={`w-3 h-3 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
                           <span>{t('taskPerformance.managerEvaluation', 'Manager Evaluation')}:</span>
                         </p>
                         <p className={`text-sm ${text.secondary}`}>{task.comments}</p>
@@ -663,7 +695,7 @@ const TaskPerformanceReview = ({ employees }) => {
                   {/* Evaluate Button */}
                   <button
                     onClick={() => openEvaluationModal(task)}
-                    className="ml-4 px-3 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center space-x-1 text-sm"
+                    className={`ml-4 px-3 py-2 ${isDarkMode ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded flex items-center space-x-1 text-sm`}
                   >
                     <Edit2 className="w-4 h-4" />
                     <span>{t('taskPerformance.evaluate', 'Evaluate')}</span>
@@ -694,7 +726,7 @@ const TaskPerformanceReview = ({ employees }) => {
               </div>
               <button
                 onClick={closeEvaluationModal}
-                className={`p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700`}
+                className={`p-2 rounded ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'}`}
               >
                 <X className={`w-5 h-5 ${text.primary}`} />
               </button>
@@ -731,7 +763,7 @@ const TaskPerformanceReview = ({ employees }) => {
                           onClick={() => setEvaluationForm({ ...evaluationForm, qualityRating: rating })}
                           className={`p-3 rounded-lg border-2 transition-all ${
                             evaluationForm.qualityRating >= rating
-                              ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
+                              ? `border-yellow-500 ${isDarkMode ? 'bg-yellow-900/20' : 'bg-yellow-50'}`
                               : border.primary
                           }`}
                         >
@@ -766,7 +798,7 @@ const TaskPerformanceReview = ({ employees }) => {
               )}
 
               {/* Task Details */}
-              <div className={`p-3 rounded bg-gray-50 dark:bg-gray-800`}>
+              <div className={`p-3 rounded ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                 <p className={`text-xs ${text.secondary} mb-2`}>{t('taskPerformance.taskDetails', 'Task Details')}:</p>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
@@ -801,7 +833,7 @@ const TaskPerformanceReview = ({ employees }) => {
             <div className="flex space-x-3 mt-6">
               <button
                 onClick={closeEvaluationModal}
-                className={`flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700`}
+                className={`flex-1 px-4 py-2 border rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
               >
                 {t('taskPerformance.cancel', 'Cancel')}
               </button>
