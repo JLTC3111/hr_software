@@ -376,6 +376,8 @@ export default {
     addNewGoal: 'เพิ่มเป้าหมายใหม่',
     performanceGoals: 'เป้าหมายประสิทธิภาพ',
     progress: 'ความคืบหน้า',
+    in_progress: 'กำลังดำเนินการ',
+    clickToRate: 'คลิกที่ดาวเพื่ออัปเดตคะแนนพนักงาน',
     deadline: 'กำหนดเส้นตาย',
     due: 'ครบกำหนด',
     complete: 'สมบูรณ์',
@@ -391,7 +393,25 @@ export default {
     edit: 'แก้ไข',
     view: 'ดู',
     progressSaved: 'บันทึกความคืบหน้าสำเร็จ!',
-    progressSaveError: 'ไม่สามารถบันทึกความคืบหน้าได้'
+    progressSaveError: 'ไม่สามารถบันทึกความคืบหน้าได้',
+    goalTitle: 'ชื่อเป้าหมาย',
+    goalTitlePlaceholder: 'ป้อนชื่อเป้าหมาย',
+    goalDescription: 'คำอธิบาย',
+    goalDescriptionPlaceholder: 'อธิบายวัตถุประสงค์ของเป้าหมาย',
+    category: 'หมวดหมู่',
+    general: 'ทั่วไป',
+    technical: 'ทางเทคนิค',
+    leadership: 'ความเป็นผู้นำ',
+    project: 'โครงการ',
+    professionalDevelopment: 'การพัฒนาอาชีพ',
+    priority: 'ลำดับความสำคัญ',
+    low: 'ต่ำ',
+    medium: 'ปานกลาง',
+    high: 'สูง',
+    critical: 'วิกฤต',
+    targetDate: 'วันที่เป้าหมาย',
+    cancelled: 'ยกเลิก',
+    onHold: 'พักไว้'
   },
 
   // Reports
@@ -408,6 +428,7 @@ export default {
     exportExcel: 'ส่งออก Excel',
     filterBy: 'กรองตาม',
     dateRange: 'ช่วงวันที่',
+    allDepartments: 'ทุกแผนก',
     department: 'แผนก',
     all: 'ทั้งหมด',
     // Navigation

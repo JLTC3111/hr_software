@@ -379,6 +379,8 @@ export default {
     addNewGoal: '새 목표 추가',
     performanceGoals: '성과 목표',
     progress: '진행률',
+    in_progress: '진행 중',
+    clickToRate: '직원 평가를 업데이트하려면 별을 클릭하세요',
     deadline: '마감일',
     due: '기한',
     complete: '완료',
@@ -394,7 +396,25 @@ export default {
     edit: '편집',
     view: '보기',
     progressSaved: '진행률이 성공적으로 저장되었습니다!',
-    progressSaveError: '진행률 저장 실패'
+    progressSaveError: '진행률 저장 실패',
+    goalTitle: '목표 제목',
+    goalTitlePlaceholder: '목표 제목 입력',
+    goalDescription: '설명',
+    goalDescriptionPlaceholder: '목표 세부사항 설명',
+    category: '카테고리',
+    general: '일반',
+    technical: '기술',
+    leadership: '리더십',
+    project: '프로젝트',
+    professionalDevelopment: '전문 개발',
+    priority: '우선순위',
+    low: '낮음',
+    medium: '중간',
+    high: '높음',
+    critical: '긴급',
+    targetDate: '목표 날짜',
+    cancelled: '취소됨',
+    onHold: '보류 중'
   },
 
   // Reports
@@ -411,6 +431,7 @@ export default {
     exportExcel: 'Excel 내보내기',
     filterBy: '필터링',
     dateRange: '날짜 범위',
+    allDepartments: '모든 부서',
     department: '부서',
     all: '모두',
     // Navigation

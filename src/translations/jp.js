@@ -376,6 +376,8 @@ export default {
     addNewGoal: '新しい目標を追加',
     performanceGoals: 'パフォーマンス目標',
     progress: '進捗',
+    in_progress: '進行中',
+    clickToRate: '星をクリックして従業員の評価を更新',
     deadline: '期限',
     due: '期日',
     complete: '完了',
@@ -391,7 +393,25 @@ export default {
     edit: '編集',
     view: '表示',
     progressSaved: '進捗が正常に保存されました！',
-    progressSaveError: '進捗の保存に失敗しました'
+    progressSaveError: '進捗の保存に失敗しました',
+    goalTitle: '目標タイトル',
+    goalTitlePlaceholder: '目標タイトルを入力',
+    goalDescription: '説明',
+    goalDescriptionPlaceholder: '目標の詳細を説明',
+    category: 'カテゴリー',
+    general: '一般',
+    technical: '技術',
+    leadership: 'リーダーシップ',
+    project: 'プロジェクト',
+    professionalDevelopment: '専門能力開発',
+    priority: '優先度',
+    low: '低',
+    medium: '中',
+    high: '高',
+    critical: '重大',
+    targetDate: '目標日',
+    cancelled: 'キャンセル',
+    onHold: '保留中'
   },
 
   // Reports
@@ -409,6 +429,7 @@ export default {
     filterBy: 'フィルター',
     dateRange: '期間',
     department: '部署',
+    allDepartments: 'すべての部署',
     all: 'すべて',
     // Navigation
     overview: '概要',

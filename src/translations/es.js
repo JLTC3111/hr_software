@@ -432,6 +432,8 @@ login: {
     addNewGoal: 'Agregar Nuevo Objetivo',
     performanceGoals: 'Objetivos de Rendimiento',
     progress: 'Progreso',
+    in_progress: 'en progreso',
+    clickToRate: 'Haz clic en las estrellas para actualizar la calificación del empleado',
     deadline: 'Fecha Límite',
     due: 'Vence',
     complete: 'completo',
@@ -447,7 +449,25 @@ login: {
     edit: 'Editar',
     view: 'Ver',
     progressSaved: '¡Progreso guardado con éxito!',
-    progressSaveError: 'Error al guardar el progreso'
+    progressSaveError: 'Error al guardar el progreso',
+    goalTitle: 'Título del objetivo',
+    goalTitlePlaceholder: 'Ingrese el título del objetivo',
+    goalDescription: 'Descripción',
+    goalDescriptionPlaceholder: 'Describa los objetivos',
+    category: 'Categoría',
+    general: 'General',
+    technical: 'Técnico',
+    leadership: 'Liderazgo',
+    project: 'Proyecto',
+    professionalDevelopment: 'Desarrollo profesional',
+    priority: 'Prioridad',
+    low: 'Baja',
+    medium: 'Media',
+    high: 'Alta',
+    critical: 'Crítica',
+    targetDate: 'Fecha objetivo',
+    cancelled: 'Cancelado',
+    onHold: 'En espera'
   },
 
   // Reports
@@ -464,6 +484,7 @@ login: {
     exportExcel: 'Exportar Excel',
     filterBy: 'Filtrar Por',
     dateRange: 'Rango de Fechas',
+    allDepartments: 'Todos los Departamentos',
     department: 'Departamento',
     all: 'Todos',
     // Navigation

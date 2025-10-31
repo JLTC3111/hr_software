@@ -423,6 +423,8 @@ export default {
     addNewGoal: 'Добавить новую цель',
     performanceGoals: 'Цели производительности',
     progress: 'Прогресс',
+    in_progress: 'в процессе',
+    clickToRate: 'Нажмите на звёзды, чтобы обновить рейтинг сотрудника',
     deadline: 'Крайний срок',
     due: 'Срок',
     complete: 'завершено',
@@ -438,7 +440,25 @@ export default {
     edit: 'Редактировать',
     view: 'Просмотр',
     progressSaved: 'Прогресс успешно сохранён!',
-    progressSaveError: 'Не удалось сохранить прогресс'
+    progressSaveError: 'Не удалось сохранить прогресс',
+    goalTitle: 'Название цели',
+    goalTitlePlaceholder: 'Введите название цели',
+    goalDescription: 'Описание',
+    goalDescriptionPlaceholder: 'Опишите цели',
+    category: 'Категория',
+    general: 'Общее',
+    technical: 'Техническое',
+    leadership: 'Руководство',
+    project: 'Проект',
+    professionalDevelopment: 'Профессиональное развитие',
+    priority: 'Приоритет',
+    low: 'Низкий',
+    medium: 'Средний',
+    high: 'Высокий',
+    critical: 'Критический',
+    targetDate: 'Целевая дата',
+    cancelled: 'Отменено',
+    onHold: 'Приостановлено'
   },
 
   // Reports
@@ -455,6 +475,7 @@ export default {
     exportExcel: 'Экспорт в Excel',
     filterBy: 'Фильтр по',
     dateRange: 'Диапазон дат',
+    allDepartments: 'Все отделы',
     department: 'Отдел',
     all: 'Все',
     // Navigation

@@ -408,6 +408,7 @@ const PerformanceAppraisal = ({ employees }) => {
   const getStatusText = (status) => {
     switch (status) {
       case 'completed': return t('performance.completed');
+      case 'in_progress': return t('performance.inProgress');
       case 'in-progress': return t('performance.inProgress');
       case 'pending': return t('performance.pending');
       default: return status;
@@ -467,7 +468,7 @@ const PerformanceAppraisal = ({ employees }) => {
           onRatingChange={handleUpdatePerformanceRating}
         />
         <p className={`text-xs mt-2 ${text.secondary}`}>
-          {t('performance.clickToRate', 'Click stars to update employee rating')}
+          {t('performance.clickToRate', '')}
         </p>
       </div>
 
@@ -707,18 +708,38 @@ const PerformanceAppraisal = ({ employees }) => {
         >
           {t('performance.performanceGoals')}
         </h3>
-        <button 
-          onClick={handleAddGoal}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 cursor-pointer transition-colors"
-          style={{
-            backgroundColor: '#2563eb',
-            color: '#ffffff',
-            borderColor: '#2563eb'
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          <span>{t('performance.addNewGoal')}</span>
-        </button>
+        <div className="flex items-center space-x-2">
+          <button 
+            onClick={() => {
+              if (currentData.goals.length > 0) {
+                handleEditGoal(currentData.goals[0]);
+              }
+            }}
+            disabled={currentData.goals.length === 0}
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center space-x-2 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              backgroundColor: currentData.goals.length === 0 ? '#6b7280' : '#4b5563',
+              color: '#ffffff',
+              borderColor: currentData.goals.length === 0 ? '#6b7280' : '#4b5563'
+            }}
+            title={currentData.goals.length === 0 ? t('performance.noGoalsToEdit', 'No goals to edit') : t('performance.editGoal', 'Edit goal')}
+          >
+            <Edit className="h-4 w-4" />
+            <span>{t('performance.editGoal', 'Edit Goal')}</span>
+          </button>
+          <button 
+            onClick={handleAddGoal}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 cursor-pointer transition-colors"
+            style={{
+              backgroundColor: '#2563eb',
+              color: '#ffffff',
+              borderColor: '#2563eb'
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            <span>{t('performance.addNewGoal')}</span>
+          </button>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -1199,17 +1220,25 @@ const PerformanceAppraisal = ({ employees }) => {
                   <label className="block text-sm font-medium mb-2">
                     {t('performance.targetDate', 'Target Date')}
                   </label>
-                  <input
-                    type="date"
-                    value={goalForm.targetDate}
-                    onChange={(e) => setGoalForm({...goalForm, targetDate: e.target.value})}
-                    className="w-full px-4 py-2 rounded-lg border transition-colors"
-                    style={{
-                      backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-                      borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                      color: isDarkMode ? '#ffffff' : '#111827'
-                    }}
-                  />
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={goalForm.targetDate}
+                      onChange={(e) => setGoalForm({...goalForm, targetDate: e.target.value})}
+                      className="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0"
+                      style={{
+                        backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+                        borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                        color: isDarkMode ? '#ffffff' : '#111827'
+                      }}
+                    />
+                    <Calendar 
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none"
+                      style={{
+                        color: isDarkMode ? '#9ca3af' : '#6b7280'
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {/* Status */}
@@ -1415,17 +1444,25 @@ const PerformanceAppraisal = ({ employees }) => {
                   <label className="block text-sm font-medium mb-2">
                     {t('performance.targetDate', 'Target Date')}
                   </label>
-                  <input
-                    type="date"
-                    value={goalForm.targetDate}
-                    onChange={(e) => setGoalForm({...goalForm, targetDate: e.target.value})}
-                    className="w-full px-4 py-2 rounded-lg border transition-colors"
-                    style={{
-                      backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-                      borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                      color: isDarkMode ? '#ffffff' : '#111827'
-                    }}
-                  />
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={goalForm.targetDate}
+                      onChange={(e) => setGoalForm({...goalForm, targetDate: e.target.value})}
+                      className="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0"
+                      style={{
+                        backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+                        borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                        color: isDarkMode ? '#ffffff' : '#111827'
+                      }}
+                    />
+                    <Calendar 
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none"
+                      style={{
+                        color: isDarkMode ? '#9ca3af' : '#6b7280'
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {/* Status */}

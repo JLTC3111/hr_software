@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, PieChart, UserPlus, Download, Calendar, SquareSigma, PiggyBank, Award, Clock, Filter, HeartPulse, Loader, DollarSign } from 'lucide-react';
+import { BarChart3, PieChart, UserPlus, Download, Calendar, SquareSigma, PiggyBank, Award, User, Users, Filter, HeartPulse, Loader, DollarSign } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import * as reportService from '../services/reportService';
@@ -999,7 +999,7 @@ const Reports = () => {
                   borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
                 }}
               >
-                <option value="all">{t('reports.allDepartments', 'All Departments')}</option>
+                <option value="all">{t('reports.allDepartments', '')}</option>
                 <option value="technology">{t('departments.technology', 'Technology')}</option>
                 <option value="legal_compliance">{t('departments.legal_compliance', 'Legal & Compliance')}</option>
                 <option value="internal_affairs">{t('departments.internal_affairs', 'Internal Affairs')}</option>

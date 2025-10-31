@@ -436,6 +436,8 @@ export default {
     addNewGoal: 'Ajouter un nouvel objectif',
     performanceGoals: 'Objectifs de performance',
     progress: 'Progrès',
+    in_progress: 'en cours',
+    clickToRate: 'Cliquez sur les étoiles pour mettre à jour la note de l\'employé',
     deadline: 'Date limite',
     due: 'Échéance',
     complete: 'terminé',
@@ -451,7 +453,26 @@ export default {
     edit: 'Modifier',
     view: 'Voir',
     progressSaved: 'Progrès enregistré avec succès!',
-    progressSaveError: 'Échec de l\'enregistrement du progrès'
+    progressSaveError: 'Échec de l\'enregistrement du progrès',
+    // Goal form fields
+    goalTitle: 'Titre de l\'objectif',
+    goalTitlePlaceholder: 'Entrez le titre de l\'objectif',
+    goalDescription: 'Description',
+    goalDescriptionPlaceholder: 'Décrivez les objectifs',
+    category: 'Catégorie',
+    general: 'Général',
+    technical: 'Technique',
+    leadership: 'Leadership',
+    project: 'Projet',
+    professionalDevelopment: 'Développement professionnel',
+    priority: 'Priorité',
+    low: 'Faible',
+    medium: 'Moyen',
+    high: 'Élevé',
+    critical: 'Critique',
+    targetDate: 'Date cible',
+    cancelled: 'Annulé',
+    onHold: 'En attente'
   },
 
   // Reports
@@ -468,6 +489,7 @@ export default {
     exportExcel: 'Exporter en Excel',
     filterBy: 'Filtrer par',
     dateRange: 'Plage de dates',
+    allDepartments: 'Tous les départements',
     department: 'Département',
     all: 'Tous',
     // Navigation

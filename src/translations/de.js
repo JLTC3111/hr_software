@@ -317,6 +317,8 @@ export default {
     addNewGoal: 'Neues Ziel hinzufügen',
     performanceGoals: 'Leistungsziele',
     progress: 'Fortschritt',
+    in_progress: 'In Bearbeitung',
+    clickToRate: 'Klicken Sie auf die Sterne, um die Mitarbeiterbewertung zu aktualisieren',
     deadline: 'Fristablauf',
     due: 'Fällig',
     complete: 'abgeschlossen',
@@ -332,7 +334,25 @@ export default {
     edit: 'Bearbeiten',
     view: 'Anzeigen',
     progressSaved: 'Fortschritt erfolgreich gespeichert!',
-    progressSaveError: 'Fehler beim Speichern des Fortschritts'
+    progressSaveError: 'Fehler beim Speichern des Fortschritts',
+    goalTitle: 'Zieltitel',
+    goalTitlePlaceholder: 'Zieltitel eingeben',
+    goalDescription: 'Beschreibung',
+    goalDescriptionPlaceholder: 'Beschreiben Sie die Ziele',
+    category: 'Kategorie',
+    general: 'Allgemein',
+    technical: 'Technisch',
+    leadership: 'Führung',
+    project: 'Projekt',
+    professionalDevelopment: 'Berufliche Entwicklung',
+    priority: 'Priorität',
+    low: 'Niedrig',
+    medium: 'Mittel',
+    high: 'Hoch',
+    critical: 'Kritisch',
+    targetDate: 'Zieldatum',
+    cancelled: 'Abgebrochen',
+    onHold: 'Pausiert'
   },
 
   // Reports
@@ -349,6 +369,7 @@ export default {
     exportExcel: 'Excel exportieren',
     filterBy: 'Filtern nach',
     dateRange: 'Datumsbereich',
+    allDepartment: 'Alle Abteilungen',
     department: 'Abteilung',
     all: 'Alle',
     // Navigation

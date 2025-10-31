@@ -431,6 +431,8 @@ export default {
     addNewGoal: 'Thêm mục tiêu mới',
     performanceGoals: 'Mục tiêu hiệu suất',
     progress: 'Tiến độ',
+    in_progress: 'đang thực hiện',
+    clickToRate: 'Nhấp vào sao để cập nhật đánh giá nhân viên',
     deadline: 'Hạn chót',
     due: 'Đến hạn',
     complete: 'hoàn thành',
@@ -446,7 +448,26 @@ export default {
     edit: 'Chỉnh sửa',
     view: 'Xem',
     progressSaved: 'Tiến độ đã được lưu thành công!',
-    progressSaveError: 'Không thể lưu tiến độ'
+    progressSaveError: 'Không thể lưu tiến độ',
+    // Goal form fields
+    goalTitle: 'Tiêu đề mục tiêu',
+    goalTitlePlaceholder: 'Nhập tiêu đề mục tiêu',
+    goalDescription: 'Mô tả',
+    goalDescriptionPlaceholder: 'Mô tả các mục tiêu',
+    category: 'Danh mục',
+    general: 'Chung',
+    technical: 'Kỹ thuật',
+    leadership: 'Lãnh đạo',
+    project: 'Dự án',
+    professionalDevelopment: 'Phát triển nghề nghiệp',
+    priority: 'Ưu tiên',
+    low: 'Thấp',
+    medium: 'Trung bình',
+    high: 'Cao',
+    critical: 'Quan trọng',
+    targetDate: 'Ngày mục tiêu',
+    cancelled: 'Đã hủy',
+    onHold: 'Tạm dừng'
   },
 
   // Reports
@@ -463,6 +484,7 @@ export default {
     exportExcel: 'Xuất Excel',
     filterBy: 'Lọc theo',
     dateRange: 'Khoảng thời gian',
+    allDepartments: 'Tất cả phòng ban',
     department: 'Phòng ban',
     all: 'Tất cả',
     // Navigation
