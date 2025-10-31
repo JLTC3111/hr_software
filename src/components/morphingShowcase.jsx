@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import MorphingTimeIcon from './morphingTimeIcon';
 import MorphingSVG from './morphingSVG';
 
 const MorphingShowcase = () => {
   const { bg, text, border, isDarkMode } = useTheme();
+  const { t } = useLanguage();
   const [clockMode, setClockMode] = useState('clock');
 
   // Status indicator shapes

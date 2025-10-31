@@ -17,6 +17,7 @@ const AdminTimeEntry = () => {
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [processedEmployeeIds, setProcessedEmployeeIds] = useState([]); // Track employees who've had entries created
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -86,6 +87,8 @@ const AdminTimeEntry = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    console.log('Submit - Selected employees:', selectedEmployees);
     
     if (selectedEmployees.length === 0) {
       setErrorMessage(t('adminTimeEntry.selectAtLeastOne', 'Please select at least one employee'));
@@ -169,15 +172,23 @@ const AdminTimeEntry = () => {
         proofFilePath
       }));
 
+      console.log('Submitting entries:', entries);
       const result = await timeTrackingService.createBulkTimeEntries(entries);
+      console.log('Result:', result);
 
       if (result.success) {
         const employeeNames = selectedEmployees.map(e => e.name).join(', ');
+        const employeeIds = selectedEmployees.map(e => e.id);
+        
         setSuccessMessage(
           selectedEmployees.length === 1 
             ? `${t('adminTimeEntry.entryAddedSuccess', 'Time entry added successfully for')} ${employeeNames}`
             : `${t('adminTimeEntry.entriesAddedSuccess', 'Time entries added successfully for')} ${selectedEmployees.length} ${t('adminTimeEntry.employees', 'employees')}: ${employeeNames}`
         );
+        
+        // Track processed employees to prevent re-selection
+        setProcessedEmployeeIds(prev => [...prev, ...employeeIds]);
+        
         // Reset form
         setFormData({
           date: new Date().toISOString().split('T')[0],
@@ -201,25 +212,39 @@ const AdminTimeEntry = () => {
   };
 
   const toggleEmployeeSelection = (employee) => {
+    console.log('Toggle employee:', employee);
     setSelectedEmployees(prev => {
       const isSelected = prev.some(e => e.id === employee.id);
-      if (isSelected) {
-        return prev.filter(e => e.id !== employee.id);
-      } else {
-        return [...prev, employee];
-      }
+      const newSelection = isSelected 
+        ? prev.filter(e => e.id !== employee.id)
+        : [...prev, employee];
+      console.log('Selected employees:', newSelection);
+      return newSelection;
     });
+    // Close dropdown and clear search after selection
+    setShowDropdown(false);
+    setSearchTerm('');
   };
 
   const removeEmployee = (employeeId) => {
     setSelectedEmployees(prev => prev.filter(e => e.id !== employeeId));
   };
 
-  const filteredEmployees = employees.filter(emp =>
-    emp.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.position?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter out employees who have already had entries created in this session
+  const filteredEmployees = employees.filter(emp => {
+    // Don't show employees that were already processed in this session
+    if (processedEmployeeIds.includes(emp.id)) return false;
+    
+    // Don't show employees that are already selected
+    if (selectedEmployees.some(e => e.id === emp.id)) return false;
+    
+    // Apply search filter
+    return (
+      emp.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emp.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emp.position?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
 
   if (!canManageTimeTracking) {
     return (
@@ -306,7 +331,7 @@ const AdminTimeEntry = () => {
                         <div className="flex-1">
                           <div className={`font-medium ${text.primary}`}>{emp.name}</div>
                           <div className={`text-sm ${text.secondary}`}>
-                            {emp.position} • {emp.department}
+                            {t(`employeePosition.${emp.position}`, emp.position)} • {t(`departments.${emp.department}`, emp.department)}
                           </div>
                         </div>
                         {isSelected && (
@@ -325,8 +350,11 @@ const AdminTimeEntry = () => {
           {/* Selected Employees Display */}
           {selectedEmployees.length > 0 && (
             <div className={`mt-2 space-y-2`}>
-              <div className={`text-sm font-medium ${text.primary}`}>
-                {t('adminTimeEntry.selectedEmployees', 'Selected Employees')}:
+              <div className={`text-sm font-medium ${text.primary} flex items-center space-x-2`}>
+                <span>{t('adminTimeEntry.selectedEmployees', 'Selected Employees')}:</span>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? 'bg-green-800 text-green-200' : 'bg-green-100 text-green-800'}`}>
+                  {selectedEmployees.length} {selectedEmployees.length === 1 ? 'employee' : 'employees'}
+                </span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {selectedEmployees.map((emp) => (
@@ -337,7 +365,7 @@ const AdminTimeEntry = () => {
                     <div>
                       <div className={`text-sm font-medium ${text.primary}`}>{emp.name}</div>
                       <div className={`text-xs ${text.secondary}`}>
-                        {emp.position}
+                        {t(`employeePosition.${emp.position}`, emp.position)} • {t(`departments.${emp.department}`, emp.department)}
                       </div>
                     </div>
                     <button
@@ -519,7 +547,7 @@ const AdminTimeEntry = () => {
               <span>
                 {selectedEmployees.length > 1 
                   ? t('adminTimeEntry.submitBulkEntries', `Submit Entries for ${selectedEmployees.length} Employees`)
-                  : t('adminTimeEntry.submitButton', 'Submit Time Entry')
+                  : t('adminTimeEntry.submitButton', '')
                 }
               </span>
             </>
