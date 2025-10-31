@@ -7,6 +7,79 @@ import * as timeTrackingService from '../services/timeTrackingService';
 import { supabase } from '../config/supabaseClient';
 import AdminTimeEntry from './AdminTimeEntry';
 import { motion } from 'framer-motion';
+import * as flubber from 'flubber';
+
+// Animated Clock Component with rotating needle
+const AnimatedClock = ({ className, isDarkMode }) => {
+  return (
+    <svg 
+      className={className}
+      viewBox="0 0 24 24" 
+      fill="none" 
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {/* Clock circle */}
+      <circle 
+        cx="12" 
+        cy="12" 
+        r="9" 
+        stroke="currentColor" 
+        strokeWidth="2"
+      />
+      {/* Hour hand (shorter, thicker, slower rotation) */}
+      <motion.line
+        x1="12"
+        y1="12"
+        x2="12"
+        y2="8.5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        animate={{
+          rotate: 360
+        }}
+        transition={{
+          duration: 12,
+          repeat: Infinity,
+          ease: "linear"
+        }}
+        style={{
+          originX: "12px",
+          originY: "12px"
+        }}
+      />
+      {/* Minute hand (longer but still inside, thinner, faster rotation) */}
+      <motion.line
+        x1="12"
+        y1="12"
+        x2="12"
+        y2="6"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        animate={{
+          rotate: 360
+        }}
+        transition={{
+          duration: 4,
+          repeat: Infinity,
+          ease: "linear"
+        }}
+        style={{
+          originX: "12px",
+          originY: "12px"
+        }}
+      />
+      {/* Clock center dot (on top) */}
+      <circle 
+        cx="12" 
+        cy="12" 
+        r="1.2" 
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
 
 const TimeClockEntry = ({ currentLanguage }) => {
   const { isDarkMode, bg, text, button, input, border } = useTheme();
@@ -872,7 +945,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     pr-10 appearance-none
                   `}
                 />
-                <Clock className={`absolute top-1/2 right-3 transform rotate-240 -translate-y-1/2 pointer-events-none w-5 h-5 ${text.secondary}`} />
+                <AnimatedClock className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-6 h-6 ${text.secondary}`} isDarkMode={isDarkMode} />
               </div>
               {errors.clockIn && <p className="text-red-500 text-sm mt-1">{errors.clockIn}</p>}
             </div>
@@ -898,7 +971,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     pr-10 appearance-none
                   `}
                 />
-                <Clock className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-5 h-5 ${text.secondary}`} />
+                <AnimatedClock className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-6 h-6 ${text.secondary}`} isDarkMode={isDarkMode} />
               </div>
               {errors.clockOut && <p className="text-red-500 text-sm mt-1">{errors.clockOut}</p>}
             </div>
@@ -925,7 +998,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                             <option key={type.value} value={type.value}>{type.label}</option>
                         ))}
                     </select>
-                    <ChevronsUpDown className={`absolute top-1/2 right-4 transform -translate-y-1/2 pointer-events-none h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`} />
+                    <ChevronsUpDown className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`} />
                 </div>
               </div>
 
