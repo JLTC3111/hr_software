@@ -24,7 +24,7 @@ const Notifications = () => {
   const [filter, setFilter] = useState('all'); // all, unread, read
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   const [updatingNotifications, setUpdatingNotifications] = useState(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -59,13 +59,13 @@ const Notifications = () => {
   const getTypeIcon = (type) => {
     switch (type) {
       case 'success':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
+        return <CheckCircle className={`h-5 w-5 ${text.secondary}`} />;
       case 'error':
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
+        return <AlertCircle className={`h-5 w-5 ${text.secondary}`} />;
       case 'warning':
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
+        return <AlertTriangle className={`h-5 w-5 ${text.secondary}`} />;
       default:
-        return <Info className="h-5 w-5 text-blue-500" />;
+        return <Info className={`h-5 w-5 ${text.secondary}`} />;
     }
   };
 
@@ -77,7 +77,7 @@ const Notifications = () => {
       case 'error':
         return isDarkMode ? 'border-red-700 bg-red-900/20' : 'border-red-200 bg-red-50';
       case 'warning':
-        return isDarkMode ? 'border-yellow-700 bg-yellow-900/20' : 'border-yellow-200 bg-yellow-50';
+        return isDarkMode ? 'border-yellow-700 bg-blue-900/20' : 'border-yellow-200 bg-yellow-50';
       default:
         return isDarkMode ? 'border-blue-700 bg-blue-900/20' : 'border-blue-200 bg-blue-50';
     }
@@ -135,6 +135,51 @@ const Notifications = () => {
     });
   };
 
+  // Helper function to translate notification titles
+  const getTranslatedTitle = (title) => {
+    const titleMap = {
+      'Pending Approvals': t('notifications.pendingApprovals', 'Pending Approvals'),
+      'Time Entry Approved': t('notifications.timeEntryApproved', 'Time Entry Approved'),
+      'Time Entry Rejected': t('notifications.timeEntryRejected', 'Time Entry Rejected'),
+      'New Employee Added': t('notifications.newEmployeeAdded', 'New Employee Added'),
+      'Performance Review': t('notifications.performanceReview', 'Performance Review'),
+      'System Update': t('notifications.systemUpdate', 'System Update'),
+    };
+    return titleMap[title] || title;
+  };
+
+  // Helper function to translate notification messages
+  const getTranslatedMessage = (message) => {
+    // Handle dynamic messages with patterns
+    const timeEntriesMatch = message.match(/You have (\d+) time entries awaiting approval/);
+    if (timeEntriesMatch) {
+      return t('notifications.timeEntriesAwaiting', 'You have {0} time entries awaiting approval').replace('{0}', timeEntriesMatch[1]);
+    }
+    return message;
+  };
+
+  // Helper function to translate action labels
+  const getTranslatedActionLabel = (label) => {
+    const labelMap = {
+      'Review Now': t('notifications.reviewNow', 'Review Now'),
+      'View Details': t('notifications.viewDetails', 'View Details'),
+    };
+    return labelMap[label] || label;
+  };
+
+  // Helper function to translate category names
+  const getTranslatedCategory = (category) => {
+    const categoryMap = {
+      'general': t('notifications.general', 'General'),
+      'time_tracking': t('notifications.timeTracking', 'Time Tracking'),
+      'performance': t('notifications.performance', 'Performance'),
+      'employee': t('notifications.employee', 'Employee'),
+      'recruitment': t('notifications.recruitment', 'Recruitment'),
+      'system': t('notifications.system', 'System'),
+    };
+    return categoryMap[category] || category;
+  };
+
   if (loading && notifications.length === 0) {
     return (
       <div className={`p-8 ${bg.primary}`}>
@@ -149,83 +194,81 @@ const Notifications = () => {
 
   return (
     <div className={`p-4 md:p-8 ${bg.primary} min-h-screen`}>
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto gap-7">
         {/* Header */}
         <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 mb-6`}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <Bell className={`h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`} />
-              <h1 className={`text-2xl font-bold ${text.primary}`}>
-                {t('notifications.title', 'Notifications')}
-              </h1>
-            </div>
+          <div className="flex items-center space-x-3 mb-4">
+            <Bell className={`h-8 w-8 ${isDarkMode ? 'text-white' : 'text-gray-900'}`} />
+            <h1 className={`text-4xl font-bold ${text.primary}`}>
+              {t('notifications.title', 'Notifications')}
+            </h1>
+          </div>
+          
+          {/* Action Buttons - Separated from header */}
+          <div className="flex items-center space-x-2 flex-wrap gap-2">
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer disabled:opacity-50`}
+              title={t('notifications.refresh', 'Refresh')}
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{t('notifications.refresh', 'Refresh')}</span>
+            </button>
             
-            {/* Action Buttons */}
-            <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer`}
+              title={t('notifications.filters', 'Filters')}
+            >
+              <Filter className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('notifications.filters', 'Filters')}</span>
+            </button>
+            
+            {unreadCount > 0 && (
               <button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer disabled:opacity-50`}
-                title={t('notifications.refresh', 'Refresh')}
-              >
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">{t('notifications.refresh', 'Refresh')}</span>
-              </button>
-              
-              <button
-                onClick={() => setShowFilters(!showFilters)}
+                onClick={markAllAsRead}
                 className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer`}
-                title={t('notifications.filters', 'Filters')}
+                title={t('notifications.markAllRead', 'Mark all as read')}
               >
-                <Filter className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('notifications.filters', 'Filters')}</span>
+                <CheckCheck className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('notifications.markAllRead', 'Mark all as read')}</span>
               </button>
-              
-              {unreadCount > 0 && (
-                <button
-                  onClick={markAllAsRead}
-                  className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer`}
-                  title={t('notifications.markAllRead', 'Mark all as read')}
-                >
-                  <CheckCheck className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('notifications.markAllRead', 'Mark all read')}</span>
-                </button>
-              )}
-              
-              {notifications.length > 0 && (
-                <button
-                  onClick={() => {
-                    if (window.confirm(t('notifications.confirmDeleteAll', 'Are you sure you want to delete all notifications?'))) {
-                      deleteAllNotifications();
-                    }
-                  }}
-                  className={`px-4 py-2 rounded-lg ${hover.bg} text-red-600 flex items-center space-x-2 transition-colors cursor-pointer`}
-                  title={t('notifications.deleteAll', 'Delete all')}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('notifications.deleteAll', 'Delete all')}</span>
-                </button>
-              )}
-            </div>
+            )}
+            
+            {notifications.length > 0 && (
+              <button
+                onClick={() => {
+                  if (window.confirm(t('notifications.confirmDeleteAll', 'Are you sure you want to delete all notifications?'))) {
+                    deleteAllNotifications();
+                  }
+                }}
+                className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer`}
+                title={t('notifications.deleteAll', 'Delete all')}
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('notifications.deleteAll', 'Delete all')}</span>
+              </button>
+            )}
           </div>
 
           {/* Statistics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-            <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+            <div className={`p-3 rounded-lg bg-transparent border ${border.primary}`}>
               <p className={`text-xs ${text.secondary}`}>{t('notifications.total', 'Total')}</p>
               <p className={`text-2xl font-bold ${text.primary}`}>{stats.total_notifications}</p>
             </div>
-            <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'}`}>
+            <div className={`p-3 rounded-lg bg-transparent border ${border.primary}`}>
               <p className={`text-xs ${text.secondary}`}>{t('notifications.unread', 'Unread')}</p>
-              <p className={`text-2xl font-bold text-blue-600`}>{stats.unread_count}</p>
+              <p className={`text-2xl font-bold ${text.primary}`}>{stats.unread_count}</p>
             </div>
-            <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-red-900/30' : 'bg-red-50'}`}>
+            <div className={`p-3 rounded-lg bg-transparent border ${border.primary}`}>
               <p className={`text-xs ${text.secondary}`}>{t('notifications.errors', 'Errors')}</p>
-              <p className={`text-2xl font-bold text-red-600`}>{stats.error_count}</p>
+              <p className={`text-2xl font-bold ${text.primary}`}>{stats.error_count}</p>
             </div>
-            <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-yellow-900/30' : 'bg-yellow-50'}`}>
+            <div className={`p-3 rounded-lg bg-transparent border ${border.primary}`}>
               <p className={`text-xs ${text.secondary}`}>{t('notifications.warnings', 'Warnings')}</p>
-              <p className={`text-2xl font-bold text-yellow-600`}>{stats.warning_count}</p>
+              <p className={`text-2xl font-bold ${text.primary}`}>{stats.warning_count}</p>
             </div>
           </div>
         </div>
@@ -317,8 +360,7 @@ const Notifications = () => {
               <div
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
-                className={`
-                  ${bg.secondary} rounded-lg shadow-sm border-l-4 
+                className={`rounded-lg shadow-sm
                   ${getTypeColor(notification.type)}
                   ${notification.action_url ? 'cursor-pointer hover:shadow-md' : ''}
                   ${!notification.is_read ? 'border-l-blue-600' : border.primary}
@@ -342,14 +384,14 @@ const Notifications = () => {
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">
                           <h4 className={`font-semibold ${text.primary}`}>
-                            {notification.title}
+                            {getTranslatedTitle(notification.title)}
                           </h4>
                           {!notification.is_read && (
                             <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
                           )}
                         </div>
                         <p className={`text-sm ${text.secondary} mt-1`}>
-                          {notification.message}
+                          {getTranslatedMessage(notification.message)}
                         </p>
                         
                         {/* Action Button */}
@@ -357,7 +399,7 @@ const Notifications = () => {
                           <button
                             className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center space-x-1"
                           >
-                            <span>{notification.action_label}</span>
+                            <span>{getTranslatedActionLabel(notification.action_label)}</span>
                             <ExternalLink className="h-3 w-3" />
                           </button>
                         )}
@@ -376,7 +418,7 @@ const Notifications = () => {
                         )}
                         <button
                           onClick={(e) => handleDelete(e, notification.id)}
-                          className={`p-2 rounded-lg ${hover.bg} text-red-600 transition-colors cursor-pointer`}
+                          className={`p-2 rounded-lg ${hover.bg} ${text.primary} transition-colors cursor-pointer`}
                           title={t('notifications.delete', 'Delete')}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -390,7 +432,7 @@ const Notifications = () => {
                         {formatTime(notification.created_at)}
                       </span>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} ${text.secondary}`}>
-                        {notification.category}
+                        {getTranslatedCategory(notification.category)}
                       </span>
                     </div>
                   </div>

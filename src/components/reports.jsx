@@ -807,6 +807,139 @@ const Reports = () => {
         </div>
       </div>
 
+      {/* Generated Report Display */}
+      {generatedReport && (
+        <div 
+          className="rounded-lg shadow-sm border p-6"
+          style={{
+            backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+            color: isDarkMode ? '#ffffff' : '#111827',
+            borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
+          }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 
+              className="text-lg font-semibold"
+              style={{
+                backgroundColor: 'transparent',
+                color: isDarkMode ? '#ffffff' : '#111827',
+                borderColor: 'transparent'
+              }}
+            >
+              {t('reports.reportResults', 'Report Results')}
+            </h3>
+            <button
+              onClick={() => setGeneratedReport(null)}
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
+              {t('common.close', 'Close')}
+            </button>
+          </div>
+
+          {/* Performance Report */}
+          {generatedReport.reviews && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="p-4 border rounded-lg" style={{ backgroundColor: isDarkMode ? '#4b5563' : '#f9fafb', borderColor: isDarkMode ? '#6b7280' : '#e5e7eb' }}>
+                  <p className="text-sm text-gray-500">{t('reports.totalReviews', 'Total Reviews')}</p>
+                  <p className="text-2xl font-bold">{generatedReport.metrics?.totalReviews || 0}</p>
+                </div>
+                <div className="p-4 border rounded-lg" style={{ backgroundColor: isDarkMode ? '#4b5563' : '#f9fafb', borderColor: isDarkMode ? '#6b7280' : '#e5e7eb' }}>
+                  <p className="text-sm text-gray-500">{t('reports.averageRating', 'Average Rating')}</p>
+                  <p className="text-2xl font-bold">{generatedReport.metrics?.averageRating?.toFixed(1) || 0}</p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b" style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}>
+                      <th className="text-left p-3">{t('reports.employee', 'Employee')}</th>
+                      <th className="text-left p-3">{t('reports.rating', 'Rating')}</th>
+                      <th className="text-left p-3">{t('reports.reviewDate', 'Review Date')}</th>
+                      <th className="text-left p-3">{t('reports.reviewer', 'Reviewer')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {generatedReport.reviews.map((review, idx) => (
+                      <tr key={idx} className="border-b" style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}>
+                        <td className="p-3">{review.employee?.name || 'N/A'}</td>
+                        <td className="p-3">{review.overall_rating || 'N/A'}</td>
+                        <td className="p-3">{new Date(review.review_date).toLocaleDateString()}</td>
+                        <td className="p-3">{review.reviewer?.name || 'N/A'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Salary Report */}
+          {generatedReport.employees && generatedReport.metrics?.averageSalary && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="p-4 border rounded-lg" style={{ backgroundColor: isDarkMode ? '#4b5563' : '#f9fafb', borderColor: isDarkMode ? '#6b7280' : '#e5e7eb' }}>
+                  <p className="text-sm text-gray-500">{t('reports.totalEmployees', 'Total Employees')}</p>
+                  <p className="text-2xl font-bold">{generatedReport.metrics?.totalEmployees || 0}</p>
+                </div>
+                <div className="p-4 border rounded-lg" style={{ backgroundColor: isDarkMode ? '#4b5563' : '#f9fafb', borderColor: isDarkMode ? '#6b7280' : '#e5e7eb' }}>
+                  <p className="text-sm text-gray-500">{t('reports.averageSalary', 'Average Salary')}</p>
+                  <p className="text-2xl font-bold">${generatedReport.metrics?.averageSalary?.toLocaleString() || 0}</p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b" style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}>
+                      <th className="text-left p-3">{t('reports.employee', 'Employee')}</th>
+                      <th className="text-left p-3">{t('reports.position', 'Position')}</th>
+                      <th className="text-left p-3">{t('reports.department', 'Department')}</th>
+                      <th className="text-left p-3">{t('reports.salary', 'Salary')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {generatedReport.employees.map((emp, idx) => (
+                      <tr key={idx} className="border-b" style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}>
+                        <td className="p-3">{emp.name || 'N/A'}</td>
+                        <td className="p-3">{emp.position || 'N/A'}</td>
+                        <td className="p-3">{emp.department || 'N/A'}</td>
+                        <td className="p-3">${emp.salary?.toLocaleString() || 'N/A'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Department Report */}
+          {generatedReport.summaries && (
+            <div className="space-y-4">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b" style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}>
+                      <th className="text-left p-3">{t('reports.department', 'Department')}</th>
+                      <th className="text-left p-3">{t('reports.totalEmployees', 'Total Employees')}</th>
+                      <th className="text-left p-3">{t('reports.averageSalary', 'Average Salary')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {generatedReport.summaries.map((summary, idx) => (
+                      <tr key={idx} className="border-b" style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}>
+                        <td className="p-3">{summary.department || 'N/A'}</td>
+                        <td className="p-3">{summary.employee_count || 0}</td>
+                        <td className="p-3">${summary.avg_salary?.toLocaleString() || 'N/A'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Pre-built Reports */}
       <div 
         className="rounded-lg shadow-sm border p-6"

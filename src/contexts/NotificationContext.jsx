@@ -71,7 +71,7 @@ export const NotificationProvider = ({ children }) => {
       fetchStats();
       
       // Check for pending approvals if user is admin/manager
-      if (user.role === 'admin' || user.role === 'hr_admin' || user.role === 'manager') {
+      if (user.role === 'admin' || user.role === 'manager') {
         checkPendingApprovals();
       }
     } else {
@@ -209,7 +209,7 @@ export const NotificationProvider = ({ children }) => {
     if (!isAuthenticated || !user?.id) return;
     
     // Only subscribe if user is admin/manager
-    if (user.role !== 'admin' && user.role !== 'hr_admin' && user.role !== 'manager') {
+    if (user.role !== 'admin' && user.role !== 'manager') {
       return;
     }
 

@@ -819,7 +819,18 @@ export default {
     hoursAgo: 'vor {0}h',
     daysAgo: 'vor {0}T',
     markAsRead: 'Als gelesen markieren',
-    delete: 'Löschen'
+    delete: 'Löschen',
+    // Notification titles
+    pendingApprovals: 'Ausstehende Genehmigungen',
+    timeEntryApproved: 'Zeiteintrag Genehmigt',
+    timeEntryRejected: 'Zeiteintrag Abgelehnt',
+    newEmployeeAdded: 'Neuer Mitarbeiter Hinzugefügt',
+    performanceReview: 'Leistungsbeurteilung',
+    systemUpdate: 'Systemaktualisierung',
+    // Notification messages
+    timeEntriesAwaiting: 'Sie haben {0} Zeiteinträge, die auf Genehmigung warten',
+    reviewNow: 'Jetzt Überprüfen',
+    viewDetails: 'Details Anzeigen',
   },
 
   // Settings

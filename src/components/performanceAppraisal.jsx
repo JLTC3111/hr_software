@@ -13,9 +13,7 @@ const PerformanceAppraisal = ({ employees }) => {
   const [showAddReviewModal, setShowAddReviewModal] = useState(false);
   const [showEditGoalModal, setShowEditGoalModal] = useState(false);
   const [showReviewDetailModal, setShowReviewDetailModal] = useState(false);
-  const [showCommentsModal, setShowCommentsModal] = useState(false);
   const [selectedReview, setSelectedReview] = useState(null);
-  const [reviewComments, setReviewComments] = useState([]);
   const [editingGoal, setEditingGoal] = useState(null);
   const [loading, setLoading] = useState(false);
   const [goals, setGoals] = useState([]);
@@ -228,35 +226,6 @@ const PerformanceAppraisal = ({ employees }) => {
     const fullReview = reviews.find(r => r.id === review.id);
     setSelectedReview(fullReview);
     setShowReviewDetailModal(true);
-  };
-
-  // Handle view comments
-  const handleViewComments = async (review) => {
-    const fullReview = reviews.find(r => r.id === review.id);
-    setSelectedReview(fullReview);
-    setLoading(true);
-    
-    try {
-      // Fetch comments from performance_comments table
-      const { supabase } = await import('../config/supabaseClient');
-      const { data, error } = await supabase
-        .from('performance_comments')
-        .select(`
-          *,
-          commenter:employees!performance_comments_commenter_id_fkey(id, name, position)
-        `)
-        .eq('review_id', review.id)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setReviewComments(data || []);
-      setShowCommentsModal(true);
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-      alert(t('performance.errorFetchingComments', 'Error fetching comments'));
-    } finally {
-      setLoading(false);
-    }
   };
 
   // Handle progress change
@@ -980,17 +949,6 @@ const PerformanceAppraisal = ({ employees }) => {
                 }}
               >
                 {t('performance.viewFullReview')}
-              </button>
-              <button 
-                onClick={() => handleViewComments(review)}
-                className="px-3 py-1 text-sm flex items-center space-x-1 cursor-pointer transition-colors rounded"
-                style={{
-                  backgroundColor: 'transparent',
-                  color: isDarkMode ? '#9ca3af' : '#6b7280',                 
-                }}
-              >
-                <MessageSquare className="h-4 w-4" />
-                <span>{t('performance.comments')}</span>
               </button>
             </div>
           </div>
@@ -1902,113 +1860,6 @@ const PerformanceAppraisal = ({ employees }) => {
                 onClick={() => {
                   setShowReviewDetailModal(false);
                   setSelectedReview(null);
-                }}
-                className={`px-6 py-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors cursor-pointer`}
-                style={{
-                  backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
-                  color: isDarkMode ? '#ffffff' : '#111827'
-                }}
-              >
-                {t('common.close', 'Close')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Comments Modal */}
-      {showCommentsModal && selectedReview && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowCommentsModal(false);
-              setSelectedReview(null);
-              setReviewComments([]);
-            }
-          }}
-        >
-          <div 
-            className="rounded-lg shadow-xl max-w-3xl w-full p-6 my-8"
-            style={{
-              backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-              color: isDarkMode ? '#ffffff' : '#111827'
-            }}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold flex items-center space-x-2">
-                  <MessageSquare className="h-6 w-6" />
-                  <span>{t('performance.reviewComments', 'Review Comments')}</span>
-                </h2>
-                <p className="text-sm mt-1" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
-                  {selectedReview.review_type} - {selectedReview.review_period}
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setShowCommentsModal(false);
-                  setSelectedReview(null);
-                  setReviewComments([]);
-                }}
-                className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-              {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                </div>
-              ) : reviewComments.length === 0 ? (
-                <div className="text-center py-12">
-                  <MessageSquare className="h-12 w-12 mx-auto mb-4" style={{ color: isDarkMode ? '#6b7280' : '#9ca3af' }} />
-                  <p style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
-                    {t('performance.noComments', 'No comments yet')}
-                  </p>
-                </div>
-              ) : (
-                reviewComments.map(comment => (
-                  <div 
-                    key={comment.id}
-                    className="p-4 rounded-lg border"
-                    style={{
-                      backgroundColor: isDarkMode ? '#374151' : '#f9fafb',
-                      borderColor: isDarkMode ? '#4b5563' : '#e5e7eb'
-                    }}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
-                          {comment.commenter?.name?.charAt(0) || 'U'}
-                        </div>
-                        <div>
-                          <p className="font-semibold">{comment.commenter?.name || t('common.unknown', 'Unknown')}</p>
-                          <p className="text-xs" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
-                            {comment.commenter?.position || ''}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-xs" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
-                        {new Date(comment.created_at).toLocaleDateString()} {new Date(comment.created_at).toLocaleTimeString()}
-                      </span>
-                    </div>
-                    <p className="whitespace-pre-wrap" style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}>
-                      {comment.comment_text}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className="flex justify-end mt-6 pt-4 border-t" style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}>
-              <button
-                onClick={() => {
-                  setShowCommentsModal(false);
-                  setSelectedReview(null);
-                  setReviewComments([]);
                 }}
                 className={`px-6 py-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors cursor-pointer`}
                 style={{

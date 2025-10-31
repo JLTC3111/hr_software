@@ -770,7 +770,18 @@ export default {
     hoursAgo: '{0} ч. назад',
     daysAgo: '{0} дн. назад',
     markAsRead: 'Отметить как прочитанное',
-    delete: 'Удалить'
+    delete: 'Удалить',
+    // Notification titles
+    pendingApprovals: 'Ожидающие утверждения',
+    timeEntryApproved: 'Запись времени одобрена',
+    timeEntryRejected: 'Запись времени отклонена',
+    newEmployeeAdded: 'Добавлен новый сотрудник',
+    performanceReview: 'Оценка эффективности',
+    systemUpdate: 'Обновление системы',
+    // Notification messages
+    timeEntriesAwaiting: 'У вас {0} записей времени ожидают утверждения',
+    reviewNow: 'Просмотреть сейчас',
+    viewDetails: 'Просмотр деталей',
   },
 
   // Settings

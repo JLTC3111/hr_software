@@ -770,7 +770,18 @@ export default {
     hoursAgo: '{0}時間前',
     daysAgo: '{0}日前',
     markAsRead: '既読にする',
-    delete: '削除'
+    delete: '削除',
+    // Notification titles
+    pendingApprovals: '承認待ち',
+    timeEntryApproved: '時間入力が承認されました',
+    timeEntryRejected: '時間入力が却下されました',
+    newEmployeeAdded: '新しい従業員が追加されました',
+    performanceReview: '業績評価',
+    systemUpdate: 'システム更新',
+    // Notification messages
+    timeEntriesAwaiting: '{0}件の時間入力が承認待ちです',
+    reviewNow: '今すぐ確認',
+    viewDetails: '詳細を表示',
   },
 
   // Settings

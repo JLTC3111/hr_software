@@ -826,7 +826,18 @@ export default {
     hoursAgo: 'il y a {0}h',
     daysAgo: 'il y a {0}j',
     markAsRead: 'Marquer comme lu',
-    delete: 'Supprimer'
+    delete: 'Supprimer',
+    // Notification titles
+    pendingApprovals: 'Approbations en attente',
+    timeEntryApproved: 'Entrée de temps approuvée',
+    timeEntryRejected: 'Entrée de temps rejetée',
+    newEmployeeAdded: 'Nouvel employé ajouté',
+    performanceReview: 'Évaluation de performance',
+    systemUpdate: 'Mise à jour du système',
+    // Notification messages
+    timeEntriesAwaiting: 'Vous avez {0} entrées de temps en attente d\'approbation',
+    reviewNow: 'Examiner maintenant',
+    viewDetails: 'Voir les détails',
   },
 
   // Settings

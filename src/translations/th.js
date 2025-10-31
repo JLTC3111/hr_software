@@ -763,7 +763,18 @@ export default {
     hoursAgo: '{0} ชั่วโมงที่แล้ว',
     daysAgo: '{0} วันที่แล้ว',
     markAsRead: 'ทำเครื่องหมายว่าอ่านแล้ว',
-    delete: 'ลบ'
+    delete: 'ลบ',
+    // Notification titles
+    pendingApprovals: 'รอการอนุมัติ',
+    timeEntryApproved: 'รายการเวลาได้รับการอนุมัติ',
+    timeEntryRejected: 'รายการเวลาถูกปฏิเสธ',
+    newEmployeeAdded: 'เพิ่มพนักงานใหม่',
+    performanceReview: 'การประเมินผลการปฏิบัติงาน',
+    systemUpdate: 'อัปเดตระบบ',
+    // Notification messages
+    timeEntriesAwaiting: 'คุณมี {0} รายการเวลารอการอนุมัติ',
+    reviewNow: 'ตรวจสอบตอนนี้',
+    viewDetails: 'ดูรายละเอียด',
   },
 
   // Settings

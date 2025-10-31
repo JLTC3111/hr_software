@@ -771,7 +771,18 @@ export default {
     hoursAgo: 'trước {0} giờ',
     daysAgo: 'trước {0} ngày',
     markAsRead: 'Đánh dấu đã đọc',
-    delete: 'Xóa'
+    delete: 'Xóa',
+    // Notification titles
+    pendingApprovals: 'Đang Chờ Phê Duyệt',
+    timeEntryApproved: 'Thời Gian Đã Được Duyệt',
+    timeEntryRejected: 'Thời Gian Bị Từ Chối',
+    newEmployeeAdded: 'Nhân Viên Mới Được Thêm',
+    performanceReview: 'Đánh Giá Hiệu Suất',
+    systemUpdate: 'Cập Nhật Hệ Thống',
+    // Notification messages
+    timeEntriesAwaiting: 'Bạn có {0} mục thời gian đang chờ phê duyệt',
+    reviewNow: 'Xem Ngay',
+    viewDetails: 'Xem Chi Tiết',
   },
 
   // Performance Appraisal Translation

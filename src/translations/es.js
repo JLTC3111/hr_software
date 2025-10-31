@@ -778,7 +778,18 @@ login: {
     hoursAgo: 'hace {0}h',
     daysAgo: 'hace {0}d',
     markAsRead: 'Marcar como leída',
-    delete: 'Eliminar'
+    delete: 'Eliminar',
+    // Notification titles
+    pendingApprovals: 'Aprobaciones pendientes',
+    timeEntryApproved: 'Entrada de tiempo aprobada',
+    timeEntryRejected: 'Entrada de tiempo rechazada',
+    newEmployeeAdded: 'Nuevo empleado agregado',
+    performanceReview: 'Evaluación de desempeño',
+    systemUpdate: 'Actualización del sistema',
+    // Notification messages
+    timeEntriesAwaiting: 'Tienes {0} entradas de tiempo esperando aprobación',
+    reviewNow: 'Revisar ahora',
+    viewDetails: 'Ver detalles',
   },
 
   // Settings

@@ -765,7 +765,18 @@ export default {
     hoursAgo: '{0}시간 전',
     daysAgo: '{0}일 전',
     markAsRead: '읽음으로 표시',
-    delete: '삭제'
+    delete: '삭제',
+    // Notification titles
+    pendingApprovals: '승인 대기 중',
+    timeEntryApproved: '시간 입력 승인됨',
+    timeEntryRejected: '시간 입력 거부됨',
+    newEmployeeAdded: '새 직원 추가됨',
+    performanceReview: '성과 평가',
+    systemUpdate: '시스템 업데이트',
+    // Notification messages
+    timeEntriesAwaiting: '{0}개의 시간 입력이 승인 대기 중입니다',
+    reviewNow: '지금 확인',
+    viewDetails: '세부정보 보기',
   },
 
   // Settings

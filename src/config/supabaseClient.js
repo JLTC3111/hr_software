@@ -98,7 +98,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // HR-specific user roles for the HR management system
 export const UserRoles = {
-  HR_ADMIN: 'hr_admin',        // Full system administrator
+  HR_ADMIN: 'admin',        // Full system administrator
   HR_MANAGER: 'manager',    // HR department manager
   EMPLOYEE: 'employee',        // Regular employee
   CONTRACTOR: 'contractor'     // Contract worker
@@ -191,7 +191,7 @@ export const Permissions = {
 
 // Helper function to check user permissions
 export const hasPermission = (userRole, permission) => {
-  // Support both 'admin' and 'hr_admin' for admin role
-  const normalizedRole = userRole === 'admin' ? 'hr_admin' : userRole;
+  // Normalize role to 'admin'
+  const normalizedRole = userRole;
   return Permissions[normalizedRole]?.[permission] || Permissions[userRole]?.[permission] || false;
 };

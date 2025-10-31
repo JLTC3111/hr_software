@@ -633,6 +633,18 @@ export default {
     lastQuarter:	'Last Quarter',
     lastYear:	'Last Year',
     customRange: 'Custom Range',
+    // Report Display
+    reportResults: 'Report Results',
+    totalReviews: 'Total Reviews',
+    averageRating: 'Average Rating',
+    employee: 'Employee',
+    rating: 'Rating',
+    reviewDate: 'Review Date',
+    reviewer: 'Reviewer',
+    position: 'Position',
+    averageSalary: 'Average Salary',
+    exportToCSV: 'Export to CSV',
+    exportAllData: 'Export All Data',
   },
 
   // Common
@@ -829,7 +841,18 @@ export default {
     hoursAgo: '{0}h ago',
     daysAgo: '{0}d ago',
     markAsRead: 'Mark as read',
-    delete: 'Delete'
+    delete: 'Delete',
+    // Notification titles
+    pendingApprovals: 'Pending Approvals',
+    timeEntryApproved: 'Time Entry Approved',
+    timeEntryRejected: 'Time Entry Rejected',
+    newEmployeeAdded: 'New Employee Added',
+    performanceReview: 'Performance Review',
+    systemUpdate: 'System Update',
+    // Notification messages
+    timeEntriesAwaiting: 'You have {0} time entries awaiting approval',
+    reviewNow: 'Review Now',
+    viewDetails: 'View Details',
   },
 
   // Settings
