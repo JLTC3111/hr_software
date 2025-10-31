@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Clock, Upload, Calendar, AlertCircle, Check, X, FileText, AlarmClockPlus, Loader, Loader2, ChevronsUpDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Clock, Upload, Calendar, AlertCircle, Check, X, FileText, AlarmClockPlus, Loader, Loader2, ChevronsUpDown, CalendarClock } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,7 +7,6 @@ import * as timeTrackingService from '../services/timeTrackingService';
 import { supabase } from '../config/supabaseClient';
 import AdminTimeEntry from './AdminTimeEntry';
 import { motion } from 'framer-motion';
-import * as flubber from 'flubber';
 
 const TimeClockEntry = ({ currentLanguage }) => {
   const { isDarkMode, bg, text, button, input, border } = useTheme();
@@ -133,40 +132,61 @@ const TimeClockEntry = ({ currentLanguage }) => {
     try {
       let result;
       
-      console.log('Fetching entries - selectedEmployeeFilter:', selectedEmployeeFilter);
-      console.log('User employee_id:', user?.employee_id, 'User id:', user?.id);
+      console.log('🔍 [TIME ENTRIES] Fetching entries...');
+      console.log('📋 Selected filter:', selectedEmployeeFilter);
+      console.log('👤 User info:', {
+        employee_id: user?.employee_id,
+        user_id: user?.id,
+        role: user?.role,
+        canManage: canManageTimeTracking
+      });
       
       // For admins/managers, always use detailed view to get employee names
       if (canManageTimeTracking) {
+        console.log('🔑 Admin/Manager mode - fetching all detailed entries');
         // Always fetch ALL entries and let the useEffect filter them
         result = await timeTrackingService.getAllTimeEntriesDetailed();
         
-        console.log('Fetched all detailed entries:', result?.data?.length, 'entries');
+        console.log('📊 API Result:', {
+          success: result?.success,
+          dataLength: result?.data?.length,
+          error: result?.error,
+          sampleData: result?.data?.[0]
+        });
         
         if (result?.success && Array.isArray(result.data)) {
+          console.log(`✅ Successfully loaded ${result.data.length} entries`);
           setTimeEntries(result.data);
         } else {
+          console.error('❌ Failed to load entries:', result?.error || 'No data returned');
           setTimeEntries([]);
         }
       } else {
         // Regular users - fetch only their own entries
         const employeeId = user?.employee_id || user?.id;
-        console.log('Regular user - fetching entries for employee ID:', employeeId);
+        console.log('👷 Regular user mode - fetching for employee ID:', employeeId);
         if (employeeId) {
           result = await timeTrackingService.getTimeEntries(employeeId);
+          console.log('📊 API Result:', {
+            success: result?.success,
+            dataLength: result?.data?.length,
+            error: result?.error
+          });
           if (result?.success && Array.isArray(result.data)) {
-            console.log('Fetched', result.data.length, 'entries for regular user');
+            console.log(`✅ Successfully loaded ${result.data.length} entries for user`);
             setTimeEntries(result.data);
           } else {
+            console.error('❌ Failed to load entries:', result?.error || 'No data returned');
             setTimeEntries([]);
           }
         } else {
-          console.warn('No employee ID found for user');
+          console.warn('⚠️ No employee ID found for user');
           setTimeEntries([]);
         }
       }
     } catch (error) {
-      console.error('Error fetching time entries:', error);
+      console.error('💥 Exception in fetchTimeEntries:', error);
+      console.error('Stack:', error.stack);
       setTimeEntries([]); // Ensure it's an empty array on error
     }
   };
@@ -243,178 +263,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const CustomCalendarIcon = ({ className, isDarkMode }) => {
-    const outlineFill = isDarkMode ? '#F5F5F5' : '#45484C'; 
-    
-    const innerDetailFill = isDarkMode ? '#1F2937' : '#FFFFFF';
-    
-    const secondaryFill = isDarkMode ? '#FF8C66' : '#FFB89A';
-    const accentFill = isDarkMode ? '#4DCB95' : '#33CC99';
-
-        return (
-            <svg 
-                width="23.5px" 
-                height="23.5px" 
-                viewBox="0 0 1024 1024" 
-                className={className} 
-                version="1.1" 
-                xmlns="http://www.w3.org/2000/svg"
-            >
-                <path d="M897.9 369.2H205c-33.8 0-61.4-27.6-61.4-61.4s27.6-61.4 61.4-61.4h692.9c33.8 0 61.4 27.6 61.4 61.4s-27.6 61.4-61.4 61.4z" fill={secondaryFill} />
-                
-                <path d="M807 171H703.3c-16.6 0-30 13.4-30 30s13.4 30 30 30H807c31.6 0 57.4 24 57.4 53.4v42.3H125.2v-42.3c0-29.5 25.7-53.4 57.4-53.4H293c16.6 0 30-13.4 30-30s-13.4-30-30-30H182.5c-64.7 0-117.4 50.9-117.4 113.4v527.7c0 62.5 52.7 113.4 117.4 113.4H807c64.7 0 117.4-50.9 117.4-113.4V284.5c0-62.6-52.7-113.5-117.4-113.5z m0 694.6H182.5c-31.6 0-57.4-24-57.4-53.4V386.8h739.2v425.4c0.1 29.5-25.7 53.4-57.3 53.4z" fill={outlineFill} />
-                
-                <path d="M447.6 217.1c-12.4-6.1-27-2.8-35.7 7.1-2.2-6.7-4-16.2-4-28.1 0-13 2.2-23 4.6-29.8 9.5 8.1 23.5 9.6 34.9 2.8 14.2-8.5 18.8-27 10.3-41.2-15.5-25.9-35.9-29.7-46.6-29.7-36.6 0-63.1 41.2-63.1 97.8s26.4 98 63.1 98c20.6 0 39-13.4 50.4-36.7 7.3-14.9 1.1-32.9-13.8-40.2zM635.9 218.5c-12.4-6.1-27-2.8-35.7 7.1-2.2-6.7-4-16.2-4-28.1 0-13 2.2-23 4.6-29.8 9.5 8.1 23.5 9.6 34.9 2.8 14.2-8.5 18.8-27 10.3-41.2-15.5-25.9-35.9-29.7-46.6-29.7-36.6 0-63.1 41.2-63.1 97.8s26.5 97.8 63.1 97.8c20.6 0 39-13.4 50.4-36.7 7.1-14.7 0.9-32.7-13.9-40z" fill={outlineFill} />
-                
-                <path d="M700.2 514.5H200.5c-16.6 0-30 13.4-30 30s13.4 30 30 30h499.7c16.6 0 30-13.4 30-30s-13.5-30-30-30zM668.4 689.8h-74c-16.6 0-30 13.4-30 30s13.4 30 30 30h74c16.6 0 30-13.4 30-30s-13.4-30-30-30zM479.3 689.8H200.5c-16.6 0-30 13.4-30 30s13.4 30 30 30h278.8c16.6 0 30-13.4 30-30s-13.4-30-30-30z" fill={accentFill} />
-            </svg>
-        );
-    };
-
-  const CustomClockIcon = ({ className }) => {
-    const outlineFill = isDarkMode ? '#F5F5F5' : '#45484C';
-    const svgRef = useRef(null);
-    const [isMorphed, setIsMorphed] = useState(false);
-    const animationRef = useRef(null);
-    
-    // Clock path (outer circle ring)
-    const clockPath = "M317.688,236.349c-49.955,0-90.597,40.642-90.597,90.596c0,49.956,40.642,90.597,90.597,90.597c49.954,0,90.595-40.641,90.595-90.597C408.283,276.991,367.642,236.349,317.688,236.349z M317.688,387.542c-33.303,0-60.597-27.294-60.597-60.597c0-33.304,27.294-60.596,60.597-60.596c33.302,0,60.595,27.292,60.595,60.596C378.283,360.248,350.99,387.542,317.688,387.542z";
-    
-    // Coffee cup path (cup shape with handle)
-    const coffeeCupPath = "M250,240 L250,380 Q250,400 270,400 L365,400 Q385,400 385,380 L385,240 Q385,230 375,230 L260,230 Q250,230 250,240 Z M385,260 L410,260 Q425,260 425,275 L425,295 Q425,310 410,310 L385,310 Z";
-    
-    useEffect(() => {
-      if (!svgRef.current) return;
-      
-      const morphPath = svgRef.current.querySelector('.morph-path');
-      if (!morphPath) return;
-      
-      // Cancel any existing animation
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      
-      const interpolator = flubber.interpolate(
-        isMorphed ? clockPath : clockPath,
-        isMorphed ? coffeeCupPath : clockPath
-      );
-      
-      const duration = 1500;
-      const startTime = Date.now();
-      
-      const animate = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        // Ease in-out cubic
-        const easedProgress = progress < 0.5
-          ? 4 * progress * progress * progress
-          : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-        
-        const targetPath = isMorphed ? coffeeCupPath : clockPath;
-        const sourcePath = isMorphed ? clockPath : coffeeCupPath;
-        const pathInterpolator = flubber.interpolate(sourcePath, targetPath);
-        const morphedPath = pathInterpolator(easedProgress);
-        
-        morphPath.setAttribute('d', morphedPath);
-        
-        if (progress < 1) {
-          animationRef.current = requestAnimationFrame(animate);
-        }
-      };
-      
-      animate();
-      
-      return () => {
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-        }
-      };
-    }, [isMorphed, clockPath, coffeeCupPath]);
-    
-    const handleClick = () => {
-      setIsMorphed(!isMorphed);
-    };
-
-    return (
-        <svg 
-          ref={svgRef}
-          width="22.5px" 
-          height="22.5px"
-          viewBox="0 0 450 450.001" 
-          xmlns="http://www.w3.org/2000/svg" 
-          fill="currentColor" 
-          className={`${className} cursor-pointer transition-all`}
-          stroke="currentColor"
-          onClick={handleClick}
-          title={isMorphed ? "Click for clock" : "Click for coffee"}
-        >
-            <path 
-                className="morph-path"
-                d={clockPath}
-                fill={outlineFill}
-                style={{ transition: 'all 0.3s ease' }}
-            />
-            
-            {/* Clock hands and running person - fade out when morphing */}
-            <g style={{ 
-              opacity: isMorphed ? 0 : 1, 
-              transition: 'opacity 0.5s ease',
-              pointerEvents: 'none'
-            }}>
-              <path 
-                  d="M317.603,249.295c-8.138,0-14.758,6.616-14.758,14.748v48.145h-29.36c-8.13,0-14.742,6.621-14.742,14.758 s6.612,14.755,14.742,14.755h44.118c8.139,0,14.759-6.618,14.759-14.755v-62.901C332.361,255.912,325.741,249.295,317.603,249.295 z"
-                  fill={outlineFill}
-              />
-              {/* Modified running person - arms and legs in running position */}
-              <path 
-                  d="M238.887,181.527c0-8.563-6.941-15.506-15.505-15.506c-20.161,0-30.705-11.269-44.055-25.535 c-9.412-10.058-19.145-20.46-32.983-27.099l-20.287-9.529l-7.896-6.725c-0.541-0.462-1.341-0.429-1.844,0.078l-12.509,12.568 c-0.507,0.523-0.368,1.275-0.368,1.275l12.14,81.42c0.076,0.545-0.079,1.095-0.427,1.521l-11.484,14.031 c-0.375,0.459-0.935,0.723-1.525,0.723s-1.15-0.264-1.524-0.723l-11.483-14.031c-0.349-0.426-0.503-0.976-0.428-1.521 l12.115-81.42c0,0,0.137-0.752-0.369-1.275L87.947,97.211c-0.504-0.507-1.304-0.54-1.845-0.078l-7.896,6.725l-21.267,10.111 c-31.131,15.814-36.663,59.643-43.036,110.325c-1.213,9.647-2.468,19.624-3.923,29.546c-1.242,8.475,4.619,16.35,13.092,17.592 c0.763,0.111,1.521,0.166,2.27,0.166c7.567,0,14.191-5.547,15.322-13.258c1.501-10.24,2.775-20.373,4.008-30.174 c2.334-18.558,4.71-37.406,8.397-52.899l0.016,65.858c0,8.436,2.963,15.949,7.741,22.227l0.011,167.972 c0,10.315,8.363,18.678,18.68,18.678s18.679-8.363,18.678-18.68l-0.008-148.078c1.327,0.11,2.648,0.176,3.957,0.176 c1.308,0,2.629-0.063,3.957-0.176l-0.002,148.078c-0.001,10.315,8.361,18.68,18.679,18.68c10.315,0,18.679-8.363,18.679-18.68 l0.002-167.97c4.778-6.276,7.742-13.791,7.742-22.227l0.022-85.218c1.812,1.868,3.624,3.804,5.461,5.768 c14.741,15.752,33.086,35.357,66.699,35.357C231.945,197.033,238.887,190.091,238.887,181.527z"
-                  fill={outlineFill}
-                  transform="translate(-5, 0) skewX(-10)"
-              />
-              {/* Running person head - tilted forward */}
-              <path 
-                  d="M102.143,95.888c22.682,0,39.611-21.136,39.995-56.577C142.382,14.717,130.671,0,102.143,0 C73.613,0,61.9,14.717,62.147,39.311C62.529,74.752,79.458,95.888,102.143,95.888z"
-                  fill={outlineFill}
-                  transform="translate(-3, 2)"
-              />
-              {/* Motion lines behind the running person */}
-              <line x1="20" y1="150" x2="35" y2="150" stroke={outlineFill} strokeWidth="2" opacity="0.3"/>
-              <line x1="15" y1="180" x2="32" y2="180" stroke={outlineFill} strokeWidth="2" opacity="0.3"/>
-              <line x1="18" y1="210" x2="38" y2="210" stroke={outlineFill} strokeWidth="2" opacity="0.3"/>
-            </g>
-            
-            {/* Coffee steam - fade in when morphed */}
-            <g style={{ 
-              opacity: isMorphed ? 0.6 : 0, 
-              transition: 'opacity 0.6s ease 0.3s',
-              pointerEvents: 'none'
-            }}>
-              <path 
-                  d="M280,210 Q275,200 280,190 Q285,180 280,170"
-                  fill="none"
-                  stroke={outlineFill}
-                  strokeWidth="4"
-                  strokeLinecap="round"
-              />
-              <path 
-                  d="M305,205 Q300,195 305,185 Q310,175 305,165"
-                  fill="none"
-                  stroke={outlineFill}
-                  strokeWidth="4"
-                  strokeLinecap="round"
-              />
-              <path 
-                  d="M330,210 Q325,200 330,190 Q335,180 330,170"
-                  fill="none"
-                  stroke={outlineFill}
-                  strokeWidth="4"
-                  strokeLinecap="round"
-              />
-            </g>
-        </svg>
-        );
-    };
   
   // Calculate hours worked
   const calculateHours = (clockIn, clockOut, date) => {
@@ -1021,10 +869,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     pr-10 appearance-none 
                     `}
                 />
-                <CustomCalendarIcon 
-                    className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none" 
-                    isDarkMode={isDarkMode}
-                />
+                <CalendarClock className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-5 h-5 ${text.secondary}`} />
                 </div>
                 
                 {errors.date && (
@@ -1052,10 +897,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     pr-10 appearance-none
                   `}
                 />
-                <CustomClockIcon 
-                  isDarkMode={isDarkMode}
-                  className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none scale-x-[-1]" 
-                />
+                <Clock className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-5 h-5 ${text.secondary}`} />
               </div>
               {errors.clockIn && <p className="text-red-500 text-sm mt-1">{errors.clockIn}</p>}
             </div>
@@ -1081,10 +923,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     pr-10 appearance-none
                   `}
                 />
-                <CustomClockIcon 
-                  isDarkMode={isDarkMode}
-                  className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none" 
-                />
+                <Clock className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-5 h-5 ${text.secondary}`} />
               </div>
               {errors.clockOut && <p className="text-red-500 text-sm mt-1">{errors.clockOut}</p>}
             </div>

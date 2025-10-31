@@ -177,6 +177,8 @@ export const getTimeEntries = async (employeeId, filters = {}) => {
  */
 export const getAllTimeEntriesDetailed = async (filters = {}) => {
   try {
+    console.log('🔧 [Service] getAllTimeEntriesDetailed called with filters:', filters);
+    
     let query = supabase
       .from('time_entries_detailed')
       .select('*')
@@ -192,12 +194,34 @@ export const getAllTimeEntriesDetailed = async (filters = {}) => {
       query = query.lte('date', filters.endDate);
     }
 
+    console.log('🔧 [Service] Executing query on time_entries_detailed view...');
     const { data, error } = await query;
 
-    if (error) throw error;
+    if (error) {
+      console.error('🔧 [Service] Query error:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+      throw error;
+    }
+    
+    console.log('🔧 [Service] Query successful. Rows returned:', data?.length || 0);
+    if (data && data.length > 0) {
+      console.log('🔧 [Service] Sample row:', data[0]);
+    }
+    
     return { success: true, data };
   } catch (error) {
-    console.error('Error fetching detailed time entries:', error);
+    console.error('🔧 [Service] Exception in getAllTimeEntriesDetailed:', error);
+    
+    // Provide helpful error message if view doesn't exist
+    if (error.message && error.message.includes('does not exist')) {
+      console.error('🔧 [Service] ⚠️ DATABASE VIEW MISSING! The time_entries_detailed view needs to be created.');
+      console.error('🔧 [Service] Run the migration: database_migrations/create_time_entries_detailed_view.sql');
+    }
+    
     return { success: false, error: error.message };
   }
 };
@@ -578,7 +602,7 @@ export const getAllLeaveRequests = async (filters = {}) => {
       .from('leave_requests')
       .select(`
         *,
-        employee:employees(id, name, department, position)
+        employee:employees!leave_requests_employee_id_fkey(id, name, department, position)
       `)
       .order('submitted_at', { ascending: false });
 
@@ -739,8 +763,10 @@ export const updateOvertimeStatus = async (logId, status, approverId) => {
  */
 const calculateSummaryFromRawData = async (employeeId, month, year) => {
   try {
+    console.log('🔧 [Service] Calculating summary for employee:', employeeId, 'month:', month, 'year:', year);
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
     const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+    console.log('🔧 [Service] Date range:', startDate, 'to', endDate);
     
     // Get time entries (INCLUDE PENDING AND APPROVED)
     const { data: timeEntries, error: timeError } = await supabase
@@ -751,6 +777,7 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
       .lte('date', endDate)
       .in('status', ['pending', 'approved']);  // CHANGED: include pending
     
+    console.log('🔧 [Service] Time entries found:', timeEntries?.length || 0);
     if (timeError) throw timeError;
     
     // Get leave requests (only approved)
@@ -869,6 +896,7 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
  */
 export const getTimeTrackingSummary = async (employeeId, month, year) => {
   try {
+    console.log('🔧 [Service] getTimeTrackingSummary called for employee:', employeeId);
     // Try to get from summary table first
     const { data, error } = await supabase
       .from('time_tracking_summary')
@@ -880,15 +908,17 @@ export const getTimeTrackingSummary = async (employeeId, month, year) => {
 
     // If summary table has data, return it
     if (!error && data && data.total_hours > 0) {
+      console.log('🔧 [Service] Found data in summary table:', data);
       return { success: true, data };
     }
 
     // Otherwise, calculate from raw data
-    console.log('Summary table empty, calculating from time_entries...');
+    console.log('🔧 [Service] Summary table empty/no data, calculating from time_entries...');
     const calculatedData = await calculateSummaryFromRawData(employeeId, month, year);
+    console.log('🔧 [Service] Calculated data:', calculatedData);
     return { success: true, data: calculatedData };
   } catch (error) {
-    console.error('Error fetching time tracking summary:', error);
+    console.error('🔧 [Service] Error fetching time tracking summary:', error);
     // Return calculated data as fallback
     try {
       const calculatedData = await calculateSummaryFromRawData(employeeId, month, year);
@@ -943,7 +973,7 @@ export const getAllEmployeesSummary = async (month, year) => {
       .from('time_tracking_summary')
       .select(`
         *,
-        employee:employees(id, name, department, position)
+        employee:employees!time_tracking_summary_employee_id_fkey(id, name, department, position)
       `)
       .eq('month', month)
       .eq('year', year)
@@ -1070,22 +1100,26 @@ export const getPendingApprovalsCount = async () => {
  */
 export const getPendingApprovals = async () => {
   try {
+    console.log('🔧 [Service] getPendingApprovals called');
+    
     const { data, error } = await supabase
       .from('time_entries')
       .select(`
         *,
-        employee:employees(id, name, department, position)
+        employee:employees!time_entries_employee_id_fkey(id, name, department, position)
       `)
       .eq('status', 'pending')
       .order('date', { ascending: false });
 
     if (error) {
-      console.error('Error in getPendingApprovals query:', error);
+      console.error('🔧 [Service] Error in getPendingApprovals query:', error);
       throw error;
     }
+    
+    console.log('🔧 [Service] Pending approvals fetched:', data?.length || 0);
     return { success: true, data: data || [] };
   } catch (error) {
-    console.error('Error fetching pending approvals:', error);
+    console.error('🔧 [Service] Error fetching pending approvals:', error);
     return { success: false, error: error.message, data: [] };
   }
 };

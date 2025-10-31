@@ -499,7 +499,7 @@ export const getAllSkillsAssessments = async (filters = {}) => {
       .from('skills_assessments')
       .select(`
         *,
-        employee:employees(id, name, position, department)
+        employee:employees!skills_assessments_employee_id_fkey(id, name, position, department)
       `)
       .order('assessment_date', { ascending: false });
 

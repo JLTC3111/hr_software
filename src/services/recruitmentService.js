@@ -111,7 +111,7 @@ export const getAllApplications = async (filters = {}) => {
         *,
         job_posting:job_postings(*),
         applicant:applicants(*),
-        reviewer:employees(id, name)
+        reviewer:employees!applications_reviewed_by_fkey(id, name)
       `)
       .order('application_date', { ascending: false });
 
@@ -142,7 +142,7 @@ export const getApplicationById = async (applicationId) => {
         *,
         job_posting:job_postings(*),
         applicant:applicants(*),
-        reviewer:employees(id, name)
+        reviewer:employees!applications_reviewed_by_fkey(id, name)
       `)
       .eq('id', applicationId)
       .single();

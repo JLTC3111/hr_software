@@ -23,27 +23,33 @@ const Dashboard = ({ employees, applications }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState({ type: '', data: [], title: '' });
   
-  // Get current month and year
+  // Get current month and year - BUT ALLOW USER TO CHANGE IT!
   const currentDate = new Date();
-  const currentMonth = currentDate.getMonth() + 1;
-  const currentYear = currentDate.getFullYear();
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
   
   // Fetch real data from Supabase
   useEffect(() => {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        // Fetch time tracking summaries for all employees for current month
+        console.log('📊 [DASHBOARD] Starting data fetch...');
+        console.log('📊 [DASHBOARD] Employees count:', employees.length);
+        console.log('📊 [DASHBOARD] Selected month:', selectedMonth, 'Year:', selectedYear);
+        
+        // Fetch time tracking summaries for all employees for SELECTED month
         const summariesPromises = employees.map(emp => 
-          timeTrackingService.getTimeTrackingSummary(String(emp.id), currentMonth, currentYear)
+          timeTrackingService.getTimeTrackingSummary(String(emp.id), selectedMonth, selectedYear)
         );
         
+        console.log('📊 [DASHBOARD] Fetching summaries for', summariesPromises.length, 'employees...');
         const summariesResults = await Promise.all(summariesPromises);
+        console.log('📊 [DASHBOARD] Summaries results:', summariesResults.length, 'responses');
         
         // Fetch leave requests for all employees
         const leavePromises = employees.map(emp => 
           timeTrackingService.getLeaveRequests(String(emp.id), {
-            year: currentYear
+            year: selectedYear
           })
         );
         const leaveResults = await Promise.all(leavePromises);
@@ -63,8 +69,8 @@ const Dashboard = ({ employees, applications }) => {
               const reqMonth = startDate.getMonth() + 1;
               const reqYear = startDate.getFullYear();
               
-              // Only count if within current month/year
-              if (reqYear === currentYear && reqMonth === currentMonth) {
+              // Only count if within SELECTED month/year
+              if (reqYear === selectedYear && reqMonth === selectedMonth) {
                 return total + (req.days_count || 0);
               }
               return total;
@@ -119,6 +125,8 @@ const Dashboard = ({ employees, applications }) => {
         
         setAllEmployeesData(employeesDataArray);
         
+        console.log('📊 [DASHBOARD] Time tracking data compiled:', Object.keys(trackingData).length, 'employees');
+        console.log('📊 [DASHBOARD] Sample tracking data:', Object.values(trackingData)[0]);
         setTimeTrackingData(trackingData);
         
         // Fetch pending approvals count and details
@@ -149,7 +157,7 @@ const Dashboard = ({ employees, applications }) => {
     if (employees.length > 0) {
       fetchDashboardData();
     }
-  }, [employees, currentMonth, currentYear]);
+  }, [employees, selectedMonth, selectedYear]);
 
   // Calculate aggregate stats
   const trackingDataValues = Object.values(timeTrackingData);
@@ -163,6 +171,15 @@ const Dashboard = ({ employees, applications }) => {
   
   // Check if we have any real data
   const hasRealData = trackingDataValues.some(emp => emp?.workDays > 0 || emp?.overtime > 0);
+  
+  console.log('📊 [DASHBOARD] Calculated stats:', {
+    totalWorkDays,
+    totalLeaveDays,
+    totalOvertime,
+    totalRegularHours,
+    avgPerformance,
+    hasRealData
+  });
 
   // Helper function to generate display names for charts - always use last name
   const getUniqueDisplayName = (employee, allEmployees) => {
@@ -324,16 +341,50 @@ const Dashboard = ({ employees, applications }) => {
           </div>
         </div>
       )}
-      <div className={`${bg.secondary} rounded-lg border ${border.primary} p-3 flex items-center justify-between slide-in-left`}>
+      <div className={`${bg.secondary} rounded-lg border ${border.primary} p-3 flex items-center justify-between slide-in-left flex-wrap gap-3`}>
         <div className="flex items-center space-x-2">
           <DatabaseZap className={`w-4 h-4 ${hasRealData ? 'text-green-600' : 'text-yellow-600'}`} />
           <span className={`text-sm ${text.secondary}`}>
             {hasRealData 
-              ? `${t('dashboard.liveData', 'Live data from Supabase')} • ${t('dashboard.currentMonth', 'Current month')}: ${currentMonth}/${currentYear}`
-              : `${t('dashboard.noData', 'No time tracking data yet')} • ${t('dashboard.currentMonth', 'Current month')}: ${currentMonth}/${currentYear}`
+              ? t('dashboard.liveData', 'Live data from Supabase')
+              : t('dashboard.noData', 'No time tracking data yet')
             }
           </span>
         </div>
+        
+        {/* Month/Year Selector */}
+        <div className="flex items-center space-x-2">
+          <Calendar className={`w-4 h-4 ${text.secondary}`} />
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+            className={`${bg.primary} ${text.primary} px-3 py-1.5 rounded-lg border ${border.primary} text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer`}
+          >
+            <option value={1}>January</option>
+            <option value={2}>February</option>
+            <option value={3}>March</option>
+            <option value={4}>April</option>
+            <option value={5}>May</option>
+            <option value={6}>June</option>
+            <option value={7}>July</option>
+            <option value={8}>August</option>
+            <option value={9}>September</option>
+            <option value={10}>October</option>
+            <option value={11}>November</option>
+            <option value={12}>December</option>
+          </select>
+          
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className={`${bg.primary} ${text.primary} px-3 py-1.5 rounded-lg border ${border.primary} text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer`}
+          >
+            <option value={2024}>2024</option>
+            <option value={2025}>2025</option>
+            <option value={2026}>2026</option>
+          </select>
+        </div>
+        
         <button
           onClick={() => window.location.reload()}
           className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-all duration-200 hover:scale-105"
