@@ -4,7 +4,7 @@ import StatsCard from './statsCard.jsx'
 import MetricDetailModal from './metricDetailModal.jsx'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ReferenceLine, ComposedChart } from 'recharts'
+import { Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ComposedChart } from 'recharts'
 import * as timeTrackingService from '../services/timeTrackingService'
 
 const Dashboard = ({ employees, applications }) => {
@@ -36,9 +36,7 @@ const Dashboard = ({ employees, applications }) => {
           timeTrackingService.getTimeTrackingSummary(String(emp.id), selectedMonth, selectedYear)
         );
         
-        console.log('📊 [DASHBOARD] Fetching summaries for', summariesPromises.length, 'employees...');
         const summariesResults = await Promise.all(summariesPromises);
-        console.log('📊 [DASHBOARD] Summaries results:', summariesResults.length, 'responses');
         
         // Fetch leave requests for all employees
         const leavePromises = employees.map(emp => 
@@ -162,15 +160,6 @@ const Dashboard = ({ employees, applications }) => {
   
   // Check if we have any real data
   const hasRealData = trackingDataValues.some(emp => emp?.workDays > 0 || emp?.overtime > 0);
-  
-  console.log('📊 [DASHBOARD] Calculated stats:', {
-    totalWorkDays,
-    totalLeaveDays,
-    totalOvertime,
-    totalRegularHours,
-    avgPerformance,
-    hasRealData
-  });
 
   // Helper function to generate display names for charts - always use last name
   const getUniqueDisplayName = (employee, allEmployees) => {
@@ -305,7 +294,6 @@ const Dashboard = ({ employees, applications }) => {
           status: approval.status || 'pending',
           hours: approval.hours || 0
         }));
-        console.log('Pending Approvals Data:', { pendingApprovals, mappedData: data });
         title = t('dashboard.pendingRequests', 'Pending Requests');
         break;
         

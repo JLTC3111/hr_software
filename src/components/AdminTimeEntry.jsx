@@ -172,9 +172,8 @@ const AdminTimeEntry = () => {
         proofFilePath
       }));
 
-      console.log('Submitting entries:', entries);
+      setSubmitting(true);
       const result = await timeTrackingService.createBulkTimeEntries(entries);
-      console.log('Result:', result);
 
       if (result.success) {
         const employeeNames = selectedEmployees.map(e => e.name).join(', ');

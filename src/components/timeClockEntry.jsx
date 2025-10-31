@@ -132,30 +132,12 @@ const TimeClockEntry = ({ currentLanguage }) => {
     try {
       let result;
       
-      console.log('🔍 [TIME ENTRIES] Fetching entries...');
-      console.log('📋 Selected filter:', selectedEmployeeFilter);
-      console.log('👤 User info:', {
-        employee_id: user?.employee_id,
-        user_id: user?.id,
-        role: user?.role,
-        canManage: canManageTimeTracking
-      });
-      
       // For admins/managers, always use detailed view to get employee names
       if (canManageTimeTracking) {
-        console.log('🔑 Admin/Manager mode - fetching all detailed entries');
         // Always fetch ALL entries and let the useEffect filter them
         result = await timeTrackingService.getAllTimeEntriesDetailed();
         
-        console.log('📊 API Result:', {
-          success: result?.success,
-          dataLength: result?.data?.length,
-          error: result?.error,
-          sampleData: result?.data?.[0]
-        });
-        
         if (result?.success && Array.isArray(result.data)) {
-          console.log(`✅ Successfully loaded ${result.data.length} entries`);
           setTimeEntries(result.data);
         } else {
           console.error('❌ Failed to load entries:', result?.error || 'No data returned');
@@ -164,16 +146,9 @@ const TimeClockEntry = ({ currentLanguage }) => {
       } else {
         // Regular users - fetch only their own entries
         const employeeId = user?.employee_id || user?.id;
-        console.log('👷 Regular user mode - fetching for employee ID:', employeeId);
         if (employeeId) {
           result = await timeTrackingService.getTimeEntries(employeeId);
-          console.log('📊 API Result:', {
-            success: result?.success,
-            dataLength: result?.data?.length,
-            error: result?.error
-          });
           if (result?.success && Array.isArray(result.data)) {
-            console.log(`✅ Successfully loaded ${result.data.length} entries for user`);
             setTimeEntries(result.data);
           } else {
             console.error('❌ Failed to load entries:', result?.error || 'No data returned');
@@ -897,7 +872,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     pr-10 appearance-none
                   `}
                 />
-                <Clock className={`absolute top-1/2 right-3 transform rotate-270 -translate-y-1/2 pointer-events-none w-5 h-5 ${text.secondary}`} />
+                <Clock className={`absolute top-1/2 right-3 transform rotate-240 -translate-y-1/2 pointer-events-none w-5 h-5 ${text.secondary}`} />
               </div>
               {errors.clockIn && <p className="text-red-500 text-sm mt-1">{errors.clockIn}</p>}
             </div>

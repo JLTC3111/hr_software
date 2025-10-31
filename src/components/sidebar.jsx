@@ -60,20 +60,6 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
         { path: '/settings', name: t('nav.settings', 'Settings'), icon: Cog },
       ]
     },
-    {
-      section: 'DEMO',
-      items: [
-        { 
-          path: '/flubber-demo', 
-          name: t('nav.svgMorphing', 'SVG Morphing'), 
-          icon: Sparkles,
-          subItems: [
-            { path: '/flubber-demo', name: t('nav.fullDemo', 'Full Demo') },
-            { path: '/morphing-showcase', name: t('nav.showcase', 'Quick Showcase') },
-          ]
-        },
-      ]
-    }
   ];
 
   const closeMobileMenu = () => {
