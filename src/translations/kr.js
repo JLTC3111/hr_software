@@ -443,6 +443,13 @@ export default {
     salary: '급여',
     attendance: '출석',
     recruitment: '채용',
+    error: '오류가 발생했습니다. 다시 시도해주세요.',
+    selected: '선택됨',
+    selectedEmployees: '선택된 직원',
+    selectAtLeastOne: '최소한 한 명의 직원을 선택하세요',
+    entryAddedSuccess: '시간 기록이 성공적으로 추가되었습니다:',
+    entriesAddedSuccess: '시간 기록이 성공적으로 추가되었습니다:',
+    employees: '명의 직원',
     department: '부서',
     all: '모두',
     // Navigation
@@ -640,6 +647,7 @@ export default {
     title: '관리자 근무 입력',
     description: '직원의 근무 시간 입력 (관리자/매니저 전용)',
     selectEmployee: '직원 선택',
+    selectEmployees: '직원 선택',
     searchEmployees: '직원 검색...',
     noEmployees: '직원을 찾을 수 없습니다',
     date: '날짜',
@@ -653,11 +661,18 @@ export default {
     notes: '메모',
     notesPlaceholder: '이 근무 입력에 대한 메모 추가...',
     submitButton: '근무 입력 제출',
+    submitBulkEntries: '{0}명의 직원 입력 제출',
     submitting: '제출 중...',
     accessDenied: '접근 거부됨: 다른 직원의 근무 입력을 관리할 권한이 없습니다.',
     errorLoadEmployees: '직원 로드 실패',
     success: '근무 입력이 성공적으로 추가되었습니다',
-    error: '근무 입력 생성 실패'
+    error: '근무 입력 생성 실패',
+    selected: '선택됨',
+    selectedEmployees: '선택된 직원',
+    selectAtLeastOne: '최소 한 명의 직원을 선택하세요',
+    entryAddedSuccess: '근무 입력이 성공적으로 추가되었습니다:',
+    entriesAddedSuccess: '근무 입력이 성공적으로 추가되었습니다:',
+    employees: '명의 직원'
   },
 
   // Recruitment Actions

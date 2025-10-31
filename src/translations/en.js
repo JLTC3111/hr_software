@@ -359,6 +359,7 @@ export default {
     title: 'Admin Time Entry',
     description: 'Enter time entries for employees (Admin/Manager only)',
     selectEmployee: 'Select Employee',
+    selectEmployees: 'Select Employees',
     searchEmployees: 'Search employees...',
     noEmployees: 'No employees found',
     date: 'Date',
@@ -372,11 +373,18 @@ export default {
     notes: 'Notes',
     notesPlaceholder: 'Add any notes about this time entry...',
     submitButton: 'Submit Time Entry',
+    submitBulkEntries: 'Submit Entries for {0} Employees',
     submitting: 'Submitting...',
     accessDenied: 'Access Denied: You don\'t have permission to manage time entries for other employees.',
     errorLoadEmployees: 'Failed to load employees',
     success: 'Time entry added successfully',
-    error: 'Failed to create time entry'
+    error: 'Failed to create time entry',
+    selected: 'selected',
+    selectedEmployees: 'Selected Employees',
+    selectAtLeastOne: 'Please select at least one employee',
+    entryAddedSuccess: 'Time entry added successfully for',
+    entriesAddedSuccess: 'Time entries added successfully for',
+    employees: 'employees'
   },
 
   // Time Clock Entry

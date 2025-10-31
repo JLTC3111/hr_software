@@ -63,6 +63,81 @@ export const createTimeEntry = async (timeEntryData) => {
 };
 
 /**
+ * Create multiple time entries at once (bulk insert)
+ * @param {Array} timeEntriesData - Array of time entry objects
+ * @returns {Promise<{success: boolean, data?: Array, error?: string}>}
+ */
+export const createBulkTimeEntries = async (timeEntriesData) => {
+  try {
+    if (!Array.isArray(timeEntriesData) || timeEntriesData.length === 0) {
+      throw new Error('No time entries provided');
+    }
+
+    // Validate all employees exist first
+    const employeeIds = timeEntriesData.map(entry => toEmployeeId(entry.employeeId));
+    const { data: employees, error: employeeError } = await supabase
+      .from('employees')
+      .select('id')
+      .in('id', employeeIds);
+
+    if (employeeError) {
+      console.error('Error checking employees:', employeeError);
+      throw new Error('Failed to validate employees');
+    }
+
+    // Check if all employees exist
+    const foundIds = new Set(employees.map(e => String(e.id)));
+    const missingIds = employeeIds.filter(id => !foundIds.has(String(id)));
+    
+    if (missingIds.length > 0) {
+      throw new Error(`Employees not found: ${missingIds.join(', ')}`);
+    }
+
+    // Format entries for bulk insert
+    const formattedEntries = timeEntriesData.map(entry => ({
+      employee_id: toEmployeeId(entry.employeeId),
+      date: entry.date,
+      clock_in: entry.clockIn,
+      clock_out: entry.clockOut,
+      hours: entry.hours,
+      hour_type: entry.hourType,
+      notes: entry.notes || null,
+      proof_file_url: entry.proofFileUrl || null,
+      proof_file_name: entry.proofFileName || null,
+      proof_file_type: entry.proofFileType || null,
+      proof_file_path: entry.proofFilePath || null,
+      status: entry.status || 'pending'
+    }));
+
+    // Bulk insert all entries
+    const { data, error } = await supabase
+      .from('time_entries')
+      .insert(formattedEntries)
+      .select();
+
+    if (error) {
+      console.error('Error creating bulk time entries:', error);
+      if (error.code === '23503') {
+        throw new Error('One or more employees not found. Please ensure all employees exist.');
+      }
+      throw error;
+    }
+    
+    return { 
+      success: true, 
+      data,
+      count: data.length 
+    };
+  } catch (error) {
+    console.error('Error creating bulk time entries:', error);
+    return { 
+      success: false, 
+      error: error.message || 'Failed to create time entries'
+    };
+  }
+};
+
+/**
  * Get time entries for an employee
  */
 export const getTimeEntries = async (employeeId, filters = {}) => {

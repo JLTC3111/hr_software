@@ -653,6 +653,7 @@ export default {
     title: 'Admin-Zeiteintrag',
     description: 'Zeiteinträge für Mitarbeiter eingeben (Nur Admin/Manager)',
     selectEmployee: 'Mitarbeiter Auswählen',
+    selectEmployees: 'Mitarbeiter Auswählen',
     searchEmployees: 'Mitarbeiter suchen...',
     noEmployees: 'Keine Mitarbeiter gefunden',
     date: 'Datum',
@@ -666,11 +667,18 @@ export default {
     notes: 'Notizen',
     notesPlaceholder: 'Notizen zu diesem Zeiteintrag hinzufügen...',
     submitButton: 'Zeiteintrag Absenden',
+    submitBulkEntries: 'Einträge Für {0} Mitarbeiter Absenden',
     submitting: 'Wird übermittelt...',
     accessDenied: 'Zugriff verweigert: Sie haben keine Berechtigung, Zeiteinträge für andere Mitarbeiter zu verwalten.',
     errorLoadEmployees: 'Fehler beim Laden der Mitarbeiter',
     success: 'Zeiteintrag erfolgreich hinzugefügt',
-    error: 'Zeiteintrag konnte nicht erstellt werden'
+    error: 'Zeiteintrag konnte nicht erstellt werden',
+    selected: 'ausgewählt',
+    selectedEmployees: 'Ausgewählte Mitarbeiter',
+    selectAtLeastOne: 'Bitte wählen Sie mindestens einen Mitarbeiter aus',
+    entryAddedSuccess: 'Zeiteintrag erfolgreich hinzugefügt für',
+    entriesAddedSuccess: 'Zeiteinträge erfolgreich hinzugefügt für',
+    employees: 'Mitarbeiter'
   },
 
   // Recruitment Actions

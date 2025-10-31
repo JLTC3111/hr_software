@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import MorphingSVG from './morphingSVG';
 
-/**
- * FlubberDemo Component
- * Showcases various SVG morphing animations using Flubber
- */
 const FlubberDemo = () => {
   const { bg, text, border, isDarkMode } = useTheme();
+  const { t } = useLanguage();
   const [selectedDemo, setSelectedDemo] = useState('shapes');
 
   // Basic geometric shapes morphing

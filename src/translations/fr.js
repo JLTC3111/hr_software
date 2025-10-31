@@ -297,6 +297,7 @@ export default {
     title: 'Saisie du Temps Admin',
     description: 'Saisir les heures pour les employés (Admin/Gestionnaire uniquement)',
     selectEmployee: 'Sélectionner un Employé',
+    selectEmployees: 'Sélectionner des Employés',
     searchEmployees: 'Rechercher des employés...',
     noEmployees: 'Aucun employé trouvé',
     date: 'Date',
@@ -310,11 +311,18 @@ export default {
     notes: 'Notes',
     notesPlaceholder: 'Ajouter des notes sur cette saisie de temps...',
     submitButton: 'Soumettre la Saisie du Temps',
+    submitBulkEntries: 'Soumettre les Saisies Pour {0} Employés',
     submitting: 'Envoi en cours...',
     accessDenied: 'Accès Refusé: Vous n\'avez pas la permission de gérer les saisies de temps pour d\'autres employés.',
     errorLoadEmployees: 'Échec du chargement des employés',
     success: 'Saisie du temps ajoutée avec succès',
-    error: 'Échec de la création de la saisie du temps'
+    error: 'Échec de la création de la saisie du temps',
+    selected: 'sélectionné(s)',
+    selectedEmployees: 'Employés Sélectionnés',
+    selectAtLeastOne: 'Veuillez sélectionner au moins un employé',
+    entryAddedSuccess: 'Saisie du temps ajoutée avec succès pour',
+    entriesAddedSuccess: 'Saisies du temps ajoutées avec succès pour',
+    employees: 'employés'
   },
 
   // Employees

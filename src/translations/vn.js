@@ -246,6 +246,7 @@ export default {
     title: 'Nhập Giờ Làm Việc (Quản Trị)',
     description: 'Nhập giờ làm việc cho nhân viên (Chỉ Quản trị/Quản lý)',
     selectEmployee: 'Chọn Nhân Viên',
+    selectEmployees: 'Chọn Nhân Viên',
     searchEmployees: 'Tìm kiếm nhân viên...',
     noEmployees: 'Không tìm thấy nhân viên',
     date: 'Ngày',
@@ -259,11 +260,18 @@ export default {
     notes: 'Ghi Chú',
     notesPlaceholder: 'Thêm ghi chú về mục nhập giờ này...',
     submitButton: 'Gửi Mục Nhập Giờ',
+    submitBulkEntries: 'Gửi Mục Nhập Cho {0} Nhân Viên',
     submitting: 'Đang gửi...',
     accessDenied: 'Truy cập bị từ chối: Bạn không có quyền quản lý mục nhập giờ của nhân viên khác.',
     errorLoadEmployees: 'Không thể tải danh sách nhân viên',
     success: 'Đã thêm mục nhập giờ thành công',
-    error: 'Không thể tạo mục nhập giờ'
+    error: 'Không thể tạo mục nhập giờ',
+    selected: 'Đã chọn',
+    selectedEmployees: 'Nhân Viên Đã Chọn',
+    selectAtLeastOne: 'Vui lòng chọn ít nhất một nhân viên',
+    entryAddedSuccess: 'Đã thêm mục nhập giờ thành công cho',
+    entriesAddedSuccess: 'Đã thêm mục nhập giờ thành công cho',
+    employees: 'Nhân viên'
   },
 
   // Employees

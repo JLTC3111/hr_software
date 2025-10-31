@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, UserPlus, Save, X, Search, AlertCircle, Calendar, LogIn, LogOut, Check, Upload, FileText, ChevronsUpDown } from 'lucide-react';
+import { Clock, UserPlus, Save, X, Search, AlertCircle, Calendar, LogIn, LogOut, Check, Upload, FileText, ChevronsUpDown, Users } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,7 +12,7 @@ const AdminTimeEntry = () => {
   const { user, checkPermission } = useAuth();
 
   const [employees, setEmployees] = useState([]);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -87,8 +87,8 @@ const AdminTimeEntry = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!selectedEmployee) {
-      setErrorMessage('Please select an employee');
+    if (selectedEmployees.length === 0) {
+      setErrorMessage(t('adminTimeEntry.selectAtLeastOne', 'Please select at least one employee'));
       return;
     }
 
@@ -118,7 +118,7 @@ const AdminTimeEntry = () => {
         return;
       }
 
-      // Upload proof file if exists
+      // Upload proof file if exists (will be shared across all entries)
       let proofFileUrl = null;
       let proofFileName = null;
       let proofFileType = null;
@@ -134,13 +134,13 @@ const AdminTimeEntry = () => {
         }
         const byteArray = new Uint8Array(byteNumbers);
         
-        // Create File object
+        // Create File object - use first employee's ID for upload
         const file = new File([byteArray], formData.proofFile.name, { 
           type: formData.proofFile.type,
           lastModified: Date.now()
         });
         
-        const uploadResult = await timeTrackingService.uploadProofFile(file, selectedEmployee.id);
+        const uploadResult = await timeTrackingService.uploadProofFile(file, selectedEmployees[0].id);
         if (uploadResult.success) {
           proofFileUrl = uploadResult.url;
           proofFileName = uploadResult.fileName;
@@ -153,8 +153,9 @@ const AdminTimeEntry = () => {
         }
       }
 
-      const entry = {
-        employeeId: selectedEmployee.id,
+      // Create entries for all selected employees
+      const entries = selectedEmployees.map(emp => ({
+        employeeId: emp.id,
         date: formData.date,
         clockIn: clockInTime,
         clockOut: clockOutTime,
@@ -166,12 +167,17 @@ const AdminTimeEntry = () => {
         proofFileName,
         proofFileType,
         proofFilePath
-      };
+      }));
 
-      const result = await timeTrackingService.createTimeEntry(entry);
+      const result = await timeTrackingService.createBulkTimeEntries(entries);
 
       if (result.success) {
-        setSuccessMessage(`Time entry added successfully for ${selectedEmployee.name}`);
+        const employeeNames = selectedEmployees.map(e => e.name).join(', ');
+        setSuccessMessage(
+          selectedEmployees.length === 1 
+            ? `${t('adminTimeEntry.entryAddedSuccess', 'Time entry added successfully for')} ${employeeNames}`
+            : `${t('adminTimeEntry.entriesAddedSuccess', 'Time entries added successfully for')} ${selectedEmployees.length} ${t('adminTimeEntry.employees', 'employees')}: ${employeeNames}`
+        );
         // Reset form
         setFormData({
           date: new Date().toISOString().split('T')[0],
@@ -181,17 +187,32 @@ const AdminTimeEntry = () => {
           notes: '',
           proofFile: null
         });
-        setSelectedEmployee(null);
+        setSelectedEmployees([]);
         setSearchTerm('');
       } else {
-        setErrorMessage(result.error || 'Failed to create time entry');
+        setErrorMessage(result.error || 'Failed to create time entries');
       }
     } catch (error) {
-      console.error('Error submitting time entry:', error);
-      setErrorMessage('Failed to submit time entry');
+      console.error('Error submitting time entries:', error);
+      setErrorMessage('Failed to submit time entries');
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleEmployeeSelection = (employee) => {
+    setSelectedEmployees(prev => {
+      const isSelected = prev.some(e => e.id === employee.id);
+      if (isSelected) {
+        return prev.filter(e => e.id !== employee.id);
+      } else {
+        return [...prev, employee];
+      }
+    });
+  };
+
+  const removeEmployee = (employeeId) => {
+    setSelectedEmployees(prev => prev.filter(e => e.id !== employeeId));
   };
 
   const filteredEmployees = employees.filter(emp =>
@@ -244,7 +265,15 @@ const AdminTimeEntry = () => {
         {/* Employee Selection */}
         <div>
           <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-            {t('adminTimeEntry.selectEmployee', 'Select Employee')} *
+            <div className="flex items-center space-x-2">
+              <Users className="w-4 h-4" />
+              <span>{t('adminTimeEntry.selectEmployees', 'Select Employees')} *</span>
+              {selectedEmployees.length > 0 && (
+                <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? 'bg-blue-800 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
+                  {selectedEmployees.length} {t('adminTimeEntry.selected', 'selected')}
+                </span>
+              )}
+            </div>
           </label>
           
           {/* Search Input */}
@@ -263,45 +292,64 @@ const AdminTimeEntry = () => {
           {searchTerm && (
             <div className={`max-h-48 overflow-y-auto border ${border.primary} rounded-lg ${bg.primary}`}>
               {filteredEmployees.length > 0 ? (
-                filteredEmployees.map((emp) => (
-                  <div
-                    key={emp.id}
-                    onClick={() => {
-                      setSelectedEmployee(emp);
-                      setSearchTerm('');
-                    }}
-                    className={`p-3 cursor-pointer  ${isDarkMode ? 'hover:bg-blue-800' : 'hover:bg-blue-50'} transition-colors ${
-                      selectedEmployee?.id === emp.id ? (isDarkMode ? 'bg-blue-800' : 'bg-blue-100') : ''
-                    }`}
-                  >
-                    <div className={`font-medium ${text.primary}`}>{emp.name}</div>
-                    <div className={`text-sm ${text.secondary}`}>
-                      {emp.position} • {emp.department}
+                filteredEmployees.map((emp) => {
+                  const isSelected = selectedEmployees.some(e => e.id === emp.id);
+                  return (
+                    <div
+                      key={emp.id}
+                      onClick={() => toggleEmployeeSelection(emp)}
+                      className={`p-3 cursor-pointer ${isDarkMode ? 'hover:bg-blue-800' : 'hover:bg-blue-50'} transition-colors ${
+                        isSelected ? (isDarkMode ? 'bg-blue-800' : 'bg-blue-100') : ''
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className={`font-medium ${text.primary}`}>{emp.name}</div>
+                          <div className={`text-sm ${text.secondary}`}>
+                            {emp.position} • {emp.department}
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <Check className={`w-5 h-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className={`p-4 text-center ${text.secondary}`}>{t('adminTimeEntry.noEmployees', 'No employees found')}</div>
               )}
             </div>
           )}
 
-          {/* Selected Employee Display */}
-          {selectedEmployee && (
-            <div className={`mt-2 p-3 border ${border.primary} rounded-lg ${bg.primary} flex justify-between items-center`}>
-              <div>
-                <div className={`font-medium ${text.primary}`}>{selectedEmployee.name}</div>
-                <div className={`text-sm ${text.secondary}`}>
-                  {selectedEmployee.position} • {selectedEmployee.department}
-                </div>
+          {/* Selected Employees Display */}
+          {selectedEmployees.length > 0 && (
+            <div className={`mt-2 space-y-2`}>
+              <div className={`text-sm font-medium ${text.primary}`}>
+                {t('adminTimeEntry.selectedEmployees', 'Selected Employees')}:
               </div>
-              <button
-                type="button"
-                onClick={() => setSelectedEmployee(null)}
-                className={`transition-colors ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-800'}`}
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex flex-wrap gap-2">
+                {selectedEmployees.map((emp) => (
+                  <div
+                    key={emp.id}
+                    className={`px-3 py-1.5 border ${border.primary} rounded-lg ${bg.primary} flex items-center space-x-2`}
+                  >
+                    <div>
+                      <div className={`text-sm font-medium ${text.primary}`}>{emp.name}</div>
+                      <div className={`text-xs ${text.secondary}`}>
+                        {emp.position}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeEmployee(emp.id)}
+                      className={`transition-colors ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-800'}`}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -340,7 +388,7 @@ const AdminTimeEntry = () => {
                 className={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
                 required
               />
-              <LogIn className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transform rotate-180 ${text.secondary} pointer-events-none`} />
+              <LogIn className={`absolute right-3 top-1/2 transform -translate-y-1/2 rotate-180 w-5 h-5 ${text.secondary} pointer-events-none`} />
             </div>
           </div>
           <div>
@@ -453,7 +501,7 @@ const AdminTimeEntry = () => {
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={loading || !selectedEmployee}
+          disabled={loading || selectedEmployees.length === 0}
           className={`w-full flex items-center justify-center space-x-2 px-6 py-3 text-white rounded-lg transition-colors shadow-lg hover:shadow-xl ${
             isDarkMode 
               ? 'bg-blue-700 hover:bg-blue-600 disabled:bg-gray-600' 
@@ -468,7 +516,12 @@ const AdminTimeEntry = () => {
           ) : (
             <>
               <Save className="w-5 h-5" />
-              <span>{t('adminTimeEntry.submitButton', 'Submit Time Entry')}</span>
+              <span>
+                {selectedEmployees.length > 1 
+                  ? t('adminTimeEntry.submitBulkEntries', `Submit Entries for ${selectedEmployees.length} Employees`)
+                  : t('adminTimeEntry.submitButton', 'Submit Time Entry')
+                }
+              </span>
             </>
           )}
         </button>

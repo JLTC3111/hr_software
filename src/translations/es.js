@@ -153,6 +153,7 @@ login: {
     title: 'Entrada de Tiempo Admin',
     description: 'Ingresar entradas de tiempo para empleados (Solo Admin/Gerente)',
     selectEmployee: 'Seleccionar Empleado',
+    selectEmployees: 'Seleccionar Empleados',
     searchEmployees: 'Buscar empleados...',
     noEmployees: 'No se encontraron empleados',
     date: 'Fecha',
@@ -166,11 +167,18 @@ login: {
     notes: 'Notas',
     notesPlaceholder: 'Agregar notas sobre esta entrada de tiempo...',
     submitButton: 'Enviar Entrada de Tiempo',
+    submitBulkEntries: 'Enviar Entradas Para {0} Empleados',
     submitting: 'Enviando...',
     accessDenied: 'Acceso Denegado: No tienes permiso para gestionar entradas de tiempo de otros empleados.',
     errorLoadEmployees: 'Error al cargar empleados',
     success: 'Entrada de tiempo agregada exitosamente',
-    error: 'Error al crear entrada de tiempo'
+    error: 'Error al crear entrada de tiempo',
+    selected: 'seleccionado(s)',
+    selectedEmployees: 'Empleados Seleccionados',
+    selectAtLeastOne: 'Por favor seleccione al menos un empleado',
+    entryAddedSuccess: 'Entrada de tiempo agregada exitosamente para',
+    entriesAddedSuccess: 'Entradas de tiempo agregadas exitosamente para',
+    employees: 'empleados'
   },
 
   // Time Clock Entry

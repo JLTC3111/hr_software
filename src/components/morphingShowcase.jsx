@@ -3,10 +3,6 @@ import { useTheme } from '../contexts/ThemeContext';
 import MorphingTimeIcon from './morphingTimeIcon';
 import MorphingSVG from './morphingSVG';
 
-/**
- * MorphingShowcase Component
- * Quick showcase of morphing capabilities integrated into the app
- */
 const MorphingShowcase = () => {
   const { bg, text, border, isDarkMode } = useTheme();
   const [clockMode, setClockMode] = useState('clock');

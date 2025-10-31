@@ -645,6 +645,7 @@ export default {
     title: '管理者勤怠入力',
     description: '従業員の勤怠を入力（管理者/マネージャーのみ）',
     selectEmployee: '従業員を選択',
+    selectEmployees: '従業員を選択',
     searchEmployees: '従業員を検索...',
     noEmployees: '従業員が見つかりません',
     date: '日付',
@@ -658,11 +659,18 @@ export default {
     notes: 'メモ',
     notesPlaceholder: 'この勤怠入力についてのメモを追加...',
     submitButton: '勤怠入力を送信',
+    submitBulkEntries: '{0}名の従業員の入力を送信',
     submitting: '送信中...',
     accessDenied: 'アクセス拒否：他の従業員の勤怠入力を管理する権限がありません。',
     errorLoadEmployees: '従業員の読み込みに失敗しました',
     success: '勤怠入力が正常に追加されました',
-    error: '勤怠入力の作成に失敗しました'
+    error: '勤怠入力の作成に失敗しました',
+    selected: '選択済み',
+    selectedEmployees: '選択された従業員',
+    selectAtLeastOne: '少なくとも1人の従業員を選択してください',
+    entryAddedSuccess: '勤怠入力が正常に追加されました：',
+    entriesAddedSuccess: '勤怠入力が正常に追加されました：',
+    employees: '名の従業員'
   },
 
   // Recruitment Actions
