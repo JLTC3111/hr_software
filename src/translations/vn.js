@@ -467,7 +467,14 @@ export default {
     critical: 'Quan trọng',
     targetDate: 'Ngày mục tiêu',
     cancelled: 'Đã hủy',
-    onHold: 'Tạm dừng'
+    onHold: 'Tạm dừng',
+    reviewDetails: 'Chi tiết đánh giá hiệu suất',
+    reviewer: 'Người đánh giá',
+    reviewDate: 'Ngày đánh giá',
+    ratings: 'Đánh giá',
+    reviewComments: 'Bình luận đánh giá',
+    noComments: 'Chưa có bình luận',
+    errorFetchingComments: 'Lỗi khi tải bình luận'
   },
 
   // Reports
@@ -485,6 +492,11 @@ export default {
     filterBy: 'Lọc theo',
     dateRange: 'Khoảng thời gian',
     allDepartments: 'Tất cả phòng ban',
+    human_resources: 'Nhân Sự',
+    finance: 'Tài Chính',
+    engineering: 'Kỹ Thuật',
+    sales: 'Bán Hàng',
+    marketing: 'Tiếp Thị',
     performance: 'Hiệu suất',
     salary: 'Lương',
     attendance: 'Chấm Công',
@@ -545,12 +557,12 @@ export default {
     trainingEffectiveness: 'Hiệu Quả Đào Tạo',
     measureTrainingSuccess: 'Đo Lường Thành Công Chương Trình Đào Tạo',
     generate: 'Tạo →',
-    fromLastPeriod: 'từ kỳ trước',
-    lastWeek: 'tuần trước',
-    lastMonth: 'tháng trước',
-    lastQuarter: 'quý trước',
-    lastYear: 'năm ngoái',
-    customRange: 'Phạm vi tùy chỉnh',
+    fromLastPeriod: 'Từ Kỳ Trước',
+    lastWeek: 'Tuần Trước',
+    lastMonth: 'Tháng Trước',
+    lastQuarter: 'Quý Trước',
+    lastYear: 'Năm Ngoái',
+    customRange: 'Phạm Vi Tùy Chỉnh',
   },
 
   // Time Clock Entry

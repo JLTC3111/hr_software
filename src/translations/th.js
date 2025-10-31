@@ -411,7 +411,14 @@ export default {
     critical: 'วิกฤต',
     targetDate: 'วันที่เป้าหมาย',
     cancelled: 'ยกเลิก',
-    onHold: 'พักไว้'
+    onHold: 'พักไว้',
+    reviewDetails: 'รายละเอียดการประเมินผลการปฏิบัติงาน',
+    reviewer: 'ผู้ประเมิน',
+    reviewDate: 'วันที่ประเมิน',
+    ratings: 'คะแนน',
+    reviewComments: 'ความคิดเห็นการประเมิน',
+    noComments: 'ยังไม่มีความคิดเห็น',
+    errorFetchingComments: 'ข้อผิดพลาดในการโหลดความคิดเห็น'
   },
 
   // Reports

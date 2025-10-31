@@ -542,7 +542,14 @@ export default {
     critical: 'Critical',
     targetDate: 'Target Date',
     cancelled: 'Cancelled',
-    onHold: 'On Hold'
+    onHold: 'On Hold',
+    reviewDetails: 'Performance Review Details',
+    reviewer: 'Reviewer',
+    reviewDate: 'Review Date',
+    ratings: 'Ratings',
+    reviewComments: 'Review Comments',
+    noComments: 'No comments yet',
+    errorFetchingComments: 'Error fetching comments'
   },
 
   // Reports

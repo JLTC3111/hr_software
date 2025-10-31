@@ -467,7 +467,14 @@ login: {
     critical: 'Crítica',
     targetDate: 'Fecha objetivo',
     cancelled: 'Cancelado',
-    onHold: 'En espera'
+    onHold: 'En espera',
+    reviewDetails: 'Detalles de evaluación de desempeño',
+    reviewer: 'Evaluador',
+    reviewDate: 'Fecha de evaluación',
+    ratings: 'Calificaciones',
+    reviewComments: 'Comentarios de evaluación',
+    noComments: 'Aún no hay comentarios',
+    errorFetchingComments: 'Error al cargar comentarios'
   },
 
   // Reports

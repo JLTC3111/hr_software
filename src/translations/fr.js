@@ -472,7 +472,14 @@ export default {
     critical: 'Critique',
     targetDate: 'Date cible',
     cancelled: 'Annulé',
-    onHold: 'En attente'
+    onHold: 'En attente',
+    reviewDetails: 'Détails de l\'évaluation des performances',
+    reviewer: 'Évaluateur',
+    reviewDate: 'Date d\'évaluation',
+    ratings: 'Évaluations',
+    reviewComments: 'Commentaires d\'évaluation',
+    noComments: 'Aucun commentaire pour le moment',
+    errorFetchingComments: 'Erreur lors du chargement des commentaires'
   },
 
   // Reports

@@ -414,7 +414,14 @@ export default {
     critical: '긴급',
     targetDate: '목표 날짜',
     cancelled: '취소됨',
-    onHold: '보류 중'
+    onHold: '보류 중',
+    reviewDetails: '성과 평가 세부사항',
+    reviewer: '평가자',
+    reviewDate: '평가 날짜',
+    ratings: '평가',
+    reviewComments: '평가 코멘트',
+    noComments: '아직 댓글이 없습니다',
+    errorFetchingComments: '댓글 로드 오류'
   },
 
   // Reports

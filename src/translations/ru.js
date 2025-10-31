@@ -458,7 +458,14 @@ export default {
     critical: 'Критический',
     targetDate: 'Целевая дата',
     cancelled: 'Отменено',
-    onHold: 'Приостановлено'
+    onHold: 'Приостановлено',
+    reviewDetails: 'Детали оценки эффективности',
+    reviewer: 'Оценщик',
+    reviewDate: 'Дата оценки',
+    ratings: 'Оценки',
+    reviewComments: 'Комментарии к оценке',
+    noComments: 'Пока нет комментариев',
+    errorFetchingComments: 'Ошибка загрузки комментариев'
   },
 
   // Reports

@@ -70,7 +70,7 @@ const Reports = () => {
     t('departments.engineering'), 
     t('departments.sales'), 
     t('departments.marketing'), 
-    t('departments.humanresources'), 
+    t('departments.human_resources'), 
     t('departments.design'),
     t('departments.legal_compliance'),
     t('departments.internal_affairs'),
@@ -846,7 +846,7 @@ const Reports = () => {
               }}
             >
               <div className="flex items-center space-x-3 mb-2">
-                <report.icon className={`h-5 w-5 ${text.primary}`} style={{ color: isDarkMode ? '#3b82f6' : '#2563eb' }} />
+                <report.icon className={`h-5 w-5 ${text.primary}`} style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
                 <h4 
                   className="font-medium"
                   style={{
@@ -871,8 +871,8 @@ const Reports = () => {
               <button 
                 onClick={() => handlePrebuiltReport(report.type)}
                 disabled={generating}
-                className="text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all"
-                style={{ color: isDarkMode ? '#3b82f6' : '#2563eb' }}
+                className="text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed rounded-lg cursor-pointer transition-all hover:bg-amber-600"
+                style={{ color: isDarkMode ? '#fff' : '#000' }}
               >
                 {generating ? t('common.generating', 'Generating...') : t('reports.generate')}
               </button>

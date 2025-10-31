@@ -352,7 +352,14 @@ export default {
     critical: 'Kritisch',
     targetDate: 'Zieldatum',
     cancelled: 'Abgebrochen',
-    onHold: 'Pausiert'
+    onHold: 'Pausiert',
+    reviewDetails: 'Details zur Leistungsbeurteilung',
+    reviewer: 'Bewerter',
+    reviewDate: 'Bewertungsdatum',
+    ratings: 'Bewertungen',
+    reviewComments: 'Bewertungskommentare',
+    noComments: 'Noch keine Kommentare',
+    errorFetchingComments: 'Fehler beim Laden der Kommentare'
   },
 
   // Reports

@@ -411,7 +411,14 @@ export default {
     critical: '重大',
     targetDate: '目標日',
     cancelled: 'キャンセル',
-    onHold: '保留中'
+    onHold: '保留中',
+    reviewDetails: '業績評価の詳細',
+    reviewer: '評価者',
+    reviewDate: '評価日',
+    ratings: '評価',
+    reviewComments: '評価コメント',
+    noComments: 'まだコメントがありません',
+    errorFetchingComments: 'コメントの読み込みエラー'
   },
 
   // Reports
