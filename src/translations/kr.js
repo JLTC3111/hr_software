@@ -661,7 +661,7 @@ export default {
     notes: '메모',
     notesPlaceholder: '이 근무 입력에 대한 메모 추가...',
     submitButton: '근무 입력 제출',
-    submitBulkEntries: '{0}명의 직원 입력 제출',
+    submitBulkEntries: '명의 직원 입력 제출',
     submitting: '제출 중...',
     accessDenied: '접근 거부됨: 다른 직원의 근무 입력을 관리할 권한이 없습니다.',
     errorLoadEmployees: '직원 로드 실패',

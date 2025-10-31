@@ -134,11 +134,11 @@ const FlubberDemo = () => {
   ];
 
   const demos = {
-    shapes: { title: 'Basic Shapes', data: basicShapes },
-    timing: { title: 'Time & Calendar', data: timingShapes },
-    ui: { title: 'UI Elements', data: uiShapes },
-    status: { title: 'Status Icons', data: statusShapes },
-    work: { title: 'Work Related', data: workShapes }
+    shapes: { title: t('flubberDemo.basicShapes', 'Basic Shapes'), data: basicShapes },
+    timing: { title: t('flubberDemo.timeCalendar', 'Time & Calendar'), data: timingShapes },
+    ui: { title: t('flubberDemo.uiElements', 'UI Elements'), data: uiShapes },
+    status: { title: t('flubberDemo.statusIcons', 'Status Icons'), data: statusShapes },
+    work: { title: t('flubberDemo.workRelated', 'Work Related'), data: workShapes }
   };
 
   return (
@@ -147,10 +147,10 @@ const FlubberDemo = () => {
         {/* Header */}
         <div className="text-center">
           <h1 className={`text-4xl font-bold ${text.primary} mb-2`}>
-            🎨 Flubber SVG Morphing Demo
+            🎨 {t('flubberDemo.title', 'Flubber SVG Morphing Demo')}
           </h1>
           <p className={`text-lg ${text.secondary}`}>
-            Smooth SVG path transitions with Flubber interpolation
+            {t('flubberDemo.subtitle', 'Smooth SVG path transitions with Flubber interpolation')}
           </p>
         </div>
 
@@ -201,10 +201,10 @@ const FlubberDemo = () => {
               <div className={`w-10 h-10 rounded-full ${isDarkMode ? 'bg-blue-900' : 'bg-blue-100'} flex items-center justify-center`}>
                 <span className="text-2xl">⚡</span>
               </div>
-              <h3 className={`text-lg font-semibold ${text.primary}`}>Smooth Transitions</h3>
+              <h3 className={`text-lg font-semibold ${text.primary}`}>{t('flubberDemo.smoothTransitions', 'Smooth Transitions')}</h3>
             </div>
             <p className={`text-sm ${text.secondary}`}>
-              Flubber creates smooth interpolations between SVG paths, handling complex shapes with ease.
+              {t('flubberDemo.smoothTransitionsDesc', 'Flubber creates smooth interpolations between SVG paths, handling complex shapes with ease.')}
             </p>
           </div>
 
@@ -213,10 +213,10 @@ const FlubberDemo = () => {
               <div className={`w-10 h-10 rounded-full ${isDarkMode ? 'bg-purple-900' : 'bg-purple-100'} flex items-center justify-center`}>
                 <span className="text-2xl">🎯</span>
               </div>
-              <h3 className={`text-lg font-semibold ${text.primary}`}>Auto Play</h3>
+              <h3 className={`text-lg font-semibold ${text.primary}`}>{t('flubberDemo.autoPlay', 'Auto Play')}</h3>
             </div>
             <p className={`text-sm ${text.secondary}`}>
-              Automatic cycling through shapes with customizable intervals and durations.
+              {t('flubberDemo.autoPlayDesc', 'Automatic cycling through shapes with customizable intervals and durations.')}
             </p>
           </div>
 
@@ -225,17 +225,17 @@ const FlubberDemo = () => {
               <div className={`w-10 h-10 rounded-full ${isDarkMode ? 'bg-green-900' : 'bg-green-100'} flex items-center justify-center`}>
                 <span className="text-2xl">🎨</span>
               </div>
-              <h3 className={`text-lg font-semibold ${text.primary}`}>Customizable</h3>
+              <h3 className={`text-lg font-semibold ${text.primary}`}>{t('flubberDemo.customizable', 'Customizable')}</h3>
             </div>
             <p className={`text-sm ${text.secondary}`}>
-              Control colors, sizes, animations, and easing functions for perfect UI integration.
+              {t('flubberDemo.customizableDesc', 'Control colors, sizes, animations, and easing functions for perfect UI integration.')}
             </p>
           </div>
         </div>
 
         {/* Code Example */}
         <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
-          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>Usage Example</h3>
+          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>{t('flubberDemo.usageExample', 'Usage Example')}</h3>
           <pre className={`${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'} p-4 rounded-lg overflow-x-auto text-sm`}>
             <code className={text.primary}>
 {`<MorphingSVG
@@ -256,20 +256,20 @@ const FlubberDemo = () => {
 
         {/* Features List */}
         <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
-          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>Features</h3>
+          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>{t('flubberDemo.features', 'Features')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
-              '✨ Smooth path interpolation using Flubber',
-              '🎬 Auto-play with customizable intervals',
-              '🎨 Theme-aware colors',
-              '⚡ Optimized performance with requestAnimationFrame',
-              '🔄 Manual shape selection',
-              '📱 Responsive and accessible',
-              '⏱️ Customizable animation duration',
-              '🎯 Easing functions for natural motion'
+              { key: 'smoothPathInterpolation', icon: '✨' },
+              { key: 'autoPlayIntervals', icon: '🎬' },
+              { key: 'themeAwareColors', icon: '🎨' },
+              { key: 'optimizedPerformance', icon: '⚡' },
+              { key: 'manualShapeSelection', icon: '🔄' },
+              { key: 'responsiveAccessible', icon: '📱' },
+              { key: 'customizableDuration', icon: '⏱️' },
+              { key: 'easingFunctions', icon: '🎯' }
             ].map((feature, idx) => (
               <div key={idx} className={`flex items-center space-x-2 ${text.secondary}`}>
-                <span>{feature}</span>
+                <span>{feature.icon} {t(`flubberDemo.${feature.key}`, feature.key)}</span>
               </div>
             ))}
           </div>

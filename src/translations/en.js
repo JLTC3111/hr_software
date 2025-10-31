@@ -373,7 +373,7 @@ export default {
     notes: 'Notes',
     notesPlaceholder: 'Add any notes about this time entry...',
     submitButton: 'Submit Time Entry',
-    submitBulkEntries: 'Submit Entries for {0} Employees',
+    submitBulkEntries: 'Submit Entries for Employees',
     submitting: 'Submitting...',
     accessDenied: 'Access Denied: You don\'t have permission to manage time entries for other employees.',
     errorLoadEmployees: 'Failed to load employees',

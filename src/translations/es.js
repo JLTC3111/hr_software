@@ -167,7 +167,7 @@ login: {
     notes: 'Notas',
     notesPlaceholder: 'Agregar notas sobre esta entrada de tiempo...',
     submitButton: 'Enviar Entrada de Tiempo',
-    submitBulkEntries: 'Enviar Entradas Para {0} Empleados',
+    submitBulkEntries: 'Enviar Entradas Para Empleados',
     submitting: 'Enviando...',
     accessDenied: 'Acceso Denegado: No tienes permiso para gestionar entradas de tiempo de otros empleados.',
     errorLoadEmployees: 'Error al cargar empleados',

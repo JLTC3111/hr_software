@@ -667,7 +667,7 @@ export default {
     notes: 'Notizen',
     notesPlaceholder: 'Notizen zu diesem Zeiteintrag hinzufügen...',
     submitButton: 'Zeiteintrag Absenden',
-    submitBulkEntries: 'Einträge Für {0} Mitarbeiter Absenden',
+    submitBulkEntries: 'Einträge Für Mitarbeiter Absenden',
     submitting: 'Wird übermittelt...',
     accessDenied: 'Zugriff verweigert: Sie haben keine Berechtigung, Zeiteinträge für andere Mitarbeiter zu verwalten.',
     errorLoadEmployees: 'Fehler beim Laden der Mitarbeiter',

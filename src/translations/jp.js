@@ -659,7 +659,7 @@ export default {
     notes: 'メモ',
     notesPlaceholder: 'この勤怠入力についてのメモを追加...',
     submitButton: '勤怠入力を送信',
-    submitBulkEntries: '{0}名の従業員の入力を送信',
+    submitBulkEntries: '名の従業員の入力を送信',
     submitting: '送信中...',
     accessDenied: 'アクセス拒否：他の従業員の勤怠入力を管理する権限がありません。',
     errorLoadEmployees: '従業員の読み込みに失敗しました',

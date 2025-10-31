@@ -52,17 +52,17 @@ const MorphingShowcase = () => {
       {/* Header */}
       <div>
         <h2 className={`text-3xl font-bold ${text.primary} mb-2`}>
-          🎨 Flubber Morphing Integration
+          🎨 {t('morphingShowcase.title', 'Flubber Morphing Integration')}
         </h2>
         <p className={text.secondary}>
-          Smooth SVG morphing animations powered by Flubber
+          {t('morphingShowcase.subtitle', 'Smooth SVG morphing animations powered by Flubber')}
         </p>
       </div>
 
       {/* Interactive Time Icon Demo */}
       <div className={`${bg.secondary} rounded-xl p-6 border ${border.primary}`}>
         <h3 className={`text-xl font-semibold ${text.primary} mb-4`}>
-          Interactive Time Icon
+          {t('morphingShowcase.interactiveTimeIcon', 'Interactive Time Icon')}
         </h3>
         <div className="flex items-center space-x-6">
           <MorphingTimeIcon
@@ -72,7 +72,7 @@ const MorphingShowcase = () => {
           />
           <div className="flex-1">
             <p className={`text-sm ${text.secondary} mb-3`}>
-              Click to morph between clock and calendar
+              {t('morphingShowcase.clickToMorph', 'Click to morph between clock and calendar')}
             </p>
             <div className="flex space-x-3">
               <button
@@ -85,7 +85,7 @@ const MorphingShowcase = () => {
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
-                🕐 Clock
+                🕐 {t('morphingShowcase.clock', 'Clock')}
               </button>
               <button
                 onClick={() => setClockMode('calendar')}
@@ -97,7 +97,7 @@ const MorphingShowcase = () => {
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
-                📅 Calendar
+                📅 {t('morphingShowcase.calendar', 'Calendar')}
               </button>
             </div>
           </div>
@@ -107,7 +107,7 @@ const MorphingShowcase = () => {
       {/* Auto-morphing Time Icon */}
       <div className={`${bg.secondary} rounded-xl p-6 border ${border.primary}`}>
         <h3 className={`text-xl font-semibold ${text.primary} mb-4`}>
-          Auto-Morphing Icon
+          {t('morphingShowcase.autoMorphingIcon', 'Auto-Morphing Icon')}
         </h3>
         <div className="flex items-center space-x-6">
           <MorphingTimeIcon
@@ -119,7 +119,7 @@ const MorphingShowcase = () => {
           />
           <div className="flex-1">
             <p className={`text-sm ${text.secondary}`}>
-              Automatically morphs between clock and calendar every 3 seconds
+              {t('morphingShowcase.autoMorphDescription', 'Automatically morphs between clock and calendar every 3 seconds')}
             </p>
           </div>
         </div>
@@ -130,7 +130,7 @@ const MorphingShowcase = () => {
         {/* Status Morphing */}
         <div className={`${bg.secondary} rounded-xl p-6 border ${border.primary}`}>
           <h3 className={`text-xl font-semibold ${text.primary} mb-4`}>
-            Status Indicators
+            {t('morphingShowcase.statusIndicators', 'Status Indicators')}
           </h3>
           <MorphingSVG
             shapes={statusShapes}
@@ -147,7 +147,7 @@ const MorphingShowcase = () => {
         {/* UI Element Morphing */}
         <div className={`${bg.secondary} rounded-xl p-6 border ${border.primary}`}>
           <h3 className={`text-xl font-semibold ${text.primary} mb-4`}>
-            UI Elements
+            {t('morphingShowcase.uiElements', 'UI Elements')}
           </h3>
           <MorphingSVG
             shapes={uiShapes}
@@ -167,28 +167,28 @@ const MorphingShowcase = () => {
       {/* Use Cases */}
       <div className={`${bg.secondary} rounded-xl p-6 border ${border.primary}`}>
         <h3 className={`text-xl font-semibold ${text.primary} mb-4`}>
-          Use Cases in HR Software
+          {t('morphingShowcase.useCases', 'Use Cases in HR Software')}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <div className="text-2xl">⏰</div>
-            <h4 className={`font-semibold ${text.primary}`}>Time Tracking</h4>
+            <h4 className={`font-semibold ${text.primary}`}>{t('morphingShowcase.timeTracking', 'Time Tracking')}</h4>
             <p className={`text-sm ${text.secondary}`}>
-              Morph between clock in/out states, show time transitions
+              {t('morphingShowcase.timeTrackingDesc', 'Morph between clock in/out states, show time transitions')}
             </p>
           </div>
           <div className="space-y-2">
             <div className="text-2xl">📊</div>
-            <h4 className={`font-semibold ${text.primary}`}>Status Updates</h4>
+            <h4 className={`font-semibold ${text.primary}`}>{t('morphingShowcase.statusUpdates', 'Status Updates')}</h4>
             <p className={`text-sm ${text.secondary}`}>
-              Smooth transitions between task states and indicators
+              {t('morphingShowcase.statusUpdatesDesc', 'Smooth transitions between task states and indicators')}
             </p>
           </div>
           <div className="space-y-2">
             <div className="text-2xl">🎯</div>
-            <h4 className={`font-semibold ${text.primary}`}>UI Feedback</h4>
+            <h4 className={`font-semibold ${text.primary}`}>{t('morphingShowcase.uiFeedback', 'UI Feedback')}</h4>
             <p className={`text-sm ${text.secondary}`}>
-              Engaging animations for actions and state changes
+              {t('morphingShowcase.uiFeedbackDesc', 'Engaging animations for actions and state changes')}
             </p>
           </div>
         </div>
@@ -197,21 +197,21 @@ const MorphingShowcase = () => {
       {/* Features */}
       <div className={`${bg.secondary} rounded-xl p-6 border ${border.primary}`}>
         <h3 className={`text-xl font-semibold ${text.primary} mb-4`}>
-          Features
+          {t('morphingShowcase.features', 'Features')}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {[
-            '✨ Smooth path interpolation',
-            '🎬 Auto-play support',
-            '🎨 Theme-aware colors',
-            '⚡ Optimized performance',
-            '🔄 Manual control',
-            '📱 Responsive design',
-            '⏱️ Customizable timing',
-            '🎯 Multiple easing functions'
+            { key: 'smoothPathInterpolation', icon: '✨' },
+            { key: 'autoPlaySupport', icon: '🎬' },
+            { key: 'themeAwareColors', icon: '🎨' },
+            { key: 'optimizedPerformance', icon: '⚡' },
+            { key: 'manualControl', icon: '🔄' },
+            { key: 'responsiveDesign', icon: '📱' },
+            { key: 'customizableTiming', icon: '⏱️' },
+            { key: 'multipleEasingFunctions', icon: '🎯' }
           ].map((feature, idx) => (
             <div key={idx} className={`flex items-center space-x-2 ${text.secondary}`}>
-              <span>{feature}</span>
+              <span>{feature.icon} {t(`morphingShowcase.${feature.key}`, feature.key)}</span>
             </div>
           ))}
         </div>

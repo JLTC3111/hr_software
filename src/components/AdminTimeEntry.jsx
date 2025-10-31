@@ -212,18 +212,12 @@ const AdminTimeEntry = () => {
   };
 
   const toggleEmployeeSelection = (employee) => {
-    console.log('Toggle employee:', employee);
     setSelectedEmployees(prev => {
       const isSelected = prev.some(e => e.id === employee.id);
-      const newSelection = isSelected 
+      return isSelected 
         ? prev.filter(e => e.id !== employee.id)
         : [...prev, employee];
-      console.log('Selected employees:', newSelection);
-      return newSelection;
     });
-    // Close dropdown and clear search after selection
-    setShowDropdown(false);
-    setSearchTerm('');
   };
 
   const removeEmployee = (employeeId) => {
@@ -546,8 +540,8 @@ const AdminTimeEntry = () => {
               <Save className="w-5 h-5" />
               <span>
                 {selectedEmployees.length > 1 
-                  ? t('adminTimeEntry.submitBulkEntries', `Submit Entries for ${selectedEmployees.length} Employees`)
-                  : t('adminTimeEntry.submitButton', '')
+                  ? `${t('adminTimeEntry.submitBulkEntries', 'Submit Entries for {0} Employees').replace('{0}', selectedEmployees.length)}`
+                  : t('adminTimeEntry.submitButton', 'Submit Time Entry')
                 }
               </span>
             </>

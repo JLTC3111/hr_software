@@ -260,7 +260,7 @@ export default {
     notes: 'Ghi Chú',
     notesPlaceholder: 'Thêm ghi chú về mục nhập giờ này...',
     submitButton: 'Gửi Mục Nhập Giờ',
-    submitBulkEntries: 'Gửi Mục Nhập Cho {0} Nhân Viên',
+    submitBulkEntries: 'Gửi Mục Nhập Cho Nhân Viên',
     submitting: 'Đang gửi...',
     accessDenied: 'Truy cập bị từ chối: Bạn không có quyền quản lý mục nhập giờ của nhân viên khác.',
     errorLoadEmployees: 'Không thể tải danh sách nhân viên',

@@ -666,7 +666,7 @@ export default {
     notes: 'หมายเหตุ',
     notesPlaceholder: 'เพิ่มหมายเหตุเกี่ยวกับการบันทึกเวลานี้...',
     submitButton: 'ส่งการบันทึกเวลา',
-    submitBulkEntries: 'ส่งรายการสำหรับ {0} คน',
+    submitBulkEntries: 'ส่งรายการสำหรับ คน',
     submitting: 'กำลังส่ง...',
     accessDenied: 'การเข้าถึงถูกปฏิเสธ: คุณไม่มีสิทธิ์จัดการการบันทึกเวลาของพนักงานคนอื่น',
     errorLoadEmployees: 'ไม่สามารถโหลดพนักงานได้',

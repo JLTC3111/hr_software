@@ -311,7 +311,7 @@ export default {
     notes: 'Notes',
     notesPlaceholder: 'Ajouter des notes sur cette saisie de temps...',
     submitButton: 'Soumettre la Saisie du Temps',
-    submitBulkEntries: 'Soumettre les Saisies Pour {0} Employés',
+    submitBulkEntries: 'Soumettre les Saisies Pour Employés',
     submitting: 'Envoi en cours...',
     accessDenied: 'Accès Refusé: Vous n\'avez pas la permission de gérer les saisies de temps pour d\'autres employés.',
     errorLoadEmployees: 'Échec du chargement des employés',
