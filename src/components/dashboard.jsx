@@ -497,6 +497,7 @@ const Dashboard = ({ employees, applications }) => {
                 stroke="#10B981" 
                 strokeWidth={3}
                 dot={{ fill: '#10B981', r: 5 }}
+                legendType="none"
               />
             </ComposedChart>
           </ResponsiveContainer>
@@ -641,6 +642,7 @@ const Dashboard = ({ employees, applications }) => {
                 stroke="#10B981" 
                 strokeWidth={3}
                 dot={{ fill: '#10B981', r: 5 }}
+                legendType="none"
               />
             </ComposedChart>
           </ResponsiveContainer>
@@ -701,6 +703,7 @@ const Dashboard = ({ employees, applications }) => {
                 stroke="#10B981" 
                 strokeWidth={3}
                 dot={{ fill: '#10B981', r: 5 }}
+                legendType="none"
               />
             </ComposedChart>
           </ResponsiveContainer>
@@ -757,6 +760,7 @@ const Dashboard = ({ employees, applications }) => {
                 stroke="#059669" 
                 strokeWidth={3}
                 dot={{ fill: '#059669', r: 5 }}
+                legendType="none"
               />
               <Line 
                 type="monotone" 
@@ -764,6 +768,7 @@ const Dashboard = ({ employees, applications }) => {
                 stroke="#DC2626" 
                 strokeWidth={3}
                 dot={{ fill: '#DC2626', r: 5 }}
+                legendType="none"
               />
             </ComposedChart>
           </ResponsiveContainer>
