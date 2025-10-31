@@ -807,6 +807,11 @@ export default {
   workload: {
     title: '仕事量管理',
     individual: '個人',
+    assignTask: 'タスクを割り当てる',
+    teamWorkload: 'チームの作業負荷',
+    filterByEmployee: '従業員でフィルタリング',
+    filterByStatus: 'ステータスでフィルタリング',
+    searchTasks: 'タスクを検索...',
     organization: '組織',
     totalTasks: '総タスク数',
     completed: '完了',

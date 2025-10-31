@@ -7,7 +7,7 @@ import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { UploadProvider } from './contexts/UploadContext'
-import { AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager, ControlPanel, WorkloadManagement, TaskPerformanceReview } from './components/index.jsx';
+import { AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager, ControlPanel, WorkloadManagement, TaskPerformanceReview, FlubberDemo, MorphingShowcase } from './components/index.jsx';
 import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
 
@@ -352,6 +352,14 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
                     <Route 
                       path="/task-performance" 
                       element={<TaskPerformanceReview employees={employees} />} 
+                    />
+                    <Route 
+                      path="/flubber-demo" 
+                      element={<FlubberDemo />} 
+                    />
+                    <Route 
+                      path="/morphing-showcase" 
+                      element={<MorphingShowcase />} 
                     />
                     <Route 
                       path="/control-panel" 

@@ -19,6 +19,9 @@ const WorkloadManagement = ({ employees }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   
+  // Modal ref for outside click detection
+  const modalRef = React.useRef(null);
+  
   // Task form state
   const [taskForm, setTaskForm] = useState({
     title: '',
@@ -88,6 +91,54 @@ const WorkloadManagement = ({ employees }) => {
       channel.unsubscribe();
     };
   }, [viewMode, selectedEmployee]);
+
+  // Close modal function
+  const closeModal = () => {
+    setShowAddTask(false);
+    setEditingTask(null);
+    setTaskForm({
+      title: '',
+      description: '',
+      dueDate: '',
+      priority: 'medium',
+      status: 'pending',
+      selfAssessment: '',
+      qualityRating: 0,
+      comments: '',
+      assignedTo: selectedEmployee
+    });
+  };
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape' && showAddTask) {
+        closeModal();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [showAddTask, selectedEmployee]);
+
+  // Handle outside click to close modal
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        closeModal();
+      }
+    };
+
+    if (showAddTask) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showAddTask, selectedEmployee]);
 
   const handleAddTask = async () => {
     // Validate required fields
@@ -273,7 +324,7 @@ const WorkloadManagement = ({ employees }) => {
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
             >
               <Plus className="w-4 h-4" />
-              <span>{canAssignTasks ? t('workload.assignTask', 'Assign Task') : t('workload.addTask', 'Add Task')}</span>
+              <span>{canAssignTasks ? t('workload.assignTask', '') : t('workload.addTask', 'Add Task')}</span>
             </button>
           </div>
 
@@ -524,7 +575,7 @@ const WorkloadManagement = ({ employees }) => {
       {/* Add/Edit Task Modal */}
       {showAddTask && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className={`${bg.secondary} rounded-lg shadow-xl max-w-2xl w-full p-6`}>
+          <div ref={modalRef} className={`${bg.secondary} rounded-lg shadow-xl max-w-2xl w-full p-6`}>
             <h3 className={`text-xl font-semibold ${text.primary} mb-4`}>
               {editingTask ? t('workload.editTask', 'Edit Task') : t('workload.addTask', 'Add Task')}
             </h3>
@@ -592,9 +643,9 @@ const WorkloadManagement = ({ employees }) => {
                     onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}
                     className={`w-full px-4 py-2 rounded-lg border ${border.primary}`}
                   >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
+                    <option value="low">{t('workload.priorityLow', 'Low')}</option>
+                    <option value="medium">{t('workload.priorityMedium', 'Medium')}</option>
+                    <option value="high">{t('workload.priorityHigh', 'High')}</option>
                   </select>
                 </div>
                 <div>
@@ -606,9 +657,9 @@ const WorkloadManagement = ({ employees }) => {
                     onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value })}
                     className={`w-full px-4 py-2 rounded-lg border ${border.primary}`}
                   >
-                    <option value="pending">Pending</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="completed">Completed</option>
+                    <option value="pending">{t('workload.statusPending', 'Pending')}</option>
+                    <option value="in-progress">{t('workload.statusInProgress', 'In Progress')}</option>
+                    <option value="completed">{t('workload.statusCompleted', 'Completed')}</option>
                   </select>
                 </div>
               </div>
@@ -639,21 +690,7 @@ const WorkloadManagement = ({ employees }) => {
               </div>
               <div className="flex space-x-3 pt-4">
                 <button
-                  onClick={() => {
-                    setShowAddTask(false);
-                    setEditingTask(null);
-                    setTaskForm({
-                      title: '',
-                      description: '',
-                      dueDate: '',
-                      priority: 'medium',
-                      status: 'pending',
-                      selfAssessment: '',
-                      qualityRating: 0,
-                      comments: '',
-                      assignedTo: selectedEmployee
-                    });
-                  }}
+                  onClick={closeModal}
                   className={`flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700`}
                 >
                   {t('common.cancel', 'Cancel')}

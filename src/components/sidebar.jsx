@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { TrendingUp, Users, Award, FileText, Clock, AlarmClock, ChevronLeft, ChevronRight, Menu, X, ChevronDown, Building2, Bell, Settings, CheckSquare } from 'lucide-react'
+import { TrendingUp, Users, Award, FileText, Clock, AlarmClock, ChevronLeft, ChevronRight, Menu, X, ChevronDown, Building2, Bell, Settings, CheckSquare, Sparkles } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 
@@ -59,6 +59,20 @@ const Sidebar = () => {
       items: [
         { path: '/notifications', name: t('nav.notifications', 'Notifications'), icon: Bell },
         { path: '/settings', name: t('nav.settings', 'Settings'), icon: Settings },
+      ]
+    },
+    {
+      section: 'DEMO',
+      items: [
+        { 
+          path: '/flubber-demo', 
+          name: t('nav.svgMorphing', 'SVG Morphing'), 
+          icon: Sparkles,
+          subItems: [
+            { path: '/flubber-demo', name: t('nav.fullDemo', 'Full Demo') },
+            { path: '/morphing-showcase', name: t('nav.showcase', 'Quick Showcase') },
+          ]
+        },
       ]
     }
   ];

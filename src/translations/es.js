@@ -822,6 +822,11 @@ login: {
   workload: {
     title: 'Gestión de Carga de Trabajo',
     individual: 'Individual',
+    assignTask: 'Asignar Tarea',
+    teamWorkload: 'Carga de Trabajo del Equipo',
+    filterByEmployee: 'Filtrar por Empleado',
+    filterByStatus: 'Filtrar por Estado',
+    searchTasks: 'Buscar Tareas...',
     organization: 'Organización',
     totalTasks: 'Tareas totales',
     completed: 'Completado',

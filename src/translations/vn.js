@@ -890,6 +890,11 @@ export default {
   workload: {
     title: 'Quản Lý Khối Lượng Công Việc',
     individual: 'Cá nhân',
+    assignTask: 'Phân Công Nhiệm Vụ',
+    teamWorkload: 'Khối lượng công việc của nhóm',
+    filterByEmployee: 'Lọc theo nhân viên',
+    filterByStatus: 'Lọc theo trạng thái',
+    searchTasks: 'Tìm kiếm nhiệm vụ...',
     organization: 'Tổ chức',
     totalTasks: 'Tổng số nhiệm vụ',
     completed: 'Đã hoàn thành',

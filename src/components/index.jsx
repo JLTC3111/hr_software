@@ -28,4 +28,8 @@ export { default as UserEmployeeCard } from './userEmployeeCard.jsx';
 export { default as UserManagement } from './userManagement.jsx';
 export { default as WorkloadManagement } from './workloadManagement.jsx';
 export { default as TaskPerformanceReview } from './taskPerformanceReview.jsx';
+export { default as MorphingSVG } from './morphingSVG.jsx';
+export { default as MorphingTimeIcon } from './morphingTimeIcon.jsx';
+export { default as FlubberDemo } from './flubberDemo.jsx';
+export { default as MorphingShowcase } from './morphingShowcase.jsx';
 export { default as EmployeeDetailModal } from './employeeDetailModal.jsx';

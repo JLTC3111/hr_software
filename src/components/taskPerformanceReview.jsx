@@ -42,6 +42,9 @@ const TaskPerformanceReview = ({ employees }) => {
   });
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  
+  // Modal ref for outside click detection
+  const modalRef = React.useRef(null);
 
   // Check if user is admin or manager
   const canEvaluateOthers = user?.role === 'admin' || user?.role === 'manager';
@@ -206,6 +209,43 @@ const TaskPerformanceReview = ({ employees }) => {
       selfAssessment: task.self_assessment || ''
     });
   };
+
+  // Close evaluation modal
+  const closeEvaluationModal = () => {
+    setEvaluatingTask(null);
+    setEvaluationForm({ qualityRating: 0, comments: '', selfAssessment: '' });
+  };
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape' && evaluatingTask) {
+        closeEvaluationModal();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [evaluatingTask]);
+
+  // Handle outside click to close modal
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        closeEvaluationModal();
+      }
+    };
+
+    if (evaluatingTask) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [evaluatingTask]);
 
   // Get quality color
   const getQualityColor = (rating) => {
@@ -639,19 +679,16 @@ const TaskPerformanceReview = ({ employees }) => {
       {/* Evaluation Modal */}
       {evaluatingTask && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className={`${bg.secondary} rounded-lg shadow-xl max-w-2xl w-full p-6`}>
+          <div ref={modalRef} className={`${bg.secondary} rounded-lg shadow-xl max-w-2xl w-full p-6`}>
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className={`text-xl font-semibold ${text.primary}`}>
-                  Evaluate Task
+                  {t('taskPerformance.evaluateTask', 'Evaluate Task')}
                 </h3>
                 <p className={`text-sm ${text.secondary} mt-1`}>{evaluatingTask.title}</p>
               </div>
               <button
-                onClick={() => {
-                  setEvaluatingTask(null);
-                  setEvaluationForm({ qualityRating: 0, comments: '', selfAssessment: '' });
-                }}
+                onClick={closeEvaluationModal}
                 className={`p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700`}
               >
                 <X className="w-5 h-5" />
@@ -758,20 +795,17 @@ const TaskPerformanceReview = ({ employees }) => {
             {/* Action Buttons */}
             <div className="flex space-x-3 mt-6">
               <button
-                onClick={() => {
-                  setEvaluatingTask(null);
-                  setEvaluationForm({ qualityRating: 0, comments: '', selfAssessment: '' });
-                }}
+                onClick={closeEvaluationModal}
                 className={`flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700`}
               >
-                Cancel
+                {t('taskPerformance.cancel', 'Cancel')}
               </button>
               <button
                 onClick={handleSubmitEvaluation}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2"
               >
                 <Save className="w-4 h-4" />
-                <span>Submit Evaluation</span>
+                <span>{t('taskPerformance.submitEvaluation', 'Submit Evaluation')}</span>
               </button>
             </div>
           </div>

@@ -800,6 +800,11 @@ export default {
   workload: {
     title: 'การจัดการภาระงาน',
     individual: 'บุคคล',
+    assignTask: 'มอบหมายงาน',
+    teamWorkload: 'ภาระงานของทีม',
+    filterByEmployee: 'กรองตามพนักงาน',
+    filterByStatus: 'กรองตามสถานะ',
+    searchTasks: 'ค้นหางาน...',
     organization: 'องค์กร',
     totalTasks: 'งานทั้งหมด',
     completed: 'เสร็จสมบูรณ์',

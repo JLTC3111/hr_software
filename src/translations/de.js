@@ -863,6 +863,11 @@ export default {
   workload: {
     title: 'Arbeitsbelastungsverwaltung',
     individual: 'Individuell',
+    assignTask: 'Aufgabe zuweisen',
+    teamWorkload: 'Teamarbeitsbelastung',
+    filterByEmployee: 'Nach Mitarbeiter filtern',
+    filterByStatus: 'Nach Status filtern',
+    searchTasks: 'Aufgaben suchen...',
     organization: 'Organisation',
     totalTasks: 'Gesamtaufgaben',
     completed: 'Abgeschlossen',

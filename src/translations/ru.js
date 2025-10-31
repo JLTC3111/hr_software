@@ -809,6 +809,11 @@ export default {
   workload: {
     title: 'Управление рабочей нагрузкой',
     individual: 'Индивидуальный',
+    assignTask: 'Назначить задачу',
+    teamWorkload: 'Рабочая нагрузка команды',
+    filterByEmployee: 'Фильтровать по сотруднику',
+    filterByStatus: 'Фильтровать по статусу',
+    searchTasks: 'Поиск задач...',
     organization: 'Организация',
     totalTasks: 'Всего задач',
     completed: 'Завершено',
