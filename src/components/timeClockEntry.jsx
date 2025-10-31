@@ -897,7 +897,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     pr-10 appearance-none
                   `}
                 />
-                <Clock className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-5 h-5 ${text.secondary}`} />
+                <Clock className={`absolute top-1/2 right-3 transform rotate-270 -translate-y-1/2 pointer-events-none w-5 h-5 ${text.secondary}`} />
               </div>
               {errors.clockIn && <p className="text-red-500 text-sm mt-1">{errors.clockIn}</p>}
             </div>

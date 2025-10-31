@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Users, Briefcase, Clock, Calendar, AlertCircle, DatabaseZap, Loader } from 'lucide-react'
+import { Users, Briefcase, Clock, Calendar, AlertCircle, DatabaseZap, Loader, Funnel } from 'lucide-react'
 import StatsCard from './statsCard.jsx'
 import MetricDetailModal from './metricDetailModal.jsx'
 import { useTheme } from '../contexts/ThemeContext'
@@ -11,7 +11,6 @@ const Dashboard = ({ employees, applications }) => {
   const { isDarkMode, bg, text, border } = useTheme();
   const { t } = useLanguage();
   
-  // State for real-time data
   const [loading, setLoading] = useState(true);
   const [timeTrackingData, setTimeTrackingData] = useState({});
   const [allEmployeesData, setAllEmployeesData] = useState([]);
@@ -19,11 +18,9 @@ const Dashboard = ({ employees, applications }) => {
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
   const [pendingApprovals, setPendingApprovals] = useState([]);
   
-  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState({ type: '', data: [], title: '' });
   
-  // Get current month and year - BUT ALLOW USER TO CHANGE IT!
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
@@ -33,9 +30,6 @@ const Dashboard = ({ employees, applications }) => {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        console.log('📊 [DASHBOARD] Starting data fetch...');
-        console.log('📊 [DASHBOARD] Employees count:', employees.length);
-        console.log('📊 [DASHBOARD] Selected month:', selectedMonth, 'Year:', selectedYear);
         
         // Fetch time tracking summaries for all employees for SELECTED month
         const summariesPromises = employees.map(emp => 
@@ -124,9 +118,6 @@ const Dashboard = ({ employees, applications }) => {
         });
         
         setAllEmployeesData(employeesDataArray);
-        
-        console.log('📊 [DASHBOARD] Time tracking data compiled:', Object.keys(trackingData).length, 'employees');
-        console.log('📊 [DASHBOARD] Sample tracking data:', Object.values(trackingData)[0]);
         setTimeTrackingData(trackingData);
         
         // Fetch pending approvals count and details
@@ -354,30 +345,30 @@ const Dashboard = ({ employees, applications }) => {
         
         {/* Month/Year Selector */}
         <div className="flex items-center space-x-2">
-          <Calendar className={`w-4 h-4 ${text.secondary}`} />
+          <Funnel className={`w-4 h-4 ${text.secondary}`} />
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(Number(e.target.value))}
-            className={`${bg.primary} ${text.primary} px-3 py-1.5 rounded-lg border ${border.primary} text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer`}
+            className={`${text.primary} px-3 py-1.5 rounded-lg border ${border.primary} text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer transition-colors ${isDarkMode ? 'hover:border-gray-100' : 'hover:border-gray-900'}`}
           >
-            <option value={1}>January</option>
-            <option value={2}>February</option>
-            <option value={3}>March</option>
-            <option value={4}>April</option>
-            <option value={5}>May</option>
-            <option value={6}>June</option>
-            <option value={7}>July</option>
-            <option value={8}>August</option>
-            <option value={9}>September</option>
-            <option value={10}>October</option>
-            <option value={11}>November</option>
-            <option value={12}>December</option>
+            <option value={1}>{t('months.january', 'January')}</option>
+            <option value={2}>{t('months.february', 'February')}</option>
+            <option value={3}>{t('months.march', 'March')}</option>
+            <option value={4}>{t('months.april', 'April')}</option>
+            <option value={5}>{t('months.may', 'May')}</option>
+            <option value={6}>{t('months.june', 'June')}</option>
+            <option value={7}>{t('months.july', 'July')}</option>
+            <option value={8}>{t('months.august', 'August')}</option>
+            <option value={9}>{t('months.september', 'September')}</option>
+            <option value={10}>{t('months.october', 'October')}</option>
+            <option value={11}>{t('months.november', 'November')}</option>
+            <option value={12}>{t('months.december', 'December')}</option>
           </select>
           
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className={`${bg.primary} ${text.primary} px-3 py-1.5 rounded-lg border ${border.primary} text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer`}
+            className={`${text.primary} px-3 py-1.5 rounded-lg border ${border.primary} text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer transition-colors ${isDarkMode ? 'hover:border-gray-100' : 'hover:border-gray-900'}`}
           >
             <option value={2024}>2024</option>
             <option value={2025}>2025</option>
@@ -506,7 +497,6 @@ const Dashboard = ({ employees, applications }) => {
                 stroke="#10B981" 
                 strokeWidth={3}
                 dot={{ fill: '#10B981', r: 5 }}
-                name="Average Trend"
               />
             </ComposedChart>
           </ResponsiveContainer>
@@ -651,7 +641,6 @@ const Dashboard = ({ employees, applications }) => {
                 stroke="#10B981" 
                 strokeWidth={3}
                 dot={{ fill: '#10B981', r: 5 }}
-                name="Average Trend"
               />
             </ComposedChart>
           </ResponsiveContainer>
@@ -712,7 +701,6 @@ const Dashboard = ({ employees, applications }) => {
                 stroke="#10B981" 
                 strokeWidth={3}
                 dot={{ fill: '#10B981', r: 5 }}
-                name="Average Trend"
               />
             </ComposedChart>
           </ResponsiveContainer>
@@ -769,7 +757,6 @@ const Dashboard = ({ employees, applications }) => {
                 stroke="#059669" 
                 strokeWidth={3}
                 dot={{ fill: '#059669', r: 5 }}
-                name="Work Days Trend"
               />
               <Line 
                 type="monotone" 
@@ -777,7 +764,6 @@ const Dashboard = ({ employees, applications }) => {
                 stroke="#DC2626" 
                 strokeWidth={3}
                 dot={{ fill: '#DC2626', r: 5 }}
-                name="Leave Days Trend"
               />
             </ComposedChart>
           </ResponsiveContainer>
