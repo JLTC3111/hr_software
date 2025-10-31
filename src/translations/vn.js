@@ -444,7 +444,9 @@ export default {
     status: 'Trạng thái',
     actions: 'Hành động',
     edit: 'Chỉnh sửa',
-    view: 'Xem'
+    view: 'Xem',
+    progressSaved: 'Tiến độ đã được lưu thành công!',
+    progressSaveError: 'Không thể lưu tiến độ'
   },
 
   // Reports
@@ -903,9 +905,15 @@ export default {
     priorityLow: 'Thấp',
     priorityMedium: 'Trung Bình',
     priorityHigh: 'Cao',
+    low: 'Thấp',
+    medium: 'Trung Bình',
+    high: 'Cao',
     statusPending: 'Đang chờ',
     statusInProgress: 'Đang tiến hành',
     statusCompleted: 'Đã hoàn thành',
+    pending: 'Đang chờ',
+    'in-progress': 'Đang tiến hành',
+    completed: 'Đã hoàn thành',
     teamWorkload: 'Khối lượng công việc của nhóm',
     filterByEmployee: 'Lọc theo nhân viên',
     filterByStatus: 'Lọc theo trạng thái',
@@ -1034,6 +1042,11 @@ export default {
     team: 'Nhóm',
     totalTasks: 'Tổng Công Việc',
     completed: 'Hoàn Thành',
+    high: 'Cao',
+    medium: 'Trung Bình',
+    low: 'Thấp',
+    taskStatus: 'Trạng Thái Công Việc',
+    completedTasks: 'Công Việc Hoàn Thành',
     inProgress: 'Đang Thực Hiện',
     overdue: 'Quá Hạn',
     completionRate: 'Tỷ Lệ Hoàn Thành',

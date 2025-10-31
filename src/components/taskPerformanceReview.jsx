@@ -296,7 +296,19 @@ const TaskPerformanceReview = ({ employees }) => {
 
   // Format month display
   const formatMonth = (date) => {
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const languageMap = {
+      'en': 'en-US',
+      'fr': 'fr-FR',
+      'es': 'es-ES',
+      'de': 'de-DE',
+      'vn': 'vi-VN',
+      'jp': 'ja-JP',
+      'kr': 'ko-KR',
+      'ru': 'ru-RU',
+      'th': 'th-TH'
+    };
+    const locale = languageMap[useLanguage().currentLanguage] || 'en-US';
+    return date.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
   };
 
   // Team View Component
@@ -634,17 +646,21 @@ const TaskPerformanceReview = ({ employees }) => {
         <div className={`${bg.secondary} rounded-lg border ${border.primary}`}>
           <div className={`divide-y ${isDarkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
             {displayTasks.map(task => (
-              <div className={`p-4 ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
+              <div key={task.id} className={`p-4 ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
                       <h4 className={`font-semibold ${text.primary}`}>{task.title}</h4>
-                      <span className={`px-2 py-1 rounded text-xs ${text.primary} ${getStatusColor(task.status)}`}>
-                        {getStatusText(task.status)}
-                      </span>
-                      <span className={`px-2 py-1 rounded text-xs ${text.primary} ${getPriorityColor(task.priority)}`}>
-                        {getPriorityText(task.priority)}
-                      </span>
+                      <span
+                        className={`px-2 py-1 rounded text-xs ${text.primary} ${getStatusColor(task.status)}`}
+                        >
+                        {t(`status.${task.status.toLowerCase()}`, getStatusText(task.status))}
+                        </span>
+                        <span
+                        className={`px-2 py-1 rounded text-xs ${getPriorityColor(task.priority)}`}
+                        >
+                        {t(`workload.${task.priority}`, task.priority)}
+                    </span>
                       {task.quality_rating > 0 && (
                         <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-800'}`}>
                           <Star className="w-4 h-4 inline-block mr-1 text-yellow-400" /> {task.quality_rating}/5
@@ -673,7 +689,6 @@ const TaskPerformanceReview = ({ employees }) => {
                     {task.self_assessment && (
                       <div className={`mt-3 p-3 ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'} rounded`}>
                         <p className={`text-xs font-semibold ${text.primary} mb-1 flex items-center space-x-1`}>
-                          <MessageSquare className={`w-3 h-3 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
                           <span>{t('taskPerformance.selfAssessment', 'Self Assessment')}:</span>
                         </p>
                         <p className={`text-sm ${text.secondary}`}>{task.self_assessment}</p>

@@ -392,7 +392,9 @@ export default {
     status: '상태',
     actions: '작업',
     edit: '편집',
-    view: '보기'
+    view: '보기',
+    progressSaved: '진행률이 성공적으로 저장되었습니다!',
+    progressSaveError: '진행률 저장 실패'
   },
 
   // Reports
@@ -817,9 +819,15 @@ export default {
     priorityLow: '낮음',
     priorityMedium: '보통',
     priorityHigh: '높음',
+    low: '낮음',
+    medium: '보통',
+    high: '높음',
     statusPending: '보류 중',
     statusInProgress: '진행 중',
     statusCompleted: '완료',
+    pending: '보류 중',
+    'in-progress': '진행 중',
+    completed: '완료',
     assignTask: '작업 할당',
     teamWorkload: '팀 작업량',
     filterByEmployee: '직원으로 필터링',

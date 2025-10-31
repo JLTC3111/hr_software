@@ -436,7 +436,9 @@ export default {
     status: 'Статус',
     actions: 'Действия',
     edit: 'Редактировать',
-    view: 'Просмотр'
+    view: 'Просмотр',
+    progressSaved: 'Прогресс успешно сохранён!',
+    progressSaveError: 'Не удалось сохранить прогресс'
   },
 
   // Reports
@@ -820,9 +822,15 @@ export default {
     priorityLow: 'Низкий',
     priorityMedium: 'Средний',
     priorityHigh: 'Высокий',
+    low: 'Низкий',
+    medium: 'Средний',
+    high: 'Высокий',
     statusPending: 'В ожидании',
     statusInProgress: 'В процессе',
     statusCompleted: 'Завершено',
+    pending: 'В ожидании',
+    'in-progress': 'В процессе',
+    completed: 'Завершено',
     teamWorkload: 'Рабочая нагрузка команды',
     filterByEmployee: 'Фильтровать по сотруднику',
     filterByStatus: 'Фильтровать по статусу',

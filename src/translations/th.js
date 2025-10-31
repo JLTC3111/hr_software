@@ -389,7 +389,9 @@ export default {
     status: 'สถานะ',
     actions: 'การดำเนินการ',
     edit: 'แก้ไข',
-    view: 'ดู'
+    view: 'ดู',
+    progressSaved: 'บันทึกความคืบหน้าสำเร็จ!',
+    progressSaveError: 'ไม่สามารถบันทึกความคืบหน้าได้'
   },
 
   // Reports
@@ -813,9 +815,15 @@ export default {
     priorityLow: 'ต่ำ',
     priorityMedium: 'ปานกลาง',
     priorityHigh: 'สูง',
+    low: 'ต่ำ',
+    medium: 'ปานกลาง',
+    high: 'สูง',
     statusPending: 'รอดำเนินการ',
     statusInProgress: 'กำลังดำเนินการ',
     statusCompleted: 'เสร็จสิ้น',
+    pending: 'รอดำเนินการ',
+    'in-progress': 'กำลังดำเนินการ',
+    completed: 'เสร็จสิ้น',
     teamWorkload: 'ภาระงานของทีม',
     filterByEmployee: 'กรองตามพนักงาน',
     filterByStatus: 'กรองตามสถานะ',

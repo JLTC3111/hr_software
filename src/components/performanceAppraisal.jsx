@@ -16,6 +16,7 @@ const PerformanceAppraisal = ({ employees }) => {
   const [loading, setLoading] = useState(false);
   const [goals, setGoals] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [progressChanges, setProgressChanges] = useState({}); // Track progress changes by goal ID
   const { t } = useLanguage();
   const { isDarkMode, text, bg, border } = useTheme();
   const { user } = useAuth();
@@ -213,6 +214,54 @@ const PerformanceAppraisal = ({ employees }) => {
       alert(t('performance.goalUpdatedSuccess', 'Goal updated successfully!'));
     } else {
       alert(t('performance.goalUpdatedError', 'Failed to update goal: ') + result.error);
+    }
+    setLoading(false);
+  };
+
+  // Handle progress change
+  const handleProgressChange = (goalId, newProgress) => {
+    setProgressChanges(prev => ({
+      ...prev,
+      [goalId]: newProgress
+    }));
+  };
+
+  // Save progress for a specific goal
+  const handleSaveProgress = async (goalId) => {
+    const newProgress = progressChanges[goalId];
+    if (newProgress === undefined) return;
+
+    setLoading(true);
+    
+    const result = await performanceService.updatePerformanceGoal(goalId, {
+      progress_percentage: newProgress
+    });
+
+    if (result.success) {
+      // Update the goal status based on progress
+      let newStatus = 'pending';
+      if (newProgress === 100) {
+        newStatus = 'completed';
+      } else if (newProgress > 0) {
+        newStatus = 'in_progress';
+      }
+      
+      // Update status if changed
+      await performanceService.updatePerformanceGoal(goalId, {
+        status: newStatus
+      });
+
+      // Clear the progress change for this goal
+      setProgressChanges(prev => {
+        const updated = { ...prev };
+        delete updated[goalId];
+        return updated;
+      });
+      
+      fetchGoalsAndReviews(); // Refresh data
+      alert(t('performance.progressSaved', 'Progress saved successfully!'));
+    } else {
+      alert(t('performance.progressSaveError', 'Failed to save progress: ') + result.error);
     }
     setLoading(false);
   };
@@ -732,17 +781,50 @@ const PerformanceAppraisal = ({ employees }) => {
                   {t('performance.progress')}
                 </span>
                 <span 
-                  className="text-sm"
+                  className="text-sm font-bold"
                   style={{
                     backgroundColor: 'transparent',
                     color: isDarkMode ? '#9ca3af' : '#6b7280',
                     borderColor: 'transparent'
                   }}
                 >
-                  {goal.progress}%
+                  {progressChanges[goal.id] !== undefined ? progressChanges[goal.id] : goal.progress}%
                 </span>
               </div>
-              <ProgressBar progress={goal.progress} />
+              
+              {/* Interactive Progress Slider */}
+              <div className="mb-2">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={progressChanges[goal.id] !== undefined ? progressChanges[goal.id] : goal.progress}
+                  onChange={(e) => handleProgressChange(goal.id, parseInt(e.target.value))}
+                  className="w-full h-3 rounded-lg appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, 
+                      #2563eb 0%, 
+                      #3b82f6 ${(progressChanges[goal.id] !== undefined ? progressChanges[goal.id] : goal.progress)}%, 
+                      ${isDarkMode ? '#4b5563' : '#d1d5db'} ${(progressChanges[goal.id] !== undefined ? progressChanges[goal.id] : goal.progress)}%, 
+                      ${isDarkMode ? '#4b5563' : '#d1d5db'} 100%)`
+                  }}
+                />
+              </div>
+              
+              {/* Save Button - Only show if progress changed */}
+              {progressChanges[goal.id] !== undefined && progressChanges[goal.id] !== goal.progress && (
+                <div className="flex justify-end mt-2">
+                  <button
+                    onClick={() => handleSaveProgress(goal.id)}
+                    disabled={loading}
+                    className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-1 cursor-pointer transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Save className="h-3 w-3" />
+                    <span>{loading ? t('common.saving', 'Saving...') : t('common.save', 'Save Progress')}</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-between text-sm">
@@ -908,7 +990,6 @@ const PerformanceAppraisal = ({ employees }) => {
               {currentEmployee.photo ? (
                 <img 
                   src={currentEmployee.photo} 
-                  alt={currentEmployee.name}
                   className={`w-10 h-10 rounded-full object-cover border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}
                 />
               ) : (
@@ -916,7 +997,7 @@ const PerformanceAppraisal = ({ employees }) => {
                   {currentEmployee.name?.charAt(0) || 'U'}
                 </div>
               )}
-              <span className={text.primary}>{currentEmployee.name}</span>
+            
             </div>
           )}
         </div>
@@ -1362,11 +1443,11 @@ const PerformanceAppraisal = ({ employees }) => {
                       color: isDarkMode ? '#ffffff' : '#111827'
                     }}
                   >
-                    <option value="pending">{t('performance.pending', 'Pending')}</option>
-                    <option value="in_progress">{t('performance.inProgress', 'In Progress')}</option>
-                    <option value="completed">{t('performance.completed', 'Completed')}</option>
-                    <option value="cancelled">{t('performance.cancelled', 'Cancelled')}</option>
-                    <option value="on_hold">{t('performance.onHold', 'On Hold')}</option>
+                    <option value="pending">{t('performance.pending', '')}</option>
+                    <option value="in_progress">{t('performance.inProgress', '')}</option>
+                    <option value="completed">{t('performance.completed', '')}</option>
+                    <option value="cancelled">{t('performance.cancelled', '')}</option>
+                    <option value="on_hold">{t('performance.onHold', '')}</option>
                   </select>
                 </div>
               </div>

@@ -348,10 +348,10 @@ const WorkloadManagement = ({ employees }) => {
                         {task.title}
                       </h4>
                       <span className={`px-2 py-1 rounded text-xs ${getPriorityColor(task.priority)}`}>
-                        {task.priority}
+                        {t(`workload.${task.priority}`, task.priority)}
                       </span>
                       <span className={`px-2 py-1 rounded text-xs ${getStatusColor(task.status)}`}>
-                        {task.status}
+                        {t(`workload.${task.status}`, task.status)}
                       </span>
                       {canAssignTasks && task.employee && (
                         <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-white' : 'bg-blue-100 text-blue-800'}`}>

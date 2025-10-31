@@ -449,7 +449,9 @@ export default {
     status: 'Statut',
     actions: 'Actions',
     edit: 'Modifier',
-    view: 'Voir'
+    view: 'Voir',
+    progressSaved: 'Progrès enregistré avec succès!',
+    progressSaveError: 'Échec de l\'enregistrement du progrès'
   },
 
   // Reports
@@ -876,9 +878,15 @@ export default {
     priorityLow: 'Faible',
     priorityMedium: 'Moyen',
     priorityHigh: 'Élevé',
+    low: 'Faible',
+    medium: 'Moyen',
+    high: 'Élevé',
     statusPending: 'En Attente',
     statusInProgress: 'En Cours',
     statusCompleted: 'Terminé',
+    pending: 'En Attente',
+    'in-progress': 'En Cours',
+    completed: 'Terminé',
     teamWorkload: 'Charge de Travail d\'Équipe',
     filterByEmployee: 'Filtrer par Employé',
     filterByStatus: 'Filtrer par État',

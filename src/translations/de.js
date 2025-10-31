@@ -330,7 +330,9 @@ export default {
     status: 'Status',
     actions: 'Aktionen',
     edit: 'Bearbeiten',
-    view: 'Anzeigen'
+    view: 'Anzeigen',
+    progressSaved: 'Fortschritt erfolgreich gespeichert!',
+    progressSaveError: 'Fehler beim Speichern des Fortschritts'
   },
 
   // Reports
@@ -875,9 +877,15 @@ export default {
     priorityLow: 'Niedrig',
     priorityMedium: 'Mittel',
     priorityHigh: 'Hoch',
+    low: 'Niedrig',
+    medium: 'Mittel',
+    high: 'Hoch',
     statusPending: 'Ausstehend',
     statusInProgress: 'In Bearbeitung',
     statusCompleted: 'Abgeschlossen',
+    pending: 'Ausstehend',
+    'in-progress': 'In Bearbeitung',
+    completed: 'Abgeschlossen',
     team: 'Team',
     individual: 'Individuell',
     assignTask: 'Aufgabe zuweisen',

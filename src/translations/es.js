@@ -445,7 +445,9 @@ login: {
     status: 'Estado',
     actions: 'Acciones',
     edit: 'Editar',
-    view: 'Ver'
+    view: 'Ver',
+    progressSaved: '¡Progreso guardado con éxito!',
+    progressSaveError: 'Error al guardar el progreso'
   },
 
   // Reports
@@ -842,9 +844,15 @@ login: {
     priorityLow: 'Bajo',
     priorityMedium: 'Medio',
     priorityHigh: 'Alto',
+    low: 'Bajo',
+    medium: 'Medio',
+    high: 'Alto',
     statusPending: 'Pendiente',
     statusInProgress: 'En Progreso',
     statusCompleted: 'Completado',
+    pending: 'Pendiente',
+    'in-progress': 'En Progreso',
+    completed: 'Completado',
     teamWorkload: 'Carga de Trabajo del Equipo',
     filterByEmployee: 'Filtrar por Empleado',
     filterByStatus: 'Filtrar por Estado',

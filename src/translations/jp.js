@@ -389,7 +389,9 @@ export default {
     status: 'ステータス',
     actions: 'アクション',
     edit: '編集',
-    view: '表示'
+    view: '表示',
+    progressSaved: '進捗が正常に保存されました！',
+    progressSaveError: '進捗の保存に失敗しました'
   },
 
   // Reports
@@ -820,9 +822,15 @@ export default {
     priorityLow: '低',
     priorityMedium: '中',
     priorityHigh: '高',
+    low: '低',
+    medium: '中',
+    high: '高',
     statusPending: '保留中',
     statusInProgress: '進行中',
     statusCompleted: '完了',
+    pending: '保留中',
+    'in-progress': '進行中',
+    completed: '完了',
     teamWorkload: 'チームの作業負荷',
     filterByEmployee: '従業員でフィルタリング',
     filterByStatus: 'ステータスでフィルタリング',
