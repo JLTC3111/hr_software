@@ -1,3 +1,5 @@
+import { TaskPerformanceReview } from "../components";
+
 export default {
   // Navigation
   nav: {
@@ -14,6 +16,8 @@ export default {
     notifications: 'Notifications',
     settings: 'Paramètres',
     workload: 'Charge de travail',
+    taskManagement: 'Gestion des tâches',
+    taskPerformance: 'Revue de performance des tâches',
     controlPanel: 'Panneau de configuration',
   },
   
@@ -980,5 +984,48 @@ export default {
     uploadAvatar: 'Télécharger l\'avatar',
     avatarUpdated: 'Avatar mis à jour avec succès!',
     avatarError: 'Erreur lors du téléchargement de l\'avatar'
+  },
+
+  // Task Performance Review
+  taskPerformance: {
+    title: 'Revue de Performance des Tâches',
+    subtitle: 'Progression mensuelle des tâches et évaluation de la qualité',
+    individual: 'Individuel',
+    team: 'Équipe',
+    totalTasks: 'Tâches Totales',
+    completed: 'Terminées',
+    inProgress: 'En Cours',
+    overdue: 'En Retard',
+    completionRate: 'Taux d\'Achèvement',
+    avgQuality: 'Qualité Moyenne',
+    onTimePerformance: 'Performance Ponctuelle',
+    onTimeCompletions: 'Achèvements Ponctuels',
+    onTimeRate: 'taux de ponctualité',
+    priorityDistribution: 'Distribution des Priorités',
+    highPriority: 'Priorité Haute',
+    mediumPriority: 'Priorité Moyenne',
+    lowPriority: 'Priorité Basse',
+    qualityAssessment: 'Évaluation de la Qualité',
+    ratedTasks: 'Tâches Évaluées',
+    noTasks: 'Aucune tâche trouvée pour ce mois',
+    noTeamTasks: 'Aucune tâche d\'équipe trouvée pour ce mois',
+    evaluateTask: 'Évaluer la Tâche',
+    selfAssessment: 'Auto-évaluation',
+    qualityRating: 'Évaluation de Qualité',
+    managerComments: 'Commentaires du Manager',
+    commentPlaceholder: 'Fournir des commentaires sur la qualité et la performance de la tâche...',
+    taskDetails: 'Détails de la Tâche',
+    status: 'Statut',
+    priority: 'Priorité',
+    dueDate: 'Date d\'Échéance',
+    currentRating: 'Évaluation Actuelle',
+    submitEvaluation: 'Soumettre l\'Évaluation',
+    cancel: 'Annuler',
+    evaluate: 'Évaluer',
+    managerEvaluation: 'Évaluation du Manager',
+    created: 'Créée',
+    due: 'Échéance',
+    all: 'Toutes',
+    pending: 'En Attente',
   },
 };

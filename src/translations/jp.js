@@ -1,3 +1,5 @@
+import { TaskPerformanceReview } from "../components";
+
 export default {
   // Navigation
   nav: {
@@ -12,6 +14,9 @@ export default {
     settings: '設定',
     workload: '作業量',
     controlPanel: 'コントロールパネル',
+    taskPerformance: 'タスクパフォーマンスレビュー',
+    taskManagement: 'タスク管理',
+    userManagement: 'ユーザー管理',
   },
 
   // Header
@@ -924,5 +929,48 @@ export default {
     uploadAvatar: 'アバターをアップロード',
     avatarUpdated: 'アバターが正常に更新されました！',
     avatarError: 'アバターのアップロードエラー'
+  },
+
+  // Task Performance Review
+  taskPerformance: {
+    title: 'タスクパフォーマンスレビュー',
+    subtitle: '月次タスク進捗と品質評価',
+    individual: '個人',
+    team: 'チーム',
+    totalTasks: '総タスク数',
+    completed: '完了',
+    inProgress: '進行中',
+    overdue: '期限切れ',
+    completionRate: '完了率',
+    avgQuality: '平均品質',
+    onTimePerformance: '時間厳守パフォーマンス',
+    onTimeCompletions: '時間厳守完了',
+    onTimeRate: '時間厳守率',
+    priorityDistribution: '優先度分布',
+    highPriority: '高優先度',
+    mediumPriority: '中優先度',
+    lowPriority: '低優先度',
+    qualityAssessment: '品質評価',
+    ratedTasks: '評価済みタスク',
+    noTasks: 'この月のタスクが見つかりません',
+    noTeamTasks: 'この月のチームタスクが見つかりません',
+    evaluateTask: 'タスクを評価',
+    selfAssessment: '自己評価',
+    qualityRating: '品質評価',
+    managerComments: 'マネージャーコメント',
+    commentPlaceholder: 'タスクの品質とパフォーマンスについてフィードバックを提供...',
+    taskDetails: 'タスク詳細',
+    status: 'ステータス',
+    priority: '優先度',
+    dueDate: '期限',
+    currentRating: '現在の評価',
+    submitEvaluation: '評価を送信',
+    cancel: 'キャンセル',
+    evaluate: '評価',
+    managerEvaluation: 'マネージャー評価',
+    created: '作成日',
+    due: '期限',
+    all: 'すべて',
+    pending: '保留中',
   },
 };

@@ -1,3 +1,5 @@
+import { TaskPerformanceReview } from "../components";
+
 export default {
   // Navigation
   nav: {
@@ -12,6 +14,9 @@ export default {
     settings: 'Cài đặt',
     controlPanel: 'Bảng Điều Khiển',
     workload: 'Việc Theo Tháng',
+    taskManagement: 'Quản Lý Nhiệm Vụ',
+    taskPerformance: 'Đánh Giá Hiệu Suất',
+    userManagement: 'Quản Lý Người Dùng',
   },
 
   // Header
@@ -1007,5 +1012,48 @@ export default {
     uploadAvatar: 'Tải lên ảnh đại diện',
     avatarUpdated: 'Cập nhật ảnh đại diện thành công!',
     avatarError: 'Lỗi khi tải lên ảnh đại diện'
+  },
+
+  // Task Performance Review
+  taskPerformance: {
+    title: 'Đánh Giá Hiệu Suất Công Việc',
+    subtitle: 'Tiến độ công việc hàng tháng và đánh giá chất lượng',
+    individual: 'Cá Nhân',
+    team: 'Nhóm',
+    totalTasks: 'Tổng Công Việc',
+    completed: 'Hoàn Thành',
+    inProgress: 'Đang Thực Hiện',
+    overdue: 'Quá Hạn',
+    completionRate: 'Tỷ Lệ Hoàn Thành',
+    avgQuality: 'Chất Lượng TB',
+    onTimePerformance: 'Hiệu Suất Đúng Hạn',
+    onTimeCompletions: 'Hoàn Thành Đúng Hạn',
+    onTimeRate: 'tỷ lệ đúng hạn',
+    priorityDistribution: 'Phân Bố Ưu Tiên',
+    highPriority: 'Ưu Tiên Cao',
+    mediumPriority: 'Ưu Tiên Trung Bình',
+    lowPriority: 'Ưu Tiên Thấp',
+    qualityAssessment: 'Đánh Giá Chất Lượng',
+    ratedTasks: 'Công Việc Đã Đánh Giá',
+    noTasks: 'Không tìm thấy công việc nào trong tháng này',
+    noTeamTasks: 'Không tìm thấy công việc nhóm nào trong tháng này',
+    evaluateTask: 'Đánh Giá Công Việc',
+    selfAssessment: 'Tự Đánh Giá',
+    qualityRating: 'Xếp Hạng Chất Lượng',
+    managerComments: 'Nhận Xét Của Quản Lý',
+    commentPlaceholder: 'Cung cấp phản hồi về chất lượng và hiệu suất công việc...',
+    taskDetails: 'Chi Tiết Công Việc',
+    status: 'Trạng Thái',
+    priority: 'Ưu Tiên',
+    dueDate: 'Ngày Đến Hạn',
+    currentRating: 'Xếp Hạng Hiện Tại',
+    submitEvaluation: 'Gửi Đánh Giá',
+    cancel: 'Hủy',
+    evaluate: 'Đánh Giá',
+    managerEvaluation: 'Đánh Giá Của Quản Lý',
+    created: 'Tạo',
+    due: 'Hạn',
+    all: 'Tất Cả',
+    pending: 'Chờ Xử Lý',
   },
 };

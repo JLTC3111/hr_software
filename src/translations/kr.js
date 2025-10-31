@@ -1,3 +1,5 @@
+import { TaskPerformanceReview } from "../components";
+
 export default {
   // Navigation
   nav: {
@@ -12,6 +14,9 @@ export default {
     settings: '설정',
     workload: '업무량',
     controlPanel: '제어판',
+    taskManagement: '업무 관리',
+    taskPerformance: '업무 성과 평가',
+    userManagement: '사용자 관리'
   },
 
   // Header
@@ -919,5 +924,48 @@ export default {
     uploadAvatar: '아바타 업로드',
     avatarUpdated: '아바타가 성공적으로 업데이트되었습니다!',
     avatarError: '아바타 업로드 오류'
+  },
+
+  // Task Performance Review
+  taskPerformance: {
+    title: '작업 성과 검토',
+    subtitle: '월간 작업 진행 상황 및 품질 평가',
+    individual: '개인',
+    team: '팀',
+    totalTasks: '총 작업',
+    completed: '완료',
+    inProgress: '진행 중',
+    overdue: '기한 초과',
+    completionRate: '완료율',
+    avgQuality: '평균 품질',
+    onTimePerformance: '정시 성과',
+    onTimeCompletions: '정시 완료',
+    onTimeRate: '정시 비율',
+    priorityDistribution: '우선순위 분포',
+    highPriority: '높은 우선순위',
+    mediumPriority: '중간 우선순위',
+    lowPriority: '낮은 우선순위',
+    qualityAssessment: '품질 평가',
+    ratedTasks: '평가된 작업',
+    noTasks: '이번 달 작업을 찾을 수 없습니다',
+    noTeamTasks: '이번 달 팀 작업을 찾을 수 없습니다',
+    evaluateTask: '작업 평가',
+    selfAssessment: '자기 평가',
+    qualityRating: '품질 평가',
+    managerComments: '관리자 의견',
+    commentPlaceholder: '작업 품질 및 성과에 대한 피드백 제공...',
+    taskDetails: '작업 세부 정보',
+    status: '상태',
+    priority: '우선순위',
+    dueDate: '마감일',
+    currentRating: '현재 평가',
+    submitEvaluation: '평가 제출',
+    cancel: '취소',
+    evaluate: '평가',
+    managerEvaluation: '관리자 평가',
+    created: '생성',
+    due: '마감',
+    all: '전체',
+    pending: '대기 중',
   },
 };

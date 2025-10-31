@@ -1,3 +1,5 @@
+import { TaskPerformanceReview } from "../components";
+
 export default {
   // Navigation
   nav: {
@@ -11,7 +13,9 @@ export default {
     notifications: 'Notificaciones',
     settings: 'Configuración',
     workload: 'Carga de trabajo',
-    controlPanel: 'Panel de control'
+    controlPanel: 'Panel de control',
+    taskManagement: 'Gestión de tareas',
+    taskPerformance: 'Revisión del rendimiento de tareas',
   },
 
 // Header
@@ -939,5 +943,48 @@ login: {
     uploadAvatar: 'Subir avatar',
     avatarUpdated: '¡Avatar actualizado exitosamente!',
     avatarError: 'Error al subir el avatar'
+  },
+
+  // Task Performance Review
+  taskPerformance: {
+    title: 'Revisión de Desempeño de Tareas',
+    subtitle: 'Progreso mensual de tareas y evaluación de calidad',
+    individual: 'Individual',
+    team: 'Equipo',
+    totalTasks: 'Tareas Totales',
+    completed: 'Completadas',
+    inProgress: 'En Progreso',
+    overdue: 'Vencidas',
+    completionRate: 'Tasa de Finalización',
+    avgQuality: 'Calidad Promedio',
+    onTimePerformance: 'Rendimiento Puntual',
+    onTimeCompletions: 'Finalizaciones Puntuales',
+    onTimeRate: 'tasa puntual',
+    priorityDistribution: 'Distribución de Prioridad',
+    highPriority: 'Prioridad Alta',
+    mediumPriority: 'Prioridad Media',
+    lowPriority: 'Prioridad Baja',
+    qualityAssessment: 'Evaluación de Calidad',
+    ratedTasks: 'Tareas Calificadas',
+    noTasks: 'No se encontraron tareas para este mes',
+    noTeamTasks: 'No se encontraron tareas del equipo para este mes',
+    evaluateTask: 'Evaluar Tarea',
+    selfAssessment: 'Autoevaluación',
+    qualityRating: 'Calificación de Calidad',
+    managerComments: 'Comentarios del Gerente',
+    commentPlaceholder: 'Proporcione comentarios sobre la calidad y el rendimiento de la tarea...',
+    taskDetails: 'Detalles de la Tarea',
+    status: 'Estado',
+    priority: 'Prioridad',
+    dueDate: 'Fecha de Vencimiento',
+    currentRating: 'Calificación Actual',
+    submitEvaluation: 'Enviar Evaluación',
+    cancel: 'Cancelar',
+    evaluate: 'Evaluar',
+    managerEvaluation: 'Evaluación del Gerente',
+    created: 'Creada',
+    due: 'Vencimiento',
+    all: 'Todas',
+    pending: 'Pendiente',
   },
 };

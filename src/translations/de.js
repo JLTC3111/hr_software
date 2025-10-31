@@ -1,3 +1,5 @@
+import { TaskPerformanceReview } from "../components";
+
 export default {
   // Navigation
   nav: {
@@ -12,6 +14,8 @@ export default {
     settings: 'Einstellungen',
     workload: 'Arbeitsbelastung',
     controlPanel: 'Systemsteuerung',
+    taskManagement: 'Aufgabenverwaltung',
+    taskPerformance: 'Aufgabenleistungsbewertung',
   },
 
   // Header
@@ -980,5 +984,48 @@ export default {
     uploadAvatar: 'Avatar hochladen',
     avatarUpdated: 'Avatar erfolgreich aktualisiert!',
     avatarError: 'Fehler beim Hochladen des Avatars'
+  },
+
+  // Task Performance Review
+  taskPerformance: {
+    title: 'Aufgabenleistungsbewertung',
+    subtitle: 'Monatlicher Aufgabenfortschritt und Qualitätsbewertung',
+    individual: 'Individuell',
+    team: 'Team',
+    totalTasks: 'Aufgaben Gesamt',
+    completed: 'Abgeschlossen',
+    inProgress: 'In Bearbeitung',
+    overdue: 'Überfällig',
+    completionRate: 'Abschlussrate',
+    avgQuality: 'Durchschn. Qualität',
+    onTimePerformance: 'Pünktlichkeit',
+    onTimeCompletions: 'Pünktliche Abschlüsse',
+    onTimeRate: 'Pünktlichkeitsrate',
+    priorityDistribution: 'Prioritätsverteilung',
+    highPriority: 'Hohe Priorität',
+    mediumPriority: 'Mittlere Priorität',
+    lowPriority: 'Niedrige Priorität',
+    qualityAssessment: 'Qualitätsbewertung',
+    ratedTasks: 'Bewertete Aufgaben',
+    noTasks: 'Keine Aufgaben für diesen Monat gefunden',
+    noTeamTasks: 'Keine Team-Aufgaben für diesen Monat gefunden',
+    evaluateTask: 'Aufgabe Bewerten',
+    selfAssessment: 'Selbsteinschätzung',
+    qualityRating: 'Qualitätsbewertung',
+    managerComments: 'Anmerkungen des Managers',
+    commentPlaceholder: 'Feedback zur Aufgabenqualität und Leistung geben...',
+    taskDetails: 'Aufgabendetails',
+    status: 'Status',
+    priority: 'Priorität',
+    dueDate: 'Fälligkeitsdatum',
+    currentRating: 'Aktuelle Bewertung',
+    submitEvaluation: 'Bewertung Absenden',
+    cancel: 'Abbrechen',
+    evaluate: 'Bewerten',
+    managerEvaluation: 'Manager-Bewertung',
+    created: 'Erstellt',
+    due: 'Fällig',
+    all: 'Alle',
+    pending: 'Ausstehend',
   },
 };

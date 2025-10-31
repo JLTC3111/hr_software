@@ -1,3 +1,5 @@
+import { TaskPerformanceReview } from "../components";
+
 export default {
   // Navigation
   nav: {
@@ -12,6 +14,9 @@ export default {
     settings: 'การตั้งค่า',
     workload: 'ปริมาณงาน',
     controlPanel: 'แผงควบคุม',
+    taskManagement: 'การจัดการงาน',
+    taskPerformance: 'การทบทวนประสิทธิภาพงาน',
+    userManagement: 'การจัดการผู้ใช้',
   },
 
   // Header
@@ -917,5 +922,48 @@ export default {
     uploadAvatar: 'อัปโหลดรูปโปรไฟล์',
     avatarUpdated: 'อัปเดตรูปโปรไฟล์สำเร็จ!',
     avatarError: 'เกิดข้อผิดพลาดในการอัปโหลดรูปโปรไฟล์'
+  },
+
+  // Task Performance Review
+  taskPerformance: {
+    title: 'การตรวจสอบผลการปฏิบัติงาน',
+    subtitle: 'ความคืบหน้างานรายเดือนและการประเมินคุณภาพ',
+    individual: 'รายบุคคล',
+    team: 'ทีม',
+    totalTasks: 'งานทั้งหมด',
+    completed: 'เสร็จสิ้น',
+    inProgress: 'กำลังดำเนินการ',
+    overdue: 'เกินกำหนด',
+    completionRate: 'อัตราการเสร็จสิ้น',
+    avgQuality: 'คุณภาพเฉลี่ย',
+    onTimePerformance: 'ผลการปฏิบัติงานตรงเวลา',
+    onTimeCompletions: 'งานที่เสร็จตรงเวลา',
+    onTimeRate: 'อัตราตรงเวลา',
+    priorityDistribution: 'การกระจายความสำคัญ',
+    highPriority: 'ความสำคัญสูง',
+    mediumPriority: 'ความสำคัญปานกลาง',
+    lowPriority: 'ความสำคัญต่ำ',
+    qualityAssessment: 'การประเมินคุณภาพ',
+    ratedTasks: 'งานที่ได้รับการประเมิน',
+    noTasks: 'ไม่พบงานสำหรับเดือนนี้',
+    noTeamTasks: 'ไม่พบงานของทีมสำหรับเดือนนี้',
+    evaluateTask: 'ประเมินงาน',
+    selfAssessment: 'การประเมินตนเอง',
+    qualityRating: 'การให้คะแนนคุณภาพ',
+    managerComments: 'ความคิดเห็นของผู้จัดการ',
+    commentPlaceholder: 'ให้ความเห็นเกี่ยวกับคุณภาพและผลการปฏิบัติงาน...',
+    taskDetails: 'รายละเอียดงาน',
+    status: 'สถานะ',
+    priority: 'ความสำคัญ',
+    dueDate: 'วันครบกำหนด',
+    currentRating: 'คะแนนปัจจุบัน',
+    submitEvaluation: 'ส่งการประเมิน',
+    cancel: 'ยกเลิก',
+    evaluate: 'ประเมิน',
+    managerEvaluation: 'การประเมินของผู้จัดการ',
+    created: 'สร้าง',
+    due: 'ครบกำหนด',
+    all: 'ทั้งหมด',
+    pending: 'รอดำเนินการ',
   },
 };

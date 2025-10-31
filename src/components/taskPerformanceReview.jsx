@@ -25,9 +25,8 @@ import * as workloadService from '../services/workloadService';
 
 const TaskPerformanceReview = ({ employees }) => {
   const { user } = useAuth();
-  const { bg, text, border } = useTheme();
+  const { isDarkMode, toggleTheme, button, bg, text, border, hover, input } = useTheme();
   const { t } = useLanguage();
-  
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
@@ -306,8 +305,8 @@ const TaskPerformanceReview = ({ employees }) => {
           {teamStats.map(stat => (
             <div key={stat.employee.id} className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
               <div className="flex items-center space-x-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <User className="w-5 h-5 text-blue-600" />
+                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
                   <p className={`font-semibold ${text.primary}`}>{stat.employee.name}</p>
@@ -317,19 +316,19 @@ const TaskPerformanceReview = ({ employees }) => {
               
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className={`text-sm ${text.secondary}`}>Tasks</span>
+                  <span className={`text-sm ${text.secondary}`}>{t('taskPerformance.totalTasks', 'Tasks')}</span>
                   <span className={`font-semibold ${text.primary}`}>{stat.totalTasks}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className={`text-sm ${text.secondary}`}>Completed</span>
-                  <span className="font-semibold text-green-600">{stat.completedTasks}</span>
+                  <span className={`text-sm ${text.secondary}`}>{t('taskPerformance.completed', 'Completed')}</span>
+                  <span className="font-semibold text-green-600 dark:text-green-400">{stat.completedTasks}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className={`text-sm ${text.secondary}`}>Completion Rate</span>
-                  <span className="font-semibold text-blue-600">{stat.completionRate}%</span>
+                  <span className={`text-sm ${text.secondary}`}>{t('taskPerformance.completionRate', 'Completion Rate')}</span>
+                  <span className="font-semibold text-blue-600 dark:text-blue-400">{stat.completionRate}%</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className={`text-sm ${text.secondary}`}>Avg Quality</span>
+                  <span className={`text-sm ${text.secondary}`}>{t('taskPerformance.avgQuality', 'Avg Quality')}</span>
                   <span className={`font-semibold ${getQualityColor(stat.avgQuality)}`}>
                     {stat.avgQuality}/5 ⭐
                   </span>
@@ -337,9 +336,9 @@ const TaskPerformanceReview = ({ employees }) => {
               </div>
 
               <div className="mt-3">
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                    className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all duration-300" 
                     style={{ width: `${stat.completionRate}%` }}
                   ></div>
                 </div>
@@ -350,7 +349,7 @@ const TaskPerformanceReview = ({ employees }) => {
 
         {teamStats.length === 0 && (
           <div className={`${bg.secondary} rounded-lg p-8 text-center border ${border.primary}`}>
-            <p className={text.secondary}>No team tasks found for this month</p>
+            <p className={text.secondary}>{t('taskPerformance.noTeamTasks', 'No team tasks found for this month')}</p>
           </div>
         )}
       </div>
@@ -377,7 +376,7 @@ const TaskPerformanceReview = ({ employees }) => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className={`text-2xl font-bold ${text.primary}`}>
-            {t('taskPerformance.title', 'Task Performance Review')}
+            {t('taskPerformance.title', '')}
           </h2>
           <p className={`text-sm ${text.secondary} mt-1`}>
             {t('taskPerformance.subtitle', 'Monthly task progress and quality evaluation')}
@@ -388,18 +387,24 @@ const TaskPerformanceReview = ({ employees }) => {
         {canEvaluateOthers && (
           <div className="flex space-x-2">
             <button
-              onClick={() => setViewMode('individual')}
-              className={`px-4 py-2 rounded-lg ${viewMode === 'individual' ? 'bg-blue-600 text-white' : bg.secondary}`}
+                onClick={() => setViewMode('individual')}
+                className={`px-4 py-2 rounded-lg ${
+                viewMode === 'individual' ? 'bg-blue-600 text-white' : bg.secondary
+                }`}
             >
-              Individual
+                {t('taskPerformance.individual', '')}
             </button>
+
             <button
-              onClick={() => setViewMode('team')}
-              className={`px-4 py-2 rounded-lg ${viewMode === 'team' ? 'bg-blue-600 text-white' : bg.secondary}`}
+                onClick={() => setViewMode('team')}
+                className={`px-4 py-2 rounded-lg ${
+                viewMode === 'team' ? 'bg-blue-600 text-white' : bg.secondary
+                }`}
             >
-              Team
+                {t('taskPerformance.team', '')}
             </button>
           </div>
+
         )}
       </div>
 
@@ -410,7 +415,7 @@ const TaskPerformanceReview = ({ employees }) => {
             onClick={() => navigateMonth(-1)}
             className={`p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700`}
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className={`w-5 h-5 ${text.primary}`} />
           </button>
           
           <div className="flex items-center space-x-2">
@@ -425,7 +430,7 @@ const TaskPerformanceReview = ({ employees }) => {
             className={`p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700`}
             disabled={selectedMonth.getMonth() === new Date().getMonth() && selectedMonth.getFullYear() === new Date().getFullYear()}
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className={`w-5 h-5 ${text.primary}`} />
           </button>
         </div>
       </div>
@@ -438,51 +443,51 @@ const TaskPerformanceReview = ({ employees }) => {
               <BarChart3 className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{monthlyStats.totalTasks}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>Total Tasks</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskPerformance.totalTasks', '')}</p>
           </div>
 
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <span className="text-2xl font-bold text-green-600">{monthlyStats.completedTasks}</span>
+              <CheckCircle className={`w-5 h-5 ${text.secondary}`} />
+              <span className={`text-2xl font-bold ${text.primary}`}>{monthlyStats.completedTasks}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>Completed</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskPerformance.completed', '')}</p>
           </div>
 
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
-              <Clock className="w-5 h-5 text-blue-600" />
-              <span className="text-2xl font-bold text-blue-600">{monthlyStats.inProgressTasks}</span>
+              <Clock className={`w-5 h-5 ${text.secondary}`} />
+              <span className={`text-2xl font-bold ${text.primary}`}>{monthlyStats.inProgressTasks}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>In Progress</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskPerformance.inProgress', '')}</p>
           </div>
 
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
-              <AlertCircle className="w-5 h-5 text-red-600" />
-              <span className="text-2xl font-bold text-red-600">{monthlyStats.overdueTasks}</span>
+              <AlertCircle className={`w-5 h-5 ${text.secondary}`} />
+              <span className={`text-2xl font-bold ${text.primary}`}>{monthlyStats.overdueTasks}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>Overdue</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskPerformance.overdue', '')}</p>
           </div>
 
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
-              <TrendingUp className={`w-5 h-5 ${monthlyStats.completionRate >= 70 ? 'text-green-600' : 'text-yellow-600'}`} />
-              <span className={`text-2xl font-bold ${monthlyStats.completionRate >= 70 ? 'text-green-600' : 'text-yellow-600'}`}>
+              <TrendingUp className={`w-5 h-5 ${monthlyStats.completionRate >= 70 ? text.secondary : text.warning}`} />
+              <span className={`text-2xl font-bold ${monthlyStats.completionRate >= 70 ? text.primary : text.warning}`}>
                 {monthlyStats.completionRate}%
               </span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>Completion Rate</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskPerformance.completionRate', '')}</p>
           </div>
 
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
-              <Star className={`w-5 h-5 ${getQualityColor(monthlyStats.avgQuality)}`} />
-              <span className={`text-2xl font-bold ${getQualityColor(monthlyStats.avgQuality)}`}>
+              <Star className={`w-5 h-5 ${text.secondary}`} />
+              <span className={`text-2xl font-bold ${text.primary}`}>
                 {monthlyStats.avgQuality}
               </span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>Avg Quality</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskPerformance.avgQuality', '')}</p>
           </div>
         </div>
       )}
@@ -491,61 +496,61 @@ const TaskPerformanceReview = ({ employees }) => {
       {viewMode === 'individual' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <h3 className={`text-sm font-semibold ${text.primary} mb-3`}>On-Time Performance</h3>
+            <h3 className={`text-sm font-semibold ${text.primary} mb-3`}>{t('taskPerformance.onTimePerformance', 'On-Time Performance')}</h3>
             <div className="flex items-center justify-between">
-              <span className={text.secondary}>On-Time Completions</span>
+              <span className={text.secondary}>{t('taskPerformance.onTimeCompletions', 'On-Time Completions')}</span>
               <span className={`font-semibold ${text.primary}`}>
                 {monthlyStats.onTimeCompletions}/{monthlyStats.completedTasks}
               </span>
             </div>
             <div className="mt-2">
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div 
-                  className="bg-green-600 h-2 rounded-full" 
+                  className="bg-green-600 dark:bg-green-500 h-2 rounded-full" 
                   style={{ width: `${monthlyStats.onTimeRate}%` }}
                 ></div>
               </div>
-              <p className={`text-xs ${text.secondary} mt-1`}>{monthlyStats.onTimeRate}% on-time rate</p>
+              <p className={`text-xs ${text.secondary} mt-1`}>{monthlyStats.onTimeRate}% {t('taskPerformance.onTimeRate', 'on-time rate')}</p>
             </div>
           </div>
 
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <h3 className={`text-sm font-semibold ${text.primary} mb-3`}>Priority Distribution</h3>
+            <h3 className={`text-sm font-semibold ${text.primary} mb-3`}>{t('taskPerformance.priorityDistribution', 'Priority Distribution')}</h3>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-red-600">High Priority</span>
+                <span className="text-sm text-red-600 dark:text-red-400">{t('workload.priorityHigh', 'High Priority')}</span>
                 <span className={`font-semibold ${text.primary}`}>{monthlyStats.highPriority}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-yellow-600">Medium Priority</span>
+                <span className="text-sm text-yellow-600 dark:text-yellow-400">{t('workload.priorityMedium', 'Medium Priority')}</span>
                 <span className={`font-semibold ${text.primary}`}>{monthlyStats.mediumPriority}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-green-600">Low Priority</span>
+                <span className="text-sm text-green-600 dark:text-green-400">{t('workload.priorityLow', 'Low Priority')}</span>
                 <span className={`font-semibold ${text.primary}`}>{monthlyStats.lowPriority}</span>
               </div>
             </div>
           </div>
 
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <h3 className={`text-sm font-semibold ${text.primary} mb-3`}>Quality Assessment</h3>
+            <h3 className={`text-sm font-semibold ${text.primary} mb-3`}>{t('taskPerformance.qualityAssessment', 'Quality Assessment')}</h3>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className={`text-sm ${text.secondary}`}>Rated Tasks</span>
+                <span className={`text-sm ${text.secondary}`}>{t('taskPerformance.ratedTasks', 'Rated Tasks')}</span>
                 <span className={`font-semibold ${text.primary}`}>
                   {monthlyStats.ratedTasks}/{monthlyStats.totalTasks}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className={`text-sm ${text.secondary}`}>Avg Quality</span>
+                <span className={`text-sm ${text.secondary}`}>{t('taskPerformance.avgQuality', 'Avg Quality')}</span>
                 <span className={`font-semibold ${getQualityColor(monthlyStats.avgQuality)}`}>
                   {monthlyStats.avgQuality}/5 ⭐
                 </span>
               </div>
               <div className="mt-2">
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div 
-                    className={`h-2 rounded-full ${monthlyStats.avgQuality >= 4 ? 'bg-green-600' : monthlyStats.avgQuality >= 3 ? 'bg-blue-600' : 'bg-yellow-600'}`}
+                    className={`h-2 rounded-full ${monthlyStats.avgQuality >= 4 ? 'bg-green-600 dark:bg-green-500' : monthlyStats.avgQuality >= 3 ? 'bg-blue-600 dark:bg-blue-500' : 'bg-yellow-600 dark:bg-yellow-500'}`}
                     style={{ width: `${(monthlyStats.avgQuality / 5) * 100}%` }}
                   ></div>
                 </div>
@@ -563,25 +568,25 @@ const TaskPerformanceReview = ({ employees }) => {
             onClick={() => setFilterStatus('all')}
             className={`px-3 py-1 rounded-lg text-sm ${filterStatus === 'all' ? 'bg-blue-600 text-white' : bg.secondary}`}
           >
-            All ({tasks.length})
+            {t('taskPerformance.all', 'All')} ({tasks.length})
           </button>
           <button
             onClick={() => setFilterStatus('completed')}
             className={`px-3 py-1 rounded-lg text-sm ${filterStatus === 'completed' ? 'bg-green-600 text-white' : bg.secondary}`}
           >
-            Completed ({monthlyStats.completedTasks})
+            {t('taskPerformance.completed', 'Completed')} ({monthlyStats.completedTasks})
           </button>
           <button
             onClick={() => setFilterStatus('in-progress')}
             className={`px-3 py-1 rounded-lg text-sm ${filterStatus === 'in-progress' ? 'bg-blue-600 text-white' : bg.secondary}`}
           >
-            In Progress ({monthlyStats.inProgressTasks})
+            {t('taskPerformance.inProgress', 'In Progress')} ({monthlyStats.inProgressTasks})
           </button>
           <button
             onClick={() => setFilterStatus('pending')}
             className={`px-3 py-1 rounded-lg text-sm ${filterStatus === 'pending' ? 'bg-gray-600 text-white' : bg.secondary}`}
           >
-            Pending ({monthlyStats.pendingTasks})
+            {t('taskPerformance.pending', 'Pending')} ({monthlyStats.pendingTasks})
           </button>
         </div>
       )}
@@ -621,13 +626,13 @@ const TaskPerformanceReview = ({ employees }) => {
                       {task.due_date && (
                         <span className={`flex items-center space-x-1 ${text.secondary}`}>
                           <Calendar className="w-3 h-3" />
-                          <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
+                          <span>{t('taskPerformance.due', 'Due')}: {new Date(task.due_date).toLocaleDateString()}</span>
                         </span>
                       )}
                       {task.created_at && (
                         <span className={`flex items-center space-x-1 ${text.secondary}`}>
                           <Clock className="w-3 h-3" />
-                          <span>Created: {new Date(task.created_at).toLocaleDateString()}</span>
+                          <span>{t('taskPerformance.created', 'Created')}: {new Date(task.created_at).toLocaleDateString()}</span>
                         </span>
                       )}
                     </div>
@@ -636,8 +641,8 @@ const TaskPerformanceReview = ({ employees }) => {
                     {task.self_assessment && (
                       <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
                         <p className={`text-xs font-semibold ${text.primary} mb-1 flex items-center space-x-1`}>
-                          <MessageSquare className="w-3 h-3" />
-                          <span>Self Assessment:</span>
+                          <MessageSquare className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                          <span>{t('taskPerformance.selfAssessment', 'Self Assessment')}:</span>
                         </p>
                         <p className={`text-sm ${text.secondary}`}>{task.self_assessment}</p>
                       </div>
@@ -647,8 +652,8 @@ const TaskPerformanceReview = ({ employees }) => {
                     {task.comments && (
                       <div className="mt-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded">
                         <p className={`text-xs font-semibold ${text.primary} mb-1 flex items-center space-x-1`}>
-                          <Award className="w-3 h-3" />
-                          <span>Manager Evaluation:</span>
+                          <Award className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                          <span>{t('taskPerformance.managerEvaluation', 'Manager Evaluation')}:</span>
                         </p>
                         <p className={`text-sm ${text.secondary}`}>{task.comments}</p>
                       </div>
@@ -658,10 +663,10 @@ const TaskPerformanceReview = ({ employees }) => {
                   {/* Evaluate Button */}
                   <button
                     onClick={() => openEvaluationModal(task)}
-                    className="ml-4 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center space-x-1 text-sm"
+                    className="ml-4 px-3 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center space-x-1 text-sm"
                   >
                     <Edit2 className="w-4 h-4" />
-                    <span>Evaluate</span>
+                    <span>{t('taskPerformance.evaluate', 'Evaluate')}</span>
                   </button>
                 </div>
               </div>
@@ -669,7 +674,7 @@ const TaskPerformanceReview = ({ employees }) => {
 
             {displayTasks.length === 0 && (
               <div className="p-8 text-center">
-                <p className={text.secondary}>No tasks found for this month</p>
+                <p className={text.secondary}>{t('taskPerformance.noTasks', 'No tasks found for this month')}</p>
               </div>
             )}
           </div>
@@ -691,7 +696,7 @@ const TaskPerformanceReview = ({ employees }) => {
                 onClick={closeEvaluationModal}
                 className={`p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700`}
               >
-                <X className="w-5 h-5" />
+                <X className={`w-5 h-5 ${text.primary}`} />
               </button>
             </div>
 
@@ -717,7 +722,7 @@ const TaskPerformanceReview = ({ employees }) => {
                 <>
                   <div>
                     <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                      Quality Rating (1-5)
+                      {t('taskPerformance.qualityRating', 'Quality Rating')} (1-5)
                     </label>
                     <div className="flex items-center space-x-2">
                       {[1, 2, 3, 4, 5].map(rating => (
@@ -747,13 +752,13 @@ const TaskPerformanceReview = ({ employees }) => {
 
                   <div>
                     <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                      Manager Comments
+                      {t('taskPerformance.managerComments', 'Manager Comments')}
                     </label>
                     <textarea
                       value={evaluationForm.comments}
                       onChange={(e) => setEvaluationForm({ ...evaluationForm, comments: e.target.value })}
                       rows="3"
-                      placeholder="Provide feedback on task quality and performance..."
+                      placeholder={t('taskPerformance.commentPlaceholder', 'Provide feedback on task quality and performance...')}
                       className={`w-full px-4 py-2 rounded-lg border ${border.primary}`}
                     />
                   </div>
@@ -762,19 +767,19 @@ const TaskPerformanceReview = ({ employees }) => {
 
               {/* Task Details */}
               <div className={`p-3 rounded bg-gray-50 dark:bg-gray-800`}>
-                <p className={`text-xs ${text.secondary} mb-2`}>Task Details:</p>
+                <p className={`text-xs ${text.secondary} mb-2`}>{t('taskPerformance.taskDetails', 'Task Details')}:</p>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <span className={text.secondary}>Status: </span>
+                    <span className={text.secondary}>{t('taskPerformance.status', 'Status')}: </span>
                     <span className={`font-semibold ${text.primary}`}>{evaluatingTask.status}</span>
                   </div>
                   <div>
-                    <span className={text.secondary}>Priority: </span>
+                    <span className={text.secondary}>{t('taskPerformance.priority', 'Priority')}: </span>
                     <span className={`font-semibold ${text.primary}`}>{evaluatingTask.priority}</span>
                   </div>
                   {evaluatingTask.due_date && (
                     <div>
-                      <span className={text.secondary}>Due Date: </span>
+                      <span className={text.secondary}>{t('taskPerformance.dueDate', 'Due Date')}: </span>
                       <span className={`font-semibold ${text.primary}`}>
                         {new Date(evaluatingTask.due_date).toLocaleDateString()}
                       </span>
