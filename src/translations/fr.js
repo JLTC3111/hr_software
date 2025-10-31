@@ -868,7 +868,17 @@ export default {
     title: 'Gestion de la Charge de Travail',
     individual: 'Individuel',
     organization: 'Organisation',
+    selectEmployee: 'Sélectionner l\'employé',
+    dueDate: 'Date d\'échéance',
+    manageTasks: 'Gérer les tâches',
+    assignTo: 'Attribuer à',
     assignTask: 'Attribuer une tâche',
+    priorityLow: 'Faible',
+    priorityMedium: 'Moyen',
+    priorityHigh: 'Élevé',
+    statusPending: 'En Attente',
+    statusInProgress: 'En Cours',
+    statusCompleted: 'Terminé',
     teamWorkload: 'Charge de Travail d\'Équipe',
     filterByEmployee: 'Filtrer par Employé',
     filterByStatus: 'Filtrer par État',
@@ -890,7 +900,9 @@ export default {
     qualityRating: 'Évaluation de la qualité',
     noTasks: 'Aucune tâche pour le moment. Ajoutez votre première tâche!',
     employeeProgress: 'Progrès des employés',
-    confirmDelete: 'Êtes-vous sûr de vouloir supprimer cette tâche?'
+    confirmDelete: 'Êtes-vous sûr de vouloir supprimer cette tâche?',
+    tasks: 'Tâches',
+    quality: 'Qualité',
   },
 
   // Performance Appraisal Translation

@@ -32,7 +32,11 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
             {/* Mobile Menu Button */}
             <button
               onClick={handleMobileMenuToggle}
-              className={`lg:hidden p-2 rounded-lg transition-all duration-200 cursor-pointer ${hover.bg}`}
+              className={`lg:hidden p-2 rounded-lg transition-all duration-200 cursor-pointer ${
+                isDarkMode 
+                  ? 'hover:bg-gray-700' 
+                  : 'hover:bg-gray-200'
+              }`}
               aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
             >
               {isMobileMenuOpen ? (
@@ -55,7 +59,7 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           </div>
           <div className="flex items-center space-x-4">
             <div className={`hidden lg:block ${bg.secondary} text-sm ${text.secondary}`}>
-              {t('header.welcome')} 
+              {t('header.welcome')} {user?.name || user?.email}
             </div>
             <div className="hidden md:block">
               <LanguageSelector />

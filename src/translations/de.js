@@ -866,6 +866,19 @@ export default {
   // Workload Management
   workload: {
     title: 'Arbeitsbelastungsverwaltung',
+    assignTo: 'Zuweisen an',
+    team: 'Team',
+    manageTasks: 'Aufgaben verwalten',
+    dueDate: 'Fälligkeitsdatum',
+    selectEmployee: 'Mitarbeiter auswählen',
+    selectDate: 'Datum auswählen',
+    priorityLow: 'Niedrig',
+    priorityMedium: 'Mittel',
+    priorityHigh: 'Hoch',
+    statusPending: 'Ausstehend',
+    statusInProgress: 'In Bearbeitung',
+    statusCompleted: 'Abgeschlossen',
+    team: 'Team',
     individual: 'Individuell',
     assignTask: 'Aufgabe zuweisen',
     teamWorkload: 'Teamarbeitsbelastung',
@@ -890,7 +903,9 @@ export default {
     qualityRating: 'Qualitätsbewertung',
     noTasks: 'Noch keine Aufgaben. Fügen Sie Ihre erste Aufgabe hinzu!',
     employeeProgress: 'Mitarbeiterfortschritt',
-    confirmDelete: 'Möchten Sie diese Aufgabe wirklich löschen?'
+    confirmDelete: 'Möchten Sie diese Aufgabe wirklich löschen?',
+    tasks: 'Aufgaben',
+    quality: 'Qualität',
   },
 
   // Performance Appraisal Translation

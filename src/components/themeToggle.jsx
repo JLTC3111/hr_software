@@ -9,7 +9,7 @@ const ThemeToggle = () => {
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 rounded-lg transition-all duration-200 border focus:outline-none focus:ring-2 focus:ring-blue-500 hover:opacity-80"
+      className="cursor-pointer p-2 rounded-lg transition-all duration-200 border focus:outline-none focus:ring-2 focus:ring-blue-500 hover:opacity-80"
       style={{
         backgroundColor: isDarkMode ? '#374151' : '#f3f4f6', // gray-700 : gray-100
         color: isDarkMode ? '#ffffff' : '#111827', // white : gray-900

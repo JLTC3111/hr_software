@@ -156,7 +156,7 @@ const Dashboard = ({ employees, applications }) => {
   const totalWorkDays = trackingDataValues.reduce((sum, emp) => sum + (emp?.workDays || 0), 0);
   const totalLeaveDays = trackingDataValues.reduce((sum, emp) => sum + (emp?.leaveDays || 0), 0);
   const totalOvertime = trackingDataValues.reduce((sum, emp) => sum + (emp?.overtime || 0) + (emp?.holidayOvertime || 0), 0).toFixed(1);
-  const totalRegularHours = trackingDataValues.reduce((sum, emp) => sum + (emp?.regularHours || 0), 0).toFixed(1);
+  const totalRegularHours = trackingDataValues.reduce((sum, emp) => sum + (emp?.regularHours || 0), 0).toFixed(0);
   const avgPerformance = trackingDataValues.length > 0 
     ? (trackingDataValues.reduce((sum, emp) => sum + (emp?.performance || 0), 0) / trackingDataValues.length).toFixed(1)
     : '0.0';
@@ -781,7 +781,7 @@ const Dashboard = ({ employees, applications }) => {
           className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
         >
           <div className="flex items-center space-x-3 mb-2">
-            <Clock className="w-5 h-5 text-blue-600" />
+            <Clock className={`w-5 h-5 ${text.primary}`} />
             <h4 className={`font-semibold ${text.primary}`}>
               {t('dashboard.totalWorkDays')}
             </h4>
@@ -797,7 +797,7 @@ const Dashboard = ({ employees, applications }) => {
           className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
         >
           <div className="flex items-center space-x-3 mb-2">
-            <Briefcase className="w-5 h-5 text-green-600" />
+            <Briefcase className={`w-5 h-5 ${text.primary}`} />
             <h4 className={`font-semibold ${text.primary}`}>
               {t('dashboard.activeApplications')}
             </h4>
@@ -813,7 +813,7 @@ const Dashboard = ({ employees, applications }) => {
           className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
         >
           <div className="flex items-center space-x-3 mb-2">
-            <AlertCircle className="w-5 h-5 text-orange-600" />
+            <AlertCircle className={`w-5 h-5 ${text.primary}`} />
             <h4 className={`font-semibold ${text.primary}`}>
               {t('dashboard.pendingRequests')}
             </h4>

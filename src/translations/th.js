@@ -805,7 +805,17 @@ export default {
   workload: {
     title: 'การจัดการภาระงาน',
     individual: 'บุคคล',
+    selectEmployee: 'เลือกพนักงาน',
+    dueDate: 'วันครบกำหนด',
+    manageTasks: 'จัดการงาน',
+    assignTo: 'มอบหมายให้',
     assignTask: 'มอบหมายงาน',
+    priorityLow: 'ต่ำ',
+    priorityMedium: 'ปานกลาง',
+    priorityHigh: 'สูง',
+    statusPending: 'รอดำเนินการ',
+    statusInProgress: 'กำลังดำเนินการ',
+    statusCompleted: 'เสร็จสิ้น',
     teamWorkload: 'ภาระงานของทีม',
     filterByEmployee: 'กรองตามพนักงาน',
     filterByStatus: 'กรองตามสถานะ',
@@ -828,7 +838,9 @@ export default {
     qualityRating: 'การประเมินคุณภาพ',
     noTasks: 'ยังไม่มีงาน เพิ่มงานแรกของคุณ!',
     employeeProgress: 'ความคืบหน้าของพนักงาน',
-    confirmDelete: 'คุณแน่ใจว่าต้องการลบงานนี้หรือไม่?'
+    confirmDelete: 'คุณแน่ใจว่าต้องการลบงานนี้หรือไม่?',
+    tasks: 'งาน',
+    quality: 'คุณภาพ',
   },
 
   // Performance Appraisal Translation

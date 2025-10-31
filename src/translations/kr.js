@@ -807,7 +807,19 @@ export default {
   workload: {
     title: '업무량 관리',
     individual: '개인',
+    selectEmployee: '직원 선택',
+    dueDate: '마감일',
+    manageTasks: '작업 관리',
     organization: '조직',
+    assignTo: '할당 대상',
+    assignTask: '작업 할당',
+    taskList: '작업 목록',
+    priorityLow: '낮음',
+    priorityMedium: '보통',
+    priorityHigh: '높음',
+    statusPending: '보류 중',
+    statusInProgress: '진행 중',
+    statusCompleted: '완료',
     assignTask: '작업 할당',
     teamWorkload: '팀 작업량',
     filterByEmployee: '직원으로 필터링',
@@ -830,7 +842,9 @@ export default {
     qualityRating: '품질 평가',
     noTasks: '작업이 없습니다. 첫 번째 작업을 추가하세요!',
     employeeProgress: '직원 진행률',
-    confirmDelete: '이 작업을 삭제하시겠습니까?'
+    confirmDelete: '이 작업을 삭제하시겠습니까?',
+    tasks: '작업',
+    quality: '품질',
   },
 
   // Performance Appraisal Translation

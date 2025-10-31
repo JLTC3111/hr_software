@@ -812,7 +812,17 @@ export default {
   workload: {
     title: 'Управление рабочей нагрузкой',
     individual: 'Индивидуальный',
+    selectEmployee: 'Выбрать сотрудника',
+    dueDate: 'Срок',
+    manageTasks: 'Управлять задачами',
+    assignTo: 'Назначить на',
     assignTask: 'Назначить задачу',
+    priorityLow: 'Низкий',
+    priorityMedium: 'Средний',
+    priorityHigh: 'Высокий',
+    statusPending: 'В ожидании',
+    statusInProgress: 'В процессе',
+    statusCompleted: 'Завершено',
     teamWorkload: 'Рабочая нагрузка команды',
     filterByEmployee: 'Фильтровать по сотруднику',
     filterByStatus: 'Фильтровать по статусу',
@@ -835,7 +845,9 @@ export default {
     qualityRating: 'Оценка качества',
     noTasks: 'Задач пока нет. Добавьте свою первую задачу!',
     employeeProgress: 'Прогресс сотрудников',
-    confirmDelete: 'Вы уверены, что хотите удалить эту задачу?'
+    confirmDelete: 'Вы уверены, что хотите удалить эту задачу?',
+    tasks: 'Задачи',
+    quality: 'Качество',
   },
 
   // Performance Appraisal Translation

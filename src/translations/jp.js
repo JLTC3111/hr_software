@@ -812,7 +812,17 @@ export default {
   workload: {
     title: '仕事量管理',
     individual: '個人',
+    selectEmployee: '従業員を選択',
+    dueDate: '期限',
+    manageTasks: 'タスクを管理',
+    assignTo: 'に割り当てる',
     assignTask: 'タスクを割り当てる',
+    priorityLow: '低',
+    priorityMedium: '中',
+    priorityHigh: '高',
+    statusPending: '保留中',
+    statusInProgress: '進行中',
+    statusCompleted: '完了',
     teamWorkload: 'チームの作業負荷',
     filterByEmployee: '従業員でフィルタリング',
     filterByStatus: 'ステータスでフィルタリング',
@@ -835,7 +845,9 @@ export default {
     qualityRating: '品質評価',
     noTasks: 'タスクがありません。最初のタスクを追加しましょう！',
     employeeProgress: '従業員の進捗',
-    confirmDelete: 'このタスクを削除してもよろしいですか？'
+    confirmDelete: 'このタスクを削除してもよろしいですか？',
+    tasks: 'タスク',
+    quality: '品質',
   },
 
   // Performance Appraisal Translation

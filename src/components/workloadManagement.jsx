@@ -483,20 +483,20 @@ const WorkloadManagement = ({ employees }) => {
                     <User className={`w-5 h-5 ${text.secondary}`} />
                     <div>
                       <p className={`font-semibold ${text.primary}`}>{employee.name}</p>
-                      <p className={`text-sm ${text.secondary}`}>{employee.department}</p>
+                      <p className={`text-sm ${text.secondary}`}>{t(`departments.${employee.department}`, employee.department)}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-6 text-sm text-center justify-center">
                     <div>
-                      <p className={`${text.secondary}`}>Tasks</p>
+                      <p className={`${text.secondary}`}>{t('workload.tasks', 'Tasks')}</p>
                       <p className={`font-semiboldcha ${text.primary}`}>{tasks.length}</p>
                     </div>
                     <div>
-                      <p className={`${text.secondary}`}>Progress</p>
+                      <p className={`${text.secondary}`}>{t('workload.progress', 'Progress')}</p>
                       <p className={`font-semibold ${text.primary}`}>{progress}%</p>
                     </div>
                     <div>
-                      <p className={`${text.secondary}`}>Quality</p>
+                      <p className={`${text.secondary}`}>{t('workload.quality', 'Quality')}</p>
                       <p className={`font-semibold ${text.primary}`}>{avgQuality}/5</p>
                     </div>
                   </div>
@@ -597,7 +597,7 @@ const WorkloadManagement = ({ employees }) => {
                     <option value="">{t('workload.selectEmployee', 'Select Employee')}</option>
                     {employees.map(emp => (
                       <option key={emp.id} value={emp.id}>
-                        {emp.name} - {t(`departments.${emp.department}`, emp.department)} ({t(`positions.${emp.position}`, emp.position)})
+                        {emp.name} - {t(`departments.${emp.department}`, emp.department)} ({t(`employeePosition.${emp.position}`, emp.position)})
                       </option>
                     ))}
                   </select>

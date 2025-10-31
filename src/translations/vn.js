@@ -895,7 +895,17 @@ export default {
   workload: {
     title: 'Quản Lý Khối Lượng Công Việc',
     individual: 'Cá nhân',
+    selectEmployee: 'Chọn nhân viên',
+    dueDate: 'Hạn chót',
+    manageTasks: 'Quản lý nhiệm vụ',
+    assignTo: 'Phân Công Cho',
     assignTask: 'Phân Công Nhiệm Vụ',
+    priorityLow: 'Thấp',
+    priorityMedium: 'Trung Bình',
+    priorityHigh: 'Cao',
+    statusPending: 'Đang chờ',
+    statusInProgress: 'Đang tiến hành',
+    statusCompleted: 'Đã hoàn thành',
     teamWorkload: 'Khối lượng công việc của nhóm',
     filterByEmployee: 'Lọc theo nhân viên',
     filterByStatus: 'Lọc theo trạng thái',
@@ -918,7 +928,9 @@ export default {
     qualityRating: 'Đánh giá chất lượng',
     noTasks: 'Chưa có nhiệm vụ nào. Thêm nhiệm vụ đầu tiên của bạn!',
     employeeProgress: 'Tiến độ nhân viên',
-    confirmDelete: 'Bạn có chắc chắn muốn xóa nhiệm vụ này?'
+    confirmDelete: 'Bạn có chắc chắn muốn xóa nhiệm vụ này?',
+    tasks: 'Nhiệm Vụ',
+    quality: 'Chất Lượng',
   },
 
   // Performance Appraisal Translation

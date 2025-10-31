@@ -2,11 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Globe } from 'lucide-react';
 import { useLanguage, SUPPORTED_LANGUAGES } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { animate } from 'framer-motion';
 
 const LanguageSelector = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isChanging, setIsChanging] = useState(false);
-  const { currentLanguage, changeLanguage, languages } = useLanguage();
+  const { currentLanguage, changeLanguage, languages, isChanging } = useLanguage();
   const { isDarkMode, bg, text, border, hover } = useTheme();
   const dropdownRef = useRef(null);
 
@@ -23,10 +23,8 @@ const LanguageSelector = () => {
   }, []);
 
   const handleLanguageChange = (languageCode) => {
-    setIsChanging(true);
     changeLanguage(languageCode);
     setIsOpen(false);
-    setTimeout(() => setIsChanging(false), 600);
   };
 
   const currentLangData = languages[currentLanguage];
@@ -44,7 +42,7 @@ const LanguageSelector = () => {
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
-        <Globe className={`w-4 h-4 ${isChanging ? 'animate-spin' : ''}`} />
+        <Globe className={`w-4 h-4 transition-transform duration-600 ${isChanging ? 'animate-spin' : ''} hover:rotate-180`} />
         <span className={`text-sm font-medium flex items-center space-x-2`}>
           <img src={currentLangData?.flag} alt={currentLangData?.name} className="w-5 h-5 rounded" />
           <span>{currentLangData?.name}</span>

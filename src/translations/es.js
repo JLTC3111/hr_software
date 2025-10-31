@@ -825,8 +825,26 @@ login: {
   // Workload Management
   workload: {
     title: 'Gestión de Carga de Trabajo',
+    assignTo: 'Asignar a',
+    team: 'Equipo',
+    selectEmployee: 'Seleccionar empleado',
+    dueDate: 'Fecha de vencimiento',
+    manageTasks: 'Gestionar tareas',
+    allTasks: 'Todas las tareas',
+    teamTasks: 'Tareas del equipo',
+    myTasks: 'Mis tareas',
+    taskType: 'Tipo de tarea',
+    allTypes: 'Todos los tipos',
+    group: 'Grupo',
+    team: 'Equipo',
     individual: 'Individual',
     assignTask: 'Asignar Tarea',
+    priorityLow: 'Bajo',
+    priorityMedium: 'Medio',
+    priorityHigh: 'Alto',
+    statusPending: 'Pendiente',
+    statusInProgress: 'En Progreso',
+    statusCompleted: 'Completado',
     teamWorkload: 'Carga de Trabajo del Equipo',
     filterByEmployee: 'Filtrar por Empleado',
     filterByStatus: 'Filtrar por Estado',
@@ -849,7 +867,9 @@ login: {
     qualityRating: 'Calificación de calidad',
     noTasks: 'Aún no hay tareas. ¡Agrega tu primera tarea!',
     employeeProgress: 'Progreso del empleado',
-    confirmDelete: '¿Estás seguro de que quieres eliminar esta tarea?'
+    confirmDelete: '¿Estás seguro de que quieres eliminar esta tarea?',
+    tasks: 'Tareas',
+    quality: 'Calidad',
   },
 
   // Performance Appraisal Translation

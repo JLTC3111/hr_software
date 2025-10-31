@@ -925,9 +925,20 @@ export default {
   // Workload Management
   workload: {
     title: 'Workload Management',
+    assignTo: 'Assign To',
+    team: 'Team',
+    selectEmployee: 'Select Employee',
+    dueDate: 'Due Date',
+    manageTasks: 'Manage Task',
     individual: 'Individual',
     assignTask: 'Assign Task',
     teamWorkload: 'Team Workload',
+    priorityLow: 'Low',
+    priorityMedium: 'Medium',
+    priorityHigh: 'High',
+    statusPending: 'Pending',
+    statusInProgress: 'In Progress',
+    statusCompleted: 'Completed',
     totalTasks: 'Total Tasks',
     completedTasks: 'Completed Tasks',
     pendingTasks: 'Pending Tasks',
@@ -973,6 +984,8 @@ export default {
     confirmDelete: 'Are you sure you want to delete this task?',
     assignTo: 'Assign To',
     selectEmployee: 'Select Employee',
+    tasks: 'Tasks',
+    quality: 'Quality',
   },
 
   // Task Performance Review

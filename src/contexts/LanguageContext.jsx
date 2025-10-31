@@ -26,6 +26,7 @@ export const SUPPORTED_LANGUAGES = {
 export const LanguageProvider = ({ children }) => {
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [translations, setTranslations] = useState({});
+  const [isChanging, setIsChanging] = useState(false);
 
   // Load translations dynamically
   useEffect(() => {
@@ -55,8 +56,10 @@ export const LanguageProvider = ({ children }) => {
 
   const changeLanguage = (languageCode) => {
     if (SUPPORTED_LANGUAGES[languageCode]) {
+      setIsChanging(true);
       setCurrentLanguage(languageCode);
       localStorage.setItem('hr-app-language', languageCode);
+      setTimeout(() => setIsChanging(false), 600);
     }
   };
 
@@ -80,7 +83,8 @@ export const LanguageProvider = ({ children }) => {
     changeLanguage,
     t,
     languages: SUPPORTED_LANGUAGES,
-    isRTL: currentLanguage === 'ar' // Add if Arabic support needed
+    isRTL: currentLanguage === 'ar', // Add if Arabic support needed
+    isChanging
   };
 
   return (

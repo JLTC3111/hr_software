@@ -358,7 +358,7 @@ const TaskPerformanceReview = ({ employees }) => {
                 <div className="flex justify-between items-center">
                   <span className={`text-sm ${text.secondary}`}>{t('taskPerformance.avgQuality', 'Avg Quality')}</span>
                   <span className={`font-semibold ${getQualityColor(stat.avgQuality)}`}>
-                    {stat.avgQuality}/5 ⭐
+                    {stat.avgQuality}/5 <Star className="w-4 h-4 inline-block ml-1 text-yellow-400" />
                   </span>
                 </div>
               </div>
@@ -570,7 +570,7 @@ const TaskPerformanceReview = ({ employees }) => {
               <div className="flex items-center justify-between">
                 <span className={`text-sm ${text.secondary}`}>{t('taskPerformance.avgQuality', 'Avg Quality')}</span>
                 <span className={`font-semibold ${getQualityColor(monthlyStats.avgQuality)}`}>
-                  {monthlyStats.avgQuality}/5 ⭐
+                  {monthlyStats.avgQuality}/5 <Star className="w-4 h-4 inline-block ml-1 text-yellow-400" />
                 </span>
               </div>
               <div className="mt-2">
@@ -647,7 +647,7 @@ const TaskPerformanceReview = ({ employees }) => {
                       </span>
                       {task.quality_rating > 0 && (
                         <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-800'}`}>
-                          ⭐ {task.quality_rating}/5
+                          <Star className="w-4 h-4 inline-block mr-1 text-yellow-400" /> {task.quality_rating}/5
                         </span>
                       )}
                     </div>
@@ -820,8 +820,8 @@ const TaskPerformanceReview = ({ employees }) => {
                   {evaluatingTask.quality_rating > 0 && (
                     <div>
                       <span className={text.secondary}>Current Rating: </span>
-                      <span className={`font-semibold ${text.primary}`}>
-                        {evaluatingTask.quality_rating}/5 ⭐
+                        <span className={`font-semibold ${text.primary}`}>
+                        {evaluatingTask.quality_rating}/5 <Star className="w-4 h-4 inline-block ml-1 text-yellow-400" />
                       </span>
                     </div>
                   )}
