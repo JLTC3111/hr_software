@@ -12,6 +12,8 @@ const PerformanceAppraisal = ({ employees }) => {
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
   const [showAddReviewModal, setShowAddReviewModal] = useState(false);
   const [showEditGoalModal, setShowEditGoalModal] = useState(false);
+  const [showReviewDetailModal, setShowReviewDetailModal] = useState(false);
+  const [selectedReview, setSelectedReview] = useState(null);
   const [editingGoal, setEditingGoal] = useState(null);
   const [loading, setLoading] = useState(false);
   const [goals, setGoals] = useState([]);
@@ -216,6 +218,14 @@ const PerformanceAppraisal = ({ employees }) => {
       alert(t('performance.goalUpdatedError', 'Failed to update goal: ') + result.error);
     }
     setLoading(false);
+  };
+
+  // Handle view review details
+  const handleViewReview = (review) => {
+    // Find the full review data from reviews array
+    const fullReview = reviews.find(r => r.id === review.id);
+    setSelectedReview(fullReview);
+    setShowReviewDetailModal(true);
   };
 
   // Handle progress change
@@ -614,12 +624,8 @@ const PerformanceAppraisal = ({ employees }) => {
           </h3>
           <button 
             onClick={handleAddGoal}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 cursor-pointer transition-colors"
-            style={{
-              backgroundColor: '#2563eb',
-              color: '#ffffff',
-              borderColor: '#2563eb'
-            }}
+            className={`px-4 py-2 text-white rounded-lg ${isDarkMode ? 'bg-transparent' : 'bg-transparent'} flex items-center space-x-2 cursor-pointer transition-colors`}
+            
           >
             <Plus className="h-4 w-4" />
             <span>{t('performance.addGoal')}</span>
@@ -714,12 +720,7 @@ const PerformanceAppraisal = ({ employees }) => {
         <div className="flex items-center space-x-2">
           <button 
             onClick={handleAddGoal}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 cursor-pointer transition-colors"
-            style={{
-              backgroundColor: '#2563eb',
-              color: '#ffffff',
-              borderColor: '#2563eb'
-            }}
+            className="px-4 py-2 bg-transparent text-white rounded-lg flex items-center space-x-2 cursor-pointer transition-colors"
           >
             <Plus className="h-4 w-4" />
             <span>{t('performance.addNewGoal')}</span>
@@ -740,7 +741,7 @@ const PerformanceAppraisal = ({ employees }) => {
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
-                <Goal className="h-5 w-5 text-blue-600" />
+                <Goal className="h-5 w-5 ${text.primary}" />
                 <h4 
                   className="font-semibold"
                   style={{
@@ -810,8 +811,8 @@ const PerformanceAppraisal = ({ employees }) => {
                   className="w-full h-3 rounded-lg appearance-none cursor-pointer"
                   style={{
                     background: `linear-gradient(to right, 
-                      #2563eb 0%, 
-                      #3b82f6 ${(progressChanges[goal.id] !== undefined ? progressChanges[goal.id] : goal.progress)}%, 
+                      #000000 0%, 
+                      #dc2626 ${(progressChanges[goal.id] !== undefined ? progressChanges[goal.id] : goal.progress)}%, 
                       ${isDarkMode ? '#4b5563' : '#d1d5db'} ${(progressChanges[goal.id] !== undefined ? progressChanges[goal.id] : goal.progress)}%, 
                       ${isDarkMode ? '#4b5563' : '#d1d5db'} 100%)`
                   }}
@@ -879,15 +880,10 @@ const PerformanceAppraisal = ({ employees }) => {
         </h3>
         <button 
           onClick={handleAddReview}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 cursor-pointer transition-colors"
-          style={{
-            backgroundColor: '#2563eb',
-            color: '#ffffff',
-            borderColor: '#2563eb'
-          }}
+          className="px-4 py-2 rounded-lg flex items-center space-x-2 cursor-pointer transition-colors hover:border-gray-100"
         >
-          <Plus className="h-4 w-4" />
-          <span>{t('performance.newReview')}</span>
+          <Plus className={`h-4 w-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`} />
+          <span className={`${isDarkMode ? 'bg-transparent text-white' : 'bg-transparent text-gray-900'}`}>{t('performance.newReview')}</span>
         </button>
       </div>
 
@@ -945,21 +941,21 @@ const PerformanceAppraisal = ({ employees }) => {
             
             <div className="flex items-center justify-end space-x-2">
               <button 
-                className="px-3 py-1 text-sm border rounded"
+                onClick={() => handleViewReview(review)}
+                className="px-3 py-1 text-sm border rounded cursor-pointer transition-colors"
                 style={{
                   backgroundColor: 'transparent',
-                  color: '#2563eb',
-                  borderColor: '#2563eb'
+                  color: isDarkMode ? '#ffffff' : '#000000',           
                 }}
               >
                 {t('performance.viewFullReview')}
               </button>
               <button 
-                className="px-3 py-1 text-sm flex items-center space-x-1"
+                onClick={() => handleViewReview(review)}
+                className="px-3 py-1 text-sm flex items-center space-x-1 cursor-pointer transition-colors rounded"
                 style={{
                   backgroundColor: 'transparent',
-                  color: isDarkMode ? '#9ca3af' : '#6b7280',
-                  borderColor: 'transparent'
+                  color: isDarkMode ? '#9ca3af' : '#6b7280',                 
                 }}
               >
                 <MessageSquare className="h-4 w-4" />
@@ -1064,12 +1060,12 @@ const PerformanceAppraisal = ({ employees }) => {
               onClick={() => setActiveTab(tab.id)}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-blue-500'
                   : `border-transparent hover:border-gray-300`
               }`}
               style={{
                 color: activeTab === tab.id 
-                  ? '#2563eb' 
+                  ? isDarkMode ? '#ffffff' : '#000000' 
                   : isDarkMode ? '#9ca3af' : '#6b7280',
                 borderBottomColor: activeTab === tab.id 
                   ? '#2563eb' 
@@ -1716,6 +1712,175 @@ const PerformanceAppraisal = ({ employees }) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Review Detail Modal */}
+      {showReviewDetailModal && selectedReview && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowReviewDetailModal(false);
+              setSelectedReview(null);
+            }
+          }}
+        >
+          <div 
+            className="rounded-lg shadow-xl max-w-4xl w-full p-6 my-8"
+            style={{
+              backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+              color: isDarkMode ? '#ffffff' : '#111827'
+            }}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold">{t('performance.reviewDetails', 'Performance Review Details')}</h2>
+                <p className="text-sm mt-1" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                  {selectedReview.review_type} - {selectedReview.review_period}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowReviewDetailModal(false);
+                  setSelectedReview(null);
+                }}
+                className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+              {/* Review Info */}
+              <div className="grid grid-cols-2 gap-4 pb-4 border-b" style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}>
+                <div>
+                  <label className="text-sm font-medium" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                    {t('performance.reviewer', 'Reviewer')}
+                  </label>
+                  <p className="mt-1 font-semibold">{selectedReview.reviewer?.name || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                    {t('performance.reviewDate', 'Review Date')}
+                  </label>
+                  <p className="mt-1 font-semibold">{new Date(selectedReview.review_date).toLocaleDateString()}</p>
+                </div>
+              </div>
+
+              {/* Ratings */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">{t('performance.ratings', 'Ratings')}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: isDarkMode ? '#374151' : '#f3f4f6' }}>
+                    <span className="font-medium">{t('performance.overallRating', 'Overall Rating')}</span>
+                    <div className="flex items-center space-x-2">
+                      <Star className="h-5 w-5 text-yellow-400 fill-current" />
+                      <span className="font-bold text-lg">{selectedReview.overall_rating?.toFixed(1) || '0.0'}</span>
+                    </div>
+                  </div>
+                  {selectedReview.technical_skills_rating && (
+                    <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: isDarkMode ? '#374151' : '#f3f4f6' }}>
+                      <span className="font-medium">{t('performance.technicalSkills', 'Technical Skills')}</span>
+                      <span className="font-bold">{selectedReview.technical_skills_rating.toFixed(1)}</span>
+                    </div>
+                  )}
+                  {selectedReview.communication_rating && (
+                    <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: isDarkMode ? '#374151' : '#f3f4f6' }}>
+                      <span className="font-medium">{t('performance.communication', 'Communication')}</span>
+                      <span className="font-bold">{selectedReview.communication_rating.toFixed(1)}</span>
+                    </div>
+                  )}
+                  {selectedReview.leadership_rating && (
+                    <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: isDarkMode ? '#374151' : '#f3f4f6' }}>
+                      <span className="font-medium">{t('performance.leadership', 'Leadership')}</span>
+                      <span className="font-bold">{selectedReview.leadership_rating.toFixed(1)}</span>
+                    </div>
+                  )}
+                  {selectedReview.teamwork_rating && (
+                    <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: isDarkMode ? '#374151' : '#f3f4f6' }}>
+                      <span className="font-medium">{t('performance.teamwork', 'Teamwork')}</span>
+                      <span className="font-bold">{selectedReview.teamwork_rating.toFixed(1)}</span>
+                    </div>
+                  )}
+                  {selectedReview.problem_solving_rating && (
+                    <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: isDarkMode ? '#374151' : '#f3f4f6' }}>
+                      <span className="font-medium">{t('performance.problemSolving', 'Problem Solving')}</span>
+                      <span className="font-bold">{selectedReview.problem_solving_rating.toFixed(1)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Strengths */}
+              {selectedReview.strengths && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2 flex items-center space-x-2">
+                    <Award className="h-5 w-5 text-green-600" />
+                    <span>{t('performance.strengths', 'Strengths')}</span>
+                  </h3>
+                  <div className="p-4 rounded-lg" style={{ backgroundColor: isDarkMode ? '#374151' : '#f3f4f6' }}>
+                    <p className="whitespace-pre-wrap">{selectedReview.strengths}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Areas for Improvement */}
+              {selectedReview.areas_for_improvement && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2 flex items-center space-x-2">
+                    <TrendingUp className="h-5 w-5 text-blue-600" />
+                    <span>{t('performance.areasForImprovement', 'Areas for Improvement')}</span>
+                  </h3>
+                  <div className="p-4 rounded-lg" style={{ backgroundColor: isDarkMode ? '#374151' : '#f3f4f6' }}>
+                    <p className="whitespace-pre-wrap">{selectedReview.areas_for_improvement}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Achievements */}
+              {selectedReview.achievements && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2 flex items-center space-x-2">
+                    <Sparkle className="h-5 w-5 text-yellow-600" />
+                    <span>{t('performance.achievements', 'Key Achievements')}</span>
+                  </h3>
+                  <div className="p-4 rounded-lg" style={{ backgroundColor: isDarkMode ? '#374151' : '#f3f4f6' }}>
+                    <p className="whitespace-pre-wrap">{selectedReview.achievements}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Comments */}
+              {selectedReview.comments && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2 flex items-center space-x-2">
+                    <MessageSquare className="h-5 w-5 text-purple-600" />
+                    <span>{t('performance.comments', 'Comments')}</span>
+                  </h3>
+                  <div className="p-4 rounded-lg" style={{ backgroundColor: isDarkMode ? '#374151' : '#f3f4f6' }}>
+                    <p className="whitespace-pre-wrap">{selectedReview.comments}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end mt-6 pt-4 border-t" style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}>
+              <button
+                onClick={() => {
+                  setShowReviewDetailModal(false);
+                  setSelectedReview(null);
+                }}
+                className={`px-6 py-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors cursor-pointer`}
+                style={{
+                  backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+                  color: isDarkMode ? '#ffffff' : '#111827'
+                }}
+              >
+                {t('common.close', 'Close')}
+              </button>
+            </div>
           </div>
         </div>
       )}
