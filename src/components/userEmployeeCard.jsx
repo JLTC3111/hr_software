@@ -167,7 +167,7 @@ const UserEmployeeCard = ({ style }) => {
           <div className="flex items-center space-x-3">
             <div className="relative group/avatar">
               <div 
-                className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center overflow-hidden border-2 transition-all"
+                className={`w-16 h-16 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} rounded-full flex items-center justify-center overflow-hidden border-2 transition-all`}
                 style={{
                   borderColor: isDarkMode ? '#ffffff' : 'transparent',
                   boxShadow: isDarkMode ? '0 0 0 2px rgba(255, 255, 255, 0.3)' : 'none'

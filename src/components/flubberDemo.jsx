@@ -191,7 +191,7 @@ const FlubberDemo = () => {
               height={280}
               fill={isDarkMode ? '#60A5FA' : '#3B82F6'}
               strokeWidth={0}
-              className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 rounded-xl p-8"
+              className={`bg-gradient-to-br ${isDarkMode ? 'from-gray-900 to-gray-800' : 'from-blue-50 to-purple-50'} rounded-xl p-8`}
             />
           </div>
         </div>
@@ -200,7 +200,7 @@ const FlubberDemo = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
             <div className="flex items-center space-x-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+              <div className={`w-10 h-10 rounded-full ${isDarkMode ? 'bg-blue-900' : 'bg-blue-100'} flex items-center justify-center`}>
                 <span className="text-2xl">⚡</span>
               </div>
               <h3 className={`text-lg font-semibold ${text.primary}`}>Smooth Transitions</h3>
@@ -212,7 +212,7 @@ const FlubberDemo = () => {
 
           <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
             <div className="flex items-center space-x-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+              <div className={`w-10 h-10 rounded-full ${isDarkMode ? 'bg-purple-900' : 'bg-purple-100'} flex items-center justify-center`}>
                 <span className="text-2xl">🎯</span>
               </div>
               <h3 className={`text-lg font-semibold ${text.primary}`}>Auto Play</h3>
@@ -224,7 +224,7 @@ const FlubberDemo = () => {
 
           <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
             <div className="flex items-center space-x-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+              <div className={`w-10 h-10 rounded-full ${isDarkMode ? 'bg-green-900' : 'bg-green-100'} flex items-center justify-center`}>
                 <span className="text-2xl">🎨</span>
               </div>
               <h3 className={`text-lg font-semibold ${text.primary}`}>Customizable</h3>

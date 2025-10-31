@@ -223,7 +223,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
           <div className="space-y-6">
             {/* Profile Section */}
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-blue-100 dark:bg-gray-700 rounded-full flex items-center justify-center overflow-hidden border-2 border-gray-200 dark:border-gray-600">
+              <div className={`w-16 h-16 ${isDarkMode ? 'bg-gray-700' : 'bg-blue-100'} rounded-full flex items-center justify-center overflow-hidden border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
                 {currentEmployee?.photo ? (
                   <img 
                     src={currentEmployee.photo} 

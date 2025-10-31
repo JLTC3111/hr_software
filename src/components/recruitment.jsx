@@ -69,13 +69,13 @@ const Recruitment = () => {
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case 'under review': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-      case 'shortlisted': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-      case 'interview scheduled': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
-      case 'offer extended': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-      case 'hired': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-      case 'rejected': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+      case 'under review': return `${isDarkMode ? 'bg-yellow-900 text-yellow-300' : 'bg-yellow-100 text-yellow-800'}`;
+      case 'shortlisted': return `${isDarkMode ? 'bg-blue-900 text-blue-300' : 'bg-blue-100 text-blue-800'}`;
+      case 'interview scheduled': return `${isDarkMode ? 'bg-purple-900 text-purple-300' : 'bg-purple-100 text-purple-800'}`;
+      case 'offer extended': return `${isDarkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-800'}`;
+      case 'hired': return `${isDarkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-800'}`;
+      case 'rejected': return `${isDarkMode ? 'bg-red-900 text-red-300' : 'bg-red-100 text-red-800'}`;
+      default: return `${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800'}`;
     }
   };
 
@@ -164,7 +164,7 @@ const Recruitment = () => {
 
       {/* Applications Table */}
       <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} overflow-hidden`}>
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className={`p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
           <h3 className={`text-lg font-semibold ${text.primary}`}>
             {t('recruitment.applications', 'Applications')}
             {filterStatus !== 'all' && ` - ${filterStatus}`}
@@ -212,7 +212,7 @@ const Recruitment = () => {
                 filteredApplications.map(application => (
                   <tr 
                     key={application.id} 
-                    className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors`}
+                    className={`${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}
                   >
                     <td className={`px-6 py-4 whitespace-nowrap`}>
                       <div>
@@ -258,7 +258,7 @@ const Recruitment = () => {
                             setSelectedApplication(application);
                             setShowDetailModal(true);
                           }}
-                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                          className={`${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-900'}`}
                           title={t('recruitmentActions.view', 'View')}
                         >
                           <Eye className="w-4 h-4" />
@@ -266,7 +266,7 @@ const Recruitment = () => {
                         {application.status === 'shortlisted' && (
                           <button 
                             onClick={() => handleScheduleInterview(application)}
-                            className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                            className={`${isDarkMode ? 'text-green-400 hover:text-green-300' : 'text-green-600 hover:text-green-900'}`}
                             title={t('recruitmentActions.schedule', 'Schedule Interview')}
                           >
                             <Calendar className="w-4 h-4" />
@@ -275,7 +275,7 @@ const Recruitment = () => {
                         {application.status !== 'rejected' && application.status !== 'hired' && (
                           <button 
                             onClick={() => handleStatusUpdate(application.id, 'rejected')}
-                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            className={`${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-900'}`}
                             title={t('recruitmentActions.reject', 'Reject')}
                           >
                             <XCircle className="w-4 h-4" />
@@ -308,21 +308,21 @@ const Recruitment = () => {
 
 // Stat Card Component
 const StatCard = ({ label, value, color, onClick, active }) => {
-  const { text, border } = useTheme();
+  const { text, border, isDarkMode } = useTheme();
   
   const colorClasses = {
-    blue: 'border-blue-500 bg-blue-50 dark:bg-blue-900',
-    yellow: 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900',
-    purple: 'border-purple-500 bg-purple-50 dark:bg-purple-900',
-    green: 'border-green-500 bg-green-50 dark:bg-green-900',
-    red: 'border-red-500 bg-red-50 dark:bg-red-900'
+    blue: `border-blue-500 ${isDarkMode ? 'bg-blue-900' : 'bg-blue-50'}`,
+    yellow: `border-yellow-500 ${isDarkMode ? 'bg-yellow-900' : 'bg-yellow-50'}`,
+    purple: `border-purple-500 ${isDarkMode ? 'bg-purple-900' : 'bg-purple-50'}`,
+    green: `border-green-500 ${isDarkMode ? 'bg-green-900' : 'bg-green-50'}`,
+    red: `border-red-500 ${isDarkMode ? 'bg-red-900' : 'bg-red-50'}`
   };
 
   return (
     <div
       onClick={onClick}
       className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
-        active ? colorClasses[color] : `${border.primary} bg-white dark:bg-gray-800`
+        active ? colorClasses[color] : `${border.primary} ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`
       }`}
     >
       <div className={`text-sm font-medium ${text.secondary} mb-1`}>{label}</div>
@@ -352,7 +352,7 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate }) => {
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
           >
             <X className="w-5 h-5" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
           </button>
@@ -394,7 +394,7 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate }) => {
                     href={application.applicant.resume_url} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center space-x-2"
+                    className={`${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'} flex items-center space-x-2`}
                   >
                     <span>View Resume</span>
                   </a>
@@ -404,7 +404,7 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate }) => {
                     href={application.applicant.linkedin_profile} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center space-x-2"
+                    className={`${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'} flex items-center space-x-2`}
                   >
                     <span>LinkedIn Profile</span>
                   </a>
@@ -426,7 +426,7 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate }) => {
         <div className={`flex justify-end p-6 border-t ${border.primary} space-x-3`}>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+            className={`px-4 py-2 ${isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'} rounded-lg`}
           >
             Close
           </button>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Circle, Edit2, Trash2, Plus, Calendar, User, TrendingUp, BarChart3, MessageSquare, Loader } from 'lucide-react';
+import { CheckCircle, Circle, Edit2, Trash2, Plus, Calendar, User, TrendingUp, BarChart3, MessageSquare, Loader, Star } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -249,7 +249,9 @@ const WorkloadManagement = ({ employees }) => {
   const calculateAvgQuality = (empTasks) => {
     const rated = empTasks.filter(t => t.quality_rating > 0);
     if (rated.length === 0) return 0;
-    return (rated.reduce((sum, t) => sum + t.quality_rating, 0) / rated.length).toFixed(1);
+    const avg = rated.reduce((sum, t) => sum + t.quality_rating, 0) / rated.length;
+    // Return whole number if it's a whole number, otherwise keep one decimal
+    return avg % 1 === 0 ? avg.toFixed(0) : avg.toFixed(1);
   };
 
   const getPriorityColor = (priority) => {
@@ -330,7 +332,7 @@ const WorkloadManagement = ({ employees }) => {
 
           <div className="space-y-3">
             {employeeTasks.map(task => (
-              <div key={task.id} className={`border ${border.primary} rounded-lg p-4 hover:shadow-md transition-shadow`}>
+              <div key={task.id} className={`border ${isDarkMode ? 'border-gray-600' : 'border-gray-200'} ${bg.secondary} ${text.primary} rounded-lg p-4 hover:shadow-md transition-shadow`}>
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
@@ -338,8 +340,8 @@ const WorkloadManagement = ({ employees }) => {
                         status: task.status === 'completed' ? 'pending' : 'completed' 
                       })}>
                         {task.status === 'completed' ? 
-                          <CheckCircle className="w-5 h-5 text-green-600" /> : 
-                          <Circle className="w-5 h-5 text-gray-400" />
+                          <CheckCircle className={`w-5 h-5 ${text.primary}`} /> : 
+                          <Circle className={`w-5 h-5 ${text.primary}`} />
                         }
                       </button>
                       <h4 className={`font-semibold ${text.primary} ${task.status === 'completed' ? 'line-through' : ''}`}>
@@ -352,8 +354,8 @@ const WorkloadManagement = ({ employees }) => {
                         {task.status}
                       </span>
                       {canAssignTasks && task.employee && (
-                        <span className={`px-2 py-1 rounded text-xs bg-blue-100 text-blue-800`}>
-                          👤 {task.employee.name}
+                        <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-white' : 'bg-blue-100 text-blue-800'}`}>
+                          {task.employee.name}
                         </span>
                       )}
                     </div>
@@ -372,8 +374,9 @@ const WorkloadManagement = ({ employees }) => {
                         </p>
                         <p className={`text-sm ${text.primary}`}>{task.self_assessment}</p>
                         {task.quality_rating > 0 && (
-                          <p className={`text-sm ${text.secondary} mt-1`}>
-                            Quality: {task.quality_rating}/5 ⭐
+                          <p className={`text-sm ${text.secondary} mt-1 flex items-center space-x-1`}>
+                            <span>Quality: {task.quality_rating}/5</span>
+                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                           </p>
                         )}
                       </div>
@@ -427,18 +430,18 @@ const WorkloadManagement = ({ employees }) => {
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <p className={`text-sm ${text.secondary}`}>{t('workload.totalTasks', 'Total Tasks')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('workload.totalTasks', '')}</p>
             <p className={`text-2xl font-bold ${text.primary}`}>{tasks.length}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <p className={`text-sm ${text.secondary}`}>{t('workload.avgProgress', 'Avg Progress')}</p>
-            <p className={`text-2xl font-bold text-blue-600`}>
+            <p className={`text-sm ${text.secondary}`}>{t('workload.avgProgress', '')}</p>
+            <p className={`text-2xl font-bold ${text.secondary}`}>
               {Math.round(orgStats.reduce((sum, s) => sum + s.progress, 0) / (orgStats.length || 1))}%
             </p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <p className={`text-sm ${text.secondary}`}>{t('workload.avgQuality', 'Avg Quality')}</p>
-            <p className={`text-2xl font-bold text-purple-600`}>
+            <p className={`text-sm ${text.secondary}`}>{t('workload.avgQuality', '')}</p>
+            <p className={`text-2xl font-bold ${text.secondary}`}>
               {(orgStats.reduce((sum, s) => sum + parseFloat(s.avgQuality || 0), 0) / (orgStats.length || 0)).toFixed(0)}/5
             </p>
           </div>
@@ -483,23 +486,23 @@ const WorkloadManagement = ({ employees }) => {
                       <p className={`text-sm ${text.secondary}`}>{employee.department}</p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-6 text-sm">
+                  <div className="flex items-center space-x-6 text-sm text-center justify-center">
                     <div>
                       <p className={`${text.secondary}`}>Tasks</p>
-                      <p className={`font-semibold ${text.primary}`}>{tasks.length}</p>
+                      <p className={`font-semiboldcha ${text.primary}`}>{tasks.length}</p>
                     </div>
                     <div>
                       <p className={`${text.secondary}`}>Progress</p>
-                      <p className="font-semibold text-blue-600">{progress}%</p>
+                      <p className={`font-semibold ${text.primary}`}>{progress}%</p>
                     </div>
                     <div>
                       <p className={`${text.secondary}`}>Quality</p>
-                      <p className="font-semibold text-purple-600">{avgQuality}/5</p>
+                      <p className={`font-semibold ${text.primary}`}>{avgQuality}/5</p>
                     </div>
                   </div>
                 </div>
                 <div className={`mt-3 w-full rounded-full h-2 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                  <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${progress}%` }}></div>
+                  <div className="bg-linear-to-r from-blue-500 to-gray-600 h-2 rounded-full" style={{ width: `${progress}%` }}></div>
                 </div>
               </div>
             ))}
@@ -543,7 +546,7 @@ const WorkloadManagement = ({ employees }) => {
               }
             `}
           >
-            {t('workload.individual', 'Individual')}
+            {t('workload.individual', '')}
           </button>
 
           <button
@@ -558,7 +561,7 @@ const WorkloadManagement = ({ employees }) => {
               }
             `}
           >
-            {t('workload.organization', 'Organization')}
+            {t('workload.organization', '')}
           </button>
         </div>
       </div>
@@ -577,7 +580,7 @@ const WorkloadManagement = ({ employees }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div ref={modalRef} className={`${bg.secondary} rounded-lg shadow-xl max-w-2xl w-full p-6`}>
             <h3 className={`text-xl font-semibold ${text.primary} mb-4`}>
-              {editingTask ? t('workload.editTask', 'Edit Task') : t('workload.addTask', 'Add Task')}
+              {editingTask ? t('workload.editTask', '') : t('workload.addTask', '')}
             </h3>
             <div className="space-y-4">
               {/* Employee Selector - Only for Admin/Manager */}
@@ -589,12 +592,12 @@ const WorkloadManagement = ({ employees }) => {
                   <select
                     value={taskForm.assignedTo}
                     onChange={(e) => setTaskForm({ ...taskForm, assignedTo: e.target.value })}
-                    className={`w-full px-4 py-2 rounded-lg border ${border.primary}`}
+                    className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
                   >
                     <option value="">{t('workload.selectEmployee', 'Select Employee')}</option>
                     {employees.map(emp => (
                       <option key={emp.id} value={emp.id}>
-                        {emp.name} - {emp.department} ({emp.position})
+                        {emp.name} - {t(`departments.${emp.department}`, emp.department)} ({t(`positions.${emp.position}`, emp.position)})
                       </option>
                     ))}
                   </select>
@@ -608,7 +611,7 @@ const WorkloadManagement = ({ employees }) => {
                   type="text"
                   value={taskForm.title}
                   onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
-                  className={`w-full px-4 py-2 rounded-lg border ${border.primary}`}
+                  className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
                 />
               </div>
               <div>
@@ -619,19 +622,22 @@ const WorkloadManagement = ({ employees }) => {
                   value={taskForm.description}
                   onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
                   rows="3"
-                  className={`w-full px-4 py-2 rounded-lg border ${border.primary}`}
+                  className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
                 />
               </div>
               <div>
                 <label className={`block text-sm font-medium ${text.primary} mb-2`}>
                   {t('workload.dueDate', 'Due Date')}
                 </label>
-                <input
-                  type="date"
-                  value={taskForm.dueDate}
-                  onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
-                  className={`w-full px-4 py-2 rounded-lg border ${border.primary}`}
-                />
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={taskForm.dueDate}
+                    onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary} [&::-webkit-calendar-picker-indicator]:opacity-0`}
+                  />
+                  <Calendar className={`absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none`} />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -641,11 +647,11 @@ const WorkloadManagement = ({ employees }) => {
                   <select
                     value={taskForm.priority}
                     onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}
-                    className={`w-full px-4 py-2 rounded-lg border ${border.primary}`}
+                    className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
                   >
-                    <option value="low">{t('workload.priorityLow', 'Low')}</option>
-                    <option value="medium">{t('workload.priorityMedium', 'Medium')}</option>
-                    <option value="high">{t('workload.priorityHigh', 'High')}</option>
+                    <option value="low">{t('workload.priorityLow', '')}</option>
+                    <option value="medium">{t('workload.priorityMedium', '')}</option>
+                    <option value="high">{t('workload.priorityHigh', '')}</option>
                   </select>
                 </div>
                 <div>
@@ -655,7 +661,7 @@ const WorkloadManagement = ({ employees }) => {
                   <select
                     value={taskForm.status}
                     onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value })}
-                    className={`w-full px-4 py-2 rounded-lg border ${border.primary}`}
+                    className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
                   >
                     <option value="pending">{t('workload.statusPending', '')}</option>
                     <option value="in-progress">{t('workload.statusInProgress', '')}</option>
@@ -672,7 +678,7 @@ const WorkloadManagement = ({ employees }) => {
                   onChange={(e) => setTaskForm({ ...taskForm, selfAssessment: e.target.value })}
                   rows="2"
                   placeholder={t('workload.selfAssessmentPlaceholder', 'How did you perform on this task?')}
-                  className={`w-full px-4 py-2 rounded-lg border ${border.primary}`}
+                  className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
                 />
               </div>
               <div>
@@ -685,20 +691,20 @@ const WorkloadManagement = ({ employees }) => {
                   max="5"
                   value={taskForm.qualityRating}
                   onChange={(e) => setTaskForm({ ...taskForm, qualityRating: parseInt(e.target.value) })}
-                  className={`w-full px-4 py-2 rounded-lg border ${border.primary}`}
+                  className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
                 />
               </div>
               <div className="flex space-x-3 pt-4">
                 <button
                   onClick={closeModal}
-                  className={`flex-1 px-4 py-2 border rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
+                  className={`flex-1 px-4 py-2 border rounded-lg ${text.secondary} ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
                 >
                   {t('common.cancel', 'Cancel')}
                 </button>
                 <button
                   onClick={() => {
                     if (editingTask) {
-                      // When updating, include assignedTo if admin/manager changed it
+                    
                       const updates = {
                         title: taskForm.title,
                         description: taskForm.description,

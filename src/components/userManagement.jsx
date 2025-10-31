@@ -286,7 +286,7 @@ const UserManagement = () => {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className={`divide-y ${isDarkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
                 {filteredUsers.map((user) => (
                   <tr key={user.id} className={`${hover.bg}`}>
                     <td className="px-6 py-4">

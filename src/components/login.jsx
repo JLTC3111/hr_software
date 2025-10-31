@@ -187,7 +187,7 @@ const Login = () => {
 
           {/* Login Error */}
           {loginError && (
-            <div className="mb-6 p-3 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 rounded-lg flex items-center space-x-2 text-red-700 dark:text-red-400">
+            <div className={`mb-6 p-3 ${isDarkMode ? 'bg-red-900/30 border-red-700 text-red-400' : 'bg-red-100 border-red-400 text-red-700'} border rounded-lg flex items-center space-x-2`}>
               <AlertCircle className="w-5 h-5 shrink-0" />
               <span className="text-sm">{loginError}</span>
             </div>
@@ -424,17 +424,17 @@ const Login = () => {
 
             {/* Success Message */}
             {forgotPasswordSuccess && (
-              <div className="mb-4 p-4 bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-700 rounded-lg flex items-start space-x-2">
-                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
-                <span className="text-sm text-green-700 dark:text-green-400">{forgotPasswordSuccess}</span>
+              <div className={`mb-4 p-4 ${isDarkMode ? 'bg-green-900/30 border-green-700' : 'bg-green-100 border-green-400'} border rounded-lg flex items-start space-x-2`}>
+                <CheckCircle className={`w-5 h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'} shrink-0 mt-0.5`} />
+                <span className={`text-sm ${isDarkMode ? 'text-green-400' : 'text-green-700'}`}>{forgotPasswordSuccess}</span>
               </div>
             )}
 
             {/* Error Message */}
             {forgotPasswordError && (
-              <div className="mb-4 p-4 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 rounded-lg flex items-start space-x-2">
-                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
-                <span className="text-sm text-red-700 dark:text-red-400">{forgotPasswordError}</span>
+              <div className={`mb-4 p-4 ${isDarkMode ? 'bg-red-900/30 border-red-700' : 'bg-red-100 border-red-400'} border rounded-lg flex items-start space-x-2`}>
+                <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'} shrink-0 mt-0.5`} />
+                <span className={`text-sm ${isDarkMode ? 'text-red-400' : 'text-red-700'}`}>{forgotPasswordError}</span>
               </div>
             )}
 

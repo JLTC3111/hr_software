@@ -740,9 +740,9 @@ const TimeClockEntry = ({ currentLanguage }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'approved': return 'text-green-800 bg-green-200 dark:bg-green-900/30 dark:text-green-400 font-semibold';
-      case 'rejected': return 'text-red-800 bg-red-200 dark:bg-red-900/30 dark:text-red-400 font-semibold';
-      default: return 'text-yellow-800 bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 font-semibold';
+      case 'approved': return `text-green-800 bg-green-200 ${isDarkMode ? 'bg-green-900/30 text-green-400' : ''} font-semibold`;
+      case 'rejected': return `text-red-800 bg-red-200 ${isDarkMode ? 'bg-red-900/30 text-red-400' : ''} font-semibold`;
+      default: return `text-yellow-800 bg-yellow-200 ${isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : ''} font-semibold`;
     }
   };
 
@@ -764,19 +764,19 @@ const TimeClockEntry = ({ currentLanguage }) => {
           <div className={`
             rounded-lg p-4 shadow-lg flex items-center space-x-3
             ${uploadToast.type === 'success' 
-              ? 'bg-green-100 dark:bg-green-900/30 border-l-4 border-green-600' 
-              : 'bg-red-100 dark:bg-red-900/30 border-l-4 border-red-600'}
+              ? `${isDarkMode ? 'bg-green-900/30' : 'bg-green-100'} border-l-4 border-green-600` 
+              : `${isDarkMode ? 'bg-red-900/30' : 'bg-red-100'} border-l-4 border-red-600`}
           `}>
             {uploadToast.type === 'success' ? (
-              <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <Check className={`w-5 h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
             ) : (
-              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
             )}
             <span className={`
               font-medium
               ${uploadToast.type === 'success' 
-                ? 'text-green-800 dark:text-green-200' 
-                : 'text-red-800 dark:text-red-200'}
+                ? `${isDarkMode ? 'text-green-200' : 'text-green-800'}` 
+                : `${isDarkMode ? 'text-red-200' : 'text-red-800'}`}
             `}>
               {uploadToast.message}
             </span>
@@ -856,17 +856,17 @@ const TimeClockEntry = ({ currentLanguage }) => {
 
       {/* Success Message */}
       {successMessage && (
-        <div className="p-4 bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-700 rounded-lg flex items-center space-x-2">
-          <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
-          <span className="text-green-700 dark:text-green-400">{successMessage}</span>
+        <div className={`p-4 ${isDarkMode ? 'bg-green-900/30 border-green-700' : 'bg-green-100 border-green-400'} border rounded-lg flex items-center space-x-2`}>
+          <Check className={`w-5 h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+          <span className={isDarkMode ? 'text-green-400' : 'text-green-700'}>{successMessage}</span>
         </div>
       )}
 
       {/* General Error */}
       {errors.general && (
-        <div className="p-4 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 rounded-lg flex items-center space-x-2">
-          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-          <span className="text-red-700 dark:text-red-400">{errors.general}</span>
+        <div className={`p-4 ${isDarkMode ? 'bg-red-900/30 border-red-700' : 'bg-red-100 border-red-400'} border rounded-lg flex items-center space-x-2`}>
+          <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
+          <span className={isDarkMode ? 'text-red-400' : 'text-red-700'}>{errors.general}</span>
         </div>
       )}
 
@@ -1089,7 +1089,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
             </form>
             
             {/* Request Leave Button */}
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className={`mt-4 pt-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
               <button
                 onClick={() => setShowLeaveModal(true)}
                 className="w-full py-3 px-6 rounded-lg font-medium text-white bg-green-600 hover:bg-green-700 active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
@@ -1173,7 +1173,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                   {calculateLeaveDays('month').toFixed(1)} {t('timeClock.days')}
                 </span>
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-2`}>
                 {t('timeClock.includesPending', '* Includes pending & approved')}
               </div>
             </div>
@@ -1280,7 +1280,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
               </thead>
               <tbody className="text-center">
                 {filteredEntries.map((entry, index) => (
-                  <tr key={entry.id} className={`border-b ${border.primary} hover:bg-blue-600 dark:hover:bg-gray-800 group transition-colors cursor-pointer`}>
+                  <tr key={entry.id} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-blue-600'} group transition-colors cursor-pointer`}>
                     <td className={`p-3 ${text.primary} text-center hover:text-white font-medium group-hover:text-white `}>
                       {entry.date || new Date(entry.created_at).toLocaleDateString()}
                     </td>
@@ -1298,10 +1298,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     </td>
                     <td className="p-3">
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                        (entry.hour_type || entry.hourType) === 'regular' ? 'bg-blue-200 text-blue-900 dark:bg-blue-900/30 dark:text-blue-400' :
-                        (entry.hour_type || entry.hourType) === 'holiday' ? 'bg-purple-200 text-purple-900 dark:bg-purple-900/30 dark:text-purple-400' :
-                        (entry.hour_type || entry.hourType) === 'weekend' ? 'bg-green-200 text-green-900 dark:bg-green-900/30 dark:text-green-400' :
-                        'bg-yellow-200 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-400'
+                        (entry.hour_type || entry.hourType) === 'regular' ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-200 text-blue-900') :
+                        (entry.hour_type || entry.hourType) === 'holiday' ? (isDarkMode ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-200 text-purple-900') :
+                        (entry.hour_type || entry.hourType) === 'weekend' ? (isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-200 text-green-900') :
+                        (isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-200 text-yellow-900')
                       }`}>
                         {hourTypes.find(t => t.value === (entry.hour_type || entry.hourType))?.label}
                       </span>
@@ -1374,9 +1374,9 @@ const TimeClockEntry = ({ currentLanguage }) => {
                             >
                               {uploadingProofId === entry.id ? (
                                 <div className="flex items-center gap-2">
-                                  <Loader className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:text-white animate-spin" />
+                                  <Loader className={`w-4 h-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'} group-hover:text-white animate-spin`} />
                                   {Object.values(uploadProgress)[0] > 0 && Object.values(uploadProgress)[0] < 100 && (
-                                    <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                    <span className={`text-xs ${isDarkMode ? 'text-blue-400' : 'text-blue-600'} font-medium`}>
                                       {Object.values(uploadProgress)[0]}%
                                     </span>
                                   )}
@@ -1467,7 +1467,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
           onClick={() => setImagePreview({ show: false, url: '' })}
         >
           <div 
-            className="relative max-w-7xl max-h-[90vh] bg-white dark:bg-gray-800 rounded-lg shadow-2xl overflow-hidden"
+            className={`relative max-w-7xl max-h-[90vh] ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-2xl overflow-hidden`}
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -1498,7 +1498,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                   textAlign: 'center',
                   padding: '2rem'
                 }}
-                className="text-gray-600 dark:text-gray-400"
+                className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}
               >
                 <p className="text-lg font-medium">Failed to load image</p>
                 <p className="text-sm mt-2">The image may be corrupted or in an unsupported format.</p>

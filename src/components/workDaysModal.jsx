@@ -180,7 +180,7 @@ const WorkDaysModal = ({ isOpen, onClose, employeeId, month }) => {
             <thead className={`border-b ${border.primary}`}>
               <tr classname="flex items-center justify-center text-center"> 
                 <th 
-                  className={`py-3 px-4 ${text.primary} font-semibold cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700`}
+                  className={`py-3 px-4 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
                   onClick={() => requestSort('date')}
                 >
                   <div className="flex space-x-2 items-center justify-center">
@@ -201,7 +201,7 @@ const WorkDaysModal = ({ isOpen, onClose, employeeId, month }) => {
                   </div>
                 </th>
                 <th 
-                  className={`py-3 px-4 ${text.primary} font-semibold cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700`}
+                  className={`py-3 px-4 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
                   onClick={() => requestSort('hours')}
                 >
                   <div className="flex justify-center items-center space-x-2">
@@ -236,7 +236,7 @@ const WorkDaysModal = ({ isOpen, onClose, employeeId, month }) => {
                 </tr>
               ) : (
                 filteredTimeEntries.map((entry, index) => (
-                  <tr key={index} className={`border-b ${border.primary} hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors`}>
+                  <tr key={index} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
                     <td className={`py-3 px-4 ${text.primary} font-medium`}>
                       {new Date(entry.date).toLocaleDateString('en-US', { 
                         weekday: 'short', 

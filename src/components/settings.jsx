@@ -184,7 +184,7 @@ const Settings = () => {
             {/* Action Buttons */}
             <div className="flex items-center space-x-2">
               {saveSuccess && (
-                <div className="flex items-center space-x-2 px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg">
+                <div className={`flex items-center space-x-2 px-4 py-2 ${isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700'} rounded-lg`}>
                   <Check className="h-4 w-4" />
                   <span className="text-sm font-medium">{t('settings.saved', 'Saved!')}</span>
                 </div>

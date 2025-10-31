@@ -544,15 +544,15 @@ const TaskPerformanceReview = ({ employees }) => {
             <h3 className={`text-sm font-semibold ${text.primary} mb-3`}>{t('taskPerformance.priorityDistribution', 'Priority Distribution')}</h3>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className={`text-sm ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{t('workload.priorityHigh', 'High Priority')}</span>
+                <span className={`text-sm ${isDarkMode ? 'text-red-200' : 'text-red-600'}`}>{t('workload.priorityHigh', 'High Priority')}</span>
                 <span className={`font-semibold ${text.primary}`}>{monthlyStats.highPriority}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className={`text-sm ${isDarkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>{t('workload.priorityMedium', 'Medium Priority')}</span>
+                <span className={`text-sm ${isDarkMode ? 'text-yellow-200' : 'text-yellow-600'}`}>{t('workload.priorityMedium', 'Medium Priority')}</span>
                 <span className={`font-semibold ${text.primary}`}>{monthlyStats.mediumPriority}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className={`text-sm ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>{t('workload.priorityLow', 'Low Priority')}</span>
+                <span className={`text-sm ${isDarkMode ? 'text-green-200' : 'text-green-600'}`}>{t('workload.priorityLow', 'Low Priority')}</span>
                 <span className={`font-semibold ${text.primary}`}>{monthlyStats.lowPriority}</span>
               </div>
             </div>
@@ -639,10 +639,10 @@ const TaskPerformanceReview = ({ employees }) => {
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
                       <h4 className={`font-semibold ${text.primary}`}>{task.title}</h4>
-                      <span className={`px-2 py-1 rounded text-xs ${getStatusColor(task.status)}`}>
+                      <span className={`px-2 py-1 rounded text-xs ${text.primary} ${getStatusColor(task.status)}`}>
                         {getStatusText(task.status)}
                       </span>
-                      <span className={`px-2 py-1 rounded text-xs ${getPriorityColor(task.priority)}`}>
+                      <span className={`px-2 py-1 rounded text-xs ${text.primary} ${getPriorityColor(task.priority)}`}>
                         {getPriorityText(task.priority)}
                       </span>
                       {task.quality_rating > 0 && (

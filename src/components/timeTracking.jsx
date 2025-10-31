@@ -630,7 +630,7 @@ const TimeTracking = ({ employees }) => {
                         <span className={text.secondary}>{item.employee.name}</span>
                         <span className={text.primary}>{item.data?.regular_hours || 0} hrs</span>
                       </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div className={`w-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} rounded-full h-2`}>
                         <div
                           className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${percentage}%` }}
@@ -678,7 +678,7 @@ const TimeTracking = ({ employees }) => {
                         <span className={text.secondary}>{item.employee.name}</span>
                         <span className={text.primary}>{overtimeTotal.toFixed(1)} hrs</span>
                       </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div className={`w-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} rounded-full h-2`}>
                         <div
                           className="bg-orange-600 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${percentage}%` }}
@@ -759,7 +759,7 @@ const TimeTracking = ({ employees }) => {
         <div className="flex flex-wrap gap-3">
           <button 
             onClick={() => navigate('/time-clock')}
-            className="cursor-pointer px-4 py-2 rounded-lg border transition-colors flex items-center space-x-2 hover:bg-gray-300 dark:hover:bg-white dark:hover:text-black"
+            className={`cursor-pointer px-4 py-2 rounded-lg border transition-colors flex items-center space-x-2 ${isDarkMode ? 'hover:bg-white hover:text-black' : 'hover:bg-gray-300'}`}
             style={{
               backgroundColor: isDarkMode ? 'transparent' : '#ffffff',
               borderColor: isDarkMode ? '#ffffff' : '#000000',
@@ -771,7 +771,7 @@ const TimeTracking = ({ employees }) => {
           </button>
           <button 
             onClick={() => setShowLeaveModal(true)}
-            className="cursor-pointer px-4 py-2 rounded-lg border transition-colors flex items-center space-x-2 hover:bg-gray-300 dark:hover:bg-white dark:hover:text-black"
+            className={`cursor-pointer px-4 py-2 rounded-lg border transition-colors flex items-center space-x-2 ${isDarkMode ? 'hover:bg-white hover:text-black' : 'hover:bg-gray-300'}`}
             style={{
               backgroundColor: isDarkMode ? 'transparent' : '#ffffff',
               borderColor: isDarkMode ? '#ffffff' : '#000000',
@@ -783,7 +783,7 @@ const TimeTracking = ({ employees }) => {
           </button>
           <button 
             onClick={() => setShowOvertimeModal(true)}
-            className="cursor-pointer px-4 py-2 rounded-lg border transition-colors flex items-center space-x-2 hover:bg-gray-300 dark:hover:bg-white dark:hover:text-black"
+            className={`cursor-pointer px-4 py-2 rounded-lg border transition-colors flex items-center space-x-2 ${isDarkMode ? 'hover:bg-white hover:text-black' : 'hover:bg-gray-300'}`}
             style={{
               backgroundColor: isDarkMode ? 'transparent' : '#ffffff',
               borderColor: isDarkMode ? '#ffffff' : '#000000',
@@ -795,7 +795,7 @@ const TimeTracking = ({ employees }) => {
           </button>
           <button 
             onClick={handleExportReport}
-            className="cursor-pointer px-4 py-2 rounded-lg border transition-colors flex items-center space-x-2 hover:bg-gray-300 dark:hover:bg-white dark:hover:text-black"
+            className={`cursor-pointer px-4 py-2 rounded-lg border transition-colors flex items-center space-x-2 ${isDarkMode ? 'hover:bg-white hover:text-black' : 'hover:bg-gray-300'}`}
             style={{
               backgroundColor: isDarkMode ? 'transparent' : '#ffffff',
               borderColor: isDarkMode ? '#ffffff' : '#000000',
@@ -882,7 +882,7 @@ const TimeTracking = ({ employees }) => {
                 <button
                   type="button"
                   onClick={() => setShowLeaveModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className={`flex-1 px-4 py-2 border ${isDarkMode ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-300 hover:bg-gray-50'} rounded-lg transition-colors`}
                 >
                   {t('common.cancel', 'Cancel')}
                 </button>
@@ -961,7 +961,7 @@ const TimeTracking = ({ employees }) => {
                 <button
                   type="button"
                   onClick={() => setShowOvertimeModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className={`flex-1 px-4 py-2 border ${isDarkMode ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-300 hover:bg-gray-50'} rounded-lg transition-colors`}
                 >
                   {t('common.cancel', 'Cancel')}
                 </button>
