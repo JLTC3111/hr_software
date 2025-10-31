@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Clock, Upload, Calendar, AlertCircle, Check, X, FileText, AlarmClockPlus, Loader, Loader2, ChevronsUpDown } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -7,6 +7,7 @@ import * as timeTrackingService from '../services/timeTrackingService';
 import { supabase } from '../config/supabaseClient';
 import AdminTimeEntry from './AdminTimeEntry';
 import { motion } from 'framer-motion';
+import * as flubber from 'flubber';
 
 const TimeClockEntry = ({ currentLanguage }) => {
   const { isDarkMode, bg, text, button, input, border } = useTheme();
@@ -271,40 +272,146 @@ const TimeClockEntry = ({ currentLanguage }) => {
     };
 
   const CustomClockIcon = ({ className }) => {
-    const outlineFill = isDarkMode ? '#F5F5F5' : '#45484C'; 
+    const outlineFill = isDarkMode ? '#F5F5F5' : '#45484C';
+    const svgRef = useRef(null);
+    const [isMorphed, setIsMorphed] = useState(false);
+    const animationRef = useRef(null);
+    
+    // Clock path (outer circle ring)
+    const clockPath = "M317.688,236.349c-49.955,0-90.597,40.642-90.597,90.596c0,49.956,40.642,90.597,90.597,90.597c49.954,0,90.595-40.641,90.595-90.597C408.283,276.991,367.642,236.349,317.688,236.349z M317.688,387.542c-33.303,0-60.597-27.294-60.597-60.597c0-33.304,27.294-60.596,60.597-60.596c33.302,0,60.595,27.292,60.595,60.596C378.283,360.248,350.99,387.542,317.688,387.542z";
+    
+    // Coffee cup path (cup shape with handle)
+    const coffeeCupPath = "M250,240 L250,380 Q250,400 270,400 L365,400 Q385,400 385,380 L385,240 Q385,230 375,230 L260,230 Q250,230 250,240 Z M385,260 L410,260 Q425,260 425,275 L425,295 Q425,310 410,310 L385,310 Z";
+    
+    useEffect(() => {
+      if (!svgRef.current) return;
+      
+      const morphPath = svgRef.current.querySelector('.morph-path');
+      if (!morphPath) return;
+      
+      // Cancel any existing animation
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      
+      const interpolator = flubber.interpolate(
+        isMorphed ? clockPath : clockPath,
+        isMorphed ? coffeeCupPath : clockPath
+      );
+      
+      const duration = 1500;
+      const startTime = Date.now();
+      
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Ease in-out cubic
+        const easedProgress = progress < 0.5
+          ? 4 * progress * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+        
+        const targetPath = isMorphed ? coffeeCupPath : clockPath;
+        const sourcePath = isMorphed ? clockPath : coffeeCupPath;
+        const pathInterpolator = flubber.interpolate(sourcePath, targetPath);
+        const morphedPath = pathInterpolator(easedProgress);
+        
+        morphPath.setAttribute('d', morphedPath);
+        
+        if (progress < 1) {
+          animationRef.current = requestAnimationFrame(animate);
+        }
+      };
+      
+      animate();
+      
+      return () => {
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+        }
+      };
+    }, [isMorphed, clockPath, coffeeCupPath]);
+    
+    const handleClick = () => {
+      setIsMorphed(!isMorphed);
+    };
 
     return (
-        <svg width="22.5px" height="22.5px"
-        viewBox="0 0 450 450.001" 
-        xmlns="http://www.w3.org/2000/svg" 
-        fill="currentColor" 
-        className={className}
-        stroke="currentColor" >
-        
+        <svg 
+          ref={svgRef}
+          width="22.5px" 
+          height="22.5px"
+          viewBox="0 0 450 450.001" 
+          xmlns="http://www.w3.org/2000/svg" 
+          fill="currentColor" 
+          className={`${className} cursor-pointer transition-all`}
+          stroke="currentColor"
+          onClick={handleClick}
+          title={isMorphed ? "Click for clock" : "Click for coffee"}
+        >
             <path 
-                d="M317.688,204.447c-67.547,0-122.501,54.953-122.501,122.498c0,67.548,54.954,122.501,122.501,122.501 s122.499-54.953,122.499-122.501C440.188,259.4,385.234,204.447,317.688,204.447z M317.688,417.542 c-49.954,0-90.595-40.641-90.595-90.597c0-49.954,40.641-90.596,90.595-90.596c49.955,0,90.597,40.642,90.597,90.596 C408.285,376.901,367.643,417.542,317.688,417.542z"
+                className="morph-path"
+                d={clockPath}
                 fill={outlineFill}
+                style={{ transition: 'all 0.3s ease' }}
             />
-            <path 
-                d="M317.603,249.295c-8.138,0-14.758,6.616-14.758,14.748v48.145h-29.36c-8.13,0-14.742,6.621-14.742,14.758 s6.612,14.755,14.742,14.755h44.118c8.139,0,14.759-6.618,14.759-14.755v-62.901C332.361,255.912,325.741,249.295,317.603,249.295 z"
-                fill={outlineFill}
-            />
-            {/* Modified running person - arms and legs in running position */}
-            <path 
-                d="M238.887,181.527c0-8.563-6.941-15.506-15.505-15.506c-20.161,0-30.705-11.269-44.055-25.535 c-9.412-10.058-19.145-20.46-32.983-27.099l-20.287-9.529l-7.896-6.725c-0.541-0.462-1.341-0.429-1.844,0.078l-12.509,12.568 c-0.507,0.523-0.368,1.275-0.368,1.275l12.14,81.42c0.076,0.545-0.079,1.095-0.427,1.521l-11.484,14.031 c-0.375,0.459-0.935,0.723-1.525,0.723s-1.15-0.264-1.524-0.723l-11.483-14.031c-0.349-0.426-0.503-0.976-0.428-1.521 l12.115-81.42c0,0,0.137-0.752-0.369-1.275L87.947,97.211c-0.504-0.507-1.304-0.54-1.845-0.078l-7.896,6.725l-21.267,10.111 c-31.131,15.814-36.663,59.643-43.036,110.325c-1.213,9.647-2.468,19.624-3.923,29.546c-1.242,8.475,4.619,16.35,13.092,17.592 c0.763,0.111,1.521,0.166,2.27,0.166c7.567,0,14.191-5.547,15.322-13.258c1.501-10.24,2.775-20.373,4.008-30.174 c2.334-18.558,4.71-37.406,8.397-52.899l0.016,65.858c0,8.436,2.963,15.949,7.741,22.227l0.011,167.972 c0,10.315,8.363,18.678,18.68,18.678s18.679-8.363,18.678-18.68l-0.008-148.078c1.327,0.11,2.648,0.176,3.957,0.176 c1.308,0,2.629-0.063,3.957-0.176l-0.002,148.078c-0.001,10.315,8.361,18.68,18.679,18.68c10.315,0,18.679-8.363,18.679-18.68 l0.002-167.97c4.778-6.276,7.742-13.791,7.742-22.227l0.022-85.218c1.812,1.868,3.624,3.804,5.461,5.768 c14.741,15.752,33.086,35.357,66.699,35.357C231.945,197.033,238.887,190.091,238.887,181.527z"
-                fill={outlineFill}
-                transform="translate(-5, 0) skewX(-10)"
-            />
-            {/* Running person head - tilted forward */}
-            <path 
-                d="M102.143,95.888c22.682,0,39.611-21.136,39.995-56.577C142.382,14.717,130.671,0,102.143,0 C73.613,0,61.9,14.717,62.147,39.311C62.529,74.752,79.458,95.888,102.143,95.888z"
-                fill={outlineFill}
-                transform="translate(-3, 2)"
-            />
-            {/* Motion lines behind the running person */}
-            <line x1="20" y1="150" x2="35" y2="150" stroke={outlineFill} strokeWidth="2" opacity="0.3"/>
-            <line x1="15" y1="180" x2="32" y2="180" stroke={outlineFill} strokeWidth="2" opacity="0.3"/>
-            <line x1="18" y1="210" x2="38" y2="210" stroke={outlineFill} strokeWidth="2" opacity="0.3"/>
+            
+            {/* Clock hands and running person - fade out when morphing */}
+            <g style={{ 
+              opacity: isMorphed ? 0 : 1, 
+              transition: 'opacity 0.5s ease',
+              pointerEvents: 'none'
+            }}>
+              <path 
+                  d="M317.603,249.295c-8.138,0-14.758,6.616-14.758,14.748v48.145h-29.36c-8.13,0-14.742,6.621-14.742,14.758 s6.612,14.755,14.742,14.755h44.118c8.139,0,14.759-6.618,14.759-14.755v-62.901C332.361,255.912,325.741,249.295,317.603,249.295 z"
+                  fill={outlineFill}
+              />
+              {/* Modified running person - arms and legs in running position */}
+              <path 
+                  d="M238.887,181.527c0-8.563-6.941-15.506-15.505-15.506c-20.161,0-30.705-11.269-44.055-25.535 c-9.412-10.058-19.145-20.46-32.983-27.099l-20.287-9.529l-7.896-6.725c-0.541-0.462-1.341-0.429-1.844,0.078l-12.509,12.568 c-0.507,0.523-0.368,1.275-0.368,1.275l12.14,81.42c0.076,0.545-0.079,1.095-0.427,1.521l-11.484,14.031 c-0.375,0.459-0.935,0.723-1.525,0.723s-1.15-0.264-1.524-0.723l-11.483-14.031c-0.349-0.426-0.503-0.976-0.428-1.521 l12.115-81.42c0,0,0.137-0.752-0.369-1.275L87.947,97.211c-0.504-0.507-1.304-0.54-1.845-0.078l-7.896,6.725l-21.267,10.111 c-31.131,15.814-36.663,59.643-43.036,110.325c-1.213,9.647-2.468,19.624-3.923,29.546c-1.242,8.475,4.619,16.35,13.092,17.592 c0.763,0.111,1.521,0.166,2.27,0.166c7.567,0,14.191-5.547,15.322-13.258c1.501-10.24,2.775-20.373,4.008-30.174 c2.334-18.558,4.71-37.406,8.397-52.899l0.016,65.858c0,8.436,2.963,15.949,7.741,22.227l0.011,167.972 c0,10.315,8.363,18.678,18.68,18.678s18.679-8.363,18.678-18.68l-0.008-148.078c1.327,0.11,2.648,0.176,3.957,0.176 c1.308,0,2.629-0.063,3.957-0.176l-0.002,148.078c-0.001,10.315,8.361,18.68,18.679,18.68c10.315,0,18.679-8.363,18.679-18.68 l0.002-167.97c4.778-6.276,7.742-13.791,7.742-22.227l0.022-85.218c1.812,1.868,3.624,3.804,5.461,5.768 c14.741,15.752,33.086,35.357,66.699,35.357C231.945,197.033,238.887,190.091,238.887,181.527z"
+                  fill={outlineFill}
+                  transform="translate(-5, 0) skewX(-10)"
+              />
+              {/* Running person head - tilted forward */}
+              <path 
+                  d="M102.143,95.888c22.682,0,39.611-21.136,39.995-56.577C142.382,14.717,130.671,0,102.143,0 C73.613,0,61.9,14.717,62.147,39.311C62.529,74.752,79.458,95.888,102.143,95.888z"
+                  fill={outlineFill}
+                  transform="translate(-3, 2)"
+              />
+              {/* Motion lines behind the running person */}
+              <line x1="20" y1="150" x2="35" y2="150" stroke={outlineFill} strokeWidth="2" opacity="0.3"/>
+              <line x1="15" y1="180" x2="32" y2="180" stroke={outlineFill} strokeWidth="2" opacity="0.3"/>
+              <line x1="18" y1="210" x2="38" y2="210" stroke={outlineFill} strokeWidth="2" opacity="0.3"/>
+            </g>
+            
+            {/* Coffee steam - fade in when morphed */}
+            <g style={{ 
+              opacity: isMorphed ? 0.6 : 0, 
+              transition: 'opacity 0.6s ease 0.3s',
+              pointerEvents: 'none'
+            }}>
+              <path 
+                  d="M280,210 Q275,200 280,190 Q285,180 280,170"
+                  fill="none"
+                  stroke={outlineFill}
+                  strokeWidth="4"
+                  strokeLinecap="round"
+              />
+              <path 
+                  d="M305,205 Q300,195 305,185 Q310,175 305,165"
+                  fill="none"
+                  stroke={outlineFill}
+                  strokeWidth="4"
+                  strokeLinecap="round"
+              />
+              <path 
+                  d="M330,210 Q325,200 330,190 Q335,180 330,170"
+                  fill="none"
+                  stroke={outlineFill}
+                  strokeWidth="4"
+                  strokeLinecap="round"
+              />
+            </g>
         </svg>
         );
     };
