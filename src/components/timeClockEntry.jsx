@@ -935,7 +935,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     pr-10 appearance-none 
                     `}
                 />
-                <CalendarClock className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-5 h-5 ${text.secondary}`} />
+                <CalendarClock className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-6 h-6 ${text.secondary}`} />
                 </div>
                 
                 {errors.date && (

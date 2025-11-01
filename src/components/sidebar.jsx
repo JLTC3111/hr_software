@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { TrendingUp, Users, Award, FileText, Clock, AlarmClock, ChevronLeft, ChevronRight, ChevronDown, Building2, Bell, Cog, CheckSquare, Sparkles, X } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
@@ -8,8 +8,42 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({});
   const [hoveredItem, setHoveredItem] = useState(null);
+  const [sidebarWidth, setSidebarWidth] = useState(256); // Default 256px (w-64)
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef(null);
   const { bg, text, hover, isDarkMode } = useTheme();
   const { t } = useLanguage();
+  
+  // Handle resize
+  const startResizing = (e) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizing) return;
+      
+      const newWidth = e.clientX;
+      if (newWidth >= 200 && newWidth <= 600) { // Min 200px, Max 600px
+        setSidebarWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
   
   const menuStructure = [
     {
@@ -85,21 +119,42 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
 
       {/* Sidebar */}
       <div 
+        ref={sidebarRef}
+        style={{ width: isCollapsed ? '64px' : `${sidebarWidth}px` }}
         className={`
-          ${isCollapsed ? 'w-16' : 'w-64'} 
           ${bg.secondary} 
           shadow-sm 
           h-screen  
           top-0 
-          transition-all 
-          duration-300 
-          ease-in-out
+          ${!isResizing ? 'transition-all duration-300 ease-in-out' : ''}
           fixed lg:sticky
           left-0
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           z-40
+          relative
         `}
       >
+        {/* Resize Handle */}
+        {!isCollapsed && (
+          <div
+            onMouseDown={startResizing}
+            className={`
+              hidden lg:block
+              absolute 
+              right-0 
+              top-0 
+              bottom-0 
+              w-1 
+              cursor-col-resize 
+              hover:bg-blue-500 
+              ${isResizing ? 'bg-blue-500' : 'bg-transparent'}
+              transition-colors
+              z-50
+            `}
+            style={{ touchAction: 'none' }}
+          />
+        )}
+        
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className={`hidden lg:block absolute -right-3 top-20 z-10 ${bg.secondary} rounded-full p-1 shadow-md border ${hover.bg} transition-colors`}
@@ -129,7 +184,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
         </div>
 
         {/* Navigation */}
-        <nav className="mt-4 px-3 overflow-y-auto flex-1" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+        <nav className="mt-4 px-3 flex-1">
           {menuStructure.map((section, sectionIndex) => (
             <div key={section.section} className={sectionIndex > 0 ? 'mt-6' : ''}>
               {/* Section Header */}
