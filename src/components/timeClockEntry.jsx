@@ -9,98 +9,51 @@ import AdminTimeEntry from './AdminTimeEntry';
 import { motion } from 'framer-motion';
 import * as flubber from 'flubber';
 
-// Animated Clock Component with rotating needle
+// Animated Clock Component with rotating hands
 const AnimatedClock = ({ className, isDarkMode }) => {
   return (
-    <svg 
+    <svg
       className={className}
-      viewBox="0 0 24 24" 
-      fill="none" 
+      viewBox="0 0 24 24"
+      fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Clock circle */}
-      <circle 
-        cx="12" 
-        cy="12" 
-        r="9" 
-        stroke="currentColor" 
-        strokeWidth="2"
-      />
-      
-      {/* 12 o'clock tick mark */}
-      <line x1="12" y1="3.5" x2="12" y2="5" stroke="currentColor" strokeWidth="2" />
-      {/* 3 o'clock tick mark */}
-      <line x1="20.5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2" />
-      {/* 6 o'clock tick mark */}
-      <line x1="12" y1="20.5" x2="12" y2="19" stroke="currentColor" strokeWidth="2" />
-      {/* 9 o'clock tick mark */}
-      <line x1="3.5" y1="12" x2="5" y2="12" stroke="currentColor" strokeWidth="2" />
-      
-      {/* Smaller tick marks for other hours */}
-      <line x1="15.2" y1="4.9" x2="14.5" y2="5.6" stroke="currentColor" strokeWidth="1.5" />
-      <line x1="19.1" y1="8.8" x2="18.4" y2="9.5" stroke="currentColor" strokeWidth="1.5" />
-      <line x1="19.1" y1="15.2" x2="18.4" y2="14.5" stroke="currentColor" strokeWidth="1.5" />
-      <line x1="15.2" y1="19.1" x2="14.5" y2="18.4" stroke="currentColor" strokeWidth="1.5" />
-      <line x1="8.8" y1="19.1" x2="9.5" y2="18.4" stroke="currentColor" strokeWidth="1.5" />
-      <line x1="4.9" y1="15.2" x2="5.6" y2="14.5" stroke="currentColor" strokeWidth="1.5" />
-      <line x1="4.9" y1="8.8" x2="5.6" y2="9.5" stroke="currentColor" strokeWidth="1.5" />
-      <line x1="8.8" y1="4.9" x2="9.5" y2="5.6" stroke="currentColor" strokeWidth="1.5" />
-      
-      {/* Hour hand (shorter, thicker) - starts at 45 degrees */}
-      <motion.line
-        x1="12"
-        y1="12"
-        x2="12"
-        y2="8.5"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        animate={{
-          rotate: 360
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          ease: "linear"
-        }}
-        style={{
-          originX: "12px",
-          originY: "12px",
-          transformBox: "fill-box"
-        }}
-        initial={{ rotate: 45 }}
-      />
-      {/* Minute hand (longer, thinner) - offset by 45 degrees from hour hand */}
-      <motion.line
-        x1="12"
-        y1="12"
-        x2="12"
-        y2="6"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        animate={{
-          rotate: 360
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          ease: "linear"
-        }}
-        style={{
-          originX: "12px",
-          originY: "12px",
-          transformBox: "fill-box"
-        }}
-        initial={{ rotate: 90 }}
-      />
-      {/* Clock center dot (on top) */}
-      <circle 
-        cx="12" 
-        cy="12" 
-        r="1.2" 
-        fill="currentColor"
-      />
+      {/* Clock border */}
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+
+      {/* Translate coordinate system so (0,0) = clock center */}
+      <g transform="translate(12.5, 18.5)">
+        {/* Center pivot indicator */}
+
+        {/* Hour hand – slow rotation */}
+        <motion.path
+          d="M0 0L0 -5.75"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          style={{
+            originX: 0,
+            originY: 0,
+            transformBox: "fill-box",
+          }}
+        />
+
+        {/* Minute hand – faster rotation */}
+        <motion.path
+          d="M0 0L0 -7"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+          style={{
+            originX: 0,
+            originY: 0,
+            transformBox: "fill-box",
+          }}
+         
+        />
+      </g>
     </svg>
   );
 };
