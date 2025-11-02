@@ -15,20 +15,103 @@ import {
   Calendar,
   BarChart,
   PieChart,
-  Activity
+  Activity,
+  Upload,
+  ClipboardList,
+  Circle,
+  Square,
+  Triangle,
+  Star,
+  Heart,
+  Smile,
+  Frown,
+  Sun,
+  Moon,
+  CloudRain,
+  Zap,
+  Home,
+  MapPin,
+  Mail,
+  Phone,
+  Camera,
+  Video,
+  Music,
+  Play,
+  Pause,
+  Download,
+  Share2
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
 const FlubberIconTest = () => {
   const { bg, text, isDarkMode } = useTheme();
   const [currentIconIndex, setCurrentIconIndex] = useState(0);
-  const [morphPath, setMorphPath] = useState('');
+  const [morphPaths, setMorphPaths] = useState([]); // Array of paths for multi-path morphing
   const [isAnimating, setIsAnimating] = useState(false);
+  const [duration, setDuration] = useState(1500);
+  const [maxSegmentLength, setMaxSegmentLength] = useState(2);
   const canvasRef = useRef(null);
+  const iconRefs = useRef({});
 
-  // Array of icons to test
+  // Debug: Check refs after render
+  useEffect(() => {
+    console.log('Component mounted/updated');
+    console.log('Icon refs:', iconRefs.current);
+    console.log('Number of refs:', Object.keys(iconRefs.current).length);
+    
+    // Test extraction on mount
+    if (iconRefs.current[0]) {
+      console.log('Testing extraction on first icon:');
+      const testPaths = extractPathsFromIcon(iconRefs.current[0]);
+      console.log('Test paths result:', testPaths);
+    }
+  }, []);
+
+  // Array of icons to test - organized in morph-friendly pairs/sequences
   const icons = [
+    // Good morphing pairs - basic shapes
+    { name: 'Circle', Icon: Circle },
+    { name: 'Square', Icon: Square },
+    { name: 'Triangle', Icon: Triangle },
+    { name: 'Star', Icon: Star },
+    
+    // Emotional morphs
+    { name: 'Heart', Icon: Heart },
+    { name: 'Smile', Icon: Smile },
+    { name: 'Frown', Icon: Frown },
+    
+    // Weather sequence
+    { name: 'Sun', Icon: Sun },
+    { name: 'Moon', Icon: Moon },
+    { name: 'CloudRain', Icon: CloudRain },
+    { name: 'Zap', Icon: Zap },
+    
+    // Location/Communication
+    { name: 'Home', Icon: Home },
+    { name: 'MapPin', Icon: MapPin },
+    { name: 'Mail', Icon: Mail },
+    { name: 'Phone', Icon: Phone },
+    
+    // Media controls
+    { name: 'Camera', Icon: Camera },
+    { name: 'Video', Icon: Video },
+    { name: 'Music', Icon: Music },
+    { name: 'Play', Icon: Play },
+    { name: 'Pause', Icon: Pause },
+    
+    // File operations
+    { name: 'Upload', Icon: Upload },
+    { name: 'Download', Icon: Download },
+    { name: 'Share2', Icon: Share2 },
+    { name: 'ClipboardList', Icon: ClipboardList },
+    
+    // Business/Analytics
     { name: 'TrendingUp', Icon: TrendingUp },
+    { name: 'BarChart', Icon: BarChart },
+    { name: 'PieChart', Icon: PieChart },
+    { name: 'Activity', Icon: Activity },
+    
+    // Office
     { name: 'Users', Icon: Users },
     { name: 'Award', Icon: Award },
     { name: 'FileText', Icon: FileText },
@@ -38,41 +121,36 @@ const FlubberIconTest = () => {
     { name: 'Bell', Icon: Bell },
     { name: 'Cog', Icon: Cog },
     { name: 'CheckSquare', Icon: CheckSquare },
-    { name: 'Calendar', Icon: Calendar },
-    { name: 'BarChart', Icon: BarChart },
-    { name: 'PieChart', Icon: PieChart },
-    { name: 'Activity', Icon: Activity }
+    { name: 'Calendar', Icon: Calendar }
   ];
 
-  // Extract SVG path from Lucide icon
-  const extractPathFromIcon = (IconComponent) => {
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    const tempDiv = document.createElement('div');
-    tempDiv.style.position = 'absolute';
-    tempDiv.style.visibility = 'hidden';
-    document.body.appendChild(tempDiv);
+  // Extract SVG paths as an array (for multi-path morphing)
+  const extractPathsFromIcon = (iconElement) => {
+    if (!iconElement) {
+      console.log('No icon element');
+      return [];
+    }
     
-    // Render the icon
-    const iconElement = IconComponent({ size: 100 });
-    tempDiv.innerHTML = iconElement.props.children.map(child => {
-      if (typeof child === 'string') return child;
-      const el = document.createElement(child.type);
-      Object.entries(child.props).forEach(([key, value]) => {
-        if (key !== 'children') el.setAttribute(key, value);
-      });
-      return el.outerHTML;
-    }).join('');
+    const svg = iconElement.querySelector('svg');
+    if (!svg) {
+      console.log('No SVG found in element');
+      return [];
+    }
     
     // Get all path elements
-    const paths = tempDiv.querySelectorAll('path, circle, line, rect, polyline, polygon');
-    const pathData = Array.from(paths).map(path => {
-      if (path.tagName === 'path') return path.getAttribute('d');
+    const paths = svg.querySelectorAll('path, circle, line, rect, polyline, polygon');
+    console.log('Found', paths.length, 'path/shape elements');
+    
+    const pathData = Array.from(paths).map(element => {
+      if (element.tagName.toLowerCase() === 'path') {
+        return element.getAttribute('d');
+      }
       // Convert other shapes to paths
-      return convertShapeToPath(path);
+      return convertShapeToPath(element);
     }).filter(Boolean);
     
-    document.body.removeChild(tempDiv);
-    return pathData.join(' ');
+    console.log('Extracted', pathData.length, 'paths');
+    return pathData;
   };
 
   // Convert basic shapes to path data
@@ -117,37 +195,95 @@ const FlubberIconTest = () => {
 
   // Morph to next icon
   const morphToNext = () => {
+    console.log('=== Starting morph ===');
+    console.log('iconRefs.current:', iconRefs.current);
+    console.log('Current index:', currentIconIndex);
+    console.log('Icon refs keys:', Object.keys(iconRefs.current));
+    
     setIsAnimating(true);
     const nextIndex = (currentIconIndex + 1) % icons.length;
     
     try {
-      const currentPath = extractPathFromIcon(icons[currentIconIndex].Icon);
-      const nextPath = extractPathFromIcon(icons[nextIndex].Icon);
+      console.log('Extracting current icon (index', currentIconIndex, ')');
+      const currentPaths = extractPathsFromIcon(iconRefs.current[currentIconIndex]);
+      console.log('Extracting next icon (index', nextIndex, ')');
+      const nextPaths = extractPathsFromIcon(iconRefs.current[nextIndex]);
       
-      if (currentPath && nextPath) {
-        const interpolator = flubber.interpolate(currentPath, nextPath, {
-          maxSegmentLength: 5
-        });
+      console.log('Current paths:', currentPaths);
+      console.log('Next paths:', nextPaths);
+      
+      if (currentPaths.length > 0 && nextPaths.length > 0) {
+        // Use flubber's combine or interpolateAll for multiple paths
+        let interpolators;
         
-        // Animate the morph
-        const duration = 1000;
+        try {
+          // If both icons have multiple paths, use separate interpolators for each
+          if (currentPaths.length > 1 || nextPaths.length > 1) {
+            console.log('Using separate interpolators for', Math.max(currentPaths.length, nextPaths.length), 'paths');
+            
+            // Match path counts by duplicating the last path if needed
+            const maxPaths = Math.max(currentPaths.length, nextPaths.length);
+            const paddedCurrentPaths = [...currentPaths];
+            const paddedNextPaths = [...nextPaths];
+            
+            while (paddedCurrentPaths.length < maxPaths) {
+              paddedCurrentPaths.push(paddedCurrentPaths[paddedCurrentPaths.length - 1]);
+            }
+            while (paddedNextPaths.length < maxPaths) {
+              paddedNextPaths.push(paddedNextPaths[paddedNextPaths.length - 1]);
+            }
+            
+            // Create an interpolator for each path pair
+            interpolators = paddedCurrentPaths.map((currentPath, i) => {
+              return flubber.interpolate(currentPath, paddedNextPaths[i], {
+                maxSegmentLength: maxSegmentLength
+              });
+            });
+          } else {
+            // Single path on both sides
+            interpolators = [flubber.interpolate(currentPaths[0], nextPaths[0], {
+              maxSegmentLength: maxSegmentLength
+            })];
+          }
+        } catch (e) {
+          console.log('Falling back to single path interpolate', e);
+          interpolators = [flubber.interpolate(
+            currentPaths.join(' '), 
+            nextPaths.join(' '),
+            { maxSegmentLength: maxSegmentLength }
+          )];
+        }
+        
+        // Animate the morph with easing
         const startTime = Date.now();
         
         const animate = () => {
           const elapsed = Date.now() - startTime;
-          const progress = Math.min(elapsed / duration, 1);
+          let progress = Math.min(elapsed / duration, 1);
           
-          setMorphPath(interpolator(progress));
+          // Apply easing for smoother animation (ease-in-out)
+          progress = progress < 0.5 
+            ? 2 * progress * progress 
+            : 1 - Math.pow(-2 * progress + 2, 2) / 2;
           
-          if (progress < 1) {
+          // Update all paths
+          const morphedPaths = interpolators.map(interpolator => interpolator(progress));
+          setMorphPaths(morphedPaths);
+          
+          if (elapsed < duration) {
             requestAnimationFrame(animate);
           } else {
             setCurrentIconIndex(nextIndex);
             setIsAnimating(false);
+            setMorphPaths([]);
           }
         };
         
         animate();
+      } else {
+        console.error('Could not extract paths');
+        setCurrentIconIndex(nextIndex);
+        setIsAnimating(false);
       }
     } catch (error) {
       console.error('Morph error:', error);
@@ -171,63 +307,101 @@ const FlubberIconTest = () => {
             <div className="relative">
               <div className="text-center mb-4">
                 <span className={`text-lg font-semibold ${text.primary}`}>
-                  {icons[currentIconIndex].name}
+                  {isAnimating ? 'Morphing...' : icons[currentIconIndex].name}
                 </span>
               </div>
               
-              {/* Original Icon Display */}
+              {/* Morphing or Static Icon Display */}
               <div className={`${bg.primary} rounded-lg p-8 border ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`}>
-                <CurrentIcon 
-                  size={100} 
-                  className={text.primary}
-                  strokeWidth={2}
-                />
+                {isAnimating && morphPaths.length > 0 ? (
+                  <svg 
+                    width="100" 
+                    height="100" 
+                    viewBox="0 0 24 24"
+                    className={text.primary}
+                  >
+                    {morphPaths.map((pathData, index) => (
+                      <path 
+                        key={index}
+                        d={pathData} 
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    ))}
+                  </svg>
+                ) : (
+                  <CurrentIcon 
+                    size={100} 
+                    className={text.primary}
+                    strokeWidth={2}
+                  />
+                )}
               </div>
             </div>
 
-            {/* Morphing SVG Display */}
-            {morphPath && (
-              <div className={`${bg.primary} rounded-lg p-8 border ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`}>
-                <svg 
-                  width="100" 
-                  height="100" 
-                  viewBox="0 0 24 24"
-                  className={text.primary}
-                >
-                  <path 
-                    d={morphPath} 
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            )}
-
             {/* Controls */}
-            <div className="flex gap-4">
-              <button
-                onClick={morphToNext}
-                disabled={isAnimating}
-                className={`
-                  px-6 py-3 rounded-lg font-medium
-                  ${isAnimating 
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-blue-600 hover:bg-blue-700'}
-                  text-white transition-colors
-                `}
-              >
-                {isAnimating ? 'Morphing...' : 'Morph to Next Icon'}
-              </button>
+            <div className="w-full space-y-4">
+              <div className="flex gap-4 justify-center">
+                <button
+                  onClick={morphToNext}
+                  disabled={isAnimating}
+                  className={`
+                    px-6 py-3 rounded-lg font-medium
+                    ${isAnimating 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700'}
+                    text-white transition-colors
+                  `}
+                >
+                  {isAnimating ? 'Morphing...' : 'Morph to Next Icon'}
+                </button>
+                
+                <button
+                  onClick={() => setCurrentIconIndex((currentIconIndex + 1) % icons.length)}
+                  className="px-6 py-3 rounded-lg font-medium bg-gray-600 hover:bg-gray-700 text-white transition-colors"
+                >
+                  Skip to Next
+                </button>
+              </div>
               
-              <button
-                onClick={() => setCurrentIconIndex((currentIconIndex + 1) % icons.length)}
-                className="px-6 py-3 rounded-lg font-medium bg-gray-600 hover:bg-gray-700 text-white transition-colors"
-              >
-                Skip to Next
-              </button>
+              {/* Morph Settings */}
+              <div className={`${bg.primary} rounded-lg p-4 space-y-3`}>
+                <h3 className={`text-sm font-semibold ${text.primary} mb-2`}>Morph Settings</h3>
+                
+                <div className="space-y-2">
+                  <label className={`block text-sm ${text.secondary}`}>
+                    Duration: {duration}ms
+                  </label>
+                  <input
+                    type="range"
+                    min="500"
+                    max="3000"
+                    step="100"
+                    value={duration}
+                    onChange={(e) => setDuration(Number(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className={`block text-sm ${text.secondary}`}>
+                    Smoothness (Max Segment Length): {maxSegmentLength}
+                    <span className="text-xs ml-2">(lower = smoother but slower)</span>
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    step="0.5"
+                    value={maxSegmentLength}
+                    onChange={(e) => setMaxSegmentLength(Number(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Icon Grid */}
@@ -264,6 +438,15 @@ const FlubberIconTest = () => {
             </div>
           </div>
         </div>
+      </div>
+      
+      {/* Hidden icons for path extraction */}
+      <div style={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none' }}>
+        {icons.map((icon, index) => (
+          <div key={index} ref={el => iconRefs.current[index] = el}>
+            <icon.Icon size={24} />
+          </div>
+        ))}
       </div>
     </div>
   );
