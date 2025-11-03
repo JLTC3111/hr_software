@@ -2,44 +2,86 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import * as flubber from 'flubber';
 import { 
-  TrendingUp, 
-  Users, 
-  Award, 
-  FileText, 
-  Clock, 
-  AlarmClock, 
-  Building2, 
-  Bell, 
-  Cog, 
-  CheckSquare, 
-  Calendar,
-  BarChart,
-  PieChart,
-  Activity,
-  Upload,
-  ClipboardList,
-  Circle,
-  Square,
-  Triangle,
-  Star,
-  Heart,
-  Smile,
-  Frown,
-  Sun,
-  Moon,
-  CloudRain,
-  Zap,
-  Home,
-  MapPin,
-  Mail,
-  Phone,
-  Camera,
-  Video,
-  Music,
-  Play,
-  Pause,
-  Download,
-  Share2
+  // Basic Shapes
+  Circle, Square, Triangle, Star, Hexagon, Octagon,
+  
+  // Arrows & Directions
+  ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowUpRight, ArrowDownLeft,
+  ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
+  ChevronsUp, ChevronsDown, ChevronsLeft, ChevronsRight,
+  TrendingUp, TrendingDown, MoveUp, MoveDown, MoveLeft, MoveRight,
+  
+  // Weather & Nature
+  Sun, Moon, Cloud, CloudRain, CloudSnow, CloudLightning, Zap, Sparkles,
+  CloudDrizzle, CloudFog, Wind, Sunrise, Sunset, Cloudy,
+  
+  // Emotions & Faces
+  Smile, Frown, Meh, Laugh, SmilePlus, Angry, Ghost, Skull,
+  Heart, HeartCrack, HeartHandshake, HeartPulse,
+  
+  // Media Controls
+  Play, Pause, Square as StopSquare, SkipForward, SkipBack, FastForward, Rewind,
+  Volume, Volume1, Volume2, VolumeX, Mic, MicOff,
+  Music, Music2, Radio, Disc,
+  
+  // Files & Documents
+  File, FileText, FileEdit, FilePlus, FileMinus, FileCheck, FileX,
+  Folder, FolderOpen, FolderPlus, FolderMinus,
+  Copy, Clipboard, ClipboardList, ClipboardCheck, ClipboardCopy,
+  
+  // Communication
+  Mail, MailOpen, MailPlus, MailMinus, MailCheck, MailX,
+  Phone, PhoneCall, PhoneIncoming, PhoneOutgoing, PhoneMissed, PhoneOff,
+  MessageCircle, MessageSquare, Send, Inbox, Archive,
+  
+  // User & People
+  User, Users, UserPlus, UserMinus, UserCheck, UserX,
+  Contact, UserCircle, UserSquare,
+  
+  // Actions & Status
+  Check, CheckCircle, CheckSquare, X, XCircle, XSquare, XOctagon,
+  Plus, PlusCircle, PlusSquare, Minus, MinusCircle, MinusSquare,
+  Equal, Slash, Percent, Hash, AtSign, DollarSign,
+  
+  // Navigation & Location
+  Home, Building, Building2, MapPin, Map, Navigation, Compass,
+  Globe, Package, Box, Archive as ArchiveBox,
+  
+  // Upload/Download
+  Upload, Download, UploadCloud, DownloadCloud, 
+  Share, Share2, Forward, Reply, RefreshCw, RotateCw, RotateCcw,
+  
+  // Time & Calendar
+  Clock, AlarmClock, Timer, Hourglass, Calendar, CalendarDays,
+  Watch, History,
+  
+  // Charts & Analytics
+  BarChart, BarChart2, BarChart3, PieChart, Activity, TrendingUp as TrendUp,
+  LineChart, AreaChart,
+  
+  // Objects & Tools
+  Camera, Video, Image, Film, Aperture,
+  Scissors, Crop, Maximize, Minimize, ZoomIn, ZoomOut,
+  Eye, EyeOff, Search, SearchX, Filter, SlidersHorizontal,
+  Settings, Cog, Wrench, Hammer, Zap as Lightning,
+  
+  // Badges & Symbols
+  Award, Trophy, Medal, Target, Flag, Bookmark, Tag,
+  Bell, BellOff, BellPlus, BellMinus, BellRing,
+  Info, AlertCircle, AlertTriangle, AlertOctagon, HelpCircle,
+  Lock, Unlock, Key, Shield, ShieldCheck, ShieldAlert,
+  
+  // Shopping & Commerce
+  ShoppingCart, ShoppingBag, Gift, CreditCard, Wallet,
+  
+  // Tech & Code
+  Code, Terminal, Command, Database, Server, Wifi, WifiOff,
+  Bluetooth, Cpu, HardDrive, Monitor, Laptop, Smartphone, Tablet,
+  Battery, BatteryCharging, BatteryFull, BatteryLow,
+  
+  // Movement & Animation
+  Move, Maximize2, Minimize2, Expand, Shrink,
+  CornerUpLeft, CornerUpRight, CornerDownLeft, CornerDownRight
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -69,59 +111,295 @@ const FlubberIconTest = () => {
 
   // Array of icons to test - organized in morph-friendly pairs/sequences
   const icons = [
-    // Good morphing pairs - basic shapes
+    // === BASIC SHAPES (Best morphing) ===
     { name: 'Circle', Icon: Circle },
     { name: 'Square', Icon: Square },
     { name: 'Triangle', Icon: Triangle },
+    { name: 'Hexagon', Icon: Hexagon },
+    { name: 'Octagon', Icon: Octagon },
     { name: 'Star', Icon: Star },
     
-    // Emotional morphs
-    { name: 'Heart', Icon: Heart },
-    { name: 'Smile', Icon: Smile },
-    { name: 'Frown', Icon: Frown },
+    // === ARROWS & DIRECTIONS ===
+    { name: 'ArrowUp', Icon: ArrowUp },
+    { name: 'ArrowRight', Icon: ArrowRight },
+    { name: 'ArrowDown', Icon: ArrowDown },
+    { name: 'ArrowLeft', Icon: ArrowLeft },
+    { name: 'ArrowUpRight', Icon: ArrowUpRight },
+    { name: 'ArrowDownLeft', Icon: ArrowDownLeft },
+    { name: 'ChevronUp', Icon: ChevronUp },
+    { name: 'ChevronRight', Icon: ChevronRight },
+    { name: 'ChevronDown', Icon: ChevronDown },
+    { name: 'ChevronLeft', Icon: ChevronLeft },
+    { name: 'ChevronsUp', Icon: ChevronsUp },
+    { name: 'ChevronsDown', Icon: ChevronsDown },
+    { name: 'TrendingUp', Icon: TrendingUp },
+    { name: 'TrendingDown', Icon: TrendingDown },
     
-    // Weather sequence
+    // === WEATHER & NATURE ===
     { name: 'Sun', Icon: Sun },
     { name: 'Moon', Icon: Moon },
+    { name: 'Cloud', Icon: Cloud },
     { name: 'CloudRain', Icon: CloudRain },
+    { name: 'CloudSnow', Icon: CloudSnow },
+    { name: 'CloudLightning', Icon: CloudLightning },
+    { name: 'CloudDrizzle', Icon: CloudDrizzle },
+    { name: 'CloudFog', Icon: CloudFog },
+    { name: 'Cloudy', Icon: Cloudy },
+    { name: 'Wind', Icon: Wind },
+    { name: 'Sunrise', Icon: Sunrise },
+    { name: 'Sunset', Icon: Sunset },
     { name: 'Zap', Icon: Zap },
+    { name: 'Sparkles', Icon: Sparkles },
     
-    // Location/Communication
-    { name: 'Home', Icon: Home },
-    { name: 'MapPin', Icon: MapPin },
-    { name: 'Mail', Icon: Mail },
-    { name: 'Phone', Icon: Phone },
+    // === EMOTIONS & HEARTS ===
+    { name: 'Heart', Icon: Heart },
+    { name: 'HeartCrack', Icon: HeartCrack },
+    { name: 'HeartHandshake', Icon: HeartHandshake },
+    { name: 'HeartPulse', Icon: HeartPulse },
+    { name: 'Smile', Icon: Smile },
+    { name: 'Frown', Icon: Frown },
+    { name: 'Meh', Icon: Meh },
+    { name: 'Laugh', Icon: Laugh },
+    { name: 'SmilePlus', Icon: SmilePlus },
+    { name: 'Angry', Icon: Angry },
     
-    // Media controls
-    { name: 'Camera', Icon: Camera },
-    { name: 'Video', Icon: Video },
-    { name: 'Music', Icon: Music },
+    // === MEDIA CONTROLS ===
     { name: 'Play', Icon: Play },
     { name: 'Pause', Icon: Pause },
+    { name: 'SkipForward', Icon: SkipForward },
+    { name: 'SkipBack', Icon: SkipBack },
+    { name: 'FastForward', Icon: FastForward },
+    { name: 'Rewind', Icon: Rewind },
+    { name: 'Volume', Icon: Volume },
+    { name: 'Volume1', Icon: Volume1 },
+    { name: 'Volume2', Icon: Volume2 },
+    { name: 'VolumeX', Icon: VolumeX },
+    { name: 'Mic', Icon: Mic },
+    { name: 'MicOff', Icon: MicOff },
     
-    // File operations
+    // === MUSIC & AUDIO ===
+      // Music & Audio ===
+    { name: 'Music', Icon: Music },
+    { name: 'Music2', Icon: Music2 },
+    { name: 'Radio', Icon: Radio },
+    { name: 'Disc', Icon: Disc },
+    
+    // === FILES & FOLDERS ===
+    { name: 'File', Icon: File },
+    { name: 'FileText', Icon: FileText },
+    { name: 'FileEdit', Icon: FileEdit },
+    { name: 'FilePlus', Icon: FilePlus },
+    { name: 'FileMinus', Icon: FileMinus },
+    { name: 'FileCheck', Icon: FileCheck },
+    { name: 'FileX', Icon: FileX },
+    { name: 'Folder', Icon: Folder },
+    { name: 'FolderOpen', Icon: FolderOpen },
+    { name: 'FolderPlus', Icon: FolderPlus },
+    
+    // === CLIPBOARD ===
+    { name: 'Clipboard', Icon: Clipboard },
+    { name: 'ClipboardList', Icon: ClipboardList },
+    { name: 'ClipboardCheck', Icon: ClipboardCheck },
+    { name: 'ClipboardCopy', Icon: ClipboardCopy },
+    { name: 'Copy', Icon: Copy },
+    
+    // === MAIL ===
+    { name: 'Mail', Icon: Mail },
+    { name: 'MailOpen', Icon: MailOpen },
+    { name: 'MailPlus', Icon: MailPlus },
+    { name: 'MailCheck', Icon: MailCheck },
+    { name: 'MailX', Icon: MailX },
+    { name: 'Inbox', Icon: Inbox },
+    { name: 'Send', Icon: Send },
+    
+    // === PHONE ===
+    { name: 'Phone', Icon: Phone },
+    { name: 'PhoneCall', Icon: PhoneCall },
+    { name: 'PhoneIncoming', Icon: PhoneIncoming },
+    { name: 'PhoneOutgoing', Icon: PhoneOutgoing },
+    { name: 'PhoneMissed', Icon: PhoneMissed },
+    { name: 'PhoneOff', Icon: PhoneOff },
+    
+    // === MESSAGING ===
+    { name: 'MessageCircle', Icon: MessageCircle },
+    { name: 'MessageSquare', Icon: MessageSquare },
+    
+    // === USERS ===
+    { name: 'User', Icon: User },
+    { name: 'Users', Icon: Users },
+    { name: 'UserPlus', Icon: UserPlus },
+    { name: 'UserMinus', Icon: UserMinus },
+    { name: 'UserCheck', Icon: UserCheck },
+    { name: 'UserX', Icon: UserX },
+    { name: 'UserCircle', Icon: UserCircle },
+    { name: 'UserSquare', Icon: UserSquare },
+    
+    // === CHECKS & X's ===
+    { name: 'Check', Icon: Check },
+    { name: 'CheckCircle', Icon: CheckCircle },
+    { name: 'CheckSquare', Icon: CheckSquare },
+    { name: 'X', Icon: X },
+    { name: 'XCircle', Icon: XCircle },
+    { name: 'XSquare', Icon: XSquare },
+    { name: 'XOctagon', Icon: XOctagon },
+    
+    // === PLUS & MINUS ===
+    { name: 'Plus', Icon: Plus },
+    { name: 'PlusCircle', Icon: PlusCircle },
+    { name: 'PlusSquare', Icon: PlusSquare },
+    { name: 'Minus', Icon: Minus },
+    { name: 'MinusCircle', Icon: MinusCircle },
+    { name: 'MinusSquare', Icon: MinusSquare },
+    
+    // === SYMBOLS ===
+    { name: 'Equal', Icon: Equal },
+    { name: 'Slash', Icon: Slash },
+    { name: 'Percent', Icon: Percent },
+    { name: 'Hash', Icon: Hash },
+    { name: 'AtSign', Icon: AtSign },
+    { name: 'DollarSign', Icon: DollarSign },
+    
+    // === NAVIGATION & LOCATION ===
+    { name: 'Home', Icon: Home },
+    { name: 'Building', Icon: Building },
+    { name: 'Building2', Icon: Building2 },
+    { name: 'MapPin', Icon: MapPin },
+    { name: 'Map', Icon: Map },
+    { name: 'Navigation', Icon: Navigation },
+    { name: 'Compass', Icon: Compass },
+    { name: 'Globe', Icon: Globe },
+    
+    // === UPLOAD/DOWNLOAD ===
     { name: 'Upload', Icon: Upload },
     { name: 'Download', Icon: Download },
+    { name: 'UploadCloud', Icon: UploadCloud },
+    { name: 'DownloadCloud', Icon: DownloadCloud },
+    { name: 'Share', Icon: Share },
     { name: 'Share2', Icon: Share2 },
-    { name: 'ClipboardList', Icon: ClipboardList },
+    { name: 'Forward', Icon: Forward },
+    { name: 'Reply', Icon: Reply },
     
-    // Business/Analytics
-    { name: 'TrendingUp', Icon: TrendingUp },
-    { name: 'BarChart', Icon: BarChart },
-    { name: 'PieChart', Icon: PieChart },
-    { name: 'Activity', Icon: Activity },
+    // === ROTATION ===
+    { name: 'RefreshCw', Icon: RefreshCw },
+    { name: 'RotateCw', Icon: RotateCw },
+    { name: 'RotateCcw', Icon: RotateCcw },
     
-    // Office
-    { name: 'Users', Icon: Users },
-    { name: 'Award', Icon: Award },
-    { name: 'FileText', Icon: FileText },
+    // === TIME ===
     { name: 'Clock', Icon: Clock },
     { name: 'AlarmClock', Icon: AlarmClock },
-    { name: 'Building2', Icon: Building2 },
-    { name: 'Bell', Icon: Bell },
+    { name: 'Timer', Icon: Timer },
+    { name: 'Hourglass', Icon: Hourglass },
+    { name: 'Watch', Icon: Watch },
+    { name: 'History', Icon: History },
+    { name: 'Calendar', Icon: Calendar },
+    { name: 'CalendarDays', Icon: CalendarDays },
+    
+    // === CHARTS ===
+    { name: 'BarChart', Icon: BarChart },
+    { name: 'BarChart2', Icon: BarChart2 },
+    { name: 'BarChart3', Icon: BarChart3 },
+    { name: 'PieChart', Icon: PieChart },
+    { name: 'Activity', Icon: Activity },
+    { name: 'LineChart', Icon: LineChart },
+    { name: 'AreaChart', Icon: AreaChart },
+    
+    // === MEDIA OBJECTS ===
+    { name: 'Camera', Icon: Camera },
+    { name: 'Video', Icon: Video },
+    { name: 'Image', Icon: Image },
+    { name: 'Film', Icon: Film },
+    { name: 'Aperture', Icon: Aperture },
+    
+    // === TOOLS ===
+    { name: 'Scissors', Icon: Scissors },
+    { name: 'Crop', Icon: Crop },
+    { name: 'Maximize', Icon: Maximize },
+    { name: 'Minimize', Icon: Minimize },
+    { name: 'Maximize2', Icon: Maximize2 },
+    { name: 'Minimize2', Icon: Minimize2 },
+    { name: 'ZoomIn', Icon: ZoomIn },
+    { name: 'ZoomOut', Icon: ZoomOut },
+    { name: 'Expand', Icon: Expand },
+    { name: 'Shrink', Icon: Shrink },
+    
+    // === VIEW ===
+    { name: 'Eye', Icon: Eye },
+    { name: 'EyeOff', Icon: EyeOff },
+    { name: 'Search', Icon: Search },
+    { name: 'SearchX', Icon: SearchX },
+    { name: 'Filter', Icon: Filter },
+    { name: 'SlidersHorizontal', Icon: SlidersHorizontal },
+    
+    // === SETTINGS ===
+    { name: 'Settings', Icon: Settings },
     { name: 'Cog', Icon: Cog },
-    { name: 'CheckSquare', Icon: CheckSquare },
-    { name: 'Calendar', Icon: Calendar }
+    { name: 'Wrench', Icon: Wrench },
+    { name: 'Hammer', Icon: Hammer },
+    
+    // === BADGES & AWARDS ===
+    { name: 'Award', Icon: Award },
+    { name: 'Trophy', Icon: Trophy },
+    { name: 'Medal', Icon: Medal },
+    { name: 'Target', Icon: Target },
+    { name: 'Flag', Icon: Flag },
+    { name: 'Bookmark', Icon: Bookmark },
+    { name: 'Tag', Icon: Tag },
+    
+    // === NOTIFICATIONS ===
+    { name: 'Bell', Icon: Bell },
+    { name: 'BellOff', Icon: BellOff },
+    { name: 'BellPlus', Icon: BellPlus },
+    { name: 'BellRing', Icon: BellRing },
+    
+    // === ALERTS ===
+    { name: 'Info', Icon: Info },
+    { name: 'AlertCircle', Icon: AlertCircle },
+    { name: 'AlertTriangle', Icon: AlertTriangle },
+    { name: 'AlertOctagon', Icon: AlertOctagon },
+    { name: 'HelpCircle', Icon: HelpCircle },
+    
+    // === SECURITY ===
+    { name: 'Lock', Icon: Lock },
+    { name: 'Unlock', Icon: Unlock },
+    { name: 'Key', Icon: Key },
+    { name: 'Shield', Icon: Shield },
+    { name: 'ShieldCheck', Icon: ShieldCheck },
+    { name: 'ShieldAlert', Icon: ShieldAlert },
+    
+    // === SHOPPING ===
+    { name: 'ShoppingCart', Icon: ShoppingCart },
+    { name: 'ShoppingBag', Icon: ShoppingBag },
+    { name: 'Gift', Icon: Gift },
+    { name: 'CreditCard', Icon: CreditCard },
+    { name: 'Wallet', Icon: Wallet },
+    
+    // === TECH ===
+    { name: 'Code', Icon: Code },
+    { name: 'Terminal', Icon: Terminal },
+    { name: 'Command', Icon: Command },
+    { name: 'Database', Icon: Database },
+    { name: 'Server', Icon: Server },
+    { name: 'Wifi', Icon: Wifi },
+    { name: 'WifiOff', Icon: WifiOff },
+    { name: 'Bluetooth', Icon: Bluetooth },
+    { name: 'Cpu', Icon: Cpu },
+    { name: 'HardDrive', Icon: HardDrive },
+    { name: 'Monitor', Icon: Monitor },
+    { name: 'Laptop', Icon: Laptop },
+    { name: 'Smartphone', Icon: Smartphone },
+    { name: 'Tablet', Icon: Tablet },
+    
+    // === BATTERY ===
+    { name: 'Battery', Icon: Battery },
+    { name: 'BatteryCharging', Icon: BatteryCharging },
+    { name: 'BatteryFull', Icon: BatteryFull },
+    { name: 'BatteryLow', Icon: BatteryLow },
+    
+    // === CORNERS ===
+    { name: 'CornerUpLeft', Icon: CornerUpLeft },
+    { name: 'CornerUpRight', Icon: CornerUpRight },
+    { name: 'CornerDownLeft', Icon: CornerDownLeft },
+    { name: 'CornerDownRight', Icon: CornerDownRight }
   ];
 
   // Extract SVG paths as an array (for multi-path morphing)
