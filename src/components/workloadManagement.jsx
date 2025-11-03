@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import * as workloadService from '../services/workloadService';
 
 const WorkloadManagement = ({ employees }) => {
-  const { user } = useAuth();
+  const { user, checkPermission } = useAuth();
   const { bg, text, border, isDarkMode } = useTheme();
   const { t } = useLanguage();
   
@@ -37,6 +37,7 @@ const WorkloadManagement = ({ employees }) => {
 
   // Check if user is admin or manager
   const canAssignTasks = user?.role === 'admin' || user?.role === 'manager';
+  const canViewOrganization = checkPermission('canViewReports'); // Only admin/manager can view organization tab
 
   // Load tasks from backend
   useEffect(() => {
@@ -549,20 +550,23 @@ const WorkloadManagement = ({ employees }) => {
             {t('workload.individual', '')}
           </button>
 
-          <button
-            onClick={() => setViewMode('organization')}
-            className={`
-              px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer
-              ${viewMode === 'organization'
-                ? 'bg-green-600 text-white'
-                : isDarkMode
-                  ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-              }
-            `}
-          >
-            {t('workload.organization', '')}
-          </button>
+          {/* Only show organization tab for admin/manager */}
+          {canViewOrganization && (
+            <button
+              onClick={() => setViewMode('organization')}
+              className={`
+                px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer
+                ${viewMode === 'organization'
+                  ? 'bg-green-600 text-white'
+                  : isDarkMode
+                    ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                }
+              `}
+            >
+              {t('workload.organization', '')}
+            </button>
+          )}
         </div>
       </div>
 

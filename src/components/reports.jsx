@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, PieChart, UserPlus, Download, Calendar, SquareSigma, PiggyBank, Award, TrendingUp, Users, Filter, HeartPulse, Loader, DollarSign } from 'lucide-react';
+import { BarChart3, PieChart, UserPlus, Download, Calendar, SquareSigma, PiggyBank, Award, TrendingUp, Users, Filter, HeartPulse, Loader, DollarSign, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import * as reportService from '../services/reportService';
 import MetricDetailModal from './metricDetailModal.jsx';
 
@@ -21,6 +22,27 @@ const Reports = () => {
   const [performanceTrend, setPerformanceTrend] = useState([]);
   const { t } = useLanguage();
   const { isDarkMode, text, bg, border } = useTheme();
+  const { checkPermission } = useAuth();
+  
+  // Check permission to view reports
+  const canViewReports = checkPermission('canViewReports');
+  
+  // If user doesn't have permission, show access denied
+  if (!canViewReports) {
+    return (
+      <div className={`min-h-screen ${bg.primary} flex items-center justify-center p-4`}>
+        <div className={`${bg.secondary} rounded-lg shadow-lg border ${border.primary} p-8 max-w-md w-full text-center`}>
+          <AlertCircle className={`w-16 h-16 ${isDarkMode ? 'text-red-400' : 'text-red-600'} mx-auto mb-4`} />
+          <h2 className={`text-2xl font-bold ${text.primary} mb-2`}>
+            {t('common.accessDenied', 'Access Denied')}
+          </h2>
+          <p className={`${text.secondary} mb-6`}>
+            {t('common.noPermissionReports', 'You do not have permission to view reports.')}
+          </p>
+        </div>
+      </div>
+    );
+  }
   
   // Get current month and year
   const currentDate = new Date();

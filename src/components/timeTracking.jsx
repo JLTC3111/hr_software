@@ -9,10 +9,13 @@ import WorkDaysModal from './workDaysModal';
 import MetricDetailModal from './metricDetailModal';
 
 const TimeTracking = ({ employees }) => {
-  const { user } = useAuth();
+  const { user, checkPermission } = useAuth();
   const { isDarkMode, toggleTheme, button, bg, text, border, hover, input } = useTheme();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  
+  // Check if user can view overview tab (admin/manager only)
+  const canViewOverview = checkPermission('canViewReports');
   
   // Auto-detect current logged-in user's employee_id
   const getCurrentEmployeeId = () => {
@@ -516,17 +519,21 @@ const TimeTracking = ({ employees }) => {
             <FileText className="w-4 h-4" />
             <span>{t('timeTracking.summary', 'Summary')}</span>
           </button>
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 ${
-              activeTab === 'overview'
-                ? 'bg-blue-600 text-white'
-                : `${text.secondary} hover:${bg.primary}`
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>{t('timeTracking.overview', 'Overview')}</span>
-          </button>
+          
+          {/* Only show overview tab for admin/manager */}
+          {canViewOverview && (
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 ${
+                activeTab === 'overview'
+                  ? 'bg-blue-600 text-white'
+                  : `${text.secondary} hover:${bg.primary}`
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>{t('timeTracking.overview', 'Overview')}</span>
+            </button>
+          )}
         </div>
       </div>
 
