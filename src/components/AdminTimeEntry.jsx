@@ -166,7 +166,7 @@ const AdminTimeEntry = () => {
       
       if (checkError) {
         console.error('Error checking existing entries:', checkError);
-        setErrorMessage('Failed to check for existing entries');
+        setErrorMessage(t('adminTimeEntry.errors.checkFailed', 'Failed to check for existing entries'));
         setLoading(false);
         return;
       }
@@ -179,7 +179,7 @@ const AdminTimeEntry = () => {
       // If all employees already have entries, show error
       if (employeesWithoutEntries.length === 0) {
         const names = employeesWithEntries.map(e => e.name).join(', ');
-        setErrorMessage(`All selected employees already have time entries for ${formData.date}: ${names}`);
+        setErrorMessage(t('adminTimeEntry.errors.allDuplicates', 'All selected employees already have time entries for {date}: {names}').replace('{date}', formData.date).replace('{names}', names));
         setLoading(false);
         return;
       }
@@ -221,7 +221,7 @@ const AdminTimeEntry = () => {
         // Add warning about skipped employees if any
         if (employeesWithEntries.length > 0) {
           const skippedNames = employeesWithEntries.map(e => e.name).join(', ');
-          message += ` (Skipped ${employeesWithEntries.length} employee(s) with existing entries: ${skippedNames})`;
+          message += ` (${t('adminTimeEntry.skippedEmployees', 'Skipped {count} employee(s) with existing entries: {names}').replace('{count}', employeesWithEntries.length).replace('{names}', skippedNames)})`;
         }
         
         setSuccessMessage(message);
@@ -443,13 +443,16 @@ const AdminTimeEntry = () => {
             <label className={`block text-sm font-medium ${text.primary} mb-2`}>
               {t('adminTimeEntry.clockIn', 'Clock In')} *
             </label>
-            <div className="relative">
+            <div 
+              className="relative cursor-pointer"
+              onClick={() => document.getElementById('admin-clockin-input').showPicker?.()}
+            >
               <input
                 id="admin-clockin-input"
                 type="time"
                 value={formData.clockIn}
                 onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
-                className={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
+                className={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
                 required
               />
               <LogIn className={`absolute right-3 top-1/2 transform -translate-y-1/2 rotate-180 w-5 h-5 ${text.secondary} pointer-events-none`} />
@@ -459,13 +462,16 @@ const AdminTimeEntry = () => {
             <label className={`block text-sm font-medium ${text.primary} mb-2`}>
               {t('adminTimeEntry.clockOut', 'Clock Out')} *
             </label>
-            <div className="relative">
+            <div 
+              className="relative cursor-pointer"
+              onClick={() => document.getElementById('admin-clockout-input').showPicker?.()}
+            >
               <input
                 id="admin-clockout-input"
                 type="time"
                 value={formData.clockOut}
                 onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
-                className={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
+                className={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
                 required
               />
               <LogOut className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none`} />

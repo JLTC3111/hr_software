@@ -384,7 +384,12 @@ export default {
     selectAtLeastOne: 'Please select at least one employee',
     entryAddedSuccess: 'Time entry added successfully for',
     entriesAddedSuccess: 'Time entries added successfully for',
-    employees: 'employees'
+    employees: 'employees',
+    skippedEmployees: 'Skipped {count} employee(s) with existing entries: {names}',
+    errors: {
+      checkFailed: 'Failed to check for existing entries',
+      allDuplicates: 'All selected employees already have time entries for {date}: {names}'
+    }
   },
 
   // Time Clock Entry
@@ -438,7 +443,10 @@ export default {
       clockOutRequired: 'Clock out time is required',
       clockOutAfterClockIn: 'Clock out must be after clock in',
       submitFailed: 'Failed to submit time entry',
-      deleteFailed: 'Failed to delete time entry'
+      deleteFailed: 'Failed to delete time entry',
+      duplicateEntry: 'A time entry already exists for this date. Please edit the existing entry instead.',
+      fileTooLarge: 'File size must be less than 50MB',
+      invalidFileType: 'Only images, PDF, and document files are allowed'
     },
     proofUploadSuccess: 'Proof file uploaded successfully',
     proofUploadError: 'Failed to upload proof file',

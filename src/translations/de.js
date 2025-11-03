@@ -601,10 +601,11 @@ export default {
       clockOutAfterClockIn: 'Ausstempeln muss nach Einstempeln erfolgen',
       tooManyHours: 'Kann 24 Stunden in einem Eintrag nicht überschreiten',
       overlapping: 'Diese Zeit überschneidet sich mit einem vorhandenen Eintrag für dieses Datum',
-      fileTooLarge: 'Dateigröße muss kleiner als 5MB sein',
-      invalidFileType: 'Nur JPG-, PNG- und PDF-Dateien sind erlaubt',
+      fileTooLarge: 'Dateigröße muss kleiner als 50MB sein',
+      invalidFileType: 'Nur Bilder, PDF- und Dokumentdateien sind erlaubt',
       submitFailed: 'Zeiteintrag konnte nicht übermittelt werden. Bitte versuchen Sie es erneut.',
-      deleteFailed: 'Zeiteintrag konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.'
+      deleteFailed: 'Zeiteintrag konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.',
+      duplicateEntry: 'Für dieses Datum existiert bereits ein Zeiteintrag. Bitte bearbeiten Sie den vorhandenen Eintrag.'
     },
     deleteOptions: 'Löschoption wählen',
     deleteEntry: 'Gesamten Zeiteintrag löschen',
@@ -678,7 +679,12 @@ export default {
     selectAtLeastOne: 'Bitte wählen Sie mindestens einen Mitarbeiter aus',
     entryAddedSuccess: 'Zeiteintrag erfolgreich hinzugefügt für',
     entriesAddedSuccess: 'Zeiteinträge erfolgreich hinzugefügt für',
-    employees: 'Mitarbeiter'
+    employees: 'Mitarbeiter',
+    skippedEmployees: '{count} Mitarbeiter mit vorhandenen Einträgen übersprungen: {names}',
+    errors: {
+      checkFailed: 'Fehler beim Überprüfen vorhandener Einträge',
+      allDuplicates: 'Alle ausgewählten Mitarbeiter haben bereits Zeiteinträge für {date}: {names}'
+    }
   },
 
   // Recruitment Actions

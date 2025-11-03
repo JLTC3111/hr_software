@@ -178,7 +178,12 @@ login: {
     selectAtLeastOne: 'Por favor seleccione al menos un empleado',
     entryAddedSuccess: 'Entrada de tiempo agregada exitosamente para',
     entriesAddedSuccess: 'Entradas de tiempo agregadas exitosamente para',
-    employees: 'empleados'
+    employees: 'empleados',
+    skippedEmployees: '{count} empleado(s) omitido(s) con entradas existentes: {names}',
+    errors: {
+      checkFailed: 'Error al verificar entradas existentes',
+      allDuplicates: 'Todos los empleados seleccionados ya tienen entradas de tiempo para {date}: {names}'
+    }
   },
 
   // Time Clock Entry
@@ -229,7 +234,10 @@ login: {
       clockOutRequired: 'La hora de salida es requerida',
       clockOutAfterClockIn: 'La hora de salida debe ser después de la entrada',
       submitFailed: 'Error al enviar entrada de tiempo',
-      deleteFailed: 'Error al eliminar entrada de tiempo'
+      deleteFailed: 'Error al eliminar entrada de tiempo',
+      duplicateEntry: 'Ya existe una entrada de tiempo para esta fecha. Por favor edite la entrada existente.',
+      fileTooLarge: 'El tamaño del archivo debe ser menor a 50MB',
+      invalidFileType: 'Solo se permiten archivos de imágenes, PDF y documentos'
     },
     deleteOptions: 'Elegir opción de eliminación',
     deleteEntry: 'Eliminar entrada de tiempo completa',

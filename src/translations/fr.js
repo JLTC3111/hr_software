@@ -218,15 +218,16 @@ export default {
     },
     errors: {
       dateRequired: 'Veuillez sélectionner une date',
-      clockInRequired: 'Veuillez saisir l’heure d’entrée',
-      clockOutRequired: 'Veuillez saisir l’heure de sortie',
-      clockOutAfterClockIn: 'L’heure de sortie doit être après l’entrée',
+      clockInRequired: 'Veuillez saisir l\'heure d\'entrée',
+      clockOutRequired: 'Veuillez saisir l\'heure de sortie',
+      clockOutAfterClockIn: 'L\'heure de sortie doit être après l\'entrée',
       tooManyHours: 'Impossible de dépasser 24 heures par enregistrement',
       overlapping: 'Cet horaire chevauche un autre enregistrement',
-      fileTooLarge: 'Le fichier doit être inférieur à 5 Mo',
-      invalidFileType: 'Seuls les fichiers JPG, PNG et PDF sont autorisés',
+      fileTooLarge: 'La taille du fichier doit être inférieure à 50 Mo',
+      invalidFileType: 'Seuls les images, PDF et documents sont autorisés',
       submitFailed: 'Échec de la soumission. Veuillez réessayer.',
-      deleteFailed: 'Échec de la suppression. Veuillez réessayer.'
+      deleteFailed: 'Échec de la suppression. Veuillez réessayer.',
+      duplicateEntry: 'Une saisie de temps existe déjà pour cette date. Veuillez modifier l\'entrée existante.'
     },
     deleteOptions: 'Choisir l\'option de suppression',
     deleteEntry: 'Supprimer l\'entrée de temps complète',
@@ -254,7 +255,7 @@ export default {
     type: 'Type',
     status: 'Statut',
     actions: 'Actions',
-    noEntries: 'Aucune entrée trouvée'
+    noEntries: 'Aucune entrée trouvée',
   },
 
   // Time Tracking
@@ -322,7 +323,12 @@ export default {
     selectAtLeastOne: 'Veuillez sélectionner au moins un employé',
     entryAddedSuccess: 'Saisie du temps ajoutée avec succès pour',
     entriesAddedSuccess: 'Saisies du temps ajoutées avec succès pour',
-    employees: 'employés'
+    employees: 'employés',
+    skippedEmployees: '{count} employé(s) ignoré(s) avec des entrées existantes: {names}',
+    errors: {
+      checkFailed: 'Échec de la vérification des entrées existantes',
+      allDuplicates: 'Tous les employés sélectionnés ont déjà des saisies de temps pour {date}: {names}'
+    }
   },
 
   // Employees

@@ -271,7 +271,12 @@ export default {
     selectAtLeastOne: 'Vui lòng chọn ít nhất một nhân viên',
     entryAddedSuccess: 'Đã thêm mục nhập giờ thành công cho',
     entriesAddedSuccess: 'Đã thêm mục nhập giờ thành công cho',
-    employees: 'Nhân viên'
+    employees: 'Nhân viên',
+    skippedEmployees: 'Đã bỏ qua {count} nhân viên có mục nhập hiện tại: {names}',
+    errors: {
+      checkFailed: 'Không thể kiểm tra các mục nhập hiện tại',
+      allDuplicates: 'Tất cả nhân viên đã chọn đã có mục nhập giờ cho {date}: {names}'
+    }
   },
 
   // Employees
@@ -633,10 +638,11 @@ export default {
       clockOutAfterClockIn: 'Giờ ra phải sau giờ vào',
       tooManyHours: 'Không thể vượt quá 24 giờ trong một bản ghi',
       overlapping: 'Thời gian này trùng với bản ghi khác trong cùng ngày',
-      fileTooLarge: 'Kích thước tệp phải nhỏ hơn 5MB',
-      invalidFileType: 'Chỉ cho phép tệp JPG, PNG và PDF',
+      fileTooLarge: 'Kích thước tệp phải nhỏ hơn 50MB',
+      invalidFileType: 'Chỉ cho phép tệp hình ảnh, PDF và tài liệu',
       submitFailed: 'Gửi giờ công thất bại. Vui lòng thử lại.',
-      deleteFailed: 'Xóa giờ công thất bại. Vui lòng thử lại.'
+      deleteFailed: 'Xóa giờ công thất bại. Vui lòng thử lại.',
+      duplicateEntry: 'Đã tồn tại mục nhập giờ cho ngày này. Vui lòng chỉnh sửa mục nhập hiện tại.'
     },
     proofUploadSuccess: 'Tải lên tệp chứng minh thành công',
     proofUploadError: 'Tải lên tệp chứng minh thất bại',
