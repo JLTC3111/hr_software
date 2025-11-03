@@ -202,8 +202,11 @@ const ControlPanel = () => {
         throw error;
       }
 
-      setPasswordSuccess(t('controlPanel.passwordChanged', 'Password changed successfully!'));
+      // Clear form fields
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      
+      // Show success message in the form
+      setPasswordSuccess(t('controlPanel.passwordChanged', 'Password changed successfully!'));
       
       // Show success toast
       setToast({
@@ -212,12 +215,16 @@ const ControlPanel = () => {
         type: 'success'
       });
       
-      // Close the window after showing success message
+      // Close the window after showing success message for 3 seconds
       setTimeout(() => {
-        setToast({ show: false, message: '', type: '' });
         setShowChangePassword(false);
         setPasswordSuccess('');
-      }, 2000); // Close after 2 seconds
+      }, 3000);
+      
+      // Hide toast after 3 seconds
+      setTimeout(() => {
+        setToast({ show: false, message: '', type: '' });
+      }, 3000);
     } catch (error) {
       console.error('Password change error:', error);
       setPasswordError(error.message || t('controlPanel.passwordChangeError', 'Error changing password'));
@@ -256,14 +263,36 @@ const ControlPanel = () => {
       return;
     }
 
+    // Get the primary email from user_emails table (the one linked to auth)
+    let primaryEmail = selectedUser.email;
+    
+    // If email contains multiple addresses (separated by semicolon), get the auth email from user_emails
+    try {
+      const { data: emailData, error: emailError } = await supabase
+        .from('user_emails')
+        .select('email')
+        .eq('user_id', selectedUserId)
+        .single();
+      
+      if (emailData && emailData.email) {
+        primaryEmail = emailData.email;
+      } else {
+        // Fallback: if no entry in user_emails, use first email from the list
+        primaryEmail = selectedUser.email.split(';')[0].trim();
+      }
+    } catch (err) {
+      // Fallback: use first email from semicolon-separated list
+      primaryEmail = selectedUser.email.split(';')[0].trim();
+    }
+
     // Confirm action
-    if (!window.confirm(t('controlPanel.confirmResetPassword', `Are you sure you want to reset password for ${selectedUser.email}?`))) {
+    if (!window.confirm(t('controlPanel.confirmResetPassword', `Are you sure you want to reset password for ${primaryEmail}?`))) {
       return;
     }
 
     try {
-      // Send password reset email to the user
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(selectedUser.email, {
+      // Send password reset email to the primary email
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(primaryEmail, {
         redirectTo: `${window.location.origin}/login`
       });
 
@@ -271,12 +300,12 @@ const ControlPanel = () => {
         throw resetError;
       }
 
-      setAdminResetSuccess(t('controlPanel.passwordResetEmailSent', `Password reset email sent to ${selectedUser.email}. They will receive instructions to set a new password.`));
+      setAdminResetSuccess(t('controlPanel.passwordResetEmailSent', `Password reset email sent to ${primaryEmail}. They will receive instructions to set a new password.`));
       
       // Show success toast
       setToast({
         show: true,
-        message: t('controlPanel.passwordResetSuccess', `Password reset successfully for ${selectedUser.email}!`),
+        message: t('controlPanel.passwordResetSuccess', `Password reset email sent to ${primaryEmail}!`),
         type: 'success'
       });
       
