@@ -443,7 +443,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
       }
       
       if (existingEntries && existingEntries.length > 0) {
-        setErrors({ general: t('timeClock.errors.duplicateEntry', 'A time entry already exists for this date. Please edit the existing entry instead.') });
+        const errorMsg = t('timeClock.errors.duplicateEntry', '');
+        console.log('Duplicate entry error message:', errorMsg);
+        console.log('Translation key:', 'timeClock.errors.duplicateEntry');
+        setErrors({ general: errorMsg });
         setIsSubmitting(false);
         return;
       }
