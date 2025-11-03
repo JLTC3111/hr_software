@@ -686,7 +686,8 @@ export default {
     active: 'Активный',
     inactive: 'Неактивный',
     onLeave: 'В отпуске',
-    pending: 'В ожидании'
+    pending: 'В ожидании',
+    outSourceContractor: 'Внешний подрядчик'
   },
 
   // Recruitment Status

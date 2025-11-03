@@ -707,7 +707,8 @@ export default {
     active: 'Actif',
     inactive: 'Inactif',
     onLeave: 'En congé',
-    pending: 'En attente'
+    pending: 'En attente',
+    outSourceContractor: 'Sous-traitant externe'
   },
 
   performanceAppraisalPage: {

@@ -687,7 +687,8 @@ export default {
     active: 'ใช้งานอยู่',
     inactive: 'ไม่ใช้งาน',
     onLeave: 'ลาพัก',
-    pending: 'รอดำเนินการ'
+    pending: 'รอดำเนินการ',
+    outSourceContractor: 'ผู้รับเหมาภายนอก'
   },
 
   // Recruitment Status

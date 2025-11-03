@@ -718,7 +718,8 @@ export default {
     active: 'Active',
     inactive: 'Inactive',
     onLeave: 'On Leave',
-    pending: 'Pending'
+    pending: 'Pending',
+    outSourceContractor: 'Outsource Contractor'
   },
 
   //Employee Position 

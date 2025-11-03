@@ -688,7 +688,8 @@ export default {
     active: '활성',
     inactive: '비활성',
     onLeave: '휴가중',
-    pending: '대기중'
+    pending: '대기중',
+    outSourceContractor: '외주 계약자'
   },
 
   // Recruitment Status

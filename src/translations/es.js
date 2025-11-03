@@ -701,7 +701,8 @@ login: {
     active: 'Activo',
     inactive: 'Inactivo',
     onLeave: 'De Permiso',
-    pending: 'Pendiente'
+    pending: 'Pendiente',
+    outSourceContractor: 'Contratista externo'
   },
 
   // Recruitment Status

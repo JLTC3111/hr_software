@@ -699,7 +699,8 @@ export default {
     active: 'Aktiv',
     inactive: 'Inaktiv',
     onLeave: 'Im Urlaub',
-    pending: 'Ausstehend'
+    pending: 'Ausstehend',
+    outSourceContractor: 'Externes Auftragnehmer'
   },
 
   // Performance Appraisal Translation

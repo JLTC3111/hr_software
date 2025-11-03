@@ -687,7 +687,8 @@ export default {
     active: 'アクティブ',
     inactive: '非アクティブ',
     onLeave: '休暇中',
-    pending: '保留中'
+    pending: '保留中',
+    outSourceContractor: '外部委託業者'
   },
 
   // Recruitment Status

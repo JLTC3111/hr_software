@@ -729,7 +729,8 @@ export default {
     active: 'Hoạt động',
     inactive: 'Không hoạt động',
     onleave: 'Nghỉ phép',
-    pending: 'Chờ xử lý'
+    pending: 'Chờ xử lý',
+    outSourceContractor: 'Nhà thầu gia công'
   },
 
   //Employee Position 
