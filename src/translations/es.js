@@ -225,7 +225,7 @@ login: {
     hourTypes: {
       regular: 'Horas Regulares',
       holiday: 'Festivo',
-      weekend: 'Fin de Semana/Horas Extra',
+      weekend: 'Fin de Semana',
       bonus: 'Horas Bonus'
     },
     errors: {
