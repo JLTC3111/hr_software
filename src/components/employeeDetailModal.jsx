@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Phone, Mail, MapPin, Award, Cake, Network, Calendar, DollarSign, User, ClipboardList, FileText, Download, Upload, Loader, Edit2, Briefcase, Trash2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useUpload } from '../contexts/UploadContext';
 import { getEmployeePdfUrl, deleteEmployeePdf } from '../services/employeeService';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -14,7 +15,11 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/$
 const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
   const { bg, text, border, isDarkMode } = useTheme();
   const { t } = useLanguage();
+  const { user } = useAuth();
   const { startPdfUpload, getUploadStatus } = useUpload();
+  
+  // Check if user has permission to edit (not employee role)
+  const canEdit = user?.role !== 'employee';
   const [activeTab, setActiveTab] = useState('info'); // 'info', 'contact', 'documents'
   const [pdfPath, setPdfPath] = useState(employee?.pdf_document_url || null);
   const [pdfUrl, setPdfUrl] = useState(null);
@@ -331,33 +336,35 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
             >
               <Phone className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
             </a>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onEdit) {
-                  onEdit(employee);
-                  onClose();
-                }
-              }}
-              style={{
-                padding: '12px',
-                backgroundColor: isDarkMode ? '#transparent' : '#eff6ff',
-                color: isDarkMode ? '#93c5fd' : '#2563eb',
-                borderRadius: '8px',
-                transition: 'all 0.3s',
-                display: 'inline-flex',
-                cursor: 'pointer'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = isDarkMode ? '#4b5563' : '#dbeafe';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = isDarkMode ? 'transparent' : '#eff6ff';
-              }}
-              title={t('employees.edit', 'Edit')}
-            >
-              <Edit2 className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
-            </button>
+            {canEdit && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onEdit) {
+                    onEdit(employee);
+                    onClose();
+                  }
+                }}
+                style={{
+                  padding: '12px',
+                  backgroundColor: isDarkMode ? '#transparent' : '#eff6ff',
+                  color: isDarkMode ? '#93c5fd' : '#2563eb',
+                  borderRadius: '8px',
+                  transition: 'all 0.3s',
+                  display: 'inline-flex',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#4b5563' : '#dbeafe';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = isDarkMode ? 'transparent' : '#eff6ff';
+                }}
+                title={t('employees.edit', 'Edit')}
+              >
+                <Edit2 className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -475,41 +482,47 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                         <Download className="w-4 h-4" />
                         <span>{t('employeeDetailModal.download', 'Download')}</span>
                       </button>
-                      <button
-                        onClick={handlePdfDelete}
-                        className={`px-4 py-2 text-white rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-red-700 hover:bg-red-600' : 'bg-red-600 hover:bg-red-700'}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        <span>{t('employeeDetailModal.delete', 'Delete')}</span>
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={handlePdfDelete}
+                          className={`px-4 py-2 text-white rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-red-700 hover:bg-red-600' : 'bg-red-600 hover:bg-red-700'}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>{t('employeeDetailModal.delete', 'Delete')}</span>
+                        </button>
+                      )}
                     </>
                   )}
-                  <input
-                    type="file"
-                    accept="application/pdf"
-                    onChange={handlePdfUpload}
-                    disabled={uploadStatus?.status === 'uploading'}
-                    className="hidden"
-                    id="pdf-upload"
-                  />
-                  <label
-                    htmlFor="pdf-upload"
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${border.primary} ${bg.primary} cursor-pointer hover:bg-transparent transition-all shadow-sm hover:shadow-md ${
-                      uploadStatus?.status === 'uploading' ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    {uploadStatus?.status === 'uploading' ? (
-                      <>
-                        <Loader className="w-5 h-5 animate-spin" />
-                        <span className={text.primary}>{t('employeeDetailModal.uploading', 'Uploading...')}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Upload className={`w-5 h-5 ${text.primary}`} />
-                        <span className={text.primary}>{t('employeeDetailModal.uploadPdf', 'Upload PDF')}</span>
-                      </>
-                    )}
-                  </label>
+                  {canEdit && (
+                    <>
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        onChange={handlePdfUpload}
+                        disabled={uploadStatus?.status === 'uploading'}
+                        className="hidden"
+                        id="pdf-upload"
+                      />
+                      <label
+                        htmlFor="pdf-upload"
+                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${border.primary} ${bg.primary} cursor-pointer hover:bg-transparent transition-all shadow-sm hover:shadow-md ${
+                          uploadStatus?.status === 'uploading' ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                      >
+                        {uploadStatus?.status === 'uploading' ? (
+                          <>
+                            <Loader className="w-5 h-5 animate-spin" />
+                            <span className={text.primary}>{t('employeeDetailModal.uploading', 'Uploading...')}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className={`w-5 h-5 ${text.primary}`} />
+                            <span className={text.primary}>{t('employeeDetailModal.uploadPdf', 'Upload PDF')}</span>
+                          </>
+                        )}
+                      </label>
+                    </>
+                  )}
                 </div>
               </div>
               

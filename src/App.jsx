@@ -7,7 +7,7 @@ import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { UploadProvider } from './contexts/UploadContext'
-import { AddEmployeeModal, Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager, ControlPanel, WorkloadManagement, TaskPerformanceReview, FlubberIconTest } from './components/index.jsx';
+import { Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager, ControlPanel, WorkloadManagement, TaskPerformanceReview, FlubberIconTest } from './components/index.jsx';
 import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
 
@@ -52,7 +52,6 @@ const HRManagementApp = () => {
   const [applications, setApplications] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -173,26 +172,6 @@ const HRManagementApp = () => {
     }
   };
 
-  const handleAddEmployee = async (newEmployee) => {
-    try {
-      // Create employee in Supabase
-      const result = await employeeService.createEmployee(newEmployee);
-      
-      if (result.success) {
-        // Refetch all employees to ensure we have the latest data from the database
-        await fetchEmployees();
-        setIsAddEmployeeModalOpen(false);
-        alert('Employee added successfully!');
-      } else {
-        console.error('Error adding employee:', result.error);
-        alert(`Failed to add employee: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('Error in handleAddEmployee:', error);
-      alert('An unexpected error occurred while adding employee.');
-    }
-  };
-
   const handleEditEmployee = (employee) => {
     setSelectedEmployee(employee);
     setIsEditMode(true);
@@ -255,9 +234,6 @@ const HRManagementApp = () => {
               onDeleteEmployee={handleDeleteEmployee}
               onCloseModal={handleCloseModal}
               onPhotoUpdate={handlePhotoUpdate}
-              isAddEmployeeModalOpen={isAddEmployeeModalOpen}
-              setIsAddEmployeeModalOpen={setIsAddEmployeeModalOpen}
-              onAddEmployee={handleAddEmployee}
               refetchEmployees={refetchEmployees}
               loading={loading}
               error={error}
@@ -271,7 +247,7 @@ const HRManagementApp = () => {
   );
 };
 
-const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onViewEmployee, onEditEmployee, onDeleteEmployee, onCloseModal, onPhotoUpdate, isAddEmployeeModalOpen, setIsAddEmployeeModalOpen, onAddEmployee, refetchEmployees, loading, error, isMobileMenuOpen, setIsMobileMenuOpen }) => {
+const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onViewEmployee, onEditEmployee, onDeleteEmployee, onCloseModal, onPhotoUpdate, refetchEmployees, loading, error, isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const { bg, text } = useTheme();
   const { isAuthenticated } = useAuth();
   const { currentLanguage } = useLanguage();
@@ -348,7 +324,7 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
                     />
                     <Route 
                       path="/employees" 
-                      element={<Employee employees={employees} onViewEmployee={onViewEmployee} onEditEmployee={onEditEmployee} onDeleteEmployee={onDeleteEmployee} onPhotoUpdate={onPhotoUpdate} onAddEmployeeClick={() => setIsAddEmployeeModalOpen(true)} refetchEmployees={refetchEmployees} />} 
+                      element={<Employee employees={employees} onViewEmployee={onViewEmployee} onEditEmployee={onEditEmployee} onDeleteEmployee={onDeleteEmployee} onPhotoUpdate={onPhotoUpdate} refetchEmployees={refetchEmployees} />} 
                     />
                     <Route 
                       path="/employees/add" 
@@ -402,12 +378,6 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
                   // Refetch employees to get latest data
                   await refetchEmployees();
                 }}
-              />
-              
-              <AddEmployeeModal 
-                isOpen={isAddEmployeeModalOpen}
-                onClose={() => setIsAddEmployeeModalOpen(false)}
-                onAddEmployee={onAddEmployee}
               />
             </div>
           ) : (

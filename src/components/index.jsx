@@ -1,5 +1,4 @@
 // Export all components from a single file for easier imports
-export { default as AddEmployeeModal } from './addEmployeeModal.jsx';
 export { default as Dashboard } from './dashboard.jsx';
 export { default as Employee } from './employee.jsx';
 export { default as EmployeeCard } from './employeeCard.jsx';

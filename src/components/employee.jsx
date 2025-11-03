@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,7 +8,8 @@ import SearchAndFilter from './search.jsx';
 import EmployeeCard from './employeeCard.jsx';
 import EmployeeDetailModal from './employeeDetailModal.jsx';
 
-const Employees = ({ employees, onViewEmployee, onEditEmployee, onDeleteEmployee, onPhotoUpdate, onAddEmployeeClick, refetchEmployees }) => {
+const Employees = ({ employees, onViewEmployee, onEditEmployee, onDeleteEmployee, onPhotoUpdate, refetchEmployees }) => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('all');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -77,7 +78,7 @@ const Employees = ({ employees, onViewEmployee, onEditEmployee, onDeleteEmployee
         <h2 className={`font-bold ${text.primary}`} style={{fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'}}>{t('employees.title')}</h2>
         {canAddEmployee && (
           <button 
-            onClick={onAddEmployeeClick}
+            onClick={() => navigate('/employees/add')}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg"
             style={{
               backgroundColor: isDarkMode ? '#374151' : '#ffffff', 

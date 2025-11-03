@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react'
 import { Mail, Phone, MapPin, Briefcase, Calendar, Award, Edit2, Save, X, User } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useTheme } from '../contexts/ThemeContext'
+import { useAuth } from '../contexts/AuthContext'
 import * as employeeService from '../services/employeeService'
 
 const getStatusColor = (status) => {
@@ -20,8 +21,12 @@ const getStatusColor = (status) => {
 const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false }) => {
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
+  const { user } = useAuth();
   
-  const [isEditing, setIsEditing] = useState(initialEditMode);
+  // Check if user has permission to edit (not employee role)
+  const canEdit = user?.role !== 'employee';
+  
+  const [isEditing, setIsEditing] = useState(initialEditMode && canEdit);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [currentEmployee, setCurrentEmployee] = useState(employee); // Track current employee data
@@ -537,13 +542,15 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                 >
                   {t('common.close', 'Close')}
                 </button>
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center"
-                >
-                  <Edit2 className="h-4 w-4 mr-2" />
-                  {t('employees.editEmployee', 'Edit Employee')}
-                </button>
+                {canEdit && (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center"
+                  >
+                    <Edit2 className="h-4 w-4 mr-2" />
+                    {t('employees.editEmployee', 'Edit Employee')}
+                  </button>
+                )}
               </>
             )}
           </div>
