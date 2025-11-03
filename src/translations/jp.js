@@ -223,7 +223,9 @@ export default {
       fileTooLarge: 'ファイルサイズは5MB未満である必要があります',
       invalidFileType: 'JPG、PNG、PDFファイルのみアップロード可能です',
       submitFailed: '時間記録の送信に失敗しました。もう一度お試しください。',
-      deleteFailed: '時間記録の削除に失敗しました。もう一度お試しください。'
+      deleteFailed: '時間記録の削除に失敗しました。もう一度お試しください。',
+      duplicateEntry: 'この日付の時間記録は既に存在します。既存の記録を編集してください。',
+
     },
     deleteOptions: '削除オプションを選択',
     deleteEntry: '時間記録全体を削除',
@@ -659,7 +661,7 @@ export default {
     notes: 'メモ',
     notesPlaceholder: 'この勤怠入力についてのメモを追加...',
     submitButton: '勤怠入力を送信',
-    submitBulkEntries: '名の従業員の入力を送信',
+    submitBulkEntries: '{0}名の従業員の入力を送信',
     submitting: '送信中...',
     accessDenied: 'アクセス拒否：他の従業員の勤怠入力を管理する権限がありません。',
     errorLoadEmployees: '従業員の読み込みに失敗しました',

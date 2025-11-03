@@ -226,7 +226,8 @@ export default {
       fileTooLarge: '파일 크기는 5MB 미만이어야 합니다',
       invalidFileType: 'JPG, PNG, PDF 파일만 허용됩니다',
       submitFailed: '시간 기록 제출에 실패했습니다. 다시 시도해 주세요.',
-      deleteFailed: '시간 기록 삭제에 실패했습니다. 다시 시도해 주세요.'
+      deleteFailed: '시간 기록 삭제에 실패했습니다. 다시 시도해 주세요.',
+      duplicateEntry: '이 날짜에는 이미 시간 기록이 있습니다. 기존 기록을 편집해 주세요.',
     },
     deleteOptions: '삭제 옵션 선택',
     deleteEntry: '전체 시간 기록 삭제',

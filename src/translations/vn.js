@@ -642,7 +642,7 @@ export default {
       invalidFileType: 'Chỉ cho phép tệp hình ảnh, PDF và tài liệu',
       submitFailed: 'Gửi giờ công thất bại. Vui lòng thử lại.',
       deleteFailed: 'Xóa giờ công thất bại. Vui lòng thử lại.',
-      duplicateEntry: 'Đã tồn tại mục nhập giờ cho ngày này. Vui lòng chỉnh sửa mục nhập hiện tại.'
+      duplicateEntry: 'Đã nhập giờ cho ngày này. Vui lòng chỉnh sửa ngày giờ hiện tại.'
     },
     proofUploadSuccess: 'Tải lên tệp chứng minh thành công',
     proofUploadError: 'Tải lên tệp chứng minh thất bại',
