@@ -199,7 +199,7 @@ export default {
     // Hour types for overtime
     weekend: 'Làm thêm cuối tuần',
     holiday: 'Làm thêm ngày lễ',
-    bonus: 'Giờ thưởng',
+    bonus: 'Giờ Làm Thêm',
     regular: 'Giờ thường',
     startDate: 'Ngày bắt đầu',
     endDate: 'Ngày kết thúc',
@@ -257,7 +257,7 @@ export default {
     regularHours: 'Giờ Làm Thường',
     weekendOvertime: 'Cuối Tuần/Tăng Ca',
     holiday: 'Ngày Lễ',
-    bonusHours: 'Giờ Thưởng',
+    bonusHours: 'Giờ Làm Thêm',
     notes: 'Ghi Chú',
     notesPlaceholder: 'Thêm ghi chú về mục nhập giờ này...',
     submitButton: 'Gửi Mục Nhập Giờ',
@@ -274,6 +274,12 @@ export default {
     entriesAddedSuccess: 'Đã thêm mục nhập giờ thành công cho',
     employees: 'Nhân viên',
     skippedEmployees: 'Đã bỏ qua {count} nhân viên có mục nhập hiện tại: {names}',
+    hourTypes: {
+      regular: 'Giờ Thường',
+      holiday: 'Ngày Lễ',
+      weekend: 'Cuối Tuần/Tăng Ca',
+      bonus: 'Giờ Thưởng'
+    },
     errors: {
       checkFailed: 'Không thể kiểm tra các mục nhập hiện tại',
       allDuplicates: 'Tất cả nhân viên đã chọn đã có mục nhập giờ cho {date}: {names}'
@@ -627,10 +633,10 @@ export default {
     notesPlaceholder: 'Thêm ghi chú hoặc nội dung bổ sung...',
     fileHelp: 'Tải lên ảnh chụp màn hình, ảnh hoặc PDF (tối đa 5MB)',
     hourTypes: {
-      regular: 'Giờ thường',
-      holiday: 'Ngày lễ',
-      weekend: 'Cuối tuần',
-      bonus: 'Giờ thưởng'
+      regular: 'Giờ Thường',
+      holiday: 'Ngày Lễ',
+      weekend: 'Cuối Tuần',
+      bonus: 'Giờ Làm Thêm'
     },
     errors: {
       dateRequired: 'Vui lòng chọn ngày',
@@ -643,7 +649,7 @@ export default {
       invalidFileType: 'Chỉ cho phép tệp hình ảnh, PDF và tài liệu',
       submitFailed: 'Gửi giờ công thất bại. Vui lòng thử lại.',
       deleteFailed: 'Xóa giờ công thất bại. Vui lòng thử lại.',
-      duplicateEntry: 'Đã nhập giờ cho ngày này. Vui lòng chỉnh sửa ngày giờ hiện tại.'
+      duplicateEntry: 'Bạn đã có mục nhập {hourType} cho ngày này. Vui lòng chỉnh sửa mục nhập hiện tại hoặc chọn loại giờ khác.'
     },
     proofUploadSuccess: 'Tải lên tệp chứng minh thành công',
     proofUploadError: 'Tải lên tệp chứng minh thất bại',

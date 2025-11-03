@@ -6,7 +6,19 @@ import { useAuth } from '../contexts/AuthContext';
 import * as performanceService from '../services/performanceService';
 
 const PerformanceAppraisal = ({ employees }) => {
-  const [selectedEmployee, setSelectedEmployee] = useState(employees[0]?.id ? String(employees[0].id) : null);
+  const { t } = useLanguage();
+  const { isDarkMode, text, bg, border } = useTheme();
+  const { user, checkPermission } = useAuth();
+
+  // Check if user can view other employees' performance
+  const canViewAllEmployees = checkPermission('canViewReports');
+
+  // Filter employees based on role
+  const availableEmployees = canViewAllEmployees 
+    ? employees 
+    : employees.filter(emp => String(emp.id) === String(user?.employeeId || user?.id));
+
+  const [selectedEmployee, setSelectedEmployee] = useState(availableEmployees[0]?.id ? String(availableEmployees[0].id) : null);
   const [selectedPeriod, setSelectedPeriod] = useState('2024-q4');
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
@@ -19,9 +31,6 @@ const PerformanceAppraisal = ({ employees }) => {
   const [goals, setGoals] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [progressChanges, setProgressChanges] = useState({}); // Track progress changes by goal ID
-  const { t } = useLanguage();
-  const { isDarkMode, text, bg, border } = useTheme();
-  const { user } = useAuth();
 
   // Form state for new goal
   const [goalForm, setGoalForm] = useState({
@@ -958,7 +967,7 @@ const PerformanceAppraisal = ({ employees }) => {
   );
 
   // Get current employee data
-  const currentEmployee = employees.find(emp => String(emp.id) === selectedEmployee);
+  const currentEmployee = availableEmployees.find(emp => String(emp.id) === selectedEmployee);
 
   return (
     <div className="space-y-4 md:space-y-6 px-2 sm:px-0">
@@ -993,23 +1002,25 @@ const PerformanceAppraisal = ({ employees }) => {
           )}
         </div>
         <div className="flex space-x-4">
-          {/* Employee Selector */}
-          <select
-            value={selectedEmployee}
-            onChange={(e) => setSelectedEmployee(String(e.target.value))}
-            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            style={{
-              backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-              color: isDarkMode ? '#ffffff' : '#111827',
-              borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-            }}
-          >
-            {employees.map(employee => (
-              <option key={employee.id} value={String(employee.id)}>
-                {employee.name}
-              </option>
-            ))}
-          </select>
+          {/* Employee Selector - Only show for admin/manager */}
+          {canViewAllEmployees && availableEmployees.length > 1 && (
+            <select
+              value={selectedEmployee}
+              onChange={(e) => setSelectedEmployee(String(e.target.value))}
+              className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              style={{
+                backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+                color: isDarkMode ? '#ffffff' : '#111827',
+                borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
+              }}
+            >
+              {availableEmployees.map(employee => (
+                <option key={employee.id} value={String(employee.id)}>
+                  {employee.name}
+                </option>
+              ))}
+            </select>
+          )}
 
           {/* Period Selector */}
           <select

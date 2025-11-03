@@ -225,7 +225,7 @@ export default {
       invalidFileType: 'JPG、PNG、PDFファイルのみアップロード可能です',
       submitFailed: '時間記録の送信に失敗しました。もう一度お試しください。',
       deleteFailed: '時間記録の削除に失敗しました。もう一度お試しください。',
-      duplicateEntry: 'この日付の時間記録は既に存在します。既存の記録を編集してください。',
+      duplicateEntry: 'この日付の{hourType}時間記録は既に存在します。既存の記録を編集するか、別の時間タイプを選択してください。',
 
     },
     deleteOptions: '削除オプションを選択',
@@ -673,7 +673,18 @@ export default {
     selectAtLeastOne: '少なくとも1人の従業員を選択してください',
     entryAddedSuccess: '勤怠入力が正常に追加されました：',
     entriesAddedSuccess: '勤怠入力が正常に追加されました：',
-    employees: '名の従業員'
+    employees: '名の従業員',
+    skippedEmployees: '既存のエントリがある{count}名の従業員をスキップしました：{names}',
+    hourTypes: {
+      regular: '通常',
+      holiday: '祝日',
+      weekend: '週末/残業',
+      bonus: 'ボーナス'
+    },
+    errors: {
+      checkFailed: '既存のエントリの確認に失敗しました',
+      allDuplicates: '選択されたすべての従業員には、{date}の勤怠入力が既に存在します：{names}'
+    }
   },
 
   // Recruitment Actions

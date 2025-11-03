@@ -387,6 +387,12 @@ export default {
     entriesAddedSuccess: 'Time entries added successfully for',
     employees: 'employees',
     skippedEmployees: 'Skipped {count} employee(s) with existing entries: {names}',
+    hourTypes: {
+      regular: 'Regular',
+      holiday: 'Holiday',
+      weekend: 'Weekend/Overtime',
+      bonus: 'Bonus'
+    },
     errors: {
       checkFailed: 'Failed to check for existing entries',
       allDuplicates: 'All selected employees already have time entries for {date}: {names}'
@@ -445,7 +451,7 @@ export default {
       clockOutAfterClockIn: 'Clock out must be after clock in',
       submitFailed: 'Failed to submit time entry',
       deleteFailed: 'Failed to delete time entry',
-      duplicateEntry: 'A time entry already exists for this date. Please edit the existing entry instead.',
+      duplicateEntry: 'You already have a {hourType} time entry for this date. Please edit the existing entry or choose a different hour type.',
       fileTooLarge: 'File size must be less than 50MB',
       invalidFileType: 'Only images, PDF, and document files are allowed'
     },

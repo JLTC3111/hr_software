@@ -156,13 +156,14 @@ const AdminTimeEntry = () => {
         }
       }
 
-      // Check for existing entries for the selected employees on this date
+      // Check for existing entries for the selected employees on this date with the same hour type
       const employeeIds = selectedEmployees.map(e => e.id);
       const { data: existingEntries, error: checkError } = await supabase
         .from('time_entries')
-        .select('employee_id, date')
+        .select('employee_id, date, hour_type')
         .in('employee_id', employeeIds)
-        .eq('date', formData.date);
+        .eq('date', formData.date)
+        .eq('hour_type', formData.hourType);
       
       if (checkError) {
         console.error('Error checking existing entries:', checkError);
@@ -171,23 +172,24 @@ const AdminTimeEntry = () => {
         return;
       }
       
-      // Filter out employees who already have entries for this date
+      // Filter out employees who already have entries for this date with the same hour type
       const existingEmployeeIds = new Set(existingEntries.map(e => e.employee_id));
       const employeesWithoutEntries = selectedEmployees.filter(emp => !existingEmployeeIds.has(emp.id));
       const employeesWithEntries = selectedEmployees.filter(emp => existingEmployeeIds.has(emp.id));
       
-      // If all employees already have entries, show error
+      // If all employees already have entries for this hour type, show error
       if (employeesWithoutEntries.length === 0) {
         const names = employeesWithEntries.map(e => e.name).join(', ');
-        setErrorMessage(t('adminTimeEntry.errors.allDuplicates', 'All selected employees already have time entries for {date}: {names}').replace('{date}', formData.date).replace('{names}', names));
+        const hourTypeLabel = t(`adminTimeEntry.hourTypes.${formData.hourType}`, formData.hourType);
+        setErrorMessage(t('adminTimeEntry.errors.allDuplicates', 'All selected employees already have {hourType} time entries for {date}: {names}').replace('{hourType}', hourTypeLabel).replace('{date}', formData.date).replace('{names}', names));
         setLoading(false);
         return;
       }
       
-      // Show warning if some employees already have entries
+      // Show warning if some employees already have entries for this hour type
       if (employeesWithEntries.length > 0) {
         const names = employeesWithEntries.map(e => e.name).join(', ');
-        console.log(`Skipping employees with existing entries: ${names}`);
+        console.log(`Skipping employees with existing ${formData.hourType} entries: ${names}`);
       }
       
       // Create entries only for employees without existing entries
@@ -213,15 +215,16 @@ const AdminTimeEntry = () => {
       if (result.success) {
         const processedNames = employeesWithoutEntries.map(e => e.name).join(', ');
         const processedIds = employeesWithoutEntries.map(e => e.id);
+        const hourTypeLabel = t(`adminTimeEntry.hourTypes.${formData.hourType}`, formData.hourType);
         
         let message = employeesWithoutEntries.length === 1 
-          ? `${t('adminTimeEntry.entryAddedSuccess', 'Time entry added successfully for')} ${processedNames}`
-          : `${t('adminTimeEntry.entriesAddedSuccess', 'Time entries added successfully for')} ${employeesWithoutEntries.length} ${t('adminTimeEntry.employees', 'employees')}: ${processedNames}`;
+          ? `${hourTypeLabel} ${t('adminTimeEntry.entryAddedSuccess', 'time entry added successfully for')} ${processedNames}`
+          : `${hourTypeLabel} ${t('adminTimeEntry.entriesAddedSuccess', 'time entries added successfully for')} ${employeesWithoutEntries.length} ${t('adminTimeEntry.employees', 'employees')}: ${processedNames}`;
         
         // Add warning about skipped employees if any
         if (employeesWithEntries.length > 0) {
           const skippedNames = employeesWithEntries.map(e => e.name).join(', ');
-          message += ` (${t('adminTimeEntry.skippedEmployees', 'Skipped {count} employee(s) with existing entries: {names}').replace('{count}', employeesWithEntries.length).replace('{names}', skippedNames)})`;
+          message += ` (${t('adminTimeEntry.skippedEmployees', 'Skipped {count} employee(s) with existing {hourType} entries: {names}').replace('{count}', employeesWithEntries.length).replace('{hourType}', hourTypeLabel).replace('{names}', skippedNames)})`;
         }
         
         setSuccessMessage(message);

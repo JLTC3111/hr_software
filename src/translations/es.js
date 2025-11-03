@@ -180,6 +180,12 @@ login: {
     entriesAddedSuccess: 'Entradas de tiempo agregadas exitosamente para',
     employees: 'empleados',
     skippedEmployees: '{count} empleado(s) omitido(s) con entradas existentes: {names}',
+    hourTypes: {
+      regular: 'Regular',
+      holiday: 'Día festivo',
+      weekend: 'Fin de semana/Horas extras',
+      bonus: 'Bono'
+    },
     errors: {
       checkFailed: 'Error al verificar entradas existentes',
       allDuplicates: 'Todos los empleados seleccionados ya tienen entradas de tiempo para {date}: {names}'
@@ -235,7 +241,7 @@ login: {
       clockOutAfterClockIn: 'La hora de salida debe ser después de la entrada',
       submitFailed: 'Error al enviar entrada de tiempo',
       deleteFailed: 'Error al eliminar entrada de tiempo',
-      duplicateEntry: 'Ya existe una entrada de tiempo para esta fecha. Por favor edite la entrada existente.',
+      duplicateEntry: 'Ya tiene una entrada de tiempo {hourType} para esta fecha. Por favor edite la entrada existente o elija un tipo de hora diferente.',
       fileTooLarge: 'El tamaño del archivo debe ser menor a 50MB',
       invalidFileType: 'Solo se permiten archivos de imágenes, PDF y documentos'
     },

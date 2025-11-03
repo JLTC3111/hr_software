@@ -228,7 +228,7 @@ export default {
       invalidFileType: 'JPG, PNG, PDF 파일만 허용됩니다',
       submitFailed: '시간 기록 제출에 실패했습니다. 다시 시도해 주세요.',
       deleteFailed: '시간 기록 삭제에 실패했습니다. 다시 시도해 주세요.',
-      duplicateEntry: '이 날짜에는 이미 시간 기록이 있습니다. 기존 기록을 편집해 주세요.',
+      duplicateEntry: '이 날짜에 이미 {hourType} 시간 기록이 있습니다. 기존 기록을 편집하거나 다른 시간 유형을 선택하세요.',
     },
     deleteOptions: '삭제 옵션 선택',
     deleteEntry: '전체 시간 기록 삭제',
@@ -674,7 +674,18 @@ export default {
     selectAtLeastOne: '최소 한 명의 직원을 선택하세요',
     entryAddedSuccess: '근무 입력이 성공적으로 추가되었습니다:',
     entriesAddedSuccess: '근무 입력이 성공적으로 추가되었습니다:',
-    employees: '명의 직원'
+    employees: '명의 직원',
+    skippedEmployees: '기존 입력이 있는 {count}명의 직원을 건너뛰었습니다: {names}',
+    hourTypes: {
+      regular: '정규',
+      holiday: '휴일',
+      weekend: '주말/초과 근무',
+      bonus: '보너스'
+    },
+    errors: {
+      checkFailed: '기존 입력 확인 실패',
+      allDuplicates: '선택한 모든 직원이 {date}에 대한 근무 입력을 이미 가지고 있습니다: {names}'
+    }
   },
 
   // Recruitment Actions

@@ -228,7 +228,7 @@ export default {
       invalidFileType: 'Seuls les images, PDF et documents sont autorisés',
       submitFailed: 'Échec de la soumission. Veuillez réessayer.',
       deleteFailed: 'Échec de la suppression. Veuillez réessayer.',
-      duplicateEntry: 'Une saisie de temps existe déjà pour cette date. Veuillez modifier l\'entrée existante.'
+      duplicateEntry: 'Vous avez déjà une saisie de temps {hourType} pour cette date. Veuillez modifier l\'entrée existante ou choisir un type d\'heure différent.'
     },
     deleteOptions: 'Choisir l\'option de suppression',
     deleteEntry: 'Supprimer l\'entrée de temps complète',
@@ -326,6 +326,12 @@ export default {
     entriesAddedSuccess: 'Saisies du temps ajoutées avec succès pour',
     employees: 'employés',
     skippedEmployees: '{count} employé(s) ignoré(s) avec des entrées existantes: {names}',
+    hourTypes: {
+      regular: 'Régulier',
+      holiday: 'Jour férié',
+      weekend: 'Week-end/Heures supplémentaires',
+      bonus: 'Bonus'
+    },
     errors: {
       checkFailed: 'Échec de la vérification des entrées existantes',
       allDuplicates: 'Tous les employés sélectionnés ont déjà des saisies de temps pour {date}: {names}'

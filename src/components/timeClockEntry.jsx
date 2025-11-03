@@ -428,12 +428,13 @@ const TimeClockEntry = ({ currentLanguage }) => {
       // Use employeeId from user profile to link with employees table
       const employeeId = user?.employeeId || user?.id;
       
-      // Check if entry already exists for this date
+      // Check if entry already exists for this date with the same hour type
       const { data: existingEntries, error: checkError } = await supabase
         .from('time_entries')
-        .select('id')
+        .select('id, hour_type')
         .eq('employee_id', employeeId)
-        .eq('date', formData.date);
+        .eq('date', formData.date)
+        .eq('hour_type', formData.hourType);
       
       if (checkError) {
         console.error('Error checking existing entries:', checkError);
@@ -443,7 +444,8 @@ const TimeClockEntry = ({ currentLanguage }) => {
       }
       
       if (existingEntries && existingEntries.length > 0) {
-        const errorMsg = t('timeClock.errors.duplicateEntry', '');
+        const hourTypeLabel = t(`timeClock.hourTypes.${formData.hourType}`, formData.hourType);
+        const errorMsg = t('timeClock.errors.duplicateEntry', 'You already have a {hourType} time entry for this date').replace('{hourType}', hourTypeLabel);
         console.log('Duplicate entry error message:', errorMsg);
         console.log('Translation key:', 'timeClock.errors.duplicateEntry');
         setErrors({ general: errorMsg });

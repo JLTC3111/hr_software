@@ -606,7 +606,7 @@ export default {
       invalidFileType: 'Nur Bilder, PDF- und Dokumentdateien sind erlaubt',
       submitFailed: 'Zeiteintrag konnte nicht übermittelt werden. Bitte versuchen Sie es erneut.',
       deleteFailed: 'Zeiteintrag konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.',
-      duplicateEntry: 'Für dieses Datum existiert bereits ein Zeiteintrag. Bitte bearbeiten Sie den vorhandenen Eintrag.'
+      duplicateEntry: 'Sie haben bereits einen {hourType} Zeiteintrag für dieses Datum. Bitte bearbeiten Sie den vorhandenen Eintrag oder wählen Sie einen anderen Stundentyp.'
     },
     deleteOptions: 'Löschoption wählen',
     deleteEntry: 'Gesamten Zeiteintrag löschen',
@@ -682,6 +682,12 @@ export default {
     entriesAddedSuccess: 'Zeiteinträge erfolgreich hinzugefügt für',
     employees: 'Mitarbeiter',
     skippedEmployees: '{count} Mitarbeiter mit vorhandenen Einträgen übersprungen: {names}',
+    hourTypes: {
+      regular: 'Regulär',
+      holiday: 'Feiertag',
+      weekend: 'Wochenende/Überstunden',
+      bonus: 'Bonus'
+    },
     errors: {
       checkFailed: 'Fehler beim Überprüfen vorhandener Einträge',
       allDuplicates: 'Alle ausgewählten Mitarbeiter haben bereits Zeiteinträge für {date}: {names}'
