@@ -427,6 +427,27 @@ const TimeClockEntry = ({ currentLanguage }) => {
       // Create time entry in Supabase
       // Use employeeId from user profile to link with employees table
       const employeeId = user?.employeeId || user?.id;
+      
+      // Check if entry already exists for this date
+      const { data: existingEntries, error: checkError } = await supabase
+        .from('time_entries')
+        .select('id')
+        .eq('employee_id', employeeId)
+        .eq('date', formData.date);
+      
+      if (checkError) {
+        console.error('Error checking existing entries:', checkError);
+        setErrors({ general: t('timeClock.errors.submitFailed') });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      if (existingEntries && existingEntries.length > 0) {
+        setErrors({ general: t('timeClock.errors.duplicateEntry', 'A time entry already exists for this date. Please edit the existing entry instead.') });
+        setIsSubmitting(false);
+        return;
+      }
+      
       const result = await timeTrackingService.createTimeEntry({
         employeeId: employeeId,
         date: formData.date,

@@ -156,8 +156,42 @@ const AdminTimeEntry = () => {
         }
       }
 
-      // Create entries for all selected employees
-      const entries = selectedEmployees.map(emp => ({
+      // Check for existing entries for the selected employees on this date
+      const employeeIds = selectedEmployees.map(e => e.id);
+      const { data: existingEntries, error: checkError } = await supabase
+        .from('time_entries')
+        .select('employee_id, date')
+        .in('employee_id', employeeIds)
+        .eq('date', formData.date);
+      
+      if (checkError) {
+        console.error('Error checking existing entries:', checkError);
+        setErrorMessage('Failed to check for existing entries');
+        setLoading(false);
+        return;
+      }
+      
+      // Filter out employees who already have entries for this date
+      const existingEmployeeIds = new Set(existingEntries.map(e => e.employee_id));
+      const employeesWithoutEntries = selectedEmployees.filter(emp => !existingEmployeeIds.has(emp.id));
+      const employeesWithEntries = selectedEmployees.filter(emp => existingEmployeeIds.has(emp.id));
+      
+      // If all employees already have entries, show error
+      if (employeesWithoutEntries.length === 0) {
+        const names = employeesWithEntries.map(e => e.name).join(', ');
+        setErrorMessage(`All selected employees already have time entries for ${formData.date}: ${names}`);
+        setLoading(false);
+        return;
+      }
+      
+      // Show warning if some employees already have entries
+      if (employeesWithEntries.length > 0) {
+        const names = employeesWithEntries.map(e => e.name).join(', ');
+        console.log(`Skipping employees with existing entries: ${names}`);
+      }
+      
+      // Create entries only for employees without existing entries
+      const entries = employeesWithoutEntries.map(emp => ({
         employeeId: emp.id,
         date: formData.date,
         clockIn: clockInTime,
@@ -172,21 +206,28 @@ const AdminTimeEntry = () => {
         proofFilePath
       }));
 
-      setSubmitting(true);
+      console.log('Submitting entries:', entries);
       const result = await timeTrackingService.createBulkTimeEntries(entries);
+      console.log('Result from service:', result);
 
       if (result.success) {
-        const employeeNames = selectedEmployees.map(e => e.name).join(', ');
-        const employeeIds = selectedEmployees.map(e => e.id);
+        const processedNames = employeesWithoutEntries.map(e => e.name).join(', ');
+        const processedIds = employeesWithoutEntries.map(e => e.id);
         
-        setSuccessMessage(
-          selectedEmployees.length === 1 
-            ? `${t('adminTimeEntry.entryAddedSuccess', 'Time entry added successfully for')} ${employeeNames}`
-            : `${t('adminTimeEntry.entriesAddedSuccess', 'Time entries added successfully for')} ${selectedEmployees.length} ${t('adminTimeEntry.employees', 'employees')}: ${employeeNames}`
-        );
+        let message = employeesWithoutEntries.length === 1 
+          ? `${t('adminTimeEntry.entryAddedSuccess', 'Time entry added successfully for')} ${processedNames}`
+          : `${t('adminTimeEntry.entriesAddedSuccess', 'Time entries added successfully for')} ${employeesWithoutEntries.length} ${t('adminTimeEntry.employees', 'employees')}: ${processedNames}`;
+        
+        // Add warning about skipped employees if any
+        if (employeesWithEntries.length > 0) {
+          const skippedNames = employeesWithEntries.map(e => e.name).join(', ');
+          message += ` (Skipped ${employeesWithEntries.length} employee(s) with existing entries: ${skippedNames})`;
+        }
+        
+        setSuccessMessage(message);
         
         // Track processed employees to prevent re-selection
-        setProcessedEmployeeIds(prev => [...prev, ...employeeIds]);
+        setProcessedEmployeeIds(prev => [...prev, ...processedIds]);
         
         // Reset form
         setFormData({
@@ -200,11 +241,13 @@ const AdminTimeEntry = () => {
         setSelectedEmployees([]);
         setSearchTerm('');
       } else {
+        console.error('Service returned error:', result.error);
         setErrorMessage(result.error || 'Failed to create time entries');
       }
     } catch (error) {
       console.error('Error submitting time entries:', error);
-      setErrorMessage('Failed to submit time entries');
+      console.error('Error details:', error.message, error.stack);
+      setErrorMessage(`Failed to submit time entries: ${error.message || error.toString()}`);
     } finally {
       setLoading(false);
     }
