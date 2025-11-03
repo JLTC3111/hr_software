@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Phone, MapPin, Mail, Award, Eye, Edit, Trash2, User, Camera, Cake, Network, Loader } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useTheme } from '../contexts/ThemeContext'
+import { useAuth } from '../contexts/AuthContext'
 
 const getStatusColor = (status) => {
   switch (status.toLowerCase()) {
@@ -21,8 +22,12 @@ const getStatusColor = (status) => {
 const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate, style }) => {
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
+  const { user } = useAuth();
   const [photoError, setPhotoError] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // Check if user has permission to edit/delete (not employee role)
+  const canEditOrDelete = user?.role !== 'employee';
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
@@ -92,7 +97,7 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
                 <User className="w-6 h-6" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
               )}
             </div>
-            {!uploading && (
+            {!uploading && canEditOrDelete && (
               <label 
                 className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer"
                 title={t('employees.uploadPhoto', 'Upload photo')}
@@ -156,26 +161,30 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
         >
           <Eye className="h-4 w-4" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
         </button>
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit && onEdit(employee);
-          }}
-          className="p-2 rounded-lg transition-all duration-200 cursor-pointer"
-          title={t('employees.edit', 'Edit')}
-        >
-          <Edit className="h-4 w-4" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
-        </button>
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete && onDelete(employee);
-          }}
-          className="p-2 rounded-lg transition-all duration-200 cursor-pointer"
-          title={t('employees.delete', 'Delete')}
-        >
-          <Trash2 className="h-4 w-4" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
-        </button>
+        {canEditOrDelete && (
+          <>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit && onEdit(employee);
+              }}
+              className="p-2 rounded-lg transition-all duration-200 cursor-pointer"
+              title={t('employees.edit', 'Edit')}
+            >
+              <Edit className="h-4 w-4" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
+            </button>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete && onDelete(employee);
+              }}
+              className="p-2 rounded-lg transition-all duration-200 cursor-pointer"
+              title={t('employees.delete', 'Delete')}
+            >
+              <Trash2 className="h-4 w-4" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
+            </button>
+          </>
+        )}
       </div>
     </div>
   </div>

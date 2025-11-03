@@ -428,10 +428,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
       // Use employeeId from user profile to link with employees table
       const employeeId = user?.employeeId || user?.id;
       
-      // Check if entry already exists for this date with the same hour type
+      // Check for overlapping time entries on this date with the same hour type
       const { data: existingEntries, error: checkError } = await supabase
         .from('time_entries')
-        .select('id, hour_type')
+        .select('id, hour_type, clock_in, clock_out')
         .eq('employee_id', employeeId)
         .eq('date', formData.date)
         .eq('hour_type', formData.hourType);
@@ -443,14 +443,31 @@ const TimeClockEntry = ({ currentLanguage }) => {
         return;
       }
       
+      // Check for time overlaps
       if (existingEntries && existingEntries.length > 0) {
-        const hourTypeLabel = t(`timeClock.hourTypes.${formData.hourType}`, formData.hourType);
-        const errorMsg = t('timeClock.errors.duplicateEntry', 'You already have a {hourType} time entry for this date').replace('{hourType}', hourTypeLabel);
-        console.log('Duplicate entry error message:', errorMsg);
-        console.log('Translation key:', 'timeClock.errors.duplicateEntry');
-        setErrors({ general: errorMsg });
-        setIsSubmitting(false);
-        return;
+        const newClockIn = formData.clockIn;
+        const newClockOut = formData.clockOut;
+        
+        for (const entry of existingEntries) {
+          const existingClockIn = entry.clock_in;
+          const existingClockOut = entry.clock_out;
+          
+          // Check if times overlap
+          const isOverlapping = (
+            (newClockIn >= existingClockIn && newClockIn < existingClockOut) ||
+            (newClockOut > existingClockIn && newClockOut <= existingClockOut) ||
+            (newClockIn <= existingClockIn && newClockOut >= existingClockOut)
+          );
+          
+          if (isOverlapping) {
+            const hourTypeLabel = t(`timeClock.hourTypes.${formData.hourType}`, formData.hourType);
+            const errorMsg = t('timeClock.errors.overlappingEntry', 'This {hourType} time entry overlaps with an existing entry ({existingIn} - {existingOut})').replace('{hourType}', hourTypeLabel).replace('{existingIn}', existingClockIn).replace('{existingOut}', existingClockOut);
+            console.log('Overlapping entry error:', errorMsg);
+            setErrors({ general: errorMsg });
+            setIsSubmitting(false);
+            return;
+          }
+        }
       }
       
       const result = await timeTrackingService.createTimeEntry({

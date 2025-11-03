@@ -15,12 +15,24 @@ const WorkloadManagement = ({ employees }) => {
   const [showAddTask, setShowAddTask] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [viewMode, setViewMode] = useState('individual'); // 'individual' or 'organization'
-  const [selectedEmployee, setSelectedEmployee] = useState(user?.employeeId || null);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   
   // Modal ref for outside click detection
   const modalRef = React.useRef(null);
+
+  // Check if user can view all employees (admin/manager)
+  const canViewAllEmployees = checkPermission('canViewReports');
+  
+  // Filter employees based on role
+  const availableEmployees = canViewAllEmployees 
+    ? employees 
+    : employees.filter(emp => String(emp.id) === String(user?.employeeId || user?.id));
+
+  // Set selected employee based on role
+  const [selectedEmployee, setSelectedEmployee] = useState(
+    availableEmployees[0]?.id ? String(availableEmployees[0].id) : null
+  );
   
   // Task form state
   const [taskForm, setTaskForm] = useState({
@@ -238,7 +250,7 @@ const WorkloadManagement = ({ employees }) => {
   };
 
   const getEmployeeTasks = (empId) => {
-    return tasks.filter(task => task.employee_id === empId);
+    return tasks.filter(task => String(task.employee_id) === String(empId));
   };
 
   const calculateProgress = (empTasks) => {
@@ -302,6 +314,31 @@ const WorkloadManagement = ({ employees }) => {
             <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{avgQuality}/5</p>
           </div>
         </div>
+
+        {/* Employee Selector - Only for admin/manager */}
+        {canViewAllEmployees && availableEmployees.length > 1 && (
+          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
+            <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+              {t('workload.selectEmployee', 'Select Employee')}
+            </label>
+            <select
+              value={selectedEmployee}
+              onChange={(e) => setSelectedEmployee(String(e.target.value))}
+              className={`w-full px-4 py-2 rounded-lg border ${text.primary} ${border.primary} cursor-pointer`}
+              style={{
+                backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
+                color: isDarkMode ? '#ffffff' : '#111827',
+                borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
+              }}
+            >
+              {availableEmployees.map(employee => (
+                <option key={employee.id} value={String(employee.id)}>
+                  {employee.name} - {t(`employeeDepartment.${employee.department.toLowerCase().replace(/\s+/g, '_')}`, employee.department)} ({t(`employeePosition.${employee.position.toLowerCase().replace(/\s+/g, '')}`, employee.position)})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Tasks List */}
         <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>

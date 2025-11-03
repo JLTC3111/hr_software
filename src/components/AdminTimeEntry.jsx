@@ -156,11 +156,11 @@ const AdminTimeEntry = () => {
         }
       }
 
-      // Check for existing entries for the selected employees on this date with the same hour type
+      // Check for overlapping time entries for the selected employees on this date with the same hour type
       const employeeIds = selectedEmployees.map(e => e.id);
       const { data: existingEntries, error: checkError } = await supabase
         .from('time_entries')
-        .select('employee_id, date, hour_type')
+        .select('employee_id, date, hour_type, clock_in, clock_out')
         .in('employee_id', employeeIds)
         .eq('date', formData.date)
         .eq('hour_type', formData.hourType);
@@ -172,25 +172,55 @@ const AdminTimeEntry = () => {
         return;
       }
       
-      // Filter out employees who already have entries for this date with the same hour type
-      const existingEmployeeIds = new Set(existingEntries.map(e => e.employee_id));
-      const employeesWithoutEntries = selectedEmployees.filter(emp => !existingEmployeeIds.has(emp.id));
-      const employeesWithEntries = selectedEmployees.filter(emp => existingEmployeeIds.has(emp.id));
+      // Check for time overlaps for each employee
+      const employeesWithOverlaps = [];
+      const employeesWithoutOverlaps = [];
       
-      // If all employees already have entries for this hour type, show error
-      if (employeesWithoutEntries.length === 0) {
-        const names = employeesWithEntries.map(e => e.name).join(', ');
+      for (const emp of selectedEmployees) {
+        const empExistingEntries = existingEntries.filter(e => e.employee_id === emp.id);
+        let hasOverlap = false;
+        
+        for (const entry of empExistingEntries) {
+          const existingClockIn = entry.clock_in;
+          const existingClockOut = entry.clock_out;
+          
+          // Check if times overlap
+          const isOverlapping = (
+            (clockInTime >= existingClockIn && clockInTime < existingClockOut) ||
+            (clockOutTime > existingClockIn && clockOutTime <= existingClockOut) ||
+            (clockInTime <= existingClockIn && clockOutTime >= existingClockOut)
+          );
+          
+          if (isOverlapping) {
+            hasOverlap = true;
+            break;
+          }
+        }
+        
+        if (hasOverlap) {
+          employeesWithOverlaps.push(emp);
+        } else {
+          employeesWithoutOverlaps.push(emp);
+        }
+      }
+      
+      // If all employees have overlapping entries, show error
+      if (employeesWithoutOverlaps.length === 0) {
+        const names = employeesWithOverlaps.map(e => e.name).join(', ');
         const hourTypeLabel = t(`adminTimeEntry.hourTypes.${formData.hourType}`, formData.hourType);
-        setErrorMessage(t('adminTimeEntry.errors.allDuplicates', 'All selected employees already have {hourType} time entries for {date}: {names}').replace('{hourType}', hourTypeLabel).replace('{date}', formData.date).replace('{names}', names));
+        setErrorMessage(t('adminTimeEntry.errors.allOverlapping', 'All selected employees have overlapping {hourType} time entries for {date}: {names}').replace('{hourType}', hourTypeLabel).replace('{date}', formData.date).replace('{names}', names));
         setLoading(false);
         return;
       }
       
-      // Show warning if some employees already have entries for this hour type
-      if (employeesWithEntries.length > 0) {
-        const names = employeesWithEntries.map(e => e.name).join(', ');
-        console.log(`Skipping employees with existing ${formData.hourType} entries: ${names}`);
+      // Show warning if some employees have overlapping entries
+      if (employeesWithOverlaps.length > 0) {
+        const names = employeesWithOverlaps.map(e => e.name).join(', ');
+        console.log(`Skipping employees with overlapping ${formData.hourType} entries: ${names}`);
       }
+      
+      const employeesWithoutEntries = employeesWithoutOverlaps;
+      const employeesWithEntries = employeesWithOverlaps;
       
       // Create entries only for employees without existing entries
       const entries = employeesWithoutEntries.map(emp => ({

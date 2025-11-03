@@ -395,7 +395,8 @@ export default {
     },
     errors: {
       checkFailed: 'Failed to check for existing entries',
-      allDuplicates: 'All selected employees already have time entries for {date}: {names}'
+      allDuplicates: 'All selected employees already have time entries for {date}: {names}',
+      allOverlapping: 'All selected employees have overlapping {hourType} time entries for {date}: {names}'
     }
   },
 
@@ -452,6 +453,7 @@ export default {
       submitFailed: 'Failed to submit time entry',
       deleteFailed: 'Failed to delete time entry',
       duplicateEntry: 'You already have a {hourType} time entry for this date. Please edit the existing entry or choose a different hour type.',
+      overlappingEntry: 'This {hourType} time entry overlaps with an existing entry ({existingIn} - {existingOut}). Please choose a different time.',
       fileTooLarge: 'File size must be less than 50MB',
       invalidFileType: 'Only images, PDF, and document files are allowed'
     },
