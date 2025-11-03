@@ -167,6 +167,17 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (data && data.is_active) {
+        // Additional check: verify employment_status is not 'terminated'
+        if (data.employment_status === 'terminated' || data.employment_status === 'inactive') {
+          console.warn(`User account has employment_status: ${data.employment_status} - denying access`);
+          await supabase.auth.signOut();
+          setUser(null);
+          setIsAuthenticated(false);
+          setSession(null);
+          setLoading(false);
+          return;
+        }
+        
         console.log('User profile found:', data);
         
         // Auto-link user to employee if employee_id is missing
@@ -214,7 +225,7 @@ export const AuthProvider = ({ children }) => {
         console.log('User not found, attempting to create profile...');
         await createUserProfile(userId);
       } else if (data && !data.is_active) {
-        console.warn('User account is inactive');
+        console.warn('User account is inactive (is_active = false)');
         await clearAuthState();
       } else {
         console.warn('No user data found and cannot create profile');

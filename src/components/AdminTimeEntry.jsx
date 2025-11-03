@@ -42,7 +42,7 @@ const AdminTimeEntry = () => {
       const { data, error } = await supabase
         .from('employees')
         .select('id, name, email, position, department, status')
-        .in('status', ['Active', 'active'])
+        // Don't filter by status - allow admins to manage time entries for all employees (including inactive/terminated)
         .order('name');
 
       if (error) throw error;
