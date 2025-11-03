@@ -8,7 +8,7 @@ export default {
     employees: 'พนักงาน',
     recruitment: 'การสรรหา',
     timeTracking: 'การติดตามเวลา',
-    performance: 'การประเมินผลการทำงาน',
+    performance: 'เป้าหมายส่วนตัว',
     reports: 'รายงาน',
     notifications: 'การแจ้งเตือน',
     settings: 'การตั้งค่า',
@@ -595,7 +595,10 @@ export default {
     success: 'ดำเนินการสำเร็จ',
     confirm: 'คุณแน่ใจหรือไม่?',
     yes: 'ใช่',
-    no: 'ไม่'
+    no: 'ไม่',
+    accessDenied: 'ปิดกั้นการเข้าถึง',
+    noPermission: 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้',
+    goBack: 'ย้อนกลับ'
   },
 
   // Theme
@@ -763,6 +766,7 @@ export default {
     markAllRead: 'ทำเครื่องหมายทั้งหมดว่าอ่านแล้ว',
     deleteAll: 'ลบทั้งหมด',
     confirmDeleteAll: 'คุณแน่ใจหรือไม่ว่าต้องการลบการแจ้งเตือนทั้งหมด?',
+    viewTimeEntries: 'ดูรายการเวลา',
     total: 'ทั้งหมด',
     unread: 'ยังไม่ได้อ่าน',
     errors: 'ข้อผิดพลาด',
@@ -1006,6 +1010,13 @@ export default {
     needHelp: 'ต้องการความช่วยเหลือ?',
     helpText: 'ดูคู่มือสำหรับคำแนะนำโดยละเอียดเกี่ยวกับการใช้ระบบ',
     standardAccess: 'การเข้าถึงผู้ใช้มาตรฐาน',
+    roles: {
+      admin: 'ผู้ดูแลระบบ',
+      hrManager: 'ผู้จัดการ HR',
+      manager: 'ผู้จัดการ',
+      employee: 'พนักงาน',
+      viewer: 'ผู้ดู'
+    },
     roleDesc: {
       admin: 'การเข้าถึงระบบเต็มรูปแบบพร้อมสิทธิ์การดูแลระบบทั้งหมด รวมถึงการจัดการผู้ใช้ การตั้งค่าระบบ และการควบคุมข้อมูลอย่างสมบูรณ์',
       hrAdmin: 'การจัดการ HR ที่สมบูรณ์พร้อมการดูแลพนักงาน การเข้าถึงเงินเดือน และการกำหนดค่าระบบ',
@@ -1016,7 +1027,55 @@ export default {
     },
     uploadAvatar: 'อัปโหลดรูปโปรไฟล์',
     avatarUpdated: 'อัปเดตรูปโปรไฟล์สำเร็จ!',
-    avatarError: 'เกิดข้อผิดพลาดในการอัปโหลดรูปโปรไฟล์'
+    avatarError: 'เกิดข้อผิดพลาดในการอัปโหลดรูปโปรไฟล์',
+    resetUserPassword: 'รีเซ็ตรหัสผ่านผู้ใช้',
+    selectUser: 'เลือกผู้ใช้',
+    chooseUser: '-- เลือกผู้ใช้ --',
+    enterNewPassword: 'ป้อนรหัสผ่านใหม่',
+    confirmNewPassword: 'ยืนยันรหัสผ่านใหม่',
+    resetPassword: 'รีเซ็ตรหัสผ่าน',
+    selectUserFirst: 'กรุณาเลือกผู้ใช้ก่อน',
+    userNotFound: 'ไม่พบผู้ใช้',
+    confirmResetPassword: 'คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตรหัสผ่านสำหรับ',
+    passwordResetSuccess: 'รีเซ็ตรหัสผ่านสำเร็จสำหรับ',
+    passwordResetError: 'เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน คุณอาจต้องการการเข้าถึงบทบาทบริการของผู้ดูแลระบบ',
+    errorFetchingUsers: 'เกิดข้อผิดพลาดในการโหลดผู้ใช้',
+    warning: 'คำเตือน',
+    adminResetWarning: 'สิ่งนี้จะเปลี่ยนรหัสผ่านสำหรับผู้ใช้ที่เลือก พวกเขาจะต้องใช้รหัสผ่านใหม่เพื่อเข้าสู่ระบบ',
+    resetEmployeePassword: 'รีเซ็ตรหัสผ่านพนักงาน',
+    selectEmployee: 'เลือกพนักงาน',
+    chooseEmployee: '-- เลือกพนักงาน --',
+    employeeNotFound: 'ไม่พบพนักงาน',
+    confirmResetEmployeePassword: 'คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตรหัสผ่านสำหรับพนักงาน',
+    passwordResetSuccessEmployee: 'รีเซ็ตรหัสผ่านสำเร็จสำหรับพนักงาน',
+    errorFetchingEmployees: 'เกิดข้อผิดพลาดในการโหลดพนักงาน',
+    noEmployeesFound: 'ไม่พบพนักงาน',
+    manageEmails: 'จัดการอีเมลผู้ใช้'
+  },
+
+  // Email Management
+  emailManagement: {
+    title: 'การจัดการอีเมลผู้ใช้',
+    description: 'จัดการที่อยู่อีเมลหลายรายการสำหรับผู้ใช้แต่ละคน อีเมลแต่ละรายการสามารถมีรหัสผ่านของตนเองได้ แต่ยืนยันตัวตนเป็นผู้ใช้เดียวกัน',
+    addEmail: 'เพิ่มอีเมล',
+    addEmailFor: 'เพิ่มอีเมลสำหรับ',
+    emailAddress: 'ที่อยู่อีเมล',
+    authUserId: 'รหัสผู้ใช้ Auth',
+    authUserIdHelp: 'รับจากแดชบอร์ด Auth ของ Supabase หลังจากสร้างบัญชี',
+    linkEmail: 'เชื่อมโยงอีเมล',
+    unlink: 'ยกเลิกการเชื่อมโยง',
+    primary: 'หลัก',
+    setPrimary: 'ตั้งเป็นหลัก',
+    confirmUnlink: 'คุณแน่ใจหรือไม่ว่าต้องการยกเลิกการเชื่อมโยง {{email}}?',
+    cannotRemoveLastEmail: 'ไม่สามารถลบอีเมลสุดท้ายได้',
+    emailLinked: 'เชื่อมโยงอีเมลสำเร็จ',
+    emailUnlinked: 'ยกเลิกการเชื่อมโยงอีเมลสำเร็จ',
+    primaryEmailSet: 'อัปเดตอีเมลหลักสำเร็จ',
+    errorLinking: 'เกิดข้อผิดพลาดในการเชื่อมโยงอีเมล',
+    errorUnlinking: 'เกิดข้อผิดพลาดในการยกเลิกการเชื่อมโยง',
+    errorSettingPrimary: 'เกิดข้อผิดพลาดในการตั้งค่าอีเมลหลัก',
+    errorLoadingUsers: 'เกิดข้อผิดพลาดในการโหลดผู้ใช้',
+    fillAllFields: 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
   },
 
   // Task Performance Review

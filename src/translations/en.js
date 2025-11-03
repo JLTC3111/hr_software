@@ -7,7 +7,7 @@ export default {
     employees: 'Employees',
     recruitment: "Recruitment",
     timeTracking: 'Summary',
-    performance: 'Performance Appraisal',
+    performance: 'Personal Goals',
     reports: 'Reports',
     notifications: 'Notifications',
     settings: 'Settings',
@@ -691,7 +691,10 @@ export default {
     success: 'Operation successful',
     confirm: 'Are you sure?',
     yes: 'Yes',
-    no: 'No'
+    no: 'No',
+    accessDenied: 'Access Denied',
+    noPermission: 'You do not have permission to access this page.',
+    goBack: 'Go Back'
   },
 
   // Theme
@@ -977,6 +980,13 @@ export default {
     needHelp: 'Need Help?',
     helpText: 'Check out the manual for detailed instructions on using the system.',
     standardAccess: 'Standard user access',
+    roles: {
+      admin: 'Admin',
+      hrManager: 'HR Manager',
+      manager: 'Manager',
+      employee: 'Employee',
+      viewer: 'Viewer'
+    },
     roleDesc: {
       admin: 'Full system access with all administrative privileges including user management, system settings, and complete data control',
       hrAdmin: 'Complete HR management with employee administration, payroll access, and system configuration',
@@ -987,7 +997,58 @@ export default {
     },
     uploadAvatar: 'Upload avatar',
     avatarUpdated: 'Avatar updated successfully!',
-    avatarError: 'Error uploading avatar'
+    avatarError: 'Error uploading avatar',
+    resetUserPassword: 'Reset User Password',
+    selectUser: 'Select User',
+    chooseUser: '-- Choose a user --',
+    enterNewPassword: 'Enter new password',
+    confirmNewPassword: 'Confirm new password',
+    resetPassword: 'Reset Password',
+    selectUserFirst: 'Please select a user first',
+    userNotFound: 'User not found',
+    confirmResetPassword: 'Are you sure you want to reset password for',
+    passwordResetSuccess: 'Password reset successfully for',
+    passwordResetError: 'Error resetting password. You may need admin service role access.',
+    errorFetchingUsers: 'Error loading users',
+    warning: 'Warning',
+    adminResetWarning: 'This will change the password for the selected user. They will need to use the new password to log in.',
+    resetEmployeePassword: 'Reset Employee Password',
+    selectEmployee: 'Select Employee',
+    chooseEmployee: '-- Choose an employee --',
+    employeeNotFound: 'Employee not found',
+    confirmResetEmployeePassword: 'Are you sure you want to reset password for employee',
+    passwordResetSuccessEmployee: 'Password reset successfully for employee',
+    errorFetchingEmployees: 'Error loading employees',
+    noEmployeesFound: 'No employees found',
+    manageEmails: 'Manage User Emails',
+    changeOwnPassword: 'Change Own Password',
+    resetOtherUserPassword: 'Reset Other Employee Password',
+    resetEmployeeTablePassword: 'Reset Employee Table Password'
+  },
+
+  // Email Management
+  emailManagement: {
+    title: 'User Email Management',
+    description: 'Manage multiple email addresses for each user. Each email can have its own password but authenticates as the same user.',
+    addEmail: 'Add Email',
+    addEmailFor: 'Add Email for',
+    emailAddress: 'Email Address',
+    authUserId: 'Auth User ID',
+    authUserIdHelp: 'Get this from Supabase Auth dashboard after creating the account',
+    linkEmail: 'Link Email',
+    unlink: 'Unlink',
+    primary: 'Primary',
+    setPrimary: 'Set as primary',
+    confirmUnlink: 'Are you sure you want to unlink {{email}}?',
+    cannotRemoveLastEmail: 'Cannot remove the last email',
+    emailLinked: 'Email linked successfully',
+    emailUnlinked: 'Email unlinked successfully',
+    primaryEmailSet: 'Primary email updated successfully',
+    errorLinking: 'Error linking email',
+    errorUnlinking: 'Error unlinking email',
+    errorSettingPrimary: 'Error setting primary email',
+    errorLoadingUsers: 'Error loading users',
+    fillAllFields: 'Please fill all fields'
   },
 
   // Workload Management

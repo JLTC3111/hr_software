@@ -8,7 +8,7 @@ export default {
     dashboard: 'Chỉ Số Thống Kê',
     employees: 'Nhân viên',
     timeTracking: 'Báo Cáo Cá Nhân',
-    performance: 'Mục Tiêu',
+    performance: 'Mục Tiêu Cá Nhân',
     reports: 'Báo cáo',
     notifications: 'Thông báo',
     settings: 'Cài đặt',
@@ -685,7 +685,10 @@ export default {
     success: 'Thao tác thành công',
     confirm: 'Bạn có chắc chắn?',
     yes: 'Có',
-    no: 'Không'
+    no: 'Không',
+    accessDenied: 'Truy Cập Bị Từ Chối',
+    noPermission: 'Bạn không có quyền truy cập trang này.',
+    goBack: 'Quay Lại'
   },
 
   // Theme
@@ -1079,6 +1082,13 @@ export default {
     needHelp: 'Cần Trợ Giúp?',
     helpText: 'Xem hướng dẫn để biết chi tiết về cách sử dụng hệ thống.',
     standardAccess: 'Quyền truy cập người dùng tiêu chuẩn',
+    roles: {
+      admin: 'Quản Trị Viên',
+      hrManager: 'Quản Lý Nhân Sự',
+      manager: 'Quản Lý',
+      employee: 'Nhân Viên',
+      viewer: 'Người Xem'
+    },
     roleDesc: {
       admin: 'Quyền truy cập toàn bộ hệ thống với tất cả các đặc quyền quản trị bao gồm quản lý người dùng, cài đặt hệ thống và kiểm soát dữ liệu hoàn toàn',
       hrAdmin: 'Quản lý nhân sự hoàn chỉnh với quản trị nhân viên, quyền truy cập bảng lương và cấu hình hệ thống',
@@ -1089,7 +1099,55 @@ export default {
     },
     uploadAvatar: 'Tải lên ảnh đại diện',
     avatarUpdated: 'Cập nhật ảnh đại diện thành công!',
-    avatarError: 'Lỗi khi tải lên ảnh đại diện'
+    avatarError: 'Lỗi khi tải lên ảnh đại diện',
+    resetUserPassword: 'Đặt Lại Mật Khẩu Người Dùng',
+    selectUser: 'Chọn Người Dùng',
+    chooseUser: '-- Chọn một người dùng --',
+    enterNewPassword: 'Nhập mật khẩu mới',
+    confirmNewPassword: 'Xác nhận mật khẩu mới',
+    resetPassword: 'Đặt Lại Mật Khẩu',
+    selectUserFirst: 'Vui lòng chọn người dùng trước',
+    userNotFound: 'Không tìm thấy người dùng',
+    confirmResetPassword: 'Bạn có chắc chắn muốn đặt lại mật khẩu cho',
+    passwordResetSuccess: 'Đặt lại mật khẩu thành công cho',
+    passwordResetError: 'Lỗi khi đặt lại mật khẩu. Bạn có thể cần quyền truy cập vai trò dịch vụ quản trị viên.',
+    errorFetchingUsers: 'Lỗi khi tải người dùng',
+    warning: 'Cảnh báo',
+    adminResetWarning: 'Điều này sẽ thay đổi mật khẩu cho người dùng đã chọn. Họ sẽ cần sử dụng mật khẩu mới để đăng nhập.',
+    resetEmployeePassword: 'Đặt Lại Mật Khẩu Nhân Viên',
+    selectEmployee: 'Chọn Nhân Viên',
+    chooseEmployee: '-- Chọn một nhân viên --',
+    employeeNotFound: 'Không tìm thấy nhân viên',
+    confirmResetEmployeePassword: 'Bạn có chắc chắn muốn đặt lại mật khẩu cho nhân viên',
+    passwordResetSuccessEmployee: 'Đặt lại mật khẩu thành công cho nhân viên',
+    errorFetchingEmployees: 'Lỗi khi tải nhân viên',
+    noEmployeesFound: 'Không tìm thấy nhân viên',
+    manageEmails: 'Quản lý Email người dùng'
+  },
+
+  // Email Management
+  emailManagement: {
+    title: 'Quản lý Email người dùng',
+    description: 'Quản lý nhiều địa chỉ email cho mỗi người dùng. Mỗi email có thể có mật khẩu riêng nhưng xác thực là cùng một người dùng.',
+    addEmail: 'Thêm Email',
+    addEmailFor: 'Thêm Email cho',
+    emailAddress: 'Địa chỉ Email',
+    authUserId: 'ID người dùng Auth',
+    authUserIdHelp: 'Lấy từ bảng điều khiển Auth của Supabase sau khi tạo tài khoản',
+    linkEmail: 'Liên kết Email',
+    unlink: 'Hủy liên kết',
+    primary: 'Chính',
+    setPrimary: 'Đặt làm chính',
+    confirmUnlink: 'Bạn có chắc chắn muốn hủy liên kết {{email}}?',
+    cannotRemoveLastEmail: 'Không thể xóa email cuối cùng',
+    emailLinked: 'Liên kết email thành công',
+    emailUnlinked: 'Hủy liên kết email thành công',
+    primaryEmailSet: 'Cập nhật email chính thành công',
+    errorLinking: 'Lỗi liên kết email',
+    errorUnlinking: 'Lỗi hủy liên kết email',
+    errorSettingPrimary: 'Lỗi đặt email chính',
+    errorLoadingUsers: 'Lỗi tải người dùng',
+    fillAllFields: 'Vui lòng điền tất cả các trường'
   },
 
   // Task Performance Review

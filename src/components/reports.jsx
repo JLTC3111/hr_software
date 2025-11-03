@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, PieChart, UserPlus, Download, Calendar, SquareSigma, PiggyBank, Award, TrendingUp, Users, Filter, HeartPulse, Loader, DollarSign, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,6 +24,7 @@ const Reports = () => {
   const { t } = useLanguage();
   const { isDarkMode, text, bg, border } = useTheme();
   const { checkPermission } = useAuth();
+  const navigate = useNavigate();
   
   // Check permission to view reports
   const canViewReports = checkPermission('canViewReports');
@@ -37,8 +39,14 @@ const Reports = () => {
             {t('common.accessDenied', 'Access Denied')}
           </h2>
           <p className={`${text.secondary} mb-6`}>
-            {t('common.noPermissionReports', 'You do not have permission to view reports.')}
+            {t('common.noPermission', 'You do not have permission to access this page.')}
           </p>
+          <button
+            onClick={() => navigate('/')}
+            className={`px-6 py-2 rounded-lg ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white transition-colors`}
+          >
+            {t('common.goBack', 'Go Back')}
+          </button>
         </div>
       </div>
     );
@@ -641,7 +649,7 @@ const Reports = () => {
 
   const OverviewTab = () => (
     <div className="space-y-6 fade-in">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title={t('reports.totalEmployees')}
           value={reportData.overview.totalEmployees}

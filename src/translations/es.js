@@ -8,7 +8,7 @@ export default {
     employees: 'Empleados',
     recruitment: 'Reclutamiento',
     timeTracking: 'Seguimiento de tiempo',
-    performance: 'Evaluación del desempeño',
+    performance: 'Metas Personales',
     reports: 'Informes',
     notifications: 'Notificaciones',
     settings: 'Configuración',
@@ -672,7 +672,10 @@ login: {
     success: 'Operación exitosa',
     confirm: '¿Estás seguro?',
     yes: 'Sí',
-    no: 'No'
+    no: 'No',
+    accessDenied: 'Acceso Denegado',
+    noPermission: 'No tiene permiso para acceder a esta página.',
+    goBack: 'Volver'
   },
 
   // Theme
@@ -772,6 +775,8 @@ login: {
     markAllRead: 'Marcar todas como leídas',
     deleteAll: 'Eliminar todas',
     confirmDeleteAll: '¿Está seguro de que desea eliminar todas las notificaciones?',
+    viewTimeEntries: 'Ver entradas de tiempo',
+    // Stats  
     total: 'Total',
     unread: 'No leídas',
     errors: 'Errores',
@@ -810,10 +815,10 @@ login: {
     timeEntryRejected: 'Entrada de tiempo rechazada',
     newEmployeeAdded: 'Nuevo empleado agregado',
     performanceReview: 'Evaluación de desempeño',
-    systemUpdate: 'Actualización del sistema',
+    systemUpdate: 'Actualización del Sistema',
     // Notification messages
     timeEntriesAwaiting: 'Tienes {0} entradas de tiempo esperando aprobación',
-    reviewNow: 'Revisar ahora',
+    reviewNow: 'Revisar Ahora',
     viewDetails: 'Ver detalles',
   },
 
@@ -1029,6 +1034,13 @@ login: {
     needHelp: '¿Necesita Ayuda?',
     helpText: 'Consulte el manual para obtener instrucciones detalladas sobre el uso del sistema.',
     standardAccess: 'Acceso de usuario estándar',
+    roles: {
+      admin: 'Admin',
+      hrManager: 'Gerente de RRHH',
+      manager: 'Gerente',
+      employee: 'Empleado',
+      viewer: 'Visor'
+    },
     roleDesc: {
       admin: 'Acceso completo al sistema con todos los privilegios administrativos incluyendo gestión de usuarios, configuración del sistema y control total de datos',
       hrAdmin: 'Gestión completa de RRHH con administración de empleados, acceso a nómina y configuración del sistema',
@@ -1039,7 +1051,55 @@ login: {
     },
     uploadAvatar: 'Subir avatar',
     avatarUpdated: '¡Avatar actualizado exitosamente!',
-    avatarError: 'Error al subir el avatar'
+    avatarError: 'Error al subir el avatar',
+    resetUserPassword: 'Restablecer Contraseña de Usuario',
+    selectUser: 'Seleccionar Usuario',
+    chooseUser: '-- Elegir un usuario --',
+    enterNewPassword: 'Introducir nueva contraseña',
+    confirmNewPassword: 'Confirmar nueva contraseña',
+    resetPassword: 'Restablecer Contraseña',
+    selectUserFirst: 'Por favor seleccione un usuario primero',
+    userNotFound: 'Usuario no encontrado',
+    confirmResetPassword: '¿Está seguro de que desea restablecer la contraseña para',
+    passwordResetSuccess: 'Contraseña restablecida exitosamente para',
+    passwordResetError: 'Error al restablecer la contraseña. Es posible que necesite acceso de rol de servicio de administrador.',
+    errorFetchingUsers: 'Error al cargar usuarios',
+    warning: 'Advertencia',
+    adminResetWarning: 'Esto cambiará la contraseña del usuario seleccionado. Deberán usar la nueva contraseña para iniciar sesión.',
+    resetEmployeePassword: 'Restablecer Contraseña de Empleado',
+    selectEmployee: 'Seleccionar Empleado',
+    chooseEmployee: '-- Elegir un empleado --',
+    employeeNotFound: 'Empleado no encontrado',
+    confirmResetEmployeePassword: '¿Está seguro de que desea restablecer la contraseña para el empleado',
+    passwordResetSuccessEmployee: 'Contraseña restablecida exitosamente para el empleado',
+    errorFetchingEmployees: 'Error al cargar empleados',
+    noEmployeesFound: 'No se encontraron empleados',
+    manageEmails: 'Gestionar correos de usuario'
+  },
+
+  // Email Management
+  emailManagement: {
+    title: 'Gestión de correos de usuario',
+    description: 'Gestione múltiples direcciones de correo para cada usuario. Cada correo puede tener su propia contraseña pero autentica como el mismo usuario.',
+    addEmail: 'Agregar correo',
+    addEmailFor: 'Agregar correo para',
+    emailAddress: 'Dirección de correo',
+    authUserId: 'ID de usuario Auth',
+    authUserIdHelp: 'Obténgalo del panel de Auth de Supabase después de crear la cuenta',
+    linkEmail: 'Vincular correo',
+    unlink: 'Desvincular',
+    primary: 'Principal',
+    setPrimary: 'Establecer como principal',
+    confirmUnlink: '¿Está seguro de que desea desvincular {{email}}?',
+    cannotRemoveLastEmail: 'No se puede eliminar el último correo',
+    emailLinked: 'Correo vinculado exitosamente',
+    emailUnlinked: 'Correo desvinculado exitosamente',
+    primaryEmailSet: 'Correo principal actualizado exitosamente',
+    errorLinking: 'Error al vincular correo',
+    errorUnlinking: 'Error al desvincular correo',
+    errorSettingPrimary: 'Error al establecer correo principal',
+    errorLoadingUsers: 'Error al cargar usuarios',
+    fillAllFields: 'Por favor complete todos los campos'
   },
 
   // Task Performance Review

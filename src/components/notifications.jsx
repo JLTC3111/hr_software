@@ -153,7 +153,7 @@ const Notifications = () => {
     // Handle dynamic messages with patterns
     const timeEntriesMatch = message.match(/You have (\d+) time entries awaiting approval/);
     if (timeEntriesMatch) {
-      return t('notifications.timeEntriesAwaiting', 'You have {0} time entries awaiting approval').replace('{0}', timeEntriesMatch[1]);
+      return t('notifications.timeEntriesAwaiting', '').replace('{0}', timeEntriesMatch[1]);
     }
     return message;
   };

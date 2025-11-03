@@ -132,14 +132,33 @@ export const AuthProvider = ({ children }) => {
     let shouldCreateProfile = false;
     
     try {
-      console.log('Fetching user profile for ID:', userId);
+      console.log('Fetching user profile for auth ID:', userId);
       
-      // Fetch user from hr_users table
-      // Try with manager relationship first, fallback if constraint doesn't exist
+      // First, try to resolve the auth_user_id to hr_user_id using user_emails table
+      const { data: emailData, error: emailError } = await supabase
+        .from('user_emails')
+        .select('hr_user_id')
+        .eq('auth_user_id', userId)
+        .maybeSingle();
+      
+      if (emailError) {
+        console.error('Error checking user_emails:', emailError);
+      }
+      
+      // Use the resolved hr_user_id if found, otherwise use the auth userId directly (backward compatibility)
+      const hrUserId = emailData?.hr_user_id || userId;
+      
+      if (emailData?.hr_user_id) {
+        console.log(`✅ Resolved auth ID ${userId} to hr_user ID ${hrUserId}`);
+      } else {
+        console.log('⚠️ No email mapping found, using auth ID directly (backward compatibility)');
+      }
+      
+      // Fetch user from hr_users table using the resolved hr_user_id
       let { data, error } = await supabase
         .from('hr_users')
         .select('*')
-        .eq('id', userId)
+        .eq('id', hrUserId)
         .single();
       
       // If successful and has manager_id, try to fetch manager separately

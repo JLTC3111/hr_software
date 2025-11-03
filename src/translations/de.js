@@ -8,7 +8,7 @@ export default {
     employees: 'Mitarbeiter',
     recruitment: 'Personalbeschaffung',
     timeTracking: 'Zeiterfassung',
-    performance: 'Leistungsbeurteilung',
+    performance: 'Persönliche Ziele',
     reports: 'Berichte',
     notifications: 'Benachrichtigungen',
     settings: 'Einstellungen',
@@ -534,7 +534,10 @@ export default {
     success: 'Vorgang erfolgreich',
     confirm: 'Sind Sie sicher?',
     yes: 'Ja',
-    no: 'Nein'
+    no: 'Nein',
+    accessDenied: 'Zugriff verweigert',
+    noPermission: 'Sie haben keine Berechtigung, auf diese Seite zuzugreifen.',
+    goBack: 'Zurück'
   },
 
   // Theme
@@ -1063,6 +1066,13 @@ export default {
     needHelp: 'Brauchen Sie Hilfe?',
     helpText: 'Schauen Sie sich das Handbuch für detaillierte Anweisungen zur Verwendung des Systems an.',
     standardAccess: 'Standard-Benutzerzugriff',
+    roles: {
+      admin: 'Admin',
+      hrManager: 'HR-Manager',
+      manager: 'Manager',
+      employee: 'Mitarbeiter',
+      viewer: 'Betrachter'
+    },
     roleDesc: {
       admin: 'Vollständiger Systemzugriff mit allen administrativen Berechtigungen einschließlich Benutzerverwaltung, Systemeinstellungen und vollständiger Datenkontrolle',
       hrAdmin: 'Vollständiges HR-Management mit Mitarbeiterverwaltung, Zugang zur Gehaltsabrechnung und Systemkonfiguration',
@@ -1073,7 +1083,55 @@ export default {
     },
     uploadAvatar: 'Avatar hochladen',
     avatarUpdated: 'Avatar erfolgreich aktualisiert!',
-    avatarError: 'Fehler beim Hochladen des Avatars'
+    avatarError: 'Fehler beim Hochladen des Avatars',
+    resetUserPassword: 'Benutzerpasswort zurücksetzen',
+    selectUser: 'Benutzer auswählen',
+    chooseUser: '-- Benutzer auswählen --',
+    enterNewPassword: 'Neues Passwort eingeben',
+    confirmNewPassword: 'Neues Passwort bestätigen',
+    resetPassword: 'Passwort zurücksetzen',
+    selectUserFirst: 'Bitte wählen Sie zuerst einen Benutzer aus',
+    userNotFound: 'Benutzer nicht gefunden',
+    confirmResetPassword: 'Möchten Sie das Passwort wirklich zurücksetzen für',
+    passwordResetSuccess: 'Passwort erfolgreich zurückgesetzt für',
+    passwordResetError: 'Fehler beim Zurücksetzen des Passworts. Sie benötigen möglicherweise Admin-Service-Rollenzugriff.',
+    errorFetchingUsers: 'Fehler beim Laden der Benutzer',
+    warning: 'Warnung',
+    adminResetWarning: 'Dies ändert das Passwort für den ausgewählten Benutzer. Er muss das neue Passwort verwenden, um sich anzumelden.',
+    resetEmployeePassword: 'Mitarbeiterpasswort zurücksetzen',
+    selectEmployee: 'Mitarbeiter auswählen',
+    chooseEmployee: '-- Mitarbeiter auswählen --',
+    employeeNotFound: 'Mitarbeiter nicht gefunden',
+    confirmResetEmployeePassword: 'Möchten Sie das Passwort wirklich zurücksetzen für Mitarbeiter',
+    passwordResetSuccessEmployee: 'Passwort erfolgreich zurückgesetzt für Mitarbeiter',
+    errorFetchingEmployees: 'Fehler beim Laden der Mitarbeiter',
+    noEmployeesFound: 'Keine Mitarbeiter gefunden',
+    manageEmails: 'Benutzer-E-Mails verwalten'
+  },
+
+  // Email Management
+  emailManagement: {
+    title: 'Benutzer-E-Mail-Verwaltung',
+    description: 'Verwalten Sie mehrere E-Mail-Adressen für jeden Benutzer. Jede E-Mail kann ihr eigenes Passwort haben, authentifiziert sich aber als derselbe Benutzer.',
+    addEmail: 'E-Mail hinzufügen',
+    addEmailFor: 'E-Mail hinzufügen für',
+    emailAddress: 'E-Mail-Adresse',
+    authUserId: 'Auth-Benutzer-ID',
+    authUserIdHelp: 'Holen Sie sich diese aus dem Supabase Auth-Dashboard nach Erstellung des Kontos',
+    linkEmail: 'E-Mail verknüpfen',
+    unlink: 'Verknüpfung aufheben',
+    primary: 'Primär',
+    setPrimary: 'Als primär festlegen',
+    confirmUnlink: 'Möchten Sie die Verknüpfung von {{email}} wirklich aufheben?',
+    cannotRemoveLastEmail: 'Letzte E-Mail kann nicht entfernt werden',
+    emailLinked: 'E-Mail erfolgreich verknüpft',
+    emailUnlinked: 'E-Mail-Verknüpfung erfolgreich aufgehoben',
+    primaryEmailSet: 'Primäre E-Mail erfolgreich aktualisiert',
+    errorLinking: 'Fehler beim Verknüpfen der E-Mail',
+    errorUnlinking: 'Fehler beim Aufheben der Verknüpfung',
+    errorSettingPrimary: 'Fehler beim Festlegen der primären E-Mail',
+    errorLoadingUsers: 'Fehler beim Laden der Benutzer',
+    fillAllFields: 'Bitte füllen Sie alle Felder aus'
   },
 
   // Task Performance Review

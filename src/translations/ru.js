@@ -6,7 +6,7 @@ export default {
     employees: 'Сотрудники',
     recruitment: 'Найм персонала',
     timeTracking: 'Отслеживание времени',
-    performance: 'Оценка эффективности',
+    performance: 'Личные цели',
     reports: 'Отчёты',
     notifications: 'Уведомления',
     settings: 'Настройки',
@@ -662,7 +662,10 @@ export default {
     success: 'Операция успешна',
     confirm: 'Вы уверены?',
     yes: 'Да',
-    no: 'Нет'
+    no: 'Нет',
+    accessDenied: 'Доступ запрещен',
+    noPermission: 'У вас нет разрешения на доступ к этой странице.',
+    goBack: 'Назад'
   },
 
   // Theme
@@ -1005,6 +1008,13 @@ export default {
     needHelp: 'Нужна Помощь?',
     helpText: 'Ознакомьтесь с руководством для получения подробных инструкций по использованию системы.',
     standardAccess: 'Стандартный пользовательский доступ',
+    roles: {
+      admin: 'Администратор',
+      hrManager: 'HR Менеджер',
+      manager: 'Менеджер',
+      employee: 'Сотрудник',
+      viewer: 'Наблюдатель'
+    },
     roleDesc: {
       admin: 'Полный системный доступ со всеми административными привилегиями, включая управление пользователями, настройки системы и полный контроль данных',
       hrAdmin: 'Полное управление HR с администрированием сотрудников, доступом к зарплате и конфигурацией системы',
@@ -1015,7 +1025,55 @@ export default {
     },
     uploadAvatar: 'Загрузить аватар',
     avatarUpdated: 'Аватар успешно обновлен!',
-    avatarError: 'Ошибка загрузки аватара'
+    avatarError: 'Ошибка загрузки аватара',
+    resetUserPassword: 'Сбросить Пароль Пользователя',
+    selectUser: 'Выбрать Пользователя',
+    chooseUser: '-- Выберите пользователя --',
+    enterNewPassword: 'Введите новый пароль',
+    confirmNewPassword: 'Подтвердите новый пароль',
+    resetPassword: 'Сбросить Пароль',
+    selectUserFirst: 'Пожалуйста, сначала выберите пользователя',
+    userNotFound: 'Пользователь не найден',
+    confirmResetPassword: 'Вы уверены, что хотите сбросить пароль для',
+    passwordResetSuccess: 'Пароль успешно сброшен для',
+    passwordResetError: 'Ошибка сброса пароля. Вам может потребоваться доступ к служебной роли администратора.',
+    errorFetchingUsers: 'Ошибка загрузки пользователей',
+    warning: 'Предупреждение',
+    adminResetWarning: 'Это изменит пароль для выбранного пользователя. Им нужно будет использовать новый пароль для входа.',
+    resetEmployeePassword: 'Сбросить Пароль Сотрудника',
+    selectEmployee: 'Выбрать Сотрудника',
+    chooseEmployee: '-- Выберите сотрудника --',
+    employeeNotFound: 'Сотрудник не найден',
+    confirmResetEmployeePassword: 'Вы уверены, что хотите сбросить пароль для сотрудника',
+    passwordResetSuccessEmployee: 'Пароль успешно сброшен для сотрудника',
+    errorFetchingEmployees: 'Ошибка загрузки сотрудников',
+    noEmployeesFound: 'Сотрудники не найдены',
+    manageEmails: 'Управление Email пользователей'
+  },
+
+  // Email Management
+  emailManagement: {
+    title: 'Управление Email пользователей',
+    description: 'Управляйте несколькими адресами электронной почты для каждого пользователя. Каждый email может иметь свой пароль, но аутентифицируется как один пользователь.',
+    addEmail: 'Добавить Email',
+    addEmailFor: 'Добавить Email для',
+    emailAddress: 'Адрес электронной почты',
+    authUserId: 'ID пользователя Auth',
+    authUserIdHelp: 'Получите его из панели Auth Supabase после создания учетной записи',
+    linkEmail: 'Связать Email',
+    unlink: 'Отвязать',
+    primary: 'Основной',
+    setPrimary: 'Установить как основной',
+    confirmUnlink: 'Вы уверены, что хотите отвязать {{email}}?',
+    cannotRemoveLastEmail: 'Невозможно удалить последний email',
+    emailLinked: 'Email успешно связан',
+    emailUnlinked: 'Email успешно отвязан',
+    primaryEmailSet: 'Основной email успешно обновлен',
+    errorLinking: 'Ошибка связывания email',
+    errorUnlinking: 'Ошибка отвязывания email',
+    errorSettingPrimary: 'Ошибка установки основного email',
+    errorLoadingUsers: 'Ошибка загрузки пользователей',
+    fillAllFields: 'Пожалуйста, заполните все поля'
   },
 
   // Task Performance Review

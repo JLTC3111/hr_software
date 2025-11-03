@@ -8,7 +8,7 @@ export default {
     employees: 'Employés',
     recruitment: 'Recrutement',
     timeTracking: 'Suivi du temps',
-    performance: 'Évaluation des performances',
+    performance: 'Objectifs Personnels',
     reports: 'Rapports',
     continueWithGithub: 'Continuer avec GitHub',
     redirecting: 'Redirection vers GitHub...',
@@ -678,7 +678,10 @@ export default {
     success: 'Opération réussie',
     confirm: 'Êtes-vous sûr?',
     yes: 'Oui',
-    no: 'Non'
+    no: 'Non',
+    accessDenied: 'Accès Refusé',
+    noPermission: 'Vous n\'avez pas la permission d\'accéder à cette page.',
+    goBack: 'Retour'
   },
 
   // Theme
@@ -1061,6 +1064,13 @@ export default {
     needHelp: 'Besoin d\'Aide?',
     helpText: 'Consultez le manuel pour des instructions détaillées sur l\'utilisation du système.',
     standardAccess: 'Accès utilisateur standard',
+    roles: {
+      admin: 'Admin',
+      hrManager: 'Responsable RH',
+      manager: 'Gestionnaire',
+      employee: 'Employé',
+      viewer: 'Observateur'
+    },
     roleDesc: {
       admin: 'Accès complet au système avec tous les privilèges administratifs incluant la gestion des utilisateurs, les paramètres système et le contrôle complet des données',
       hrAdmin: 'Gestion RH complète avec administration des employés, accès à la paie et configuration du système',
@@ -1071,7 +1081,55 @@ export default {
     },
     uploadAvatar: 'Télécharger l\'avatar',
     avatarUpdated: 'Avatar mis à jour avec succès!',
-    avatarError: 'Erreur lors du téléchargement de l\'avatar'
+    avatarError: 'Erreur lors du téléchargement de l\'avatar',
+    resetUserPassword: 'Réinitialiser le Mot de Passe de l\'Utilisateur',
+    selectUser: 'Sélectionner un Utilisateur',
+    chooseUser: '-- Choisir un utilisateur --',
+    enterNewPassword: 'Entrer le nouveau mot de passe',
+    confirmNewPassword: 'Confirmer le nouveau mot de passe',
+    resetPassword: 'Réinitialiser le Mot de Passe',
+    selectUserFirst: 'Veuillez d\'abord sélectionner un utilisateur',
+    userNotFound: 'Utilisateur non trouvé',
+    confirmResetPassword: 'Êtes-vous sûr de vouloir réinitialiser le mot de passe pour',
+    passwordResetSuccess: 'Mot de passe réinitialisé avec succès pour',
+    passwordResetError: 'Erreur lors de la réinitialisation du mot de passe. Vous pourriez avoir besoin d\'un accès au rôle de service administrateur.',
+    errorFetchingUsers: 'Erreur lors du chargement des utilisateurs',
+    warning: 'Avertissement',
+    adminResetWarning: 'Cela changera le mot de passe de l\'utilisateur sélectionné. Ils devront utiliser le nouveau mot de passe pour se connecter.',
+    resetEmployeePassword: 'Réinitialiser le Mot de Passe de l\'Employé',
+    selectEmployee: 'Sélectionner un Employé',
+    chooseEmployee: '-- Choisir un employé --',
+    employeeNotFound: 'Employé non trouvé',
+    confirmResetEmployeePassword: 'Êtes-vous sûr de vouloir réinitialiser le mot de passe pour l\'employé',
+    passwordResetSuccessEmployee: 'Mot de passe réinitialisé avec succès pour l\'employé',
+    errorFetchingEmployees: 'Erreur lors du chargement des employés',
+    noEmployeesFound: 'Aucun employé trouvé',
+    manageEmails: 'Gérer les e-mails des utilisateurs'
+  },
+
+  // Email Management
+  emailManagement: {
+    title: 'Gestion des e-mails des utilisateurs',
+    description: 'Gérez plusieurs adresses e-mail pour chaque utilisateur. Chaque e-mail peut avoir son propre mot de passe mais s\'authentifie en tant que même utilisateur.',
+    addEmail: 'Ajouter un e-mail',
+    addEmailFor: 'Ajouter un e-mail pour',
+    emailAddress: 'Adresse e-mail',
+    authUserId: 'ID utilisateur Auth',
+    authUserIdHelp: 'Obtenez ceci depuis le tableau de bord Auth de Supabase après avoir créé le compte',
+    linkEmail: 'Lier l\'e-mail',
+    unlink: 'Dissocier',
+    primary: 'Principal',
+    setPrimary: 'Définir comme principal',
+    confirmUnlink: 'Êtes-vous sûr de vouloir dissocier {{email}} ?',
+    cannotRemoveLastEmail: 'Impossible de supprimer le dernier e-mail',
+    emailLinked: 'E-mail lié avec succès',
+    emailUnlinked: 'E-mail dissocié avec succès',
+    primaryEmailSet: 'E-mail principal mis à jour avec succès',
+    errorLinking: 'Erreur lors de la liaison de l\'e-mail',
+    errorUnlinking: 'Erreur lors de la dissociation de l\'e-mail',
+    errorSettingPrimary: 'Erreur lors de la définition de l\'e-mail principal',
+    errorLoadingUsers: 'Erreur lors du chargement des utilisateurs',
+    fillAllFields: 'Veuillez remplir tous les champs'
   },
 
   // Task Performance Review

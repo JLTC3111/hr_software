@@ -125,7 +125,6 @@
 -- 4. Cleanup strategy:
 --    - Move old photos to archives/ folder instead of deleting
 --    - Run periodic cleanup job (monthly) to remove orphaned files
---    - Use employee_photos table to track active files
 -- 
 -- ============================================
 -- HELPER FUNCTIONS

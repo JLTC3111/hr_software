@@ -8,7 +8,7 @@ export default {
     employees: '従業員',
     recruitment: '採用',
     timeTracking: '勤怠管理',
-    performance: '業績評価',
+    performance: '個人目標',
     reports: 'レポート',
     notifications: '通知',
     settings: '設定',
@@ -603,7 +603,10 @@ export default {
     success: '操作が成功しました',
     confirm: '本当によろしいですか？',
     yes: 'はい',
-    no: 'いいえ'
+    no: 'いいえ',
+    accessDenied: 'アクセス拒否',
+    noPermission: 'このページにアクセスする権限がありません。',
+    goBack: '戻る'
   },
 
   // Theme
@@ -1006,6 +1009,13 @@ export default {
     needHelp: 'ヘルプが必要ですか？',
     helpText: 'システムの使用方法の詳細については、マニュアルをご覧ください。',
     standardAccess: '標準ユーザーアクセス',
+    roles: {
+      admin: '管理者',
+      hrManager: 'HR マネージャー',
+      manager: 'マネージャー',
+      employee: '従業員',
+      viewer: '閲覧者'
+    },
     roleDesc: {
       admin: 'ユーザー管理、システム設定、完全なデータ制御を含むすべての管理権限を持つ完全なシステムアクセス',
       hrAdmin: '従業員管理、給与アクセス、システム構成を伴う完全なHR管理',
@@ -1016,7 +1026,55 @@ export default {
     },
     uploadAvatar: 'アバターをアップロード',
     avatarUpdated: 'アバターが正常に更新されました！',
-    avatarError: 'アバターのアップロードエラー'
+    avatarError: 'アバターのアップロードエラー',
+    resetUserPassword: 'ユーザーパスワードをリセット',
+    selectUser: 'ユーザーを選択',
+    chooseUser: '-- ユーザーを選択してください --',
+    enterNewPassword: '新しいパスワードを入力',
+    confirmNewPassword: '新しいパスワードを確認',
+    resetPassword: 'パスワードをリセット',
+    selectUserFirst: 'まずユーザーを選択してください',
+    userNotFound: 'ユーザーが見つかりません',
+    confirmResetPassword: '本当にパスワードをリセットしますか',
+    passwordResetSuccess: 'パスワードが正常にリセットされました',
+    passwordResetError: 'パスワードのリセットエラー。管理者サービスロールアクセスが必要な場合があります。',
+    errorFetchingUsers: 'ユーザーの読み込みエラー',
+    warning: '警告',
+    adminResetWarning: 'これにより、選択したユーザーのパスワードが変更されます。ログインするには新しいパスワードを使用する必要があります。',
+    resetEmployeePassword: '従業員パスワードをリセット',
+    selectEmployee: '従業員を選択',
+    chooseEmployee: '-- 従業員を選択してください --',
+    employeeNotFound: '従業員が見つかりません',
+    confirmResetEmployeePassword: '本当に従業員のパスワードをリセットしますか',
+    passwordResetSuccessEmployee: '従業員のパスワードが正常にリセットされました',
+    errorFetchingEmployees: '従業員の読み込みエラー',
+    noEmployeesFound: '従業員が見つかりません',
+    manageEmails: 'ユーザーメール管理'
+  },
+
+  // Email Management
+  emailManagement: {
+    title: 'ユーザーメール管理',
+    description: '各ユーザーに複数のメールアドレスを管理します。各メールは独自のパスワードを持つことができますが、同じユーザーとして認証されます。',
+    addEmail: 'メール追加',
+    addEmailFor: 'メール追加：',
+    emailAddress: 'メールアドレス',
+    authUserId: '認証ユーザーID',
+    authUserIdHelp: 'アカウント作成後、Supabase Auth ダッシュボードから取得してください',
+    linkEmail: 'メールをリンク',
+    unlink: 'リンク解除',
+    primary: 'プライマリ',
+    setPrimary: 'プライマリに設定',
+    confirmUnlink: '{{email}}のリンクを解除してもよろしいですか？',
+    cannotRemoveLastEmail: '最後のメールを削除できません',
+    emailLinked: 'メールが正常にリンクされました',
+    emailUnlinked: 'メールのリンクが正常に解除されました',
+    primaryEmailSet: 'プライマリメールが正常に更新されました',
+    errorLinking: 'メールのリンクエラー',
+    errorUnlinking: 'メールのリンク解除エラー',
+    errorSettingPrimary: 'プライマリメールの設定エラー',
+    errorLoadingUsers: 'ユーザーの読み込みエラー',
+    fillAllFields: 'すべてのフィールドを入力してください'
   },
 
   // Task Performance Review

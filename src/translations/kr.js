@@ -8,7 +8,7 @@ export default {
     employees: '직원',
     recruitment: '채용',
     timeTracking: '근무 시간 추적',
-    performance: '성과 평가',
+    performance: '개인 목표',
     reports: '보고서',
     notifications: '알림',
     settings: '설정',
@@ -604,7 +604,10 @@ export default {
     success: '작업이 성공했습니다',
     confirm: '정말로 하시겠습니까?',
     yes: '예',
-    no: '아니오'
+    no: '아니오',
+    accessDenied: '접근 거부',
+    noPermission: '이 페이지에 접근할 권한이 없습니다.',
+    goBack: '뒤로 가기'
   },
 
   // Theme
@@ -1009,6 +1012,13 @@ export default {
     needHelp: '도움이 필요하신가요?',
     helpText: '시스템 사용에 대한 자세한 지침은 매뉴얼을 확인하세요.',
     standardAccess: '표준 사용자 액세스',
+    roles: {
+      admin: '관리자',
+      hrManager: 'HR 관리자',
+      manager: '매니저',
+      employee: '직원',
+      viewer: '열람자'
+    },
     roleDesc: {
       admin: '사용자 관리, 시스템 설정 및 완전한 데이터 제어를 포함한 모든 관리 권한을 가진 전체 시스템 액세스',
       hrAdmin: '직원 관리, 급여 액세스 및 시스템 구성을 포함한 완전한 HR 관리',
@@ -1019,7 +1029,55 @@ export default {
     },
     uploadAvatar: '아바타 업로드',
     avatarUpdated: '아바타가 성공적으로 업데이트되었습니다!',
-    avatarError: '아바타 업로드 오류'
+    avatarError: '아바타 업로드 오류',
+    resetUserPassword: '사용자 비밀번호 재설정',
+    selectUser: '사용자 선택',
+    chooseUser: '-- 사용자를 선택하세요 --',
+    enterNewPassword: '새 비밀번호 입력',
+    confirmNewPassword: '새 비밀번호 확인',
+    resetPassword: '비밀번호 재설정',
+    selectUserFirst: '먼저 사용자를 선택하세요',
+    userNotFound: '사용자를 찾을 수 없음',
+    confirmResetPassword: '정말로 비밀번호를 재설정하시겠습니까',
+    passwordResetSuccess: '비밀번호가 성공적으로 재설정되었습니다',
+    passwordResetError: '비밀번호 재설정 오류. 관리자 서비스 역할 액세스가 필요할 수 있습니다.',
+    errorFetchingUsers: '사용자 로드 오류',
+    warning: '경고',
+    adminResetWarning: '선택한 사용자의 비밀번호가 변경됩니다. 로그인하려면 새 비밀번호를 사용해야 합니다.',
+    resetEmployeePassword: '직원 비밀번호 재설정',
+    selectEmployee: '직원 선택',
+    chooseEmployee: '-- 직원을 선택하세요 --',
+    employeeNotFound: '직원을 찾을 수 없음',
+    confirmResetEmployeePassword: '정말로 직원의 비밀번호를 재설정하시겠습니까',
+    passwordResetSuccessEmployee: '직원의 비밀번호가 성공적으로 재설정되었습니다',
+    errorFetchingEmployees: '직원 로드 오류',
+    noEmployeesFound: '직원을 찾을 수 없음',
+    manageEmails: '사용자 이메일 관리'
+  },
+
+  // Email Management
+  emailManagement: {
+    title: '사용자 이메일 관리',
+    description: '각 사용자에 대해 여러 이메일 주소를 관리합니다. 각 이메일은 고유한 비밀번호를 가질 수 있지만 동일한 사용자로 인증됩니다.',
+    addEmail: '이메일 추가',
+    addEmailFor: '이메일 추가:',
+    emailAddress: '이메일 주소',
+    authUserId: '인증 사용자 ID',
+    authUserIdHelp: '계정 생성 후 Supabase Auth 대시보드에서 가져오세요',
+    linkEmail: '이메일 연결',
+    unlink: '연결 해제',
+    primary: '기본',
+    setPrimary: '기본으로 설정',
+    confirmUnlink: '{{email}}의 연결을 해제하시겠습니까?',
+    cannotRemoveLastEmail: '마지막 이메일을 제거할 수 없습니다',
+    emailLinked: '이메일이 성공적으로 연결되었습니다',
+    emailUnlinked: '이메일 연결이 성공적으로 해제되었습니다',
+    primaryEmailSet: '기본 이메일이 성공적으로 업데이트되었습니다',
+    errorLinking: '이메일 연결 오류',
+    errorUnlinking: '이메일 연결 해제 오류',
+    errorSettingPrimary: '기본 이메일 설정 오류',
+    errorLoadingUsers: '사용자 로드 오류',
+    fillAllFields: '모든 필드를 입력해주세요'
   },
 
   // Task Performance Review

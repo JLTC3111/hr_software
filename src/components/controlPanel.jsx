@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { User, LogOut, Key, BookOpen, Shield, Info, Camera, Loader } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, LogOut, Key, BookOpen, Shield, Info, Camera, Loader, Users, Eye, EyeOff, Check, AlertCircle, Mail } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../config/supabaseClient';
+import EmailManagement from './EmailManagement';
 
 const ControlPanel = () => {
   const { isDarkMode, bg, text, border } = useTheme();
@@ -22,6 +23,41 @@ const ControlPanel = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || null);
   const [avatarSuccess, setAvatarSuccess] = useState('');
+  
+  // Password visibility states
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Admin password reset states
+  const [showAdminReset, setShowAdminReset] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [adminResetPassword, setAdminResetPassword] = useState('');
+  const [adminResetConfirm, setAdminResetConfirm] = useState('');
+  const [adminResetError, setAdminResetError] = useState('');
+  const [adminResetSuccess, setAdminResetSuccess] = useState('');
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [showAdminConfirm, setShowAdminConfirm] = useState(false);
+
+  // Admin employee password reset states
+  const [showEmployeeReset, setShowEmployeeReset] = useState(false);
+  const [allEmployees, setAllEmployees] = useState([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
+  const [employeeResetPassword, setEmployeeResetPassword] = useState('');
+  const [employeeResetConfirm, setEmployeeResetConfirm] = useState('');
+  const [employeeResetError, setEmployeeResetError] = useState('');
+  const [employeeResetSuccess, setEmployeeResetSuccess] = useState('');
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const [showEmployeePassword, setShowEmployeePassword] = useState(false);
+  const [showEmployeeConfirm, setShowEmployeeConfirm] = useState(false);
+
+  // Toast notification state
+  const [toast, setToast] = useState({ show: false, message: '', type: '' });
+
+  // Email management state
+  const [showEmailManagement, setShowEmailManagement] = useState(false);
 
   // Get user role and info
   const userRole = user?.user_metadata?.role || user?.role || 'Employee';
@@ -29,6 +65,74 @@ const ControlPanel = () => {
   const userEmail = user?.email || '';
   const userId = user?.id || '';
   const employeeId = user?.employee_id || user?.employeeId || null;
+  const isAdmin = userRole === 'admin' || userRole === 'Admin';
+
+  // Fetch all users for admin password reset
+  useEffect(() => {
+    if (isAdmin && showAdminReset) {
+      fetchAllUsers();
+    }
+  }, [isAdmin, showAdminReset]);
+
+  // Fetch all employees for admin employee password reset
+  useEffect(() => {
+    if (isAdmin && showEmployeeReset) {
+      fetchAllEmployees();
+    }
+  }, [isAdmin, showEmployeeReset]);
+
+  const fetchAllUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const { data, error } = await supabase
+        .from('hr_users')
+        .select('id, full_name, email, role')
+        .order('full_name');
+      
+      if (error) throw error;
+      setAllUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setAdminResetError(t('controlPanel.errorFetchingUsers', 'Error loading users'));
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const fetchAllEmployees = async () => {
+    setLoadingEmployees(true);
+    try {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('id, name, email, user_id')
+        .order('name');
+      
+      if (error) throw error;
+      setAllEmployees(data || []);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      setEmployeeResetError(t('controlPanel.errorFetchingEmployees', 'Error loading employees'));
+    } finally {
+      setLoadingEmployees(false);
+    }
+  };
+
+  // Function to get translated role name
+  const getTranslatedRole = (role) => {
+    const roleMap = {
+      'admin': t('controlPanel.roles.admin', 'Admin'),
+      'hr_manager': t('controlPanel.roles.hrManager', 'HR Manager'),
+      'manager': t('controlPanel.roles.manager', 'Manager'),
+      'employee': t('controlPanel.roles.employee', 'Employee'),
+      'viewer': t('controlPanel.roles.viewer', 'Viewer'),
+      'Admin': t('controlPanel.roles.admin', 'Admin'),
+      'HR Manager': t('controlPanel.roles.hrManager', 'HR Manager'),
+      'Manager': t('controlPanel.roles.manager', 'Manager'),
+      'Employee': t('controlPanel.roles.employee', 'Employee'),
+      'Viewer': t('controlPanel.roles.viewer', 'Viewer')
+    };
+    return roleMap[role] || role;
+  };
 
   // Role descriptions with detailed permissions
   const roleDescriptions = {
@@ -72,16 +176,198 @@ const ControlPanel = () => {
     }
 
     try {
-      // Here you would call your password change API
-      // For now, we'll simulate success
+      // First verify the current password by attempting to re-authenticate
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        throw new Error('No user session found');
+      }
+
+      // Verify current password
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: passwordForm.currentPassword
+      });
+
+      if (verifyError) {
+        setPasswordError(t('controlPanel.currentPasswordIncorrect', 'Current password is incorrect'));
+        return;
+      }
+
+      // Now update to the new password
+      const { error } = await supabase.auth.updateUser({
+        password: passwordForm.newPassword
+      });
+
+      if (error) {
+        throw error;
+      }
+
       setPasswordSuccess(t('controlPanel.passwordChanged', 'Password changed successfully!'));
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      
+      // Show success toast
+      setToast({
+        show: true,
+        message: t('controlPanel.passwordChanged', 'Password changed successfully!'),
+        type: 'success'
+      });
+      
+      // Close the window after showing success message
       setTimeout(() => {
+        setToast({ show: false, message: '', type: '' });
         setShowChangePassword(false);
         setPasswordSuccess('');
-      }, 2000);
+      }, 2000); // Close after 2 seconds
     } catch (error) {
-      setPasswordError(t('controlPanel.passwordChangeError', 'Error changing password'));
+      console.error('Password change error:', error);
+      setPasswordError(error.message || t('controlPanel.passwordChangeError', 'Error changing password'));
+    }
+  };
+
+  const handleOthersPassword = async (e) => {
+    e.preventDefault();
+    setAdminResetError('');
+    setAdminResetSuccess('');
+
+    // Validation
+    if (!selectedUserId) {
+      setAdminResetError(t('controlPanel.selectUserFirst', 'Please select a user first'));
+      return;
+    }
+
+    if (!adminResetPassword || !adminResetConfirm) {
+      setAdminResetError(t('controlPanel.allFieldsRequired', 'All fields are required'));
+      return;
+    }
+
+    if (adminResetPassword.length < 6) {
+      setAdminResetError(t('controlPanel.passwordTooShort', 'Password must be at least 6 characters'));
+      return;
+    }
+
+    if (adminResetPassword !== adminResetConfirm) {
+      setAdminResetError(t('controlPanel.passwordsDontMatch', 'Passwords do not match'));
+      return;
+    }
+
+    const selectedUser = allUsers.find(u => u.id === selectedUserId);
+    if (!selectedUser) {
+      setAdminResetError(t('controlPanel.userNotFound', 'User not found'));
+      return;
+    }
+
+    // Confirm action
+    if (!window.confirm(t('controlPanel.confirmResetPassword', `Are you sure you want to reset password for ${selectedUser.email}?`))) {
+      return;
+    }
+
+    try {
+      // Send password reset email to the user
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(selectedUser.email, {
+        redirectTo: `${window.location.origin}/login`
+      });
+
+      if (resetError) {
+        throw resetError;
+      }
+
+      setAdminResetSuccess(t('controlPanel.passwordResetEmailSent', `Password reset email sent to ${selectedUser.email}. They will receive instructions to set a new password.`));
+      
+      // Show success toast
+      setToast({
+        show: true,
+        message: t('controlPanel.passwordResetSuccess', `Password reset successfully for ${selectedUser.email}!`),
+        type: 'success'
+      });
+      
+      // Don't clear the password immediately so admin can copy it
+      setTimeout(() => {
+        setAdminResetPassword('');
+        setAdminResetConfirm('');
+        setSelectedUserId('');
+        setAdminResetSuccess('');
+        setShowAdminReset(false);
+        setToast({ show: false, message: '', type: '' });
+      }, 10000); // Give 10 seconds to copy the password
+    } catch (error) {
+      console.error('Admin password reset error:', error);
+      setAdminResetError(error.message || t('controlPanel.passwordResetError', 'Error resetting password. You may need admin service role access.'));
+    }
+  };
+
+  const handleEmployeeResetPassword = async (e) => {
+    e.preventDefault();
+    setEmployeeResetError('');
+    setEmployeeResetSuccess('');
+
+    // Validation
+    if (!selectedEmployeeId) {
+      setEmployeeResetError(t('controlPanel.selectUserFirst', 'Please select a user first'));
+      return;
+    }
+
+    if (!employeeResetPassword || !employeeResetConfirm) {
+      setEmployeeResetError(t('controlPanel.allFieldsRequired', 'All fields are required'));
+      return;
+    }
+
+    if (employeeResetPassword.length < 6) {
+      setEmployeeResetError(t('controlPanel.passwordTooShort', 'Password must be at least 6 characters'));
+      return;
+    }
+
+    if (employeeResetPassword !== employeeResetConfirm) {
+      setEmployeeResetError(t('controlPanel.passwordsDontMatch', 'Passwords do not match'));
+      return;
+    }
+
+    const selectedEmployee = allEmployees.find(e => e.id === selectedEmployeeId);
+    if (!selectedEmployee) {
+      setEmployeeResetError(t('controlPanel.employeeNotFound', 'Employee not found'));
+      return;
+    }
+
+    if (!selectedEmployee.user_id) {
+      setEmployeeResetError('Employee does not have a user account');
+      return;
+    }
+
+    // Confirm action
+    if (!window.confirm(t('controlPanel.confirmResetEmployeePassword', `Are you sure you want to reset password for employee ${selectedEmployee.name}?`))) {
+      return;
+    }
+
+    try {
+      // Call Supabase admin API to update employee's user password
+      const { data, error } = await supabase.auth.admin.updateUserById(
+        selectedEmployee.user_id,
+        { password: employeeResetPassword }
+      );
+
+      if (error) {
+        throw error;
+      }
+
+      setEmployeeResetSuccess(t('controlPanel.passwordResetSuccessEmployee', `Password reset successfully for employee ${selectedEmployee.name}!`));
+      setEmployeeResetPassword('');
+      setEmployeeResetConfirm('');
+      setSelectedEmployeeId('');
+      
+      // Show success toast
+      setToast({
+        show: true,
+        message: t('controlPanel.passwordResetSuccessEmployee', `Password reset successfully for employee ${selectedEmployee.name}!`),
+        type: 'success'
+      });
+      
+      setTimeout(() => {
+        setEmployeeResetSuccess('');
+        setShowEmployeeReset(false);
+        setToast({ show: false, message: '', type: '' });
+      }, 3000);
+    } catch (error) {
+      console.error('Employee password reset error:', error);
+      setEmployeeResetError(error.message || t('controlPanel.passwordResetError', 'Error resetting password. You may need admin service role access.'));
     }
   };
 
@@ -264,7 +550,7 @@ const ControlPanel = () => {
               className="text-sm font-semibold"
               style={{ color: isDarkMode ? '#ffffff' : '#111827' }}
             >
-              {t('controlPanel.role', 'Role')}: {userRole}
+              {t('controlPanel.role', 'Role')}: {getTranslatedRole(userRole)}
             </span>
           </div>
           <p 
@@ -345,8 +631,50 @@ const ControlPanel = () => {
             }}
           >
             <Key className="w-4 h-4" />
-            <span className="text-sm">{t('controlPanel.changePassword', 'Change Password')}</span>
+            <span className="text-sm">{t('controlPanel.changeOwnPassword', 'Change Own Password')}</span>
           </button>
+
+          {/* Admin Password Reset Button */}
+          {isAdmin && (
+            <button
+              onClick={() => setShowAdminReset(!showAdminReset)}
+              className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors"
+              style={{
+                backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff',
+                color: isDarkMode ? '#93c5fd' : '#1e40af'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = isDarkMode ? '#1e40af' : '#dbeafe';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = isDarkMode ? '#1e3a5f' : '#eff6ff';
+              }}
+            >
+              <Users className="w-4 h-4" />
+              <span className="text-sm">{t('controlPanel.resetOtherUserPassword', 'Reset Other Employee Password')}</span>
+            </button>
+          )}
+
+          {/* Admin Email Management Button */}
+          {isAdmin && (
+            <button
+              onClick={() => setShowEmailManagement(!showEmailManagement)}
+              className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors"
+              style={{
+                backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff',
+                color: isDarkMode ? '#93c5fd' : '#1e40af'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = isDarkMode ? '#1e40af' : '#dbeafe';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = isDarkMode ? '#1e3a5f' : '#eff6ff';
+              }}
+            >
+              <Mail className="w-4 h-4" />
+              <span className="text-sm">{t('controlPanel.manageEmails', 'Manage User Emails')}</span>
+            </button>
+          )}
 
           <button
             onClick={openManual}
@@ -436,17 +764,27 @@ const ControlPanel = () => {
               >
                 {t('controlPanel.currentPassword', 'Current Password')}
               </label>
-              <input
-                type="password"
-                value={passwordForm.currentPassword}
-                onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
-                className="w-full px-3 py-2 rounded border text-sm"
-                style={{
-                  backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-                  borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                  color: isDarkMode ? '#ffffff' : '#111827'
-                }}
-              />
+              <div className="relative">
+                <input
+                  type={showCurrentPassword ? "text" : "password"}
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                  className="w-full px-3 py-2 pr-10 rounded border text-sm"
+                  style={{
+                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                    color: isDarkMode ? '#ffffff' : '#111827'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition-opacity"
+                  style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
+                >
+                  {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div>
@@ -456,17 +794,27 @@ const ControlPanel = () => {
               >
                 {t('controlPanel.newPassword', 'New Password')}
               </label>
-              <input
-                type="password"
-                value={passwordForm.newPassword}
-                onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                className="w-full px-3 py-2 rounded border text-sm"
-                style={{
-                  backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-                  borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                  color: isDarkMode ? '#ffffff' : '#111827'
-                }}
-              />
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                  className="w-full px-3 py-2 pr-10 rounded border text-sm"
+                  style={{
+                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                    color: isDarkMode ? '#ffffff' : '#111827'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition-opacity"
+                  style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div>
@@ -476,17 +824,27 @@ const ControlPanel = () => {
               >
                 {t('controlPanel.confirmPassword', 'Confirm Password')}
               </label>
-              <input
-                type="password"
-                value={passwordForm.confirmPassword}
-                onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                className="w-full px-3 py-2 rounded border text-sm"
-                style={{
-                  backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-                  borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                  color: isDarkMode ? '#ffffff' : '#111827'
-                }}
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                  className="w-full px-3 py-2 pr-10 rounded border text-sm"
+                  style={{
+                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                    color: isDarkMode ? '#ffffff' : '#111827'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition-opacity"
+                  style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div className="flex space-x-2">
@@ -532,6 +890,398 @@ const ControlPanel = () => {
         </div>
       )}
 
+      {/* Admin Password Reset Form */}
+      {isAdmin && showAdminReset && (
+        <div 
+          className="rounded-lg shadow-sm p-4"
+          style={{
+            backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+            borderColor: isDarkMode ? '#4b5563' : '#e5e7eb',
+            border: '1px solid'
+          }}
+        >
+          <h4 
+            className="font-semibold mb-3 flex items-center space-x-2"
+            style={{ color: isDarkMode ? '#ffffff' : '#111827' }}
+          >
+            <Users className="w-4 h-4" />
+            <span>{t('controlPanel.resetUserPassword', 'Reset User Password')}</span>
+          </h4>
+
+          {adminResetError && (
+            <div 
+              className="mb-3 p-2 rounded text-sm"
+              style={{
+                backgroundColor: isDarkMode ? '#7f1d1d' : '#fee2e2',
+                color: isDarkMode ? '#fca5a5' : '#991b1b'
+              }}
+            >
+              {adminResetError}
+            </div>
+          )}
+
+          {adminResetSuccess && (
+            <div 
+              className="mb-3 p-2 rounded text-sm"
+              style={{
+                backgroundColor: isDarkMode ? '#14532d' : '#dcfce7',
+                color: isDarkMode ? '#86efac' : '#166534'
+              }}
+            >
+              {adminResetSuccess}
+            </div>
+          )}
+
+          <form onSubmit={handleOthersPassword} className="space-y-3">
+            <div>
+              <label 
+                className="block text-xs font-medium mb-1"
+                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
+              >
+                {t('controlPanel.selectUser', 'Select User')}
+              </label>
+              {loadingUsers ? (
+                <div className="flex items-center space-x-2 text-sm" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                  <Loader className="w-4 h-4 animate-spin" />
+                  <span>{t('common.loading', 'Loading...')}</span>
+                </div>
+              ) : (
+                <select
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  className="w-full px-3 py-2 rounded border text-sm"
+                  style={{
+                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                    color: isDarkMode ? '#ffffff' : '#111827'
+                  }}
+                >
+                  <option value="">{t('controlPanel.chooseUser', '-- Choose a user --')}</option>
+                  {allUsers.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.full_name || u.email} ({u.email}) - {getTranslatedRole(u.role)}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div>
+              <label 
+                className="block text-xs font-medium mb-1"
+                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
+              >
+                {t('controlPanel.newPassword', 'New Password')}
+              </label>
+              <div className="relative">
+                <input
+                  type={showAdminPassword ? "text" : "password"}
+                  value={adminResetPassword}
+                  onChange={(e) => setAdminResetPassword(e.target.value)}
+                  className="w-full px-3 py-2 pr-10 rounded border text-sm"
+                  style={{
+                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                    color: isDarkMode ? '#ffffff' : '#111827'
+                  }}
+                  placeholder={t('controlPanel.enterNewPassword', 'Enter new password')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAdminPassword(!showAdminPassword)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition-opacity"
+                  style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
+                >
+                  {showAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label 
+                className="block text-xs font-medium mb-1"
+                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
+              >
+                {t('controlPanel.confirmPassword', 'Confirm Password')}
+              </label>
+              <div className="relative">
+                <input
+                  type={showAdminConfirm ? "text" : "password"}
+                  value={adminResetConfirm}
+                  onChange={(e) => setAdminResetConfirm(e.target.value)}
+                  className="w-full px-3 py-2 pr-10 rounded border text-sm"
+                  style={{
+                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                    color: isDarkMode ? '#ffffff' : '#111827'
+                  }}
+                  placeholder={t('controlPanel.confirmNewPassword', 'Confirm new password')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAdminConfirm(!showAdminConfirm)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition-opacity"
+                  style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
+                >
+                  {showAdminConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex space-x-2">
+              <button
+                type="submit"
+                className="flex-1 px-3 py-2 rounded text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: '#dc2626',
+                  color: '#ffffff'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#b91c1c';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#dc2626';
+                }}
+              >
+                {t('controlPanel.resetPassword', 'Reset Password')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAdminReset(false);
+                  setSelectedUserId('');
+                  setAdminResetPassword('');
+                  setAdminResetConfirm('');
+                  setAdminResetError('');
+                }}
+                className="flex-1 px-3 py-2 rounded text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6',
+                  color: isDarkMode ? '#ffffff' : '#111827'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#374151' : '#e5e7eb';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#1f2937' : '#f3f4f6';
+                }}
+              >
+                {t('common.cancel', 'Cancel')}
+              </button>
+            </div>
+          </form>
+
+          {/* Warning Notice */}
+          <div 
+            className="mt-3 p-2 rounded text-xs"
+            style={{
+              backgroundColor: isDarkMode ? '#7c2d12' : '#fed7aa',
+              color: isDarkMode ? '#fbbf24' : '#92400e',
+              border: '1px solid',
+              borderColor: isDarkMode ? '#92400e' : '#fbbf24'
+            }}
+          >
+            <strong>{t('controlPanel.warning', 'Warning')}:</strong> {t('controlPanel.adminResetWarning', 'This will change the password for the selected user. They will need to use the new password to log in.')}
+          </div>
+        </div>
+      )}
+
+      {/* Admin Other Employees Password Reset Form */}
+      {isAdmin && showEmployeeReset && (
+        <div 
+          className="rounded-lg shadow-sm p-4"
+          style={{
+            backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+            borderColor: isDarkMode ? '#4b5563' : '#e5e7eb',
+            border: '1px solid'
+          }}
+        >
+          <h4 
+            className="font-semibold mb-3 flex items-center space-x-2"
+            style={{ color: isDarkMode ? '#ffffff' : '#111827' }}
+          >
+            <Shield className="w-4 h-4" />
+            <span>{t('controlPanel.resetEmployeePassword', '')}</span>
+          </h4>
+
+          {employeeResetError && (
+            <div 
+              className="mb-3 p-2 rounded text-sm"
+              style={{
+                backgroundColor: isDarkMode ? '#7f1d1d' : '#fee2e2',
+                color: isDarkMode ? '#fca5a5' : '#991b1b'
+              }}
+            >
+              {employeeResetError}
+            </div>
+          )}
+
+          {employeeResetSuccess && (
+            <div 
+              className="mb-3 p-2 rounded text-sm"
+              style={{
+                backgroundColor: isDarkMode ? '#14532d' : '#dcfce7',
+                color: isDarkMode ? '#86efac' : '#166534'
+              }}
+            >
+              {employeeResetSuccess}
+            </div>
+          )}
+
+          <form onSubmit={handleEmployeeResetPassword} className="space-y-3">
+            <div>
+              <label 
+                className="block text-xs font-medium mb-1"
+                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
+              >
+                {t('controlPanel.selectEmployee', 'Select Employee')}
+              </label>
+              {loadingEmployees ? (
+                <div className="flex items-center space-x-2 text-sm" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                  <Loader className="w-4 h-4 animate-spin" />
+                  <span>{t('common.loading', 'Loading...')}</span>
+                </div>
+              ) : (
+                <select
+                  value={selectedEmployeeId}
+                  onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                  className="w-full px-3 py-2 rounded border text-sm"
+                  style={{
+                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                    color: isDarkMode ? '#ffffff' : '#111827'
+                  }}
+                >
+                  <option value="">{t('controlPanel.chooseEmployee', '-- Choose an employee --')}</option>
+                  {allEmployees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name} ({emp.email})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div>
+              <label 
+                className="block text-xs font-medium mb-1"
+                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
+              >
+                {t('controlPanel.newPassword', 'New Password')}
+              </label>
+              <div className="relative">
+                <input
+                  type={showEmployeePassword ? "text" : "password"}
+                  value={employeeResetPassword}
+                  onChange={(e) => setEmployeeResetPassword(e.target.value)}
+                  className="w-full px-3 py-2 pr-10 rounded border text-sm"
+                  style={{
+                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                    color: isDarkMode ? '#ffffff' : '#111827'
+                  }}
+                  placeholder={t('controlPanel.enterNewPassword', 'Enter new password')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowEmployeePassword(!showEmployeePassword)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition-opacity"
+                  style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
+                >
+                  {showEmployeePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label 
+                className="block text-xs font-medium mb-1"
+                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
+              >
+                {t('controlPanel.confirmPassword', 'Confirm Password')}
+              </label>
+              <div className="relative">
+                <input
+                  type={showEmployeeConfirm ? "text" : "password"}
+                  value={employeeResetConfirm}
+                  onChange={(e) => setEmployeeResetConfirm(e.target.value)}
+                  className="w-full px-3 py-2 pr-10 rounded border text-sm"
+                  style={{
+                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                    color: isDarkMode ? '#ffffff' : '#111827'
+                  }}
+                  placeholder={t('controlPanel.confirmNewPassword', 'Confirm new password')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowEmployeeConfirm(!showEmployeeConfirm)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition-opacity"
+                  style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
+                >
+                  {showEmployeeConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex space-x-2">
+              <button
+                type="submit"
+                className="flex-1 px-3 py-2 rounded text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: '#dc2626',
+                  color: '#ffffff'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#b91c1c';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#dc2626';
+                }}
+              >
+                {t('controlPanel.resetPassword', 'Reset Password')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEmployeeReset(false);
+                  setSelectedEmployeeId('');
+                  setEmployeeResetPassword('');
+                  setEmployeeResetConfirm('');
+                  setEmployeeResetError('');
+                }}
+                className="flex-1 px-3 py-2 rounded text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6',
+                  color: isDarkMode ? '#ffffff' : '#111827'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#374151' : '#e5e7eb';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#1f2937' : '#f3f4f6';
+                }}
+              >
+                {t('common.cancel', 'Cancel')}
+              </button>
+            </div>
+          </form>
+
+          {/* Warning Notice */}
+          <div 
+            className="mt-3 p-2 rounded text-xs"
+            style={{
+              backgroundColor: isDarkMode ? '#7c2d12' : '#fed7aa',
+              color: isDarkMode ? '#fbbf24' : '#92400e',
+              border: '1px solid',
+              borderColor: isDarkMode ? '#92400e' : '#fbbf24'
+            }}
+          >
+            <strong>{t('controlPanel.warning', 'Warning')}:</strong> {t('controlPanel.adminResetWarning', 'This will change the password for the selected user. They will need to use the new password to log in.')}
+          </div>
+        </div>
+      )}
+
       {/* Info Card */}
       <div 
         className="rounded-lg shadow-sm p-3"
@@ -559,6 +1309,53 @@ const ControlPanel = () => {
           </div>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className="fixed top-4 right-4 z-50 animate-fade-in">
+          <div className={`
+            rounded-lg p-4 shadow-lg flex items-center space-x-3
+            ${toast.type === 'success' 
+              ? `${isDarkMode ? 'bg-green-900/30' : 'bg-green-100'} border-l-4 border-green-600` 
+              : `${isDarkMode ? 'bg-red-900/30' : 'bg-red-100'} border-l-4 border-red-600`}
+          `}>
+            {toast.type === 'success' ? (
+              <Check className={`w-5 h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+            ) : (
+              <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
+            )}
+            <span className={`
+              font-medium
+              ${toast.type === 'success' 
+                ? `${isDarkMode ? 'text-green-200' : 'text-green-800'}` 
+                : `${isDarkMode ? 'text-red-200' : 'text-red-800'}`}
+            `}>
+              {toast.message}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Email Management Section */}
+      {showEmailManagement && isAdmin && (
+        <EmailManagement />
+      )}
+
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
