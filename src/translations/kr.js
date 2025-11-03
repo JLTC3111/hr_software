@@ -132,6 +132,7 @@ export default {
     sales: '영업',
     marketing: '마케팅',
     design: '디자인',
+    part_time_employee: '파트타임 직원',
   },
 
   // Months
@@ -738,6 +739,7 @@ export default {
     contract_manager: '계약 담당자',
     managing_director: '원장',
     support_staff: '지원팀',
+    employee: '직원',
   }, 
 
   // Notifications
@@ -973,6 +975,7 @@ export default {
     sales: '영업',
     marketing: '마케팅',
     design: '디자인',
+    part_time_employee: '파트타임 직원',
   },
 
   // Control Panel

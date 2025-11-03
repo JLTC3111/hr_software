@@ -43,12 +43,18 @@ const Employees = ({ employees, onViewEmployee, onEditEmployee, onDeleteEmployee
   
   const departments = [
     t('departments.all'), 
+    t('departments.legal_compliance'),
+    t('departments.technology'),
+    t('departments.internal_affairs'),
+    t('departments.human_resources'),
+    t('departments.office_unit'),
+    t('departments.board_of_directors'),
+    t('departments.finance'),
     t('departments.engineering'), 
-    t('departments.marketing'), 
     t('departments.sales'), 
-    t('departments.humanresources'), 
-    t('departments.design'), 
-    t('departments.finance')
+    t('departments.marketing'), 
+    t('departments.design'),
+    t('departments.part_time_employee')
   ];
 
   // Filter active employees only

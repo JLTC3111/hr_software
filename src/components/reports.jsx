@@ -89,15 +89,18 @@ const Reports = () => {
 
   const departments = [
     t('departments.all'), 
+    t('departments.legal_compliance'),
+    t('departments.technology'),
+    t('departments.internal_affairs'),
+    t('departments.human_resources'),
+    t('departments.office_unit'),
+    t('departments.board_of_directors'),
+    t('departments.finance'),
     t('departments.engineering'), 
     t('departments.sales'), 
     t('departments.marketing'), 
-    t('departments.human_resources'), 
     t('departments.design'),
-    t('departments.legal_compliance'),
-    t('departments.internal_affairs'),
-    t('departments.office_unit'),
-    t('departments.board_of_directors')
+    t('departments.part_time_employee')
   ];
 
   const handleMetricClick = async (metricType) => {

@@ -85,16 +85,29 @@ const AddNewEmployee = ({ refetchEmployees }) => {
   ];
 
   const departments = [
-    { value: 'legal_compliance', label: t('departments.legal_compliance', 'Legal') },
-    { value: 'human_resources', label: t('departments.human_resources', 'HR') },
+    { value: 'legal_compliance', label: t('departments.legal_compliance', 'Legal Compliance') },
+    { value: 'technology', label: t('departments.technology', 'Technology') },
+    { value: 'internal_affairs', label: t('departments.internal_affairs', 'Internal Affairs') },
+    { value: 'human_resources', label: t('departments.human_resources', 'Human Resources') },
+    { value: 'office_unit', label: t('departments.office_unit', 'Office Unit') },
+    { value: 'board_of_directors', label: t('departments.board_of_directors', 'Board of Directors') },
     { value: 'finance', label: t('departments.finance', 'Finance') },
-    { value: 'engineering', label: t('departments.engineering', 'Engineering') }
+    { value: 'engineering', label: t('departments.engineering', 'Engineering') },
+    { value: 'sales', label: t('departments.sales', 'Sales') },
+    { value: 'marketing', label: t('departments.marketing', 'Marketing') },
+    { value: 'design', label: t('departments.design', 'Design') },
+    { value: 'part_time_employee', label: t('departments.part_time_employee', 'Part-Time Employee') }
   ];
 
   const positions = [
-    { value: 'general_manager', label: t('employeePosition.general_manager', 'Manager') },
-    { value: 'senior_developer', label: t('employeePosition.senior_developer', 'Developer') },
-    { value: 'hr_specialist', label: t('employeePosition.hr_specialist', 'HR Specialist') }
+    { value: 'general_manager', label: t('employeePosition.general_manager', 'General Manager') },
+    { value: 'senior_developer', label: t('employeePosition.senior_developer', 'Senior Developer') },
+    { value: 'hr_specialist', label: t('employeePosition.hr_specialist', 'HR Manager') },
+    { value: 'accountant', label: t('employeePosition.accountant', 'Chief Accountant') },
+    { value: 'contract_manager', label: t('employeePosition.contract_manager', 'Contract Manager') },
+    { value: 'managing_director', label: t('employeePosition.managing_director', 'Managing Director') },
+    { value: 'support_staff', label: t('employeePosition.support_staff', 'Support Staff') },
+    { value: 'employee', label: t('employeePosition.employee', 'Employee') }
   ];
 
   const handleChange = useCallback((e) => {

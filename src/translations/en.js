@@ -244,6 +244,7 @@ export default {
     sales: 'Sales',
     marketing: 'Marketing',
     design: 'Design',
+    part_time_employee: 'Part-Time Employee',
   },
 
   // Months
@@ -775,6 +776,7 @@ export default {
     contract_manager: 'Contract Manager',
     managing_director: 'Managing Director',
     support_staff: 'Support Staff',
+    employee: 'Employee',
   },
 
   // Recruitment Status
@@ -1153,6 +1155,7 @@ export default {
     sales: 'Sales',
     marketing: 'Marketing',
     design: 'Design',
+    part_time_employee: 'Part-Time Employee',
   },
 
   // Morphing Showcase

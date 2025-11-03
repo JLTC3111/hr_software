@@ -128,6 +128,7 @@ export default {
     sales: 'Vertrieb',
     marketing: 'Marketing',
     design: 'Design',
+    part_time_employee: 'Teilzeitmitarbeiter',
   },
 
   // Months
@@ -790,6 +791,7 @@ export default {
     contract_manager: 'Vertragsmanager',
     managing_director: 'Geschäftsführender Direktor',
     support_staff: 'Unterstützung',
+    employee: 'Mitarbeiter',
   }, 
 
   // Notifications
@@ -1032,6 +1034,7 @@ export default {
     sales: 'Vertrieb',
     marketing: 'Marketing',
     design: 'Design',
+    part_time_employee: 'Teilzeitmitarbeiter',
   },
 
   // Control Panel

@@ -143,6 +143,7 @@ export default {
     sales: 'Продажи',
     marketing: 'Маркетинг',
     design: 'Дизайн',
+    part_time_employee: 'Сотрудник на неполный рабочий день',
   },
 
   // Months
@@ -736,6 +737,7 @@ export default {
     contract_manager: 'Менеджер по контрактам',
     managing_director: 'Исполнительный директор',
     support_staff: 'Вспомогательный персонал',
+    employee: 'Сотрудник',
   }, 
 
   // Notifications
@@ -969,6 +971,7 @@ export default {
     sales: 'Продажи',
     marketing: 'Маркетинг',
     design: 'Дизайн',
+    part_time_employee: 'Сотрудник на неполный рабочий день',
   },
 
   // Control Panel

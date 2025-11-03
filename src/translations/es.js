@@ -281,6 +281,7 @@ login: {
     sales: 'Ventas',
     marketing: 'Marketing',
     design: 'Diseño',
+    part_time_employee: 'Empleado a Tiempo Parcial',
   },
 
   // Months
@@ -751,6 +752,7 @@ login: {
     contract_manager: 'Gerente de contratos',
     managing_director: 'Director Gerente',
     support_staff: 'Personal de apoyo',
+    employee: 'Empleado',
   }, 
 
   // Notifications
@@ -998,6 +1000,7 @@ login: {
     sales: 'Ventas',
     marketing: 'Marketing',
     design: 'Diseño',
+    part_time_employee: 'Empleado a Tiempo Parcial',
   },
 
   // Control Panel

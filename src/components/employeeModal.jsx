@@ -39,6 +39,32 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
     dob: ''
   });
 
+  const departments = [
+    { value: 'legal_compliance', label: t('departments.legal_compliance', 'Legal Compliance') },
+    { value: 'technology', label: t('departments.technology', 'Technology') },
+    { value: 'internal_affairs', label: t('departments.internal_affairs', 'Internal Affairs') },
+    { value: 'human_resources', label: t('departments.human_resources', 'Human Resources') },
+    { value: 'office_unit', label: t('departments.office_unit', 'Office Unit') },
+    { value: 'board_of_directors', label: t('departments.board_of_directors', 'Board of Directors') },
+    { value: 'finance', label: t('departments.finance', 'Finance') },
+    { value: 'engineering', label: t('departments.engineering', 'Engineering') },
+    { value: 'sales', label: t('departments.sales', 'Sales') },
+    { value: 'marketing', label: t('departments.marketing', 'Marketing') },
+    { value: 'design', label: t('departments.design', 'Design') },
+    { value: 'part_time_employee', label: t('departments.part_time_employee', 'Part-Time Employee') }
+  ];
+
+  const positions = [
+    { value: 'general_manager', label: t('employeePosition.general_manager', 'General Manager') },
+    { value: 'senior_developer', label: t('employeePosition.senior_developer', 'Senior Developer') },
+    { value: 'hr_specialist', label: t('employeePosition.hr_specialist', 'HR Manager') },
+    { value: 'accountant', label: t('employeePosition.accountant', 'Chief Accountant') },
+    { value: 'contract_manager', label: t('employeePosition.contract_manager', 'Contract Manager') },
+    { value: 'managing_director', label: t('employeePosition.managing_director', 'Managing Director') },
+    { value: 'support_staff', label: t('employeePosition.support_staff', 'Support Staff') },
+    { value: 'employee', label: t('employeePosition.employee', 'Employee') }
+  ];
+
   // Initialize form data when employee changes
   useEffect(() => {
     if (employee) {
@@ -258,18 +284,25 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                 
                 {isEditing ? (
                   <div className="mt-2">
-                    <input
-                      type="text"
+                    <select
                       name="position"
                       value={formData.position}
                       onChange={handleChange}
                       className={`w-full px-3 py-2 ${inputBg} border ${errors.position ? 'border-red-500' : inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
-                      placeholder={t('employees.position', 'Position')}
-                    />
+                    >
+                      <option value="">{t('addEmployee.selectPosition', 'Select Position')}</option>
+                      {positions.map(pos => (
+                        <option key={pos.value} value={pos.value}>
+                          {pos.label}
+                        </option>
+                      ))}
+                    </select>
                     {errors.position && <p className="text-red-500 text-sm mt-1">{errors.position}</p>}
                   </div>
                 ) : (
-                  <p className={textSecondary}>{currentEmployee?.position || 'N/A'}</p>
+                  <p className={textSecondary}>
+                    {formData.position ? t(`employeePosition.${formData.position}`, currentEmployee?.position) : 'N/A'}
+                  </p>
                 )}
                 
                 {isEditing ? (
@@ -379,18 +412,25 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                     </div>
                     {isEditing ? (
                       <div>
-                        <input
-                          type="text"
+                        <select
                           name="department"
                           value={formData.department}
                           onChange={handleChange}
                           className={`w-full px-3 py-2 ${inputBg} border ${errors.department ? 'border-red-500' : inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
-                          placeholder="Engineering, HR, etc."
-                        />
+                        >
+                          <option value="">{t('addEmployee.selectDepartment', 'Select Department')}</option>
+                          {departments.map(dept => (
+                            <option key={dept.value} value={dept.value}>
+                              {dept.label}
+                            </option>
+                          ))}
+                        </select>
                         {errors.department && <p className="text-red-500 text-xs mt-1">{errors.department}</p>}
                       </div>
                     ) : (
-                      <span className={textPrimary}>{currentEmployee?.department || 'N/A'}</span>
+                      <span className={textPrimary}>
+                        {formData.department ? t(`departments.${formData.department}`, currentEmployee?.department) : 'N/A'}
+                      </span>
                     )}
                   </div>
                   

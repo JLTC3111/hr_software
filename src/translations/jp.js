@@ -129,6 +129,7 @@ export default {
     sales: '営業',
     marketing: 'マーケティング',
     design: 'デザイン',
+    part_time_employee: 'パートタイム従業員',
   },
 
   // Months
@@ -737,6 +738,7 @@ export default {
     contract_manager: '契約管理者',
     managing_director: '所長 / 院長',
     support_staff: 'サポートスタッフ',
+    employee: '従業員',
   }, 
 
   // Notifications
@@ -970,6 +972,7 @@ export default {
     sales: '営業',
     marketing: 'マーケティング',
     design: 'デザイン',
+    part_time_employee: 'パートタイム従業員',
   },
 
   // Control Panel

@@ -129,6 +129,7 @@ export default {
     sales: 'Bán Hàng',
     marketing: 'Tiếp Thị',
     design: 'Thiết Kế',
+    part_time_employee: 'Nhân Viên Bán Thời Gian',
   },
 
   // Months
@@ -709,21 +710,6 @@ export default {
     reject: 'Từ chối'
   },
 
-  // Employee Department (for display in cards)
-  employeeDepartment: {
-    legal_compliance: 'Pháp Lý',
-    technology: 'Công Nghệ',
-    internal_affairs: 'Quản Lý Nội Bộ',
-    human_resources: 'Nhân Sự',
-    office_unit: 'Đơn Vị Văn Phòng',
-    board_of_directors: 'Hội Đồng Quản Trị',
-    finance: 'Tài Chính',
-    engineering: 'Kỹ Thuật',
-    sales: 'Bán Hàng',
-    marketing: 'Tiếp Thị',
-    design: 'Thiết Kế',
-  },
-
   // Employee Status
   employeeStatus: {
     active: 'Hoạt động',
@@ -735,13 +721,14 @@ export default {
 
   //Employee Position 
   employeePosition: {
-    general_manager: 'Quản Lý Chung',
+    general_manager: 'Quản Lý',
     senior_developer: 'Lập Trình Viên Cao Cấp',
     hr_specialist: 'Điều Hành Nhân Sự',
     accountant: 'Kế Toán Trưởng',
     contract_manager: 'Phụ Trách Đấu Thầu',
     managing_director: 'Viện Trưởng',
     support_staff: 'Hỗ Trợ',
+    employee: 'Nhân Viên',
   },  
 
   // Notifications
@@ -1063,6 +1050,7 @@ export default {
     sales: 'Bán Hàng',
     marketing: 'Tiếp Thị',
     design: 'Thiết Kế',
+    part_time_employee: 'Nhân Viên Bán Thời Gian',
   },
 
   // Control Panel

@@ -129,6 +129,7 @@ export default {
     sales: 'ขาย',
     marketing: 'การตลาด',
     design: 'ดีไซน์',
+    part_time_employee: 'พนักงานพาร์ทไทม์',
   },
 
   // Months
@@ -737,6 +738,7 @@ export default {
     contract_manager: 'ผู้จัดการสัญญา/การประมูล',
     managing_director: 'ผู้อำนวยการ',
     support_staff: 'เจ้าหน้าที่สนับสนุน',
+    employee: 'พนักงาน',
   }, 
 
   // Notifications
@@ -970,6 +972,7 @@ export default {
     sales: 'การขาย',
     marketing: 'การตลาด',
     design: 'ดีไซน์',
+    part_time_employee: 'พนักงานพาร์ทไทม์',
   },
 
   // Control Panel

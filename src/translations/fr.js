@@ -131,6 +131,7 @@ export default {
     sales: 'Ventes',
     marketing: 'Marketing',
     design: 'Design',
+    part_time_employee: 'Employé à temps partiel',
   },
 
   // Months
@@ -797,6 +798,7 @@ export default {
     contract_manager: 'Responsable des marchés',
     managing_director: 'Directeur (d\'Institut)',
     support_staff: 'Personnel de soutien',
+    employee: 'Employé',
   }, 
 
   // Notifications
@@ -1030,6 +1032,7 @@ export default {
     sales: 'Ventes',
     marketing: 'Marketing',
     design: 'Design',
+    part_time_employee: 'Employé à temps partiel',
   },
 
   // Control Panel
