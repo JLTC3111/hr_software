@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Circle, Edit2, Trash2, Plus, Calendar, User, TrendingUp, BarChart3, MessageSquare, Loader, Star } from 'lucide-react';
+import { CheckCircle, Circle, Edit2, Trash2, Plus, Calendar, User, TrendingUp, BarChart3, MessageSquare, Loader, Star, Users } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -321,22 +321,25 @@ const WorkloadManagement = ({ employees }) => {
             <label className={`block text-sm font-medium ${text.primary} mb-2`}>
               {t('workload.selectEmployee', 'Select Employee')}
             </label>
-            <select
-              value={selectedEmployee}
-              onChange={(e) => setSelectedEmployee(String(e.target.value))}
-              className={`w-full px-4 py-2 rounded-lg border ${text.primary} ${border.primary} cursor-pointer`}
-              style={{
-                backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
-                color: isDarkMode ? '#ffffff' : '#111827',
-                borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
-              }}
-            >
-              {availableEmployees.map(employee => (
-                <option key={employee.id} value={String(employee.id)}>
-                  {employee.name} - {t(`employeeDepartment.${employee.department.toLowerCase().replace(/\s+/g, '_')}`, employee.department)} ({t(`employeePosition.${employee.position.toLowerCase().replace(/\s+/g, '')}`, employee.position)})
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={selectedEmployee}
+                onChange={(e) => setSelectedEmployee(String(e.target.value))}
+                className={`w-full px-4 py-2 pr-10 rounded-lg border ${text.primary} ${border.primary} cursor-pointer appearance-none`}
+                style={{
+                  backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
+                  color: isDarkMode ? '#ffffff' : '#111827',
+                  borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
+                }}
+              >
+                {availableEmployees.map(employee => (
+                  <option key={employee.id} value={String(employee.id)}>
+                    {employee.name} - {t(`employeeDepartment.${employee.department.toLowerCase().replace(/\s+/g, '_')}`, employee.department)} ({t(`employeePosition.${employee.position.toLowerCase().replace(/\s+/g, '')}`, employee.position)})
+                  </option>
+                ))}
+              </select>
+              <Users className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none`} />
+            </div>
           </div>
         )}
 
