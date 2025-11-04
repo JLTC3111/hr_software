@@ -22,7 +22,7 @@ export default {
   // Header
   header: {
     title: 'HR 매니저',
-    welcome: '다시 오신 것을 환영합니다, HR팀',
+    welcome: '다시 오신 것을 환영합니다,',
     user: 'HR팀',
     logout: '로그아웃',
   },

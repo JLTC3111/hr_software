@@ -21,7 +21,7 @@ export default {
 // Header
 header: {
   title: 'Gerente de RH',
-  welcome: 'Bienvenido de nuevo',
+  welcome: 'Bienvenido de nuevo,',
   user: 'Equipo de RH',
   logout: 'Cerrar sesión',
 },

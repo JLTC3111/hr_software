@@ -21,8 +21,8 @@ export default {
   },
   // Header
   header: {
-    title: 'HR Manager',
-    welcome: 'Welcome Back',
+    title: 'HR Management',
+    welcome: 'Welcome Back,',
     user: 'HR Team',
     logout: 'Logout',
     notifications: 'Notifications'

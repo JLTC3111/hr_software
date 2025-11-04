@@ -22,7 +22,7 @@ export default {
   // Header
   header: {
     title: 'Quản lý HR',
-    welcome: 'Chào mừng trở lại',
+    welcome: 'Xin Chào,',
     user: 'Đội ngũ HR',
     logout: 'Đăng xuất'
   },

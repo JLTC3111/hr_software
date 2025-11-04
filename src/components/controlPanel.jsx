@@ -1402,6 +1402,18 @@ const ControlPanel = () => {
         .animate-fade-in {
           animation: fadeIn 0.3s ease-out;
         }
+        /* Hide browser's default password reveal icon */
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+          display: none;
+        }
+        input[type="password"]::-webkit-contacts-auto-fill-button,
+        input[type="password"]::-webkit-credentials-auto-fill-button {
+          visibility: hidden;
+          pointer-events: none;
+          position: absolute;
+          right: 0;
+        }
       `}</style>
     </div>
   );

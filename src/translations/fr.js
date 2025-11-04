@@ -24,7 +24,7 @@ export default {
   // Header
   header: {
     title: 'Gestionnaire RH',
-    welcome: 'Bon retour, équipe RH',
+    welcome: 'Bon retour,',
     user: 'Équipe RH',
     logout: 'Se deconnecter',
   },

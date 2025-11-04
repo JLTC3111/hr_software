@@ -22,7 +22,7 @@ export default {
   // Header
   header: {
     title: 'HRマネージャー',
-    welcome: 'おかえりなさい、HRチーム',
+    welcome: 'おかえりなさい、,',
     user: 'HRチーム',
     logout: 'ログアウト',
   },
