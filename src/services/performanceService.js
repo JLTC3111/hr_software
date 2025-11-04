@@ -471,9 +471,7 @@ export const upsertSkillAssessment = async (skillData) => {
   }
 };
 
-/**
- * Get skills for an employee
- */
+
 export const getSkillsByEmployee = async (employeeId) => {
   try {
     const { data, error } = await supabase

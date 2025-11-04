@@ -583,6 +583,37 @@ export default {
     lastQuarter: 'Quý Trước',
     lastYear: 'Năm Ngoái',
     customRange: 'Phạm Vi Tùy Chỉnh',
+    // Date Range Options
+    today: 'Hôm Nay',
+    thisWeek: 'Tuần Này',
+    thisMonth: 'Tháng Này',
+    thisQuarter: 'Quý Này',
+    thisYear: 'Năm Nay',
+    // Data Types
+    timeEntries: 'Bảng Chấm Công',
+    tasks: 'Nhiệm Vụ',
+    goals: 'Mục Tiêu Cá Nhân',
+    // Filter Labels
+    employee: 'Nhân Viên',
+    dateRange: 'Phạm Vi Thời Gian',
+    dataType: 'Loại Dữ Liệu',
+    quickFilters: 'Bộ Lọc Nhanh',
+    allEmployees: 'Tất Cả Nhân Viên',
+    startDate: 'Ngày Bắt Đầu',
+    endDate: 'Ngày Kết Thúc',
+    // Status and Results
+    recordsFound: 'bản ghi được tìm thấy',
+    noData: 'Không tìm thấy dữ liệu',
+    adjustFilters: 'Thử điều chỉnh bộ lọc hoặc phạm vi ngày',
+    dataPreview: 'Xem Trước Dữ Liệu',
+    showingFirst50: 'Hiển thị 50 bản ghi đầu tiên',
+    showingFirst50of: 'Hiển thị 50 đầu tiên trong',
+    records: 'bản ghi',
+    exportForAll: 'Xuất CSV để lấy tất cả bản ghi.',
+    liveData: 'Dữ liệu trực tiếp từ Supabase',
+    subtitle: 'Xuất dữ liệu toàn diện cho chấm công, nhiệm vụ và mục tiêu cá nhân',
+    errorExporting: 'Lỗi xuất dữ liệu',
+    exportToCSV: 'Xuất CSV',
   },
 
   // Time Clock Entry
@@ -1255,5 +1286,42 @@ export default {
     responsiveAccessible: 'Đáp ứng và dễ tiếp cận',
     customizableDuration: 'Thời lượng hoạt ảnh có thể tùy chỉnh',
     easingFunctions: 'Các hàm làm mềm cho chuyển động tự nhiên',
+  },
+
+  // Workload Management
+  workload: {
+    task: 'Nhiệm vụ',
+    priority: 'Ưu tiên',
+    status: 'Trạng thái',
+    dueDate: 'Ngày hết hạn',
+    taskTitle: 'Tiêu đề nhiệm vụ',
+    description: 'Mô tả',
+    estimatedHours: 'Giờ ước tính',
+    actualHours: 'Giờ thực tế',
+  },
+
+  // Performance Management
+  performance: {
+    goal: 'Mục tiêu',
+    goals: 'Mục tiêu',
+    category: 'Danh mục',
+    status: 'Trạng thái',
+    progress: 'Tiến độ',
+    goalTitle: 'Tiêu đề mục tiêu',
+    description: 'Mô tả',
+    targetDate: 'Ngày mục tiêu',
+    notes: 'Ghi chú',
+  },
+
+  // Time Tracking
+  timeTracking: {
+    date: 'Ngày',
+    hours: 'Giờ',
+    type: 'Loại',
+    status: 'Trạng thái',
+    clockIn: 'Chấm công vào',
+    clockOut: 'Chấm công ra',
+    hourType: 'Loại giờ',
+    notes: 'Ghi chú',
   },
 };

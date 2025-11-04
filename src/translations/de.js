@@ -428,6 +428,37 @@ export default {
     lastQuarter:	'Letztes Quartal',
     lastYear:	'Letztes Jahr',
     customRange:	'Benutzerdefinierter Bereich',
+    // Date Range Options
+    today: 'Heute',
+    thisWeek: 'Diese Woche',
+    thisMonth: 'Dieser Monat',
+    thisQuarter: 'Dieses Quartal',
+    thisYear: 'Dieses Jahr',
+    // Data Types
+    timeEntries: 'Zeiterfassung',
+    tasks: 'Aufgaben',
+    goals: 'Persönliche Ziele',
+    // Filter Labels
+    employee: 'Mitarbeiter',
+    dateRange: 'Zeitraum',
+    dataType: 'Datentyp',
+    quickFilters: 'Schnellfilter',
+    allEmployees: 'Alle Mitarbeiter',
+    startDate: 'Startdatum',
+    endDate: 'Enddatum',
+    // Status and Results
+    recordsFound: 'Datensätze gefunden',
+    noData: 'Keine Daten gefunden',
+    adjustFilters: 'Versuchen Sie, Ihre Filter oder den Zeitraum anzupassen',
+    dataPreview: 'Datenvorschau',
+    showingFirst50: 'Zeige erste 50 Datensätze',
+    showingFirst50of: 'Zeige erste 50 von',
+    records: 'Datensätze',
+    exportForAll: 'Exportieren Sie zu CSV, um alle Datensätze zu erhalten.',
+    liveData: 'Live-Daten von Supabase',
+    subtitle: 'Umfassende Daten für Zeiterfassung, Aufgaben und persönliche Ziele exportieren',
+    errorExporting: 'Fehler beim Exportieren der Daten',
+    exportToCSV: 'Als CSV exportieren',
   },
 
   // Add Employee

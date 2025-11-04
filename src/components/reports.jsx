@@ -1,1318 +1,832 @@
-import React, { useState, useEffect } from 'react';
-import { BarChart3, PieChart, UserPlus, Download, Calendar, SquareSigma, PiggyBank, Award, TrendingUp, Users, Filter, HeartPulse, Loader, DollarSign, AlertCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useTheme } from '../contexts/ThemeContext';
+import React, { useState, useEffect, useMemo } from "react";
+import { useLanguage } from "../contexts/LanguageContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from '../contexts/AuthContext';
-import * as reportService from '../services/reportService';
-import MetricDetailModal from './metricDetailModal.jsx';
+import { 
+  Calendar, 
+  Download, 
+  Users, 
+  Filter, 
+  BarChart3, 
+  Clock, 
+  CheckCircle, 
+  PlayCircle, 
+  Target,
+  FileText,
+  Database,
+  Loader
+} from 'lucide-react';
+import timeTrackingService from '../services/timeTrackingService';
+import { getAllTasks } from '../services/workloadService';
+import performanceService from '../services/performanceService';
+import { supabase } from '../config/supabaseClient';
 
 const Reports = () => {
-  const [selectedReport, setSelectedReport] = useState('overview');
-  const [dateRange, setDateRange] = useState('last-quarter');
-  const [department, setDepartment] = useState('all');
-  const [loading, setLoading] = useState(true);
-  const [timeTrackingData, setTimeTrackingData] = useState({});
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalConfig, setModalConfig] = useState({ type: '', data: [], title: '' });
-  const [reportType, setReportType] = useState('performance');
-  const [generatedReport, setGeneratedReport] = useState(null);
-  const [generating, setGenerating] = useState(false);
-  const [showFilters, setShowFilters] = useState(true);
-  const [reportData, setReportData] = useState(null);
-  const [performanceTrend, setPerformanceTrend] = useState([]);
   const { t } = useLanguage();
-  const { isDarkMode, text, bg, border } = useTheme();
-  const { checkPermission } = useAuth();
-  const navigate = useNavigate();
+  const { isDarkMode } = useTheme();
   
-  // Check permission to view reports
-  const canViewReports = checkPermission('canViewReports');
+  // Helper function to translate department values
+  const translateDepartment = (department) => {
+    if (!department) return '';
+    return t(`departments.${department}`, department);
+  };
   
-  // If user doesn't have permission, show access denied
-  if (!canViewReports) {
-    return (
-      <div className={`min-h-screen ${bg.primary} flex items-center justify-center p-4`}>
-        <div className={`${bg.secondary} rounded-lg shadow-lg border ${border.primary} p-8 max-w-md w-full text-center`}>
-          <AlertCircle className={`w-16 h-16 ${isDarkMode ? 'text-red-400' : 'text-red-600'} mx-auto mb-4`} />
-          <h2 className={`text-2xl font-bold ${text.primary} mb-2`}>
-            {t('common.accessDenied', 'Access Denied')}
-          </h2>
-          <p className={`${text.secondary} mb-6`}>
-            {t('common.noPermission', 'You do not have permission to access this page.')}
-          </p>
-          <button
-            onClick={() => navigate('/')}
-            className={`px-6 py-2 rounded-lg ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white transition-colors`}
-          >
-            {t('common.goBack', 'Go Back')}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Helper function to translate position values
+  const translatePosition = (position) => {
+    if (!position) return '';
+    return t(`positions.${position}`, position);
+  };
   
-  // Get current month and year
-  const currentDate = new Date();
-  const currentMonth = currentDate.getMonth() + 1;
-  const currentYear = currentDate.getFullYear();
+  // Theme classes
+  const bg = {
+    primary: isDarkMode ? 'bg-gray-800' : 'bg-white',
+    secondary: isDarkMode ? 'bg-gray-900' : 'bg-gray-50'
+  };
   
-  // Fetch all report data from backend
+  const text = {
+    primary: isDarkMode ? 'text-white' : 'text-gray-900',
+    secondary: isDarkMode ? 'text-gray-300' : 'text-gray-600'
+  };
+  
+  const border = {
+    primary: isDarkMode ? 'border-gray-700' : 'border-gray-200'
+  };
+
+  // State
+  const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [activeTab, setActiveTab] = useState('time-entries');
+  const [selectedEmployee, setSelectedEmployee] = useState('all');
+  const [dateRange, setDateRange] = useState('this-month');
+  const [filters, setFilters] = useState({
+    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0]
+  });
+
+  // Data state
+  const [reportData, setReportData] = useState({
+    timeEntries: [],
+    tasks: [],
+    goals: [],
+    employees: []
+  });
+
+  // Get employees list
   useEffect(() => {
-    const fetchReportData = async () => {
-      setLoading(true);
+    const fetchEmployees = async () => {
       try {
-        // Fetch overview stats
-        const overviewResult = await reportService.getOverviewStats();
-        if (overviewResult.success) {
-          setReportData(overviewResult.data);
-        } else {
-          console.error('Error fetching overview stats:', overviewResult.error);
-        }
-        
-        // Fetch performance trend
-        const trendResult = await reportService.getPerformanceTrend();
-        if (trendResult.success) {
-          setPerformanceTrend(trendResult.data);
-        } else {
-          console.error('Error fetching performance trend:', trendResult.error);
-        }
+        const employeesResponse = await timeTrackingService.getAllEmployees();
+        const employees = employeesResponse.success ? employeesResponse.data : [];
+        setReportData(prev => ({ ...prev, employees }));
       } catch (error) {
-        console.error('Error fetching report data:', error);
-      } finally {
-        setLoading(false);
+        console.error('Error fetching employees:', error);
       }
     };
-    
-    fetchReportData();
+    fetchEmployees();
   }, []);
 
-  const dateRanges = [
-    { value: 'last-week', label: t('reports.lastWeek') },
-    { value: 'last-month', label: t('reports.lastMonth') },
-    { value: 'last-quarter', label: t('reports.lastQuarter') },
-    { value: 'last-year', label: t('reports.lastYear') },
-    { value: 'custom', label: t('reports.customRange') }
-  ];
-
-  const departments = [
-    t('departments.all'), 
-    t('departments.legal_compliance'),
-    t('departments.technology'),
-    t('departments.internal_affairs'),
-    t('departments.human_resources'),
-    t('departments.office_unit'),
-    t('departments.board_of_directors'),
-    t('departments.finance'),
-    t('departments.engineering'), 
-    t('departments.sales'), 
-    t('departments.marketing'), 
-    t('departments.design'),
-    t('departments.part_time_employee')
-  ];
-
-  const handleMetricClick = async (metricType) => {
-    let data = [];
-    let title = '';
-    
-    try {
-      const { supabase } = await import('../config/supabaseClient');
-      
-      switch(metricType) {
-        case 'employees':
-          const { data: allEmployees, error: empError } = await supabase
-            .from('employees')
-            .select('name, department, position, status');
-          
-          if (empError) throw empError;
-          
-          data = allEmployees.map(emp => ({
-            employeeName: emp.name,
-            department: emp.department,
-            position: emp.position,
-            status: emp.status
-          }));
-          title = t('reports.totalEmployees');
-          break;
-          
-        case 'newHires':
-          const threeMonthsAgo = new Date();
-          threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-          
-          const { data: newHireData, error: hireError } = await supabase
-            .from('employees')
-            .select('name, department, position, start_date')
-            .gte('start_date', threeMonthsAgo.toISOString().split('T')[0]);
-          
-          if (hireError) throw hireError;
-          
-          data = newHireData.map(emp => ({
-            employeeName: emp.name,
-            department: emp.department,
-            position: emp.position,
-            startDate: emp.start_date
-          }));
-          title = t('reports.newHires');
-          break;
-          
-        default:
-          return;
-      }
-      
-      setModalConfig({ type: metricType, data, title });
-      setModalOpen(true);
-    } catch (error) {
-      console.error('Error fetching metric data:', error);
-      alert(t('reports.errorFetchingData', 'Error fetching data'));
-    }
-  };
-
-  // Get date range for filters
-  const getDateRangeFilters = () => {
+  // Update date filters when range changes
+  useEffect(() => {
     const today = new Date();
-    let dateFrom, dateTo = today.toISOString().split('T')[0];
-    
-    switch(dateRange) {
-      case 'last-week':
-        dateFrom = new Date(today.setDate(today.getDate() - 7)).toISOString().split('T')[0];
+    let startDate, endDate = today.toISOString().split('T')[0];
+
+    switch (dateRange) {
+      case 'today':
+        startDate = today.toISOString().split('T')[0];
+        break;
+      case 'this-week':
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay());
+        startDate = startOfWeek.toISOString().split('T')[0];
+        break;
+      case 'this-month':
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
         break;
       case 'last-month':
-        dateFrom = new Date(today.setMonth(today.getMonth() - 1)).toISOString().split('T')[0];
+        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        startDate = lastMonth.toISOString().split('T')[0];
+        endDate = new Date(today.getFullYear(), today.getMonth(), 0).toISOString().split('T')[0];
         break;
-      case 'last-quarter':
-        dateFrom = new Date(today.setMonth(today.getMonth() - 3)).toISOString().split('T')[0];
+      case 'this-quarter':
+        const quarter = Math.floor(today.getMonth() / 3);
+        startDate = new Date(today.getFullYear(), quarter * 3, 1).toISOString().split('T')[0];
         break;
-      case 'last-year':
-        dateFrom = new Date(today.setFullYear(today.getFullYear() - 1)).toISOString().split('T')[0];
+      case 'this-year':
+        startDate = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
         break;
       default:
-        dateFrom = null;
-    }
-    
-    return { dateFrom, dateTo };
-  };
-
-  // Handle report generation
-  const handleGenerateReport = async () => {
-    setGenerating(true);
-    const { dateFrom, dateTo } = getDateRangeFilters();
-    const filters = {
-      department,
-      dateFrom,
-      dateTo,
-      month: currentMonth,
-      year: currentYear
-    };
-
-    try {
-      let result;
-      
-      switch(reportType) {
-        case 'performance':
-          result = await reportService.generatePerformanceReport(filters);
-          break;
-        case 'salary':
-          result = await reportService.generateSalaryReport(filters);
-          break;
-        case 'attendance':
-          result = await reportService.generateAttendanceReport(filters);
-          break;
-        case 'recruitment':
-          result = await reportService.generateRecruitmentReport(filters);
-          break;
-        case 'department':
-          result = await reportService.generateDepartmentReport(filters);
-          break;
-        default:
-          result = await reportService.generatePerformanceReport(filters);
-      }
-
-      if (result.success) {
-        setGeneratedReport(result.data);
-        alert(t('reports.reportGenerated', 'Report generated successfully!'));
-      } else {
-        alert(t('reports.reportError', 'Error generating report: ') + result.error);
-      }
-    } catch (error) {
-      console.error('Error generating report:', error);
-      alert(t('reports.reportError', 'Error generating report'));
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  // Handle pre-built report generation
-  const handlePrebuiltReport = async (reportName) => {
-    setGenerating(true);
-    const { dateFrom, dateTo } = getDateRangeFilters();
-    
-    try {
-      let result;
-      
-      switch(reportName) {
-        case 'performance':
-          result = await reportService.generatePerformanceReport({ dateFrom, dateTo });
-          break;
-        case 'salary':
-          result = await reportService.generateSalaryReport({ dateFrom, dateTo });
-          break;
-        case 'attendance':
-          result = await reportService.generateAttendanceReport({
-            month: currentMonth,
-            year: currentYear
-          });
-          break;
-        case 'recruitment':
-          result = await reportService.generateRecruitmentReport({ dateFrom, dateTo });
-          break;
-        case 'turnover':
-          result = await reportService.generateTurnoverReport({ dateFrom, dateTo });
-          break;
-        case 'department':
-          result = await reportService.generateDepartmentReport({ dateFrom, dateTo });
-          break;
-        default:
-          return;
-      }
-
-      if (result.success) {
-        setGeneratedReport(result.data);
-        alert(t('reports.reportGenerated', 'Report generated successfully!'));
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  // Handle export to CSV
-  const handleExportCSV = (data, filename) => {
-    try {
-      if (!data || (Array.isArray(data) && data.length === 0)) {
-        alert(t('reports.noDataToExport', 'No data to export'));
+        // Custom range - don't change filters
         return;
+    }
+
+    if (dateRange !== 'custom') {
+      setFilters({ startDate, endDate });
+    }
+  }, [dateRange]);
+
+  // Fetch data when filters change
+  useEffect(() => {
+    // Only fetch if employees are loaded
+    if (reportData.employees.length > 0) {
+      fetchReportData();
+    }
+  }, [filters, selectedEmployee, activeTab, reportData.employees]);
+
+  const fetchReportData = async () => {
+    setLoading(true);
+    try {
+      const { startDate, endDate } = filters;
+      const employeeId = selectedEmployee === 'all' ? null : parseInt(selectedEmployee);
+
+      if (activeTab === 'time-entries') {
+        // Use direct Supabase query with proper join instead of the view
+        const { data: timeEntries, error } = await supabase
+          .from('time_entries')
+          .select(`
+            *,
+            employee:employees!time_entries_employee_id_fkey(id, name, department, position)
+          `)
+          .gte('date', startDate)
+          .lte('date', endDate)
+          .order('date', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching time entries:', error);
+          setReportData(prev => ({ ...prev, timeEntries: [] }));
+        } else {
+          // Filter by employee if selected
+          const filteredTimeEntries = employeeId ? 
+            timeEntries.filter(entry => entry.employee_id === employeeId.toString()) : 
+            timeEntries;
+          
+          setReportData(prev => ({ ...prev, timeEntries: filteredTimeEntries }));
+        }
+      } else if (activeTab === 'tasks') {
+        const tasksResponse = await getAllTasks({ 
+          startDate, 
+          endDate,
+          employeeId: employeeId 
+        });
+        const tasks = tasksResponse.success ? tasksResponse.data : [];
+        setReportData(prev => ({ ...prev, tasks }));
+      } else if (activeTab === 'goals') {
+        const goalsResponse = await performanceService.getAllPerformanceGoals({ 
+          employeeId: employeeId 
+        });
+        const goals = goalsResponse.success ? goalsResponse.data : [];
+        setReportData(prev => ({ ...prev, goals }));
       }
-      
-      console.log('Attempting to export CSV with data:', data.length, 'records');
-      console.log('Sample record:', data[0]);
-      
-      reportService.exportToCSV(data, filename);
-      console.log('CSV export completed successfully');
     } catch (error) {
-      console.error('Error in handleExportCSV:', error);
+      console.error('Error fetching report data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get current data based on active tab
+  const currentData = useMemo(() => {
+    switch (activeTab) {
+      case 'time-entries':
+        return reportData.timeEntries;
+      case 'tasks':
+        return reportData.tasks;
+      case 'goals':
+        return reportData.goals;
+      default:
+        return [];
+    }
+  }, [activeTab, reportData]);
+
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const data = currentData;
+    const totalRecords = data.length;
+
+    if (activeTab === 'time-entries') {
+      const totalHours = data.reduce((sum, entry) => sum + (entry.hours || 0), 0);
+      const approved = data.filter(entry => entry.status === 'approved').length;
+      const pending = data.filter(entry => entry.status === 'pending').length;
+      
+      return {
+        totalRecords,
+        totalHours: totalHours.toFixed(1),
+        approved,
+        pending
+      };
+    } else if (activeTab === 'tasks') {
+      const completed = data.filter(task => task.status === 'completed').length;
+      const inProgress = data.filter(task => task.status === 'in-progress').length;
+      const completionRate = totalRecords > 0 ? Math.round((completed / totalRecords) * 100) : 0;
+      
+      return {
+        totalRecords,
+        completed,
+        inProgress,
+        completionRate
+      };
+    } else if (activeTab === 'goals') {
+      const achieved = data.filter(goal => goal.status === 'achieved').length;
+      const inProgress = data.filter(goal => goal.status === 'in-progress').length;
+      const averageProgress = totalRecords > 0 ? 
+        Math.round(data.reduce((sum, goal) => sum + (goal.progress || 0), 0) / totalRecords) : 0;
+      
+      return {
+        totalRecords,
+        achieved,
+        inProgress,
+        averageProgress
+      };
+    }
+
+    return { totalRecords };
+  }, [activeTab, currentData]);
+
+  // CSV Export function
+  const exportToCSV = (data, filename, headers) => {
+    try {
+      const csvContent = [
+        headers.join(','),
+        ...data.map(row => 
+          headers.map(header => {
+            const value = row[header] || '';
+            // Escape quotes and wrap in quotes if contains comma or quotes
+            return typeof value === 'string' && (value.includes(',') || value.includes('"')) 
+              ? `"${value.replace(/"/g, '""')}"` 
+              : value;
+          }).join(',')
+        )
+      ].join('\n');
+
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
       alert(t('reports.errorExporting', 'Error exporting data') + ': ' + error.message);
     }
   };
 
-  // Handle export all data
-  const handleExportAll = async () => {
+  // Export time entries
+  const exportTimeEntries = () => {
+    setExporting(true);
     try {
-      const { supabase } = await import('../config/supabaseClient');
+      const exportData = reportData.timeEntries.map(entry => ({
+        [t('employees.name', 'Employee Name')]: entry.employee?.name || 'Unknown',
+        [t('employees.department', 'Department')]: translateDepartment(entry.employee?.department) || '',
+        [t('employees.position', 'Position')]: translatePosition(entry.employee?.position) || '',
+        [t('timeTracking.date', 'Date')]: entry.date,
+        [t('timeTracking.clockIn', 'Clock In')]: entry.clock_in || '',
+        [t('timeTracking.clockOut', 'Clock Out')]: entry.clock_out || '',
+        [t('timeTracking.hours', 'Hours')]: entry.hours || 0,
+        [t('timeTracking.hourType', 'Hour Type')]: entry.hour_type || '',
+        [t('timeTracking.status', 'Status')]: entry.status || '',
+        [t('timeTracking.notes', 'Notes')]: entry.notes || '',
+        [t('general.createdAt', 'Created At')]: new Date(entry.created_at).toLocaleString()
+      }));
+
+      const employeeName = selectedEmployee !== 'all' ? 
+        `_${reportData.employees.find(emp => emp.id === parseInt(selectedEmployee))?.name?.replace(/\s+/g, '_')}` : 
+        '';
       
-      // First, let's check what columns are available
-      const { data: allEmployees, error } = await supabase
-        .from('employees')
-        .select('*');
+      const filename = `time_entries${employeeName}_${filters.startDate}_to_${filters.endDate}.csv`;
+      const headers = Object.keys(exportData[0] || {});
       
-      if (error) {
-        console.error('Database error:', error);
-        throw error;
-      }
-      
-      if (!allEmployees || allEmployees.length === 0) {
-        alert(t('reports.noDataToExport', 'No employee data found to export'));
-        return;
-      }
-      
-      // Map the data with available fields only and use translated headers
-      const exportData = allEmployees.map(emp => {
-        const mappedData = {};
-        
-        // Only include fields that exist and have values, using translated headers
-        if (emp.name) mappedData[t('employees.name', 'Name')] = emp.name;
-        if (emp.department) {
-          mappedData[t('employees.department', 'Department')] = t(`departments.${emp.department}`, emp.department);
-        }
-        if (emp.position) {
-          mappedData[t('employees.position', 'Position')] = t(`employeePosition.${emp.position}`, emp.position);
-        }
-        if (emp.email) mappedData[t('employees.email', 'Email')] = emp.email;
-        if (emp.phone) mappedData[t('employees.phone', 'Phone')] = emp.phone;
-        if (emp.status) {
-          // Translate status values
-          let statusKey = '';
-          switch(emp.status.toLowerCase()) {
-            case 'active':
-              statusKey = 'employees.active';
-              break;
-            case 'inactive':
-              statusKey = 'employees.inactive';
-              break;
-            case 'on leave':
-            case 'onleave':
-              statusKey = 'employees.onLeave';
-              break;
-            default:
-              statusKey = '';
-          }
-          mappedData[t('employees.status', 'Status')] = statusKey ? t(statusKey, emp.status) : emp.status;
-        }
-        if (emp.salary !== null && emp.salary !== undefined) mappedData[t('employees.salary', 'Salary')] = emp.salary;
-        if (emp.start_date) mappedData[t('employees.startDate', 'Start Date')] = emp.start_date;
-        if (emp.created_at) mappedData[t('general.createdAt', 'Created At')] = emp.created_at;
-        if (emp.id) mappedData[t('general.id', 'ID')] = emp.id;
-        
-        return mappedData;
-      });
-      
-      console.log('Export data prepared:', exportData.length, 'records');
-      handleExportCSV(exportData, 'all_employees');
+      exportToCSV(exportData, filename, headers);
     } catch (error) {
-      console.error('Error exporting data:', error);
-      console.error('Error details:', error.message, error.code, error.details);
-      alert(t('reports.errorExporting', 'Error exporting data') + ': ' + error.message);
+      console.error('Error exporting time entries:', error);
+      alert(t('reports.errorExporting', 'Error exporting data'));
+    } finally {
+      setExporting(false);
     }
   };
 
-  const StatCard = ({
-      title,
-      value,
-      subtitle,
-      icon: Icon,
-      color = isDarkMode ? 'text-white' : 'text-gray-800',
-      bg = isDarkMode ? 'bg-gray-700' : 'bg-gray-100',
-      trend,
-      onClick
-    }) => (
-      <div 
-        className={`rounded-lg shadow-sm border p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer group scale-in 
-                    ${isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'}`}
-        onClick={onClick}
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <p 
-              className={`text-sm font-medium transition-colors duration-200 
-                          ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}
-            >
-              {title}
-            </p>
+  // Export tasks
+  const exportTasks = () => {
+    setExporting(true);
+    try {
+      const exportData = reportData.tasks.map(task => ({
+        [t('employees.name', 'Employee Name')]: task.employee?.name || 'Unknown',
+        [t('employees.department', 'Department')]: translateDepartment(task.employee?.department) || '',
+        [t('workload.taskTitle', 'Task Title')]: task.title || '',
+        [t('workload.description', 'Description')]: task.description || '',
+        [t('workload.priority', 'Priority')]: task.priority || '',
+        [t('workload.status', 'Status')]: task.status || '',
+        [t('workload.dueDate', 'Due Date')]: task.due_date || '',
+        [t('workload.estimatedHours', 'Estimated Hours')]: task.estimated_hours || '',
+        [t('workload.actualHours', 'Actual Hours')]: task.actual_hours || '',
+        [t('general.createdAt', 'Created At')]: new Date(task.created_at).toLocaleString(),
+        [t('general.updatedAt', 'Updated At')]: new Date(task.updated_at).toLocaleString()
+      }));
 
-            <p 
-              className={`text-2xl font-bold mt-1 transition-all duration-200 group-hover:scale-105 ${color}`}
-            >
-              {value}
-            </p>
+      const employeeName = selectedEmployee !== 'all' ? 
+        `_${reportData.employees.find(emp => emp.id === parseInt(selectedEmployee))?.name?.replace(/\s+/g, '_')}` : 
+        '';
+      
+      const filename = `tasks${employeeName}_${filters.startDate}_to_${filters.endDate}.csv`;
+      const headers = Object.keys(exportData[0] || {});
+      
+      exportToCSV(exportData, filename, headers);
+    } catch (error) {
+      console.error('Error exporting tasks:', error);
+      alert(t('reports.errorExporting', 'Error exporting data'));
+    } finally {
+      setExporting(false);
+    }
+  };
 
-            {subtitle && (
-              <p 
-                className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}
-              >
-                {subtitle}
-              </p>
-            )}
+  // Export goals
+  const exportGoals = () => {
+    setExporting(true);
+    try {
+      const exportData = reportData.goals.map(goal => ({
+        [t('employees.name', 'Employee Name')]: goal.employee?.name || 'Unknown',
+        [t('employees.department', 'Department')]: translateDepartment(goal.employee?.department) || '',
+        [t('performance.goalTitle', 'Goal Title')]: goal.title || '',
+        [t('performance.description', 'Description')]: goal.description || '',
+        [t('performance.category', 'Category')]: goal.category || '',
+        [t('performance.targetDate', 'Target Date')]: goal.target_date || '',
+        [t('performance.status', 'Status')]: goal.status || '',
+        [t('performance.progress', 'Progress')]: goal.progress || 0,
+        [t('performance.notes', 'Notes')]: goal.notes || '',
+        [t('general.createdAt', 'Created At')]: new Date(goal.created_at).toLocaleString(),
+        [t('general.updatedAt', 'Updated At')]: new Date(goal.updated_at).toLocaleString()
+      }));
+
+      const employeeName = selectedEmployee !== 'all' ? 
+        `_${reportData.employees.find(emp => emp.id === parseInt(selectedEmployee))?.name?.replace(/\s+/g, '_')}` : 
+        '';
+      
+      const filename = `personal_goals${employeeName}_${filters.startDate}_to_${filters.endDate}.csv`;
+      const headers = Object.keys(exportData[0] || {});
+      
+      exportToCSV(exportData, filename, headers);
+    } catch (error) {
+      console.error('Error exporting goals:', error);
+      alert(t('reports.errorExporting', 'Error exporting data'));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6 p-6">
+      {/* Loading overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className={`${bg.secondary} rounded-lg p-6 flex items-center space-x-3`}>
+            <Loader className="w-6 h-6 animate-spin text-blue-600" />
+            <span className={text.primary}>{t('common.loading', 'Loading reports...')}</span>
           </div>
-
-          <div 
-            className={`p-3 rounded-full transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6 
-                        ${bg} flex items-center justify-center`}
-          >
-            <Icon className={`h-6 w-6 ${color}`} />
-          </div>
-        </div>
-
-        {trend && (
-          <div className="mt-4 flex items-center">
-            <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-            <span className="text-sm text-green-600">
-              {trend}% {t('reports.fromLastPeriod')}
-            </span>
-          </div>
-        )}
-      </div>
-    );
-
-  const ChartContainer = ({ title, children, actions }) => (
-    <div 
-      className="rounded-lg shadow-sm border p-6"
-      style={{
-        backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-        color: isDarkMode ? '#ffffff' : '#111827',
-        borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-      }}
-    >
-      <div className="flex items-center justify-between mb-6">
-        <h3 
-          className="text-lg font-semibold"
-          style={{
-            backgroundColor: 'transparent',
-            color: isDarkMode ? '#ffffff' : '#111827',
-            borderColor: 'transparent'
-          }}
-        >
-          {title}
-        </h3>
-        {actions && (
-          <div className="flex space-x-2">
-            {actions}
-          </div>
-        )}
-      </div>
-      {children}
-    </div>
-  );
-
-  const DepartmentChart = () => (
-    <ChartContainer 
-      title={t('reports.departmentOverview')}
-      actions={
-        <button 
-          className="p-2 hover:text-gray-600"
-          style={{
-            backgroundColor: 'transparent',
-            color: isDarkMode ? '#9ca3af' : '#9ca3af',
-            borderColor: 'transparent'
-          }}
-        >
-          <Download className="h-4 w-4" />
-        </button>
-      }
-    >
-      <div className="space-y-4">
-        {reportData.departmentStats.map((dept, index) => (
-          <div key={dept.name} className="flex items-center justify-between gap-15">
-            <div className="flex items-center space-x-3">
-              <div className={`w-4 h-4 rounded ${dept.color}`}></div>
-              <span 
-                className="font-medium"
-                style={{
-                  backgroundColor: 'transparent',
-                  color: isDarkMode ? '#ffffff' : '#111827',
-                  borderColor: 'transparent'
-                }}
-              >
-                {t(`departments.${dept.name.toLowerCase().replace(/\s+/g, '_')}`, dept.name)}
-              </span>
-            </div>
-            <div 
-              className="flex items-center space-x-6 text-sm"
-              style={{
-                backgroundColor: 'transparent',
-                color: isDarkMode ? '#d1d5db' : '#4b5563',
-                borderColor: 'transparent'
-              }}
-            >
-              <span>{dept.employees} {t('reports.employees')}</span>
-              <span>${dept.avgSalary.toLocaleString()}</span>
-              <span>{dept.performance}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </ChartContainer>
-  );
-
-  const AttendanceChart = () => (
-    <ChartContainer title={t('reports.attendanceOverview')}>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <span 
-            style={{
-              backgroundColor: 'transparent',
-              color: isDarkMode ? '#d1d5db' : '#4b5563',
-              borderColor: 'transparent'
-            }}
-          >
-            {t('reports.present')}
-          </span>
-          <div className="flex items-center space-x-2">
-            <div 
-              className="w-32 rounded-full h-2"
-              style={{
-                backgroundColor: isDarkMode ? '#4b5563' : '#e5e7eb'
-              }}
-            >
-              <div className="bg-emerald-600 h-2 rounded-full" style={{ width: `${reportData.attendance.present}%` }}></div>
-            </div>
-            <span 
-              className="text-sm font-medium"
-              style={{
-                backgroundColor: 'transparent',
-                color: isDarkMode ? '#ffffff' : '#111827',
-                borderColor: 'transparent'
-              }}
-            >
-              {reportData.attendance.present}% ({reportData.attendance.presentCount})
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <span 
-            style={{
-              backgroundColor: 'transparent',
-              color: isDarkMode ? '#d1d5db' : '#4b5563',
-              borderColor: 'transparent'
-            }}
-          >
-            {t('reports.onLeave')}
-          </span>
-          <div className="flex items-center space-x-2">
-            <div 
-              className="w-32 rounded-full h-2"
-              style={{
-                backgroundColor: isDarkMode ? '#4b5563' : '#e5e7eb'
-              }}
-            >
-              <div className="bg-amber-600 h-2 rounded-full" style={{ width: `${reportData.attendance.leave}%` }}></div>
-            </div>
-            <span 
-              className="text-sm font-medium"
-              style={{
-                backgroundColor: 'transparent',
-                color: isDarkMode ? '#ffffff' : '#111827',
-                borderColor: 'transparent'
-              }}
-            >
-              {reportData.attendance.leave}% ({reportData.attendance.leaveCount})
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <span 
-            style={{
-              backgroundColor: 'transparent',
-              color: isDarkMode ? '#d1d5db' : '#4b5563',
-              borderColor: 'transparent'
-            }}
-          >
-            {t('reports.absent')}
-          </span>
-          <div className="flex items-center space-x-2">
-            <div 
-              className="w-32 rounded-full h-2"
-              style={{
-                backgroundColor: isDarkMode ? '#4b5563' : '#e5e7eb'
-              }}
-            >
-              <div className="bg-slate-600 h-2 rounded-full" style={{ width: `${reportData.attendance.absent}%` }}></div>
-            </div>
-            <span 
-              className="text-sm font-medium"
-              style={{
-                backgroundColor: 'transparent',
-                color: isDarkMode ? '#ffffff' : '#111827',
-                borderColor: 'transparent'
-              }}
-            >
-              {reportData.attendance.absent}% ({reportData.attendance.absentCount})
-            </span>
-          </div>
-        </div>
-      </div>
-    </ChartContainer>
-  );
-
-  const RecruitmentChart = () => (
-    <ChartContainer title={t('reports.recruitmentFunnel')}>
-      <div className="space-y-4">
-        {[
-          { label: t('reports.totalApplications'), value: reportData.recruitment.totalApplications, color: 'bg-sky-700' },
-          { label: t('reports.interviewed'), value: reportData.recruitment.interviewed, color: 'bg-amber-600' },
-          { label: t('reports.hired'), value: reportData.recruitment.hired, color: 'bg-emerald-700' },
-          { label: t('reports.rejected'), value: reportData.recruitment.rejected, color: 'bg-rose-700' }
-        ].map((item, index) => (
-          <div key={item.label} className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className={`w-4 h-4 rounded ${item.color}`}></div>
-              <span 
-                style={{
-                  backgroundColor: 'transparent',
-                  color: isDarkMode ? '#d1d5db' : '#374151',
-                  borderColor: 'transparent'
-                }}
-              >
-                {item.label}
-              </span>
-            </div>
-            <span 
-              className="font-semibold"
-              style={{
-                backgroundColor: 'transparent',
-                color: isDarkMode ? '#ffffff' : '#111827',
-                borderColor: 'transparent'
-              }}
-            >
-              {item.value}
-            </span>
-          </div>
-        ))}
-      </div>
-    </ChartContainer>
-  );
-
-  const PerformanceTrend = () => (
-    <ChartContainer title={t('reports.performanceTrend')}>
-      <div className="space-y-4">
-        {performanceTrend.map((item, index) => (
-          <div key={item.month} className="flex items-center justify-between">
-            <span 
-              style={{
-                backgroundColor: 'transparent',
-                color: isDarkMode ? '#d1d5db' : '#4b5563',
-                borderColor: 'transparent'
-              }}
-            >
-              {item.month}
-            </span>
-            <div className="flex items-center space-x-2">
-              <div 
-                className="w-24 rounded-full h-2"
-                style={{
-                  backgroundColor: isDarkMode ? '#4b5563' : '#e5e7eb'
-                }}
-              >
-                <div 
-                  className={`${text.primary} h-2 rounded-full`}
-                  style={{ 
-                    width: `${(item.rating / 5) * 100}%`,
-                    backgroundColor: isDarkMode ? '#3b82f6' : '#2563eb'
-                  }}
-                ></div>
-              </div>
-              <span 
-                className="text-sm font-medium"
-                style={{
-                  backgroundColor: 'transparent',
-                  color: isDarkMode ? '#ffffff' : '#111827',
-                  borderColor: 'transparent'
-                }}
-              >
-                {item.rating}/5.0
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </ChartContainer>
-  );
-
-  const OverviewTab = () => (
-    <div className="space-y-6 fade-in">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title={t('reports.totalEmployees')}
-          value={reportData.overview.totalEmployees}
-          icon={SquareSigma}
-          onClick={() => handleMetricClick('employees')}
-        />
-        <StatCard
-          title={t('reports.newHires')}
-          value={reportData.overview.newHires}
-          subtitle={t('reports.thisQuarter')}
-          icon={UserPlus}
-          onClick={() => handleMetricClick('newHires')}
-        />
-        <StatCard
-          title={t('reports.avgSalary')}
-          value={`$${reportData.overview.avgSalary.toLocaleString()}`}
-          icon={PiggyBank}
-        />
-        <StatCard
-          title={t('reports.satisfaction')}
-          value={`${reportData.overview.satisfaction}/5.0`}
-          icon={HeartPulse}
-        />
-      </div>
-
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <DepartmentChart />
-        <AttendanceChart />
-        <RecruitmentChart />
-        <PerformanceTrend />
-      </div>
-    </div>
-  );
-
-  const DetailedReportsTab = () => (
-    <div className="space-y-6">
-      <div 
-        className="rounded-lg shadow-sm border p-6"
-        style={{
-          backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-          color: isDarkMode ? '#ffffff' : '#111827',
-          borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-        }}
-      >
-        <h3 
-          className="text-lg font-semibold mb-4"
-          style={{
-            backgroundColor: 'transparent',
-            color: isDarkMode ? '#ffffff' : '#111827',
-            borderColor: 'transparent'
-          }}
-        >
-          {t('reports.generateCustomReport')}
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div>
-            <label 
-              className="block text-sm font-medium mb-2"
-              style={{
-                backgroundColor: 'transparent',
-                color: isDarkMode ? '#d1d5db' : '#374151',
-                borderColor: 'transparent'
-              }}
-            >
-              {t('reports.reportType')}
-            </label>
-            <select 
-              value={reportType}
-              onChange={(e) => setReportType(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
-              style={{
-                backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
-                color: isDarkMode ? '#ffffff' : '#111827',
-                borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
-              }}
-            >
-              <option value="performance">{t('reports.employeePerformance')}</option>
-              <option value="salary">{t('reports.salaryAnalysis')}</option>
-              <option value="attendance">{t('reports.attendanceReport')}</option>
-              <option value="recruitment">{t('reports.recruitmentMetrics')}</option>
-              <option value="department">{t('reports.departmentComparison')}</option>
-            </select>
-          </div>
-          
-          <div>
-            <label 
-              className="block text-sm font-medium mb-2"
-              style={{
-                backgroundColor: 'transparent',
-                color: isDarkMode ? '#d1d5db' : '#374151',
-                borderColor: 'transparent'
-              }}
-            >
-              {t('reports.dateRange')}
-            </label>
-            <select 
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              style={{
-                backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
-                color: isDarkMode ? '#ffffff' : '#111827',
-                borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
-              }}
-            >
-              {dateRanges.map(range => (
-                <option key={range.value} value={range.value}>
-                  {range.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label 
-              className="block text-sm font-medium mb-2"
-              style={{
-                backgroundColor: 'transparent',
-                color: isDarkMode ? '#d1d5db' : '#374151',
-                borderColor: 'transparent'
-              }}
-            >
-              {t('reports.department')}
-            </label>
-            <select 
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              style={{
-                backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
-                color: isDarkMode ? '#ffffff' : '#111827',
-                borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
-              }}
-            >
-              {departments.map(dept => (
-                <option key={dept.toLowerCase()} value={dept.toLowerCase()}>
-                  {dept}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="flex space-x-4">
-          <button 
-            onClick={handleGenerateReport}
-            disabled={generating}
-            className={`px-6 py-2 text-white rounded-lg flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all ${text.primary}`}
-            style={{
-              backgroundColor: isDarkMode ? '#3b82f6' : '#2563eb',
-              color: '#ffffff',
-              borderColor: isDarkMode ? '#3b82f6' : '#2563eb'
-            }}
-          >
-            {generating ? <Loader className="h-4 w-4 animate-spin" /> : <BarChart3 className="h-4 w-4" />}
-            <span>{generating ? t('common.generating', 'Generating...') : t('reports.generateReport')}</span>
-          </button>
-          <button 
-            onClick={() => generatedReport && handleExportCSV(
-              Array.isArray(generatedReport) ? generatedReport : (generatedReport.employees || generatedReport.reviews || generatedReport.summaries || []),
-              `${reportType}_report`
-            )}
-            disabled={!generatedReport}
-            className="px-6 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all"
-            style={{
-              backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
-              color: isDarkMode ? '#d1d5db' : '#374151',
-              borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
-            }}
-          >
-            <Download className="h-4 w-4" />
-            <span>{t('reports.exportToCSV', 'Export to CSV')}</span>
-          </button>
-          <button 
-            onClick={handleExportAll}
-            className="px-6 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2 cursor-pointer transition-all"
-            style={{
-              backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
-              color: isDarkMode ? '#d1d5db' : '#374151',
-              borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
-            }}
-          >
-            <Download className="h-4 w-4" />
-            <span>{t('reports.exportAllData', 'Export All Data')}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Generated Report Display */}
-      {generatedReport && (
-        <div 
-          className="rounded-lg shadow-sm border p-6"
-          style={{
-            backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-            color: isDarkMode ? '#ffffff' : '#111827',
-            borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-          }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h3 
-              className="text-lg font-semibold"
-              style={{
-                backgroundColor: 'transparent',
-                color: isDarkMode ? '#ffffff' : '#111827',
-                borderColor: 'transparent'
-              }}
-            >
-              {t('reports.reportResults', 'Report Results')}
-            </h3>
-            <button
-              onClick={() => setGeneratedReport(null)}
-              className="text-sm text-gray-500 hover:text-gray-700"
-            >
-              {t('common.close', 'Close')}
-            </button>
-          </div>
-
-          {/* Performance Report */}
-          {generatedReport.reviews && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="p-4 border rounded-lg" style={{ backgroundColor: isDarkMode ? '#4b5563' : '#f9fafb', borderColor: isDarkMode ? '#6b7280' : '#e5e7eb' }}>
-                  <p className="text-sm text-gray-500">{t('reports.totalReviews', 'Total Reviews')}</p>
-                  <p className="text-2xl font-bold">{generatedReport.metrics?.totalReviews || 0}</p>
-                </div>
-                <div className="p-4 border rounded-lg" style={{ backgroundColor: isDarkMode ? '#4b5563' : '#f9fafb', borderColor: isDarkMode ? '#6b7280' : '#e5e7eb' }}>
-                  <p className="text-sm text-gray-500">{t('reports.averageRating', 'Average Rating')}</p>
-                  <p className="text-2xl font-bold">{generatedReport.metrics?.averageRating?.toFixed(1) || 0}</p>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b" style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}>
-                      <th className="text-left p-3">{t('reports.employee', 'Employee')}</th>
-                      <th className="text-left p-3">{t('reports.rating', 'Rating')}</th>
-                      <th className="text-left p-3">{t('reports.reviewDate', 'Review Date')}</th>
-                      <th className="text-left p-3">{t('reports.reviewer', 'Reviewer')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {generatedReport.reviews.map((review, idx) => (
-                      <tr key={idx} className="border-b" style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}>
-                        <td className="p-3">{review.employee?.name || 'N/A'}</td>
-                        <td className="p-3">{review.overall_rating || 'N/A'}</td>
-                        <td className="p-3">{new Date(review.review_date).toLocaleDateString()}</td>
-                        <td className="p-3">{review.reviewer?.name || 'N/A'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Salary Report */}
-          {generatedReport.employees && generatedReport.metrics?.averageSalary && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="p-4 border rounded-lg" style={{ backgroundColor: isDarkMode ? '#4b5563' : '#f9fafb', borderColor: isDarkMode ? '#6b7280' : '#e5e7eb' }}>
-                  <p className="text-sm text-gray-500">{t('reports.totalEmployees', 'Total Employees')}</p>
-                  <p className="text-2xl font-bold">{generatedReport.metrics?.totalEmployees || 0}</p>
-                </div>
-                <div className="p-4 border rounded-lg" style={{ backgroundColor: isDarkMode ? '#4b5563' : '#f9fafb', borderColor: isDarkMode ? '#6b7280' : '#e5e7eb' }}>
-                  <p className="text-sm text-gray-500">{t('reports.averageSalary', 'Average Salary')}</p>
-                  <p className="text-2xl font-bold">${generatedReport.metrics?.averageSalary?.toLocaleString() || 0}</p>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b" style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}>
-                      <th className="text-left p-3">{t('reports.employee', 'Employee')}</th>
-                      <th className="text-left p-3">{t('reports.position', 'Position')}</th>
-                      <th className="text-left p-3">{t('reports.department', 'Department')}</th>
-                      <th className="text-left p-3">{t('reports.salary', 'Salary')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {generatedReport.employees.map((emp, idx) => (
-                      <tr key={idx} className="border-b" style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}>
-                        <td className="p-3">{emp.name || 'N/A'}</td>
-                        <td className="p-3">{emp.position || 'N/A'}</td>
-                        <td className="p-3">{emp.department || 'N/A'}</td>
-                        <td className="p-3">${emp.salary?.toLocaleString() || 'N/A'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Department Report */}
-          {generatedReport.summaries && (
-            <div className="space-y-4">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b" style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}>
-                      <th className="text-left p-3">{t('reports.department', 'Department')}</th>
-                      <th className="text-left p-3">{t('reports.totalEmployees', 'Total Employees')}</th>
-                      <th className="text-left p-3">{t('reports.averageSalary', 'Average Salary')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {generatedReport.summaries.map((summary, idx) => (
-                      <tr key={idx} className="border-b" style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}>
-                        <td className="p-3">{summary.department || 'N/A'}</td>
-                        <td className="p-3">{summary.employee_count || 0}</td>
-                        <td className="p-3">${summary.avg_salary?.toLocaleString() || 'N/A'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
-      {/* Pre-built Reports */}
-      <div 
-        className="rounded-lg shadow-sm border p-6"
-        style={{
-          backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-          color: isDarkMode ? '#ffffff' : '#111827',
-          borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-        }}
-      >
-        <h3 
-          className="text-lg font-semibold mb-4"
-          style={{
-            backgroundColor: 'transparent',
-            color: isDarkMode ? '#ffffff' : '#111827',
-            borderColor: 'transparent'
-          }}
-        >
-          {t('reports.prebuiltReports')}
+      {/* Header */}
+      <div className={`${bg.secondary} rounded-lg border ${border.primary} p-6`}>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className={`text-2xl font-bold ${text.primary} mb-2`}>
+              {t('nav.reports', 'Reports & Analytics')}
+            </h1>
+            <p className={`${text.secondary}`}>
+              {t('reports.subtitle', 'Export comprehensive data for time entries, tasks, and personal goals')}
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Database className={`w-5 h-5 text-green-600`} />
+            <span className={`text-sm ${text.secondary}`}>
+              {t('reports.liveData', 'Live data from Supabase')}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Export Button - shows current tab data count */}
+      <div className={`${bg.secondary} rounded-lg border ${border.primary} p-4`}>
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+          <div>
+            <h2 className={`text-lg font-semibold ${text.primary} mb-1`}>
+              {activeTab === 'time-entries' && t('reports.timeEntries', 'Time Entries')}
+              {activeTab === 'tasks' && t('reports.tasks', 'Tasks')}
+              {activeTab === 'goals' && t('reports.goals', 'Personal Goals')}
+            </h2>
+            <p className={`text-sm ${text.secondary}`}>
+              {stats.totalRecords} {t('reports.recordsFound', 'records found')} 
+              {selectedEmployee !== 'all' && ` for ${reportData.employees.find(emp => emp.id === parseInt(selectedEmployee))?.name}`}
+              {` from ${filters.startDate} to ${filters.endDate}`}
+            </p>
+          </div>
+          
+          <button
+            onClick={() => {
+              if (activeTab === 'time-entries') exportTimeEntries();
+              else if (activeTab === 'tasks') exportTasks();
+              else if (activeTab === 'goals') exportGoals();
+            }}
+            disabled={exporting || currentData.length === 0}
+            className={`px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg flex items-center gap-2 transition-colors font-medium`}
+          >
+            {exporting ? (
+              <Loader className="w-5 h-5 animate-spin" />
+            ) : (
+              <Download className="w-5 h-5" />
+            )}
+            {t('reports.exportToCSV', 'Export to CSV')}
+          </button>
+        </div>
+      </div>
+
+      {/* Quick Filters */}
+      <div className={`${bg.secondary} rounded-lg border ${border.primary} p-6`}>
+        <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
+          {t('reports.quickFilters', 'Quick Filters')}
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            { name: t('reports.monthlyPerformanceReview'), description: t('reports.comprehensivePerformanceAnalysis'), icon: Award, type: 'performance' },
-            { name: t('reports.salaryBenchmarking'), description: t('reports.compareSalariesAcrossDepartments'), icon: DollarSign, type: 'salary' },
-            { name: t('reports.attendanceAnalytics'), description: t('reports.trackAttendancePatterns'), icon: Calendar, type: 'attendance' },
-            { name: t('reports.recruitmentPipeline'), description: t('reports.monitorHiringProcess'), icon: Users, type: 'recruitment' },
-            { name: t('reports.employeeTurnover'), description: t('reports.analyzeRetentionRates'), icon: TrendingUp, type: 'turnover' },
-            { name: t('reports.trainingEffectiveness'), description: t('reports.measureTrainingSuccess'), icon: Award, type: 'department' }
-          ].map((report, index) => (
-            <div 
-              key={index} 
-              className="border rounded-lg p-4 hover:shadow-md transition-shadow"
-              style={{
-                backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
-                color: isDarkMode ? '#ffffff' : '#111827',
-                borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
-              }}
+          {/* Employee Filter */}
+          <div>
+            <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+              <Users className="w-4 h-4 inline mr-1" />
+              {t('reports.employee', 'Employee')}
+            </label>
+            <select
+              value={selectedEmployee}
+              onChange={(e) => setSelectedEmployee(e.target.value)}
+              className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
             >
-              <div className="flex items-center space-x-3 mb-2">
-                <report.icon className={`h-5 w-5 ${text.primary}`} style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
-                <h4 
-                  className="font-medium"
-                  style={{
-                    backgroundColor: 'transparent',
-                    color: isDarkMode ? '#ffffff' : '#111827',
-                    borderColor: 'transparent'
-                  }}
-                >
-                  {report.name}
-                </h4>
+              <option value="all">{t('reports.allEmployees', 'All Employees')} ({reportData.employees.length})</option>
+              {reportData.employees.map(emp => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.name} - {translateDepartment(emp.department)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Date Range Preset */}
+          <div>
+            <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+              <Calendar className="w-4 h-4 inline mr-1" />
+              {t('reports.dateRange', 'Date Range')}
+            </label>
+            <select
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+            >
+              <option value="today">{t('reports.today', 'Today')}</option>
+              <option value="this-week">{t('reports.thisWeek', 'This Week')}</option>
+              <option value="this-month">{t('reports.thisMonth', 'This Month')}</option>
+              <option value="last-month">{t('reports.lastMonth', 'Last Month')}</option>
+              <option value="this-quarter">{t('reports.thisQuarter', 'This Quarter')}</option>
+              <option value="this-year">{t('reports.thisYear', 'This Year')}</option>
+              <option value="custom">{t('reports.customRange', 'Custom Range')}</option>
+            </select>
+          </div>
+
+          {/* Tab selector */}
+          <div>
+            <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+              <Filter className="w-4 h-4 inline mr-1" />
+              {t('reports.dataType', 'Data Type')}
+            </label>
+            <select
+              value={activeTab}
+              onChange={(e) => setActiveTab(e.target.value)}
+              className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+            >
+              <option value="time-entries">{t('reports.timeEntries', 'Time Entries')}</option>
+              <option value="tasks">{t('reports.tasks', 'Tasks')}</option>
+              <option value="goals">{t('reports.goals', 'Personal Goals')}</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Custom Date Range */}
+        {dateRange === 'custom' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div>
+              <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                {t('reports.startDate', 'Start Date')}
+              </label>
+              <input
+                type="date"
+                value={filters.startDate}
+                onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              />
+            </div>
+
+            <div>
+              <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                {t('reports.endDate', 'End Date')}
+              </label>
+              <input
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`text-sm ${text.secondary}`}>Total Records</p>
+              <p className={`text-3xl font-bold ${text.primary}`}>{stats.totalRecords}</p>
+            </div>
+            <BarChart3 className={`w-8 h-8 ${text.secondary}`} />
+          </div>
+        </div>
+
+        {activeTab === 'time-entries' && (
+          <>
+            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm ${text.secondary}`}>Total Hours</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.totalHours}h</p>
+                </div>
+                <Clock className={`w-8 h-8 ${text.secondary}`} />
               </div>
-              <p 
-                className="text-sm mb-3"
-                style={{
-                  backgroundColor: 'transparent',
-                  color: isDarkMode ? '#d1d5db' : '#4b5563',
-                  borderColor: 'transparent'
-                }}
-              >
-                {report.description}
-              </p>
-              <button 
-                onClick={() => handlePrebuiltReport(report.type)}
-                disabled={generating}
-                className="text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed rounded-lg cursor-pointer transition-all hover:bg-amber-600"
-                style={{ color: isDarkMode ? '#fff' : '#000' }}
-              >
-                {generating ? t('common.generating', 'Generating...') : t('reports.generate')}
-              </button>
             </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm ${text.secondary}`}>Approved</p>
+                  <p className={`text-3xl font-bold text-green-600`}>{stats.approved}</p>
+                </div>
+                <CheckCircle className={`w-8 h-8 text-green-600`} />
+              </div>
+            </div>
+            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm ${text.secondary}`}>Pending</p>
+                  <p className={`text-3xl font-bold text-yellow-600`}>{stats.pending}</p>
+                </div>
+                <PlayCircle className={`w-8 h-8 text-yellow-600`} />
+              </div>
+            </div>
+          </>
+        )}
 
-  return (
-    <div className="space-y-4 md:space-y-6 px-2 sm:px-0">
-      {/* Loading Overlay */}
-      {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div 
-            className="rounded-lg p-6 flex items-center space-x-3 scale-in"
-            style={{
-              backgroundColor: isDarkMode ? '#374151' : '#ffffff'
-            }}
-          >
-            <Loader className={`w-6 h-6 animate-spin ${text.primary}`} style={{ color: isDarkMode ? '#3b82f6' : '#2563eb' }} />
-            <span style={{ color: isDarkMode ? '#ffffff' : '#111827' }}>
-              {t('common.loading', 'Loading reports...')}
+        {activeTab === 'tasks' && (
+          <>
+            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm ${text.secondary}`}>Completed</p>
+                  <p className={`text-3xl font-bold text-green-600`}>{stats.completed}</p>
+                </div>
+                <CheckCircle className={`w-8 h-8 text-green-600`} />
+              </div>
+            </div>
+            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm ${text.secondary}`}>In Progress</p>
+                  <p className={`text-3xl font-bold text-blue-600`}>{stats.inProgress}</p>
+                </div>
+                <PlayCircle className={`w-8 h-8 text-blue-600`} />
+              </div>
+            </div>
+            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm ${text.secondary}`}>Completion Rate</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.completionRate}%</p>
+                </div>
+                <BarChart3 className={`w-8 h-8 ${text.secondary}`} />
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeTab === 'goals' && (
+          <>
+            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm ${text.secondary}`}>Achieved</p>
+                  <p className={`text-3xl font-bold text-green-600`}>{stats.achieved}</p>
+                </div>
+                <CheckCircle className={`w-8 h-8 text-green-600`} />
+              </div>
+            </div>
+            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm ${text.secondary}`}>In Progress</p>
+                  <p className={`text-3xl font-bold text-blue-600`}>{stats.inProgress}</p>
+                </div>
+                <PlayCircle className={`w-8 h-8 text-blue-600`} />
+              </div>
+            </div>
+            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm ${text.secondary}`}>Avg Progress</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.averageProgress}%</p>
+                </div>
+                <Target className={`w-8 h-8 ${text.secondary}`} />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Preview Table */}
+      <div className={`${bg.secondary} rounded-lg border ${border.primary}`}>
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <h3 className={`text-lg font-semibold ${text.primary}`}>
+            {t('reports.dataPreview', 'Data Preview')} 
+            <span className={`text-sm font-normal ${text.secondary} ml-2`}>
+              ({t('reports.showingFirst50', 'Showing first 50 records')})
             </span>
-          </div>
-        </div>
-      )}
-      
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 slide-in-left">
-        <h2 
-          className="font-bold"
-          style={{
-            backgroundColor: 'transparent',
-            color: isDarkMode ? '#ffffff' : '#111827',
-            borderColor: 'transparent',
-            fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'
-          }}
-        >
-          {t('reports.title')}
-        </h2>
-        <div className="flex space-x-4">
-          <button 
-            onClick={() => setShowFilters(!showFilters)}
-            className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center space-x-2 transition-all duration-200 hover:scale-105 hover:shadow-md cursor-pointer"
-            style={{
-              backgroundColor: showFilters ? '#2563eb' : (isDarkMode ? '#4b5563' : '#ffffff'),
-              color: showFilters ? '#ffffff' : (isDarkMode ? '#d1d5db' : '#374151'),
-              borderColor: showFilters ? '#2563eb' : (isDarkMode ? '#6b7280' : '#d1d5db')
-            }}
-          >
-            <Filter className="h-4 w-4" />
-            <span>{t('reports.filters')}</span>
-          </button>
-          <button 
-            onClick={handleExportAll}
-            className="px-4 py-2 text-white rounded-lg flex items-center space-x-2 transition-all duration-200 hover:scale-105 hover:shadow-lg cursor-pointer"
-            style={{
-              backgroundColor: isDarkMode ? '#3b82f6' : '#2563eb',
-              color: '#ffffff',
-              borderColor: '#2563eb'
-            }}
-          >
-            <Download className="h-4 w-4" />
-            <span>{t('reports.exportAll')}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Filters Panel */}
-      {showFilters && (
-        <div 
-          className="rounded-lg shadow-sm border p-6"
-          style={{
-            backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-            borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-          }}
-        >
-          <h3 
-            className="text-lg font-semibold mb-4"
-            style={{ color: isDarkMode ? '#ffffff' : '#111827' }}
-          >
-            {t('reports.filterBy', 'Filter By')}
           </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Date Range Filter */}
-            <div>
-              <label 
-                className="block text-sm font-medium mb-2"
-                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
-              >
-                {t('reports.dateRange', 'Date Range')}
-              </label>
-              <select
-                value={dateRange}
-                onChange={(e) => setDateRange(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                style={{
-                  backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
-                  color: isDarkMode ? '#ffffff' : '#111827',
-                  borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
-                }}
-              >
-                <option value="last-week">{t('reports.lastWeek', 'Last Week')}</option>
-                <option value="last-month">{t('reports.lastMonth', 'Last Month')}</option>
-                <option value="last-quarter">{t('reports.lastQuarter', 'Last Quarter')}</option>
-                <option value="last-year">{t('reports.lastYear', 'Last Year')}</option>
-              </select>
-            </div>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className={`${bg.primary}`}>
+              <tr>
+                {activeTab === 'time-entries' && (
+                  <>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('employees.employee', 'Employee')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('timeTracking.date', 'Date')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('timeTracking.hours', 'Hours')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('timeTracking.type', 'Type')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('timeTracking.status', 'Status')}</th>
+                  </>
+                )}
+                
+                {activeTab === 'tasks' && (
+                  <>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('employees.employee', 'Employee')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('workload.task', 'Task')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('workload.priority', 'Priority')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('workload.status', 'Status')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('workload.dueDate', 'Due Date')}</th>
+                  </>
+                )}
+                
+                {activeTab === 'goals' && (
+                  <>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('employees.employee', 'Employee')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('performance.goal', 'Goal')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('performance.category', 'Category')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('performance.status', 'Status')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('performance.progress', 'Progress')}</th>
+                  </>
+                )}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {currentData.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className={`px-6 py-12 text-center ${text.secondary}`}>
+                    <div className="flex flex-col items-center">
+                      <FileText className="w-12 h-12 mb-4 opacity-50" />
+                      <p className="text-lg font-medium mb-2">{t('reports.noData', 'No data found')}</p>
+                      <p className="text-sm">{t('reports.adjustFilters', 'Try adjusting your filters or date range')}</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                currentData.slice(0, 50).map((item, index) => (
+                  <tr key={index} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
+                    {activeTab === 'time-entries' && (
+                      <>
+                        <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
+                          <div>
+                            <div className="text-sm font-medium">{item.employee?.name || 'Unknown'}</div>
+                            <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
+                          </div>
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{item.date}</td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>
+                          <span className="font-medium">{item.hours || 0}h</span>
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap`}>
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            item.hour_type === 'regular' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                            item.hour_type === 'overtime' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                            'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                          }`}>
+                            {item.hour_type}
+                          </span>
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap`}>
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            item.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                            item.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                            'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                          }`}>
+                            {item.status}
+                          </span>
+                        </td>
+                      </>
+                    )}
+                    
+                    {activeTab === 'tasks' && (
+                      <>
+                        <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
+                          <div>
+                            <div className="text-sm font-medium">{item.employee?.name || 'Unknown'}</div>
+                            <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
+                          </div>
+                        </td>
+                        <td className={`px-6 py-4 ${text.primary}`}>
+                          <div className="text-sm font-medium max-w-xs truncate">{item.title}</div>
+                          <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{item.description}</div>
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap`}>
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            item.priority === 'high' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                            item.priority === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                            'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          }`}>
+                            {item.priority}
+                          </span>
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap`}>
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            item.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                            item.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                            'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                          }`}>
+                            {item.status}
+                          </span>
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{item.due_date || '-'}</td>
+                      </>
+                    )}
+                    
+                    {activeTab === 'goals' && (
+                      <>
+                        <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
+                          <div>
+                            <div className="text-sm font-medium">{item.employee?.name || 'Unknown'}</div>
+                            <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
+                          </div>
+                        </td>
+                        <td className={`px-6 py-4 ${text.primary}`}>
+                          <div className="text-sm font-medium max-w-xs truncate">{item.title}</div>
+                          <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{item.description}</div>
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{item.category}</td>
+                        <td className={`px-6 py-4 whitespace-nowrap`}>
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            item.status === 'achieved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                            item.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                            'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                          }`}>
+                            {item.status}
+                          </span>
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
+                          <div className="flex items-center">
+                            <div className={`w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-3`}>
+                              <div 
+                                className="bg-blue-600 h-2 rounded-full" 
+                                style={{width: `${Math.min(item.progress || 0, 100)}%`}}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-medium">{item.progress || 0}%</span>
+                          </div>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-            {/* Department Filter */}
-            <div>
-              <label 
-                className="block text-sm font-medium mb-2"
-                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
-              >
-                {t('reports.department', 'Department')}
-              </label>
-              <select
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                style={{
-                  backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
-                  color: isDarkMode ? '#ffffff' : '#111827',
-                  borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
-                }}
-              >
-                <option value="all">{t('reports.allDepartments', '')}</option>
-                <option value="technology">{t('departments.technology', 'Technology')}</option>
-                <option value="legal_compliance">{t('departments.legal_compliance', 'Legal & Compliance')}</option>
-                <option value="internal_affairs">{t('departments.internal_affairs', 'Internal Affairs')}</option>
-              </select>
-            </div>
-
-            {/* Report Type Filter */}
-            <div>
-              <label 
-                className="block text-sm font-medium mb-2"
-                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
-              >
-                {t('reports.reportType', 'Report Type')}
-              </label>
-              <select
-                value={reportType}
-                onChange={(e) => setReportType(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                style={{
-                  backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
-                  color: isDarkMode ? '#ffffff' : '#111827',
-                  borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
-                }}
-              >
-                <option value="performance">{t('reports.performance', '')}</option>
-                <option value="salary">{t('reports.salary', '')}</option>
-                <option value="attendance">{t('reports.attendance', '')}</option>
-                <option value="recruitment">{t('reports.recruitment', '')}</option>
-              </select>
-            </div>
+        {currentData.length > 50 && (
+          <div className={`px-6 py-4 border-t border-gray-200 dark:border-gray-700 ${bg.primary}`}>
+            <p className={`text-sm ${text.secondary} text-center`}>
+              {t('reports.showingFirst50of', 'Showing first 50 of')} {currentData.length} {t('reports.records', 'records')}. 
+              <span className="font-medium ml-1">{t('reports.exportForAll', 'Export to CSV to get all records.')}</span>
+            </p>
           </div>
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div 
-        className="border-b"
-        style={{
-          borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-        }}
-      >
-        <nav className="-mb-px flex space-x-8">
-          {[
-            { id: 'overview', name: t('reports.overview'), icon: BarChart3 },
-            { id: 'detailed', name: t('reports.detailedReports'), icon: PieChart }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              role="tab"
-              aria-selected={selectedReport === tab.id}
-              onClick={() => setSelectedReport(tab.id)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 transition-all duration-300 hover:scale-105`}
-              style={{
-                backgroundColor: 'transparent',
-                color: selectedReport === tab.id 
-                  ? (isDarkMode ? '#ffffff' : '#111827') 
-                  : isDarkMode ? '#9ca3af' : '#6b7280',
-                borderColor: selectedReport === tab.id ? '#2563eb' : 'transparent'
-              }}
-            >
-              <tab.icon className="h-4 w-4" />
-              <span>{tab.name}</span>
-            </button>
-          ))}
-        </nav>
+        )}
       </div>
-
-      {/* Tab Content */}
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader className={`w-8 h-8 animate-spin ${text.primary}`} style={{ color: isDarkMode ? '#3b82f6' : '#2563eb' }} />
-        </div>
-      ) : !reportData ? (
-        <div className="text-center py-12">
-          <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
-            {t('reports.noData', 'No data available')}
-          </p>
-        </div>
-      ) : (
-        <>
-          {selectedReport === 'overview' && <OverviewTab />}
-          {selectedReport === 'detailed' && <DetailedReportsTab />}
-        </>
-      )}
-      
-      {/* Metric Detail Modal */}
-      <MetricDetailModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        metricType={modalConfig.type}
-        data={modalConfig.data}
-        title={modalConfig.title}
-      />
     </div>
   );
 };

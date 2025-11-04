@@ -429,7 +429,7 @@ const Dashboard = ({ employees, applications }) => {
           <h3 className={`font-semibold ${text.primary} mb-3`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.125rem)'}}>
             {t('dashboard.employeePerformance')}
           </h3>
-          <ResponsiveContainer width="100%" height={400}>
+          <ResponsiveContainer width="100%" height={350}>
             <ComposedChart data={performanceData} margin={{ top: 5, right: 5, left: 0, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
               <XAxis 
@@ -496,7 +496,7 @@ const Dashboard = ({ employees, applications }) => {
           <h3 className={`font-semibold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.125rem)'}}>
             {t('dashboard.departmentDist')}
           </h3>
-          <ResponsiveContainer width="100%" height={500}>
+          <ResponsiveContainer width="100%" height={350}>
             <PieChart>
               <defs>
                 <linearGradient id="pieGradient0" x1="0" y1="0" x2="1" y2="1">
@@ -542,7 +542,7 @@ const Dashboard = ({ employees, applications }) => {
                 labelLine={false}
                 label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                 labelStyle={{ fill: isDarkMode ? '#FFFFFF' : '#111827', fontSize: 14 }}
-                outerRadius={80}
+                outerRadius={100}
                 fill="#8884d8"
                 dataKey="value"
                 style={{ fontSize: '13px' }}
