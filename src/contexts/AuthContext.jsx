@@ -143,15 +143,18 @@ export const AuthProvider = ({ children }) => {
       console.log('Fetching user profile for auth ID:', userId);
       
       // First, try to resolve the auth_user_id to hr_user_id using user_emails table
-      const { data: emailData, error: emailError } = await supabase
+      const { data: emailDataArray, error: emailError } = await supabase
         .from('user_emails')
         .select('hr_user_id')
         .eq('auth_user_id', userId)
-        .maybeSingle();
+        .limit(1);
       
       if (emailError) {
         console.error('Error checking user_emails:', emailError);
       }
+      
+      // Get the first result if exists
+      const emailData = emailDataArray && emailDataArray.length > 0 ? emailDataArray[0] : null;
       
       // Use the resolved hr_user_id if found, otherwise use the auth userId directly (backward compatibility)
       const hrUserId = emailData?.hr_user_id || userId;
@@ -198,19 +201,26 @@ export const AuthProvider = ({ children }) => {
         console.log(`🔍 Searching employees table with emails:`, emailsToSearch);
         
         // Try to find employee by any of these emails
-        const { data: employeeData } = await supabase
+        const { data: employeeData, error: employeeError } = await supabase
           .from('employees')
-          .select('name, id')
+          .select('name, id, email')
           .in('email', emailsToSearch)
-          .limit(1)
-          .maybeSingle();
+          .limit(1);
         
-        if (employeeData && employeeData.name) {
-          console.log(`✅ Found employee name: ${employeeData.name}`);
-          data.employee_name = employeeData.name;
-          data.employee_id = employeeData.id;
+        console.log(`📊 Employee query result:`, { employeeData, employeeError, searchedEmails: emailsToSearch });
+        
+        if (employeeData && employeeData.length > 0 && employeeData[0].name) {
+          console.log(`✅ Found employee: ${employeeData[0].name} (${employeeData[0].email})`);
+          data.employee_name = employeeData[0].name;
+          data.employee_id = employeeData[0].id;
         } else {
           console.log(`⚠️ No employee found for emails:`, emailsToSearch);
+          // Let's also check what employees exist with similar emails
+          const { data: allEmployees } = await supabase
+            .from('employees')
+            .select('name, email')
+            .limit(10);
+          console.log(`📋 Sample employees in database:`, allEmployees);
         }
       }
       
@@ -255,6 +265,8 @@ export const AuthProvider = ({ children }) => {
         // Employee data is already fetched above, just use it
         const employeeId = data.employee_id;
         const employeeName = data.employee_name;
+        
+        console.log(`👤 Name selection: employeeName="${employeeName}" | full_name="${data.full_name}" | first_name="${data.first_name}"`);
         
         // Update last_login timestamp
         await supabase
@@ -418,20 +430,9 @@ export const AuthProvider = ({ children }) => {
         // Manually fetch the HR user profile using the mapped hr_user_id
         // This allows multiple auth users to map to the same HR profile
         try {
-          const { data: hrProfile, error: profileError } = await supabase
-            .from('hr_users')
-            .select('*')
-            .eq('id', emailMapping.hr_user_id)
-            .single();
-          
-          if (!profileError && hrProfile) {
-            console.log('✅ Loaded mapped HR profile:', hrProfile);
-            setUser(hrProfile);
-            setIsAuthenticated(true);
-            setSession(data.session);
-            setLoading(false);
-            return { success: true };
-          }
+          console.log(`📝 Loading full HR profile for: ${emailMapping.hr_user_id}`);
+          await fetchUserProfile(emailMapping.hr_user_id);
+          return { success: true };
         } catch (profileError) {
           console.error('Error loading mapped profile:', profileError);
           // Fall through to normal profile loading

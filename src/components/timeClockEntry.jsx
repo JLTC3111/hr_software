@@ -1252,13 +1252,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
             {t('timeClock.history', 'Time Entry History')}
           </h2>
           
-          {/* Debug: Show user role */}
-          {user && (
-            <div className="text-xs text-gray-500">
-              Role: {user.role || 'No role'} | Can Manage: {canManageTimeTracking ? 'Yes' : 'No'}
-            </div>
-          )}
-          
           {/* Employee Filter Dropdown (only for admin/manager) */}
           {canManageTimeTracking && (
             <div className="flex items-center gap-3">
@@ -1288,7 +1281,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     <optgroup label={t('timeClock.specificEmployee', 'Specific Employee')}>
                       {allEmployees.map(emp => (
                         <option key={emp.id} value={emp.id}>
-                          {emp.name} - {emp.position}
+                          {emp.name} - {t(`employeePosition.${emp.position}`, emp.position)}
                         </option>
                       ))}
                     </optgroup>
