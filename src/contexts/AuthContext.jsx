@@ -169,6 +169,51 @@ export const AuthProvider = ({ children }) => {
         .eq('id', hrUserId)
         .single();
       
+      // If successful, try to fetch employee name by matching email
+      if (data && data.email && !error) {
+        // Get all emails for this user from user_emails table
+        const { data: userEmails } = await supabase
+          .from('user_emails')
+          .select('email')
+          .eq('hr_user_id', hrUserId);
+        
+        // Build array of emails to search
+        const emailsToSearch = [];
+        
+        // Split hr_users.email in case it has semicolon-separated emails
+        if (data.email) {
+          const hrUserEmails = data.email.split(';').map(e => e.trim()).filter(e => e);
+          emailsToSearch.push(...hrUserEmails);
+        }
+        
+        // Add all emails from user_emails table
+        if (userEmails && userEmails.length > 0) {
+          userEmails.forEach(ue => {
+            if (!emailsToSearch.includes(ue.email)) {
+              emailsToSearch.push(ue.email);
+            }
+          });
+        }
+        
+        console.log(`🔍 Searching employees table with emails:`, emailsToSearch);
+        
+        // Try to find employee by any of these emails
+        const { data: employeeData } = await supabase
+          .from('employees')
+          .select('name, id')
+          .in('email', emailsToSearch)
+          .limit(1)
+          .maybeSingle();
+        
+        if (employeeData && employeeData.name) {
+          console.log(`✅ Found employee name: ${employeeData.name}`);
+          data.employee_name = employeeData.name;
+          data.employee_id = employeeData.id;
+        } else {
+          console.log(`⚠️ No employee found for emails:`, emailsToSearch);
+        }
+      }
+      
       // If successful and has manager_id, try to fetch manager separately
       if (data && data.manager_id && !error) {
         const { data: managerData } = await supabase
@@ -207,29 +252,20 @@ export const AuthProvider = ({ children }) => {
         
         console.log('User profile found:', data);
         
-        // Auto-link user to employee if employee_id is missing
-        let employeeId = data.employee_id;
-        if (!employeeId && data.email) {
-          console.log('🔗 No employee_id found, attempting to auto-link...');
-          const linkResult = await linkUserToEmployee(userId, data.email);
-          if (linkResult.success) {
-            employeeId = linkResult.data.employeeId;
-            console.log(`✅ Auto-linked to employee ${employeeId}`);
-          } else {
-            console.log('⚠️ Could not auto-link user to employee:', linkResult.error);
-          }
-        }
+        // Employee data is already fetched above, just use it
+        const employeeId = data.employee_id;
+        const employeeName = data.employee_name;
         
         // Update last_login timestamp
         await supabase
           .from('hr_users')
           .update({ last_login: new Date().toISOString() })
-          .eq('id', userId);
+          .eq('id', hrUserId);
         
         setUser({
           id: data.id,
           email: data.email,
-          name: data.full_name || data.first_name || data.email.split('@')[0],
+          name: employeeName || data.full_name || data.first_name || data.email.split('@')[0],
           firstName: data.first_name,
           lastName: data.last_name,
           phone: data.phone,
