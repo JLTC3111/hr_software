@@ -966,6 +966,8 @@ export default {
     userUuid: 'User UUID',
     employeeId: 'Employee ID',
     changePassword: 'Change Password',
+    changeOwnPassword: 'Change Own Password',
+    resetOtherUserPassword: 'Reset Other Employee Password',
     readManual: 'Read Manual',
     logout: 'Log Out',
     confirmLogout: 'Are you sure you want to log out?',

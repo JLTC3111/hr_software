@@ -994,6 +994,8 @@ export default {
     userUuid: 'UUID Пользователя',
     employeeId: 'ID Сотрудника',
     changePassword: 'Изменить Пароль',
+    changeOwnPassword: 'Изменить Свой Пароль',
+    resetOtherUserPassword: 'Сбросить Пароль Другого Сотрудника',
     readManual: 'Прочитать Руководство',
     logout: 'Выйти',
     confirmLogout: 'Вы уверены, что хотите выйти?',

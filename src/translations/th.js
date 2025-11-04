@@ -996,6 +996,8 @@ export default {
     userUuid: 'UUID ผู้ใช้',
     employeeId: 'รหัสพนักงาน',
     changePassword: 'เปลี่ยนรหัสผ่าน',
+    changeOwnPassword: 'เปลี่ยนรหัสผ่านของฉัน',
+    resetOtherUserPassword: 'รีเซ็ตรหัสผ่านพนักงานอื่น',
     readManual: 'อ่านคู่มือ',
     logout: 'ออกจากระบบ',
     confirmLogout: 'คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?',

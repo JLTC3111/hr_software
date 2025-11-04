@@ -1050,6 +1050,8 @@ export default {
     userUuid: 'UUID Utilisateur',
     employeeId: 'ID Employé',
     changePassword: 'Changer le Mot de Passe',
+    changeOwnPassword: 'Changer Mon Mot de Passe',
+    resetOtherUserPassword: 'Réinitialiser le Mot de Passe d\'Un Autre Employé',
     readManual: 'Lire le Manuel',
     logout: 'Se Déconnecter',
     confirmLogout: 'Êtes-vous sûr de vouloir vous déconnecter?',

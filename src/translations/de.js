@@ -1052,6 +1052,8 @@ export default {
     userUuid: 'Benutzer-UUID',
     employeeId: 'Mitarbeiter-ID',
     changePassword: 'Passwort Ändern',
+    changeOwnPassword: 'Eigenes Passwort Ändern',
+    resetOtherUserPassword: 'Passwort Anderer Mitarbeiter Zurücksetzen',
     readManual: 'Handbuch Lesen',
     logout: 'Abmelden',
     confirmLogout: 'Möchten Sie sich wirklich abmelden?',

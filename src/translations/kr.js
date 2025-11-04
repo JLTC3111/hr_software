@@ -998,6 +998,8 @@ export default {
     userUuid: '사용자 UUID',
     employeeId: '직원 ID',
     changePassword: '비밀번호 변경',
+    changeOwnPassword: '내 비밀번호 변경',
+    resetOtherUserPassword: '다른 직원 비밀번호 재설정',
     readManual: '매뉴얼 읽기',
     logout: '로그아웃',
     confirmLogout: '로그아웃 하시겠습니까?',

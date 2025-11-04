@@ -1020,6 +1020,8 @@ login: {
     userUuid: 'UUID de Usuario',
     employeeId: 'ID de Empleado',
     changePassword: 'Cambiar Contraseña',
+    changeOwnPassword: 'Cambiar Mi Contraseña',
+    resetOtherUserPassword: 'Restablecer Contraseña de Otro Empleado',
     readManual: 'Leer Manual',
     logout: 'Cerrar Sesión',
     confirmLogout: '¿Está seguro de que desea cerrar sesión?',

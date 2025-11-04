@@ -1068,6 +1068,8 @@ export default {
     userUuid: 'UUID Người Dùng',
     employeeId: 'Mã Nhân Viên',
     changePassword: 'Đổi Mật Khẩu',
+    changeOwnPassword: 'Đổi Mật Khẩu Của Bạn',
+    resetOtherUserPassword: 'Đặt Lại Mật Khẩu Nhân Viên Khác',
     readManual: 'Đọc Hướng Dẫn',
     logout: 'Đăng Xuất',
     confirmLogout: 'Bạn có chắc chắn muốn đăng xuất?',

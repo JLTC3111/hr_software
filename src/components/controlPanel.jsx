@@ -1085,8 +1085,8 @@ const ControlPanel = () => {
                 type="submit"
                 className="flex-1 px-3 py-2 rounded text-sm font-medium transition-colors"
                 style={{
-                  backgroundColor: '#dc2626',
-                  color: '#ffffff'
+                  backgroundColor: isDarkMode ? '#ffffff' : '#000000',
+                  color: isDarkMode ? '#000000' : '#ffffff',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = '#b91c1c';
