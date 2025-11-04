@@ -36,7 +36,7 @@ const SearchAndFilter = ({ searchTerm, setSearchTerm, filterDepartment, setFilte
             }}
           >
             {departments.map(dept => (
-              <option key={dept} value={dept.toLowerCase()}>{t(`${dept.toLowerCase()}`)}</option>
+              <option key={dept.key} value={dept.key}>{dept.label}</option>
             ))}
           </select>
         </div>

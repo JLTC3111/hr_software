@@ -48,19 +48,19 @@ const Employees = ({ employees, onViewEmployee, onEditEmployee, onDeleteEmployee
   }, [location, refetchEmployees]);
   
   const departments = [
-    t('departments.all'), 
-    t('departments.legal_compliance'),
-    t('departments.technology'),
-    t('departments.internal_affairs'),
-    t('departments.human_resources'),
-    t('departments.office_unit'),
-    t('departments.board_of_directors'),
-    t('departments.finance'),
-    t('departments.engineering'), 
-    t('departments.sales'), 
-    t('departments.marketing'), 
-    t('departments.design'),
-    t('departments.part_time_employee')
+    { key: 'all', label: t('departments.all') },
+    { key: 'legal_compliance', label: t('departments.legal_compliance') },
+    { key: 'technology', label: t('departments.technology') },
+    { key: 'internal_affairs', label: t('departments.internal_affairs') },
+    { key: 'human_resources', label: t('departments.human_resources') },
+    { key: 'office_unit', label: t('departments.office_unit') },
+    { key: 'board_of_directors', label: t('departments.board_of_directors') },
+    { key: 'finance', label: t('departments.finance') },
+    { key: 'engineering', label: t('departments.engineering') },
+    { key: 'sales', label: t('departments.sales') },
+    { key: 'marketing', label: t('departments.marketing') },
+    { key: 'design', label: t('departments.design') },
+    { key: 'part_time_employee', label: t('departments.part_time_employee') }
   ];
 
   // Filter active employees only
