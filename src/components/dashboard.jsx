@@ -496,7 +496,7 @@ const Dashboard = ({ employees, applications }) => {
           <h3 className={`font-semibold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.125rem)'}}>
             {t('dashboard.departmentDist')}
           </h3>
-          <ResponsiveContainer width="100%" height={400}>
+          <ResponsiveContainer width="100%" height={500}>
             <PieChart>
               <defs>
                 <linearGradient id="pieGradient0" x1="0" y1="0" x2="1" y2="1">
@@ -565,6 +565,16 @@ const Dashboard = ({ employees, applications }) => {
                     color: isDarkMode ? '#FFFFFF' : '#111827',
                   }}
                 />
+              <Legend 
+                wrapperStyle={{ 
+                  color: isDarkMode ? '#FFFFFF' : '#111827',
+                  fontSize: '14px'
+                }} 
+                iconType="circle"
+                align="center"
+                verticalAlign="bottom"
+                height={36}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
