@@ -313,7 +313,6 @@ export const AuthProvider = ({ children }) => {
             email: authData.user.email,
             first_name: firstName || authData.user.email.split('@')[0],
             last_name: lastName || null,
-            full_name: employeeName || fullName || `${firstName || ''} ${lastName || ''}`.trim(),
             avatar_url: userMetadata.avatar_url || null,
             role: position === 'general_manager' ? 'admin' : 
                   position === 'hr_specialist' ? 'manager' : 'employee',
@@ -339,7 +338,7 @@ export const AuthProvider = ({ children }) => {
   // Email/Password login
   const login = async (email, password, rememberMe = true) => {
     try {
-      console.log(`🔐 Logging in with rememberMe: ${rememberMe}`);
+      console.log(`🔐 Logging in with email: ${email}, rememberMe: ${rememberMe}`);
       
       // Set storage type based on rememberMe checkbox
       if (typeof window !== 'undefined') {
@@ -352,14 +351,57 @@ export const AuthProvider = ({ children }) => {
         }
       }
       
+      // Check if this email has a mapping to a different HR user
+      console.log('🔍 Checking email mapping in user_emails...');
+      const { data: emailMapping, error: mappingError } = await supabase
+        .from('user_emails')
+        .select('email, hr_user_id, auth_user_id')
+        .eq('email', email)
+        .maybeSingle();
+      
+      // Always login with the provided email (authenticate the actual auth user)
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email,
         password
       });
 
       if (error) throw error;
 
       console.log('✅ Login successful');
+      
+      // If this email is mapped to a different HR user, we need to load that profile instead
+      if (emailMapping && !mappingError && emailMapping.hr_user_id) {
+        console.log(`🔗 Email mapping found: auth user ${data.user.id} → HR user ${emailMapping.hr_user_id}`);
+        
+        // Check if the logged-in auth user matches the expected auth_user_id
+        if (data.user.id !== emailMapping.auth_user_id) {
+          console.log(`⚠️ Auth user mismatch: logged in as ${data.user.id}, but user_emails expects ${emailMapping.auth_user_id}`);
+          console.log(`📝 Will load HR profile for: ${emailMapping.hr_user_id}`);
+        }
+        
+        // Manually fetch the HR user profile using the mapped hr_user_id
+        // This allows multiple auth users to map to the same HR profile
+        try {
+          const { data: hrProfile, error: profileError } = await supabase
+            .from('hr_users')
+            .select('*')
+            .eq('id', emailMapping.hr_user_id)
+            .single();
+          
+          if (!profileError && hrProfile) {
+            console.log('✅ Loaded mapped HR profile:', hrProfile);
+            setUser(hrProfile);
+            setIsAuthenticated(true);
+            setSession(data.session);
+            setLoading(false);
+            return { success: true };
+          }
+        } catch (profileError) {
+          console.error('Error loading mapped profile:', profileError);
+          // Fall through to normal profile loading
+        }
+      }
+      
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
