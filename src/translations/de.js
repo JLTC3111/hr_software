@@ -459,6 +459,7 @@ export default {
     subtitle: 'Umfassende Daten für Zeiterfassung, Aufgaben und persönliche Ziele exportieren',
     errorExporting: 'Fehler beim Exportieren der Daten',
     exportToCSV: 'Als CSV exportieren',
+    exportSuccess: 'Daten erfolgreich exportiert',
   },
 
   // Add Employee

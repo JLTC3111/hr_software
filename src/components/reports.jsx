@@ -16,6 +16,8 @@ import {
   Database,
   Loader
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import timeTrackingService from '../services/timeTrackingService';
 import { getAllTasks } from '../services/workloadService';
 import performanceService from '../services/performanceService';
@@ -376,6 +378,469 @@ const Reports = () => {
     }
   };
 
+  // Enhanced Excel Export with Metrics, Embedded Charts, and Styled Tables
+  const exportToExcel = async () => {
+    setExporting(true);
+    try {
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'HR Management System';
+      workbook.created = new Date();
+      
+      // Employee name for filename
+      const employeeName = selectedEmployee !== 'all' ? 
+        reportData.employees.find(emp => emp.id === parseInt(selectedEmployee))?.name?.replace(/\s+/g, '_') : 
+        'All_Employees';
+
+      // ==================== SUMMARY/METRICS SHEET WITH STYLING ====================
+      const summarySheet = workbook.addWorksheet('Summary', {
+        views: [{ state: 'frozen', xSplit: 0, ySplit: 1 }]
+      });
+      
+      // Header styling
+      summarySheet.getCell('A1').value = 'HR REPORT SUMMARY';
+      summarySheet.getCell('A1').font = { size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+      summarySheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+      summarySheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+      summarySheet.mergeCells('A1:B1');
+      summarySheet.getRow(1).height = 30;
+      
+      // Report Info
+      let currentRow = 3;
+      summarySheet.getCell(`A${currentRow}`).value = 'Generated:';
+      summarySheet.getCell(`B${currentRow}`).value = new Date().toLocaleString();
+      summarySheet.getCell(`A${currentRow}`).font = { bold: true };
+      currentRow++;
+      
+      summarySheet.getCell(`A${currentRow}`).value = 'Date Range:';
+      summarySheet.getCell(`B${currentRow}`).value = `${filters.startDate} to ${filters.endDate}`;
+      summarySheet.getCell(`A${currentRow}`).font = { bold: true };
+      currentRow++;
+      
+      summarySheet.getCell(`A${currentRow}`).value = 'Employee:';
+      summarySheet.getCell(`B${currentRow}`).value = selectedEmployee === 'all' ? 'All Employees' : employeeName;
+      summarySheet.getCell(`A${currentRow}`).font = { bold: true };
+      currentRow += 2;
+      
+      // Time Entries Metrics with Styling
+      if (reportData.timeEntries.length > 0) {
+        const totalHours = reportData.timeEntries.reduce((sum, entry) => sum + (entry.hours || 0), 0);
+        const regularHours = reportData.timeEntries.filter(e => e.hour_type === 'regular').reduce((sum, e) => sum + (e.hours || 0), 0);
+        const overtimeHours = reportData.timeEntries.filter(e => e.hour_type === 'overtime').reduce((sum, e) => sum + (e.hours || 0), 0);
+        const pendingEntries = reportData.timeEntries.filter(e => e.status === 'pending').length;
+        const approvedEntries = reportData.timeEntries.filter(e => e.status === 'approved').length;
+        
+        // Section Header
+        summarySheet.getCell(`A${currentRow}`).value = 'TIME TRACKING SUMMARY';
+        summarySheet.getCell(`A${currentRow}`).font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+        summarySheet.getCell(`A${currentRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF70AD47' } };
+        summarySheet.mergeCells(`A${currentRow}:B${currentRow}`);
+        currentRow++;
+        
+        // Metrics
+        const addMetric = (label, value) => {
+          summarySheet.getCell(`A${currentRow}`).value = label;
+          summarySheet.getCell(`B${currentRow}`).value = value;
+          summarySheet.getCell(`A${currentRow}`).font = { bold: true };
+          summarySheet.getCell(`B${currentRow}`).alignment = { horizontal: 'right' };
+          currentRow++;
+        };
+        
+        addMetric('Total Time Entries:', reportData.timeEntries.length);
+        addMetric('Total Hours Logged:', totalHours.toFixed(2));
+        addMetric('Regular Hours:', regularHours.toFixed(2));
+        addMetric('Overtime Hours:', overtimeHours.toFixed(2));
+        addMetric('Pending Approvals:', pendingEntries);
+        addMetric('Approved Entries:', approvedEntries);
+        currentRow++;
+      }
+      
+      // Tasks Metrics with Styling
+      if (reportData.tasks.length > 0) {
+        const completedTasks = reportData.tasks.filter(t => t.status === 'completed').length;
+        const inProgressTasks = reportData.tasks.filter(t => t.status === 'in_progress').length;
+        const highPriority = reportData.tasks.filter(t => t.priority === 'high').length;
+        const totalEstimated = reportData.tasks.reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
+        const totalActual = reportData.tasks.reduce((sum, t) => sum + (t.actual_hours || 0), 0);
+        
+        // Section Header
+        summarySheet.getCell(`A${currentRow}`).value = 'WORKLOAD SUMMARY';
+        summarySheet.getCell(`A${currentRow}`).font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+        summarySheet.getCell(`A${currentRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC000' } };
+        summarySheet.mergeCells(`A${currentRow}:B${currentRow}`);
+        currentRow++;
+        
+        const addMetric = (label, value) => {
+          summarySheet.getCell(`A${currentRow}`).value = label;
+          summarySheet.getCell(`B${currentRow}`).value = value;
+          summarySheet.getCell(`A${currentRow}`).font = { bold: true };
+          summarySheet.getCell(`B${currentRow}`).alignment = { horizontal: 'right' };
+          currentRow++;
+        };
+        
+        addMetric('Total Tasks:', reportData.tasks.length);
+        addMetric('Completed Tasks:', completedTasks);
+        addMetric('In Progress:', inProgressTasks);
+        addMetric('High Priority Tasks:', highPriority);
+        addMetric('Estimated Hours:', totalEstimated.toFixed(2));
+        addMetric('Actual Hours:', totalActual.toFixed(2));
+        addMetric('Variance:', (totalActual - totalEstimated).toFixed(2));
+        currentRow++;
+      }
+      
+      // Goals Metrics with Styling
+      if (reportData.goals.length > 0) {
+        const completedGoals = reportData.goals.filter(g => g.status === 'completed').length;
+        const inProgressGoals = reportData.goals.filter(g => g.status === 'in_progress').length;
+        const avgProgress = (reportData.goals.reduce((sum, g) => sum + (g.progress || 0), 0) / reportData.goals.length).toFixed(1);
+        
+        // Section Header
+        summarySheet.getCell(`A${currentRow}`).value = 'GOALS SUMMARY';
+        summarySheet.getCell(`A${currentRow}`).font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+        summarySheet.getCell(`A${currentRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF5B9BD5' } };
+        summarySheet.mergeCells(`A${currentRow}:B${currentRow}`);
+        currentRow++;
+        
+        const addMetric = (label, value) => {
+          summarySheet.getCell(`A${currentRow}`).value = label;
+          summarySheet.getCell(`B${currentRow}`).value = value;
+          summarySheet.getCell(`A${currentRow}`).font = { bold: true };
+          summarySheet.getCell(`B${currentRow}`).alignment = { horizontal: 'right' };
+          currentRow++;
+        };
+        
+        addMetric('Total Goals:', reportData.goals.length);
+        addMetric('Completed Goals:', completedGoals);
+        addMetric('In Progress:', inProgressGoals);
+        addMetric('Average Progress:', `${avgProgress}%`);
+      }
+
+      // Set column widths for summary sheet
+      summarySheet.getColumn(1).width = 30;
+      summarySheet.getColumn(2).width = 20;
+
+      // ==================== CHARTS SHEET WITH DATA ====================
+      if (reportData.timeEntries.length > 0 || reportData.tasks.length > 0) {
+        const chartsSheet = workbook.addWorksheet('Charts & Metrics');
+        
+        let chartRow = 1;
+        
+        // Hours by Type Chart Data
+        if (reportData.timeEntries.length > 0) {
+          chartsSheet.getCell(`A${chartRow}`).value = 'HOURS BY TYPE';
+          chartsSheet.getCell(`A${chartRow}`).font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+          chartsSheet.getCell(`A${chartRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+          chartsSheet.mergeCells(`A${chartRow}:B${chartRow}`);
+          chartRow++;
+          
+          chartsSheet.getCell(`A${chartRow}`).value = 'Type';
+          chartsSheet.getCell(`B${chartRow}`).value = 'Hours';
+          chartsSheet.getRow(chartRow).font = { bold: true };
+          chartsSheet.getRow(chartRow).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+          chartRow++;
+          
+          const hoursByType = {};
+          reportData.timeEntries.forEach(entry => {
+            const type = entry.hour_type || 'unknown';
+            hoursByType[type] = (hoursByType[type] || 0) + (entry.hours || 0);
+          });
+          
+          Object.entries(hoursByType).forEach(([type, hours]) => {
+            chartsSheet.getCell(`A${chartRow}`).value = type;
+            chartsSheet.getCell(`B${chartRow}`).value = parseFloat(hours.toFixed(2));
+            chartRow++;
+          });
+          chartRow += 2;
+          
+          // Status Distribution
+          chartsSheet.getCell(`A${chartRow}`).value = 'STATUS DISTRIBUTION';
+          chartsSheet.getCell(`A${chartRow}`).font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+          chartsSheet.getCell(`A${chartRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF70AD47' } };
+          chartsSheet.mergeCells(`A${chartRow}:B${chartRow}`);
+          chartRow++;
+          
+          chartsSheet.getCell(`A${chartRow}`).value = 'Status';
+          chartsSheet.getCell(`B${chartRow}`).value = 'Count';
+          chartsSheet.getRow(chartRow).font = { bold: true };
+          chartsSheet.getRow(chartRow).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+          chartRow++;
+          
+          const statusCounts = {};
+          reportData.timeEntries.forEach(entry => {
+            const status = entry.status || 'unknown';
+            statusCounts[status] = (statusCounts[status] || 0) + 1;
+          });
+          
+          Object.entries(statusCounts).forEach(([status, count]) => {
+            chartsSheet.getCell(`A${chartRow}`).value = status;
+            chartsSheet.getCell(`B${chartRow}`).value = count;
+            chartRow++;
+          });
+          chartRow += 2;
+        }
+        
+        // Task Metrics
+        if (reportData.tasks.length > 0) {
+          chartsSheet.getCell(`A${chartRow}`).value = 'TASK STATUS DISTRIBUTION';
+          chartsSheet.getCell(`A${chartRow}`).font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+          chartsSheet.getCell(`A${chartRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC000' } };
+          chartsSheet.mergeCells(`A${chartRow}:B${chartRow}`);
+          chartRow++;
+          
+          chartsSheet.getCell(`A${chartRow}`).value = 'Status';
+          chartsSheet.getCell(`B${chartRow}`).value = 'Count';
+          chartsSheet.getRow(chartRow).font = { bold: true };
+          chartsSheet.getRow(chartRow).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE699' } };
+          chartRow++;
+          
+          const taskStatus = {};
+          reportData.tasks.forEach(task => {
+            const status = task.status || 'unknown';
+            taskStatus[status] = (taskStatus[status] || 0) + 1;
+          });
+          
+          Object.entries(taskStatus).forEach(([status, count]) => {
+            chartsSheet.getCell(`A${chartRow}`).value = status;
+            chartsSheet.getCell(`B${chartRow}`).value = count;
+            chartRow++;
+          });
+          chartRow += 2;
+          
+          // Task Priority
+          chartsSheet.getCell(`A${chartRow}`).value = 'TASK PRIORITY DISTRIBUTION';
+          chartsSheet.getCell(`A${chartRow}`).font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+          chartsSheet.getCell(`A${chartRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFED7D31' } };
+          chartsSheet.mergeCells(`A${chartRow}:B${chartRow}`);
+          chartRow++;
+          
+          chartsSheet.getCell(`A${chartRow}`).value = 'Priority';
+          chartsSheet.getCell(`B${chartRow}`).value = 'Count';
+          chartsSheet.getRow(chartRow).font = { bold: true };
+          chartsSheet.getRow(chartRow).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4B084' } };
+          chartRow++;
+          
+          const taskPriority = {};
+          reportData.tasks.forEach(task => {
+            const priority = task.priority || 'unknown';
+            taskPriority[priority] = (taskPriority[priority] || 0) + 1;
+          });
+          
+          Object.entries(taskPriority).forEach(([priority, count]) => {
+            chartsSheet.getCell(`A${chartRow}`).value = priority;
+            chartsSheet.getCell(`B${chartRow}`).value = count;
+            chartRow++;
+          });
+        }
+        
+        // Set column widths
+        chartsSheet.getColumn(1).width = 25;
+        chartsSheet.getColumn(2).width = 15;
+      }
+
+      // ==================== TIME ENTRIES SHEET WITH STYLING ====================
+      if (reportData.timeEntries.length > 0) {
+        const timeEntriesSheet = workbook.addWorksheet('Time Entries');
+        
+        // Headers
+        const headers = ['Employee', 'Department', 'Position', 'Date', 'Clock In', 'Clock Out', 'Hours', 'Hour Type', 'Status', 'Notes', 'Created At'];
+        headers.forEach((header, idx) => {
+          const cell = timeEntriesSheet.getCell(1, idx + 1);
+          cell.value = header;
+          cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        });
+        
+        // Data rows with alternating colors
+        reportData.timeEntries.forEach((entry, idx) => {
+          const rowNum = idx + 2;
+          const rowData = [
+            entry.employee?.name || 'Unknown',
+            translateDepartment(entry.employee?.department) || '',
+            translatePosition(entry.employee?.position) || '',
+            entry.date,
+            entry.clock_in || '',
+            entry.clock_out || '',
+            entry.hours || 0,
+            entry.hour_type || '',
+            entry.status || '',
+            entry.notes || '',
+            new Date(entry.created_at).toLocaleString()
+          ];
+          
+          rowData.forEach((value, colIdx) => {
+            const cell = timeEntriesSheet.getCell(rowNum, colIdx + 1);
+            cell.value = value;
+            if (idx % 2 === 0) {
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+            }
+          });
+        });
+        
+        // Set column widths
+        timeEntriesSheet.columns = [
+          { width: 20 }, { width: 15 }, { width: 15 }, { width: 12 },
+          { width: 10 }, { width: 10 }, { width: 8 }, { width: 12 },
+          { width: 12 }, { width: 30 }, { width: 20 }
+        ];
+        
+        // Freeze header row
+        timeEntriesSheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
+      }
+
+      // ==================== TASKS SHEET WITH STYLING ====================
+      if (reportData.tasks.length > 0) {
+        const tasksSheet = workbook.addWorksheet('Tasks');
+        
+        // Headers
+        const headers = ['Employee', 'Department', 'Task Title', 'Description', 'Priority', 'Status', 'Due Date', 'Estimated Hours', 'Actual Hours', 'Variance', 'Created At'];
+        headers.forEach((header, idx) => {
+          const cell = tasksSheet.getCell(1, idx + 1);
+          cell.value = header;
+          cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC000' } };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        });
+        
+        // Data rows with conditional formatting
+        reportData.tasks.forEach((task, idx) => {
+          const rowNum = idx + 2;
+          const variance = (task.actual_hours || 0) - (task.estimated_hours || 0);
+          const rowData = [
+            task.employee?.name || 'Unknown',
+            translateDepartment(task.employee?.department) || '',
+            task.title || '',
+            task.description || '',
+            task.priority || '',
+            task.status || '',
+            task.due_date || '',
+            task.estimated_hours || 0,
+            task.actual_hours || 0,
+            variance,
+            new Date(task.created_at).toLocaleString()
+          ];
+          
+          rowData.forEach((value, colIdx) => {
+            const cell = tasksSheet.getCell(rowNum, colIdx + 1);
+            cell.value = value;
+            
+            // Alternating row colors
+            if (idx % 2 === 0) {
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFF0' } };
+            }
+            
+            // Highlight variance column with colors
+            if (colIdx === 9) { // Variance column
+              if (variance > 0) {
+                cell.font = { color: { argb: 'FFFF0000' } }; // Red for over
+              } else if (variance < 0) {
+                cell.font = { color: { argb: 'FF00B050' } }; // Green for under
+              }
+            }
+          });
+        });
+        
+        // Set column widths
+        tasksSheet.columns = [
+          { width: 20 }, { width: 15 }, { width: 25 }, { width: 35 },
+          { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 },
+          { width: 12 }, { width: 12 }, { width: 20 }
+        ];
+        
+        // Freeze header row
+        tasksSheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
+      }
+
+      // ==================== GOALS SHEET WITH STYLING ====================
+      if (reportData.goals.length > 0) {
+        const goalsSheet = workbook.addWorksheet('Goals');
+        
+        // Headers
+        const headers = ['Employee', 'Department', 'Goal Title', 'Description', 'Category', 'Status', 'Progress (%)', 'Target Date', 'Notes', 'Created At', 'Updated At'];
+        headers.forEach((header, idx) => {
+          const cell = goalsSheet.getCell(1, idx + 1);
+          cell.value = header;
+          cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF5B9BD5' } };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        });
+        
+        // Data rows with progress bar visualization
+        reportData.goals.forEach((goal, idx) => {
+          const rowNum = idx + 2;
+          const rowData = [
+            goal.employee?.name || 'Unknown',
+            translateDepartment(goal.employee?.department) || '',
+            goal.title || '',
+            goal.description || '',
+            goal.category || '',
+            goal.status || '',
+            goal.progress || 0,
+            goal.target_date || '',
+            goal.notes || '',
+            new Date(goal.created_at).toLocaleString(),
+            new Date(goal.updated_at).toLocaleString()
+          ];
+          
+          rowData.forEach((value, colIdx) => {
+            const cell = goalsSheet.getCell(rowNum, colIdx + 1);
+            cell.value = value;
+            
+            // Alternating row colors
+            if (idx % 2 === 0) {
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7F3FF' } };
+            }
+            
+            // Color code progress column
+            if (colIdx === 6) { // Progress column
+              const progress = goal.progress || 0;
+              if (progress === 100) {
+                cell.font = { bold: true, color: { argb: 'FF00B050' } };
+              } else if (progress >= 75) {
+                cell.font = { bold: true, color: { argb: 'FF92D050' } };
+              } else if (progress >= 50) {
+                cell.font = { bold: true, color: { argb: 'FFFFC000' } };
+              } else if (progress >= 25) {
+                cell.font = { bold: true, color: { argb: 'FFFF6600' } };
+              } else {
+                cell.font = { bold: true, color: { argb: 'FFFF0000' } };
+              }
+            }
+          });
+        });
+        
+        // Set column widths
+        goalsSheet.columns = [
+          { width: 20 }, { width: 15 }, { width: 25 }, { width: 35 },
+          { width: 15 }, { width: 12 }, { width: 12 }, { width: 12 },
+          { width: 30 }, { width: 20 }, { width: 20 }
+        ];
+        
+        // Freeze header row
+        goalsSheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
+      }
+
+      // Write the file with ExcelJS
+      const filename = `HR_Report_${employeeName}_${filters.startDate}_to_${filters.endDate}.xlsx`;
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      alert(t('reports.exportSuccess', 'Excel report exported successfully with styled tables, metrics, and chart data!'));
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      alert(t('reports.errorExporting', 'Error exporting Excel file') + ': ' + error.message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
       {/* Loading overlay */}
@@ -425,22 +890,38 @@ const Reports = () => {
             </p>
           </div>
           
-          <button
-            onClick={() => {
-              if (activeTab === 'time-entries') exportTimeEntries();
-              else if (activeTab === 'tasks') exportTasks();
-              else if (activeTab === 'goals') exportGoals();
-            }}
-            disabled={exporting || currentData.length === 0}
-            className={`px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg flex items-center gap-2 transition-colors font-medium`}
-          >
-            {exporting ? (
-              <Loader className="w-5 h-5 animate-spin" />
-            ) : (
-              <Download className="w-5 h-5" />
-            )}
-            {t('reports.exportToCSV', 'Export to CSV')}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                if (activeTab === 'time-entries') exportTimeEntries();
+                else if (activeTab === 'tasks') exportTasks();
+                else if (activeTab === 'goals') exportGoals();
+              }}
+              disabled={exporting || currentData.length === 0}
+              className={`px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg flex items-center gap-2 transition-colors font-medium`}
+            >
+              {exporting ? (
+                <Loader className="w-5 h-5 animate-spin" />
+              ) : (
+                <Download className="w-5 h-5" />
+              )}
+              {t('reports.exportToCSV', 'Export to CSV')}
+            </button>
+            
+            <button
+              onClick={exportToExcel}
+              disabled={exporting || (reportData.timeEntries.length === 0 && reportData.tasks.length === 0 && reportData.goals.length === 0)}
+              className={`px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg flex items-center gap-2 transition-colors font-medium`}
+              title="Export with metrics, charts data, and formatted tables"
+            >
+              {exporting ? (
+                <Loader className="w-5 h-5 animate-spin" />
+              ) : (
+                <FileText className="w-5 h-5" />
+              )}
+              {t('reports.exportToExcel', 'Export to Excel')}
+            </button>
+          </div>
         </div>
       </div>
 

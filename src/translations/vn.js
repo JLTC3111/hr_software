@@ -614,6 +614,7 @@ export default {
     subtitle: 'Xuất dữ liệu toàn diện cho chấm công, nhiệm vụ và mục tiêu cá nhân',
     errorExporting: 'Lỗi xuất dữ liệu',
     exportToCSV: 'Xuất CSV',
+    exportSuccess: 'Xuất dữ liệu thành công',
   },
 
   // Time Clock Entry
@@ -1286,42 +1287,5 @@ export default {
     responsiveAccessible: 'Đáp ứng và dễ tiếp cận',
     customizableDuration: 'Thời lượng hoạt ảnh có thể tùy chỉnh',
     easingFunctions: 'Các hàm làm mềm cho chuyển động tự nhiên',
-  },
-
-  // Workload Management
-  workload: {
-    task: 'Nhiệm vụ',
-    priority: 'Ưu tiên',
-    status: 'Trạng thái',
-    dueDate: 'Ngày hết hạn',
-    taskTitle: 'Tiêu đề nhiệm vụ',
-    description: 'Mô tả',
-    estimatedHours: 'Giờ ước tính',
-    actualHours: 'Giờ thực tế',
-  },
-
-  // Performance Management
-  performance: {
-    goal: 'Mục tiêu',
-    goals: 'Mục tiêu',
-    category: 'Danh mục',
-    status: 'Trạng thái',
-    progress: 'Tiến độ',
-    goalTitle: 'Tiêu đề mục tiêu',
-    description: 'Mô tả',
-    targetDate: 'Ngày mục tiêu',
-    notes: 'Ghi chú',
-  },
-
-  // Time Tracking
-  timeTracking: {
-    date: 'Ngày',
-    hours: 'Giờ',
-    type: 'Loại',
-    status: 'Trạng thái',
-    clockIn: 'Chấm công vào',
-    clockOut: 'Chấm công ra',
-    hourType: 'Loại giờ',
-    notes: 'Ghi chú',
   },
 };

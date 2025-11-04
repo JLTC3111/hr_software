@@ -703,6 +703,7 @@ export default {
     liveData: 'Live data from Supabase',
     subtitle: 'Export comprehensive data for time entries, tasks, and personal goals',
     errorExporting: 'Error exporting data',
+    exportSuccess: 'Data exported successfully',
   },
 
   // Common
