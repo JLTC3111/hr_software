@@ -26,7 +26,7 @@ import * as workloadService from '../services/workloadService';
 const TaskPerformanceReview = ({ employees }) => {
   const { user } = useAuth();
   const { isDarkMode, toggleTheme, button, bg, text, border, hover, input } = useTheme();
-  const { t } = useLanguage();
+  const { t, currentLanguage } = useLanguage();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
@@ -47,6 +47,33 @@ const TaskPerformanceReview = ({ employees }) => {
 
   // Check if user is admin or manager
   const canEvaluateOthers = user?.role === 'admin' || user?.role === 'manager';
+
+  // Format month display with proper localization
+  const formattedMonth = useMemo(() => {
+    const languageMap = {
+      'en': 'en-US',
+      'fr': 'fr-FR',
+      'es': 'es-ES',
+      'de': 'de-DE',
+      'vn': 'vi-VN',
+      'jp': 'ja-JP',
+      'kr': 'ko-KR',
+      'ru': 'ru-RU',
+      'th': 'th-TH'
+    };
+    const locale = languageMap[currentLanguage] || 'en-US';
+    let formattedDate = selectedMonth.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+    
+    // Special handling for Vietnamese to capitalize each word
+    if (currentLanguage === 'vn') {
+      formattedDate = formattedDate
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    }
+    
+    return formattedDate;
+  }, [selectedMonth, currentLanguage]);
 
   // Load tasks for selected month
   useEffect(() => {
@@ -294,23 +321,6 @@ const TaskPerformanceReview = ({ employees }) => {
     }
   };
 
-  // Format month display
-  const formatMonth = (date) => {
-    const languageMap = {
-      'en': 'en-US',
-      'fr': 'fr-FR',
-      'es': 'es-ES',
-      'de': 'de-DE',
-      'vn': 'vi-VN',
-      'jp': 'ja-JP',
-      'kr': 'ko-KR',
-      'ru': 'ru-RU',
-      'th': 'th-TH'
-    };
-    const locale = languageMap[useLanguage().currentLanguage] || 'en-US';
-    return date.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
-  };
-
   // Team View Component
   const TeamView = () => {
     const teamStats = employees.map(emp => {
@@ -459,7 +469,7 @@ const TaskPerformanceReview = ({ employees }) => {
           <div className="flex items-center space-x-2">
             <Calendar className={`w-5 h-5 ${text.secondary}`} />
             <span className={`text-lg font-semibold ${text.primary}`}>
-              {formatMonth(selectedMonth)}
+              {formattedMonth}
             </span>
           </div>
 

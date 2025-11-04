@@ -332,41 +332,63 @@ export const getPerformanceSummaries = async (filters = {}) => {
 
 // Export report data to CSV format
 export const exportToCSV = (data, filename) => {
-  if (!data || data.length === 0) {
-    console.warn('No data to export');
-    return;
-  }
-  
-  // Get headers from first object
-  const headers = Object.keys(data[0]);
-  
-  // Create CSV content
-  let csv = headers.join(',') + '\n';
-  
-  data.forEach(row => {
-    const values = headers.map(header => {
-      const value = row[header];
-      // Handle values with commas or quotes
-      if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
-        return `"${value.replace(/"/g, '""')}"`;
+  try {
+    if (!data || data.length === 0) {
+      console.warn('No data to export');
+      throw new Error('No data provided for export');
+    }
+    
+    console.log('Starting CSV export for', data.length, 'records');
+    
+    // Get headers from first object
+    const headers = Object.keys(data[0]);
+    console.log('CSV Headers:', headers);
+    
+    // Create CSV content
+    let csv = headers.join(',') + '\n';
+    
+    data.forEach((row, index) => {
+      try {
+        const values = headers.map(header => {
+          const value = row[header];
+          // Handle null/undefined values
+          if (value === null || value === undefined) {
+            return '';
+          }
+          // Handle values with commas or quotes
+          if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+            return `"${value.replace(/"/g, '""')}"`;
+          }
+          return value;
+        });
+        csv += values.join(',') + '\n';
+      } catch (rowError) {
+        console.warn(`Error processing row ${index}:`, rowError);
+        // Skip this row and continue
       }
-      return value;
     });
-    csv += values.join(',') + '\n';
-  });
-  
-  // Create download link
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  const url = URL.createObjectURL(blob);
-  
-  link.setAttribute('href', url);
-  link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
-  link.style.visibility = 'hidden';
-  
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+    
+    // Create download link
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Clean up the URL object
+    URL.revokeObjectURL(url);
+    
+    console.log('CSV export completed successfully');
+  } catch (error) {
+    console.error('Error in exportToCSV:', error);
+    throw error;
+  }
 };
 
 // Helper: Calculate performance metrics

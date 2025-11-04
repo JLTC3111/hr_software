@@ -18,7 +18,7 @@ const Reports = () => {
   const [reportType, setReportType] = useState('performance');
   const [generatedReport, setGeneratedReport] = useState(null);
   const [generating, setGenerating] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   const [reportData, setReportData] = useState(null);
   const [performanceTrend, setPerformanceTrend] = useState([]);
   const { t } = useLanguage();
@@ -288,12 +288,21 @@ const Reports = () => {
 
   // Handle export to CSV
   const handleExportCSV = (data, filename) => {
-    if (!data || (Array.isArray(data) && data.length === 0)) {
-      alert(t('reports.noDataToExport', 'No data to export'));
-      return;
+    try {
+      if (!data || (Array.isArray(data) && data.length === 0)) {
+        alert(t('reports.noDataToExport', 'No data to export'));
+        return;
+      }
+      
+      console.log('Attempting to export CSV with data:', data.length, 'records');
+      console.log('Sample record:', data[0]);
+      
+      reportService.exportToCSV(data, filename);
+      console.log('CSV export completed successfully');
+    } catch (error) {
+      console.error('Error in handleExportCSV:', error);
+      alert(t('reports.errorExporting', 'Error exporting data') + ': ' + error.message);
     }
-    
-    reportService.exportToCSV(data, filename);
   };
 
   // Handle export all data
@@ -301,27 +310,68 @@ const Reports = () => {
     try {
       const { supabase } = await import('../config/supabaseClient');
       
+      // First, let's check what columns are available
       const { data: allEmployees, error } = await supabase
         .from('employees')
-        .select('name, department, position, email, phone, status, salary, start_date');
+        .select('*');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
       
-      const exportData = allEmployees.map(emp => ({
-        Name: emp.name,
-        Department: emp.department,
-        Position: emp.position,
-        Email: emp.email,
-        Phone: emp.phone,
-        Status: emp.status,
-        Salary: emp.salary,
-        StartDate: emp.start_date
-      }));
+      if (!allEmployees || allEmployees.length === 0) {
+        alert(t('reports.noDataToExport', 'No employee data found to export'));
+        return;
+      }
       
+      // Map the data with available fields only and use translated headers
+      const exportData = allEmployees.map(emp => {
+        const mappedData = {};
+        
+        // Only include fields that exist and have values, using translated headers
+        if (emp.name) mappedData[t('employees.name', 'Name')] = emp.name;
+        if (emp.department) {
+          mappedData[t('employees.department', 'Department')] = t(`departments.${emp.department}`, emp.department);
+        }
+        if (emp.position) {
+          mappedData[t('employees.position', 'Position')] = t(`employeePosition.${emp.position}`, emp.position);
+        }
+        if (emp.email) mappedData[t('employees.email', 'Email')] = emp.email;
+        if (emp.phone) mappedData[t('employees.phone', 'Phone')] = emp.phone;
+        if (emp.status) {
+          // Translate status values
+          let statusKey = '';
+          switch(emp.status.toLowerCase()) {
+            case 'active':
+              statusKey = 'employees.active';
+              break;
+            case 'inactive':
+              statusKey = 'employees.inactive';
+              break;
+            case 'on leave':
+            case 'onleave':
+              statusKey = 'employees.onLeave';
+              break;
+            default:
+              statusKey = '';
+          }
+          mappedData[t('employees.status', 'Status')] = statusKey ? t(statusKey, emp.status) : emp.status;
+        }
+        if (emp.salary !== null && emp.salary !== undefined) mappedData[t('employees.salary', 'Salary')] = emp.salary;
+        if (emp.start_date) mappedData[t('employees.startDate', 'Start Date')] = emp.start_date;
+        if (emp.created_at) mappedData[t('general.createdAt', 'Created At')] = emp.created_at;
+        if (emp.id) mappedData[t('general.id', 'ID')] = emp.id;
+        
+        return mappedData;
+      });
+      
+      console.log('Export data prepared:', exportData.length, 'records');
       handleExportCSV(exportData, 'all_employees');
     } catch (error) {
       console.error('Error exporting data:', error);
-      alert(t('reports.errorExporting', 'Error exporting data'));
+      console.error('Error details:', error.message, error.code, error.details);
+      alert(t('reports.errorExporting', 'Error exporting data') + ': ' + error.message);
     }
   };
 

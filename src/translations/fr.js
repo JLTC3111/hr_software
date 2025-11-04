@@ -134,22 +134,6 @@ export default {
     part_time_employee: 'Employé à temps partiel',
   },
 
-  // Months
-  months: {
-    january: 'Janvier',
-    february: 'Février',
-    march: 'Mars',
-    april: 'Avril',
-    may: 'Mai',
-    june: 'Juin',
-    july: 'Juillet',
-    august: 'Août',
-    september: 'Septembre',
-    october: 'Octobre',
-    november: 'Novembre',
-    december: 'Décembre'
-  },
-
   // Recruitment
   recruitment: {
     title: 'Pipeline de recrutement',
