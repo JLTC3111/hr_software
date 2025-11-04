@@ -24,7 +24,6 @@ const ControlPanel = () => {
     }
   }, []);
   const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
@@ -35,7 +34,6 @@ const ControlPanel = () => {
   const [avatarSuccess, setAvatarSuccess] = useState('');
   
   // Password visibility states
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
@@ -214,7 +212,7 @@ const ControlPanel = () => {
     setPasswordSuccess('');
 
     // Validation
-    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+    if (!passwordForm.newPassword || !passwordForm.confirmPassword) {
       console.log('❌ Validation failed: Missing fields');
       setPasswordError(t('controlPanel.allFieldsRequired', 'All fields are required'));
       isChangingPassword.current = false;
@@ -257,7 +255,7 @@ const ControlPanel = () => {
       console.log('🧹 Clearing form states...');
       setPasswordError('');
       setPasswordSuccess('');
-      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPasswordForm({ newPassword: '', confirmPassword: '' });
       
       // Close the form immediately
       console.log('🚪 Closing password change form');
@@ -718,7 +716,7 @@ const ControlPanel = () => {
               isChangingPassword.current = false;
               setShowChangePassword(!showChangePassword);
             }}
-            className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors"
+            className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
             style={{
               backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6',
               color: isDarkMode ? '#ffffff' : '#111827'
@@ -757,7 +755,7 @@ const ControlPanel = () => {
 
           <button
             onClick={openManual}
-            className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors"
+            className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
             style={{
               backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6',
               color: isDarkMode ? '#ffffff' : '#111827'
@@ -770,12 +768,12 @@ const ControlPanel = () => {
             }}
           >
             <BookOpen className="w-4 h-4" />
-            <span className="text-sm">{t('controlPanel.readManual', 'Read Manual')}</span>
+            <span className="text-sm cursor-pointer">{t('controlPanel.readManual', 'Read Manual')}</span>
           </button>
 
           <button
             onClick={handleLogout}
-            className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors"
+            className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
             style={{
               backgroundColor: '#dc2626',
               color: '#ffffff'
@@ -841,37 +839,6 @@ const ControlPanel = () => {
                 className="block text-xs font-medium mb-1"
                 style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
               >
-                {t('controlPanel.currentPassword', 'Current Password')}
-              </label>
-              <div className="relative">
-                <input
-                  type={showCurrentPassword ? "text" : "password"}
-                  value={passwordForm.currentPassword}
-                  onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
-                  autoComplete="current-password"
-                  className="w-full px-3 py-2 pr-10 rounded border text-sm"
-                  style={{
-                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                    color: isDarkMode ? '#ffffff' : '#111827'
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition-opacity"
-                  style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
-                >
-                  {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label 
-                className="block text-xs font-medium mb-1"
-                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
-              >
                 {t('controlPanel.newPassword', 'New Password')}
               </label>
               <div className="relative">
@@ -932,7 +899,7 @@ const ControlPanel = () => {
             <div className="flex space-x-2">
               <button
                 type="submit"
-                className="flex-1 px-3 py-2 rounded text-sm font-medium transition-colors"
+                className="flex-1 px-3 py-2 rounded text-sm font-medium transition-colors cursor-pointer"
                 style={{
                   backgroundColor: '#3b82f6',
                   color: '#ffffff'
@@ -953,10 +920,10 @@ const ControlPanel = () => {
                   localStorage.removeItem('changingPassword');
                   isChangingPassword.current = false;
                   setShowChangePassword(false);
-                  setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                  setPasswordForm({ newPassword: '', confirmPassword: '' });
                   setPasswordError('');
                 }}
-                className="flex-1 px-3 py-2 rounded text-sm font-medium transition-colors"
+                className="flex-1 px-3 py-2 rounded text-sm font-medium transition-colors cursor-pointer"
                 style={{
                   backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6',
                   color: isDarkMode ? '#ffffff' : '#111827'
