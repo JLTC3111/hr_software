@@ -8,24 +8,26 @@ SELECT 'BEFORE FIX:' as status, * FROM user_emails WHERE email LIKE '%info@icue.
 -- Get the hr_user_id for this user (should match the auth_user_id)
 SELECT 'HR User ID:' as info, id, email FROM hr_users WHERE id = 'e7ce8878-e664-4bc1-9b4a-dd8d3bcbe311';
 
--- Delete the malformed row
-DELETE FROM user_emails WHERE email LIKE '%info@icue.vn%';
+-- Drop the unique constraint
+ALTER TABLE user_emails DROP CONSTRAINT user_emails_auth_user_id_key;
 
--- Insert two proper rows
+-- Then insert your data
+DELETE FROM user_emails WHERE email LIKE '%info@icue.vn%' OR email = 'trinhthitinh@icue.vn';
+
 INSERT INTO user_emails (hr_user_id, auth_user_id, email, is_primary)
 VALUES 
-  (
-    'e7ce8878-e664-4bc1-9b4a-dd8d3bcbe311',  -- hr_user_id (same as auth_user_id)
-    'e7ce8878-e664-4bc1-9b4a-dd8d3bcbe311',  -- auth_user_id
-    'trinhthitinh@icue.vn',
-    true  -- Primary email
-  ),
-  (
-    'e7ce8878-e664-4bc1-9b4a-dd8d3bcbe311',  -- hr_user_id
-    'e7ce8878-e664-4bc1-9b4a-dd8d3bcbe311',  -- auth_user_id
-    'info@icue.vn',
-    false  -- Secondary email
-  );
+(
+  'e7ce8878-e664-4bc1-9b4a-dd8d3bcbe311',
+  'e7ce8878-e664-4bc1-9b4a-dd8d3bcbe311',
+  'trinhthitinh@icue.vn',
+  true
+),
+(
+  'e7ce8878-e664-4bc1-9b4a-dd8d3bcbe311',
+  'e7ce8878-e664-4bc1-9b4a-dd8d3bcbe311',
+  'info@icue.vn',
+  false
+);
 
 -- Verify the fix
 SELECT 'AFTER FIX:' as status, email, hr_user_id, auth_user_id, is_primary 
