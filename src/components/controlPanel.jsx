@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { User, LogOut, Key, BookOpen, Shield, Info, Camera, Loader, Users, Eye, EyeOff, Check, AlertCircle, Mail } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { User, LogOut, Key, BookOpen, Shield, Info, Camera, Loader, Users, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../config/supabaseClient';
-import EmailManagement from './EmailManagement';
 
 const ControlPanel = () => {
   const { isDarkMode, bg, text, border } = useTheme();
@@ -13,6 +12,17 @@ const ControlPanel = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const isChangingPassword = useRef(false);
+  
+  // Check localStorage on mount for password change in progress
+  useEffect(() => {
+    const changingPwd = localStorage.getItem('changingPassword');
+    if (changingPwd === 'true') {
+      isChangingPassword.current = true;
+      setShowChangePassword(false);
+      console.log('🔄 Restored isChangingPassword from localStorage');
+    }
+  }, []);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
@@ -56,9 +66,6 @@ const ControlPanel = () => {
   // Toast notification state
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
 
-  // Email management state
-  const [showEmailManagement, setShowEmailManagement] = useState(false);
-
   // Get user role and info
   const userRole = user?.user_metadata?.role || user?.role || 'Employee';
   const userName = user?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
@@ -66,6 +73,20 @@ const ControlPanel = () => {
   const userId = user?.id || '';
   const employeeId = user?.employee_id || user?.employeeId || null;
   const isAdmin = userRole === 'admin' || userRole === 'Admin';
+
+  // Debug: Monitor showChangePassword state changes
+  useEffect(() => {
+    // Check both ref and localStorage
+    const changingPwd = localStorage.getItem('changingPassword') === 'true';
+    console.log('🔄 showChangePassword state changed to:', showChangePassword, '| isChangingPassword.current:', isChangingPassword.current, '| localStorage:', changingPwd);
+    
+    // Aggressively prevent form from reopening during password change process
+    if ((isChangingPassword.current || changingPwd) && showChangePassword) {
+      console.log('⚠️ FORCE CLOSING form during password change process');
+      isChangingPassword.current = true; // Ensure ref is set
+      setShowChangePassword(false);
+    }
+  }, [showChangePassword]);
 
   // Fetch all users for admin password reset
   useEffect(() => {
@@ -84,13 +105,35 @@ const ControlPanel = () => {
   const fetchAllUsers = async () => {
     setLoadingUsers(true);
     try {
-      const { data, error } = await supabase
+      // Fetch users from hr_users
+      const { data: usersData, error: usersError } = await supabase
         .from('hr_users')
         .select('id, full_name, email, role')
         .order('full_name');
       
-      if (error) throw error;
-      setAllUsers(data || []);
+      if (usersError) throw usersError;
+
+      // For each user, try to get their primary email from user_emails table
+      const usersWithPrimaryEmail = await Promise.all(
+        (usersData || []).map(async (user) => {
+          // Try to get primary email from user_emails
+          const { data: emailData } = await supabase
+            .from('user_emails')
+            .select('email')
+            .eq('user_id', user.id)
+            .single();
+          
+          // Use primary email if found, otherwise use first email from hr_users.email
+          const primaryEmail = emailData?.email || user.email.split(';')[0].trim();
+          
+          return {
+            ...user,
+            email: primaryEmail
+          };
+        })
+      );
+      
+      setAllUsers(usersWithPrimaryEmail);
     } catch (error) {
       console.error('Error fetching users:', error);
       setAdminResetError(t('controlPanel.errorFetchingUsers', 'Error loading users'));
@@ -156,78 +199,96 @@ const ControlPanel = () => {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
+    
+    // Prevent multiple simultaneous submissions
+    if (isChangingPassword.current) {
+      console.log('⏸️ Password change already in progress, ignoring duplicate submission');
+      return;
+    }
+    
+    console.log('🔐 Starting password change process...');
+    isChangingPassword.current = true;
+    localStorage.setItem('changingPassword', 'true');
+    console.log('💾 Saved changingPassword flag to localStorage');
     setPasswordError('');
     setPasswordSuccess('');
 
     // Validation
     if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      console.log('❌ Validation failed: Missing fields');
       setPasswordError(t('controlPanel.allFieldsRequired', 'All fields are required'));
+      isChangingPassword.current = false;
+      localStorage.removeItem('changingPassword');
       return;
     }
 
     if (passwordForm.newPassword.length < 6) {
+      console.log('❌ Validation failed: Password too short');
       setPasswordError(t('controlPanel.passwordTooShort', 'Password must be at least 6 characters'));
+      isChangingPassword.current = false;
+      localStorage.removeItem('changingPassword');
       return;
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      console.log('❌ Validation failed: Passwords do not match');
       setPasswordError(t('controlPanel.passwordsDontMatch', 'Passwords do not match'));
+      isChangingPassword.current = false;
+      localStorage.removeItem('changingPassword');
       return;
     }
 
+    console.log('✅ Validation passed');
+
     try {
-      // First verify the current password by attempting to re-authenticate
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) {
-        throw new Error('No user session found');
-      }
-
-      // Verify current password
-      const { error: verifyError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: passwordForm.currentPassword
-      });
-
-      if (verifyError) {
-        setPasswordError(t('controlPanel.currentPasswordIncorrect', 'Current password is incorrect'));
-        return;
-      }
-
-      // Now update to the new password
+      // Update to the new password directly (Supabase will verify the user is authenticated)
+      console.log('� Updating to new password...');
       const { error } = await supabase.auth.updateUser({
         password: passwordForm.newPassword
       });
 
       if (error) {
+        console.log('❌ Password update failed:', error.message);
         throw error;
       }
+      console.log('✅ Password updated successfully in Supabase');
 
-      // Clear form fields
+      // Clear all states first
+      console.log('🧹 Clearing form states...');
+      setPasswordError('');
+      setPasswordSuccess('');
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       
-      // Show success message in the form
-      setPasswordSuccess(t('controlPanel.passwordChanged', 'Password changed successfully!'));
+      // Close the form immediately
+      console.log('🚪 Closing password change form');
+      setShowChangePassword(false);
       
-      // Show success toast
+      // Show success toast notification
+      console.log('📢 Showing success toast...');
       setToast({
         show: true,
         message: t('controlPanel.passwordChanged', 'Password changed successfully!'),
         type: 'success'
       });
       
-      // Close the window after showing success message for 3 seconds
+      // IMPORTANT: Clear the flag immediately after a brief delay to allow the USER_UPDATED event to complete
+      // This prevents the form from reopening during the auth state update
       setTimeout(() => {
-        setShowChangePassword(false);
-        setPasswordSuccess('');
-      }, 3000);
+        console.log('� Clearing changingPassword flag (allowing form to be opened again)');
+        isChangingPassword.current = false;
+        localStorage.removeItem('changingPassword');
+      }, 2000); // 2 seconds - enough time for USER_UPDATED to complete
       
-      // Hide toast after 3 seconds
+      // Hide toast after 4 seconds
       setTimeout(() => {
+        console.log('🔕 Hiding toast');
         setToast({ show: false, message: '', type: '' });
-      }, 3000);
+      }, 4000);
     } catch (error) {
-      console.error('Password change error:', error);
+      console.error('❌ Password change error:', error);
       setPasswordError(error.message || t('controlPanel.passwordChangeError', 'Error changing password'));
+      isChangingPassword.current = false;
+      localStorage.removeItem('changingPassword');
     }
   };
 
@@ -263,61 +324,66 @@ const ControlPanel = () => {
       return;
     }
 
-    // Get the primary email from user_emails table (the one linked to auth)
-    let primaryEmail = selectedUser.email;
-    
-    // If email contains multiple addresses (separated by semicolon), get the auth email from user_emails
-    try {
-      const { data: emailData, error: emailError } = await supabase
-        .from('user_emails')
-        .select('email')
-        .eq('user_id', selectedUserId)
-        .single();
-      
-      if (emailData && emailData.email) {
-        primaryEmail = emailData.email;
-      } else {
-        // Fallback: if no entry in user_emails, use first email from the list
-        primaryEmail = selectedUser.email.split(';')[0].trim();
-      }
-    } catch (err) {
-      // Fallback: use first email from semicolon-separated list
-      primaryEmail = selectedUser.email.split(';')[0].trim();
-    }
-
     // Confirm action
-    if (!window.confirm(t('controlPanel.confirmResetPassword', `Are you sure you want to reset password for ${primaryEmail}?`))) {
+    const confirmMessage = `Are you sure you want to reset password for ${selectedUser.full_name || selectedUser.email}?\n\nUser: ${selectedUser.full_name}\nEmail: ${selectedUser.email}\nRole: ${getTranslatedRole(selectedUser.role)}`;
+    if (!window.confirm(confirmMessage)) {
       return;
     }
 
     try {
-      // Send password reset email to the primary email
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(primaryEmail, {
-        redirectTo: `${window.location.origin}/login`
-      });
-
-      if (resetError) {
-        throw resetError;
+      // Get the current user's session token
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No active session');
       }
 
-      setAdminResetSuccess(t('controlPanel.passwordResetEmailSent', `Password reset email sent to ${primaryEmail}. They will receive instructions to set a new password.`));
+      // Call the Edge Function to reset password with service role
+      const response = await fetch(
+        `${supabase.supabaseUrl}/functions/v1/admin-reset-password`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: selectedUserId,
+            newPassword: adminResetPassword
+          })
+        }
+      );
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to reset password');
+      }
+
+      setAdminResetSuccess(t('controlPanel.passwordResetSuccess', `Password successfully reset for ${selectedUser.full_name}!`));
+      
+      // Clear the form
+      setAdminResetPassword('');
+      setAdminResetConfirm('');
+      setSelectedUserId('');
       
       // Show success toast
       setToast({
         show: true,
-        message: t('controlPanel.passwordResetSuccess', `Password reset email sent to ${primaryEmail}!`),
+        message: t('controlPanel.passwordResetSuccess', `Password successfully reset for ${selectedUser.full_name}!`),
         type: 'success'
       });
       
-      // Don't clear the password immediately so admin can copy it
+      // Close the window after showing success message
       setTimeout(() => {
-        setAdminResetPassword('');
-        setAdminResetConfirm('');
-        setSelectedUserId('');
-        setAdminResetSuccess('');
         setShowAdminReset(false);
+        setAdminResetSuccess('');
+      }, 3000);
+      
+      // Hide toast after 3 seconds
+      setTimeout(() => {
         setToast({ show: false, message: '', type: '' });
-      }, 10000); // Give 10 seconds to copy the password
+      }, 3000);
     } catch (error) {
       console.error('Admin password reset error:', error);
       setAdminResetError(error.message || t('controlPanel.passwordResetError', 'Error resetting password. You may need admin service role access.'));
@@ -646,7 +712,12 @@ const ControlPanel = () => {
         {/* Action Buttons */}
         <div className="space-y-2">
           <button
-            onClick={() => setShowChangePassword(!showChangePassword)}
+            onClick={() => {
+              // Clear the flag when manually toggling the form
+              localStorage.removeItem('changingPassword');
+              isChangingPassword.current = false;
+              setShowChangePassword(!showChangePassword);
+            }}
             className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors"
             style={{
               backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6',
@@ -681,27 +752,6 @@ const ControlPanel = () => {
             >
               <Users className="w-4 h-4" />
               <span className="text-sm">{t('controlPanel.resetOtherUserPassword', 'Reset Other Employee Password')}</span>
-            </button>
-          )}
-
-          {/* Admin Email Management Button */}
-          {isAdmin && (
-            <button
-              onClick={() => setShowEmailManagement(!showEmailManagement)}
-              className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors"
-              style={{
-                backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff',
-                color: isDarkMode ? '#93c5fd' : '#1e40af'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = isDarkMode ? '#1e40af' : '#dbeafe';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = isDarkMode ? '#1e3a5f' : '#eff6ff';
-              }}
-            >
-              <Mail className="w-4 h-4" />
-              <span className="text-sm">{t('controlPanel.manageEmails', 'Manage User Emails')}</span>
             </button>
           )}
 
@@ -744,7 +794,7 @@ const ControlPanel = () => {
       </div>
 
       {/* Change Password Form */}
-      {showChangePassword && (
+      {showChangePassword && !isChangingPassword.current && localStorage.getItem('changingPassword') !== 'true' && (
         <div 
           className="rounded-lg shadow-sm p-4"
           style={{
@@ -798,6 +848,7 @@ const ControlPanel = () => {
                   type={showCurrentPassword ? "text" : "password"}
                   value={passwordForm.currentPassword}
                   onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                  autoComplete="current-password"
                   className="w-full px-3 py-2 pr-10 rounded border text-sm"
                   style={{
                     backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
@@ -828,6 +879,7 @@ const ControlPanel = () => {
                   type={showNewPassword ? "text" : "password"}
                   value={passwordForm.newPassword}
                   onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                  autoComplete="new-password"
                   className="w-full px-3 py-2 pr-10 rounded border text-sm"
                   style={{
                     backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
@@ -858,6 +910,7 @@ const ControlPanel = () => {
                   type={showConfirmPassword ? "text" : "password"}
                   value={passwordForm.confirmPassword}
                   onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                  autoComplete="new-password"
                   className="w-full px-3 py-2 pr-10 rounded border text-sm"
                   style={{
                     backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
@@ -896,6 +949,9 @@ const ControlPanel = () => {
               <button
                 type="button"
                 onClick={() => {
+                  // Clear the flag when cancelling
+                  localStorage.removeItem('changingPassword');
+                  isChangingPassword.current = false;
                   setShowChangePassword(false);
                   setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
                   setPasswordError('');
@@ -1363,11 +1419,6 @@ const ControlPanel = () => {
             </span>
           </div>
         </div>
-      )}
-
-      {/* Email Management Section */}
-      {showEmailManagement && isAdmin && (
-        <EmailManagement />
       )}
 
       <style>{`

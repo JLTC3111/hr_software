@@ -117,7 +117,15 @@ export const AuthProvider = ({ children }) => {
         // Don't reload profile, just update session
       } else if (event === 'USER_UPDATED' && session) {
         console.log('👤 User updated');
-        await fetchUserProfile(session.user.id);
+        // Check if this is a password change - if so, skip profile reload
+        // Password changes don't affect user metadata, so no need to reload
+        const isPasswordChange = localStorage.getItem('changingPassword') === 'true';
+        if (isPasswordChange) {
+          console.log('⏭️ Skipping profile reload for password change');
+        } else {
+          console.log('🔄 Reloading profile for user update');
+          await fetchUserProfile(session.user.id);
+        }
       }
     });
 
