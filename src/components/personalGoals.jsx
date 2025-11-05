@@ -101,6 +101,30 @@ const TaskPerformanceReview = ({ employees }) => {
     fetchEmployeeData();
   }, [selectedEmployee, employees, viewMode]);
 
+  // ESC key handler to close modals
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape') {
+        if (evaluatingTask) {
+          setEvaluatingTask(null);
+          setEvaluationForm({ qualityRating: 0, comments: '', selfAssessment: '' });
+        } else if (creatingGoal) {
+          setCreatingGoal(false);
+        } else if (editingPerformanceRating) {
+          cancelPerformanceRatingEdit();
+        }
+      }
+    };
+
+    // Add event listener
+    document.addEventListener('keydown', handleEscKey);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [evaluatingTask, creatingGoal, editingPerformanceRating]);
+
   // Load tasks for selected month
   useEffect(() => {
     const fetchMonthlyTasks = async () => {

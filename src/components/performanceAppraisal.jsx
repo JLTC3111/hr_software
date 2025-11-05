@@ -31,6 +31,7 @@ const PerformanceAppraisal = ({ employees }) => {
   const [loading, setLoading] = useState(false);
   const [goals, setGoals] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [skills, setSkills] = useState([]);
   const [progressChanges, setProgressChanges] = useState({}); // Track progress changes by goal ID
 
   // Form state for new goal
@@ -67,6 +68,31 @@ const PerformanceAppraisal = ({ employees }) => {
     }
   }, [selectedEmployee]);
 
+  // ESC key handler to close modals
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape') {
+        if (showAddGoalModal) {
+          setShowAddGoalModal(false);
+        } else if (showAddReviewModal) {
+          setShowAddReviewModal(false);
+        } else if (showEditGoalModal) {
+          setShowEditGoalModal(false);
+        } else if (showReviewDetailModal) {
+          setShowReviewDetailModal(false);
+        }
+      }
+    };
+
+    // Add event listener
+    document.addEventListener('keydown', handleEscKey);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [showAddGoalModal, showAddReviewModal, showEditGoalModal, showReviewDetailModal]);
+
   const fetchGoalsAndReviews = async () => {
     setLoading(true);
     try {
@@ -85,6 +111,19 @@ const PerformanceAppraisal = ({ employees }) => {
       if (reviewsResult.success) {
         setReviews(reviewsResult.data || []);
       }
+
+      // Fetch skills assessments
+      const { data: skillsData, error: skillsError } = await supabase
+        .from('skills_assessments')
+        .select('*')
+        .eq('employee_id', selectedEmployee)
+        .order('skill_category', { ascending: true });
+
+      if (!skillsError && skillsData) {
+        setSkills(skillsData);
+      } else {
+        setSkills([]);
+      }
     } catch (error) {
       console.error('Error fetching performance data:', error);
     } finally {
@@ -100,70 +139,97 @@ const PerformanceAppraisal = ({ employees }) => {
       // Round to 2 decimal places (to match DECIMAL(3,2) in database)
       const roundedRating = Math.round(newRating * 100) / 100;
 
-      // Get current quarter and year for review_period
-      const now = new Date();
-      const quarter = Math.floor(now.getMonth() / 3) + 1;
-      const year = now.getFullYear();
-      const reviewPeriod = `Q${quarter}-${year}`;
-
-      // Check if review exists for this period
-      const { data: existingReview, error: fetchError } = await supabase
-        .from('performance_reviews')
-        .select('id')
-        .eq('employee_id', selectedEmployee)
-        .eq('review_period', reviewPeriod)
-        .single();
-
-      let result;
-      if (existingReview && !fetchError) {
-        // Update existing review
-        result = await supabase
-          .from('performance_reviews')
-          .update({ 
-            overall_rating: roundedRating,
-            status: 'approved',
-            approved_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingReview.id)
-          .select();
-      } else {
-        // Create new review
-        result = await supabase
-          .from('performance_reviews')
-          .insert({
-            employee_id: selectedEmployee,
-            reviewer_id: user?.employeeId,
-            review_period: reviewPeriod,
-            review_type: 'quarterly',
-            overall_rating: roundedRating,
-            status: 'approved',
-            review_date: new Date().toISOString().split('T')[0],
-            approved_at: new Date().toISOString()
-          })
-          .select();
-      }
-
-      if (result.error) {
-        console.error('Error saving to performance_reviews:', result.error);
-        throw result.error;
-      }
-
-      // Also update legacy employees.performance column for backward compatibility
+      // Only update legacy employees.performance column
       const { updateEmployee } = await import('../services/employeeService');
-      await updateEmployee(selectedEmployee, {
+      const result = await updateEmployee(selectedEmployee, {
         performance: roundedRating
       });
 
-      console.log('Performance review saved:', result.data);
-      
-      // Show success notification
-      alert(t('performance.ratingUpdated', 'Performance rating updated successfully!'));
-      // Refresh the employee data
-      fetchGoalsAndReviews();
+      if (result.success) {
+        console.log('Performance rating updated in employees table');
+        
+        // Show success notification
+        alert(t('performance.ratingUpdated', 'Performance rating updated successfully!'));
+        // Refresh the employee data
+        fetchGoalsAndReviews();
+      } else {
+        alert(t('performance.ratingUpdateError', 'Failed to update performance rating'));
+      }
     } catch (error) {
       console.error('Error updating performance rating:', error);
       alert(t('performance.ratingUpdateError', 'Failed to update performance rating'));
+    }
+  };
+
+  // Handler to update skill rating
+  const handleUpdateSkillRating = async (skillName, category, newRating) => {
+    if (!selectedEmployee) return;
+    
+    try {
+      const roundedRating = Math.round(newRating * 10) / 10;
+      
+      // Update local state immediately for instant UI feedback
+      setSkills(prevSkills => {
+        const existingSkillIndex = prevSkills.findIndex(s => s.skill_name === skillName);
+        
+        if (existingSkillIndex >= 0) {
+          // Update existing skill
+          const updated = [...prevSkills];
+          updated[existingSkillIndex] = {
+            ...updated[existingSkillIndex],
+            rating: roundedRating,
+            proficiency_level: roundedRating >= 4 ? 'advanced' : roundedRating >= 3 ? 'intermediate' : 'beginner'
+          };
+          return updated;
+        } else {
+          // Add new skill
+          return [...prevSkills, {
+            employee_id: selectedEmployee,
+            skill_name: skillName,
+            skill_category: category,
+            rating: roundedRating,
+            proficiency_level: roundedRating >= 4 ? 'advanced' : roundedRating >= 3 ? 'intermediate' : 'beginner',
+            assessment_date: new Date().toISOString().split('T')[0]
+          }];
+        }
+      });
+
+      // Check if skill exists in database
+      const { data: existing, error: fetchError } = await supabase
+        .from('skills_assessments')
+        .select('id')
+        .eq('employee_id', selectedEmployee)
+        .eq('skill_name', skillName)
+        .single();
+
+      if (existing && !fetchError) {
+        // Update existing
+        await supabase
+          .from('skills_assessments')
+          .update({
+            rating: roundedRating,
+            proficiency_level: roundedRating >= 4 ? 'advanced' : roundedRating >= 3 ? 'intermediate' : 'beginner',
+            assessment_date: new Date().toISOString().split('T')[0],
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
+      } else {
+        // Create new
+        await supabase
+          .from('skills_assessments')
+          .insert({
+            employee_id: selectedEmployee,
+            skill_name: skillName,
+            skill_category: category,
+            rating: roundedRating,
+            proficiency_level: roundedRating >= 4 ? 'advanced' : roundedRating >= 3 ? 'intermediate' : 'beginner',
+            assessment_date: new Date().toISOString().split('T')[0]
+          });
+      }
+    } catch (error) {
+      console.error('Error updating skill rating:', error);
+      // Revert local state on error
+      fetchGoalsAndReviews();
     }
   };
 
@@ -182,9 +248,18 @@ const PerformanceAppraisal = ({ employees }) => {
   };
 
   const handleAddReview = () => {
+    // Generate default period based on current date
+    const now = new Date();
+    const currentQuarter = Math.floor(now.getMonth() / 3) + 1;
+    const currentYear = now.getFullYear();
+    
     setReviewForm({
       reviewType: 'quarterly',
-      reviewPeriod: '',
+      reviewPeriod: `Q${currentQuarter}-${currentYear}`,
+      periodType: 'quarter', // 'month', 'quarter', 'annual'
+      selectedYear: currentYear,
+      selectedQuarter: currentQuarter,
+      selectedMonth: now.getMonth() + 1,
       overallRating: 5,
       technicalSkillsRating: 5,
       communicationRating: 5,
@@ -223,19 +298,74 @@ const PerformanceAppraisal = ({ employees }) => {
     e.preventDefault();
     setLoading(true);
     
-    const result = await performanceService.createPerformanceReview({
-      employeeId: selectedEmployee,
-      reviewerId: selectedEmployee, // Should be manager/reviewer ID
-      ...reviewForm
-    });
+    try {
+      // Create performance review
+      const result = await performanceService.createPerformanceReview({
+        employeeId: selectedEmployee,
+        reviewerId: user?.employeeId || selectedEmployee,
+        ...reviewForm
+      });
 
-    if (result.success) {
-      setShowAddReviewModal(false);
-      fetchGoalsAndReviews(); // Refresh data
-      alert(t('performance.reviewCreatedSuccess', 'Review created successfully!'));
-    } else {
-      alert(t('performance.reviewCreatedError', 'Failed to create review: ') + result.error);
+      if (result.success) {
+        // Save individual skill ratings to skills_assessments table
+        const skillsToSave = [
+          { name: 'Technical Skills', category: 'technical', rating: reviewForm.technicalSkillsRating },
+          { name: 'Communication', category: 'communication', rating: reviewForm.communicationRating },
+          { name: 'Leadership', category: 'leadership', rating: reviewForm.leadershipRating },
+          { name: 'Teamwork', category: 'teamwork', rating: reviewForm.teamworkRating },
+          { name: 'Problem Solving', category: 'problem_solving', rating: reviewForm.problemSolvingRating }
+        ];
+
+        // Save or update each skill assessment
+        for (const skill of skillsToSave) {
+          try {
+            // Check if skill assessment already exists
+            const { data: existing, error: fetchError } = await supabase
+              .from('skills_assessments')
+              .select('id')
+              .eq('employee_id', selectedEmployee)
+              .eq('skill_name', skill.name)
+              .single();
+
+            if (existing && !fetchError) {
+              // Update existing
+              await supabase
+                .from('skills_assessments')
+                .update({
+                  rating: skill.rating,
+                  assessment_date: new Date().toISOString().split('T')[0],
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', existing.id);
+            } else {
+              // Create new
+              await supabase
+                .from('skills_assessments')
+                .insert({
+                  employee_id: selectedEmployee,
+                  skill_name: skill.name,
+                  skill_category: skill.category,
+                  rating: skill.rating,
+                  proficiency_level: skill.rating >= 4 ? 'advanced' : skill.rating >= 3 ? 'intermediate' : 'beginner',
+                  assessment_date: new Date().toISOString().split('T')[0]
+                });
+            }
+          } catch (skillError) {
+            console.error(`Error saving skill ${skill.name}:`, skillError);
+          }
+        }
+
+        setShowAddReviewModal(false);
+        fetchGoalsAndReviews(); // Refresh data
+        alert(t('performance.reviewCreatedSuccess', 'Review created successfully!'));
+      } else {
+        alert(t('performance.reviewCreatedError', 'Failed to create review: ') + result.error);
+      }
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      alert(t('performance.reviewCreatedError', 'Failed to create review'));
     }
+    
     setLoading(false);
   };
 
@@ -367,7 +497,7 @@ const PerformanceAppraisal = ({ employees }) => {
       strengths: review.strengths,
       areasForImprovement: review.areas_for_improvement
     })),
-    skills: [] // Will be fetched separately if needed
+    skills: skills
   };
 
   const periods = [
@@ -658,6 +788,68 @@ const PerformanceAppraisal = ({ employees }) => {
               </p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Individual Skills Rating */}
+      <div 
+        className="rounded-lg shadow-sm border p-6"
+        style={{
+          backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+          color: isDarkMode ? '#ffffff' : '#111827',
+          borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
+        }}
+      >
+        <h3 
+          className="text-lg font-semibold mb-4"
+          style={{
+            backgroundColor: 'transparent',
+            color: isDarkMode ? '#ffffff' : '#111827',
+            borderColor: 'transparent'
+          }}
+        >
+          {t('performance.skillsAssessment')}
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[
+            { key: 'technicalSkills', label: t('performance.technical', 'Technical Skills'), category: 'technical', skillName: 'Technical Skills' },
+            { key: 'communication', label: t('performance.communication', 'Communication'), category: 'communication', skillName: 'Communication' },
+            { key: 'leadership', label: t('performance.leadership', 'Leadership'), category: 'leadership', skillName: 'Leadership' },
+            { key: 'teamwork', label: t('performance.teamwork', 'Teamwork'), category: 'teamwork', skillName: 'Teamwork' },
+            { key: 'problemSolving', label: t('performance.problemSolving', 'Problem Solving'), category: 'problem_solving', skillName: 'Problem Solving' }
+          ].map(({ key, label, category, skillName }) => {
+            const skill = currentData.skills.find(s => s.skill_name === skillName);
+            const currentRating = skill?.rating || 0;
+            
+            return (
+              <div key={key} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">{label}</label>
+                  <span className="text-sm font-semibold">{currentRating.toFixed(1)}/5.0</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="5"
+                  step="0.5"
+                  value={currentRating}
+                  onChange={(e) => {
+                    const newRating = parseFloat(e.target.value);
+                    handleUpdateSkillRating(skillName, category, newRating);
+                  }}
+                  className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(currentRating / 5) * 100}%, ${isDarkMode ? '#4b5563' : '#e5e7eb'} ${(currentRating / 5) * 100}%, ${isDarkMode ? '#4b5563' : '#e5e7eb'} 100%)`
+                  }}
+                />
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>{t('performance.beginner', 'Beginner')}</span>
+                  <span>{t('performance.advanced', 'Advanced')}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -1597,14 +1789,156 @@ const PerformanceAppraisal = ({ employees }) => {
                       color: isDarkMode ? '#ffffff' : '#111827'
                     }}
                   >
-                    <option value="quarterly">{t('performance.quarterly', '')}</option>
-                    <option value="mid-year">{t('performance.midYear', '')}</option>
-                    <option value="annual">{t('performance.annual', '')}</option>
-                    <option value="probation">{t('performance.probation', '')}</option>
-                    <option value="project">{t('performance.project', '')}</option>
-                    <option value="ad-hoc">{t('performance.adHoc', '')}</option>
+                    <option value="weekly">{t('performance.weekly', 'Weekly')}</option>
+                    <option value="monthly">{t('performance.monthly', 'Monthly')}</option>
+                    <option value="quarterly">{t('performance.quarterly', 'Quarterly')}</option>
+                    <option value="mid-year">{t('performance.midYear', 'Mid-Year')}</option>
+                    <option value="annual">{t('performance.annual', 'Annual')}</option>
+                    <option value="probation">{t('performance.probation', 'Probation')}</option>
+                    <option value="ad-hoc">{t('performance.adHoc', 'Ad-Hoc')}</option>
                   </select>
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {t('performance.periodType', 'Period Type')} <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    required
+                    value={reviewForm.periodType || 'quarter'}
+                    onChange={(e) => {
+                      const type = e.target.value;
+                      const now = new Date();
+                      const year = now.getFullYear();
+                      const quarter = Math.floor(now.getMonth() / 3) + 1;
+                      const month = now.getMonth() + 1;
+                      
+                      let period = '';
+                      if (type === 'month') {
+                        period = `${year}-${String(month).padStart(2, '0')}`;
+                      } else if (type === 'quarter') {
+                        period = `Q${quarter}-${year}`;
+                      } else if (type === 'annual') {
+                        period = `${year}`;
+                      }
+                      
+                      setReviewForm({
+                        ...reviewForm, 
+                        periodType: type,
+                        reviewPeriod: period,
+                        selectedYear: year,
+                        selectedQuarter: quarter,
+                        selectedMonth: month
+                      });
+                    }}
+                    className="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer"
+                    style={{
+                      backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+                      borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                      color: isDarkMode ? '#ffffff' : '#111827'
+                    }}
+                  >
+                    <option value="month">{t('performance.byMonth', 'By Month')}</option>
+                    <option value="quarter">{t('performance.byQuarter', 'By Quarter')}</option>
+                    <option value="annual">{t('performance.byYear', 'By Year')}</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Period Selection */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {t('performance.year', 'Year')} <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    required
+                    value={reviewForm.selectedYear || new Date().getFullYear()}
+                    onChange={(e) => {
+                      const year = parseInt(e.target.value);
+                      const type = reviewForm.periodType || 'quarter';
+                      let period = '';
+                      
+                      if (type === 'month') {
+                        period = `${year}-${String(reviewForm.selectedMonth || 1).padStart(2, '0')}`;
+                      } else if (type === 'quarter') {
+                        period = `Q${reviewForm.selectedQuarter || 1}-${year}`;
+                      } else {
+                        period = `${year}`;
+                      }
+                      
+                      setReviewForm({...reviewForm, selectedYear: year, reviewPeriod: period});
+                    }}
+                    className="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer"
+                    style={{
+                      backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+                      borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                      color: isDarkMode ? '#ffffff' : '#111827'
+                    }}
+                  >
+                    {[...Array(10)].map((_, i) => {
+                      const year = new Date().getFullYear() - 2 + i;
+                      return <option key={year} value={year}>{year}</option>;
+                    })}
+                  </select>
+                </div>
+
+                {reviewForm.periodType === 'quarter' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      {t('performance.quarter', 'Quarter')} <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      required
+                      value={reviewForm.selectedQuarter || 1}
+                      onChange={(e) => {
+                        const quarter = parseInt(e.target.value);
+                        const period = `Q${quarter}-${reviewForm.selectedYear || new Date().getFullYear()}`;
+                        setReviewForm({...reviewForm, selectedQuarter: quarter, reviewPeriod: period});
+                      }}
+                      className="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer"
+                      style={{
+                        backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+                        borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                        color: isDarkMode ? '#ffffff' : '#111827'
+                      }}
+                    >
+                      <option value="1">{t('performance.q1', 'Q1 (Jan-Mar)')}</option>
+                      <option value="2">{t('performance.q2', 'Q2 (Apr-Jun)')}</option>
+                      <option value="3">{t('performance.q3', 'Q3 (Jul-Sep)')}</option>
+                      <option value="4">{t('performance.q4', 'Q4 (Oct-Dec)')}</option>
+                    </select>
+                  </div>
+                )}
+
+                {reviewForm.periodType === 'month' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      {t('performance.month', 'Month')} <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      required
+                      value={reviewForm.selectedMonth || 1}
+                      onChange={(e) => {
+                        const month = parseInt(e.target.value);
+                        const period = `${reviewForm.selectedYear || new Date().getFullYear()}-${String(month).padStart(2, '0')}`;
+                        setReviewForm({...reviewForm, selectedMonth: month, reviewPeriod: period});
+                      }}
+                      className="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer"
+                      style={{
+                        backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+                        borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+                        color: isDarkMode ? '#ffffff' : '#111827'
+                      }}
+                    >
+                      {[...Array(12)].map((_, i) => (
+                        <option key={i + 1} value={i + 1}>
+                          {new Date(2000, i, 1).toLocaleString('default', { month: 'long' })}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium mb-2">
@@ -1613,13 +1947,12 @@ const PerformanceAppraisal = ({ employees }) => {
                   <input
                     type="text"
                     value={reviewForm.reviewPeriod}
-                    onChange={(e) => setReviewForm({...reviewForm, reviewPeriod: e.target.value})}
-                    placeholder={t('performance.reviewPeriodPlaceholder', 'e.g., Q4 2024')}
-                    className="w-full px-4 py-2 rounded-lg border transition-colors"
+                    readOnly
+                    className="w-full px-4 py-2 rounded-lg border transition-colors bg-gray-100"
                     style={{
-                      backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+                      backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6',
                       borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                      color: isDarkMode ? '#ffffff' : '#111827'
+                      color: isDarkMode ? '#9ca3af' : '#6b7280'
                     }}
                   />
                 </div>
