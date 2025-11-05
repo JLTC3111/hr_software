@@ -6,12 +6,20 @@ import {
   Calendar, 
   Download, 
   Users, 
+  User,
   Filter, 
   BarChart3, 
   Clock, 
   CheckCircle, 
   PlayCircle, 
   Target,
+  Pickaxe,
+  HeartPlus,
+  ShieldCheck,
+  Goal,
+  PenOff,
+  Apple, 
+  Hourglass,
   FileText,
   Database,
   Loader
@@ -36,7 +44,7 @@ const Reports = () => {
   // Helper function to translate position values
   const translatePosition = (position) => {
     if (!position) return '';
-    return t(`positions.${position}`, position);
+    return t(`employeePosition.${position}`, position);
   };
   
   // Theme classes
@@ -144,7 +152,8 @@ const Reports = () => {
       
       console.log('Fetching data for:', { selectedEmployee, employeeId, activeTab, startDate, endDate });
 
-      if (activeTab === 'time-entries') {
+      // Fetch Time Entries (for 'all' or 'time-entries' tab)
+      if (activeTab === 'all' || activeTab === 'time-entries') {
         // Use direct Supabase query with proper join - fetch all entries first
         const { data: allTimeEntries, error } = await supabase
           .from('time_entries')
@@ -184,7 +193,10 @@ const Reports = () => {
           
           setReportData(prev => ({ ...prev, timeEntries: filteredEntries }));
         }
-      } else if (activeTab === 'tasks') {
+      }
+
+      // Fetch Tasks (for 'all' or 'tasks' tab)
+      if (activeTab === 'all' || activeTab === 'tasks') {
         // For tasks, don't filter by date range as tasks are ongoing
         // Only filter by employee if one is selected
         const tasksResponse = await getAllTasks(
@@ -212,7 +224,10 @@ const Reports = () => {
           error: tasksResponse.error
         });
         setReportData(prev => ({ ...prev, tasks: filteredTasks }));
-      } else if (activeTab === 'goals') {
+      }
+
+      // Fetch Goals (for 'all' or 'goals' tab)
+      if (activeTab === 'all' || activeTab === 'goals') {
         const goalsResponse = await performanceService.getAllPerformanceGoals(
           employeeId ? { employeeId: employeeId } : {}
         );
@@ -249,6 +264,12 @@ const Reports = () => {
   // Get current data based on active tab
   const currentData = useMemo(() => {
     switch (activeTab) {
+      case 'all':
+        return {
+          timeEntries: reportData.timeEntries,
+          tasks: reportData.tasks,
+          goals: reportData.goals
+        };
       case 'time-entries':
         return reportData.timeEntries;
       case 'tasks':
@@ -263,6 +284,31 @@ const Reports = () => {
   // Calculate statistics
   const stats = useMemo(() => {
     const data = currentData;
+    
+    if (activeTab === 'all') {
+      // Combined statistics for all data types
+      const timeEntries = data.timeEntries || [];
+      const tasks = data.tasks || [];
+      const goals = data.goals || [];
+      
+      const totalRecords = timeEntries.length + tasks.length + goals.length;
+      const totalHours = timeEntries.reduce((sum, entry) => sum + (entry.hours || 0), 0);
+      const approvedTime = timeEntries.filter(entry => entry.status === 'approved').length;
+      const completedTasks = tasks.filter(task => task.status === 'completed').length;
+      const achievedGoals = goals.filter(goal => goal.status === 'achieved').length;
+      
+      return {
+        totalRecords,
+        totalHours: totalHours.toFixed(1),
+        timeEntriesCount: timeEntries.length,
+        tasksCount: tasks.length,
+        goalsCount: goals.length,
+        approvedTime,
+        completedTasks,
+        achievedGoals
+      };
+    }
+    
     const totalRecords = data.length;
 
     if (activeTab === 'time-entries') {
@@ -1098,11 +1144,16 @@ const Reports = () => {
           <div className="flex flex-wrap gap-3">
             <button
               onClick={() => {
-                if (activeTab === 'time-entries') exportTimeEntries();
+                if (activeTab === 'all') {
+                  // Export all data types when "all" is selected
+                  exportTimeEntries();
+                  setTimeout(() => exportTasks(), 500);
+                  setTimeout(() => exportGoals(), 1000);
+                } else if (activeTab === 'time-entries') exportTimeEntries();
                 else if (activeTab === 'tasks') exportTasks();
                 else if (activeTab === 'goals') exportGoals();
               }}
-              disabled={exporting || currentData.length === 0}
+              disabled={exporting || (activeTab === 'all' ? stats.totalRecords === 0 : currentData.length === 0)}
               className={`px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg flex items-center gap-2 transition-colors font-medium`}
             >
               {exporting ? (
@@ -1144,7 +1195,7 @@ const Reports = () => {
               {t('reports.employee', 'Employee')} 
               {selectedEmployee !== 'all' && (
                 <span className="ml-2 px-2 py-0.5 text-xs bg-blue-600 text-white rounded-full">
-                  Individual Stats
+                 
                 </span>
               )}
             </label>
@@ -1154,14 +1205,15 @@ const Reports = () => {
               className={`w-full px-3 py-2 rounded-lg border ${selectedEmployee !== 'all' ? 'border-blue-500 ring-2 ring-blue-500' : border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
             >
               <option value="all">
-                📊 {t('reports.allEmployees', 'All Employees')} ({reportData.employees.length})
+                {t('reports.allEmployees', 'All Employees')} ({reportData.employees.length})
               </option>
               <optgroup label="──────────────────────">
                 {reportData.employees
                   .sort((a, b) => a.name.localeCompare(b.name))
                   .map(emp => (
                     <option key={emp.id} value={emp.id}>
-                      👤 {emp.name} • {translateDepartment(emp.department)} • {translatePosition(emp.position)}
+                      <Users className="w-4 h-4 inline mr-1" />
+                      {emp.name} • {translateDepartment(emp.department)} • {translatePosition(emp.position)}
                     </option>
                   ))}
               </optgroup>
@@ -1206,6 +1258,7 @@ const Reports = () => {
               onChange={(e) => setActiveTab(e.target.value)}
               className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
             >
+              <option value="all">{t('reports.all', 'All Data Types')}</option>
               <option value="time-entries">{t('reports.timeEntries', 'Time Entries')}</option>
               <option value="tasks">{t('reports.tasks', 'Tasks')}</option>
               <option value="goals">{t('reports.goals', 'Personal Goals')}</option>
@@ -1281,46 +1334,43 @@ const Reports = () => {
                   Report Period: {filters.startDate} to {filters.endDate}
                 </p>
               </div>
-              <div className={`px-4 py-2 rounded-lg ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'}`}>
-                <Users className="w-8 h-8 text-blue-600" />
-              </div>
             </div>
 
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {/* Time Tracking Stats */}
-              <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <Clock className="w-5 h-5 text-blue-600 mb-2" />
+              <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                <Clock className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                 <p className={`text-xs ${text.secondary} mb-1`}>Total Hours</p>
                 <p className={`text-2xl font-bold ${text.primary}`}>{totalHours.toFixed(1)}</p>
               </div>
 
-              <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <CheckCircle className="w-5 h-5 text-green-600 mb-2" />
+              <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                <Hourglass className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                 <p className={`text-xs ${text.secondary} mb-1`}>Regular Hours</p>
                 <p className={`text-2xl font-bold ${text.primary}`}>{regularHours.toFixed(1)}</p>
               </div>
 
-              <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <Clock className="w-5 h-5 text-orange-600 mb-2" />
+              <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                <HeartPlus className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                 <p className={`text-xs ${text.secondary} mb-1`}>Overtime</p>
                 <p className={`text-2xl font-bold ${text.primary}`}>{overtimeHours.toFixed(1)}</p>
               </div>
 
-              <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <CheckCircle className="w-5 h-5 text-purple-600 mb-2" />
+              <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                <ShieldCheck className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                 <p className={`text-xs ${text.secondary} mb-1`}>Tasks Done</p>
                 <p className={`text-2xl font-bold ${text.primary}`}>{completedTasks}/{employeeTasks.length}</p>
               </div>
 
-              <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <Target className="w-5 h-5 text-green-600 mb-2" />
+              <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                <Goal className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                 <p className={`text-xs ${text.secondary} mb-1`}>Completion</p>
                 <p className={`text-2xl font-bold ${text.primary}`}>{taskCompletionRate}%</p>
               </div>
 
               <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <Target className="w-5 h-5 text-blue-600 mb-2" />
+                <Pickaxe className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                 <p className={`text-xs ${text.secondary} mb-1`}>Goal Progress</p>
                 <p className={`text-2xl font-bold ${text.primary}`}>{avgProgress}%</p>
               </div>
@@ -1422,6 +1472,38 @@ const Reports = () => {
           </div>
         </div>
 
+        {activeTab === 'all' && (
+          <>
+            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm ${text.secondary}`}>Time Entries</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.timeEntriesCount}</p>
+                </div>
+                <Clock className={`w-8 h-8 ${text.secondary}`} />
+              </div>
+            </div>
+            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm ${text.secondary}`}>Tasks</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.tasksCount}</p>
+                </div>
+                <CheckCircle className={`w-8 h-8 ${text.secondary}`} />
+              </div>
+            </div>
+            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm ${text.secondary}`}>Goals</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.goalsCount}</p>
+                </div>
+                <Target className={`w-8 h-8 ${text.secondary}`} />
+              </div>
+            </div>
+          </>
+        )}
+
         {activeTab === 'time-entries' && (
           <>
             <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
@@ -1437,18 +1519,18 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-sm ${text.secondary}`}>Approved</p>
-                  <p className={`text-3xl font-bold text-green-600`}>{stats.approved}</p>
+                  <p className={`text-3xl font-bold ${text.secondary}`}>{stats.approved}</p>
                 </div>
-                <CheckCircle className={`w-8 h-8 text-green-600`} />
+                <CheckCircle className={`w-8 h-8 ${text.primary}`} />
               </div>
             </div>
             <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-sm ${text.secondary}`}>Pending</p>
-                  <p className={`text-3xl font-bold text-yellow-600`}>{stats.pending}</p>
+                  <p className={`text-3xl font-bold ${text.secondary}`}>{stats.pending}</p>
                 </div>
-                <PlayCircle className={`w-8 h-8 text-yellow-600`} />
+                <PenOff className={`w-8 h-8 ${text.primary}`} />
               </div>
             </div>
           </>
@@ -1534,6 +1616,16 @@ const Reports = () => {
           <table className="w-full">
             <thead className={`${bg.primary}`}>
               <tr>
+                {activeTab === 'all' && (
+                  <>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.type', 'Type')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('employees.employee', 'Employee')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.details', 'Details')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.status', 'Status')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.date', 'Date')}</th>
+                  </>
+                )}
+                
                 {activeTab === 'time-entries' && (
                   <>
                     <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('employees.employee', 'Employee')}</th>
@@ -1566,7 +1658,7 @@ const Reports = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {currentData.length === 0 ? (
+              {(activeTab === 'all' ? (currentData.timeEntries?.length + currentData.tasks?.length + currentData.goals?.length === 0) : currentData.length === 0) ? (
                 <tr>
                   <td colSpan={5} className={`px-6 py-12 text-center ${text.secondary}`}>
                     <div className="flex flex-col items-center">
@@ -1576,6 +1668,100 @@ const Reports = () => {
                     </div>
                   </td>
                 </tr>
+              ) : activeTab === 'all' ? (
+                <>
+                  {/* Time Entries */}
+                  {(currentData.timeEntries || []).slice(0, 20).map((item, index) => (
+                    <tr key={`time-${index}`} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
+                      <td className={`px-6 py-4 whitespace-nowrap`}>
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          Time Entry
+                        </span>
+                      </td>
+                      <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
+                        <div>
+                          <div className="text-sm font-medium">{item.employee?.name || 'Unknown'}</div>
+                          <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
+                        </div>
+                      </td>
+                      <td className={`px-6 py-4 ${text.primary}`}>
+                        <div className="text-sm">{item.hours || 0}h - {item.hour_type}</div>
+                      </td>
+                      <td className={`px-6 py-4 whitespace-nowrap`}>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          item.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                          item.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                          'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                        }`}>
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{item.date}</td>
+                    </tr>
+                  ))}
+                  
+                  {/* Tasks */}
+                  {(currentData.tasks || []).slice(0, 20).map((item, index) => (
+                    <tr key={`task-${index}`} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
+                      <td className={`px-6 py-4 whitespace-nowrap`}>
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                          Task
+                        </span>
+                      </td>
+                      <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
+                        <div>
+                          <div className="text-sm font-medium">{item.employee?.name || 'Unknown'}</div>
+                          <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
+                        </div>
+                      </td>
+                      <td className={`px-6 py-4 ${text.primary}`}>
+                        <div className="text-sm font-medium max-w-xs truncate">{item.title}</div>
+                        <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{item.description}</div>
+                      </td>
+                      <td className={`px-6 py-4 whitespace-nowrap`}>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          item.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                          item.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                          'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                        }`}>
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{item.due_date || '-'}</td>
+                    </tr>
+                  ))}
+                  
+                  {/* Goals */}
+                  {(currentData.goals || []).slice(0, 20).map((item, index) => (
+                    <tr key={`goal-${index}`} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
+                      <td className={`px-6 py-4 whitespace-nowrap`}>
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                          Goal
+                        </span>
+                      </td>
+                      <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
+                        <div>
+                          <div className="text-sm font-medium">{item.employee?.name || 'Unknown'}</div>
+                          <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
+                        </div>
+                      </td>
+                      <td className={`px-6 py-4 ${text.primary}`}>
+                        <div className="text-sm font-medium max-w-xs truncate">{item.title}</div>
+                        <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{item.category} - {item.progress || 0}%</div>
+                      </td>
+                      <td className={`px-6 py-4 whitespace-nowrap`}>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          item.status === 'achieved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                          item.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                          'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                        }`}>
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{item.target_date || '-'}</td>
+                    </tr>
+                  ))}
+                </>
               ) : (
                 currentData.slice(0, 50).map((item, index) => (
                   <tr key={index} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>

@@ -61,6 +61,17 @@ const PerformanceAppraisal = ({ employees }) => {
     comments: ''
   });
 
+  // Helper functions to translate department and position values
+  const translateDepartment = (department) => {
+    if (!department) return '';
+    return t(`departments.${department}`, department);
+  };
+  
+  const translatePosition = (position) => {
+    if (!position) return '';
+    return t(`positions.${position}`, position);
+  };
+
   // Fetch goals and reviews when employee changes
   useEffect(() => {
     if (selectedEmployee) {
@@ -610,10 +621,25 @@ const PerformanceAppraisal = ({ employees }) => {
   const getStatusText = (status) => {
     switch (status) {
       case 'completed': return t('performance.completed');
+      case 'achieved': return t('performance.achieved');
       case 'in_progress': return t('performance.inProgress');
       case 'in-progress': return t('performance.inProgress');
       case 'pending': return t('performance.pending');
+      case 'not-started': return t('performance.notStarted');
       default: return status;
+    }
+  };
+
+  const getReviewTypeText = (reviewType) => {
+    switch (reviewType) {
+      case 'quarterly': return t('performance.quarterly');
+      case 'weekly': return t('performance.weekly');
+      case 'monthly': return t('performance.monthly');
+      case 'annual': return t('performance.annual');
+      case 'mid-year': return t('performance.midYear');
+      case 'probation': return t('performance.probation');
+      case 'ad-hoc': return t('performance.adHoc');
+      default: return reviewType;
     }
   };
 
@@ -878,7 +904,7 @@ const PerformanceAppraisal = ({ employees }) => {
             className={`px-4 py-2 text-white rounded-lg ${isDarkMode ? 'bg-transparent' : 'bg-transparent'} flex items-center space-x-2 cursor-pointer transition-colors`}
             
           >
-            <Plus className="h-4 w-4" />
+            <Plus className={`h-4 w-4 ${text.secondary}`} />
             <span>{t('performance.addGoal')}</span>
           </button>
         </div>
@@ -921,7 +947,7 @@ const PerformanceAppraisal = ({ employees }) => {
                       borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
                     }}
                   >
-                    <Edit className="h-3.5 w-3.5" />
+                    <Edit className={`h-3.5 w-3.5 ${text.secondary}`} />
                   </button>
                 </div>
               </div>
@@ -973,7 +999,7 @@ const PerformanceAppraisal = ({ employees }) => {
             onClick={handleAddGoal}
             className="px-4 py-2 bg-transparent text-white rounded-lg flex items-center space-x-2 cursor-pointer transition-colors"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className={`h-4 w-4 ${text.secondary}`} />
             <span>{t('performance.addNewGoal')}</span>
           </button>
         </div>
@@ -992,7 +1018,7 @@ const PerformanceAppraisal = ({ employees }) => {
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
-                <Goal className="h-5 w-5 ${text.primary}" />
+                <Goal className={`h-5 w-5 ${text.secondary}`} />
                 <h4 
                   className="font-semibold"
                   style={{
@@ -1021,7 +1047,7 @@ const PerformanceAppraisal = ({ employees }) => {
                     borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
                   }}
                 >
-                  <Edit className="h-4 w-4" />
+                  <Edit className={`h-4 w-4 ${text.secondary}`} />
                 </button>
               </div>
             </div>
@@ -1078,7 +1104,7 @@ const PerformanceAppraisal = ({ employees }) => {
                     disabled={loading}
                     className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-1 cursor-pointer transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Save className="h-3 w-3" />
+                    <Save className={`h-3 w-3 ${text.secondary}`} />
                     <span>{loading ? t('common.saving', 'Saving...') : t('common.save', 'Save Progress')}</span>
                   </button>
                 </div>
@@ -1087,7 +1113,7 @@ const PerformanceAppraisal = ({ employees }) => {
 
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4" />
+                <Calendar className={`h-4 w-4 ${text.secondary}`} />
                 <span 
                   style={{
                     backgroundColor: 'transparent',
@@ -1106,7 +1132,7 @@ const PerformanceAppraisal = ({ employees }) => {
                   borderColor: 'transparent'
                 }}
               >
-                <Eye className="h-4 w-4" />
+                <Eye className={`h-4 w-4 ${text.secondary}`} />
                 <span>{t('performance.viewDetails')}</span>
               </button>
             </div>
@@ -1151,7 +1177,7 @@ const PerformanceAppraisal = ({ employees }) => {
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
-                <User className="h-5 w-5" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }} />
+                <User className={`h-5 w-5 ${text.secondary}`} />
                 <div>
                   <h4 
                     className="font-semibold"
@@ -1161,7 +1187,7 @@ const PerformanceAppraisal = ({ employees }) => {
                       borderColor: 'transparent'
                     }}
                   >
-                    {review.type}
+                    {getReviewTypeText(review.type)}
                   </h4>
                   <p 
                     className="text-sm"
@@ -1258,7 +1284,7 @@ const PerformanceAppraisal = ({ employees }) => {
             >
               {availableEmployees.map(employee => (
                 <option key={employee.id} value={String(employee.id)}>
-                  {employee.name}
+                  {employee.name} • {translateDepartment(employee.department)} • {translatePosition(employee.position)}
                 </option>
               ))}
             </select>
@@ -1348,7 +1374,7 @@ const PerformanceAppraisal = ({ employees }) => {
                 onClick={() => setShowAddGoalModal(false)}
                 className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
               >
-                <X className="h-5 w-5" />
+                <X className={`h-5 w-5 ${text.secondary}`} />
               </button>
             </div>
 
@@ -1508,7 +1534,7 @@ const PerformanceAppraisal = ({ employees }) => {
                   disabled={loading}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Save className="h-4 w-4" />
+                  <Save className={`h-4 w-4 ${text.secondary}`} />
                   <span>{loading ? t('common.saving', 'Saving...') : t('common.save', 'Save')}</span>
                 </button>
               </div>
@@ -1544,7 +1570,7 @@ const PerformanceAppraisal = ({ employees }) => {
                 }}
                 className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
               >
-                <X className="h-5 w-5" />
+                <X className={`h-5 w-5 ${text.secondary}`} />
               </button>
             </div>
 
@@ -1735,7 +1761,7 @@ const PerformanceAppraisal = ({ employees }) => {
                   disabled={loading}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Save className="h-4 w-4" />
+                  <Save className={`h-4 w-4 ${text.secondary}`} />
                   <span>{loading ? t('common.updating', 'Updating...') : t('common.update', 'Update')}</span>
                 </button>
               </div>
@@ -1767,7 +1793,7 @@ const PerformanceAppraisal = ({ employees }) => {
                 onClick={() => setShowAddReviewModal(false)}
                 className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
               >
-                <X className="h-5 w-5" />
+                <X className={`h-5 w-5 ${text.secondary}`} />
               </button>
             </div>
 
@@ -2090,7 +2116,7 @@ const PerformanceAppraisal = ({ employees }) => {
                   disabled={loading}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Save className="h-4 w-4" />
+                  <Save className={`h-4 w-4 ${text.secondary}`} />
                   <span>{loading ? t('common.saving', 'Saving...') : t('common.save', 'Save Review')}</span>
                 </button>
               </div>
@@ -2121,7 +2147,7 @@ const PerformanceAppraisal = ({ employees }) => {
               <div>
                 <h2 className="text-2xl font-bold">{t('performance.reviewDetails', 'Performance Review Details')}</h2>
                 <p className="text-sm mt-1" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
-                  {selectedReview.review_type} - {selectedReview.review_period}
+                  {getReviewTypeText(selectedReview.review_type)} - {selectedReview.review_period}
                 </p>
               </div>
               <button
@@ -2131,7 +2157,7 @@ const PerformanceAppraisal = ({ employees }) => {
                 }}
                 className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
               >
-                <X className="h-5 w-5" />
+                <X className={`h-5 w-5 ${text.secondary}`} />
               </button>
             </div>
 
