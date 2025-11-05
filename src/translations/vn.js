@@ -645,6 +645,46 @@ export default {
     errorExporting: 'Lỗi xuất dữ liệu',
     exportToCSV: 'Xuất CSV',
     exportSuccess: 'Xuất dữ liệu thành công',
+    // Performance Summary
+    performanceSummary: ' - Tổng kết Hiệu suất',
+    reportPeriod: 'Kỳ báo cáo',
+    to: 'đến',
+    totalHours: 'Tổng giờ',
+    regularHours: 'Giờ thường',
+    overtime: 'Tăng ca',
+    tasksDone: 'Hoàn thành',
+    completion: 'Hoàn thành',
+    goalProgress: 'Tiến độ mục tiêu',
+    approved: 'Đã duyệt',
+    pending: 'Chờ duyệt',
+    completed: 'Hoàn thành',
+    inProgress: 'Đang thực hiện',
+    completionRate: 'Tỷ lệ hoàn thành',
+    avgProgress: 'Tiến độ trung bình',
+    totalGoals: 'Tổng mục tiêu',
+    type: 'Loại',
+    details: 'Chi tiết',
+    status: 'Trạng thái',
+    date: 'Ngày',
+  },
+
+  // Status translations
+  status: {
+    approved: 'Đã duyệt',
+    pending: 'Chờ xử lý',
+    rejected: 'Bị từ chối',
+    completed: 'Hoàn thành',
+    'in-progress': 'Đang thực hiện',
+    'not-started': 'Chưa bắt đầu',
+    achieved: 'Đã đạt được',
+    'on-hold': 'Tạm dừng',
+  },
+
+  // Time Tracking Hour Types
+  timeTracking: {
+    regular: 'Thường xuyên',
+    overtime: 'Làm thêm',
+    bonus: 'Thưởng',
   },
 
   // Time Clock Entry

@@ -47,6 +47,34 @@ const Reports = () => {
     return t(`employeePosition.${position}`, position);
   };
   
+  // Helper function to translate status values
+  const translateStatus = (status) => {
+    if (!status) return '';
+    const statusMap = {
+      'approved': t('status.approved', 'Approved'),
+      'pending': t('status.pending', 'Pending'),
+      'rejected': t('status.rejected', 'Rejected'),
+      'completed': t('status.completed', 'Completed'),
+      'in-progress': t('status.inProgress', 'In Progress'),
+      'in_progress': t('status.inProgress', 'In Progress'),
+      'not-started': t('status.notStarted', 'Not Started'),
+      'achieved': t('status.achieved', 'Achieved'),
+      'on-hold': t('status.onHold', 'On Hold')
+    };
+    return statusMap[status] || status;
+  };
+  
+  // Helper function to translate hour types
+  const translateHourType = (type) => {
+    if (!type) return '';
+    const typeMap = {
+      'regular': t('timeTracking.regular', 'Regular'),
+      'overtime': t('timeTracking.overtime', 'Overtime'),
+      'bonus': t('timeTracking.bonus', 'Bonus')
+    };
+    return typeMap[type] || type;
+  };
+  
   // Theme classes
   const bg = {
     primary: isDarkMode ? 'bg-gray-800' : 'bg-white',
@@ -1123,8 +1151,8 @@ const Reports = () => {
               {activeTab === 'tasks' && t('reports.tasks', 'Tasks')}
               {activeTab === 'goals' && t('reports.goals', 'Personal Goals')}
               {selectedEmployee !== 'all' && (
-                <span className="px-3 py-1 text-xs bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-medium">
-                  Individual Report
+                <span className="px-3 py-1 text-xs bg-linear-to-r from-blue-600 to-gray-600 text-white rounded-full font-medium">
+                  {t('reports.individualReport', 'Individual Report')}
                 </span>
               )}
             </h2>
@@ -1134,9 +1162,9 @@ const Reports = () => {
               {` from ${filters.startDate} to ${filters.endDate}`}
             </p>
             {selectedEmployee !== 'all' && (
-              <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+              <p className={`text-xs ${isDarkMode ? 'text-amber-100' : 'text-blue-600'} mt-1 flex items-center gap-1 italic`}>
                 <Users className="w-3 h-3" />
-                Exporting will include this employee's detailed performance report
+                {t('reports.exportingIncludes', 'Exporting will include this employee\'s detailed performance report')}
               </p>
             )}
           </div>
@@ -1194,7 +1222,7 @@ const Reports = () => {
               <Users className="w-4 h-4 inline mr-1" />
               {t('reports.employee', 'Employee')} 
               {selectedEmployee !== 'all' && (
-                <span className="ml-2 px-2 py-0.5 text-xs bg-blue-600 text-white rounded-full">
+                <span className="ml-2 px-2 py-0.5 text-xs">
                  
                 </span>
               )}
@@ -1219,9 +1247,9 @@ const Reports = () => {
               </optgroup>
             </select>
             {selectedEmployee !== 'all' && (
-              <p className="mt-1 text-xs text-blue-600 flex items-center gap-1">
+              <p className={`mt-1 text-xs ${isDarkMode ? 'text-amber-100' : 'text-blue-600'} flex items-center gap-1 italic`}>
                 <BarChart3 className="w-3 h-3" />
-                Individual performance metrics shown below
+                {t('reports.individualMetrics', 'Individual performance metrics shown below')}
               </p>
             )}
           </div>
@@ -1321,17 +1349,17 @@ const Reports = () => {
         const avgProgress = employeeGoals.length > 0 ? (employeeGoals.reduce((sum, g) => sum + (g.progress || 0), 0) / employeeGoals.length).toFixed(1) : 0;
 
         return (
-          <div className={`${bg.secondary} rounded-lg border-2 ${isDarkMode ? 'border-blue-500' : 'border-blue-400'} p-6`}>
+          <div className={`${bg.secondary} rounded-lg border border-transparent transition-colors ${isDarkMode ? 'hover:border-amber-50' : 'hover:border-blue-400'} p-6`}>
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h3 className={`text-xl font-bold ${text.primary} mb-1`}>
-                  {employee.name}'s Performance Summary
+                  {employee.name}{t('reports.performanceSummary', "'s Performance Summary")}
                 </h3>
                 <p className={`${text.secondary} text-sm`}>
                   {translateDepartment(employee.department)} • {translatePosition(employee.position)}
                 </p>
                 <p className={`${text.secondary} text-xs mt-1`}>
-                  Report Period: {filters.startDate} to {filters.endDate}
+                  {t('reports.reportPeriod', 'Report Period')}: {filters.startDate} {t('reports.to', 'to')} {filters.endDate}
                 </p>
               </div>
             </div>
@@ -1341,37 +1369,37 @@ const Reports = () => {
               {/* Time Tracking Stats */}
               <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                 <Clock className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                <p className={`text-xs ${text.secondary} mb-1`}>Total Hours</p>
+                <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.totalHours', 'Total Hours')}</p>
                 <p className={`text-2xl font-bold ${text.primary}`}>{totalHours.toFixed(1)}</p>
               </div>
 
               <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                 <Hourglass className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                <p className={`text-xs ${text.secondary} mb-1`}>Regular Hours</p>
+                <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.regularHours', 'Regular Hours')}</p>
                 <p className={`text-2xl font-bold ${text.primary}`}>{regularHours.toFixed(1)}</p>
               </div>
 
               <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                 <HeartPlus className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                <p className={`text-xs ${text.secondary} mb-1`}>Overtime</p>
+                <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.overtime', 'Overtime')}</p>
                 <p className={`text-2xl font-bold ${text.primary}`}>{overtimeHours.toFixed(1)}</p>
               </div>
 
               <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                 <ShieldCheck className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                <p className={`text-xs ${text.secondary} mb-1`}>Tasks Done</p>
+                <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.tasksDone', 'Tasks Done')}</p>
                 <p className={`text-2xl font-bold ${text.primary}`}>{completedTasks}/{employeeTasks.length}</p>
               </div>
 
               <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                 <Goal className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                <p className={`text-xs ${text.secondary} mb-1`}>Completion</p>
+                <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.completion', 'Completion')}</p>
                 <p className={`text-2xl font-bold ${text.primary}`}>{taskCompletionRate}%</p>
               </div>
 
               <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                 <Pickaxe className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                <p className={`text-xs ${text.secondary} mb-1`}>Goal Progress</p>
+                <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.goalProgress', 'Goal Progress')}</p>
                 <p className={`text-2xl font-bold ${text.primary}`}>{avgProgress}%</p>
               </div>
             </div>
@@ -1382,23 +1410,23 @@ const Reports = () => {
               <div className={`p-4 rounded-lg border ${border.primary}`}>
                 <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
                   <Clock className="w-4 h-4" />
-                  Time Entries ({employeeTimeEntries.length})
+                  {t('reports.timeEntries', 'Time Entries')} ({employeeTimeEntries.length})
                 </h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className={text.secondary}>Approved:</span>
+                    <span className={text.secondary}>{t('reports.approved', 'Approved')}:</span>
                     <span className={`font-medium ${text.primary}`}>{approvedEntries}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={text.secondary}>Pending:</span>
+                    <span className={text.secondary}>{t('reports.pending', 'Pending')}:</span>
                     <span className={`font-medium ${text.primary}`}>{pendingEntries}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={text.secondary}>Regular Hours:</span>
+                    <span className={text.secondary}>{t('reports.regularHours', 'Regular Hours')}:</span>
                     <span className={`font-medium ${text.primary}`}>{regularHours.toFixed(1)}h</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={text.secondary}>Overtime:</span>
+                    <span className={text.secondary}>{t('reports.overtime', 'Overtime')}:</span>
                     <span className={`font-medium ${text.primary}`}>{overtimeHours.toFixed(1)}h</span>
                   </div>
                 </div>
@@ -1408,23 +1436,23 @@ const Reports = () => {
               <div className={`p-4 rounded-lg border ${border.primary}`}>
                 <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
                   <CheckCircle className="w-4 h-4" />
-                  Tasks ({employeeTasks.length})
+                  {t('reports.tasks', 'Tasks')} ({employeeTasks.length})
                 </h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className={text.secondary}>Completed:</span>
+                    <span className={text.secondary}>{t('reports.completed', 'Completed')}:</span>
                     <span className={`font-medium text-green-600`}>{completedTasks}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={text.secondary}>In Progress:</span>
+                    <span className={text.secondary}>{t('reports.inProgress', 'In Progress')}:</span>
                     <span className={`font-medium text-blue-600`}>{inProgressTasks}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={text.secondary}>Pending:</span>
+                    <span className={text.secondary}>{t('reports.pending', 'Pending')}:</span>
                     <span className={`font-medium text-yellow-600`}>{pendingTasks}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={text.secondary}>Completion Rate:</span>
+                    <span className={text.secondary}>{t('reports.completionRate', 'Completion Rate')}:</span>
                     <span className={`font-medium ${text.primary}`}>{taskCompletionRate}%</span>
                   </div>
                 </div>
@@ -1434,23 +1462,23 @@ const Reports = () => {
               <div className={`p-4 rounded-lg border ${border.primary}`}>
                 <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
                   <Target className="w-4 h-4" />
-                  Goals ({employeeGoals.length})
+                  {t('reports.goals', 'Goals')} ({employeeGoals.length})
                 </h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className={text.secondary}>Completed:</span>
+                    <span className={text.secondary}>{t('reports.completed', 'Completed')}:</span>
                     <span className={`font-medium text-green-600`}>{completedGoals}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={text.secondary}>In Progress:</span>
+                    <span className={text.secondary}>{t('reports.inProgress', 'In Progress')}:</span>
                     <span className={`font-medium text-blue-600`}>{employeeGoals.length - completedGoals}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={text.secondary}>Avg Progress:</span>
+                    <span className={text.secondary}>{t('reports.avgProgress', 'Avg Progress')}:</span>
                     <span className={`font-medium ${text.primary}`}>{avgProgress}%</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={text.secondary}>Total Goals:</span>
+                    <span className={text.secondary}>{t('reports.totalGoals', 'Total Goals')}:</span>
                     <span className={`font-medium ${text.primary}`}>{employeeGoals.length}</span>
                   </div>
                 </div>
@@ -1685,7 +1713,7 @@ const Reports = () => {
                         </div>
                       </td>
                       <td className={`px-6 py-4 ${text.primary}`}>
-                        <div className="text-sm">{item.hours || 0}h - {item.hour_type}</div>
+                        <div className="text-sm">{item.hours || 0}h - {translateHourType(item.hour_type)}</div>
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap`}>
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -1693,7 +1721,7 @@ const Reports = () => {
                           item.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
                           'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                         }`}>
-                          {item.status}
+                          {translateStatus(item.status)}
                         </span>
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{item.date}</td>
@@ -1724,7 +1752,7 @@ const Reports = () => {
                           item.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
                           'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
                         }`}>
-                          {item.status}
+                          {translateStatus(item.status)}
                         </span>
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{item.due_date || '-'}</td>
@@ -1755,7 +1783,7 @@ const Reports = () => {
                           item.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
                           'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
                         }`}>
-                          {item.status}
+                          {translateStatus(item.status)}
                         </span>
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{item.target_date || '-'}</td>
@@ -1783,7 +1811,7 @@ const Reports = () => {
                             item.hour_type === 'overtime' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
                             'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
                           }`}>
-                            {item.hour_type}
+                            {translateHourType(item.hour_type)}
                           </span>
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap`}>
@@ -1792,7 +1820,7 @@ const Reports = () => {
                             item.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
                             'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                           }`}>
-                            {item.status}
+                            {translateStatus(item.status)}
                           </span>
                         </td>
                       </>
@@ -1825,7 +1853,7 @@ const Reports = () => {
                             item.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
                             'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
                           }`}>
-                            {item.status}
+                            {translateStatus(item.status)}
                           </span>
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{item.due_date || '-'}</td>
@@ -1851,7 +1879,7 @@ const Reports = () => {
                             item.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
                             'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
                           }`}>
-                            {item.status}
+                            {translateStatus(item.status)}
                           </span>
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>

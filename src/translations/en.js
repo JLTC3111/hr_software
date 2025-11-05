@@ -736,6 +736,46 @@ export default {
     subtitle: 'Export comprehensive data for time entries, tasks, and personal goals',
     errorExporting: 'Error exporting data',
     exportSuccess: 'Data exported successfully',
+    // Performance Summary
+    performanceSummary: "'s Performance Summary",
+    reportPeriod: 'Report Period',
+    to: 'to',
+    totalHours: 'Total Hours',
+    regularHours: 'Regular Hours',
+    overtime: 'Overtime',
+    tasksDone: 'Tasks Done',
+    completion: 'Completion',
+    goalProgress: 'Goal Progress',
+    approved: 'Approved',
+    pending: 'Pending',
+    completed: 'Completed',
+    inProgress: 'In Progress',
+    completionRate: 'Completion Rate',
+    avgProgress: 'Avg Progress',
+    totalGoals: 'Total Goals',
+    type: 'Type',
+    details: 'Details',
+    status: 'Status',
+    date: 'Date',
+  },
+
+  // Status translations
+  status: {
+    approved: 'Approved',
+    pending: 'Pending',
+    rejected: 'Rejected',
+    completed: 'Completed',
+    'in-progress': 'In Progress',
+    'not-started': 'Not Started',
+    achieved: 'Achieved',
+    'on-hold': 'On Hold',
+  },
+
+  // Time Tracking Hour Types
+  timeTracking: {
+    regular: 'Regular',
+    overtime: 'Overtime',
+    bonus: 'Bonus',
   },
 
   // Common
