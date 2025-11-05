@@ -1,5 +1,3 @@
-import { TaskPerformanceReview } from "../components";
-
 export default {
   // Navigation
   nav: {

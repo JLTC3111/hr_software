@@ -1200,6 +1200,16 @@ export default {
     due: 'Due',
     all: 'All',
     pending: 'Pending',
+    createGoal: 'Create Goal',
+    createGoalSubtitle: 'Set a new goal for an employee',
+    createPersonalGoal: 'Set a new personal goal',
+    assignTo: 'Assign To',
+    goalTitle: 'Goal Title',
+    goalTitlePlaceholder: 'Enter goal title...',
+    goalDescription: 'Description',
+    goalDescriptionPlaceholder: 'Describe the goal in detail...',
+    goalPermissionAdmin: 'As an admin/manager, you can create goals for any employee',
+    goalPermissionEmployee: 'You can only create goals for yourself',
   },
 
   // Performance Appraisal Translation

@@ -3,6 +3,7 @@ import { Star, Sparkle, TrendingUp, Calendar, User, Award, Goal, MessageSquare, 
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../config/supabaseClient';
 import * as performanceService from '../services/performanceService';
 
 const PerformanceAppraisal = ({ employees }) => {
@@ -96,21 +97,70 @@ const PerformanceAppraisal = ({ employees }) => {
     if (!selectedEmployee) return;
     
     try {
-      // Import employeeService
-      const { updateEmployee } = await import('../services/employeeService');
-      
-      const result = await updateEmployee(selectedEmployee, {
-        performance: newRating
-      });
-      
-      if (result.success) {
-        // Show success notification
-        alert(t('performance.ratingUpdated', 'Performance rating updated successfully!'));
-        // Optionally refresh the employee data
-        fetchGoalsAndReviews();
+      // Round to 2 decimal places (to match DECIMAL(3,2) in database)
+      const roundedRating = Math.round(newRating * 100) / 100;
+
+      // Get current quarter and year for review_period
+      const now = new Date();
+      const quarter = Math.floor(now.getMonth() / 3) + 1;
+      const year = now.getFullYear();
+      const reviewPeriod = `Q${quarter}-${year}`;
+
+      // Check if review exists for this period
+      const { data: existingReview, error: fetchError } = await supabase
+        .from('performance_reviews')
+        .select('id')
+        .eq('employee_id', selectedEmployee)
+        .eq('review_period', reviewPeriod)
+        .single();
+
+      let result;
+      if (existingReview && !fetchError) {
+        // Update existing review
+        result = await supabase
+          .from('performance_reviews')
+          .update({ 
+            overall_rating: roundedRating,
+            status: 'approved',
+            approved_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingReview.id)
+          .select();
       } else {
-        alert(t('performance.ratingUpdateError', 'Failed to update performance rating'));
+        // Create new review
+        result = await supabase
+          .from('performance_reviews')
+          .insert({
+            employee_id: selectedEmployee,
+            reviewer_id: user?.employeeId,
+            review_period: reviewPeriod,
+            review_type: 'quarterly',
+            overall_rating: roundedRating,
+            status: 'approved',
+            review_date: new Date().toISOString().split('T')[0],
+            approved_at: new Date().toISOString()
+          })
+          .select();
       }
+
+      if (result.error) {
+        console.error('Error saving to performance_reviews:', result.error);
+        throw result.error;
+      }
+
+      // Also update legacy employees.performance column for backward compatibility
+      const { updateEmployee } = await import('../services/employeeService');
+      await updateEmployee(selectedEmployee, {
+        performance: roundedRating
+      });
+
+      console.log('Performance review saved:', result.data);
+      
+      // Show success notification
+      alert(t('performance.ratingUpdated', 'Performance rating updated successfully!'));
+      // Refresh the employee data
+      fetchGoalsAndReviews();
     } catch (error) {
       console.error('Error updating performance rating:', error);
       alert(t('performance.ratingUpdateError', 'Failed to update performance rating'));

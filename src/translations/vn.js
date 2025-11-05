@@ -1,5 +1,3 @@
-import { TaskPerformanceReview } from "../components";
-
 export default {
   // Navigation
   nav: {
@@ -1228,6 +1226,16 @@ export default {
     managerEvaluation: 'Đánh Giá Của Quản Lý',
     created: 'Tạo',
     due: 'Hạn',
+    createGoal: 'Tạo Mục Tiêu',
+    createGoalSubtitle: 'Đặt mục tiêu mới cho nhân viên',
+    createPersonalGoal: 'Đặt mục tiêu cá nhân mới',
+    assignTo: 'Giao Cho',
+    goalTitle: 'Tiêu Đề Mục Tiêu',
+    goalTitlePlaceholder: 'Nhập tiêu đề mục tiêu...',
+    goalDescription: 'Mô Tả',
+    goalDescriptionPlaceholder: 'Mô tả chi tiết mục tiêu...',
+    goalPermissionAdmin: 'Với tư cách quản trị viên/quản lý, bạn có thể tạo mục tiêu cho bất kỳ nhân viên nào',
+    goalPermissionEmployee: 'Bạn chỉ có thể tạo mục tiêu cho chính mình',
     all: 'Tất Cả',
     pending: 'Chờ Xử Lý',
   },

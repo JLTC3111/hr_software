@@ -79,6 +79,7 @@ const Reports = () => {
       try {
         const employeesResponse = await timeTrackingService.getAllEmployees();
         const employees = employeesResponse.success ? employeesResponse.data : [];
+        console.log('Loaded employees:', employees.map(e => ({ id: e.id, type: typeof e.id, name: e.name })));
         setReportData(prev => ({ ...prev, employees }));
       } catch (error) {
         console.error('Error fetching employees:', error);
@@ -138,11 +139,14 @@ const Reports = () => {
     setLoading(true);
     try {
       const { startDate, endDate } = filters;
-      const employeeId = selectedEmployee === 'all' ? null : parseInt(selectedEmployee);
+      // Don't parse as int - IDs might be UUIDs
+      const employeeId = selectedEmployee === 'all' ? null : selectedEmployee;
+      
+      console.log('Fetching data for:', { selectedEmployee, employeeId, activeTab, startDate, endDate });
 
       if (activeTab === 'time-entries') {
-        // Use direct Supabase query with proper join instead of the view
-        const { data: timeEntries, error } = await supabase
+        // Use direct Supabase query with proper join - fetch all entries first
+        const { data: allTimeEntries, error } = await supabase
           .from('time_entries')
           .select(`
             *,
@@ -156,27 +160,84 @@ const Reports = () => {
           console.error('Error fetching time entries:', error);
           setReportData(prev => ({ ...prev, timeEntries: [] }));
         } else {
-          // Filter by employee if selected
-          const filteredTimeEntries = employeeId ? 
-            timeEntries.filter(entry => entry.employee_id === employeeId.toString()) : 
-            timeEntries;
+          // Filter client-side using string comparison like timeClockEntry does
+          let filteredEntries = allTimeEntries || [];
           
-          setReportData(prev => ({ ...prev, timeEntries: filteredTimeEntries }));
+          if (employeeId) {
+            // Compare as strings to handle both int and string IDs
+            filteredEntries = filteredEntries.filter(entry => 
+              String(entry.employee_id) === String(employeeId)
+            );
+          }
+          
+          console.log('Filtered time entries:', {
+            employeeIdFilter: employeeId,
+            totalFetched: allTimeEntries?.length,
+            afterFilter: filteredEntries.length,
+            sampleEntry: filteredEntries[0] ? {
+              employee_id: filteredEntries[0].employee_id,
+              employee_id_type: typeof filteredEntries[0].employee_id,
+              employee: filteredEntries[0].employee,
+              date: filteredEntries[0].date
+            } : null
+          });
+          
+          setReportData(prev => ({ ...prev, timeEntries: filteredEntries }));
         }
       } else if (activeTab === 'tasks') {
-        const tasksResponse = await getAllTasks({ 
-          startDate, 
-          endDate,
-          employeeId: employeeId 
-        });
+        // For tasks, don't filter by date range as tasks are ongoing
+        // Only filter by employee if one is selected
+        const tasksResponse = await getAllTasks(
+          employeeId ? { employeeId: employeeId } : {}
+        );
         const tasks = tasksResponse.success ? tasksResponse.data : [];
-        setReportData(prev => ({ ...prev, tasks }));
-      } else if (activeTab === 'goals') {
-        const goalsResponse = await performanceService.getAllPerformanceGoals({ 
-          employeeId: employeeId 
+        
+        // Filter client-side using string comparison like we do for time entries
+        let filteredTasks = tasks;
+        if (employeeId) {
+          filteredTasks = tasks.filter(task => String(task.employee_id) === String(employeeId));
+        }
+        
+        console.log('Tasks fetched:', {
+          employeeId,
+          employeeIdType: typeof employeeId,
+          success: tasksResponse.success,
+          totalFetched: tasks.length,
+          afterFilter: filteredTasks.length,
+          sampleTask: filteredTasks[0] ? {
+            employee_id: filteredTasks[0].employee_id,
+            employee_id_type: typeof filteredTasks[0].employee_id,
+            title: filteredTasks[0].title
+          } : null,
+          error: tasksResponse.error
         });
+        setReportData(prev => ({ ...prev, tasks: filteredTasks }));
+      } else if (activeTab === 'goals') {
+        const goalsResponse = await performanceService.getAllPerformanceGoals(
+          employeeId ? { employeeId: employeeId } : {}
+        );
         const goals = goalsResponse.success ? goalsResponse.data : [];
-        setReportData(prev => ({ ...prev, goals }));
+        
+        // Filter client-side using string comparison
+        let filteredGoals = goals;
+        if (employeeId) {
+          filteredGoals = goals.filter(goal => String(goal.employee_id) === String(employeeId));
+        }
+        
+        console.log('Goals fetched:', {
+          employeeId,
+          employeeIdType: typeof employeeId,
+          success: goalsResponse.success,
+          totalFetched: goals.length,
+          afterFilter: filteredGoals.length,
+          sampleGoal: filteredGoals[0] ? {
+            employee_id: filteredGoals[0].employee_id,
+            employee_id_type: typeof filteredGoals[0].employee_id,
+            title: filteredGoals[0].title
+          } : null,
+          error: goalsResponse.error
+        });
+        setReportData(prev => ({ ...prev, goals: filteredGoals }));
       }
     } catch (error) {
       console.error('Error fetching report data:', error);
@@ -295,7 +356,7 @@ const Reports = () => {
       }));
 
       const employeeName = selectedEmployee !== 'all' ? 
-        `_${reportData.employees.find(emp => emp.id === parseInt(selectedEmployee))?.name?.replace(/\s+/g, '_')}` : 
+        `_${reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_')}` : 
         '';
       
       const filename = `time_entries${employeeName}_${filters.startDate}_to_${filters.endDate}.csv`;
@@ -329,7 +390,7 @@ const Reports = () => {
       }));
 
       const employeeName = selectedEmployee !== 'all' ? 
-        `_${reportData.employees.find(emp => emp.id === parseInt(selectedEmployee))?.name?.replace(/\s+/g, '_')}` : 
+        `_${reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_')}` : 
         '';
       
       const filename = `tasks${employeeName}_${filters.startDate}_to_${filters.endDate}.csv`;
@@ -363,7 +424,7 @@ const Reports = () => {
       }));
 
       const employeeName = selectedEmployee !== 'all' ? 
-        `_${reportData.employees.find(emp => emp.id === parseInt(selectedEmployee))?.name?.replace(/\s+/g, '_')}` : 
+        `_${reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_')}` : 
         '';
       
       const filename = `personal_goals${employeeName}_${filters.startDate}_to_${filters.endDate}.csv`;
@@ -388,7 +449,7 @@ const Reports = () => {
       
       // Employee name for filename
       const employeeName = selectedEmployee !== 'all' ? 
-        reportData.employees.find(emp => emp.id === parseInt(selectedEmployee))?.name?.replace(/\s+/g, '_') : 
+        reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_') : 
         'All_Employees';
 
       // ==================== SUMMARY/METRICS SHEET WITH STYLING ====================
@@ -425,7 +486,8 @@ const Reports = () => {
       if (reportData.timeEntries.length > 0) {
         const totalHours = reportData.timeEntries.reduce((sum, entry) => sum + (entry.hours || 0), 0);
         const regularHours = reportData.timeEntries.filter(e => e.hour_type === 'regular').reduce((sum, e) => sum + (e.hours || 0), 0);
-        const overtimeHours = reportData.timeEntries.filter(e => e.hour_type === 'overtime').reduce((sum, e) => sum + (e.hours || 0), 0);
+        // Include both overtime and bonus as overtime hours
+        const overtimeHours = reportData.timeEntries.filter(e => e.hour_type === 'overtime' || e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
         const pendingEntries = reportData.timeEntries.filter(e => e.status === 'pending').length;
         const approvedEntries = reportData.timeEntries.filter(e => e.status === 'approved').length;
         
@@ -517,6 +579,138 @@ const Reports = () => {
       // Set column widths for summary sheet
       summarySheet.getColumn(1).width = 30;
       summarySheet.getColumn(2).width = 20;
+
+      // ==================== INDIVIDUAL EMPLOYEE PERFORMANCE SHEET ====================
+      if (selectedEmployee !== 'all') {
+        const employee = reportData.employees.find(emp => String(emp.id) === String(selectedEmployee));
+        if (employee) {
+          const perfSheet = workbook.addWorksheet('Employee Performance');
+          
+          // Header
+          perfSheet.getCell('A1').value = `${employee.name.toUpperCase()} - PERFORMANCE REPORT`;
+          perfSheet.getCell('A1').font = { size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+          perfSheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0070C0' } };
+          perfSheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+          perfSheet.mergeCells('A1:D1');
+          perfSheet.getRow(1).height = 35;
+          
+          let perfRow = 3;
+          
+          // Employee Info Section
+          perfSheet.getCell(`A${perfRow}`).value = 'EMPLOYEE INFORMATION';
+          perfSheet.getCell(`A${perfRow}`).font = { size: 12, bold: true };
+          perfSheet.getCell(`A${perfRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } };
+          perfSheet.mergeCells(`A${perfRow}:D${perfRow}`);
+          perfRow++;
+          
+          const addInfo = (label, value) => {
+            perfSheet.getCell(`A${perfRow}`).value = label;
+            perfSheet.getCell(`B${perfRow}`).value = value;
+            perfSheet.getCell(`A${perfRow}`).font = { bold: true };
+            perfSheet.mergeCells(`B${perfRow}:D${perfRow}`);
+            perfRow++;
+          };
+          
+          addInfo('Name:', employee.name);
+          addInfo('Department:', translateDepartment(employee.department));
+          addInfo('Position:', translatePosition(employee.position));
+          addInfo('Email:', employee.email || 'N/A');
+          addInfo('Report Period:', `${filters.startDate} to ${filters.endDate}`);
+          perfRow++;
+          
+          // Performance Metrics Section
+          const employeeTimeEntries = reportData.timeEntries.filter(e => e.employee_id === employee.id);
+          const employeeTasks = reportData.tasks.filter(t => t.employee_id === employee.id);
+          const employeeGoals = reportData.goals.filter(g => g.employee_id === employee.id);
+          
+          perfSheet.getCell(`A${perfRow}`).value = 'PERFORMANCE METRICS';
+          perfSheet.getCell(`A${perfRow}`).font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+          perfSheet.getCell(`A${perfRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF70AD47' } };
+          perfSheet.mergeCells(`A${perfRow}:D${perfRow}`);
+          perfRow++;
+          
+          // Metrics table header
+          ['Metric', 'Value', 'Status', 'Notes'].forEach((header, idx) => {
+            const cell = perfSheet.getCell(perfRow, idx + 1);
+            cell.value = header;
+            cell.font = { bold: true };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
+            cell.alignment = { horizontal: 'center' };
+          });
+          perfRow++;
+          
+          // Time Tracking Metrics
+          const totalHours = employeeTimeEntries.reduce((sum, e) => sum + (e.hours || 0), 0);
+          const regularHours = employeeTimeEntries.filter(e => e.hour_type === 'regular').reduce((sum, e) => sum + (e.hours || 0), 0);
+          // Include both overtime and bonus as overtime hours
+          const overtimeHours = employeeTimeEntries.filter(e => e.hour_type === 'overtime' || e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
+          const approvedEntries = employeeTimeEntries.filter(e => e.status === 'approved').length;
+          
+          const addMetric = (metric, value, status, notes) => {
+            perfSheet.getCell(`A${perfRow}`).value = metric;
+            perfSheet.getCell(`B${perfRow}`).value = value;
+            perfSheet.getCell(`C${perfRow}`).value = status;
+            perfSheet.getCell(`D${perfRow}`).value = notes;
+            perfSheet.getCell(`B${perfRow}`).alignment = { horizontal: 'right' };
+            perfRow++;
+          };
+          
+          addMetric('Total Hours Logged', totalHours.toFixed(1), totalHours > 160 ? '⚠️ High' : '✅ Normal', `${employeeTimeEntries.length} entries`);
+          addMetric('Regular Hours', regularHours.toFixed(1), '✅ Tracked', `${(regularHours/totalHours*100).toFixed(0)}% of total`);
+          addMetric('Overtime Hours', overtimeHours.toFixed(1), overtimeHours > 20 ? '⚠️ High' : '✅ Normal', `${(overtimeHours/totalHours*100).toFixed(0)}% of total`);
+          addMetric('Approval Rate', `${approvedEntries}/${employeeTimeEntries.length}`, approvedEntries === employeeTimeEntries.length ? '✅ All Approved' : '⏳ Pending', `${((approvedEntries/employeeTimeEntries.length)*100).toFixed(0)}%`);
+          perfRow++;
+          
+          // Task Performance
+          const completedTasks = employeeTasks.filter(t => t.status === 'completed').length;
+          const taskCompletionRate = employeeTasks.length > 0 ? ((completedTasks / employeeTasks.length) * 100).toFixed(1) : 0;
+          
+          addMetric('Total Tasks', employeeTasks.length, employeeTasks.length > 0 ? '✅ Active' : '⚠️ No Tasks', `${completedTasks} completed`);
+          addMetric('Task Completion Rate', `${taskCompletionRate}%`, taskCompletionRate >= 80 ? '✅ Excellent' : taskCompletionRate >= 60 ? '⚠️ Good' : '❌ Needs Improvement', `${completedTasks}/${employeeTasks.length} done`);
+          perfRow++;
+          
+          // Goals Performance
+          const completedGoals = employeeGoals.filter(g => g.status === 'completed').length;
+          const avgProgress = employeeGoals.length > 0 ? (employeeGoals.reduce((sum, g) => sum + (g.progress || 0), 0) / employeeGoals.length).toFixed(1) : 0;
+          
+          addMetric('Total Goals', employeeGoals.length, employeeGoals.length > 0 ? '✅ Set' : '⚠️ No Goals', `${completedGoals} completed`);
+          addMetric('Average Goal Progress', `${avgProgress}%`, avgProgress >= 75 ? '✅ On Track' : avgProgress >= 50 ? '⚠️ Progressing' : '❌ Behind', `${employeeGoals.length} goals tracked`);
+          perfRow += 2;
+          
+          // Performance Summary
+          perfSheet.getCell(`A${perfRow}`).value = 'OVERALL PERFORMANCE RATING';
+          perfSheet.getCell(`A${perfRow}`).font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+          perfSheet.getCell(`A${perfRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC000' } };
+          perfSheet.mergeCells(`A${perfRow}:D${perfRow}`);
+          perfRow++;
+          
+          // Calculate overall score
+          const timeScore = Math.min(100, (approvedEntries / Math.max(1, employeeTimeEntries.length)) * 100);
+          const taskScore = parseFloat(taskCompletionRate);
+          const goalScore = parseFloat(avgProgress);
+          const overallScore = ((timeScore + taskScore + goalScore) / 3).toFixed(1);
+          
+          perfSheet.getCell(`A${perfRow}`).value = 'Overall Performance Score:';
+          perfSheet.getCell(`B${perfRow}`).value = `${overallScore}%`;
+          perfSheet.getCell(`A${perfRow}`).font = { bold: true, size: 14 };
+          perfSheet.getCell(`B${perfRow}`).font = { bold: true, size: 16, color: { argb: overallScore >= 80 ? 'FF00B050' : overallScore >= 60 ? 'FFFFC000' : 'FFFF0000' } };
+          perfSheet.getCell(`B${perfRow}`).alignment = { horizontal: 'center' };
+          perfSheet.mergeCells(`B${perfRow}:D${perfRow}`);
+          perfRow++;
+          
+          perfSheet.getCell(`A${perfRow}`).value = 'Rating:';
+          const rating = overallScore >= 90 ? '⭐⭐⭐⭐⭐ Outstanding' : overallScore >= 80 ? '⭐⭐⭐⭐ Excellent' : overallScore >= 70 ? '⭐⭐⭐ Good' : overallScore >= 60 ? '⭐⭐ Satisfactory' : '⭐ Needs Improvement';
+          perfSheet.getCell(`B${perfRow}`).value = rating;
+          perfSheet.getCell(`A${perfRow}`).font = { bold: true };
+          perfSheet.getCell(`B${perfRow}`).font = { bold: true, size: 12 };
+          perfSheet.mergeCells(`B${perfRow}:D${perfRow}`);
+          
+          // Set column widths
+          perfSheet.columns = [
+            { width: 25 }, { width: 20 }, { width: 20 }, { width: 30 }
+          ];
+        }
+      }
 
       // ==================== CHARTS SHEET WITH DATA ====================
       if (reportData.timeEntries.length > 0 || reportData.tasks.length > 0) {
@@ -877,20 +1071,31 @@ const Reports = () => {
       {/* Export Button - shows current tab data count */}
       <div className={`${bg.secondary} rounded-lg border ${border.primary} p-4`}>
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-          <div>
-            <h2 className={`text-lg font-semibold ${text.primary} mb-1`}>
+          <div className="flex-1">
+            <h2 className={`text-lg font-semibold ${text.primary} mb-1 flex items-center gap-2`}>
               {activeTab === 'time-entries' && t('reports.timeEntries', 'Time Entries')}
               {activeTab === 'tasks' && t('reports.tasks', 'Tasks')}
               {activeTab === 'goals' && t('reports.goals', 'Personal Goals')}
+              {selectedEmployee !== 'all' && (
+                <span className="px-3 py-1 text-xs bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-medium">
+                  Individual Report
+                </span>
+              )}
             </h2>
             <p className={`text-sm ${text.secondary}`}>
               {stats.totalRecords} {t('reports.recordsFound', 'records found')} 
-              {selectedEmployee !== 'all' && ` for ${reportData.employees.find(emp => emp.id === parseInt(selectedEmployee))?.name}`}
+              {selectedEmployee !== 'all' && ` for ${reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name}`}
               {` from ${filters.startDate} to ${filters.endDate}`}
             </p>
+            {selectedEmployee !== 'all' && (
+              <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                <Users className="w-3 h-3" />
+                Exporting will include this employee's detailed performance report
+              </p>
+            )}
           </div>
           
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <button
               onClick={() => {
                 if (activeTab === 'time-entries') exportTimeEntries();
@@ -932,24 +1137,41 @@ const Reports = () => {
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Employee Filter */}
+          {/* Employee Filter - Enhanced */}
           <div>
             <label className={`block text-sm font-medium ${text.primary} mb-2`}>
               <Users className="w-4 h-4 inline mr-1" />
-              {t('reports.employee', 'Employee')}
+              {t('reports.employee', 'Employee')} 
+              {selectedEmployee !== 'all' && (
+                <span className="ml-2 px-2 py-0.5 text-xs bg-blue-600 text-white rounded-full">
+                  Individual Stats
+                </span>
+              )}
             </label>
             <select
               value={selectedEmployee}
               onChange={(e) => setSelectedEmployee(e.target.value)}
-              className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              className={`w-full px-3 py-2 rounded-lg border ${selectedEmployee !== 'all' ? 'border-blue-500 ring-2 ring-blue-500' : border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
             >
-              <option value="all">{t('reports.allEmployees', 'All Employees')} ({reportData.employees.length})</option>
-              {reportData.employees.map(emp => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.name} - {translateDepartment(emp.department)}
-                </option>
-              ))}
+              <option value="all">
+                📊 {t('reports.allEmployees', 'All Employees')} ({reportData.employees.length})
+              </option>
+              <optgroup label="──────────────────────">
+                {reportData.employees
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(emp => (
+                    <option key={emp.id} value={emp.id}>
+                      👤 {emp.name} • {translateDepartment(emp.department)} • {translatePosition(emp.position)}
+                    </option>
+                  ))}
+              </optgroup>
             </select>
+            {selectedEmployee !== 'all' && (
+              <p className="mt-1 text-xs text-blue-600 flex items-center gap-1">
+                <BarChart3 className="w-3 h-3" />
+                Individual performance metrics shown below
+              </p>
+            )}
           </div>
 
           {/* Date Range Preset */}
@@ -1020,6 +1242,173 @@ const Reports = () => {
           </div>
         )}
       </div>
+
+      {/* Individual Employee Statistics */}
+      {selectedEmployee !== 'all' && (() => {
+        const employee = reportData.employees.find(emp => String(emp.id) === String(selectedEmployee));
+        if (!employee) return null;
+
+        const employeeTimeEntries = reportData.timeEntries.filter(e => String(e.employee_id) === String(employee.id));
+        const employeeTasks = reportData.tasks.filter(t => String(t.employee_id) === String(employee.id));
+        const employeeGoals = reportData.goals.filter(g => String(g.employee_id) === String(employee.id));
+
+        const totalHours = employeeTimeEntries.reduce((sum, e) => sum + (e.hours || 0), 0);
+        const regularHours = employeeTimeEntries.filter(e => e.hour_type === 'regular').reduce((sum, e) => sum + (e.hours || 0), 0);
+        // Include both overtime and bonus as overtime hours
+        const overtimeHours = employeeTimeEntries.filter(e => e.hour_type === 'overtime' || e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
+        const pendingEntries = employeeTimeEntries.filter(e => e.status === 'pending').length;
+        const approvedEntries = employeeTimeEntries.filter(e => e.status === 'approved').length;
+
+        const completedTasks = employeeTasks.filter(t => t.status === 'completed').length;
+        const inProgressTasks = employeeTasks.filter(t => t.status === 'in_progress').length;
+        const pendingTasks = employeeTasks.filter(t => t.status === 'pending').length;
+        const taskCompletionRate = employeeTasks.length > 0 ? ((completedTasks / employeeTasks.length) * 100).toFixed(1) : 0;
+
+        const completedGoals = employeeGoals.filter(g => g.status === 'completed').length;
+        const avgProgress = employeeGoals.length > 0 ? (employeeGoals.reduce((sum, g) => sum + (g.progress || 0), 0) / employeeGoals.length).toFixed(1) : 0;
+
+        return (
+          <div className={`${bg.secondary} rounded-lg border-2 ${isDarkMode ? 'border-blue-500' : 'border-blue-400'} p-6`}>
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h3 className={`text-xl font-bold ${text.primary} mb-1`}>
+                  {employee.name}'s Performance Summary
+                </h3>
+                <p className={`${text.secondary} text-sm`}>
+                  {translateDepartment(employee.department)} • {translatePosition(employee.position)}
+                </p>
+                <p className={`${text.secondary} text-xs mt-1`}>
+                  Report Period: {filters.startDate} to {filters.endDate}
+                </p>
+              </div>
+              <div className={`px-4 py-2 rounded-lg ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'}`}>
+                <Users className="w-8 h-8 text-blue-600" />
+              </div>
+            </div>
+
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {/* Time Tracking Stats */}
+              <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                <Clock className="w-5 h-5 text-blue-600 mb-2" />
+                <p className={`text-xs ${text.secondary} mb-1`}>Total Hours</p>
+                <p className={`text-2xl font-bold ${text.primary}`}>{totalHours.toFixed(1)}</p>
+              </div>
+
+              <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                <CheckCircle className="w-5 h-5 text-green-600 mb-2" />
+                <p className={`text-xs ${text.secondary} mb-1`}>Regular Hours</p>
+                <p className={`text-2xl font-bold ${text.primary}`}>{regularHours.toFixed(1)}</p>
+              </div>
+
+              <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                <Clock className="w-5 h-5 text-orange-600 mb-2" />
+                <p className={`text-xs ${text.secondary} mb-1`}>Overtime</p>
+                <p className={`text-2xl font-bold ${text.primary}`}>{overtimeHours.toFixed(1)}</p>
+              </div>
+
+              <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                <CheckCircle className="w-5 h-5 text-purple-600 mb-2" />
+                <p className={`text-xs ${text.secondary} mb-1`}>Tasks Done</p>
+                <p className={`text-2xl font-bold ${text.primary}`}>{completedTasks}/{employeeTasks.length}</p>
+              </div>
+
+              <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                <Target className="w-5 h-5 text-green-600 mb-2" />
+                <p className={`text-xs ${text.secondary} mb-1`}>Completion</p>
+                <p className={`text-2xl font-bold ${text.primary}`}>{taskCompletionRate}%</p>
+              </div>
+
+              <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                <Target className="w-5 h-5 text-blue-600 mb-2" />
+                <p className={`text-xs ${text.secondary} mb-1`}>Goal Progress</p>
+                <p className={`text-2xl font-bold ${text.primary}`}>{avgProgress}%</p>
+              </div>
+            </div>
+
+            {/* Detailed Breakdown */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Time Entries Breakdown */}
+              <div className={`p-4 rounded-lg border ${border.primary}`}>
+                <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
+                  <Clock className="w-4 h-4" />
+                  Time Entries ({employeeTimeEntries.length})
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className={text.secondary}>Approved:</span>
+                    <span className={`font-medium ${text.primary}`}>{approvedEntries}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={text.secondary}>Pending:</span>
+                    <span className={`font-medium ${text.primary}`}>{pendingEntries}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={text.secondary}>Regular Hours:</span>
+                    <span className={`font-medium ${text.primary}`}>{regularHours.toFixed(1)}h</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={text.secondary}>Overtime:</span>
+                    <span className={`font-medium ${text.primary}`}>{overtimeHours.toFixed(1)}h</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tasks Breakdown */}
+              <div className={`p-4 rounded-lg border ${border.primary}`}>
+                <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
+                  <CheckCircle className="w-4 h-4" />
+                  Tasks ({employeeTasks.length})
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className={text.secondary}>Completed:</span>
+                    <span className={`font-medium text-green-600`}>{completedTasks}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={text.secondary}>In Progress:</span>
+                    <span className={`font-medium text-blue-600`}>{inProgressTasks}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={text.secondary}>Pending:</span>
+                    <span className={`font-medium text-yellow-600`}>{pendingTasks}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={text.secondary}>Completion Rate:</span>
+                    <span className={`font-medium ${text.primary}`}>{taskCompletionRate}%</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Goals Breakdown */}
+              <div className={`p-4 rounded-lg border ${border.primary}`}>
+                <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
+                  <Target className="w-4 h-4" />
+                  Goals ({employeeGoals.length})
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className={text.secondary}>Completed:</span>
+                    <span className={`font-medium text-green-600`}>{completedGoals}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={text.secondary}>In Progress:</span>
+                    <span className={`font-medium text-blue-600`}>{employeeGoals.length - completedGoals}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={text.secondary}>Avg Progress:</span>
+                    <span className={`font-medium ${text.primary}`}>{avgProgress}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={text.secondary}>Total Goals:</span>
+                    <span className={`font-medium ${text.primary}`}>{employeeGoals.length}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -1,5 +1,3 @@
-import { TaskPerformanceReview } from "../components";
-
 export default {
   // Navigation
   nav: {
@@ -1193,6 +1191,16 @@ export default {
     due: 'Fällig',
     all: 'Alle',
     pending: 'Ausstehend',
+    createGoal: 'Ziel Erstellen',
+    createGoalSubtitle: 'Neues Ziel für einen Mitarbeiter festlegen',
+    createPersonalGoal: 'Neues persönliches Ziel festlegen',
+    assignTo: 'Zuweisen An',
+    goalTitle: 'Zieltitel',
+    goalTitlePlaceholder: 'Zieltitel eingeben...',
+    goalDescription: 'Beschreibung',
+    goalDescriptionPlaceholder: 'Ziel im Detail beschreiben...',
+    goalPermissionAdmin: 'Als Admin/Manager können Sie Ziele für jeden Mitarbeiter erstellen',
+    goalPermissionEmployee: 'Sie können nur Ziele für sich selbst erstellen',
   },
 
   // Morphing Showcase
