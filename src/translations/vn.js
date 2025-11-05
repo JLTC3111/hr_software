@@ -687,6 +687,13 @@ export default {
     bonus: 'Thưởng',
   },
 
+  // Data Type Labels
+  dataType: {
+    timeEntry: 'Bảng chấm công',
+    task: 'Nhiệm vụ',
+    goal: 'Mục tiêu',
+  },
+
   // Time Clock Entry
   timeClock: {
     title: 'Chấm công',

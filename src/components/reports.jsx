@@ -55,11 +55,11 @@ const Reports = () => {
       'pending': t('status.pending', 'Pending'),
       'rejected': t('status.rejected', 'Rejected'),
       'completed': t('status.completed', 'Completed'),
-      'in-progress': t('status.inProgress', 'In Progress'),
-      'in_progress': t('status.inProgress', 'In Progress'),
-      'not-started': t('status.notStarted', 'Not Started'),
+      'in-progress': t('status.in-progress', 'In Progress'),
+      'in_progress': t('status.in-progress', 'In Progress'),
+      'not-started': t('status.not-started', 'Not Started'),
       'achieved': t('status.achieved', 'Achieved'),
-      'on-hold': t('status.onHold', 'On Hold')
+      'on-hold': t('status.on-hold', 'On Hold')
     };
     return statusMap[status] || status;
   };
@@ -73,6 +73,30 @@ const Reports = () => {
       'bonus': t('timeTracking.bonus', 'Bonus')
     };
     return typeMap[type] || type;
+  };
+  
+  // Helper function to translate data type labels
+  const translateDataType = (type) => {
+    if (!type) return '';
+    const typeMap = {
+      'timeEntry': t('dataType.timeEntry', 'Time Entry'),
+      'task': t('dataType.task', 'Task'),
+      'goal': t('dataType.goal', 'Goal')
+    };
+    return typeMap[type] || type;
+  };
+  
+  // Helper function to translate category labels
+  const translateCategory = (category) => {
+    if (!category) return '';
+    const categoryMap = {
+      'general': t('performance.general', 'General'),
+      'technical': t('performance.technical', 'Technical'),
+      'leadership': t('performance.leadership', 'Leadership'),
+      'project': t('performance.project', 'Project'),
+      'professional_development': t('performance.professionalDevelopment', 'Professional Development')
+    };
+    return categoryMap[category] || category;
   };
   
   // Theme classes
@@ -1703,7 +1727,7 @@ const Reports = () => {
                     <tr key={`time-${index}`} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
                       <td className={`px-6 py-4 whitespace-nowrap`}>
                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                          Time Entry
+                          {translateDataType('timeEntry')}
                         </span>
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
@@ -1733,7 +1757,7 @@ const Reports = () => {
                     <tr key={`task-${index}`} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
                       <td className={`px-6 py-4 whitespace-nowrap`}>
                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                          Task
+                          {translateDataType('task')}
                         </span>
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
@@ -1764,7 +1788,7 @@ const Reports = () => {
                     <tr key={`goal-${index}`} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
                       <td className={`px-6 py-4 whitespace-nowrap`}>
                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                          Goal
+                          {translateDataType('goal')}
                         </span>
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
@@ -1775,7 +1799,7 @@ const Reports = () => {
                       </td>
                       <td className={`px-6 py-4 ${text.primary}`}>
                         <div className="text-sm font-medium max-w-xs truncate">{item.title}</div>
-                        <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{item.category} - {item.progress || 0}%</div>
+                        <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{translateCategory(item.category)} - {item.progress || 0}%</div>
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap`}>
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -1872,7 +1896,7 @@ const Reports = () => {
                           <div className="text-sm font-medium max-w-xs truncate">{item.title}</div>
                           <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{item.description}</div>
                         </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{item.category}</td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{translateCategory(item.category)}</td>
                         <td className={`px-6 py-4 whitespace-nowrap`}>
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                             item.status === 'achieved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :

@@ -778,6 +778,13 @@ export default {
     bonus: 'Bonus',
   },
 
+  // Data Type Labels
+  dataType: {
+    timeEntry: 'Time Entry',
+    task: 'Task',
+    goal: 'Goal',
+  },
+
   // Common
   common: {
     search: 'Search',
