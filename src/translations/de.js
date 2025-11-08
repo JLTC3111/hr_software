@@ -348,8 +348,47 @@ export default {
   // Reports
   reports: {
     title: 'Berichte & Analysen',
+    achieved: 'Erreicht',
+    avgProgress: 'Durchschnittlicher Fortschritt',
+    type: 'Typ',
+    task: 'Aufgabe',
+    priority: 'Priorität',
+    status: 'Status',
+    goal: 'Ziel',
+    category: 'Kategorie',
+    progress: 'Fortschritt',
+    dueDate: 'Fälligkeitsdatum',
+    employees: 'Mitarbeiter',
+    details: 'Details',
+    status: 'Status',
+    date: 'Datum',
+    hours: 'Stunden',
+    approved: 'Genehmigt',
+    pending: 'Ausstehend',
+    completed: 'Abgeschlossen',
+    inProgress: 'In Bearbeitung',
+    completionRate: 'Abschlussquote',
+    quickFilters: 'Schnellfilter',
+    performanceSummary: 'Leistungsübersicht',
+    totalHours: 'Gesamtstunden',
+    regularHours: 'Reguläre Stunden',
+    overtime: 'Überstunden',
+    completion: 'Abgeschlossene Aufgaben',
+    tasksDone: 'Aufgaben erledigt',
+    goalProgress: 'Ziel-Fortschritt',
+    taskCompletionRate: 'Aufgabenabschlussrate',
+    avgProgress: 'Durchschn. Fortschritt',
+    employee: 'Mitarbeiter',
+    exportToCSV: 'Als CSV exportieren',
+    totalRecords: 'Gesamtanzahl der Datensätze:',
+    totalEntries: 'Gesamteinträge',
     employeeGrowth: 'Mitarbeiterwachstum',
+    timeEntry: 'Zeiteinträge',
+    timeEntries: 'Zeiteinträge',
     departmentDistribution: 'Abteilungsverteilung',
+    individualMetrics: 'Individuelle Metriken',
+    individualReport: 'Individueller Bericht',
+    exportingIncludes: '*Der Export umfasst alle Datensätze, nicht nur die angezeigten',
     performanceMetrics: 'Leistungsmetriken',
     recruitmentMetrics: 'Rekrutierungsmetriken',
     attendanceReport: 'Anwesenheitsbericht',
@@ -432,8 +471,6 @@ export default {
     thisMonth: 'Dieser Monat',
     thisQuarter: 'Dieses Quartal',
     thisYear: 'Dieses Jahr',
-    // Data Types
-    timeEntries: 'Zeiterfassung',
     tasks: 'Aufgaben',
     goals: 'Persönliche Ziele',
     // Filter Labels
@@ -458,6 +495,8 @@ export default {
     errorExporting: 'Fehler beim Exportieren der Daten',
     exportToCSV: 'Als CSV exportieren',
     exportSuccess: 'Daten erfolgreich exportiert',
+    for: 'für',
+    from: 'von',
   },
 
   // Add Employee
@@ -526,6 +565,32 @@ export default {
     noDocument: 'Kein Dokument hochgeladen',
     uploadInstructions: 'Klicken oder ziehen Sie eine PDF-Datei hierher zum Hochladen',
     maxFileSize: 'Maximale Dateigröße: 10MB'
+  },
+
+  // Status translations
+  status: {
+    approved: 'Genehmigt',
+    pending: 'Ausstehend',
+    rejected: 'Abgelehnt',
+    completed: 'Abgeschlossen',
+    'in-progress': 'In Bearbeitung',
+    'not-started': 'Nicht begonnen',
+    achieved: 'Erreicht',
+    'on-hold': 'Pausiert',
+  },
+
+  // Time Tracking Hour Types
+  timeTracking: {
+    regular: 'Regulär',
+    overtime: 'Überstunden',
+    bonus: 'Bonus',
+  },
+
+  // Data Type Labels
+  dataType: {
+    timeEntry: 'Zeiteintrag',
+    task: 'Aufgabe',
+    goal: 'Ziel',
   },
 
   // Common

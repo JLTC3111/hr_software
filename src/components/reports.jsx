@@ -6,6 +6,7 @@ import {
   Calendar, 
   Download, 
   Users, 
+  CircleArrowOutUpLeft,
   User,
   Filter, 
   BarChart3, 
@@ -97,6 +98,17 @@ const Reports = () => {
       'professional_development': t('performance.professionalDevelopment', 'Professional Development')
     };
     return categoryMap[category] || category;
+  };
+  
+  // Helper function to translate priority labels
+  const translatePriority = (priority) => {
+    if (!priority) return '';
+    const priorityMap = {
+      'low': t('workload.low', 'Low'),
+      'medium': t('workload.medium', 'Medium'),
+      'high': t('workload.high', 'High')
+    };
+    return priorityMap[priority] || priority;
   };
   
   // Theme classes
@@ -1182,8 +1194,8 @@ const Reports = () => {
             </h2>
             <p className={`text-sm ${text.secondary}`}>
               {stats.totalRecords} {t('reports.recordsFound', 'records found')} 
-              {selectedEmployee !== 'all' && ` for ${reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name}`}
-              {` from ${filters.startDate} to ${filters.endDate}`}
+              {selectedEmployee !== 'all' && ` ${t('reports.for', 'for')} ${reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name}`}
+              {` ${t('reports.from', 'from')} ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}`}
             </p>
             {selectedEmployee !== 'all' && (
               <p className={`text-xs ${isDarkMode ? 'text-amber-100' : 'text-blue-600'} mt-1 flex items-center gap-1 italic`}>
@@ -1377,7 +1389,7 @@ const Reports = () => {
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h3 className={`text-xl font-bold ${text.primary} mb-1`}>
-                  {employee.name}{t('reports.performanceSummary', "'s Performance Summary")}
+                  {employee.name} - {t('reports.performanceSummary', "")}
                 </h3>
                 <p className={`${text.secondary} text-sm`}>
                   {translateDepartment(employee.department)} • {translatePosition(employee.position)}
@@ -1517,7 +1529,7 @@ const Reports = () => {
         <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className={`text-sm ${text.secondary}`}>Total Records</p>
+              <p className={`text-sm ${text.secondary}`}>{t('reports.totalRecords', 'Total Records')}:    </p>
               <p className={`text-3xl font-bold ${text.primary}`}>{stats.totalRecords}</p>
             </div>
             <BarChart3 className={`w-8 h-8 ${text.secondary}`} />
@@ -1529,7 +1541,7 @@ const Reports = () => {
             <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm ${text.secondary}`}>Time Entries</p>
+                  <p className={`text-sm ${text.secondary}`}>{t('reports.totalEntries', 'Total Entries')}</p>
                   <p className={`text-3xl font-bold ${text.primary}`}>{stats.timeEntriesCount}</p>
                 </div>
                 <Clock className={`w-8 h-8 ${text.secondary}`} />
@@ -1538,7 +1550,7 @@ const Reports = () => {
             <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm ${text.secondary}`}>Tasks</p>
+                  <p className={`text-sm ${text.secondary}`}>{t('reports.tasks', 'Tasks')}</p>
                   <p className={`text-3xl font-bold ${text.primary}`}>{stats.tasksCount}</p>
                 </div>
                 <CheckCircle className={`w-8 h-8 ${text.secondary}`} />
@@ -1547,7 +1559,7 @@ const Reports = () => {
             <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm ${text.secondary}`}>Goals</p>
+                  <p className={`text-sm ${text.secondary}`}>{t('reports.goals', 'Goals')}</p>
                   <p className={`text-3xl font-bold ${text.primary}`}>{stats.goalsCount}</p>
                 </div>
                 <Target className={`w-8 h-8 ${text.secondary}`} />
@@ -1561,7 +1573,7 @@ const Reports = () => {
             <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm ${text.secondary}`}>Total Hours</p>
+                  <p className={`text-sm ${text.secondary}`}>{t('reports.totalHours', 'Total Hours')}</p>
                   <p className={`text-3xl font-bold ${text.primary}`}>{stats.totalHours}h</p>
                 </div>
                 <Clock className={`w-8 h-8 ${text.secondary}`} />
@@ -1570,7 +1582,7 @@ const Reports = () => {
             <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm ${text.secondary}`}>Approved</p>
+                  <p className={`text-sm ${text.secondary}`}>{t('reports.approved', 'Approved')}</p>
                   <p className={`text-3xl font-bold ${text.secondary}`}>{stats.approved}</p>
                 </div>
                 <CheckCircle className={`w-8 h-8 ${text.primary}`} />
@@ -1579,7 +1591,7 @@ const Reports = () => {
             <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm ${text.secondary}`}>Pending</p>
+                  <p className={`text-sm ${text.secondary}`}>{t('reports.pending', 'Pending')}</p>
                   <p className={`text-3xl font-bold ${text.secondary}`}>{stats.pending}</p>
                 </div>
                 <PenOff className={`w-8 h-8 ${text.primary}`} />
@@ -1593,25 +1605,25 @@ const Reports = () => {
             <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm ${text.secondary}`}>Completed</p>
-                  <p className={`text-3xl font-bold text-green-600`}>{stats.completed}</p>
+                  <p className={`text-sm ${text.secondary}`}>{t('reports.completed', 'Completed')}</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.completed}</p>
                 </div>
-                <CheckCircle className={`w-8 h-8 text-green-600`} />
+                <CheckCircle className={`w-8 h-8 ${text.secondary}`} />
               </div>
             </div>
             <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm ${text.secondary}`}>In Progress</p>
-                  <p className={`text-3xl font-bold text-blue-600`}>{stats.inProgress}</p>
+                  <p className={`text-sm ${text.secondary}`}>{t('reports.inProgress', 'In Progress')}</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.inProgress}</p>
                 </div>
-                <PlayCircle className={`w-8 h-8 text-blue-600`} />
+                <PlayCircle className={`w-8 h-8 ${text.secondary}`} />
               </div>
             </div>
             <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm ${text.secondary}`}>Completion Rate</p>
+                  <p className={`text-sm ${text.secondary}`}>{t('reports.completionRate', 'Completion Rate')}</p>
                   <p className={`text-3xl font-bold ${text.primary}`}>{stats.completionRate}%</p>
                 </div>
                 <BarChart3 className={`w-8 h-8 ${text.secondary}`} />
@@ -1625,28 +1637,28 @@ const Reports = () => {
             <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm ${text.secondary}`}>Achieved</p>
-                  <p className={`text-3xl font-bold text-green-600`}>{stats.achieved}</p>
+                  <p className={`text-sm ${text.secondary}`}>{t('reports.achieved', 'Achieved')}</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.achieved}</p>
                 </div>
-                <CheckCircle className={`w-8 h-8 text-green-600`} />
+                <CheckCircle className={`w-8 h-8 ${text.secondary}`} />
               </div>
             </div>
             <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm ${text.secondary}`}>In Progress</p>
-                  <p className={`text-3xl font-bold text-blue-600`}>{stats.inProgress}</p>
+                  <p className={`text-sm ${text.secondary}`}>{t('reports.inProgress', 'In Progress')}</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.inProgress}</p>
                 </div>
-                <PlayCircle className={`w-8 h-8 text-blue-600`} />
+                <PlayCircle className={`w-8 h-8 ${text.secondary}`} />
               </div>
             </div>
             <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className={`text-sm ${text.secondary}`}>Avg Progress</p>
+                  <p className={`text-sm ${text.secondary}`}>{t('reports.avgProgress', 'Avg Progress')}</p>
                   <p className={`text-3xl font-bold ${text.primary}`}>{stats.averageProgress}%</p>
                 </div>
-                <Target className={`w-8 h-8 ${text.secondary}`} />
+                <CircleArrowOutUpLeft className={`w-8 h-8 ${text.secondary}`} />
               </div>
             </div>
           </>
@@ -1671,7 +1683,7 @@ const Reports = () => {
                 {activeTab === 'all' && (
                   <>
                     <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.type', 'Type')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('employees.employee', 'Employee')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.employees', 'Employee')}</th>
                     <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.details', 'Details')}</th>
                     <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.status', 'Status')}</th>
                     <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.date', 'Date')}</th>
@@ -1680,31 +1692,31 @@ const Reports = () => {
                 
                 {activeTab === 'time-entries' && (
                   <>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('employees.employee', 'Employee')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('timeTracking.date', 'Date')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('timeTracking.hours', 'Hours')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('timeTracking.type', 'Type')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('timeTracking.status', 'Status')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.employees', 'Employee')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.date', 'Date')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.hours', 'Hours')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.type', 'Type')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.status', 'Status')}</th>
                   </>
                 )}
                 
                 {activeTab === 'tasks' && (
                   <>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('employees.employee', 'Employee')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('workload.task', 'Task')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('workload.priority', 'Priority')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('workload.status', 'Status')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('workload.dueDate', 'Due Date')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.employees', 'Employee')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.task', 'Task')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.priority', 'Priority')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.status', 'Status')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.dueDate', 'Due Date')}</th>
                   </>
                 )}
                 
                 {activeTab === 'goals' && (
                   <>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('employees.employee', 'Employee')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('performance.goal', 'Goal')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('performance.category', 'Category')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('performance.status', 'Status')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('performance.progress', 'Progress')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.employees', 'Employee')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.goal', 'Goal')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.category', 'Category')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.status', 'Status')}</th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.progress', 'Progress')}</th>
                   </>
                 )}
               </tr>
@@ -1868,7 +1880,7 @@ const Reports = () => {
                             item.priority === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
                             'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                           }`}>
-                            {item.priority}
+                            {translatePriority(item.priority)}
                           </span>
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap`}>
