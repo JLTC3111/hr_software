@@ -69,7 +69,7 @@ const PerformanceAppraisal = ({ employees }) => {
   
   const translatePosition = (position) => {
     if (!position) return '';
-    return t(`positions.${position}`, position);
+    return t(`employeePosition.${position}`, position);
   };
 
   // Fetch goals and reviews when employee changes
@@ -481,9 +481,15 @@ const PerformanceAppraisal = ({ employees }) => {
 
   // Calculate overall rating from reviews
   const calculateOverallRating = () => {
-    if (reviews.length === 0) return 0;
-    const sum = reviews.reduce((acc, review) => acc + (review.overall_rating || 0), 0);
-    return sum / reviews.length;
+    // Calculate average from skills assessments
+    const skillNames = ['Technical Skills', 'Communication', 'Leadership', 'Teamwork', 'Problem Solving'];
+    const skillRatings = skillNames
+      .map(name => skills.find(s => s.skill_name === name))
+      .filter(skill => skill && skill.rating > 0)
+      .map(skill => skill.rating);
+    
+    if (skillRatings.length === 0) return 0;
+    return skillRatings.reduce((sum, rating) => sum + rating, 0) / skillRatings.length;
   };
 
   // Prepare current data from state

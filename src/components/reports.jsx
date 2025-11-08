@@ -371,7 +371,7 @@ const Reports = () => {
       const totalHours = timeEntries.reduce((sum, entry) => sum + (entry.hours || 0), 0);
       const approvedTime = timeEntries.filter(entry => entry.status === 'approved').length;
       const completedTasks = tasks.filter(task => task.status === 'completed').length;
-      const achievedGoals = goals.filter(goal => goal.status === 'achieved').length;
+      const achievedGoals = goals.filter(goal => goal.status === 'completed').length;
       
       return {
         totalRecords,
@@ -410,8 +410,8 @@ const Reports = () => {
         completionRate
       };
     } else if (activeTab === 'goals') {
-      const achieved = data.filter(goal => goal.status === 'achieved').length;
-      const inProgress = data.filter(goal => goal.status === 'in-progress').length;
+      const achieved = data.filter(goal => goal.status === 'completed').length;
+      const inProgress = data.filter(goal => goal.status === 'in_progress').length;
       const averageProgress = totalRecords > 0 ? 
         Math.round(data.reduce((sum, goal) => sum + (goal.progress || 0), 0) / totalRecords) : 0;
       
@@ -675,7 +675,7 @@ const Reports = () => {
       if (reportData.goals.length > 0) {
         const completedGoals = reportData.goals.filter(g => g.status === 'completed').length;
         const inProgressGoals = reportData.goals.filter(g => g.status === 'in_progress').length;
-        const avgProgress = (reportData.goals.reduce((sum, g) => sum + (g.progress || 0), 0) / reportData.goals.length).toFixed(1);
+        const avgProgress = (reportData.goals.reduce((sum, g) => sum + (g.status === 'completed' ? 100 : (g.progress || 0)), 0) / reportData.goals.length).toFixed(1);
         
         // Section Header
         summarySheet.getCell(`A${currentRow}`).value = 'GOALS SUMMARY';
@@ -793,7 +793,7 @@ const Reports = () => {
           
           // Goals Performance
           const completedGoals = employeeGoals.filter(g => g.status === 'completed').length;
-          const avgProgress = employeeGoals.length > 0 ? (employeeGoals.reduce((sum, g) => sum + (g.progress || 0), 0) / employeeGoals.length).toFixed(1) : 0;
+          const avgProgress = employeeGoals.length > 0 ? (employeeGoals.reduce((sum, g) => sum + (g.status === 'completed' ? 100 : (g.progress || 0)), 0) / employeeGoals.length).toFixed(1) : 0;
           
           addMetric('Total Goals', employeeGoals.length, employeeGoals.length > 0 ? '✅ Set' : '⚠️ No Goals', `${completedGoals} completed`);
           addMetric('Average Goal Progress', `${avgProgress}%`, avgProgress >= 75 ? '✅ On Track' : avgProgress >= 50 ? '⚠️ Progressing' : '❌ Behind', `${employeeGoals.length} goals tracked`);
@@ -1394,7 +1394,9 @@ const Reports = () => {
         const taskCompletionRate = employeeTasks.length > 0 ? ((completedTasks / employeeTasks.length) * 100).toFixed(1) : 0;
 
         const completedGoals = employeeGoals.filter(g => g.status === 'completed').length;
-        const avgProgress = employeeGoals.length > 0 ? (employeeGoals.reduce((sum, g) => sum + (g.progress || 0), 0) / employeeGoals.length).toFixed(1) : 0;
+        const inProgressGoals = employeeGoals.filter(g => g.status === 'in_progress').length;
+        const goalCompletionRate = employeeGoals.length > 0 ? ((completedGoals / employeeGoals.length) * 100).toFixed(1) : 0;
+        const avgProgress = employeeGoals.length > 0 ? (employeeGoals.reduce((sum, g) => sum + (g.status === 'completed' ? 100 : (g.progress || 0)), 0) / employeeGoals.length).toFixed(1) : 0;
 
         return (
           <div className={`${bg.secondary} rounded-lg border border-transparent transition-colors ${isDarkMode ? 'hover:border-amber-50' : 'hover:border-blue-400'} p-6`}>
@@ -1442,7 +1444,9 @@ const Reports = () => {
               <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                 <Goal className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                 <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.completion', 'Completion')}</p>
-                <p className={`text-2xl font-bold ${text.primary}`}>{taskCompletionRate}%</p>
+                <p className={`text-2xl font-bold ${text.primary}`}>
+                  {activeTab === 'goals' ? goalCompletionRate : taskCompletionRate}%
+                </p>
               </div>
 
               <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
@@ -1489,15 +1493,15 @@ const Reports = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className={text.secondary}>{t('reports.completed', 'Completed')}:</span>
-                    <span className={`font-medium text-green-600`}>{completedTasks}</span>
+                    <span className={`font-medium ${text.primary}`}>{completedTasks}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className={text.secondary}>{t('reports.inProgress', 'In Progress')}:</span>
-                    <span className={`font-medium text-blue-600`}>{inProgressTasks}</span>
+                    <span className={`font-medium ${text.primary}`}>{inProgressTasks}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className={text.secondary}>{t('reports.pending', 'Pending')}:</span>
-                    <span className={`font-medium text-yellow-600`}>{pendingTasks}</span>
+                    <span className={`font-medium ${text.primary}`}>{pendingTasks}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className={text.secondary}>{t('reports.completionRate', 'Completion Rate')}:</span>
@@ -1515,11 +1519,11 @@ const Reports = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className={text.secondary}>{t('reports.completed', 'Completed')}:</span>
-                    <span className={`font-medium text-green-600`}>{completedGoals}</span>
+                    <span className={`font-medium ${text.primary}`}>{completedGoals}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className={text.secondary}>{t('reports.inProgress', 'In Progress')}:</span>
-                    <span className={`font-medium text-blue-600`}>{employeeGoals.length - completedGoals}</span>
+                    <span className={`font-medium ${text.primary}`}>{inProgressGoals}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className={text.secondary}>{t('reports.avgProgress', 'Avg Progress')}:</span>
@@ -1827,8 +1831,8 @@ const Reports = () => {
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap`}>
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          item.status === 'achieved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                          item.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                          item.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                          item.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
                           'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
                         }`}>
                           {translateStatus(item.status)}
@@ -1923,8 +1927,8 @@ const Reports = () => {
                         <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{translateCategory(item.category)}</td>
                         <td className={`px-6 py-4 whitespace-nowrap`}>
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            item.status === 'achieved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                            item.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                            item.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                            item.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
                             'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
                           }`}>
                             {translateStatus(item.status)}

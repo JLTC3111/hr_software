@@ -46,6 +46,13 @@ const TaskPerformanceReview = ({ employees }) => {
   const [currentEmployee, setCurrentEmployee] = useState(null);
   const [editingPerformanceRating, setEditingPerformanceRating] = useState(false);
   const [newPerformanceRating, setNewPerformanceRating] = useState(0);
+  const [skillRatings, setSkillRatings] = useState({
+    technical_skills_rating: 0,
+    communication_rating: 0,
+    leadership_rating: 0,
+    teamwork_rating: 0,
+    problem_solving_rating: 0
+  });
   const [creatingGoal, setCreatingGoal] = useState(false);
   const [goalForm, setGoalForm] = useState({
     title: '',
@@ -96,6 +103,27 @@ const TaskPerformanceReview = ({ employees }) => {
         const employee = employees.find(emp => String(emp.id) === String(selectedEmployee));
         setCurrentEmployee(employee || null);
         setNewPerformanceRating(employee?.performance || 0);
+        
+        // Fetch latest performance review for skill ratings
+        if (employee) {
+          const { data: latestReview } = await supabase
+            .from('performance_reviews')
+            .select('*')
+            .eq('employee_id', employee.id)
+            .order('review_date', { ascending: false })
+            .limit(1)
+            .single();
+          
+          if (latestReview) {
+            setSkillRatings({
+              technical_skills_rating: latestReview.technical_skills_rating || 0,
+              communication_rating: latestReview.communication_rating || 0,
+              leadership_rating: latestReview.leadership_rating || 0,
+              teamwork_rating: latestReview.teamwork_rating || 0,
+              problem_solving_rating: latestReview.problem_solving_rating || 0
+            });
+          }
+        }
       }
     };
     fetchEmployeeData();
@@ -162,6 +190,21 @@ const TaskPerformanceReview = ({ employees }) => {
 
     fetchMonthlyTasks();
   }, [selectedMonth, viewMode, selectedEmployee]);
+
+  // Calculate overall rating as average of skill assessments
+  const calculatedOverallRating = useMemo(() => {
+    const ratings = [
+      skillRatings.technical_skills_rating,
+      skillRatings.communication_rating,
+      skillRatings.leadership_rating,
+      skillRatings.teamwork_rating,
+      skillRatings.problem_solving_rating
+    ];
+    const validRatings = ratings.filter(r => r > 0);
+    if (validRatings.length === 0) return 0;
+    const sum = validRatings.reduce((acc, val) => acc + val, 0);
+    return sum / validRatings.length;
+  }, [skillRatings]);
 
   // Calculate monthly statistics
   const monthlyStats = useMemo(() => {
@@ -300,17 +343,21 @@ const TaskPerformanceReview = ({ employees }) => {
       return;
     }
 
-    // Parse and validate the rating
-    const rating = parseFloat(newPerformanceRating);
-    
-    if (isNaN(rating) || rating < 0 || rating > 5) {
-      setErrorMessage('Performance rating must be between 0 and 5');
-      setTimeout(() => setErrorMessage(''), 5000);
-      return;
-    }
+    // Calculate overall rating as average of skill ratings
+    const skillValues = [
+      skillRatings.technical_skills_rating,
+      skillRatings.communication_rating,
+      skillRatings.leadership_rating,
+      skillRatings.teamwork_rating,
+      skillRatings.problem_solving_rating
+    ];
+    const validSkills = skillValues.filter(r => r > 0);
+    const calculatedRating = validSkills.length > 0 
+      ? validSkills.reduce((sum, val) => sum + val, 0) / validSkills.length 
+      : 0;
 
     // Round to 2 decimal places (to match DECIMAL(3,2) in database)
-    const roundedRating = Math.round(rating * 100) / 100;
+    const roundedRating = Math.round(calculatedRating * 100) / 100;
 
     try {
       // Get current quarter and year for review_period
@@ -329,11 +376,16 @@ const TaskPerformanceReview = ({ employees }) => {
 
       let result;
       if (existingReview && !fetchError) {
-        // Update existing review
+        // Update existing review with skill ratings
         result = await supabase
           .from('performance_reviews')
           .update({ 
             overall_rating: roundedRating,
+            technical_skills_rating: Math.round(skillRatings.technical_skills_rating * 100) / 100,
+            communication_rating: Math.round(skillRatings.communication_rating * 100) / 100,
+            leadership_rating: Math.round(skillRatings.leadership_rating * 100) / 100,
+            teamwork_rating: Math.round(skillRatings.teamwork_rating * 100) / 100,
+            problem_solving_rating: Math.round(skillRatings.problem_solving_rating * 100) / 100,
             status: 'approved',
             approved_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
@@ -341,7 +393,7 @@ const TaskPerformanceReview = ({ employees }) => {
           .eq('id', existingReview.id)
           .select();
       } else {
-        // Create new review
+        // Create new review with skill ratings
         result = await supabase
           .from('performance_reviews')
           .insert({
@@ -350,6 +402,11 @@ const TaskPerformanceReview = ({ employees }) => {
             review_period: reviewPeriod,
             review_type: 'quarterly',
             overall_rating: roundedRating,
+            technical_skills_rating: Math.round(skillRatings.technical_skills_rating * 100) / 100,
+            communication_rating: Math.round(skillRatings.communication_rating * 100) / 100,
+            leadership_rating: Math.round(skillRatings.leadership_rating * 100) / 100,
+            teamwork_rating: Math.round(skillRatings.teamwork_rating * 100) / 100,
+            problem_solving_rating: Math.round(skillRatings.problem_solving_rating * 100) / 100,
             status: 'approved',
             review_date: new Date().toISOString().split('T')[0],
             approved_at: new Date().toISOString()
@@ -372,8 +429,9 @@ const TaskPerformanceReview = ({ employees }) => {
 
       // Update local state
       setCurrentEmployee({ ...currentEmployee, performance: roundedRating });
+      setNewPerformanceRating(roundedRating);
       setEditingPerformanceRating(false);
-      setSuccessMessage('Performance rating saved to review system successfully');
+      setSuccessMessage('Performance rating and skill assessments saved successfully');
       setTimeout(() => setSuccessMessage(''), 5000);
 
       // Trigger a re-fetch of employees in parent component if needed
@@ -781,8 +839,8 @@ const TaskPerformanceReview = ({ employees }) => {
                   </div>
                 ) : (
                   <div className="flex items-center space-x-2">
-                    <span className={`text-3xl font-bold ${getQualityColor(currentEmployee.performance || 0)}`}>
-                      {(currentEmployee.performance || 0).toFixed(1)}
+                    <span className={`text-3xl font-bold ${getQualityColor(calculatedOverallRating)}`}>
+                      {calculatedOverallRating.toFixed(1)}
                     </span>
                     <span className={`text-xl font-bold ${text.secondary}`}>/5.0</span>
                     <Star className="w-6 h-6 text-yellow-400 fill-yellow-400" />
@@ -819,6 +877,141 @@ const TaskPerformanceReview = ({ employees }) => {
                   )}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Skill Assessments Section */}
+      {viewMode === 'individual' && currentEmployee && (
+        <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary} shadow-sm`}>
+          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
+            {t('performance.skillsAssessment', 'Skills Assessment')}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Technical Skills */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className={`text-sm font-medium ${text.primary}`}>
+                  {t('performance.technical', 'Technical Skills')}
+                </label>
+                <span className={`text-sm font-bold ${text.primary}`}>
+                  {skillRatings.technical_skills_rating.toFixed(1)}/5.0
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="5"
+                step="0.5"
+                value={skillRatings.technical_skills_rating}
+                onChange={(e) => setSkillRatings({...skillRatings, technical_skills_rating: parseFloat(e.target.value)})}
+                disabled={!canEvaluateOthers || !editingPerformanceRating}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-300 dark:bg-gray-700"
+                style={{
+                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(skillRatings.technical_skills_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} ${(skillRatings.technical_skills_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} 100%)`
+                }}
+              />
+            </div>
+
+            {/* Communication */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className={`text-sm font-medium ${text.primary}`}>
+                  {t('performance.communication', 'Communication')}
+                </label>
+                <span className={`text-sm font-bold ${text.primary}`}>
+                  {skillRatings.communication_rating.toFixed(1)}/5.0
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="5"
+                step="0.5"
+                value={skillRatings.communication_rating}
+                onChange={(e) => setSkillRatings({...skillRatings, communication_rating: parseFloat(e.target.value)})}
+                disabled={!canEvaluateOthers || !editingPerformanceRating}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(skillRatings.communication_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} ${(skillRatings.communication_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} 100%)`
+                }}
+              />
+            </div>
+
+            {/* Leadership */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className={`text-sm font-medium ${text.primary}`}>
+                  {t('performance.leadership', 'Leadership')}
+                </label>
+                <span className={`text-sm font-bold ${text.primary}`}>
+                  {skillRatings.leadership_rating.toFixed(1)}/5.0
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="5"
+                step="0.5"
+                value={skillRatings.leadership_rating}
+                onChange={(e) => setSkillRatings({...skillRatings, leadership_rating: parseFloat(e.target.value)})}
+                disabled={!canEvaluateOthers || !editingPerformanceRating}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(skillRatings.leadership_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} ${(skillRatings.leadership_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} 100%)`
+                }}
+              />
+            </div>
+
+            {/* Teamwork */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className={`text-sm font-medium ${text.primary}`}>
+                  {t('performance.teamwork', 'Teamwork')}
+                </label>
+                <span className={`text-sm font-bold ${text.primary}`}>
+                  {skillRatings.teamwork_rating.toFixed(1)}/5.0
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="5"
+                step="0.5"
+                value={skillRatings.teamwork_rating}
+                onChange={(e) => setSkillRatings({...skillRatings, teamwork_rating: parseFloat(e.target.value)})}
+                disabled={!canEvaluateOthers || !editingPerformanceRating}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(skillRatings.teamwork_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} ${(skillRatings.teamwork_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} 100%)`
+                }}
+              />
+            </div>
+
+            {/* Problem Solving */}
+            <div className="md:col-span-2">
+              <div className="flex items-center justify-between mb-2">
+                <label className={`text-sm font-medium ${text.primary}`}>
+                  {t('performance.problemSolving', 'Problem Solving')}
+                </label>
+                <span className={`text-sm font-bold ${text.primary}`}>
+                  {skillRatings.problem_solving_rating.toFixed(1)}/5.0
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="5"
+                step="0.5"
+                value={skillRatings.problem_solving_rating}
+                onChange={(e) => setSkillRatings({...skillRatings, problem_solving_rating: parseFloat(e.target.value)})}
+                disabled={!canEvaluateOthers || !editingPerformanceRating}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(skillRatings.problem_solving_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} ${(skillRatings.problem_solving_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} 100%)`
+                }}
+              />
             </div>
           </div>
         </div>
