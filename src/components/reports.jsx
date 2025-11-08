@@ -33,6 +33,22 @@ import { getAllTasks } from '../services/workloadService';
 import performanceService from '../services/performanceService';
 import { supabase } from '../config/supabaseClient';
 
+/**
+ * Reports Component
+ * 
+ * This component provides comprehensive reporting and analytics for:
+ * 1. Time Entries (time_entries table)
+ * 2. Workload Tasks (workload_tasks table)
+ * 3. Personal Goals (performance_goals table) ← NOTE: Uses performance_goals, NOT performance_reviews
+ * 
+ * DATA ARCHITECTURE:
+ * - performance_goals table: Goal tracking with progress percentages, milestones, target dates
+ * - performance_reviews table: Quarterly reviews, skill assessments, overall performance ratings
+ * 
+ * The two tables serve different purposes and should not be confused:
+ * - Use performance_goals for: goal progress, completion tracking, personal objectives
+ * - Use performance_reviews for: skill ratings, quarterly evaluations, performance appraisals
+ */
 const Reports = () => {
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
@@ -292,8 +308,11 @@ const Reports = () => {
       }
 
       // Fetch Goals (for 'all' or 'goals' tab)
+      // NOTE: Goals are fetched from performance_goals table, NOT performance_reviews
+      // - performance_goals = Goal tracking with progress percentages and milestones
+      // - performance_reviews = Skill assessments and quarterly performance reviews
       if (activeTab === 'all' || activeTab === 'goals') {
-        console.log('=== FETCHING GOALS ===', { activeTab, employeeId });
+        console.log('=== FETCHING GOALS FROM performance_goals TABLE ===', { activeTab, employeeId });
         const goalsResponse = await performanceService.getAllPerformanceGoals(
           employeeId ? { employeeId: employeeId } : {}
         );
@@ -315,7 +334,8 @@ const Reports = () => {
           sampleGoal: filteredGoals[0] ? {
             employee_id: filteredGoals[0].employee_id,
             employee_id_type: typeof filteredGoals[0].employee_id,
-            title: filteredGoals[0].title
+            title: filteredGoals[0].title,
+            progress: filteredGoals[0].progress
           } : null,
           rawGoals: goals,
           error: goalsResponse.error
@@ -1415,126 +1435,144 @@ const Reports = () => {
             </div>
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {/* Time Tracking Stats */}
-              <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <Clock className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.totalHours', 'Total Hours')}</p>
-                <p className={`text-2xl font-bold ${text.primary}`}>{totalHours.toFixed(1)}</p>
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {/* Time Tracking Stats - Show only for time-entries or all */}
+              {(activeTab === 'time-entries' || activeTab === 'all') && (
+                <>
+                  <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                    <Clock className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
+                    <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.totalHours', 'Total Hours')}</p>
+                    <p className={`text-2xl font-bold ${text.primary}`}>{totalHours.toFixed(1)}</p>
+                  </div>
 
-              <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <Hourglass className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.regularHours', 'Regular Hours')}</p>
-                <p className={`text-2xl font-bold ${text.primary}`}>{regularHours.toFixed(1)}</p>
-              </div>
+                  <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                    <Hourglass className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
+                    <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.regularHours', 'Regular Hours')}</p>
+                    <p className={`text-2xl font-bold ${text.primary}`}>{regularHours.toFixed(1)}</p>
+                  </div>
 
-              <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <HeartPlus className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.overtime', 'Overtime')}</p>
-                <p className={`text-2xl font-bold ${text.primary}`}>{overtimeHours.toFixed(1)}</p>
-              </div>
+                  <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                    <HeartPlus className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
+                    <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.overtime', 'Overtime')}</p>
+                    <p className={`text-2xl font-bold ${text.primary}`}>{overtimeHours.toFixed(1)}</p>
+                  </div>
+                </>
+              )}
 
-              <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <ShieldCheck className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.tasksDone', 'Tasks Done')}</p>
-                <p className={`text-2xl font-bold ${text.primary}`}>{completedTasks}/{employeeTasks.length}</p>
-              </div>
+              {/* Task Stats - Show only for tasks or all */}
+              {(activeTab === 'tasks' || activeTab === 'all') && (
+                <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                  <ShieldCheck className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
+                  <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.tasksDone', 'Tasks Done')}</p>
+                  <p className={`text-2xl font-bold ${text.primary}`}>{completedTasks}/{employeeTasks.length}</p>
+                </div>
+              )}
 
-              <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <Goal className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.completion', 'Completion')}</p>
-                <p className={`text-2xl font-bold ${text.primary}`}>
-                  {activeTab === 'goals' ? goalCompletionRate : taskCompletionRate}%
-                </p>
-              </div>
+              {/* Goal Stats - Show only for goals or all */}
+              {(activeTab === 'goals' || activeTab === 'all') && (
+                <>
+                  <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                    <Goal className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
+                    <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.completion', 'Completion')}</p>
+                    <p className={`text-2xl font-bold ${text.primary}`}>
+                      {activeTab === 'goals' ? goalCompletionRate : taskCompletionRate}%
+                    </p>
+                  </div>
 
-              <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <Pickaxe className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.goalProgress', 'Goal Progress')}</p>
-                <p className={`text-2xl font-bold ${text.primary}`}>{avgProgress}%</p>
-              </div>
+                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                    <Pickaxe className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
+                    <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.goalProgress', 'Goal Progress')}</p>
+                    <p className={`text-2xl font-bold ${text.primary}`}>{avgProgress}%</p>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Detailed Breakdown */}
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Time Entries Breakdown */}
-              <div className={`p-4 rounded-lg border ${border.primary}`}>
-                <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
-                  <Clock className="w-4 h-4" />
-                  {t('reports.timeEntries', 'Time Entries')} ({employeeTimeEntries.length})
-                </h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className={text.secondary}>{t('reports.approved', 'Approved')}:</span>
-                    <span className={`font-medium ${text.primary}`}>{approvedEntries}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className={text.secondary}>{t('reports.pending', 'Pending')}:</span>
-                    <span className={`font-medium ${text.primary}`}>{pendingEntries}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className={text.secondary}>{t('reports.regularHours', 'Regular Hours')}:</span>
-                    <span className={`font-medium ${text.primary}`}>{regularHours.toFixed(1)}h</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className={text.secondary}>{t('reports.overtime', 'Overtime')}:</span>
-                    <span className={`font-medium ${text.primary}`}>{overtimeHours.toFixed(1)}h</span>
+              {/* Time Entries Breakdown - Show only for time-entries or all */}
+              {(activeTab === 'time-entries' || activeTab === 'all') && (
+                <div className={`p-4 rounded-lg border ${border.primary}`}>
+                  <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
+                    <Clock className="w-4 h-4" />
+                    {t('reports.timeEntries', 'Time Entries')} ({employeeTimeEntries.length})
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className={text.secondary}>{t('reports.approved', 'Approved')}:</span>
+                      <span className={`font-medium ${text.primary}`}>{approvedEntries}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className={text.secondary}>{t('reports.pending', 'Pending')}:</span>
+                      <span className={`font-medium ${text.primary}`}>{pendingEntries}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className={text.secondary}>{t('reports.regularHours', 'Regular Hours')}:</span>
+                      <span className={`font-medium ${text.primary}`}>{regularHours.toFixed(1)}h</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className={text.secondary}>{t('reports.overtime', 'Overtime')}:</span>
+                      <span className={`font-medium ${text.primary}`}>{overtimeHours.toFixed(1)}h</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Tasks Breakdown */}
-              <div className={`p-4 rounded-lg border ${border.primary}`}>
-                <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
-                  <CheckCircle className="w-4 h-4" />
-                  {t('reports.tasks', 'Tasks')} ({employeeTasks.length})
-                </h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className={text.secondary}>{t('reports.completed', 'Completed')}:</span>
-                    <span className={`font-medium ${text.primary}`}>{completedTasks}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className={text.secondary}>{t('reports.inProgress', 'In Progress')}:</span>
-                    <span className={`font-medium ${text.primary}`}>{inProgressTasks}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className={text.secondary}>{t('reports.pending', 'Pending')}:</span>
-                    <span className={`font-medium ${text.primary}`}>{pendingTasks}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className={text.secondary}>{t('reports.completionRate', 'Completion Rate')}:</span>
-                    <span className={`font-medium ${text.primary}`}>{taskCompletionRate}%</span>
+              {/* Tasks Breakdown - Show only for tasks or all */}
+              {(activeTab === 'tasks' || activeTab === 'all') && (
+                <div className={`p-4 rounded-lg border ${border.primary}`}>
+                  <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
+                    <CheckCircle className="w-4 h-4" />
+                    {t('reports.tasks', 'Tasks')} ({employeeTasks.length})
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className={text.secondary}>{t('reports.completed', 'Completed')}:</span>
+                      <span className={`font-medium ${text.primary}`}>{completedTasks}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className={text.secondary}>{t('reports.inProgress', 'In Progress')}:</span>
+                      <span className={`font-medium ${text.primary}`}>{inProgressTasks}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className={text.secondary}>{t('reports.pending', 'Pending')}:</span>
+                      <span className={`font-medium ${text.primary}`}>{pendingTasks}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className={text.secondary}>{t('reports.completionRate', 'Completion Rate')}:</span>
+                      <span className={`font-medium ${text.primary}`}>{taskCompletionRate}%</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Goals Breakdown */}
-              <div className={`p-4 rounded-lg border ${border.primary}`}>
-                <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
-                  <Target className="w-4 h-4" />
-                  {t('reports.goals', 'Goals')} ({employeeGoals.length})
-                </h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className={text.secondary}>{t('reports.completed', 'Completed')}:</span>
-                    <span className={`font-medium ${text.primary}`}>{completedGoals}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className={text.secondary}>{t('reports.inProgress', 'In Progress')}:</span>
-                    <span className={`font-medium ${text.primary}`}>{inProgressGoals}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className={text.secondary}>{t('reports.avgProgress', 'Avg Progress')}:</span>
-                    <span className={`font-medium ${text.primary}`}>{avgProgress}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className={text.secondary}>{t('reports.totalGoals', 'Total Goals')}:</span>
-                    <span className={`font-medium ${text.primary}`}>{employeeGoals.length}</span>
+              {/* Goals Breakdown - Show only for goals or all */}
+              {(activeTab === 'goals' || activeTab === 'all') && (
+                <div className={`p-4 rounded-lg border ${border.primary}`}>
+                  <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
+                    <Target className="w-4 h-4" />
+                    {t('reports.goals', 'Goals')} ({employeeGoals.length})
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className={text.secondary}>{t('reports.completed', 'Completed')}:</span>
+                      <span className={`font-medium ${text.primary}`}>{completedGoals}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className={text.secondary}>{t('reports.inProgress', 'In Progress')}:</span>
+                      <span className={`font-medium ${text.primary}`}>{inProgressGoals}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className={text.secondary}>{t('reports.avgProgress', 'Avg Progress')}:</span>
+                      <span className={`font-medium ${text.primary}`}>{avgProgress}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className={text.secondary}>{t('reports.totalGoals', 'Total Goals')}:</span>
+                      <span className={`font-medium ${text.primary}`}>{employeeGoals.length}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         );
@@ -1827,7 +1865,7 @@ const Reports = () => {
                       </td>
                       <td className={`px-6 py-4 ${text.primary}`}>
                         <div className="text-sm font-medium max-w-xs truncate">{item.title}</div>
-                        <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{translateCategory(item.category)} - {item.progress || 0}%</div>
+                        <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{translateCategory(item.category)} - {item.status === 'completed' ? 100 : (item.progress || 0)}%</div>
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap`}>
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -1939,10 +1977,10 @@ const Reports = () => {
                             <div className={`w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-3`}>
                               <div 
                                 className="bg-blue-600 h-2 rounded-full" 
-                                style={{width: `${Math.min(item.progress || 0, 100)}%`}}
+                                style={{width: `${Math.min(item.status === 'completed' ? 100 : (item.progress || 0), 100)}%`}}
                               ></div>
                             </div>
-                            <span className="text-sm font-medium">{item.progress || 0}%</span>
+                            <span className="text-sm font-medium">{item.status === 'completed' ? 100 : (item.progress || 0)}%</span>
                           </div>
                         </td>
                       </>

@@ -25,6 +25,18 @@ import { useAuth } from '../contexts/AuthContext';
 import * as workloadService from '../services/workloadService';
 import { supabase } from '../config/supabaseClient';
 
+/**
+ * TaskPerformanceReview Component
+ * 
+ * This component handles:
+ * 1. Task performance reviews and evaluations (workload_tasks table)
+ * 2. Employee skill ratings and quarterly performance reviews (performance_reviews table)
+ * 
+ * NOTE: This component does NOT handle personal goal progress tracking.
+ * Goal progress is managed separately in the performance_goals table.
+ * - performance_reviews table = Skill assessments, quarterly reviews, overall ratings
+ * - performance_goals table = Goal tracking, progress percentages, milestones
+ */
 const TaskPerformanceReview = ({ employees }) => {
   const { user } = useAuth();
   const { isDarkMode, toggleTheme, button, bg, text, border, hover, input } = useTheme();
@@ -366,7 +378,12 @@ const TaskPerformanceReview = ({ employees }) => {
       const year = now.getFullYear();
       const reviewPeriod = `Q${quarter}-${year}`;
 
-      // Create or update performance review in proper table
+      /**
+       * IMPORTANT: This saves to performance_reviews table for skill assessments.
+       * It does NOT handle goal progress - that's in performance_goals table.
+       * - performance_reviews = Quarterly reviews, skill ratings, overall performance
+       * - performance_goals = Goal tracking, progress tracking, milestones
+       */
       const { data: existingReview, error: fetchError } = await supabase
         .from('performance_reviews')
         .select('id')

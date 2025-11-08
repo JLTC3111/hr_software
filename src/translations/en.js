@@ -807,7 +807,7 @@ export default {
     regularHours: 'Regular Hours',
     overtime: 'Overtime',
     tasksDone: 'Tasks Done',
-    completion: 'Completion',
+    completion: 'Completion Rate',
     goalProgress: 'Goal Progress',
     approved: 'Approved',
     pending: 'Pending',
