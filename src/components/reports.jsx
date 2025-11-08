@@ -6,13 +6,14 @@ import {
   Calendar, 
   Download, 
   Users, 
-  CircleArrowOutUpLeft,
+  Activity,
   User,
+  PlayCircle,
   Filter, 
   BarChart3, 
   Clock, 
   CheckCircle, 
-  PlayCircle, 
+  Combine, 
   Target,
   Pickaxe,
   HeartPlus,
@@ -129,7 +130,7 @@ const Reports = () => {
   // State
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [activeTab, setActiveTab] = useState('time-entries');
+  const [activeTab, setActiveTab] = useState('all');
   const [selectedEmployee, setSelectedEmployee] = useState('all');
   const [dateRange, setDateRange] = useState('this-month');
   const [filters, setFilters] = useState({
@@ -292,9 +293,11 @@ const Reports = () => {
 
       // Fetch Goals (for 'all' or 'goals' tab)
       if (activeTab === 'all' || activeTab === 'goals') {
+        console.log('=== FETCHING GOALS ===', { activeTab, employeeId });
         const goalsResponse = await performanceService.getAllPerformanceGoals(
           employeeId ? { employeeId: employeeId } : {}
         );
+        console.log('Goals Response:', goalsResponse);
         const goals = goalsResponse.success ? goalsResponse.data : [];
         
         // Filter client-side using string comparison
@@ -314,9 +317,18 @@ const Reports = () => {
             employee_id_type: typeof filteredGoals[0].employee_id,
             title: filteredGoals[0].title
           } : null,
+          rawGoals: goals,
           error: goalsResponse.error
         });
-        setReportData(prev => ({ ...prev, goals: filteredGoals }));
+        console.log('Setting goals in reportData:', filteredGoals);
+        setReportData(prev => {
+          console.log('Previous reportData:', prev);
+          const newData = { ...prev, goals: filteredGoals };
+          console.log('New reportData with goals:', newData);
+          return newData;
+        });
+      } else {
+        console.log('=== SKIPPING GOALS FETCH ===', { activeTab });
       }
     } catch (error) {
       console.error('Error fetching report data:', error);
@@ -1649,7 +1661,7 @@ const Reports = () => {
                   <p className={`text-sm ${text.secondary}`}>{t('reports.inProgress', 'In Progress')}</p>
                   <p className={`text-3xl font-bold ${text.primary}`}>{stats.inProgress}</p>
                 </div>
-                <PlayCircle className={`w-8 h-8 ${text.secondary}`} />
+                <Combine className={`w-8 h-8 ${text.secondary}`} />
               </div>
             </div>
             <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
@@ -1658,7 +1670,7 @@ const Reports = () => {
                   <p className={`text-sm ${text.secondary}`}>{t('reports.avgProgress', 'Avg Progress')}</p>
                   <p className={`text-3xl font-bold ${text.primary}`}>{stats.averageProgress}%</p>
                 </div>
-                <CircleArrowOutUpLeft className={`w-8 h-8 ${text.secondary}`} />
+                <Activity className={`w-8 h-8 ${text.secondary}`} />
               </div>
             </div>
           </>
