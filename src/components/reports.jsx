@@ -11,14 +11,14 @@ import {
   PlayCircle,
   Filter, 
   BarChart3, 
+  Gauge,
+  Goal,
   Clock, 
   CheckCircle, 
   Combine, 
-  Target,
   Pickaxe,
   HeartPlus,
   ShieldCheck,
-  Goal,
   PenOff,
   Apple, 
   Hourglass,
@@ -1191,18 +1191,18 @@ const Reports = () => {
       // Header
       doc.setFontSize(20);
       doc.setTextColor(40, 44, 52);
-      doc.text('HR PERFORMANCE REPORT', pageWidth / 2, yPosition, { align: 'center' });
+      doc.text(t('reports.performanceReport', 'HR PERFORMANCE REPORT').toUpperCase(), pageWidth / 2, yPosition, { align: 'center' });
       
       yPosition += 10;
       doc.setFontSize(10);
       doc.setTextColor(100, 100, 100);
-      doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth / 2, yPosition, { align: 'center' });
+      doc.text(`${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}`, pageWidth / 2, yPosition, { align: 'center' });
       
       yPosition += 5;
-      doc.text(`Period: ${filters.startDate} to ${filters.endDate}`, pageWidth / 2, yPosition, { align: 'center' });
+      doc.text(`${t('reports.period', 'Period')}: ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}`, pageWidth / 2, yPosition, { align: 'center' });
       
       yPosition += 5;
-      doc.text(`Employee: ${selectedEmployee === 'all' ? 'All Employees' : employeeName}`, pageWidth / 2, yPosition, { align: 'center' });
+      doc.text(`${t('reports.employee', 'Employee')}: ${selectedEmployee === 'all' ? t('reports.allEmployees', 'All Employees') : employeeName}`, pageWidth / 2, yPosition, { align: 'center' });
       
       yPosition += 15;
 
@@ -1212,37 +1212,37 @@ const Reports = () => {
       
       doc.setFontSize(14);
       doc.setTextColor(40, 44, 52);
-      doc.text('SUMMARY OVERVIEW', pageWidth / 2, yPosition + 8, { align: 'center' });
+      doc.text(t('reports.summaryOverview', 'SUMMARY OVERVIEW').toUpperCase(), pageWidth / 2, yPosition + 8, { align: 'center' });
       
       yPosition += 15;
       doc.setFontSize(10);
       doc.setTextColor(60, 60, 60);
       
       if (activeTab === 'all') {
-        doc.text(`Total Records: ${stats.totalRecords}`, 25, yPosition);
-        doc.text(`Time Entries: ${stats.timeEntriesCount}`, 25, yPosition + 6);
-        doc.text(`Tasks: ${stats.tasksCount}`, 25, yPosition + 12);
-        doc.text(`Goals: ${stats.goalsCount}`, 25, yPosition + 18);
+        doc.text(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, 25, yPosition);
+        doc.text(`${t('reports.timeEntries', 'Time Entries')}: ${stats.timeEntriesCount}`, 25, yPosition + 6);
+        doc.text(`${t('reports.tasks', 'Tasks')}: ${stats.tasksCount}`, 25, yPosition + 12);
+        doc.text(`${t('reports.goals', 'Goals')}: ${stats.goalsCount}`, 25, yPosition + 18);
         
-        doc.text(`Total Hours: ${stats.totalHours}h`, pageWidth - 85, yPosition);
-        doc.text(`Approved: ${stats.approvedTime}`, pageWidth - 85, yPosition + 6);
-        doc.text(`Completed Tasks: ${stats.completedTasks}`, pageWidth - 85, yPosition + 12);
-        doc.text(`Achieved Goals: ${stats.achievedGoals}`, pageWidth - 85, yPosition + 18);
+        doc.text(`${t('reports.totalHours', 'Total Hours')}: ${stats.totalHours}h`, pageWidth - 85, yPosition);
+        doc.text(`${t('reports.approved', 'Approved')}: ${stats.approvedTime}`, pageWidth - 85, yPosition + 6);
+        doc.text(`${t('reports.completedTasks', 'Completed Tasks')}: ${stats.completedTasks}`, pageWidth - 85, yPosition + 12);
+        doc.text(`${t('reports.achievedGoals', 'Achieved Goals')}: ${stats.achievedGoals}`, pageWidth - 85, yPosition + 18);
       } else if (activeTab === 'time-entries') {
-        doc.text(`Total Records: ${stats.totalRecords}`, 25, yPosition);
-        doc.text(`Total Hours: ${stats.totalHours}h`, 25, yPosition + 6);
-        doc.text(`Approved: ${stats.approved}`, pageWidth - 85, yPosition);
-        doc.text(`Pending: ${stats.pending}`, pageWidth - 85, yPosition + 6);
+        doc.text(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, 25, yPosition);
+        doc.text(`${t('reports.totalHours', 'Total Hours')}: ${stats.totalHours}h`, 25, yPosition + 6);
+        doc.text(`${t('reports.approved', 'Approved')}: ${stats.approved}`, pageWidth - 85, yPosition);
+        doc.text(`${t('reports.pending', 'Pending')}: ${stats.pending}`, pageWidth - 85, yPosition + 6);
       } else if (activeTab === 'tasks') {
-        doc.text(`Total Records: ${stats.totalRecords}`, 25, yPosition);
-        doc.text(`Completed: ${stats.completed}`, 25, yPosition + 6);
-        doc.text(`In Progress: ${stats.inProgress}`, pageWidth - 85, yPosition);
-        doc.text(`Completion Rate: ${stats.completionRate}%`, pageWidth - 85, yPosition + 6);
+        doc.text(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, 25, yPosition);
+        doc.text(`${t('reports.completed', 'Completed')}: ${stats.completed}`, 25, yPosition + 6);
+        doc.text(`${t('reports.inProgress', 'In Progress')}: ${stats.inProgress}`, pageWidth - 85, yPosition);
+        doc.text(`${t('reports.completionRate', 'Completion Rate')}: ${stats.completionRate}%`, pageWidth - 85, yPosition + 6);
       } else if (activeTab === 'goals') {
-        doc.text(`Total Records: ${stats.totalRecords}`, 25, yPosition);
-        doc.text(`Achieved: ${stats.achieved}`, 25, yPosition + 6);
-        doc.text(`In Progress: ${stats.inProgress}`, pageWidth - 85, yPosition);
-        doc.text(`Avg Progress: ${stats.averageProgress}%`, pageWidth - 85, yPosition + 6);
+        doc.text(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, 25, yPosition);
+        doc.text(`${t('reports.achieved', 'Achieved')}: ${stats.achieved}`, 25, yPosition + 6);
+        doc.text(`${t('reports.inProgress', 'In Progress')}: ${stats.inProgress}`, pageWidth - 85, yPosition);
+        doc.text(`${t('reports.avgProgress', 'Avg Progress')}: ${stats.averageProgress}%`, pageWidth - 85, yPosition + 6);
       }
       
       yPosition += 35;
@@ -1253,11 +1253,11 @@ const Reports = () => {
         if (reportData.timeEntries.length > 0) {
           doc.setFontSize(12);
           doc.setTextColor(40, 44, 52);
-          doc.text('TIME ENTRIES', 15, yPosition);
+          doc.text(t('reports.timeEntries', 'TIME ENTRIES').toUpperCase(), 15, yPosition);
           yPosition += 5;
 
           const timeEntriesData = reportData.timeEntries.slice(0, 20).map(entry => [
-            entry.employee?.name || 'Unknown',
+            entry.employee?.name || t('reports.unknown', 'Unknown'),
             entry.date,
             `${entry.hours || 0}h`,
             entry.hour_type || '',
@@ -1266,7 +1266,7 @@ const Reports = () => {
 
           autoTable(doc, {
             startY: yPosition,
-            head: [['Employee', 'Date', 'Hours', 'Type', 'Status']],
+            head: [[t('reports.employee', 'Employee'), t('reports.date', 'Date'), t('reports.hours', 'Hours'), t('reports.type', 'Type'), t('reports.status', 'Status')]],
             body: timeEntriesData,
             theme: 'striped',
             headStyles: { fillColor: [70, 173, 71], textColor: 255, fontStyle: 'bold' },
@@ -1286,11 +1286,11 @@ const Reports = () => {
         if (reportData.tasks.length > 0) {
           doc.setFontSize(12);
           doc.setTextColor(40, 44, 52);
-          doc.text('TASKS', 15, yPosition);
+          doc.text(t('reports.tasks', 'TASKS').toUpperCase(), 15, yPosition);
           yPosition += 5;
 
           const tasksData = reportData.tasks.slice(0, 20).map(task => [
-            task.employee?.name || 'Unknown',
+            task.employee?.name || t('reports.unknown', 'Unknown'),
             task.title.substring(0, 30),
             task.priority || '',
             task.status || '',
@@ -1299,7 +1299,7 @@ const Reports = () => {
 
           autoTable(doc, {
             startY: yPosition,
-            head: [['Employee', 'Task', 'Priority', 'Status', 'Due Date']],
+            head: [[t('reports.employee', 'Employee'), t('reports.task', 'Task'), t('reports.priority', 'Priority'), t('reports.status', 'Status'), t('reports.dueDate', 'Due Date')]],
             body: tasksData,
             theme: 'striped',
             headStyles: { fillColor: [255, 192, 0], textColor: 0, fontStyle: 'bold' },
@@ -1319,11 +1319,11 @@ const Reports = () => {
         if (reportData.goals.length > 0) {
           doc.setFontSize(12);
           doc.setTextColor(40, 44, 52);
-          doc.text('PERSONAL GOALS', 15, yPosition);
+          doc.text(t('reports.personalGoals', 'PERSONAL GOALS').toUpperCase(), 15, yPosition);
           yPosition += 5;
 
           const goalsData = reportData.goals.slice(0, 20).map(goal => [
-            goal.employee?.name || 'Unknown',
+            goal.employee?.name || t('reports.unknown', 'Unknown'),
             goal.title.substring(0, 30),
             goal.category || '',
             goal.status || '',
@@ -1332,7 +1332,7 @@ const Reports = () => {
 
           autoTable(doc, {
             startY: yPosition,
-            head: [['Employee', 'Goal', 'Category', 'Status', 'Progress']],
+            head: [[t('reports.employee', 'Employee'), t('reports.goal', 'Goal'), t('reports.category', 'Category'), t('reports.status', 'Status'), t('reports.progress', 'Progress')]],
             body: goalsData,
             theme: 'striped',
             headStyles: { fillColor: [91, 155, 213], textColor: 255, fontStyle: 'bold' },
@@ -1342,7 +1342,7 @@ const Reports = () => {
         }
       } else if (activeTab === 'time-entries' && reportData.timeEntries.length > 0) {
         const timeEntriesData = reportData.timeEntries.slice(0, 50).map(entry => [
-          entry.employee?.name || 'Unknown',
+          entry.employee?.name || t('reports.unknown', 'Unknown'),
           translateDepartment(entry.employee?.department) || '',
           entry.date,
           entry.clock_in || '',
@@ -1354,7 +1354,7 @@ const Reports = () => {
 
         autoTable(doc, {
           startY: yPosition,
-          head: [['Employee', 'Department', 'Date', 'Clock In', 'Clock Out', 'Hours', 'Type', 'Status']],
+          head: [[t('reports.employee', 'Employee'), t('reports.department', 'Department'), t('reports.date', 'Date'), t('reports.clockIn', 'Clock In'), t('reports.clockOut', 'Clock Out'), t('reports.hours', 'Hours'), t('reports.type', 'Type'), t('reports.status', 'Status')]],
           body: timeEntriesData,
           theme: 'striped',
           headStyles: { fillColor: [70, 173, 71], textColor: 255, fontStyle: 'bold' },
@@ -1363,7 +1363,7 @@ const Reports = () => {
         });
       } else if (activeTab === 'tasks' && reportData.tasks.length > 0) {
         const tasksData = reportData.tasks.slice(0, 50).map(task => [
-          task.employee?.name || 'Unknown',
+          task.employee?.name || t('reports.unknown', 'Unknown'),
           translateDepartment(task.employee?.department) || '',
           task.title.substring(0, 40),
           task.priority || '',
@@ -1375,7 +1375,7 @@ const Reports = () => {
 
         autoTable(doc, {
           startY: yPosition,
-          head: [['Employee', 'Department', 'Task', 'Priority', 'Status', 'Due Date', 'Est.', 'Actual']],
+          head: [[t('reports.employee', 'Employee'), t('reports.department', 'Department'), t('reports.task', 'Task'), t('reports.priority', 'Priority'), t('reports.status', 'Status'), t('reports.dueDate', 'Due Date'), t('reports.est', 'Est.'), t('reports.actual', 'Actual')]],
           body: tasksData,
           theme: 'striped',
           headStyles: { fillColor: [255, 192, 0], textColor: 0, fontStyle: 'bold' },
@@ -1384,7 +1384,7 @@ const Reports = () => {
         });
       } else if (activeTab === 'goals' && reportData.goals.length > 0) {
         const goalsData = reportData.goals.slice(0, 50).map(goal => [
-          goal.employee?.name || 'Unknown',
+          goal.employee?.name || t('reports.unknown', 'Unknown'),
           translateDepartment(goal.employee?.department) || '',
           goal.title.substring(0, 40),
           goal.category || '',
@@ -1395,7 +1395,7 @@ const Reports = () => {
 
         autoTable(doc, {
           startY: yPosition,
-          head: [['Employee', 'Department', 'Goal', 'Category', 'Status', 'Target Date', 'Progress']],
+          head: [[t('reports.employee', 'Employee'), t('reports.department', 'Department'), t('reports.goal', 'Goal'), t('reports.category', 'Category'), t('reports.status', 'Status'), t('reports.targetDate', 'Target Date'), t('reports.progress', 'Progress')]],
           body: goalsData,
           theme: 'striped',
           headStyles: { fillColor: [91, 155, 213], textColor: 255, fontStyle: 'bold' },
@@ -1411,7 +1411,7 @@ const Reports = () => {
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
         doc.text(
-          `Page ${i} of ${pageCount} | Generated by HR Management System`,
+          `${t('reports.page', 'Page')} ${i} ${t('reports.of', 'of')} ${pageCount} | ${t('reports.generatedBy', 'Generated by HR Management System')}`,
           pageWidth / 2,
           pageHeight - 10,
           { align: 'center' }
@@ -1818,7 +1818,7 @@ const Reports = () => {
               {(activeTab === 'goals' || activeTab === 'all') && (
                 <div className={`p-4 rounded-lg border ${border.primary}`}>
                   <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
-                    <Target className="w-4 h-4" />
+                    <Goal className="w-4 h-4" />
                     {t('reports.goals', 'Goals')} ({employeeGoals.length})
                   </h4>
                   <div className="space-y-2 text-sm">
@@ -1884,7 +1884,7 @@ const Reports = () => {
                   <p className={`text-sm ${text.secondary}`}>{t('reports.goals', 'Goals')}</p>
                   <p className={`text-3xl font-bold ${text.primary}`}>{stats.goalsCount}</p>
                 </div>
-                <Target className={`w-8 h-8 ${text.secondary}`} />
+                <Goal className={`w-8 h-8 ${text.secondary}`} />
               </div>
             </div>
           </>
@@ -1948,7 +1948,7 @@ const Reports = () => {
                   <p className={`text-sm ${text.secondary}`}>{t('reports.completionRate', 'Completion Rate')}</p>
                   <p className={`text-3xl font-bold ${text.primary}`}>{stats.completionRate}%</p>
                 </div>
-                <BarChart3 className={`w-8 h-8 ${text.secondary}`} />
+                <Gauge className={`w-8 h-8 ${text.secondary}`} />
               </div>
             </div>
           </>
