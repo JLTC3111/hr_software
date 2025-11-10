@@ -52,32 +52,32 @@ const TaskListing = ({ employees }) => {
   const canViewOrganization = checkPermission('canViewReports'); // Only admin/manager can view organization tab
 
   // Load tasks from backend
-  useEffect(() => {
-    const fetchTasks = async () => {
-      setLoading(true);
-      try {
-        let result;
-        if (viewMode === 'individual' && selectedEmployee) {
-          result = await workloadService.getEmployeeTasks(selectedEmployee);
-        } else {
-          result = await workloadService.getAllTasks();
-        }
-        
-        if (result.success) {
-          setTasks(result.data);
-        } else {
-          setErrorMessage(result.error || 'Failed to load tasks');
-          setTimeout(() => setErrorMessage(''), 5000);
-        }
-      } catch (error) {
-        console.error('Error fetching tasks:', error);
-        setErrorMessage('Failed to load tasks');
-        setTimeout(() => setErrorMessage(''), 5000);
-      } finally {
-        setLoading(false);
+  const fetchTasks = async () => {
+    setLoading(true);
+    try {
+      let result;
+      if (viewMode === 'individual' && selectedEmployee) {
+        result = await workloadService.getEmployeeTasks(selectedEmployee);
+      } else {
+        result = await workloadService.getAllTasks();
       }
-    };
+      
+      if (result.success) {
+        setTasks(result.data);
+      } else {
+        setErrorMessage(result.error || 'Failed to load tasks');
+        setTimeout(() => setErrorMessage(''), 5000);
+      }
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      setErrorMessage('Failed to load tasks');
+      setTimeout(() => setErrorMessage(''), 5000);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchTasks();
   }, [viewMode, selectedEmployee]);
 
@@ -88,14 +88,9 @@ const TaskListing = ({ employees }) => {
       (payload) => {
         console.log('Task change:', payload);
         
-        if (payload.eventType === 'INSERT') {
-          setTasks(prev => [payload.new, ...prev]);
-        } else if (payload.eventType === 'UPDATE') {
-          setTasks(prev => prev.map(task => 
-            task.id === payload.new.id ? payload.new : task
-          ));
-        } else if (payload.eventType === 'DELETE') {
-          setTasks(prev => prev.filter(task => task.id !== payload.old.id));
+        // Refetch tasks to get complete data with employee info
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE' || payload.eventType === 'DELETE') {
+          fetchTasks();
         }
       }
     );
@@ -197,7 +192,8 @@ const TaskListing = ({ employees }) => {
           assignedTo: selectedEmployee
         });
         setShowAddTask(false);
-        // Tasks will update via real-time subscription
+        // Refetch tasks to get complete data with employee info
+        fetchTasks();
       } else {
         setErrorMessage(result.error || 'Failed to create task');
         setTimeout(() => setErrorMessage(''), 5000);
@@ -216,7 +212,8 @@ const TaskListing = ({ employees }) => {
       if (result.success) {
         setSuccessMessage('Task updated successfully');
         setTimeout(() => setSuccessMessage(''), 3000);
-        // Tasks will update via real-time subscription
+        // Refetch tasks to get complete data with employee info
+        fetchTasks();
       } else {
         setErrorMessage(result.error || 'Failed to update task');
         setTimeout(() => setErrorMessage(''), 5000);
@@ -236,7 +233,8 @@ const TaskListing = ({ employees }) => {
         if (result.success) {
           setSuccessMessage('Task deleted successfully');
           setTimeout(() => setSuccessMessage(''), 3000);
-          // Tasks will update via real-time subscription
+          // Refetch tasks to get complete data
+          fetchTasks();
         } else {
           setErrorMessage(result.error || 'Failed to delete task');
           setTimeout(() => setErrorMessage(''), 5000);
