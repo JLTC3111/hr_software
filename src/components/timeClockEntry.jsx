@@ -151,7 +151,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
   const [imagePreview, setImagePreview] = useState({ show: false, url: '' });
   
   // State for employee filtering and approval
-  const [selectedEmployeeFilter, setSelectedEmployeeFilter] = useState('self'); // 'self' or employee ID or 'all'
+  const [selectedEmployeeFilter, setSelectedEmployeeFilter] = useState(canManageTimeTracking ? 'all' : 'self'); // Default to 'all' for admin/manager, 'self' for employees
   const [allEmployees, setAllEmployees] = useState([]);
   const [filteredEntries, setFilteredEntries] = useState([]);
   const [approvingEntryId, setApprovingEntryId] = useState(null);
@@ -485,12 +485,8 @@ const TimeClockEntry = ({ currentLanguage }) => {
       });
       
       if (result.success) {
-        // Refresh time entries
-        const employeeId = user.employeeId || user.id;
-        const entriesResult = await timeTrackingService.getTimeEntries(employeeId);
-        if (entriesResult.success) {
-          setTimeEntries(entriesResult.data || []);
-        }
+        // Refresh time entries using the centralized fetch function
+        await fetchTimeEntries();
         
         // Reset form
         setFormData({
@@ -565,20 +561,8 @@ const TimeClockEntry = ({ currentLanguage }) => {
         const result = await timeTrackingService.deleteProofFile(id, entry.proof_file_path);
         
         if (result.success) {
-          // Update local state to remove proof file info
-          setTimeEntries(prevEntries =>
-            prevEntries.map(e =>
-              e.id === id
-                ? {
-                    ...e,
-                    proof_file_url: null,
-                    proof_file_name: null,
-                    proof_file_type: null,
-                    proof_file_path: null
-                  }
-                : e
-            )
-          );
+          // Refresh time entries using the centralized fetch function
+          await fetchTimeEntries();
           
           setUploadToast({
             show: true,
@@ -598,7 +582,8 @@ const TimeClockEntry = ({ currentLanguage }) => {
         // Delete entire entry
         const result = await timeTrackingService.deleteTimeEntry(id);
         if (result.success) {
-          setTimeEntries(timeEntries.filter(entry => entry.id !== id));
+          // Refresh time entries using the centralized fetch function
+          await fetchTimeEntries();
           setSuccessMessage(t('timeClock.deleteSuccess', 'Time entry deleted successfully'));
           setTimeout(() => setSuccessMessage(''), 3000);
         } else {
@@ -635,20 +620,8 @@ const TimeClockEntry = ({ currentLanguage }) => {
           setUploadProgress({});
         }, 2000);
         
-        // Update the time entry in local state
-        setTimeEntries(prevEntries =>
-          prevEntries.map(entry =>
-            entry.id === entryId
-              ? {
-                  ...entry,
-                  proof_file_url: result.data.proof_file_url,
-                  proof_file_name: result.data.proof_file_name,
-                  proof_file_type: result.data.proof_file_type,
-                  proof_file_path: result.data.proof_file_path
-                }
-              : entry
-          )
-        );
+        // Refresh time entries using the centralized fetch function
+        await fetchTimeEntries();
 
         // Show success toast
         setUploadToast({
@@ -700,7 +673,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
   };
   
   // Handle approval of time entry
-  // Handle approval of time entry
   const handleApprove = async (entryId) => {
     setApprovingEntryId(entryId);
     
@@ -709,14 +681,8 @@ const TimeClockEntry = ({ currentLanguage }) => {
       const result = await timeTrackingService.updateTimeEntryStatus(entryId, 'approved', approverId);
       
       if (result.success) {
-        // Update local state
-        setTimeEntries(prevEntries =>
-          prevEntries.map(entry =>
-            entry.id === entryId
-              ? { ...entry, status: 'approved' }
-              : entry
-          )
-        );
+        // Refresh time entries using the centralized fetch function
+        await fetchTimeEntries();
         
         setUploadToast({
           show: true,
@@ -924,7 +890,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
       </div>
 
       {/* Admin Time Entry Section (Only for admin/manager roles) */}
-      <AdminTimeEntry />
+      <AdminTimeEntry onEntriesChanged={fetchTimeEntries} />
 
       {/* Success Message */}
       {successMessage && (

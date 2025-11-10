@@ -1174,11 +1174,28 @@ const Reports = () => {
     }
   };
 
+  // Helper function to clean text for PDF rendering
+  const cleanTextForPDF = (text) => {
+    if (!text) return '';
+    // Normalize Unicode characters and remove any zero-width characters
+    // Also remove any excessive spaces that might cause character spacing issues
+    return text
+      .normalize('NFC')
+      .replace(/[\u200B-\u200D\uFEFF]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
   // PDF Export with Charts and Tables
   const exportToPDF = async () => {
     setExporting(true);
     try {
       const doc = new jsPDF('p', 'mm', 'a4');
+      
+      // Add Unicode font support for special characters
+      doc.setFont('helvetica', 'normal');
+      doc.setLanguage('de-DE'); // Set language for proper text rendering
+      
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       let yPosition = 20;
@@ -1257,7 +1274,7 @@ const Reports = () => {
           yPosition += 5;
 
           const timeEntriesData = reportData.timeEntries.slice(0, 20).map(entry => [
-            entry.employee?.name || t('reports.unknown', 'Unknown'),
+            cleanTextForPDF(entry.employee?.name || t('reports.unknown', 'Unknown')),
             entry.date,
             `${entry.hours || 0}h`,
             entry.hour_type || '',
@@ -1269,8 +1286,18 @@ const Reports = () => {
             head: [[t('reports.employee', 'Employee'), t('reports.date', 'Date'), t('reports.hours', 'Hours'), t('reports.type', 'Type'), t('reports.status', 'Status')]],
             body: timeEntriesData,
             theme: 'striped',
-            headStyles: { fillColor: [70, 173, 71], textColor: 255, fontStyle: 'bold' },
-            styles: { fontSize: 8, cellPadding: 2 },
+            headStyles: { 
+              fillColor: [70, 173, 71], 
+              textColor: 255, 
+              fontStyle: 'bold',
+              font: 'helvetica'
+            },
+            styles: { 
+              fontSize: 8, 
+              cellPadding: 2,
+              font: 'helvetica',
+              fontStyle: 'normal'
+            },
             margin: { left: 15, right: 15 }
           });
 
@@ -1290,8 +1317,8 @@ const Reports = () => {
           yPosition += 5;
 
           const tasksData = reportData.tasks.slice(0, 20).map(task => [
-            task.employee?.name || t('reports.unknown', 'Unknown'),
-            task.title.substring(0, 30),
+            cleanTextForPDF(task.employee?.name || t('reports.unknown', 'Unknown')),
+            cleanTextForPDF(task.title.substring(0, 30)),
             task.priority || '',
             task.status || '',
             task.due_date || '-'
@@ -1302,8 +1329,18 @@ const Reports = () => {
             head: [[t('reports.employee', 'Employee'), t('reports.task', 'Task'), t('reports.priority', 'Priority'), t('reports.status', 'Status'), t('reports.dueDate', 'Due Date')]],
             body: tasksData,
             theme: 'striped',
-            headStyles: { fillColor: [255, 192, 0], textColor: 0, fontStyle: 'bold' },
-            styles: { fontSize: 8, cellPadding: 2 },
+            headStyles: { 
+              fillColor: [255, 192, 0], 
+              textColor: 0, 
+              fontStyle: 'bold',
+              font: 'helvetica'
+            },
+            styles: { 
+              fontSize: 8, 
+              cellPadding: 2,
+              font: 'helvetica',
+              fontStyle: 'normal'
+            },
             margin: { left: 15, right: 15 }
           });
 
@@ -1323,8 +1360,8 @@ const Reports = () => {
           yPosition += 5;
 
           const goalsData = reportData.goals.slice(0, 20).map(goal => [
-            goal.employee?.name || t('reports.unknown', 'Unknown'),
-            goal.title.substring(0, 30),
+            cleanTextForPDF(goal.employee?.name || t('reports.unknown', 'Unknown')),
+            cleanTextForPDF(goal.title.substring(0, 30)),
             goal.category || '',
             goal.status || '',
             `${goal.progress || 0}%`
@@ -1335,15 +1372,25 @@ const Reports = () => {
             head: [[t('reports.employee', 'Employee'), t('reports.goal', 'Goal'), t('reports.category', 'Category'), t('reports.status', 'Status'), t('reports.progress', 'Progress')]],
             body: goalsData,
             theme: 'striped',
-            headStyles: { fillColor: [91, 155, 213], textColor: 255, fontStyle: 'bold' },
-            styles: { fontSize: 8, cellPadding: 2 },
+            headStyles: { 
+              fillColor: [91, 155, 213], 
+              textColor: 255, 
+              fontStyle: 'bold',
+              font: 'helvetica'
+            },
+            styles: { 
+              fontSize: 8, 
+              cellPadding: 2,
+              font: 'helvetica',
+              fontStyle: 'normal'
+            },
             margin: { left: 15, right: 15 }
           });
         }
       } else if (activeTab === 'time-entries' && reportData.timeEntries.length > 0) {
         const timeEntriesData = reportData.timeEntries.slice(0, 50).map(entry => [
-          entry.employee?.name || t('reports.unknown', 'Unknown'),
-          translateDepartment(entry.employee?.department) || '',
+          cleanTextForPDF(entry.employee?.name || t('reports.unknown', 'Unknown')),
+          cleanTextForPDF(translateDepartment(entry.employee?.department) || ''),
           entry.date,
           entry.clock_in || '',
           entry.clock_out || '',
@@ -1357,15 +1404,25 @@ const Reports = () => {
           head: [[t('reports.employee', 'Employee'), t('reports.department', 'Department'), t('reports.date', 'Date'), t('reports.clockIn', 'Clock In'), t('reports.clockOut', 'Clock Out'), t('reports.hours', 'Hours'), t('reports.type', 'Type'), t('reports.status', 'Status')]],
           body: timeEntriesData,
           theme: 'striped',
-          headStyles: { fillColor: [70, 173, 71], textColor: 255, fontStyle: 'bold' },
-          styles: { fontSize: 7, cellPadding: 1.5 },
+          headStyles: { 
+            fillColor: [70, 173, 71], 
+            textColor: 255, 
+            fontStyle: 'bold',
+            font: 'helvetica'
+          },
+          styles: { 
+            fontSize: 7, 
+            cellPadding: 1.5,
+            font: 'helvetica',
+            fontStyle: 'normal'
+          },
           margin: { left: 15, right: 15 }
         });
       } else if (activeTab === 'tasks' && reportData.tasks.length > 0) {
         const tasksData = reportData.tasks.slice(0, 50).map(task => [
-          task.employee?.name || t('reports.unknown', 'Unknown'),
-          translateDepartment(task.employee?.department) || '',
-          task.title.substring(0, 40),
+          cleanTextForPDF(task.employee?.name || t('reports.unknown', 'Unknown')),
+          cleanTextForPDF(translateDepartment(task.employee?.department) || ''),
+          cleanTextForPDF(task.title.substring(0, 40)),
           task.priority || '',
           task.status || '',
           task.due_date || '-',
@@ -1378,15 +1435,25 @@ const Reports = () => {
           head: [[t('reports.employee', 'Employee'), t('reports.department', 'Department'), t('reports.task', 'Task'), t('reports.priority', 'Priority'), t('reports.status', 'Status'), t('reports.dueDate', 'Due Date'), t('reports.est', 'Est.'), t('reports.actual', 'Actual')]],
           body: tasksData,
           theme: 'striped',
-          headStyles: { fillColor: [255, 192, 0], textColor: 0, fontStyle: 'bold' },
-          styles: { fontSize: 7, cellPadding: 1.5 },
+          headStyles: { 
+            fillColor: [255, 192, 0], 
+            textColor: 0, 
+            fontStyle: 'bold',
+            font: 'helvetica'
+          },
+          styles: { 
+            fontSize: 7, 
+            cellPadding: 1.5,
+            font: 'helvetica',
+            fontStyle: 'normal'
+          },
           margin: { left: 15, right: 15 }
         });
       } else if (activeTab === 'goals' && reportData.goals.length > 0) {
         const goalsData = reportData.goals.slice(0, 50).map(goal => [
-          goal.employee?.name || t('reports.unknown', 'Unknown'),
-          translateDepartment(goal.employee?.department) || '',
-          goal.title.substring(0, 40),
+          cleanTextForPDF(goal.employee?.name || t('reports.unknown', 'Unknown')),
+          cleanTextForPDF(translateDepartment(goal.employee?.department) || ''),
+          cleanTextForPDF(goal.title.substring(0, 40)),
           goal.category || '',
           goal.status || '',
           goal.target_date || '-',
@@ -1398,8 +1465,18 @@ const Reports = () => {
           head: [[t('reports.employee', 'Employee'), t('reports.department', 'Department'), t('reports.goal', 'Goal'), t('reports.category', 'Category'), t('reports.status', 'Status'), t('reports.targetDate', 'Target Date'), t('reports.progress', 'Progress')]],
           body: goalsData,
           theme: 'striped',
-          headStyles: { fillColor: [91, 155, 213], textColor: 255, fontStyle: 'bold' },
-          styles: { fontSize: 7, cellPadding: 1.5 },
+          headStyles: { 
+            fillColor: [91, 155, 213], 
+            textColor: 255, 
+            fontStyle: 'bold',
+            font: 'helvetica'
+          },
+          styles: { 
+            fontSize: 7, 
+            cellPadding: 1.5,
+            font: 'helvetica',
+            fontStyle: 'normal'
+          },
           margin: { left: 15, right: 15 }
         });
       }

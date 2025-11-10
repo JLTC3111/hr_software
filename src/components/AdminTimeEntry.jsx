@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import * as timeTrackingService from '../services/timeTrackingService';
 import { supabase } from '../config/supabaseClient';
 
-const AdminTimeEntry = () => {
+const AdminTimeEntry = ({ onEntriesChanged }) => {
   const { isDarkMode, bg, text, border } = useTheme();
   const { t } = useLanguage();
   const { user, checkPermission } = useAuth();
@@ -273,6 +273,11 @@ const AdminTimeEntry = () => {
         });
         setSelectedEmployees([]);
         setSearchTerm('');
+        
+        // Notify parent component to refresh time entries
+        if (onEntriesChanged) {
+          onEntriesChanged();
+        }
       } else {
         console.error('Service returned error:', result.error);
         setErrorMessage(result.error || 'Failed to create time entries');
