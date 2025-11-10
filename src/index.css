@@ -34,6 +34,62 @@ h1 {
   line-height: 1.1;
 }
 
+/* Base styling for the track to ensure consistent appearance */
+input[type="range"] {
+  -webkit-appearance: none; /* Hide default thumb on Chrome/Safari */
+  appearance: none;
+  background: transparent; /* Make track transparent so our custom gradient shows */
+  width: 100%;
+  height: 8px; /* Match your height-2 */
+}
+
+/* Style for the Webkit (Chrome, Safari, Edge) thumb */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; /* Hide default thumb */
+  appearance: none;
+  width: 14px; 
+  height: 14px; 
+  border-radius: 50%;
+  background: #ff8c00; 
+  cursor: pointer;
+  margin-top: -3px;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3); 
+}
+
+/* Style for the Mozilla Firefox thumb */
+input[type="range"]::-moz-range-thumb {
+  width: 16px; /* Adjust size as needed */
+  height: 16px; /* Adjust size as needed */
+  border-radius: 50%; /* Make it circular */
+  background: #ff8c00; /* Your orange-ish color */
+  cursor: pointer;
+  border: none; /* Remove default border */
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3); /* Optional: add a subtle shadow */
+}
+
+/* Style for the MS Edge (older) thumb if needed (less common now) */
+input[type="range"]::-ms-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ff8c00;
+  cursor: pointer;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Optional: Style for the track itself for more control (less needed if using inline gradient) */
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 4px;
+  background: transparent; /* Important: The gradient is applied inline, so make this transparent */
+}
+
+input[type="range"]::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background: transparent; /* Important: The gradient is applied inline, so make this transparent */
+}
+
 /* NUCLEAR OPTION */
 select {
     -webkit-appearance: none !important;

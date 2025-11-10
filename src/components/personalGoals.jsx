@@ -607,8 +607,11 @@ const PersonalGoals = ({ employees }) => {
           className="h-2 rounded-full transition-all"
           style={{ 
             width: `${localProgress}%`,
-            background: `linear-gradient(to right, #000000, #c40000ff)`,
-            boxShadow: isHovering && editable ? '0 0 6px rgba(220, 38, 38, 0.6)' : '0 0 4px rgba(220, 38, 38, 0.4)'
+            background: `linear-gradient(to right, #9f9f9f 0%, #9f9f9f 0.5%, #1086d8 5%, #1086d8 100%)`,
+            // FIX: Replacing red (220, 38, 38) with blue (16, 134, 216)
+            boxShadow: isHovering && editable 
+              ? '0 0 6px rgba(16, 134, 216, 0.6)' 
+              : '0 0 4px rgba(16, 134, 216, 0.4)'
           }}
         ></div>
       </div>
@@ -872,9 +875,9 @@ const PersonalGoals = ({ employees }) => {
                   }}
                   className="w-full h-2 rounded-lg appearance-none cursor-pointer"
                   style={{
-                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(currentRating / 5) * 100}%, ${isDarkMode ? '#4b5563' : '#e5e7eb'} ${(currentRating / 5) * 100}%, ${isDarkMode ? '#4b5563' : '#e5e7eb'} 100%)`
+                      background: `linear-gradient(to right, #9f9f9f 0%, #9f9f9f 2.5%,  #ff8c00 5%, #ff8c00, ${(currentRating / 5) * 100}%, ${isDarkMode ? '#4b5563' : '#e5e7eb'} ${(currentRating / 5) * 100}%, ${isDarkMode ? '#4b5563' : '#e5e7eb'} 100%)`
                   }}
-                />
+                 />
                 <div className="flex justify-between text-xs text-gray-500">
                   <span>{t('personalGoals.beginner', 'Beginner')}</span>
                   <span>{t('personalGoals.advanced', 'Advanced')}</span>
@@ -1094,7 +1097,10 @@ const PersonalGoals = ({ employees }) => {
                   className="w-full h-3 rounded-lg appearance-none cursor-pointer"
                   style={{
                     background: `linear-gradient(to right, 
-                      #000000 0%, 
+                      #9f9f9f 0%, 
+                      #9f9f9f 0.5%,  
+                      #ff8c00 5%, 
+                      #ff8c00 ${(progressChanges[goal.id] !== undefined ? progressChanges[goal.id] : goal.progress)}%,
                       #dc2626 ${(progressChanges[goal.id] !== undefined ? progressChanges[goal.id] : goal.progress)}%, 
                       ${isDarkMode ? '#4b5563' : '#d1d5db'} ${(progressChanges[goal.id] !== undefined ? progressChanges[goal.id] : goal.progress)}%, 
                       ${isDarkMode ? '#4b5563' : '#d1d5db'} 100%)`
@@ -1228,7 +1234,7 @@ const PersonalGoals = ({ employees }) => {
                 className="px-3 py-1 text-sm border rounded cursor-pointer transition-colors"
                 style={{
                   backgroundColor: 'transparent',
-                  color: isDarkMode ? '#ffffff' : '#000000',           
+                  color: isDarkMode ? '#ffffff' : '#9f9f9f',           
                 }}
               >
                 {t('personalGoals.viewFullReview')}
@@ -1339,7 +1345,7 @@ const PersonalGoals = ({ employees }) => {
               }`}
               style={{
                 color: activeTab === tab.id 
-                  ? isDarkMode ? '#ffffff' : '#000000' 
+                  ? isDarkMode ? '#ffffff' : '#9f9f9f' 
                   : isDarkMode ? '#9ca3af' : '#6b7280',
                 borderBottomColor: activeTab === tab.id 
                   ? '#2563eb' 
@@ -1634,9 +1640,10 @@ const PersonalGoals = ({ employees }) => {
                   className="w-full h-3 rounded-lg appearance-none cursor-pointer"
                   style={{
                     background: `linear-gradient(to right, 
-                      #000000 0%, 
+                      #9f9f9f 0%, 
+                      #9f9f9f 2.5%,
                       #4a0000 ${goalForm.progressPercentage * 0.5}%,
-                      #dc2626 ${goalForm.progressPercentage}%, 
+                      #ff4545 ${goalForm.progressPercentage}%, 
                       ${isDarkMode ? '#4b5563' : '#d1d5db'} ${goalForm.progressPercentage}%, 
                       ${isDarkMode ? '#4b5563' : '#d1d5db'} 100%)`
                   }}

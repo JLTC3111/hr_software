@@ -313,8 +313,12 @@ const TaskReview = ({ employees }) => {
                             <div className="flex-1">
                               <div className="flex items-center space-x-2 mb-2">
                                 <h4 className={`font-semibold ${text.primary}`}>{task.title}</h4>
-                                <span className={`px-2 py-0.5 rounded text-xs ${getStatusColor(task.status)}`}>{task.status}</span>
-                                <span className={`px-2 py-0.5 rounded text-xs ${getPriorityColor(task.priority)}`}>{task.priority}</span>
+                                <span className={`px-2 py-0.5 rounded text-xs ${getStatusColor(task.status)}`}>
+                                  {t(`status.${task.status}`) || task.status}
+                                </span>
+                                <span className={`px-2 py-0.5 rounded text-xs ${getPriorityColor(task.priority)}`}>
+                                  {t(`taskListing.${task.priority}`) || task.priority}
+                                </span>
                               </div>
                               {task.description && <p className={`text-sm ${text.secondary} mb-3`}>{task.description}</p>}
                               
@@ -490,8 +494,12 @@ const TaskReview = ({ employees }) => {
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
                       <h4 className={`font-semibold ${text.primary}`}>{task.title}</h4>
-                      <span className={`px-2 py-0.5 rounded text-xs ${getStatusColor(task.status)}`}>{task.status}</span>
-                      <span className={`px-2 py-0.5 rounded text-xs ${getPriorityColor(task.priority)}`}>{task.priority}</span>
+                      <span className={`px-2 py-0.5 rounded text-xs ${getStatusColor(task.status)}`}>
+                        {t(`status.${task.status}`) || task.status}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded text-xs ${getPriorityColor(task.priority)}`}>
+                        {t(`taskListing.${task.priority}`) || task.priority}
+                      </span>
                     </div>
                     {task.description && <p className={`text-sm ${text.secondary} mb-3`}>{task.description}</p>}
                     
