@@ -287,7 +287,8 @@ export const updatePerformanceGoal = async (goalId, updates) => {
     if (updates.category !== undefined) updateData.category = updates.category;
     if (updates.targetDate !== undefined) updateData.target_date = updates.targetDate;
     if (updates.status !== undefined) updateData.status = updates.status;
-    if (updates.progressPercentage !== undefined) updateData.progress_percentage = updates.progressPercentage;
+    // Map progressPercentage to the correct database column 'progress'
+    if (updates.progressPercentage !== undefined) updateData.progress = updates.progressPercentage;
     if (updates.priority !== undefined) updateData.priority = updates.priority;
     if (updates.notes !== undefined) updateData.notes = updates.notes;
     if (updates.successCriteria !== undefined) updateData.success_criteria = updates.successCriteria;

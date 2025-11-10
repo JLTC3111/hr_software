@@ -335,8 +335,18 @@ const Reports = () => {
             employee_id: filteredGoals[0].employee_id,
             employee_id_type: typeof filteredGoals[0].employee_id,
             title: filteredGoals[0].title,
-            progress: filteredGoals[0].progress
+            status: filteredGoals[0].status,
+            progress: filteredGoals[0].progress,
+            progress_type: typeof filteredGoals[0].progress,
+            progress_is_null: filteredGoals[0].progress === null,
+            progress_is_zero: filteredGoals[0].progress === 0
           } : null,
+          allGoalsProgress: filteredGoals.map(g => ({
+            title: g.title,
+            status: g.status,
+            progress: g.progress,
+            progress_type: typeof g.progress
+          })),
           rawGoals: goals,
           error: goalsResponse.error
         });

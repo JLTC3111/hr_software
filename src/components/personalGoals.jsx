@@ -392,7 +392,7 @@ const PersonalGoals = ({ employees }) => {
         targetDate: originalGoal.target_date,
         priority: originalGoal.priority,
         status: originalGoal.status,
-        progressPercentage: originalGoal.progress_percentage || 0
+        progressPercentage: originalGoal.progress || 0
       });
       setShowEditGoalModal(true);
     }
@@ -406,7 +406,7 @@ const PersonalGoals = ({ employees }) => {
     
     const result = await performanceService.updatePerformanceGoal(editingGoal.id, {
       ...goalForm,
-      progress_percentage: goalForm.progressPercentage
+      progressPercentage: goalForm.progressPercentage
     });
 
     if (result.success) {
@@ -499,7 +499,7 @@ const PersonalGoals = ({ employees }) => {
       id: goal.id,
       title: goal.title,
       status: goal.status,
-      progress: goal.progress_percentage || 0,
+      progress: goal.progress || 0,
       deadline: goal.target_date,
       description: goal.description,
       category: goal.category,
@@ -586,7 +586,7 @@ const PersonalGoals = ({ employees }) => {
       // Update in database
       if (goalId) {
         const result = await performanceService.updatePerformanceGoal(goalId, {
-          progress_percentage: newProgress
+          progressPercentage: newProgress
         });
         
         if (result.success) {
