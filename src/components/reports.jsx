@@ -108,11 +108,11 @@ const Reports = () => {
   const translateCategory = (category) => {
     if (!category) return '';
     const categoryMap = {
-      'general': t('performance.general', 'General'),
-      'technical': t('performance.technical', 'Technical'),
-      'leadership': t('performance.leadership', 'Leadership'),
-      'project': t('performance.project', 'Project'),
-      'professional_development': t('performance.professionalDevelopment', 'Professional Development')
+      'general': t('personalGoals.general', 'General'),
+      'technical': t('personalGoals.technical', 'Technical'),
+      'leadership': t('personalGoals.leadership', 'Leadership'),
+      'project': t('personalGoals.project', 'Project'),
+      'professional_development': t('personalGoals.professionalDevelopment', 'Professional Development')
     };
     return categoryMap[category] || category;
   };
@@ -554,13 +554,13 @@ const Reports = () => {
       const exportData = reportData.goals.map(goal => ({
         [t('employees.name', 'Employee Name')]: goal.employee?.name || 'Unknown',
         [t('employees.department', 'Department')]: translateDepartment(goal.employee?.department) || '',
-        [t('performance.goalTitle', 'Goal Title')]: goal.title || '',
-        [t('performance.description', 'Description')]: goal.description || '',
-        [t('performance.category', 'Category')]: goal.category || '',
-        [t('performance.targetDate', 'Target Date')]: goal.target_date || '',
-        [t('performance.status', 'Status')]: goal.status || '',
-        [t('performance.progress', 'Progress')]: goal.progress || 0,
-        [t('performance.notes', 'Notes')]: goal.notes || '',
+        [t('personalGoals.goalTitle', 'Goal Title')]: goal.title || '',
+        [t('personalGoals.description', 'Description')]: goal.description || '',
+        [t('personalGoals.category', 'Category')]: goal.category || '',
+        [t('personalGoals.targetDate', 'Target Date')]: goal.target_date || '',
+        [t('personalGoals.status', 'Status')]: goal.status || '',
+        [t('personalGoals.progress', 'Progress')]: goal.progress || 0,
+        [t('personalGoals.notes', 'Notes')]: goal.notes || '',
         [t('general.createdAt', 'Created At')]: new Date(goal.created_at).toLocaleString(),
         [t('general.updatedAt', 'Updated At')]: new Date(goal.updated_at).toLocaleString()
       }));

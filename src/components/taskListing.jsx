@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as workloadService from '../services/workloadService';
 
-const WorkloadManagement = ({ employees }) => {
+const TaskListing = ({ employees }) => {
   const { user, checkPermission } = useAuth();
   const { bg, text, border, isDarkMode } = useTheme();
   const { t } = useLanguage();
@@ -785,4 +785,4 @@ const WorkloadManagement = ({ employees }) => {
   );
 };
 
-export default WorkloadManagement;
+export default TaskListing;

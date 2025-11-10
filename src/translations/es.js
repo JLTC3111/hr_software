@@ -1309,8 +1309,8 @@ login: {
     fillAllFields: 'Por favor complete todos los campos'
   },
 
-  // Task Performance Review
-  taskPerformance: {
+  // Personal Goals
+  personalGoals: {
     title: 'Revisión de Desempeño de Tareas',
     subtitle: 'Progreso mensual de tareas y evaluación de calidad',
     individual: 'Individual',

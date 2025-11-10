@@ -1361,8 +1361,8 @@ export default {
     fillAllFields: 'Veuillez remplir tous les champs'
   },
 
-  // Task Performance Review
-  taskPerformance: {
+  // Personal Goals
+  personalGoals: {
     title: 'Revue de Performance des Tâches',
     subtitle: 'Progression mensuelle des tâches et évaluation de la qualité',
     individual: 'Individuel',

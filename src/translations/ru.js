@@ -1253,8 +1253,8 @@ export default {
     fillAllFields: 'Пожалуйста, заполните все поля'
   },
 
-  // Task Performance Review
-  taskPerformance: {
+  // Personal Goals
+  personalGoals: {
     title: 'Обзор Эффективности Задач',
     subtitle: 'Ежемесячный прогресс задач и оценка качества',
     individual: 'Индивидуальный',

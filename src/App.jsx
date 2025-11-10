@@ -7,7 +7,7 @@ import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { UploadProvider } from './contexts/UploadContext'
-import { Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, PerformanceAppraisal, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager, ControlPanel, WorkloadManagement, TaskPerformanceReview, FlubberIconTest } from './components/index.jsx';
+import { Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, TaskListing, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager, ControlPanel, TaskReview, PersonalGoals, FlubberIconTest } from './components/index.jsx';
 import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
 
@@ -335,20 +335,20 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
                       element={<TimeTracking employees={employees} />} 
                     />
                     <Route 
-                      path="/workload" 
-                      element={<WorkloadManagement employees={employees} />} 
+                      path="/task-review" 
+                      element={<TaskReview employees={employees} />} 
                     />
                     <Route 
-                      path="/task-performance" 
-                      element={<TaskPerformanceReview employees={employees} />} 
+                      path="/personal-goals" 
+                      element={<PersonalGoals employees={employees} />} 
                     />
                     <Route 
                       path="/control-panel" 
                       element={<ControlPanel />} 
                     />
                     <Route 
-                      path="/performance" 
-                      element={<PerformanceAppraisal employees={employees} />} 
+                      path="/task-listing" 
+                      element={<TaskListing employees={employees} />} 
                     />
                     <Route 
                       path="/reports" 

@@ -1218,8 +1218,8 @@ export default {
     fillAllFields: '모든 필드를 입력해주세요'
   },
 
-  // Task Performance Review
-  taskPerformance: {
+  // Personal Goals
+  personalGoals: {
     title: '작업 성과 검토',
     subtitle: '월간 작업 진행 상황 및 품질 평가',
     individual: '개인',

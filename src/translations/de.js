@@ -256,8 +256,8 @@ export default {
     years: 'Jahre'
   },
 
-  // Performance Appraisal
-  performance: {
+  // Personal Goals
+  personalGoals: {
     title: 'Leistungsbeurteilung',
     overallRating: 'Gesamtbewertung',
     reviewPeriod: 'Bewertungszeitraum',

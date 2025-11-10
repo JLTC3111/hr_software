@@ -1407,8 +1407,8 @@ export default {
     fillAllFields: 'Vui lòng điền tất cả các trường'
   },
 
-  // Task Performance Review
-  taskPerformance: {
+  // Personal Goals
+  personalGoals: {
     title: 'Đánh Giá Hiệu Suất Công Việc',
     subtitle: 'Tiến độ công việc hàng tháng và đánh giá chất lượng',
     individual: 'Cá Nhân',

@@ -480,9 +480,9 @@ export default {
     noEntries: 'No time entries found'
   },
 
-  // Performance Appraisal
-  performance: {
-    title: 'Performance Appraisal',
+  // Personal Goals
+  personalGoals: {
+    title: 'Personal Goals',
     overallRating: 'Overall Rating',
     reviewPeriod: 'Review Period',
     goals: 'Goals & Objectives',
@@ -1330,7 +1330,7 @@ export default {
     selfAssessment: 'Self Assessment',
     qualityRating: 'Quality Rating',
     managerComments: 'Manager Comments',
-    commentPlaceholder: 'Provide feedback on task quality and performance...',
+    commentPlaceholder: 'Provide feedback on task quality and personalGoals...',
     taskDetails: 'Task Details',
     status: 'Status',
     priority: 'Priority',

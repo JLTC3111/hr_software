@@ -1236,8 +1236,8 @@ export default {
     fillAllFields: 'すべてのフィールドを入力してください'
   },
 
-  // Task Performance Review
-  taskPerformance: {
+  // Personal Goals
+  personalGoals: {
     title: 'タスクパフォーマンスレビュー',
     subtitle: '月次タスク進捗と品質評価',
     individual: '個人',

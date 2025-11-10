@@ -1,0 +1,1566 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Calendar, 
+  TrendingUp, 
+  Pickaxe, 
+  Award, 
+  Star, 
+  CheckCircle, 
+  Clock, 
+  AlertCircle,
+  TimerOff,
+  BarChart3,
+  MessageSquare,
+  Edit2,
+  Save,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  Target
+} from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
+import * as workloadService from '../services/workloadService';
+import { supabase } from '../config/supabaseClient';
+
+const TaskReview = ({ employees }) => {
+  const { user } = useAuth();
+  const { isDarkMode, toggleTheme, button, bg, text, border, hover, input } = useTheme();
+  const { t, currentLanguage } = useLanguage();
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [selectedEmployee, setSelectedEmployee] = useState(user?.employeeId || null);
+  const [viewMode, setViewMode] = useState('individual'); // 'individual' or 'team'
+  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'completed', 'in-progress', 'pending'
+  const [evaluatingTask, setEvaluatingTask] = useState(null);
+  const [evaluationForm, setEvaluationForm] = useState({
+    qualityRating: 0,
+    comments: '',
+    selfAssessment: ''
+  });
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [currentEmployee, setCurrentEmployee] = useState(null);
+  const [editingPerformanceRating, setEditingPerformanceRating] = useState(false);
+  const [newPerformanceRating, setNewPerformanceRating] = useState(0);
+  const [skillRatings, setSkillRatings] = useState({
+    technical_skills_rating: 0,
+    communication_rating: 0,
+    leadership_rating: 0,
+    teamwork_rating: 0,
+    problem_solving_rating: 0
+  });
+  const [creatingGoal, setCreatingGoal] = useState(false);
+  const [goalForm, setGoalForm] = useState({
+    title: '',
+    description: '',
+    dueDate: '',
+    priority: 'medium',
+    assignedTo: user?.employeeId || null
+  });
+  
+  // Modal ref for outside click detection
+  const modalRef = React.useRef(null);
+  const goalModalRef = React.useRef(null);
+
+  // Check if user is admin or manager
+  const canEvaluateOthers = user?.role === 'admin' || user?.role === 'manager';
+
+  // Format month display with proper localization
+  const formattedMonth = useMemo(() => {
+    const languageMap = {
+      'en': 'en-US',
+      'fr': 'fr-FR',
+      'es': 'es-ES',
+      'de': 'de-DE',
+      'vn': 'vi-VN',
+      'jp': 'ja-JP',
+      'kr': 'ko-KR',
+      'ru': 'ru-RU',
+      'th': 'th-TH'
+    };
+    const locale = languageMap[currentLanguage] || 'en-US';
+    let formattedDate = selectedMonth.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+    
+    // Special handling for Vietnamese to capitalize each word
+    if (currentLanguage === 'vn') {
+      formattedDate = formattedDate
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    }
+    
+    return formattedDate;
+  }, [selectedMonth, currentLanguage]);
+
+  // Fetch current employee data
+  useEffect(() => {
+    const fetchEmployeeData = async () => {
+      if (selectedEmployee && viewMode === 'individual') {
+        const employee = employees.find(emp => String(emp.id) === String(selectedEmployee));
+        setCurrentEmployee(employee || null);
+        setNewPerformanceRating(employee?.performance || 0);
+        
+        // Fetch latest performance review for skill ratings
+        if (employee) {
+          const { data: latestReview } = await supabase
+            .from('performance_reviews')
+            .select('*')
+            .eq('employee_id', employee.id)
+            .order('review_date', { ascending: false })
+            .limit(1)
+            .single();
+          
+          if (latestReview) {
+            setSkillRatings({
+              technical_skills_rating: latestReview.technical_skills_rating || 0,
+              communication_rating: latestReview.communication_rating || 0,
+              leadership_rating: latestReview.leadership_rating || 0,
+              teamwork_rating: latestReview.teamwork_rating || 0,
+              problem_solving_rating: latestReview.problem_solving_rating || 0
+            });
+          }
+        }
+      }
+    };
+    fetchEmployeeData();
+  }, [selectedEmployee, employees, viewMode]);
+
+  // ESC key handler to close modals
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape') {
+        if (evaluatingTask) {
+          setEvaluatingTask(null);
+          setEvaluationForm({ qualityRating: 0, comments: '', selfAssessment: '' });
+        } else if (creatingGoal) {
+          setCreatingGoal(false);
+        } else if (editingPerformanceRating) {
+          cancelPerformanceRatingEdit();
+        }
+      }
+    };
+
+    // Add event listener
+    document.addEventListener('keydown', handleEscKey);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [evaluatingTask, creatingGoal, editingPerformanceRating]);
+
+  // Load tasks for selected month
+  useEffect(() => {
+    const fetchMonthlyTasks = async () => {
+      setLoading(true);
+      try {
+        let result;
+        if (viewMode === 'individual' && selectedEmployee) {
+          result = await workloadService.getEmployeeTasks(selectedEmployee);
+        } else {
+          result = await workloadService.getAllTasks();
+        }
+        
+        if (result.success) {
+          // Filter tasks by selected month
+          const filtered = result.data.filter(task => {
+            const taskDate = new Date(task.created_at);
+            return (
+              taskDate.getMonth() === selectedMonth.getMonth() &&
+              taskDate.getFullYear() === selectedMonth.getFullYear()
+            );
+          });
+          setTasks(filtered);
+        } else {
+          setErrorMessage(result.error || 'Failed to load tasks');
+          setTimeout(() => setErrorMessage(''), 5000);
+        }
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+        setErrorMessage('Failed to load tasks');
+        setTimeout(() => setErrorMessage(''), 5000);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMonthlyTasks();
+  }, [selectedMonth, viewMode, selectedEmployee]);
+
+  // Calculate overall rating as average of skill assessments
+  const calculatedOverallRating = useMemo(() => {
+    const ratings = [
+      skillRatings.technical_skills_rating,
+      skillRatings.communication_rating,
+      skillRatings.leadership_rating,
+      skillRatings.teamwork_rating,
+      skillRatings.problem_solving_rating
+    ];
+    const validRatings = ratings.filter(r => r > 0);
+    if (validRatings.length === 0) return 0;
+    const sum = validRatings.reduce((acc, val) => acc + val, 0);
+    return sum / validRatings.length;
+  }, [skillRatings]);
+
+  // Calculate monthly statistics
+  const monthlyStats = useMemo(() => {
+    const filteredTasks = filterStatus === 'all' 
+      ? tasks 
+      : tasks.filter(t => t.status === filterStatus);
+
+    const totalTasks = filteredTasks.length;
+    const completedTasks = filteredTasks.filter(t => t.status === 'completed').length;
+    const inProgressTasks = filteredTasks.filter(t => t.status === 'in-progress').length;
+    const pendingTasks = filteredTasks.filter(t => t.status === 'pending').length;
+    const overdueTasks = filteredTasks.filter(t => {
+      if (!t.due_date) return false;
+      return new Date(t.due_date) < new Date() && t.status !== 'completed';
+    }).length;
+
+    const ratedTasks = filteredTasks.filter(t => t.quality_rating > 0);
+    const avgQuality = ratedTasks.length > 0
+      ? (ratedTasks.reduce((sum, t) => sum + t.quality_rating, 0) / ratedTasks.length).toFixed(1)
+      : '0.0';
+
+    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    const onTimeCompletions = filteredTasks.filter(t => {
+      if (t.status !== 'completed' || !t.due_date || !t.updated_at) return false;
+      return new Date(t.updated_at) <= new Date(t.due_date);
+    }).length;
+    const onTimeRate = completedTasks > 0 
+      ? Math.round((onTimeCompletions / completedTasks) * 100) 
+      : 0;
+
+    // Priority distribution
+    const highPriority = filteredTasks.filter(t => t.priority === 'high').length;
+    const mediumPriority = filteredTasks.filter(t => t.priority === 'medium').length;
+    const lowPriority = filteredTasks.filter(t => t.priority === 'low').length;
+
+    return {
+      totalTasks,
+      completedTasks,
+      inProgressTasks,
+      pendingTasks,
+      overdueTasks,
+      avgQuality,
+      completionRate,
+      onTimeRate,
+      onTimeCompletions,
+      highPriority,
+      mediumPriority,
+      lowPriority,
+      ratedTasks: ratedTasks.length
+    };
+  }, [tasks, filterStatus]);
+
+  // Get tasks for display (filtered)
+  const displayTasks = useMemo(() => {
+    return filterStatus === 'all' 
+      ? tasks 
+      : tasks.filter(t => t.status === filterStatus);
+  }, [tasks, filterStatus]);
+
+  // Handle month navigation
+  const navigateMonth = (direction) => {
+    const newDate = new Date(selectedMonth);
+    newDate.setMonth(newDate.getMonth() + direction);
+    setSelectedMonth(newDate);
+  };
+
+  // Handle evaluation submission
+  const handleSubmitEvaluation = async () => {
+    if (!evaluatingTask) return;
+
+    try {
+      const updates = {};
+      
+      // Admin/Manager can update quality rating and comments
+      if (canEvaluateOthers) {
+        if (evaluationForm.qualityRating > 0) {
+          updates.qualityRating = evaluationForm.qualityRating;
+        }
+        if (evaluationForm.comments) {
+          updates.comments = evaluationForm.comments;
+        }
+      }
+      
+      // Employee can update self-assessment
+      if (evaluationForm.selfAssessment !== evaluatingTask.self_assessment) {
+        updates.selfAssessment = evaluationForm.selfAssessment;
+      }
+
+      const result = await workloadService.updateTask(evaluatingTask.id, updates);
+
+      if (result.success) {
+        setSuccessMessage('Evaluation submitted successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+        
+        // Update local task state
+        setTasks(prev => prev.map(t => 
+          t.id === evaluatingTask.id 
+            ? { ...t, ...updates, quality_rating: updates.qualityRating || t.quality_rating }
+            : t
+        ));
+        
+        setEvaluatingTask(null);
+        setEvaluationForm({ qualityRating: 0, comments: '', selfAssessment: '' });
+      } else {
+        setErrorMessage(result.error || 'Failed to submit evaluation');
+        setTimeout(() => setErrorMessage(''), 5000);
+      }
+    } catch (error) {
+      console.error('Error submitting evaluation:', error);
+      setErrorMessage('Failed to submit evaluation');
+      setTimeout(() => setErrorMessage(''), 5000);
+    }
+  };
+
+  // Open evaluation modal
+  const openEvaluationModal = (task) => {
+    setEvaluatingTask(task);
+    setEvaluationForm({
+      qualityRating: task.quality_rating || 0,
+      comments: task.comments || '',
+      selfAssessment: task.self_assessment || ''
+    });
+  };
+
+  // Close evaluation modal
+  const closeEvaluationModal = () => {
+    setEvaluatingTask(null);
+    setEvaluationForm({ qualityRating: 0, comments: '', selfAssessment: '' });
+  };
+
+  // Handle performance rating update
+  const handleUpdatePerformanceRating = async () => {
+    if (!canEvaluateOthers || !currentEmployee) {
+      setErrorMessage('You do not have permission to update performance ratings');
+      setTimeout(() => setErrorMessage(''), 5000);
+      return;
+    }
+
+    // Calculate overall rating as average of skill ratings
+    const skillValues = [
+      skillRatings.technical_skills_rating,
+      skillRatings.communication_rating,
+      skillRatings.leadership_rating,
+      skillRatings.teamwork_rating,
+      skillRatings.problem_solving_rating
+    ];
+    const validSkills = skillValues.filter(r => r > 0);
+    const calculatedRating = validSkills.length > 0 
+      ? validSkills.reduce((sum, val) => sum + val, 0) / validSkills.length 
+      : 0;
+
+    // Round to 2 decimal places (to match DECIMAL(3,2) in database)
+    const roundedRating = Math.round(calculatedRating * 100) / 100;
+
+    try {
+      // Get current quarter and year for review_period
+      const now = new Date();
+      const quarter = Math.floor(now.getMonth() / 3) + 1;
+      const year = now.getFullYear();
+      const reviewPeriod = `Q${quarter}-${year}`;
+
+      /**
+       * IMPORTANT: This saves to performance_reviews table for skill assessments.
+       * It does NOT handle goal progress - that's in performance_goals table.
+       * - performance_reviews = Quarterly reviews, skill ratings, overall performance
+       * - performance_goals = Goal tracking, progress tracking, milestones
+       */
+      const { data: existingReview, error: fetchError } = await supabase
+        .from('performance_reviews')
+        .select('id')
+        .eq('employee_id', currentEmployee.id)
+        .eq('review_period', reviewPeriod)
+        .single();
+
+      let result;
+      if (existingReview && !fetchError) {
+        // Update existing review with skill ratings
+        result = await supabase
+          .from('performance_reviews')
+          .update({ 
+            overall_rating: roundedRating,
+            technical_skills_rating: Math.round(skillRatings.technical_skills_rating * 100) / 100,
+            communication_rating: Math.round(skillRatings.communication_rating * 100) / 100,
+            leadership_rating: Math.round(skillRatings.leadership_rating * 100) / 100,
+            teamwork_rating: Math.round(skillRatings.teamwork_rating * 100) / 100,
+            problem_solving_rating: Math.round(skillRatings.problem_solving_rating * 100) / 100,
+            status: 'approved',
+            approved_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingReview.id)
+          .select();
+      } else {
+        // Create new review with skill ratings
+        result = await supabase
+          .from('performance_reviews')
+          .insert({
+            employee_id: currentEmployee.id,
+            reviewer_id: user?.employeeId,
+            review_period: reviewPeriod,
+            review_type: 'quarterly',
+            overall_rating: roundedRating,
+            technical_skills_rating: Math.round(skillRatings.technical_skills_rating * 100) / 100,
+            communication_rating: Math.round(skillRatings.communication_rating * 100) / 100,
+            leadership_rating: Math.round(skillRatings.leadership_rating * 100) / 100,
+            teamwork_rating: Math.round(skillRatings.teamwork_rating * 100) / 100,
+            problem_solving_rating: Math.round(skillRatings.problem_solving_rating * 100) / 100,
+            status: 'approved',
+            review_date: new Date().toISOString().split('T')[0],
+            approved_at: new Date().toISOString()
+          })
+          .select();
+      }
+
+      if (result.error) {
+        console.error('Supabase error:', result.error);
+        throw result.error;
+      }
+
+      // Also update the legacy employees.performance column for backward compatibility
+      await supabase
+        .from('employees')
+        .update({ performance: roundedRating })
+        .eq('id', currentEmployee.id);
+
+      console.log('Performance review saved successfully:', result.data);
+
+      // Update local state
+      setCurrentEmployee({ ...currentEmployee, performance: roundedRating });
+      setNewPerformanceRating(roundedRating);
+      setEditingPerformanceRating(false);
+      setSuccessMessage('Performance rating and skill assessments saved successfully');
+      setTimeout(() => setSuccessMessage(''), 5000);
+
+      // Trigger a re-fetch of employees in parent component if needed
+      window.location.reload(); // Simple approach to refresh employee data
+    } catch (error) {
+      console.error('Error saving performance rating:', error);
+      setErrorMessage(`Failed to save performance rating: ${error.message}`);
+      setTimeout(() => setErrorMessage(''), 5000);
+    }
+  };
+
+  // Cancel performance rating edit
+  const cancelPerformanceRatingEdit = () => {
+    setNewPerformanceRating(currentEmployee?.performance || 0);
+    setEditingPerformanceRating(false);
+  };
+
+  // Open goal creation modal
+  const openGoalCreationModal = () => {
+    // Reset form
+    setGoalForm({
+      title: '',
+      description: '',
+      dueDate: '',
+      priority: 'medium',
+      assignedTo: canEvaluateOthers ? selectedEmployee : user?.employeeId
+    });
+    setCreatingGoal(true);
+  };
+
+  // Close goal creation modal
+  const closeGoalCreationModal = () => {
+    setCreatingGoal(false);
+    setGoalForm({
+      title: '',
+      description: '',
+      dueDate: '',
+      priority: 'medium',
+      assignedTo: user?.employeeId || null
+    });
+  };
+
+  // Handle goal creation
+  const handleCreateGoal = async () => {
+    if (!goalForm.title.trim()) {
+      setErrorMessage('Goal title is required');
+      setTimeout(() => setErrorMessage(''), 5000);
+      return;
+    }
+
+    if (!goalForm.dueDate) {
+      setErrorMessage('Due date is required');
+      setTimeout(() => setErrorMessage(''), 5000);
+      return;
+    }
+
+    // Role-based permission check
+    const targetEmployeeId = goalForm.assignedTo;
+    if (!canEvaluateOthers && String(targetEmployeeId) !== String(user?.employeeId)) {
+      setErrorMessage('Employees can only create goals for themselves');
+      setTimeout(() => setErrorMessage(''), 5000);
+      return;
+    }
+
+    try {
+      const result = await workloadService.createTask({
+        employeeId: targetEmployeeId,
+        title: goalForm.title,
+        description: goalForm.description,
+        dueDate: goalForm.dueDate,
+        priority: goalForm.priority,
+        status: 'pending',
+        createdBy: user?.employeeId
+      });
+
+      if (result.success) {
+        setSuccessMessage('Goal created successfully');
+        setTimeout(() => setSuccessMessage(''), 5000);
+        closeGoalCreationModal();
+        
+        // Refresh tasks
+        const tasksResult = viewMode === 'individual' && selectedEmployee
+          ? await workloadService.getEmployeeTasks(selectedEmployee)
+          : await workloadService.getAllTasks();
+        
+        if (tasksResult.success) {
+          const filtered = tasksResult.data.filter(task => {
+            const taskDate = new Date(task.created_at);
+            return (
+              taskDate.getMonth() === selectedMonth.getMonth() &&
+              taskDate.getFullYear() === selectedMonth.getFullYear()
+            );
+          });
+          setTasks(filtered);
+        }
+      } else {
+        setErrorMessage(result.error || 'Failed to create goal');
+        setTimeout(() => setErrorMessage(''), 5000);
+      }
+    } catch (error) {
+      console.error('Error creating goal:', error);
+      setErrorMessage('Failed to create goal');
+      setTimeout(() => setErrorMessage(''), 5000);
+    }
+  };
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape') {
+        if (evaluatingTask) {
+          closeEvaluationModal();
+        }
+        if (creatingGoal) {
+          closeGoalCreationModal();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [evaluatingTask, creatingGoal]);
+
+  // Handle outside click to close modal
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        closeEvaluationModal();
+      }
+    };
+
+    if (evaluatingTask) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [evaluatingTask]);
+
+  // Get quality color
+  const getQualityColor = (rating) => {
+    if (rating >= 4.5) return 'text-green-600';
+    if (rating >= 3.5) return 'text-blue-600';
+    if (rating >= 2.5) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  // Get status badge color
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'completed': return isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800';
+      case 'in-progress': return isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-800';
+      case 'pending': return isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800';
+      default: return isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Get status text (translated)
+  const getStatusText = (status) => {
+    switch(status) {
+      case 'completed': return t('personalGoals.completed', 'Completed');
+      case 'in-progress': return t('personalGoals.inProgress', 'In Progress');
+      case 'pending': return t('personalGoals.pending', 'Pending');
+      default: return status;
+    }
+  };
+
+  // Get priority badge color
+  const getPriorityColor = (priority) => {
+    switch(priority) {
+      case 'high': return isDarkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-800';
+      case 'medium': return isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-800';
+      case 'low': return isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800';
+      default: return isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Get priority text (translated)
+  const getPriorityText = (priority) => {
+    switch(priority) {
+      case 'high': return t('workload.priorityHigh', 'High Priority');
+      case 'medium': return t('workload.priorityMedium', 'Medium Priority');
+      case 'low': return t('workload.priorityLow', 'Low Priority');
+      default: return priority;
+    }
+  };
+
+  // Team View Component
+  const TeamView = () => {
+    const teamStats = employees.map(emp => {
+      const empTasks = tasks.filter(t => t.employee_id === emp.id);
+      const completed = empTasks.filter(t => t.status === 'completed').length;
+      const total = empTasks.length;
+      const rated = empTasks.filter(t => t.quality_rating > 0);
+      const avgQuality = rated.length > 0
+        ? (rated.reduce((sum, t) => sum + t.quality_rating, 0) / rated.length).toFixed(1)
+        : '0.0';
+
+      return {
+        employee: emp,
+        totalTasks: total,
+        completedTasks: completed,
+        completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+        avgQuality: parseFloat(avgQuality)
+      };
+    }).filter(stat => stat.totalTasks > 0); // Only show employees with tasks
+
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {teamStats.map(stat => (
+            <div key={stat.employee.id} className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
+              <div className="flex items-center space-x-3 mb-3">
+                {stat.employee.photo ? (
+                  <img 
+                    src={stat.employee.photo} 
+                    alt={stat.employee.name}
+                    className={`w-10 h-10 rounded-full object-cover border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}
+                  />
+                ) : (
+                  <div className={`w-10 h-10 rounded-full ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-100'} flex items-center justify-center font-bold text-white bg-blue-500`}>
+                    {stat.employee.name?.charAt(0) || 'U'}
+                  </div>
+                )}
+                <div>
+                  <p className={`font-semibold ${text.primary}`}>{stat.employee.name}</p>
+                  <p className={`text-xs ${text.secondary}`}>{t(`employeePosition.${stat.employee.position}`, stat.employee.position)}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className={`text-sm ${text.secondary}`}>{t('personalGoals.totalTasks', 'Tasks')}</span>
+                  <span className={`font-semibold ${text.primary}`}>{stat.totalTasks}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className={`text-sm ${text.secondary}`}>{t('personalGoals.completed', 'Completed')}</span>
+                  <span className={`font-semibold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>{stat.completedTasks}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className={`text-sm ${text.secondary}`}>{t('personalGoals.completionRate', 'Completion Rate')}</span>
+                  <span className={`font-semibold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>{stat.completionRate}%</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className={`text-sm ${text.secondary}`}>{t('personalGoals.avgQuality', 'Avg Quality')}</span>
+                  <span className={`font-semibold ${getQualityColor(stat.avgQuality)}`}>
+                    {stat.avgQuality}/5 <Star className="w-4 h-4 inline-block ml-1 text-yellow-400" />
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-3">
+                <div className={`w-full rounded-full h-2 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-300 shadow-sm ${isDarkMode ? 'bg-linear-to-r from-blue-600 to-blue-400' : 'bg-linear-to-r from-blue-500 to-blue-600'}`}
+                    style={{ width: `${stat.completionRate}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {teamStats.length === 0 && (
+          <div className={`${bg.secondary} rounded-lg p-8 text-center border ${border.primary}`}>
+            <p className={text.secondary}>{t('personalGoals.noTeamTasks', 'No team tasks found for this month')}</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Success/Error Messages */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
+          <CheckCircle className="w-5 h-5" />
+          <span>{successMessage}</span>
+        </div>
+      )}
+      {errorMessage && (
+        <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
+          <AlertCircle className="w-5 h-5" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className={`text-2xl font-bold ${text.primary}`}>
+            {t('personalGoals.title', '')}
+          </h2>
+          <p className={`text-sm ${text.secondary} mt-1`}>
+            {t('personalGoals.subtitle', 'Monthly task progress and quality evaluation')}
+          </p>
+        </div>
+
+        {/* View Mode Toggle */}
+        {canEvaluateOthers && (
+          <div className="flex space-x-2">
+            <button
+                onClick={() => setViewMode('individual')}
+                className={`px-4 py-2 rounded-lg cursor-pointer ${text.primary} ${
+                viewMode === 'individual' ? 'bg-blue-600 text-white' : bg.secondary
+                }`}
+            >
+                {t('personalGoals.individual', '')}
+            </button>
+
+            <button
+                onClick={() => setViewMode('team')}
+                className={`px-4 py-2 rounded-lg cursor-pointer ${text.primary} ${viewMode === 'team' ? 'bg-blue-600 text-white' : bg.secondary}`}
+            >
+                {t('personalGoals.team', '')}
+            </button>
+          </div>
+
+        )}
+      </div>
+
+      {/* Month Selector */}
+      <div className={`cursor-pointer ${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
+        <div className="flex justify-between items-center">
+          <button
+            onClick={() => navigateMonth(-1)}
+            className={`p-2 rounded cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'}`}
+          >
+            <ChevronLeft className={`w-5 h-5 ${text.primary}`} />
+          </button>
+          
+          <div className="flex items-center space-x-2">
+            <Calendar className={`w-5 h-5 ${text.secondary}`} />
+            <span className={`text-lg font-semibold ${text.primary}`}>
+              {formattedMonth}
+            </span>
+          </div>
+
+          <button
+            onClick={() => navigateMonth(1)}
+            className={`cursor-pointer p-2 rounded ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'}`}
+            disabled={selectedMonth.getMonth() === new Date().getMonth() && selectedMonth.getFullYear() === new Date().getFullYear()}
+          >
+            <ChevronRight className={`w-5 h-5 ${text.primary}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Employee Performance Rating Card */}
+      {viewMode === 'individual' && currentEmployee && (
+        <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary} shadow-sm`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className={`p-3 rounded-full ${isDarkMode ? 'bg-purple-900/30' : 'bg-purple-100'}`}>
+                <Award className={`w-8 h-8 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+              </div>
+              <div>
+                <h3 className={`text-lg font-semibold ${text.primary}`}>
+                  {currentEmployee.name}
+                </h3>
+                <p className={`text-sm ${text.secondary}`}>
+                  {t(`employeePosition.${currentEmployee.position}`, currentEmployee.position)}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              <div className="text-right">
+                <p className={`text-sm ${text.secondary} mb-1`}>
+                  {t('employees.performance', 'Overall Performance')}
+                </p>
+                {editingPerformanceRating && canEvaluateOthers ? (
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="number"
+                      min="0"
+                      max="5"
+                      step="0.1"
+                      value={newPerformanceRating}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '' || value === '.') {
+                          setNewPerformanceRating(0);
+                        } else {
+                          const parsed = parseFloat(value);
+                          if (!isNaN(parsed)) {
+                            setNewPerformanceRating(Math.min(5, Math.max(0, parsed)));
+                          }
+                        }
+                      }}
+                      onBlur={(e) => {
+                        // Round to 1 decimal place on blur
+                        const parsed = parseFloat(e.target.value);
+                        if (!isNaN(parsed)) {
+                          setNewPerformanceRating(Math.round(parsed * 10) / 10);
+                        }
+                      }}
+                      className={`w-20 px-2 py-1 rounded border ${border.primary} ${text.primary} ${bg.primary} text-center font-bold text-xl`}
+                    />
+                    <span className={`text-xl font-bold ${text.secondary}`}>/5.0</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-3xl font-bold ${getQualityColor(calculatedOverallRating)}`}>
+                      {calculatedOverallRating.toFixed(1)}
+                    </span>
+                    <span className={`text-xl font-bold ${text.secondary}`}>/5.0</span>
+                    <Star className="w-6 h-6 text-yellow-400 fill-yellow-400" />
+                  </div>
+                )}
+              </div>
+
+              {canEvaluateOthers && (
+                <div className="flex flex-col space-y-2">
+                  {editingPerformanceRating ? (
+                    <>
+                      <button
+                        onClick={handleUpdatePerformanceRating}
+                        className={`px-3 py-1 ${isDarkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'} text-white rounded text-sm flex items-center space-x-1`}
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>Save</span>
+                      </button>
+                      <button
+                        onClick={cancelPerformanceRatingEdit}
+                        className={`px-3 py-1 border ${border.primary} ${text.primary} rounded text-sm`}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setEditingPerformanceRating(true)}
+                      className={`px-3 py-1 ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white rounded text-sm flex items-center space-x-1`}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      <span>Edit Rating</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Skill Assessments Section */}
+      {viewMode === 'individual' && currentEmployee && (
+        <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary} shadow-sm`}>
+          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
+            {t('personalGoals.skillsAssessment', 'Skills Assessment')}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Technical Skills */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className={`text-sm font-medium ${text.primary}`}>
+                  {t('personalGoals.technical', 'Technical Skills')}
+                </label>
+                <span className={`text-sm font-bold ${text.primary}`}>
+                  {skillRatings.technical_skills_rating.toFixed(1)}/5.0
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="5"
+                step="0.5"
+                value={skillRatings.technical_skills_rating}
+                onChange={(e) => setSkillRatings({...skillRatings, technical_skills_rating: parseFloat(e.target.value)})}
+                disabled={!canEvaluateOthers || !editingPerformanceRating}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-300 dark:bg-gray-700"
+                style={{
+                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(skillRatings.technical_skills_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} ${(skillRatings.technical_skills_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} 100%)`
+                }}
+              />
+            </div>
+
+            {/* Communication */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className={`text-sm font-medium ${text.primary}`}>
+                  {t('personalGoals.communication', 'Communication')}
+                </label>
+                <span className={`text-sm font-bold ${text.primary}`}>
+                  {skillRatings.communication_rating.toFixed(1)}/5.0
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="5"
+                step="0.5"
+                value={skillRatings.communication_rating}
+                onChange={(e) => setSkillRatings({...skillRatings, communication_rating: parseFloat(e.target.value)})}
+                disabled={!canEvaluateOthers || !editingPerformanceRating}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(skillRatings.communication_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} ${(skillRatings.communication_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} 100%)`
+                }}
+              />
+            </div>
+
+            {/* Leadership */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className={`text-sm font-medium ${text.primary}`}>
+                  {t('personalGoals.leadership', 'Leadership')}
+                </label>
+                <span className={`text-sm font-bold ${text.primary}`}>
+                  {skillRatings.leadership_rating.toFixed(1)}/5.0
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="5"
+                step="0.5"
+                value={skillRatings.leadership_rating}
+                onChange={(e) => setSkillRatings({...skillRatings, leadership_rating: parseFloat(e.target.value)})}
+                disabled={!canEvaluateOthers || !editingPerformanceRating}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(skillRatings.leadership_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} ${(skillRatings.leadership_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} 100%)`
+                }}
+              />
+            </div>
+
+            {/* Teamwork */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className={`text-sm font-medium ${text.primary}`}>
+                  {t('personalGoals.teamwork', 'Teamwork')}
+                </label>
+                <span className={`text-sm font-bold ${text.primary}`}>
+                  {skillRatings.teamwork_rating.toFixed(1)}/5.0
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="5"
+                step="0.5"
+                value={skillRatings.teamwork_rating}
+                onChange={(e) => setSkillRatings({...skillRatings, teamwork_rating: parseFloat(e.target.value)})}
+                disabled={!canEvaluateOthers || !editingPerformanceRating}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(skillRatings.teamwork_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} ${(skillRatings.teamwork_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} 100%)`
+                }}
+              />
+            </div>
+
+            {/* Problem Solving */}
+            <div className="md:col-span-2">
+              <div className="flex items-center justify-between mb-2">
+                <label className={`text-sm font-medium ${text.primary}`}>
+                  {t('personalGoals.problemSolving', 'Problem Solving')}
+                </label>
+                <span className={`text-sm font-bold ${text.primary}`}>
+                  {skillRatings.problem_solving_rating.toFixed(1)}/5.0
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="5"
+                step="0.5"
+                value={skillRatings.problem_solving_rating}
+                onChange={(e) => setSkillRatings({...skillRatings, problem_solving_rating: parseFloat(e.target.value)})}
+                disabled={!canEvaluateOthers || !editingPerformanceRating}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(skillRatings.problem_solving_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} ${(skillRatings.problem_solving_rating / 5) * 100}%, ${isDarkMode ? '#374151' : '#d1d5db'} 100%)`
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Statistics Cards */}
+      {viewMode === 'individual' && (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
+            <div className="flex items-center justify-between mb-2">
+              <BarChart3 className={`w-5 h-5 ${text.secondary}`} />
+              <span className={`text-2xl font-bold ${text.primary}`}>{monthlyStats.totalTasks}</span>
+            </div>
+            <p className={`text-sm ${text.secondary}`}>{t('personalGoals.totalTasks', '')}</p>
+          </div>
+
+          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
+            <div className="flex items-center justify-between mb-2">
+              <CheckCircle className={`w-5 h-5 ${text.secondary}`} />
+              <span className={`text-2xl font-bold ${text.primary}`}>{monthlyStats.completedTasks}</span>
+            </div>
+            <p className={`text-sm ${text.secondary}`}>{t('personalGoals.completed', '')}</p>
+          </div>
+
+          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
+            <div className="flex items-center justify-between mb-2">
+              <Pickaxe className={`w-5 h-5 ${text.secondary}`} />
+              <span className={`text-2xl font-bold ${text.primary}`}>{monthlyStats.inProgressTasks}</span>
+            </div>
+            <p className={`text-sm ${text.secondary}`}>{t('personalGoals.inProgress', '')}</p>
+          </div>
+
+          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
+            <div className="flex items-center justify-between mb-2">
+              <TimerOff className={`w-5 h-5 ${text.secondary}`} />
+              <span className={`text-2xl font-bold ${text.primary}`}>{monthlyStats.overdueTasks}</span>
+            </div>
+            <p className={`text-sm ${text.secondary}`}>{t('personalGoals.overdue', '')}</p>
+          </div>
+
+          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
+            <div className="flex items-center justify-between mb-2">
+              <TrendingUp className={`w-5 h-5 ${text.secondary} ${monthlyStats.completionRate >= 70 ? text.secondary : text.warning}`} />
+              <span className={`text-2xl font-bold ${text.primary} ${monthlyStats.completionRate >= 70 ? text.primary : text.warning}`}>
+                {monthlyStats.completionRate}%
+              </span>
+            </div>
+            <p className={`text-sm ${text.secondary}`}>{t('personalGoals.completionRate', '')}</p>
+          </div>
+
+          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
+            <div className="flex items-center justify-between mb-2">
+              <Star className={`w-5 h-5 ${text.secondary}`} />
+              <span className={`text-2xl font-bold ${text.primary}`}>
+                {monthlyStats.avgQuality}
+              </span>
+            </div>
+            <p className={`text-sm ${text.secondary}`}>{t('personalGoals.avgQuality', '')}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Additional Metrics */}
+      {viewMode === 'individual' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
+            <h3 className={`text-sm font-semibold ${text.primary} mb-3`}>{t('personalGoals.onTimePerformance', 'On-Time Performance')}</h3>
+            <div className="flex items-center justify-between">
+              <span className={text.secondary}>{t('personalGoals.onTimeCompletions', 'On-Time Completions')}</span>
+              <span className={`font-semibold ${text.primary}`}>
+                {monthlyStats.onTimeCompletions}/{monthlyStats.completedTasks}
+              </span>
+            </div>
+            <div className="mt-2">
+              <div className={`w-full rounded-full h-2 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                <div 
+                  className={`h-2 rounded-full shadow-sm ${isDarkMode ? 'bg-gradient-to-r from-green-600 to-green-400' : 'bg-gradient-to-r from-green-500 to-green-600'}`}
+                  style={{ width: `${monthlyStats.onTimeRate}%` }}
+                ></div>
+              </div>
+              <p className={`text-xs ${text.secondary} mt-1`}>{monthlyStats.onTimeRate}% {t('personalGoals.onTimeRate', 'on-time rate')}</p>
+            </div>
+          </div>
+
+          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
+            <h3 className={`text-sm font-semibold ${text.primary} mb-3`}>{t('personalGoals.priorityDistribution', 'Priority Distribution')}</h3>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className={`text-sm ${isDarkMode ? 'text-red-200' : 'text-red-600'}`}>{t('workload.priorityHigh', 'High Priority')}</span>
+                <span className={`font-semibold ${text.primary}`}>{monthlyStats.highPriority}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className={`text-sm ${isDarkMode ? 'text-yellow-200' : 'text-yellow-600'}`}>{t('workload.priorityMedium', 'Medium Priority')}</span>
+                <span className={`font-semibold ${text.primary}`}>{monthlyStats.mediumPriority}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className={`text-sm ${isDarkMode ? 'text-green-200' : 'text-green-600'}`}>{t('workload.priorityLow', 'Low Priority')}</span>
+                <span className={`font-semibold ${text.primary}`}>{monthlyStats.lowPriority}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
+            <h3 className={`text-sm font-semibold ${text.primary} mb-3`}>{t('personalGoals.qualityAssessment', 'Quality Assessment')}</h3>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className={`text-sm ${text.secondary}`}>{t('personalGoals.ratedTasks', 'Rated Tasks')}</span>
+                <span className={`font-semibold ${text.primary}`}>
+                  {monthlyStats.ratedTasks}/{monthlyStats.totalTasks}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className={`text-sm ${text.secondary}`}>{t('personalGoals.avgQuality', 'Avg Quality')}</span>
+                <span className={`font-semibold ${getQualityColor(monthlyStats.avgQuality)}`}>
+                  {monthlyStats.avgQuality}/5 <Star className="w-4 h-4 inline-block ml-1 text-yellow-400" />
+                </span>
+              </div>
+              <div className="mt-2">
+                <div className={`w-full rounded-full h-2 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                  <div 
+                    className={`h-2 rounded-full shadow-sm ${
+                      monthlyStats.avgQuality >= 4 
+                        ? isDarkMode ? 'bg-linear-to-r from-green-600 to-green-400' : 'bg-linear-to-r from-green-500 to-green-600'
+                        : monthlyStats.avgQuality >= 3 
+                        ? isDarkMode ? 'bg-linear-to-r from-blue-600 to-blue-400' : 'bg-linear-to-r from-blue-500 to-blue-600'
+                        : isDarkMode ? 'bg-linear-to-r from-yellow-600 to-yellow-400' : 'bg-linear-to-r from-yellow-500 to-yellow-600'
+                    }`}
+                    style={{ width: `${(monthlyStats.avgQuality / 5) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filter Buttons and Create Goal */}
+      {(viewMode === 'individual' || viewMode === 'team') && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Filter className={`w-5 h-5 ${text.secondary}`} />
+            <button
+              onClick={() => setFilterStatus('all')}
+              className={`px-3 py-1 rounded-lg text-sm ${text.secondary} ${filterStatus === 'all' ? 'bg-blue-600 text-white' : bg.secondary}`}
+            >
+              {t('personalGoals.all', '')} ({tasks.length})
+            </button>
+            <button
+              onClick={() => setFilterStatus('completed')}
+              className={`px-3 py-1 rounded-lg text-sm ${text.secondary} ${filterStatus === 'completed' ? 'bg-green-600 text-white' : bg.secondary}`}
+            >
+              {t('personalGoals.completed', '')} ({monthlyStats.completedTasks})
+            </button>
+            <button
+              onClick={() => setFilterStatus('in-progress')}
+              className={`px-3 py-1 rounded-lg text-sm ${text.secondary} ${filterStatus === 'in-progress' ? 'bg-blue-600 text-white' : bg.secondary}`}
+            >
+              {t('personalGoals.inProgress', '')} ({monthlyStats.inProgressTasks})
+            </button>
+            <button
+              onClick={() => setFilterStatus('pending')}
+              className={`px-3 py-1 rounded-lg text-sm ${text.secondary} ${filterStatus === 'pending' ? 'bg-gray-600 text-white' : bg.secondary}`}
+            >
+              {t('personalGoals.pending', '')} ({monthlyStats.pendingTasks})
+            </button>
+          </div>
+
+          {/* Create Goal Button */}
+          {viewMode === 'individual' && (
+            <button
+              onClick={openGoalCreationModal}
+              className={`px-4 py-2 ${isDarkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-purple-500 hover:bg-purple-600'} text-white rounded-lg flex items-center space-x-2`}
+            >
+              <Target className="w-5 h-5" />
+              <span>{t('personalGoals.createGoal', 'Create Goal')}</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Content Area */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      ) : viewMode === 'team' ? (
+        <TeamView />
+      ) : (
+        <div className={`${bg.secondary} rounded-lg border ${border.primary}`}>
+          <div className={`divide-y ${isDarkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+            {displayTasks.map(task => (
+              <div key={task.id} className={`p-4 ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <h4 className={`font-semibold ${text.primary}`}>{task.title}</h4>
+                      <span
+                        className={`px-2 py-1 rounded text-xs ${text.primary} ${getStatusColor(task.status)}`}
+                        >
+                        {t(`status.${task.status.toLowerCase()}`, getStatusText(task.status))}
+                        </span>
+                        <span
+                        className={`px-2 py-1 rounded text-xs ${getPriorityColor(task.priority)}`}
+                        >
+                        {t(`workload.${task.priority}`, task.priority)}
+                    </span>
+                      {task.quality_rating > 0 && (
+                        <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-800'}`}>
+                          <Star className="w-4 h-4 inline-block mr-1 text-yellow-400" /> {task.quality_rating}/5
+                        </span>
+                      )}
+                    </div>
+
+                    <p className={`text-sm ${text.secondary} mb-2`}>{task.description}</p>
+
+                    <div className="flex items-center space-x-4 text-xs">
+                      {task.due_date && (
+                        <span className={`flex items-center space-x-1 ${text.secondary}`}>
+                          <Calendar className="w-3 h-3" />
+                          <span>{t('personalGoals.due', 'Due')}: {new Date(task.due_date).toLocaleDateString()}</span>
+                        </span>
+                      )}
+                      {task.created_at && (
+                        <span className={`flex items-center space-x-1 ${text.secondary}`}>
+                          <Clock className="w-3 h-3" />
+                          <span>{t('personalGoals.created', 'Created')}: {new Date(task.created_at).toLocaleDateString()}</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Self Assessment */}
+                    {task.self_assessment && (
+                      <div className={`mt-3 p-3 ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'} rounded`}>
+                        <p className={`text-xs font-semibold ${text.primary} mb-1 flex items-center space-x-1`}>
+                          <span>{t('personalGoals.selfAssessment', 'Self Assessment')}:</span>
+                        </p>
+                        <p className={`text-sm ${text.secondary}`}>{task.self_assessment}</p>
+                      </div>
+                    )}
+
+                    {/* Manager Comments */}
+                    {task.comments && (
+                      <div className={`mt-2 p-3 ${isDarkMode ? 'bg-purple-900/20' : 'bg-purple-50'} rounded`}>
+                        <p className={`text-xs font-semibold ${text.primary} mb-1 flex items-center space-x-1`}>
+                          <Award className={`w-3 h-3 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+                          <span>{t('personalGoals.managerEvaluation', 'Manager Evaluation')}:</span>
+                        </p>
+                        <p className={`text-sm ${text.secondary}`}>{task.comments}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Evaluate Button */}
+                  <button
+                    onClick={() => openEvaluationModal(task)}
+                    className={`ml-4 px-3 py-2 ${isDarkMode ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded flex items-center space-x-1 text-sm`}
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    <span>{t('personalGoals.evaluate', 'Evaluate')}</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {displayTasks.length === 0 && (
+              <div className="p-8 text-center">
+                <p className={text.secondary}>{t('personalGoals.noTasks', 'No tasks found for this month')}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Evaluation Modal */}
+      {evaluatingTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div ref={modalRef} className={`${bg.secondary} rounded-lg shadow-xl max-w-2xl w-full p-6`}>
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className={`text-xl font-semibold ${text.primary}`}>
+                  {t('personalGoals.evaluateTask', 'Evaluate Task')}
+                </h3>
+                <p className={`text-sm ${text.secondary} mt-1`}>{evaluatingTask.title}</p>
+              </div>
+              <button
+                onClick={closeEvaluationModal}
+                className={`p-2 rounded ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'}`}
+              >
+                <X className={`w-5 h-5 ${text.primary}`} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Self Assessment - Available to task owner */}
+              {evaluatingTask.employee_id === user?.employeeId && (
+                <div>
+                  <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                    Self Assessment
+                  </label>
+                  <textarea
+                    value={evaluationForm.selfAssessment}
+                    onChange={(e) => setEvaluationForm({ ...evaluationForm, selfAssessment: e.target.value })}
+                    rows="3"
+                    placeholder="How did you perform on this task? What challenges did you face?"
+                    className={`w-full px-4 py-2 rounded-lg border ${border.primary}`}
+                  />
+                </div>
+              )}
+
+              {/* Quality Rating - Available to admin/manager */}
+              {canEvaluateOthers && (
+                <>
+                  <div>
+                    <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                      {t('personalGoals.qualityRating', 'Quality Rating')} (1-5)
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      {[1, 2, 3, 4, 5].map(rating => (
+                        <button
+                          key={rating}
+                          onClick={() => setEvaluationForm({ ...evaluationForm, qualityRating: rating })}
+                          className={`p-3 rounded-lg border-2 transition-all ${
+                            evaluationForm.qualityRating >= rating
+                              ? `border-yellow-500 ${isDarkMode ? 'bg-yellow-900/20' : 'bg-yellow-50'}`
+                              : border.primary
+                          }`}
+                        >
+                          <Star 
+                            className={`w-6 h-6 ${
+                              evaluationForm.qualityRating >= rating
+                                ? 'text-yellow-500 fill-yellow-500'
+                                : 'text-gray-400'
+                            }`}
+                          />
+                        </button>
+                      ))}
+                      <span className={`ml-2 font-semibold ${text.primary}`}>
+                        {evaluationForm.qualityRating}/5
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                      {t('personalGoals.managerComments', 'Manager Comments')}
+                    </label>
+                    <textarea
+                      value={evaluationForm.comments}
+                      onChange={(e) => setEvaluationForm({ ...evaluationForm, comments: e.target.value })}
+                      rows="3"
+                      placeholder={t('personalGoals.commentPlaceholder', 'Provide feedback on task quality and personalGoals...')}
+                      className={`w-full px-4 py-2 rounded-lg border ${border.primary}`}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Task Details */}
+              <div className={`p-3 rounded ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                <p className={`text-xs ${text.secondary} mb-2`}>{t('personalGoals.taskDetails', 'Task Details')}:</p>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className={text.secondary}>{t('personalGoals.status', 'Status')}: </span>
+                    <span className={`font-semibold ${text.primary}`}>{evaluatingTask.status}</span>
+                  </div>
+                  <div>
+                    <span className={text.secondary}>{t('personalGoals.priority', 'Priority')}: </span>
+                    <span className={`font-semibold ${text.primary}`}>{evaluatingTask.priority}</span>
+                  </div>
+                  {evaluatingTask.due_date && (
+                    <div>
+                      <span className={text.secondary}>{t('personalGoals.dueDate', 'Due Date')}: </span>
+                      <span className={`font-semibold ${text.primary}`}>
+                        {new Date(evaluatingTask.due_date).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                  {evaluatingTask.quality_rating > 0 && (
+                    <div>
+                      <span className={text.secondary}>Current Rating: </span>
+                        <span className={`font-semibold ${text.primary}`}>
+                        {evaluatingTask.quality_rating}/5 <Star className="w-4 h-4 inline-block ml-1 text-yellow-400" />
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={closeEvaluationModal}
+                className={`flex-1 px-4 py-2 border rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
+              >
+                {t('personalGoals.cancel', 'Cancel')}
+              </button>
+              <button
+                onClick={handleSubmitEvaluation}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2"
+              >
+                <Save className="w-4 h-4" />
+                <span>{t('personalGoals.submitEvaluation', 'Submit Evaluation')}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Goal Creation Modal */}
+      {creatingGoal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div ref={goalModalRef} className={`${bg.secondary} rounded-lg shadow-xl max-w-2xl w-full p-6`}>
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className={`text-xl font-semibold ${text.primary} flex items-center space-x-2`}>
+                  <Target className="w-6 h-6" />
+                  <span>{t('personalGoals.createGoal', 'Create New Goal')}</span>
+                </h3>
+                <p className={`text-sm ${text.secondary} mt-1`}>
+                  {canEvaluateOthers 
+                    ? t('personalGoals.createGoalSubtitle', 'Set a new goal for an employee')
+                    : t('personalGoals.createPersonalGoal', 'Set a new personal goal')}
+                </p>
+              </div>
+              <button
+                onClick={closeGoalCreationModal}
+                className={`p-2 rounded ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'}`}
+              >
+                <X className={`w-5 h-5 ${text.primary}`} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Assign To (only for admin/manager) */}
+              {canEvaluateOthers && (
+                <div>
+                  <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                    {t('personalGoals.assignTo', 'Assign To')}
+                  </label>
+                  <select
+                    value={goalForm.assignedTo}
+                    onChange={(e) => setGoalForm({ ...goalForm, assignedTo: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-lg border ${border.primary} ${text.primary}`}
+                  >
+                    {employees.map(emp => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.name} - {t(`employeePosition.${emp.position}`, emp.position)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Goal Title */}
+              <div>
+                <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                  {t('personalGoals.goalTitle', 'Goal Title')} *
+                </label>
+                <input
+                  type="text"
+                  value={goalForm.title}
+                  onChange={(e) => setGoalForm({ ...goalForm, title: e.target.value })}
+                  placeholder={t('personalGoals.goalTitlePlaceholder', 'Enter goal title...')}
+                  className={`w-full px-4 py-2 rounded-lg border ${border.primary} ${text.primary}`}
+                />
+              </div>
+
+              {/* Goal Description */}
+              <div>
+                <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                  {t('personalGoals.goalDescription', 'Description')}
+                </label>
+                <textarea
+                  value={goalForm.description}
+                  onChange={(e) => setGoalForm({ ...goalForm, description: e.target.value })}
+                  rows="4"
+                  placeholder={t('personalGoals.goalDescriptionPlaceholder', 'Describe the goal in detail...')}
+                  className={`w-full px-4 py-2 rounded-lg border ${border.primary} ${text.primary}`}
+                />
+              </div>
+
+              {/* Due Date and Priority */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                    {t('personalGoals.dueDate', 'Due Date')} *
+                  </label>
+                  <input
+                    type="date"
+                    value={goalForm.dueDate}
+                    onChange={(e) => setGoalForm({ ...goalForm, dueDate: e.target.value })}
+                    min={new Date().toISOString().split('T')[0]}
+                    className={`w-full px-4 py-2 rounded-lg border ${border.primary} ${text.primary}`}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                    {t('personalGoals.priority', 'Priority')}
+                  </label>
+                  <select
+                    value={goalForm.priority}
+                    onChange={(e) => setGoalForm({ ...goalForm, priority: e.target.value })}
+                    className={`w-full px-4 py-2 rounded-lg border ${border.primary} ${text.primary}`}
+                  >
+                    <option value="low">{t('workload.priorityLow', 'Low')}</option>
+                    <option value="medium">{t('workload.priorityMedium', 'Medium')}</option>
+                    <option value="high">{t('workload.priorityHigh', 'High')}</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Info message */}
+              <div className={`p-3 rounded ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
+                <p className={`text-xs ${text.secondary}`}>
+                  {canEvaluateOthers 
+                    ? t('personalGoals.goalPermissionAdmin', 'As an admin/manager, you can create goals for any employee')
+                    : t('personalGoals.goalPermissionEmployee', 'You can only create goals for yourself')}
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={closeGoalCreationModal}
+                className={`flex-1 px-4 py-2 border rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} ${text.primary}`}
+              >
+                {t('personalGoals.cancel', 'Cancel')}
+              </button>
+              <button
+                onClick={handleCreateGoal}
+                className={`flex-1 px-4 py-2 ${isDarkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-purple-500 hover:bg-purple-600'} text-white rounded-lg flex items-center justify-center space-x-2`}
+              >
+                <Target className="w-4 h-4" />
+                <span>{t('personalGoals.createGoal', 'Create Goal')}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TaskReview;

@@ -74,8 +74,8 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           name: t('nav.workload', 'Workload Management'), 
           icon: CheckSquare,
           subItems: [
-            { path: '/workload', name: t('nav.taskManagement', 'Task Management') },
-            { path: '/task-performance', name: t('nav.taskPerformance', 'Performance Review') },
+            { path: '/task-listing', name: t('nav.taskListing', 'Task Listing') },
+            { path: '/task-review', name: t('nav.taskReview', 'Performance Review') },
           ]
         },
       ]
@@ -83,7 +83,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
     {
       section: 'ANALYTICS',
       items: [
-        { path: '/performance', name: t('nav.performance'), icon: Award },
+        { path: '/personal-goals', name: t('nav.personalGoals', 'Personal Goals'), icon: Award },
         { path: '/reports', name: t('nav.reports'), icon: FileText },
       ]
     },

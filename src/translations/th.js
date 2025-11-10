@@ -1246,8 +1246,8 @@ export default {
     fillAllFields: 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
   },
 
-  // Task Performance Review
-  taskPerformance: {
+  // Personal Goals
+  personalGoals: {
     title: 'การตรวจสอบผลการปฏิบัติงาน',
     subtitle: 'ความคืบหน้างานรายเดือนและการประเมินคุณภาพ',
     individual: 'รายบุคคล',
