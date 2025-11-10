@@ -673,6 +673,7 @@ export default {
     errorExporting: 'Lỗi xuất dữ liệu',
     exportToCSV: 'Xuất CSV',
     exportSuccess: 'Xuất dữ liệu thành công',
+    pdfExportSuccess: 'Xuất báo cáo PDF thành công!',
     reportPeriod: 'Kỳ báo cáo',
     to: 'đến',
     totalHours: 'Tổng giờ',

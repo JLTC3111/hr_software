@@ -28,27 +28,14 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 import timeTrackingService from '../services/timeTrackingService';
 import { getAllTasks } from '../services/workloadService';
 import performanceService from '../services/performanceService';
 import { supabase } from '../config/supabaseClient';
 
-/**
- * Reports Component
- * 
- * This component provides comprehensive reporting and analytics for:
- * 1. Time Entries (time_entries table)
- * 2. Workload Tasks (workload_tasks table)
- * 3. Personal Goals (performance_goals table) ← NOTE: Uses performance_goals, NOT performance_reviews
- * 
- * DATA ARCHITECTURE:
- * - performance_goals table: Goal tracking with progress percentages, milestones, target dates
- * - performance_reviews table: Quarterly reviews, skill assessments, overall performance ratings
- * 
- * The two tables serve different purposes and should not be confused:
- * - Use performance_goals for: goal progress, completion tracking, personal objectives
- * - Use performance_reviews for: skill ratings, quarterly evaluations, performance appraisals
- */
 const Reports = () => {
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
@@ -1187,6 +1174,263 @@ const Reports = () => {
     }
   };
 
+  // PDF Export with Charts and Tables
+  const exportToPDF = async () => {
+    setExporting(true);
+    try {
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let yPosition = 20;
+
+      // Employee name for filename
+      const employeeName = selectedEmployee !== 'all' ? 
+        reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_') : 
+        'All_Employees';
+
+      // Header
+      doc.setFontSize(20);
+      doc.setTextColor(40, 44, 52);
+      doc.text('HR PERFORMANCE REPORT', pageWidth / 2, yPosition, { align: 'center' });
+      
+      yPosition += 10;
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth / 2, yPosition, { align: 'center' });
+      
+      yPosition += 5;
+      doc.text(`Period: ${filters.startDate} to ${filters.endDate}`, pageWidth / 2, yPosition, { align: 'center' });
+      
+      yPosition += 5;
+      doc.text(`Employee: ${selectedEmployee === 'all' ? 'All Employees' : employeeName}`, pageWidth / 2, yPosition, { align: 'center' });
+      
+      yPosition += 15;
+
+      // Summary Box
+      doc.setFillColor(240, 242, 245);
+      doc.rect(15, yPosition, pageWidth - 30, 40, 'F');
+      
+      doc.setFontSize(14);
+      doc.setTextColor(40, 44, 52);
+      doc.text('SUMMARY OVERVIEW', pageWidth / 2, yPosition + 8, { align: 'center' });
+      
+      yPosition += 15;
+      doc.setFontSize(10);
+      doc.setTextColor(60, 60, 60);
+      
+      if (activeTab === 'all') {
+        doc.text(`Total Records: ${stats.totalRecords}`, 25, yPosition);
+        doc.text(`Time Entries: ${stats.timeEntriesCount}`, 25, yPosition + 6);
+        doc.text(`Tasks: ${stats.tasksCount}`, 25, yPosition + 12);
+        doc.text(`Goals: ${stats.goalsCount}`, 25, yPosition + 18);
+        
+        doc.text(`Total Hours: ${stats.totalHours}h`, pageWidth - 85, yPosition);
+        doc.text(`Approved: ${stats.approvedTime}`, pageWidth - 85, yPosition + 6);
+        doc.text(`Completed Tasks: ${stats.completedTasks}`, pageWidth - 85, yPosition + 12);
+        doc.text(`Achieved Goals: ${stats.achievedGoals}`, pageWidth - 85, yPosition + 18);
+      } else if (activeTab === 'time-entries') {
+        doc.text(`Total Records: ${stats.totalRecords}`, 25, yPosition);
+        doc.text(`Total Hours: ${stats.totalHours}h`, 25, yPosition + 6);
+        doc.text(`Approved: ${stats.approved}`, pageWidth - 85, yPosition);
+        doc.text(`Pending: ${stats.pending}`, pageWidth - 85, yPosition + 6);
+      } else if (activeTab === 'tasks') {
+        doc.text(`Total Records: ${stats.totalRecords}`, 25, yPosition);
+        doc.text(`Completed: ${stats.completed}`, 25, yPosition + 6);
+        doc.text(`In Progress: ${stats.inProgress}`, pageWidth - 85, yPosition);
+        doc.text(`Completion Rate: ${stats.completionRate}%`, pageWidth - 85, yPosition + 6);
+      } else if (activeTab === 'goals') {
+        doc.text(`Total Records: ${stats.totalRecords}`, 25, yPosition);
+        doc.text(`Achieved: ${stats.achieved}`, 25, yPosition + 6);
+        doc.text(`In Progress: ${stats.inProgress}`, pageWidth - 85, yPosition);
+        doc.text(`Avg Progress: ${stats.averageProgress}%`, pageWidth - 85, yPosition + 6);
+      }
+      
+      yPosition += 35;
+
+      // Data Tables
+      if (activeTab === 'all') {
+        // Time Entries Table
+        if (reportData.timeEntries.length > 0) {
+          doc.setFontSize(12);
+          doc.setTextColor(40, 44, 52);
+          doc.text('TIME ENTRIES', 15, yPosition);
+          yPosition += 5;
+
+          const timeEntriesData = reportData.timeEntries.slice(0, 20).map(entry => [
+            entry.employee?.name || 'Unknown',
+            entry.date,
+            `${entry.hours || 0}h`,
+            entry.hour_type || '',
+            entry.status || ''
+          ]);
+
+          autoTable(doc, {
+            startY: yPosition,
+            head: [['Employee', 'Date', 'Hours', 'Type', 'Status']],
+            body: timeEntriesData,
+            theme: 'striped',
+            headStyles: { fillColor: [70, 173, 71], textColor: 255, fontStyle: 'bold' },
+            styles: { fontSize: 8, cellPadding: 2 },
+            margin: { left: 15, right: 15 }
+          });
+
+          yPosition = doc.lastAutoTable.finalY + 10;
+
+          if (yPosition > pageHeight - 60) {
+            doc.addPage();
+            yPosition = 20;
+          }
+        }
+
+        // Tasks Table
+        if (reportData.tasks.length > 0) {
+          doc.setFontSize(12);
+          doc.setTextColor(40, 44, 52);
+          doc.text('TASKS', 15, yPosition);
+          yPosition += 5;
+
+          const tasksData = reportData.tasks.slice(0, 20).map(task => [
+            task.employee?.name || 'Unknown',
+            task.title.substring(0, 30),
+            task.priority || '',
+            task.status || '',
+            task.due_date || '-'
+          ]);
+
+          autoTable(doc, {
+            startY: yPosition,
+            head: [['Employee', 'Task', 'Priority', 'Status', 'Due Date']],
+            body: tasksData,
+            theme: 'striped',
+            headStyles: { fillColor: [255, 192, 0], textColor: 0, fontStyle: 'bold' },
+            styles: { fontSize: 8, cellPadding: 2 },
+            margin: { left: 15, right: 15 }
+          });
+
+          yPosition = doc.lastAutoTable.finalY + 10;
+
+          if (yPosition > pageHeight - 60) {
+            doc.addPage();
+            yPosition = 20;
+          }
+        }
+
+        // Goals Table
+        if (reportData.goals.length > 0) {
+          doc.setFontSize(12);
+          doc.setTextColor(40, 44, 52);
+          doc.text('PERSONAL GOALS', 15, yPosition);
+          yPosition += 5;
+
+          const goalsData = reportData.goals.slice(0, 20).map(goal => [
+            goal.employee?.name || 'Unknown',
+            goal.title.substring(0, 30),
+            goal.category || '',
+            goal.status || '',
+            `${goal.progress || 0}%`
+          ]);
+
+          autoTable(doc, {
+            startY: yPosition,
+            head: [['Employee', 'Goal', 'Category', 'Status', 'Progress']],
+            body: goalsData,
+            theme: 'striped',
+            headStyles: { fillColor: [91, 155, 213], textColor: 255, fontStyle: 'bold' },
+            styles: { fontSize: 8, cellPadding: 2 },
+            margin: { left: 15, right: 15 }
+          });
+        }
+      } else if (activeTab === 'time-entries' && reportData.timeEntries.length > 0) {
+        const timeEntriesData = reportData.timeEntries.slice(0, 50).map(entry => [
+          entry.employee?.name || 'Unknown',
+          translateDepartment(entry.employee?.department) || '',
+          entry.date,
+          entry.clock_in || '',
+          entry.clock_out || '',
+          `${entry.hours || 0}h`,
+          entry.hour_type || '',
+          entry.status || ''
+        ]);
+
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Employee', 'Department', 'Date', 'Clock In', 'Clock Out', 'Hours', 'Type', 'Status']],
+          body: timeEntriesData,
+          theme: 'striped',
+          headStyles: { fillColor: [70, 173, 71], textColor: 255, fontStyle: 'bold' },
+          styles: { fontSize: 7, cellPadding: 1.5 },
+          margin: { left: 15, right: 15 }
+        });
+      } else if (activeTab === 'tasks' && reportData.tasks.length > 0) {
+        const tasksData = reportData.tasks.slice(0, 50).map(task => [
+          task.employee?.name || 'Unknown',
+          translateDepartment(task.employee?.department) || '',
+          task.title.substring(0, 40),
+          task.priority || '',
+          task.status || '',
+          task.due_date || '-',
+          `${task.estimated_hours || 0}h`,
+          `${task.actual_hours || 0}h`
+        ]);
+
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Employee', 'Department', 'Task', 'Priority', 'Status', 'Due Date', 'Est.', 'Actual']],
+          body: tasksData,
+          theme: 'striped',
+          headStyles: { fillColor: [255, 192, 0], textColor: 0, fontStyle: 'bold' },
+          styles: { fontSize: 7, cellPadding: 1.5 },
+          margin: { left: 15, right: 15 }
+        });
+      } else if (activeTab === 'goals' && reportData.goals.length > 0) {
+        const goalsData = reportData.goals.slice(0, 50).map(goal => [
+          goal.employee?.name || 'Unknown',
+          translateDepartment(goal.employee?.department) || '',
+          goal.title.substring(0, 40),
+          goal.category || '',
+          goal.status || '',
+          goal.target_date || '-',
+          `${goal.progress || 0}%`
+        ]);
+
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Employee', 'Department', 'Goal', 'Category', 'Status', 'Target Date', 'Progress']],
+          body: goalsData,
+          theme: 'striped',
+          headStyles: { fillColor: [91, 155, 213], textColor: 255, fontStyle: 'bold' },
+          styles: { fontSize: 7, cellPadding: 1.5 },
+          margin: { left: 15, right: 15 }
+        });
+      }
+
+      // Footer on all pages
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(
+          `Page ${i} of ${pageCount} | Generated by HR Management System`,
+          pageWidth / 2,
+          pageHeight - 10,
+          { align: 'center' }
+        );
+      }
+
+      // Save the PDF
+      const filename = `HR_Report_${employeeName}_${filters.startDate}_to_${filters.endDate}.pdf`;
+      doc.save(filename);
+      
+      alert(t('reports.pdfExportSuccess', 'PDF report exported successfully!'));
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      alert(t('reports.errorExporting', 'Error exporting PDF file') + ': ' + error.message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
       {/* Loading overlay */}
@@ -1282,6 +1526,20 @@ const Reports = () => {
                 <FileText className="w-5 h-5" />
               )}
               {t('reports.exportToExcel', 'Export to Excel')}
+            </button>
+
+            <button
+              onClick={exportToPDF}
+              disabled={exporting || (reportData.timeEntries.length === 0 && reportData.tasks.length === 0 && reportData.goals.length === 0)}
+              className={`px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg flex items-center gap-2 transition-colors font-medium`}
+              title="Export as PDF with summary and tables"
+            >
+              {exporting ? (
+                <Loader className="w-5 h-5 animate-spin" />
+              ) : (
+                <FileText className="w-5 h-5" />
+              )}
+              {t('reports.exportToPDF', 'Export to PDF')}
             </button>
           </div>
         </div>

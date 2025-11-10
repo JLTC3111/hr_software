@@ -808,6 +808,7 @@ export default {
     subtitle: 'Export comprehensive data for time entries, tasks, and personal goals',
     errorExporting: 'Error exporting data',
     exportSuccess: 'Data exported successfully',
+    pdfExportSuccess: 'PDF report exported successfully!',
     reportPeriod: 'Report Period',
     to: 'to',
     totalHours: 'Total Hours',
