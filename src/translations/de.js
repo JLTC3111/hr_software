@@ -1,19 +1,23 @@
 export default {
   // Navigation
   nav: {
-    timeClock: 'Stempeluhr',
+    menu: 'Menü',
+    timeClock: 'Zeiterfassung',
     dashboard: 'Dashboard',
     employees: 'Mitarbeiter',
     recruitment: 'Personalbeschaffung',
-    timeTracking: 'Zeiterfassung',
-    personalGoals: 'Persönliche Ziele',
+    timeTracking: 'Übersicht',
+    performance: 'Persönliche Ziele',
     reports: 'Berichte',
     notifications: 'Benachrichtigungen',
     settings: 'Einstellungen',
-    workload: 'Arbeitsbelastung',
-    controlPanel: 'Systemsteuerung',
-    taskManagement: 'Aufgabenverwaltung',
-    taskPerformance: 'Aufgabenleistungsbewertung',
+    controlPanel: 'Kontrollzentrum',
+    personalGoals: 'Persönliche Ziele',
+    taskListing: 'Aufgabenliste',
+    taskReview: 'Leistungsbeurteilung',
+    svgMorphing: 'SVG Morphing',
+    fullDemo: 'Volle Demo',
+    showcase: 'Kurz-Showcase',
   },
 
   // Header
