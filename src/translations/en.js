@@ -843,13 +843,6 @@ export default {
     'on-hold': 'On Hold',
   },
 
-  // Time Tracking Hour Types
-  timeTracking: {
-    regular: 'Regular',
-    overtime: 'Overtime',
-    bonus: 'Bonus',
-  },
-
   // Data Type Labels
   dataType: {
     timeEntry: 'Time Entry',

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Calendar, 
   TrendingUp, 
+  Pickaxe,
   Award, 
   Star, 
   CheckCircle, 
@@ -242,7 +243,7 @@ const TaskReview = ({ employees }) => {
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
-              <TrendingUp className={`w-5 h-5 ${text.secondary}`} />
+              <Pickaxe className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.completionRate}%</span>
             </div>
             <p className={`text-sm ${text.secondary}`}>{t('taskReview.completion')}</p>
@@ -472,7 +473,7 @@ const TaskReview = ({ employees }) => {
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
-              <TrendingUp className={`w-5 h-5 ${text.secondary}`} />
+              <Pickaxe className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{stats.completionRate || 0}%</span>
             </div>
             <p className={`text-sm ${text.secondary}`}>{t('taskReview.completion')}</p>

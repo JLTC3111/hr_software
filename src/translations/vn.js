@@ -708,13 +708,6 @@ export default {
     'on-hold': 'Tạm dừng',
   },
 
-  // Time Tracking Hour Types
-  timeTracking: {
-    regular: 'Thường xuyên',
-    overtime: 'Làm thêm',
-    bonus: 'Thưởng',
-  },
-
   // Data Type Labels
   dataType: {
     timeEntry: 'Bảng chấm công',
