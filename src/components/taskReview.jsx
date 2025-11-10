@@ -600,9 +600,9 @@ const TaskReview = ({ employees }) => {
   // Get status text (translated)
   const getStatusText = (status) => {
     switch(status) {
-      case 'completed': return t('personalGoals.completed', 'Completed');
-      case 'in-progress': return t('personalGoals.inProgress', 'In Progress');
-      case 'pending': return t('personalGoals.pending', 'Pending');
+      case 'completed': return t('taskReview.completed', 'Completed');
+      case 'in-progress': return t('taskReview.inProgress', 'In Progress');
+      case 'pending': return t('taskReview.pending', 'Pending');
       default: return status;
     }
   };
@@ -620,9 +620,9 @@ const TaskReview = ({ employees }) => {
   // Get priority text (translated)
   const getPriorityText = (priority) => {
     switch(priority) {
-      case 'high': return t('workload.priorityHigh', 'High Priority');
-      case 'medium': return t('workload.priorityMedium', 'Medium Priority');
-      case 'low': return t('workload.priorityLow', 'Low Priority');
+      case 'high': return t('taskListing.priorityHigh', 'High Priority');
+      case 'medium': return t('taskListing.priorityMedium', 'Medium Priority');
+      case 'low': return t('taskListing.priorityLow', 'Low Priority');
       default: return priority;
     }
   };
@@ -672,19 +672,19 @@ const TaskReview = ({ employees }) => {
               
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className={`text-sm ${text.secondary}`}>{t('personalGoals.totalTasks', 'Tasks')}</span>
+                  <span className={`text-sm ${text.secondary}`}>{t('taskReview.totalTasks', 'Tasks')}</span>
                   <span className={`font-semibold ${text.primary}`}>{stat.totalTasks}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className={`text-sm ${text.secondary}`}>{t('personalGoals.completed', 'Completed')}</span>
+                  <span className={`text-sm ${text.secondary}`}>{t('taskReview.completed', 'Completed')}</span>
                   <span className={`font-semibold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>{stat.completedTasks}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className={`text-sm ${text.secondary}`}>{t('personalGoals.completionRate', 'Completion Rate')}</span>
+                  <span className={`text-sm ${text.secondary}`}>{t('taskReview.completionRate', 'Completion Rate')}</span>
                   <span className={`font-semibold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>{stat.completionRate}%</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className={`text-sm ${text.secondary}`}>{t('personalGoals.avgQuality', 'Avg Quality')}</span>
+                  <span className={`text-sm ${text.secondary}`}>{t('taskReview.avgQuality', 'Avg Quality')}</span>
                   <span className={`font-semibold ${getQualityColor(stat.avgQuality)}`}>
                     {stat.avgQuality}/5 <Star className="w-4 h-4 inline-block ml-1 text-yellow-400" />
                   </span>
@@ -705,7 +705,7 @@ const TaskReview = ({ employees }) => {
 
         {teamStats.length === 0 && (
           <div className={`${bg.secondary} rounded-lg p-8 text-center border ${border.primary}`}>
-            <p className={text.secondary}>{t('personalGoals.noTeamTasks', 'No team tasks found for this month')}</p>
+            <p className={text.secondary}>{t('taskReview.noTeamTasks', 'No team tasks found for this month')}</p>
           </div>
         )}
       </div>
@@ -732,10 +732,10 @@ const TaskReview = ({ employees }) => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className={`text-2xl font-bold ${text.primary}`}>
-            {t('personalGoals.title', '')}
+            {t('taskReview.title', '')}
           </h2>
           <p className={`text-sm ${text.secondary} mt-1`}>
-            {t('personalGoals.subtitle', 'Monthly task progress and quality evaluation')}
+            {t('taskReview.subtitle', 'Monthly task progress and quality evaluation')}
           </p>
         </div>
 
@@ -748,14 +748,14 @@ const TaskReview = ({ employees }) => {
                 viewMode === 'individual' ? 'bg-blue-600 text-white' : bg.secondary
                 }`}
             >
-                {t('personalGoals.individual', '')}
+                {t('taskReview.individual', '')}
             </button>
 
             <button
                 onClick={() => setViewMode('team')}
                 className={`px-4 py-2 rounded-lg cursor-pointer ${text.primary} ${viewMode === 'team' ? 'bg-blue-600 text-white' : bg.secondary}`}
             >
-                {t('personalGoals.team', '')}
+                {t('taskReview.team', '')}
             </button>
           </div>
 
@@ -891,14 +891,14 @@ const TaskReview = ({ employees }) => {
       {viewMode === 'individual' && currentEmployee && (
         <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary} shadow-sm`}>
           <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-            {t('personalGoals.skillsAssessment', 'Skills Assessment')}
+            {t('taskReview.skillsAssessment', 'Skills Assessment')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Technical Skills */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className={`text-sm font-medium ${text.primary}`}>
-                  {t('personalGoals.technical', 'Technical Skills')}
+                  {t('taskReview.technical', 'Technical Skills')}
                 </label>
                 <span className={`text-sm font-bold ${text.primary}`}>
                   {skillRatings.technical_skills_rating.toFixed(1)}/5.0
@@ -923,7 +923,7 @@ const TaskReview = ({ employees }) => {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className={`text-sm font-medium ${text.primary}`}>
-                  {t('personalGoals.communication', 'Communication')}
+                  {t('taskReview.communication', 'Communication')}
                 </label>
                 <span className={`text-sm font-bold ${text.primary}`}>
                   {skillRatings.communication_rating.toFixed(1)}/5.0
@@ -948,7 +948,7 @@ const TaskReview = ({ employees }) => {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className={`text-sm font-medium ${text.primary}`}>
-                  {t('personalGoals.leadership', 'Leadership')}
+                  {t('taskReview.leadership', 'Leadership')}
                 </label>
                 <span className={`text-sm font-bold ${text.primary}`}>
                   {skillRatings.leadership_rating.toFixed(1)}/5.0
@@ -973,7 +973,7 @@ const TaskReview = ({ employees }) => {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className={`text-sm font-medium ${text.primary}`}>
-                  {t('personalGoals.teamwork', 'Teamwork')}
+                  {t('taskReview.teamwork', 'Teamwork')}
                 </label>
                 <span className={`text-sm font-bold ${text.primary}`}>
                   {skillRatings.teamwork_rating.toFixed(1)}/5.0
@@ -998,7 +998,7 @@ const TaskReview = ({ employees }) => {
             <div className="md:col-span-2">
               <div className="flex items-center justify-between mb-2">
                 <label className={`text-sm font-medium ${text.primary}`}>
-                  {t('personalGoals.problemSolving', 'Problem Solving')}
+                  {t('taskReview.problemSolving', 'Problem Solving')}
                 </label>
                 <span className={`text-sm font-bold ${text.primary}`}>
                   {skillRatings.problem_solving_rating.toFixed(1)}/5.0
@@ -1030,7 +1030,7 @@ const TaskReview = ({ employees }) => {
               <BarChart3 className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{monthlyStats.totalTasks}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>{t('personalGoals.totalTasks', '')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskReview.totalTasks', '')}</p>
           </div>
 
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
@@ -1038,7 +1038,7 @@ const TaskReview = ({ employees }) => {
               <CheckCircle className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{monthlyStats.completedTasks}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>{t('personalGoals.completed', '')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskReview.completed', '')}</p>
           </div>
 
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
@@ -1046,7 +1046,7 @@ const TaskReview = ({ employees }) => {
               <Pickaxe className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{monthlyStats.inProgressTasks}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>{t('personalGoals.inProgress', '')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskReview.inProgress', '')}</p>
           </div>
 
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
@@ -1054,7 +1054,7 @@ const TaskReview = ({ employees }) => {
               <TimerOff className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{monthlyStats.overdueTasks}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>{t('personalGoals.overdue', '')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskReview.overdue', '')}</p>
           </div>
 
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
@@ -1064,7 +1064,7 @@ const TaskReview = ({ employees }) => {
                 {monthlyStats.completionRate}%
               </span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>{t('personalGoals.completionRate', '')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskReview.completionRate', '')}</p>
           </div>
 
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
@@ -1074,7 +1074,7 @@ const TaskReview = ({ employees }) => {
                 {monthlyStats.avgQuality}
               </span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>{t('personalGoals.avgQuality', '')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskReview.avgQuality', '')}</p>
           </div>
         </div>
       )}
@@ -1083,9 +1083,9 @@ const TaskReview = ({ employees }) => {
       {viewMode === 'individual' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <h3 className={`text-sm font-semibold ${text.primary} mb-3`}>{t('personalGoals.onTimePerformance', 'On-Time Performance')}</h3>
+            <h3 className={`text-sm font-semibold ${text.primary} mb-3`}>{t('taskReview.onTimePerformance', 'On-Time Performance')}</h3>
             <div className="flex items-center justify-between">
-              <span className={text.secondary}>{t('personalGoals.onTimeCompletions', 'On-Time Completions')}</span>
+              <span className={text.secondary}>{t('taskReview.onTimeCompletions', 'On-Time Completions')}</span>
               <span className={`font-semibold ${text.primary}`}>
                 {monthlyStats.onTimeCompletions}/{monthlyStats.completedTasks}
               </span>
@@ -1097,39 +1097,39 @@ const TaskReview = ({ employees }) => {
                   style={{ width: `${monthlyStats.onTimeRate}%` }}
                 ></div>
               </div>
-              <p className={`text-xs ${text.secondary} mt-1`}>{monthlyStats.onTimeRate}% {t('personalGoals.onTimeRate', 'on-time rate')}</p>
+              <p className={`text-xs ${text.secondary} mt-1`}>{monthlyStats.onTimeRate}% {t('taskReview.onTimeRate', 'on-time rate')}</p>
             </div>
           </div>
 
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <h3 className={`text-sm font-semibold ${text.primary} mb-3`}>{t('personalGoals.priorityDistribution', 'Priority Distribution')}</h3>
+            <h3 className={`text-sm font-semibold ${text.primary} mb-3`}>{t('taskReview.priorityDistribution', 'Priority Distribution')}</h3>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className={`text-sm ${isDarkMode ? 'text-red-200' : 'text-red-600'}`}>{t('workload.priorityHigh', 'High Priority')}</span>
+                <span className={`text-sm ${isDarkMode ? 'text-red-200' : 'text-red-600'}`}>{t('taskListing.priorityHigh', 'High Priority')}</span>
                 <span className={`font-semibold ${text.primary}`}>{monthlyStats.highPriority}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className={`text-sm ${isDarkMode ? 'text-yellow-200' : 'text-yellow-600'}`}>{t('workload.priorityMedium', 'Medium Priority')}</span>
+                <span className={`text-sm ${isDarkMode ? 'text-yellow-200' : 'text-yellow-600'}`}>{t('taskListing.priorityMedium', 'Medium Priority')}</span>
                 <span className={`font-semibold ${text.primary}`}>{monthlyStats.mediumPriority}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className={`text-sm ${isDarkMode ? 'text-green-200' : 'text-green-600'}`}>{t('workload.priorityLow', 'Low Priority')}</span>
+                <span className={`text-sm ${isDarkMode ? 'text-green-200' : 'text-green-600'}`}>{t('taskListing.priorityLow', 'Low Priority')}</span>
                 <span className={`font-semibold ${text.primary}`}>{monthlyStats.lowPriority}</span>
               </div>
             </div>
           </div>
 
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <h3 className={`text-sm font-semibold ${text.primary} mb-3`}>{t('personalGoals.qualityAssessment', 'Quality Assessment')}</h3>
+            <h3 className={`text-sm font-semibold ${text.primary} mb-3`}>{t('taskReview.qualityAssessment', 'Quality Assessment')}</h3>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className={`text-sm ${text.secondary}`}>{t('personalGoals.ratedTasks', 'Rated Tasks')}</span>
+                <span className={`text-sm ${text.secondary}`}>{t('taskReview.ratedTasks', 'Rated Tasks')}</span>
                 <span className={`font-semibold ${text.primary}`}>
                   {monthlyStats.ratedTasks}/{monthlyStats.totalTasks}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className={`text-sm ${text.secondary}`}>{t('personalGoals.avgQuality', 'Avg Quality')}</span>
+                <span className={`text-sm ${text.secondary}`}>{t('taskReview.avgQuality', 'Avg Quality')}</span>
                 <span className={`font-semibold ${getQualityColor(monthlyStats.avgQuality)}`}>
                   {monthlyStats.avgQuality}/5 <Star className="w-4 h-4 inline-block ml-1 text-yellow-400" />
                 </span>
@@ -1162,25 +1162,25 @@ const TaskReview = ({ employees }) => {
               onClick={() => setFilterStatus('all')}
               className={`px-3 py-1 rounded-lg text-sm ${text.secondary} ${filterStatus === 'all' ? 'bg-blue-600 text-white' : bg.secondary}`}
             >
-              {t('personalGoals.all', '')} ({tasks.length})
+              {t('taskReview.all', '')} ({tasks.length})
             </button>
             <button
               onClick={() => setFilterStatus('completed')}
               className={`px-3 py-1 rounded-lg text-sm ${text.secondary} ${filterStatus === 'completed' ? 'bg-green-600 text-white' : bg.secondary}`}
             >
-              {t('personalGoals.completed', '')} ({monthlyStats.completedTasks})
+              {t('taskReview.completed', '')} ({monthlyStats.completedTasks})
             </button>
             <button
               onClick={() => setFilterStatus('in-progress')}
               className={`px-3 py-1 rounded-lg text-sm ${text.secondary} ${filterStatus === 'in-progress' ? 'bg-blue-600 text-white' : bg.secondary}`}
             >
-              {t('personalGoals.inProgress', '')} ({monthlyStats.inProgressTasks})
+              {t('taskReview.inProgress', '')} ({monthlyStats.inProgressTasks})
             </button>
             <button
               onClick={() => setFilterStatus('pending')}
               className={`px-3 py-1 rounded-lg text-sm ${text.secondary} ${filterStatus === 'pending' ? 'bg-gray-600 text-white' : bg.secondary}`}
             >
-              {t('personalGoals.pending', '')} ({monthlyStats.pendingTasks})
+              {t('taskReview.pending', '')} ({monthlyStats.pendingTasks})
             </button>
           </div>
 
@@ -1191,7 +1191,7 @@ const TaskReview = ({ employees }) => {
               className={`px-4 py-2 ${isDarkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-purple-500 hover:bg-purple-600'} text-white rounded-lg flex items-center space-x-2`}
             >
               <Target className="w-5 h-5" />
-              <span>{t('personalGoals.createGoal', 'Create Goal')}</span>
+              <span>{t('taskReview.createGoal', 'Create Goal')}</span>
             </button>
           )}
         </div>
@@ -1221,7 +1221,7 @@ const TaskReview = ({ employees }) => {
                         <span
                         className={`px-2 py-1 rounded text-xs ${getPriorityColor(task.priority)}`}
                         >
-                        {t(`workload.${task.priority}`, task.priority)}
+                        {t(`taskListing.${task.priority}`, task.priority)}
                     </span>
                       {task.quality_rating > 0 && (
                         <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-800'}`}>
@@ -1236,13 +1236,13 @@ const TaskReview = ({ employees }) => {
                       {task.due_date && (
                         <span className={`flex items-center space-x-1 ${text.secondary}`}>
                           <Calendar className="w-3 h-3" />
-                          <span>{t('personalGoals.due', 'Due')}: {new Date(task.due_date).toLocaleDateString()}</span>
+                          <span>{t('taskReview.due', 'Due')}: {new Date(task.due_date).toLocaleDateString()}</span>
                         </span>
                       )}
                       {task.created_at && (
                         <span className={`flex items-center space-x-1 ${text.secondary}`}>
                           <Clock className="w-3 h-3" />
-                          <span>{t('personalGoals.created', 'Created')}: {new Date(task.created_at).toLocaleDateString()}</span>
+                          <span>{t('taskReview.created', 'Created')}: {new Date(task.created_at).toLocaleDateString()}</span>
                         </span>
                       )}
                     </div>
@@ -1251,7 +1251,7 @@ const TaskReview = ({ employees }) => {
                     {task.self_assessment && (
                       <div className={`mt-3 p-3 ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'} rounded`}>
                         <p className={`text-xs font-semibold ${text.primary} mb-1 flex items-center space-x-1`}>
-                          <span>{t('personalGoals.selfAssessment', 'Self Assessment')}:</span>
+                          <span>{t('taskReview.selfAssessment', 'Self Assessment')}:</span>
                         </p>
                         <p className={`text-sm ${text.secondary}`}>{task.self_assessment}</p>
                       </div>
@@ -1262,7 +1262,7 @@ const TaskReview = ({ employees }) => {
                       <div className={`mt-2 p-3 ${isDarkMode ? 'bg-purple-900/20' : 'bg-purple-50'} rounded`}>
                         <p className={`text-xs font-semibold ${text.primary} mb-1 flex items-center space-x-1`}>
                           <Award className={`w-3 h-3 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
-                          <span>{t('personalGoals.managerEvaluation', 'Manager Evaluation')}:</span>
+                          <span>{t('taskReview.managerEvaluation', 'Manager Evaluation')}:</span>
                         </p>
                         <p className={`text-sm ${text.secondary}`}>{task.comments}</p>
                       </div>
@@ -1275,7 +1275,7 @@ const TaskReview = ({ employees }) => {
                     className={`ml-4 px-3 py-2 ${isDarkMode ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded flex items-center space-x-1 text-sm`}
                   >
                     <Edit2 className="w-4 h-4" />
-                    <span>{t('personalGoals.evaluate', 'Evaluate')}</span>
+                    <span>{t('taskReview.evaluate', 'Evaluate')}</span>
                   </button>
                 </div>
               </div>
@@ -1283,7 +1283,7 @@ const TaskReview = ({ employees }) => {
 
             {displayTasks.length === 0 && (
               <div className="p-8 text-center">
-                <p className={text.secondary}>{t('personalGoals.noTasks', 'No tasks found for this month')}</p>
+                <p className={text.secondary}>{t('taskReview.noTasks', 'No tasks found for this month')}</p>
               </div>
             )}
           </div>
@@ -1297,7 +1297,7 @@ const TaskReview = ({ employees }) => {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className={`text-xl font-semibold ${text.primary}`}>
-                  {t('personalGoals.evaluateTask', 'Evaluate Task')}
+                  {t('taskReview.evaluateTask', 'Evaluate Task')}
                 </h3>
                 <p className={`text-sm ${text.secondary} mt-1`}>{evaluatingTask.title}</p>
               </div>
@@ -1331,7 +1331,7 @@ const TaskReview = ({ employees }) => {
                 <>
                   <div>
                     <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                      {t('personalGoals.qualityRating', 'Quality Rating')} (1-5)
+                      {t('taskReview.qualityRating', 'Quality Rating')} (1-5)
                     </label>
                     <div className="flex items-center space-x-2">
                       {[1, 2, 3, 4, 5].map(rating => (
@@ -1361,13 +1361,13 @@ const TaskReview = ({ employees }) => {
 
                   <div>
                     <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                      {t('personalGoals.managerComments', 'Manager Comments')}
+                      {t('taskReview.managerComments', 'Manager Comments')}
                     </label>
                     <textarea
                       value={evaluationForm.comments}
                       onChange={(e) => setEvaluationForm({ ...evaluationForm, comments: e.target.value })}
                       rows="3"
-                      placeholder={t('personalGoals.commentPlaceholder', 'Provide feedback on task quality and personalGoals...')}
+                      placeholder={t('taskReview.commentPlaceholder', 'Provide feedback on task quality and taskReview...')}
                       className={`w-full px-4 py-2 rounded-lg border ${border.primary}`}
                     />
                   </div>
@@ -1376,19 +1376,19 @@ const TaskReview = ({ employees }) => {
 
               {/* Task Details */}
               <div className={`p-3 rounded ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <p className={`text-xs ${text.secondary} mb-2`}>{t('personalGoals.taskDetails', 'Task Details')}:</p>
+                <p className={`text-xs ${text.secondary} mb-2`}>{t('taskReview.taskDetails', 'Task Details')}:</p>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <span className={text.secondary}>{t('personalGoals.status', 'Status')}: </span>
+                    <span className={text.secondary}>{t('taskReview.status', 'Status')}: </span>
                     <span className={`font-semibold ${text.primary}`}>{evaluatingTask.status}</span>
                   </div>
                   <div>
-                    <span className={text.secondary}>{t('personalGoals.priority', 'Priority')}: </span>
+                    <span className={text.secondary}>{t('taskReview.priority', 'Priority')}: </span>
                     <span className={`font-semibold ${text.primary}`}>{evaluatingTask.priority}</span>
                   </div>
                   {evaluatingTask.due_date && (
                     <div>
-                      <span className={text.secondary}>{t('personalGoals.dueDate', 'Due Date')}: </span>
+                      <span className={text.secondary}>{t('taskReview.dueDate', 'Due Date')}: </span>
                       <span className={`font-semibold ${text.primary}`}>
                         {new Date(evaluatingTask.due_date).toLocaleDateString()}
                       </span>
@@ -1412,14 +1412,14 @@ const TaskReview = ({ employees }) => {
                 onClick={closeEvaluationModal}
                 className={`flex-1 px-4 py-2 border rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
               >
-                {t('personalGoals.cancel', 'Cancel')}
+                {t('taskReview.cancel', 'Cancel')}
               </button>
               <button
                 onClick={handleSubmitEvaluation}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2"
               >
                 <Save className="w-4 h-4" />
-                <span>{t('personalGoals.submitEvaluation', 'Submit Evaluation')}</span>
+                <span>{t('taskReview.submitEvaluation', 'Submit Evaluation')}</span>
               </button>
             </div>
           </div>
@@ -1434,12 +1434,12 @@ const TaskReview = ({ employees }) => {
               <div>
                 <h3 className={`text-xl font-semibold ${text.primary} flex items-center space-x-2`}>
                   <Target className="w-6 h-6" />
-                  <span>{t('personalGoals.createGoal', 'Create New Goal')}</span>
+                  <span>{t('taskReview.createGoal', 'Create New Goal')}</span>
                 </h3>
                 <p className={`text-sm ${text.secondary} mt-1`}>
                   {canEvaluateOthers 
-                    ? t('personalGoals.createGoalSubtitle', 'Set a new goal for an employee')
-                    : t('personalGoals.createPersonalGoal', 'Set a new personal goal')}
+                    ? t('taskReview.createGoalSubtitle', 'Set a new goal for an employee')
+                    : t('taskReview.createPersonalGoal', 'Set a new personal goal')}
                 </p>
               </div>
               <button
@@ -1455,7 +1455,7 @@ const TaskReview = ({ employees }) => {
               {canEvaluateOthers && (
                 <div>
                   <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                    {t('personalGoals.assignTo', 'Assign To')}
+                    {t('taskReview.assignTo', 'Assign To')}
                   </label>
                   <select
                     value={goalForm.assignedTo}
@@ -1474,13 +1474,13 @@ const TaskReview = ({ employees }) => {
               {/* Goal Title */}
               <div>
                 <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                  {t('personalGoals.goalTitle', 'Goal Title')} *
+                  {t('taskReview.goalTitle', 'Goal Title')} *
                 </label>
                 <input
                   type="text"
                   value={goalForm.title}
                   onChange={(e) => setGoalForm({ ...goalForm, title: e.target.value })}
-                  placeholder={t('personalGoals.goalTitlePlaceholder', 'Enter goal title...')}
+                  placeholder={t('taskReview.goalTitlePlaceholder', 'Enter goal title...')}
                   className={`w-full px-4 py-2 rounded-lg border ${border.primary} ${text.primary}`}
                 />
               </div>
@@ -1488,13 +1488,13 @@ const TaskReview = ({ employees }) => {
               {/* Goal Description */}
               <div>
                 <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                  {t('personalGoals.goalDescription', 'Description')}
+                  {t('taskReview.goalDescription', 'Description')}
                 </label>
                 <textarea
                   value={goalForm.description}
                   onChange={(e) => setGoalForm({ ...goalForm, description: e.target.value })}
                   rows="4"
-                  placeholder={t('personalGoals.goalDescriptionPlaceholder', 'Describe the goal in detail...')}
+                  placeholder={t('taskReview.goalDescriptionPlaceholder', 'Describe the goal in detail...')}
                   className={`w-full px-4 py-2 rounded-lg border ${border.primary} ${text.primary}`}
                 />
               </div>
@@ -1503,7 +1503,7 @@ const TaskReview = ({ employees }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                    {t('personalGoals.dueDate', 'Due Date')} *
+                    {t('taskReview.dueDate', 'Due Date')} *
                   </label>
                   <input
                     type="date"
@@ -1516,16 +1516,16 @@ const TaskReview = ({ employees }) => {
 
                 <div>
                   <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                    {t('personalGoals.priority', 'Priority')}
+                    {t('taskReview.priority', 'Priority')}
                   </label>
                   <select
                     value={goalForm.priority}
                     onChange={(e) => setGoalForm({ ...goalForm, priority: e.target.value })}
                     className={`w-full px-4 py-2 rounded-lg border ${border.primary} ${text.primary}`}
                   >
-                    <option value="low">{t('workload.priorityLow', 'Low')}</option>
-                    <option value="medium">{t('workload.priorityMedium', 'Medium')}</option>
-                    <option value="high">{t('workload.priorityHigh', 'High')}</option>
+                    <option value="low">{t('taskListing.priorityLow', 'Low')}</option>
+                    <option value="medium">{t('taskListing.priorityMedium', 'Medium')}</option>
+                    <option value="high">{t('taskListing.priorityHigh', 'High')}</option>
                   </select>
                 </div>
               </div>
@@ -1534,8 +1534,8 @@ const TaskReview = ({ employees }) => {
               <div className={`p-3 rounded ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
                 <p className={`text-xs ${text.secondary}`}>
                   {canEvaluateOthers 
-                    ? t('personalGoals.goalPermissionAdmin', 'As an admin/manager, you can create goals for any employee')
-                    : t('personalGoals.goalPermissionEmployee', 'You can only create goals for yourself')}
+                    ? t('taskReview.goalPermissionAdmin', 'As an admin/manager, you can create goals for any employee')
+                    : t('taskReview.goalPermissionEmployee', 'You can only create goals for yourself')}
                 </p>
               </div>
             </div>
@@ -1546,14 +1546,14 @@ const TaskReview = ({ employees }) => {
                 onClick={closeGoalCreationModal}
                 className={`flex-1 px-4 py-2 border rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} ${text.primary}`}
               >
-                {t('personalGoals.cancel', 'Cancel')}
+                {t('taskReview.cancel', 'Cancel')}
               </button>
               <button
                 onClick={handleCreateGoal}
                 className={`flex-1 px-4 py-2 ${isDarkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-purple-500 hover:bg-purple-600'} text-white rounded-lg flex items-center justify-center space-x-2`}
               >
                 <Target className="w-4 h-4" />
-                <span>{t('personalGoals.createGoal', 'Create Goal')}</span>
+                <span>{t('taskReview.createGoal', 'Create Goal')}</span>
               </button>
             </div>
           </div>

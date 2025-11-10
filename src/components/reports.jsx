@@ -108,11 +108,11 @@ const Reports = () => {
   const translateCategory = (category) => {
     if (!category) return '';
     const categoryMap = {
-      'general': t('personalGoals.general', 'General'),
-      'technical': t('personalGoals.technical', 'Technical'),
-      'leadership': t('personalGoals.leadership', 'Leadership'),
-      'project': t('personalGoals.project', 'Project'),
-      'professional_development': t('personalGoals.professionalDevelopment', 'Professional Development')
+      'general': t('taskReview.general', 'General'),
+      'technical': t('taskReview.technical', 'Technical'),
+      'leadership': t('taskReview.leadership', 'Leadership'),
+      'project': t('taskReview.project', 'Project'),
+      'professional_development': t('taskReview.professionalDevelopment', 'Professional Development')
     };
     return categoryMap[category] || category;
   };
@@ -121,9 +121,9 @@ const Reports = () => {
   const translatePriority = (priority) => {
     if (!priority) return '';
     const priorityMap = {
-      'low': t('workload.low', 'Low'),
-      'medium': t('workload.medium', 'Medium'),
-      'high': t('workload.high', 'High')
+      'low': t('taskListing.low', 'Low'),
+      'medium': t('taskListing.medium', 'Medium'),
+      'high': t('taskListing.high', 'High')
     };
     return priorityMap[priority] || priority;
   };
@@ -520,13 +520,13 @@ const Reports = () => {
       const exportData = reportData.tasks.map(task => ({
         [t('employees.name', 'Employee Name')]: task.employee?.name || 'Unknown',
         [t('employees.department', 'Department')]: translateDepartment(task.employee?.department) || '',
-        [t('workload.taskTitle', 'Task Title')]: task.title || '',
-        [t('workload.description', 'Description')]: task.description || '',
-        [t('workload.priority', 'Priority')]: task.priority || '',
-        [t('workload.status', 'Status')]: task.status || '',
-        [t('workload.dueDate', 'Due Date')]: task.due_date || '',
-        [t('workload.estimatedHours', 'Estimated Hours')]: task.estimated_hours || '',
-        [t('workload.actualHours', 'Actual Hours')]: task.actual_hours || '',
+        [t('taskListing.taskTitle', 'Task Title')]: task.title || '',
+        [t('taskListing.description', 'Description')]: task.description || '',
+        [t('taskListing.priority', 'Priority')]: task.priority || '',
+        [t('taskListing.status', 'Status')]: task.status || '',
+        [t('taskListing.dueDate', 'Due Date')]: task.due_date || '',
+        [t('taskListing.estimatedHours', 'Estimated Hours')]: task.estimated_hours || '',
+        [t('taskListing.actualHours', 'Actual Hours')]: task.actual_hours || '',
         [t('general.createdAt', 'Created At')]: new Date(task.created_at).toLocaleString(),
         [t('general.updatedAt', 'Updated At')]: new Date(task.updated_at).toLocaleString()
       }));
@@ -554,13 +554,13 @@ const Reports = () => {
       const exportData = reportData.goals.map(goal => ({
         [t('employees.name', 'Employee Name')]: goal.employee?.name || 'Unknown',
         [t('employees.department', 'Department')]: translateDepartment(goal.employee?.department) || '',
-        [t('personalGoals.goalTitle', 'Goal Title')]: goal.title || '',
-        [t('personalGoals.description', 'Description')]: goal.description || '',
-        [t('personalGoals.category', 'Category')]: goal.category || '',
-        [t('personalGoals.targetDate', 'Target Date')]: goal.target_date || '',
-        [t('personalGoals.status', 'Status')]: goal.status || '',
-        [t('personalGoals.progress', 'Progress')]: goal.progress || 0,
-        [t('personalGoals.notes', 'Notes')]: goal.notes || '',
+        [t('taskReview.goalTitle', 'Goal Title')]: goal.title || '',
+        [t('taskReview.description', 'Description')]: goal.description || '',
+        [t('taskReview.category', 'Category')]: goal.category || '',
+        [t('taskReview.targetDate', 'Target Date')]: goal.target_date || '',
+        [t('taskReview.status', 'Status')]: goal.status || '',
+        [t('taskReview.progress', 'Progress')]: goal.progress || 0,
+        [t('taskReview.notes', 'Notes')]: goal.notes || '',
         [t('general.createdAt', 'Created At')]: new Date(goal.created_at).toLocaleString(),
         [t('general.updatedAt', 'Updated At')]: new Date(goal.updated_at).toLocaleString()
       }));

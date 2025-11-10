@@ -229,7 +229,7 @@ const TaskListing = ({ employees }) => {
   };
 
   const handleDeleteTask = async (taskId) => {
-    if (window.confirm(t('workload.confirmDelete', 'Delete this task?'))) {
+    if (window.confirm(t('taskListing.confirmDelete', 'Delete this task?'))) {
       try {
         const result = await workloadService.deleteTask(taskId);
         
@@ -296,21 +296,21 @@ const TaskListing = ({ employees }) => {
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <p className={`text-sm ${text.secondary}`}>{t('workload.totalTasks', '')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskListing.totalTasks', '')}</p>
             <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{employeeTasks.length}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <p className={`text-sm ${text.secondary}`}>{t('workload.completed', '')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskListing.completed', '')}</p>
             <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               {employeeTasks.filter(t => t.status === 'completed').length}
             </p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <p className={`text-sm ${text.secondary}`}>{t('workload.progress', '')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskListing.progress', '')}</p>
             <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{progress}%</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <p className={`text-sm ${text.secondary}`}>{t('workload.avgQuality', '')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskListing.avgQuality', '')}</p>
             <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{avgQuality}/5</p>
           </div>
         </div>
@@ -319,7 +319,7 @@ const TaskListing = ({ employees }) => {
         {canViewAllEmployees && availableEmployees.length > 1 && (
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-              {t('workload.selectEmployee', 'Select Employee')}
+              {t('taskListing.selectEmployee', 'Select Employee')}
             </label>
             <div className="relative">
               <select
@@ -347,7 +347,7 @@ const TaskListing = ({ employees }) => {
         <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
           <div className="flex justify-between items-center mb-4">
             <h3 className={`text-lg font-semibold ${text.primary}`}>
-              {canAssignTasks ? t('workload.manageTasks', '') : t('workload.myTasks', '')}
+              {canAssignTasks ? t('taskListing.manageTasks', '') : t('taskListing.myTasks', '')}
             </h3>
             <button
               onClick={() => {
@@ -367,7 +367,7 @@ const TaskListing = ({ employees }) => {
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 cursor-pointer"
             >
               <Plus className="w-4 h-4 cursor-pointer" />
-              <span>{canAssignTasks ? t('workload.assignTask', '') : t('workload.addTask', '')}</span>
+              <span>{canAssignTasks ? t('taskListing.assignTask', '') : t('taskListing.addTask', '')}</span>
             </button>
           </div>
 
@@ -389,10 +389,10 @@ const TaskListing = ({ employees }) => {
                         {task.title}
                       </h4>
                       <span className={`px-2 py-1 rounded text-xs ${getPriorityColor(task.priority)}`}>
-                        {t(`workload.${task.priority}`, task.priority)}
+                        {t(`taskListing.${task.priority}`, task.priority)}
                       </span>
                       <span className={`px-2 py-1 rounded text-xs ${getStatusColor(task.status)}`}>
-                        {t(`workload.${task.status}`, task.status)}
+                        {t(`taskListing.${task.status}`, task.status)}
                       </span>
                       {canAssignTasks && task.employee && (
                         <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-white' : 'bg-blue-100 text-blue-800'}`}>
@@ -411,7 +411,7 @@ const TaskListing = ({ employees }) => {
                       <div className={`mt-2 p-2 rounded ${bg.primary}`}>
                         <p className={`text-xs ${text.secondary} mb-1`}>
                           <MessageSquare className="w-3 h-3 inline mr-1" />
-                          {t('workload.selfAssessment', 'Self Assessment')}:
+                          {t('taskListing.selfAssessment', 'Self Assessment')}:
                         </p>
                         <p className={`text-sm ${text.primary}`}>{task.self_assessment}</p>
                         {task.quality_rating > 0 && (
@@ -449,7 +449,7 @@ const TaskListing = ({ employees }) => {
             ))}
             {employeeTasks.length === 0 && (
               <p className={`text-center py-8 ${text.secondary}`}>
-                {t('workload.noTasks', 'No tasks yet. Add your first task!')}
+                {t('taskListing.noTasks', 'No tasks yet. Add your first task!')}
               </p>
             )}
           </div>
@@ -471,17 +471,17 @@ const TaskListing = ({ employees }) => {
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <p className={`text-sm ${text.secondary}`}>{t('workload.totalTasks', '')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskListing.totalTasks', '')}</p>
             <p className={`text-2xl font-bold ${text.primary}`}>{tasks.length}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <p className={`text-sm ${text.secondary}`}>{t('workload.avgProgress', '')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskListing.avgProgress', '')}</p>
             <p className={`text-2xl font-bold ${text.secondary}`}>
               {Math.round(orgStats.reduce((sum, s) => sum + s.progress, 0) / (orgStats.length || 1))}%
             </p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <p className={`text-sm ${text.secondary}`}>{t('workload.avgQuality', '')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskListing.avgQuality', '')}</p>
             <p className={`text-2xl font-bold ${text.secondary}`}>
               {(orgStats.reduce((sum, s) => sum + parseFloat(s.avgQuality || 0), 0) / (orgStats.length || 0)).toFixed(0)}/5
             </p>
@@ -491,7 +491,7 @@ const TaskListing = ({ employees }) => {
         <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
           <div className="flex justify-between items-center mb-4">
             <h3 className={`text-lg font-semibold ${text.primary}`}>
-              {t('workload.employeeProgress', 'Employee Progress')}
+              {t('taskListing.employeeProgress', 'Employee Progress')}
             </h3>
             {canAssignTasks && (
               <button
@@ -512,7 +512,7 @@ const TaskListing = ({ employees }) => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                <span>{t('workload.assignTask', 'Assign Task')}</span>
+                <span>{t('taskListing.assignTask', 'Assign Task')}</span>
               </button>
             )}
           </div>
@@ -529,15 +529,15 @@ const TaskListing = ({ employees }) => {
                   </div>
                   <div className="flex items-center space-x-6 text-sm text-center justify-center">
                     <div>
-                      <p className={`${text.secondary}`}>{t('workload.tasks', 'Tasks')}</p>
+                      <p className={`${text.secondary}`}>{t('taskListing.tasks', 'Tasks')}</p>
                       <p className={`font-semiboldcha ${text.primary}`}>{tasks.length}</p>
                     </div>
                     <div>
-                      <p className={`${text.secondary}`}>{t('workload.progress', 'Progress')}</p>
+                      <p className={`${text.secondary}`}>{t('taskListing.progress', 'Progress')}</p>
                       <p className={`font-semibold ${text.primary}`}>{progress}%</p>
                     </div>
                     <div>
-                      <p className={`${text.secondary}`}>{t('workload.quality', 'Quality')}</p>
+                      <p className={`${text.secondary}`}>{t('taskListing.quality', 'Quality')}</p>
                       <p className={`font-semibold ${text.primary}`}>{avgQuality}/5</p>
                     </div>
                   </div>
@@ -572,7 +572,7 @@ const TaskListing = ({ employees }) => {
 
       <div className="flex justify-between items-center gap-15">
         <h2 className={`text-2xl font-bold ${text.primary}`}>
-          {t('workload.title', '')}
+          {t('taskListing.title', '')}
         </h2>
         <div className="flex space-x-2">
           <button
@@ -587,7 +587,7 @@ const TaskListing = ({ employees }) => {
               }
             `}
           >
-            {t('workload.individual', '')}
+            {t('taskListing.individual', '')}
           </button>
 
           {/* Only show organization tab for admin/manager */}
@@ -604,7 +604,7 @@ const TaskListing = ({ employees }) => {
                 }
               `}
             >
-              {t('workload.organization', '')}
+              {t('taskListing.organization', '')}
             </button>
           )}
         </div>
@@ -624,21 +624,21 @@ const TaskListing = ({ employees }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div ref={modalRef} className={`${bg.secondary} rounded-lg shadow-xl max-w-2xl w-full p-6`}>
             <h3 className={`text-xl font-semibold ${text.primary} mb-4`}>
-              {editingTask ? t('workload.editTask', '') : t('workload.addTask', '')}
+              {editingTask ? t('taskListing.editTask', '') : t('taskListing.addTask', '')}
             </h3>
             <div className="space-y-4">
               {/* Employee Selector - Only for Admin/Manager */}
               {canAssignTasks && (
                 <div>
                   <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                    {t('workload.assignTo', '')} *
+                    {t('taskListing.assignTo', '')} *
                   </label>
                   <select
                     value={taskForm.assignedTo}
                     onChange={(e) => setTaskForm({ ...taskForm, assignedTo: e.target.value })}
                     className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
                   >
-                    <option value="">{t('workload.selectEmployee', 'Select Employee')}</option>
+                    <option value="">{t('taskListing.selectEmployee', 'Select Employee')}</option>
                     {employees.map(emp => (
                       <option key={emp.id} value={emp.id}>
                         {emp.name} - {t(`departments.${emp.department}`, emp.department)} ({t(`employeePosition.${emp.position}`, emp.position)})
@@ -649,7 +649,7 @@ const TaskListing = ({ employees }) => {
               )}
               <div>
                 <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                  {t('workload.taskTitle', 'Task Title')}
+                  {t('taskListing.taskTitle', 'Task Title')}
                 </label>
                 <input
                   type="text"
@@ -660,7 +660,7 @@ const TaskListing = ({ employees }) => {
               </div>
               <div>
                 <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                  {t('workload.description', 'Description')}
+                  {t('taskListing.description', 'Description')}
                 </label>
                 <textarea
                   value={taskForm.description}
@@ -671,7 +671,7 @@ const TaskListing = ({ employees }) => {
               </div>
               <div>
                 <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                  {t('workload.dueDate', 'Due Date')}
+                  {t('taskListing.dueDate', 'Due Date')}
                 </label>
                 <div className="relative">
                   <input
@@ -686,48 +686,48 @@ const TaskListing = ({ employees }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                    {t('workload.priority', 'Priority')}
+                    {t('taskListing.priority', 'Priority')}
                   </label>
                   <select
                     value={taskForm.priority}
                     onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}
                     className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
                   >
-                    <option value="low">{t('workload.priorityLow', '')}</option>
-                    <option value="medium">{t('workload.priorityMedium', '')}</option>
-                    <option value="high">{t('workload.priorityHigh', '')}</option>
+                    <option value="low">{t('taskListing.priorityLow', '')}</option>
+                    <option value="medium">{t('taskListing.priorityMedium', '')}</option>
+                    <option value="high">{t('taskListing.priorityHigh', '')}</option>
                   </select>
                 </div>
                 <div>
                   <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                    {t('workload.status', 'Status')}
+                    {t('taskListing.status', 'Status')}
                   </label>
                   <select
                     value={taskForm.status}
                     onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value })}
                     className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
                   >
-                    <option value="pending">{t('workload.statusPending', '')}</option>
-                    <option value="in-progress">{t('workload.statusInProgress', '')}</option>
-                    <option value="completed">{t('workload.statusCompleted', '')}</option>
+                    <option value="pending">{t('taskListing.statusPending', '')}</option>
+                    <option value="in-progress">{t('taskListing.statusInProgress', '')}</option>
+                    <option value="completed">{t('taskListing.statusCompleted', '')}</option>
                   </select>
                 </div>
               </div>
               <div>
                 <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                  {t('workload.selfAssessment', 'Self Assessment')}
+                  {t('taskListing.selfAssessment', 'Self Assessment')}
                 </label>
                 <textarea
                   value={taskForm.selfAssessment}
                   onChange={(e) => setTaskForm({ ...taskForm, selfAssessment: e.target.value })}
                   rows="2"
-                  placeholder={t('workload.selfAssessmentPlaceholder', 'How did you perform on this task?')}
+                  placeholder={t('taskListing.selfAssessmentPlaceholder', 'How did you perform on this task?')}
                   className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
                 />
               </div>
               <div>
                 <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                  {t('workload.qualityRating', 'Quality Rating')} (0-5)
+                  {t('taskListing.qualityRating', 'Quality Rating')} (0-5)
                 </label>
                 <input
                   type="number"
