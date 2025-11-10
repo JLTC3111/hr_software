@@ -2,6 +2,7 @@ export default {
   // Navigation
   nav: {
     menu: 'Меню',
+    workload: 'Управление Работой',
     timeClock: 'Учет времени',
     dashboard: 'Панель управления',
     employees: 'Сотрудники',
@@ -968,9 +969,9 @@ export default {
     weeklyReportDesc: 'Получать еженедельную сводку рабочих активностей'
   },
 
-  // Workload Management
-  workload: {
-    title: 'Управление рабочей нагрузкой',
+  // Task Listing
+  taskListing: {
+    title: 'Управление задачами',
     individual: 'Индивидуальный',
     selectEmployee: 'Выбрать сотрудника',
     dueDate: 'Срок',
@@ -1014,6 +1015,59 @@ export default {
     confirmDelete: 'Вы уверены, что хотите удалить эту задачу?',
     tasks: 'Задачи',
     quality: 'Качество',
+  },
+
+  // Task Review
+  taskReview: {
+    title: 'Обзор Задач',
+    subtitle: 'Ежемесячная оценка прогресса и качества выполнения задач',
+    individual: 'Индивидуальная',
+    team: 'Команда',
+    totalTasks: 'Всего Задач',
+    completed: 'Завершено',
+    inProgress: 'В Процессе',
+    overdue: 'Просрочено',
+    completionRate: 'Процент Выполнения',
+    avgQuality: 'Среднее Качество',
+    onTimePerformance: 'Своевременное Выполнение',
+    onTimeCompletions: 'Своевременные Завершения',
+    onTimeRate: 'Процент своевременности',
+    priorityDistribution: 'Распределение Приоритетов',
+    highPriority: 'Высокий Приоритет',
+    mediumPriority: 'Средний Приоритет',
+    lowPriority: 'Низкий Приоритет',
+    qualityAssessment: 'Оценка Качества',
+    ratedTasks: 'Оцененные Задачи',
+    noTasks: 'Задачи за этот месяц не найдены',
+    noTeamTasks: 'Командные задачи за этот месяц не найдены',
+    evaluateTask: 'Оценить Задачу',
+    selfAssessment: 'Самооценка',
+    qualityRating: 'Оценка Качества',
+    managerComments: 'Комментарии Менеджера',
+    commentPlaceholder: 'Предоставьте обратную связь по качеству задачи и личным целям...',
+    taskDetails: 'Детали Задачи',
+    status: 'Статус',
+    priority: 'Приоритет',
+    dueDate: 'Срок Выполнения',
+    currentRating: 'Текущая Оценка',
+    submitEvaluation: 'Отправить Оценку',
+    cancel: 'Отмена',
+    evaluate: 'Оценить',
+    managerEvaluation: 'Оценка Менеджера',
+    created: 'Создано',
+    due: 'К Сроку',
+    all: 'Все',
+    pending: 'В Ожидании',
+    createGoal: 'Создать Цель',
+    createGoalSubtitle: 'Установить новую цель для сотрудника',
+    createPersonalGoal: 'Установить новую личную цель',
+    assignTo: 'Назначить',
+    goalTitle: 'Название Цели',
+    goalTitlePlaceholder: 'Введите название цели...',
+    goalDescription: 'Описание',
+    goalDescriptionPlaceholder: 'Подробно опишите цель...',
+    goalPermissionAdmin: 'Как администратор/менеджер, вы можете создавать цели для любого сотрудника',
+    goalPermissionEmployee: 'Вы можете создавать цели только для себя',
   },
 
   // Performance Appraisal Translation

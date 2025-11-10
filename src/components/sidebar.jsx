@@ -71,7 +71,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
         },
         { 
           path: '/workload', 
-          name: t('nav.workload', 'Workload Management'), 
+          name: t('nav.workload', 'Work Management'), 
           icon: CheckSquare,
           subItems: [
             { path: '/task-listing', name: t('nav.taskListing', 'Task Listing') },

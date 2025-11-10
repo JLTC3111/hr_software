@@ -2,6 +2,7 @@ export default {
   // Navigation
   nav: {
     menu: 'เมนู',
+    workload: 'การจัดการงาน',
     timeClock: 'นาฬิกาบันทึกเวลา',
     dashboard: 'แดชบอร์ด',
     employees: 'พนักงาน',
@@ -961,9 +962,9 @@ export default {
     weeklyReportDesc: 'รับสรุปกิจกรรมการทำงานรายสัปดาห์'
   },
 
-  // Workload Management
-  workload: {
-    title: 'การจัดการภาระงาน',
+  // Task Listing
+  taskListing: {
+    title: 'การจัดการงาน',
     individual: 'บุคคล',
     selectEmployee: 'เลือกพนักงาน',
     dueDate: 'วันครบกำหนด',
@@ -1007,6 +1008,59 @@ export default {
     confirmDelete: 'คุณแน่ใจว่าต้องการลบงานนี้หรือไม่?',
     tasks: 'งาน',
     quality: 'คุณภาพ',
+  },
+
+  // Task Review
+  taskReview: {
+    title: 'ทบทวนงาน',
+    subtitle: 'ความคืบหน้าของงานและการประเมินคุณภาพรายเดือน',
+    individual: 'รายบุคคล',
+    team: 'ทีม',
+    totalTasks: 'งานทั้งหมด',
+    completed: 'เสร็จสมบูรณ์',
+    inProgress: 'กำลังดำเนินการ',
+    overdue: 'เกินกำหนด',
+    completionRate: 'อัตราความสำเร็จ',
+    avgQuality: 'คุณภาพเฉลี่ย',
+    onTimePerformance: 'ประสิทธิภาพตรงเวลา',
+    onTimeCompletions: 'เสร็จสมบูรณ์ตรงเวลา',
+    onTimeRate: 'อัตราตรงเวลา',
+    priorityDistribution: 'การกระจายลำดับความสำคัญ',
+    highPriority: 'ลำดับความสำคัญสูง',
+    mediumPriority: 'ลำดับความสำคัญปานกลาง',
+    lowPriority: 'ลำดับความสำคัญต่ำ',
+    qualityAssessment: 'การประเมินคุณภาพ',
+    ratedTasks: 'งานที่ได้รับการจัดอันดับ',
+    noTasks: 'ไม่พบงานสำหรับเดือนนี้',
+    noTeamTasks: 'ไม่พบงานทีมสำหรับเดือนนี้',
+    evaluateTask: 'ประเมินงาน',
+    selfAssessment: 'การประเมินตนเอง',
+    qualityRating: 'ระดับคุณภาพ',
+    managerComments: 'ความคิดเห็นของผู้จัดการ',
+    commentPlaceholder: 'ให้ข้อเสนอแนะเกี่ยวกับคุณภาพงานและเป้าหมายส่วนบุคคล...',
+    taskDetails: 'รายละเอียดงาน',
+    status: 'สถานะ',
+    priority: 'ลำดับความสำคัญ',
+    dueDate: 'วันที่ครบกำหนด',
+    currentRating: 'ระดับปัจจุบัน',
+    submitEvaluation: 'ส่งการประเมิน',
+    cancel: 'ยกเลิก',
+    evaluate: 'ประเมิน',
+    managerEvaluation: 'การประเมินของผู้จัดการ',
+    created: 'สร้างแล้ว',
+    due: 'ครบกำหนด',
+    all: 'ทั้งหมด',
+    pending: 'รอดำเนินการ',
+    createGoal: 'สร้างเป้าหมาย',
+    createGoalSubtitle: 'ตั้งเป้าหมายใหม่สำหรับพนักงาน',
+    createPersonalGoal: 'ตั้งเป้าหมายส่วนบุคคลใหม่',
+    assignTo: 'มอบหมายให้',
+    goalTitle: 'ชื่อเป้าหมาย',
+    goalTitlePlaceholder: 'ป้อนชื่อเป้าหมาย...',
+    goalDescription: 'คำอธิบาย',
+    goalDescriptionPlaceholder: 'อธิบายรายละเอียดของเป้าหมาย...',
+    goalPermissionAdmin: 'ในฐานะผู้ดูแล/ผู้จัดการ คุณสามารถสร้างเป้าหมายสำหรับพนักงานทุกคนได้',
+    goalPermissionEmployee: 'คุณสามารถสร้างเป้าหมายได้เฉพาะสำหรับตัวคุณเองเท่านั้น',
   },
 
   // Performance Appraisal Translation

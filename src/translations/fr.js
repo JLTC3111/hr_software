@@ -2,6 +2,7 @@ export default {
   // Navigation
   nav: {
     menu: 'Menu',
+    workload: 'Gestion du travail',
     timeClock: 'Horloge de pointage',
     dashboard: 'Tableau de bord',
     employees: 'Employés',
@@ -1073,9 +1074,9 @@ export default {
     weeklyReportDesc: 'Recevoir un résumé hebdomadaire de vos activités professionnelles'
   },
 
-  // Workload Management
-  workload: {
-    title: 'Gestion de la Charge de Travail',
+  // Task Listing
+  taskListing: {
+    title: 'Gestion des Tâches',
     individual: 'Individuel',
     organization: 'Organisation',
     selectEmployee: 'Sélectionner l\'employé',
@@ -1119,6 +1120,59 @@ export default {
     confirmDelete: 'Êtes-vous sûr de vouloir supprimer cette tâche?',
     tasks: 'Tâches',
     quality: 'Qualité',
+  },
+
+  // Task Review
+  taskReview: {
+    title: 'Évaluation des tâches',
+    subtitle: 'Évaluation mensuelle de la progression et de la qualité des tâches',
+    individual: 'Individuel',
+    team: 'Équipe',
+    totalTasks: 'Total des tâches',
+    completed: 'Terminées',
+    inProgress: 'En cours',
+    overdue: 'En retard',
+    completionRate: 'Taux d\'achèvement',
+    avgQuality: 'Qualité moyenne',
+    onTimePerformance: 'Performance à temps',
+    onTimeCompletions: 'Achèvements à temps',
+    onTimeRate: 'Taux à temps',
+    priorityDistribution: 'Distribution des priorités',
+    highPriority: 'Haute priorité',
+    mediumPriority: 'Priorité moyenne',
+    lowPriority: 'Basse priorité',
+    qualityAssessment: 'Évaluation de la qualité',
+    ratedTasks: 'Tâches notées',
+    noTasks: 'Aucune tâche trouvée pour ce mois',
+    noTeamTasks: 'Aucune tâche d\'équipe trouvée pour ce mois',
+    evaluateTask: 'Évaluer la tâche',
+    selfAssessment: 'Auto-évaluation',
+    qualityRating: 'Note de qualité',
+    managerComments: 'Commentaires du manager',
+    commentPlaceholder: 'Fournir des commentaires sur la qualité de la tâche et les objectifs personnels...',
+    taskDetails: 'Détails de la tâche',
+    status: 'Statut',
+    priority: 'Priorité',
+    dueDate: 'Date d\'échéance',
+    currentRating: 'Note actuelle',
+    submitEvaluation: 'Soumettre l\'évaluation',
+    cancel: 'Annuler',
+    evaluate: 'Évaluer',
+    managerEvaluation: 'Évaluation du manager',
+    created: 'Créée',
+    due: 'Échéance',
+    all: 'Tous',
+    pending: 'En attente',
+    createGoal: 'Créer un objectif',
+    createGoalSubtitle: 'Définir un nouvel objectif pour un employé',
+    createPersonalGoal: 'Définir un nouvel objectif personnel',
+    assignTo: 'Assigner à',
+    goalTitle: 'Titre de l\'objectif',
+    goalTitlePlaceholder: 'Entrer le titre de l\'objectif...',
+    goalDescription: 'Description',
+    goalDescriptionPlaceholder: 'Décrire l\'objectif en détail...',
+    goalPermissionAdmin: 'En tant qu\'administrateur/manager, vous pouvez créer des objectifs pour n\'importe quel employé',
+    goalPermissionEmployee: 'Vous ne pouvez créer des objectifs que pour vous-même',
   },
 
   // Performance Appraisal Translation

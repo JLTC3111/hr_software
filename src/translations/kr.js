@@ -2,6 +2,7 @@ export default {
   // Navigation
   nav: {
     menu: '메뉴',
+    workload: '업무 관리',
     timeClock: '시간 기록',
     dashboard: '대시보드',
     employees: '직원',
@@ -931,9 +932,9 @@ export default {
     weeklyReportDesc: '작업 활동에 대한 주간 요약 받기'
   },
 
-  // Workload Management
-  workload: {
-    title: '업무량 관리',
+  // Task Listing
+  taskListing: {
+    title: '작업 목록',
     individual: '개인',
     selectEmployee: '직원 선택',
     dueDate: '마감일',
@@ -979,6 +980,59 @@ export default {
     confirmDelete: '이 작업을 삭제하시겠습니까?',
     tasks: '작업',
     quality: '품질',
+  },
+
+  // Task Review 
+  taskReview: {
+    title: '작업 검토',
+    subtitle: '월별 작업 진행 상황 및 품질 평가',
+    individual: '개별',
+    team: '팀',
+    totalTasks: '총 작업 수',
+    completed: '완료됨',
+    inProgress: '진행 중',
+    overdue: '기한 초과',
+    completionRate: '완료율',
+    avgQuality: '평균 품질',
+    onTimePerformance: '정시 이행률',
+    onTimeCompletions: '정시 완료 수',
+    onTimeRate: '정시율',
+    priorityDistribution: '우선순위 분포',
+    highPriority: '최우선',
+    mediumPriority: '중간 우선순위',
+    lowPriority: '낮은 우선순위',
+    qualityAssessment: '품질 평가',
+    ratedTasks: '평가된 작업',
+    noTasks: '이번 달에 찾은 작업이 없습니다',
+    noTeamTasks: '이번 달에 찾은 팀 작업이 없습니다',
+    evaluateTask: '작업 평가',
+    selfAssessment: '자기 평가',
+    qualityRating: '품질 등급',
+    managerComments: '관리자 의견',
+    commentPlaceholder: '작업 품질 및 개인 목표에 대한 피드백을 제공하십시오...',
+    taskDetails: '작업 세부 정보',
+    status: '상태',
+    priority: '우선순위',
+    dueDate: '마감일',
+    currentRating: '현재 등급',
+    submitEvaluation: '평가 제출',
+    cancel: '취소',
+    evaluate: '평가',
+    managerEvaluation: '관리자 평가',
+    created: '생성됨',
+    due: '마감',
+    all: '전체',
+    pending: '보류 중',
+    createGoal: '목표 생성',
+    createGoalSubtitle: '직원을 위한 새 목표 설정',
+    createPersonalGoal: '새 개인 목표 설정',
+    assignTo: '할당 대상',
+    goalTitle: '목표 제목',
+    goalTitlePlaceholder: '목표 제목 입력...',
+    goalDescription: '설명',
+    goalDescriptionPlaceholder: '목표를 자세히 설명하십시오...',
+    goalPermissionAdmin: '관리자/매니저로서 모든 직원에 대한 목표를 생성할 수 있습니다',
+    goalPermissionEmployee: '자신에 대한 목표만 생성할 수 있습니다',
   },
 
   // Performance Appraisal Translation

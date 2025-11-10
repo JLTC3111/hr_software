@@ -2,6 +2,7 @@ export default {
   // Navigation
   nav: {
     menu: 'メニュー',
+    workload: '業務管理',
     timeClock: 'タイムクロック',
     dashboard: 'ダッシュボード',
     employees: '従業員',
@@ -951,9 +952,9 @@ export default {
     weeklyReportDesc: '作業活動の週次まとめを受け取る'
   },
 
-  // Workload Management
-  workload: {
-    title: '仕事量管理',
+  // Task Listing
+  taskListing: {
+    title: 'タスクリスト',
     individual: '個人',
     selectEmployee: '従業員を選択',
     dueDate: '期限',
@@ -997,6 +998,59 @@ export default {
     confirmDelete: 'このタスクを削除してもよろしいですか？',
     tasks: 'タスク',
     quality: '品質',
+  },
+
+  // Task Review
+  taskReview: {
+    title: 'タスクレビュー',
+    subtitle: '月次タスクの進捗と品質評価',
+    individual: '個人',
+    team: 'チーム',
+    totalTasks: 'タスク総数',
+    completed: '完了済み',
+    inProgress: '進行中',
+    overdue: '期限超過',
+    completionRate: '完了率',
+    avgQuality: '平均品質',
+    onTimePerformance: '期限内実績',
+    onTimeCompletions: '期限内完了数',
+    onTimeRate: '期限内率',
+    priorityDistribution: '優先度分布',
+    highPriority: '高優先度',
+    mediumPriority: '中優先度',
+    lowPriority: '低優先度',
+    qualityAssessment: '品質評価',
+    ratedTasks: '評価済みタスク',
+    noTasks: '今月はタスクが見つかりませんでした',
+    noTeamTasks: '今月はチームタスクが見つかりませんでした',
+    evaluateTask: 'タスクを評価',
+    selfAssessment: '自己評価',
+    qualityRating: '品質評価',
+    managerComments: '管理者コメント',
+    commentPlaceholder: 'タスクの品質と個人目標についてフィードバックを提供してください...',
+    taskDetails: 'タスクの詳細',
+    status: 'ステータス',
+    priority: '優先度',
+    dueDate: '期限日',
+    currentRating: '現在の評価',
+    submitEvaluation: '評価を提出',
+    cancel: 'キャンセル',
+    evaluate: '評価する',
+    managerEvaluation: '管理者評価',
+    created: '作成済み',
+    due: '期限',
+    all: 'すべて',
+    pending: '保留中',
+    createGoal: '目標を作成',
+    createGoalSubtitle: '従業員に新しい目標を設定する',
+    createPersonalGoal: '新しい個人目標を設定する',
+    assignTo: '割り当て先',
+    goalTitle: '目標タイトル',
+    goalTitlePlaceholder: '目標タイトルを入力してください...',
+    goalDescription: '説明',
+    goalDescriptionPlaceholder: '目標を詳細に記述してください...',
+    goalPermissionAdmin: '管理者/マネージャーとして、任意の従業員に目標を作成できます',
+    goalPermissionEmployee: '自分自身にのみ目標を作成できます',
   },
 
   // Performance Appraisal Translation

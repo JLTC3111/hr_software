@@ -1,6 +1,7 @@
 export default {
   nav: {
     menu: 'Menú',
+    workload: 'Gestión de Trabajo',
     timeClock: 'Reloj de fichar',
     dashboard: 'Panel de control',
     employees: 'Empleados',
@@ -939,6 +940,59 @@ login: {
     viewDetails: 'Ver detalles',
   },
 
+  // Task Review
+  taskReview: {
+    title: 'Revisión de Tareas',
+    subtitle: 'Evaluación mensual del progreso y calidad de las tareas',
+    individual: 'Individual',
+    team: 'Equipo',
+    totalTasks: 'Tareas Totales',
+    completed: 'Completadas',
+    inProgress: 'En curso',
+    overdue: 'Atrasadas',
+    completionRate: 'Tasa de Finalización',
+    avgQuality: 'Calidad promedio',
+    onTimePerformance: 'Rendimiento a Tiempo',
+    onTimeCompletions: 'Finalizaciones a Tiempo',
+    onTimeRate: 'Tasa a tiempo',
+    priorityDistribution: 'Distribución de Prioridad',
+    highPriority: 'Prioridad Alta',
+    mediumPriority: 'Prioridad Media',
+    lowPriority: 'Prioridad Baja',
+    qualityAssessment: 'Evaluación de Calidad',
+    ratedTasks: 'Tareas Calificadas',
+    noTasks: 'No se encontraron tareas para este mes',
+    noTeamTasks: 'No se encontraron tareas de equipo para este mes',
+    evaluateTask: 'Evaluar Tarea',
+    selfAssessment: 'Autoevaluación',
+    qualityRating: 'Calificación de Calidad',
+    managerComments: 'Comentarios del Gerente',
+    commentPlaceholder: 'Proporcione comentarios sobre la calidad de la tarea y las metas personales...',
+    taskDetails: 'Detalles de la Tarea',
+    status: 'Estado',
+    priority: 'Prioridad',
+    dueDate: 'Fecha de Vencimiento',
+    currentRating: 'Calificación Actual',
+    submitEvaluation: 'Enviar Evaluación',
+    cancel: 'Cancelar',
+    evaluate: 'Evaluar',
+    managerEvaluation: 'Evaluación del Gerente',
+    created: 'Creada',
+    due: 'Vence',
+    all: 'Todas',
+    pending: 'Pendiente',
+    createGoal: 'Crear Meta',
+    createGoalSubtitle: 'Establecer una nueva meta para un empleado',
+    createPersonalGoal: 'Establecer una nueva meta personal',
+    assignTo: 'Asignar a',
+    goalTitle: 'Título de la Meta',
+    goalTitlePlaceholder: 'Ingrese el título de la meta...',
+    goalDescription: 'Descripción',
+    goalDescriptionPlaceholder: 'Describa la meta en detalle...',
+    goalPermissionAdmin: 'Como administrador/gerente, puede crear metas para cualquier empleado',
+    goalPermissionEmployee: 'Solo puede crear metas para usted mismo',
+  },
+
   // Settings
   settings: {
     title: 'Configuración',
@@ -1014,9 +1068,9 @@ login: {
     weeklyReportDesc: 'Recibir un resumen semanal de sus actividades laborales'
   },
 
-  // Workload Management
-  workload: {
-    title: 'Gestión de Carga de Trabajo',
+  // Task Listing
+  taskListing: {
+    title: 'Gestión de Tareas',
     assignTo: 'Asignar a',
     team: 'Equipo',
     selectEmployee: 'Seleccionar empleado',

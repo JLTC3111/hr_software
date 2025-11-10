@@ -2,6 +2,7 @@ export default {
   // Navigation
   nav: {
     menu: 'Menu',
+    workload: 'Quản Lý Công Việc',
     timeClock: 'Đồng hồ chấm công',
     dashboard: 'Bảng điều khiển',
     employees: 'Nhân viên',
@@ -1089,9 +1090,9 @@ export default {
     weeklyReportDesc: 'Nhận tóm tắt hàng tuần về các hoạt động công việc của bạn'
   },
 
-  // Workload Management
-  workload: {
-    title: 'Quản Lý Khối Lượng Công Việc',
+  // Task Listing
+  taskListing: {
+    title: 'Danh Sách Nhiệm Vụ',
     individual: 'Cá nhân',
     selectEmployee: 'Chọn nhân viên',
     dueDate: 'Hạn chót',
@@ -1135,6 +1136,59 @@ export default {
     confirmDelete: 'Bạn có chắc chắn muốn xóa nhiệm vụ này?',
     tasks: 'Nhiệm Vụ',
     quality: 'Chất Lượng',
+  },
+
+  // Task Review
+  taskReview: {
+    title: 'Đánh giá Công việc',
+    subtitle: 'Đánh giá tiến độ và chất lượng công việc hàng tháng',
+    individual: 'Cá nhân',
+    team: 'Đội nhóm',
+    totalTasks: 'Tổng số công việc',
+    completed: 'Hoàn thành',
+    inProgress: 'Đang tiến hành',
+    overdue: 'Quá hạn',
+    completionRate: 'Tỷ lệ hoàn thành',
+    avgQuality: 'Chất lượng TB',
+    onTimePerformance: 'Hiệu suất đúng hạn',
+    onTimeCompletions: 'Hoàn thành đúng hạn',
+    onTimeRate: 'Tỷ lệ đúng hạn',
+    priorityDistribution: 'Phân bổ ưu tiên',
+    highPriority: 'Ưu tiên cao',
+    mediumPriority: 'Ưu tiên trung bình',
+    lowPriority: 'Ưu tiên thấp',
+    qualityAssessment: 'Đánh giá chất lượng',
+    ratedTasks: 'Công việc đã đánh giá',
+    noTasks: 'Không tìm thấy công việc cho tháng này',
+    noTeamTasks: 'Không tìm thấy công việc đội nhóm cho tháng này',
+    evaluateTask: 'Đánh giá Công việc',
+    selfAssessment: 'Tự đánh giá',
+    qualityRating: 'Xếp hạng chất lượng',
+    managerComments: 'Bình luận của Quản lý',
+    commentPlaceholder: 'Cung cấp phản hồi về chất lượng công việc và mục tiêu cá nhân...',
+    taskDetails: 'Chi tiết Công việc',
+    status: 'Trạng thái',
+    priority: 'Ưu tiên',
+    dueDate: 'Ngày đến hạn',
+    currentRating: 'Xếp hạng hiện tại',
+    submitEvaluation: 'Gửi Đánh giá',
+    cancel: 'Hủy',
+    evaluate: 'Đánh giá',
+    managerEvaluation: 'Đánh giá của Quản lý',
+    created: 'Đã tạo',
+    due: 'Đến hạn',
+    all: 'Tất cả',
+    pending: 'Đang chờ',
+    createGoal: 'Tạo Mục tiêu',
+    createGoalSubtitle: 'Đặt một mục tiêu mới cho nhân viên',
+    createPersonalGoal: 'Đặt một mục tiêu cá nhân mới',
+    assignTo: 'Giao cho',
+    goalTitle: 'Tiêu đề Mục tiêu',
+    goalTitlePlaceholder: 'Nhập tiêu đề mục tiêu...',
+    goalDescription: 'Mô tả',
+    goalDescriptionPlaceholder: 'Mô tả chi tiết mục tiêu...',
+    goalPermissionAdmin: 'Là quản trị viên/quản lý, bạn có thể tạo mục tiêu cho bất kỳ nhân viên nào',
+    goalPermissionEmployee: 'Bạn chỉ có thể tạo mục tiêu cho chính mình',
   },
 
   // Performance Appraisal Translation

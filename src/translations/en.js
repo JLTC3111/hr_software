@@ -2,6 +2,7 @@ export default {
   // Navigation
   nav: {
     menu: 'Menu',
+    workload: 'Work Management',
     timeClock: 'Time Clock',
     dashboard: 'Dashboard',
     employees: 'Employees',
@@ -1231,9 +1232,9 @@ export default {
     fillAllFields: 'Please fill all fields'
   },
 
-  // Workload Management
-  workload: {
-    title: 'Workload Management',
+  // Task Listing
+  taskListing: {
+    title: 'Task Listing',
     assignTo: 'Assign To',
     team: 'Team',
     selectEmployee: 'Select Employee',
@@ -1303,9 +1304,9 @@ export default {
     quality: 'Quality',
   },
 
-  // Task Performance Review
-  taskPerformance: {
-    title: 'Task Performance Review',
+  // Task Review
+  taskReview: {
+    title: 'Task Review',
     subtitle: 'Monthly task progress and quality evaluation',
     individual: 'Individual',
     team: 'Team',

@@ -2,6 +2,7 @@ export default {
   // Navigation
   nav: {
     menu: 'Menü',
+    workload: 'Arbeitsverwaltung',
     timeClock: 'Zeiterfassung',
     dashboard: 'Dashboard',
     employees: 'Mitarbeiter',
@@ -1017,9 +1018,9 @@ export default {
     weeklyReportDesc: 'Wöchentliche Zusammenfassung Ihrer Arbeitsaktivitäten erhalten'
   },
 
-  // Workload Management
-  workload: {
-    title: 'Arbeitsbelastungsverwaltung',
+  // Task Listing
+  taskListing: {
+    title: 'Aufgabenverwaltung',
     assignTo: 'Zuweisen an',
     team: 'Team',
     manageTasks: 'Aufgaben verwalten',
@@ -1219,9 +1220,9 @@ export default {
     fillAllFields: 'Bitte füllen Sie alle Felder aus'
   },
 
-  // Task Performance Review
-  taskPerformance: {
-    title: 'Aufgabenleistungsbewertung',
+  // Task Review
+  taskReview: {
+    title: 'Aufgabenbewertung',
     subtitle: 'Monatlicher Aufgabenfortschritt und Qualitätsbewertung',
     individual: 'Individuell',
     team: 'Team',
