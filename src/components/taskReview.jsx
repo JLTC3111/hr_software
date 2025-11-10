@@ -217,48 +217,48 @@ const TaskReview = ({ employees }) => {
               <BarChart3 className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.totalTasks}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>{t('taskReview.totalTasks', 'Total Tasks')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskReview.totalTasks')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <Users className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.totalEmployees}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>{t('taskReview.employees', 'Employees')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskReview.employees')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <CheckCircle className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.completed}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>{t('taskReview.completed', 'Completed')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskReview.completed')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <Clock className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.inProgress}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>{t('taskReview.inProgress', 'In Progress')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskReview.inProgress')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <TrendingUp className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.completionRate}%</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>{t('taskReview.completion', 'Completion')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskReview.completion')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <Star className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.avgQualityRating}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>{t('taskReview.quality', 'Quality')}</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskReview.quality')}</p>
           </div>
         </div>
       )}
       <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
         <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-          {t('taskReview.employeeBreakdown', 'Employee Task Breakdown')}
+          {t('taskReview.employeeBreakdown')}
         </h3>
         <div className="space-y-3">
           {Object.values(tasksByEmployee).filter(({ tasks }) => tasks.length > 0).map(({ employee, tasks: empTasks }) => {
@@ -279,21 +279,23 @@ const TaskReview = ({ employees }) => {
                       )}
                       <div className="flex-1">
                         <p className={`font-semibold ${text.primary}`}>{employee.name}</p>
-                        <p className={`text-xs ${text.secondary}`}>{employee.position} • {employee.department}</p>
+                        <p className={`text-xs ${text.secondary}`}>
+                          {t(`employeePosition.${employee.position}`) || employee.position} • {t(`employeeDepartment.${employee.department}`) || employee.department}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-6 text-sm">
                       <div className="text-center">
                         <p className={`font-semibold ${text.primary}`}>{empTasks.length}</p>
-                        <p className={`text-xs ${text.secondary}`}>Tasks</p>
+                        <p className={`text-xs ${text.secondary}`}>{t('taskReview.tasks')}</p>
                       </div>
                       <div className="text-center">
                         <p className={`font-semibold ${text.primary}`}>{progress}%</p>
-                        <p className={`text-xs ${text.secondary}`}>Progress</p>
+                        <p className={`text-xs ${text.secondary}`}>{t('taskReview.progress')}</p>
                       </div>
                       <div className="text-center">
                         <p className={`font-semibold ${text.primary}`}>{avgQuality}/5</p>
-                        <p className={`text-xs ${text.secondary}`}>Quality</p>
+                        <p className={`text-xs ${text.secondary}`}>{t('taskReview.quality')}</p>
                       </div>
                       {isExpanded ? <ChevronUp className={`w-5 h-5 ${text.secondary}`} /> : <ChevronDown className={`w-5 h-5 ${text.secondary}`} />}
                     </div>
@@ -322,7 +324,7 @@ const TaskReview = ({ employees }) => {
                                   <div className={`flex items-center space-x-2 ${text.secondary} text-xs`}>
                                     <Calendar className="w-4 h-4" />
                                     <div>
-                                      <p className="font-medium">Due Date</p>
+                                      <p className="font-medium">{t('taskReview.dueDate')}</p>
                                       <p className={text.primary}>{new Date(task.due_date).toLocaleDateString()}</p>
                                     </div>
                                   </div>
@@ -330,16 +332,16 @@ const TaskReview = ({ employees }) => {
                                 <div className={`flex items-center space-x-2 ${text.secondary} text-xs`}>
                                   <User className="w-4 h-4" />
                                   <div>
-                                    <p className="font-medium">Assigned To</p>
-                                    <p className={text.primary}>{employees.find(e => e.id === task.employee_id)?.name || 'Unknown'}</p>
+                                    <p className="font-medium">{t('taskReview.assignedTo')}</p>
+                                    <p className={text.primary}>{employees.find(e => e.id === task.employee_id)?.name || t('taskReview.unknown')}</p>
                                   </div>
                                 </div>
                                 {task.created_by && (
                                   <div className={`flex items-center space-x-2 ${text.secondary} text-xs`}>
                                     <UserCheck className="w-4 h-4" />
                                     <div>
-                                      <p className="font-medium">Assigned By</p>
-                                      <p className={text.primary}>{employees.find(e => e.id === task.created_by)?.name || 'Unknown'}</p>
+                                      <p className="font-medium">{t('taskReview.assignedBy')}</p>
+                                      <p className={text.primary}>{employees.find(e => e.id === task.created_by)?.name || t('taskReview.unknown')}</p>
                                     </div>
                                   </div>
                                 )}
@@ -347,7 +349,7 @@ const TaskReview = ({ employees }) => {
                                   <div className={`flex items-center space-x-2 ${text.secondary} text-xs`}>
                                     <Star className="w-4 h-4 text-yellow-400" />
                                     <div>
-                                      <p className="font-medium">Quality Rating</p>
+                                      <p className="font-medium">{t('taskReview.qualityRating')}</p>
                                       <p className={text.primary}>{task.quality_rating}/5 ⭐</p>
                                     </div>
                                   </div>
@@ -358,16 +360,16 @@ const TaskReview = ({ employees }) => {
                                 <div className={`mt-2 p-3 rounded ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'} border-l-4 border-blue-500`}>
                                   <p className={`text-xs font-semibold ${text.primary} mb-1 flex items-center space-x-1`}>
                                     <MessageSquare className="w-3 h-3" />
-                                    <span>Employee Self-Assessment:</span>
+                                    <span>{t('taskReview.employeeSelfAssessment')}:</span>
                                   </p>
                                   <p className={`text-sm ${text.secondary}`}>{task.self_assessment}</p>
                                 </div>
                               )}
                               {task.comments && (
-                                <div className={`mt-2 p-3 rounded ${isDarkMode ? 'bg-purple-900/20' : 'bg-purple-50'} border-l-4 border-purple-500`}>
+                                <div className={`mt-2 p-3 rounded ${isDarkMode ? 'bg-amber-600/20' : 'bg-amber-50'} border-l-4 border-amber-500`}>
                                   <p className={`text-xs font-semibold ${text.primary} mb-1 flex items-center space-x-1`}>
                                     <Award className="w-3 h-3" />
-                                    <span>Manager Evaluation:</span>
+                                    <span>{t('taskReview.managerEvaluation')}:</span>
                                   </p>
                                   <p className={`text-sm ${text.secondary}`}>{task.comments}</p>
                                 </div>
@@ -388,7 +390,7 @@ const TaskReview = ({ employees }) => {
                                 className={`ml-4 px-4 py-2 rounded-lg flex items-center space-x-2 ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white transition-colors cursor-pointer`}
                               >
                                 <Edit2 className="w-4 h-4" />
-                                <span>Review</span>
+                                <span>{t('taskReview.review')}</span>
                               </button>
                             )}
                           </div>
@@ -412,7 +414,7 @@ const TaskReview = ({ employees }) => {
     if (!selectedEmployee || !empData) {
       return (
         <div className={`${bg.secondary} rounded-lg p-8 text-center border ${border.primary}`}>
-          <p className={text.secondary}>Please select an employee to view tasks</p>
+          <p className={text.secondary}>{t('taskReview.selectEmployeeToView')}</p>
         </div>
       );
     }
@@ -429,7 +431,9 @@ const TaskReview = ({ employees }) => {
             )}
             <div>
               <h3 className={`text-xl font-bold ${text.primary}`}>{empData.employee.name}</h3>
-              <p className={`text-sm ${text.secondary}`}>{empData.employee.position} • {empData.employee.department}</p>
+              <p className={`text-sm ${text.secondary}`}>
+                {t(`employeePosition.${empData.employee.position}`) || empData.employee.position} • {t(`employeeDepartment.${empData.employee.department}`) || empData.employee.department}
+              </p>
             </div>
           </div>
         </div>
@@ -439,46 +443,46 @@ const TaskReview = ({ employees }) => {
               <List className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{stats.total || 0}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>Total</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskReview.total')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <CheckCircle className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{stats.completed || 0}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>Completed</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskReview.completed')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <Clock className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{stats.inProgress || 0}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>In Progress</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskReview.inProgress')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <AlertCircle className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{stats.overdue || 0}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>Overdue</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskReview.overdue')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <TrendingUp className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{stats.completionRate || 0}%</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>Completion</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskReview.completion')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <Star className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{stats.avgQualityRating || '0.0'}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>Quality</p>
+            <p className={`text-sm ${text.secondary}`}>{t('taskReview.quality')}</p>
           </div>
         </div>
         <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
-          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>Task List</h3>
+          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>{t('taskReview.taskList')}</h3>
           <div className="space-y-4">
             {empTasks.map(task => (
               <div key={task.id} className={`p-4 rounded border ${border.primary} ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-all hover:shadow-md`}>
@@ -497,7 +501,7 @@ const TaskReview = ({ employees }) => {
                         <div className={`flex items-center space-x-2 ${text.secondary} text-xs`}>
                           <Calendar className="w-4 h-4" />
                           <div>
-                            <p className="font-medium">Due Date</p>
+                            <p className="font-medium">{t('taskReview.dueDate')}</p>
                             <p className={text.primary}>{new Date(task.due_date).toLocaleDateString()}</p>
                           </div>
                         </div>
@@ -505,16 +509,16 @@ const TaskReview = ({ employees }) => {
                       <div className={`flex items-center space-x-2 ${text.secondary} text-xs`}>
                         <User className="w-4 h-4" />
                         <div>
-                          <p className="font-medium">Assigned To</p>
-                          <p className={text.primary}>{employees.find(e => e.id === task.employee_id)?.name || 'Unknown'}</p>
+                          <p className="font-medium">{t('taskReview.assignedTo')}</p>
+                          <p className={text.primary}>{employees.find(e => e.id === task.employee_id)?.name || t('taskReview.unknown')}</p>
                         </div>
                       </div>
                       {task.created_by && (
                         <div className={`flex items-center space-x-2 ${text.secondary} text-xs`}>
                           <UserCheck className="w-4 h-4" />
                           <div>
-                            <p className="font-medium">Assigned By</p>
-                            <p className={text.primary}>{employees.find(e => e.id === task.created_by)?.name || 'Unknown'}</p>
+                            <p className="font-medium">{t('taskReview.assignedBy')}</p>
+                            <p className={text.primary}>{employees.find(e => e.id === task.created_by)?.name || t('taskReview.unknown')}</p>
                           </div>
                         </div>
                       )}
@@ -522,7 +526,7 @@ const TaskReview = ({ employees }) => {
                         <div className={`flex items-center space-x-2 ${text.secondary} text-xs`}>
                           <Star className="w-4 h-4 text-yellow-400" />
                           <div>
-                            <p className="font-medium">Quality Rating</p>
+                            <p className="font-medium">{t('taskReview.qualityRating')}</p>
                             <p className={text.primary}>{task.quality_rating}/5 ⭐</p>
                           </div>
                         </div>
@@ -533,16 +537,16 @@ const TaskReview = ({ employees }) => {
                       <div className={`mt-2 p-3 rounded ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'} border-l-4 border-blue-500`}>
                         <p className={`text-xs font-semibold ${text.primary} mb-1 flex items-center space-x-1`}>
                           <MessageSquare className="w-3 h-3" />
-                          <span>Employee Self-Assessment:</span>
+                          <span>{t('taskReview.employeeSelfAssessment')}:</span>
                         </p>
                         <p className={`text-sm ${text.secondary}`}>{task.self_assessment}</p>
                       </div>
                     )}
                     {task.comments && (
-                      <div className={`mt-2 p-3 rounded ${isDarkMode ? 'bg-purple-900/20' : 'bg-purple-50'} border-l-4 border-purple-500`}>
+                      <div className={`mt-2 p-3 rounded ${isDarkMode ? 'bg-amber-600/20' : 'bg-amber-50'} border-l-4 border-amber-500`}>
                         <p className={`text-xs font-semibold ${text.primary} mb-1 flex items-center space-x-1`}>
                           <Award className="w-3 h-3" />
-                          <span>Manager Evaluation:</span>
+                          <span>{t('taskReview.managerEvaluation')}:</span>
                         </p>
                         <p className={`text-sm ${text.secondary}`}>{task.comments}</p>
                       </div>
@@ -571,7 +575,7 @@ const TaskReview = ({ employees }) => {
             ))}
             {empTasks.length === 0 && (
               <div className="text-center py-8">
-                <p className={text.secondary}>No tasks found for this employee</p>
+                <p className={text.secondary}>{t('taskReview.noTasksForEmployee')}</p>
               </div>
             )}
           </div>
@@ -594,7 +598,7 @@ const TaskReview = ({ employees }) => {
       const result = await workloadService.updateTask(reviewingTask.id, updateData);
 
       if (result.success) {
-        setSuccessMessage('Task review submitted successfully!');
+        setSuccessMessage(t('taskReview.reviewSubmitSuccess'));
         setReviewingTask(null);
         setReviewForm({ qualityRating: 0, managerComments: '', status: 'pending' });
         
@@ -609,12 +613,12 @@ const TaskReview = ({ employees }) => {
         // Clear success message after 3 seconds
         setTimeout(() => setSuccessMessage(''), 3000);
       } else {
-        setErrorMessage(result.error || 'Failed to submit review');
+        setErrorMessage(result.error || t('taskReview.reviewSubmitFailed'));
         setTimeout(() => setErrorMessage(''), 3000);
       }
     } catch (error) {
       console.error('Error submitting review:', error);
-      setErrorMessage('An error occurred while submitting the review');
+      setErrorMessage(t('taskReview.reviewSubmitError'));
       setTimeout(() => setErrorMessage(''), 3000);
     }
   };
@@ -675,8 +679,8 @@ const TaskReview = ({ employees }) => {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className={`text-2xl font-bold ${text.primary}`}>Task Review & Analysis</h2>
-          <p className={`text-sm ${text.secondary} mt-1`}>Comprehensive task tracking and performance evaluation</p>
+          <h2 className={`text-2xl font-bold ${text.primary}`}>{t('taskReview.title')}</h2>
+          <p className={`text-sm ${text.secondary} mt-1`}>{t('taskReview.subtitle')}</p>
         </div>
         {canViewAllEmployees && (
           <div className="flex space-x-2">
@@ -684,29 +688,37 @@ const TaskReview = ({ employees }) => {
               onClick={() => { setViewMode('organization'); setSelectedEmployee(null); }}
               className={`px-4 py-2 rounded-lg cursor-pointer transition-colors ${viewMode === 'organization' ? 'bg-blue-600 text-white' : isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
             >
-              <Users className="w-4 h-4 inline-block mr-2" />Organization
+              <Users className="w-4 h-4 inline-block mr-2" />{t('taskReview.organization')}
             </button>
             <button
-              onClick={() => setViewMode('individual')}
+              onClick={() => {
+                setViewMode('individual');
+                // Set logged-in user as default when switching to individual view
+                if (!selectedEmployee && user?.employeeId) {
+                  setSelectedEmployee(String(user.employeeId));
+                }
+              }}
               className={`px-4 py-2 rounded-lg cursor-pointer transition-colors ${viewMode === 'individual' ? 'bg-blue-600 text-white' : isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
             >
-              <User className="w-4 h-4 inline-block mr-2" />Individual
+              <User className="w-4 h-4 inline-block mr-2" />{t('taskReview.individual')}
             </button>
           </div>
         )}
       </div>
       {viewMode === 'individual' && canViewAllEmployees && (
         <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-          <label className={`block text-sm font-medium ${text.primary} mb-2`}>Select Employee</label>
+          <label className={`block text-sm font-medium ${text.primary} mb-2`}>{t('taskReview.selectEmployee')}</label>
           <select
             value={selectedEmployee || ''}
             onChange={(e) => setSelectedEmployee(e.target.value)}
             className={`w-full px-4 py-2 rounded-lg border ${border.primary} ${text.primary}`}
             style={{ backgroundColor: isDarkMode ? '#4b5563' : '#ffffff', color: isDarkMode ? '#ffffff' : '#111827' }}
           >
-            <option value="">Choose an employee...</option>
+            <option value="">{t('taskReview.chooseEmployee')}</option>
             {availableEmployees.map(emp => (
-              <option key={emp.id} value={emp.id}>{emp.name} - {emp.position}</option>
+              <option key={emp.id} value={emp.id}>
+                {emp.name} - {t(`employeePosition.${emp.position}`) || emp.position}
+              </option>
             ))}
           </select>
         </div>
@@ -715,18 +727,18 @@ const TaskReview = ({ employees }) => {
         <div className="flex flex-wrap items-center gap-4">
           <Filter className={`w-5 h-5 ${text.secondary}`} />
           <div className="flex items-center space-x-2">
-            <span className={`text-sm ${text.secondary}`}>Status:</span>
-            <button onClick={() => setFilterStatus('all')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'all' ? 'bg-blue-600 text-white' : bg.primary}`}>All</button>
-            <button onClick={() => setFilterStatus('completed')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'completed' ? 'bg-green-600 text-white' : bg.primary}`}>Completed</button>
-            <button onClick={() => setFilterStatus('in-progress')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'in-progress' ? 'bg-blue-600 text-white' : bg.primary}`}>In Progress</button>
-            <button onClick={() => setFilterStatus('pending')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'pending' ? 'bg-gray-600 text-white' : bg.primary}`}>Pending</button>
+            <span className={`text-sm ${text.secondary}`}>{t('taskReview.status')}:</span>
+            <button onClick={() => setFilterStatus('all')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'all' ? 'bg-blue-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.all')}</button>
+            <button onClick={() => setFilterStatus('completed')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'completed' ? 'bg-green-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.completed')}</button>
+            <button onClick={() => setFilterStatus('in-progress')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'in-progress' ? 'bg-blue-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.inProgress')}</button>
+            <button onClick={() => setFilterStatus('pending')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'pending' ? 'bg-gray-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.pending')}</button>
           </div>
           <div className="flex items-center space-x-2">
-            <span className={`text-sm ${text.secondary}`}>Priority:</span>
-            <button onClick={() => setFilterPriority('all')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'all' ? 'bg-blue-600 text-white' : bg.primary}`}>All</button>
-            <button onClick={() => setFilterPriority('high')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'high' ? 'bg-red-600 text-white' : bg.primary}`}>High</button>
-            <button onClick={() => setFilterPriority('medium')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'medium' ? 'bg-yellow-600 text-white' : bg.primary}`}>Medium</button>
-            <button onClick={() => setFilterPriority('low')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'low' ? 'bg-green-600 text-white' : bg.primary}`}>Low</button>
+            <span className={`text-sm ${text.secondary}`}>{t('taskReview.priority')}:</span>
+            <button onClick={() => setFilterPriority('all')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'all' ? 'bg-blue-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.all')}</button>
+            <button onClick={() => setFilterPriority('high')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'high' ? 'bg-red-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.high')}</button>
+            <button onClick={() => setFilterPriority('medium')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'medium' ? 'bg-yellow-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.medium')}</button>
+            <button onClick={() => setFilterPriority('low')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'low' ? 'bg-green-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.low')}</button>
           </div>
         </div>
       </div>
@@ -742,7 +754,7 @@ const TaskReview = ({ employees }) => {
           <div ref={reviewModalRef} className={`${bg.secondary} rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border ${border.primary}`}>
             <div className={`sticky top-0 ${bg.secondary} border-b ${border.primary} px-6 py-4 flex items-center justify-between`}>
               <div>
-                <h3 className={`text-xl font-bold ${text.primary}`}>Review Task</h3>
+                <h3 className={`text-xl font-bold ${text.primary}`}>{t('taskReview.reviewTask')}</h3>
                 <p className={`text-sm ${text.secondary} mt-1`}>{reviewingTask.title}</p>
               </div>
               <button
@@ -761,37 +773,37 @@ const TaskReview = ({ employees }) => {
               <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} border ${border.primary}`}>
                 <h4 className={`font-semibold ${text.primary} mb-3 flex items-center space-x-2`}>
                   <Eye className="w-4 h-4" />
-                  <span>Task Details</span>
+                  <span>{t('taskReview.taskDetails')}</span>
                 </h4>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <p className={`${text.secondary} font-medium`}>Assigned To:</p>
-                    <p className={text.primary}>{employees.find(e => e.id === reviewingTask.employee_id)?.name || 'Unknown'}</p>
+                    <p className={`${text.secondary} font-medium`}>{t('taskReview.assignedTo')}:</p>
+                    <p className={text.primary}>{employees.find(e => e.id === reviewingTask.employee_id)?.name || t('taskReview.unknown')}</p>
                   </div>
                   <div>
-                    <p className={`${text.secondary} font-medium`}>Assigned By:</p>
-                    <p className={text.primary}>{employees.find(e => e.id === reviewingTask.created_by)?.name || 'Unknown'}</p>
+                    <p className={`${text.secondary} font-medium`}>{t('taskReview.assignedBy')}:</p>
+                    <p className={text.primary}>{employees.find(e => e.id === reviewingTask.created_by)?.name || t('taskReview.unknown')}</p>
                   </div>
                   {reviewingTask.due_date && (
                     <div>
-                      <p className={`${text.secondary} font-medium`}>Due Date:</p>
+                      <p className={`${text.secondary} font-medium`}>{t('taskReview.dueDate')}:</p>
                       <p className={text.primary}>{new Date(reviewingTask.due_date).toLocaleDateString()}</p>
                     </div>
                   )}
                   <div>
-                    <p className={`${text.secondary} font-medium`}>Priority:</p>
+                    <p className={`${text.secondary} font-medium`}>{t('taskReview.priority')}:</p>
                     <span className={`px-2 py-0.5 rounded text-xs ${getPriorityColor(reviewingTask.priority)}`}>{reviewingTask.priority}</span>
                   </div>
                 </div>
                 {reviewingTask.description && (
                   <div className="mt-3">
-                    <p className={`${text.secondary} font-medium`}>Description:</p>
+                    <p className={`${text.secondary} font-medium`}>{t('taskReview.description')}:</p>
                     <p className={`${text.primary} text-sm mt-1`}>{reviewingTask.description}</p>
                   </div>
                 )}
                 {reviewingTask.self_assessment && (
                   <div className={`mt-3 p-3 rounded ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'} border-l-4 border-blue-500`}>
-                    <p className={`${text.primary} font-semibold text-sm mb-1`}>Employee Self-Assessment:</p>
+                    <p className={`${text.primary} font-semibold text-sm mb-1`}>{t('taskReview.employeeSelfAssessment')}:</p>
                     <p className={`${text.secondary} text-sm`}>{reviewingTask.self_assessment}</p>
                   </div>
                 )}
@@ -800,7 +812,7 @@ const TaskReview = ({ employees }) => {
               {/* Quality Rating */}
               <div>
                 <label className={`block text-sm font-semibold ${text.primary} mb-3`}>
-                  Quality Rating (1-5 Stars)
+                  {t('taskReview.qualityRatingStars')}
                 </label>
                 <div className="flex items-center space-x-2">
                   {[1, 2, 3, 4, 5].map(rating => (
@@ -813,7 +825,7 @@ const TaskReview = ({ employees }) => {
                     </button>
                   ))}
                   <span className={`ml-4 ${text.primary} font-semibold text-lg`}>
-                    {reviewForm.qualityRating > 0 ? `${reviewForm.qualityRating}/5` : 'Not rated'}
+                    {reviewForm.qualityRating > 0 ? `${reviewForm.qualityRating}/5` : t('taskReview.notRated')}
                   </span>
                 </div>
               </div>
@@ -821,7 +833,7 @@ const TaskReview = ({ employees }) => {
               {/* Status Update */}
               <div>
                 <label className={`block text-sm font-semibold ${text.primary} mb-2`}>
-                  Update Status
+                  {t('taskReview.updateStatus')}
                 </label>
                 <select
                   value={reviewForm.status}
@@ -829,21 +841,21 @@ const TaskReview = ({ employees }) => {
                   className={`w-full px-4 py-2 rounded-lg border ${border.primary} ${text.primary}`}
                   style={{ backgroundColor: isDarkMode ? '#4b5563' : '#ffffff', color: isDarkMode ? '#ffffff' : '#111827' }}
                 >
-                  <option value="pending">Pending</option>
-                  <option value="in-progress">In Progress</option>
-                  <option value="completed">Completed</option>
+                  <option value="pending">{t('taskReview.pending')}</option>
+                  <option value="in-progress">{t('taskReview.inProgress')}</option>
+                  <option value="completed">{t('taskReview.completed')}</option>
                 </select>
               </div>
 
               {/* Manager Comments */}
               <div>
                 <label className={`block text-sm font-semibold ${text.primary} mb-2`}>
-                  Manager Evaluation & Comments
+                  {t('taskReview.managerEvaluationComments')}
                 </label>
                 <textarea
                   value={reviewForm.managerComments}
                   onChange={(e) => setReviewForm({ ...reviewForm, managerComments: e.target.value })}
-                  placeholder="Provide detailed feedback on task performance, quality, and areas for improvement..."
+                  placeholder={t('taskReview.feedbackPlaceholder')}
                   rows={6}
                   className={`w-full px-4 py-2 rounded-lg border ${border.primary} ${text.primary} resize-none`}
                   style={{ backgroundColor: isDarkMode ? '#4b5563' : '#ffffff', color: isDarkMode ? '#ffffff' : '#111827' }}
@@ -860,14 +872,14 @@ const TaskReview = ({ employees }) => {
                   className={`px-6 py-2 rounded-lg border ${border.primary} ${text.primary} hover:${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} transition-colors cursor-pointer flex items-center space-x-2`}
                 >
                   <X className="w-4 h-4" />
-                  <span>Cancel</span>
+                  <span>{t('taskReview.cancel')}</span>
                 </button>
                 <button
                   onClick={handleReviewSubmit}
                   className={`px-6 py-2 rounded-lg ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white transition-colors cursor-pointer flex items-center space-x-2`}
                 >
                   <Save className="w-4 h-4" />
-                  <span>Submit Review</span>
+                  <span>{t('taskReview.submitReview')}</span>
                 </button>
               </div>
             </div>

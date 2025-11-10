@@ -29,10 +29,8 @@ const TaskListing = ({ employees }) => {
     ? employees 
     : employees.filter(emp => String(emp.id) === String(user?.employeeId || user?.id));
 
-  // Set selected employee based on role
-  const [selectedEmployee, setSelectedEmployee] = useState(
-    availableEmployees[0]?.id ? String(availableEmployees[0].id) : null
-  );
+  // Set selected employee - default to logged-in user's employeeId
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
   
   // Task form state
   const [taskForm, setTaskForm] = useState({
@@ -44,12 +42,30 @@ const TaskListing = ({ employees }) => {
     selfAssessment: '',
     qualityRating: 0,
     comments: '',
-    assignedTo: selectedEmployee // For admin/manager task assignment
+    assignedTo: null // For admin/manager task assignment
   });
 
   // Check if user is admin or manager
   const canAssignTasks = user?.role === 'admin' || user?.role === 'manager';
   const canViewOrganization = checkPermission('canViewReports'); // Only admin/manager can view organization tab
+
+  // Set logged-in user as default selected employee on mount
+  useEffect(() => {
+    if (user && employees.length > 0 && !selectedEmployee) {
+      const userEmployeeId = String(user.employeeId || user.id);
+      const userEmployee = employees.find(emp => String(emp.id) === userEmployeeId);
+      
+      if (userEmployee) {
+        setSelectedEmployee(String(userEmployee.id));
+        // Also set as default assignedTo in task form
+        setTaskForm(prev => ({ ...prev, assignedTo: String(userEmployee.id) }));
+      } else if (availableEmployees.length > 0) {
+        // Fallback to first available employee if user's employee record not found
+        setSelectedEmployee(String(availableEmployees[0].id));
+        setTaskForm(prev => ({ ...prev, assignedTo: String(availableEmployees[0].id) }));
+      }
+    }
+  }, [user, employees, availableEmployees, selectedEmployee]);
 
   // Load tasks from backend
   const fetchTasks = async () => {
@@ -78,7 +94,9 @@ const TaskListing = ({ employees }) => {
   };
 
   useEffect(() => {
-    fetchTasks();
+    if (selectedEmployee) {
+      fetchTasks();
+    }
   }, [viewMode, selectedEmployee]);
 
   // Subscribe to real-time task updates
