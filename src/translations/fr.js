@@ -425,6 +425,7 @@ export default {
     title: 'Rapports et analyses',
     achieved: 'Atteint',
     pending: 'En attente',
+    personalGoals: 'Objectifs personnels',
     totalGoals: 'Objectifs totaux',
     completedTasks: 'Tâches terminées',
     avgProgress: 'Progrès moyen',

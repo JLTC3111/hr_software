@@ -447,6 +447,7 @@ login: {
   reports: {
     title: 'Informes y Análisis',
     achieved: 'Logrado',
+    personalGoals: 'Metas Personales',
     total: 'Total',
     avgProgress: 'Progreso Promedio',
     type: 'Tipo de Informe', 

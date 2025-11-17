@@ -629,6 +629,8 @@ export default {
   // Reports
   reports: {
     title: 'Reports & Analytics',
+    personalGoals: 'Personal Goals',
+    attendance: 'Attendance',
     timeEntry: 'Time Entries',
     timeEntries: 'Time Entries Report',
     performanceSummary: 'Performance Summary',

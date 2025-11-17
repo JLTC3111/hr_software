@@ -369,6 +369,7 @@ export default {
     title: 'レポート・分析',
     achieved: '達成',
     avgProgress: '平均進捗',
+    personalGoals: '個人目標',
     type: 'レポートタイプ',
     task: 'タスク',
     category: 'カテゴリー',

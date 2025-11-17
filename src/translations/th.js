@@ -368,6 +368,7 @@ export default {
     title: 'รายงานและการวิเคราะห์',
     achieved: 'ที่บรรลุ',
     avgProgress: 'ความคืบหน้าเฉลี่ย',
+    personalGoals: 'เป้าหมายส่วนบุคคล',
     type: 'ประเภทของรายงาน',
     category: 'หมวดหมู่',
     progress: 'ความคืบหน้า',

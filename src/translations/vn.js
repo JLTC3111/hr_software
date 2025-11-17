@@ -416,6 +416,7 @@ export default {
     title: 'Báo cáo và phân tích',
     achieved: 'Đã đạt được',
     avgProgress: 'Tiến độ trung bình',
+    personalGoals: 'Mục Tiêu Cá Nhân',
     type: 'Loại báo cáo',
     goal: 'Mục tiêu',
     progress: 'Tiến độ',

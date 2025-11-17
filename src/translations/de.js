@@ -399,6 +399,7 @@ export default {
   reports: {
     title: 'Berichte & Analysen',
     achieved: 'Erreicht',
+    personalGoals: 'Persönliche Ziele',
     avgProgress: 'Durchschnittlicher Fortschritt',
     type: 'Typ',
     task: 'Aufgabe',

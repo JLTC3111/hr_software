@@ -38,7 +38,7 @@ import performanceService from '../services/performanceService';
 import { supabase } from '../config/supabaseClient';
 
 const Reports = () => {
-  const { t } = useLanguage();
+  const { t, currentLanguage } = useLanguage();
   const { isDarkMode } = useTheme();
   
   // Helper function to translate department values
@@ -1306,15 +1306,58 @@ const Reports = () => {
     try {
       const doc = new jsPDF('p', 'mm', 'a4');
       
-      // ENHANCED: Unicode font support for CJK (Chinese/Japanese/Korean), Thai, Vietnamese, and special characters
+      // ENHANCED: Language-specific font loading for proper Unicode support
       let unicodeFontLoaded = false;
       
+      // Determine which font to load based on current language
+      const getFontUrlForLanguage = (lang) => {
+        switch (lang) {
+          case 'jp':
+            return {
+              primary: 'https://cdn.jsdelivr.net/gh/googlefonts/noto-cjk/NotoSansJP-Regular.otf',
+              fallback: 'https://fonts.gstatic.com/s/notosansjp/v52/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFBEi75vY0rw-oME.woff2',
+              name: 'Noto Sans JP'
+            };
+          case 'kr':
+            return {
+              primary: 'https://cdn.jsdelivr.net/gh/googlefonts/noto-cjk/NotoSansKR-Regular.otf',
+              fallback: 'https://fonts.gstatic.com/s/notosanskr/v36/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyeLTq8H4hfeE.woff2',
+              name: 'Noto Sans KR'
+            };
+          case 'th':
+            return {
+              primary: 'https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSansThai/NotoSansThai-Regular.ttf',
+              fallback: 'https://fonts.gstatic.com/s/notosansthai/v20/iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RtpzF-QRvzzXg.woff2',
+              name: 'Noto Sans Thai'
+            };
+          case 'ru':
+            return {
+              primary: 'https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSans/NotoSans-Regular.ttf',
+              fallback: 'https://fonts.gstatic.com/s/notosans/v30/o-0IIpQlx3QUlC5A4PNr5TRG.ttf',
+              name: 'Noto Sans'
+            };
+          case 'vn':
+          case 'en':
+          case 'de':
+          case 'fr':
+          case 'es':
+          default:
+            return {
+              primary: 'https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSans/NotoSans-Regular.ttf',
+              fallback: 'https://fonts.gstatic.com/s/notosans/v30/o-0IIpQlx3QUlC5A4PNr5TRG.ttf',
+              name: 'Noto Sans'
+            };
+        }
+      };
+      
+      const fontConfig = getFontUrlForLanguage(currentLanguage);
+      
       try {
-        // Option 1: Try loading Noto Sans from CDN (supports Thai, Vietnamese, Japanese, Korean, etc.)
-        const fontUrl = 'https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSans/NotoSans-Regular.ttf';
+        console.log(`Loading ${fontConfig.name} for language: ${currentLanguage}`);
         
-        const fontResponse = await fetch(fontUrl);
-        if (!fontResponse.ok) throw new Error('Font fetch failed');
+        // Try loading primary font URL
+        const fontResponse = await fetch(fontConfig.primary);
+        if (!fontResponse.ok) throw new Error('Primary font fetch failed');
         
         const fontData = await fontResponse.arrayBuffer();
         const base64Font = btoa(
@@ -1326,14 +1369,13 @@ const Reports = () => {
         doc.setFont('NotoSans');
         unicodeFontLoaded = true;
         
-        console.log('✓ Unicode font (Noto Sans) loaded successfully for PDF export');
+        console.log(`✓ ${fontConfig.name} loaded successfully for PDF export`);
       } catch (fontError) {
-        console.warn('Failed to load Unicode font from CDN, trying fallback...', fontError);
+        console.warn(`Failed to load ${fontConfig.name} from primary CDN, trying fallback...`, fontError);
         
-        // Option 2: Fallback to alternative CDN
+        // Try fallback URL
         try {
-          const fallbackUrl = 'https://fonts.gstatic.com/s/notosans/v30/o-0IIpQlx3QUlC5A4PNr5TRG.ttf';
-          const fontResponse = await fetch(fallbackUrl);
+          const fontResponse = await fetch(fontConfig.fallback);
           
           if (fontResponse.ok) {
             const fontData = await fontResponse.arrayBuffer();
@@ -1346,7 +1388,7 @@ const Reports = () => {
             doc.setFont('NotoSans');
             unicodeFontLoaded = true;
             
-            console.log('✓ Unicode font loaded from fallback CDN');
+            console.log(`✓ ${fontConfig.name} loaded from fallback CDN`);
           }
         } catch (fallbackError) {
           console.warn('Fallback font also failed, using sanitization:', fallbackError);
