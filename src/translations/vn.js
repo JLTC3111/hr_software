@@ -176,7 +176,8 @@ export default {
   timeTracking: {
     title: 'Bảng Điều Khiển',
     overview: 'Tổng quan',
-    clockIn: 'Chấm công',
+    clockIn: 'Giờ Vào',
+    clockOut: 'Giờ Ra',
     summary: 'Tóm Tắt',
     quickActions: 'Chức Năng',
     workDays: 'Ngày Làm Việc',

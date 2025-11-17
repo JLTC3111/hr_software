@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useLanguage } from "../contexts/LanguageContext";
+import { useLanguage, SUPPORTED_LANGUAGES } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from '../contexts/AuthContext';
 import { 
@@ -408,8 +408,20 @@ const Reports = () => {
   // CSV Export function
   const exportToCSV = (data, filename, headers) => {
     try {
+      const languageName = SUPPORTED_LANGUAGES[currentLanguage]?.name || 'English';
       const csvContent = [
-        headers.join(','),
+        // Add metadata row
+        `"${t('reports.language', 'Report Language')}: ${languageName}"`,
+        `"${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}"`,
+        '', // Empty row for separation
+        // Add headers
+        headers.map(header => {
+          // Escape and quote header if needed
+          return typeof header === 'string' && (header.includes(',') || header.includes('"')) 
+            ? `"${header.replace(/"/g, '""')}"` 
+            : header;
+        }).join(','),
+        // Add data rows
         ...data.map(row => 
           headers.map(header => {
             const value = row[header] || '';
@@ -460,7 +472,7 @@ const Reports = () => {
         `_${reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_')}` : 
         '';
       
-      const filename = `time_entries${employeeName}_${filters.startDate}_to_${filters.endDate}.csv`;
+      const filename = `time_entries${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.csv`;
       const headers = Object.keys(exportData[0] || {});
       
       exportToCSV(exportData, filename, headers);
@@ -494,7 +506,7 @@ const Reports = () => {
         `_${reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_')}` : 
         '';
       
-      const filename = `tasks${employeeName}_${filters.startDate}_to_${filters.endDate}.csv`;
+      const filename = `tasks${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.csv`;
       const headers = Object.keys(exportData[0] || {});
       
       exportToCSV(exportData, filename, headers);
@@ -528,7 +540,7 @@ const Reports = () => {
         `_${reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_')}` : 
         '';
       
-      const filename = `personal_goals${employeeName}_${filters.startDate}_to_${filters.endDate}.csv`;
+      const filename = `personal_goals${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.csv`;
       const headers = Object.keys(exportData[0] || {});
       
       exportToCSV(exportData, filename, headers);
@@ -580,6 +592,12 @@ const Reports = () => {
       
       summarySheet.getCell(`A${currentRow}`).value = 'Employee:';
       summarySheet.getCell(`B${currentRow}`).value = selectedEmployee === 'all' ? 'All Employees' : employeeName;
+      summarySheet.getCell(`A${currentRow}`).font = { bold: true };
+      currentRow++;
+      
+      const languageName = SUPPORTED_LANGUAGES[currentLanguage]?.name || 'English';
+      summarySheet.getCell(`A${currentRow}`).value = 'Report Language:';
+      summarySheet.getCell(`B${currentRow}`).value = languageName;
       summarySheet.getCell(`A${currentRow}`).font = { bold: true };
       currentRow += 2;
       
@@ -1119,7 +1137,7 @@ const Reports = () => {
       }
 
       // Write the file with ExcelJS
-      const filename = `HR_Report_${employeeName}_${filters.startDate}_to_${filters.endDate}.xlsx`;
+      const filename = `HR_Report_${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.xlsx`;
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = URL.createObjectURL(blob);
@@ -1760,6 +1778,7 @@ const Reports = () => {
 
       // Footer on all pages
       const pageCount = doc.internal.getNumberOfPages();
+      const languageName = SUPPORTED_LANGUAGES[currentLanguage]?.name || 'English';
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
@@ -1770,10 +1789,17 @@ const Reports = () => {
           pageHeight - 10,
           { align: 'center' }
         );
+        // Add language indicator on the right
+        doc.text(
+          `${t('reports.language', 'Language')}: ${languageName}`,
+          pageWidth - 15,
+          pageHeight - 10,
+          { align: 'right' }
+        );
       }
 
       // Save the PDF
-      const filename = `HR_Report_${employeeName}_${filters.startDate}_to_${filters.endDate}.pdf`;
+      const filename = `HR_Report_${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.pdf`;
       doc.save(filename);
       
       alert(t('reports.pdfExportSuccess', 'PDF report exported successfully!'));
