@@ -425,10 +425,10 @@ const AddNewEmployee = ({ refetchEmployees }) => {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div><p className={`text-sm ${text.secondary}`}>Email</p><p className={text.primary}>{formData.email}</p></div>
-                  <div><p className={`text-sm ${text.secondary}`}>Phone</p><p className={text.primary}>{formData.phone}</p></div>
-                  <div><p className={`text-sm ${text.secondary}`}>Department</p><p className={text.primary}>{departments.find(d => d.value === formData.department)?.label}</p></div>
-                  <div><p className={`text-sm ${text.secondary}`}>Salary</p><p className={text.primary}>${parseFloat(formData.salary).toLocaleString()}</p></div>
+                  <div><p className={`text-sm ${text.secondary}`}>{t('employees.email')}</p><p className={text.primary}>{formData.email}</p></div>
+                  <div><p className={`text-sm ${text.secondary}`}>{t('employees.phone')}</p><p className={text.primary}>{formData.phone}</p></div>
+                  <div><p className={`text-sm ${text.secondary}`}>{t('employees.department')}</p><p className={text.primary}>{departments.find(d => d.value === formData.department)?.label}</p></div>
+                  <div><p className={`text-sm ${text.secondary}`}>{t('employees.salary')}</p><p className={text.primary}>${parseFloat(formData.salary).toLocaleString()}</p></div>
                 </div>
               </div>
               {errors.submit && <div className="bg-red-100 border border-red-500 text-red-700 px-4 py-3 rounded flex items-start space-x-2"><AlertCircle className="h-5 w-5" /><span>{errors.submit}</span></div>}
