@@ -429,6 +429,7 @@ export default {
   // Reports
   reports: {
     title: 'Rapports et analyses',
+    language: 'Langue',
     achieved: 'Atteint',
     pending: 'En attente',
     personalGoals: 'Objectifs personnels',

@@ -372,6 +372,7 @@ export default {
   // Reports
   reports: {
     title: 'รายงานและการวิเคราะห์',
+    language: 'ภาษา',
     achieved: 'ที่บรรลุ',
     avgProgress: 'ความคืบหน้าเฉลี่ย',
     personalGoals: 'เป้าหมายส่วนบุคคล',

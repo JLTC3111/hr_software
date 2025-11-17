@@ -437,6 +437,7 @@ export default {
   reports: {
     title: 'Отчёты и аналитика',
     achieved: 'Достигнуто',
+    language: 'Язык',
     avgProgress: 'Средний прогресс',
     personalGoals: 'Личные цели',
     totalGoals: 'Всего целей',

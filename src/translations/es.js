@@ -453,6 +453,7 @@ login: {
   reports: {
     title: 'Informes y Análisis',
     achieved: 'Logrado',
+    language: 'Idioma',
     personalGoals: 'Metas Personales',
     total: 'Total',
     avgProgress: 'Progreso Promedio',

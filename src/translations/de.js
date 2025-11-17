@@ -404,6 +404,7 @@ export default {
   reports: {
     title: 'Berichte & Analysen',
     achieved: 'Erreicht',
+    language: 'Sprache',
     personalGoals: 'Persönliche Ziele',
     avgProgress: 'Durchschnittlicher Fortschritt',
     type: 'Typ',

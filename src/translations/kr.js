@@ -376,6 +376,7 @@ export default {
   reports: {
     title: '보고서 및 분석',
     achieved: '달성됨', 
+    language: '언어',
     avgProgress: '평균 진행률',
     personalGoals: '개인 목표',
     type: '보고서 유형',

@@ -472,7 +472,8 @@ const Reports = () => {
         `_${reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_')}` : 
         '';
       
-      const filename = `time_entries${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.csv`;
+      const reportType = t('reports.timeEntries', 'Time Entries').replace(/\s+/g, '_');
+      const filename = `${reportType}${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.csv`;
       const headers = Object.keys(exportData[0] || {});
       
       exportToCSV(exportData, filename, headers);
@@ -506,7 +507,8 @@ const Reports = () => {
         `_${reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_')}` : 
         '';
       
-      const filename = `tasks${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.csv`;
+      const reportType = t('reports.tasks', 'Tasks').replace(/\s+/g, '_');
+      const filename = `${reportType}${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.csv`;
       const headers = Object.keys(exportData[0] || {});
       
       exportToCSV(exportData, filename, headers);
@@ -540,7 +542,8 @@ const Reports = () => {
         `_${reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_')}` : 
         '';
       
-      const filename = `personal_goals${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.csv`;
+      const reportType = t('reports.personalGoals', 'Personal Goals').replace(/\s+/g, '_');
+      const filename = `${reportType}${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.csv`;
       const headers = Object.keys(exportData[0] || {});
       
       exportToCSV(exportData, filename, headers);

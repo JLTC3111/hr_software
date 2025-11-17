@@ -373,6 +373,7 @@ export default {
   // Reports
   reports: {
     title: 'レポート・分析',
+    language: '言語',
     achieved: '達成',
     avgProgress: '平均進捗',
     personalGoals: '個人目標',
