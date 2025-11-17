@@ -1143,6 +1143,11 @@ export default {
     completedTasks: '完了したタスク',
     inProgressTasks: '進行中のタスク',
     overdueTasks: '期限超過のタスク',
+    category: 'カテゴリー',
+    targetDate: '目標日',
+    notes: 'ノート',
+    createdAt: '作成日',
+    updatedAt: '更新日',
   },
 
   // Performance Appraisal Translation

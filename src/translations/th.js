@@ -1162,6 +1162,11 @@ export default {
     inProgressTasks: 'งานที่กำลังดำเนินการ',
     overdueTasks: 'งานที่เกินกำหนด',
     avgQualityRating: 'คะแนนคุณภาพเฉลี่ย',
+    category: 'หมวดหมู่',
+    targetDate: 'วันที่เป้าหมาย',
+    notes: 'บันทึก',
+    createdAt: 'สร้างเมื่อ',
+    updatedAt: 'อัปเดตเมื่อ'
   },
 
   // Performance Appraisal Translation

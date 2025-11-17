@@ -1273,6 +1273,11 @@ export default {
     inProgressTasks: 'Nhiệm vụ đang tiến hành',
     overdueTasks: 'Nhiệm vụ quá hạn',
     avgQualityRating: 'Đánh giá chất lượng TB',
+    category: 'Danh Mục',
+    targetDate: 'Ngày Mục Tiêu',
+    notes: 'Ghi Chú',
+    createdAt: 'Ngày Tạo',
+    updatedAt: 'Ngày Cập Nhật',
   },
 
   // Performance Appraisal Translation

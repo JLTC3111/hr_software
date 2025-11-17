@@ -1142,6 +1142,11 @@ export default {
     completedOnTime: 'Завершено вовремя',
     completedLate: 'Завершено с опозданием',
     notCompleted: 'Не завершено',
+    category: 'Категория',
+    targetDate: 'Целевая дата',
+    notes: 'Заметки',
+    createdAt: 'Создано',
+    updatedAt: 'Обновлено'
   },
 
   // Performance Appraisal Translation

@@ -1246,6 +1246,11 @@ export default {
     pendingTasks: 'tâches en attente',
     inProgressTasks: 'tâches en cours',
     overdueTasks: 'tâches en retard',
+    category: 'Catégorie',
+    targetDate: 'Date Cible',
+    notes: 'Notes',
+    createdAt: 'Créé le',
+    updatedAt: 'Mis à jour le'
   },
 
   // Performance Appraisal Translation

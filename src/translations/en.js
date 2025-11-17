@@ -1454,6 +1454,11 @@ export default {
     taskList: 'Task List',
     employeeSelfAssessment: 'Employee Self Assessment',
     employeeBreakdown: 'Employee Breakdown',
+    category: 'Category',
+    targetDate: 'Target Date',
+    notes: 'Notes',
+    createdAt: 'Created At',
+    updatedAt: 'Updated At',
   },
 
   // Performance Appraisal Translation

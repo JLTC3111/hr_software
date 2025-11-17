@@ -1338,6 +1338,11 @@ export default {
     reviewSubmitSuccess: 'Aufgabenbewertung erfolgreich eingereicht!',
     reviewSubmitFailed: 'Bewertung konnte nicht eingereicht werden',
     reviewSubmitError: 'Ein Fehler ist beim Einreichen der Bewertung aufgetreten',
+    category: 'Kategorie',
+    targetDate: 'Zieldatum',
+    notes: 'Notizen:', 
+    createdAt: 'Erstellt am',
+    updatedAt: 'Aktualisiert am',
   },
 
   // Morphing Showcase

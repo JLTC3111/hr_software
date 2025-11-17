@@ -412,7 +412,7 @@ const Reports = () => {
       const csvContent = [
         // Add metadata row
         `"${t('reports.language', 'Report Language')}: ${languageName}"`,
-        `"${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}"`,,
+        `"${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}"`,
         '', // Empty row for separation
         // Add headers
         headers.map(header => {
@@ -464,7 +464,7 @@ const Reports = () => {
         [t('timeTracking.amountHours', 'Hours')]: entry.hours || 0,
         [t('timeTracking.hourType', 'Hour Type')]: translateHourType(entry.hour_type) || '',
         [t('timeTracking.status', 'Status')]: translateStatus(entry.status) || '',
-        [t('timeTracking.notes', 'Notes')]: entry.notes || '',
+        [t('timeTracking.notes', 'Notes')]: translateNotes(entry.notes) || '',
         [t('timeTracking.createdAt', 'Created At')]: new Date(entry.created_at).toLocaleString()
       }));
 
@@ -533,8 +533,8 @@ const Reports = () => {
         [t('taskReview.status', 'Status')]: translateStatus(goal.status) || '',
         [t('taskReview.progress', 'Progress')]: goal.progress || 0,
         [t('taskReview.notes', 'Notes')]: goal.notes || '',
-        [t('general.createdAt', 'Created At')]: new Date(goal.created_at).toLocaleString(),
-        [t('general.updatedAt', 'Updated At')]: new Date(goal.updated_at).toLocaleString()
+        [t('taskReview.createdAt', 'Created At')]: new Date(goal.created_at).toLocaleString(),
+        [t('taskReview.updatedAt', 'Updated At')]: new Date(goal.updated_at).toLocaleString()
       }));
 
       const employeeName = selectedEmployee !== 'all' ? 
@@ -1318,6 +1318,18 @@ const Reports = () => {
       default:
         return priority;
     }
+  };
+
+  // Helper function to translate notes with "Entered by admin:" prefix
+  const translateNotes = (notes) => {
+    if (!notes) return '';
+    // Check if notes starts with "Entered by admin:"
+    const adminPrefix = 'Entered by admin:';
+    if (notes.startsWith(adminPrefix)) {
+      const translatedPrefix = t('timeTracking.enteredByAdmin', 'Entered by admin:');
+      return notes.replace(adminPrefix, translatedPrefix);
+    }
+    return notes;
   };
 
   // PDF Export with Charts and Tables

@@ -1075,6 +1075,11 @@ login: {
     avgQuality: 'Calidad Promedio',
     noGoals: 'No se encontraron metas para este mes',
     noPersonalGoals: 'No se encontraron metas personales para este mes',
+    category: 'Categoría',
+    targetDate: 'Fecha Objetivo',
+    notes: 'Notas',
+    createdAt: 'Creado En',
+    updatedAt: 'Actualizado En'
   },
 
   // Settings
