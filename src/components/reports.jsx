@@ -412,7 +412,7 @@ const Reports = () => {
       const csvContent = [
         // Add metadata row
         `"${t('reports.language', 'Report Language')}: ${languageName}"`,
-        `"${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}"`,
+        `"${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}"`,,
         '', // Empty row for separation
         // Add headers
         headers.map(header => {
@@ -497,10 +497,9 @@ const Reports = () => {
         [t('taskListing.priority', 'Priority')]: translatePriority(task.priority) || '',
         [t('taskListing.status', 'Status')]: translateStatus(task.status) || '',
         [t('taskListing.dueDate', 'Due Date')]: task.due_date || '',
-        [t('taskListing.estimatedHours', 'Estimated Hours')]: task.estimated_hours || '',
-        [t('taskListing.actualHours', 'Actual Hours')]: task.actual_hours || '',
-        [t('general.createdAt', 'Created At')]: new Date(task.created_at).toLocaleString(),
-        [t('general.updatedAt', 'Updated At')]: new Date(task.updated_at).toLocaleString()
+        [t('taskListing.completionDate', 'Completion Date')]: task.completion_date || '',
+        [t('taskListing.createdAt', 'Created At')]: new Date(task.created_at).toLocaleString(),
+        [t('taskListing.updatedAt', 'Updated At')]: new Date(task.updated_at).toLocaleString()
       }));
 
       const employeeName = selectedEmployee !== 'all' ? 

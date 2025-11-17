@@ -638,6 +638,7 @@ export default {
     personalGoals: 'Personal Goals',
     attendance: 'Attendance',
     language: 'Language',
+    performance: 'Performance',
     recruitment: 'Recruitment',
     salary: 'Salary',
     performanceMetrics: 'Performance Metrics',
@@ -853,7 +854,7 @@ export default {
     for: 'for',
     from: 'from',
     // PDF Export specific translations
-    generated: 'Generated',
+    generated: 'Generated ',
     period: 'Period',
     summaryOverview: 'Summary Overview',
     totalRecords: 'Total Records',
@@ -1357,6 +1358,9 @@ export default {
     selectEmployee: 'Select Employee',
     tasks: 'Tasks',
     quality: 'Quality',
+    completionDate: 'Completion Date',
+    createdAt: 'Created At',
+    updatedAt: 'Updated At',
   },
 
   // Task Review

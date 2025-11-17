@@ -706,7 +706,7 @@ export default {
     for: 'cho',
     from: 'từ',
     // PDF Export specific translations
-    generated: 'Tạo lúc',
+    generated: 'Tạo Lúc',
     period: 'Kỳ',
     summaryOverview: 'Tổng quan',
     totalRecords: 'Tất Cả',
@@ -1174,6 +1174,9 @@ export default {
     confirmDelete: 'Bạn có chắc chắn muốn xóa nhiệm vụ này?',
     tasks: 'Nhiệm Vụ',
     quality: 'Chất Lượng',
+    completionDate: 'Ngày Hoàn Thành',
+    createdAt: 'Ngày Tạo',
+    updatedAt: 'Ngày Cập Nhật',
   },
 
   // Task Review

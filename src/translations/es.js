@@ -454,6 +454,7 @@ login: {
     title: 'Informes y Análisis',
     achieved: 'Logrado',
     language: 'Idioma',
+    generated: 'Generado el',
     personalGoals: 'Metas Personales',
     total: 'Total',
     avgProgress: 'Progreso Promedio',
@@ -1205,6 +1206,9 @@ login: {
     confirmDelete: '¿Estás seguro de que quieres eliminar esta tarea?',
     tasks: 'Tareas',
     quality: 'Calidad',
+    completionDate: 'Fecha de Finalización',
+    createdAt: 'Fecha de Creación',
+    updatedAt: 'Fecha de Actualización',
   },
 
   // Performance Appraisal Translation

@@ -374,6 +374,7 @@ export default {
   reports: {
     title: 'レポート・分析',
     language: '言語',
+    generated: '生成日',
     achieved: '達成',
     avgProgress: '平均進捗',
     personalGoals: '個人目標',
@@ -1036,6 +1037,9 @@ export default {
     confirmDelete: 'このタスクを削除してもよろしいですか？',
     tasks: 'タスク',
     quality: '品質',
+    completionDate: '完了日',
+    createdAt: '作成日',
+    updatedAt: '更新日',   
   },
 
   // Task Review

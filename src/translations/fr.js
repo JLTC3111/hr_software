@@ -430,6 +430,7 @@ export default {
   reports: {
     title: 'Rapports et analyses',
     language: 'Langue',
+    generated: 'Généré le',
     achieved: 'Atteint',
     pending: 'En attente',
     personalGoals: 'Objectifs personnels',
@@ -1153,6 +1154,9 @@ export default {
     confirmDelete: 'Êtes-vous sûr de vouloir supprimer cette tâche?',
     tasks: 'Tâches',
     quality: 'Qualité',
+    completionDate: 'Date d\'achèvement',
+    createdAt: 'Créé le',
+    updatedAt: 'Mis à jour le',
   },
 
   // Task Review

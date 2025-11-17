@@ -438,6 +438,7 @@ export default {
     title: 'Отчёты и аналитика',
     achieved: 'Достигнуто',
     language: 'Язык',
+    generated: 'Создано',
     avgProgress: 'Средний прогресс',
     personalGoals: 'Личные цели',
     totalGoals: 'Всего целей',
@@ -1050,6 +1051,9 @@ export default {
     confirmDelete: 'Вы уверены, что хотите удалить эту задачу?',
     tasks: 'Задачи',
     quality: 'Качество',
+    completionDate: 'Дата завершения',
+    createdAt: 'Дата создания',
+    updatedAt: 'Обновлено',
   },
 
   // Task Review

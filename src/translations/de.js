@@ -405,6 +405,7 @@ export default {
     title: 'Berichte & Analysen',
     achieved: 'Erreicht',
     language: 'Sprache',
+    generated: 'Erstellt',
     personalGoals: 'Persönliche Ziele',
     avgProgress: 'Durchschnittlicher Fortschritt',
     type: 'Typ',
@@ -1123,6 +1124,9 @@ export default {
     confirmDelete: 'Möchten Sie diese Aufgabe wirklich löschen?',
     tasks: 'Aufgaben',
     quality: 'Qualität',
+    completionDate: 'Fälligkeitsdatum',
+    createdAt: 'Erstellt am',
+    updatedAt: 'Aktualisiert am',
   },
 
   // Performance Appraisal Translation

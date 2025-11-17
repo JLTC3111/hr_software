@@ -377,6 +377,7 @@ export default {
     title: '보고서 및 분석',
     achieved: '달성됨', 
     language: '언어',
+    generated: '생성일',
     avgProgress: '평균 진행률',
     personalGoals: '개인 목표',
     type: '보고서 유형',
@@ -1018,6 +1019,9 @@ export default {
     confirmDelete: '이 작업을 삭제하시겠습니까?',
     tasks: '작업',
     quality: '품질',
+    completionDate: '완료일',
+    createdAt: '생성일',
+    updatedAt: '업데이트됨',
   },
 
   // Task Review 

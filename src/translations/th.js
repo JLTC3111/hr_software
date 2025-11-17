@@ -373,6 +373,7 @@ export default {
   reports: {
     title: 'รายงานและการวิเคราะห์',
     language: 'ภาษา',
+    generated: 'สร้างเมื่อ',
     achieved: 'ที่บรรลุ',
     avgProgress: 'ความคืบหน้าเฉลี่ย',
     personalGoals: 'เป้าหมายส่วนบุคคล',
@@ -1059,6 +1060,9 @@ export default {
     confirmDelete: 'คุณแน่ใจว่าต้องการลบงานนี้หรือไม่?',
     tasks: 'งาน',
     quality: 'คุณภาพ',
+    completionDate: 'วันที่เสร็จสิ้น',
+    createdAt: 'วันที่สร้าง',
+    updatedAt: 'วันที่อัปเดต',
   },
 
   // Task Review
