@@ -1456,13 +1456,19 @@ const Reports = () => {
 
           autoTable(doc, {
             startY: yPosition,
-            head: [[t('reports.employee', 'Employee'), t('reports.date', 'Date'), t('reports.hours', 'Hours'), t('reports.type', 'Type'), t('reports.status', 'Status')]],
+            head: [[
+              unicodeFontLoaded ? t('reports.employee', 'Employee') : cleanTextForPDF(t('reports.employee', 'Employee')),
+              unicodeFontLoaded ? t('reports.date', 'Date') : cleanTextForPDF(t('reports.date', 'Date')),
+              unicodeFontLoaded ? t('reports.hours', 'Hours') : cleanTextForPDF(t('reports.hours', 'Hours')),
+              unicodeFontLoaded ? t('reports.type', 'Type') : cleanTextForPDF(t('reports.type', 'Type')),
+              unicodeFontLoaded ? t('reports.status', 'Status') : cleanTextForPDF(t('reports.status', 'Status'))
+            ]],
             body: timeEntriesData,
             theme: 'striped',
             headStyles: { 
               fillColor: [70, 173, 71], 
               textColor: 255, 
-              fontStyle: 'bold',
+              fontStyle: 'normal',
               font: getTableFont()
             },
             styles: { 
@@ -1470,6 +1476,9 @@ const Reports = () => {
               cellPadding: 2,
               font: getTableFont(),
               fontStyle: 'normal'
+            },
+            didParseCell: function(data) {
+              data.cell.styles.font = getTableFont();
             },
             margin: { left: 15, right: 15 }
           });
@@ -1499,13 +1508,19 @@ const Reports = () => {
 
           autoTable(doc, {
             startY: yPosition,
-            head: [[t('reports.employee', 'Employee'), t('reports.task', 'Task'), t('reports.priority', 'Priority'), t('reports.status', 'Status'), t('reports.dueDate', 'Due Date')]],
+            head: [[
+              unicodeFontLoaded ? t('reports.employee', 'Employee') : cleanTextForPDF(t('reports.employee', 'Employee')),
+              unicodeFontLoaded ? t('reports.task', 'Task') : cleanTextForPDF(t('reports.task', 'Task')),
+              unicodeFontLoaded ? t('reports.priority', 'Priority') : cleanTextForPDF(t('reports.priority', 'Priority')),
+              unicodeFontLoaded ? t('reports.status', 'Status') : cleanTextForPDF(t('reports.status', 'Status')),
+              unicodeFontLoaded ? t('reports.dueDate', 'Due Date') : cleanTextForPDF(t('reports.dueDate', 'Due Date'))
+            ]],
             body: tasksData,
             theme: 'striped',
             headStyles: { 
               fillColor: [255, 192, 0], 
               textColor: 0, 
-              fontStyle: 'bold',
+              fontStyle: 'normal',
               font: getTableFont()
             },
             styles: { 
@@ -1513,6 +1528,9 @@ const Reports = () => {
               cellPadding: 2,
               font: getTableFont(),
               fontStyle: 'normal'
+            },
+            didParseCell: function(data) {
+              data.cell.styles.font = getTableFont();
             },
             margin: { left: 15, right: 15 }
           });
@@ -1542,13 +1560,19 @@ const Reports = () => {
 
           autoTable(doc, {
             startY: yPosition,
-            head: [[t('reports.employee', 'Employee'), t('reports.goal', 'Goal'), t('reports.category', 'Category'), t('reports.status', 'Status'), t('reports.progress', 'Progress')]],
+            head: [[
+              unicodeFontLoaded ? t('reports.employee', 'Employee') : cleanTextForPDF(t('reports.employee', 'Employee')),
+              unicodeFontLoaded ? t('reports.goal', 'Goal') : cleanTextForPDF(t('reports.goal', 'Goal')),
+              unicodeFontLoaded ? t('reports.category', 'Category') : cleanTextForPDF(t('reports.category', 'Category')),
+              unicodeFontLoaded ? t('reports.status', 'Status') : cleanTextForPDF(t('reports.status', 'Status')),
+              unicodeFontLoaded ? t('reports.progress', 'Progress') : cleanTextForPDF(t('reports.progress', 'Progress'))
+            ]],
             body: goalsData,
             theme: 'striped',
             headStyles: { 
               fillColor: [91, 155, 213], 
               textColor: 255, 
-              fontStyle: 'bold',
+              fontStyle: 'normal',
               font: getTableFont()
             },
             styles: { 
@@ -1556,6 +1580,9 @@ const Reports = () => {
               cellPadding: 2,
               font: getTableFont(),
               fontStyle: 'normal'
+            },
+            didParseCell: function(data) {
+              data.cell.styles.font = getTableFont();
             },
             margin: { left: 15, right: 15 }
           });
@@ -1574,13 +1601,22 @@ const Reports = () => {
 
         autoTable(doc, {
           startY: yPosition,
-          head: [[t('reports.employee', 'Employee'), t('reports.department', 'Department'), t('reports.date', 'Date'), t('reports.clockIn', 'Clock In'), t('reports.clockOut', 'Clock Out'), t('reports.hours', 'Hours'), t('reports.type', 'Type'), t('reports.status', 'Status')]],
+          head: [[
+            unicodeFontLoaded ? t('reports.employee', 'Employee') : cleanTextForPDF(t('reports.employee', 'Employee')),
+            unicodeFontLoaded ? t('reports.department', 'Department') : cleanTextForPDF(t('reports.department', 'Department')),
+            unicodeFontLoaded ? t('reports.date', 'Date') : cleanTextForPDF(t('reports.date', 'Date')),
+            unicodeFontLoaded ? t('reports.clockIn', 'Clock In') : cleanTextForPDF(t('reports.clockIn', 'Clock In')),
+            unicodeFontLoaded ? t('reports.clockOut', 'Clock Out') : cleanTextForPDF(t('reports.clockOut', 'Clock Out')),
+            unicodeFontLoaded ? t('reports.hours', 'Hours') : cleanTextForPDF(t('reports.hours', 'Hours')),
+            unicodeFontLoaded ? t('reports.type', 'Type') : cleanTextForPDF(t('reports.type', 'Type')),
+            unicodeFontLoaded ? t('reports.status', 'Status') : cleanTextForPDF(t('reports.status', 'Status'))
+          ]],
           body: timeEntriesData,
           theme: 'striped',
           headStyles: { 
             fillColor: [70, 173, 71], 
             textColor: 255, 
-            fontStyle: 'bold',
+            fontStyle: 'normal',
             font: getTableFont()
           },
           styles: { 
@@ -1588,6 +1624,9 @@ const Reports = () => {
             cellPadding: 1.5,
             font: getTableFont(),
             fontStyle: 'normal'
+          },
+          didParseCell: function(data) {
+            data.cell.styles.font = getTableFont();
           },
           margin: { left: 15, right: 15 }
         });
@@ -1605,13 +1644,22 @@ const Reports = () => {
 
         autoTable(doc, {
           startY: yPosition,
-          head: [[t('reports.employee', 'Employee'), t('reports.department', 'Department'), t('reports.task', 'Task'), t('reports.priority', 'Priority'), t('reports.status', 'Status'), t('reports.dueDate', 'Due Date'), t('reports.est', 'Est.'), t('reports.actual', 'Actual')]],
+          head: [[
+            unicodeFontLoaded ? t('reports.employee', 'Employee') : cleanTextForPDF(t('reports.employee', 'Employee')),
+            unicodeFontLoaded ? t('reports.department', 'Department') : cleanTextForPDF(t('reports.department', 'Department')),
+            unicodeFontLoaded ? t('reports.task', 'Task') : cleanTextForPDF(t('reports.task', 'Task')),
+            unicodeFontLoaded ? t('reports.priority', 'Priority') : cleanTextForPDF(t('reports.priority', 'Priority')),
+            unicodeFontLoaded ? t('reports.status', 'Status') : cleanTextForPDF(t('reports.status', 'Status')),
+            unicodeFontLoaded ? t('reports.dueDate', 'Due Date') : cleanTextForPDF(t('reports.dueDate', 'Due Date')),
+            unicodeFontLoaded ? t('reports.est', 'Est.') : cleanTextForPDF(t('reports.est', 'Est.')),
+            unicodeFontLoaded ? t('reports.actual', 'Actual') : cleanTextForPDF(t('reports.actual', 'Actual'))
+          ]],
           body: tasksData,
           theme: 'striped',
           headStyles: { 
             fillColor: [255, 192, 0], 
             textColor: 0, 
-            fontStyle: 'bold',
+            fontStyle: 'normal',
             font: getTableFont()
           },
           styles: { 
@@ -1619,6 +1667,9 @@ const Reports = () => {
             cellPadding: 1.5,
             font: getTableFont(),
             fontStyle: 'normal'
+          },
+          didParseCell: function(data) {
+            data.cell.styles.font = getTableFont();
           },
           margin: { left: 15, right: 15 }
         });
@@ -1635,13 +1686,21 @@ const Reports = () => {
 
         autoTable(doc, {
           startY: yPosition,
-          head: [[t('reports.employee', 'Employee'), t('reports.department', 'Department'), t('reports.goal', 'Goal'), t('reports.category', 'Category'), t('reports.status', 'Status'), t('reports.targetDate', 'Target Date'), t('reports.progress', 'Progress')]],
+          head: [[
+            unicodeFontLoaded ? t('reports.employee', 'Employee') : cleanTextForPDF(t('reports.employee', 'Employee')),
+            unicodeFontLoaded ? t('reports.department', 'Department') : cleanTextForPDF(t('reports.department', 'Department')),
+            unicodeFontLoaded ? t('reports.goal', 'Goal') : cleanTextForPDF(t('reports.goal', 'Goal')),
+            unicodeFontLoaded ? t('reports.category', 'Category') : cleanTextForPDF(t('reports.category', 'Category')),
+            unicodeFontLoaded ? t('reports.status', 'Status') : cleanTextForPDF(t('reports.status', 'Status')),
+            unicodeFontLoaded ? t('reports.targetDate', 'Target Date') : cleanTextForPDF(t('reports.targetDate', 'Target Date')),
+            unicodeFontLoaded ? t('reports.progress', 'Progress') : cleanTextForPDF(t('reports.progress', 'Progress'))
+          ]],
           body: goalsData,
           theme: 'striped',
           headStyles: { 
             fillColor: [91, 155, 213], 
             textColor: 255, 
-            fontStyle: 'bold',
+            fontStyle: 'normal',
             font: getTableFont()
           },
           styles: { 
@@ -1649,6 +1708,9 @@ const Reports = () => {
             cellPadding: 1.5,
             font: getTableFont(),
             fontStyle: 'normal'
+          },
+          didParseCell: function(data) {
+            data.cell.styles.font = getTableFont();
           },
           margin: { left: 15, right: 15 }
         });
