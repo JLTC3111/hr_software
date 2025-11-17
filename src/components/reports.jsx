@@ -980,15 +980,19 @@ const Reports = () => {
             entry.clock_in || '',
             entry.clock_out || '',
             entry.hours || 0,
-            entry.hour_type || '',
-            entry.status || '',
-            entry.notes || '',
+            translateHourType(entry.hour_type) || '',
+            translateStatus(entry.status) || '',
+            translateNotes(entry.notes) || '',
             new Date(entry.created_at).toLocaleString()
           ];
           
           rowData.forEach((value, colIdx) => {
             const cell = timeEntriesSheet.getCell(rowNum, colIdx + 1);
             cell.value = value;
+            // Center align specific columns: Date(4), Clock In(5), Clock Out(6), Hours(7), Hour Type(8), Status(9)
+            if ([3, 4, 5, 6, 7, 8].includes(colIdx)) {
+              cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            }
             if (idx % 2 === 0) {
               cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
             }
@@ -1029,8 +1033,8 @@ const Reports = () => {
             translateDepartment(task.employee?.department) || '',
             task.title || '',
             task.description || '',
-            task.priority || '',
-            task.status || '',
+            translatePriority(task.priority) || '',
+            translateStatus(task.status) || '',
             task.due_date || '',
             task.estimated_hours || 0,
             task.actual_hours || 0,
@@ -1041,6 +1045,11 @@ const Reports = () => {
           rowData.forEach((value, colIdx) => {
             const cell = tasksSheet.getCell(rowNum, colIdx + 1);
             cell.value = value;
+            
+            // Center align specific columns: Priority(5), Status(6), Due Date(7), Estimated(8), Actual(9), Variance(10)
+            if ([4, 5, 6, 7, 8, 9].includes(colIdx)) {
+              cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            }
             
             // Alternating row colors
             if (idx % 2 === 0) {
@@ -1091,8 +1100,8 @@ const Reports = () => {
             translateDepartment(goal.employee?.department) || '',
             goal.title || '',
             goal.description || '',
-            goal.category || '',
-            goal.status || '',
+            translateCategory(goal.category) || '',
+            translateStatus(goal.status) || '',
             goal.progress || 0,
             goal.target_date || '',
             goal.notes || '',
@@ -1103,6 +1112,11 @@ const Reports = () => {
           rowData.forEach((value, colIdx) => {
             const cell = goalsSheet.getCell(rowNum, colIdx + 1);
             cell.value = value;
+            
+            // Center align specific columns: Category(5), Status(6), Progress(7), Target Date(8)
+            if ([4, 5, 6, 7].includes(colIdx)) {
+              cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            }
             
             // Alternating row colors
             if (idx % 2 === 0) {
@@ -1970,7 +1984,6 @@ const Reports = () => {
                   .sort((a, b) => a.name.localeCompare(b.name))
                   .map(emp => (
                     <option key={emp.id} value={emp.id}>
-                      <Users className="w-4 h-4 inline mr-1" />
                       {emp.name} • {translateDepartment(emp.department)} • {translatePosition(emp.position)}
                     </option>
                   ))}
