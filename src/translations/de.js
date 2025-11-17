@@ -379,7 +379,20 @@ export default {
     ratings: 'Bewertungen',
     reviewComments: 'Bewertungskommentare',
     noComments: 'Noch keine Kommentare',
-    errorFetchingComments: 'Fehler beim Laden der Kommentare'
+    errorFetchingComments: 'Fehler beim Laden der Kommentare',
+    general: 'Allgemein',
+    technical: 'Technisch',
+    leadership: 'Führung', 
+    project: 'Projekt',
+    communication: 'Kommunikation',
+    teamwork: 'Teamarbeit',
+    problemSolving: 'Problemlösung',
+    timeManagement: 'Zeitmanagement',
+    adaptability: 'Anpassungsfähigkeit',
+    creativity: 'Kreativität',
+    workEthic: 'Arbeitsmoral',
+    attentionToDetail: 'Detailgenauigkeit',
+    professionalDevelopment: 'Berufliche Entwicklung',
   },
 
   // Reports
@@ -534,6 +547,15 @@ export default {
     exportSuccess: 'Daten erfolgreich exportiert',
     for: 'für',
     from: 'von',
+    priorityLow: 'Priorität Niedrig',
+    priorityMedium: 'Priorität Mittel',
+    priorityHigh: 'Priorität Hoch',
+    statusApproved: 'Genehmigt',
+    statusRejected: 'Abgelehnt',
+    statusPending: 'Ausstehend',
+    statusCompleted: 'Abgeschlossen',
+    statusInProgress: 'In Bearbeitung',
+    statusNotStarted: 'Nicht begonnen',
   },
 
   // Add Employee

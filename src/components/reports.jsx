@@ -68,11 +68,11 @@ const Reports = () => {
   const translateCategory = (category) => {
     if (!category) return '';
     const categoryMap = {
-      'general': t('taskReview.general', 'General'),
-      'technical': t('taskReview.technical', 'Technical'),
-      'leadership': t('taskReview.leadership', 'Leadership'),
-      'project': t('taskReview.project', 'Project'),
-      'professional_development': t('taskReview.professionalDevelopment', 'Professional Development')
+      'general': t('personalGoals.general', 'General'),
+      'technical': t('personalGoals.technical', 'Technical'),
+      'leadership': t('personalGoals.leadership', 'Leadership'),
+      'project': t('personalGoals.project', 'Project'),
+      'professional_development': t('personalGoals.professionalDevelopment', 'Professional Development')
     };
     return categoryMap[category] || category;
   };
@@ -1244,15 +1244,15 @@ const Reports = () => {
     const type = hourType.toLowerCase();
     switch (type) {
       case 'regular':
-        return t('timeClock.regular', 'Regular Hours');
+        return t('timeClock.hourTypes.regular', 'Regular Hours');
       case 'holiday':
         return t('timeClock.holiday', 'Holiday Hours');
       case 'weekend':
-        return t('timeClock.weekend', 'Weekend Overtime');
+        return t('timeClock.hourTypes.weekend', 'Weekend Overtime');
       case 'bonus':
-        return t('timeClock.bonus', 'Bonus Hours');
+        return t('timeClock.hourTypes.bonus', 'Bonus Hours');
       case 'wfh':
-        return t('timeClock.wfh', 'Working From Home');
+        return t('timeClock.hourTypes.wfh', 'Working From Home');
       default:
         return hourType;
     }
@@ -1273,9 +1273,11 @@ const Reports = () => {
         return t('reports.statusCompleted', 'Completed');
       case 'in progress':
       case 'in_progress':
+      case 'in-progress':
         return t('reports.statusInProgress', 'In Progress');
       case 'not started':
       case 'not_started':
+      case 'not-started':
         return t('reports.statusNotStarted', 'Not Started');
       default:
         return status;
@@ -1533,7 +1535,7 @@ const Reports = () => {
           const goalsData = reportData.goals.slice(0, 20).map(goal => [
             cleanTextForPDF(goal.employee?.name || t('reports.unknown', 'Unknown'), unicodeFontLoaded),
             cleanTextForPDF(goal.title.substring(0, 30), unicodeFontLoaded),
-            goal.category || '',
+            cleanTextForPDF(translateCategory(goal.category), unicodeFontLoaded),
             cleanTextForPDF(translateStatus(goal.status), unicodeFontLoaded),
             `${goal.progress || 0}%`
           ]);
@@ -1625,7 +1627,7 @@ const Reports = () => {
           cleanTextForPDF(goal.employee?.name || t('reports.unknown', 'Unknown'), unicodeFontLoaded),
           cleanTextForPDF(translateDepartment(goal.employee?.department) || '', unicodeFontLoaded),
           cleanTextForPDF(goal.title.substring(0, 40), unicodeFontLoaded),
-          goal.category || '',
+          cleanTextForPDF(translateCategory(goal.category), unicodeFontLoaded),
           cleanTextForPDF(translateStatus(goal.status), unicodeFontLoaded),
           goal.target_date || '-',
           `${goal.progress || 0}%`

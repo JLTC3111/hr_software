@@ -721,6 +721,15 @@ export default {
     of: 'trên',
     generatedBy: 'Được tạo bởi Hệ thống Quản lý HR',
     achieved: 'Đã đạt được',
+    priorityLow: 'Thấp',
+    priorityMedium: 'Trung bình',
+    priorityHigh: 'Cao',
+    statusApproved: 'Đã duyệt',
+    statusRejected: 'Bị từ chối',
+    statusPending: 'Chờ xử lý',
+    statusCompleted: 'Hoàn thành',
+    statusInProgress: 'Đang thực hiện',
+    statusNotStarted: 'Chưa bắt đầu',
   },
 
   // Status translations
@@ -1586,7 +1595,20 @@ export default {
     ratings: 'Đánh giá',
     reviewComments: 'Bình luận đánh giá',
     noComments: 'Chưa có bình luận',
-    errorFetchingComments: 'Lỗi khi tải bình luận'
+    errorFetchingComments: 'Lỗi khi tải bình luận',
+    general: 'Chung',
+    technical: 'Kỹ thuật',
+    leadership: 'Lãnh đạo',
+    project: 'Dự án',
+    communication: 'Giao tiếp',
+    timeManagement: 'Quản lý thời gian',
+    problemSolving: 'Giải quyết vấn đề',
+    creativity: 'Sáng tạo',
+    teamwork: 'Làm việc nhóm',
+    adaptability: 'Thích nghi',
+    emotionalIntelligence: 'Trí tuệ cảm xúc',
+    criticalThinking: 'Tư duy phản biện',
+    professionalDevelopment: 'Phát triển chuyên nghiệp',
   },
 
   // Morphing Showcase

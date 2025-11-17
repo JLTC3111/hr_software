@@ -657,6 +657,15 @@ export default {
     customRange:	'Пользовательский диапазон',	
     for: 'для',
     from: 'с',
+    priorityLow: 'Низкий приоритет',
+    priorityMedium: 'Средний приоритет',
+    priorityHigh: 'Высокий приоритет',
+    statusApproved: 'Одобрено',
+    statusRejected: 'Отклонено',
+    statusPending: 'В ожидании',
+    statusCompleted: 'Завершено',
+    statusInProgress: 'В процессе',
+    statusNotStarted: 'Не начато',
   },
 
   // Add Employee
@@ -1403,7 +1412,20 @@ export default {
     ratings: 'Оценки',
     reviewComments: 'Комментарии к оценке',
     noComments: 'Пока нет комментариев',
-    errorFetchingComments: 'Ошибка загрузки комментариев'
+    errorFetchingComments: 'Ошибка загрузки комментариев',
+    general: 'Общий',
+    technical: 'Технический',
+    leadership: 'Лидерство',
+    project: 'Проект',
+    communication: 'Коммуникация',
+    timeManagement: 'Управление временем',
+    problemSolving: 'Решение проблем',
+    creativity: 'Креативность',
+    teamwork: 'Командная работа',
+    adaptability: 'Адаптивность',
+    emotionalIntelligence: 'Эмоциональный интеллект',
+    criticalThinking: 'Критическое мышление',
+    professionalDevelopment: 'Профессиональное развитие',
   },
 
   // Morphing Showcase

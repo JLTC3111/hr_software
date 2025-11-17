@@ -578,6 +578,15 @@ export default {
     customRange:	'カスタム範囲',
     for: 'の',
     from: 'から',
+    priorityLow: '低優先度',
+    priorityMedium: '中優先度',
+    priorityHigh: '高優先度',
+    statusApproved: '承認済み',
+    statusRejected: '却下',
+    statusPending: '保留中',
+    statusCompleted: '完了',
+    statusInProgress: '進行中',
+    statusNotStarted: '未開始',
   },
 
   // Add Employee
@@ -1406,7 +1415,20 @@ export default {
     ratings: '評価',
     reviewComments: '評価コメント',
     noComments: 'まだコメントがありません',
-    errorFetchingComments: 'コメントの読み込みエラー'
+    errorFetchingComments: 'コメントの読み込みエラー',
+    general: '一般',
+    technical: '技術',
+    leadership: 'リーダーシップ',
+    project: 'プロジェクト',
+    communication: 'コミュニケーション',
+    timeManagement: '時間管理',
+    problemSolving: '問題解決',
+    creativity: '創造性',
+    teamwork: 'チームワーク',
+    adaptability: '適応力',
+    emotionalIntelligence: '感情知能',
+    criticalThinking: '批判的思考',
+    professionalDevelopment: '専門的成長',
   },
 
   // Morphing Showcase

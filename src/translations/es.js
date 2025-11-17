@@ -1,3 +1,5 @@
+import { time } from "framer-motion";
+
 export default {
   nav: {
     menu: 'Menú',
@@ -701,6 +703,15 @@ login: {
     customRange:	'Rango personalizado',
     for: 'para',
     from: 'desde',
+    priorityLow: 'Baja',
+    priorityMedium: 'Media',
+    priorityHigh: 'Alta',
+    statusApproved: 'Aprobado',
+    statusRejected: 'Rechazado',
+    statusPending: 'Pendiente',
+    statusCompleted: 'Completado',
+    statusInProgress: 'En progreso',
+    statusNotStarted: 'No iniciado',
   },
 
   // Add Employee
@@ -1470,7 +1481,20 @@ login: {
     ratings: 'Calificaciones',
     reviewComments: 'Comentarios de evaluación',
     noComments: 'Aún no hay comentarios',
-    errorFetchingComments: 'Error al cargar comentarios'
+    errorFetchingComments: 'Error al cargar comentarios',
+    general: 'General',
+    technical: 'Técnico',
+    leadership: 'Liderazgo',
+    project: 'Proyecto',
+    communication: 'Comunicación',
+    timeManagement: 'Gestión del Tiempo',
+    problemSolving: 'Resolución de Problemas',
+    creativity: 'Creatividad',
+    teamwork: 'Trabajo en Equipo',
+    adaptability: 'Adaptabilidad',
+    emotionalIntelligence: 'Inteligencia Emocional',
+    criticalThinking: 'Pensamiento Crítico',
+    professionalDevelopment: 'Desarrollo Profesional',
   },
 
   // Morphing Showcase

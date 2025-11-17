@@ -566,6 +566,15 @@ export default {
     customRange:	'사용자 지정 범위 (Sayongja jijeong beomwi)',
     for: '에 대한',
     from: '에서',
+    priorityLow: '낮음',
+    priorityMedium: '중간',
+    priorityHigh: '높음',
+    statusApproved: '승인됨',
+    statusRejected: '거부됨',
+    statusPending: '대기 중',
+    statusCompleted: '완료',
+    statusInProgress: '진행 중',
+    statusNotStarted: '시작 안 함',
   },
 
   // Add Employee
@@ -1380,7 +1389,20 @@ export default {
     ratings: '평가',
     reviewComments: '평가 코멘트',
     noComments: '아직 댓글이 없습니다',
-    errorFetchingComments: '댓글 로드 오류'
+    errorFetchingComments: '댓글 로드 오류',
+    general: '일반',
+    technical: '기술',
+    leadership: '리더십',
+    project: '프로젝트',
+    communication: '커뮤니케이션',
+    timeManagement: '시간 관리',
+    problemSolving: '문제 해결',
+    creativity: '창의성',
+    teamwork: '팀워크',
+    adaptability: '적응력',
+    emotionalIntelligence: '감성 지능',
+    criticalThinking: '비판적 사고',
+    professionalDevelopment: '전문성 개발',
   },
 
   // Morphing Showcase

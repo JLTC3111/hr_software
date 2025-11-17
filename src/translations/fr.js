@@ -720,6 +720,15 @@ export default {
     customRange:	'Plage personnalisée',
     for: 'pour',
     from: 'de',
+    priorityLow: 'Faible',
+    priorityMedium: 'Moyenne',
+    priorityHigh: 'Élevée',
+    statusApproved: 'Approuvé',
+    statusRejected: 'Rejeté',
+    statusPending: 'En attente',
+    statusCompleted: 'Terminé',
+    statusInProgress: 'En cours',
+    statusNotStarted: 'Non commencé',
   },
 
   // Add Employee
@@ -1510,7 +1519,20 @@ export default {
     ratings: 'Évaluations',
     reviewComments: 'Commentaires d\'évaluation',
     noComments: 'Aucun commentaire pour le moment',
-    errorFetchingComments: 'Erreur lors du chargement des commentaires'
+    errorFetchingComments: 'Erreur lors du chargement des commentaires',
+    general: 'Général',
+    technical: 'Technique',
+    leadership: 'le commandement',
+    project: 'Projet',
+    communication: 'Communication',
+    timeManagement: 'Gestion du Temps',
+    problemSolving: 'Résolution de Problèmes',
+    creativity: 'Créativité',
+    teamwork: 'Travail d\'Équipe',
+    adaptability: 'Adaptabilité',
+    emotionalIntelligence: 'Intelligence Émotionnelle',
+    criticalThinking: 'Pensée Critique',
+    professionalDevelopment: 'Développement Professionnel',
   },
 
   // Morphing Showcase
