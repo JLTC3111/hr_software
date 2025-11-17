@@ -53,35 +53,6 @@ const Reports = () => {
     return t(`employeePosition.${position}`, position);
   };
   
-  // Helper function to translate status values
-  const translateStatus = (status) => {
-    if (!status) return '';
-    const statusMap = {
-      'approved': t('status.approved', 'Approved'),
-      'pending': t('status.pending', 'Pending'),
-      'rejected': t('status.rejected', 'Rejected'),
-      'completed': t('status.completed', 'Completed'),
-      'in-progress': t('status.in-progress', 'In Progress'),
-      'in_progress': t('status.in-progress', 'In Progress'),
-      'not-started': t('status.not-started', 'Not Started'),
-      'achieved': t('status.achieved', 'Achieved'),
-      'on-hold': t('status.on-hold', 'On Hold')
-    };
-    return statusMap[status] || status;
-  };
-  
-  // Helper function to translate hour types
-  const translateHourType = (type) => {
-    if (!type) return '';
-    const typeMap = {
-      'regular': t('timeTracking.regular', 'Regular'),
-      'overtime': t('timeTracking.overtime', 'Overtime'),
-      'bonus': t('timeTracking.bonus', 'Bonus'),
-      'wfh': t('timeTracking.wfh', 'WFH')
-    };
-    return typeMap[type] || type;
-  };
-  
   // Helper function to translate data type labels
   const translateDataType = (type) => {
     if (!type) return '';
@@ -104,17 +75,6 @@ const Reports = () => {
       'professional_development': t('taskReview.professionalDevelopment', 'Professional Development')
     };
     return categoryMap[category] || category;
-  };
-  
-  // Helper function to translate priority labels
-  const translatePriority = (priority) => {
-    if (!priority) return '';
-    const priorityMap = {
-      'low': t('taskListing.low', 'Low'),
-      'medium': t('taskListing.medium', 'Medium'),
-      'high': t('taskListing.high', 'High')
-    };
-    return priorityMap[priority] || priority;
   };
   
   // Theme classes
@@ -1181,9 +1141,22 @@ const Reports = () => {
   };
 
   // Helper function to clean text for PDF rendering
-  const cleanTextForPDF = (text) => {
+  // When unicodeFont is true, the function preserves Unicode characters
+  // When unicodeFont is false, it sanitizes to ASCII-safe characters
+  const cleanTextForPDF = (text, unicodeFont = false) => {
     if (!text) return '';
     
+    // If Unicode font is loaded, return text with minimal cleaning
+    if (unicodeFont) {
+      // Only remove control characters and zero-width characters
+      let cleaned = String(text)
+        .replace(/[\u200B-\u200D\uFEFF\u0000-\u001F\u007F-\u009F]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      return cleaned || 'N/A';
+    }
+    
+    // Fallback: Full sanitization for Helvetica font
     // Special character mapping for Vietnamese and other diacritics
     const charMap = {
       // Vietnamese lowercase
@@ -1224,18 +1197,13 @@ const Reports = () => {
       'œ': 'oe', 'Œ': 'OE',
       'æ': 'ae', 'Æ': 'AE',
       // Additional accented characters
-      'à': 'a', 'á': 'a', 'â': 'a', 'ã': 'a', 'å': 'a',
-      'À': 'A', 'Á': 'A', 'Â': 'A', 'Ã': 'A', 'Å': 'A',
-      'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
-      'È': 'E', 'É': 'E', 'Ê': 'E', 'Ë': 'E',
-      'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
-      'Ì': 'I', 'Í': 'I', 'Î': 'I', 'Ï': 'I',
-      'ò': 'o', 'ó': 'o', 'ô': 'o', 'õ': 'o', 'ø': 'o',
-      'Ò': 'O', 'Ó': 'O', 'Ô': 'O', 'Õ': 'O', 'Ø': 'O',
-      'ù': 'u', 'ú': 'u', 'û': 'u',
-      'Ù': 'U', 'Ú': 'U', 'Û': 'U',
-      'ý': 'y', 'ÿ': 'y',
-      'Ý': 'Y', 'Ÿ': 'Y'
+      'å': 'a', 'Å': 'A',
+      'ë': 'e', 'Ë': 'E',
+      'ï': 'i', 'Ï': 'I',
+      'î': 'i', 'Î': 'I',
+      'ø': 'o', 'Ø': 'O',
+      'û': 'u', 'Û': 'U',
+      'ÿ': 'y', 'Ÿ': 'Y'
     };
     
     // Convert to string first
@@ -1268,6 +1236,66 @@ const Reports = () => {
     
     // Step 7: Ensure no empty result - return a placeholder if needed
     return cleaned || 'N/A';
+  };
+
+  // Helper function to translate hour types
+  const translateHourType = (hourType) => {
+    if (!hourType) return '';
+    const type = hourType.toLowerCase();
+    switch (type) {
+      case 'regular':
+        return t('timeClock.regular', 'Regular Hours');
+      case 'holiday':
+        return t('timeClock.holiday', 'Holiday Hours');
+      case 'weekend':
+        return t('timeClock.weekend', 'Weekend Overtime');
+      case 'bonus':
+        return t('timeClock.bonus', 'Bonus Hours');
+      case 'wfh':
+        return t('timeClock.wfh', 'Working From Home');
+      default:
+        return hourType;
+    }
+  };
+
+  // Helper function to translate status
+  const translateStatus = (status) => {
+    if (!status) return '';
+    const stat = status.toLowerCase();
+    switch (stat) {
+      case 'pending':
+        return t('reports.statusPending', 'Pending');
+      case 'approved':
+        return t('reports.statusApproved', 'Approved');
+      case 'rejected':
+        return t('reports.statusRejected', 'Rejected');
+      case 'completed':
+        return t('reports.statusCompleted', 'Completed');
+      case 'in progress':
+      case 'in_progress':
+        return t('reports.statusInProgress', 'In Progress');
+      case 'not started':
+      case 'not_started':
+        return t('reports.statusNotStarted', 'Not Started');
+      default:
+        return status;
+    }
+  };
+
+  // Helper function to translate priority
+  const translatePriority = (priority) => {
+    if (!priority) return '';
+    const prio = priority.toLowerCase();
+    switch (prio) {
+      case 'low':
+        return t('reports.priorityLow', 'Low');
+      case 'medium':
+        return t('reports.priorityMedium', 'Medium');
+      case 'high':
+        return t('reports.priorityHigh', 'High');
+      default:
+        return priority;
+    }
   };
 
   // PDF Export with Charts and Tables
@@ -1343,7 +1371,7 @@ const Reports = () => {
       // Only sanitize filename if Unicode font failed to load, otherwise keep original
       const employeeName = unicodeFontLoaded ? 
         (rawEmployeeName || 'All_Employees').replace(/\s+/g, '_').replace(/[<>:"/\\|?*]/g, '_') :
-        cleanTextForPDF(rawEmployeeName || 'All_Employees').replace(/\s+/g, '_');
+        cleanTextForPDF(rawEmployeeName || 'All_Employees', false).replace(/\s+/g, '_');
 
       // Header
       doc.setFontSize(20);
@@ -1361,7 +1389,7 @@ const Reports = () => {
       yPosition += 5;
       const displayEmployeeName = selectedEmployee === 'all' ? 
         t('reports.allEmployees', 'All Employees') : 
-        (unicodeFontLoaded ? rawEmployeeName : cleanTextForPDF(rawEmployeeName));
+        (unicodeFontLoaded ? rawEmployeeName : cleanTextForPDF(rawEmployeeName, false));
       doc.text(`${t('reports.employee', 'Employee')}: ${displayEmployeeName}`, pageWidth / 2, yPosition, { align: 'center' });
       
       yPosition += 15;
@@ -1417,11 +1445,11 @@ const Reports = () => {
           yPosition += 5;
 
           const timeEntriesData = reportData.timeEntries.slice(0, 20).map(entry => [
-            unicodeFontLoaded ? (entry.employee?.name || t('reports.unknown', 'Unknown')) : cleanTextForPDF(entry.employee?.name || t('reports.unknown', 'Unknown')),
+            cleanTextForPDF(entry.employee?.name || t('reports.unknown', 'Unknown'), unicodeFontLoaded),
             entry.date,
             `${entry.hours || 0}h`,
-            entry.hour_type || '',
-            entry.status || ''
+            cleanTextForPDF(translateHourType(entry.hour_type), unicodeFontLoaded),
+            cleanTextForPDF(translateStatus(entry.status), unicodeFontLoaded)
           ]);
 
           autoTable(doc, {
@@ -1433,12 +1461,12 @@ const Reports = () => {
               fillColor: [70, 173, 71], 
               textColor: 255, 
               fontStyle: 'bold',
-              font: unicodeFontLoaded ? 'NotoSans' : 'helvetica'
+              font: getTableFont()
             },
             styles: { 
               fontSize: 8, 
               cellPadding: 2,
-              font: unicodeFontLoaded ? 'NotoSans' : 'helvetica',
+              font: getTableFont(),
               fontStyle: 'normal'
             },
             margin: { left: 15, right: 15 }
@@ -1460,10 +1488,10 @@ const Reports = () => {
           yPosition += 5;
 
           const tasksData = reportData.tasks.slice(0, 20).map(task => [
-            cleanTextForPDF(task.employee?.name || t('reports.unknown', 'Unknown')),
-            cleanTextForPDF(task.title.substring(0, 30)),
-            task.priority || '',
-            task.status || '',
+            cleanTextForPDF(task.employee?.name || t('reports.unknown', 'Unknown'), unicodeFontLoaded),
+            cleanTextForPDF(task.title.substring(0, 30), unicodeFontLoaded),
+            cleanTextForPDF(translatePriority(task.priority), unicodeFontLoaded),
+            cleanTextForPDF(translateStatus(task.status), unicodeFontLoaded),
             task.due_date || '-'
           ]);
 
@@ -1476,7 +1504,7 @@ const Reports = () => {
               fillColor: [255, 192, 0], 
               textColor: 0, 
               fontStyle: 'bold',
-              font: 'helvetica'
+              font: getTableFont()
             },
             styles: { 
               fontSize: 8, 
@@ -1503,10 +1531,10 @@ const Reports = () => {
           yPosition += 5;
 
           const goalsData = reportData.goals.slice(0, 20).map(goal => [
-            cleanTextForPDF(goal.employee?.name || t('reports.unknown', 'Unknown')),
-            cleanTextForPDF(goal.title.substring(0, 30)),
+            cleanTextForPDF(goal.employee?.name || t('reports.unknown', 'Unknown'), unicodeFontLoaded),
+            cleanTextForPDF(goal.title.substring(0, 30), unicodeFontLoaded),
             goal.category || '',
-            goal.status || '',
+            cleanTextForPDF(translateStatus(goal.status), unicodeFontLoaded),
             `${goal.progress || 0}%`
           ]);
 
@@ -1532,14 +1560,14 @@ const Reports = () => {
         }
       } else if (activeTab === 'time-entries' && reportData.timeEntries.length > 0) {
         const timeEntriesData = reportData.timeEntries.slice(0, 50).map(entry => [
-          unicodeFontLoaded ? (entry.employee?.name || t('reports.unknown', 'Unknown')) : cleanTextForPDF(entry.employee?.name || t('reports.unknown', 'Unknown')),
-          unicodeFontLoaded ? (translateDepartment(entry.employee?.department) || '') : cleanTextForPDF(translateDepartment(entry.employee?.department) || ''),
+          cleanTextForPDF(entry.employee?.name || t('reports.unknown', 'Unknown'), unicodeFontLoaded),
+          cleanTextForPDF(translateDepartment(entry.employee?.department) || '', unicodeFontLoaded),
           entry.date,
-          entry.clock_in || '',
-          entry.clock_out || '',
+          entry.clock_in || '-',
+          entry.clock_out || '-',
           `${entry.hours || 0}h`,
-          entry.hour_type || '',
-          entry.status || ''
+          cleanTextForPDF(translateHourType(entry.hour_type), unicodeFontLoaded),
+          cleanTextForPDF(translateStatus(entry.status), unicodeFontLoaded)
         ]);
 
         autoTable(doc, {
@@ -1563,11 +1591,11 @@ const Reports = () => {
         });
       } else if (activeTab === 'tasks' && reportData.tasks.length > 0) {
         const tasksData = reportData.tasks.slice(0, 50).map(task => [
-          unicodeFontLoaded ? (task.employee?.name || t('reports.unknown', 'Unknown')) : cleanTextForPDF(task.employee?.name || t('reports.unknown', 'Unknown')),
-          unicodeFontLoaded ? (translateDepartment(task.employee?.department) || '') : cleanTextForPDF(translateDepartment(task.employee?.department) || ''),
-          unicodeFontLoaded ? task.title.substring(0, 40) : cleanTextForPDF(task.title.substring(0, 40)),
-          task.priority || '',
-          task.status || '',
+          cleanTextForPDF(task.employee?.name || t('reports.unknown', 'Unknown'), unicodeFontLoaded),
+          cleanTextForPDF(translateDepartment(task.employee?.department) || '', unicodeFontLoaded),
+          cleanTextForPDF(task.title.substring(0, 40), unicodeFontLoaded),
+          cleanTextForPDF(translatePriority(task.priority), unicodeFontLoaded),
+          cleanTextForPDF(translateStatus(task.status), unicodeFontLoaded),
           task.due_date || '-',
           `${task.estimated_hours || 0}h`,
           `${task.actual_hours || 0}h`
@@ -1594,11 +1622,11 @@ const Reports = () => {
         });
       } else if (activeTab === 'goals' && reportData.goals.length > 0) {
         const goalsData = reportData.goals.slice(0, 50).map(goal => [
-          unicodeFontLoaded ? (goal.employee?.name || t('reports.unknown', 'Unknown')) : cleanTextForPDF(goal.employee?.name || t('reports.unknown', 'Unknown')),
-          unicodeFontLoaded ? (translateDepartment(goal.employee?.department) || '') : cleanTextForPDF(translateDepartment(goal.employee?.department) || ''),
-          unicodeFontLoaded ? goal.title.substring(0, 40) : cleanTextForPDF(goal.title.substring(0, 40)),
+          cleanTextForPDF(goal.employee?.name || t('reports.unknown', 'Unknown'), unicodeFontLoaded),
+          cleanTextForPDF(translateDepartment(goal.employee?.department) || '', unicodeFontLoaded),
+          cleanTextForPDF(goal.title.substring(0, 40), unicodeFontLoaded),
           goal.category || '',
-          goal.status || '',
+          cleanTextForPDF(translateStatus(goal.status), unicodeFontLoaded),
           goal.target_date || '-',
           `${goal.progress || 0}%`
         ]);
