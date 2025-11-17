@@ -761,6 +761,7 @@ export default {
     emailPlaceholder: 'employe@exemple.fr',
     phonePlaceholder: '+33 6 12 34 56 78',
     addressPlaceholder: 'Ville, Pays',
+    salaryPlaceholder: 'Entrer le salaire de l\'employé',
     dob: 'Date de Naissance',
     address: 'Adresse',
     personalInfo: 'Informations Personnelles',
@@ -831,6 +832,7 @@ export default {
   common: {
     search: 'Rechercher',
     filter: 'Filtrer',
+    next: 'Suivant',
     back: 'Retour',
     submit: 'Soumettre',
     reset: 'Réinitialiser',
@@ -839,6 +841,7 @@ export default {
     type: 'Type',
     sort: 'Trier',
     save: 'Sauvegarder',
+    saving: 'Sauvegarde...',
     cancel: 'Annuler',
     delete: 'Supprimer',
     edit: 'Modifier',

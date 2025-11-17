@@ -619,6 +619,7 @@ export default {
     emailPlaceholder: 'employee@example.jp',
     phonePlaceholder: '+81 90 1234 5678',
     addressPlaceholder: '市区町村、国',
+    salaryPlaceholder: '従業員の給与を入力',
     dob: '生年月日',
     address: '住所',
     personalInfo: '個人情報',
@@ -689,6 +690,7 @@ export default {
   common: {
     search: '検索',
     filter: 'フィルター',
+    next: '次へ',
     back: '戻る',
     date: '日付',
     time: '時間',
@@ -700,6 +702,7 @@ export default {
     submit: '送信',
     sort: 'ソート',
     save: '保存',
+    saving: '保存中...',
     cancel: 'キャンセル',
     delete: '削除',
     edit: '編集',

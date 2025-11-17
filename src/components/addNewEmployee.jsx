@@ -359,7 +359,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
                 <div className="relative">
                   <Briefcase className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${text.secondary}`} />
                   <select name="position" value={formData.position} onChange={handleChange} className={`w-full pl-10 pr-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg`}>
-                    <option value="">Select Position</option>
+                    <option value="">{t('addEmployee.selectPosition', 'Select Position')}</option>
                     {positions.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
                   </select>
                 </div>
@@ -370,7 +370,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
                 <div className="relative">
                   <Building2 className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${text.secondary}`} />
                   <select name="department" value={formData.department} onChange={handleChange} className={`w-full pl-10 pr-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg`}>
-                    <option value="">Select Department</option>
+                    <option value="">{t('addEmployee.selectDepartment', 'Select Department')}</option>
                     {departments.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
                   </select>
                 </div>
@@ -395,7 +395,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
               <InputField 
                 name="salary" 
                 label={t('employees.salary')} 
-                placeholder={t('employees.salaryPlaceholder', 'Enter employee salary')}
+                placeholder={t('addEmployee.salaryPlaceholder', 'Enter employee salary')}
                 type="number" 
                 icon={DollarSign} 
                 min="0" 
@@ -444,7 +444,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
               <button onClick={handleNext} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{t('common.next', 'Next')}</button>
             ) : (
               <button onClick={handleSubmit} disabled={saving} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
-                {saving ? <span>Saving...</span> : <><Save className="h-4 w-4 inline mr-2" />{t('common.submit', 'Submit')}</>}
+                {saving ? <span>{t('common.saving', 'Saving...')}</span> : <><Save className="h-4 w-4 inline mr-2" />{t('common.save', 'Save')}</>}
               </button>
             )}
           </div>

@@ -587,6 +587,7 @@ export default {
     emailPlaceholder: 'mitarbeiter@beispiel.de',
     phonePlaceholder: '+49 123 456 789',
     addressPlaceholder: 'Stadt, Land',
+    salaryPlaceholder: 'Mitarbeitergehalt eingeben',
     dob: 'Geburtsdatum',
     address: 'Adresse',
     personalInfo: 'Persönliche Informationen',
@@ -656,11 +657,13 @@ export default {
   // Common
   common: {
     search: 'Suchen',
+    next: 'Weiter',
     back: 'Zurück',
     type: 'Typ',
     filter: 'Filter',
     sort: 'Sortieren',
     save: 'Speichern',
+    saving: 'Wird gespeichert...',
     cancel: 'Abbrechen',
     delete: 'Löschen',
     edit: 'Bearbeiten',
