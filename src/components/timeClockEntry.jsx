@@ -777,6 +777,13 @@ const TimeClockEntry = ({ currentLanguage }) => {
     { value: 'wfh', label: t('timeClock.hourTypes.wfh'), color: 'cyan' }
   ];
 
+  // Helper function to translate status
+  const translateStatus = (status) => {
+    if (!status) return '';
+    const statusKey = `status.${status.toLowerCase()}`;
+    return t(statusKey, status.charAt(0).toUpperCase() + status.slice(1));
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'approved': return `text-green-800 bg-green-200 ${isDarkMode ? 'bg-green-900/30 text-green-400' : ''} font-semibold`;
@@ -1331,7 +1338,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     </td>
                     <td className="p-3">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(entry.status)}`}>
-                        {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
+                        {translateStatus(entry.status)}
                       </span>
                     </td>
                     <td className="p-3">
