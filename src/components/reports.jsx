@@ -7,6 +7,7 @@ import {
   Download, 
   Users, 
   Activity,
+  Laptop,
   User,
   PlayCircle,
   Filter, 
@@ -75,7 +76,8 @@ const Reports = () => {
     const typeMap = {
       'regular': t('timeTracking.regular', 'Regular'),
       'overtime': t('timeTracking.overtime', 'Overtime'),
-      'bonus': t('timeTracking.bonus', 'Bonus')
+      'bonus': t('timeTracking.bonus', 'Bonus'),
+      'wfh': t('timeTracking.wfh', 'WFH')
     };
     return typeMap[type] || type;
   };
@@ -194,7 +196,7 @@ const Reports = () => {
         startDate = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
         break;
       default:
-        // Custom range - don't change filters
+    
         return;
     }
 
@@ -627,6 +629,7 @@ const Reports = () => {
         const regularHours = reportData.timeEntries.filter(e => e.hour_type === 'regular').reduce((sum, e) => sum + (e.hours || 0), 0);
         // Include both overtime and bonus as overtime hours
         const overtimeHours = reportData.timeEntries.filter(e => e.hour_type === 'overtime' || e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
+        const wfhHours = reportData.timeEntries.filter(e => e.hour_type === 'wfh').reduce((sum, e) => sum + (e.hours || 0), 0);
         const pendingEntries = reportData.timeEntries.filter(e => e.status === 'pending').length;
         const approvedEntries = reportData.timeEntries.filter(e => e.status === 'approved').length;
         
@@ -650,6 +653,7 @@ const Reports = () => {
         addMetric('Total Hours Logged:', totalHours.toFixed(2));
         addMetric('Regular Hours:', regularHours.toFixed(2));
         addMetric('Overtime Hours:', overtimeHours.toFixed(2));
+        addMetric('WFH Hours:', wfhHours.toFixed(2));
         addMetric('Pending Approvals:', pendingEntries);
         addMetric('Approved Entries:', approvedEntries);
         currentRow++;
@@ -783,6 +787,7 @@ const Reports = () => {
           const regularHours = employeeTimeEntries.filter(e => e.hour_type === 'regular').reduce((sum, e) => sum + (e.hours || 0), 0);
           // Include both overtime and bonus as overtime hours
           const overtimeHours = employeeTimeEntries.filter(e => e.hour_type === 'overtime' || e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
+          const wfhHours = employeeTimeEntries.filter(e => e.hour_type === 'wfh').reduce((sum, e) => sum + (e.hours || 0), 0);
           const approvedEntries = employeeTimeEntries.filter(e => e.status === 'approved').length;
           
           const addMetric = (metric, value, status, notes) => {
@@ -797,6 +802,7 @@ const Reports = () => {
           addMetric('Total Hours Logged', totalHours.toFixed(1), totalHours > 160 ? '⚠️ High' : '✅ Normal', `${employeeTimeEntries.length} entries`);
           addMetric('Regular Hours', regularHours.toFixed(1), '✅ Tracked', `${(regularHours/totalHours*100).toFixed(0)}% of total`);
           addMetric('Overtime Hours', overtimeHours.toFixed(1), overtimeHours > 20 ? '⚠️ High' : '✅ Normal', `${(overtimeHours/totalHours*100).toFixed(0)}% of total`);
+          addMetric('WFH Hours', wfhHours.toFixed(1), '✅ Tracked', `${totalHours > 0 ? (wfhHours/totalHours*100).toFixed(0) : 0}% of total`);
           addMetric('Approval Rate', `${approvedEntries}/${employeeTimeEntries.length}`, approvedEntries === employeeTimeEntries.length ? '✅ All Approved' : '⏳ Pending', `${((approvedEntries/employeeTimeEntries.length)*100).toFixed(0)}%`);
           perfRow++;
           
@@ -1177,13 +1183,91 @@ const Reports = () => {
   // Helper function to clean text for PDF rendering
   const cleanTextForPDF = (text) => {
     if (!text) return '';
-    // Normalize Unicode characters and remove any zero-width characters
-    // Also remove any excessive spaces that might cause character spacing issues
-    return text
-      .normalize('NFC')
-      .replace(/[\u200B-\u200D\uFEFF]/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
+    
+    // Special character mapping for Vietnamese and other diacritics
+    const charMap = {
+      // Vietnamese lowercase
+      'à': 'a', 'á': 'a', 'ả': 'a', 'ã': 'a', 'ạ': 'a',
+      'ă': 'a', 'ằ': 'a', 'ắ': 'a', 'ẳ': 'a', 'ẵ': 'a', 'ặ': 'a',
+      'â': 'a', 'ầ': 'a', 'ấ': 'a', 'ẩ': 'a', 'ẫ': 'a', 'ậ': 'a',
+      'đ': 'd',
+      'è': 'e', 'é': 'e', 'ẻ': 'e', 'ẽ': 'e', 'ẹ': 'e',
+      'ê': 'e', 'ề': 'e', 'ế': 'e', 'ể': 'e', 'ễ': 'e', 'ệ': 'e',
+      'ì': 'i', 'í': 'i', 'ỉ': 'i', 'ĩ': 'i', 'ị': 'i',
+      'ò': 'o', 'ó': 'o', 'ỏ': 'o', 'õ': 'o', 'ọ': 'o',
+      'ô': 'o', 'ồ': 'o', 'ố': 'o', 'ổ': 'o', 'ỗ': 'o', 'ộ': 'o',
+      'ơ': 'o', 'ờ': 'o', 'ớ': 'o', 'ở': 'o', 'ỡ': 'o', 'ợ': 'o',
+      'ù': 'u', 'ú': 'u', 'ủ': 'u', 'ũ': 'u', 'ụ': 'u',
+      'ư': 'u', 'ừ': 'u', 'ứ': 'u', 'ử': 'u', 'ữ': 'u', 'ự': 'u',
+      'ỳ': 'y', 'ý': 'y', 'ỷ': 'y', 'ỹ': 'y', 'ỵ': 'y',
+      // Vietnamese uppercase
+      'À': 'A', 'Á': 'A', 'Ả': 'A', 'Ã': 'A', 'Ạ': 'A',
+      'Ă': 'A', 'Ằ': 'A', 'Ắ': 'A', 'Ẳ': 'A', 'Ẵ': 'A', 'Ặ': 'A',
+      'Â': 'A', 'Ầ': 'A', 'Ấ': 'A', 'Ẩ': 'A', 'Ẫ': 'A', 'Ậ': 'A',
+      'Đ': 'D',
+      'È': 'E', 'É': 'E', 'Ẻ': 'E', 'Ẽ': 'E', 'Ẹ': 'E',
+      'Ê': 'E', 'Ề': 'E', 'Ế': 'E', 'Ể': 'E', 'Ễ': 'E', 'Ệ': 'E',
+      'Ì': 'I', 'Í': 'I', 'Ỉ': 'I', 'Ĩ': 'I', 'Ị': 'I',
+      'Ò': 'O', 'Ó': 'O', 'Ỏ': 'O', 'Õ': 'O', 'Ọ': 'O',
+      'Ô': 'O', 'Ồ': 'O', 'Ố': 'O', 'Ổ': 'O', 'Ỗ': 'O', 'Ộ': 'O',
+      'Ơ': 'O', 'Ờ': 'O', 'Ớ': 'O', 'Ở': 'O', 'Ỡ': 'O', 'Ợ': 'O',
+      'Ù': 'U', 'Ú': 'U', 'Ủ': 'U', 'Ũ': 'U', 'Ụ': 'U',
+      'Ư': 'U', 'Ừ': 'U', 'Ứ': 'U', 'Ử': 'U', 'Ữ': 'U', 'Ự': 'U',
+      'Ỳ': 'Y', 'Ý': 'Y', 'Ỷ': 'Y', 'Ỹ': 'Y', 'Ỵ': 'Y',
+      // German umlauts
+      'ä': 'ae', 'ö': 'oe', 'ü': 'ue', 'ß': 'ss',
+      'Ä': 'Ae', 'Ö': 'Oe', 'Ü': 'Ue',
+      // Spanish
+      'ñ': 'n', 'Ñ': 'N',
+      // French
+      'ç': 'c', 'Ç': 'C',
+      'œ': 'oe', 'Œ': 'OE',
+      'æ': 'ae', 'Æ': 'AE',
+      // Additional accented characters
+      'à': 'a', 'á': 'a', 'â': 'a', 'ã': 'a', 'å': 'a',
+      'À': 'A', 'Á': 'A', 'Â': 'A', 'Ã': 'A', 'Å': 'A',
+      'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
+      'È': 'E', 'É': 'E', 'Ê': 'E', 'Ë': 'E',
+      'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
+      'Ì': 'I', 'Í': 'I', 'Î': 'I', 'Ï': 'I',
+      'ò': 'o', 'ó': 'o', 'ô': 'o', 'õ': 'o', 'ø': 'o',
+      'Ò': 'O', 'Ó': 'O', 'Ô': 'O', 'Õ': 'O', 'Ø': 'O',
+      'ù': 'u', 'ú': 'u', 'û': 'u',
+      'Ù': 'U', 'Ú': 'U', 'Û': 'U',
+      'ý': 'y', 'ÿ': 'y',
+      'Ý': 'Y', 'Ÿ': 'Y'
+    };
+    
+    // Convert to string first
+    let cleaned = String(text);
+    
+    // Step 1: Apply character map for known characters
+    cleaned = cleaned.split('').map(char => charMap[char] || char).join('');
+    
+    // Step 2: Normalize to NFD (decomposed form) to separate base characters from diacritics
+    cleaned = cleaned.normalize('NFD');
+    
+    // Step 3: Remove combining diacritical marks
+    cleaned = cleaned.replace(/[\u0300-\u036f]/g, '');
+    
+    // Step 4: Handle any remaining non-ASCII characters that might cause issues
+    // Keep only printable ASCII characters (32-126), digits, and common punctuation
+    cleaned = cleaned.replace(/[^\x20-\x7E]/g, (match) => {
+      // If character is in our map, use the mapped value
+      if (charMap[match]) return charMap[match];
+      // Otherwise, try to get the base character or remove it
+      const base = match.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return base !== match ? base : '';
+    });
+    
+    // Step 5: Remove zero-width characters and control characters
+    cleaned = cleaned.replace(/[\u200B-\u200D\uFEFF\u0000-\u001F\u007F-\u009F]/g, '');
+    
+    // Step 6: Clean up excessive spaces
+    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+    
+    // Step 7: Ensure no empty result - return a placeholder if needed
+    return cleaned || 'N/A';
   };
 
   // PDF Export with Charts and Tables
@@ -1192,18 +1276,74 @@ const Reports = () => {
     try {
       const doc = new jsPDF('p', 'mm', 'a4');
       
-      // Add Unicode font support for special characters
-      doc.setFont('helvetica', 'normal');
-      doc.setLanguage('de-DE'); // Set language for proper text rendering
+      // ENHANCED: Unicode font support for CJK (Chinese/Japanese/Korean), Thai, Vietnamese, and special characters
+      let unicodeFontLoaded = false;
+      
+      try {
+        // Option 1: Try loading Noto Sans from CDN (supports Thai, Vietnamese, Japanese, Korean, etc.)
+        const fontUrl = 'https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSans/NotoSans-Regular.ttf';
+        
+        const fontResponse = await fetch(fontUrl);
+        if (!fontResponse.ok) throw new Error('Font fetch failed');
+        
+        const fontData = await fontResponse.arrayBuffer();
+        const base64Font = btoa(
+          new Uint8Array(fontData).reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
+        
+        doc.addFileToVFS('NotoSans-Regular.ttf', base64Font);
+        doc.addFont('NotoSans-Regular.ttf', 'NotoSans', 'normal');
+        doc.setFont('NotoSans');
+        unicodeFontLoaded = true;
+        
+        console.log('✓ Unicode font (Noto Sans) loaded successfully for PDF export');
+      } catch (fontError) {
+        console.warn('Failed to load Unicode font from CDN, trying fallback...', fontError);
+        
+        // Option 2: Fallback to alternative CDN
+        try {
+          const fallbackUrl = 'https://fonts.gstatic.com/s/notosans/v30/o-0IIpQlx3QUlC5A4PNr5TRG.ttf';
+          const fontResponse = await fetch(fallbackUrl);
+          
+          if (fontResponse.ok) {
+            const fontData = await fontResponse.arrayBuffer();
+            const base64Font = btoa(
+              new Uint8Array(fontData).reduce((data, byte) => data + String.fromCharCode(byte), '')
+            );
+            
+            doc.addFileToVFS('NotoSans.ttf', base64Font);
+            doc.addFont('NotoSans.ttf', 'NotoSans', 'normal');
+            doc.setFont('NotoSans');
+            unicodeFontLoaded = true;
+            
+            console.log('✓ Unicode font loaded from fallback CDN');
+          }
+        } catch (fallbackError) {
+          console.warn('Fallback font also failed, using sanitization:', fallbackError);
+        }
+      }
+      
+      // If Unicode font fails to load, use helvetica with aggressive sanitization
+      if (!unicodeFontLoaded) {
+        doc.setFont('helvetica', 'normal');
+        console.log('⚠ Using Helvetica with character sanitization (Unicode font unavailable)');
+      }
+      
+      // Helper to get the correct font name for autoTable
+      const getTableFont = () => unicodeFontLoaded ? 'NotoSans' : 'helvetica';
       
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       let yPosition = 20;
 
-      // Employee name for filename
-      const employeeName = selectedEmployee !== 'all' ? 
-        reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_') : 
-        'All_Employees';
+      // Employee name for filename - sanitize for safe filename
+      const rawEmployeeName = selectedEmployee !== 'all' ? 
+        reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name : 
+        'All Employees';
+      // Only sanitize filename if Unicode font failed to load, otherwise keep original
+      const employeeName = unicodeFontLoaded ? 
+        (rawEmployeeName || 'All_Employees').replace(/\s+/g, '_').replace(/[<>:"/\\|?*]/g, '_') :
+        cleanTextForPDF(rawEmployeeName || 'All_Employees').replace(/\s+/g, '_');
 
       // Header
       doc.setFontSize(20);
@@ -1219,7 +1359,10 @@ const Reports = () => {
       doc.text(`${t('reports.period', 'Period')}: ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}`, pageWidth / 2, yPosition, { align: 'center' });
       
       yPosition += 5;
-      doc.text(`${t('reports.employee', 'Employee')}: ${selectedEmployee === 'all' ? t('reports.allEmployees', 'All Employees') : employeeName}`, pageWidth / 2, yPosition, { align: 'center' });
+      const displayEmployeeName = selectedEmployee === 'all' ? 
+        t('reports.allEmployees', 'All Employees') : 
+        (unicodeFontLoaded ? rawEmployeeName : cleanTextForPDF(rawEmployeeName));
+      doc.text(`${t('reports.employee', 'Employee')}: ${displayEmployeeName}`, pageWidth / 2, yPosition, { align: 'center' });
       
       yPosition += 15;
 
@@ -1274,7 +1417,7 @@ const Reports = () => {
           yPosition += 5;
 
           const timeEntriesData = reportData.timeEntries.slice(0, 20).map(entry => [
-            cleanTextForPDF(entry.employee?.name || t('reports.unknown', 'Unknown')),
+            unicodeFontLoaded ? (entry.employee?.name || t('reports.unknown', 'Unknown')) : cleanTextForPDF(entry.employee?.name || t('reports.unknown', 'Unknown')),
             entry.date,
             `${entry.hours || 0}h`,
             entry.hour_type || '',
@@ -1290,12 +1433,12 @@ const Reports = () => {
               fillColor: [70, 173, 71], 
               textColor: 255, 
               fontStyle: 'bold',
-              font: 'helvetica'
+              font: unicodeFontLoaded ? 'NotoSans' : 'helvetica'
             },
             styles: { 
               fontSize: 8, 
               cellPadding: 2,
-              font: 'helvetica',
+              font: unicodeFontLoaded ? 'NotoSans' : 'helvetica',
               fontStyle: 'normal'
             },
             margin: { left: 15, right: 15 }
@@ -1338,7 +1481,7 @@ const Reports = () => {
             styles: { 
               fontSize: 8, 
               cellPadding: 2,
-              font: 'helvetica',
+              font: getTableFont(),
               fontStyle: 'normal'
             },
             margin: { left: 15, right: 15 }
@@ -1376,12 +1519,12 @@ const Reports = () => {
               fillColor: [91, 155, 213], 
               textColor: 255, 
               fontStyle: 'bold',
-              font: 'helvetica'
+              font: getTableFont()
             },
             styles: { 
               fontSize: 8, 
               cellPadding: 2,
-              font: 'helvetica',
+              font: getTableFont(),
               fontStyle: 'normal'
             },
             margin: { left: 15, right: 15 }
@@ -1389,8 +1532,8 @@ const Reports = () => {
         }
       } else if (activeTab === 'time-entries' && reportData.timeEntries.length > 0) {
         const timeEntriesData = reportData.timeEntries.slice(0, 50).map(entry => [
-          cleanTextForPDF(entry.employee?.name || t('reports.unknown', 'Unknown')),
-          cleanTextForPDF(translateDepartment(entry.employee?.department) || ''),
+          unicodeFontLoaded ? (entry.employee?.name || t('reports.unknown', 'Unknown')) : cleanTextForPDF(entry.employee?.name || t('reports.unknown', 'Unknown')),
+          unicodeFontLoaded ? (translateDepartment(entry.employee?.department) || '') : cleanTextForPDF(translateDepartment(entry.employee?.department) || ''),
           entry.date,
           entry.clock_in || '',
           entry.clock_out || '',
@@ -1408,21 +1551,21 @@ const Reports = () => {
             fillColor: [70, 173, 71], 
             textColor: 255, 
             fontStyle: 'bold',
-            font: 'helvetica'
+            font: getTableFont()
           },
           styles: { 
             fontSize: 7, 
             cellPadding: 1.5,
-            font: 'helvetica',
+            font: getTableFont(),
             fontStyle: 'normal'
           },
           margin: { left: 15, right: 15 }
         });
       } else if (activeTab === 'tasks' && reportData.tasks.length > 0) {
         const tasksData = reportData.tasks.slice(0, 50).map(task => [
-          cleanTextForPDF(task.employee?.name || t('reports.unknown', 'Unknown')),
-          cleanTextForPDF(translateDepartment(task.employee?.department) || ''),
-          cleanTextForPDF(task.title.substring(0, 40)),
+          unicodeFontLoaded ? (task.employee?.name || t('reports.unknown', 'Unknown')) : cleanTextForPDF(task.employee?.name || t('reports.unknown', 'Unknown')),
+          unicodeFontLoaded ? (translateDepartment(task.employee?.department) || '') : cleanTextForPDF(translateDepartment(task.employee?.department) || ''),
+          unicodeFontLoaded ? task.title.substring(0, 40) : cleanTextForPDF(task.title.substring(0, 40)),
           task.priority || '',
           task.status || '',
           task.due_date || '-',
@@ -1439,21 +1582,21 @@ const Reports = () => {
             fillColor: [255, 192, 0], 
             textColor: 0, 
             fontStyle: 'bold',
-            font: 'helvetica'
+            font: getTableFont()
           },
           styles: { 
             fontSize: 7, 
             cellPadding: 1.5,
-            font: 'helvetica',
+            font: getTableFont(),
             fontStyle: 'normal'
           },
           margin: { left: 15, right: 15 }
         });
       } else if (activeTab === 'goals' && reportData.goals.length > 0) {
         const goalsData = reportData.goals.slice(0, 50).map(goal => [
-          cleanTextForPDF(goal.employee?.name || t('reports.unknown', 'Unknown')),
-          cleanTextForPDF(translateDepartment(goal.employee?.department) || ''),
-          cleanTextForPDF(goal.title.substring(0, 40)),
+          unicodeFontLoaded ? (goal.employee?.name || t('reports.unknown', 'Unknown')) : cleanTextForPDF(goal.employee?.name || t('reports.unknown', 'Unknown')),
+          unicodeFontLoaded ? (translateDepartment(goal.employee?.department) || '') : cleanTextForPDF(translateDepartment(goal.employee?.department) || ''),
+          unicodeFontLoaded ? goal.title.substring(0, 40) : cleanTextForPDF(goal.title.substring(0, 40)),
           goal.category || '',
           goal.status || '',
           goal.target_date || '-',
@@ -1469,12 +1612,12 @@ const Reports = () => {
             fillColor: [91, 155, 213], 
             textColor: 255, 
             fontStyle: 'bold',
-            font: 'helvetica'
+            font: getTableFont()
           },
           styles: { 
             fontSize: 7, 
             cellPadding: 1.5,
-            font: 'helvetica',
+            font: getTableFont(),
             fontStyle: 'normal'
           },
           margin: { left: 15, right: 15 }
@@ -1750,6 +1893,7 @@ const Reports = () => {
         const regularHours = employeeTimeEntries.filter(e => e.hour_type === 'regular').reduce((sum, e) => sum + (e.hours || 0), 0);
         // Include both overtime and bonus as overtime hours
         const overtimeHours = employeeTimeEntries.filter(e => e.hour_type === 'overtime' || e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
+        const wfhHours = employeeTimeEntries.filter(e => e.hour_type === 'wfh').reduce((sum, e) => sum + (e.hours || 0), 0);
         const pendingEntries = employeeTimeEntries.filter(e => e.status === 'pending').length;
         const approvedEntries = employeeTimeEntries.filter(e => e.status === 'approved').length;
 
@@ -1800,6 +1944,12 @@ const Reports = () => {
                     <HeartPlus className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                     <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.overtime', 'Overtime')}</p>
                     <p className={`text-2xl font-bold ${text.primary}`}>{overtimeHours.toFixed(1)}</p>
+                  </div>
+                  
+                  <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                    <Laptop className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
+                    <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.wfh', 'Working From Home')}</p>
+                    <p className={`text-2xl font-bold ${text.primary}`}>{wfhHours.toFixed(1)}</p>
                   </div>
                 </>
               )}
@@ -1858,6 +2008,10 @@ const Reports = () => {
                     <div className="flex justify-between">
                       <span className={text.secondary}>{t('reports.overtime', 'Overtime')}:</span>
                       <span className={`font-medium ${text.primary}`}>{overtimeHours.toFixed(1)}h</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className={text.secondary}>{t('reports.wfh', 'WFH')}:</span>
+                      <span className={`font-medium ${text.primary}`}>{wfhHours.toFixed(1)}h</span>
                     </div>
                   </div>
                 </div>

@@ -167,6 +167,7 @@ export default {
     workDays: 'Arbeitstage',
     leaveDays: 'Urlaubstage',
     overtime: 'Überstunden',
+    wfh: 'Arbeiten von zu Hause',
     holidayOvertime: 'Feiertagsüberstunden',
     hours: 'Stunden',
     days: 'Tage',

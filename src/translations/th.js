@@ -270,6 +270,7 @@ export default {
     workDays: 'วันทำงาน',
     leaveDays: 'วันลา',
     overtime: 'ชั่วโมงล่วงเวลา',
+    wfh: 'ชั่วโมงทำงานจากระยะไกล',
     holidayOvertime: 'ล่วงเวลาวันหยุด',
     hours: 'ชั่วโมง',
     days: 'วัน',

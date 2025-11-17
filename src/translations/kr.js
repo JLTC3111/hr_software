@@ -273,6 +273,7 @@ export default {
     workDays: '근무 일수',
     leaveDays: '휴가 일수',
     overtime: '초과 근무 시간',
+    wfh: '재택 근무 시간',
     holidayOvertime: '휴일 초과 근무',
     hours: '시간',
     days: '일',

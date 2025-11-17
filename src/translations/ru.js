@@ -289,6 +289,7 @@ export default {
     workDays: 'Рабочие Дни',
     leaveDays: 'Дни Отпуска/Отгула',
     overtime: 'Сверхурочные Часы',
+    wfh: 'Часы Удаленной Работы',
     holidayOvertime: 'Сверхурочные в Праздники',
     hours: 'часов',
     days: 'дней',

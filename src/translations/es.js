@@ -343,6 +343,7 @@ login: {
     workDays: 'Jours travaillés',
     leaveDays: 'Jours de congé',
     overtime: 'Heures supplémentaires',
+    wfh: 'Heures télétravail',
     holidayOvertime: 'Heures sup. jour férié',
     hours: 'heures',
     days: 'jours',

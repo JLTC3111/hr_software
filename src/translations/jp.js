@@ -271,6 +271,7 @@ export default {
     workDays: '勤務日数',
     leaveDays: '休暇日数',
     overtime: '残業時間',
+    wfh: '在宅勤務時間',
     holidayOvertime: '休日残業',
     hours: '時間',
     days: '日',
