@@ -214,7 +214,8 @@ export default {
       regular: 'เวลาปกติ',
       holiday: 'วันหยุดนักขัตฤกษ์',
       weekend: 'วันหยุดสุดสัปดาห์',
-      bonus: 'ชั่วโมงพิเศษ'
+      bonus: 'ชั่วโมงพิเศษ',
+      wfh: 'ชั่วโมงทำงานจากระยะไกล',
     },
     errors: {
       dateRequired: 'กรุณาเลือกวันที่',
@@ -781,7 +782,8 @@ export default {
       regular: 'ปกติ',
       holiday: 'วันหยุด',
       weekend: 'สุดสัปดาห์/ล่วงเวลา',
-      bonus: 'โบนัส'
+      bonus: 'โบนัส',
+      wfh: 'ชั่วโมงทำงานจากระยะไกล',
     },
     errors: {
       checkFailed: 'ไม่สามารถตรวจสอบรายการที่มีอยู่',

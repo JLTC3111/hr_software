@@ -393,7 +393,8 @@ export default {
       regular: 'Regular',
       holiday: 'Holiday',
       weekend: 'Weekend/Overtime',
-      bonus: 'Bonus'
+      bonus: 'Bonus',
+      wfh: 'Working From Home (Online)'
     },
     errors: {
       checkFailed: 'Failed to check for existing entries',
@@ -445,7 +446,8 @@ export default {
       regular: 'Regular Hours',
       holiday: 'Holiday',
       weekend: 'Weekend/Overtime',
-      bonus: 'Bonus Hours'
+      bonus: 'Bonus Hours',
+      wfh: 'Working From Home (Online)'
     },
     errors: {
       dateRequired: 'Date is required',

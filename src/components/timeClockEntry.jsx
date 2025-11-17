@@ -773,7 +773,8 @@ const TimeClockEntry = ({ currentLanguage }) => {
     { value: 'regular', label: t('timeClock.hourTypes.regular'), color: 'blue' },
     { value: 'holiday', label: t('timeClock.hourTypes.holiday'), color: 'purple' },
     { value: 'weekend', label: t('timeClock.hourTypes.weekend'), color: 'green' },
-    { value: 'bonus', label: t('timeClock.hourTypes.bonus'), color: 'yellow' }
+    { value: 'bonus', label: t('timeClock.hourTypes.bonus'), color: 'yellow' },
+    { value: 'wfh', label: t('timeClock.hourTypes.wfh'), color: 'cyan' }
   ];
 
   const getStatusColor = (status) => {
@@ -1093,7 +1094,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                 disabled={isSubmitting}
                 // Add flex, items-center, justify-center, and space-x-2 for icon alignment
                 className={`
-                    w-full py-3 px-6 rounded-lg font-medium text-white transition-colors 
+                    w-full py-3 px-6 rounded-lg font-medium cursor-pointer text-white transition-colors 
                     flex items-center justify-center space-x-2 
                     ${isSubmitting
                         ? 'bg-gray-400 cursor-not-allowed'
@@ -1121,7 +1122,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
             <div className={`mt-4 pt-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
               <button
                 onClick={() => setShowLeaveModal(true)}
-                className="w-full py-3 px-6 rounded-lg font-medium text-white bg-green-600 hover:bg-green-700 active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
+                className="w-full py-3 px-6 rounded-lg font-medium cursor-pointer text-white bg-green-600 hover:bg-green-700 active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
               >
                 <Calendar className="w-5 h-5" />
                 <span>{t('timeClock.requestLeave', 'Request Leave')}</span>

@@ -280,7 +280,8 @@ export default {
       regular: 'Giờ Thường',
       holiday: 'Ngày Lễ',
       weekend: 'Cuối Tuần/Tăng Ca',
-      bonus: 'Giờ Thưởng'
+      bonus: 'Giờ Thưởng',
+      wfh: 'Làm Việc Tại Nhà (Trực Tuyến)'
     },
     errors: {
       checkFailed: 'Không thể kiểm tra các mục nhập hiện tại',
@@ -791,7 +792,8 @@ export default {
       regular: 'Giờ Thường',
       holiday: 'Ngày Lễ',
       weekend: 'Cuối Tuần',
-      bonus: 'Giờ Làm Thêm'
+      bonus: 'Giờ Làm Thêm',
+      wfh: 'Làm Việc Tại Nhà (Trực Tuyến)'
     },
     errors: {
       dateRequired: 'Vui lòng chọn ngày',

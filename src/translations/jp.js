@@ -214,7 +214,8 @@ export default {
       regular: '通常勤務',
       holiday: '祝日勤務',
       weekend: '週末勤務',
-      bonus: '特別勤務'
+      bonus: '特別勤務',
+      wfh: '在宅勤務',
     },
     errors: {
       dateRequired: '日付を選択してください',
@@ -772,7 +773,8 @@ export default {
       regular: '通常',
       holiday: '祝日',
       weekend: '週末/残業',
-      bonus: 'ボーナス'
+      bonus: 'ボーナス',
+      wfh: '在宅勤務',
     },
     errors: {
       checkFailed: '既存のエントリの確認に失敗しました',

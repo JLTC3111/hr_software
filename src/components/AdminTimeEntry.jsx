@@ -534,10 +534,11 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                             pr-10
                         `}
           >
-            <option value="regular">{t('adminTimeEntry.regularHours', 'Regular Hours')}</option>
-            <option value="weekend">{t('adminTimeEntry.weekendOvertime', 'Weekend/Overtime')}</option>
-            <option value="holiday">{t('adminTimeEntry.holiday', 'Holiday')}</option>
-            <option value="bonus">{t('adminTimeEntry.bonusHours', 'Bonus Hours')}</option>
+            <option value="regular">{t('adminTimeEntry.hourTypes.regular', 'Regular Hours')}</option>
+            <option value="weekend">{t('adminTimeEntry.hourTypes.weekend', 'Weekend/Overtime')}</option>
+            <option value="holiday">{t('adminTimeEntry.hourTypes.holiday', 'Holiday')}</option>
+            <option value="bonus">{t('adminTimeEntry.hourTypes.bonus', 'Bonus Hours')}</option>
+            <option value="wfh">{t('adminTimeEntry.hourTypes.wfh', 'Working From Home (Online)')}</option>
           </select>
           <ChevronsUpDown className={`absolute top-[70%] right-3 transform -translate-y-1/2 pointer-events-none h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`} />
         </div>
@@ -610,7 +611,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
         <button
           type="submit"
           disabled={loading || selectedEmployees.length === 0}
-          className={`w-full flex items-center justify-center space-x-2 px-6 py-3 text-white rounded-lg transition-colors shadow-lg hover:shadow-xl ${
+          className={`w-full flex items-center justify-center space-x-2 px-6 py-3 cursor-pointer text-white rounded-lg transition-colors shadow-lg hover:shadow-xl ${
             isDarkMode 
               ? 'bg-blue-700 hover:bg-blue-600 disabled:bg-gray-600' 
               : 'bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400'

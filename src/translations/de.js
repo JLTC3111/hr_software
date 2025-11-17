@@ -704,7 +704,8 @@ export default {
       regular: 'Reguläre Stunden',
       holiday: 'Feiertag',
       weekend: 'Wochenende',
-      bonus: 'Bonusstunden'
+      bonus: 'Bonusstunden',
+      wfh: 'Homeoffice Stunden',
     },
     errors: {
       dateRequired: 'Datum ist erforderlich',
@@ -797,7 +798,8 @@ export default {
       regular: 'Regulär',
       holiday: 'Feiertag',
       weekend: 'Wochenende/Überstunden',
-      bonus: 'Bonus'
+      bonus: 'Bonus',
+      wfh: 'Homeoffice Stunden',
     },
     errors: {
       checkFailed: 'Fehler beim Überprüfen vorhandener Einträge',

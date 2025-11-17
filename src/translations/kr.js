@@ -217,7 +217,8 @@ export default {
       regular: '일반 근무',
       holiday: '공휴일 근무',
       weekend: '주말 근무',
-      bonus: '보너스 근무'
+      bonus: '보너스 근무',
+      wfh: '재택근무',
     },
     errors: {
       dateRequired: '날짜를 선택하세요',
@@ -752,7 +753,8 @@ export default {
       regular: '정규',
       holiday: '휴일',
       weekend: '주말/초과 근무',
-      bonus: '보너스'
+      bonus: '보너스',
+      wfh: '재택근무',
     },
     errors: {
       checkFailed: '기존 입력 확인 실패',

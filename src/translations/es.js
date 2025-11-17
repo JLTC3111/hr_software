@@ -186,7 +186,8 @@ login: {
       regular: 'Regular',
       holiday: 'Día festivo',
       weekend: 'Fin de semana/Horas extras',
-      bonus: 'Bono'
+      bonus: 'Bono',
+      wfh: 'Horas de teletrabajo',
     },
     errors: {
       checkFailed: 'Error al verificar entradas existentes',
@@ -234,7 +235,8 @@ login: {
       regular: 'Horas Regulares',
       holiday: 'Festivo',
       weekend: 'Fin de Semana',
-      bonus: 'Horas Bonus'
+      bonus: 'Horas Bonus',
+      wfh: 'Horas de teletrabajo',
     },
     errors: {
       dateRequired: 'La fecha es requerida',

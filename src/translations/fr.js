@@ -199,7 +199,8 @@ export default {
       regular: 'Heures normales',
       holiday: 'Jour férié',
       weekend: 'Week-end',
-      bonus: 'Heures supplémentaires'
+      bonus: 'Heures supplémentaires',
+      wfh: 'Heures de télétravail',
     },
     errors: {
       dateRequired: 'Veuillez sélectionner une date',
@@ -334,7 +335,8 @@ export default {
       regular: 'Régulier',
       holiday: 'Jour férié',
       weekend: 'Week-end/Heures supplémentaires',
-      bonus: 'Bonus'
+      bonus: 'Bonus',
+      wfh: 'Heures de télétravail',
     },
     errors: {
       checkFailed: 'Échec de la vérification des entrées existantes',
