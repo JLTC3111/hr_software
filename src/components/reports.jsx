@@ -465,7 +465,7 @@ const Reports = () => {
         [t('timeTracking.hourType', 'Hour Type')]: entry.hour_type || '',
         [t('timeTracking.status', 'Status')]: entry.status || '',
         [t('timeTracking.notes', 'Notes')]: entry.notes || '',
-        [t('general.createdAt', 'Created At')]: new Date(entry.created_at).toLocaleString()
+        [t('timeTracking.createdAt', 'Created At')]: new Date(entry.created_at).toLocaleString()
       }));
 
       const employeeName = selectedEmployee !== 'all' ? 
