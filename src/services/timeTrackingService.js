@@ -813,7 +813,7 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
       // Only count pending or approved
       if (entry.status === 'pending' || entry.status === 'approved') {
         uniqueDays.add(entry.date);
-        const hours = parseFloat(entry.hours || 0);
+        const hours = Math.round(parseFloat(entry.hours || 0) * 100) / 100;
         
         switch (entry.hour_type) {
           case 'regular':
@@ -850,7 +850,7 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
     let overtimeRegular = 0;
     let overtimeHoliday = 0;
     (overtimeLogs || []).forEach(log => {
-      const hours = parseFloat(log.hours || 0);
+      const hours = Math.round(parseFloat(log.hours || 0) * 100) / 100;
       if (log.overtime_type === 'holiday') {
         overtimeHoliday += hours;
       } else {
@@ -860,14 +860,14 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
     
     // AGGREGATE INTO SUMMARY COLUMNS (matching database logic)
     // overtime_hours = weekend + bonus + overtime_logs.regular
-    const overtimeHours = weekendHours + bonusHours + overtimeRegular;
+    const overtimeHours = Math.round((weekendHours + bonusHours + overtimeRegular) * 100) / 100;
     
     // holiday_overtime_hours = holiday + overtime_logs.holiday
-    const holidayOvertimeHours = holidayHours + overtimeHoliday;
+    const holidayOvertimeHours = Math.round((holidayHours + overtimeHoliday) * 100) / 100;
     
     // total_hours = ALL hours from all sources
-    const totalHours = regularHours + weekendHours + holidayHours + 
-                       bonusHours + overtimeRegular + overtimeHoliday;
+    const totalHours = Math.round((regularHours + weekendHours + holidayHours + 
+                       bonusHours + overtimeRegular + overtimeHoliday) * 100) / 100;
     
     const totalDays = daysWorked + leaveDays;
     const workingDaysInMonth = 22;
@@ -879,11 +879,11 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
       year,
       days_worked: daysWorked,
       leave_days: leaveDays,
-      regular_hours: regularHours,
+      regular_hours: Math.round(regularHours * 100) / 100,
       overtime_hours: overtimeHours,
       holiday_overtime_hours: holidayOvertimeHours,
       total_hours: totalHours,
-      attendance_rate: Math.min(attendanceRate, 100)
+      attendance_rate: Math.round(Math.min(attendanceRate, 100) * 100) / 100
     };
   } catch (error) {
     console.error('Error calculating summary from raw data:', error);

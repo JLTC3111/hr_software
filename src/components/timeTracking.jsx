@@ -29,7 +29,7 @@ const TimeTracking = ({ employees }) => {
   const [selectedEmployee, setSelectedEmployee] = useState(getCurrentEmployeeId());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // 1-indexed for Supabase
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [activeTab, setActiveTab] = useState('summary'); // 'summary' or 'overview'
+  const [activeTab, setActiveTab] = useState('overview'); // 'summary' or 'overview'
   
   // Loading and data states
   const [loading, setLoading] = useState(true);
