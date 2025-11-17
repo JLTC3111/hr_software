@@ -266,7 +266,7 @@ export default {
     overviewTitle: 'ภาพรวมบริษัท',
     clockIn: 'ตอกบัตรเข้า',
     clockOut: 'ตอกบัตรออก',
-    hours: 'ชั่วโมง',
+    amountHours: 'ชั่วโมง',
     hourType: 'ประเภทชั่วโมง',
     status: 'สถานะ',
     notes: 'บันทึก',

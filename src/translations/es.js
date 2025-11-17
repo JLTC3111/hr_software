@@ -341,7 +341,7 @@ login: {
     overviewTitle: 'Aperçu de l\'entreprise',
     clockIn: 'Pointage Entrée',
     clockOut: 'Pointage Sortie',
-    hours: 'Horas',
+    amountHours: 'Horas',
     hourType: 'Tipo de Hora',
     status: 'Estado',
     notes: 'Notas',

@@ -285,7 +285,7 @@ export default {
     overviewTitle: 'Обзор компании',
     clockIn: 'Отметка Входа',
     clockOut: 'Отметка Выхода',
-    hours: 'Часы',
+    amountHours: 'Часы',
     hourType: 'Тип часов',
     status: 'Статус',
     notes: 'Заметки',

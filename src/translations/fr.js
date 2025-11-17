@@ -251,7 +251,7 @@ export default {
     overviewTitle: 'Aperçu de l\'entreprise',
     clockIn: 'Pointage Entrée',
     clockOut: 'Pointage Sortie',
-    hours: 'Heures',
+    amountHours: 'Heures',
     hourType: 'Type d\'heure',
     status: 'Statut',
     notes: 'Remarques',

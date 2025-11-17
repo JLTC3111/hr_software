@@ -267,7 +267,7 @@ export default {
     overviewTitle: '会社概要',
     clockIn: '出勤',
     clockOut: '退勤',
-     hours: '時間',
+    amountHours: '時間',
     hourType: '勤務時間の種類',
     status: 'ステータス',
     notes: 'メモ',

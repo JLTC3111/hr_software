@@ -269,7 +269,7 @@ export default {
     overviewTitle: '회사 개요',
     clockIn: '출근 기록',
     clockOut: '퇴근 기록',
-     hours: '시간',
+    amountHours: '시간',
     hourType: '근무 시간 유형',
     status: '상태',
     notes: '메모',
