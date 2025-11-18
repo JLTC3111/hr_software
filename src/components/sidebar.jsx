@@ -128,8 +128,14 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           top-0 
           ${!isResizing ? 'transition-all duration-300 ease-in-out' : ''}
           absolute lg:sticky
+          top-0
           left-0
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-[200%] lg:translate-x-0'}
+          transform
+          lg:transform-none
+          w-64
+          flex 
+          flex-col
           z-40
           relative
         `}
