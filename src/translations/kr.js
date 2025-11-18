@@ -375,6 +375,8 @@ export default {
   // Reports
   reports: {
     title: '보고서 및 분석',
+    filenamePrefix: 'HR_보고서_',
+    allEmployees: '모든_직원',
     achieved: '달성됨', 
     language: '언어',
     generated: '생성일',

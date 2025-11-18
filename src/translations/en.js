@@ -636,6 +636,31 @@ export default {
   // Reports
   reports: {
     title: 'Reports & Analytics',
+    allEmployees: 'All_Employees',
+    filenamePrefix: 'HR_Report_',
+    generateReport: 'Generate Report',
+    selectReportType: 'Select Report Type',
+    selectDateRange: 'Select Date Range',
+    selectFilters: 'Select Filters',
+    previewData: 'Preview Data',
+    exportCSV: 'Export to CSV',
+    exportingIncludes: '*Exporting includes all filtered data, not just previewed records',
+    // Report Types
+    reportTypes: 'Report Types',
+    employeePerformance: 'Employee Performance',
+    salaryAnalysis: 'Salary Analysis',
+    attendanceReport: 'Attendance Report',
+    recruitmentMetrics: 'Recruitment Metrics',
+    departmentComparison: 'Department Comparison',
+    // Report Categories
+    categories: 'Report Categories',
+    performanceReports: 'Performance Reports',
+    attendanceReports: 'Attendance Reports',
+    recruitmentReports: 'Recruitment Reports',
+    salaryReports: 'Salary Reports',
+    // Report Names 
+    employeeGrowth: 'Employee Growth',
+    departmentDistribution: 'Department Distribution',
     personalGoals: 'Personal Goals',
     attendance: 'Attendance',
     language: 'Language',

@@ -436,6 +436,8 @@ export default {
   // Reports
   reports: {
     title: 'Отчёты и аналитика',
+    filenamePrefix: 'HRMS_Отчет',
+    allEmployees: 'Все сотрудники',
     achieved: 'Достигнуто',
     language: 'Язык',
     generated: 'Создано',

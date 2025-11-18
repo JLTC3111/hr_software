@@ -372,6 +372,8 @@ export default {
   // Reports
   reports: {
     title: 'รายงานและการวิเคราะห์',
+    filenamePrefix: 'รายงาน_',
+    allEmployees: 'พนักงานทั้งหมด',
     language: 'ภาษา',
     generated: 'สร้างเมื่อ',
     achieved: 'ที่บรรลุ',

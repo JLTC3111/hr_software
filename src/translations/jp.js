@@ -373,6 +373,8 @@ export default {
   // Reports
   reports: {
     title: 'レポート・分析',
+    allEmployees: '全従業員',
+    filenamePrefix: '人事報告書_',
     language: '言語',
     generated: '生成日',
     achieved: '達成',

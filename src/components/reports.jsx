@@ -1156,7 +1156,7 @@ const Reports = () => {
       }
 
       // Write the file with ExcelJS
-      const filename = `HR_Report_${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.xlsx`;
+      const filename = `${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.xlsx`;
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = URL.createObjectURL(blob);
@@ -1460,11 +1460,11 @@ const Reports = () => {
       // Employee name for filename - sanitize for safe filename
       const rawEmployeeName = selectedEmployee !== 'all' ? 
         reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name : 
-        'All Employees';
+        t('reports.allEmployees', 'All Employees');
       // Only sanitize filename if Unicode font failed to load, otherwise keep original
       const employeeName = unicodeFontLoaded ? 
-        (rawEmployeeName || 'All_Employees').replace(/\s+/g, '_').replace(/[<>:"/\\|?*]/g, '_') :
-        cleanTextForPDF(rawEmployeeName || 'All_Employees', false).replace(/\s+/g, '_');
+        (rawEmployeeName || `${t('reports.allEmployees', '')}`).replace(/\s+/g, '_').replace(/[<>:"/\\|?*]/g, '_') :
+        cleanTextForPDF(rawEmployeeName || `${t('reports.allEmployees', '')}`, false).replace(/\s+/g, '_');
 
       // Header
       doc.setFontSize(20);
@@ -1830,7 +1830,7 @@ const Reports = () => {
       }
 
       // Save the PDF
-      const filename = `HR_Report_${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.pdf`;
+      const filename = `${t('reports.filenamePrefix', 'HR_Report')}_${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.pdf`;
       doc.save(filename);
       
       alert(t('reports.pdfExportSuccess', 'PDF report exported successfully!'));

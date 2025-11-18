@@ -452,6 +452,8 @@ login: {
   // Reports
   reports: {
     title: 'Informes y Análisis',
+    allEmployees: 'Todos_los_Empleados',
+    filenamePrefix: 'Informe_RH',
     achieved: 'Logrado',
     language: 'Idioma',
     generated: 'Generado el',

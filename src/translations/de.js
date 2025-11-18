@@ -403,6 +403,8 @@ export default {
   // Reports
   reports: {
     title: 'Berichte & Analysen',
+    allEmployees: 'Alle_Mitarbeiter',
+    filenamePrefix: 'HR_Bericht',
     achieved: 'Erreicht',
     language: 'Sprache',
     generated: 'Erstellt',

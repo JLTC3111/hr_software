@@ -429,6 +429,8 @@ export default {
   // Reports
   reports: {
     title: 'Rapports et analyses',
+    allEmployees: 'Tous_les_employés',
+    filenamePrefix: 'Rapport_RH',
     language: 'Langue',
     generated: 'Généré le',
     achieved: 'Atteint',
