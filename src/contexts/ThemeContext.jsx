@@ -48,6 +48,7 @@ export const ThemeProvider = ({ children }) => {
       primary: isDarkMode ? 'text-white' : 'text-gray-900',
       secondary: isDarkMode ? 'text-white' : 'text-gray-600',
       tertiary: isDarkMode ? 'text-white' : 'text-gray-500',
+      fill: isDarkMode ? 'fill-white' : 'fill-gray-900',
     },
     border: {
       primary: isDarkMode ? 'border-gray-700' : 'border-gray-200',
