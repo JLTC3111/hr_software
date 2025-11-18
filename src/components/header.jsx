@@ -61,7 +61,7 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
             <div className={`hidden lg:block ${bg.secondary} text-sm ${text.secondary}`}>
               {t('header.welcome')} {user?.name || user?.email}
             </div>
-            <div className="hidden md:block">
+            <div className="flex items-center">
               <LanguageSelector />
             </div>
             <ThemeToggle />
