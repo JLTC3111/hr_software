@@ -127,9 +127,9 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           h-screen  
           top-0 
           ${!isResizing ? 'transition-all duration-300 ease-in-out' : ''}
-          fixed lg:sticky
+          absolute lg:sticky
           left-0
-          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-[200%] lg:translate-x-0'}
           z-40
           relative
         `}
@@ -217,7 +217,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                           `}
                         >
                           <div className="flex items-center space-x-3">
-                            <Icon className="h-5 w-5 flex-shrink-0" />
+                            <Icon className="h-5 w-5 shrink-0" />
                             <span className="font-medium">{item.name}</span>
                           </div>
                           <ChevronDown 
@@ -281,7 +281,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                       {/* Popover for collapsed state with sub-items */}
                       {hasSubItems && isCollapsed && hoveredItem === item.name && (
                         <div 
-                          className={`absolute left-full ml-2 top-0 ${bg.secondary} border rounded-lg shadow-xl p-2 min-w-[160px] z-50 scale-in`}
+                          className={`absolute left-full ml-2 top-0 ${bg.secondary} border rounded-lg shadow-xl p-2 min-w-40 z-50 scale-in`}
                           style={{ borderColor: isDarkMode ? '#4b5563' : '#d1d5db' }}
                         >
                           <div className={`px-2 py-1 text-xs font-semibold ${text.primary} border-b mb-1`}
