@@ -9,13 +9,16 @@ import {
   Activity,
   Laptop,
   User,
+  LayoutList,
   PlayCircle,
   Filter, 
   BarChart3, 
   Gauge,
   Goal,
   Clock, 
+  SmilePlus,
   CheckCircle, 
+  ListCheck,
   Combine, 
   Pickaxe,
   HeartPlus,
@@ -2293,7 +2296,7 @@ const Reports = () => {
                   <p className={`text-sm ${text.secondary}`}>{t('reports.tasks', 'Tasks')}</p>
                   <p className={`text-3xl font-bold ${text.primary}`}>{stats.tasksCount}</p>
                 </div>
-                <CheckCircle className={`w-8 h-8 ${text.secondary}`} />
+                <LayoutList className={`w-8 h-8 ${text.secondary}`} />
               </div>
             </div>
             <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
@@ -2348,7 +2351,7 @@ const Reports = () => {
                   <p className={`text-sm ${text.secondary}`}>{t('reports.completed', 'Completed')}</p>
                   <p className={`text-3xl font-bold ${text.primary}`}>{stats.completed}</p>
                 </div>
-                <CheckCircle className={`w-8 h-8 ${text.secondary}`} />
+                <ListCheck className={`w-8 h-8 ${text.secondary}`} />
               </div>
             </div>
             <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
@@ -2380,7 +2383,7 @@ const Reports = () => {
                   <p className={`text-sm ${text.secondary}`}>{t('reports.achieved', 'Achieved')}</p>
                   <p className={`text-3xl font-bold ${text.primary}`}>{stats.achieved}</p>
                 </div>
-                <CheckCircle className={`w-8 h-8 ${text.secondary}`} />
+                <SmilePlus className={`w-8 h-8 ${text.secondary}`} />
               </div>
             </div>
             <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>

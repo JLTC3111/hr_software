@@ -433,7 +433,11 @@ const TaskListing = ({ employees }) => {
                         {task.quality_rating > 0 && (
                           <p className={`text-sm ${text.secondary} mt-1 flex items-center space-x-1`}>
                             <span>Quality: {task.quality_rating}/5</span>
-                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                            <Star 
+                              className={`w-4 h-4 ${text.primary} transition-transform duration-500 ease-in-out ${
+                                task.quality_rating > 0 ? 'rotate-360' : ''
+                              }`} 
+                            />
                           </p>
                         )}
                       </div>
