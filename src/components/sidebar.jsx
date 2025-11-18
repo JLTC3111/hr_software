@@ -8,7 +8,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({});
   const [hoveredItem, setHoveredItem] = useState(null);
-  const [sidebarWidth, setSidebarWidth] = useState(256); // Default 256px (w-64)
+  const [sidebarWidth, setSidebarWidth] = useState(256);
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef(null);
   const { bg, text, hover, isDarkMode } = useTheme();
@@ -125,19 +125,13 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           ${bg.secondary} 
           shadow-sm 
           h-screen  
-          top-0 
           ${!isResizing ? 'transition-all duration-300 ease-in-out' : ''}
           absolute lg:sticky
+          lg:block
           top-0
           left-0
-          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-[200%] lg:translate-x-0'}
-          transform
-          lg:transform-none
-          w-64
-          flex 
-          flex-col
+          ${isMobileMenuOpen ? 'translate-x-0' : ' transform -translate-x-[200%] sm:hidden lg:translate-x-0'}
           z-40
-          relative
         `}
       >
         {/* Resize Handle */}
