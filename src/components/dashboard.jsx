@@ -187,7 +187,7 @@ const Dashboard = ({ employees, applications }) => {
   }, {});
 
   const departmentData = Object.entries(departmentCounts).map(([dept, count]) => ({
-    name: t(`departments.${dept}`, dept),
+    name: t(`employeeDepartment.${dept}`, dept),
     value: count
   }));
 

@@ -544,7 +544,7 @@ const TaskListing = ({ employees }) => {
                     <User className={`w-5 h-5 ${text.secondary}`} />
                     <div>
                       <p className={`font-semibold ${text.primary}`}>{employee.name}</p>
-                      <p className={`text-sm ${text.secondary}`}>{t(`departments.${employee.department}`, employee.department)}</p>
+                      <p className={`text-sm ${text.secondary}`}>{t(`employeeDepartment.${employee.department}`, employee.department)}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-6 text-sm text-center justify-center">
@@ -661,7 +661,7 @@ const TaskListing = ({ employees }) => {
                     <option value="">{t('taskListing.selectEmployee', 'Select Employee')}</option>
                     {employees.map(emp => (
                       <option key={emp.id} value={emp.id}>
-                        {emp.name} - {t(`departments.${emp.department}`, emp.department)} ({t(`employeePosition.${emp.position}`, emp.position)})
+                        {emp.name} - {t(`employeeDepartment.${emp.department}`, emp.department)} ({t(`employeePosition.${emp.position}`, emp.position)})
                       </option>
                     ))}
                   </select>

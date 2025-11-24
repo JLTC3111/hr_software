@@ -144,7 +144,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                 <td className={`p-3 ${text.primary} font-medium`}>{item.employeeName}</td>
                 <td className={`p-3 ${text.secondary}`}>
                   <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
-                    {t(`departments.${item.department}`, item.department)}
+                    {t(`employeeDepartment.${item.department}`, item.department)}
                   </span>
                 </td>
                 <td className={`p-3 ${text.secondary}`}>
@@ -218,7 +218,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                 <td className={`text-center p-3 ${text.primary} font-medium`}>{item.employeeName}</td>
                 <td className={`text-center p-3 ${text.secondary}`}>
                   <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
-                    {t(`departments.${item.department}`, item.department)}
+                    {t(`employeeDepartment.${item.department}`, item.department)}
                   </span>
                 </td>
                 {metricType === 'performance' && (
@@ -276,7 +276,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                 <td className={`p-3 ${text.primary} font-medium`}>{item.employeeName}</td>
                 <td className={`p-3 ${text.secondary}`}>
                   <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-800'}`}>
-                    {t(`departments.${item.department}`, item.department)}
+                    {t(`employeeDepartment.${item.department}`, item.department)}
                   </span>
                 </td>
                 <td className={`p-3 ${text.primary} font-semibold`}>{item.workDays} days</td>
@@ -374,7 +374,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
               <tr key={index} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
                 <td className={`text-center p-3 ${text.primary}`}>
                   <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
-                    {t(`departments.${item.department}`, item.department || 'N/A')}
+                    {t(`employeeDepartment.${item.department}`, item.department || 'N/A')}
                   </span>
                 </td>
                 <td className={`text-center p-3 ${text.primary} font-semibold`}>

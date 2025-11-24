@@ -30,7 +30,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
 
   // Check if user has permission
   const canManageTimeTracking = checkPermission('canManageTimeTracking');
-  
+
   const hourTypes = [
     { value: 'regular', label: t('timeClock.hourTypes.regular'), color: 'blue' },
     { value: 'holiday', label: t('timeClock.hourTypes.holiday'), color: 'purple' },
@@ -410,7 +410,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                         <div className="flex-1">
                           <div className={`font-medium ${text.primary}`}>{emp.name}</div>
                           <div className={`text-sm ${text.secondary}`}>
-                            {t(`employeePosition.${emp.position}`, emp.position)} • {t(`departments.${emp.department}`, emp.department)}
+                            {t(`employeePosition.${emp.position}`, emp.position)} • {t(`employeeDepartment.${emp.department}`, emp.department)}
                           </div>
                         </div>
                         {isSelected && (
@@ -444,7 +444,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                     <div>
                       <div className={`text-sm font-medium ${text.primary}`}>{emp.name}</div>
                       <div className={`text-xs ${text.secondary}`}>
-                        {t(`employeePosition.${emp.position}`, emp.position)} • {t(`departments.${emp.department}`, emp.department)}
+                        {t(`employeePosition.${emp.position}`, emp.position)} • {t(`employeeDepartment.${emp.department}`, emp.department)}
                       </div>
                     </div>
                     <button

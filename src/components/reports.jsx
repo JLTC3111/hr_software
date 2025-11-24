@@ -47,7 +47,7 @@ const Reports = () => {
   // Helper function to translate department values
   const translateDepartment = (department) => {
     if (!department) return '';
-    return t(`departments.${department}`, department);
+    return t(`employeeDepartment.${department}`, department);
   };
   
   // Helper function to translate position values
