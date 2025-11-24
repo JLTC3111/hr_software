@@ -79,6 +79,8 @@ export default {
 
   // Dashboard
   dashboard: {
+    liveData: 'Live Data from Supabase',
+    noData: 'No data available',
     title: 'Dashboard Overview',
     pendingApprovals: 'Pending Approvals',
     overview: 'Organization Overview',

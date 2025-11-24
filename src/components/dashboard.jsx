@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Users, Briefcase, Clock, Calendar, AlertCircle, DatabaseZap, Loader, Funnel } from 'lucide-react'
+import { Users, Briefcase, Clock, Calendar, AlertCircle, DatabaseZap, Loader, Funnel, HeartPlus, Coffee, AlarmClock } from 'lucide-react'
 import StatsCard from './statsCard.jsx'
 import MetricDetailModal from './metricDetailModal.jsx'
 import { useTheme } from '../contexts/ThemeContext'
@@ -388,7 +388,7 @@ const Dashboard = ({ employees, applications }) => {
           <StatsCard 
             title={t('dashboard.totalRegularHours', '')} 
             value={`${totalRegularHours}h`} 
-            icon={Clock} 
+            icon={AlarmClock} 
             color={isDarkMode ? "#ffffff" : "#1f1f1f"}
             onClick={() => handleMetricClick('regularHours')}
           />
@@ -406,7 +406,7 @@ const Dashboard = ({ employees, applications }) => {
           <StatsCard 
             title={t('dashboard.totalOvertime')} 
             value={`${totalOvertime}h`} 
-            icon={Clock} 
+            icon={HeartPlus} 
             color={isDarkMode ? "#ffffff" : "#1f1f1f"}
             onClick={() => handleMetricClick('overtime')}
           />
@@ -415,7 +415,7 @@ const Dashboard = ({ employees, applications }) => {
           <StatsCard 
             title={t('dashboard.totalLeave')} 
             value={totalLeaveDays} 
-            icon={Calendar} 
+            icon={Coffee} 
             color={isDarkMode ? "#ffffff" : "#1f1f1f"}
             onClick={() => handleMetricClick('leave')}
           />

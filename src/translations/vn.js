@@ -72,6 +72,8 @@ export default {
 
   // Dashboard
   dashboard: {
+    liveData: 'Dữ liệu trực tiếp từ Supabase',
+    noData: 'Không có dữ liệu khả dụng',
     title: 'Tổng Quan Bảng Điều Khiển',
     overview: 'Tổng Quan Tổ Chức',
     totalEmployees: 'Tổng Số Nhân Viên',

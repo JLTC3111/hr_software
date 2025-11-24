@@ -72,6 +72,8 @@ export default {
 
   // Dashboard
   dashboard: {
+    liveData: 'Supabase에서 실시간 데이터',
+    noData: '사용 가능한 데이터가 없습니다',
     title: '대시보드 요약',
     overview: '조직 개요',
     totalEmployees: '전체 직원 수',

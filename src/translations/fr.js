@@ -72,6 +72,8 @@ export default {
 
   // Dashboard
   dashboard: {
+    liveData: 'Données en direct de Supabase',
+    noData: 'Aucune donnée disponible',
     title: 'Vue d’Ensemble du Tableau de Bord',
     overview: 'Description Générale de l’Organisation',
     totalEmployees: 'Nombre Total d’Employés',

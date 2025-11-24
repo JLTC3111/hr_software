@@ -72,6 +72,8 @@ export default {
 
   // Dashboard
   dashboard: {
+    liveData: 'ข้อมูลสดจาก Supabase',
+    noData: 'ไม่มีข้อมูลที่พร้อมใช้งาน',
     title: 'ภาพรวมแดชบอร์ด',
     overview: 'ภาพรวมองค์กร',
     totalEmployees: 'จำนวนพนักงานทั้งหมด',

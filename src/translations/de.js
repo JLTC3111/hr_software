@@ -72,6 +72,8 @@ export default {
 
   // Dashboard
   dashboard: {
+    liveData: 'Live-Daten von Supabase',
+    noData: 'Keine Daten verfügbar von Supabase',
     title: 'Dashboard-Übersicht',
     overview: 'Unternehmensübersicht',
     totalEmployees: 'Gesamte Mitarbeiter',
@@ -658,6 +660,7 @@ export default {
 
   // Common
   common: {
+    liveData: 'Live-Daten',
     leaveRequest: 'Urlaubsantrag',
     search: 'Suchen',
     next: 'Weiter',

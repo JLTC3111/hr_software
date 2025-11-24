@@ -72,6 +72,8 @@ export default {
 
   // Dashboard
   dashboard: {
+    liveData: 'Данные в реальном времени от Supabase',
+    noData: 'Данные отсутствуют',
     title: 'Обзор Панели Управления',
     overview: 'Обзор организации',
     totalEmployees: 'Всего Сотрудников',

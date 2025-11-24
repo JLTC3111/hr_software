@@ -96,6 +96,8 @@ login: {
   },
 
   dashboard: {
+    liveData: 'Datos en vivo de Supabase',
+    noData: 'No hay datos disponibles',
     title: 'Resumen del Panel de Control',
     overview: 'Descripción general de la organización',
     totalEmployees: 'Total de Empleados',

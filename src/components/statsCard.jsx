@@ -14,7 +14,7 @@ const StatsCard = ({ title, value, icon: Icon, color, size, onClick }) => {
           <p className={`text-sm font-medium ${text.secondary} transition-colors duration-200`}>{title}</p>
           <p className={`text-2xl font-bold ${text.primary} transition-all duration-200 group-hover:scale-105`}>{value}</p>
         </div>
-        <div className="transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
+        <div className="transition-transform duration-300 group-hover:scale-110">
           <Icon className="h-6 w-6 m-2" color={color} size={size} />
         </div>
       </div>

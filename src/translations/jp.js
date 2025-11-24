@@ -72,6 +72,8 @@ export default {
 
   // Dashboard
   dashboard: {
+    liveData: 'Supabaseからのライブデータ',
+    noData: '利用可能なデータがありません',
     title: 'ダッシュボード概要',
     overview: '組織の概要',
     totalEmployees: '従業員総数',
