@@ -72,6 +72,7 @@ export default {
 
   // Dashboard
   dashboard: {
+    currentMonth: '이번 달',
     liveData: 'Supabase에서 실시간 데이터',
     noData: '사용 가능한 데이터가 없습니다',
     title: '대시보드 요약',
@@ -680,6 +681,7 @@ export default {
 
   // Common
   common: {
+    results: '결과',
     leaveRequest: '휴가 요청',
     search: '검색',
     filter: '필터',

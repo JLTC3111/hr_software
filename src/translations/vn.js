@@ -72,6 +72,7 @@ export default {
 
   // Dashboard
   dashboard: {
+    currentMonth: 'Tháng Hiện Tại',
     liveData: 'Dữ liệu trực tiếp từ Supabase',
     noData: 'Không có dữ liệu khả dụng',
     title: 'Tổng Quan Bảng Điều Khiển',
@@ -917,6 +918,11 @@ export default {
 
   // Common
   common: {
+    results: 'Kết Quả',
+    total: 'Tổng',
+    employees: 'Nhân Viên',
+    departments: 'Phòng Ban',
+    hours: 'Giờ',
     leaveRequest: 'Yêu Cầu Nghỉ Phép',
     search: 'Tìm kiếm',
     filter: 'Lọc',

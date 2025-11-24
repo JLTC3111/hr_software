@@ -79,6 +79,7 @@ export default {
 
   // Dashboard
   dashboard: {
+    currentMonth: 'Current Month',
     liveData: 'Live Data from Supabase',
     noData: 'No data available',
     title: 'Dashboard Overview',
@@ -937,6 +938,21 @@ export default {
 
   // Common
   common: {
+    results: 'Results',
+    total: 'Total',
+    employee: 'Employee',
+    department: 'Department',
+    position: 'Position',
+    date: 'Date',
+    actions: 'Actions',
+    clockIn: 'Clock In',
+    clockOut: 'Clock Out',
+    hours: 'Hours',
+    hourType: 'Hour Type',
+    notes: 'Notes',
+    status: 'Status',
+    type: 'Type',
+    viewDetails: 'View Details',
     leaveRequest: 'Leave Request',
     search: 'Search',
     filter: 'Filter',

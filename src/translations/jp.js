@@ -72,6 +72,7 @@ export default {
 
   // Dashboard
   dashboard: {
+    currentMonth: '今月のデータ',
     liveData: 'Supabaseからのライブデータ',
     noData: '利用可能なデータがありません',
     title: 'ダッシュボード概要',
@@ -692,6 +693,15 @@ export default {
 
   // Common
   common: {
+    results: '結果',
+    employees: '従業員',
+    timeTracking: '勤怠管理',
+    reports: 'レポート',
+    dashboard: 'ダッシュボード',
+    settings: '設定',
+    profile: 'プロフィール',
+    logout: 'ログアウト',
+    timeClock: '勤怠記録',
     leaveRequest: '休暇申請',
     overtimeLog: '残業記録',
     exportReport: 'レポート出力',

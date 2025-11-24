@@ -72,6 +72,7 @@ export default {
 
   // Dashboard
   dashboard: {
+    currentMonth: 'Mois Actuel',
     liveData: 'Données en direct de Supabase',
     noData: 'Aucune donnée disponible',
     title: 'Vue d’Ensemble du Tableau de Bord',
@@ -834,6 +835,13 @@ export default {
 
   // Common
   common: {
+    results: 'résultats',
+    employee: 'Employé',
+    employees: 'Employés',
+    timeEntry: 'Saisie de temps',
+    task: 'Tâche',
+    goal: 'Objectif',
+    performanceReview: 'Évaluation de performance',
     leaveRequest: 'Demande de congé',
     overtimeLog: 'Enregistrement des heures supplémentaires',
     recordTime: 'Enregistrer le temps',

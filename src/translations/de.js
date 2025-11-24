@@ -72,6 +72,7 @@ export default {
 
   // Dashboard
   dashboard: {
+    currentMonth: 'Aktueller Monat',
     liveData: 'Live-Daten von Supabase',
     noData: 'Keine Daten verfügbar von Supabase',
     title: 'Dashboard-Übersicht',
@@ -660,6 +661,9 @@ export default {
 
   // Common
   common: {
+    results: 'Ergebnisse',
+    total: 'Gesamt',
+    employee: 'Mitarbeiter',
     liveData: 'Live-Daten',
     leaveRequest: 'Urlaubsantrag',
     search: 'Suchen',

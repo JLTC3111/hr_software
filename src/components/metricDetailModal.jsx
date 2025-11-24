@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { X, Search, AlarmClock, Hourglass, ArrowUpDown, Calendar, User, Briefcase, Clock } from 'lucide-react';
+import { X, Search, ClockFading, CalendarClock, Coffee, ArrowUpDown, Calendar, IdCard, User, Briefcase, Clock, Network } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -116,21 +116,21 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                 <div className="flex items-center space-x-2">
                   <User className="w-4 h-4" />
                   <span>{t('employees.name', 'Employee')}</span>
-                  <ArrowUpDown className="w-3 h-3" />
+                  <ArrowUpDown className="w-4 h-4" />
                 </div>
               </th>
               <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('department')}>
                 <div className="flex items-center space-x-2">
-                  <Briefcase className="w-4 h-4" />
+                  <Network className="w-4 h-4" />
                   <span>{t('employees.department', 'Department')}</span>
-                  <ArrowUpDown className="w-3 h-3" />
+                  <ArrowUpDown className="w-4 h-4" />
                 </div>
               </th>
               <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('position')}>
                 <div className="flex items-center space-x-2">
-                  <Briefcase className="w-4 h-4" />
+                  <IdCard className="w-4 h-4" />
                   <span>{t('employees.position', 'Position')}</span>
-                  <ArrowUpDown className="w-3 h-3" />
+                  <ArrowUpDown className="w-4 h-4" />
                 </div>
               </th>
               <th className={`text-left p-3 ${text.primary} font-semibold`}>
@@ -143,7 +143,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
               <tr key={index} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
                 <td className={`p-3 ${text.primary} font-medium`}>{item.employeeName}</td>
                 <td className={`p-3 ${text.secondary}`}>
-                  <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-800'}`}>
+                  <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
                     {t(`departments.${item.department}`, item.department)}
                   </span>
                 </td>
@@ -154,9 +154,11 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
                     item.status === 'Active' || item.status === 'active' ? isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800' :
                     item.status === 'On Leave' || item.status === 'onLeave' ? isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-800' :
-                    isDarkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-800'
+                    item.status === 'Pending' || item.status === 'pending' ? isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-800' :
+                    item.status === 'Outsource Contractor' || item.status === 'outsourceContractor' ? isDarkMode ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-800' :
+                    item.status === 'Inactive' || item.status === 'inactive' ? isDarkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-800' : isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800'
                   }`}>
-                    {item.status}
+                    {t(`employeeStatus.${item.status?.replace(/\s+/g, '').toLowerCase()}`, item.status)}
                   </span>
                 </td>
               </tr>
@@ -169,74 +171,65 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
         <table className="w-full">
           <thead>
             <tr className={`border-b ${border.primary}`}>
-              <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('employeeName')}>
-                <div className="flex items-center space-x-2">
+              <th className={`text-center p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('employeeName')}>
+                <div className="flex items-center justify-center space-x-2">
                   <User className="w-4 h-4" />
                   <span>{t('employees.name', 'Employee')}</span>
-                  <ArrowUpDown className="w-3 h-3" />
+                  <ArrowUpDown className="w-4 h-4" />
                 </div>
               </th>
-              <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('department')}>
-                <div className="flex items-center space-x-2">
-                  <Briefcase className="w-4 h-4" />
+              <th className={`text-center p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('department')}>
+                <div className="flex items-center justify-center space-x-2">
+                  <Network className="w-4 h-4" />
                   <span>{t('employees.department', 'Department')}</span>
-                  <ArrowUpDown className="w-3 h-3" />
+                  <ArrowUpDown className="w-4 h-4" />
                 </div>
               </th>
               {metricType === 'performance' && (
-                <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('performance')}>
-                  <div className="flex items-center space-x-2">
+                <th className={`text-center p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('performance')}>
+                  <div className="flex items-center justify-center space-x-2">
                     <span>{t('employees.performance', 'Performance')}</span>
-                    <ArrowUpDown className="w-3 h-3" />
+                    <ArrowUpDown className="w-4 h-4" />
                   </div>
                 </th>
               )}
               {metricType === 'overtime' && (
-                <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('overtime')}>
-                  <div className="flex items-center space-x-2">
-                    <Clock className="w-4 h-4" />
+                <th className={`text-center p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('overtime')}>
+                  <div className="flex items-center justify-center space-x-2">
                     <span>{t('dashboard.overtime', 'Overtime')}</span>
-                    <ArrowUpDown className="w-3 h-3" />
+                    <ArrowUpDown className="w-4 h-4" />
                   </div>
                 </th>
               )}
               {metricType === 'leave' && (
-                <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('leaveDays')}>
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-4 h-4" />
+                <th className={`text-center p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('leaveDays')}>
+                  <div className="flex items-center justify-center space-x-2">
+                    <Coffee className="w-4 h-4" />
                     <span>{t('timeTracking.leaveDays', 'Leave Days')}</span>
-                    <ArrowUpDown className="w-3 h-3" />
+                    <ArrowUpDown className="w-4 h-4" />
                   </div>
                 </th>
               )}
-              <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('workDays')}>
-                <div className="flex items-center space-x-2">
-                  <Calendar className="w-4 h-4" />
-                  <span>{t('timeTracking.workDays', 'Work Days')}</span>
-                  <ArrowUpDown className="w-3 h-3" />
-                </div>
-              </th>
             </tr>
           </thead>
           <tbody>
             {filteredData.map((item, index) => (
               <tr key={index} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
-                <td className={`p-3 ${text.primary} font-medium`}>{item.employeeName}</td>
-                <td className={`p-3 ${text.secondary}`}>
-                  <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-800'}`}>
+                <td className={`text-center p-3 ${text.primary} font-medium`}>{item.employeeName}</td>
+                <td className={`text-center p-3 ${text.secondary}`}>
+                  <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
                     {t(`departments.${item.department}`, item.department)}
                   </span>
                 </td>
                 {metricType === 'performance' && (
-                  <td className={`p-3 ${text.primary} font-semibold`}>{item.performance}/5.0</td>
+                  <td className={`text-center p-3 ${text.primary} font-semibold`}>{item.performance}/5.0</td>
                 )}
                 {metricType === 'overtime' && (
-                  <td className={`p-3 ${text.primary} font-semibold`}>{item.overtime}h</td>
+                  <td className={`text-center p-3 ${text.primary} font-semibold`}>{item.overtime}h</td>
                 )}
                 {metricType === 'leave' && (
-                  <td className={`p-3 ${text.primary} font-semibold`}>{item.leaveDays} days</td>
+                  <td className={`text-center p-3 ${text.primary} font-semibold`}>{item.leaveDays} days</td>
                 )}
-                <td className={`p-3 ${text.primary}`}>{item.workDays} days</td>
               </tr>
             ))}
           </tbody>
@@ -355,21 +348,21 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
             <tr className={`border-b ${border.primary}`}>
               <th className={`text-center p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('department')}>
                 <div className="flex items-center justify-center space-x-2">
-                  <Briefcase className="w-4 h-4" />
+                  <Network className="w-4 h-4" />
                   <span>{t('employees.department', 'Department')}</span>
                   <ArrowUpDown className="w-4 h-4" />
                 </div>
               </th>
               <th className={`text-center p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('regularHours')}>
                 <div className="flex items-center justify-center space-x-2">
-                  <AlarmClock className="w-4 h-4" />
+                  <ClockFading className="w-4 h-4" />
                   <span>{t('timeTracking.regularHours', 'Regular Hours')}</span>
                   <ArrowUpDown className="w-4 h-4" />
                 </div>
               </th>
               <th className={`text-center p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('totalHours')}>
                 <div className="flex items-center justify-center space-x-2">
-                  <Hourglass className="w-4 h-4" />
+                  <CalendarClock className="w-4.5 h-4.5" />
                   <span>{t('timeTracking.totalHours', 'Total Hours')}</span>
                   <ArrowUpDown className="w-4 h-4" />
                 </div>
@@ -379,16 +372,16 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
           <tbody>
             {filteredData.map((item, index) => (
               <tr key={index} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
-                <td className={`text-center p-3 ${text.secondary}`}>
-                  <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-800'}`}>
-                    {item.department || 'N/A'}
+                <td className={`text-center p-3 ${text.primary}`}>
+                  <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
+                    {t(`departments.${item.department}`, item.department || 'N/A')}
                   </span>
                 </td>
                 <td className={`text-center p-3 ${text.primary} font-semibold`}>
-                  <span className={isDarkMode ? 'text-blue-400' : 'text-blue-600'}>{item.regularHours || '0.0'} {t('timeTracking.hrs', 'hrs')}</span>
+                  <span className={text.primary}>{item.regularHours || '0.0'} {t('timeTracking.hrs', 'hrs')}</span>
                 </td>
                 <td className={`text-center p-3 ${text.primary} font-semibold`}>
-                  <span className={isDarkMode ? 'text-blue-400' : 'text-blue-600'}>{item.totalHours || '0.0'} {t('timeTracking.hrs', 'hrs')}</span>
+                  <span className={text.primary}>{item.totalHours || '0.0'} {t('timeTracking.hrs', 'hrs')}</span>
                 </td>
               </tr>
             ))}

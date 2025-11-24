@@ -72,6 +72,7 @@ export default {
 
   // Dashboard
   dashboard: {
+    currentMonth: 'Текущий месяц',
     liveData: 'Данные в реальном времени от Supabase',
     noData: 'Данные отсутствуют',
     title: 'Обзор Панели Управления',
@@ -773,6 +774,7 @@ export default {
 
   // Common
   common: {
+    results: 'Найдено результатов',
     leaveRequest: 'Запрос на отпуск',
     overtimeLog: 'Запись сверхурочных',
     report: 'Отчёт',

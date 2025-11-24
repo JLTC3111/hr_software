@@ -72,6 +72,7 @@ export default {
 
   // Dashboard
   dashboard: {
+    currentMonth: 'ข้อมูลของเดือนนี้',
     liveData: 'ข้อมูลสดจาก Supabase',
     noData: 'ไม่มีข้อมูลที่พร้อมใช้งาน',
     title: 'ภาพรวมแดชบอร์ด',
@@ -713,6 +714,11 @@ export default {
 
   // Common
   common: {
+    results: 'ผลลัพธ์',
+    loadingData: 'กำลังโหลดข้อมูล...',
+    noResults: 'ไม่พบผลลัพธ์',
+    actions: 'การดำเนินการ',
+    timeTracking: 'การติดตามเวลา',
     leaveRequest: 'คำขอลางาน',
     overtimeLog: 'บันทึกชั่วโมงล่วงเวลา',
     exportReport: 'ส่งออกรายงาน',

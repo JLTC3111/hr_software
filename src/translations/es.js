@@ -96,6 +96,7 @@ login: {
   },
 
   dashboard: {
+    currentMonth: 'Mes Actual',
     liveData: 'Datos en vivo de Supabase',
     noData: 'No hay datos disponibles',
     title: 'Resumen del Panel de Control',
@@ -817,6 +818,19 @@ login: {
 
   // Common
   common: {
+    results: 'Resultados',
+    employee: 'Empleado',
+    employees: 'Empleados',
+    timeEntry: 'Entrada de Tiempo',
+    timeEntries: 'Entradas de Tiempo',
+    task: 'Tarea',
+    tasks: 'Tareas',
+    goal: 'Meta',
+    goals: 'Metas',
+    performanceReview: 'Revisión de Rendimiento',
+    recruitmentApplication: 'Solicitud de Reclutamiento',
+    recruitmentApplications: 'Solicitudes de Reclutamiento',
+    timeTracking: 'Registro de Tiempo', 
     leaveRequest: 'Solicitud de Permiso',
     overtimeLog: 'Registro de Horas Extra',
     search: 'Buscar',
