@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { X, Search, Download, Filter, ArrowUpDown, Calendar, User, Briefcase, Clock } from 'lucide-react';
+import { X, Search, AlarmClock, Hourglass, ArrowUpDown, Calendar, User, Briefcase, Clock } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -353,25 +353,25 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
         <table className="w-full">
           <thead>
             <tr className={`border-b ${border.primary}`}>
-              <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('department')}>
-                <div className="flex items-center space-x-2">
+              <th className={`text-center p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('department')}>
+                <div className="flex items-center justify-center space-x-2">
                   <Briefcase className="w-4 h-4" />
                   <span>{t('employees.department', 'Department')}</span>
-                  <ArrowUpDown className="w-3 h-3" />
+                  <ArrowUpDown className="w-4 h-4" />
                 </div>
               </th>
-              <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('regularHours')}>
-                <div className="flex items-center space-x-2">
-                  <Clock className="w-4 h-4" />
+              <th className={`text-center p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('regularHours')}>
+                <div className="flex items-center justify-center space-x-2">
+                  <AlarmClock className="w-4 h-4" />
                   <span>{t('timeTracking.regularHours', 'Regular Hours')}</span>
-                  <ArrowUpDown className="w-3 h-3" />
+                  <ArrowUpDown className="w-4 h-4" />
                 </div>
               </th>
-              <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('totalHours')}>
-                <div className="flex items-center space-x-2">
-                  <Clock className="w-4 h-4" />
+              <th className={`text-center p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('totalHours')}>
+                <div className="flex items-center justify-center space-x-2">
+                  <Hourglass className="w-4 h-4" />
                   <span>{t('timeTracking.totalHours', 'Total Hours')}</span>
-                  <ArrowUpDown className="w-3 h-3" />
+                  <ArrowUpDown className="w-4 h-4" />
                 </div>
               </th>
             </tr>
@@ -379,15 +379,15 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
           <tbody>
             {filteredData.map((item, index) => (
               <tr key={index} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
-                <td className={`p-3 ${text.secondary}`}>
+                <td className={`text-center p-3 ${text.secondary}`}>
                   <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-800'}`}>
                     {item.department || 'N/A'}
                   </span>
                 </td>
-                <td className={`p-3 ${text.primary} font-semibold`}>
+                <td className={`text-center p-3 ${text.primary} font-semibold`}>
                   <span className={isDarkMode ? 'text-blue-400' : 'text-blue-600'}>{item.regularHours || '0.0'} {t('timeTracking.hrs', 'hrs')}</span>
                 </td>
-                <td className={`p-3 ${text.primary} font-semibold`}>
+                <td className={`text-center p-3 ${text.primary} font-semibold`}>
                   <span className={isDarkMode ? 'text-blue-400' : 'text-blue-600'}>{item.totalHours || '0.0'} {t('timeTracking.hrs', 'hrs')}</span>
                 </td>
               </tr>
