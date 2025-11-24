@@ -101,7 +101,7 @@ export default {
     totalOvertimeLegend: 'Total Overtime',
     workLeaveComp: 'Work vs Leave Days',
     topPerformers: 'Top Performers',
-    overtime: 'OT',
+    overtime: 'Over Time',
     totalWorkDays: 'Total Work Days',
     acrossEmployees: 'Across all employees this month',
     activeApplications: 'Active Applications',

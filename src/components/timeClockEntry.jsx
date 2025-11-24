@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Upload, Coffee, AlertCircle, Check, X, FileText, AlarmClockPlus, Loader, Loader2, ChevronsUpDown, CalendarClock } from 'lucide-react';
+import { Clock, Upload, Coffee, AlertCircle, Check, X, FileCheck, AlarmClockPlus, Loader, Loader2, ChevronsUpDown, CalendarClock } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -1516,7 +1516,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                   }
                                 }}
                               >
-                                <FileText className={`w-5 h-5 ${isDarkMode ? 'text-green-200' : 'text-green-600'} group-hover:text-white transition-all duration-500`} />
+                                <FileCheck className={`w-5 h-5 ${isDarkMode ? 'text-green-100' : 'text-green-900'} group-hover:text-white transition-all duration-500`} />
                               </button>
                             ) : (
                               // Use regular link for PDFs and other files
@@ -1528,11 +1528,11 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                 onClick={(e) => e.stopPropagation()}
                                 title={t('timeClock.downloadProof', 'Download proof file')}
                               >
-                                <FileText className={`w-5 h-5 ${isDarkMode ? 'text-green-200' : 'text-green-600'} group-hover:text-white transition-all duration-500 hover:bg-gray-900`} />
+                                <FileCheck className={`w-5 h-5 ${isDarkMode ? 'text-green-100' : 'text-green-900'} group-hover:text-white transition-all duration-500 hover:bg-gray-900`} />
                               </a>
                             )
                           ) : (
-                            <FileText className={`w-5 h-5 ${isDarkMode ? 'text-green-200' : 'text-green-600'} group-hover:text-white transition-all duration-500 hover:bg-gray-900`} />
+                            <FileCheck className={`w-5 h-5 ${isDarkMode ? 'text-green-100' : 'text-green-600'} group-hover:text-white transition-all duration-500 hover:bg-gray-900`} />
                           )
                         ) : (
                           <span className={`text-xs ${text.secondary} group-hover:text-white`}></span>
