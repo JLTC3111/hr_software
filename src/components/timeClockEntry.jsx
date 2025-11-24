@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Upload, Calendar, AlertCircle, Check, X, FileText, AlarmClockPlus, Loader, Loader2, ChevronsUpDown, CalendarClock } from 'lucide-react';
+import { Clock, Upload, Coffee, AlertCircle, Check, X, FileText, AlarmClockPlus, Loader, Loader2, ChevronsUpDown, CalendarClock } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -163,7 +163,59 @@ const TimeClockEntry = ({ currentLanguage }) => {
     endDate: '',
     reason: ''
   });
-
+   const handleLeaveSubmit = async (e) => {
+      e.preventDefault();
+      setLoading(true);
+      
+      try {
+        const result = await timeTrackingService.createLeaveRequest({
+          employeeId: selectedEmployee,
+          type: leaveForm.type,
+          startDate: leaveForm.startDate,
+          endDate: leaveForm.endDate,
+          reason: leaveForm.reason
+        });
+        
+        if (result.success) {
+          setSuccessMessage(t('timeTracking.leaveSuccess', 'Leave request submitted successfully!'));
+          setShowLeaveModal(false);
+          
+          // Refresh leave requests and summary data
+          const leaveResult = await timeTrackingService.getLeaveRequests(selectedEmployee, {
+            year: selectedYear
+          });
+          if (leaveResult.success) {
+            setLeaveRequests(leaveResult.data);
+          }
+          
+          // Refresh summary to update leave days count
+          const summaryResult = await timeTrackingService.getTimeTrackingSummary(
+            selectedEmployee,
+            selectedMonth,
+            selectedYear
+          );
+          if (summaryResult.success) {
+            setSummaryData(summaryResult.data);
+          }
+          
+          // Reset form
+          setLeaveForm({
+            type: 'vacation',
+            startDate: '',
+            endDate: '',
+            reason: ''
+          });
+        } else {
+          setSuccessMessage(t('timeTracking.leaveError', 'Error submitting leave request'));
+        }
+      } catch (error) {
+        console.error('Error submitting leave:', error);
+        setSuccessMessage(t('timeTracking.leaveError', 'Error submitting leave request'));
+      } finally {
+        setLoading(false);
+        setTimeout(() => setSuccessMessage(''), 3000);
+      }
+    };
   // Fetch time entries and employees when component mounts
   useEffect(() => {
     const loadData = async () => {
@@ -1124,14 +1176,101 @@ const TimeClockEntry = ({ currentLanguage }) => {
                 )}
             </button>
             </form>
+            {showLeaveModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                      <div className={`${bg.secondary} rounded-lg shadow-xl max-w-md w-full p-6`}>
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className={`text-xl font-semibold ${text.primary}`}>
+                            {t('timeTracking.requestLeave', 'Request Leave')}
+                          </h3>
+                          <button onClick={() => setShowLeaveModal(false)} className={`${text.secondary} hover:${text.primary}`}>
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
             
+                        <form onSubmit={handleLeaveSubmit} className="space-y-4">
+                          <div>
+                            <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                              {t('timeTracking.leaveType', 'Leave Type')}
+                            </label>
+                            <select
+                              value={leaveForm.type}
+                              onChange={(e) => setLeaveForm({ ...leaveForm, type: e.target.value })}
+                              className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                            >
+                              <option value="vacation">{t('timeTracking.vacation', 'Vacation')}</option>
+                              <option value="sick">{t('timeTracking.sickLeave', 'Sick Leave')}</option>
+                              <option value="personal">{t('timeTracking.personal', 'Personal Leave')}</option>
+                              <option value="unpaid">{t('timeTracking.unpaid', 'Unpaid Leave')}</option>
+                            </select>
+                          </div>
+            
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                                {t('timeTracking.startDate', 'Start Date')}
+                              </label>
+                              <input
+                                type="date"
+                                value={leaveForm.startDate}
+                                onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
+                                required
+                                className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                              />
+                            </div>
+                            <div>
+                              <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                                {t('timeTracking.endDate', 'End Date')}
+                              </label>
+                              <input
+                                type="date"
+                                value={leaveForm.endDate}
+                                onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
+                                required
+                                className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                              />
+                            </div>
+                          </div>
+            
+                          <div>
+                            <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                              {t('timeTracking.reason', 'Reason')}
+                            </label>
+                            <textarea
+                              value={leaveForm.reason}
+                              onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })}
+                              rows="3"
+                              placeholder={t('timeTracking.reasonPlaceholder', 'Briefly explain your leave request...')}
+                              className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                            />
+                          </div>
+            
+                          <div className="flex space-x-3 pt-4">
+                            <button
+                              type="button"
+                              onClick={() => setShowLeaveModal(false)}
+                              className={`flex-1 px-4 py-2 border ${isDarkMode ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-300 hover:bg-gray-50'} rounded-lg transition-colors`}
+                            >
+                              {t('common.cancel', 'Cancel')}
+                            </button>
+                            <button 
+                              type="submit"
+                              className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                            >
+                              {t('common.leaveRequest', 'Submit Request')}
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
             {/* Request Leave Button */}
             <div className={`mt-4 pt-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
               <button
                 onClick={() => setShowLeaveModal(true)}
-                className="w-full py-3 px-6 rounded-lg font-medium cursor-pointer text-white bg-green-600 hover:bg-green-700 active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
+                className="w-full py-3 px-6 rounded-lg font-medium cursor-pointer text-white bg-green-700 hover:bg-green-800 active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
               >
-                <Calendar className="w-5 h-5" />
+                <Coffee className={`w-5 h-5 hover:animate-bounce -translate-y-px transition-all`} />
                 <span>{t('timeClock.requestLeave', 'Request Leave')}</span>
               </button>
             </div>

@@ -658,6 +658,7 @@ export default {
 
   // Common
   common: {
+    leaveRequest: 'Urlaubsantrag',
     search: 'Suchen',
     next: 'Weiter',
     back: 'Zurück',

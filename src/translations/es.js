@@ -815,6 +815,8 @@ login: {
 
   // Common
   common: {
+    leaveRequest: 'Solicitud de Permiso',
+    overtimeLog: 'Registro de Horas Extra',
     search: 'Buscar',
     filter: 'Filtrar',
     next: 'Siguiente',

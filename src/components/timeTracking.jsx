@@ -844,7 +844,7 @@ const TimeTracking = ({ employees }) => {
                   type="submit"
                   className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
                 >
-                  {t('common.submit', 'Submit Request')}
+                  {t('common.leaveRequest', 'Submit Request')}
                 </button>
               </div>
             </form>

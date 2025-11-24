@@ -711,6 +711,19 @@ export default {
 
   // Common
   common: {
+    leaveRequest: 'คำขอลางาน',
+    overtimeLog: 'บันทึกชั่วโมงล่วงเวลา',
+    exportReport: 'ส่งออกรายงาน',
+    dashboard: 'แดชบอร์ด',
+    employees: 'พนักงาน',
+    recruitment: 'การรับสมัคร',
+    reports: 'รายงาน',
+    settings: 'การตั้งค่า',
+    profile: 'โปรไฟล์',
+    logout: 'ออกจากระบบ',
+    login: 'เข้าสู่ระบบ',
+    register: 'ลงทะเบียน',
+    home: 'หน้าแรก',
     search: 'ค้นหา',
     filter: 'กรอง',
     next: 'ถัดไป',

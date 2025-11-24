@@ -678,6 +678,7 @@ export default {
 
   // Common
   common: {
+    leaveRequest: '휴가 요청',
     search: '검색',
     filter: '필터',
     next: '다음',

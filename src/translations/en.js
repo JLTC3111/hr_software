@@ -935,6 +935,7 @@ export default {
 
   // Common
   common: {
+    leaveRequest: 'Leave Request',
     search: 'Search',
     filter: 'Filter',
     next: 'Next', 

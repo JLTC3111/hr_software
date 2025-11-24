@@ -832,6 +832,9 @@ export default {
 
   // Common
   common: {
+    leaveRequest: 'Demande de congé',
+    overtimeLog: 'Enregistrement des heures supplémentaires',
+    recordTime: 'Enregistrer le temps',
     search: 'Rechercher',
     filter: 'Filtrer',
     next: 'Suivant',

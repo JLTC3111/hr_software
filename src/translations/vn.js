@@ -915,6 +915,7 @@ export default {
 
   // Common
   common: {
+    leaveRequest: 'Yêu Cầu Nghỉ Phép',
     search: 'Tìm kiếm',
     filter: 'Lọc',
     sort: 'Sắp xếp',

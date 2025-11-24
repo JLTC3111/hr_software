@@ -690,6 +690,9 @@ export default {
 
   // Common
   common: {
+    leaveRequest: '休暇申請',
+    overtimeLog: '残業記録',
+    exportReport: 'レポート出力',
     search: '検索',
     filter: 'フィルター',
     next: '次へ',

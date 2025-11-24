@@ -771,6 +771,16 @@ export default {
 
   // Common
   common: {
+    leaveRequest: 'Запрос на отпуск',
+    overtimeLog: 'Запись сверхурочных',
+    report: 'Отчёт',
+    dashboard: 'Панель управления',
+    profile: 'Профиль',
+    settings: 'Настройки',
+    logout: 'Выйти',
+    login: 'Войти',
+    register: 'Зарегистрироваться',
+    home: 'Главная',
     search: 'Поиск',
     filter: 'Фильтр',
     type: 'Тип',
