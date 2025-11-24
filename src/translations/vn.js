@@ -284,10 +284,10 @@ export default {
     employees: 'Nhân viên',
     skippedEmployees: 'Đã bỏ qua {count} nhân viên có mục nhập hiện tại: {names}',
     hourTypes: {
-      regular: 'Giờ Thường',
+      regular: 'Giờ Làm Thường',
       holiday: 'Ngày Lễ',
       weekend: 'Cuối Tuần/Tăng Ca',
-      bonus: 'Giờ Thưởng',
+      bonus: 'Giờ Làm Thêm',
       wfh: 'Làm Việc Tại Nhà (Trực Tuyến)'
     },
     errors: {

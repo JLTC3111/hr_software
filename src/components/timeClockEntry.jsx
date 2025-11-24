@@ -163,6 +163,18 @@ const TimeClockEntry = ({ currentLanguage }) => {
     endDate: '',
     reason: ''
   });
+  
+  // Get the current employeeId for leave requests
+  const getCurrentEmployeeId = () => {
+    if (user?.employeeId) return user.employeeId;
+    if (user?.id) return user.id;
+    return null;
+  };
+  const [selectedEmployee, setSelectedEmployee] = useState(getCurrentEmployeeId());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [summaryData, setSummaryData] = useState(null);
+
    const handleLeaveSubmit = async (e) => {
       e.preventDefault();
       setLoading(true);
@@ -216,6 +228,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
         setTimeout(() => setSuccessMessage(''), 3000);
       }
     };
+    
   // Fetch time entries and employees when component mounts
   useEffect(() => {
     const loadData = async () => {

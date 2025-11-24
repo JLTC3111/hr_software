@@ -30,7 +30,14 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
 
   // Check if user has permission
   const canManageTimeTracking = checkPermission('canManageTimeTracking');
-
+  
+  const hourTypes = [
+    { value: 'regular', label: t('timeClock.hourTypes.regular'), color: 'blue' },
+    { value: 'holiday', label: t('timeClock.hourTypes.holiday'), color: 'purple' },
+    { value: 'weekend', label: t('timeClock.hourTypes.weekend'), color: 'green' },
+    { value: 'bonus', label: t('timeClock.hourTypes.bonus'), color: 'yellow' },
+    { value: 'wfh', label: t('timeClock.hourTypes.wfh'), color: 'cyan' }
+  ];
   useEffect(() => {
     if (canManageTimeTracking) {
       fetchEmployees();
@@ -258,11 +265,9 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
         }
         
         setSuccessMessage(message);
-        
-        // Track processed employees to prevent re-selection
+        // Track processed employees to prevent re-selection (for this submission only)
         setProcessedEmployeeIds(prev => [...prev, ...processedIds]);
-        
-        // Reset form
+        // Reset form and allow all employees to be selectable again
         setFormData({
           date: new Date().toISOString().split('T')[0],
           clockIn: '',
@@ -273,7 +278,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
         });
         setSelectedEmployees([]);
         setSearchTerm('');
-        
+        setProcessedEmployeeIds([]); // Clear processed employees so they reappear in the list
         // Notify parent component to refresh time entries
         if (onEntriesChanged) {
           onEntriesChanged();
