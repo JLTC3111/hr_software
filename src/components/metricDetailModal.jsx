@@ -38,6 +38,26 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
     };
   }, [onClose, isOpen]);
 
+  // Department Color Tag
+  function getDepartmentColor(department) {
+    switch (department) {
+      case 'technology':
+        return 'bg-blue-100 text-blue-800';
+      case 'finance':
+        return 'bg-gray-100 text-gray-800';
+      case 'human_resources':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'board_of_directors':
+        return 'bg-blue-600 text-green-100';
+      case 'office_unit':
+        return 'bg-pink-200 text-pink-900';
+      case 'engineering':
+        return 'bg-teal-900 text-teal-100';
+      // Add more cases as needed
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  }
   // Sort data
   const sortedData = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -150,7 +170,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
               <tr key={index} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
                 <td className={`p-3 ${text.primary} font-medium`}>{item.employeeName}</td>
                 <td className={`p-3 ${text.secondary}`}>
-                  <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
+                  <span className={`px-2 py-1 ${getDepartmentColor(item.department)} rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
                     {t(`employeeDepartment.${item.department}`, item.department)}
                   </span>
                 </td>
@@ -186,7 +206,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                 </div>
               </th>
               <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('department')}>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-center space-x-2">
                   <Network className="w-4 h-4" />
                   <span>{t('employees.department', 'Department')}</span>
                   <ArrowUpDown className="w-4 h-4" />
@@ -230,8 +250,8 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
             {filteredData.map((item, index) => (
               <tr key={index} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
                 <td className={`text-left p-3 ${text.primary} font-medium`}>{item.employeeName}</td>
-                <td className={`text-left p-3 ${text.secondary}`}>
-                  <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
+                <td className={`text-center p-3 ${text.secondary}`}>
+                  <span className={`px-2 py-1 ${getDepartmentColor(item.department)} rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
                     {t(`employeeDepartment.${item.department}`, item.department)}
                   </span>
                 </td>
@@ -398,7 +418,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
               <tr key={index} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
                 <td className={`p-3 ${text.primary} font-medium`}>{item.employeeName}</td>
                 <td className={`text-center p-3 ${text.primary}`}>
-                  <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
+                  <span className={`px-2 py-1 ${getDepartmentColor(item.department)} rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
                     {t(`employeeDepartment.${item.department}`, item.department || 'N/A')}
                   </span>
                 </td>
