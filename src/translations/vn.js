@@ -179,6 +179,7 @@ export default {
   timeTracking: {
     title: 'Bảng Điều Khiển',
     overview: 'Tổng quan',
+    leaveRequests: 'Quản Lý Đơn Xin Nghỉ Phép',
     clockIn: 'Giờ Vào',
     clockOut: 'Giờ Ra',
     amountHours: 'Số Giờ',

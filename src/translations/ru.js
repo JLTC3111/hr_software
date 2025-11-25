@@ -285,6 +285,7 @@ export default {
   timeTracking: {
     title: 'Панель управления учетом времени',
     overview: 'Обзор',
+    leaveRequests: 'Управление запросами на отпуск',
     overviewTitle: 'Обзор компании',
     clockIn: 'Отметка Входа',
     clockOut: 'Отметка Выхода',

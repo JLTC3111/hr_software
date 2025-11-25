@@ -295,6 +295,7 @@ export default {
   timeTracking: {
     title: 'Time Tracking Dashboard',
     overview: 'Overview',
+    leaveRequests: 'Leave Requests',
     overviewTitle: 'Company Overview',
     clockIn: 'Clock In',
     clockOut: 'Clock Out',

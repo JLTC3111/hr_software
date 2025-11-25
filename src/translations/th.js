@@ -266,6 +266,7 @@ export default {
   timeTracking: {
     title: 'แดชบอร์ดการติดตามเวลา',
     overview: 'ภาพรวม',
+    leaveRequests: 'การจัดการคำขอลา',
     overviewTitle: 'ภาพรวมบริษัท',
     clockIn: 'ตอกบัตรเข้า',
     clockOut: 'ตอกบัตรออก',

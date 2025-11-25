@@ -341,6 +341,7 @@ login: {
   timeTracking: {
     title: 'Tableau de bord de suivi du temps',
     overview: 'Aperçu',
+    leaveRequests: 'Gestion des demandes de congé',
     overviewTitle: 'Aperçu de l\'entreprise',
     clockIn: 'Pointage Entrée',
     clockOut: 'Pointage Sortie',

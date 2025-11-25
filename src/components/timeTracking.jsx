@@ -79,12 +79,14 @@ const TimeTracking = ({ employees }) => {
       };
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // 1-indexed for Supabase
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [activeTab, setActiveTab] = useState('overview'); // 'summary' or 'overview'
+  // Add 'leaveRequests' tab for admin/manager
+  const [activeTab, setActiveTab] = useState('overview'); // 'summary', 'overview', 'leaveRequests'
   
   // Loading and data states
   const [loading, setLoading] = useState(true);
   const [summaryData, setSummaryData] = useState(null);
   const [leaveRequests, setLeaveRequests] = useState([]);
+  const [allLeaveRequests, setAllLeaveRequests] = useState([]);
   const [timeEntries, setTimeEntries] = useState([]);
   const [allEmployeesData, setAllEmployeesData] = useState([]);
   
@@ -122,7 +124,6 @@ const TimeTracking = ({ employees }) => {
   useEffect(() => {
     const fetchTimeTrackingData = async () => {
       if (!selectedEmployee) return;
-      
       setLoading(true);
       try {
         // Fetch summary data
@@ -131,20 +132,16 @@ const TimeTracking = ({ employees }) => {
           selectedMonth,
           selectedYear
         );
-        
         if (summaryResult.success) {
           setSummaryData(summaryResult.data);
         }
-        
-        // Fetch leave requests
+        // Fetch leave requests for selected employee
         const leaveResult = await timeTrackingService.getLeaveRequests(selectedEmployee, {
           year: selectedYear
         });
-        
         if (leaveResult.success) {
           setLeaveRequests(leaveResult.data);
         }
-        
         // Fetch time entries (includes overtime)
         const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
         const endDate = new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0];
@@ -152,7 +149,6 @@ const TimeTracking = ({ employees }) => {
           startDate: startDate,
           endDate: endDate
         });
-        
         if (entriesResult.success) {
           setTimeEntries(entriesResult.data);
         }
@@ -163,9 +159,27 @@ const TimeTracking = ({ employees }) => {
         setLoading(false);
       }
     };
-    
     fetchTimeTrackingData();
   }, [selectedEmployee, selectedMonth, selectedYear]);
+
+  // Fetch all leave requests for all employees (admin/manager only)
+  useEffect(() => {
+    const fetchAllLeaveRequests = async () => {
+      if (!(checkPermission('admin') || checkPermission('manager'))) return;
+      try {
+        const result = await timeTrackingService.getAllLeaveRequests({});
+        if (result.success && Array.isArray(result.data)) {
+          setAllLeaveRequests(result.data);
+        } else {
+          setAllLeaveRequests([]);
+        }
+      } catch (error) {
+        console.error('Error fetching all leave requests:', error);
+        setAllLeaveRequests([]);
+      }
+    };
+    fetchAllLeaveRequests();
+  }, [checkPermission]);
   
   // Fetch all employees data for Overview
   useEffect(() => {
@@ -569,20 +583,32 @@ const TimeTracking = ({ employees }) => {
             <FileText className="w-4 h-4" />
             <span>{t('timeTracking.summary', 'Summary')}</span>
           </button>
-          
           {/* Only show overview tab for admin/manager */}
           {canViewOverview && (
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 ${
-                activeTab === 'overview'
-                  ? 'bg-blue-600 text-white'
-                  : `${text.secondary} hover:${bg.primary}`
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              <span>{t('timeTracking.overview', 'Overview')}</span>
-            </button>
+            <>
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 ${
+                  activeTab === 'overview'
+                    ? 'bg-blue-600 text-white'
+                    : `${text.secondary} hover:${bg.primary}`
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                <span>{t('timeTracking.overview', 'Overview')}</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('leaveRequests')}
+                className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 ${
+                  activeTab === 'leaveRequests'
+                    ? 'bg-blue-600 text-white'
+                    : `${text.secondary} hover:${bg.primary}`
+                }`}
+              >
+                <Coffee className="w-4 h-4" />
+                <span>{t('timeTracking.leaveRequests', 'Leave Request Management')}</span>
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -743,7 +769,7 @@ const TimeTracking = ({ employees }) => {
                   <span className="inline-flex items-center gap-1">
                     {t('timeTracking.employee', 'Employee')}
                     <ArrowDownAZ
-                      className={`inline w-4 h-4 ml-1 transition-all-0.5s ${sortKey === 'employee' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
+                      className={`inline w-4 h-4 ml-1 hover:animate-pulse transition-all-0.5s ${sortKey === 'employee' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
                       style={{transition: 'transform 0.5s', transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
                     />
                   </span>
@@ -757,15 +783,15 @@ const TimeTracking = ({ employees }) => {
                     {sortKey === 'days_worked' ? (
                       sortDirection === 'asc' ? (
                         <CalendarArrowUp
-                          className={`inline w-4 h-4 ml-1 transition-all-0.5s ${isDarkMode ? 'text-white' : 'text-black'}`}
+                          className={`inline w-4 h-4 ml-1 hover:animate-pulse transition-all-0.5s ${isDarkMode ? 'text-white' : 'text-black'}`}
                         />
                       ) : (
                         <CalendarArrowDown
-                          className={`inline w-4 h-4 ml-1 transition-all-0.5s ${isDarkMode ? 'text-white' : 'text-black'}`}
+                          className={`inline w-4 h-4 ml-1 hover:animate-pulse transition-all-0.5s ${isDarkMode ? 'text-white' : 'text-black'}`}
                         />
                       )
                     ) : (
-                      <CalendarArrowUp className="inline w-4 h-4 ml-1 transition-all-0.5s text-gray-400 transition-all" />
+                      <CalendarArrowUp className="inline w-4 h-4 ml-1 hover:animate-pulse transition-all-0.5s text-gray-400 transition-all" />
                     )}
                   </span>
                 </th>
@@ -776,7 +802,7 @@ const TimeTracking = ({ employees }) => {
                   <span className="inline-flex items-center gap-1">
                     {t('timeTracking.regularHours', 'Regular Hours')}
                     <CircleFadingArrowUp
-                      className={`inline w-4 h-4  ml-1 transition-all ${sortKey === 'regular_hours' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
+                      className={`inline w-4 h-4  ml-1 hover:animate-pulse transition-all ${sortKey === 'regular_hours' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
                       style={{transition: 'transform 0.5s', transform: sortKey === 'regular_hours' && sortDirection === 'asc' ? 'rotate(540deg)' : 'none' }}
                     />
                   </span>
@@ -788,7 +814,7 @@ const TimeTracking = ({ employees }) => {
                   <span className="inline-flex items-center gap-1">
                     {t('timeTracking.overtime', 'Overtime')}
                     <Pickaxe
-                      className={`inline w-3 h-3 ml-1 transition-all ${sortKey === 'overtime' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
+                      className={`inline w-3 h-3 ml-1 hover:animate-pulse transition-all ${sortKey === 'overtime' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
                       style={{transition: 'transform 0.5s', transform: sortKey === 'overtime' && sortDirection === 'asc' ? 'rotate(90deg)' : 'none' }}
                     />
                   </span>
@@ -797,10 +823,10 @@ const TimeTracking = ({ employees }) => {
                   className={`text-right py-3 px-4 ${text.primary} font-semibold cursor-pointer select-none`}
                   onClick={() => handleSort('total_hours')}
                 >
-                  <span className="inline-flex items-center gap-1">
+                  <span className={`inline-flex items-center gap-1 `}>
                     {t('timeTracking.totalHoursLabel', 'Total Hours')}
                     <Hourglass
-                      className={`inline w-3.5 h-3.5  ml-1 transition-all-0.5s ${sortKey === 'total_hours' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
+                      className={`inline w-3.5 h-3.5 ml-1 hover:animate-pulse transition-all-0.5s ${sortKey === 'total_hours' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
                       style={{transition: 'transform 0.5s', transform: sortKey === 'total_hours' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
                     />
                   </span>
@@ -836,8 +862,49 @@ const TimeTracking = ({ employees }) => {
               </tr>
             </tbody>
           </table>
+
         </div>
       </div>
+      )}
+
+      {/* Leave Requests Tab (moved out of overview) */}
+      {activeTab === 'leaveRequests' && (checkPermission('admin') || checkPermission('manager')) && (
+        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 mt-6`}>
+          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>Leave Request Management - {getMonthName(selectedMonth)} {selectedYear}</h3>
+          <div className="mt-2">
+            {(() => { console.log('DEBUG allLeaveRequests:', allLeaveRequests); return null; })()}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className={`border-b ${border.primary}`}>
+                    <th className="py-2 px-4 text-left">Leave Days</th>
+                    <th className="py-2 px-4 text-left">Leave Type</th>
+                    <th className="py-2 px-4 text-left">Status</th>
+                    <th className="py-2 px-4 text-left">Requested By</th>
+                    <th className="py-2 px-4 text-left">Approved By</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allLeaveRequests.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-4 text-center text-gray-500">No leave requests found.</td>
+                    </tr>
+                  ) : (
+                    allLeaveRequests.map((req, idx) => (
+                      <tr key={req.id || idx}>
+                        <td className="py-2 px-4">{req.days_count}</td>
+                        <td className="py-2 px-4">{req.leave_type}</td>
+                        <td className="py-2 px-4">{req.status}</td>
+                        <td className="py-2 px-4">{req.employee?.name || '-'}</td>
+                        <td className="py-2 px-4">{req.approved_by_name || '-'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Success Message */}
@@ -847,8 +914,6 @@ const TimeTracking = ({ employees }) => {
           <span>{successMessage}</span>
         </div>
       )}
-
-      
 
       {/* Leave Request Modal */}
       {showLeaveModal && (

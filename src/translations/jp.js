@@ -267,6 +267,7 @@ export default {
   timeTracking: {
     title: '勤怠管理ダッシュボード',
     overview: '概要',
+    leaveRequests: '休暇申請管理',
     overviewTitle: '会社概要',
     clockIn: '出勤',
     clockOut: '退勤',

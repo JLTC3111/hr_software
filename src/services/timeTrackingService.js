@@ -593,9 +593,7 @@ export const getLeaveRequests = async (employeeId, filters = {}) => {
   }
 };
 
-/**
- * Get all leave requests (for HR/managers)
- */
+/* Get all leave requests (for HR/managers) */
 export const getAllLeaveRequests = async (filters = {}) => {
   try {
     let query = supabase
@@ -620,9 +618,7 @@ export const getAllLeaveRequests = async (filters = {}) => {
   }
 };
 
-/**
- * Update leave request status
- */
+/* Update leave request status */
 export const updateLeaveRequestStatus = async (requestId, status, approverId, rejectionReason = null) => {
   try {
     const { data, error } = await supabase
@@ -645,13 +641,7 @@ export const updateLeaveRequestStatus = async (requestId, status, approverId, re
   }
 };
 
-// ============================================
-// OVERTIME LOGS
-// ============================================
-
-/**
- * Create an overtime log
- */
+/* Create an overtime log */
 export const createOvertimeLog = async (overtimeData) => {
   try {
     const employeeId = toEmployeeId(overtimeData.employeeId);
@@ -699,9 +689,7 @@ export const createOvertimeLog = async (overtimeData) => {
   }
 };
 
-/**
- * Get overtime logs for an employee
- */
+/* Get overtime logs for an employee */
 export const getOvertimeLogs = async (employeeId, filters = {}) => {
   try {
     let query = supabase
@@ -729,9 +717,7 @@ export const getOvertimeLogs = async (employeeId, filters = {}) => {
   }
 };
 
-/**
- * Update overtime log status
- */
+/* Update overtime log status */
 export const updateOvertimeStatus = async (logId, status, approverId) => {
   try {
     const { data, error } = await supabase
@@ -757,10 +743,8 @@ export const updateOvertimeStatus = async (logId, status, approverId) => {
 // TIME TRACKING SUMMARY
 // ============================================
 
-/**
- * Calculate summary directly from time_entries, leave_requests, and overtime_logs
- * Matches database function logic exactly
- */
+/* Calculate summary directly from time_entries, leave_requests, and overtime_logs, Matches database function logic exactly */
+   
 const calculateSummaryFromRawData = async (employeeId, month, year) => {
   try {
     console.log('🔧 [Service] Calculating summary for employee:', employeeId, 'month:', month, 'year:', year);
@@ -891,9 +875,7 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
   }
 };
 
-/**
- * Get time tracking summary for an employee
- */
+/* Get time tracking summary for an employee */
 export const getTimeTrackingSummary = async (employeeId, month, year) => {
   try {
     console.log('🔧 [Service] getTimeTrackingSummary called for employee:', employeeId);
@@ -944,9 +926,7 @@ export const getTimeTrackingSummary = async (employeeId, month, year) => {
   }
 };
 
-/**
- * Manually trigger summary update
- */
+/* Manually trigger summary update */
 export const updateSummary = async (employeeId, month, year) => {
   try {
     const { data, error } = await supabase
@@ -964,9 +944,7 @@ export const updateSummary = async (employeeId, month, year) => {
   }
 };
 
-/**
- * Get summaries for all employees in a period
- */
+/* Get summaries for all employees in a period */
 export const getAllEmployeesSummary = async (month, year) => {
   try {
     const { data, error } = await supabase
@@ -1012,9 +990,7 @@ export const getMonthlyAttendanceSummary = async (filters = {}) => {
   }
 };
 
-/**
- * Calculate totals for different hour types
- */
+/* Calculate totals for different hour types */
 export const calculateHourTotals = async (employeeId, period = 'week') => {
   try {
     const now = new Date();
@@ -1058,9 +1034,7 @@ export const calculateHourTotals = async (employeeId, period = 'week') => {
   }
 };
 
-/**
- * Get pending approvals count (for managers/HR)
- */
+/* Get pending approvals count (for managers/HR) */
 export const getPendingApprovalsCount = async () => {
   try {
     const [timeEntries, leaveRequests, overtimeLogs] = await Promise.all([
@@ -1095,9 +1069,7 @@ export const getPendingApprovalsCount = async () => {
   }
 };
 
-/**
- * Get detailed pending approvals (for managers/HR)
- */
+/* Get detailed pending approvals (for managers/HR) */
 export const getPendingApprovals = async () => {
   try {
     console.log('🔧 [Service] getPendingApprovals called');
@@ -1220,9 +1192,7 @@ export const ensureEmployeeExists = async (employeeId, employeeData = {}) => {
   }
 };
 
-/**
- * Get or create employee from auth user
- */
+/* Get or create employee from auth user */
 export const getOrCreateEmployeeFromAuth = async (authUser) => {
   try {
     if (!authUser || !authUser.id) {
@@ -1243,9 +1213,7 @@ export const getOrCreateEmployeeFromAuth = async (authUser) => {
   }
 };
 
-/**
- * Sync local employees to Supabase
- */
+/* Sync local employees to Supabase */
 export const syncEmployeesToSupabase = async (employees) => {
   try {
     const employeesData = employees.map(emp => ({
@@ -1294,9 +1262,7 @@ export const getAllEmployees = async () => {
   }
 };
 
-/**
- * Get employee by ID
- */
+/* Get employee by ID */
 export const getEmployeeById = async (employeeId) => {
   try {
     const { data, error } = await supabase

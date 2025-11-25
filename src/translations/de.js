@@ -163,6 +163,7 @@ export default {
   timeTracking: {
     title: 'Zeiterfassungs-Dashboard',
     overview: 'Übersicht',
+    leaveRequests: 'Urlaubsanträge',
     overviewTitle: 'Unternehmensübersicht',
     clockIn: 'Einstempeln',
     clockOut: 'Ausstempeln',
