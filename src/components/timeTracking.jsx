@@ -842,7 +842,7 @@ const TimeTracking = ({ employees }) => {
                   <span className="inline-flex items-center gap-1">
                     {t('timeTracking.employee', 'Employee')}
                     <ArrowDownAZ
-                      className={`inline w-4 h-4 ml-1 transition-all-0.5s ${sortKey === 'employee' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400 hover:animate-pulse'}`}
+                      className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
                       style={{transition: 'transform 0.5s', transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
                     />
                   </span>
@@ -853,18 +853,18 @@ const TimeTracking = ({ employees }) => {
                 >
                   <span className="inline-flex items-center gap-1">
                     {t('timeTracking.daysWorked', 'Days Worked')}
-                    {sortKey === 'days_worked' ? (
+                        {sortKey === 'days_worked' ? (
                       sortDirection === 'asc' ? (
                         <CalendarArrowUp
-                          className={`inline w-4 h-4 ml-1 transition-all-0.5s ${isDarkMode ? 'text-white' : 'text-black'}`}
+                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
                         />
                       ) : (
                         <CalendarArrowDown
-                          className={`inline w-4 h-4 ml-1 transition-all-0.5s ${isDarkMode ? 'text-white' : 'text-black'}`}
+                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
                         />
                       )
                     ) : (
-                      <CalendarArrowUp className="inline w-4 h-4 ml-1 transition-all-0.5s text-gray-400 hover:animate-pulse transition-all" />
+                      <CalendarArrowUp className="inline w-4 h-4 ml-1 transition-all duration-500 text-gray-400 hover:text-blue-400 hover:animate-pulse" />
                     )}
                   </span>
                 </th>
@@ -875,7 +875,7 @@ const TimeTracking = ({ employees }) => {
                   <span className="inline-flex items-center gap-1">
                     {t('timeTracking.regularHours', 'Regular Hours')}
                     <CircleFadingArrowUp
-                      className={`inline w-4 h-4  ml-1 transition-all ${sortKey === 'regular_hours' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400 hover:animate-pulse'}`}
+                      className={`inline w-4 h-4  ml-1 transition-all duration-500 ${sortKey === 'regular_hours' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
                       style={{transition: 'transform 0.5s', transform: sortKey === 'regular_hours' && sortDirection === 'asc' ? 'rotate(540deg)' : 'none' }}
                     />
                   </span>
@@ -887,7 +887,7 @@ const TimeTracking = ({ employees }) => {
                   <span className="inline-flex items-center gap-1">
                     {t('timeTracking.overtime', 'Overtime')}
                     <Pickaxe
-                      className={`inline w-3 h-3 ml-1 transition-all ${sortKey === 'overtime' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400 hover:animate-pulse'}`}
+                      className={`inline w-3 h-3 ml-1 transition-all duration-500 ${sortKey === 'overtime' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
                       style={{transition: 'transform 0.5s', transform: sortKey === 'overtime' && sortDirection === 'asc' ? 'rotate(90deg)' : 'none' }}
                     />
                   </span>
@@ -898,8 +898,8 @@ const TimeTracking = ({ employees }) => {
                 >
                   <span className={`inline-flex items-center gap-1 `}>
                     {t('timeTracking.totalHoursLabel', 'Total Hours')}
-                    <Hourglass
-                      className={`inline w-3.5 h-3.5 ml-1 transition-all-0.5s ${sortKey === 'total_hours' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400 hover:animate-pulse'}`}
+                      <Hourglass
+                      className={`inline w-3.5 h-3.5 ml-1 transition-all duration-500 ${sortKey === 'total_hours' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
                       style={{transition: 'transform 0.5s', transform: sortKey === 'total_hours' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
                     />
                   </span>
@@ -965,7 +965,7 @@ const TimeTracking = ({ employees }) => {
                   ) : (
                     allLeaveRequests.map((req, idx) => (
                       <tr key={req.id || idx}>
-                        <td className="py-2 px-4">{req.days_count}</td>
+                        <td className="py-2 px-4 text-center">{req.days_count}</td>
                         <td className="py-2 px-4">{(function(){
                           switch(req.leave_type){
                             case 'sick': return t('timeTracking.sickLeave', 'Sick Leave');
