@@ -7,7 +7,7 @@ export default {
     dashboard: 'Dashboard',
     employees: 'Employees',
     recruitment: "Recruitment",
-    timeTracking: 'Summary',
+    timeTracking: 'Time Tracking',
     performance: 'Personal Goals',
     reports: 'Reports',
     notifications: 'Notifications',

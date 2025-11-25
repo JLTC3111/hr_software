@@ -114,7 +114,6 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
   };
 
   const handleExport = () => {
-    // Convert data to CSV
     if (filteredData.length === 0) return;
     
     const headers = Object.keys(filteredData[0]);

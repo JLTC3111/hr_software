@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Clock, Calendar, TrendingUp, Users, X, Check, Download, FileText, Coffee, Zap, Loader, BarChart3, PieChart } from 'lucide-react'
+import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Download, ArrowUpDown, FileText, Coffee, Zap, Loader, BarChart3, PieChart } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
@@ -27,6 +27,56 @@ const TimeTracking = ({ employees }) => {
   };
   
   const [selectedEmployee, setSelectedEmployee] = useState(getCurrentEmployeeId());
+      // Sorting state for overview table
+      const [sortKey, setSortKey] = useState('employee');
+      const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
+
+      // Sorting function for overview table
+      const getSortedEmployees = () => {
+        const sorted = [...allEmployeesData];
+        sorted.sort((a, b) => {
+          let aValue, bValue;
+          switch (sortKey) {
+            case 'employee':
+              aValue = a.employee.name?.toLowerCase() || '';
+              bValue = b.employee.name?.toLowerCase() || '';
+              break;
+            case 'days_worked':
+              aValue = a.data?.days_worked || 0;
+              bValue = b.data?.days_worked || 0;
+              break;
+            case 'regular_hours':
+              aValue = a.data?.regular_hours || 0;
+              bValue = b.data?.regular_hours || 0;
+              break;
+            case 'overtime':
+              aValue = (a.data?.overtime_hours || 0) + (a.data?.holiday_overtime_hours || 0);
+              bValue = (b.data?.overtime_hours || 0) + (b.data?.holiday_overtime_hours || 0);
+              break;
+            case 'total_hours':
+              aValue = a.data?.total_hours || 0;
+              bValue = b.data?.total_hours || 0;
+              break;
+            default:
+              aValue = 0;
+              bValue = 0;
+          }
+          if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+          if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+          return 0;
+        });
+        return sorted;
+      };
+
+      // Handle header click for sorting
+      const handleSort = (key) => {
+        if (sortKey === key) {
+          setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+          setSortKey(key);
+          setSortDirection('asc');
+        }
+      };
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // 1-indexed for Supabase
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [activeTab, setActiveTab] = useState('overview'); // 'summary' or 'overview'
@@ -591,31 +641,9 @@ const TimeTracking = ({ employees }) => {
         <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
           {t('timeTracking.overviewTitle', 'Company Overview')} - {getMonthName(selectedMonth)} {selectedYear}
         </h3>
-        
-        {/* Total Regular Hours for All Employees */}
-        <div className="mb-6">
-          <div 
-            className={`${bg.primary} rounded-lg p-4 border ${border.primary} cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
-            onClick={() => setShowWorkDaysModal(true)}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Clock className={`w-6 h-6 ${text.primary}`} />
-                <span className={`text-lg font-semibold ${text.primary}`}>
-                  {t('timeTracking.totalRegularHours', 'Total Regular Hours (All Employees)')}
-                </span>
-              </div>
-              <span className={`text-2xl font-bold ${text.primary}`}>
-                {allEmployeesData.reduce((sum, item) => sum + (item.data?.regular_hours || 0), 0).toFixed(1)}
-                <span className={`text-sm ${text.secondary} ml-1`}>{t('timeTracking.hrs', 'hrs')}</span>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Charts */}
+      
+        {/* Regular Hours By Employee */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Total Regular Hours Chart */}
           <div className={`${bg.primary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center space-x-2 mb-4">
               <BarChart3 className={`w-5 h-5 ${text.primary}`} />
@@ -629,7 +657,7 @@ const TimeTracking = ({ employees }) => {
                 .sort((a, b) => (b.data?.regular_hours || 0) - (a.data?.regular_hours || 0))
                 .slice(0, 10)
                 .map((item, index) => {
-                  const maxHours = Math.max(...allEmployeesData.map(i => i.data?.regular_hours || 0));
+                  const maxHours = Math.max(...getSortedEmployees().map(i => i.data?.regular_hours || 0));
                   const percentage = maxHours > 0 ? ((item.data?.regular_hours || 0) / maxHours) * 100 : 0;
                   return (
                     <div key={index} className="space-y-1">
@@ -647,7 +675,6 @@ const TimeTracking = ({ employees }) => {
                   );
                 })}
             </div>
-            {/* Chart Legend */}
             <div className="mt-4 flex items-center justify-center space-x-2">
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 bg-blue-600 rounded"></div>
@@ -656,7 +683,7 @@ const TimeTracking = ({ employees }) => {
             </div>
           </div>
 
-          {/* Total Overtime Hours Chart */}
+          {/* Total Overtime Hours By Employee */}
           <div className={`${bg.primary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center space-x-2 mb-4">
               <PieChart className={`w-5 h-5 ${text.primary}`} />
@@ -675,7 +702,7 @@ const TimeTracking = ({ employees }) => {
                 .slice(0, 10)
                 .map((item, index) => {
                   const overtimeTotal = (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0);
-                  const maxOT = Math.max(...allEmployeesData.map(i => 
+                  const maxOT = Math.max(...getSortedEmployees().map(i => 
                     (i.data?.overtime_hours || 0) + (i.data?.holiday_overtime_hours || 0)
                   ));
                   const percentage = maxOT > 0 ? (overtimeTotal / maxOT) * 100 : 0;
@@ -695,7 +722,6 @@ const TimeTracking = ({ employees }) => {
                   );
                 })}
             </div>
-            {/* Chart Legend */}
             <div className="mt-4 flex items-center justify-center space-x-2">
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 bg-orange-600 rounded"></div>
@@ -710,22 +736,75 @@ const TimeTracking = ({ employees }) => {
           <table className="w-full">
             <thead>
               <tr className={`border-b ${border.primary}`}>
-                <th className={`text-left py-3 px-4 ${text.primary} font-semibold`}>{t('timeTracking.employee', 'Employee')}</th>
-                <th className={`text-right py-3 px-4 ${text.primary} font-semibold`}>{t('timeTracking.daysWorked', 'Days Worked')}</th>
-                <th className={`text-right py-3 px-4 ${text.primary} font-semibold`}>{t('timeTracking.regularHours', 'Regular Hours')}</th>
-                <th className={`text-right py-3 px-4 ${text.primary} font-semibold`}>{t('timeTracking.overtime', 'Overtime')}</th>
-                <th className={`text-right py-3 px-4 ${text.primary} font-semibold`}>{t('timeTracking.totalHoursLabel', 'Total Hours')}</th>
+                <th
+                  className={`text-left py-3 px-4 ${text.primary} font-semibold cursor-pointer select-none`}
+                  onClick={() => handleSort('employee')}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    {t('timeTracking.employee', 'Employee')}
+                    <ArrowDownAZ
+                      className={`inline w-4 h-4 transition-transform ${sortKey === 'employee' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
+                      style={{ transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                    />
+                  </span>
+                </th>
+                <th
+                  className={`text-right py-3 px-4 ${text.primary} font-semibold cursor-pointer select-none`}
+                  onClick={() => handleSort('days_worked')}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    {t('timeTracking.daysWorked', 'Days Worked')}
+                    <ArrowDownAZ
+                      className={`inline w-4 h-4 transition-transform ${sortKey === 'days_worked' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
+                      style={{ transform: sortKey === 'days_worked' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                    />
+                  </span>
+                </th>
+                <th
+                  className={`text-right py-3 px-4 ${text.primary} font-semibold cursor-pointer select-none`}
+                  onClick={() => handleSort('regular_hours')}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    {t('timeTracking.regularHours', 'Regular Hours')}
+                    <ArrowDownAZ
+                      className={`inline w-4 h-4 transition-transform ${sortKey === 'regular_hours' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
+                      style={{ transform: sortKey === 'regular_hours' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                    />
+                  </span>
+                </th>
+                <th
+                  className={`text-right py-3 px-4 ${text.primary} font-semibold cursor-pointer select-none`}
+                  onClick={() => handleSort('overtime')}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    {t('timeTracking.overtime', 'Overtime')}
+                    <ArrowDownAZ
+                      className={`inline w-4 h-4 transition-transform ${sortKey === 'overtime' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
+                      style={{ transform: sortKey === 'overtime' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                    />
+                  </span>
+                </th>
+                <th
+                  className={`text-right py-3 px-4 ${text.primary} font-semibold cursor-pointer select-none`}
+                  onClick={() => handleSort('total_hours')}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    {t('timeTracking.totalHoursLabel', 'Total Hours')}
+                    <ArrowDownAZ
+                      className={`inline w-4 h-4 transition-transform ${sortKey === 'total_hours' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
+                      style={{ transform: sortKey === 'total_hours' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                    />
+                  </span>
+                </th>
               </tr>
             </thead>
             <tbody>
-              {allEmployeesData.map((item, index) => (
-                <tr key={index} className={`border-b ${border.primary} hover:${bg.primary} transition-colors`}>
-                  <td className={`py-3 px-4 ${text.primary}`}>{item.employee.name}</td>
+              {getSortedEmployees().map((item, idx) => (
+                <tr key={item.employee.id || idx}>
+                  <td className={`text-left py-3 px-4 ${text.secondary}`}>{item.employee.name}</td>
                   <td className={`text-right py-3 px-4 ${text.secondary}`}>{item.data?.days_worked || 0}</td>
                   <td className={`text-right py-3 px-4 ${text.secondary}`}>{item.data?.regular_hours?.toFixed(1) || '0.0'}</td>
-                  <td className={`text-right py-3 px-4 ${text.secondary}`}>
-                    {((item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0)).toFixed(1)}
-                  </td>
+                  <td className={`text-right py-3 px-4 ${text.secondary}`}>{((item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0)).toFixed(1)}</td>
                   <td className={`text-right py-3 px-4 font-semibold ${text.primary}`}>{parseFloat(item.data?.total_hours || 0).toFixed(1)}</td>
                 </tr>
               ))}
