@@ -297,6 +297,11 @@ export default {
     sickLeave: 'ลาป่วย',
     personal: 'ลากิจ',
     unpaid: 'ลาไม่ได้รับค่าจ้าง',
+    leaveDays: 'วันลา',
+    leaveType: 'ประเภทการลา',
+    status: 'สถานะ',
+    requestedBy: 'ผู้ขอ',
+    approvedBy: 'ผู้อนุมัติ',
     // Hour types for overtime
     weekend: 'ล่วงเวลาสุดสัปดาห์',
     holiday: 'ล่วงเวลาวันหยุด',

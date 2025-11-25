@@ -282,6 +282,11 @@ export default {
     sickLeave: 'Arrêt maladie',
     personal: 'Congé personnel',
     unpaid: 'Congé sans solde',
+    leaveDays: 'Jours de congé',
+    leaveType: 'Type de congé', 
+    status: 'Statut',
+    requestedBy: 'Demandé par',
+    approvedBy: 'Approuvé par',
     // Hour types for overtime
     weekend: 'Heures sup. week-end',
     holiday: 'Heures sup. jour férié',

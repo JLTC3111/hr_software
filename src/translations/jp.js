@@ -298,6 +298,11 @@ export default {
     sickLeave: '病気休暇',
     personal: '私用休暇',
     unpaid: '無給休暇',
+    leaveDays: '休暇日数',
+    leaveType: '休暇タイプ',
+    status: 'ステータス',
+    requestedBy: '申請者',
+    approvedBy: '承認者',
     // Hour types for overtime
     weekend: '週末残業',
     holiday: '休日残業',

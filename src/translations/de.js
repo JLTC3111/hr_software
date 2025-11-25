@@ -193,6 +193,11 @@ export default {
     sickLeave: 'Krankheit',
     personal: 'Persönlicher Urlaub',
     unpaid: 'Unbezahlter Urlaub',
+    leaveDays: 'Urlaubstage',
+    leaveType: 'Urlaubsart',
+    status: 'Status',
+    requestedBy: 'Angefragt von',
+    approvedBy: 'Genehmigt von',
     // Hour types for overtime
     weekend: 'Wochenendüberstunden',
     holiday: 'Feiertagsüberstunden',

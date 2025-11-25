@@ -372,6 +372,11 @@ login: {
     sickLeave: 'Baja por enfermedad',
     personal: 'Permiso personal',
     unpaid: 'Permiso sin goce de sueldo',
+    leaveDays: 'Días de Permiso',
+    leaveType: 'Tipo de Permiso',
+    status: 'Estado',
+    requestedBy: 'Solicitado por',
+    approvedBy: 'Aprobado por',
     // Hour types for overtime
     weekend: 'Horas Extra en Fin de Semana',
     holiday: 'Horas Extra en Festivos',

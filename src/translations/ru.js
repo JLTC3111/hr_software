@@ -316,6 +316,11 @@ export default {
     sickLeave: 'Больничный',
     personal: 'Личный Отгул',
     unpaid: 'Неоплачиваемый Отпуск',
+    leaveDays: 'Дни отпуска',
+    leaveType: 'Тип Отпуска/Отгула',
+    status: 'Статус',
+    requestedBy: 'Запрошено',
+    approvedBy: 'Одобрено',
     // Hour types for overtime
     weekend: 'Сверхурочные в Выходные',
     holiday: 'Сверхурочные в Праздники',

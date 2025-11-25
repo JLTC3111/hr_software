@@ -326,6 +326,11 @@ export default {
     sickLeave: 'Sick Leave',
     personal: 'Personal Leave',
     unpaid: 'Unpaid Leave',
+    leaveDays: 'Leave Days',
+    leaveType: 'Leave Type',
+    status: 'Status',
+    requestedBy: 'Requested By',
+    approvedBy: 'Approved By',
     // Hour types for overtime
     weekend: 'Weekend Overtime',
     holiday: 'Holiday Overtime',

@@ -300,6 +300,11 @@ export default {
     sickLeave: '병가',
     personal: '개인 휴가',
     unpaid: '무급 휴가',
+    leaveDays: '휴가 일수',
+    leaveType: '휴가 유형',
+    status: '상태',
+    requestedBy: '요청자',
+    approvedBy: '승인자',
     // Hour types for overtime
     weekend: '주말 초과 근무',
     holiday: '휴일 초과 근무',

@@ -891,11 +891,11 @@ const TimeTracking = ({ employees }) => {
               <table className="w-full">
                 <thead>
                   <tr className={`border-b ${border.primary}`}>
-                    <th className="py-2 px-4 text-left">Leave Days</th>
-                    <th className="py-2 px-4 text-left">Leave Type</th>
-                    <th className="py-2 px-4 text-left">Status</th>
-                    <th className="py-2 px-4 text-left">Requested By</th>
-                    <th className="py-2 px-4 text-left">Approved By</th>
+                    <th className="py-2 px-4 text-left">{t('timeTracking.leaveDays', 'Leave Days')}</th>
+                    <th className="py-2 px-4 text-left">{t('timeTracking.leaveType', 'Leave Type')}</th>
+                    <th className="py-2 px-4 text-left">{t('timeTracking.status', 'Status')}</th>
+                    <th className="py-2 px-4 text-left">{t('timeTracking.requestedBy', 'Requested By')}</th>
+                    <th className="py-2 px-4 text-left">{t('timeTracking.approvedBy', 'Approved By')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -907,8 +907,16 @@ const TimeTracking = ({ employees }) => {
                     allLeaveRequests.map((req, idx) => (
                       <tr key={req.id || idx}>
                         <td className="py-2 px-4">{req.days_count}</td>
-                        <td className="py-2 px-4">{req.leave_type}</td>
-                        <td className="py-2 px-4">{req.status}</td>
+                        <td className="py-2 px-4">{(function(){
+                          switch(req.leave_type){
+                            case 'sick': return t('timeTracking.sickLeave', 'Sick Leave');
+                            case 'vacation': return t('timeTracking.vacation', 'Vacation');
+                            case 'personal': return t('timeTracking.personal', 'Personal Leave');
+                            case 'unpaid': return t('timeTracking.unpaid', 'Unpaid Leave');
+                            default: return req.leave_type || '-';
+                          }
+                        })()}</td>
+                        <td className="py-2 px-4">{t(`timeTracking.${req.status}`, req.status)}</td>
                         <td className="py-2 px-4">{req.employee?.name || '-'}</td>
                         <td className="py-2 px-4">{req.approved_by_name || '-'}</td>
                       </tr>
