@@ -1205,7 +1205,7 @@ const TimeTracking = ({ employees }) => {
                     <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('status')}>
                       <span className="inline-flex items-center gap-1">
                         {t('timeTracking.status', 'Status')}
-                        <ListFilterPlus className={`inline w-3.5 h-3.5 ml-1 transition-all duration-500 ${leaveSortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'status' && leaveSortDirection === 'asc' ? 'rotateY(180deg)' : 'none' }} />
+                        <ListFilterPlus className={`inline w-4.5 h-4.5 ml-1 transition-all duration-500 ${leaveSortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'status' && leaveSortDirection === 'asc' ? 'rotateY(180deg)' : 'none' }} />
                       </span>
                     </th>
                     <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('requested_by')}>
