@@ -894,7 +894,7 @@ export default {
     notesPlaceholder: 'Thêm ghi chú hoặc nội dung bổ sung...',
     fileHelp: 'Tải lên ảnh chụp màn hình, ảnh hoặc PDF (tối đa 5MB)',
     hourTypes: {
-      regular: 'Giờ Thường',
+      regular: 'Làm Tại Văn Phòng',
       holiday: 'Ngày Lễ',
       weekend: 'Cuối Tuần',
       bonus: 'Giờ Làm Thêm',

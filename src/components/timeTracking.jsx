@@ -647,7 +647,7 @@ const TimeTracking = ({ employees }) => {
         <div className="flex space-x-2">
           <button
             onClick={() => setActiveTab('summary')}
-            className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 ${
+            className={`flex-1 px-4 py-2 rounded-lg transition-colors cursor-pointer flex items-center justify-center space-x-2 ${
               activeTab === 'summary'
                 ? 'bg-blue-600 text-white'
                 : `${text.secondary} hover:${bg.primary}`
@@ -661,7 +661,7 @@ const TimeTracking = ({ employees }) => {
             <>
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 ${
+                className={`flex-1 px-4 py-2 rounded-lg cursor-pointer transition-colors flex items-center justify-center space-x-2 ${
                   activeTab === 'overview'
                     ? 'bg-blue-600 text-white'
                     : `${text.secondary} hover:${bg.primary}`
@@ -672,7 +672,7 @@ const TimeTracking = ({ employees }) => {
               </button>
               <button
                 onClick={() => setActiveTab('leaveRequests')}
-                className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 ${
+                className={`flex-1 px-4 py-2 cursor-pointer rounded-lg transition-colors flex items-center justify-center space-x-2 ${
                   activeTab === 'leaveRequests'
                     ? 'bg-blue-600 text-white'
                     : `${text.secondary} hover:${bg.primary}`
@@ -943,7 +943,7 @@ const TimeTracking = ({ employees }) => {
       {/* Leave Requests Tab (moved out of overview) */}
       {activeTab === 'leaveRequests' && canViewOverview && (
         <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 mt-6`}>
-          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>{t('timeTracking.leaveRequestManagement', 'Leave Request Management')} - {getMonthName(selectedMonth)} {selectedYear}</h3>
+          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>{t('timeTracking.leaveRequestManagement', 'Leave Request Management')}</h3>
           <div className="mt-2">
             {(() => { console.log('DEBUG allLeaveRequests (render):', allLeaveRequests?.length); return null; })()}
             <div className="overflow-x-auto">
