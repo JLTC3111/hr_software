@@ -214,6 +214,11 @@ export default {
     status: 'Trạng Thái',
     requestedBy: 'Người Yêu Cầu',
     approvedBy: 'Người Phê Duyệt',
+    leaveRequestManagement: 'Quản Lý Đơn Xin Nghỉ Phép',
+    pending: 'Đang chờ',
+    approved: 'Đã phê duyệt',
+    rejected: 'Từ chối',
+    cancelled: 'Đã hủy',
     // Hour types for overtime
     weekend: 'Làm thêm cuối tuần',
     holiday: 'Làm thêm ngày lễ',

@@ -377,6 +377,11 @@ login: {
     status: 'Estado',
     requestedBy: 'Solicitado por',
     approvedBy: 'Aprobado por',
+    leaveRequestManagement: 'Gestión de Solicitudes de Permiso',
+    pending: 'Pendiente',
+    approved: 'Aprobado',
+    rejected: 'Rechazado',
+    cancelled: 'Cancelado',
     // Hour types for overtime
     weekend: 'Horas Extra en Fin de Semana',
     holiday: 'Horas Extra en Festivos',

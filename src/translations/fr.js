@@ -287,6 +287,11 @@ export default {
     status: 'Statut',
     requestedBy: 'Demandé par',
     approvedBy: 'Approuvé par',
+    leaveRequestManagement: 'Gestion des demandes de congé',
+    pending: 'En attente',
+    approved: 'Approuvé',
+    rejected: 'Rejeté',
+    cancelled: 'Annulé',
     // Hour types for overtime
     weekend: 'Heures sup. week-end',
     holiday: 'Heures sup. jour férié',

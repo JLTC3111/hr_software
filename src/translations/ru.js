@@ -321,6 +321,11 @@ export default {
     status: 'Статус',
     requestedBy: 'Запрошено',
     approvedBy: 'Одобрено',
+    leaveRequestManagement: 'Управление Запросами на Отпуск/Отгул',
+    pending: 'В ожидании',
+    approved: 'Одобрено',
+    rejected: 'Отклонено',
+    cancelled: 'Отменено',
     // Hour types for overtime
     weekend: 'Сверхурочные в Выходные',
     holiday: 'Сверхурочные в Праздники',

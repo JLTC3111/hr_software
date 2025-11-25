@@ -198,6 +198,11 @@ export default {
     status: 'Status',
     requestedBy: 'Angefragt von',
     approvedBy: 'Genehmigt von',
+    leaveRequestManagement: 'Urlaubsantragsverwaltung',
+    pending: 'Ausstehend',
+    approved: 'Genehmigt', 
+    rejected: 'Abgelehnt',
+    cancelled: 'Abgebrochen',
     // Hour types for overtime
     weekend: 'Wochenendüberstunden',
     holiday: 'Feiertagsüberstunden',

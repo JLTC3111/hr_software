@@ -302,6 +302,11 @@ export default {
     status: 'สถานะ',
     requestedBy: 'ผู้ขอ',
     approvedBy: 'ผู้อนุมัติ',
+    leaveRequestManagement: 'การจัดการคำขอลา',
+    pending: 'รอดำเนินการ',
+    approved: 'อนุมัติแล้ว',
+    rejected: 'ถูกปฏิเสธ',
+    cancelled: 'ยกเลิกแล้ว',
     // Hour types for overtime
     weekend: 'ล่วงเวลาสุดสัปดาห์',
     holiday: 'ล่วงเวลาวันหยุด',

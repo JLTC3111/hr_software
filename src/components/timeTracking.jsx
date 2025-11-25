@@ -87,6 +87,7 @@ const TimeTracking = ({ employees }) => {
   const [summaryData, setSummaryData] = useState(null);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [allLeaveRequests, setAllLeaveRequests] = useState([]);
+  const [processingRequests, setProcessingRequests] = useState({}); // { [requestId]: true }
   const [timeEntries, setTimeEntries] = useState([]);
   const [allEmployeesData, setAllEmployeesData] = useState([]);
   
@@ -194,6 +195,64 @@ const TimeTracking = ({ employees }) => {
     };
     fetchAllLeaveRequests();
   }, [canViewOverview, activeTab, selectedMonth, selectedYear]);
+
+  // Approve / Reject handlers for admin actions on leave requests
+  const handleApproveRequest = async (requestId) => {
+    if (!user?.employeeId) {
+      setSuccessMessage(t('timeTracking.actionError', 'Unable to determine approver'));
+      setTimeout(() => setSuccessMessage(''), 3000);
+      return;
+    }
+
+    setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
+    try {
+      const result = await timeTrackingService.updateLeaveRequestStatus(requestId, 'approved', user.employeeId);
+      if (result.success) {
+        // If service returned the updated row use it, otherwise update status locally
+        const updated = result.data || { id: requestId, status: 'approved' };
+        setAllLeaveRequests(prev => prev.map(r => r.id === requestId ? { ...r, ...updated, status: 'approved', approved_by_name: updated.approved_by_name || (user?.name || '-') } : r));
+        setSuccessMessage(t('timeTracking.approveSuccess', 'Request approved'));
+      } else {
+        setSuccessMessage(result.error || t('timeTracking.actionError', 'Error updating request'));
+      }
+    } catch (error) {
+      console.error('Error approving leave request:', error);
+      setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
+    } finally {
+      setProcessingRequests(prev => { const copy = { ...prev }; delete copy[requestId]; return copy; });
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    if (!user?.employeeId) {
+      setSuccessMessage(t('timeTracking.actionError', 'Unable to determine approver'));
+      setTimeout(() => setSuccessMessage(''), 3000);
+      return;
+    }
+
+    // Ask for a rejection reason (simple prompt for now)
+    const reason = window.prompt(t('timeTracking.rejectReasonPrompt', 'Please enter a reason for rejection (optional):'));
+    if (reason === null) return; // user cancelled
+
+    setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
+    try {
+      const result = await timeTrackingService.updateLeaveRequestStatus(requestId, 'rejected', user.employeeId, reason || null);
+      if (result.success) {
+        const updated = result.data || { id: requestId, status: 'rejected' };
+        setAllLeaveRequests(prev => prev.map(r => r.id === requestId ? { ...r, ...updated, status: 'rejected' } : r));
+        setSuccessMessage(t('timeTracking.rejectSuccess', 'Request rejected'));
+      } else {
+        setSuccessMessage(result.error || t('timeTracking.actionError', 'Error updating request'));
+      }
+    } catch (error) {
+      console.error('Error rejecting leave request:', error);
+      setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
+    } finally {
+      setProcessingRequests(prev => { const copy = { ...prev }; delete copy[requestId]; return copy; });
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
+  };
   
   // Fetch all employees data for Overview
   useEffect(() => {
@@ -884,7 +943,7 @@ const TimeTracking = ({ employees }) => {
       {/* Leave Requests Tab (moved out of overview) */}
       {activeTab === 'leaveRequests' && canViewOverview && (
         <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 mt-6`}>
-          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>Leave Request Management - {getMonthName(selectedMonth)} {selectedYear}</h3>
+          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>{t('timeTracking.leaveRequestManagement', 'Leave Request Management')} - {getMonthName(selectedMonth)} {selectedYear}</h3>
           <div className="mt-2">
             {(() => { console.log('DEBUG allLeaveRequests (render):', allLeaveRequests?.length); return null; })()}
             <div className="overflow-x-auto">
@@ -918,7 +977,30 @@ const TimeTracking = ({ employees }) => {
                         })()}</td>
                         <td className="py-2 px-4">{t(`timeTracking.${req.status}`, req.status)}</td>
                         <td className="py-2 px-4">{req.employee?.name || '-'}</td>
-                        <td className="py-2 px-4">{req.approved_by_name || '-'}</td>
+                        <td className="py-2 px-4 flex items-center gap-2">
+                          {req.status === 'pending' ? (
+                            <>
+                              <button
+                                onClick={() => handleApproveRequest(req.id)}
+                                disabled={!!processingRequests[req.id]}
+                                title={t('timeTracking.approve', 'Approve')}
+                                className={`text-green-600 hover:text-green-800 transition ${processingRequests[req.id] ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                              >
+                                <Check className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleRejectRequest(req.id)}
+                                disabled={!!processingRequests[req.id]}
+                                title={t('timeTracking.reject', 'Reject')}
+                                className={`text-red-600 hover:text-red-800 transition ${processingRequests[req.id] ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </>
+                          ) : (
+                            req.approved_by_name || '-'
+                          )}
+                        </td>
                       </tr>
                     ))
                   )}

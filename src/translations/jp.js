@@ -303,6 +303,11 @@ export default {
     status: 'ステータス',
     requestedBy: '申請者',
     approvedBy: '承認者',
+    leaveRequestManagement: '休暇申請管理',
+    pending: '保留中',
+    approved: '承認済み',
+    rejected: '却下',
+    cancelled: '取消済み', 
     // Hour types for overtime
     weekend: '週末残業',
     holiday: '休日残業',

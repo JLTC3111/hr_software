@@ -305,6 +305,11 @@ export default {
     status: '상태',
     requestedBy: '요청자',
     approvedBy: '승인자',
+    leaveRequestManagement: '휴가 신청 관리',
+    pending: '보류 중',
+    approved: '승인됨',
+    rejected: '거부됨',
+    cancelled: '취소됨',
     // Hour types for overtime
     weekend: '주말 초과 근무',
     holiday: '휴일 초과 근무',
