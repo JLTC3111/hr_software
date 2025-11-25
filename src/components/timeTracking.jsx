@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, ArrowUp01, Sailboat, Stamp, ShieldQuestionMark, ShieldCheck, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
@@ -108,6 +109,53 @@ const TimeTracking = ({ employees }) => {
     endDate: '',
     reason: ''
   });
+
+  // Small component: cross-fade between question/tick/X using Framer Motion
+  const StatusMorph = ({ status }) => {
+    const base = 'absolute inset-0 flex items-center justify-center';
+    return (
+      <div className="ml-2 w-5 h-5 relative" aria-hidden>
+        <AnimatePresence mode="wait">
+          {status === 'pending' && (
+            <motion.div
+              key="pending"
+              className={base}
+              initial={{ opacity: 0, scale: 0.7, rotate: 8 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              exit={{ opacity: 0, scale: 0.85, rotate: -8 }}
+              transition={{ duration: 0.22 }}
+            >
+              <ShieldQuestionMark className="w-4 h-4 text-amber-500" />
+            </motion.div>
+          )}
+          {status === 'approved' && (
+            <motion.div
+              key="approved"
+              className={base}
+              initial={{ opacity: 0, scale: 0.7, rotate: -8 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              exit={{ opacity: 0, scale: 0.85, rotate: 8 }}
+              transition={{ duration: 0.22 }}
+            >
+              <ShieldCheck className="w-4 h-4 text-green-600" />
+            </motion.div>
+          )}
+          {status === 'rejected' && (
+            <motion.div
+              key="rejected"
+              className={base}
+              initial={{ opacity: 0, scale: 0.7 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
+              transition={{ duration: 0.22 }}
+            >
+              <X className="w-4 h-4 text-red-600" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  };
   
   // Overtime log form
   const [overtimeForm, setOvertimeForm] = useState({
@@ -1011,31 +1059,31 @@ const TimeTracking = ({ employees }) => {
                     <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('days_count')}>
                       <span className="inline-flex items-center gap-1">
                         {t('timeTracking.leaveDays', 'Leave Days')}
-                        <ArrowDownAZ className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'days_count' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'days_count' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
+                        <ArrowUp01 className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'days_count' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'days_count' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
                       </span>
                     </th>
                     <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('leave_type')}>
                       <span className="inline-flex items-center gap-1">
                         {t('timeTracking.leaveType', 'Leave Type')}
-                        <CircleFadingArrowUp className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'leave_type' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'leave_type' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
+                        <Sailboat className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'leave_type' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'leave_type' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
                       </span>
                     </th>
                     <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('status')}>
                       <span className="inline-flex items-center gap-1">
                         {t('timeTracking.status', 'Status')}
-                        <Hourglass className={`inline w-3.5 h-3.5 ml-1 transition-all duration-500 ${leaveSortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'status' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
+                        <ShieldQuestionMark className={`inline w-3.5 h-3.5 ml-1 transition-all duration-500 ${leaveSortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'status' && leaveSortDirection === 'asc' ? 'rotateY(180deg)' : 'none' }} />
                       </span>
                     </th>
                     <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('requested_by')}>
                       <span className="inline-flex items-center gap-1">
                         {t('timeTracking.requestedBy', 'Requested By')}
-                        <ArrowDownAZ className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'requested_by' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'requested_by' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
+                        <ArrowDownAZ className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'requested_by' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'requested_by' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
                       </span>
                     </th>
                     <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('approved_by')}>
                       <span className="inline-flex items-center gap-1">
                         {t('timeTracking.approvedBy', 'Approved By')}
-                        <CalendarArrowDown className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'approved_by' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'approved_by' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
+                        <Stamp className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'approved_by' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'approved_by' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
                       </span>
                     </th>
                   </tr>
@@ -1058,7 +1106,12 @@ const TimeTracking = ({ employees }) => {
                             default: return req.leave_type || '-';
                           }
                         })()}</td>
-                        <td className="py-2 px-4">{t(`timeTracking.${req.status}`, req.status)}</td>
+                        <td className="py-2 px-4">
+                          <div className="flex items-center justify-between">
+                            <span>{t(`timeTracking.${req.status}`, req.status)}</span>
+                            <StatusMorph status={req.status} />
+                          </div>
+                        </td>
                         <td className="py-2 px-4">{req.employee?.name || '-'}</td>
                         <td className="py-2 px-4 flex items-center gap-2">
                           {req.status === 'pending' ? (
