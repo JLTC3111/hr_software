@@ -596,12 +596,10 @@ export const getLeaveRequests = async (employeeId, filters = {}) => {
 /* Get all leave requests (for HR/managers) */
 export const getAllLeaveRequests = async (filters = {}) => {
   try {
+    // Fetch leave requests without relying on a foreign-key relationship in the schema cache
     let query = supabase
       .from('leave_requests')
-      .select(`
-        *,
-        employee:employees!leave_requests_employee_id_fkey(id, name, department, position)
-      `)
+      .select('*')
       .order('submitted_at', { ascending: false });
 
     if (filters.status) {
@@ -609,9 +607,39 @@ export const getAllLeaveRequests = async (filters = {}) => {
     }
 
     const { data, error } = await query;
-
     if (error) throw error;
-    return { success: true, data };
+
+    // If no leave requests, return early
+    if (!Array.isArray(data) || data.length === 0) return { success: true, data: [] };
+
+    // Batch-fetch employee info for requesters and approvers to attach readable names
+    const requesterIds = [...new Set(data.map(r => r.employee_id).filter(Boolean))];
+    const approverIds = [...new Set(data.map(r => r.approved_by).filter(Boolean))];
+    const allIds = [...new Set([...requesterIds, ...approverIds])];
+
+    let employees = [];
+    if (allIds.length > 0) {
+      const { data: empData, error: empError } = await supabase
+        .from('employees')
+        .select('id, name, department, position')
+        .in('id', allIds);
+
+      if (empError) {
+        console.error('Error fetching employees for leave requests:', empError);
+      } else {
+        employees = empData || [];
+      }
+    }
+
+    const empMap = employees.reduce((acc, e) => { acc[e.id] = e; return acc; }, {});
+
+    const merged = data.map(r => ({
+      ...r,
+      employee: empMap[r.employee_id] || null,
+      approved_by_name: empMap[r.approved_by]?.name || null
+    }));
+
+    return { success: true, data: merged };
   } catch (error) {
     console.error('Error fetching all leave requests:', error);
     return { success: false, error: error.message };

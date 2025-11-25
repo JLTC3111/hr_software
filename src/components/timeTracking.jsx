@@ -165,9 +165,23 @@ const TimeTracking = ({ employees }) => {
   // Fetch all leave requests for all employees (admin/manager only)
   useEffect(() => {
     const fetchAllLeaveRequests = async () => {
-      if (!(checkPermission('admin') || checkPermission('manager'))) return;
+
+      // Use the same permission guard that shows the Overview tab
+      // (some installs grant a 'canViewReports' capability rather than 'admin'/'manager')
+      console.log('[DEBUG] fetchAllLeaveRequests canViewOverview:', canViewOverview, 'activeTab:', activeTab);
+
+      if (!canViewOverview) {
+        console.log('[DEBUG] fetchAllLeaveRequests: user lacks canViewReports permission — skipping');
+        setAllLeaveRequests([]);
+        return;
+      }
+
+      // Only fetch when the Leave Requests tab is active (avoid unnecessary queries)
+      if (activeTab !== 'leaveRequests') return;
+
       try {
         const result = await timeTrackingService.getAllLeaveRequests({});
+        console.log('[DEBUG] getAllLeaveRequests result:', result);
         if (result.success && Array.isArray(result.data)) {
           setAllLeaveRequests(result.data);
         } else {
@@ -179,7 +193,7 @@ const TimeTracking = ({ employees }) => {
       }
     };
     fetchAllLeaveRequests();
-  }, [checkPermission]);
+  }, [canViewOverview, activeTab, selectedMonth, selectedYear]);
   
   // Fetch all employees data for Overview
   useEffect(() => {
@@ -868,11 +882,11 @@ const TimeTracking = ({ employees }) => {
       )}
 
       {/* Leave Requests Tab (moved out of overview) */}
-      {activeTab === 'leaveRequests' && (checkPermission('admin') || checkPermission('manager')) && (
+      {activeTab === 'leaveRequests' && canViewOverview && (
         <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 mt-6`}>
           <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>Leave Request Management - {getMonthName(selectedMonth)} {selectedYear}</h3>
           <div className="mt-2">
-            {(() => { console.log('DEBUG allLeaveRequests:', allLeaveRequests); return null; })()}
+            {(() => { console.log('DEBUG allLeaveRequests (render):', allLeaveRequests?.length); return null; })()}
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
