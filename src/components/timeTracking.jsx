@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence, useMotionValue, animate } from 'framer-motion'
 import { interpolate } from 'flubber'
-import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, ArrowUp01, Sailboat, Stamp, ShieldQuestionMark, ShieldCheck, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart } from 'lucide-react'
+import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, ArrowUp01, Sailboat, Stamp, ShieldQuestionMark, ListFilterPlus, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
@@ -1199,13 +1199,13 @@ const TimeTracking = ({ employees }) => {
                     <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('leave_type')}>
                       <span className="inline-flex items-center gap-1">
                         {t('timeTracking.leaveType', 'Leave Type')}
-                        <Sailboat className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'leave_type' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'leave_type' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
+                        <Sailboat className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'leave_type' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'leave_type' && leaveSortDirection === 'asc' ? 'rotateY(180deg)' : 'none' }} />
                       </span>
                     </th>
                     <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('status')}>
                       <span className="inline-flex items-center gap-1">
                         {t('timeTracking.status', 'Status')}
-                        <ShieldQuestionMark className={`inline w-3.5 h-3.5 ml-1 transition-all duration-500 ${leaveSortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'status' && leaveSortDirection === 'asc' ? 'rotateY(180deg)' : 'none' }} />
+                        <ListFilterPlus className={`inline w-3.5 h-3.5 ml-1 transition-all duration-500 ${leaveSortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'status' && leaveSortDirection === 'asc' ? 'rotateY(180deg)' : 'none' }} />
                       </span>
                     </th>
                     <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('requested_by')}>
@@ -1217,7 +1217,7 @@ const TimeTracking = ({ employees }) => {
                     <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('approved_by')}>
                       <span className="inline-flex items-center gap-1">
                         {t('timeTracking.approvedBy', 'Approved By')}
-                        <Stamp className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'approved_by' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'approved_by' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
+                        <Stamp className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'approved_by' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'approved_by' && leaveSortDirection === 'asc' ? 'rotateY(180deg)' : 'none' }} />
                       </span>
                     </th>
                   </tr>
