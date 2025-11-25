@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Download, ArrowUpDown, FileText, Coffee, Zap, Loader, BarChart3, PieChart } from 'lucide-react'
+import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
@@ -743,8 +743,8 @@ const TimeTracking = ({ employees }) => {
                   <span className="inline-flex items-center gap-1">
                     {t('timeTracking.employee', 'Employee')}
                     <ArrowDownAZ
-                      className={`inline w-4 h-4 transition-transform ${sortKey === 'employee' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
-                      style={{ transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                      className={`inline w-4 h-4 ml-1 transition-all-0.5s ${sortKey === 'employee' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
+                      style={{transition: 'transform 0.5s', transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
                     />
                   </span>
                 </th>
@@ -754,10 +754,19 @@ const TimeTracking = ({ employees }) => {
                 >
                   <span className="inline-flex items-center gap-1">
                     {t('timeTracking.daysWorked', 'Days Worked')}
-                    <ArrowDownAZ
-                      className={`inline w-4 h-4 transition-transform ${sortKey === 'days_worked' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
-                      style={{ transform: sortKey === 'days_worked' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                    />
+                    {sortKey === 'days_worked' ? (
+                      sortDirection === 'asc' ? (
+                        <CalendarArrowUp
+                          className={`inline w-4 h-4 ml-1 transition-all-0.5s ${isDarkMode ? 'text-white' : 'text-black'}`}
+                        />
+                      ) : (
+                        <CalendarArrowDown
+                          className={`inline w-4 h-4 ml-1 transition-all-0.5s ${isDarkMode ? 'text-white' : 'text-black'}`}
+                        />
+                      )
+                    ) : (
+                      <CalendarArrowUp className="inline w-4 h-4 ml-1 transition-all-0.5s text-gray-400 transition-all" />
+                    )}
                   </span>
                 </th>
                 <th
@@ -766,9 +775,9 @@ const TimeTracking = ({ employees }) => {
                 >
                   <span className="inline-flex items-center gap-1">
                     {t('timeTracking.regularHours', 'Regular Hours')}
-                    <ArrowDownAZ
-                      className={`inline w-4 h-4 transition-transform ${sortKey === 'regular_hours' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
-                      style={{ transform: sortKey === 'regular_hours' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                    <CircleFadingArrowUp
+                      className={`inline w-4 h-4  ml-1 transition-all ${sortKey === 'regular_hours' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
+                      style={{transition: 'transform 0.5s', transform: sortKey === 'regular_hours' && sortDirection === 'asc' ? 'rotate(540deg)' : 'none' }}
                     />
                   </span>
                 </th>
@@ -778,9 +787,9 @@ const TimeTracking = ({ employees }) => {
                 >
                   <span className="inline-flex items-center gap-1">
                     {t('timeTracking.overtime', 'Overtime')}
-                    <ArrowDownAZ
-                      className={`inline w-4 h-4 transition-transform ${sortKey === 'overtime' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
-                      style={{ transform: sortKey === 'overtime' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                    <Pickaxe
+                      className={`inline w-3 h-3 ml-1 transition-all ${sortKey === 'overtime' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
+                      style={{transition: 'transform 0.5s', transform: sortKey === 'overtime' && sortDirection === 'asc' ? 'rotate(90deg)' : 'none' }}
                     />
                   </span>
                 </th>
@@ -790,9 +799,9 @@ const TimeTracking = ({ employees }) => {
                 >
                   <span className="inline-flex items-center gap-1">
                     {t('timeTracking.totalHoursLabel', 'Total Hours')}
-                    <ArrowDownAZ
-                      className={`inline w-4 h-4 transition-transform ${sortKey === 'total_hours' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
-                      style={{ transform: sortKey === 'total_hours' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                    <Hourglass
+                      className={`inline w-3.5 h-3.5  ml-1 transition-all-0.5s ${sortKey === 'total_hours' ? isDarkMode ? 'text-white' : 'text-black' : 'text-gray-400'}`}
+                      style={{transition: 'transform 0.5s', transform: sortKey === 'total_hours' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
                     />
                   </span>
                 </th>
