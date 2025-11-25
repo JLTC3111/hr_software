@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, animate } from 'framer-motion'
+import { interpolate } from 'flubber'
 import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, ArrowUp01, Sailboat, Stamp, ShieldQuestionMark, ShieldCheck, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -110,52 +111,185 @@ const TimeTracking = ({ employees }) => {
     reason: ''
   });
 
-  // Small component: cross-fade between question/tick/X using Framer Motion
-  const StatusMorph = ({ status }) => {
-    const base = 'absolute inset-0 flex items-center justify-center';
+  // True morph component: morphing shield icon with inner symbol transitions
+  const TruePathMorph = ({ status }) => {
+  // Lucide icon paths
+    const paths = {
+      shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10",
+      question: "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3",
+      questionDot: "M12 17h.01",
+      check: "m9 12 2 2 4-4",
+      cross1: "m15 9-6 6",
+      cross2: "m9 9 6 6"
+    };
+
+    // Slower, smoother animation variants
+    const iconVariants = {
+      initial: { scale: 0.5, opacity: 0, rotate: -45, pathLength: 0 },
+      animate: { 
+        scale: 1, 
+        opacity: 1, 
+        rotate: 0, 
+        pathLength: 1,
+        transition: { 
+          type: "spring",
+          stiffness: 70, // Reduced from 300 for slower movement
+          damping: 15,    // Adjusted for a smoother settle
+          mass: 1.2,       // Added mass for a slightly "heavier", more deliberate feel
+          duration: 2.5, 
+          delay: 0.05,
+        }
+      },
+      exit: { 
+        scale: 0.5, 
+        opacity: 0, 
+        rotate: 45,
+        transition: { duration: 1.5 } // Increased exit duration
+      }
+    };
+
+    // Color mapping based on status (applied to inner icon only)
+    const getIconColor = () => {
+      switch (status) {
+        case 'approved': return 'text-green-600';
+        case 'rejected': return 'text-red-600';
+        default: return 'text-amber-500';
+      }
+    };
+
     return (
-      <div className="ml-2 w-5 h-5 relative" aria-hidden>
-        <AnimatePresence mode="wait">
-          {status === 'pending' && (
-            <motion.div
-              key="pending"
-              className={base}
-              initial={{ opacity: 0, scale: 0.7, rotate: 8 }}
-              animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              exit={{ opacity: 0, scale: 0.85, rotate: -8 }}
-              transition={{ duration: 0.22 }}
-            >
-              <ShieldQuestionMark className="w-4 h-4 text-amber-500" />
-            </motion.div>
-          )}
-          {status === 'approved' && (
-            <motion.div
-              key="approved"
-              className={base}
-              initial={{ opacity: 0, scale: 0.7, rotate: -8 }}
-              animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              exit={{ opacity: 0, scale: 0.85, rotate: 8 }}
-              transition={{ duration: 0.22 }}
-            >
-              <ShieldCheck className="w-4 h-4 text-green-600" />
-            </motion.div>
-          )}
-          {status === 'rejected' && (
-            <motion.div
-              key="rejected"
-              className={base}
-              initial={{ opacity: 0, scale: 0.7 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.85 }}
-              transition={{ duration: 0.22 }}
-            >
-              <X className="w-4 h-4 text-red-600" />
-            </motion.div>
-          )}
-        </AnimatePresence>
+      <div className="ml-2 w-5 h-5 relative flex items-center justify-center">
+        <svg 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          className="w-5 h-5"
+        >
+          {/* Static Shield in a neutral color to prevent "redrawing" perception */}
+          <path d={paths.shield} className="text-gray-400" />
+
+          {/* The inner symbol morphs/swaps with specific status colors */}
+          <AnimatePresence mode="wait">
+            {status === 'pending' && (
+              <motion.g
+                key="pending"
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                variants={iconVariants}
+                className={getIconColor()}
+              >
+                <path d={paths.question} />
+                <path d={paths.questionDot} strokeWidth="3" />
+              </motion.g>
+            )}
+
+            {status === 'approved' && (
+              <motion.path
+                key="approved"
+                d={paths.check}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                variants={iconVariants}
+                className={getIconColor()}
+              />
+            )}
+
+            {status === 'rejected' && (
+              <motion.g
+                key="rejected"
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                variants={iconVariants}
+                className={getIconColor()}
+              >
+                <path d={paths.cross1} />
+                <path d={paths.cross2} />
+              </motion.g>
+            )}
+          </AnimatePresence>
+        </svg>
       </div>
     );
   };
+
+  // morph the inner question glyph into a check or an X using flubber.interpolate
+  const trueFlubberMorph = ({ status }) => {
+    // Paths for morphing (inner glyphs only). Keep paths simple and compatible.
+    const question = 'M9.5 9.5c0-2 2-3.5 3.5-3.5s3.5 1.5 3.5 3.5c0 2-3.5 2.5-3.5 4.5';
+    const dot = 'M12 17h.01';
+    const check = 'M6 12l4 4L18 8';
+    const crossA = 'M7 7l10 10';
+    const crossB = 'M17 7L7 17';
+
+    const [dMain, setDMain] = useState(status === 'approved' ? check : status === 'rejected' ? crossA : question);
+    const [dDot, setDDot] = useState(status === 'approved' ? '' : dot);
+    const prevRef = useRef(status);
+    const prog = useMotionValue(1);
+    const interpRef = useRef(null);
+
+    useEffect(() => {
+      const prev = prevRef.current || 'pending';
+      if (prev === status) return;
+
+      let fromMain, toMain, fromDot, toDot;
+      switch (prev) {
+        case 'pending': fromMain = question; fromDot = dot; break;
+        case 'approved': fromMain = check; fromDot = ''; break;
+        case 'rejected': fromMain = crossA; fromDot = crossB; break;
+        default: fromMain = question; fromDot = dot;
+      }
+      switch (status) {
+        case 'pending': toMain = question; toDot = dot; break;
+        case 'approved': toMain = check; toDot = ''; break;
+        case 'rejected': toMain = crossA; toDot = crossB; break;
+        default: toMain = question; toDot = dot;
+      }
+
+      // create interpolator(s)
+      try {
+        interpRef.current = interpolate(fromMain, toMain, { maxSegmentLength: 2 });
+        const interpDot = (fromDot && toDot) ? interpolate(fromDot, toDot, { maxSegmentLength: 2 }) : null;
+
+        prog.set(0);
+        const unsub = prog.onChange((v) => {
+          try {
+            if (interpRef.current) setDMain(interpRef.current(v));
+            if (interpDot) setDDot(interpDot(v));
+          } catch (e) {
+            // ignore interpolation errors
+          }
+        });
+
+        animate(prog, 1, { duration: 0.38, ease: [0.22, 0.8, 0.2, 1] });
+        prevRef.current = status;
+        return () => { unsub && unsub(); };
+      } catch (err) {
+        // fallback to instant swap
+        setDMain(toMain);
+        setDDot(toDot);
+        prevRef.current = status;
+      }
+    }, [status]);
+
+    const colorClass = status === 'approved' ? 'text-green-600' : status === 'rejected' ? 'text-red-600' : 'text-amber-500';
+
+    return (
+      <div className="ml-2 w-5 h-5 relative flex items-center justify-center" aria-hidden>
+        <svg viewBox="0 0 24 24" className={`w-5 h-5 ${colorClass}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d={"M12 2l8 3v7c0 6-8 10-8 10S4 18 4 12V5l8-3z"} className="text-gray-300" />
+          <path d={dMain} />
+          {dDot && <path d={dDot} strokeWidth="3" />}
+        </svg>
+      </div>
+    );
+  };
+
   
   // Overtime log form
   const [overtimeForm, setOvertimeForm] = useState({
@@ -1109,7 +1243,7 @@ const TimeTracking = ({ employees }) => {
                         <td className="py-2 px-4">
                           <div className="flex items-center justify-between">
                             <span>{t(`timeTracking.${req.status}`, req.status)}</span>
-                            <StatusMorph status={req.status} />
+                            <TruePathMorph status={req.status} />
                           </div>
                         </td>
                         <td className="py-2 px-4">{req.employee?.name || '-'}</td>
