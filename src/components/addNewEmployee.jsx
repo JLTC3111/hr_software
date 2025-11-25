@@ -85,18 +85,18 @@ const AddNewEmployee = ({ refetchEmployees }) => {
   ];
 
   const departments = [
-    { value: 'legal_compliance', label: t('departments.legal_compliance', 'Legal Compliance') },
-    { value: 'technology', label: t('departments.technology', 'Technology') },
-    { value: 'internal_affairs', label: t('departments.internal_affairs', 'Internal Affairs') },
-    { value: 'human_resources', label: t('departments.human_resources', 'Human Resources') },
-    { value: 'office_unit', label: t('departments.office_unit', 'Office Unit') },
-    { value: 'board_of_directors', label: t('departments.board_of_directors', 'Board of Directors') },
-    { value: 'finance', label: t('departments.finance', 'Finance') },
-    { value: 'engineering', label: t('departments.engineering', 'Engineering') },
-    { value: 'sales', label: t('departments.sales', 'Sales') },
-    { value: 'marketing', label: t('departments.marketing', 'Marketing') },
-    { value: 'design', label: t('departments.design', 'Design') },
-    { value: 'part_time_employee', label: t('departments.part_time_employee', 'Part-Time Employee') }
+    { value: 'legal_compliance', label: t('employeeDepartment.legal_compliance', 'Legal Compliance') },
+    { value: 'technology', label: t('employeeDepartment.technology', 'Technology') },
+    { value: 'internal_affairs', label: t('employeeDepartment.internal_affairs', 'Internal Affairs') },
+    { value: 'human_resources', label: t('employeeDepartment.human_resources', 'Human Resources') },
+    { value: 'office_unit', label: t('employeeDepartment.office_unit', 'Office Unit') },
+    { value: 'board_of_directors', label: t('employeeDepartment.board_of_directors', 'Board of Directors') },
+    { value: 'finance', label: t('employeeDepartment.finance', 'Finance') },
+    { value: 'engineering', label: t('employeeDepartment.engineering', 'Engineering') },
+    { value: 'sales', label: t('employeeDepartment.sales', 'Sales') },
+    { value: 'marketing', label: t('employeeDepartment.marketing', 'Marketing') },
+    { value: 'design', label: t('employeeDepartment.design', 'Design') },
+    { value: 'part_time_employee', label: t('employeeDepartment.part_time_employee', 'Part-Time Employee') }
   ];
 
   const positions = [
@@ -371,7 +371,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
                   <Building2 className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${text.secondary}`} />
                   <select name="department" value={formData.department} onChange={handleChange} className={`w-full pl-10 pr-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg`}>
                     <option value="">{t('addEmployee.selectDepartment', 'Select Department')}</option>
-                    {departments.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                    {employeeDepartment.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
                   </select>
                 </div>
                 {errors.department && <p className="text-red-500 text-sm mt-1">{errors.department}</p>}
@@ -427,7 +427,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
                 <div className="grid grid-cols-2 gap-4">
                   <div><p className={`text-sm ${text.secondary}`}>{t('employees.email')}</p><p className={text.primary}>{formData.email}</p></div>
                   <div><p className={`text-sm ${text.secondary}`}>{t('employees.phone')}</p><p className={text.primary}>{formData.phone}</p></div>
-                  <div><p className={`text-sm ${text.secondary}`}>{t('employees.department')}</p><p className={text.primary}>{departments.find(d => d.value === formData.department)?.label}</p></div>
+                  <div><p className={`text-sm ${text.secondary}`}>{t('employees.department')}</p><p className={text.primary}>{employeeDepartment.find(d => d.value === formData.department)?.label}</p></div>
                   <div><p className={`text-sm ${text.secondary}`}>{t('employees.salary')}</p><p className={text.primary}>${parseFloat(formData.salary).toLocaleString()}</p></div>
                 </div>
               </div>

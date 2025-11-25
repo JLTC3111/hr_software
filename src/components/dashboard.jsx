@@ -235,6 +235,7 @@ const Dashboard = ({ employees, applications }) => {
       case 'performance':
         data = employees.map(emp => ({
           employeeName: emp.name,
+          position: emp.position,
           department: emp.department,
           performance: timeTrackingData[String(emp.id)]?.performance || emp.performance || 0,
           overtime: timeTrackingData[String(emp.id)]?.overtime || 0
@@ -245,6 +246,7 @@ const Dashboard = ({ employees, applications }) => {
       case 'regularHours':
         data = employees.map(emp => ({
           employeeName: emp.name,
+          position: emp.position,
           department: emp.department,
           regularHours: timeTrackingData[String(emp.id)]?.regularHours || 0,
           totalHours: timeTrackingData[String(emp.id)]?.totalHours || 0
@@ -255,6 +257,7 @@ const Dashboard = ({ employees, applications }) => {
       case 'overtime':
         data = employees.map(emp => ({
           employeeName: emp.name,
+          position: emp.position,
           department: emp.department,
           overtime: (timeTrackingData[String(emp.id)]?.overtime || 0) + (timeTrackingData[String(emp.id)]?.holidayOvertime || 0),
           workDays: timeTrackingData[String(emp.id)]?.workDays || 0
@@ -267,6 +270,7 @@ const Dashboard = ({ employees, applications }) => {
           const empId = String(emp.id);
           return {
             employeeName: emp.name,
+            position: emp.position,
             department: emp.department,
             leaveDays: leaveRequestsData[empId] || timeTrackingData[empId]?.leaveDays || 0,
             workDays: timeTrackingData[empId]?.workDays || 0
@@ -278,6 +282,7 @@ const Dashboard = ({ employees, applications }) => {
       case 'workDays':
         data = employees.map(emp => ({
           employeeName: emp.name,
+          position: emp.position,
           department: emp.department,
           workDays: timeTrackingData[String(emp.id)]?.workDays || 0,
           overtime: timeTrackingData[String(emp.id)]?.overtime || 0

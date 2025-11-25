@@ -41,27 +41,34 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
   // Sort data
   const sortedData = useMemo(() => {
     if (!data || data.length === 0) return [];
-    
-    let sortableData = [...data];
-    
+    // Ensure every item has a position property, checking jobTitle and role as fallbacks
+    let sortableData = data.map(item => ({
+      ...item,
+      position: item.position || item.jobTitle || item.role || 'employee',
+    }));
+
     if (sortConfig.key) {
       sortableData.sort((a, b) => {
         const aVal = a[sortConfig.key];
         const bVal = b[sortConfig.key];
-        
+
         if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
       });
     }
-    
+
     return sortableData;
   }, [data, sortConfig]);
 
   // Filter data
   const filteredData = useMemo(() => {
-    let filtered = sortedData;
-    
+    // Ensure every item has a position property (in case sortedData is mutated elsewhere)
+    let filtered = sortedData.map(item => ({
+      ...item,
+      position: item.position || item.jobTitle || item.role || 'employee',
+    }));
+
     // Search filter
     if (searchTerm) {
       filtered = filtered.filter(item => {
@@ -70,12 +77,12 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
         );
       });
     }
-    
+
     // Status filter
     if (filterStatus !== 'all') {
       filtered = filtered.filter(item => item.status === filterStatus);
     }
-    
+
     return filtered;
   }, [sortedData, searchTerm, filterStatus]);
 
@@ -171,22 +178,29 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
         <table className="w-full">
           <thead>
             <tr className={`border-b ${border.primary}`}>
-              <th className={`text-center p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('employeeName')}>
-                <div className="flex items-center justify-center space-x-2">
+              <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('employeeName')}>
+                <div className="flex items-center space-x-2">
                   <User className="w-4 h-4" />
                   <span>{t('employees.name', 'Employee')}</span>
                   <ArrowUpDown className="w-4 h-4" />
                 </div>
               </th>
-              <th className={`text-center p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('department')}>
-                <div className="flex items-center justify-center space-x-2">
+              <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('department')}>
+                <div className="flex items-center space-x-2">
                   <Network className="w-4 h-4" />
                   <span>{t('employees.department', 'Department')}</span>
                   <ArrowUpDown className="w-4 h-4" />
                 </div>
               </th>
+              <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('position')}>
+                <div className="flex items-center justify-center space-x-2">
+                  <IdCard className="w-4 h-4" />
+                  <span>{t('employees.position', 'Position')}</span>
+                  <ArrowUpDown className="w-4 h-4" />
+                </div>
+              </th>
               {metricType === 'performance' && (
-                <th className={`text-center p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('performance')}>
+                <th className={`p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('performance')}>
                   <div className="flex items-center justify-center space-x-2">
                     <span>{t('employees.performance', 'Performance')}</span>
                     <ArrowUpDown className="w-4 h-4" />
@@ -194,7 +208,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                 </th>
               )}
               {metricType === 'overtime' && (
-                <th className={`text-center p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('overtime')}>
+                <th className={`p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('overtime')}>
                   <div className="flex items-center justify-center space-x-2">
                     <span>{t('dashboard.overtime', 'Overtime')}</span>
                     <ArrowUpDown className="w-4 h-4" />
@@ -202,7 +216,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                 </th>
               )}
               {metricType === 'leave' && (
-                <th className={`text-center p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('leaveDays')}>
+                <th className={`p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('leaveDays')}>
                   <div className="flex items-center justify-center space-x-2">
                     <Coffee className="w-4 h-4" />
                     <span>{t('timeTracking.leaveDays', 'Leave Days')}</span>
@@ -215,11 +229,14 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
           <tbody>
             {filteredData.map((item, index) => (
               <tr key={index} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
-                <td className={`text-center p-3 ${text.primary} font-medium`}>{item.employeeName}</td>
-                <td className={`text-center p-3 ${text.secondary}`}>
+                <td className={`text-left p-3 ${text.primary} font-medium`}>{item.employeeName}</td>
+                <td className={`text-left p-3 ${text.secondary}`}>
                   <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
                     {t(`employeeDepartment.${item.department}`, item.department)}
                   </span>
+                </td>
+                 <td className={`text-center p-3 ${text.secondary}`}>
+                  {t(`employeePosition.${item.position}`, item.position)}
                 </td>
                 {metricType === 'performance' && (
                   <td className={`text-center p-3 ${text.primary} font-semibold`}>{item.performance}/5.0</td>
@@ -346,6 +363,13 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
         <table className="w-full">
           <thead>
             <tr className={`border-b ${border.primary}`}>
+               <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('employeeName')}>
+                <div className="flex items-center space-x-2">
+                  <User className="w-4 h-4" />
+                  <span>{t('employees.name', 'Employee')}</span>
+                  <ArrowUpDown className="w-4 h-4" />
+                </div>
+              </th>
               <th className={`text-center p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('department')}>
                 <div className="flex items-center justify-center space-x-2">
                   <Network className="w-4 h-4" />
@@ -372,6 +396,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
           <tbody>
             {filteredData.map((item, index) => (
               <tr key={index} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
+                <td className={`p-3 ${text.primary} font-medium`}>{item.employeeName}</td>
                 <td className={`text-center p-3 ${text.primary}`}>
                   <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
                     {t(`employeeDepartment.${item.department}`, item.department || 'N/A')}

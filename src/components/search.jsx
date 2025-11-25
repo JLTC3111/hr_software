@@ -2,7 +2,7 @@ import React from 'react'
 import { Search, Filter } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 
-const SearchAndFilter = ({ searchTerm, setSearchTerm, filterDepartment, setFilterDepartment, departments, style }) => {
+const SearchAndFilter = ({ searchTerm, setSearchTerm, filterDepartment, setFilterDepartment, employeeDepartment, style }) => {
   const { t } = useLanguage();
   
   return (
@@ -35,8 +35,8 @@ const SearchAndFilter = ({ searchTerm, setSearchTerm, filterDepartment, setFilte
               borderColor: style?.borderColor || '#d1d5db'
             }}
           >
-            {departments.map(dept => (
-              <option key={dept.key} value={dept.key}>{dept.label}</option>
+            {(employeeDepartment || []).map(dept => (
+              <option key={dept.value} value={dept.value}>{dept.label}</option>
             ))}
           </select>
         </div>
