@@ -87,6 +87,8 @@ const TimeTracking = ({ employees }) => {
   const [summaryData, setSummaryData] = useState(null);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [allLeaveRequests, setAllLeaveRequests] = useState([]);
+  const [leaveSortKey, setLeaveSortKey] = useState('start_date');
+  const [leaveSortDirection, setLeaveSortDirection] = useState('asc');
   const [processingRequests, setProcessingRequests] = useState({}); // { [requestId]: true }
   const [timeEntries, setTimeEntries] = useState([]);
   const [allEmployeesData, setAllEmployeesData] = useState([]);
@@ -177,8 +179,9 @@ const TimeTracking = ({ employees }) => {
         return;
       }
 
-      // Only fetch when the Leave Requests tab is active (avoid unnecessary queries)
-      if (activeTab !== 'leaveRequests') return;
+      // Prefetch once for admins so the Leave Requests tab shows immediately when opened.
+      // Avoid extra queries: if we're not on the tab but already have data, skip.
+      if (activeTab !== 'leaveRequests' && Array.isArray(allLeaveRequests) && allLeaveRequests.length > 0) return;
 
       try {
         const result = await timeTrackingService.getAllLeaveRequests({});
@@ -317,6 +320,61 @@ const TimeTracking = ({ employees }) => {
   
   // Override leave_days with calculated value (includes pending)
   currentData.leave_days = calculatedLeaveDays;
+
+  // Leave requests sorting helpers
+  const handleLeaveSort = (key) => {
+    if (leaveSortKey === key) {
+      setLeaveSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setLeaveSortKey(key);
+      setLeaveSortDirection('asc');
+    }
+  };
+
+  const getSortedLeaveRequests = () => {
+    const sorted = [...allLeaveRequests];
+    sorted.sort((a, b) => {
+      let aVal;
+      let bVal;
+      switch (leaveSortKey) {
+        case 'days_count':
+          aVal = a.days_count || 0;
+          bVal = b.days_count || 0;
+          break;
+        case 'leave_type':
+          aVal = (a.leave_type || '').toLowerCase();
+          bVal = (b.leave_type || '').toLowerCase();
+          break;
+        case 'status':
+          aVal = (a.status || '').toLowerCase();
+          bVal = (b.status || '').toLowerCase();
+          break;
+        case 'requested_by':
+          aVal = (a.employee?.name || '').toLowerCase();
+          bVal = (b.employee?.name || '').toLowerCase();
+          break;
+        case 'approved_by':
+          aVal = (a.approved_by_name || '').toLowerCase();
+          bVal = (b.approved_by_name || '').toLowerCase();
+          break;
+        case 'start_date':
+        default:
+          aVal = a.start_date ? new Date(a.start_date).getTime() : 0;
+          bVal = b.start_date ? new Date(b.start_date).getTime() : 0;
+      }
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        if (aVal < bVal) return leaveSortDirection === 'asc' ? -1 : 1;
+        if (aVal > bVal) return leaveSortDirection === 'asc' ? 1 : -1;
+        return 0;
+      }
+
+      if (aVal < bVal) return leaveSortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return leaveSortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  };
 
   const months = [
     t('months.january'), t('months.february'), t('months.march'), t('months.april'), 
@@ -876,7 +934,7 @@ const TimeTracking = ({ employees }) => {
                     {t('timeTracking.regularHours', 'Regular Hours')}
                     <CircleFadingArrowUp
                       className={`inline w-4 h-4  ml-1 transition-all duration-500 ${sortKey === 'regular_hours' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                      style={{transition: 'transform 0.5s', transform: sortKey === 'regular_hours' && sortDirection === 'asc' ? 'rotate(540deg)' : 'none' }}
+                      style={{transition: 'transform 0.5s', transform: sortKey === 'regular_hours' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
                     />
                   </span>
                 </th>
@@ -950,11 +1008,36 @@ const TimeTracking = ({ employees }) => {
               <table className="w-full">
                 <thead>
                   <tr className={`border-b ${border.primary}`}>
-                    <th className="py-2 px-4 text-left">{t('timeTracking.leaveDays', 'Leave Days')}</th>
-                    <th className="py-2 px-4 text-left">{t('timeTracking.leaveType', 'Leave Type')}</th>
-                    <th className="py-2 px-4 text-left">{t('timeTracking.status', 'Status')}</th>
-                    <th className="py-2 px-4 text-left">{t('timeTracking.requestedBy', 'Requested By')}</th>
-                    <th className="py-2 px-4 text-left">{t('timeTracking.approvedBy', 'Approved By')}</th>
+                    <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('days_count')}>
+                      <span className="inline-flex items-center gap-1">
+                        {t('timeTracking.leaveDays', 'Leave Days')}
+                        <ArrowDownAZ className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'days_count' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'days_count' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
+                      </span>
+                    </th>
+                    <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('leave_type')}>
+                      <span className="inline-flex items-center gap-1">
+                        {t('timeTracking.leaveType', 'Leave Type')}
+                        <CircleFadingArrowUp className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'leave_type' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'leave_type' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
+                      </span>
+                    </th>
+                    <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('status')}>
+                      <span className="inline-flex items-center gap-1">
+                        {t('timeTracking.status', 'Status')}
+                        <Hourglass className={`inline w-3.5 h-3.5 ml-1 transition-all duration-500 ${leaveSortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'status' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
+                      </span>
+                    </th>
+                    <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('requested_by')}>
+                      <span className="inline-flex items-center gap-1">
+                        {t('timeTracking.requestedBy', 'Requested By')}
+                        <ArrowDownAZ className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'requested_by' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'requested_by' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
+                      </span>
+                    </th>
+                    <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('approved_by')}>
+                      <span className="inline-flex items-center gap-1">
+                        {t('timeTracking.approvedBy', 'Approved By')}
+                        <CalendarArrowDown className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'approved_by' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'approved_by' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
+                      </span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -963,7 +1046,7 @@ const TimeTracking = ({ employees }) => {
                       <td colSpan={5} className="py-4 text-center text-gray-500">No leave requests found.</td>
                     </tr>
                   ) : (
-                    allLeaveRequests.map((req, idx) => (
+                    getSortedLeaveRequests().map((req, idx) => (
                       <tr key={req.id || idx}>
                         <td className="py-2 px-4 text-center">{req.days_count}</td>
                         <td className="py-2 px-4">{(function(){
