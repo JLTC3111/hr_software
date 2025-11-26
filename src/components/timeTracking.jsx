@@ -1190,31 +1190,31 @@ const TimeTracking = ({ employees }) => {
               <table className="w-full">
                 <thead>
                   <tr className={`border-b ${border.primary}`}>
-                    <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('days_count')}>
+                    <th className={`${text.primary} py-2 px-4 text-left cursor-pointer`} onClick={() => handleLeaveSort('days_count')}>
                       <span className="inline-flex items-center gap-1">
                         {t('timeTracking.leaveDays', 'Leave Days')}
                         <ArrowUp01 className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'days_count' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'days_count' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
                       </span>
                     </th>
-                    <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('leave_type')}>
+                    <th className={`${text.primary} py-2 px-4 text-left cursor-pointer`} onClick={() => handleLeaveSort('leave_type')}>
                       <span className="inline-flex items-center gap-1">
                         {t('timeTracking.leaveType', 'Leave Type')}
                         <Sailboat className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'leave_type' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'leave_type' && leaveSortDirection === 'asc' ? 'rotateY(180deg)' : 'none' }} />
                       </span>
                     </th>
-                    <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('status')}>
+                    <th className={`${text.primary} py-2 px-4 text-left cursor-pointer`} onClick={() => handleLeaveSort('status')}>
                       <span className="inline-flex items-center gap-1">
                         {t('timeTracking.status', 'Status')}
                         <ListFilterPlus className={`inline w-4.5 h-4.5 ml-1 transition-all duration-500 ${leaveSortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'status' && leaveSortDirection === 'asc' ? 'rotateY(180deg)' : 'none' }} />
                       </span>
                     </th>
-                    <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('requested_by')}>
+                    <th className={`${text.primary} py-2 px-4 text-left cursor-pointer`} onClick={() => handleLeaveSort('requested_by')}>
                       <span className="inline-flex items-center gap-1">
                         {t('timeTracking.requestedBy', 'Requested By')}
                         <ArrowDownAZ className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'requested_by' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'requested_by' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
                       </span>
                     </th>
-                    <th className="py-2 px-4 text-left cursor-pointer" onClick={() => handleLeaveSort('approved_by')}>
+                    <th className={`${text.primary} py-2 px-4 text-left cursor-pointer`} onClick={() => handleLeaveSort('approved_by')}>
                       <span className="inline-flex items-center gap-1">
                         {t('timeTracking.approvedBy', 'Approved By')}
                         <Stamp className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'approved_by' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'approved_by' && leaveSortDirection === 'asc' ? 'rotateY(180deg)' : 'none' }} />
@@ -1230,8 +1230,8 @@ const TimeTracking = ({ employees }) => {
                   ) : (
                     getSortedLeaveRequests().map((req, idx) => (
                       <tr key={req.id || idx}>
-                        <td className="py-2 px-4 text-center">{req.days_count}</td>
-                        <td className="py-2 px-4">{(function(){
+                        <td className={`${text.primary} py-2 px-4 text-center`}>{req.days_count}</td>
+                        <td className={`${text.primary} py-2 px-4`}>{(function(){
                           switch(req.leave_type){
                             case 'sick': return t('timeTracking.sickLeave', 'Sick Leave');
                             case 'vacation': return t('timeTracking.vacation', 'Vacation');
@@ -1240,14 +1240,14 @@ const TimeTracking = ({ employees }) => {
                             default: return req.leave_type || '-';
                           }
                         })()}</td>
-                        <td className="py-2 px-4">
+                        <td className={`${text.primary} py-2 px-4`}>
                           <div className="flex items-center justify-between">
                             <span>{t(`timeTracking.${req.status}`, req.status)}</span>
                             <TruePathMorph status={req.status} />
                           </div>
                         </td>
-                        <td className="py-2 px-4">{req.employee?.name || '-'}</td>
-                        <td className="py-2 px-4 flex items-center gap-2">
+                        <td className={`${text.primary} py-2 px-4`}>{req.employee?.name || '-'}</td>
+                        <td className={`${text.primary} py-2 px-4 flex items-center gap-2`}>
                           {req.status === 'pending' ? (
                             <>
                               <button
