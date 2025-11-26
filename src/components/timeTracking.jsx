@@ -239,12 +239,12 @@ const TimeTracking = ({ employees }) => {
      ----------------------------*/
     const getColor = (icon) => {
       if (icon.status === 'approved') {
-        return isDarkMode ? 'text-green-400' : 'text-green-600';
+        return isDarkMode ? 'text-green-400' : 'text-green-700';
       }
       if (icon.status === 'rejected') {
-        return isDarkMode ? 'text-red-400' : 'text-red-600';
+        return isDarkMode ? 'text-red-400' : 'text-red-700';
       }
-      return isDarkMode ? 'text-gray-300' : 'text-gray-700';
+      return isDarkMode ? 'text-gray-300' : 'text-gray-400';
     };
 
     /** Icon definitions */
@@ -420,7 +420,7 @@ const TimeTracking = ({ employees }) => {
               ))}
             </svg>
           ) : (
-            <CurrentIcon size={size} className={currentColor} strokeWidth={2} />
+            <CurrentIcon size={size} className={currentColor} stroke="currentColor" strokeWidth={1.5} />
           )}
         </div>
 
@@ -1396,7 +1396,7 @@ const TimeTracking = ({ employees }) => {
                         <td className={`${text.primary} py-2 px-4`}>
                           <div className="flex items-center justify-between">
                             <span>{t(`timeTracking.${req.status}`, req.status)}</span>
-                            <FlubberIconTest status={req.status} size={20} className={`${text.primary} ml-4`} />
+                            <FlubberIconTest isDarkMode={isDarkMode} status={req.status} size={20} className={`${text.primary} ml-4`} />
                           </div>
                         </td>
                         <td className={`${text.primary} py-2 px-4`}>{req.employee?.name || '-'}</td>
@@ -1407,7 +1407,7 @@ const TimeTracking = ({ employees }) => {
                                 onClick={() => handleApproveRequest(req.id)}
                                 disabled={!!processingRequests[req.id]}
                                 title={t('timeTracking.approve', 'Approve')}
-                                className={`text-green-600 hover:animate-pulse hover:scale-120 transition-all duration-500 ${processingRequests[req.id] ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                className={`text-green-600 hover:animate-pulse ${isDarkMode ? 'hover:bg-gray-100' : 'hover:bg-gray-700'} rounded-4xl hover:scale-120 transition-all duration-500 ${processingRequests[req.id] ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                               >
                                 <Check className="w-4 h-4" />
                               </button>
@@ -1415,7 +1415,7 @@ const TimeTracking = ({ employees }) => {
                                 onClick={() => handleRejectRequest(req.id)}
                                 disabled={!!processingRequests[req.id]}
                                 title={t('timeTracking.reject', 'Reject')}
-                                className={`text-red-600 -translate-y-px hover:scale-120 hover:rotate-180 transition-transform duration-1500 ${processingRequests[req.id] ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                className={`text-red-600 -translate-y-px hover:scale-120 hover:rotate-180 transition-transform duration-1500 ${isDarkMode ? 'hover:bg-gray-200' : 'hover:bg-gray-300'} rounded-4xl ${processingRequests[req.id] ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                               >
                                 <X className="w-4 h-4" />
                               </button>
