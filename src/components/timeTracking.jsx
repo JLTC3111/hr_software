@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence, useMotionValue, animate } from 'framer-motion'
-import { interpolate } from 'flubber'
+import * as flubber from 'flubber'
 import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, ArrowUp01, Sailboat, Stamp, ShieldQuestionMark, ListFilterPlus, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext'
 import * as timeTrackingService from '../services/timeTrackingService'
 import WorkDaysModal from './workDaysModal';
 import MetricDetailModal from './metricDetailModal';
+import FlubberIconTest from './FlubberIconTest'
 
 const TimeTracking = ({ employees }) => {
   const { user, checkPermission } = useAuth();
@@ -133,8 +134,8 @@ const TimeTracking = ({ employees }) => {
         pathLength: 1,
         transition: { 
           type: "spring",
-          stiffness: 70, // Reduced from 300 for slower movement
-          damping: 15,    // Adjusted for a smoother settle
+          stiffness: 70, // Reduced for for slower movement
+          damping: 15,    
           mass: 1.2,       // Added mass for a slightly "heavier", more deliberate feel
           duration: 2.5, 
           delay: 0.05,
@@ -144,7 +145,8 @@ const TimeTracking = ({ employees }) => {
         scale: 0.5, 
         opacity: 0, 
         rotate: 45,
-        transition: { duration: 1.5 } // Increased exit duration
+        duration: 2.5,
+        transition: { duration: 1.5 },
       }
     };
 
@@ -218,118 +220,113 @@ const TimeTracking = ({ employees }) => {
     );
   };
 
-  // morph the inner question glyph into a check or an X using flubber.interpolate
   const FlubberMorph = ({ status }) => {
-    // Use lucide-like accurate inner paths for smoother morphing
+    // Core shapes
     const question = 'M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3';
     const dot = 'M12 17h.01';
     const check = 'M9 12l2 2 4-4';
     const crossA = 'M18 6L6 18';
     const crossB = 'M6 6l12 12';
 
+    // States
     const [dMain, setDMain] = useState(status === 'approved' ? check : status === 'rejected' ? crossA : question);
     const [dDot, setDDot] = useState(status === 'approved' ? '' : dot);
     const prevRef = useRef(status);
-    const prog = useMotionValue(1);
-    const interpRef = useRef(null);
-    const [jiggle, setJiggle] = useState(false);
+
+    // === Smooth animation settings (matches your big component) ===
+    const duration = 420;             // ms
+    const maxSegmentLength = 2;       // smoothness
+    const ease = (t) =>               // easeInOutQuad
+      t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
     useEffect(() => {
-      let cancelled = false;
-      const prev = prevRef.current || 'pending';
+      const prev = prevRef.current;
       if (prev === status) return;
 
-      // Define intermediate vertical line and dot-up positions
-      const vertical = 'M12 8 L12 15';
-      const dotUp = 'M12 10h.01';
+      // Determine from → to paths
+      const fromMain =
+        prev === 'approved' ? check :
+        prev === 'rejected' ? crossA :
+        question;
 
-      // determine final main path based on target status
-      const finalMain = status === 'approved' ? check : status === 'rejected' ? crossA : question;
-      const finalDot = status === 'approved' ? '' : status === 'rejected' ? crossB : dot;
+      const toMain =
+        status === 'approved' ? check :
+        status === 'rejected' ? crossA :
+        question;
 
-      const runSequence = async () => {
+      const fromDot =
+        prev === 'approved' ? '' :
+        prev === 'rejected' ? crossB :
+        dot;
+
+      const toDot =
+        status === 'approved' ? '' :
+        status === 'rejected' ? crossB :
+        dot;
+
+      // === 1. Create interpolators ===
+      let mainInterp, dotInterp;
+      try {
+        mainInterp = flubber.interpolate(fromMain, toMain, { maxSegmentLength });
+        if (fromDot && toDot) {
+          dotInterp = flubber.interpolate(fromDot, toDot, { maxSegmentLength });
+        }
+      } catch (err) {
+        // fallback on failure
+        setDMain(toMain);
+        setDDot(toDot);
+        prevRef.current = status;
+        return;
+      }
+
+      // === 2. Animate with requestAnimationFrame ===
+      const start = performance.now();
+
+      const animateFrame = (now) => {
+        const elapsed = now - start;
+        const t = Math.min(elapsed / duration, 1);
+        const e = ease(t);
+
         try {
-          // Stage 1: question -> vertical line (main)
-          let interp1 = interpolate(question, vertical, { maxSegmentLength: 2 });
-          prog.set(0);
-          const unsub1 = prog.on('change', (v) => {
-            if (cancelled) return;
-            try { setDMain(interp1(v)); } catch (e) {}
-          });
-          animate(prog, 1, { duration: 0.28, ease: [0.22, 0.8, 0.2, 1] });
-          await new Promise(res => setTimeout(res, 280));
-          unsub1 && unsub1();
-          if (cancelled) return;
+          setDMain(mainInterp(e));
+          if (dotInterp) setDDot(dotInterp(e));
+        } catch (err) {}
 
-          // Stage 2: dot rises to join the line (dot path morph)
-          // Interpolate dot -> dotUp
-          if (dDot) {
-            try {
-              const interpDot = interpolate(dot, dotUp, { maxSegmentLength: 3 });
-              prog.set(0);
-              const unsub2 = prog.on('change', (v) => {
-                if (cancelled) return;
-                try { setDDot(interpDot(v)); } catch (e) {}
-              });
-              animate(prog, 1, { duration: 0.22, ease: [0.22, 0.8, 0.2, 1] });
-              await new Promise(res => setTimeout(res, 220));
-              unsub2 && unsub2();
-            } catch (e) {
-              setDDot(dotUp);
-            }
-          }
-          if (cancelled) return;
-
-          // Brief pause to let the dot visually join
-          await new Promise(res => setTimeout(res, 80));
-          if (cancelled) return;
-
-          // Stage 3: vertical -> final (tick or cross)
-          try {
-            const interp3 = interpolate(vertical, finalMain, { maxSegmentLength: 2 });
-            prog.set(0);
-            const unsub3 = prog.on('change', (v) => {
-              if (cancelled) return;
-              try { setDMain(interp3(v)); } catch (e) {}
-            });
-            animate(prog, 1, { duration: 0.36, ease: [0.22, 0.8, 0.2, 1] });
-            await new Promise(res => setTimeout(res, 360));
-            unsub3 && unsub3();
-            // Small push/jiggle when turning into a check to simulate "push downwards at an angle"
-            if (!cancelled && status === 'approved') {
-              setJiggle(true);
-              setTimeout(() => setJiggle(false), 180);
-            }
-          } catch (e) {
-            setDMain(finalMain);
-          }
-
-          // Finalize dot state
-          setDDot(finalDot);
-          prevRef.current = status;
-        } catch (err) {
-          // On any failure fallback to final shapes
-          setDMain(finalMain);
-          setDDot(finalDot);
+        if (t < 1) {
+          requestAnimationFrame(animateFrame);
+        } else {
           prevRef.current = status;
         }
       };
 
-      runSequence();
-
-      return () => { cancelled = true; };
+      requestAnimationFrame(animateFrame);
     }, [status]);
 
-    const colorClass = status === 'approved' ? 'text-green-600' : status === 'rejected' ? 'text-red-600' : 'text-amber-500';
+    // Color logic unchanged
+    const colorClass =
+      status === 'approved'
+        ? 'text-green-600'
+        : status === 'rejected'
+          ? 'text-red-600'
+          : 'text-amber-500';
 
     return (
       <div className="ml-2 w-5 h-5 relative flex items-center justify-center" aria-hidden>
-        <svg viewBox="0 0 24 24" className={`w-5 h-5 ${colorClass}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d={"M12 2l8 3v7c0 6-8 10-8 10S4 18 4 12V5l8-3z"} className="text-gray-300" />
-          <g style={{ transform: jiggle ? 'rotate(20deg) translateY(2px)' : 'none', transformOrigin: '12px 12px' }}>
-            <path d={dMain} />
-            {dDot && <path d={dDot} strokeWidth="3" />}
-          </g>
+        <svg
+          viewBox="0 0 24 24"
+          className={`w-5 h-5 ${colorClass}`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path
+            d="M12 2l8 3v7c0 6-8 10-8 10S4 18 4 12V5l8-3z"
+            className="text-gray-300"
+          />
+          <path d={dMain} />
+          {dDot && <path d={dDot} strokeWidth="3" />}
         </svg>
       </div>
     );

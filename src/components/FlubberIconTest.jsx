@@ -111,7 +111,7 @@ const FlubberIconTest = () => {
 
   // Array of icons to test - organized in morph-friendly pairs/sequences
   const icons = [
-    // === BASIC SHAPES (Best morphing) ===
+    // === BASIC SHAPES ===
     { name: 'Circle', Icon: Circle },
     { name: 'Square', Icon: Square },
     { name: 'Triangle', Icon: Triangle },
@@ -402,7 +402,7 @@ const FlubberIconTest = () => {
     { name: 'CornerDownRight', Icon: CornerDownRight }
   ];
 
-  // Extract SVG paths as an array (for multi-path morphing)
+  // Extract SVG paths as an array for Multi-Path morphing
   const extractPathsFromIcon = (iconElement) => {
     if (!iconElement) {
       console.log('No icon element');

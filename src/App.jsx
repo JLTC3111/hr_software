@@ -290,7 +290,7 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
             isAuthenticated ? <Navigate to="/time-clock" replace /> : <Login />
           } />
           
-          {/* Public Route - Flubber Test (No Auth Required) */}
+          {/* Private Route - Login first) */}
           <Route path="/flubber-test" element={<FlubberIconTest />} />
           
           {/* Protected Routes */}
