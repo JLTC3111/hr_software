@@ -195,6 +195,7 @@ export default {
     success: '勤怠記録が正常に送信されました！',
     confirmDelete: 'この記録を削除してもよろしいですか？',
     delete: '削除',
+    employee: '従業員',
     noEntries: '記録がありません。最初の記録を送信してください！',
     time: '時間',
     hours: '時間数',

@@ -210,6 +210,7 @@ export default {
     total: 'รวม',
     hrs: 'ชม.',
     days: 'วัน',
+    employee: 'พนักงาน',
     includesPending: '* รวมที่รอดำเนินการและอนุมัติแล้ว',
     notesPlaceholder: 'เพิ่มบันทึกหรือรายละเอียดเพิ่มเติม...',
     fileHelp: 'อัปโหลดภาพหน้าจอ รูปภาพ หรือ PDF (ขนาดไม่เกิน 5MB)',

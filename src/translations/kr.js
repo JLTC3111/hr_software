@@ -204,6 +204,7 @@ export default {
     type: '유형',
     status: '상태',
     actions: '작업',
+    employee: '직원',
     weeklySummary: '이번 주',
     monthlySummary: '이번 달',
     leaveDays: '휴가 일수',

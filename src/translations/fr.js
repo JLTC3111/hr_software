@@ -169,6 +169,7 @@ export default {
     selectDate: 'Sélectionner une date',
     date: 'Date',
     clockIn: 'Heure d’entrée',
+    employee: 'Employé',
     clockOut: 'Heure de sortie',
     hourType: 'Type d’heure',
     proof: 'Preuve de présence',

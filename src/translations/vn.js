@@ -890,6 +890,7 @@ export default {
     total: 'Tổng cộng',
     hrs: 'giờ',
     days: 'ngày',
+    employee: 'Nhân Viên',
     includesPending: '* Bao gồm đang chờ và đã duyệt',
     notesPlaceholder: 'Thêm ghi chú hoặc nội dung bổ sung...',
     fileHelp: 'Tải lên ảnh chụp màn hình, ảnh hoặc PDF (tối đa 5MB)',

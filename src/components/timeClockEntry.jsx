@@ -151,7 +151,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
   const [imagePreview, setImagePreview] = useState({ show: false, url: '' });
   
   // State for employee filtering and approval
-  const [selectedEmployeeFilter, setSelectedEmployeeFilter] = useState(canManageTimeTracking ? 'all' : 'self'); // Default to 'all' for admin/manager, 'self' for employees
+  const [selectedEmployeeFilter, setSelectedEmployeeFilter] = useState(canManageTimeTracking ? 'all' : 'self'); 
   const [allEmployees, setAllEmployees] = useState([]);
   const [filteredEntries, setFilteredEntries] = useState([]);
   const [approvingEntryId, setApprovingEntryId] = useState(null);
@@ -1434,7 +1434,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     <th className={`text-center p-3 ${text.primary} font-semibold`}>
                       {t('timeClock.date', 'Date')}
                     </th>
-                    {/* Show Name column only when NOT viewing "My Entries" */}
                     {selectedEmployeeFilter !== 'self' && (
                       <th className={`text-center p-3 ${text.primary} font-semibold`}>
                         {t('timeClock.employee', 'Employee')}

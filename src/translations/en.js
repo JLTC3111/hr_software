@@ -443,6 +443,7 @@ export default {
     selectDate: 'Select Date',
     clockIn: 'Clock In',
     clockOut: 'Clock Out',
+    employee: 'Employee',
     hourType: 'Hour Type',
     proof: 'Proof of Work',
     optional: 'Optional',

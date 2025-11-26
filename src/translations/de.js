@@ -726,6 +726,7 @@ export default {
     history: 'Zeiterfassungs-Verlauf',
     selectDate: 'Datum auswählen',
     date: 'Datum',
+    employee: 'Mitarbeiter',
     clockIn: 'Einstempeln',
     clockOut: 'Ausstempeln',
     hourType: 'Stundentyp',

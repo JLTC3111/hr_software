@@ -213,6 +213,7 @@ login: {
     date: 'Fecha',
     time: 'Hora',
     hours: 'Horas',
+    employee: 'Empleado',
     status: 'Estado',
     actions: 'Acciones',
     clockOut: 'Salida',
