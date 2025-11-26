@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence, useMotionValue, animate } from 'framer-motion'
 import * as flubber from 'flubber'
-import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, ArrowUp01, Sailboat, Stamp, ShieldQuestionMark, ShieldCheck, ShieldAlert, ListFilterPlus, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart } from 'lucide-react'
+import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, ArrowUp01, Sailboat, Stamp, CircleQuestionMark, ShieldCheck, ShieldX, ListFilterPlus, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
@@ -220,7 +220,12 @@ const TimeTracking = ({ employees }) => {
   };
   
 
-  const FlubberIconTest = ({ status = 'pending', size = 24, className = '' }) => {
+  const FlubberIconTest = ({
+    status = 'pending',
+    size = 24,
+    className = '',
+    isDarkMode = false,
+  }) => {
     const [currentIconIndex, setCurrentIconIndex] = useState(0);
     const [morphPaths, setMorphPaths] = useState([]);
     const [isAnimating, setIsAnimating] = useState(false);
@@ -229,70 +234,75 @@ const TimeTracking = ({ employees }) => {
     const iconRefs = useRef({});
     const animationFrameRef = useRef(null);
 
-    // Array of icons mapped to status
+    /** ---------------------------
+     * Dynamic color selection
+     ----------------------------*/
+    const getColor = (icon) => {
+      if (icon.status === 'approved') {
+        return isDarkMode ? 'text-green-400' : 'text-green-600';
+      }
+      if (icon.status === 'rejected') {
+        return isDarkMode ? 'text-red-400' : 'text-red-600';
+      }
+      return isDarkMode ? 'text-gray-300' : 'text-gray-700';
+    };
+
+    /** Icon definitions */
     const icons = [
-      { name: 'ShieldQuestionMark', Icon: ShieldQuestionMark, status: 'pending' },
+      { name: 'CircleQuestionMark', Icon: CircleQuestionMark, status: 'pending' },
       { name: 'ShieldCheck', Icon: ShieldCheck, status: 'approved' },
-      { name: 'ShieldAlert', Icon: ShieldAlert, status: 'rejected' },
+      { name: 'ShieldX', Icon: ShieldX, status: 'rejected' },
     ];
 
-    // Get icon index from status
     const getIconIndexFromStatus = (statusValue) => {
-      const index = icons.findIndex(icon => icon.status === statusValue);
+      const index = icons.findIndex((icon) => icon.status === statusValue);
       return index !== -1 ? index : 0;
     };
 
-    // Initialize with correct icon based on status
     useEffect(() => {
       const initialIndex = getIconIndexFromStatus(status);
       setCurrentIconIndex(initialIndex);
-      console.log('Initial status:', status, 'Initial index:', initialIndex);
     }, []);
 
-    // Extract SVG paths as an array for Multi-Path morphing
+    /** Extract SVG paths for morphing */
     const extractPathsFromIcon = (iconElement) => {
-      if (!iconElement) {
-        console.log('No icon element');
-        return [];
-      }
-      
+      if (!iconElement) return [];
       const svg = iconElement.querySelector('svg');
-      if (!svg) {
-        console.log('No SVG found in element');
-        return [];
-      }
-      
-      const paths = svg.querySelectorAll('path, circle, line, rect, polyline, polygon');
-      
-      const pathData = Array.from(paths).map(element => {
-        if (element.tagName.toLowerCase() === 'path') {
-          return element.getAttribute('d');
-        }
-        return convertShapeToPath(element);
-      }).filter(Boolean);
-      
-      return pathData;
+      if (!svg) return [];
+
+      const elements = svg.querySelectorAll(
+        'path, circle, line, rect, polyline, polygon'
+      );
+
+      const paths = Array.from(elements)
+        .map((element) => {
+          if (element.tagName.toLowerCase() === 'path') {
+            return element.getAttribute('d');
+          }
+          return convertShapeToPath(element);
+        })
+        .filter(Boolean);
+
+      return paths;
     };
 
-    // Convert basic shapes to path data
+    /** Convert non-path shapes to path data */
     const convertShapeToPath = (element) => {
       const tag = element.tagName.toLowerCase();
-      
+
       if (tag === 'circle') {
         const cx = parseFloat(element.getAttribute('cx'));
         const cy = parseFloat(element.getAttribute('cy'));
         const r = parseFloat(element.getAttribute('r'));
         return `M ${cx - r},${cy} a ${r},${r} 0 1,0 ${r * 2},0 a ${r},${r} 0 1,0 ${-r * 2},0`;
       }
-      
+
       if (tag === 'line') {
-        const x1 = element.getAttribute('x1');
-        const y1 = element.getAttribute('y1');
-        const x2 = element.getAttribute('x2');
-        const y2 = element.getAttribute('y2');
-        return `M ${x1},${y1} L ${x2},${y2}`;
+        return `M ${element.getAttribute('x1')},${element.getAttribute(
+          'y1'
+        )} L ${element.getAttribute('x2')},${element.getAttribute('y2')}`;
       }
-      
+
       if (tag === 'rect') {
         const x = parseFloat(element.getAttribute('x') || 0);
         const y = parseFloat(element.getAttribute('y') || 0);
@@ -300,176 +310,131 @@ const TimeTracking = ({ employees }) => {
         const h = parseFloat(element.getAttribute('height'));
         return `M ${x},${y} L ${x + w},${y} L ${x + w},${y + h} L ${x},${y + h} Z`;
       }
-      
+
       if (tag === 'polyline' || tag === 'polygon') {
         const points = element.getAttribute('points').trim().split(/\s+/);
-        const commands = points.map((point, i) => {
-          const [x, y] = point.split(',');
+        const cmds = points.map((p, i) => {
+          const [x, y] = p.split(',');
           return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
         });
-        if (tag === 'polygon') commands.push('Z');
-        return commands.join(' ');
+        if (tag === 'polygon') cmds.push('Z');
+        return cmds.join(' ');
       }
-      
+
       return null;
     };
 
-    // Morph to specific icon index
+    /** Morph animation logic */
     const morphToIndex = (targetIndex) => {
-      console.log('=== Starting morph to index', targetIndex, '===');
-      console.log('Current index:', currentIconIndex);
-      console.log('isAnimating:', isAnimating);
-      
-      if (isAnimating) {
-        console.log('Already animating, skipping...');
-        return;
-      }
+      if (isAnimating || currentIconIndex === targetIndex) return;
 
-      if (currentIconIndex === targetIndex) {
-        console.log('Already at target index, skipping...');
-        return;
-      }
-      
       setIsAnimating(true);
-      
-      try {
-        console.log('Extracting current icon (index', currentIconIndex, ')');
-        const currentPaths = extractPathsFromIcon(iconRefs.current[currentIconIndex]);
-        console.log('Extracting target icon (index', targetIndex, ')');
-        const nextPaths = extractPathsFromIcon(iconRefs.current[targetIndex]);
-        
-        console.log('Current paths:', currentPaths);
-        console.log('Next paths:', nextPaths);
-        
-        if (currentPaths.length > 0 && nextPaths.length > 0) {
-          let interpolators;
-          
-          try {
-            if (currentPaths.length > 1 || nextPaths.length > 1) {
-              console.log('Using separate interpolators for', Math.max(currentPaths.length, nextPaths.length), 'paths');
-              
-              const maxPaths = Math.max(currentPaths.length, nextPaths.length);
-              const paddedCurrentPaths = [...currentPaths];
-              const paddedNextPaths = [...nextPaths];
-              
-              while (paddedCurrentPaths.length < maxPaths) {
-                paddedCurrentPaths.push(paddedCurrentPaths[paddedCurrentPaths.length - 1]);
-              }
-              while (paddedNextPaths.length < maxPaths) {
-                paddedNextPaths.push(paddedNextPaths[paddedNextPaths.length - 1]);
-              }
-              
-              interpolators = paddedCurrentPaths.map((currentPath, i) => {
-                return flubber.interpolate(currentPath, paddedNextPaths[i], {
-                  maxSegmentLength: maxSegmentLength
-                });
-              });
-            } else {
-              interpolators = [flubber.interpolate(currentPaths[0], nextPaths[0], {
-                maxSegmentLength: maxSegmentLength
-              })];
-            }
-          } catch (e) {
-            console.log('Falling back to single path interpolate', e);
-            interpolators = [flubber.interpolate(
-              currentPaths.join(' '), 
-              nextPaths.join(' '),
-              { maxSegmentLength: maxSegmentLength }
-            )];
-          }
-          
-          const startTime = Date.now();
-          console.log('Starting animation at:', startTime);
-          
-          const animate = () => {
-            const elapsed = Date.now() - startTime;
-            let progress = Math.min(elapsed / duration, 1);
-            
-            progress = progress < 0.5 
-              ? 2 * progress * progress 
-              : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-            
-            const morphedPaths = interpolators.map(interpolator => interpolator(progress));
-            setMorphPaths(morphedPaths);
-            
-            if (elapsed < duration) {
-              animationFrameRef.current = requestAnimationFrame(animate);
-            } else {
-              console.log('Animation complete, setting index to:', targetIndex);
-              setCurrentIconIndex(targetIndex);
-              setIsAnimating(false);
-              setMorphPaths([]);
-            }
-          };
-          
-          animate();
-        } else {
-          console.error('Could not extract paths');
-          setCurrentIconIndex(targetIndex);
-          setIsAnimating(false);
-        }
-      } catch (error) {
-        console.error('Morph error:', error);
+
+      const currentPaths = extractPathsFromIcon(iconRefs.current[currentIconIndex]);
+      const nextPaths = extractPathsFromIcon(iconRefs.current[targetIndex]);
+
+      if (!currentPaths.length || !nextPaths.length) {
         setCurrentIconIndex(targetIndex);
         setIsAnimating(false);
-      }
-    };
-
-    // Watch for status changes and trigger morph
-    useEffect(() => {
-      const targetIndex = getIconIndexFromStatus(status);
-      console.log('Status changed to:', status, 'Target index:', targetIndex, 'Current index:', currentIconIndex);
-      
-      if (targetIndex !== currentIconIndex && !isAnimating) {
-        console.log('Triggering morph from', currentIconIndex, 'to', targetIndex);
-        morphToIndex(targetIndex);
+        return;
       }
 
-      return () => {
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current);
+      let interpolators;
+
+      try {
+        const maxPaths = Math.max(currentPaths.length, nextPaths.length);
+        const paddedCurrent = [...currentPaths];
+        const paddedNext = [...nextPaths];
+
+        while (paddedCurrent.length < maxPaths) {
+          paddedCurrent.push(paddedCurrent[paddedCurrent.length - 1]);
+        }
+        while (paddedNext.length < maxPaths) {
+          paddedNext.push(paddedNext[paddedNext.length - 1]);
+        }
+
+        interpolators = paddedCurrent.map((c, i) =>
+          flubber.interpolate(c, paddedNext[i], { maxSegmentLength })
+        );
+      } catch {
+        interpolators = [
+          flubber.interpolate(currentPaths.join(' '), nextPaths.join(' '), {
+            maxSegmentLength,
+          }),
+        ];
+      }
+
+      const start = Date.now();
+
+      const animate = () => {
+        const elapsed = Date.now() - start;
+        let t = Math.min(elapsed / duration, 1);
+
+        // easeInOutQuad
+        t = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+        const morphed = interpolators.map((fn) => fn(t));
+        setMorphPaths(morphed);
+
+        if (elapsed < duration) {
+          animationFrameRef.current = requestAnimationFrame(animate);
+        } else {
+          setCurrentIconIndex(targetIndex);
+          setIsAnimating(false);
+          setMorphPaths([]);
         }
       };
+
+      animate();
+    };
+
+    useEffect(() => {
+      morphToIndex(getIconIndexFromStatus(status));
     }, [status]);
 
     const CurrentIcon = icons[currentIconIndex].Icon;
+    const currentColor = getColor(icons[currentIconIndex]);
 
     return (
-      <div className="inline-block">
+      <div className={`inline-block ${className}`}>
         <div className="relative">
           {isAnimating && morphPaths.length > 0 ? (
-            <svg 
-              width={size} 
-              height={size} 
+            <svg
+              width={size}
+              height={size}
               viewBox="0 0 24 24"
-              className={className}
-              style={{ display: 'block' }}
+              className={currentColor}
+              stroke="currentColor" 
+              color="currentColor"
             >
-              {morphPaths.map((pathData, index) => (
-                <path 
-                  key={index}
-                  d={pathData} 
+              {morphPaths.map((d, i) => (
+                <path
+                  key={i}
+                  d={d}
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="2"
+                  strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
               ))}
             </svg>
           ) : (
-            <CurrentIcon 
-              size={size} 
-              className={className}
-              strokeWidth={2}
-            />
+            <CurrentIcon size={size} className={currentColor} strokeWidth={2} />
           )}
         </div>
-        
+
         {/* Hidden icons for path extraction */}
-        <div style={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none', left: '-9999px' }}>
-          {icons.map((icon, index) => (
-            <div key={index} ref={el => iconRefs.current[index] = el}>
+        <div
+          style={{
+            position: 'absolute',
+            visibility: 'hidden',
+            pointerEvents: 'none',
+            left: '-9999px',
+          }}
+        >
+          {icons.map((icon, i) => (
+            <div key={i} ref={(el) => (iconRefs.current[i] = el)}>
               <icon.Icon size={24} />
             </div>
           ))}
@@ -477,6 +442,7 @@ const TimeTracking = ({ employees }) => {
       </div>
     );
   };
+
 
   // Overtime log form
   const [overtimeForm, setOvertimeForm] = useState({
@@ -1430,18 +1396,18 @@ const TimeTracking = ({ employees }) => {
                         <td className={`${text.primary} py-2 px-4`}>
                           <div className="flex items-center justify-between">
                             <span>{t(`timeTracking.${req.status}`, req.status)}</span>
-                            <FlubberIconTest status={req.status} size={20} className={`ml-3 ${text.primary}`} />
+                            <FlubberIconTest status={req.status} size={20} className={`${text.primary} ml-4`} />
                           </div>
                         </td>
                         <td className={`${text.primary} py-2 px-4`}>{req.employee?.name || '-'}</td>
-                        <td className={`${text.primary} py-2 px-4 flex items-center gap-2`}>
+                        <td className={`${text.primary} py-2 px-4 flex justify-center items-center gap-2`}>
                           {req.status === 'pending' ? (
                             <>
                               <button
                                 onClick={() => handleApproveRequest(req.id)}
                                 disabled={!!processingRequests[req.id]}
                                 title={t('timeTracking.approve', 'Approve')}
-                                className={`text-green-600 hover:text-green-800 transition ${processingRequests[req.id] ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                className={`text-green-600 hover:animate-pulse hover:scale-120 transition-all duration-500 ${processingRequests[req.id] ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                               >
                                 <Check className="w-4 h-4" />
                               </button>
@@ -1449,7 +1415,7 @@ const TimeTracking = ({ employees }) => {
                                 onClick={() => handleRejectRequest(req.id)}
                                 disabled={!!processingRequests[req.id]}
                                 title={t('timeTracking.reject', 'Reject')}
-                                className={`text-red-600 hover:text-red-800 transition ${processingRequests[req.id] ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                className={`text-red-600 -translate-y-px hover:scale-120 hover:rotate-180 transition-transform duration-1500 ${processingRequests[req.id] ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                               >
                                 <X className="w-4 h-4" />
                               </button>
