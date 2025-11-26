@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence, useMotionValue, animate } from 'framer-motion'
 import * as flubber from 'flubber'
-import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, ArrowUp01, Sailboat, Stamp, ShieldQuestionMark, ListFilterPlus, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart } from 'lucide-react'
+import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, ArrowUp01, Sailboat, Stamp, ShieldQuestionMark, ShieldCheck, ShieldAlert, ListFilterPlus, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
@@ -9,7 +9,6 @@ import { useAuth } from '../contexts/AuthContext'
 import * as timeTrackingService from '../services/timeTrackingService'
 import WorkDaysModal from './workDaysModal';
 import MetricDetailModal from './metricDetailModal';
-import FlubberIconTest from './FlubberIconTest'
 
 const TimeTracking = ({ employees }) => {
   const { user, checkPermission } = useAuth();
@@ -112,7 +111,7 @@ const TimeTracking = ({ employees }) => {
     reason: ''
   });
 
-  // True morph component: morphing shield icon with inner symbol transitions
+  // Morphing shield icon with inner symbol transitions
   const TruePathMorph = ({ status }) => {
   // Lucide icon paths
     const paths = {
@@ -219,115 +218,256 @@ const TimeTracking = ({ employees }) => {
       </div>
     );
   };
+  
+  const FlubberIconTest = () => {
+    const { bg, text, isDarkMode } = useTheme();
+    const [currentIconIndex, setCurrentIconIndex] = useState(0);
+    const [morphPaths, setMorphPaths] = useState([]); // Array of paths for multi-path morphing
+    const [isAnimating, setIsAnimating] = useState(false);
+    const [duration, setDuration] = useState(1500);
+    const [maxSegmentLength, setMaxSegmentLength] = useState(2);
+    const canvasRef = useRef(null);
+    const iconRefs = useRef({});
 
-  const FlubberMorph = ({ status }) => {
-    // Core shapes
-    const question = 'M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3';
-    const dot = 'M12 17h.01';
-    const check = 'M9 12l2 2 4-4';
-    const crossA = 'M18 6L6 18';
-    const crossB = 'M6 6l12 12';
-
-    // States
-    const [dMain, setDMain] = useState(status === 'approved' ? check : status === 'rejected' ? crossA : question);
-    const [dDot, setDDot] = useState(status === 'approved' ? '' : dot);
-    const prevRef = useRef(status);
-
-    // === Smooth animation settings (matches your big component) ===
-    const duration = 420;             // ms
-    const maxSegmentLength = 2;       // smoothness
-    const ease = (t) =>               // easeInOutQuad
-      t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-
+    // Debug: Check refs after render
     useEffect(() => {
-      const prev = prevRef.current;
-      if (prev === status) return;
-
-      // Determine from → to paths
-      const fromMain =
-        prev === 'approved' ? check :
-        prev === 'rejected' ? crossA :
-        question;
-
-      const toMain =
-        status === 'approved' ? check :
-        status === 'rejected' ? crossA :
-        question;
-
-      const fromDot =
-        prev === 'approved' ? '' :
-        prev === 'rejected' ? crossB :
-        dot;
-
-      const toDot =
-        status === 'approved' ? '' :
-        status === 'rejected' ? crossB :
-        dot;
-
-      // === 1. Create interpolators ===
-      let mainInterp, dotInterp;
-      try {
-        mainInterp = flubber.interpolate(fromMain, toMain, { maxSegmentLength });
-        if (fromDot && toDot) {
-          dotInterp = flubber.interpolate(fromDot, toDot, { maxSegmentLength });
-        }
-      } catch (err) {
-        // fallback on failure
-        setDMain(toMain);
-        setDDot(toDot);
-        prevRef.current = status;
-        return;
+      console.log('Component mounted/updated');
+      console.log('Icon refs:', iconRefs.current);
+      console.log('Number of refs:', Object.keys(iconRefs.current).length);
+      
+      // Test extraction on mount
+      if (iconRefs.current[0]) {
+        console.log('Testing extraction on first icon:');
+        const testPaths = extractPathsFromIcon(iconRefs.current[0]);
+        console.log('Test paths result:', testPaths);
       }
+    }, []);
 
-      // === 2. Animate with requestAnimationFrame ===
-      const start = performance.now();
+    // Array of icons to test - organized in morph-friendly pairs/sequences
+    const icons = [
+      { name: 'ShieldQuestionMark', Icon: ShieldQuestionMark },
+      { name: 'ShieldCheck', Icon: ShieldCheck },
+      { name: 'ShieldAlert', Icon: ShieldAlert },
+    ];
 
-      const animateFrame = (now) => {
-        const elapsed = now - start;
-        const t = Math.min(elapsed / duration, 1);
-        const e = ease(t);
-
-        try {
-          setDMain(mainInterp(e));
-          if (dotInterp) setDDot(dotInterp(e));
-        } catch (err) {}
-
-        if (t < 1) {
-          requestAnimationFrame(animateFrame);
-        } else {
-          prevRef.current = status;
+    // Extract SVG paths as an array for Multi-Path morphing
+    const extractPathsFromIcon = (iconElement) => {
+      if (!iconElement) {
+        console.log('No icon element');
+        return [];
+      }
+      
+      const svg = iconElement.querySelector('svg');
+      if (!svg) {
+        console.log('No SVG found in element');
+        return [];
+      }
+      
+      // Get all path elements
+      const paths = svg.querySelectorAll('path, circle, line, rect, polyline, polygon');
+      console.log('Found', paths.length, 'path/shape elements');
+      
+      const pathData = Array.from(paths).map(element => {
+        if (element.tagName.toLowerCase() === 'path') {
+          return element.getAttribute('d');
         }
-      };
+        // Convert other shapes to paths
+        return convertShapeToPath(element);
+      }).filter(Boolean);
+      
+      console.log('Extracted', pathData.length, 'paths');
+      return pathData;
+    };
 
-      requestAnimationFrame(animateFrame);
-    }, [status]);
+    // Convert basic shapes to path data
+    const convertShapeToPath = (element) => {
+      const tag = element.tagName.toLowerCase();
+      
+      if (tag === 'circle') {
+        const cx = parseFloat(element.getAttribute('cx'));
+        const cy = parseFloat(element.getAttribute('cy'));
+        const r = parseFloat(element.getAttribute('r'));
+        return `M ${cx - r},${cy} a ${r},${r} 0 1,0 ${r * 2},0 a ${r},${r} 0 1,0 ${-r * 2},0`;
+      }
+      
+      if (tag === 'line') {
+        const x1 = element.getAttribute('x1');
+        const y1 = element.getAttribute('y1');
+        const x2 = element.getAttribute('x2');
+        const y2 = element.getAttribute('y2');
+        return `M ${x1},${y1} L ${x2},${y2}`;
+      }
+      
+      if (tag === 'rect') {
+        const x = parseFloat(element.getAttribute('x') || 0);
+        const y = parseFloat(element.getAttribute('y') || 0);
+        const w = parseFloat(element.getAttribute('width'));
+        const h = parseFloat(element.getAttribute('height'));
+        return `M ${x},${y} L ${x + w},${y} L ${x + w},${y + h} L ${x},${y + h} Z`;
+      }
+      
+      if (tag === 'polyline' || tag === 'polygon') {
+        const points = element.getAttribute('points').trim().split(/\s+/);
+        const commands = points.map((point, i) => {
+          const [x, y] = point.split(',');
+          return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
+        });
+        if (tag === 'polygon') commands.push('Z');
+        return commands.join(' ');
+      }
+      
+      return null;
+    };
 
-    // Color logic unchanged
-    const colorClass =
-      status === 'approved'
-        ? 'text-green-600'
-        : status === 'rejected'
-          ? 'text-red-600'
-          : 'text-amber-500';
+    // Morph to next icon
+    const morphToNext = () => {
+      console.log('=== Starting morph ===');
+      console.log('iconRefs.current:', iconRefs.current);
+      console.log('Current index:', currentIconIndex);
+      console.log('Icon refs keys:', Object.keys(iconRefs.current));
+      
+      setIsAnimating(true);
+      const nextIndex = (currentIconIndex + 1) % icons.length;
+      
+      try {
+        console.log('Extracting current icon (index', currentIconIndex, ')');
+        const currentPaths = extractPathsFromIcon(iconRefs.current[currentIconIndex]);
+        console.log('Extracting next icon (index', nextIndex, ')');
+        const nextPaths = extractPathsFromIcon(iconRefs.current[nextIndex]);
+        
+        console.log('Current paths:', currentPaths);
+        console.log('Next paths:', nextPaths);
+        
+        if (currentPaths.length > 0 && nextPaths.length > 0) {
+          // Use flubber's combine or interpolateAll for multiple paths
+          let interpolators;
+          
+          try {
+            // If both icons have multiple paths, use separate interpolators for each
+            if (currentPaths.length > 1 || nextPaths.length > 1) {
+              console.log('Using separate interpolators for', Math.max(currentPaths.length, nextPaths.length), 'paths');
+              
+              // Match path counts by duplicating the last path if needed
+              const maxPaths = Math.max(currentPaths.length, nextPaths.length);
+              const paddedCurrentPaths = [...currentPaths];
+              const paddedNextPaths = [...nextPaths];
+              
+              while (paddedCurrentPaths.length < maxPaths) {
+                paddedCurrentPaths.push(paddedCurrentPaths[paddedCurrentPaths.length - 1]);
+              }
+              while (paddedNextPaths.length < maxPaths) {
+                paddedNextPaths.push(paddedNextPaths[paddedNextPaths.length - 1]);
+              }
+              
+              // Create an interpolator for each path pair
+              interpolators = paddedCurrentPaths.map((currentPath, i) => {
+                return flubber.interpolate(currentPath, paddedNextPaths[i], {
+                  maxSegmentLength: maxSegmentLength
+                });
+              });
+            } else {
+              // Single path on both sides
+              interpolators = [flubber.interpolate(currentPaths[0], nextPaths[0], {
+                maxSegmentLength: maxSegmentLength
+              })];
+            }
+          } catch (e) {
+            console.log('Falling back to single path interpolate', e);
+            interpolators = [flubber.interpolate(
+              currentPaths.join(' '), 
+              nextPaths.join(' '),
+              { maxSegmentLength: maxSegmentLength }
+            )];
+          }
+          
+          // Animate the morph with easing
+          const startTime = Date.now();
+          
+          const animate = () => {
+            const elapsed = Date.now() - startTime;
+            let progress = Math.min(elapsed / duration, 1);
+            
+            // Apply easing for smoother animation (ease-in-out)
+            progress = progress < 0.5 
+              ? 2 * progress * progress 
+              : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+            
+            // Update all paths
+            const morphedPaths = interpolators.map(interpolator => interpolator(progress));
+            setMorphPaths(morphedPaths);
+            
+            if (elapsed < duration) {
+              requestAnimationFrame(animate);
+            } else {
+              setCurrentIconIndex(nextIndex);
+              setIsAnimating(false);
+              setMorphPaths([]);
+            }
+          };
+          
+          animate();
+        } else {
+          console.error('Could not extract paths');
+          setCurrentIconIndex(nextIndex);
+          setIsAnimating(false);
+        }
+      } catch (error) {
+        console.error('Morph error:', error);
+        setCurrentIconIndex(nextIndex);
+        setIsAnimating(false);
+      }
+    };
+
+    const CurrentIcon = icons[currentIconIndex].Icon;
 
     return (
-      <div className="ml-2 w-5 h-5 relative flex items-center justify-center" aria-hidden>
-        <svg
-          viewBox="0 0 24 24"
-          className={`w-5 h-5 ${colorClass}`}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path
-            d="M12 2l8 3v7c0 6-8 10-8 10S4 18 4 12V5l8-3z"
-            className="text-gray-300"
-          />
-          <path d={dMain} />
-          {dDot && <path d={dDot} strokeWidth="3" />}
-        </svg>
+      <div>
+        <div className="ml-3 max-w-4xl mx-auto">
+          <div>
+            <div>
+              <div className="relative">
+                {/* Morphing or Static Icon Display */}
+                <div>
+                  {isAnimating && morphPaths.length > 0 ? (
+                    <svg 
+                      width="20" 
+                      height="20" 
+                      viewBox="0 0 24 24"
+                      className={text.primary}
+                    >
+                      {morphPaths.map((pathData, index) => (
+                        <path 
+                          key={index}
+                          d={pathData} 
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      ))}
+                    </svg>
+                  ) : (
+                    <CurrentIcon 
+                      size={20} 
+                      className={text.primary}
+                      strokeWidth={2}
+                    />
+                  )}
+                </div>
+              </div>         
+            </div>
+          </div>
+        </div>
+        
+        {/* Hidden icons for path extraction */}
+        <div style={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none' }}>
+          {icons.map((icon, index) => (
+            <div key={index} ref={el => iconRefs.current[index] = el}>
+              <icon.Icon size={24} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   };
