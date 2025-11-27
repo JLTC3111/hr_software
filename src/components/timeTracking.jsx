@@ -1287,16 +1287,16 @@ const handleRejectRequest = async (requestId) => {
                   {attendanceRecords && attendanceRecords.length > 0 ? (
                     attendanceRecords.map((record, index) => (
                       <tr key={record.id || index} className={`border-b ${border.primary} hover:${bg.tertiary} transition-colors`}>
-                        <td className={`p-3 ${text.primary} text-center hover:text-white font-medium group-hover:text-white `}>
+                        <td className={`p-3 ${text.primary} text-centerfont-medium `}>
                             {record.date || (record.created_at ? new Date(record.created_at).toLocaleDateString() : '-')}
                           </td>
-                        <td className={`p-3 ${text.primary} text-center hover:text-white font-medium group-hover:text-white`}>
+                        <td className={`p-3 ${text.primary} text-centerfont-medium`}>
                             {record.employee_name || employees.find(emp => String(emp.id) === String(record.employee_id))?.name || employees.find(emp => String(emp.id) === selectedEmployee)?.name || '-'}
                         </td>
-                        <td className={`p-3 ${text.secondary} group-hover:text-white`}>
+                        <td className={`p-3 ${text.secondary}`}>
                             {record.clock_in || record.clockIn} - {record.clock_out || record.clockOut}
                         </td>
-                        <td className={`${text.primary} py-3 px-4`}>
+                        <td className={`${text.primary} py-3 px-4 text-center`}>
                           <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
                             (record.hour_type || record.hourType) === 'regular' ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-200 text-blue-900') :
                             (record.hour_type || record.hourType) === 'holiday' ? (isDarkMode ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-200 text-purple-900') :
@@ -1306,7 +1306,7 @@ const handleRejectRequest = async (requestId) => {
                             {t(`timeTracking.${record.hour_type || 'regular'}`, record.hour_type || 'regular')}
                           </span>
                         </td>
-                        <td className={`p-3 text-center ${text.primary} font-semibold group-hover:text-white`}>
+                        <td className={`p-3 text-center ${text.primary} font-semibold`}>
                           {record.hours} {t('timeClock.hrs')}
                         </td>
                       </tr>
