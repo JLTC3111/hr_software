@@ -6,6 +6,7 @@ import {
   Pickaxe,
   Award, 
   Star, 
+  Check,
   CheckCircle, 
   Clock, 
   AlertCircle,
@@ -24,6 +25,8 @@ import {
   MessageSquare,
   CircleQuestionMark,
   X,
+  Goal,
+  Crosshair,
   Save,
   Eye
 } from 'lucide-react';
@@ -36,8 +39,8 @@ const MiniFlubberAutoMorph = ({
   size = 24,
   className = '',
   isDarkMode = false,
-  autoMorphInterval = 3000, // Time between auto-morphs in ms
-  morphDuration = 2000, // Duration of each morph animation
+  autoMorphInterval = 2000, // Time between auto-morphs in ms
+  morphDuration = 1500, // Duration of each morph animation
 }) => {
   const [currentIconIndex, setCurrentIconIndex] = useState(0);
   const [morphPaths, setMorphPaths] = useState([]);
@@ -57,14 +60,20 @@ const MiniFlubberAutoMorph = ({
     if (icon.status === 'rejected') {
       return isDarkMode ? 'text-red-400' : 'text-red-700';
     }
+    if (icon.status === 'standard') {
+      return isDarkMode ? 'text-white' : 'text-black';
+    }
     return isDarkMode ? 'text-gray-300' : 'text-gray-400';
   };
 
   /** Icon definitions */
   const icons = [
     { name: 'CircleQuestionMark', Icon: CircleQuestionMark, status: 'pending' },
-    { name: 'Hourglass', Icon: Hourglass, status: 'approved' },
+    { name: 'Hourglass', Icon: Hourglass, status: 'standard' },
+    { name: 'Check', Icon: Check, status: 'approved' },
+    { name: 'Crosshair', Icon: Crosshair, status: 'stanard' },
     { name: 'X', Icon: X, status: 'rejected' },
+    { name: 'Goal', Icon: Goal, status: 'standard' },
   ];
 
   /** Extract SVG paths for morphing */
