@@ -11,7 +11,7 @@ import { AnimatedClockIcon } from './timeClockEntry'
 
 export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = false }) => {
     const mainColor = isDarkMode ? '#ffffff' : '#000000';
-    const steamColor = isDarkMode ? '#e5e7eb' : '#d1d5db'; 
+    const steamColor = isDarkMode ? '#e5e7eb' : '#000000'; 
 
     // CSS Keyframes 
     const styleSheet = `
@@ -105,7 +105,6 @@ export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = fal
         </div>
     );
 };
-
 
 export const MiniFlubberMorphingLeaveStatus = ({
   status = 'pending',
