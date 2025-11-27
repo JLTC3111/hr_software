@@ -1286,8 +1286,8 @@ const handleRejectRequest = async (requestId) => {
                 <tbody>
                   {attendanceRecords && attendanceRecords.length > 0 ? (
                     attendanceRecords.map((record, index) => (
-                      <tr key={record.id || index} className={`border-b ${border.primary} hover:${bg.tertiary} transition-colors`}>
-                        <td className={`p-3 ${text.primary} text-centerfont-medium `}>
+                      <tr key={record.id || index} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-blue-500' : 'hover:bg-amber-100'} transition-colors`}>
+                        <td className={`p-3 ${text.primary} text-centerfont-medium`}>
                             {record.date || (record.created_at ? new Date(record.created_at).toLocaleDateString() : '-')}
                           </td>
                         <td className={`p-3 ${text.primary} text-centerfont-medium`}>
