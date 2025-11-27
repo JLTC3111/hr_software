@@ -10,7 +10,7 @@ import * as timeTrackingService from '../services/timeTrackingService'
 import { AnimatedClockIcon } from './timeClockEntry'
 
 export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = false }) => {
-    // Steam Color
+    const mainColor = isDarkMode ? '#ffffff' : '#000000';
     const steamColor = isDarkMode ? '#e5e7eb' : '#d1d5db'; 
 
     // CSS Keyframes 
@@ -50,15 +50,14 @@ export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = fal
     return (
         <div className={`relative ${className}`} style={{ width: size, height: size }}>
             <style>{styleSheet}</style>
-            {/* 1. Base Coffee Cup Icon */}
-            <Coffee size={size} strokeWidth={2} />
-
-            {/* 2. Overlaid SVG for Steam Animation */}
+            
+            <Coffee size={size} strokeWidth={1.5} stroke={mainColor}/>
             <svg
                 width={size}
                 height={size}
                 viewBox="0 0 24 24"
                 className="absolute top-0 left-0"
+                stroke={mainColor}
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
             >
@@ -107,229 +106,20 @@ export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = fal
     );
 };
 
-const TimeTracking = ({ employees }) => {
-  const { user, checkPermission } = useAuth();
-  const { isDarkMode, toggleTheme, button, bg, text, border, hover, input } = useTheme();
-  const { t } = useLanguage();
-  const navigate = useNavigate();
-  
-  // Check if user can view overview tab (admin/manager only)
-  const canViewOverview = checkPermission('canViewReports');
-  
-  // Auto-detect current logged-in user's employee_id
-  const getCurrentEmployeeId = () => {
-    if (user?.employeeId) {
-      const userEmployee = employees.find(emp => emp.id === user.employeeId);
-      if (userEmployee) return String(user.employeeId);
-    }
-    return employees[0]?.id ? String(employees[0].id) : null;
-  };
-  
-  const [selectedEmployee, setSelectedEmployee] = useState(getCurrentEmployeeId());
-      // Sorting state for overview table
-      const [sortKey, setSortKey] = useState('employee');
-      const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
 
-      // Sorting function for overview table
-      const getSortedEmployees = () => {
-        const sorted = [...allEmployeesData];
-        sorted.sort((a, b) => {
-          let aValue, bValue;
-          switch (sortKey) {
-            case 'employee':
-              aValue = a.employee.name?.toLowerCase() || '';
-              bValue = b.employee.name?.toLowerCase() || '';
-              break;
-            case 'days_worked':
-              aValue = a.data?.days_worked || 0;
-              bValue = b.data?.days_worked || 0;
-              break;
-            case 'regular_hours':
-              aValue = a.data?.regular_hours || 0;
-              bValue = b.data?.regular_hours || 0;
-              break;
-            case 'overtime':
-              aValue = (a.data?.overtime_hours || 0) + (a.data?.holiday_overtime_hours || 0);
-              bValue = (b.data?.overtime_hours || 0) + (b.data?.holiday_overtime_hours || 0);
-              break;
-            case 'total_hours':
-              aValue = a.data?.total_hours || 0;
-              bValue = b.data?.total_hours || 0;
-              break;
-            default:
-              aValue = 0;
-              bValue = 0;
-          }
-          if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-          if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-          return 0;
-        });
-        return sorted;
-      };
-
-      // Handle header click for sorting
-      const handleSort = (key) => {
-        if (sortKey === key) {
-          setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-        } else {
-          setSortKey(key);
-          setSortDirection('asc');
-        }
-      };
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // 1-indexed for Supabase
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  // Add 'leaveRequests' tab for admin/manager
-  const [activeTab, setActiveTab] = useState('overview'); // 'summary', 'overview', 'leaveRequests'
-  
-  // Loading and data states
-  const [loading, setLoading] = useState(true);
-  const [summaryData, setSummaryData] = useState(null);
-  const [leaveRequests, setLeaveRequests] = useState([]);
-  const [allLeaveRequests, setAllLeaveRequests] = useState([]);
-  const [leaveSortKey, setLeaveSortKey] = useState('start_date');
-  const [leaveSortDirection, setLeaveSortDirection] = useState('asc');
-  const [processingRequests, setProcessingRequests] = useState({}); // { [requestId]: true }
-  const [timeEntries, setTimeEntries] = useState([]);
-  const [allEmployeesData, setAllEmployeesData] = useState([]);
-  
-  // Modal states
-  const [showLeaveModal, setShowLeaveModal] = useState(false);
-  const [showOvertimeModal, setShowOvertimeModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalConfig, setModalConfig] = useState({ type: '', data: [], title: '' });
-  const [showWorkDaysModal, setShowWorkDaysModal] = useState(false);
-  
-  // Leave request form
-  const [leaveForm, setLeaveForm] = useState({
-    type: 'vacation',
-    startDate: '',
-    endDate: '',
-    reason: ''
-  });
-
-  // Morphing shield icon with inner symbol transitions
-  const TruePathMorph = ({ status }) => {
-  // Lucide icon paths
-    const paths = {
-      shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10",
-      question: "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3",
-      questionDot: "M12 17h.01",
-      check: "m9 12 2 2 4-4",
-      cross1: "m15 9-6 6",
-      cross2: "m9 9 6 6"
-    };
-
-    // Slower, smoother animation variants
-    const iconVariants = {
-      initial: { scale: 0.5, opacity: 0, rotate: -45, pathLength: 0 },
-      animate: { 
-        scale: 1, 
-        opacity: 1, 
-        rotate: 0, 
-        pathLength: 1,
-        transition: { 
-          type: "spring",
-          stiffness: 70, // Reduced for for slower movement
-          damping: 15,    
-          mass: 1.2,       // Added mass for a slightly "heavier", more deliberate feel
-          duration: 2.5, 
-          delay: 0.05,
-        }
-      },
-      exit: { 
-        scale: 0.5, 
-        opacity: 0, 
-        rotate: 45,
-        duration: 2.5,
-        transition: { duration: 1.5 },
-      }
-    };
-
-    // Color mapping based on status (applied to inner icon only)
-    const getIconColor = () => {
-      switch (status) {
-        case 'approved': return 'text-green-600';
-        case 'rejected': return 'text-red-600';
-        default: return 'text-amber-500';
-      }
-    };
-
-    return (
-      <div className="ml-2 w-5 h-5 relative flex items-center justify-center">
-        <svg 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2" 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-          className="w-5 h-5"
-        >
-          {/* Static Shield in a neutral color to prevent "redrawing" perception */}
-          <path d={paths.shield} className="text-gray-400" />
-
-          {/* The inner symbol morphs/swaps with specific status colors */}
-          <AnimatePresence mode="wait">
-            {status === 'pending' && (
-              <motion.g
-                key="pending"
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                variants={iconVariants}
-                className={getIconColor()}
-              >
-                <path d={paths.question} />
-                <path d={paths.questionDot} strokeWidth="3" />
-              </motion.g>
-            )}
-
-            {status === 'approved' && (
-              <motion.path
-                key="approved"
-                d={paths.check}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                variants={iconVariants}
-                className={getIconColor()}
-              />
-            )}
-
-            {status === 'rejected' && (
-              <motion.g
-                key="rejected"
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                variants={iconVariants}
-                className={getIconColor()}
-              >
-                <path d={paths.cross1} />
-                <path d={paths.cross2} />
-              </motion.g>
-            )}
-          </AnimatePresence>
-        </svg>
-      </div>
-    );
-  };
-  
-
-  const MiniFlubberMorphing = ({
-    status = 'pending',
-    size = 24,
-    className = '',
-    isDarkMode = false,
-  }) => {
-    const [currentIconIndex, setCurrentIconIndex] = useState(0);
-    const [morphPaths, setMorphPaths] = useState([]);
-    const [isAnimating, setIsAnimating] = useState(false);
-    const [duration] = useState(3000);
-    const [maxSegmentLength] = useState(2);
-    const iconRefs = useRef({});
-    const animationFrameRef = useRef(null);
+export const MiniFlubberMorphingLeaveStatus = ({
+  status = 'pending',
+  size = 24,
+  className = '',
+  isDarkMode = false,
+}) => {
+  const [currentIconIndex, setCurrentIconIndex] = useState(0);
+  const [morphPaths, setMorphPaths] = useState([]);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [duration] = useState(3000);
+  const [maxSegmentLength] = useState(2);
+  const iconRefs = useRef({});
+  const animationFrameRef = useRef(null);
 
     /** ---------------------------
      * Dynamic color selection
@@ -540,6 +330,214 @@ const TimeTracking = ({ employees }) => {
     );
   };
 
+const TimeTracking = ({ employees }) => {
+  const { user, checkPermission } = useAuth();
+  const { isDarkMode, toggleTheme, button, bg, text, border, hover, input } = useTheme();
+  const { t } = useLanguage();
+  const navigate = useNavigate();
+  
+  // Check if user can view overview tab (admin/manager only)
+  const canViewOverview = checkPermission('canViewReports');
+  
+  // Auto-detect current logged-in user's employee_id
+  const getCurrentEmployeeId = () => {
+    if (user?.employeeId) {
+      const userEmployee = employees.find(emp => emp.id === user.employeeId);
+      if (userEmployee) return String(user.employeeId);
+    }
+    return employees[0]?.id ? String(employees[0].id) : null;
+  };
+  
+  const [selectedEmployee, setSelectedEmployee] = useState(getCurrentEmployeeId());
+      // Sorting state for overview table
+      const [sortKey, setSortKey] = useState('employee');
+      const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
+
+      // Sorting function for overview table
+      const getSortedEmployees = () => {
+        const sorted = [...allEmployeesData];
+        sorted.sort((a, b) => {
+          let aValue, bValue;
+          switch (sortKey) {
+            case 'employee':
+              aValue = a.employee.name?.toLowerCase() || '';
+              bValue = b.employee.name?.toLowerCase() || '';
+              break;
+            case 'days_worked':
+              aValue = a.data?.days_worked || 0;
+              bValue = b.data?.days_worked || 0;
+              break;
+            case 'regular_hours':
+              aValue = a.data?.regular_hours || 0;
+              bValue = b.data?.regular_hours || 0;
+              break;
+            case 'overtime':
+              aValue = (a.data?.overtime_hours || 0) + (a.data?.holiday_overtime_hours || 0);
+              bValue = (b.data?.overtime_hours || 0) + (b.data?.holiday_overtime_hours || 0);
+              break;
+            case 'total_hours':
+              aValue = a.data?.total_hours || 0;
+              bValue = b.data?.total_hours || 0;
+              break;
+            default:
+              aValue = 0;
+              bValue = 0;
+          }
+          if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+          if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+          return 0;
+        });
+        return sorted;
+      };
+
+      // Handle header click for sorting
+      const handleSort = (key) => {
+        if (sortKey === key) {
+          setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+          setSortKey(key);
+          setSortDirection('asc');
+        }
+      };
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // 1-indexed for Supabase
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  // Add 'leaveRequests' tab for admin/manager
+  const [activeTab, setActiveTab] = useState('overview'); // 'summary', 'overview', 'leaveRequests'
+  
+  // Loading and data states
+  const [loading, setLoading] = useState(true);
+  const [summaryData, setSummaryData] = useState(null);
+  const [leaveRequests, setLeaveRequests] = useState([]);
+  const [allLeaveRequests, setAllLeaveRequests] = useState([]);
+  const [leaveSortKey, setLeaveSortKey] = useState('start_date');
+  const [leaveSortDirection, setLeaveSortDirection] = useState('asc');
+  const [processingRequests, setProcessingRequests] = useState({}); // { [requestId]: true }
+  const [timeEntries, setTimeEntries] = useState([]);
+  const [allEmployeesData, setAllEmployeesData] = useState([]);
+  
+  // Modal states
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [showOvertimeModal, setShowOvertimeModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalConfig, setModalConfig] = useState({ type: '', data: [], title: '' });
+  const [showWorkDaysModal, setShowWorkDaysModal] = useState(false);
+  
+  // Leave request form
+  const [leaveForm, setLeaveForm] = useState({
+    type: 'vacation',
+    startDate: '',
+    endDate: '',
+    reason: ''
+  });
+
+  // Morphing shield icon with inner symbol transitions
+  const TruePathMorph = ({ status }) => {
+  // Lucide icon paths
+    const paths = {
+      shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10",
+      question: "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3",
+      questionDot: "M12 17h.01",
+      check: "m9 12 2 2 4-4",
+      cross1: "m15 9-6 6",
+      cross2: "m9 9 6 6"
+    };
+
+    // Slower, smoother animation variants
+    const iconVariants = {
+      initial: { scale: 0.5, opacity: 0, rotate: -45, pathLength: 0 },
+      animate: { 
+        scale: 1, 
+        opacity: 1, 
+        rotate: 0, 
+        pathLength: 1,
+        transition: { 
+          type: "spring",
+          stiffness: 70, // Reduced for for slower movement
+          damping: 15,    
+          mass: 1.2,       // Added mass for a slightly "heavier", more deliberate feel
+          duration: 2.5, 
+          delay: 0.05,
+        }
+      },
+      exit: { 
+        scale: 0.5, 
+        opacity: 0, 
+        rotate: 45,
+        duration: 2.5,
+        transition: { duration: 1.5 },
+      }
+    };
+
+    // Color mapping based on status (applied to inner icon only)
+    const getIconColor = () => {
+      switch (status) {
+        case 'approved': return 'text-green-600';
+        case 'rejected': return 'text-red-600';
+        default: return 'text-amber-500';
+      }
+    };
+
+    return (
+      <div className="ml-2 w-5 h-5 relative flex items-center justify-center">
+        <svg 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          className="w-5 h-5"
+        >
+          {/* Static Shield in a neutral color to prevent "redrawing" perception */}
+          <path d={paths.shield} className="text-gray-400" />
+
+          {/* The inner symbol morphs/swaps with specific status colors */}
+          <AnimatePresence mode="wait">
+            {status === 'pending' && (
+              <motion.g
+                key="pending"
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                variants={iconVariants}
+                className={getIconColor()}
+              >
+                <path d={paths.question} />
+                <path d={paths.questionDot} strokeWidth="3" />
+              </motion.g>
+            )}
+
+            {status === 'approved' && (
+              <motion.path
+                key="approved"
+                d={paths.check}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                variants={iconVariants}
+                className={getIconColor()}
+              />
+            )}
+
+            {status === 'rejected' && (
+              <motion.g
+                key="rejected"
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                variants={iconVariants}
+                className={getIconColor()}
+              >
+                <path d={paths.cross1} />
+                <path d={paths.cross2} />
+              </motion.g>
+            )}
+          </AnimatePresence>
+        </svg>
+      </div>
+    );
+  };
 
   // Overtime log form
   const [overtimeForm, setOvertimeForm] = useState({
@@ -908,7 +906,7 @@ const handleRejectRequest = async (requestId) => {
     setModalOpen(true);
   };
   
-  const TimeCard = ({ title, value, unit, icon: Icon, color, bgColor, onClick }) => (
+  const TimeCard = ({ title, value, unit, icon: Icon, color, bgColor, onClick, isDarkMode, iconProps = {} }) => (
     <div 
       className={`rounded-lg p-6 border ${border.primary} ${onClick ? 'cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1' : ''}`}
       onClick={onClick}
@@ -922,7 +920,7 @@ const handleRejectRequest = async (requestId) => {
           </p>
         </div>
         <div>
-          <Icon className={`h-8 w-8 ${color}`} />
+          <Icon className={`h-8 w-8 ${color}`} isDarkMode={isDarkMode} {...iconProps} />
         </div>
       </div>
     </div>
@@ -1612,7 +1610,7 @@ const handleRejectRequest = async (requestId) => {
                         <td className={`${text.primary} py-2 px-4`}>
                           <div className="flex items-center justify-between">
                             <span>{t(`timeTracking.${req.status}`, req.status)}</span>
-                            <MiniFlubberMorphing isDarkMode={isDarkMode} status={req.status} size={20} className={`${text.primary} ml-4`} />
+                            <MiniFlubberMorphingLeaveStatus isDarkMode={isDarkMode} status={req.status} size={20} className={`${text.primary} ml-4`} />
                           </div>
                         </td>
                         <td className={`${text.primary} py-2 px-4`}>{req.employee?.name || '-'}</td>

@@ -35,7 +35,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as workloadService from '../services/workloadService';
 
-const MiniFlubberAutoMorphEmployees = ({
+export const MiniFlubberAutoMorphEmployees = ({
   size = 24,
   className = '',
   isDarkMode = false,
@@ -51,7 +51,7 @@ const MiniFlubberAutoMorphEmployees = ({
   const autoMorphTimerRef = useRef(null);
 
   /** ---------------------------
-   * Dynamic color selection
+   * Dynamic Color Selection
    ----------------------------*/
   const getColor = (icon) => {
     if (icon.status === 'approved') {
@@ -63,7 +63,7 @@ const MiniFlubberAutoMorphEmployees = ({
     if (icon.status === 'standard') {
       return isDarkMode ? 'text-white' : 'text-black';
     }
-    return isDarkMode ? 'text-gray-300' : 'text-gray-400';
+    return isDarkMode ? 'text-white' : 'text-black';
   };
 
   /** Icon definitions */
@@ -274,7 +274,7 @@ const MiniFlubberAutoMorphEmployees = ({
   );
 };
 
-const MiniFlubberAutoMorphInProgress = ({
+export const MiniFlubberAutoMorphInProgress = ({
   size = 24,
   className = '',
   isDarkMode = false,

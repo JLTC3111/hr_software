@@ -32,4 +32,8 @@ export { default as EmployeeDetailModal } from './employeeDetailModal.jsx';
 export { AnimatedClockIcon } from './timeClockEntry.jsx';
 export { AnimatedAlarmClockIcon } from './timeClockEntry.jsx';
 export { AnimatedCoffeeIcon } from './timeTracking.jsx';
+export { MiniFlubberMorphingLeaveStatus } from './timeTracking.jsx';
+export { MiniFlubberAutoMorphEmployees } from './taskReview.jsx';
+export { MiniFlubberAutoMorphInProgress } from './taskReview.jsx';
+
 // ...other exports

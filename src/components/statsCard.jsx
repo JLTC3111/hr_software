@@ -1,7 +1,7 @@
 import React from 'react'
 import { useTheme } from '../contexts/ThemeContext'
 
-const StatsCard = ({ title, value, icon: Icon, color, size, onClick }) => {
+const StatsCard = ({ title, value, icon: Icon, color, size, onClick, isDarkMode, iconProps = {} }) => {
   const { bg, text, border } = useTheme();
   
   return (
@@ -15,7 +15,7 @@ const StatsCard = ({ title, value, icon: Icon, color, size, onClick }) => {
           <p className={`text-2xl font-bold ${text.primary} transition-all duration-200 group-hover:scale-105`}>{value}</p>
         </div>
         <div className="transition-transform duration-300 group-hover:scale-110">
-          <Icon className="h-6 w-6 m-2" color={color} size={size} />
+          <Icon className="h-6 w-6 m-2" color={color} size={size} isDarkMode={isDarkMode} {...iconProps} />
         </div>
       </div>
     </div>
