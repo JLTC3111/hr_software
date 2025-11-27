@@ -29,3 +29,7 @@ export { default as TaskReview } from './taskReview.jsx';
 export { default as PersonalGoals } from './personalGoals.jsx';
 export { default as FlubberIconTest } from './FlubberIconTest.jsx';
 export { default as EmployeeDetailModal } from './employeeDetailModal.jsx';
+export { AnimatedClockIcon } from './timeClockEntry.jsx';
+export { AnimatedAlarmClockIcon } from './timeClockEntry.jsx';
+export { AnimatedCoffeeIcon } from './timeTracking.jsx';
+// ...other exports

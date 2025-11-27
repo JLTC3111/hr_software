@@ -7,55 +7,9 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import * as timeTrackingService from '../services/timeTrackingService'
-import WorkDaysModal from './workDaysModal';
-import MetricDetailModal from './metricDetailModal';
+import { AnimatedClockIcon } from './timeClockEntry'
 
-const AnimatedClockIcon = ({ className, isDarkMode }) => {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-
-      {/* Translate coordinate system so (0,0) = clock center */}
-      <g transform="translate(12.5, 18.5)">
-
-        {/* Hour hand – slow rotation */}
-        <motion.path
-          d="M0 0L0 -5.75"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          style={{
-            originX: 0,
-            originY: 0,
-            transformBox: "fill-box",
-          }}
-        />
-
-        {/* Minute hand – faster rotation */}
-        <motion.path
-          d="M0 0L0 -7"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-          style={{
-            originX: 0,
-            originY: 0,
-            transformBox: "fill-box",
-          }}       
-        />
-      </g>
-    </svg>
-  );
-};
-
-const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = false }) => {
+export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = false }) => {
     // Steam Color
     const steamColor = isDarkMode ? '#e5e7eb' : '#d1d5db'; 
 
@@ -828,6 +782,9 @@ const handleRejectRequest = async (requestId) => {
   // Override leave_days with calculated value (includes pending)
   currentData.leave_days = calculatedLeaveDays;
 
+  // Attendance records alias (fix ReferenceError and expose timeEntries for the Summary table)
+  const attendanceRecords = timeEntries || [];
+
   // Leave requests sorting helpers
   const handleLeaveSort = (key) => {
     if (leaveSortKey === key) {
@@ -1255,51 +1212,135 @@ const handleRejectRequest = async (requestId) => {
 
       {/* Summary Tab */}
       {activeTab === 'summary' && (
-      <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
-        <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-          {t('timeTracking.summary', `Summary for ${employees.find(emp => String(emp.id) === selectedEmployee)?.name} - ${getMonthName(selectedMonth)} ${selectedYear}`)}
-        </h3>
-        
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(380px,1fr))] gap-6">
-          <div className="space-y-3 ">
-            <div className="flex justify-between">
-              <span className={`${text.secondary} mr-12`}>{t('timeTracking.regularHours')}:</span>
-              <span className={`font-medium ${text.primary}`}>{currentData.regular_hours || 0} {t('timeTracking.hrs')}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className={`${text.secondary} mr-12`}>{t('timeTracking.overtimeHours')}:</span>
-              <span className={`font-medium ${text.primary}`}>
-                {((currentData.overtime_hours || 0) + (currentData.holiday_overtime_hours || 0)).toFixed(1)} {t('timeTracking.hrs')}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className={`${text.secondary} mr-12`}>{t('timeTracking.totalHours')}:</span>
-              <span className={`font-medium ${text.primary}`}>{parseFloat(currentData.total_hours || 0).toFixed(1)} {t('timeTracking.hrs')}</span>
-            </div>
-          </div>
-          
-          <div className="space-y-3 ">
-            <div className="flex justify-between">
-              <span className={`${text.secondary} ml-12`}>{t('timeTracking.workDays')}:</span>
-              <span className={`font-medium ${text.primary}`}>{currentData.days_worked || 0} {t('timeTracking.days')}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className={`${text.secondary} ml-12`}>{t('timeTracking.leaveDays')}:</span>
-              <span className={`font-medium ${text.primary}`}>
-                {calculatedLeaveDays.toFixed(1)} {t('timeTracking.days')}
-                <span className="text-xs text-gray-500 ml-1">({t('timeTracking.includesPending', '*incl. pending')})</span>
-              </span>
-            </div>
-            <div className={`flex justify-between border-t ${border.primary} pt-3`}>
-              <span className={`${text.primary} font-semibold ml-12`}>{t('timeTracking.attendanceRate')}:</span>
-              <span className={`font-bold ${text.primary}`}>
-                {(currentData.attendance_rate || 0).toFixed(1)}%
-              </span>
-            </div>
-          </div>
+  <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
+    <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
+      {t('timeTracking.summary', `Summary for ${employees.find(emp => String(emp.id) === selectedEmployee)?.name} - ${getMonthName(selectedMonth)} ${selectedYear}`)}
+    </h3>
+    
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(380px,1fr))] gap-6">
+      <div className="space-y-3">
+        <div className="flex justify-between">
+          <span className={`${text.secondary} mr-12`}>{t('timeTracking.regularHours')}:</span>
+          <span className={`font-medium ${text.primary}`}>{currentData.regular_hours || 0} {t('timeTracking.hrs')}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className={`${text.secondary} mr-12`}>{t('timeTracking.overtimeHours')}:</span>
+          <span className={`font-medium ${text.primary}`}>
+            {((currentData.overtime_hours || 0) + (currentData.holiday_overtime_hours || 0)).toFixed(1)} {t('timeTracking.hrs')}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className={`${text.secondary} mr-12`}>{t('timeTracking.totalHours')}:</span>
+          <span className={`font-medium ${text.primary}`}>{parseFloat(currentData.total_hours || 0).toFixed(1)} {t('timeTracking.hrs')}</span>
         </div>
       </div>
-      )}
+      
+      <div className="space-y-3">
+        <div className="flex justify-between">
+          <span className={`${text.secondary} ml-12`}>{t('timeTracking.workDays')}:</span>
+          <span className={`font-medium ${text.primary}`}>{currentData.days_worked || 0} {t('timeTracking.days')}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className={`${text.secondary} ml-12`}>{t('timeTracking.leaveDays')}:</span>
+          <span className={`font-medium ${text.primary}`}>
+            {calculatedLeaveDays.toFixed(1)} {t('timeTracking.days')}
+            <span className="text-xs text-gray-500 ml-1">({t('timeTracking.includesPending', '*incl. pending')})</span>
+          </span>
+        </div>
+        <div className={`flex justify-between border-t ${border.primary} pt-3`}>
+          <span className={`${text.primary} font-semibold ml-12`}>{t('timeTracking.attendanceRate')}:</span>
+          <span className={`font-bold ${text.primary}`}>
+            {(currentData.attendance_rate || 0).toFixed(1)}%
+          </span>
+        </div>
+      </div>
+    </div>
+
+    {/* Detailed Breakdown Table */}
+    <div className="mt-8">
+      <h4 className={`text-md font-semibold ${text.primary} mb-4`}>
+        {t('timeTracking.detailedBreakdown', 'Detailed Breakdown')}
+      </h4>
+      
+      <div className="overflow-x-auto">
+        <table className={`w-full border ${border.primary}`}>
+          <thead className={`${bg.tertiary}`}>
+            <tr>
+              <th className={`${text.primary} py-3 px-4 text-left font-semibold border-b ${border.primary}`}>
+                {t('timeTracking.date', 'Date')}
+              </th>
+              <th className={`${text.primary} py-3 px-4 text-left font-semibold border-b ${border.primary}`}>
+                {t('timeTracking.checkIn', 'Check In')}
+              </th>
+              <th className={`${text.primary} py-3 px-4 text-left font-semibold border-b ${border.primary}`}>
+                {t('timeTracking.checkOut', 'Check Out')}
+              </th>
+              <th className={`${text.primary} py-3 px-4 text-left font-semibold border-b ${border.primary}`}>
+                {t('timeTracking.hourType', 'Hour Type')}
+              </th>
+              <th className={`${text.primary} py-3 px-4 text-right font-semibold border-b ${border.primary}`}>
+                {t('timeTracking.totalHours', 'Total Hours')}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {attendanceRecords && attendanceRecords.length > 0 ? (
+              attendanceRecords.map((record, index) => (
+                <tr key={record.id || index} className={`border-b ${border.primary} hover:${bg.tertiary} transition-colors`}>
+                  <td className={`p-3 ${text.primary} text-center hover:text-white font-medium group-hover:text-white `}>
+                      {entry.date || new Date(entry.created_at).toLocaleDateString()}
+                    </td>
+                  <td className={`p-3 ${text.primary} text-center hover:text-white font-medium group-hover:text-white`}>
+                        {entry.employee_name || 'N/A'}
+                  </td>
+                  <td className={`${text.primary} py-3 px-4`}>
+                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                      record.hour_type === 'overtime' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                      record.hour_type === 'holiday' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                      'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                    }`}>
+                      {t(`timeTracking.${record.hour_type || 'regular'}`, record.hour_type || 'regular')}
+                    </span>
+                  </td>
+                  <td className={`${text.primary} py-3 px-4 text-right font-medium`}>
+                    {record.total_hours ? parseFloat(record.total_hours).toFixed(2) : '0.00'} {t('timeTracking.hrs')}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5" className={`${text.secondary} py-8 px-4 text-center`}>
+                  {t('timeTracking.noRecords', 'No attendance records found for this period')}
+                </td>
+              </tr>
+            )}
+          </tbody>
+          <tfoot className={`${bg.tertiary} font-semibold`}>
+            <tr>
+              <td colSpan="4" className={`${text.primary} py-3 px-4 text-right border-t-2 ${border.primary}`}>
+                {t('timeTracking.totalDays', 'Total Days')}:
+              </td>
+              <td className={`${text.primary} py-3 px-4 text-right border-t-2 ${border.primary}`}>
+                {attendanceRecords ? attendanceRecords.length : 0} {t('timeTracking.days')}
+              </td>
+            </tr>
+            <tr>
+              <td colSpan="4" className={`${text.primary} py-3 px-4 text-right border-t ${border.primary}`}>
+                {t('timeTracking.totalHours', 'Total Hours')}:
+              </td>
+              <td className={`${text.primary} py-3 px-4 text-right border-t ${border.primary}`}>
+                {attendanceRecords ? 
+                  attendanceRecords.reduce((sum, record) => sum + (parseFloat(record.total_hours) || 0), 0).toFixed(2) : 
+                  '0.00'
+                } {t('timeTracking.hrs')}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Overview Tab */}
       {activeTab === 'overview' && (
