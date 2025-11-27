@@ -340,6 +340,7 @@ login: {
   
   // Time Tracking
   timeTracking: {
+    detailedBreakdown: 'Desglose Detallado del Seguimiento de Tiempo',
     title: 'Tableau de bord de suivi du temps',
     overview: 'Aperçu',
     leaveRequests: 'Gestion des demandes de congé',
@@ -349,6 +350,7 @@ login: {
     amountHours: 'Horas',
     hourType: 'Tipo de Hora',
     status: 'Estado',
+    time: 'Tiempo',
     notes: 'Notas',
     createdAt: 'Creado En',
     summary: 'Resumen',

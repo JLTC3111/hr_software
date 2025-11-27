@@ -161,6 +161,7 @@ export default {
   
   // Time Tracking
   timeTracking: {
+    detailedBreakdown: 'Detaillierte Aufschlüsselung der Zeiterfassung',
     title: 'Zeiterfassungs-Dashboard',
     overview: 'Übersicht',
     leaveRequests: 'Urlaubsanträge',
@@ -169,6 +170,7 @@ export default {
     clockOut: 'Ausstempeln',
     amountHours: 'Stunden',
     hourType: 'Stundentyp',
+    time: 'Zeit',
     hours: 'Stunden',
     status: 'Status',
     notes: 'Notizen',

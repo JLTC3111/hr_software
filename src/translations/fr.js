@@ -250,6 +250,7 @@ export default {
 
   // Time Tracking
   timeTracking: {
+    detailedBreakdown: 'Répartition détaillée du suivi du temps',
     title: 'Tableau de bord de suivi du temps',
     overview: 'Aperçu',
     leaveRequests: 'Gestion des demandes de congé',
@@ -259,6 +260,7 @@ export default {
     amountHours: 'Heures',
     hourType: 'Type d\'heure',
     status: 'Statut',
+    time: 'Temps',
     notes: 'Remarques',
     createdAt: 'Créé le',
     summary: 'Résumé',

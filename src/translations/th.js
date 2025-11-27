@@ -265,6 +265,7 @@ export default {
 
   // Time Tracking
   timeTracking: {
+    detailedBreakdown: 'รายละเอียดการติดตามเวลาอย่างละเอียด',
     title: 'แดชบอร์ดการติดตามเวลา',
     overview: 'ภาพรวม',
     leaveRequests: 'การจัดการคำขอลา',
@@ -273,6 +274,7 @@ export default {
     clockOut: 'ตอกบัตรออก',
     amountHours: 'ชั่วโมง',
     hourType: 'ประเภทชั่วโมง',
+    time: 'เวลา',
     status: 'สถานะ',
     notes: 'บันทึก',
     createdAt: 'สร้างเมื่อ',

@@ -284,6 +284,7 @@ export default {
 
   // Time Tracking
   timeTracking: {
+    detailedBreakdown: 'Подробный анализ учета времени',
     title: 'Панель управления учетом времени',
     overview: 'Обзор',
     leaveRequests: 'Управление запросами на отпуск',
@@ -293,6 +294,7 @@ export default {
     amountHours: 'Часы',
     hourType: 'Тип часов',
     status: 'Статус',
+    time: 'Время',
     notes: 'Заметки',
     createdAt: 'Создано',
     summary: 'Сводка',

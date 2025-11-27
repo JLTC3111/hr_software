@@ -293,6 +293,7 @@ export default {
 
   // Time Tracking
   timeTracking: {
+    detailedBreakdown: 'Detailed Time Tracking Breakdown',
     title: 'Time Tracking Dashboard',
     overview: 'Overview',
     leaveRequests: 'Leave Requests',
@@ -302,6 +303,7 @@ export default {
     amountHours: 'Hours',
     hourType: 'Hour Type',
     status: 'Status',
+    time: 'Time',
     notes: 'Notes',
     createdAt: 'Created At',
     summary: 'Summary',

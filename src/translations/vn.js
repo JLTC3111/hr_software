@@ -177,6 +177,7 @@ export default {
 
   // Time Tracking
   timeTracking: {
+    detailedBreakdown: 'Phân Tích Chi Tiết Theo Dõi Thời Gian',
     title: 'Bảng Điều Khiển',
     overview: 'Tổng quan',
     leaveRequests: 'Quản Lý Đơn Xin Nghỉ Phép',
@@ -184,6 +185,7 @@ export default {
     clockOut: 'Giờ Ra',
     amountHours: 'Số Giờ',
     hours: 'Giờ',
+    time: 'Thời Gian',
     hourType: 'Loại Giờ',
     status: 'Trạng Thái',
     notes: 'Ghi Chú',
@@ -195,7 +197,7 @@ export default {
     overtime: 'Giờ Làm Thêm',
     wfh: 'Làm Việc Tại Nhà',
     holidayOvertime: 'Làm thêm ngày lễ',
-    days: 'ngày',
+    days: 'Ngày',
     thisMonth: 'Tháng này',
     totalHours: 'Tổng số giờ',
     regularHours: 'Giờ thường',

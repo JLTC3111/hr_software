@@ -268,9 +268,11 @@ export default {
   
   // Time Tracking
   timeTracking: {
+    detailedBreakdown: '상세 근무 시간 추적 내역',
     title: '시간 추적 대시보드',
     overview: '개요',
     leaveRequests: '휴가 신청 관리',
+    time: '시간',
     overviewTitle: '회사 개요',
     clockIn: '출근 기록',
     clockOut: '퇴근 기록',

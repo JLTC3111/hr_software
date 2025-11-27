@@ -266,6 +266,7 @@ export default {
   
   // Time Tracking
   timeTracking: {
+    detailedBreakdown: '詳細な勤怠管理の内訳',
     title: '勤怠管理ダッシュボード',
     overview: '概要',
     leaveRequests: '休暇申請管理',
@@ -273,6 +274,7 @@ export default {
     clockIn: '出勤',
     clockOut: '退勤',
     amountHours: '時間',
+    time: '時間',
     hourType: '勤務時間の種類',
     status: 'ステータス',
     notes: 'メモ',
