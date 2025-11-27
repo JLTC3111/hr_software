@@ -1338,7 +1338,7 @@ const PersonalGoals = ({ employees }) => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              className={`py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
                 activeTab === tab.id
                   ? 'border-blue-500'
                   : `border-transparent hover:border-gray-300`

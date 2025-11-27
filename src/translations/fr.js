@@ -1194,6 +1194,7 @@ export default {
   // Task Review
   taskReview: {
     title: 'Évaluation des tâches',
+    notRated: 'Non noté',
     subtitle: 'Évaluation mensuelle de la progression et de la qualité des tâches',
     individual: 'Individuel',
     team: 'Équipe',

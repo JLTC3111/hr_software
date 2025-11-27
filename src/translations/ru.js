@@ -1092,6 +1092,7 @@ export default {
   // Task Review
   taskReview: {
     title: 'Обзор Задач',
+    notRated: 'Не оценено',
     subtitle: 'Ежемесячная оценка прогресса и качества выполнения задач',
     individual: 'Индивидуальная',
     team: 'Команда',

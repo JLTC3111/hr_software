@@ -1435,6 +1435,7 @@ export default {
   // Task Review
   taskReview: {
     title: 'Task Review',
+    notRated: 'Not Rated', 
     subtitle: 'Monthly task progress and quality evaluation',
     individual: 'Individual',
     team: 'Team',

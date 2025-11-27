@@ -1052,6 +1052,7 @@ export default {
   // Task Review 
   taskReview: {
     title: '작업 검토',
+    notRated: '평가되지 않음',
     subtitle: '월별 작업 진행 상황 및 품질 평가',
     individual: '개별',
     team: '팀',

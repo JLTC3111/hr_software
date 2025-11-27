@@ -1079,6 +1079,7 @@ export default {
   // Task Review
   taskReview: {
     title: 'タスクレビュー',
+    notRated: '未評価のタスク',
     subtitle: '月次タスクの進捗と品質評価',
     individual: '個人',
     team: 'チーム',

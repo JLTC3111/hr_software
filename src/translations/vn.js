@@ -1280,6 +1280,7 @@ export default {
   // Task Review
   taskReview: {
     title: 'Đánh giá Công việc',
+    notRated: 'Chưa được đánh giá',
     subtitle: 'Đánh giá tiến độ và chất lượng công việc hàng tháng',
     individual: 'Cá nhân',
     team: 'Đội nhóm',

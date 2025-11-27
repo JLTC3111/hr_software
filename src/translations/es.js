@@ -1021,6 +1021,8 @@ login: {
   // Task Review
   taskReview: {
     title: 'Revisión de Tareas',
+    notRated: 'No Calificado',
+    monthlyEvaluation: 'Evaluación Mensual',
     subtitle: 'Evaluación mensual del progreso y calidad de las tareas',
     individual: 'Individual',
     team: 'Equipo',

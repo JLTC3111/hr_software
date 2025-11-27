@@ -1108,6 +1108,11 @@ export default {
   // Task Review
   taskReview: {
     title: 'ทบทวนงาน',
+    notRated: 'ยังไม่ได้จัดอันดับ',
+    rated: 'ได้รับการจัดอันดับ',
+    submitSuccess: 'ส่งการทบทวนงานสำเร็จ!',
+    submitError: 'ส่งการทบทวนงานล้มเหลว',
+    title: 'การทบทวนงานและการประเมินคุณภาพ',
     subtitle: 'ความคืบหน้าของงานและการประเมินคุณภาพรายเดือน',
     individual: 'รายบุคคล',
     team: 'ทีม',
