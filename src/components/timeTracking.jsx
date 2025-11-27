@@ -1286,7 +1286,7 @@ const handleRejectRequest = async (requestId) => {
                 <tbody>
                   {attendanceRecords && attendanceRecords.length > 0 ? (
                     attendanceRecords.map((record, index) => (
-                      <tr key={record.id || index} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-blue-500' : 'hover:bg-amber-100'} transition-colors`}>
+                      <tr key={record.id || index} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-blue-700' : 'hover:bg-amber-100'} group cursor-pointer transition-colors`}>
                         <td className={`p-3 ${text.primary} text-centerfont-medium`}>
                             {record.date || (record.created_at ? new Date(record.created_at).toLocaleDateString() : '-')}
                           </td>
@@ -1297,11 +1297,11 @@ const handleRejectRequest = async (requestId) => {
                             {record.clock_in || record.clockIn} - {record.clock_out || record.clockOut}
                         </td>
                         <td className={`${text.primary} py-3 px-4 text-center`}>
-                          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                            (record.hour_type || record.hourType) === 'regular' ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-200 text-blue-900') :
-                            (record.hour_type || record.hourType) === 'holiday' ? (isDarkMode ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-200 text-purple-900') :
-                            (record.hour_type || record.hourType) === 'weekend' ? (isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-200 text-green-900') :
-                            (isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-200 text-yellow-900')
+                          <span className={`inline-flex items-center px-2 py-1 text-xs font-medium ${
+                            (record.hour_type || record.hourType) === 'regular' ? (isDarkMode ? 'bg-blue-900/30 text-blue-400 group-hover:text-white' : 'bg-blue-200 text-blue-900 group-hover:text-black')  :
+                            (record.hour_type || record.hourType) === 'holiday' ? (isDarkMode ? 'bg-purple-900/30 text-purple-400 group-hover:text-white' : 'bg-purple-200 text-purple-900 group-hover:text-black') :
+                            (record.hour_type || record.hourType) === 'weekend' ? (isDarkMode ? 'bg-green-900/30 text-green-400 group-hover:text-white' : 'bg-green-200 text-green-900 group-hover:text-black') :
+                            (isDarkMode ? 'bg-yellow-900/30 text-yellow-400 group-hover:text-white' : 'bg-yellow-200 text-yellow-900 group-hover:text-black')
                           }`}>
                             {t(`timeTracking.${record.hour_type || 'regular'}`, record.hour_type || 'regular')}
                           </span>
