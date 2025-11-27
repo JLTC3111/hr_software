@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence, useMotionValue, animate } from 'framer-motion'
 import * as flubber from 'flubber'
-import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, ArrowUp01, Sailboat, Stamp, CircleQuestionMark, ShieldCheck, ShieldX, ListFilterPlus, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart } from 'lucide-react'
+import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, ArrowUp01, Sailboat, Stamp, CircleQuestionMark, Funnel, ListFilterPlus, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
@@ -9,6 +9,152 @@ import { useAuth } from '../contexts/AuthContext'
 import * as timeTrackingService from '../services/timeTrackingService'
 import WorkDaysModal from './workDaysModal';
 import MetricDetailModal from './metricDetailModal';
+
+const AnimatedClockIcon = ({ className, isDarkMode }) => {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+
+      {/* Translate coordinate system so (0,0) = clock center */}
+      <g transform="translate(12.5, 18.5)">
+
+        {/* Hour hand – slow rotation */}
+        <motion.path
+          d="M0 0L0 -5.75"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          style={{
+            originX: 0,
+            originY: 0,
+            transformBox: "fill-box",
+          }}
+        />
+
+        {/* Minute hand – faster rotation */}
+        <motion.path
+          d="M0 0L0 -7"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+          style={{
+            originX: 0,
+            originY: 0,
+            transformBox: "fill-box",
+          }}       
+        />
+      </g>
+    </svg>
+  );
+};
+
+const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = true }) => {
+    // Icon Color
+    const mainColor = isDarkMode ? 'text-white' : 'text-gray-700';
+    // Steam Color
+    const steamColor = isDarkMode ? '#a3a3a3' : '#6b7280'; // Gray-400 / Gray-500 equivalent
+
+    // CSS Keyframes 
+    const styleSheet = `
+        @keyframes steam-rise {
+            /* Start: Mostly transparent, at base level */
+            0%, 100% {
+                opacity: 0;
+                transform: translateY(0);
+            }
+            /* Peak Opacity: Steam becomes visible */
+            10% {
+                opacity: 0.8; 
+            }
+            /* Halfway: Moves up and starts fading */
+            50% {
+                opacity: 0.5;
+                transform: translateY(-1.5px);
+            }
+            /* End of movement cycle: Fades out completely, max rise of ~2px */
+            80% {
+                opacity: 0.05; 
+                transform: translateY(-2.5px);
+            }
+        }
+
+        .steam-line {
+            stroke: ${steamColor};
+            stroke-linecap: round;
+            stroke-width: 2;
+            fill: none;
+            /* 3s duration, repeats infinitely, uses a subtle ease-out */
+            animation: steam-rise 3s infinite ease-out;
+        }
+    `;
+
+    return (
+        <div className={`relative ${className}`} style={{ width: size, height: size }}>
+            <style>{styleSheet}</style>
+
+            {/* 1. Base Coffee Icon */}
+            <Coffee size={size} className={mainColor} strokeWidth={2} />
+
+            {/* 2. Overlaid SVG for Steam Animation (positioned absolutely over the cup) */}
+            <svg
+                width={size}
+                height={size}
+                viewBox="0 0 24 24"
+                className="absolute top-0 left-0"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+            >
+                
+                {/* Steam Bar 1 (Left) - Delayed start */}
+                <line 
+                    x1="6" 
+                    y1="10" 
+                    x2="6" 
+                    y2="10" 
+                    className="steam-line" 
+                    style={{ animationDelay: '0.6s' }} 
+                />
+                
+                {/* Steam Bar 2 (Center) - Instant start */}
+                <line 
+                    x1="9" 
+                    y1="10" 
+                    x2="9" 
+                    y2="10" 
+                    className="steam-line" 
+                    style={{ animationDelay: '0s' }} 
+                />
+                
+                {/* Steam Bar 3 (Right) - Heaviest delay */}
+                <line 
+                    x1="12" 
+                    y1="10" 
+                    x2="12" 
+                    y2="10" 
+                    className="steam-line" 
+                    style={{ animationDelay: '1.2s' }} 
+                />
+                {/* Steam Bar 4 (Right) - Heaviest delay */}
+                <line 
+                    x1="15" 
+                    y1="10" 
+                    x2="15" 
+                    y2="10" 
+                    className="steam-line" 
+                    style={{ animationDelay: '0.9s' }} 
+                />
+                
+            </svg>
+        </div>
+    );
+};
 
 const TimeTracking = ({ employees }) => {
   const { user, checkPermission } = useAuth();
@@ -220,7 +366,7 @@ const TimeTracking = ({ employees }) => {
   };
   
 
-  const FlubberIconTest = ({
+  const MiniFlubberMorphing = ({
     status = 'pending',
     size = 24,
     className = '',
@@ -229,7 +375,7 @@ const TimeTracking = ({ employees }) => {
     const [currentIconIndex, setCurrentIconIndex] = useState(0);
     const [morphPaths, setMorphPaths] = useState([]);
     const [isAnimating, setIsAnimating] = useState(false);
-    const [duration] = useState(1500);
+    const [duration] = useState(3000);
     const [maxSegmentLength] = useState(2);
     const iconRefs = useRef({});
     const animationFrameRef = useRef(null);
@@ -250,8 +396,8 @@ const TimeTracking = ({ employees }) => {
     /** Icon definitions */
     const icons = [
       { name: 'CircleQuestionMark', Icon: CircleQuestionMark, status: 'pending' },
-      { name: 'ShieldCheck', Icon: ShieldCheck, status: 'approved' },
-      { name: 'ShieldX', Icon: ShieldX, status: 'rejected' },
+      { name: 'Check', Icon: Check, status: 'approved' },
+      { name: 'X', Icon: X, status: 'rejected' },
     ];
 
     const getIconIndexFromStatus = (statusValue) => {
@@ -535,62 +681,91 @@ const TimeTracking = ({ employees }) => {
   }, [canViewOverview, activeTab, selectedMonth, selectedYear]);
 
   // Approve / Reject handlers for admin actions on leave requests
-  const handleApproveRequest = async (requestId) => {
-    if (!user?.employeeId) {
-      setSuccessMessage(t('timeTracking.actionError', 'Unable to determine approver'));
-      setTimeout(() => setSuccessMessage(''), 3000);
-      return;
+const handleApproveRequest = async (requestId) => {
+  if (!user?.employeeId) {
+    setSuccessMessage(t('timeTracking.actionError', 'Unable to determine approver'));
+    setTimeout(() => setSuccessMessage(''), 3000);
+    return;
+  }
+  
+  setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
+  
+  try {
+    const result = await timeTrackingService.updateLeaveRequestStatus(requestId, 'approved', user.employeeId);
+    
+    if (result.success) {
+      // Only update the specific request - preserve object references for others
+      setAllLeaveRequests(prev => prev.map(r => {
+        if (r.id === requestId) {
+          const updated = result.data || {};
+          return { 
+            ...r, 
+            ...updated, 
+            status: 'approved', 
+            approved_by_name: updated.approved_by_name || (user?.name || '-') 
+          };
+        }
+        return r; // Keep same reference for unchanged items
+      }));
+      
+      setSuccessMessage(t('timeTracking.approveSuccess', 'Request approved'));
+    } else {
+      setSuccessMessage(result.error || t('timeTracking.actionError', 'Error updating request'));
     }
+  } catch (error) {
+    console.error('Error approving leave request:', error);
+    setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
+  } finally {
+    setProcessingRequests(prev => { 
+      const copy = { ...prev }; 
+      delete copy[requestId]; 
+      return copy; 
+    });
+    setTimeout(() => setSuccessMessage(''), 3000);
+  }
+};
 
-    setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
-    try {
-      const result = await timeTrackingService.updateLeaveRequestStatus(requestId, 'approved', user.employeeId);
-      if (result.success) {
-        // If service returned the updated row use it, otherwise update status locally
-        const updated = result.data || { id: requestId, status: 'approved' };
-        setAllLeaveRequests(prev => prev.map(r => r.id === requestId ? { ...r, ...updated, status: 'approved', approved_by_name: updated.approved_by_name || (user?.name || '-') } : r));
-        setSuccessMessage(t('timeTracking.approveSuccess', 'Request approved'));
-      } else {
-        setSuccessMessage(result.error || t('timeTracking.actionError', 'Error updating request'));
-      }
-    } catch (error) {
-      console.error('Error approving leave request:', error);
-      setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
-    } finally {
-      setProcessingRequests(prev => { const copy = { ...prev }; delete copy[requestId]; return copy; });
-      setTimeout(() => setSuccessMessage(''), 3000);
+const handleRejectRequest = async (requestId) => {
+  if (!user?.employeeId) {
+    setSuccessMessage(t('timeTracking.actionError', 'Unable to determine approver'));
+    setTimeout(() => setSuccessMessage(''), 3000);
+    return;
+  }
+  
+  const reason = window.prompt(t('timeTracking.rejectReasonPrompt', 'Please enter a reason for rejection (optional):'));
+  if (reason === null) return;
+  
+  setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
+  
+  try {
+    const result = await timeTrackingService.updateLeaveRequestStatus(requestId, 'rejected', user.employeeId, reason || null);
+    
+    if (result.success) {
+      // Only update the specific request - preserve object references for others
+      setAllLeaveRequests(prev => prev.map(r => {
+        if (r.id === requestId) {
+          const updated = result.data || {};
+          return { ...r, ...updated, status: 'rejected' };
+        }
+        return r; // Keep same reference for unchanged items
+      }));
+      
+      setSuccessMessage(t('timeTracking.rejectSuccess', 'Request rejected'));
+    } else {
+      setSuccessMessage(result.error || t('timeTracking.actionError', 'Error updating request'));
     }
-  };
-
-  const handleRejectRequest = async (requestId) => {
-    if (!user?.employeeId) {
-      setSuccessMessage(t('timeTracking.actionError', 'Unable to determine approver'));
-      setTimeout(() => setSuccessMessage(''), 3000);
-      return;
-    }
-
-    // Ask for a rejection reason (simple prompt for now)
-    const reason = window.prompt(t('timeTracking.rejectReasonPrompt', 'Please enter a reason for rejection (optional):'));
-    if (reason === null) return; // user cancelled
-
-    setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
-    try {
-      const result = await timeTrackingService.updateLeaveRequestStatus(requestId, 'rejected', user.employeeId, reason || null);
-      if (result.success) {
-        const updated = result.data || { id: requestId, status: 'rejected' };
-        setAllLeaveRequests(prev => prev.map(r => r.id === requestId ? { ...r, ...updated, status: 'rejected' } : r));
-        setSuccessMessage(t('timeTracking.rejectSuccess', 'Request rejected'));
-      } else {
-        setSuccessMessage(result.error || t('timeTracking.actionError', 'Error updating request'));
-      }
-    } catch (error) {
-      console.error('Error rejecting leave request:', error);
-      setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
-    } finally {
-      setProcessingRequests(prev => { const copy = { ...prev }; delete copy[requestId]; return copy; });
-      setTimeout(() => setSuccessMessage(''), 3000);
-    }
-  };
+  } catch (error) {
+    console.error('Error rejecting leave request:', error);
+    setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
+  } finally {
+    setProcessingRequests(prev => { 
+      const copy = { ...prev }; 
+      delete copy[requestId]; 
+      return copy; 
+    });
+    setTimeout(() => setSuccessMessage(''), 3000);
+  }
+};
   
   // Fetch all employees data for Overview
   useEffect(() => {
@@ -962,6 +1137,7 @@ const TimeTracking = ({ employees }) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className={`font-bold ${text.primary}`} style={{fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'}}>{t('timeTracking.title')}</h2>
+       
         <div className="flex space-x-4">
           {/* Employee Selector */}
           <select
@@ -1019,7 +1195,8 @@ const TimeTracking = ({ employees }) => {
           title={t('timeTracking.leaveDays')}
           value={calculatedLeaveDays.toFixed(0)}
           unit={t('timeTracking.days')}
-          icon={Coffee}
+          icon={AnimatedCoffeeIcon}
+          isDarkMode={isDarkMode}
           color={isDarkMode ? "text-white" : "text-black"}
           bgColor="bg-white"
           onClick={() => handleMetricClick('leaveDays')}
@@ -1028,7 +1205,7 @@ const TimeTracking = ({ employees }) => {
           title={t('timeTracking.overtime')}
           value={(currentData.overtime_hours || 0) + (currentData.holiday_overtime_hours || 0)}
           unit={t('timeTracking.hours')}
-          icon={Clock}
+          icon={AnimatedClockIcon}
           color={isDarkMode ? "text-white" : "text-black"}
           bgColor="bg-white"
           onClick={() => handleMetricClick('overtime')}
@@ -1396,7 +1573,7 @@ const TimeTracking = ({ employees }) => {
                         <td className={`${text.primary} py-2 px-4`}>
                           <div className="flex items-center justify-between">
                             <span>{t(`timeTracking.${req.status}`, req.status)}</span>
-                            <FlubberIconTest isDarkMode={isDarkMode} status={req.status} size={20} className={`${text.primary} ml-4`} />
+                            <MiniFlubberMorphing isDarkMode={isDarkMode} status={req.status} size={20} className={`${text.primary} ml-4`} />
                           </div>
                         </td>
                         <td className={`${text.primary} py-2 px-4`}>{req.employee?.name || '-'}</td>

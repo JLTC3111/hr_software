@@ -157,13 +157,13 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
         
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className={`hidden lg:block absolute -right-3 top-20 z-10 ${bg.secondary} rounded-full p-1 shadow-md border ${hover.bg} transition-colors`}
+          className={`hidden lg:block absolute cursor-pointer -right-3 top-20 z-10 ${bg.secondary} rounded-full  p-1 shadow-md border ${text.secondary} ${hover.bg} transition-all duration-400`}
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {isCollapsed ? (
-            <ChevronRight className={`h-4 w-4 ${text.primary}`} />
+            <ChevronRight className={`h-4.5 w-4.5 ${text.primary}`} />
           ) : (
-            <ChevronLeft className={`h-4 w-4 ${text.primary}`} />
+            <ChevronLeft className={`h-4.5 w-4.5 ${text.primary}`} />
           )}
         </button>
 

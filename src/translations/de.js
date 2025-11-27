@@ -169,6 +169,7 @@ export default {
     clockOut: 'Ausstempeln',
     amountHours: 'Stunden',
     hourType: 'Stundentyp',
+    hours: 'Stunden',
     status: 'Status',
     notes: 'Notizen',
     createdAt: 'Erstellt am',
