@@ -1462,28 +1462,27 @@ const TimeClockEntry = ({ currentLanguage }) => {
               </thead>
               <tbody className="text-center">
                 {filteredEntries.map((entry, index) => (
-                  <tr key={entry.id} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-blue-600'} group transition-colors cursor-pointer`}>
-                    <td className={`p-3 ${text.primary} text-center hover:text-white font-medium group-hover:text-white `}>
+                  <tr key={entry.id} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-amber-200' : 'hover:bg-blue-600'} group transition-all duration-100 group cursor-pointer`}>
+                    <td className={`p-3 ${text.primary} text-center font-medium ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>
                       {entry.date || new Date(entry.created_at).toLocaleDateString()}
                     </td>
-                    
                     {selectedEmployeeFilter !== 'self' && (
-                      <td className={`p-3 ${text.primary} text-center hover:text-white font-medium group-hover:text-white`}>
+                      <td className={`p-3 ${text.primary} text-center font-medium ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>
                         {entry.employee_name || 'N/A'}
                       </td>
                     )}
-                    <td className={`p-3 ${text.secondary} group-hover:text-white`}>
+                    <td className={`p-3 ${text.secondary} ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>
                       {entry.clock_in || entry.clockIn} - {entry.clock_out || entry.clockOut}
                     </td>
-                    <td className={`p-3 ${text.primary} font-semibold group-hover:text-white`}>
+                    <td className={`p-3 ${text.primary} font-semibold ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>
                       {entry.hours} {t('timeClock.hrs')}
                     </td>
                     <td className="p-3">
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                        (entry.hour_type || entry.hourType) === 'regular' ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-200 text-blue-900') :
-                        (entry.hour_type || entry.hourType) === 'holiday' ? (isDarkMode ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-200 text-purple-900') :
-                        (entry.hour_type || entry.hourType) === 'weekend' ? (isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-200 text-green-900') :
-                        (isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-200 text-yellow-900')
+                        (entry.hour_type || entry.hourType) === 'regular' ? (isDarkMode ? 'bg-blue-900/30 text-blue-400 group-hover:text-black' : 'bg-blue-200 text-blue-900 group-hover:text-white') :
+                        (entry.hour_type || entry.hourType) === 'holiday' ? (isDarkMode ? 'bg-purple-900/30 text-purple-400 group-hover:text-black' : 'bg-purple-200 text-purple-900 group-hover:text-white') :
+                        (entry.hour_type || entry.hourType) === 'weekend' ? (isDarkMode ? 'bg-green-900/30 text-green-400 group-hover:text-black' : 'bg-green-200 text-green-900 group-hover:text-white') :
+                        (isDarkMode ? 'bg-yellow-900/30 text-yellow-400 group-hover:text-black' : 'bg-yellow-200 text-yellow-900 group-hover:text-white')
                       }`}>
                         {hourTypes.find(t => t.value === (entry.hour_type || entry.hourType))?.label}
                       </span>
@@ -1516,7 +1515,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                   }
                                 }}
                               >
-                                <FileCheck className={`w-5 h-5 ${isDarkMode ? 'text-green-100' : 'text-green-900'} group-hover:text-white transition-all duration-500`} />
+                                <FileCheck className={`w-5 h-5 ${isDarkMode ? 'text-green-100 group-hover:text-black' : 'text-green-900 group-hover:text-white'} transition-all duration-500`} />
                               </button>
                             ) : (
                               // Use regular link for PDFs and other files
@@ -1528,11 +1527,11 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                 onClick={(e) => e.stopPropagation()}
                                 title={t('timeClock.downloadProof', 'Download proof file')}
                               >
-                                <FileCheck className={`w-5 h-5 ${isDarkMode ? 'text-green-100' : 'text-green-900'} group-hover:text-white transition-all duration-500 hover:bg-gray-900`} />
+                                <FileCheck className={`w-5 h-5 ${isDarkMode ? 'text-green-100 group-hover:text-black' : 'text-green-900 group-hover:text-white'} transition-all duration-500 hover:bg-gray-900`} />
                               </a>
                             )
                           ) : (
-                            <FileCheck className={`w-5 h-5 ${isDarkMode ? 'text-green-100' : 'text-green-600'} group-hover:text-white transition-all duration-500 hover:bg-gray-900`} />
+                            <FileCheck className={`w-5 h-5 ${isDarkMode ? 'text-green-100 group-hover:text-black' : 'text-green-600 group-hover:text-white'} transition-all duration-500 hover:bg-gray-900`} />
                           )
                         ) : (
                           <span className={`text-xs ${text.secondary} group-hover:text-white`}></span>
@@ -1556,15 +1555,15 @@ const TimeClockEntry = ({ currentLanguage }) => {
                             >
                               {uploadingProofId === entry.id ? (
                                 <div className="flex items-center gap-2">
-                                  <Loader className={`w-4 h-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'} group-hover:text-white animate-spin`} />
+                                  <Loader className={`w-4 h-4 ${isDarkMode ? 'text-blue-400 group-hover:text-black' : 'text-blue-600 group-hover:text-white'} animate-spin`} />
                                   {Object.values(uploadProgress)[0] > 0 && Object.values(uploadProgress)[0] < 100 && (
-                                    <span className={`text-xs ${isDarkMode ? 'text-blue-400' : 'text-blue-600'} font-medium`}>
+                                    <span className={`text-xs ${isDarkMode ? 'text-blue-400 group-hover:text-black' : 'text-blue-600 group-hover:text-white'} font-medium`}>
                                       {Object.values(uploadProgress)[0]}%
                                     </span>
                                   )}
                                 </div>
                               ) : (
-                                <Upload className={`w-5 h-5 mr-1.75 ${isDarkMode ? 'text-blue-100' : 'text-blue-600'} transform transition-all duration-500 group-hover:text-white`} />
+                                <Upload className={`w-5 h-5 mr-1.75 ${isDarkMode ? 'text-blue-100 group-hover:text-black' : 'text-blue-600 group-hover:text-white'} transform transition-all duration-500`} />
                               )}
                               <input
                                 id={`proof-upload-${entry.id}`}
@@ -1586,7 +1585,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                       </div>
                     </td>
                     <td className="p-3 text-center">
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-center gap-2 group">
                         {/* Approve Button (only for pending entries and if user has permission) */}
                         {entry.status === 'pending' && canApprove(entry) && (
                           <button
@@ -1608,7 +1607,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                             {approvingEntryId === entry.id ? (
                               <Loader2 className="w-5 h-5 animate-spin" />
                             ) : (
-                              <Check className={`w-5 h-5 ${isDarkMode ? 'text-green-200' : 'text-green-600'} group-hover:text-white transition-all duration-500 hover:bg-gray-900 rounded-2xl`} />
+                              <Check className={`w-5 h-5 ${isDarkMode ? 'text-green-200 group-hover:text-black' : 'text-green-600 group-hover:text-white'} transition-all duration-500 hover:bg-white rounded-2xl`} />
                             )}
                           </button>
                         )}
@@ -1619,7 +1618,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                             e.stopPropagation();
                             handleDelete(entry.id, entry);
                           }}
-                          className={`${isDarkMode ? 'text-red-400' : 'text-red-600'} group-hover:text-white transition-all duration-500 hover:scale-110`}
+                          className={`${isDarkMode ? 'text-red-400' : 'text-red-600'} transition-all duration-500 hover:scale-110`}
                           title={entry.proof_file_url ? t('timeClock.deleteOptions', 'Delete options') : t('timeClock.delete', 'Delete')}
                           onMouseEnter={(e) => {
                             const el = e.currentTarget.querySelector('svg');
@@ -1629,7 +1628,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                             }
                           }}
                         >
-                          <X className="w-5 h-5 hover:bg-gray-900 rounded-2xl" />
+                          <X className={`w-5 h-5 ${isDarkMode ? 'group-hover:bg-white group-hover:text-black' : 'group-hover:bg-black group-hover:text-white'} rounded-2xl`} />
                         </button>
 
                       </div>
