@@ -1479,10 +1479,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     </td>
                     <td className="p-3">
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                        (entry.hour_type || entry.hourType) === 'regular' ? (isDarkMode ? 'bg-blue-900/30 text-blue-400 group-hover:text-black' : 'bg-blue-200 text-blue-900 group-hover:text-white') :
-                        (entry.hour_type || entry.hourType) === 'holiday' ? (isDarkMode ? 'bg-purple-900/30 text-purple-400 group-hover:text-black' : 'bg-purple-200 text-purple-900 group-hover:text-white') :
-                        (entry.hour_type || entry.hourType) === 'weekend' ? (isDarkMode ? 'bg-green-900/30 text-green-400 group-hover:text-black' : 'bg-green-200 text-green-900 group-hover:text-white') :
-                        (isDarkMode ? 'bg-yellow-900/30 text-yellow-400 group-hover:text-black' : 'bg-yellow-200 text-yellow-900 group-hover:text-white')
+                        (entry.hour_type || entry.hourType) === 'regular' ? (isDarkMode ? 'bg-blue-900/30 text-blue-400 group-hover:text-black' : 'bg-blue-200 text-blue-900 group-hover:text-black') :
+                        (entry.hour_type || entry.hourType) === 'holiday' ? (isDarkMode ? 'bg-purple-900/30 text-purple-400 group-hover:text-black' : 'bg-purple-200 text-purple-900 group-hover:text-black') :
+                        (entry.hour_type || entry.hourType) === 'weekend' ? (isDarkMode ? 'bg-green-900/30 text-green-400 group-hover:text-black' : 'bg-green-200 text-green-900 group-hover:text-black') :
+                        (isDarkMode ? 'bg-yellow-900/30 text-yellow-400 group-hover:text-black' : 'bg-yellow-200 text-yellow-900 group-hover:text-black')
                       }`}>
                         {hourTypes.find(t => t.value === (entry.hour_type || entry.hourType))?.label}
                       </span>
@@ -1607,7 +1607,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                             {approvingEntryId === entry.id ? (
                               <Loader2 className="w-5 h-5 animate-spin" />
                             ) : (
-                              <Check className={`w-5 h-5 ${isDarkMode ? 'text-green-200 group-hover:text-black' : 'text-green-600 group-hover:text-white'} transition-all duration-500 hover:bg-white rounded-2xl`} />
+                              <Check className={`w-5 h-5 ${isDarkMode ? 'text-green-200 group-hover:text-black hover:bg-white group-hover:bg-transparent' : 'text-green-600 group-hover:text-white hover:bg-black group-hover:bg-transparent'} transition-all duration-500 rounded-2xl`} />
                             )}
                           </button>
                         )}
