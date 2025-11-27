@@ -55,11 +55,9 @@ const AnimatedClockIcon = ({ className, isDarkMode }) => {
   );
 };
 
-const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = true }) => {
-    // Icon Color
-    const mainColor = isDarkMode ? 'text-white' : 'text-gray-700';
+const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = false }) => {
     // Steam Color
-    const steamColor = isDarkMode ? '#a3a3a3' : '#6b7280'; // Gray-400 / Gray-500 equivalent
+    const steamColor = isDarkMode ? '#e5e7eb' : '#d1d5db'; 
 
     // CSS Keyframes 
     const styleSheet = `
@@ -98,11 +96,10 @@ const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = true }) =>
     return (
         <div className={`relative ${className}`} style={{ width: size, height: size }}>
             <style>{styleSheet}</style>
+            {/* 1. Base Coffee Cup Icon */}
+            <Coffee size={size} strokeWidth={2} />
 
-            {/* 1. Base Coffee Icon */}
-            <Coffee size={size} className={mainColor} strokeWidth={2} />
-
-            {/* 2. Overlaid SVG for Steam Animation (positioned absolutely over the cup) */}
+            {/* 2. Overlaid SVG for Steam Animation */}
             <svg
                 width={size}
                 height={size}
