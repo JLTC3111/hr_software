@@ -1628,7 +1628,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                             }
                           }}
                         >
-                          <X className={`w-5 h-5 ${isDarkMode ? 'group-hover:bg-white group-hover:text-black' : 'group-hover:bg-black group-hover:text-white'} rounded-2xl`} />
+                          <X className={`w-5 h-5 cursor-pointer ${isDarkMode ? 'group-hover:bg-white group-hover:text-black' : 'group-hover:bg-black group-hover:text-white'} rounded-2xl`} />
                         </button>
 
                       </div>
