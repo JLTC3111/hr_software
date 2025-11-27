@@ -180,7 +180,7 @@ export default {
     detailedBreakdown: 'Phân Tích Chi Tiết Theo Dõi Thời Gian',
     title: 'Bảng Điều Khiển',
     overview: 'Tổng quan',
-    leaveRequests: 'Quản Lý Đơn Xin Nghỉ Phép',
+    leaveRequests: 'Quản Lý Nghỉ Phép',
     clockIn: 'Giờ Vào',
     clockOut: 'Giờ Ra',
     amountHours: 'Số Giờ',

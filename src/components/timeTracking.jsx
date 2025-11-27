@@ -1266,16 +1266,16 @@ const handleRejectRequest = async (requestId) => {
               <table className={`w-full border ${border.primary}`}>
                 <thead className={`${bg.tertiary}`}>
                   <tr>
-                    <th className={`${text.primary} py-3 px-4 text-left font-semibold border-b ${border.primary}`}>
+                    <th className={`${text.primary} py-3 px-4 text-center font-semibold border-b ${border.primary}`}>
                       {t('timeTracking.date', 'Date')}
                     </th>
-                    <th className={`${text.primary} py-3 px-4 text-left font-semibold border-b ${border.primary}`}>
+                    <th className={`${text.primary} py-3 px-4 text-center font-semibold border-b ${border.primary}`}>
                       {t('timeTracking.employee', 'Employee')}
                     </th>
-                    <th className={`${text.primary} py-3 px-4 text-left font-semibold border-b ${border.primary}`}>
+                    <th className={`${text.primary} py-3 px-4 text-center font-semibold border-b ${border.primary}`}>
                       {t('timeTracking.time', 'Hours Worked')}
                     </th>
-                    <th className={`${text.primary} py-3 px-4 text-left font-semibold border-b ${border.primary}`}>
+                    <th className={`${text.primary} py-3 px-4 text-center font-semibold border-b ${border.primary}`}>
                       {t('timeTracking.hourType', 'Hour Type')}
                     </th>
                     <th className={`${text.primary} py-3 px-4 text-right font-semibold border-b ${border.primary}`}>
@@ -1298,9 +1298,10 @@ const handleRejectRequest = async (requestId) => {
                         </td>
                         <td className={`${text.primary} py-3 px-4`}>
                           <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                            record.hour_type === 'overtime' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
-                            record.hour_type === 'holiday' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
-                            'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                            (record.hour_type || record.hourType) === 'regular' ? (isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-200 text-blue-900') :
+                            (record.hour_type || record.hourType) === 'holiday' ? (isDarkMode ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-200 text-purple-900') :
+                            (record.hour_type || record.hourType) === 'weekend' ? (isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-200 text-green-900') :
+                            (isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-200 text-yellow-900')
                           }`}>
                             {t(`timeTracking.${record.hour_type || 'regular'}`, record.hour_type || 'regular')}
                           </span>
