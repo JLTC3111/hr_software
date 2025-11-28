@@ -561,25 +561,25 @@ const TaskListing = ({ employees }) => {
 
     return (
       <div className="space-y-6">
-        {/* Stats */}
+        {/* Metric Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <p className={`text-sm ${text.secondary}`}>{t('taskListing.totalTasks', '')}</p>
-            <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{employeeTasks.length}</p>
+            <p className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{employeeTasks.length}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <p className={`text-sm ${text.secondary}`}>{t('taskListing.completed', '')}</p>
-            <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            <p className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               {employeeTasks.filter(t => t.status === 'completed').length}
             </p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <p className={`text-sm ${text.secondary}`}>{t('taskListing.progress', '')}</p>
-            <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{progress}%</p>
+            <p className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{progress}%</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <p className={`text-sm ${text.secondary}`}>{t('taskListing.avgQuality', '')}</p>
-            <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{avgQuality}/5</p>
+            <p className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{avgQuality}/5</p>
           </div>
         </div>
 
@@ -781,17 +781,17 @@ const TaskListing = ({ employees }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <p className={`text-sm ${text.secondary}`}>{t('taskListing.totalTasks', '')}</p>
-            <p className={`text-2xl font-bold ${text.primary}`}>{tasks.length}</p>
+            <p className={`text-xl font-bold ${text.primary}`}>{tasks.length}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <p className={`text-sm ${text.secondary}`}>{t('taskListing.avgProgress', '')}</p>
-            <p className={`text-2xl font-bold ${text.secondary}`}>
+            <p className={`text-sm text-center ${text.secondary}`}>{t('taskListing.avgProgress', '')}</p>
+            <p className={`text-xl text-center font-bold ${text.secondary}`}>
               {Math.round(orgStats.reduce((sum, s) => sum + s.progress, 0) / (orgStats.length || 1))}%
             </p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <p className={`text-sm ${text.secondary}`}>{t('taskListing.avgQuality', '')}</p>
-            <p className={`text-2xl font-bold ${text.secondary}`}>
+            <p className={`text-sm text-center ${text.secondary}`}>{t('taskListing.avgQuality', '')}</p>
+            <p className={`text-xl text-center font-bold ${text.secondary}`}>
               {(orgStats.reduce((sum, s) => sum + parseFloat(s.avgQuality || 0), 0) / (orgStats.length || 0)).toFixed(0)}/5
             </p>
           </div>
