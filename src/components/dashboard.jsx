@@ -1476,15 +1476,36 @@ const Dashboard = ({ employees, applications }) => {
                         <div style={{ fontWeight: 600, marginBottom: 8 }}>
                           {payload[0]?.payload?.fullName ? `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}` : label}
                         </div>
-                        {unique.map((p, idx) => (
-                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <div style={{ width: 10, height: 10, background: p.color || (isDarkMode ? '#F9FAFB' : '#111827'), borderRadius: 3 }} />
-                              <div>{p.name || p.dataKey}</div>
+                        {unique.map((p, idx) => {
+                          const isPerformance = p.dataKey === 'performance' || String(p.name || '').toLowerCase().includes(String(t('dashboard.performanceRating', 'Performance Rating')).toLowerCase());
+                          const isLine = p.payload && p.payload.hasOwnProperty('performance') && p.type === 'line';
+
+                          const swatchStyle = isPerformance
+                            ? {
+                                width: 12,
+                                height: 12,
+                                borderRadius: 3,
+                                backgroundImage: 'linear-gradient(180deg, #DC2626 0%, #7C2D12 50%, #000000 100%)',
+                                border: isDarkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.08)'
+                              }
+                            : {
+                                width: 12,
+                                height: 12,
+                                borderRadius: 3,
+                                background: p.color || (isDarkMode ? '#F9FAFB' : '#111827'),
+                                border: isDarkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.08)'
+                              };
+
+                          return (
+                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={swatchStyle} />
+                                <div>{p.name || p.dataKey}</div>
+                              </div>
+                              <div style={{ fontWeight: 700 }}>{p.value}</div>
                             </div>
-                            <div style={{ fontWeight: 700 }}>{p.value}</div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     );
                   }}
@@ -1663,12 +1684,38 @@ const Dashboard = ({ employees, applications }) => {
                         {payload[0]?.payload?.fullName ? `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}` : label}
                       </div>
                       {unique.map((p, idx) => {
-                        // Choose swatch color: prefer series color, else pick by dataKey
-                        const swatchColor = p.color || (p.dataKey === 'regularHours' ? '#2563EB' : (p.dataKey === 'overtimeHours' ? '#F59E0B' : (isDarkMode ? '#F9FAFB' : '#111827')));
+                        // Render a visible swatch. For regularHours use the exact gradient used by the bar.
+                        const isRegular = p.dataKey === 'regularHours' || String(p.name || '').toLowerCase().includes(String(t('dashboard.regularHoursLegend', 'Regular Hours')).toLowerCase());
+                        const isOvertime = p.dataKey === 'overtimeHours' || String(p.name || '').toLowerCase().includes(String(t('dashboard.totalOvertimeLegend', 'Overtime Hours')).toLowerCase());
+
+                        const swatchStyle = isRegular
+                          ? {
+                              width: 12,
+                              height: 12,
+                              borderRadius: 3,
+                              backgroundImage: 'linear-gradient(180deg, #2563EB 0%, #1E3A8A 50%, #000000 100%)',
+                              border: isDarkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.08)'
+                            }
+                          : isOvertime
+                          ? {
+                              width: 12,
+                              height: 12,
+                              borderRadius: 3,
+                              backgroundColor: '#F59E0B',
+                              border: isDarkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.08)'
+                            }
+                          : {
+                              width: 12,
+                              height: 12,
+                              borderRadius: 3,
+                              background: p.color || (isDarkMode ? '#F9FAFB' : '#111827'),
+                              border: isDarkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.08)'
+                            };
+
                         return (
                           <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <div style={{ width: 10, height: 10, background: swatchColor, borderRadius: 3 }} />
+                              <div style={swatchStyle} />
                               <div>{p.name || p.dataKey}</div>
                             </div>
                             <div style={{ fontWeight: 700 }}>{p.value}</div>
