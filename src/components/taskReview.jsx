@@ -774,7 +774,7 @@ const TaskReview = ({ employees }) => {
   // State management
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('organization');
+  const [viewMode, setViewMode] = useState(() => checkPermission('canViewReports') ? 'organization' : 'individual');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -798,6 +798,24 @@ const TaskReview = ({ employees }) => {
   const availableEmployees = canViewAllEmployees 
     ? employees 
     : employees.filter(emp => String(emp.id) === String(user?.employeeId));
+
+  // Ensure non-privileged users can't remain on Organization view
+  useEffect(() => {
+    if (!canViewAllEmployees && viewMode === 'organization') {
+      setViewMode('individual');
+    }
+  }, [canViewAllEmployees, viewMode]);
+
+  // Default selected employee to the logged-in user's employeeId for non-admin users
+  useEffect(() => {
+    if (user && employees.length > 0 && !selectedEmployee) {
+      const userEmployeeId = String(user.employeeId || user.id);
+      const userEmployee = employees.find(emp => String(emp.id) === userEmployeeId);
+      if (userEmployee) {
+        setSelectedEmployee(String(userEmployee.id));
+      }
+    }
+  }, [user, employees, selectedEmployee]);
 
   // Fetch tasks from Supabase
   const fetchTasks = async () => {
@@ -1492,7 +1510,7 @@ const TaskReview = ({ employees }) => {
         <div className="flex items-center justify-center py-12">
           <Loader className="w-8 h-8 animate-spin text-blue-600" />
         </div>
-      ) : viewMode === 'organization' ? <OrganizationView /> : <IndividualView />}
+      ) : (viewMode === 'organization' && checkPermission('canViewReports')) ? <OrganizationView /> : <IndividualView />}
 
       {/* Review Modal */}
       {reviewingTask && (

@@ -790,8 +790,8 @@ const TaskListing = ({ employees }) => {
             </p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <p className={`text-sm text-center ${text.secondary}`}>{t('taskListing.avgQuality', '')}</p>
-            <p className={`text-xl text-center font-bold ${text.secondary}`}>
+            <p className={`text-sm ${text.secondary}`}>{t('taskListing.avgQuality', '')}</p>
+            <p className={`text-xl font-bold ${text.secondary}`}>
               {(orgStats.reduce((sum, s) => sum + parseFloat(s.avgQuality || 0), 0) / (orgStats.length || 0)).toFixed(0)}/5
             </p>
           </div>
