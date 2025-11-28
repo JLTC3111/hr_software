@@ -439,25 +439,22 @@ const TaskListing = ({ employees }) => {
                         <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
                       </p>
                     )}
-                    {task.self_assessment && (
-                      <div className={`mt-2 p-2 rounded ${bg.primary}`}>
-                        <p className={`text-xs ${text.secondary} mb-1`}>
-                          <MessageSquare className="w-3 h-3 inline mr-1" />
-                          {t('taskListing.selfAssessment', 'Self Assessment')}:
-                        </p>
-                        <p className={`text-sm ${text.primary}`}>{task.self_assessment}</p>
-                        {task.quality_rating > 0 && (
-                          <p className={`text-sm ${text.secondary} mt-1 flex items-center space-x-1`}>
-                            <span>{t('taskListing.quality', 'Quality')}: {task.quality_rating}/5</span>
-                            <Star 
-                              className={`w-4 h-4 cursor-pointer ${text.primary} hover:animate-pulse hover:scale-115 ${isDarkMode ? 'hover:fill-white' : 'hover:fill-blue-900 hover:text-gray-900'} transition-all duration-300 ease-in-out ${
-                                task.quality_rating > 0 ? 'scale-100 rotate-0' : 'scale-0'
-                              }`} 
-                            />
-                          </p>
-                        )}
+                    
+                    {/* Assigned info: Assigned To, Assigned By, Assign Date */}
+                    <div className={`mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs ${text.secondary}`}>
+                      <div>
+                        <p className="font-medium">{t('taskReview.assignedTo') || 'Assigned To'}</p>
+                        <p className={text.primary}>{employees.find(e => String(e.id) === String(task.employee_id))?.name || task.employee?.name || '-'}</p>
                       </div>
-                    )}
+                      <div>
+                        <p className="font-medium">{t('taskReview.assignedBy') || 'Assigned By'}</p>
+                        <p className={text.primary}>{employees.find(e => String(e.id) === String(task.created_by))?.name || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="font-medium">{t('taskListing.assignDate', 'Assign Date')}</p>
+                        <p className={text.primary}>{task.created_at ? new Date(task.created_at).toLocaleDateString() : '-'}</p>
+                      </div>
+                    </div>
                   </div>
                   <div className="flex items-center space-x-2">
                     <button 
