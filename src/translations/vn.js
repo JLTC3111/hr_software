@@ -1379,7 +1379,7 @@ export default {
     notes: 'Ghi Chú',
     createdAt: 'Ngày Tạo',
     updatedAt: 'Ngày Cập Nhật',
-    completed: 'Nhiệm Vụ Đã Hoàn Thành'
+    completed: 'Nhiệm Vụ Đã Hoàn Thành',
   },
 
   // Performance Appraisal Translation

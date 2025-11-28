@@ -1314,7 +1314,7 @@ const TaskReview = ({ employees }) => {
                       className={`ml-4 px-4 py-2 rounded-lg flex items-center space-x-2 ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white transition-colors cursor-pointer`}
                     >
                       <Edit2 className="w-4 h-4" />
-                      <span>Review</span>
+                      <span>{t('taskReview.review')}</span>
                     </button>
                   )}
                 </div>
