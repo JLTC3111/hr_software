@@ -1029,6 +1029,7 @@ export default {
   taskListing: {
     title: 'タスクリスト',
     individual: '個人',
+    assignDate: '割り当て日',
     selectEmployee: '従業員を選択',
     dueDate: '期限',
     manageTasks: 'タスクを管理',

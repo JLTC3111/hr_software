@@ -1144,6 +1144,8 @@ export default {
   taskListing: {
     title: 'Gestion des Tâches',
     individual: 'Individuel',
+    assignDate: 'Date d\'attribution',
+    team: 'Équipe',
     organization: 'Organisation',
     selectEmployee: 'Sélectionner l\'employé',
     dueDate: 'Date d\'échéance',

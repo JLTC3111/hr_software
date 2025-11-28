@@ -2,11 +2,13 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import * as flubber from 'flubber';
 import { 
   Calendar, 
-  TrendingUp, 
+  GraduationCap, 
   Pickaxe,
   Award, 
   Star, 
-  Check,
+  ListCheck,
+  MailCheck,
+  School,
   CheckCircle, 
   Clock, 
   AlertCircle,
@@ -19,6 +21,7 @@ import {
   ChevronUp,
   Loader,
   UserCheck,
+  CircleCheck,
   ShieldCheck,
   Hourglass,
   Edit2,
@@ -26,7 +29,9 @@ import {
   CircleQuestionMark,
   X,
   Goal,
-  Crosshair,
+  Building,
+  PersonStanding,
+  Speech,
   Save,
   Ellipsis,
   BellElectric,
@@ -72,6 +77,248 @@ export const MiniFlubberAutoMorphEmployees = ({
   const icons = [
     { name: 'Users', Icon: Users, status: 'stanard' },
     { name: 'User', Icon: User, status: 'standard' },
+    { name: 'Gossip', Icon: Speech, status: 'standard' },
+    { name: 'Human', Icon: PersonStanding, status: 'standard' },
+  ];
+
+  /** Extract SVG paths for morphing */
+  const extractPathsFromIcon = (iconElement) => {
+    if (!iconElement) return [];
+    const svg = iconElement.querySelector('svg');
+    if (!svg) return [];
+
+    const elements = svg.querySelectorAll(
+      'path, circle, line, rect, polyline, polygon'
+    );
+
+    const paths = Array.from(elements)
+      .map((element) => {
+        if (element.tagName.toLowerCase() === 'path') {
+          return element.getAttribute('d');
+        }
+        return convertShapeToPath(element);
+      })
+      .filter(Boolean);
+
+    return paths;
+  };
+
+  /** Convert non-path shapes to path data */
+  const convertShapeToPath = (element) => {
+    const tag = element.tagName.toLowerCase();
+
+    if (tag === 'circle') {
+      const cx = parseFloat(element.getAttribute('cx'));
+      const cy = parseFloat(element.getAttribute('cy'));
+      const r = parseFloat(element.getAttribute('r'));
+      return `M ${cx - r},${cy} a ${r},${r} 0 1,0 ${r * 2},0 a ${r},${r} 0 1,0 ${-r * 2},0`;
+    }
+
+    if (tag === 'line') {
+      return `M ${element.getAttribute('x1')},${element.getAttribute(
+        'y1'
+      )} L ${element.getAttribute('x2')},${element.getAttribute('y2')}`;
+    }
+
+    if (tag === 'rect') {
+      const x = parseFloat(element.getAttribute('x') || 0);
+      const y = parseFloat(element.getAttribute('y') || 0);
+      const w = parseFloat(element.getAttribute('width'));
+      const h = parseFloat(element.getAttribute('height'));
+      return `M ${x},${y} L ${x + w},${y} L ${x + w},${y + h} L ${x},${y + h} Z`;
+    }
+
+    if (tag === 'polyline' || tag === 'polygon') {
+      const points = element.getAttribute('points').trim().split(/\s+/);
+      const cmds = points.map((p, i) => {
+        const [x, y] = p.split(',');
+        return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
+      });
+      if (tag === 'polygon') cmds.push('Z');
+      return cmds.join(' ');
+    }
+
+    return null;
+  };
+
+  /** Morph animation logic */
+  const morphToIndex = (targetIndex) => {
+    if (isAnimating || currentIconIndex === targetIndex) return;
+
+    setIsAnimating(true);
+
+    const currentPaths = extractPathsFromIcon(iconRefs.current[currentIconIndex]);
+    const nextPaths = extractPathsFromIcon(iconRefs.current[targetIndex]);
+
+    if (!currentPaths.length || !nextPaths.length) {
+      setCurrentIconIndex(targetIndex);
+      setIsAnimating(false);
+      return;
+    }
+
+    let interpolators;
+
+    try {
+      const maxPaths = Math.max(currentPaths.length, nextPaths.length);
+      const paddedCurrent = [...currentPaths];
+      const paddedNext = [...nextPaths];
+
+      while (paddedCurrent.length < maxPaths) {
+        paddedCurrent.push(paddedCurrent[paddedCurrent.length - 1]);
+      }
+      while (paddedNext.length < maxPaths) {
+        paddedNext.push(paddedNext[paddedNext.length - 1]);
+      }
+
+      interpolators = paddedCurrent.map((c, i) =>
+        flubber.interpolate(c, paddedNext[i], { maxSegmentLength })
+      );
+    } catch {
+      interpolators = [
+        flubber.interpolate(currentPaths.join(' '), nextPaths.join(' '), {
+          maxSegmentLength,
+        }),
+      ];
+    }
+
+    const start = Date.now();
+
+    const animate = () => {
+      const elapsed = Date.now() - start;
+      let t = Math.min(elapsed / morphDuration, 1);
+
+      // easeInOutQuad
+      t = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+      const morphed = interpolators.map((fn) => fn(t));
+      setMorphPaths(morphed);
+
+      if (elapsed < morphDuration) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      } else {
+        setCurrentIconIndex(targetIndex);
+        setIsAnimating(false);
+        setMorphPaths([]);
+      }
+    };
+
+    animate();
+  };
+
+  /** Auto-morph to next icon */
+  const morphToNext = () => {
+    const nextIndex = (currentIconIndex + 1) % icons.length;
+    morphToIndex(nextIndex);
+  };
+
+  /** Set up auto-morphing interval */
+  useEffect(() => {
+    autoMorphTimerRef.current = setInterval(() => {
+      morphToNext();
+    }, autoMorphInterval);
+
+    return () => {
+      if (autoMorphTimerRef.current) {
+        clearInterval(autoMorphTimerRef.current);
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [currentIconIndex, autoMorphInterval]);
+
+  const CurrentIcon = icons[currentIconIndex].Icon;
+  const currentColor = getColor(icons[currentIconIndex]);
+
+  return (
+    <div className={`inline-block ${className}`}>
+      <div className="relative">
+        {isAnimating && morphPaths.length > 0 ? (
+          <svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            className={currentColor}
+            stroke="currentColor"
+            color="currentColor"
+          >
+            {morphPaths.map((d, i) => (
+              <path
+                key={i}
+                d={d}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            ))}
+          </svg>
+        ) : (
+          <CurrentIcon
+            size={size}
+            className={currentColor}
+            stroke="currentColor"
+            strokeWidth={1.5}
+          />
+        )}
+      </div>
+
+      {/* Hidden icons for path extraction */}
+      <div
+        style={{
+          position: 'absolute',
+          visibility: 'hidden',
+          pointerEvents: 'none',
+          left: '-9999px',
+        }}
+      >
+        {icons.map((icon, i) => (
+          <div key={i} ref={(el) => (iconRefs.current[i] = el)}>
+            <icon.Icon size={24} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export const MiniFlubberAutoMorphCompletionRate = ({
+  size = 24,
+  className = '',
+  isDarkMode = false,
+  autoMorphInterval = 2000, // Time between auto-morphs in ms
+  morphDuration = 1500, // Duration of each morph animation
+}) => {
+  const [currentIconIndex, setCurrentIconIndex] = useState(0);
+  const [morphPaths, setMorphPaths] = useState([]);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [maxSegmentLength] = useState(2);
+  const iconRefs = useRef({});
+  const animationFrameRef = useRef(null);
+  const autoMorphTimerRef = useRef(null);
+
+  /** ---------------------------
+   * Dynamic Color Selection
+   ----------------------------*/
+  const getColor = (icon) => {
+    if (icon.status === 'approved') {
+      return isDarkMode ? 'text-green-400' : 'text-green-700';
+    }
+    if (icon.status === 'rejected') {
+      return isDarkMode ? 'text-red-400' : 'text-red-700';
+    }
+    if (icon.status === 'standard') {
+      return isDarkMode ? 'text-white' : 'text-black';
+    }
+    return isDarkMode ? 'text-white' : 'text-black';
+  };
+
+  /** Icon definitions */
+  const icons = [
+    { name: 'Circle', Icon: CircleCheck, status: 'standard' },
+    { name: 'List', Icon: ListCheck, status: 'standard' },
+    { name: 'Email', Icon: MailCheck, status: 'standard' },
   ];
 
   /** Extract SVG paths for morphing */
@@ -309,11 +556,11 @@ export const MiniFlubberAutoMorphInProgress = ({
 
   /** Icon definitions */
   const icons = [
-    { name: 'CircleQuestionMark', Icon: CircleQuestionMark, status: 'pending' },
+    { name: 'CircleQuestionMark', Icon: CircleQuestionMark, status: 'standard' },
     { name: 'Hourglass', Icon: Hourglass, status: 'standard' },
     { name: 'Loading', Icon: Loader, status: 'standard' },
-    { name: '3 Dots', Icon: Ellipsis, status: 'stanard' },
-    { name: 'Bell', Icon: BellElectric, status: 'stanard' },
+    { name: '3 Dots', Icon: Ellipsis, status: 'standard' },
+    { name: 'Bell', Icon: BellElectric, status: 'standard' },
     { name: 'Goal', Icon: Goal, status: 'standard' },
   ];
 
@@ -709,42 +956,42 @@ const TaskReview = ({ employees }) => {
               <BarChart3 className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.totalTasks}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>{t('taskReview.totalTasks')}</p>
+            <p className={`text-sm text-left ${text.secondary}`}>{t('taskReview.totalTasks')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <MiniFlubberAutoMorphEmployees size={24} isDarkMode={isDarkMode} />
               <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.totalEmployees}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>{t('taskReview.employees')}</p>
+            <p className={`text-sm text-left ${text.secondary}`}>{t('taskReview.employees')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
-              <ShieldCheck className={`w-5 h-5 ${text.secondary}`} />
+              <ShieldCheck className={`w-6 h-6 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.completed}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>{t('taskReview.completed')}</p>
+            <p className={`text-sm text-right ${text.secondary}`}>{t('taskReview.completed')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <MiniFlubberAutoMorphInProgress size={24} isDarkMode={isDarkMode} />
               <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.inProgress}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>{t('taskReview.inProgress')}</p>
+            <p className={`text-sm text-left ${text.secondary}`}>{t('taskReview.inProgress')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
-              <Pickaxe className={`w-5 h-5 ${text.secondary}`} />
+              <MiniFlubberAutoMorphCompletionRate isDarkMode={isDarkMode} className={`w-5 h-5 mr-8 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.completionRate}%</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>{t('taskReview.completion')}</p>
+            <p className={`text-sm text-right ${text.secondary}`}>{t('taskReview.completion')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <Star className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.avgQualityRating}</span>
             </div>
-            <p className={`text-sm ${text.secondary}`}>{t('taskReview.quality')}</p>
+            <p className={`text-sm text-right ${text.secondary}`}>{t('taskReview.quality')}</p>
           </div>
         </div>
       )}
@@ -1188,19 +1435,18 @@ const TaskReview = ({ employees }) => {
               onClick={() => { setViewMode('organization'); setSelectedEmployee(null); }}
               className={`px-4 py-2 rounded-lg cursor-pointer transition-colors ${viewMode === 'organization' ? 'bg-blue-600 text-white' : isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
             >
-              <Users className="w-4 h-4 inline-block mr-2" />{t('taskReview.organization')}
+              <School className="w-4 h-4 inline-block mr-2 -translate-y-0.5" />{t('taskReview.organization')}
             </button>
             <button
               onClick={() => {
                 setViewMode('individual');
-                // Set logged-in user as default when switching to individual view
                 if (!selectedEmployee && user?.employeeId) {
                   setSelectedEmployee(String(user.employeeId));
                 }
               }}
-              className={`px-4 py-2 rounded-lg cursor-pointer transition-colors ${viewMode === 'individual' ? 'bg-blue-600 text-white' : isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
+              className={`px-4 py-2 rounded-lg cursor-pointer transition-colors ${viewMode === 'individual' ? 'bg-amber-600 text-white' : isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
             >
-              <User className="w-4 h-4 inline-block mr-2" />{t('taskReview.individual')}
+              <GraduationCap className="w-4 h-4 inline-block mr-2 -translate-y-0.5" />{t('taskReview.individual')}
             </button>
           </div>
         )}

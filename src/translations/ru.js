@@ -1041,6 +1041,8 @@ export default {
   // Task Listing
   taskListing: {
     title: 'Управление задачами',
+    assignDate: 'Дата назначения',
+    team: 'Команда',
     individual: 'Индивидуальный',
     selectEmployee: 'Выбрать сотрудника',
     dueDate: 'Срок',

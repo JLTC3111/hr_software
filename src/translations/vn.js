@@ -1230,6 +1230,8 @@ export default {
   taskListing: {
     title: 'Danh Sách Nhiệm Vụ',
     individual: 'Cá nhân',
+    assignDate: 'Ngày Phân Công',
+    team: 'Đội nhóm',
     selectEmployee: 'Chọn nhân viên',
     dueDate: 'Hạn chót',
     manageTasks: 'Quản lý nhiệm vụ',
@@ -1347,8 +1349,8 @@ export default {
     high: 'Cao',
     medium: 'Trung Bình',
     low: 'Thấp',
-    employees: 'Nhân Viên',
-    completion: 'Hoàn Thành',
+    employees: 'Nhân Viên Có Nhiệm Vụ',
+    completion: 'Tỉ Lệ Việc Hoàn Thành',
     quality: 'Chất Lượng',
     task: 'Nhiệm Vụ',
     progress: 'Tiến Độ',
@@ -1377,6 +1379,7 @@ export default {
     notes: 'Ghi Chú',
     createdAt: 'Ngày Tạo',
     updatedAt: 'Ngày Cập Nhật',
+    completed: 'Nhiệm Vụ Đã Hoàn Thành'
   },
 
   // Performance Appraisal Translation

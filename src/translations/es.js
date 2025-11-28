@@ -1200,6 +1200,8 @@ login: {
   taskListing: {
     title: 'Gestión de Tareas',
     assignTo: 'Asignar a',
+    assignDate: 'Fecha de Asignación',
+    assignedBy: 'Asignado por',
     team: 'Equipo',
     selectEmployee: 'Seleccionar empleado',
     dueDate: 'Fecha de vencimiento',

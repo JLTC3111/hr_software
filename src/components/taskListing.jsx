@@ -1,9 +1,249 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { CheckCircle, Circle, Edit2, Trash2, Plus, Calendar, User, TrendingUp, BarChart3, MessageSquare, Loader, Star, Users } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as workloadService from '../services/workloadService';
+import * as flubber from 'flubber';
+
+export const MiniFlubberAutoMorphCompleteTask = ({
+  size = 24,
+  className = '',
+  isDarkMode = false,
+  autoMorphInterval = 1000, 
+  morphDuration = 500, 
+}) => {
+  const [currentIconIndex, setCurrentIconIndex] = useState(0);
+  const [morphPaths, setMorphPaths] = useState([]);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [maxSegmentLength] = useState(2);
+  const iconRefs = useRef({});
+  const animationFrameRef = useRef(null);
+  const autoMorphTimerRef = useRef(null);
+
+  /** ---------------------------
+   * Dynamic Color Selection
+   ----------------------------*/
+  const getColor = (icon) => {
+    if (icon.status === 'approved') {
+      return isDarkMode ? 'text-green-400' : 'text-green-700';
+    }
+    if (icon.status === 'rejected') {
+      return isDarkMode ? 'text-red-400' : 'text-red-700';
+    }
+    if (icon.status === 'standard') {
+      return isDarkMode ? 'text-white' : 'text-black';
+    }
+    return isDarkMode ? 'text-white' : 'text-black';
+  };
+
+  /** Icon definitions */
+  const icons = [
+    { name: 'Circle', Icon: Circle, status: 'stanard' },
+    { name: 'CheckCircle', Icon: CheckCircle, status: 'standard' },
+  ];
+
+  /** Extract SVG paths for morphing */
+  const extractPathsFromIcon = (iconElement) => {
+    if (!iconElement) return [];
+    const svg = iconElement.querySelector('svg');
+    if (!svg) return [];
+
+    const elements = svg.querySelectorAll(
+      'path, circle, line, rect, polyline, polygon'
+    );
+
+    const paths = Array.from(elements)
+      .map((element) => {
+        if (element.tagName.toLowerCase() === 'path') {
+          return element.getAttribute('d');
+        }
+        return convertShapeToPath(element);
+      })
+      .filter(Boolean);
+
+    return paths;
+  };
+
+  /** Convert non-path shapes to path data */
+  const convertShapeToPath = (element) => {
+    const tag = element.tagName.toLowerCase();
+
+    if (tag === 'circle') {
+      const cx = parseFloat(element.getAttribute('cx'));
+      const cy = parseFloat(element.getAttribute('cy'));
+      const r = parseFloat(element.getAttribute('r'));
+      return `M ${cx - r},${cy} a ${r},${r} 0 1,0 ${r * 2},0 a ${r},${r} 0 1,0 ${-r * 2},0`;
+    }
+
+    if (tag === 'line') {
+      return `M ${element.getAttribute('x1')},${element.getAttribute(
+        'y1'
+      )} L ${element.getAttribute('x2')},${element.getAttribute('y2')}`;
+    }
+
+    if (tag === 'rect') {
+      const x = parseFloat(element.getAttribute('x') || 0);
+      const y = parseFloat(element.getAttribute('y') || 0);
+      const w = parseFloat(element.getAttribute('width'));
+      const h = parseFloat(element.getAttribute('height'));
+      return `M ${x},${y} L ${x + w},${y} L ${x + w},${y + h} L ${x},${y + h} Z`;
+    }
+
+    if (tag === 'polyline' || tag === 'polygon') {
+      const points = element.getAttribute('points').trim().split(/\s+/);
+      const cmds = points.map((p, i) => {
+        const [x, y] = p.split(',');
+        return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
+      });
+      if (tag === 'polygon') cmds.push('Z');
+      return cmds.join(' ');
+    }
+
+    return null;
+  };
+
+  /** Morph animation logic */
+  const morphToIndex = (targetIndex) => {
+    if (isAnimating || currentIconIndex === targetIndex) return;
+
+    setIsAnimating(true);
+
+    const currentPaths = extractPathsFromIcon(iconRefs.current[currentIconIndex]);
+    const nextPaths = extractPathsFromIcon(iconRefs.current[targetIndex]);
+
+    if (!currentPaths.length || !nextPaths.length) {
+      setCurrentIconIndex(targetIndex);
+      setIsAnimating(false);
+      return;
+    }
+
+    let interpolators;
+
+    try {
+      const maxPaths = Math.max(currentPaths.length, nextPaths.length);
+      const paddedCurrent = [...currentPaths];
+      const paddedNext = [...nextPaths];
+
+      while (paddedCurrent.length < maxPaths) {
+        paddedCurrent.push(paddedCurrent[paddedCurrent.length - 1]);
+      }
+      while (paddedNext.length < maxPaths) {
+        paddedNext.push(paddedNext[paddedNext.length - 1]);
+      }
+
+      interpolators = paddedCurrent.map((c, i) =>
+        flubber.interpolate(c, paddedNext[i], { maxSegmentLength })
+      );
+    } catch {
+      interpolators = [
+        flubber.interpolate(currentPaths.join(' '), nextPaths.join(' '), {
+          maxSegmentLength,
+        }),
+      ];
+    }
+
+    const start = Date.now();
+
+    const animate = () => {
+      const elapsed = Date.now() - start;
+      let t = Math.min(elapsed / morphDuration, 1);
+
+      // easeInOutQuad
+      t = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+      const morphed = interpolators.map((fn) => fn(t));
+      setMorphPaths(morphed);
+
+      if (elapsed < morphDuration) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      } else {
+        setCurrentIconIndex(targetIndex);
+        setIsAnimating(false);
+        setMorphPaths([]);
+      }
+    };
+
+    animate();
+  };
+
+  /** Auto-morph to next icon */
+  const morphToNext = () => {
+    const nextIndex = (currentIconIndex + 1) % icons.length;
+    morphToIndex(nextIndex);
+  };
+
+  /** Set up auto-morphing interval */
+  useEffect(() => {
+    autoMorphTimerRef.current = setInterval(() => {
+      morphToNext();
+    }, autoMorphInterval);
+
+    return () => {
+      if (autoMorphTimerRef.current) {
+        clearInterval(autoMorphTimerRef.current);
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [currentIconIndex, autoMorphInterval]);
+
+  const CurrentIcon = icons[currentIconIndex].Icon;
+  const currentColor = getColor(icons[currentIconIndex]);
+
+  return (
+    <div className={`inline-block ${className}`}>
+      <div className="relative">
+        {isAnimating && morphPaths.length > 0 ? (
+          <svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            className={currentColor}
+            stroke="currentColor"
+            color="currentColor"
+          >
+            {morphPaths.map((d, i) => (
+              <path
+                key={i}
+                d={d}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            ))}
+          </svg>
+        ) : (
+          <CurrentIcon
+            size={size}
+            className={currentColor}
+            stroke="currentColor"
+            strokeWidth={1.5}
+          />
+        )}
+      </div>
+
+      {/* Hidden icons for path extraction */}
+      <div
+        style={{
+          position: 'absolute',
+          visibility: 'hidden',
+          pointerEvents: 'none',
+          left: '-9999px',
+        }}
+      >
+        {icons.map((icon, i) => (
+          <div key={i} ref={(el) => (iconRefs.current[i] = el)}>
+            <icon.Icon size={24} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const TaskListing = ({ employees }) => {
   const { user, checkPermission } = useAuth();
@@ -410,17 +650,17 @@ const TaskListing = ({ employees }) => {
                         status: task.status === 'completed' ? 'pending' : 'completed' 
                       })}>
                         {task.status === 'completed' ? 
-                          <CheckCircle className={`w-5 h-5 ${text.primary}`} /> : 
+                          <MiniFlubberAutoMorphCompleteTask isDarkMode={isDarkMode} className={`w-5 h-5 ${text.primary}`} /> : 
                           <Circle className={`w-5 h-5 ${text.primary}`} />
                         }
                       </button>
                       <h4 className={`font-semibold ${text.primary} ${task.status === 'completed' ? 'line-through' : ''}`}>
                         {task.title}
                       </h4>
-                      <span className={`px-2 py-1 rounded text-xs ${getPriorityColor(task.priority)}`}>
+                      <span className={`px-2 py-1 rounded text-xs ${getPriorityColor(task.priority)} ${task.status === 'completed' ? 'line-through' : ''}`}>
                         {t(`taskListing.${task.priority}`, task.priority)}
                       </span>
-                      <span className={`px-2 py-1 rounded text-xs ${getStatusColor(task.status)}`}>
+                      <span className={`px-2 py-1 rounded text-xs ${getStatusColor(task.status)} ${task.status === 'completed' ? 'line-through' : ''}`}>
                         {t(`taskListing.${task.status}`, task.status)}
                         {typeof statusToPercent === 'function' && statusToPercent(task.status) !== undefined ? (
                           <span className="ml-1">({statusToPercent(task.status)})</span>
@@ -501,13 +741,39 @@ const TaskListing = ({ employees }) => {
       avgQuality: calculateAvgQuality(getEmployeeTasks(emp.id))
     }));
 
-    // Sort employees by number of ongoing tasks (status === 'in-progress') desc
+    // Sort employees by task status priority:
+    // 1) completed count (desc)
+    // 2) in-progress count (desc)
+    // 3) pending count (desc)
+    // 4) total tasks (desc)
+    // 5) employee name (asc)
     const orgStatsSorted = [...orgStats].sort((a, b) => {
-      const aOngoing = (a.tasks || []).filter(t => t.status === 'in-progress').length;
-      const bOngoing = (b.tasks || []).filter(t => t.status === 'in-progress').length;
-      // If ongoing counts equal, fall back to total tasks count
-      if (bOngoing !== aOngoing) return bOngoing - aOngoing;
-      return (b.tasks || []).length - (a.tasks || []).length;
+      const aTasks = a.tasks || [];
+      const bTasks = b.tasks || [];
+
+      const countBy = (tasks, status) => tasks.filter(t => String(t.status).toLowerCase() === status).length;
+
+      const aCompleted = countBy(aTasks, 'completed');
+      const bCompleted = countBy(bTasks, 'completed');
+      if (bCompleted !== aCompleted) return bCompleted - aCompleted;
+
+      const aInProgress = countBy(aTasks, 'in-progress');
+      const bInProgress = countBy(bTasks, 'in-progress');
+      if (bInProgress !== aInProgress) return bInProgress - aInProgress;
+
+      const aPending = countBy(aTasks, 'pending');
+      const bPending = countBy(bTasks, 'pending');
+      if (bPending !== aPending) return bPending - aPending;
+
+      // fallback to total tasks
+      if (bTasks.length !== aTasks.length) return bTasks.length - aTasks.length;
+
+      // final fallback: alphabetical by employee name
+      const aName = (a.employee?.name || '').toLowerCase();
+      const bName = (b.employee?.name || '').toLowerCase();
+      if (aName < bName) return -1;
+      if (aName > bName) return 1;
+      return 0;
     });
 
     return (

@@ -1058,6 +1058,10 @@ export default {
   taskListing: {
     title: 'การจัดการงาน',
     individual: 'บุคคล',
+    assignDate: 'วันที่มอบหมาย',
+    team: 'ทีม',
+    taskManagement: 'การจัดการงาน',
+    viewTasks: 'ดูงาน',
     selectEmployee: 'เลือกพนักงาน',
     dueDate: 'วันครบกำหนด',
     manageTasks: 'จัดการงาน',
