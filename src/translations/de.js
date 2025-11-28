@@ -70,6 +70,12 @@ export default {
     footer: ' 2024 HR-Manager. Alle Rechte vorbehalten.'
   },
 
+  sidebar: {
+    main: 'HAUPT',
+    analytics: 'ANALYSEN',
+    settings: 'EINSTELLUNGEN'
+  },
+
   // Dashboard
   dashboard: {
     regularAndOvertimeByEmployee: 'Reguläre & Überstunden nach Mitarbeiter',

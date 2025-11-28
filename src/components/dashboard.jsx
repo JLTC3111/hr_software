@@ -290,7 +290,6 @@ export const MiniFlubberAutoMorphOfficeWork = ({
     { name: 'Alarm Clock', Icon: AlarmClock, status: 'standard' },
     { name: 'Computer', Icon: Laptop, status: 'standard' },
     { name: 'Drink', Icon: CupSoda, status: 'standard' },
-    { name: 'Food', Icon: Grape, status: 'standard' },
     { name: 'Document', Icon: Form, status: 'standard' },
     { name: 'Phone Calls', Icon: PhoneCall, status: 'standard' },
   ];
@@ -497,7 +496,7 @@ export const MiniFlubberAutoMorphOfficeWork = ({
   );
 };
 
-export const MiniFlubberAutoMorphHeartPlus = ({
+export const MiniFlubberAutoMorphOverTime = ({
   size = 24,
   className = '',
   isDarkMode = false,
@@ -533,7 +532,6 @@ export const MiniFlubberAutoMorphHeartPlus = ({
     { name: 'heart', Icon: Heart, status: 'standard' },
     { name: 'heartPlus', Icon: HeartPlus, status: 'standard' },
     { name: 'person', Icon: PersonStanding, status: 'standard' },
-    { name: 'biceps', Icon: BicepsFlexed, status: 'standard' },
     { name: 'house', Icon: HouseWifi, status: 'standard' },
     { name: 'fire', Icon: Flame, status: 'standard' },
   ];
@@ -1393,7 +1391,7 @@ const Dashboard = ({ employees, applications }) => {
           <StatsCard 
             title={t('dashboard.totalOvertime')} 
             value={`${totalOvertime}h`} 
-            icon={MiniFlubberAutoMorphHeartPlus} 
+            icon={MiniFlubberAutoMorphOverTime} 
             size={28}
             isDarkMode={isDarkMode}
             color={isDarkMode ? "#ffffff" : "#1f1f1f"}
@@ -1664,15 +1662,19 @@ const Dashboard = ({ employees, applications }) => {
                       <div style={{ fontWeight: 600, marginBottom: 8 }}>
                         {payload[0]?.payload?.fullName ? `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}` : label}
                       </div>
-                      {unique.map((p, idx) => (
-                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <div style={{ width: 10, height: 10, background: p.color || (isDarkMode ? '#F9FAFB' : '#111827'), borderRadius: 3 }} />
-                            <div>{p.name || p.dataKey}</div>
+                      {unique.map((p, idx) => {
+                        // Choose swatch color: prefer series color, else pick by dataKey
+                        const swatchColor = p.color || (p.dataKey === 'regularHours' ? '#2563EB' : (p.dataKey === 'overtimeHours' ? '#F59E0B' : (isDarkMode ? '#F9FAFB' : '#111827')));
+                        return (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div style={{ width: 10, height: 10, background: swatchColor, borderRadius: 3 }} />
+                              <div>{p.name || p.dataKey}</div>
+                            </div>
+                            <div style={{ fontWeight: 700 }}>{p.value}</div>
                           </div>
-                          <div style={{ fontWeight: 700 }}>{p.value}</div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   );
                 }}

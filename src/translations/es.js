@@ -95,6 +95,12 @@ login: {
     placeholder: 'Buscar empleados...'
   },
 
+  sidebar: {
+    main: 'PRINCIPAL',
+    analytics: 'ANÁLISIS',
+    settings: 'CONFIGURACIÓN',
+  },
+
   dashboard: {
     regularAndOvertimeByEmployee: 'Horas Regulares y Extra por Empleado',
     employeeLabel: 'Empleado',

@@ -70,6 +70,12 @@ export default {
     footer: '© 2024 Quản lý HR. Tất cả quyền được bảo lưu.'
   },
 
+  sidebar: {
+    main: 'Chính',
+    analytics: 'Phân Tích',
+    settings: 'Cài Đặt',
+  },
+
   // Dashboard
   dashboard: {
     regularAndOvertimeByEmployee: 'Giờ Thường & Giờ Làm Thêm',

@@ -35,5 +35,10 @@ export { AnimatedCoffeeIcon } from './timeTracking.jsx';
 export { MiniFlubberMorphingLeaveStatus } from './timeTracking.jsx';
 export { MiniFlubberAutoMorphEmployees } from './taskReview.jsx';
 export { MiniFlubberAutoMorphInProgress } from './taskReview.jsx';
-
+export { MiniFlubberAutoMorphTotalTasks } from './taskReview.jsx';
+export { MiniFlubberAutoMorphCompletionRate } from './taskReview.jsx';
+export { MiniFlubberAutoMorphVacation } from './dashboard.jsx';
+export { MiniFlubberAutoMorphOverTime } from './dashboard.jsx';
+export { MiniFlubberAutoMorphOfficeWork } from './dashboard.jsx';
+export { MiniFlubberAutoMorphPerformance } from './dashboard.jsx';
 // ...other exports

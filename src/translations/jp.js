@@ -70,6 +70,12 @@ export default {
     footer: '© 2024 HRマネージャー. All rights reserved.'
   },
 
+  sidebar: {
+    main: 'メイン',
+    analytics: '分析',
+    settings: '設定',
+  },
+
   // Dashboard
   dashboard: {
     regularAndOvertimeByEmployee: '従業員別の通常勤務時間と残業時間',

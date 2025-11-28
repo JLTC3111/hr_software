@@ -77,6 +77,12 @@ export default {
     fileReadError: 'Error reading file. Please try again.'
   },
 
+  sidebar: {
+    main: 'MAIN',
+    analytics: 'ANALYTICS',
+    settings: 'SETTINGS',
+  },
+
   // Dashboard
   dashboard: {
     regularAndOvertimeByEmployee: 'Regular & Overtime by Employee',

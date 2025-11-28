@@ -70,6 +70,12 @@ export default {
     footer: '© 2024 ผู้จัดการ HR สงวนลิขสิทธิ์'
   },
 
+  sidebar: {
+    main: 'หลัก',
+    analytics: 'การวิเคราะห์',
+    settings: 'การตั้งค่า',
+  },
+
   // Dashboard
   dashboard: {
     regularAndOvertimeByEmployee: 'ชั่วโมงปกติ & ล่วงเวลาตามพนักงาน',

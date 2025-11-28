@@ -70,6 +70,12 @@ export default {
     footer: '© 2024 Gestionnaire RH. Tous droits réservés.'
   },
 
+  sidebar: {
+    main: 'PRINCIPAL',
+    analytics: 'ANALYSES',
+    settings: 'PARAMÈTRES',
+  },
+
   // Dashboard
   dashboard: {
     regularAndOvertimeByEmployee: 'Heures Régulières et Supplémentaires par Employé',

@@ -70,6 +70,12 @@ export default {
     footer: '© 2024 HR Менеджер. Все права защищены.'
   },
 
+  sidebar: {
+    main: 'Главная',
+    analytics: 'Аналитика',
+    settings: 'Настройки',
+  },
+
   // Dashboard
   dashboard: {
     regularAndOvertimeByEmployee: 'Обычные и сверхурочные часы по сотрудникам',

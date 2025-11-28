@@ -47,7 +47,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   
   const menuStructure = [
     {
-      section: 'MAIN',
+      section: t('sidebar.main', 'MAIN'),
       items: [
         { path: '/time-clock', name: t('nav.timeClock'), icon: AlarmClock },
         { 
@@ -81,14 +81,14 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
       ]
     },
     {
-      section: 'ANALYTICS',
+      section: t('sidebar.analytics', 'ANALYTICS'),
       items: [
         { path: '/personal-goals', name: t('nav.personalGoals', 'Personal Goals'), icon: Award },
         { path: '/reports', name: t('nav.reports'), icon: FileText },
       ]
     },
     {
-      section: 'SETTINGS',
+      section: t('sidebar.settings', 'SETTINGS'),
       items: [
         { path: '/notifications', name: t('nav.notifications', 'Notifications'), icon: Bell },
         { path: '/settings', name: t('nav.settings', 'Settings'), icon: Cog },

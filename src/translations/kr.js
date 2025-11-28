@@ -70,6 +70,12 @@ export default {
     footer: '© 2024 HR 매니저. All rights reserved.'
   },
 
+  sidebar: {
+    main: '메인',
+    analytics: '분석',
+    settings: '설정',
+  },
+
   // Dashboard
   dashboard: {
     regularAndOvertimeByEmployee: '직원별 정규 및 초과 근무 시간',
