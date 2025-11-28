@@ -31,6 +31,8 @@ const TaskListing = ({ employees }) => {
 
   // Set selected employee - default to logged-in user's employeeId
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  // Modal mode: 'add' | 'assign' | 'edit' | null
+  const [modalMode, setModalMode] = useState(null);
   
   // Task form state
   const [taskForm, setTaskForm] = useState({
@@ -133,6 +135,7 @@ const TaskListing = ({ employees }) => {
       comments: '',
       assignedTo: selectedEmployee
     });
+    setModalMode(null);
   };
 
   // Handle ESC key to close modal
@@ -378,12 +381,13 @@ const TaskListing = ({ employees }) => {
                   comments: '',
                   assignedTo: canAssignTasks ? '' : selectedEmployee
                 });
+                setModalMode('add');
                 setShowAddTask(true);
               }}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 cursor-pointer"
             >
               <Plus className="w-4 h-4 cursor-pointer" />
-              <span>{canAssignTasks ? t('taskListing.assignTask', '') : t('taskListing.addTask', '')}</span>
+              <span>{t('taskListing.addTask', '')}</span>
             </button>
           </div>
 
@@ -451,6 +455,7 @@ const TaskListing = ({ employees }) => {
                           ...task,
                           assignedTo: task.employee_id
                         });
+                        setModalMode('edit');
                         setShowAddTask(true);
                       }}
                       className={`p-2 rounded cursor-pointer ${isDarkMode ? 'hover:bg-green-700' : 'hover:bg-green-100'}`}
@@ -527,6 +532,7 @@ const TaskListing = ({ employees }) => {
                     comments: '',
                     assignedTo: ''
                   });
+                  setModalMode('assign');
                   setShowAddTask(true);
                 }}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 cursor-pointer"
@@ -644,11 +650,16 @@ const TaskListing = ({ employees }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div ref={modalRef} className={`${bg.secondary} rounded-lg shadow-xl max-w-2xl w-full p-6`}>
             <h3 className={`text-xl font-semibold ${text.primary} mb-4`}>
-              {editingTask ? t('taskListing.editTask', '') : t('taskListing.addTask', '')}
+              {modalMode === 'assign'
+                ? t('taskListing.assignTask', 'Assign Task')
+                : modalMode === 'edit'
+                ? t('taskListing.editTask', '')
+                : t('taskListing.addTask', '')
+              }
             </h3>
             <div className="space-y-4">
-              {/* Employee Selector - Only for Admin/Manager */}
-              {canAssignTasks && (
+              {/* Employee Selector - only shown when assigning or editing (and assigners can assign) */}
+              {(modalMode === 'assign' || (modalMode === 'edit' && canAssignTasks)) && (
                 <div>
                   <label className={`block text-sm font-medium ${text.primary} mb-2`}>
                     {t('taskListing.assignTo', '')} *

@@ -1,11 +1,6 @@
 import { supabase } from '../config/supabaseClient';
 
 /**
- * Workload Management Service
- * Handles all database operations for task management
- */
-
-/**
  * Get all tasks for a specific employee
  * @param {number} employeeId - The employee ID
  * @returns {Promise<{success: boolean, data?: array, error?: string}>}
