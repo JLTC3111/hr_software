@@ -28,6 +28,8 @@ import {
   Goal,
   Crosshair,
   Save,
+  Ellipsis,
+  BellElectric,
   Eye
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
@@ -309,9 +311,9 @@ export const MiniFlubberAutoMorphInProgress = ({
   const icons = [
     { name: 'CircleQuestionMark', Icon: CircleQuestionMark, status: 'pending' },
     { name: 'Hourglass', Icon: Hourglass, status: 'standard' },
-    { name: 'Check', Icon: Check, status: 'approved' },
-    { name: 'Crosshair', Icon: Crosshair, status: 'stanard' },
-    { name: 'X', Icon: X, status: 'rejected' },
+    { name: 'Loading', Icon: Loader, status: 'standard' },
+    { name: '3 Dots', Icon: Ellipsis, status: 'stanard' },
+    { name: 'Bell', Icon: BellElectric, status: 'stanard' },
     { name: 'Goal', Icon: Goal, status: 'standard' },
   ];
 
