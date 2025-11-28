@@ -965,12 +965,14 @@ const TaskReview = ({ employees }) => {
   };
 
   // Organization View
-  const OrganizationView = () => (
-    <div className="space-y-6">
-      {orgStats && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <div className="flex items-center justify-between mb-2">
+  const OrganizationView = () => {
+    const filteredEmployees = employees.filter(emp => String(emp.id) !== String(user.employeeId || user.id));
+    return (
+      <div className="space-y-6">
+        {orgStats && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
+              <div className="flex items-center justify-between mb-2">
               <BarChart3 className={`w-5 h-5 ${text.secondary}`} />
               <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.totalTasks}</span>
             </div>
@@ -1018,7 +1020,7 @@ const TaskReview = ({ employees }) => {
           {t('taskReview.employeeBreakdown')}
         </h3>
         <div className="space-y-3">
-          {Object.values(tasksByEmployee).filter(({ tasks }) => tasks.length > 0).map(({ employee, tasks: empTasks }) => {
+          {Object.values(tasksByEmployee).filter(({ employee }) => filteredEmployees.some(e => e.id === employee.id)).filter(({ tasks }) => tasks.length > 0).map(({ employee, tasks: empTasks }) => {
             const isExpanded = expandedEmployee === employee.id;
             const progress = calculateProgress(empTasks);
             const avgQuality = calculateAvgQuality(empTasks);
@@ -1166,7 +1168,7 @@ const TaskReview = ({ employees }) => {
         </div>
       </div>
     </div>
-  );
+  )};
 
   const IndividualView = () => {
     const empData = selectedEmployee ? tasksByEmployee[selectedEmployee] : null;
