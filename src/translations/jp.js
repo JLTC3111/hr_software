@@ -72,6 +72,8 @@ export default {
 
   // Dashboard
   dashboard: {
+    regularAndOvertimeByEmployee: '従業員別の通常勤務時間と残業時間',
+    employeeLabel: '従業員',
     currentMonth: '今月のデータ',
     liveData: 'Supabaseからのライブデータ',
     noData: '利用可能なデータがありません',

@@ -72,7 +72,9 @@ export default {
 
   // Dashboard
   dashboard: {
+    regularAndOvertimeByEmployee: 'Giờ Thường & Giờ Làm Thêm',
     currentMonth: 'Tháng Hiện Tại',
+    employeeLabel: 'Nhân Viên',
     liveData: 'Dữ liệu trực tiếp từ Supabase',
     noData: 'Không có dữ liệu khả dụng',
     title: 'Tổng Quan Bảng Điều Khiển',

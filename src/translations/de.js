@@ -72,6 +72,8 @@ export default {
 
   // Dashboard
   dashboard: {
+    regularAndOvertimeByEmployee: 'Reguläre & Überstunden nach Mitarbeiter',
+    employeeLabel: 'Mitarbeiter',
     currentMonth: 'Aktueller Monat',
     liveData: 'Live-Daten von Supabase',
     noData: 'Keine Daten verfügbar von Supabase',

@@ -96,6 +96,8 @@ login: {
   },
 
   dashboard: {
+    regularAndOvertimeByEmployee: 'Horas Regulares y Extra por Empleado',
+    employeeLabel: 'Empleado',
     currentMonth: 'Mes Actual',
     liveData: 'Datos en vivo de Supabase',
     noData: 'No hay datos disponibles',

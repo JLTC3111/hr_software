@@ -1456,9 +1456,39 @@ const Dashboard = ({ employees, applications }) => {
                   labelFormatter={(label, payload) => {
                     // Show full employee name as tooltip label
                     if (payload && payload.length > 0 && payload[0].payload.fullName) {
-                      return `Employee: ${payload[0].payload.fullName}`;
+                      return `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}`;
                     }
                     return label;
+                  }}
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload || payload.length === 0) return null;
+
+                    // Deduplicate series by canonical key (prefer dataKey, fallback to name)
+                    const seen = new Set();
+                    const unique = payload.filter(p => {
+                      const labelText = String(p.dataKey || p.name || '').trim().toLowerCase();
+                      if (!labelText) return false;
+                      if (seen.has(labelText)) return false;
+                      seen.add(labelText);
+                      return true;
+                    });
+
+                    return (
+                      <div style={{ background: isDarkMode ? '#1F2937' : '#FFFFFF', border: `1px solid ${isDarkMode ? '#374151' : '#E5E7EB'}`, borderRadius: '0.5rem', padding: 10, color: isDarkMode ? '#F9FAFB' : '#111827' }}>
+                        <div style={{ fontWeight: 600, marginBottom: 8 }}>
+                          {payload[0]?.payload?.fullName ? `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}` : label}
+                        </div>
+                        {unique.map((p, idx) => (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div style={{ width: 10, height: 10, background: p.color || (isDarkMode ? '#F9FAFB' : '#111827'), borderRadius: 3 }} />
+                              <div>{p.name || p.dataKey}</div>
+                            </div>
+                            <div style={{ fontWeight: 700 }}>{p.value}</div>
+                          </div>
+                        ))}
+                      </div>
+                    );
                   }}
                 />
               <Legend wrapperStyle={{ color: isDarkMode ? '#FFFFFF' : '#111827' }} />
@@ -1571,29 +1601,31 @@ const Dashboard = ({ employees, applications }) => {
         </div>
       </div>
 
-      {/* Charts Row 2 - Regular Hours and Overtime Charts */}
+      {/* Charts Row 2 - Regular + Overtime Hours (Merged) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Regular Hours by Employee */}
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
+        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 lg:col-span-2`}>
           <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-            {t('dashboard.regularHoursByEmployee', 'Regular Hours by Employee')}
+            {t('dashboard.regularAndOvertimeByEmployee', 'Regular & Overtime Hours by Employee')}
           </h3>
-          <ResponsiveContainer width="100%" height={400}>
-            <ComposedChart 
+          <ResponsiveContainer width="100%" height={450}>
+            <ComposedChart
               data={allEmployeesData
                 .filter(item => item.data)
-                .sort((a, b) => (b.data?.regular_hours || 0) - (a.data?.regular_hours || 0))
-                .slice(0, 10)
                 .map(item => ({
                   name: getUniqueDisplayName(item.employee, employees),
                   fullName: item.employee.name,
-                  regularHours: item.data?.regular_hours || 0
-                }))}
-              margin={{ top: 5, right: 5, left: 0, bottom: 60 }}
+                  regularHours: item.data?.regular_hours || 0,
+                  overtimeHours: (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0)
+                }))
+                // Sort by total hours (regular + overtime) and show top 10
+                .sort((a, b) => (b.regularHours + b.overtimeHours) - (a.regularHours + a.overtimeHours))
+                .slice(0, 10)
+              }
+              margin={{ top: 5, right: 20, left: 0, bottom: 80 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
-              <XAxis 
-                dataKey="name" 
+              <XAxis
+                dataKey="name"
                 stroke={isDarkMode ? '#FFFFFF' : '#6B7280'}
                 angle={-45}
                 textAnchor="end"
@@ -1611,12 +1643,42 @@ const Dashboard = ({ employees, applications }) => {
                 }}
                 labelFormatter={(label, payload) => {
                   if (payload && payload.length > 0 && payload[0].payload.fullName) {
-                    return `Employee: ${payload[0].payload.fullName}`;
+                    return `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}`;
                   }
                   return label;
                 }}
+                content={({ active, payload, label }) => {
+                  if (!active || !payload || payload.length === 0) return null;
+
+                  const seen = new Set();
+                  const unique = payload.filter(p => {
+                    const labelText = String(p.dataKey || p.name || '').trim().toLowerCase();
+                    if (!labelText) return false;
+                    if (seen.has(labelText)) return false;
+                    seen.add(labelText);
+                    return true;
+                  });
+
+                  return (
+                    <div style={{ background: isDarkMode ? '#1F2937' : '#FFFFFF', border: `1px solid ${isDarkMode ? '#374151' : '#E5E7EB'}`, borderRadius: '0.5rem', padding: 10, color: isDarkMode ? '#F9FAFB' : '#111827' }}>
+                      <div style={{ fontWeight: 600, marginBottom: 8 }}>
+                        {payload[0]?.payload?.fullName ? `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}` : label}
+                      </div>
+                      {unique.map((p, idx) => (
+                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 10, height: 10, background: p.color || (isDarkMode ? '#F9FAFB' : '#111827'), borderRadius: 3 }} />
+                            <div>{p.name || p.dataKey}</div>
+                          </div>
+                          <div style={{ fontWeight: 700 }}>{p.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }}
               />
               <Legend wrapperStyle={{ color: isDarkMode ? '#FFFFFF' : '#111827' }} />
+
               <defs>
                 <linearGradient id="regularHoursGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#2563EB" stopOpacity={0.95} />
@@ -1624,76 +1686,10 @@ const Dashboard = ({ employees, applications }) => {
                   <stop offset="100%" stopColor="#000000" stopOpacity={0.85} />
                 </linearGradient>
               </defs>
-              <Bar dataKey="regularHours" fill="url(#regularHoursGradient)" name={t('dashboard.regularHoursLegend', 'Regular Hours')} radius={[8, 8, 0, 0]} />
-              <Line 
-                type="monotone" 
-                dataKey="regularHours" 
-                stroke="#10B981" 
-                strokeWidth={3}
-                dot={{ fill: '#10B981', r: 5 }}
-                legendType="none"
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
 
-        {/* Overtime Hours by Employee */}
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
-          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-            {t('dashboard.overtimeHoursByEmployee', 'Overtime Hours by Employee')}
-          </h3>
-          <ResponsiveContainer width="100%" height={400}>
-            <ComposedChart 
-              data={allEmployeesData
-                .filter(item => item.data)
-                .sort((a, b) => {
-                  const aTotal = (b.data?.overtime_hours || 0) + (b.data?.holiday_overtime_hours || 0);
-                  const bTotal = (a.data?.overtime_hours || 0) + (a.data?.holiday_overtime_hours || 0);
-                  return aTotal - bTotal;
-                })
-                .slice(0, 10)
-                .map(item => ({
-                  name: getUniqueDisplayName(item.employee, employees),
-                  fullName: item.employee.name,
-                  overtimeHours: ((item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0)).toFixed(1)
-                }))}
-              margin={{ top: 5, right: 5, left: 0, bottom: 60 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
-              <XAxis 
-                dataKey="name" 
-                stroke={isDarkMode ? '#FFFFFF' : '#6B7280'}
-                angle={-45}
-                textAnchor="end"
-                height={80}
-                interval={0}
-                tick={{ fontSize: 13, fill: isDarkMode ? '#FFFFFF' : '#374151' }}
-              />
-              <YAxis stroke={isDarkMode ? '#FFFFFF' : '#6B7280'} tick={{ fill: isDarkMode ? '#FFFFFF' : '#374151' }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
-                  border: `1px solid ${isDarkMode ? '#374151' : '#E5E7EB'}`,
-                  borderRadius: '0.5rem',
-                  color: isDarkMode ? '#F9FAFB' : '#111827',
-                }}
-                labelFormatter={(label, payload) => {
-                  if (payload && payload.length > 0 && payload[0].payload.fullName) {
-                    return `Employee: ${payload[0].payload.fullName}`;
-                  }
-                  return label;
-                }}
-              />
-              <Legend />
-              <Bar dataKey="overtimeHours" fill="#F59E0B" name={t('dashboard.totalOvertimeLegend', 'Total Overtime')} radius={[8, 8, 0, 0]} />
-              <Line 
-                type="monotone" 
-                dataKey="overtimeHours" 
-                stroke="#10B981" 
-                strokeWidth={3}
-                dot={{ fill: '#10B981', r: 5 }}
-                legendType="none"
-              />
+              <Bar dataKey="regularHours" fill="url(#regularHoursGradient)" name={t('dashboard.regularHoursLegend', 'Regular Hours')} radius={[8, 8, 0, 0]} />
+              <Bar dataKey="overtimeHours" fill="#F59E0B" name={t('dashboard.totalOvertimeLegend', 'Overtime Hours')} radius={[8, 8, 0, 0]} />
+
             </ComposedChart>
           </ResponsiveContainer>
         </div>
@@ -1735,9 +1731,39 @@ const Dashboard = ({ employees, applications }) => {
                   labelFormatter={(label, payload) => {
                     // Show full employee name as tooltip label
                     if (payload && payload.length > 0 && payload[0].payload.fullName) {
-                      return `Employee: ${payload[0].payload.fullName}`;
+                      return `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}`;
                     }
                     return label;
+                  }}
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload || payload.length === 0) return null;
+
+                    // Deduplicate by normalized displayed label (case-insensitive)
+                    const seen = new Set();
+                    const unique = payload.filter(p => {
+                      const labelText = String(p.dataKey || p.name || '').trim().toLowerCase();
+                      if (!labelText) return false;
+                      if (seen.has(labelText)) return false;
+                      seen.add(labelText);
+                      return true;
+                    });
+
+                    return (
+                      <div style={{ background: isDarkMode ? '#1F2937' : '#FFFFFF', border: `1px solid ${isDarkMode ? '#374151' : '#E5E7EB'}`, borderRadius: '0.5rem', padding: 10, color: isDarkMode ? '#F9FAFB' : '#111827' }}>
+                        <div style={{ fontWeight: 600, marginBottom: 8 }}>
+                          {payload[0]?.payload?.fullName ? `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}` : label}
+                        </div>
+                        {unique.map((p, idx) => (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div style={{ width: 10, height: 10, background: p.color || (isDarkMode ? '#F9FAFB' : '#111827'), borderRadius: 3 }} />
+                              <div>{p.name || p.dataKey}</div>
+                            </div>
+                            <div style={{ fontWeight: 700 }}>{p.value}</div>
+                          </div>
+                        ))}
+                      </div>
+                    );
                   }}
                 />
               <Legend />

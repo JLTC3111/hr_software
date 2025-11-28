@@ -72,6 +72,8 @@ export default {
 
   // Dashboard
   dashboard: {
+    regularAndOvertimeByEmployee: '직원별 정규 및 초과 근무 시간',
+    employeeLabel: '직원',
     currentMonth: '이번 달',
     liveData: 'Supabase에서 실시간 데이터',
     noData: '사용 가능한 데이터가 없습니다',

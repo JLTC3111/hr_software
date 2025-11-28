@@ -72,6 +72,8 @@ export default {
 
   // Dashboard
   dashboard: {
+    regularAndOvertimeByEmployee: 'ชั่วโมงปกติ & ล่วงเวลาตามพนักงาน',
+    employeeLabel: 'พนักงาน',
     currentMonth: 'ข้อมูลของเดือนนี้',
     liveData: 'ข้อมูลสดจาก Supabase',
     noData: 'ไม่มีข้อมูลที่พร้อมใช้งาน',
