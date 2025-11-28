@@ -304,6 +304,15 @@ const TaskListing = ({ employees }) => {
     }
   };
 
+  // Map certain statuses to a numeric percent for clarity
+  const statusToPercent = (status) => {
+    if (!status) return undefined;
+    const s = String(status).toLowerCase();
+    if (s === 'completed') return 100;
+    if (s === 'notstarted' || s === 'not_started' || s === 'not started' || s === 'notstarted') return 0;
+    return undefined;
+  };
+
   // Individual View
   const IndividualView = () => {
     const employeeTasks = getEmployeeTasks(selectedEmployee);
@@ -413,6 +422,9 @@ const TaskListing = ({ employees }) => {
                       </span>
                       <span className={`px-2 py-1 rounded text-xs ${getStatusColor(task.status)}`}>
                         {t(`taskListing.${task.status}`, task.status)}
+                        {typeof statusToPercent === 'function' && statusToPercent(task.status) !== undefined ? (
+                          <span className="ml-1">({statusToPercent(task.status)})</span>
+                        ) : null}
                       </span>
                       {canAssignTasks && task.employee && (
                         <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-white' : 'bg-blue-100 text-blue-800'}`}>
@@ -492,6 +504,15 @@ const TaskListing = ({ employees }) => {
       avgQuality: calculateAvgQuality(getEmployeeTasks(emp.id))
     }));
 
+    // Sort employees by number of ongoing tasks (status === 'in-progress') desc
+    const orgStatsSorted = [...orgStats].sort((a, b) => {
+      const aOngoing = (a.tasks || []).filter(t => t.status === 'in-progress').length;
+      const bOngoing = (b.tasks || []).filter(t => t.status === 'in-progress').length;
+      // If ongoing counts equal, fall back to total tasks count
+      if (bOngoing !== aOngoing) return bOngoing - aOngoing;
+      return (b.tasks || []).length - (a.tasks || []).length;
+    });
+
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -543,7 +564,7 @@ const TaskListing = ({ employees }) => {
             )}
           </div>
           <div className="space-y-3">
-            {orgStats.map(({ employee, tasks, progress, avgQuality }) => (
+            {orgStatsSorted.map(({ employee, tasks, progress, avgQuality }) => (
               <div key={employee.id} className={`border ${border.primary} rounded-lg p-4`}>
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-3">
