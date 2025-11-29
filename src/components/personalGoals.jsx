@@ -753,7 +753,7 @@ const PersonalGoals = ({ employees }) => {
                     {getStatusText(goal.status)}
                   </span>
                   <button 
-                    className={`p-1.5 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} rounded transition-colors border`}
+                    className={`cursor-pointer ${isDarkMode ? 'hover:bg-gray-50' : 'hover:bg-gray-800'} rounded transition-colors border`}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleEditGoal(goal);
@@ -765,7 +765,7 @@ const PersonalGoals = ({ employees }) => {
                       borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
                     }}
                   >
-                    <Edit className={`h-3.5 w-3.5 ${text.secondary}`} />
+                    <Edit className={`h-4.5 w-4.5 ${text.secondary}`} />
                   </button>
                 </div>
               </div>
