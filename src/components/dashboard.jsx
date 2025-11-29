@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Briefcase, Clock, Heart, AlertCircle, TreePalm, Car, Salad, Clapperboard, Laptop, Form, PhoneCall, CupSoda, Grape, BicepsFlexed, Flame, DatabaseZap, Loader, HouseWifi, Funnel, HeartPlus, Coffee, AlarmClock, Gauge, BriefcaseBusiness, WifiPen, TrendingUp, LineChart, BatteryCharging, PersonStanding, Volleyball } from 'lucide-react'
+import { Clock, Heart, AlertCircle, TreePalm, Car, Salad, Clapperboard, Laptop, Form, PhoneCall, CupSoda, Grape, BicepsFlexed, Flame, DatabaseZap, Loader, HouseWifi, Funnel, HeartPlus, Coffee, AlarmClock, Gauge, BriefcaseBusiness, WifiPen, TrendingUp, LineChart, BatteryCharging, PersonStanding, Volleyball, FileUser } from 'lucide-react'
 import StatsCard from './statsCard.jsx'
 import MetricDetailModal from './metricDetailModal.jsx'
 import { useTheme } from '../contexts/ThemeContext'
@@ -1887,7 +1887,7 @@ const Dashboard = ({ employees, applications }) => {
           className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
         >
           <div className="flex items-center space-x-3 mb-2">
-            <Clock className={`w-5 h-5 ${text.primary}`} />
+            <AnimatedClockIcon isDarkMode={isDarkMode} className={`w-5 h-5 ${text.primary}`} />
             <h4 className={`font-semibold ${text.primary}`}>
               {t('dashboard.totalWorkDays')}
             </h4>
@@ -1903,7 +1903,7 @@ const Dashboard = ({ employees, applications }) => {
           className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
         >
           <div className="flex items-center space-x-3 mb-2">
-            <Briefcase className={`w-5 h-5 ${text.primary}`} />
+            <FileUser className={`w-5 h-5 ${text.primary}`} />
             <h4 className={`font-semibold ${text.primary}`}>
               {t('dashboard.activeApplications')}
             </h4>
@@ -1919,7 +1919,7 @@ const Dashboard = ({ employees, applications }) => {
           className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
         >
           <div className="flex items-center space-x-3 mb-2">
-            <AlertCircle className={`w-5 h-5 ${text.primary}`} />
+            <MiniFlubberAutoMorphInProgress isDarkMode={isDarkMode} className={`w-5 h-5 ${text.primary}`} />
             <h4 className={`font-semibold ${text.primary}`}>
               {t('dashboard.pendingRequests')}
             </h4>
