@@ -23,11 +23,30 @@ const PersonalGoals = ({ employees }) => {
   const canViewAllEmployees = checkPermission('canViewReports');
 
   // Filter employees based on role
-  const availableEmployees = canViewAllEmployees 
-    ? employees 
+  const availableEmployees = canViewAllEmployees
+    ? employees
     : employees.filter(emp => String(emp.id) === String(user?.employeeId || user?.id));
 
-  const [selectedEmployee, setSelectedEmployee] = useState(availableEmployees[0]?.id ? String(availableEmployees[0].id) : null);
+  // Default the selected employee to the logged-in user's employee id (or user id)
+  const defaultEmployeeId = user?.employeeId
+    ? String(user.employeeId)
+    : user?.id
+    ? String(user.id)
+    : (availableEmployees[0]?.id ? String(availableEmployees[0].id) : null);
+
+  const [selectedEmployee, setSelectedEmployee] = useState(defaultEmployeeId);
+
+  // If `user` or `availableEmployees` arrive after mount, ensure we pick the logged-in user
+  useEffect(() => {
+    if (!selectedEmployee) {
+      const fallback = user?.employeeId
+        ? String(user.employeeId)
+        : user?.id
+        ? String(user.id)
+        : (availableEmployees[0]?.id ? String(availableEmployees[0].id) : null);
+      if (fallback) setSelectedEmployee(fallback);
+    }
+  }, [user, availableEmployees]);
   const [selectedPeriod, setSelectedPeriod] = useState(() => getCurrentQuarter());
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
@@ -704,7 +723,7 @@ const PersonalGoals = ({ employees }) => {
             
           >
             <Plus className={`h-4 w-4 ${text.secondary}`} />
-            <span>{t('personalGoals.addGoal')}</span>
+            <span style={{ color: isDarkMode ? '#ffffff' : '#111827' }}>{t('personalGoals.addGoal')}</span>
           </button>
         </div>
         <div className="space-y-4">
@@ -1290,7 +1309,8 @@ const PersonalGoals = ({ employees }) => {
                   step="0.5"
                   value={goalForm.progressPercentage}
                   onChange={(e) => setGoalForm({...goalForm, progressPercentage: parseFloat(e.target.value)})}
-                  className="w-full h-3 rounded-lg appearance-none cursor-pointer"
+                  className={`w-full h-3 rounded-lg appearance-none cursor-pointer ${goalForm.progressPercentage === 100 ? 'cursor-not-allowed opacity-50' : ''}`}
+                  disabled={goalForm.progressPercentage === 100}
                   style={{
                     background: isDarkMode
                       ? `linear-gradient(to right,
