@@ -21,8 +21,8 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
-    clockIn: '',
-    clockOut: '',
+    clockIn: '09:00',
+    clockOut: '17:00',
     hourType: 'regular',
     notes: '',
     proofFile: null
@@ -466,14 +466,17 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
           <label className={`block text-sm font-medium ${text.primary} mb-2`}>
             {t('adminTimeEntry.date', 'Date')} *
           </label>
-          <div className="relative">
+          <div 
+            className="relative cursor-pointer"
+            onClick={() => document.getElementById('admin-date-input')?.showPicker?.()}
+          >
             <input
               id="admin-date-input"
               type="date"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               max={new Date().toISOString().split('T')[0]}
-              className={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
+              className={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
               required
             />
             <Calendar className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none`} />
@@ -488,7 +491,18 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
             </label>
             <div 
               className="relative cursor-pointer"
-              onClick={() => document.getElementById('admin-clockin-input').showPicker?.()}
+              onClick={() => {
+                const input = document.getElementById('admin-clockin-input');
+                if (input) {
+                  // If no value yet, set a default before opening the picker so picker shows it
+                  if (!formData.clockIn) {
+                    const defaultIn = '09:00';
+                    setFormData(fd => ({ ...fd, clockIn: defaultIn }));
+                    try { input.value = defaultIn; } catch (e) {}
+                  }
+                  input.showPicker?.();
+                }
+              }}
             >
               <input
                 id="admin-clockin-input"
@@ -507,7 +521,17 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
             </label>
             <div 
               className="relative cursor-pointer"
-              onClick={() => document.getElementById('admin-clockout-input').showPicker?.()}
+              onClick={() => {
+                const input = document.getElementById('admin-clockout-input');
+                if (input) {
+                  if (!formData.clockOut) {
+                    const defaultOut = '17:00';
+                    setFormData(fd => ({ ...fd, clockOut: defaultOut }));
+                    try { input.value = defaultOut; } catch (e) {}
+                  }
+                  input.showPicker?.();
+                }
+              }}
             >
               <input
                 id="admin-clockout-input"
