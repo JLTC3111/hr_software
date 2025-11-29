@@ -83,7 +83,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
     {
       section: t('sidebar.analytics', 'ANALYTICS'),
       items: [
-        /*{ path: '/personal-goals', name: t('nav.personalGoals', 'Personal Goals'), icon: Award },*/
+        { path: '/personal-goals', name: t('nav.personalGoals', 'Personal Goals'), icon: Award },
         { path: '/reports', name: t('nav.reports'), icon: FileText },
       ]
     },
