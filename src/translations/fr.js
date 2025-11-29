@@ -858,6 +858,8 @@ export default {
   // Common
   common: {
     results: 'résultats',
+    update: 'Mettre à jour',
+    updating: 'Mise à jour...', 
     employee: 'Employé',
     employees: 'Employés',
     timeEntry: 'Saisie de temps',

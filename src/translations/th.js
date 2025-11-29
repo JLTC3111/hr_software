@@ -737,6 +737,8 @@ export default {
   // Common
   common: {
     results: 'ผลลัพธ์',
+    update: 'อัปเดต',
+    updating: 'กำลังอัปเดต...',
     loadingData: 'กำลังโหลดข้อมูล...',
     noResults: 'ไม่พบผลลัพธ์',
     actions: 'การดำเนินการ',

@@ -841,6 +841,8 @@ login: {
   // Common
   common: {
     results: 'Resultados',
+    update: 'Actualizar',
+    updating: 'Actualizando...',
     employee: 'Empleado',
     employees: 'Empleados',
     timeEntry: 'Entrada de Tiempo',

@@ -704,6 +704,8 @@ export default {
   // Common
   common: {
     results: '결과',
+    update: '업데이트',
+    updating: '업데이트 중...',
     leaveRequest: '휴가 요청',
     search: '검색',
     filter: '필터',

@@ -702,6 +702,8 @@ export default {
     saving: 'Wird gespeichert...',
     cancel: 'Abbrechen',
     delete: 'Löschen',
+    update: 'Aktualisieren',
+    updating: 'Wird aktualisiert...',
     edit: 'Bearbeiten',
     view: 'Anzeigen',
     add: 'Hinzufügen',

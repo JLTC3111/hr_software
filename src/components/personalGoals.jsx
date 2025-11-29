@@ -664,9 +664,9 @@ const PersonalGoals = ({ employees }) => {
                     handleUpdateSkillRating(skillName, category, newRating);
                   }}
                   className="w-full h-2 rounded-lg appearance-none cursor-pointer"
-                  style={{
-                      background: `linear-gradient(to right, #9f9f9f 0%, #9f9f9f 2.5%,  #ff8c00 5%, #ff8c00, ${(currentRating / 5) * 100}%, ${isDarkMode ? '#4b5563' : '#e5e7eb'} ${(currentRating / 5) * 100}%, ${isDarkMode ? '#4b5563' : '#e5e7eb'} 100%)`
-                  }}
+                    style={{
+                      background: `linear-gradient(to right, #9f9f9f 0%, #9f9f9f 2.5%, ${isDarkMode ? '#ffffff' : '#374151'} ${(currentRating / 5) * 100}%, ${isDarkMode ? '#4b5563' : '#e5e7eb'} ${(currentRating / 5) * 100}%, ${isDarkMode ? '#4b5563' : '#e5e7eb'} 100%)`
+                    }}
                  />
                 <div className="flex justify-between text-xs text-gray-500">
                   <span>{t('personalGoals.beginner', 'Beginner')}</span>
@@ -1230,7 +1230,7 @@ const PersonalGoals = ({ employees }) => {
             }}
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">{t('personalGoals.editGoal', 'Edit Goal')}</h2>
+              <h2 className="text-2xl font-bold">{t('personalGoals.title', 'Edit Goal')}</h2>
               <button
                 onClick={() => {
                   setShowEditGoalModal(false);
@@ -1243,7 +1243,6 @@ const PersonalGoals = ({ employees }) => {
             </div>
 
             <form onSubmit={handleUpdateGoal} className="space-y-4">
-              {/* Title */}
               <div>
                 <label className="block text-sm font-medium mb-2">
                   {t('personalGoals.goalTitle', 'Goal Title')} <span className="text-red-500">*</span>
@@ -1262,7 +1261,6 @@ const PersonalGoals = ({ employees }) => {
                 />
               </div>
 
-              {/* Description */}
               <div>
                 <label className="block text-sm font-medium mb-2">
                   {t('personalGoals.goalDescription', 'Description')}
@@ -1279,38 +1277,37 @@ const PersonalGoals = ({ employees }) => {
                   }}
                 />
               </div>
-
-              {/* Progress Percentage Slider */}
+            
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  {t('personalGoals.progressPercentage', 'Progress')} 
+                  {t('personalGoals.progress', 'Progress')} 
                   <span className="ml-2 font-bold text-red-600">{goalForm.progressPercentage}%</span>
                 </label>
                 <input
                   type="range"
                   min="0"
                   max="100"
-                  step="5"
+                  step="0.5"
                   value={goalForm.progressPercentage}
-                  onChange={(e) => setGoalForm({...goalForm, progressPercentage: parseInt(e.target.value)})}
+                  onChange={(e) => setGoalForm({...goalForm, progressPercentage: parseFloat(e.target.value)})}
                   className="w-full h-3 rounded-lg appearance-none cursor-pointer"
                   style={{
-                  background: isDarkMode
-                    ? `linear-gradient(to right,
-                        #6b7280 0%,
-                        #6b7280 2.5%,
-                        #4a0000 ${goalForm.progressPercentage * 0.5}%,
-                        #ff4545 ${goalForm.progressPercentage}%,
-                        #374151 ${goalForm.progressPercentage}%,
-                        #374151 100%)`
-                    : `linear-gradient(to right,
-                        #9f9f9f 0%,
-                        #9f9f9f 2.5%,
-                        #4a0000 ${goalForm.progressPercentage * 0.5}%,
-                        #ff4545 ${goalForm.progressPercentage}%,
-                        #d1d5db ${goalForm.progressPercentage}%,
-                        #d1d5db 100%)`
-                }}
+                    background: isDarkMode
+                      ? `linear-gradient(to right,
+                          #6b7280 0%,
+                          #6b7280 2.5%,
+                          #ffffff ${goalForm.progressPercentage * 0.5}%,
+                          #ffffff ${goalForm.progressPercentage}%,
+                          #ffffff ${goalForm.progressPercentage}%,
+                          #ffffff 100%)`
+                      : `linear-gradient(to right,
+                          #9f9f9f 0%,
+                          #9f9f9f 2.5%,
+                          #000000 ${goalForm.progressPercentage * 0.5}%,
+                          #000000 ${goalForm.progressPercentage}%,
+                          #000000 ${goalForm.progressPercentage}%,
+                          #000000 100%)`
+                  }}
                 />
                 <div className="flex justify-between text-xs mt-1" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
                   <span>0%</span>
@@ -1438,8 +1435,8 @@ const PersonalGoals = ({ employees }) => {
                   disabled={loading}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Save className={`h-4 w-4 ${text.secondary}`} />
-                  <span>{loading ? t('common.updating', 'Updating...') : t('common.update', 'Update')}</span>
+                  <Save className={`h-4 w-4 ${isDarkMode ? 'text-white' : 'text-white'}`} />
+                  <span>{loading ? t('common.updating', 'Updating...') : t('common.update', '')}</span>
                 </button>
               </div>
             </form>

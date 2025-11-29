@@ -797,6 +797,10 @@ export default {
   // Common
   common: {
     results: 'Найдено результатов',
+    update: 'Обновить',
+    updating: 'Обновление...',
+    canceling: 'Отмена...',
+    recordTime: 'Записать время',
     leaveRequest: 'Запрос на отпуск',
     overtimeLog: 'Запись сверхурочных',
     report: 'Отчёт',

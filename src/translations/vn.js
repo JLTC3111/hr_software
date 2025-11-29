@@ -940,6 +940,8 @@ export default {
 
   // Common
   common: {
+    update: 'Cập Nhật',
+    updating: 'Đang Cập Nhật...',
     results: 'Kết Quả',
     total: 'Tổng',
     employees: 'Nhân Viên',
