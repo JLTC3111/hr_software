@@ -292,7 +292,7 @@ export default {
     holiday: 'Ngày Lễ',
     bonusHours: 'Giờ Làm Thêm',
     notes: 'Ghi Chú',
-    notesPlaceholder: 'Thêm ghi chú về mục nhập giờ này...',
+    notesPlaceholder: 'Thêm Ghi Chú: VD: Làm tại VP, Đi họp tại...Đi công tác ở...',
     submitButton: 'Gửi Mục Nhập Giờ',
     submitBulkEntries: 'Gửi Mục Nhập Cho Nhân Viên',
     submitting: 'Đang gửi...',

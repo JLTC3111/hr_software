@@ -21,8 +21,8 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
-    clockIn: '09:00',
-    clockOut: '17:00',
+    clockIn: '',
+    clockOut: '',
     hourType: 'regular',
     notes: '',
     proofFile: null
