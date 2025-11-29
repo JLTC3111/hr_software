@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Sparkle, TrendingUp, Calendar, User, Award, Goal, MessageSquare, Plus, Edit, Eye, X, Save, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Star, Sparkle, TrendingUp, Calendar, User, Award, Goal, ShieldEllipsis, MessageSquare, Plus, Edit, Eye, X, Save, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,6 +11,14 @@ const PersonalGoals = ({ employees }) => {
   const { isDarkMode, text, bg, border } = useTheme();
   const { user, checkPermission } = useAuth();
 
+  // Helper to compute the current year-quarter string, e.g. '2025-q4'
+  const getCurrentQuarter = (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = date.getMonth(); // 0-11
+    const quarter = Math.floor(month / 3) + 1; // 1-4
+    return `${year}-q${quarter}`;
+  };
+
   // Check if user can view other employees' performance
   const canViewAllEmployees = checkPermission('canViewReports');
 
@@ -20,7 +28,7 @@ const PersonalGoals = ({ employees }) => {
     : employees.filter(emp => String(emp.id) === String(user?.employeeId || user?.id));
 
   const [selectedEmployee, setSelectedEmployee] = useState(availableEmployees[0]?.id ? String(availableEmployees[0].id) : null);
-  const [selectedPeriod, setSelectedPeriod] = useState('2024-q4');
+  const [selectedPeriod, setSelectedPeriod] = useState(() => getCurrentQuarter());
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
   const [showEditGoalModal, setShowEditGoalModal] = useState(false);
@@ -384,12 +392,13 @@ const PersonalGoals = ({ employees }) => {
     skills: skills
   };
 
-  const periods = [
-    { value: '2024-q4', label: t('personalGoals.q4_2024') },
-    { value: '2024-q3', label: t('personalGoals.q3_2024') },
-    { value: '2024-q2', label: t('personalGoals.q2_2024') },
-    { value: '2024-q1', label: t('personalGoals.q1_2024') }
-  ];
+  // Generate period options for the current year (Q1..Q4).
+  // Labels use translation keys if available, otherwise fall back to "<year> Q<quarter>".
+  const currentYear = new Date().getFullYear();
+  const periods = [1, 2, 3, 4].map(q => ({
+    value: `${currentYear}-q${q}`,
+    label: t(`personalGoals.q${q}_${currentYear}`, `${currentYear} Q${q}`)
+  }));
 
   const StarRating = ({ rating, size = 'w-5 h-5', editable = false, onRatingChange }) => {
     const [hoverRating, setHoverRating] = useState(0);
@@ -416,23 +425,13 @@ const PersonalGoals = ({ employees }) => {
           <Star
             key={star}
             className={`${size} ${
-              star <= (hoverRating || newRating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
+              star <= (hoverRating || newRating) ? `${text.primary} fill-current` : 'text-gray-300'
             } ${editable ? 'cursor-pointer hover:scale-110 transition-transform' : ''}`}
             onClick={() => handleStarClick(star)}
             onMouseEnter={() => handleStarHover(star)}
             onMouseLeave={() => setHoverRating(0)}
           />
         ))}
-        <span 
-          className="ml-2 text-sm font-medium"
-          style={{
-            backgroundColor: 'transparent',
-            color: isDarkMode ? '#d1d5db' : '#374151',
-            borderColor: 'transparent'
-          }}
-        >
-          {newRating.toFixed(1)}
-        </span>
       </div>
     );
   };
@@ -493,39 +492,13 @@ const PersonalGoals = ({ employees }) => {
           >
             {t('personalGoals.overallPerformance')}
           </h3>
-          <div className="flex items-center space-x-2">
-            <TrendingUp className="h-5 w-5 text-green-600" />
-            <span 
-              className="text-2xl font-bold"
-              style={{
-                backgroundColor: 'transparent',
-                color: isDarkMode ? '#ffffff' : '#111827',
-                borderColor: 'transparent'
-              }}
-            >
-              {currentData.overallRating.toFixed(1)}
-            </span>
-            <span 
-              className="text-gray-500"
-              style={{
-                backgroundColor: 'transparent',
-                color: isDarkMode ? '#9ca3af' : '#6b7280',
-                borderColor: 'transparent'
-              }}
-            >
-              /5.0
-            </span>
-          </div>
+         
         </div>
         <StarRating 
           rating={currentData.overallRating} 
           size="w-6 h-6" 
-          editable={true}
-          onRatingChange={handleUpdatePerformanceRating}
+          editable={false}
         />
-        <p className={`text-xs mt-2 ${text.secondary}`}>
-          {t('personalGoals.clickToRate', '')}
-        </p>
       </div>
 
       {/* Quick Stats */}
@@ -540,7 +513,7 @@ const PersonalGoals = ({ employees }) => {
         >
           <div className="flex items-center space-x-3">
             <div className="p-3 bg-transparent rounded-full">
-              <Goal className={`h-6 w-6 ${text.primary}`} />
+              <ShieldEllipsis className={`h-6 w-6 ${text.primary}`} />
             </div>
             <div>
               <p 
@@ -551,7 +524,7 @@ const PersonalGoals = ({ employees }) => {
                   borderColor: 'transparent'
                 }}
               >
-                {t('personalGoals.goalsCompleted')}
+                {t('personalGoals.goalsInProgress', 'Goals In Progress')}
               </p>
               <p 
                 className="text-2xl font-bold"
@@ -561,12 +534,11 @@ const PersonalGoals = ({ employees }) => {
                   borderColor: 'transparent'
                 }}
               >
-                {currentData.goals.filter(g => g.status === 'completed').length}/{currentData.goals.length}
+                {currentData.goals.filter(g => g.status === 'in_progress' || g.status === 'in-progress').length}
               </p>
             </div>
           </div>
         </div>
-        
         <div 
           className="rounded-lg shadow-sm border p-6"
           style={{
@@ -602,6 +574,42 @@ const PersonalGoals = ({ employees }) => {
                   ? (currentData.skills.reduce((acc, skill) => acc + skill.rating, 0) / currentData.skills.length).toFixed(1)
                   : '0.0'
                 }
+              </p>
+            </div>
+          </div>
+        </div>
+        <div 
+          className="rounded-lg shadow-sm border p-6"
+          style={{
+            backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+            color: isDarkMode ? '#ffffff' : '#111827',
+            borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
+          }}
+        >
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-transparent rounded-full">
+              <Goal className={`h-6 w-6 ${text.primary}`} />
+            </div>
+            <div>
+              <p 
+                className="text-sm"
+                style={{
+                  backgroundColor: 'transparent',
+                  color: isDarkMode ? '#d1d5db' : '#4b5563',
+                  borderColor: 'transparent'
+                }}
+              >
+                {t('personalGoals.goalsCompleted')}
+              </p>
+              <p 
+                className="text-2xl font-bold"
+                style={{
+                  backgroundColor: 'transparent',
+                  color: isDarkMode ? '#ffffff' : '#111827',
+                  borderColor: 'transparent'
+                }}
+              >
+                {currentData.goals.filter(g => g.status === 'completed').length}/{currentData.goals.length}
               </p>
             </div>
           </div>
@@ -742,7 +750,7 @@ const PersonalGoals = ({ employees }) => {
                   </button>
                 </div>
               </div>
-              {/* Progress bar removed — show progress as simple text below */}
+          
               <div className="flex items-center justify-between text-sm">
                 <span 
                   style={{
@@ -864,8 +872,6 @@ const PersonalGoals = ({ employees }) => {
                   {progressChanges[goal.id] !== undefined ? progressChanges[goal.id] : goal.progress}%
                 </span>
               </div>
-              
-              {/* Inline progress control removed — showing progress as text above */}
             </div>
 
             <div className="flex items-center justify-between text-sm">
@@ -899,7 +905,6 @@ const PersonalGoals = ({ employees }) => {
     </div>
   );
 
-  // Get current employee data
   const currentEmployee = availableEmployees.find(emp => String(emp.id) === selectedEmployee);
 
   return (
@@ -1290,14 +1295,22 @@ const PersonalGoals = ({ employees }) => {
                   onChange={(e) => setGoalForm({...goalForm, progressPercentage: parseInt(e.target.value)})}
                   className="w-full h-3 rounded-lg appearance-none cursor-pointer"
                   style={{
-                    background: `linear-gradient(to right, 
-                      #9f9f9f 0%, 
-                      #9f9f9f 2.5%,
-                      #4a0000 ${goalForm.progressPercentage * 0.5}%,
-                      #ff4545 ${goalForm.progressPercentage}%, 
-                      ${isDarkMode ? '#4b5563' : '#d1d5db'} ${goalForm.progressPercentage}%, 
-                      ${isDarkMode ? '#4b5563' : '#d1d5db'} 100%)`
-                  }}
+                  background: isDarkMode
+                    ? `linear-gradient(to right,
+                        #6b7280 0%,
+                        #6b7280 2.5%,
+                        #4a0000 ${goalForm.progressPercentage * 0.5}%,
+                        #ff4545 ${goalForm.progressPercentage}%,
+                        #374151 ${goalForm.progressPercentage}%,
+                        #374151 100%)`
+                    : `linear-gradient(to right,
+                        #9f9f9f 0%,
+                        #9f9f9f 2.5%,
+                        #4a0000 ${goalForm.progressPercentage * 0.5}%,
+                        #ff4545 ${goalForm.progressPercentage}%,
+                        #d1d5db ${goalForm.progressPercentage}%,
+                        #d1d5db 100%)`
+                }}
                 />
                 <div className="flex justify-between text-xs mt-1" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
                   <span>0%</span>
