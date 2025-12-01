@@ -1312,21 +1312,12 @@ const PersonalGoals = ({ employees }) => {
                   className={`w-full h-3 rounded-lg appearance-none cursor-pointer ${goalForm.progressPercentage === 100 ? 'cursor-not-allowed opacity-50' : ''}`}
                   disabled={goalForm.progressPercentage === 100}
                   style={{
-                    background: isDarkMode
-                      ? `linear-gradient(to right,
-                          #6b7280 0%,
-                          #6b7280 2.5%,
-                          #ffffff ${goalForm.progressPercentage * 0.5}%,
-                          #ffffff ${goalForm.progressPercentage}%,
-                          #ffffff ${goalForm.progressPercentage}%,
-                          #ffffff 100%)`
-                      : `linear-gradient(to right,
-                          #9f9f9f 0%,
-                          #9f9f9f 2.5%,
-                          #000000 ${goalForm.progressPercentage * 0.5}%,
-                          #000000 ${goalForm.progressPercentage}%,
-                          #000000 ${goalForm.progressPercentage}%,
-                          #000000 100%)`
+                    background: `linear-gradient(to right,
+                      ${isDarkMode ? '#6b7280' : '#9f9f9f'} 0%,
+                      ${isDarkMode ? '#6b7280' : '#9f9f9f'} 2.5%,
+                      ${isDarkMode ? '#ffffff' : '#374151'} ${goalForm.progressPercentage}%,
+                      ${isDarkMode ? '#4b5563' : '#e5e7eb'} ${goalForm.progressPercentage}%,
+                      ${isDarkMode ? '#4b5563' : '#e5e7eb'} 100%)`
                   }}
                 />
                 <div className="flex justify-between text-xs mt-1" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>

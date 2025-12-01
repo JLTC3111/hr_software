@@ -561,6 +561,24 @@ const Reports = () => {
   const exportToExcel = async () => {
     setExporting(true);
     try {
+      // Helpers for safe values and typing
+      const sanitize = (v) => {
+        if (v == null) return '';
+        const s = String(v);
+        return (/^[=+\-@]/.test(s) ? "'" + s : s);
+      };
+
+      const toDate = (d) => {
+        if (!d) return null;
+        const dt = new Date(d);
+        return isNaN(dt.getTime()) ? null : dt;
+      };
+
+      const toNumber = (n, fallback = 0) => {
+        const num = Number(n);
+        return Number.isFinite(num) ? num : fallback;
+      };
+
       const workbook = new ExcelJS.Workbook();
       workbook.creator = 'HR Management System';
       workbook.created = new Date();
@@ -624,21 +642,21 @@ const Reports = () => {
         currentRow++;
         
         // Metrics
-        const addMetric = (label, value) => {
+        const addMetric = (label, value, isNumeric = false) => {
           summarySheet.getCell(`A${currentRow}`).value = label;
-          summarySheet.getCell(`B${currentRow}`).value = value;
+          summarySheet.getCell(`B${currentRow}`).value = isNumeric ? toNumber(value) : sanitize(value);
           summarySheet.getCell(`A${currentRow}`).font = { bold: true };
           summarySheet.getCell(`B${currentRow}`).alignment = { horizontal: 'right' };
           currentRow++;
         };
-        
-        addMetric('Total Time Entries:', reportData.timeEntries.length);
-        addMetric('Total Hours Logged:', totalHours.toFixed(2));
-        addMetric('Regular Hours:', regularHours.toFixed(2));
-        addMetric('Overtime Hours:', overtimeHours.toFixed(2));
-        addMetric('WFH Hours:', wfhHours.toFixed(2));
-        addMetric('Pending Approvals:', pendingEntries);
-        addMetric('Approved Entries:', approvedEntries);
+
+        addMetric('Total Time Entries:', reportData.timeEntries.length, true);
+        addMetric('Total Hours Logged:', totalHours, true);
+        addMetric('Regular Hours:', regularHours, true);
+        addMetric('Overtime Hours:', overtimeHours, true);
+        addMetric('WFH Hours:', wfhHours, true);
+        addMetric('Pending Approvals:', pendingEntries, true);
+        addMetric('Approved Entries:', approvedEntries, true);
         currentRow++;
       }
       
@@ -657,21 +675,21 @@ const Reports = () => {
         summarySheet.mergeCells(`A${currentRow}:B${currentRow}`);
         currentRow++;
         
-        const addMetric = (label, value) => {
+        const addMetric = (label, value, isNumeric = false) => {
           summarySheet.getCell(`A${currentRow}`).value = label;
-          summarySheet.getCell(`B${currentRow}`).value = value;
+          summarySheet.getCell(`B${currentRow}`).value = isNumeric ? toNumber(value) : sanitize(value);
           summarySheet.getCell(`A${currentRow}`).font = { bold: true };
           summarySheet.getCell(`B${currentRow}`).alignment = { horizontal: 'right' };
           currentRow++;
         };
-        
-        addMetric('Total Tasks:', reportData.tasks.length);
-        addMetric('Completed Tasks:', completedTasks);
-        addMetric('In Progress:', inProgressTasks);
-        addMetric('High Priority Tasks:', highPriority);
-        addMetric('Estimated Hours:', totalEstimated.toFixed(2));
-        addMetric('Actual Hours:', totalActual.toFixed(2));
-        addMetric('Variance:', (totalActual - totalEstimated).toFixed(2));
+
+        addMetric('Total Tasks:', reportData.tasks.length, true);
+        addMetric('Completed Tasks:', completedTasks, true);
+        addMetric('In Progress:', inProgressTasks, true);
+        addMetric('High Priority Tasks:', highPriority, true);
+        addMetric('Estimated Hours:', totalEstimated, true);
+        addMetric('Actual Hours:', totalActual, true);
+        addMetric('Variance:', totalActual - totalEstimated, true);
         currentRow++;
       }
       
@@ -688,23 +706,25 @@ const Reports = () => {
         summarySheet.mergeCells(`A${currentRow}:B${currentRow}`);
         currentRow++;
         
-        const addMetric = (label, value) => {
+        const addMetric = (label, value, isNumeric = false) => {
           summarySheet.getCell(`A${currentRow}`).value = label;
-          summarySheet.getCell(`B${currentRow}`).value = value;
+          summarySheet.getCell(`B${currentRow}`).value = isNumeric ? toNumber(value) : sanitize(value);
           summarySheet.getCell(`A${currentRow}`).font = { bold: true };
           summarySheet.getCell(`B${currentRow}`).alignment = { horizontal: 'right' };
           currentRow++;
         };
-        
-        addMetric('Total Goals:', reportData.goals.length);
-        addMetric('Completed Goals:', completedGoals);
-        addMetric('In Progress:', inProgressGoals);
-        addMetric('Average Progress:', `${avgProgress}%`);
+
+        addMetric('Total Goals:', reportData.goals.length, true);
+        addMetric('Completed Goals:', completedGoals, true);
+        addMetric('In Progress:', inProgressGoals, true);
+        addMetric('Average Progress:', parseFloat(avgProgress) || 0, true);
       }
 
       // Set column widths for summary sheet
       summarySheet.getColumn(1).width = 30;
       summarySheet.getColumn(2).width = 20;
+      // Format second column for numbers (metrics)
+      summarySheet.getColumn(2).numFmt = '#,##0.00';
 
       // ==================== INDIVIDUAL EMPLOYEE PERFORMANCE SHEET ====================
       if (selectedEmployee !== 'all') {
@@ -1156,7 +1176,10 @@ const Reports = () => {
       }
 
       // Write the file with ExcelJS
-      const filename = `${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.xlsx`;
+      // Safe filename and export
+      const safeEmployee = sanitize(employeeName || 'All_Employees');
+      const rawFilename = `${safeEmployee}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.xlsx`;
+      const filename = encodeURIComponent(rawFilename);
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = URL.createObjectURL(blob);
@@ -1177,9 +1200,6 @@ const Reports = () => {
     }
   };
 
-  // Helper function to clean text for PDF rendering
-  // When unicodeFont is true, the function preserves Unicode characters
-  // When unicodeFont is false, it sanitizes to ASCII-safe characters
   const cleanTextForPDF = (text, unicodeFont = false) => {
     if (!text) return '';
     
