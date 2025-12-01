@@ -429,3 +429,33 @@ select::-ms-expand {
     }
   }
 }
+
+/* ============================================
+   Hide native calendar icon for scoped date inputs
+   Apply the `no-calendar` class to any `input[type="date"]` you
+   want to remove the browser's calendar picker icon from.
+   This keeps the rule scoped (avoids global removal) and preserves
+   accessibility — use your own click handler or wrapper to show the picker.
+   ============================================ */
+.no-calendar::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: none;
+}
+
+.no-calendar::-webkit-clear-button,
+.no-calendar::-webkit-inner-spin-button {
+  display: none;
+}
+
+.no-calendar::-ms-clear,
+.no-calendar::-ms-expand {
+  display: none;
+}
+
+.no-calendar {
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+  appearance: none;
+}

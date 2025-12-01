@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Clock, Upload, Coffee, AlertCircle, Check, X, FileCheck, AlarmClockPlus, Loader, Loader2, ChevronsUpDown, CalendarClock } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -118,6 +118,11 @@ const TimeClockEntry = ({ currentLanguage }) => {
     notes: '',
     proofFile: null
   });
+
+  // Refs for clickable input wrappers
+  const dateInputRef = useRef(null);
+  const leaveStartRef = useRef(null);
+  const leaveEndRef = useRef(null);
 
   // Animation variants for upload icon
   const uploadVariants = {
@@ -1001,14 +1006,31 @@ const TimeClockEntry = ({ currentLanguage }) => {
                 {t('timeClock.selectDate', 'Select Date')}
                 </label>
                 
-                <div className="relative">
-                <input
+                <div
+                  className="relative"
+                  onClick={(e) => {
+                    // If the actual input was clicked, let the native behavior occur
+                    if (e.target === dateInputRef.current) return;
+
+                    // Ignore clicks on other interactive controls
+                    if (e.target.closest && e.target.closest('button, a, input[type="file"], label')) return;
+
+                    if (dateInputRef.current) {
+                      if (typeof dateInputRef.current.showPicker === 'function') {
+                        try { dateInputRef.current.showPicker(); } catch (err) { dateInputRef.current.focus(); }
+                      } else {
+                        dateInputRef.current.focus();
+                      }
+                    }
+                  }}
+                >
+                  <input
                     id="date-input"
+                    ref={dateInputRef}
                     type="date"
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                     max={new Date().toISOString().split('T')[0]}
-                    
                     className={`
                     w-full px-4 py-2 
                     rounded-lg border 
@@ -1018,8 +1040,8 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     ${errors.date ? 'border-red-500' : ''}
                     pr-10 appearance-none 
                     `}
-                />
-                <CalendarClock className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-6 h-6 ${text.secondary}`} />
+                  />
+                  <CalendarClock className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-6 h-6 ${text.secondary}`} />
                 </div>
                 
                 {errors.date && (
@@ -1192,14 +1214,17 @@ const TimeClockEntry = ({ currentLanguage }) => {
             </button>
             </form>
             {showLeaveModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                     onClick={(e) => { if (e.target === e.currentTarget) setShowLeaveModal(false); }}>
                       <div className={`${bg.secondary} rounded-lg shadow-xl max-w-md w-full p-6`}>
                         <div className="flex justify-between items-center mb-4">
                           <h3 className={`text-xl font-semibold ${text.primary}`}>
                             {t('timeTracking.requestLeave', 'Request Leave')}
                           </h3>
-                          <button onClick={() => setShowLeaveModal(false)} className={`${text.secondary} hover:${text.primary}`}>
-                            <X className="w-5 h-5" />
+                          <button onClick={() => setShowLeaveModal(false)} className={`group ${text.secondary} cursor-pointer rounded-2xl ${isDarkMode ? 'text-white' : 'text-red-600'} transition-all`}>
+                            <X
+                              className="w-6 h-6 group-hover:animate-spin group-hover:scale-110 origin-center transition-transform"
+                            />
                           </button>
                         </div>
             
@@ -1211,7 +1236,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                             <select
                               value={leaveForm.type}
                               onChange={(e) => setLeaveForm({ ...leaveForm, type: e.target.value })}
-                              className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                              className={`w-full px-4 py-2 ${text.primary} rounded-lg border ${input.className}`}
                             >
                               <option value="vacation">{t('timeTracking.vacation', 'Vacation')}</option>
                               <option value="sick">{t('timeTracking.sickLeave', 'Sick Leave')}</option>
@@ -1225,25 +1250,91 @@ const TimeClockEntry = ({ currentLanguage }) => {
                               <label className={`block text-sm font-medium ${text.primary} mb-2`}>
                                 {t('timeTracking.startDate', 'Start Date')}
                               </label>
-                              <input
-                                type="date"
-                                value={leaveForm.startDate}
-                                onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
-                                required
-                                className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
-                              />
+                              <div
+                                className="relative"
+                                onClick={(e) => {
+                                  if (e.target === leaveStartRef.current) return;
+                                  if (e.target.closest && e.target.closest('button, a, input[type="file"], label')) return;
+                                  if (leaveStartRef.current) {
+                                    if (typeof leaveStartRef.current.showPicker === 'function') {
+                                      try { leaveStartRef.current.showPicker(); } catch (err) { leaveStartRef.current.focus(); }
+                                    } else {
+                                      leaveStartRef.current.focus();
+                                    }
+                                  }
+                                }}
+                              >
+                                <input
+                                  ref={leaveStartRef}
+                                  type="date"
+                                  value={leaveForm.startDate}
+                                  onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
+                                  required
+                                  className={`w-full px-4 py-2 ${text.primary} cursor-pointer rounded-lg border ${input.className} no-calendar pr-10 appearance-none`}
+                                />
+                                <button
+                                  type="button"
+                                  aria-label={t('timeClock.openDatePicker', 'Open date picker')}
+                                  onClick={(ev) => {
+                                    ev.stopPropagation();
+                                    if (leaveStartRef.current) {
+                                      if (typeof leaveStartRef.current.showPicker === 'function') {
+                                        try { leaveStartRef.current.showPicker(); } catch (err) { leaveStartRef.current.focus(); }
+                                      } else {
+                                        leaveStartRef.current.focus();
+                                      }
+                                    }
+                                  }}
+                                  className={`absolute top-1/2 right-3 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center ${text.secondary}`}
+                                >
+                                  <CalendarClock className="w-5 h-5 cursor-pointer" aria-hidden="true" />
+                                </button>
+                              </div>
                             </div>
                             <div>
                               <label className={`block text-sm font-medium ${text.primary} mb-2`}>
                                 {t('timeTracking.endDate', 'End Date')}
                               </label>
-                              <input
-                                type="date"
-                                value={leaveForm.endDate}
-                                onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
-                                required
-                                className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
-                              />
+                              <div
+                                className="relative"
+                                onClick={(e) => {
+                                  if (e.target === leaveEndRef.current) return;
+                                  if (e.target.closest && e.target.closest('button, a, input[type="file"], label')) return;
+                                  if (leaveEndRef.current) {
+                                    if (typeof leaveEndRef.current.showPicker === 'function') {
+                                      try { leaveEndRef.current.showPicker(); } catch (err) { leaveEndRef.current.focus(); }
+                                    } else {
+                                      leaveEndRef.current.focus();
+                                    }
+                                  }
+                                }}
+                              >
+                                <input
+                                  ref={leaveEndRef}
+                                  type="date"
+                                  value={leaveForm.endDate}
+                                  onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
+                                  required
+                                  className={`w-full px-4 py-2 ${text.primary} cursor-pointer rounded-lg border ${input.className} no-calendar pr-10 appearance-none`}
+                                />
+                                <button
+                                  type="button"
+                                  aria-label={t('timeClock.openDatePicker', 'Open date picker')}
+                                  onClick={(ev) => {
+                                    ev.stopPropagation();
+                                    if (leaveEndRef.current) {
+                                      if (typeof leaveEndRef.current.showPicker === 'function') {
+                                        try { leaveEndRef.current.showPicker(); } catch (err) { leaveEndRef.current.focus(); }
+                                      } else {
+                                        leaveEndRef.current.focus();
+                                      }
+                                    }
+                                  }}
+                                  className={`absolute top-1/2 right-3 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center ${text.secondary}`}
+                                >
+                                  <CalendarClock className="w-5 h-5 cursor-pointer" aria-hidden="true" />
+                                </button>
+                              </div>
                             </div>
                           </div>
             
@@ -1256,7 +1347,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                               onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })}
                               rows="3"
                               placeholder={t('timeTracking.reasonPlaceholder', 'Briefly explain your leave request...')}
-                              className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                              className={`w-full px-4 py-2 ${text.primary} rounded-lg border ${input.className}`}
                             />
                           </div>
             
@@ -1264,13 +1355,13 @@ const TimeClockEntry = ({ currentLanguage }) => {
                             <button
                               type="button"
                               onClick={() => setShowLeaveModal(false)}
-                              className={`flex-1 px-4 py-2 border ${isDarkMode ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-300 hover:bg-gray-50'} rounded-lg transition-colors`}
+                              className={`flex-1 px-4 py-2 border ${text.primary} cursor-pointer ${isDarkMode ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-300 hover:bg-gray-50'} rounded-lg transition-colors`}
                             >
                               {t('common.cancel', 'Cancel')}
                             </button>
                             <button 
                               type="submit"
-                              className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                              className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors cursor-pointer"
                             >
                               {t('common.leaveRequest', 'Submit Request')}
                             </button>

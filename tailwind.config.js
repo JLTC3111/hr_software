@@ -11,5 +11,10 @@ export default {
       
     },
   },
+  variants: {
+    extend: {
+      animation: ['hover', 'group-hover'],
+    },
+  },
   plugins: [],
 }
