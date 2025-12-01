@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, Upload, Coffee, AlertCircle, Check, X, FileCheck, AlarmClockPlus, Loader, Loader2, ChevronsUpDown, CalendarClock } from 'lucide-react';
+import { Clock, Upload, Coffee, AlertCircle, Check, X, FileCheck, AlarmClockPlus, Loader, Loader2, Calendar, ChevronsUpDown, CalendarClock } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -1287,7 +1287,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                   }}
                                   className={`absolute top-1/2 right-3 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center ${text.secondary}`}
                                 >
-                                  <CalendarClock className="w-5 h-5 cursor-pointer" aria-hidden="true" />
+                                  <Calendar className="w-5 h-5 cursor-pointer" aria-hidden="true" />
                                 </button>
                               </div>
                             </div>
@@ -1332,7 +1332,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                   }}
                                   className={`absolute top-1/2 right-3 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center ${text.secondary}`}
                                 >
-                                  <CalendarClock className="w-5 h-5 cursor-pointer" aria-hidden="true" />
+                                  <Calendar className="w-5 h-5 cursor-pointer" aria-hidden="true" />
                                 </button>
                               </div>
                             </div>
