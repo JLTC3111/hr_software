@@ -666,6 +666,11 @@ export default {
 
   // Employee Detail Modal
   employeeDetailModal: {
+    download: 'ダウンロード',
+    uploadPdf: 'PDFを アップロード',
+    uploading: 'アップロード中',
+    delete: '削除',
+    deleting: '削除中',
     basicInfo: '基本情報',
     contact: '連絡先',
     documents: '書類',

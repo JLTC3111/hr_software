@@ -687,6 +687,11 @@ export default {
 
   // Employee Detail Modal
   employeeDetailModal: {
+    download: 'ดาวน์โหลด',
+    uploadPdf: 'อัปโหลด PDF',
+    uploading: 'กำลังอัปโหลด',
+    delete: 'ลบ',
+    deleting: 'กำลังลบ',
     basicInfo: 'ข้อมูลพื้นฐาน',
     contact: 'ติดต่อ',
     documents: 'เอกสาร',

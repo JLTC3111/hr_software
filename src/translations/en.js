@@ -211,6 +211,10 @@ export default {
 
   // Employee Detail Modal
   employeeDetailModal: {
+    download: 'Download',
+    uploadPdf: 'Upload PDF',
+    uploading: 'Uploading...',
+    delete: 'Delete',
     basicInfo: 'Basic Information',
     contact: 'Contact',
     documents: 'Documents',

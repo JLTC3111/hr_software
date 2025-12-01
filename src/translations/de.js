@@ -638,6 +638,12 @@ export default {
 
   // Employee Detail Modal
   employeeDetailModal: {
+    download: 'Herunterladen',
+    uploadPdf: 'PDF Hochladen',
+    uploading: 'Wird hochgeladen',
+    delete: 'Löschen',
+    deleting: 'Wird gelöscht',
+    title: 'Mitarbeiterdetails',
     basicInfo: 'Grundinformationen',
     contact: 'Kontakt',
     documents: 'Dokumente',

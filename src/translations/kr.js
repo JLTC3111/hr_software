@@ -654,6 +654,12 @@ export default {
 
   // Employee Detail Modal
   employeeDetailModal: {
+    download: '다운로드',
+    uploadPdf: 'PDF 업로드',
+    uploading: '업로드 중',
+    delete: '삭제',
+    deleting: '삭제 중',
+    title: '직원 세부 정보',
     basicInfo: '기본 정보',
     contact: '연락처',
     documents: '문서',

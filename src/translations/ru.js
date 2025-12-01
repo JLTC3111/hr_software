@@ -747,6 +747,12 @@ export default {
 
   // Employee Detail Modal
   employeeDetailModal: {
+    download: 'Скачать',
+    uploadPdf: 'Загрузить PDF',
+    uploading: 'Загрузка',
+    delete: 'Удалить',
+    deleting: 'Удаление',
+    title: 'Детали Сотрудника',
     basicInfo: 'Основная Информация',
     contact: 'Контакт',
     documents: 'Документы',

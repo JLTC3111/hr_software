@@ -791,6 +791,12 @@ login: {
 
   // Employee Detail Modal
   employeeDetailModal: {
+    download: 'Descargar',
+    uploadPdf: 'Subir PDF',
+    uploading: 'Subiendo',
+    delete: 'Eliminar',
+    deleting: 'Eliminando',
+    title: 'Detalle del Empleado',
     basicInfo: 'Información Básica',
     contact: 'Contacto',
     documents: 'Documentos',

@@ -408,7 +408,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
         <div className={`flex border-b ${border.primary} px-6`}>
           <button
             onClick={() => setActiveTab('info')}
-            className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors relative ${
+            className={`flex items-center cursor-pointer space-x-2 px-4 py-3 font-medium transition-colors relative ${
               activeTab === 'info'
                 ? `${text.primary} border-b-2 border-blue-600`
                 : `${text.secondary} hover:${text.primary}`
@@ -419,7 +419,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
           </button>
           <button
             onClick={() => setActiveTab('contact')}
-            className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors relative ${
+            className={`flex items-center cursor-pointer space-x-2 px-4 py-3 font-medium transition-colors relative ${
               activeTab === 'contact'
                 ? `${text.primary} border-b-2 border-blue-600`
                 : `${text.secondary} hover:${text.primary}`
@@ -430,7 +430,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
           </button>
           <button
             onClick={() => setActiveTab('documents')}
-            className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors relative ${
+            className={`flex items-center cursor-pointer space-x-2 px-4 py-3 font-medium transition-colors relative ${
               activeTab === 'documents'
                 ? `${text.primary} border-b-2 border-blue-600`
                 : `${text.secondary} hover:${text.primary}`
@@ -535,30 +535,6 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                   </div>
                 </div>
               )}
-
-              {/* PDF Viewer Mode Toggle */}
-              <div className="flex justify-end mb-2 space-x-2">
-                <button
-                  onClick={() => setUseIframe(false)}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-                    !useIframe 
-                      ? 'bg-blue-600 text-white shadow-lg hover:bg-blue-700' 
-                      : `${bg.secondary} ${text.primary} border ${border.primary} ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-blue-50'}`
-                  }`}
-                >
-                  PDF.js
-                </button>
-                <button
-                  onClick={() => setUseIframe(true)}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-                    useIframe 
-                      ? 'bg-blue-600 text-white shadow-lg hover:bg-blue-700' 
-                      : `${bg.secondary} ${text.primary} border ${border.primary} ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-blue-50'}`
-                  }`}
-                >
-                  Iframe
-                </button>
-              </div>
 
               {/* PDF Viewer */}
               <div className={`border-2 border-dashed ${border.primary} rounded-lg p-4 min-h-[400px] ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>

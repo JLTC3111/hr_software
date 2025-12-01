@@ -397,6 +397,10 @@ export default {
 
   // Employee Detail Modal
   employeeDetailModal: {
+    download: 'Tải Xuống', 
+    uploadPdf: 'Tải Lên PDF',
+    uploading: 'Đang tải lên...',
+    delete: 'Xóa',
     basicInfo: 'Thông Tin Cơ Bản',
     contact: 'Liên Hệ',
     documents: 'Tài Liệu',

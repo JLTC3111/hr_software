@@ -808,6 +808,13 @@ export default {
 
   // Employee Detail Modal
   employeeDetailModal: {
+    download: 'Descargar',
+    download: 'Télécharger',
+    uploadPdf: 'Téléverser PDF',
+    uploading: 'Téléversement',
+    delete: 'Supprimer',
+    deleting: 'Suppression',
+    title: 'Détails de l\'Employé',
     basicInfo: 'Informations de Base',
     contact: 'Contact',
     documents: 'Documents',
