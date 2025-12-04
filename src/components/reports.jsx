@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useLanguage, SUPPORTED_LANGUAGES } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from '../contexts/AuthContext';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import { 
   Calendar, 
   Download, 
@@ -318,6 +319,20 @@ const Reports = () => {
       setLoading(false);
     }
   };
+
+  // Memoize fetchReportData for use in visibility hook
+  const memoizedFetchReportData = useCallback(() => {
+    if (reportData.employees.length > 0) {
+      fetchReportData();
+    }
+  }, [filters, selectedEmployee, activeTab, reportData.employees]);
+
+  // Use visibility refresh hook to reload data when page becomes visible after idle
+  useVisibilityRefresh(memoizedFetchReportData, {
+    staleTime: 120000, // 2 minutes - refresh if data is older than this
+    refreshOnFocus: true,
+    refreshOnOnline: true
+  });
 
   // Get current data based on active tab
   const currentData = useMemo(() => {

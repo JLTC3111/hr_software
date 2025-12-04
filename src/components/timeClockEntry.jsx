@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Clock, Upload, Coffee, AlertCircle, Check, X, FileCheck, AlarmClockPlus, Loader, Loader2, Calendar, ChevronsUpDown, CalendarClock } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -8,6 +8,7 @@ import { supabase } from '../config/supabaseClient';
 import AdminTimeEntry from './AdminTimeEntry';
 import { motion } from 'framer-motion';
 import * as flubber from 'flubber';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 // Animated Clock 1
 export const AnimatedAlarmClockIcon = ({ className, isDarkMode }) => {
@@ -236,29 +237,37 @@ const TimeClockEntry = ({ currentLanguage }) => {
       }
     };
     
-  // Fetch time entries and employees when component mounts
-  useEffect(() => {
-    const loadData = async () => {
-      if (user) {
-        setLoading(true);
-        try {
-          await fetchTimeEntries();
-          // Fetch all employees if user is admin or manager
-          if (canManageTimeTracking) {
-            await fetchAllEmployees();
-          }
-        } catch (error) {
-          console.error('Error loading data:', error);
-        } finally {
-          setLoading(false);
+  // Define loadData as a callback for reuse
+  const loadData = useCallback(async () => {
+    if (user) {
+      setLoading(true);
+      try {
+        await fetchTimeEntries();
+        // Fetch all employees if user is admin or manager
+        if (canManageTimeTracking) {
+          await fetchAllEmployees();
         }
-      } else {
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
         setLoading(false);
       }
-    };
-    
-    loadData();
+    } else {
+      setLoading(false);
+    }
   }, [user, canManageTimeTracking]);
+    
+  // Fetch time entries and employees when component mounts
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Use visibility refresh hook to reload data when page becomes visible after idle
+  useVisibilityRefresh(loadData, {
+    staleTime: 120000, // 2 minutes - refresh if data is older than this
+    refreshOnFocus: true,
+    refreshOnOnline: true
+  });
   
   // Filter entries based on selected employee
   useEffect(() => {

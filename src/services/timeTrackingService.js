@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabaseClient';
+import { withTimeout } from '../utils/supabaseTimeout';
 
 const toEmployeeId = (id) => {
   return id ? String(id) : null;

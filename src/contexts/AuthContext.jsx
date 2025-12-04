@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, hasPermission, customStorage } from '../config/supabaseClient';
 import { linkUserToEmployee } from '../services/employeeService';
 
@@ -17,6 +17,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
+  const isRefreshing = useRef(false);
+  const lastVisibilityCheck = useRef(Date.now());
 
   const clearAuthState = async () => {
     console.log('🧹 Clearing auth state and setting loading = false');
@@ -134,6 +136,127 @@ export const AuthProvider = ({ children }) => {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Handle visibility change (when user returns from power saving mode / idle)
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        const now = Date.now();
+        const timeSinceLastCheck = now - lastVisibilityCheck.current;
+        
+        // Only refresh if more than 30 seconds have passed since last check
+        // This prevents excessive refreshing
+        if (timeSinceLastCheck < 30000) {
+          console.log('⏭️ Skipping session refresh - checked recently');
+          return;
+        }
+        
+        lastVisibilityCheck.current = now;
+        
+        // Prevent concurrent refresh attempts
+        if (isRefreshing.current) {
+          console.log('⏭️ Session refresh already in progress');
+          return;
+        }
+        
+        console.log('👁️ Page became visible - checking session...');
+        isRefreshing.current = true;
+        
+        try {
+          // Try to get current session
+          const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+          
+          if (sessionError) {
+            console.error('Session check error:', sessionError);
+            // Don't clear auth state immediately - try to refresh first
+          }
+          
+          if (currentSession) {
+            // Check if token needs refresh (expired or will expire soon)
+            const expiresAt = currentSession.expires_at;
+            const now = Math.floor(Date.now() / 1000);
+            const expiresInSeconds = expiresAt - now;
+            
+            console.log(`🔐 Session expires in ${expiresInSeconds} seconds`);
+            
+            // If token expires in less than 5 minutes, try to refresh
+            if (expiresInSeconds < 300) {
+              console.log('🔄 Token expiring soon - refreshing session...');
+              const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+              
+              if (refreshError) {
+                console.error('Session refresh failed:', refreshError);
+                // Session is invalid - need to re-login
+                await clearAuthState();
+                return;
+              }
+              
+              if (refreshData.session) {
+                console.log('✅ Session refreshed successfully');
+                setSession(refreshData.session);
+              }
+            } else {
+              // Session is still valid
+              console.log('✅ Session is still valid');
+              setSession(currentSession);
+            }
+            
+            // Verify the user is still valid
+            const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
+            
+            if (userError || !currentUser) {
+              console.error('User verification failed:', userError);
+              await clearAuthState();
+              return;
+            }
+            
+            // If we don't have user data in state, reload the profile
+            if (!user) {
+              console.log('🔄 User state empty - reloading profile...');
+              await fetchUserProfile(currentUser.id);
+            }
+          } else {
+            // No session - user needs to log in
+            console.log('❌ No session found after visibility change');
+            if (isAuthenticated) {
+              await clearAuthState();
+            }
+          }
+        } catch (error) {
+          console.error('Error during visibility change session check:', error);
+        } finally {
+          isRefreshing.current = false;
+        }
+      }
+    };
+
+    // Handle online/offline events
+    const handleOnline = async () => {
+      console.log('🌐 Network came online - checking session...');
+      // Trigger a visibility check when coming back online
+      lastVisibilityCheck.current = 0; // Reset to force check
+      handleVisibilityChange();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
+    
+    // Also handle focus events for additional reliability
+    const handleFocus = () => {
+      // Debounce focus events
+      const now = Date.now();
+      if (now - lastVisibilityCheck.current > 60000) { // 1 minute debounce for focus
+        handleVisibilityChange();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [isAuthenticated, user]);
 
   // Fetch user profile with role from database
   const fetchUserProfile = async (userId) => {

@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabaseClient';
+import { withTimeout } from '../utils/supabaseTimeout';
 
 /**
  * Employee Service
@@ -136,7 +137,7 @@ export const getAllEmployees = async (filters = {}) => {
       query = query.eq('position', filters.position);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await withTimeout(query);
 
     if (error) throw error;
     

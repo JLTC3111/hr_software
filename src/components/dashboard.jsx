@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Clock, Heart, AlertCircle, TreePalm, Car, Salad, Clapperboard, Laptop, Form, PhoneCall, CupSoda, Grape, BicepsFlexed, Flame, DatabaseZap, Loader, HouseWifi, Funnel, HeartPlus, Coffee, AlarmClock, Gauge, BriefcaseBusiness, WifiPen, TrendingUp, LineChart, BatteryCharging, PersonStanding, Volleyball, FileUser } from 'lucide-react'
 import StatsCard from './statsCard.jsx'
 import MetricDetailModal from './metricDetailModal.jsx'
@@ -10,6 +10,7 @@ import * as flubber from 'flubber';
 import { AnimatedClockIcon, AnimatedAlarmClockIcon } from './timeClockEntry.jsx'
 import { AnimatedCoffeeIcon, MiniFlubberMorphingLeaveStatus } from './timeTracking.jsx';
 import { MiniFlubberAutoMorphInProgress,MiniFlubberAutoMorphEmployees } from './taskReview.jsx'
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 export const MiniFlubberAutoMorphVacation = ({
   size = 24,
@@ -999,25 +1000,26 @@ const Dashboard = ({ employees, applications }) => {
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
-  
-  // Fetch real data from Supabase
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      setLoading(true);
-      try {
-        
-        // Fetch time tracking summaries for all employees for SELECTED month
-        const summariesPromises = employees.map(emp => 
-          timeTrackingService.getTimeTrackingSummary(String(emp.id), selectedMonth, selectedYear)
-        );
-        
-        const summariesResults = await Promise.all(summariesPromises);
-        
-        // Fetch leave requests for all employees
-        const leavePromises = employees.map(emp => 
-          timeTrackingService.getLeaveRequests(String(emp.id), {
-            year: selectedYear
-          })
+
+  // Define fetch function that can be reused
+  const fetchDashboardData = useCallback(async () => {
+    if (employees.length === 0) return;
+    
+    setLoading(true);
+    try {
+      
+      // Fetch time tracking summaries for all employees for SELECTED month
+      const summariesPromises = employees.map(emp => 
+        timeTrackingService.getTimeTrackingSummary(String(emp.id), selectedMonth, selectedYear)
+      );
+      
+      const summariesResults = await Promise.all(summariesPromises);
+      
+      // Fetch leave requests for all employees
+      const leavePromises = employees.map(emp => 
+        timeTrackingService.getLeaveRequests(String(emp.id), {
+          year: selectedYear
+        })
         );
         const leaveResults = await Promise.all(leavePromises);
         
@@ -1116,12 +1118,21 @@ const Dashboard = ({ employees, applications }) => {
       } finally {
         setLoading(false);
       }
-    };
-    
+  }, [employees, selectedMonth, selectedYear]);
+
+  // Fetch data on mount and when dependencies change
+  useEffect(() => {
     if (employees.length > 0) {
       fetchDashboardData();
     }
-  }, [employees, selectedMonth, selectedYear]);
+  }, [fetchDashboardData]);
+
+  // Use visibility refresh hook to reload data when page becomes visible after idle
+  useVisibilityRefresh(fetchDashboardData, {
+    staleTime: 120000, // 2 minutes - refresh if data is older than this
+    refreshOnFocus: true,
+    refreshOnOnline: true
+  });
 
   // Calculate aggregate stats
   const trackingDataValues = Object.values(timeTrackingData);

@@ -83,6 +83,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
       'Prefer': 'return=representation'
+    },
+    fetch: (url, options = {}) => {
+      // Add timeout to all fetch requests to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      return fetch(url, {
+        ...options,
+        signal: controller.signal
+      }).finally(() => {
+        clearTimeout(timeoutId);
+      });
     }
   },
   db: {

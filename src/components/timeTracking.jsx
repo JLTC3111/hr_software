@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence, useMotionValue, animate } from 'framer-motion'
 import * as flubber from 'flubber'
 import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, ArrowUp01, Sailboat, Stamp, CircleQuestionMark, Funnel, ListFilterPlus, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart } from 'lucide-react'
@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import * as timeTrackingService from '../services/timeTrackingService'
 import { AnimatedClockIcon } from './timeClockEntry'
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh'
 
 export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = false }) => {
     const mainColor = isDarkMode ? '#ffffff' : '#000000';
@@ -551,48 +552,57 @@ const TimeTracking = ({ employees }) => {
       setSelectedEmployee(String(user.employeeId));
     }
   }, [user]);
+
+  // Define fetch function that can be reused for visibility refresh
+  const fetchTimeTrackingData = useCallback(async () => {
+    if (!selectedEmployee) return;
+    setLoading(true);
+    try {
+      // Fetch summary data
+      const summaryResult = await timeTrackingService.getTimeTrackingSummary(
+        selectedEmployee,
+        selectedMonth,
+        selectedYear
+      );
+      if (summaryResult.success) {
+        setSummaryData(summaryResult.data);
+      }
+      // Fetch leave requests for selected employee
+      const leaveResult = await timeTrackingService.getLeaveRequests(selectedEmployee, {
+        year: selectedYear
+      });
+      if (leaveResult.success) {
+        setLeaveRequests(leaveResult.data);
+      }
+      // Fetch time entries (includes overtime)
+      const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
+      const endDate = new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0];
+      const entriesResult = await timeTrackingService.getTimeEntries(selectedEmployee, {
+        startDate: startDate,
+        endDate: endDate
+      });
+      if (entriesResult.success) {
+        setTimeEntries(entriesResult.data);
+      }
+    } catch (error) {
+      console.error('Error fetching time tracking data:', error);
+      setSuccessMessage('');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedEmployee, selectedMonth, selectedYear]);
   
   // Fetch data from Supabase when employee or period changes
   useEffect(() => {
-    const fetchTimeTrackingData = async () => {
-      if (!selectedEmployee) return;
-      setLoading(true);
-      try {
-        // Fetch summary data
-        const summaryResult = await timeTrackingService.getTimeTrackingSummary(
-          selectedEmployee,
-          selectedMonth,
-          selectedYear
-        );
-        if (summaryResult.success) {
-          setSummaryData(summaryResult.data);
-        }
-        // Fetch leave requests for selected employee
-        const leaveResult = await timeTrackingService.getLeaveRequests(selectedEmployee, {
-          year: selectedYear
-        });
-        if (leaveResult.success) {
-          setLeaveRequests(leaveResult.data);
-        }
-        // Fetch time entries (includes overtime)
-        const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
-        const endDate = new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0];
-        const entriesResult = await timeTrackingService.getTimeEntries(selectedEmployee, {
-          startDate: startDate,
-          endDate: endDate
-        });
-        if (entriesResult.success) {
-          setTimeEntries(entriesResult.data);
-        }
-      } catch (error) {
-        console.error('Error fetching time tracking data:', error);
-        setSuccessMessage('');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchTimeTrackingData();
-  }, [selectedEmployee, selectedMonth, selectedYear]);
+  }, [fetchTimeTrackingData]);
+
+  // Use visibility refresh hook to reload data when page becomes visible after idle
+  useVisibilityRefresh(fetchTimeTrackingData, {
+    staleTime: 120000, // 2 minutes - refresh if data is older than this
+    refreshOnFocus: true,
+    refreshOnOnline: true
+  });
 
   // Fetch all leave requests for all employees (admin/manager only)
   useEffect(() => {
