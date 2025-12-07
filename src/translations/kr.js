@@ -31,6 +31,7 @@ export default {
 
   // Login
   login: {
+    tryDemo: '데모 모드 사용해보기',
     title: 'HR 매니저',
     subtitle: '대시보드에 액세스하려면 로그인하세요',
     email: '이메일 주소',
@@ -242,6 +243,7 @@ export default {
       regular: '일반 근무',
       holiday: '공휴일 근무',
       weekend: '주말 근무',
+      overtime: '초과 근무',
       bonus: '보너스 근무',
       wfh: '재택근무',
     },
@@ -826,6 +828,7 @@ export default {
       regular: '정규',
       holiday: '휴일',
       weekend: '주말/초과 근무',
+      overtime: '초과 근무',
       bonus: '보너스',
       wfh: '재택근무',
     },

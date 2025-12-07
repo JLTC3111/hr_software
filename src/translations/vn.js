@@ -31,6 +31,7 @@ export default {
 
   // Login
   login: {
+    tryDemo: 'Thử Chế Độ Demo',
     title: 'Quản lý HR',
     subtitle: 'Đăng nhập để truy cập bảng điều khiển',
     email: 'Địa chỉ Email',
@@ -324,6 +325,7 @@ export default {
       regular: 'Giờ Làm Thường',
       holiday: 'Ngày Giỗ Lễ',
       weekend: 'Cuối Tuần/Tăng Ca',
+      overtime: 'Giờ Làm Thêm',
       bonus: 'Giờ Làm Thêm',
       wfh: 'Làm Việc Tại Nhà (Trực Tuyến)'
     },
@@ -925,7 +927,8 @@ export default {
       regular: 'Làm Tại Văn Phòng',
       holiday: 'Ngày Lễ',
       weekend: 'Cuối Tuần',
-      bonus: 'Giờ Làm Thêm',
+      overtime: 'Giờ Làm Thêm',
+      bonus: 'Giờ Thưởng',
       wfh: 'Làm Việc Tại Nhà (Trực Tuyến)'
     },
     errors: {

@@ -31,6 +31,7 @@ export default {
 
   // Login
   login: {
+    tryDemo: 'デモモードを試す',
     title: 'HRマネージャー',
     subtitle: 'ダッシュボードにアクセスするにはサインインしてください',
     email: 'メールアドレス',
@@ -239,6 +240,7 @@ export default {
       regular: '通常勤務',
       holiday: '祝日勤務',
       weekend: '週末勤務',
+      overtime: '残業',
       bonus: '特別勤務',
       wfh: '在宅勤務',
     },
@@ -865,6 +867,7 @@ export default {
       regular: '通常',
       holiday: '祝日',
       weekend: '週末/残業',
+      overtime: '残業',
       bonus: 'ボーナス',
       wfh: '在宅勤務',
     },

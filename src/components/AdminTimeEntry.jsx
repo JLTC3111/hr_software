@@ -36,6 +36,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
     { value: 'regular', label: t('timeClock.hourTypes.regular'), color: 'blue' },
     { value: 'holiday', label: t('timeClock.hourTypes.holiday'), color: 'purple' },
     { value: 'weekend', label: t('timeClock.hourTypes.weekend'), color: 'green' },
+    { value: 'overtime', label: t('timeClock.hourTypes.overtime'), color: 'orange' },
     { value: 'bonus', label: t('timeClock.hourTypes.bonus'), color: 'yellow' },
     { value: 'wfh', label: t('timeClock.hourTypes.wfh'), color: 'cyan' }
   ];

@@ -32,6 +32,7 @@ header: {
 
 // Login
 login: {
+  tryDemo: 'Probar modo demo',
   title: 'Gerente de RH',
   subtitle: 'Inicia sesión para acceder a tu panel',
   email: 'Correo Electrónico',
@@ -199,6 +200,7 @@ login: {
       regular: 'Regular',
       holiday: 'Día festivo',
       weekend: 'Fin de semana/Horas extras',
+      overtime: 'Horas extra',
       bonus: 'Bono',
       wfh: 'Horas de teletrabajo',
     },
@@ -249,6 +251,7 @@ login: {
       regular: 'Horas Regulares',
       holiday: 'Festivo',
       weekend: 'Fin de Semana',
+      overtime: 'Horas extra',
       bonus: 'Horas Bonus',
       wfh: 'Horas de teletrabajo',
     },

@@ -1349,9 +1349,11 @@ const Reports = () => {
       case 'regular':
         return t('timeClock.hourTypes.regular', 'Regular Hours');
       case 'holiday':
-        return t('timeClock.holiday', 'Holiday Hours');
+        return t('timeClock.hourTypes.holiday', 'Holiday Hours');
       case 'weekend':
         return t('timeClock.hourTypes.weekend', 'Weekend Overtime');
+      case 'overtime':
+        return t('timeClock.hourTypes.overtime', 'Overtime');
       case 'bonus':
         return t('timeClock.hourTypes.bonus', 'Bonus Hours');
       case 'wfh':

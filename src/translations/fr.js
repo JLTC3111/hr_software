@@ -31,6 +31,7 @@ export default {
 
   // Login
   login: {
+    tryDemo: 'Essayer le mode démo',
     title: 'Gestionnaire RH',
     subtitle: 'Connectez-vous pour accéder à votre tableau de bord',
     email: 'Adresse e-mail',
@@ -224,7 +225,8 @@ export default {
       regular: 'Heures normales',
       holiday: 'Jour férié',
       weekend: 'Week-end',
-      bonus: 'Heures supplémentaires',
+      overtime: 'Heures supplémentaires',
+      bonus: 'Heures supplémentaires (bonus)',
       wfh: 'Heures de télétravail',
     },
     errors: {

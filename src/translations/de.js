@@ -31,6 +31,7 @@ export default {
 
   // Login
   login: {
+    tryDemo: 'Demo ausprobieren',
     title: 'HR-Manager',
     subtitle: 'Melden Sie sich an, um auf Ihr Dashboard zuzugreifen',
     email: 'E-Mail-Adresse',
@@ -796,6 +797,7 @@ export default {
       regular: 'Reguläre Stunden',
       holiday: 'Feiertag',
       weekend: 'Wochenende',
+      overtime: 'Überstunden',
       bonus: 'Bonusstunden',
       wfh: 'Homeoffice Stunden',
     },
@@ -890,6 +892,7 @@ export default {
       regular: 'Regulär',
       holiday: 'Feiertag',
       weekend: 'Wochenende/Überstunden',
+      overtime: 'Überstunden',
       bonus: 'Bonus',
       wfh: 'Homeoffice Stunden',
     },

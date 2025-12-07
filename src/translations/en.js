@@ -31,6 +31,7 @@ export default {
 
   // Login
   login: {
+    tryDemo: 'Try Demo Mode',
     title: 'HR Manager',
     subtitle: 'Sign in to access your dashboard',
     email: 'Email Address',
