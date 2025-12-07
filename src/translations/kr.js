@@ -146,6 +146,19 @@ export default {
     marketing: '마케팅',
     design: '디자인',
     part_time_employee: '파트타임 직원',
+    // Also support capitalized versions for compatibility
+    Management: '관리',
+    Engineering: '엔지니어링',
+    Design: '디자인',
+    Marketing: '마케팅',
+    Sales: '영업',
+    Finance: '재무',
+    'Human Resources': '인사',
+    Technology: '기술',
+    Operations: '운영',
+    Support: '지원',
+    Legal: '법무',
+    IT: 'IT',
   },
 
   // Months

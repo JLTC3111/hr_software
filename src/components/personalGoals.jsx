@@ -4,6 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../config/supabaseClient';
+import { isDemoMode } from '../utils/demoHelper';
 import * as performanceService from '../services/performanceService';
 
 const PersonalGoals = ({ employees }) => {
@@ -128,11 +129,24 @@ const PersonalGoals = ({ employees }) => {
       }
 
       // Fetch skills assessments
-      const { data: skillsData, error: skillsError } = await supabase
-        .from('skills_assessments')
-        .select('*')
-        .eq('employee_id', selectedEmployee)
-        .order('skill_category', { ascending: true });
+      let skillsData = [];
+      let skillsError = null;
+
+      if (isDemoMode()) {
+        skillsData = [
+          { id: 1, employee_id: selectedEmployee, skill_name: 'React', skill_category: 'Technical', rating: 4, proficiency_level: 'advanced', assessment_date: '2023-01-01' },
+          { id: 2, employee_id: selectedEmployee, skill_name: 'Communication', skill_category: 'Soft Skills', rating: 5, proficiency_level: 'advanced', assessment_date: '2023-01-01' },
+          { id: 3, employee_id: selectedEmployee, skill_name: 'Project Management', skill_category: 'Management', rating: 3, proficiency_level: 'intermediate', assessment_date: '2023-01-01' }
+        ];
+      } else {
+        const { data, error } = await supabase
+          .from('skills_assessments')
+          .select('*')
+          .eq('employee_id', selectedEmployee)
+          .order('skill_category', { ascending: true });
+        skillsData = data;
+        skillsError = error;
+      }
 
       if (!skillsError && skillsData) {
         setSkills(skillsData);
@@ -208,6 +222,8 @@ const PersonalGoals = ({ employees }) => {
           }];
         }
       });
+
+      if (isDemoMode()) return;
 
       // Check if skill exists in database
       const { data: existing, error: fetchError } = await supabase

@@ -1,11 +1,24 @@
 import { supabase } from '../config/supabaseClient';
 import { withTimeout } from '../utils/supabaseTimeout';
+import { isDemoMode, MOCK_TIME_ENTRIES } from '../utils/demoHelper';
 
 const toEmployeeId = (id) => {
   return id ? String(id) : null;
 };
 
 export const createTimeEntry = async (timeEntryData) => {
+  if (isDemoMode()) {
+    return { 
+      success: true, 
+      data: { 
+        id: `demo-entry-${Date.now()}`,
+        ...timeEntryData,
+        status: 'pending',
+        created_at: new Date().toISOString()
+      } 
+    };
+  }
+
   try {
     const employeeId = toEmployeeId(timeEntryData.employeeId);
     
@@ -69,6 +82,17 @@ export const createTimeEntry = async (timeEntryData) => {
  * @returns {Promise<{success: boolean, data?: Array, error?: string}>}
  */
 export const createBulkTimeEntries = async (timeEntriesData) => {
+  if (isDemoMode()) {
+    return { 
+      success: true, 
+      data: timeEntriesData.map((entry, i) => ({
+        id: `demo-bulk-${Date.now()}-${i}`,
+        ...entry,
+        status: 'pending'
+      }))
+    };
+  }
+
   try {
     if (!Array.isArray(timeEntriesData) || timeEntriesData.length === 0) {
       throw new Error('No time entries provided');
@@ -142,6 +166,22 @@ export const createBulkTimeEntries = async (timeEntriesData) => {
  * Get time entries for an employee
  */
 export const getTimeEntries = async (employeeId, filters = {}) => {
+  if (isDemoMode()) {
+    let entries = MOCK_TIME_ENTRIES.filter(e => String(e.employee_id) === String(employeeId));
+    
+    if (filters.startDate) {
+      entries = entries.filter(e => e.date >= filters.startDate);
+    }
+    if (filters.endDate) {
+      entries = entries.filter(e => e.date <= filters.endDate);
+    }
+    
+    // Sort by date desc
+    entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    return { success: true, data: entries };
+  }
+
   try {
     let query = supabase
       .from('time_entries')
@@ -177,6 +217,22 @@ export const getTimeEntries = async (employeeId, filters = {}) => {
  * Get all time entries with employee details (for HR/managers)
  */
 export const getAllTimeEntriesDetailed = async (filters = {}) => {
+  if (isDemoMode()) {
+    let entries = [...MOCK_TIME_ENTRIES];
+    
+    if (filters.startDate) {
+      entries = entries.filter(e => e.date >= filters.startDate);
+    }
+    if (filters.endDate) {
+      entries = entries.filter(e => e.date <= filters.endDate);
+    }
+    
+    // Sort by date desc
+    entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    return { success: true, data: entries };
+  }
+
   try {
     console.log('🔧 [Service] getAllTimeEntriesDetailed called with filters:', filters);
     
@@ -231,6 +287,10 @@ export const getAllTimeEntriesDetailed = async (filters = {}) => {
  * Update time entry status (approve/reject)
  */
 export const updateTimeEntryStatus = async (entryId, status, approverId) => {
+  if (isDemoMode()) {
+    return { success: true, data: { id: entryId, status, approved_by: approverId } };
+  }
+
   try {
     const { data, error } = await supabase
       .from('time_entries')
@@ -260,6 +320,10 @@ export const updateTimeEntryStatus = async (entryId, status, approverId) => {
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export const updateTimeEntryProof = async (entryId, file, employeeId, onProgress = null) => {
+  if (isDemoMode()) {
+    return { success: true, data: { id: entryId, proof_file_name: file.name } };
+  }
+
   try {
     // Upload the proof file with progress tracking
     const uploadResult = await uploadProofFile(file, employeeId, onProgress);
@@ -300,6 +364,10 @@ export const updateTimeEntryProof = async (entryId, file, employeeId, onProgress
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 export const deleteProofFile = async (entryId, filePath) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     // Delete file from storage if path exists
     if (filePath) {
@@ -342,6 +410,10 @@ export const deleteProofFile = async (entryId, filePath) => {
  * Delete a time entry
  */
 export const deleteTimeEntry = async (entryId) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     const { error } = await supabase
       .from('time_entries')
@@ -519,6 +591,17 @@ export const getProofFileSignedUrl = async (filePath) => {
  * Create a leave request
  */
 export const createLeaveRequest = async (leaveData) => {
+  if (isDemoMode()) {
+    return { 
+      success: true, 
+      data: { 
+        id: `demo-leave-${Date.now()}`,
+        ...leaveData,
+        status: 'pending'
+      } 
+    };
+  }
+
   try {
     const employeeId = toEmployeeId(leaveData.employeeId);
     
@@ -569,6 +652,11 @@ export const createLeaveRequest = async (leaveData) => {
  * Get leave requests for an employee
  */
 export const getLeaveRequests = async (employeeId, filters = {}) => {
+  if (isDemoMode()) {
+    // Return empty array for now or add mock leave requests if needed
+    return { success: true, data: [] };
+  }
+
   try {
     let query = supabase
       .from('leave_requests')
@@ -596,6 +684,10 @@ export const getLeaveRequests = async (employeeId, filters = {}) => {
 
 /* Get all leave requests (for HR/managers) */
 export const getAllLeaveRequests = async (filters = {}) => {
+  if (isDemoMode()) {
+    return { success: true, data: [] };
+  }
+
   try {
     // Fetch leave requests without relying on a foreign-key relationship in the schema cache
     let query = supabase
@@ -649,6 +741,10 @@ export const getAllLeaveRequests = async (filters = {}) => {
 
 /* Update leave request status */
 export const updateLeaveRequestStatus = async (requestId, status, approverId, rejectionReason = null) => {
+  if (isDemoMode()) {
+    return { success: true, data: { id: requestId, status } };
+  }
+
   try {
     const { data, error } = await supabase
       .from('leave_requests')
@@ -672,6 +768,17 @@ export const updateLeaveRequestStatus = async (requestId, status, approverId, re
 
 /* Create an overtime log */
 export const createOvertimeLog = async (overtimeData) => {
+  if (isDemoMode()) {
+    return { 
+      success: true, 
+      data: { 
+        id: `demo-ot-${Date.now()}`,
+        ...overtimeData,
+        status: 'pending'
+      } 
+    };
+  }
+
   try {
     const employeeId = toEmployeeId(overtimeData.employeeId);
     
@@ -720,6 +827,10 @@ export const createOvertimeLog = async (overtimeData) => {
 
 /* Get overtime logs for an employee */
 export const getOvertimeLogs = async (employeeId, filters = {}) => {
+  if (isDemoMode()) {
+    return { success: true, data: [] };
+  }
+
   try {
     let query = supabase
       .from('overtime_logs')
@@ -748,6 +859,10 @@ export const getOvertimeLogs = async (employeeId, filters = {}) => {
 
 /* Update overtime log status */
 export const updateOvertimeStatus = async (logId, status, approverId) => {
+  if (isDemoMode()) {
+    return { success: true, data: { id: logId, status } };
+  }
+
   try {
     const { data, error } = await supabase
       .from('overtime_logs')
@@ -906,6 +1021,30 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
 
 /* Get time tracking summary for an employee */
 export const getTimeTrackingSummary = async (employeeId, month, year) => {
+  if (isDemoMode()) {
+    const entries = MOCK_TIME_ENTRIES.filter(e => {
+      const d = new Date(e.date);
+      return String(e.employee_id) === String(employeeId) && 
+             d.getMonth() + 1 === parseInt(month) && 
+             d.getFullYear() === parseInt(year);
+    });
+    
+    const regularHours = entries.filter(e => e.hour_type === 'regular').reduce((sum, e) => sum + e.hours, 0);
+    const overtimeHours = entries.filter(e => e.hour_type === 'overtime').reduce((sum, e) => sum + e.hours, 0);
+    const daysWorked = new Set(entries.map(e => e.date)).size;
+    
+    return {
+      success: true,
+      data: {
+        regular_hours: regularHours,
+        overtime_hours: overtimeHours,
+        total_hours: regularHours + overtimeHours,
+        days_worked: daysWorked,
+        holiday_overtime_hours: 0
+      }
+    };
+  }
+
   try {
     console.log('🔧 [Service] getTimeTrackingSummary called for employee:', employeeId);
     // Try to get from summary table first
@@ -957,6 +1096,10 @@ export const getTimeTrackingSummary = async (employeeId, month, year) => {
 
 /* Manually trigger summary update */
 export const updateSummary = async (employeeId, month, year) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     const { data, error } = await supabase
       .rpc('update_time_tracking_summary', {
@@ -975,6 +1118,10 @@ export const updateSummary = async (employeeId, month, year) => {
 
 /* Get summaries for all employees in a period */
 export const getAllEmployeesSummary = async (month, year) => {
+  if (isDemoMode()) {
+    return { success: true, data: [] };
+  }
+
   try {
     const { data, error } = await supabase
       .from('time_tracking_summary')
@@ -995,6 +1142,10 @@ export const getAllEmployeesSummary = async (month, year) => {
 };
 
 export const getMonthlyAttendanceSummary = async (filters = {}) => {
+  if (isDemoMode()) {
+    return { success: true, data: [] };
+  }
+
   try {
     let query = supabase
       .from('monthly_attendance_summary')
@@ -1021,6 +1172,10 @@ export const getMonthlyAttendanceSummary = async (filters = {}) => {
 
 /* Calculate totals for different hour types */
 export const calculateHourTotals = async (employeeId, period = 'week') => {
+  if (isDemoMode()) {
+    return { success: true, data: { regular: 40, overtime: 5, holiday: 0, wfh: 8 } };
+  }
+
   try {
     const now = new Date();
     let startDate;
@@ -1065,6 +1220,13 @@ export const calculateHourTotals = async (employeeId, period = 'week') => {
 
 /* Get pending approvals count (for managers/HR) */
 export const getPendingApprovalsCount = async () => {
+  if (isDemoMode()) {
+    return { 
+      success: true, 
+      data: { timeEntries: 2, leaveRequests: 1, overtimeLogs: 0, total: 3 } 
+    };
+  }
+
   try {
     const [timeEntries, leaveRequests, overtimeLogs] = await Promise.all([
       supabase.from('time_entries').select('id', { count: 'exact' }).eq('status', 'pending'),
@@ -1100,6 +1262,10 @@ export const getPendingApprovalsCount = async () => {
 
 /* Get detailed pending approvals (for managers/HR) */
 export const getPendingApprovals = async () => {
+  if (isDemoMode()) {
+    return { success: true, data: MOCK_TIME_ENTRIES.filter(e => e.status === 'pending') };
+  }
+
   try {
     console.log('🔧 [Service] getPendingApprovals called');
     

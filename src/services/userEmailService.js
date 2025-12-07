@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabaseClient';
+import { isDemoMode, MOCK_USER } from '../utils/demoHelper';
 
 /**
  * Service for managing multiple email addresses per user
@@ -10,6 +11,23 @@ import { supabase } from '../config/supabaseClient';
  * @returns {Promise<{success: boolean, data?: array, error?: string}>}
  */
 export const getUserEmails = async (hrUserId) => {
+  if (isDemoMode()) {
+    if (hrUserId === MOCK_USER.id) {
+      return {
+        success: true,
+        data: [
+          {
+            hr_user_id: MOCK_USER.id,
+            auth_user_id: MOCK_USER.id,
+            email: MOCK_USER.email,
+            is_primary: true
+          }
+        ]
+      };
+    }
+    return { success: true, data: [] };
+  }
+
   try {
     const { data, error } = await supabase
       .from('user_emails')
@@ -32,6 +50,13 @@ export const getUserEmails = async (hrUserId) => {
  * @returns {Promise<{success: boolean, hrUserId?: string, error?: string}>}
  */
 export const getHrUserIdFromAuth = async (authUserId) => {
+  if (isDemoMode()) {
+    if (authUserId === MOCK_USER.id) {
+      return { success: true, hrUserId: MOCK_USER.id };
+    }
+    return { success: false, error: 'User not found' };
+  }
+
   try {
     const { data, error } = await supabase
       .from('user_emails')
@@ -68,6 +93,10 @@ export const getHrUserIdFromAuth = async (authUserId) => {
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 export const linkEmailToUser = async (hrUserId, authUserId, email, isPrimary = false) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     // Check if the auth account already exists in the system
     const { data: existingLink } = await supabase
@@ -130,6 +159,10 @@ export const linkEmailToUser = async (hrUserId, authUserId, email, isPrimary = f
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 export const unlinkEmailFromUser = async (authUserId) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     // Check if this is the only email for the user
     const { data: emailData } = await supabase
@@ -173,6 +206,10 @@ export const unlinkEmailFromUser = async (authUserId) => {
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 export const setPrimaryEmail = async (authUserId) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     // Get the email data
     const { data: emailData, error: fetchError } = await supabase
@@ -219,6 +256,46 @@ export const setPrimaryEmail = async (authUserId) => {
  * @returns {Promise<{success: boolean, data?: array, error?: string}>}
  */
 export const getAllUsersWithEmails = async () => {
+  if (isDemoMode()) {
+    return {
+      success: true,
+      data: [
+        {
+          hr_user_id: MOCK_USER.id,
+          full_name: MOCK_USER.name,
+          role: MOCK_USER.role,
+          department: MOCK_USER.department,
+          is_active: true,
+          emails: [
+            {
+              id: 'mock-email-id-1',
+              auth_user_id: 'mock-auth-id-1',
+              email: MOCK_USER.email,
+              is_primary: true,
+              created_at: new Date().toISOString()
+            }
+          ]
+        },
+        {
+          hr_user_id: 'mock-emp-2',
+          full_name: 'Sarah Connor',
+          role: 'Employee',
+          department: 'Operations',
+          is_active: true,
+          emails: [
+            {
+              id: 'mock-email-id-2',
+              auth_user_id: 'mock-auth-id-2',
+              email: 'sarah.connor@example.com',
+              is_primary: true,
+              created_at: new Date().toISOString()
+            }
+          ]
+        }
+      ]
+    };
+  }
+
   try {
     const { data, error } = await supabase
       .from('user_emails_view')

@@ -44,6 +44,7 @@ export default {
     invalidCredentials: 'Invalid email or password',
     rememberMe: 'Remember me',
     forgotPassword: 'Forgot password?',
+    tryDemo: 'Try Demo Mode',
     forgotPasswordModal: {
       title: 'Reset Password',
       description: 'Enter your email address and we\'ll send you a link to reset your password.',
@@ -263,6 +264,19 @@ export default {
     marketing: 'Marketing',
     design: 'Design',
     part_time_employee: 'Part-Time Employee',
+    // Also support capitalized versions for compatibility
+    Management: 'Management',
+    Engineering: 'Engineering',
+    Design: 'Design',
+    Marketing: 'Marketing',
+    Sales: 'Sales',
+    Finance: 'Finance',
+    'Human Resources': 'Human Resources',
+    Technology: 'Technology',
+    Operations: 'Operations',
+    Support: 'Support',
+    Legal: 'Legal',
+    IT: 'IT',
   },
 
   // Months

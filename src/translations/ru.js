@@ -159,6 +159,19 @@ export default {
     marketing: 'Маркетинг',
     design: 'Дизайн',
     part_time_employee: 'Сотрудник на неполный рабочий день',
+    // Also support capitalized versions for compatibility
+    Management: 'Управление',
+    Engineering: 'Инженерия',
+    Design: 'Дизайн',
+    Marketing: 'Маркетинг',
+    Sales: 'Продажи',
+    Finance: 'Финансы',
+    'Human Resources': 'Кадры',
+    Technology: 'Технологии',
+    Operations: 'Операции',
+    Support: 'Поддержка',
+    Legal: 'Юридический',
+    IT: 'IT',
   },
 
   // Months

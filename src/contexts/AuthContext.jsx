@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, hasPermission, customStorage } from '../config/supabaseClient';
 import { linkUserToEmployee } from '../services/employeeService';
+import { isDemoMode, enableDemoMode, disableDemoMode, MOCK_USER } from '../utils/demoHelper';
 
 const AuthContext = createContext();
 
@@ -43,6 +44,15 @@ export const AuthProvider = ({ children }) => {
       try {
         console.log('🔍 Initializing auth...');
         
+        // Check for demo mode first
+        if (isDemoMode()) {
+          console.log('🧪 Demo mode detected');
+          setUser(MOCK_USER);
+          setIsAuthenticated(true);
+          setLoading(false);
+          return;
+        }
+
         // Get the current session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
@@ -72,6 +82,9 @@ export const AuthProvider = ({ children }) => {
           return;
         }
 
+        // Real session is valid - disable demo mode if it was enabled
+        disableDemoMode();
+
         // Session is valid - fetch user profile
         console.log('✅ Valid session found, loading profile...');
         setSession(session);
@@ -95,6 +108,9 @@ export const AuthProvider = ({ children }) => {
 
       if (event === 'SIGNED_IN' && session) {
         console.log('🔐 User signed in');
+        // Clear demo mode when a real user signs in
+        disableDemoMode();
+        
         setSession(session);
         setLoading(true);
         
@@ -667,6 +683,16 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('🚪 Logging out...');
       
+      if (isDemoMode()) {
+        disableDemoMode();
+        setUser(null);
+        setIsAuthenticated(false);
+        setSession(null);
+        setLoading(false);
+        console.log('✅ Demo mode disabled');
+        return;
+      }
+
       // Sign out from Supabase (this will trigger SIGNED_OUT event)
       const { error } = await supabase.auth.signOut();
       
@@ -694,7 +720,16 @@ export const AuthProvider = ({ children }) => {
   // Check if user has specific permission
   const checkPermission = (permission) => {
     if (!user || !user.role) return false;
+    // In demo mode, admin has all permissions
+    if (isDemoMode() && user.role === 'admin') return true;
     return hasPermission(user.role, permission);
+  };
+
+  const loginAsDemo = () => {
+    enableDemoMode();
+    setUser(MOCK_USER);
+    setIsAuthenticated(true);
+    setLoading(false);
   };
 
   const value = {
@@ -704,6 +739,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     loginWithGithub,
+    loginAsDemo,
     logout,
     signOut: logout, // Alias for backward compatibility
     forgotPassword,

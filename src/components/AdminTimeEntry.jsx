@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as timeTrackingService from '../services/timeTrackingService';
 import { supabase } from '../config/supabaseClient';
+import { isDemoMode, MOCK_EMPLOYEES } from '../utils/demoHelper';
 
 const AdminTimeEntry = ({ onEntriesChanged }) => {
   const { isDarkMode, bg, text, border } = useTheme();
@@ -45,6 +46,11 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
   }, [canManageTimeTracking]);
 
   const fetchEmployees = async () => {
+    if (isDemoMode()) {
+      setEmployees(MOCK_EMPLOYEES);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('employees')
@@ -165,12 +171,21 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
 
       // Check for overlapping time entries for the selected employees on this date with the same hour type
       const employeeIds = selectedEmployees.map(e => e.id);
-      const { data: existingEntries, error: checkError } = await supabase
-        .from('time_entries')
-        .select('employee_id, date, hour_type, clock_in, clock_out')
-        .in('employee_id', employeeIds)
-        .eq('date', formData.date)
-        .eq('hour_type', formData.hourType);
+      let existingEntries = [];
+      let checkError = null;
+
+      if (isDemoMode()) {
+        existingEntries = [];
+      } else {
+        const { data, error } = await supabase
+          .from('time_entries')
+          .select('employee_id, date, hour_type, clock_in, clock_out')
+          .in('employee_id', employeeIds)
+          .eq('date', formData.date)
+          .eq('hour_type', formData.hourType);
+        existingEntries = data;
+        checkError = error;
+      }
       
       if (checkError) {
         console.error('Error checking existing entries:', checkError);

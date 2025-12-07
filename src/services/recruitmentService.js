@@ -1,4 +1,11 @@
 import { supabase } from '../config/supabaseClient';
+import { 
+  isDemoMode, 
+  MOCK_JOB_POSTINGS, 
+  MOCK_APPLICANTS, 
+  MOCK_APPLICATIONS, 
+  MOCK_INTERVIEWS 
+} from '../utils/demoHelper';
 
 /**
  * Recruitment Service
@@ -14,6 +21,17 @@ import { supabase } from '../config/supabaseClient';
  * Get all job postings
  */
 export const getAllJobPostings = async (filters = {}) => {
+  if (isDemoMode()) {
+    let data = [...MOCK_JOB_POSTINGS];
+    if (filters.status) {
+      data = data.filter(job => job.status === filters.status);
+    }
+    if (filters.department) {
+      data = data.filter(job => job.department === filters.department);
+    }
+    return { success: true, data };
+  }
+
   try {
     let query = supabase
       .from('job_postings')
@@ -63,6 +81,10 @@ export const createJobPosting = async (jobData) => {
  * Get all applicants
  */
 export const getAllApplicants = async () => {
+  if (isDemoMode()) {
+    return { success: true, data: MOCK_APPLICANTS };
+  }
+
   try {
     const { data, error } = await supabase
       .from('applicants')
@@ -104,6 +126,17 @@ export const createApplicant = async (applicantData) => {
  * Get all applications with job and applicant details
  */
 export const getAllApplications = async (filters = {}) => {
+  if (isDemoMode()) {
+    let data = [...MOCK_APPLICATIONS];
+    if (filters.status) {
+      data = data.filter(app => app.status === filters.status);
+    }
+    if (filters.jobPostingId) {
+      data = data.filter(app => app.job_posting_id === filters.jobPostingId);
+    }
+    return { success: true, data };
+  }
+
   try {
     let query = supabase
       .from('applications')
@@ -135,6 +168,14 @@ export const getAllApplications = async (filters = {}) => {
  * Get application by ID
  */
 export const getApplicationById = async (applicationId) => {
+  if (isDemoMode()) {
+    const application = MOCK_APPLICATIONS.find(a => a.id === applicationId);
+    if (application) {
+      return { success: true, data: application };
+    }
+    return { success: false, error: 'Application not found' };
+  }
+
   try {
     const { data, error } = await supabase
       .from('applications')
@@ -240,6 +281,11 @@ export const createInterviewSchedule = async (interviewData) => {
  * Get interviews for an application
  */
 export const getInterviewsByApplication = async (applicationId) => {
+  if (isDemoMode()) {
+    const interviews = MOCK_INTERVIEWS.filter(i => i.application_id === applicationId);
+    return { success: true, data: interviews };
+  }
+
   try {
     const { data, error } = await supabase
       .from('interview_schedules')
@@ -266,6 +312,12 @@ export const getInterviewsByApplication = async (applicationId) => {
  * Get all upcoming interviews
  */
 export const getUpcomingInterviews = async () => {
+  if (isDemoMode()) {
+    const now = new Date().toISOString();
+    const interviews = MOCK_INTERVIEWS.filter(i => i.scheduled_date >= now && i.status === 'scheduled');
+    return { success: true, data: interviews };
+  }
+
   try {
     const now = new Date().toISOString();
     
@@ -319,6 +371,20 @@ export const updateInterviewSchedule = async (interviewId, updates) => {
  * Get recruitment metrics for a job posting
  */
 export const getRecruitmentMetrics = async (jobPostingId = null) => {
+  if (isDemoMode()) {
+    // Return mock metrics
+    const metrics = {
+      views: 150,
+      applications: 12,
+      interviews: 4,
+      offers: 1,
+      hires: 0,
+      time_to_hire: 15,
+      source_breakdown: { linkedin: 40, website: 30, referral: 30 }
+    };
+    return { success: true, data: metrics };
+  }
+
   try {
     let query = supabase
       .from('recruitment_metrics')
@@ -344,6 +410,19 @@ export const getRecruitmentMetrics = async (jobPostingId = null) => {
  * Get overall recruitment statistics
  */
 export const getRecruitmentStats = async () => {
+  if (isDemoMode()) {
+    const stats = {
+      total: MOCK_APPLICATIONS.length,
+      underReview: MOCK_APPLICATIONS.filter(a => a.status === 'under review').length,
+      shortlisted: MOCK_APPLICATIONS.filter(a => a.status === 'shortlisted').length,
+      interviewScheduled: MOCK_APPLICATIONS.filter(a => a.status === 'interview scheduled').length,
+      offerExtended: MOCK_APPLICATIONS.filter(a => a.status === 'offer extended').length,
+      hired: MOCK_APPLICATIONS.filter(a => a.status === 'hired').length,
+      rejected: MOCK_APPLICATIONS.filter(a => a.status === 'rejected').length
+    };
+    return { success: true, data: stats };
+  }
+
   try {
     // Get counts for each status
     const { data: applications, error } = await supabase

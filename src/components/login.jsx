@@ -3,12 +3,13 @@ import { Eye, EyeOff, Lock, Mail, Building2, AlertCircle, X, CheckCircle } from 
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { disableDemoMode } from '../utils/demoHelper';
 import ThemeToggle from './themeToggle';
 import LanguageSelector from './LanguageSelector';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-  const { login, loginWithGithub, forgotPassword, isAuthenticated, user, loading } = useAuth();
+  const { login, loginWithGithub, loginAsDemo, forgotPassword, isAuthenticated, user, loading } = useAuth();
   const { isDarkMode, bg, text, input } = useTheme();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -87,6 +88,9 @@ const Login = () => {
     setIsLoading(true);
     setLoginError('');
     
+    // Clear demo mode before attempting real login
+    disableDemoMode();
+    
     const result = await login(formData.email, formData.password, rememberMe);
     
     if (!result.success) {
@@ -98,6 +102,9 @@ const Login = () => {
   const handleGithubLogin = async () => {
     setLoginError('');
     setIsGithubLoading(true);
+    
+    // Clear demo mode before attempting real login
+    disableDemoMode();
     
     const result = await loginWithGithub();
     
@@ -351,8 +358,8 @@ const Login = () => {
             </div>
           </div>
 
-          {/* GitHub OAuth Button */}
-          <button
+          {/* GitHub OAuth Button - Hidden for now */}
+          {/* <button
             type="button"
             onClick={handleGithubLogin}
             className={`w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 cursor-pointer ${
@@ -378,6 +385,27 @@ const Login = () => {
                 <span>{t('login.continueWithGithub', 'Continue with GitHub')}</span>
               </>
             )}
+          </button> */}
+
+          {/* Demo Mode Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsLoading(true);
+              // Simulate a small delay for better UX
+              setTimeout(() => {
+                loginAsDemo();
+              }, 800);
+            }}
+            className={`w-full mt-3 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 cursor-pointer ${
+              isDarkMode 
+                ? 'bg-purple-900/30 hover:bg-purple-900/50 text-purple-200 border border-purple-700' 
+                : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200'
+            }`}
+            disabled={isLoading}
+          >
+            <Building2 className="w-5 h-5" />
+            <span>{t('login.tryDemo', 'Try Demo Mode')}</span>
           </button>
 
           {/* Sign Up Link */}

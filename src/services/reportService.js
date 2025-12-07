@@ -1,4 +1,9 @@
 import { supabase } from '../config/supabaseClient';
+import { 
+  isDemoMode, 
+  MOCK_EMPLOYEES, 
+  MOCK_APPLICATIONS 
+} from '../utils/demoHelper';
 
 /**
  * Report Generation Service
@@ -7,6 +12,36 @@ import { supabase } from '../config/supabaseClient';
 
 // Generate comprehensive employee performance report
 export const generatePerformanceReport = async (filters = {}) => {
+  if (isDemoMode()) {
+    // Mock performance reviews
+    const mockReviews = MOCK_EMPLOYEES.map(emp => ({
+      id: `review-${emp.id}`,
+      employee_id: emp.id,
+      review_date: '2023-10-01',
+      overall_rating: Math.floor(Math.random() * 2) + 3, // 3-5
+      reviewer_id: 'demo-emp-1',
+      status: 'completed',
+      employees: emp
+    }));
+
+    let data = [...mockReviews];
+    if (filters.department && filters.department !== 'all') {
+      data = data.filter(r => r.employees.department === filters.department);
+    }
+    if (filters.employeeId) {
+      data = data.filter(r => r.employee_id === filters.employeeId);
+    }
+
+    const metrics = calculatePerformanceMetrics(data);
+    return {
+      success: true,
+      data: {
+        reviews: data,
+        metrics
+      }
+    };
+  }
+
   try {
     const { department, dateFrom, dateTo, employeeId } = filters;
     
@@ -66,6 +101,22 @@ export const generatePerformanceReport = async (filters = {}) => {
 
 // Generate salary analysis report
 export const generateSalaryReport = async (filters = {}) => {
+  if (isDemoMode()) {
+    let data = [...MOCK_EMPLOYEES];
+    if (filters.department && filters.department !== 'all') {
+      data = data.filter(emp => emp.department === filters.department);
+    }
+    
+    const stats = calculateSalaryStats(data);
+    return {
+      success: true,
+      data: {
+        employees: data,
+        statistics: stats
+      }
+    };
+  }
+
   try {
     const { department, dateFrom, dateTo } = filters;
     
@@ -107,6 +158,37 @@ export const generateSalaryReport = async (filters = {}) => {
 
 // Generate attendance report
 export const generateAttendanceReport = async (filters = {}) => {
+  if (isDemoMode()) {
+    // Mock attendance summaries
+    const mockSummaries = MOCK_EMPLOYEES.map(emp => ({
+      id: `summary-${emp.id}`,
+      employee_id: emp.id,
+      month: filters.month || new Date().getMonth() + 1,
+      year: filters.year || new Date().getFullYear(),
+      total_hours: 160,
+      days_worked: 20,
+      attendance_rate: 95 + Math.random() * 5,
+      employees: emp
+    }));
+
+    let data = [...mockSummaries];
+    if (filters.department && filters.department !== 'all') {
+      data = data.filter(s => s.employees.department === filters.department);
+    }
+    if (filters.employeeId) {
+      data = data.filter(s => s.employee_id === filters.employeeId);
+    }
+
+    const metrics = calculateAttendanceMetrics(data);
+    return {
+      success: true,
+      data: {
+        summaries: data,
+        metrics
+      }
+    };
+  }
+
   try {
     const { department, month, year, employeeId } = filters;
     
@@ -163,6 +245,20 @@ export const generateAttendanceReport = async (filters = {}) => {
 
 // Generate recruitment metrics report
 export const generateRecruitmentReport = async (filters = {}) => {
+  if (isDemoMode()) {
+    let data = [...MOCK_APPLICATIONS];
+    // Apply filters if needed (simplified for demo)
+    
+    const metrics = calculateRecruitmentMetrics(data);
+    return {
+      success: true,
+      data: {
+        applications: data,
+        metrics
+      }
+    };
+  }
+
   try {
     const { dateFrom, dateTo, position } = filters;
     
@@ -207,6 +303,20 @@ export const generateRecruitmentReport = async (filters = {}) => {
 
 // Generate department comparison report
 export const generateDepartmentReport = async (filters = {}) => {
+  if (isDemoMode()) {
+    // Mock department stats
+    const departments = ['Management', 'Engineering', 'Design', 'Marketing', 'Sales', 'HR'];
+    const stats = departments.map(dept => ({
+      department: dept,
+      employeeCount: MOCK_EMPLOYEES.filter(e => e.department === dept).length,
+      avgPerformance: 4.2,
+      avgAttendance: 96.5,
+      totalSalary: MOCK_EMPLOYEES.filter(e => e.department === dept).reduce((sum, e) => sum + e.salary, 0)
+    })).filter(s => s.employeeCount > 0);
+
+    return { success: true, data: stats };
+  }
+
   try {
     const { dateFrom, dateTo } = filters;
     
@@ -262,6 +372,22 @@ export const generateDepartmentReport = async (filters = {}) => {
 
 // Generate employee turnover report
 export const generateTurnoverReport = async (filters = {}) => {
+  if (isDemoMode()) {
+    let data = [...MOCK_EMPLOYEES];
+    if (filters.department && filters.department !== 'all') {
+      data = data.filter(emp => emp.department === filters.department);
+    }
+    
+    const metrics = calculateTurnoverMetrics(data, filters.dateFrom, filters.dateTo);
+    return {
+      success: true,
+      data: {
+        employees: data,
+        metrics
+      }
+    };
+  }
+
   try {
     const { dateFrom, dateTo, department } = filters;
     
@@ -297,6 +423,28 @@ export const generateTurnoverReport = async (filters = {}) => {
 
 // Get employee performance summary from view
 export const getPerformanceSummaries = async (filters = {}) => {
+  if (isDemoMode()) {
+    const summaries = MOCK_EMPLOYEES.map(emp => ({
+      employee_id: emp.id,
+      employee_name: emp.name,
+      department: emp.department,
+      position: emp.position,
+      avg_rating: 4.0 + Math.random(),
+      review_count: 2,
+      last_review_date: '2023-10-01'
+    }));
+    
+    let data = [...summaries];
+    if (filters.department && filters.department !== 'all') {
+      data = data.filter(s => s.department === filters.department);
+    }
+    if (filters.employeeId) {
+      data = data.filter(s => s.employee_id === filters.employeeId);
+    }
+    
+    return { success: true, data };
+  }
+
   try {
     const { department, employeeId } = filters;
     

@@ -3,6 +3,7 @@ import { useLanguage, SUPPORTED_LANGUAGES } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from '../contexts/AuthContext';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import { isDemoMode } from '../utils/demoHelper';
 import { 
   Calendar, 
   Download, 
@@ -188,16 +189,46 @@ const Reports = () => {
 
       // Fetch Time Entries (for 'all' or 'time-entries' tab)
       if (activeTab === 'all' || activeTab === 'time-entries') {
-        // Use direct Supabase query with proper join - fetch all entries first
-        const { data: allTimeEntries, error } = await supabase
-          .from('time_entries')
-          .select(`
-            *,
-            employee:employees!time_entries_employee_id_fkey(id, name, department, position)
-          `)
-          .gte('date', startDate)
-          .lte('date', endDate)
-          .order('date', { ascending: false });
+        let allTimeEntries = [];
+        let error = null;
+
+        if (isDemoMode()) {
+          allTimeEntries = [
+            {
+              id: 'mock-entry-1',
+              employee_id: 'demo-emp-1',
+              date: startDate,
+              clock_in: '09:00:00',
+              clock_out: '17:00:00',
+              total_hours: 8,
+              status: 'approved',
+              employee: { id: 'demo-emp-1', name: 'Demo Admin', department: 'Management', position: 'HR Manager' }
+            },
+            {
+              id: 'mock-entry-2',
+              employee_id: 'mock-emp-2',
+              date: startDate,
+              clock_in: '08:30:00',
+              clock_out: '17:30:00',
+              total_hours: 9,
+              status: 'approved',
+              employee: { id: 'mock-emp-2', name: 'Sarah Connor', department: 'Operations', position: 'Developer' }
+            }
+          ];
+        } else {
+          // Use direct Supabase query with proper join - fetch all entries first
+          const result = await supabase
+            .from('time_entries')
+            .select(`
+              *,
+              employee:employees!time_entries_employee_id_fkey(id, name, department, position)
+            `)
+            .gte('date', startDate)
+            .lte('date', endDate)
+            .order('date', { ascending: false });
+          allTimeEntries = result.data;
+          error = result.error;
+        }
 
         if (error) {
           console.error('Error fetching time entries:', error);

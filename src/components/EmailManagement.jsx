@@ -3,7 +3,6 @@ import { Mail, Plus, X, Star, Check, AlertCircle, Users, Trash2 } from 'lucide-r
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { supabase } from '../config/supabaseClient';
 import * as userEmailService from '../services/userEmailService';
 
 const EmailManagement = () => {
@@ -50,8 +49,12 @@ const EmailManagement = () => {
     setLoading(true);
     setError('');
     try {
-      const data = await userEmailService.getAllUsersWithEmails();
-      setUsersWithEmails(data);
+      const response = await userEmailService.getAllUsersWithEmails();
+      if (response.success) {
+        setUsersWithEmails(response.data);
+      } else {
+        throw new Error(response.error || 'Failed to load users');
+      }
     } catch (err) {
       console.error('Error loading users with emails:', err);
       setError(t('emailManagement.errorLoadingUsers') || 'Error loading users');

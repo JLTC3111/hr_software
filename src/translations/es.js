@@ -306,6 +306,19 @@ login: {
     marketing: 'Marketing',
     design: 'Diseño',
     part_time_employee: 'Empleado a Tiempo Parcial',
+    // Also support capitalized versions for compatibility
+    Management: 'Gestión',
+    Engineering: 'Ingeniería',
+    Design: 'Diseño',
+    Marketing: 'Marketing',
+    Sales: 'Ventas',
+    Finance: 'Finanzas',
+    'Human Resources': 'Recursos Humanos',
+    Technology: 'Tecnología',
+    Operations: 'Operaciones',
+    Support: 'Soporte',
+    Legal: 'Legal',
+    IT: 'TI',
   },
 
   // Months

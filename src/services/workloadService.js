@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabaseClient';
+import { isDemoMode, MOCK_TASKS } from '../utils/demoHelper';
 
 /**
  * Get all tasks for a specific employee
@@ -6,6 +7,11 @@ import { supabase } from '../config/supabaseClient';
  * @returns {Promise<{success: boolean, data?: array, error?: string}>}
  */
 export const getEmployeeTasks = async (employeeId) => {
+  if (isDemoMode()) {
+    const tasks = MOCK_TASKS.filter(t => String(t.employee_id) === String(employeeId));
+    return { success: true, data: tasks };
+  }
+
   try {
     const { data, error } = await supabase
       .from('workload_tasks')
@@ -28,6 +34,22 @@ export const getEmployeeTasks = async (employeeId) => {
  * @returns {Promise<{success: boolean, data?: array, error?: string}>}
  */
 export const getAllTasks = async (filters = {}) => {
+  if (isDemoMode()) {
+    let tasks = [...MOCK_TASKS];
+    
+    if (filters.status) {
+      tasks = tasks.filter(t => t.status === filters.status);
+    }
+    if (filters.priority) {
+      tasks = tasks.filter(t => t.priority === filters.priority);
+    }
+    if (filters.employeeId) {
+      tasks = tasks.filter(t => String(t.employee_id) === String(filters.employeeId));
+    }
+    
+    return { success: true, data: tasks };
+  }
+
   try {
     let query = supabase
       .from('workload_tasks')
@@ -71,6 +93,11 @@ export const getAllTasks = async (filters = {}) => {
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export const getTaskById = async (taskId) => {
+  if (isDemoMode()) {
+    const task = MOCK_TASKS.find(t => t.id === taskId);
+    return { success: true, data: task || null };
+  }
+
   try {
     const { data, error } = await supabase
       .from('workload_tasks')
@@ -96,6 +123,20 @@ export const getTaskById = async (taskId) => {
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export const createTask = async (taskData) => {
+  if (isDemoMode()) {
+    const newTask = {
+      id: `task-demo-${Date.now()}`,
+      employee_id: taskData.employeeId,
+      title: taskData.title,
+      description: taskData.description,
+      due_date: taskData.dueDate,
+      priority: taskData.priority || 'medium',
+      status: taskData.status || 'pending',
+      created_at: new Date().toISOString()
+    };
+    return { success: true, data: newTask };
+  }
+
   try {
     const { data, error } = await supabase
       .from('workload_tasks')
@@ -130,6 +171,10 @@ export const createTask = async (taskData) => {
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export const updateTask = async (taskId, updates) => {
+  if (isDemoMode()) {
+    return { success: true, data: { id: taskId, ...updates, updated_at: new Date().toISOString() } };
+  }
+
   try {
     const updateData = {};
     
@@ -166,6 +211,10 @@ export const updateTask = async (taskId, updates) => {
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 export const deleteTask = async (taskId) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     const { error } = await supabase
       .from('workload_tasks')
@@ -187,6 +236,19 @@ export const deleteTask = async (taskId) => {
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export const getEmployeeTaskStats = async (employeeId) => {
+  if (isDemoMode()) {
+    const tasks = MOCK_TASKS.filter(t => String(t.employee_id) === String(employeeId));
+    const stats = {
+      total: tasks.length,
+      pending: tasks.filter(t => t.status === 'pending').length,
+      inProgress: tasks.filter(t => t.status === 'in-progress').length,
+      completed: tasks.filter(t => t.status === 'completed').length,
+      cancelled: tasks.filter(t => t.status === 'cancelled').length,
+      completionRate: tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100) : 0
+    };
+    return { success: true, data: stats };
+  }
+
   try {
     const { data: tasks, error } = await supabase
       .from('workload_tasks')
@@ -226,6 +288,18 @@ export const getEmployeeTaskStats = async (employeeId) => {
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export const getOrganizationTaskStats = async () => {
+  if (isDemoMode()) {
+    const stats = {
+      totalTasks: MOCK_TASKS.length,
+      totalEmployees: 5,
+      pending: MOCK_TASKS.filter(t => t.status === 'pending').length,
+      inProgress: MOCK_TASKS.filter(t => t.status === 'in-progress').length,
+      completed: MOCK_TASKS.filter(t => t.status === 'completed').length,
+      completionRate: MOCK_TASKS.length > 0 ? Math.round((MOCK_TASKS.filter(t => t.status === 'completed').length / MOCK_TASKS.length) * 100) : 0
+    };
+    return { success: true, data: stats };
+  }
+
   try {
     const { data: tasks, error } = await supabase
       .from('workload_tasks')
@@ -272,6 +346,10 @@ export const getOrganizationTaskStats = async () => {
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 export const bulkUpdateTaskStatus = async (taskIds, status) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     const { error } = await supabase
       .from('workload_tasks')

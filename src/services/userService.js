@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabaseClient';
+import { isDemoMode, MOCK_USER, MOCK_EMPLOYEES } from '../utils/demoHelper';
 
 /**
  * User Service
@@ -13,6 +14,10 @@ import { supabase } from '../config/supabaseClient';
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 export const deleteUser = async (userId) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     console.log(`🗑️ Starting deletion process for user ${userId}`);
 
@@ -149,6 +154,10 @@ export const deleteUser = async (userId) => {
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 export const deactivateUser = async (userId) => {
+  if (isDemoMode()) {
+    return { success: true, data: { id: userId, is_active: false } };
+  }
+
   try {
     console.log(`🔒 Deactivating user ${userId}`);
 
@@ -183,6 +192,10 @@ export const deactivateUser = async (userId) => {
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 export const reactivateUser = async (userId) => {
+  if (isDemoMode()) {
+    return { success: true, data: { id: userId, is_active: true } };
+  }
+
   try {
     console.log(`🔓 Reactivating user ${userId}`);
 
@@ -217,6 +230,47 @@ export const reactivateUser = async (userId) => {
  * @returns {Promise<{success: boolean, data?: Array, error?: string}>}
  */
 export const getAllUsers = async (filters = {}) => {
+  if (isDemoMode()) {
+    // Create mock users from employees
+    const mockUsers = MOCK_EMPLOYEES.map(emp => ({
+      id: `user-${emp.id}`,
+      email: emp.email,
+      full_name: emp.name,
+      role: emp.position.includes('Manager') ? 'admin' : 'employee',
+      department: emp.department,
+      is_active: emp.status === 'active',
+      employee_id: emp.id,
+      avatar_url: emp.photo
+    }));
+    
+    // Add the current logged in demo user if not already there
+    if (!mockUsers.find(u => u.email === MOCK_USER.email)) {
+      mockUsers.unshift({
+        id: MOCK_USER.id,
+        email: MOCK_USER.email,
+        full_name: MOCK_USER.name,
+        role: MOCK_USER.role,
+        department: MOCK_USER.department,
+        is_active: true,
+        employee_id: MOCK_USER.employeeId,
+        avatar_url: MOCK_USER.avatar_url
+      });
+    }
+
+    let data = [...mockUsers];
+    if (filters.role) {
+      data = data.filter(u => u.role === filters.role);
+    }
+    if (filters.department) {
+      data = data.filter(u => u.department === filters.department);
+    }
+    if (filters.is_active !== undefined) {
+      data = data.filter(u => u.is_active === filters.is_active);
+    }
+
+    return { success: true, data };
+  }
+
   try {
     let query = supabase
       .from('hr_users')
@@ -263,6 +317,10 @@ export const getAllUsers = async (filters = {}) => {
  * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
  */
 export const updateUser = async (userId, updates) => {
+  if (isDemoMode()) {
+    return { success: true, data: { id: userId, ...updates } };
+  }
+
   try {
     const { data, error } = await supabase
       .from('hr_users')
@@ -290,6 +348,18 @@ export const updateUser = async (userId, updates) => {
  * @returns {Promise<{success: boolean, results: Array, error?: string}>}
  */
 export const bulkDeleteUsers = async (userIds) => {
+  if (isDemoMode()) {
+    return {
+      success: true,
+      results: userIds.map(id => ({ userId: id, success: true })),
+      summary: {
+        total: userIds.length,
+        successful: userIds.length,
+        failed: 0
+      }
+    };
+  }
+
   try {
     const results = [];
     

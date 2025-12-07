@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as timeTrackingService from '../services/timeTrackingService';
 import { supabase } from '../config/supabaseClient';
+import { isDemoMode } from '../utils/demoHelper';
 import AdminTimeEntry from './AdminTimeEntry';
 import { motion } from 'framer-motion';
 import * as flubber from 'flubber';
@@ -341,6 +342,14 @@ const TimeClockEntry = ({ currentLanguage }) => {
   // Fetch all employees for dropdown
   const fetchAllEmployees = async () => {
     try {
+      if (isDemoMode()) {
+        setAllEmployees([
+          { id: 'demo-emp-1', name: 'Demo Admin', position: 'HR Manager', department: 'Management' },
+          { id: 'mock-emp-2', name: 'Sarah Connor', position: 'Developer', department: 'Operations' }
+        ]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('employees')
         .select('id, name, position, department')
@@ -510,12 +519,21 @@ const TimeClockEntry = ({ currentLanguage }) => {
       const employeeId = user?.employeeId || user?.id;
       
       // Check for overlapping time entries on this date with the same hour type
-      const { data: existingEntries, error: checkError } = await supabase
-        .from('time_entries')
-        .select('id, hour_type, clock_in, clock_out')
-        .eq('employee_id', employeeId)
-        .eq('date', formData.date)
-        .eq('hour_type', formData.hourType);
+      let existingEntries = [];
+      let checkError = null;
+
+      if (isDemoMode()) {
+        existingEntries = [];
+      } else {
+        const { data, error } = await supabase
+          .from('time_entries')
+          .select('id, hour_type, clock_in, clock_out')
+          .eq('employee_id', employeeId)
+          .eq('date', formData.date)
+          .eq('hour_type', formData.hourType);
+        existingEntries = data;
+        checkError = error;
+      }
       
       if (checkError) {
         console.error('Error checking existing entries:', checkError);
@@ -865,6 +883,32 @@ const TimeClockEntry = ({ currentLanguage }) => {
     return t(statusKey, status.charAt(0).toUpperCase() + status.slice(1));
   };
 
+  // Format time string to HH:MM format
+  const formatTime = (timeStr) => {
+    if (!timeStr) return '';
+    // If it's already in HH:MM:SS format, extract HH:MM
+    if (timeStr.match(/^\d{2}:\d{2}(:\d{2})?$/)) {
+      return timeStr.substring(0, 5);
+    }
+    // If it contains a T (ISO format like 2025-12-04T09:00:00), extract time part
+    if (timeStr.includes('T')) {
+      const timePart = timeStr.split('T')[1];
+      if (timePart) {
+        return timePart.substring(0, 5);
+      }
+    }
+    // Try to parse as date and extract time
+    try {
+      const date = new Date(timeStr);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      }
+    } catch (e) {
+      // Fall through
+    }
+    return timeStr;
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'approved': return `text-green-800 bg-green-200 ${isDarkMode ? 'bg-green-900/30 text-green-400' : ''} font-semibold`;
@@ -911,63 +955,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
         </div>
       )}
       
-        <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fade-in {
-          animation: fadeIn 0.3s ease-out;
-        }
-
-        #clock-in-input::-webkit-calendar-picker-indicator,
-        #clock-out-input::-webkit-calendar-picker-indicator,
-        #date-input::-webkit-calendar-picker-indicator {
-            opacity: 0;
-            position: absolute; 
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            cursor: pointer;
-            z-index: 2;
-            background: transparent;
-        }
-
-        #date-input, #clock-in-input, #clock-out-input {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-        }
-
-        #notes-textarea::placeholder,
-        #notes-textarea::-webkit-input-placeholder {
-            color: ${isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.45)'};
-            font-style: italic;
-            opacity: 1; 
-        }
-        
-        /* Firefox requires the 'moz' prefix */
-        #notes-textarea::-moz-placeholder {
-            color: ${isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.45)'};
-            font-style: italic;
-            opacity: 1;
-        }
-
-        /* IE/Edge require the 'ms' prefix */
-        #notes-textarea:-ms-input-placeholder {
-            color: ${isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.45)'};
-            font-style: italic;
-            opacity: 1;
-        }
-      `}</style>
       {/* Header */}
       <div>
         <h1 className={`text-3xl font-bold ${text.primary}`}>
@@ -1569,11 +1556,11 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     </td>
                     {selectedEmployeeFilter !== 'self' && (
                       <td className={`p-3 ${text.primary} text-center font-medium ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>
-                        {entry.employee_name || 'N/A'}
+                        {entry.employee_name || entry.employee?.name || 'N/A'}
                       </td>
                     )}
                     <td className={`p-3 ${text.secondary} ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>
-                      {entry.clock_in || entry.clockIn} - {entry.clock_out || entry.clockOut}
+                      {formatTime(entry.clock_in || entry.clockIn)} - {formatTime(entry.clock_out || entry.clockOut)}
                     </td>
                     <td className={`p-3 ${text.primary} font-semibold ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>
                       {entry.hours} {t('timeClock.hrs')}

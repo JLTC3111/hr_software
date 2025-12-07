@@ -143,6 +143,19 @@ export default {
     marketing: 'マーケティング',
     design: 'デザイン',
     part_time_employee: 'パートタイム従業員',
+    // Also support capitalized versions for compatibility
+    Management: '管理',
+    Engineering: 'エンジニアリング',
+    Design: 'デザイン',
+    Marketing: 'マーケティング',
+    Sales: '営業',
+    Finance: '財務',
+    'Human Resources': '人事',
+    Technology: 'テクノロジー',
+    Operations: 'オペレーション',
+    Support: 'サポート',
+    Legal: '法務',
+    IT: 'IT',
   },
 
   // Months

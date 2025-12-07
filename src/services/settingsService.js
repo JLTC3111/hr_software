@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabaseClient';
+import { isDemoMode, MOCK_SETTINGS } from '../utils/demoHelper';
 
 /**
  * Get user settings
@@ -6,6 +7,10 @@ import { supabase } from '../config/supabaseClient';
  * @returns {Promise<object>} Result with settings data
  */
 export const getUserSettings = async (userId) => {
+  if (isDemoMode()) {
+    return { success: true, data: MOCK_SETTINGS };
+  }
+
   try {
     const { data, error } = await supabase
       .from('hr_user_settings')
@@ -34,6 +39,10 @@ export const getUserSettings = async (userId) => {
  * @returns {Promise<object>} Result with created settings
  */
 export const createDefaultSettings = async (userId) => {
+  if (isDemoMode()) {
+    return { success: true, data: MOCK_SETTINGS };
+  }
+
   try {
     const defaultSettings = {
       user_id: userId,
@@ -83,6 +92,10 @@ export const createDefaultSettings = async (userId) => {
  * @returns {Promise<object>} Result with updated settings
  */
 export const updateUserSettings = async (userId, updates) => {
+  if (isDemoMode()) {
+    return { success: true, data: { ...MOCK_SETTINGS, ...updates } };
+  }
+
   try {
     const { data, error } = await supabase
       .from('hr_user_settings')

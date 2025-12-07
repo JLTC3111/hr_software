@@ -143,6 +143,19 @@ export default {
     marketing: 'Marketing',
     design: 'Design',
     part_time_employee: 'Teilzeitmitarbeiter',
+    // Also support capitalized versions for compatibility
+    Management: 'Management',
+    Engineering: 'Ingenieurwesen',
+    Design: 'Design',
+    Marketing: 'Marketing',
+    Sales: 'Vertrieb',
+    Finance: 'Finanzen',
+    'Human Resources': 'Mitarbeiterwesen',
+    Technology: 'Technologie',
+    Operations: 'Betrieb',
+    Support: 'Support',
+    Legal: 'Recht',
+    IT: 'IT',
   },
 
   // Recruitment

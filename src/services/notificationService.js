@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabaseClient';
+import { isDemoMode, MOCK_NOTIFICATIONS } from '../utils/demoHelper';
 
 /**
  * Get all notifications for a user
@@ -7,6 +8,23 @@ import { supabase } from '../config/supabaseClient';
  * @returns {Promise<object>} Result with notifications data
  */
 export const getUserNotifications = async (userId, filters = {}) => {
+  if (isDemoMode()) {
+    let data = [...MOCK_NOTIFICATIONS];
+    if (filters.isRead !== undefined) {
+      data = data.filter(n => n.is_read === filters.isRead);
+    }
+    if (filters.type) {
+      data = data.filter(n => n.type === filters.type);
+    }
+    if (filters.category) {
+      data = data.filter(n => n.category === filters.category);
+    }
+    if (filters.limit) {
+      data = data.slice(0, filters.limit);
+    }
+    return { success: true, data };
+  }
+
   try {
     let query = supabase
       .from('hr_notifications')
@@ -48,6 +66,11 @@ export const getUserNotifications = async (userId, filters = {}) => {
  * @returns {Promise<object>} Result with count
  */
 export const getUnreadCount = async (userId) => {
+  if (isDemoMode()) {
+    const count = MOCK_NOTIFICATIONS.filter(n => !n.is_read).length;
+    return { success: true, count };
+  }
+
   try {
     const { count, error } = await supabase
       .from('hr_notifications')
@@ -71,6 +94,25 @@ export const getUnreadCount = async (userId) => {
  * @returns {Promise<object>} Result with created notification
  */
 export const createNotification = async (notification) => {
+  if (isDemoMode()) {
+    const newNotification = {
+      id: `notif-${Date.now()}`,
+      user_id: notification.userId,
+      title: notification.title,
+      message: notification.message,
+      type: notification.type || 'info',
+      category: notification.category || 'general',
+      is_read: false,
+      created_at: new Date().toISOString(),
+      action_url: notification.actionUrl,
+      action_label: notification.actionLabel,
+      metadata: notification.metadata || {},
+      expires_at: notification.expiresAt
+    };
+    // In a real app we would push to MOCK_NOTIFICATIONS but here we just return success
+    return { success: true, data: newNotification };
+  }
+
   try {
     const { data, error } = await supabase
       .from('hr_notifications')
@@ -103,6 +145,10 @@ export const createNotification = async (notification) => {
  * @returns {Promise<object>} Result
  */
 export const markAsRead = async (notificationId) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     const { error } = await supabase
       .from('hr_notifications')
@@ -127,6 +173,10 @@ export const markAsRead = async (notificationId) => {
  * @returns {Promise<object>} Result
  */
 export const markAllAsRead = async (userId) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     const { error } = await supabase
       .from('hr_notifications')
@@ -152,6 +202,10 @@ export const markAllAsRead = async (userId) => {
  * @returns {Promise<object>} Result
  */
 export const deleteNotification = async (notificationId) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     const { error } = await supabase
       .from('hr_notifications')
@@ -173,6 +227,10 @@ export const deleteNotification = async (notificationId) => {
  * @returns {Promise<object>} Result
  */
 export const deleteAllNotifications = async (userId) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     const { error } = await supabase
       .from('hr_notifications')
@@ -195,6 +253,10 @@ export const deleteAllNotifications = async (userId) => {
  * @returns {object} Subscription object
  */
 export const subscribeToNotifications = (userId, callback) => {
+  if (isDemoMode()) {
+    return { unsubscribe: () => {} };
+  }
+
   const subscription = supabase
     .channel('notifications')
     .on(

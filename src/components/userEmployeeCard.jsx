@@ -5,6 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { getEmployeeByUserId, updateEmployee } from '../services/employeeService';
 import { supabase } from '../config/supabaseClient';
+import { isDemoMode } from '../utils/demoHelper';
 
 const getStatusColor = (status) => {
   switch (status?.toLowerCase()) {
@@ -91,10 +92,12 @@ const UserEmployeeCard = ({ style }) => {
             setEmployee(prev => ({ ...prev, photo: base64Data }));
             
             // Also update user avatar_url in hr_users table
-            await supabase
-              .from('hr_users')
-              .update({ avatar_url: base64Data })
-              .eq('id', user.id);
+            if (!isDemoMode()) {
+              await supabase
+                .from('hr_users')
+                .update({ avatar_url: base64Data })
+                .eq('id', user.id);
+            }
               
             setPhotoError(false);
             alert(t('employees.photoUpdated', 'Photo updated successfully!'));

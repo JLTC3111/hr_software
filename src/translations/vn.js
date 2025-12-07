@@ -143,6 +143,19 @@ export default {
     marketing: 'Tiếp Thị',
     design: 'Thiết Kế',
     part_time_employee: 'Nhân Viên Bán Thời Gian',
+    // Also support capitalized versions for compatibility
+    Management: 'Quản Lý',
+    Engineering: 'Kỹ Thuật',
+    Design: 'Thiết Kế',
+    Marketing: 'Tiếp Thị',
+    Sales: 'Bán Hàng',
+    Finance: 'Tài Chính',
+    'Human Resources': 'Nhân Sự',
+    Technology: 'Công Nghệ',
+    Operations: 'Vận Hành',
+    Support: 'Hỗ Trợ',
+    Legal: 'Pháp Lý',
+    IT: 'Công Nghệ Thông Tin',
   },
 
   // Months

@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabaseClient';
 import { withTimeout } from '../utils/supabaseTimeout';
+import { isDemoMode, MOCK_EMPLOYEES } from '../utils/demoHelper';
 
 /**
  * Employee Service
@@ -77,6 +78,14 @@ export const linkUserToEmployee = async (userId, userEmail) => {
  * Fetches the employee record linked to the user's account
  */
 export const getEmployeeByUserId = async (userId) => {
+  if (isDemoMode()) {
+    // In demo mode, the user ID is 'demo-user-id' and linked to 'demo-emp-1'
+    if (userId === 'demo-user-id') {
+      return { success: true, data: MOCK_EMPLOYEES[0] };
+    }
+    return { success: false, error: 'User not found in demo mode' };
+  }
+
   try {
     // First get the employee_id from hr_users
     const { data: hrUser, error: hrUserError } = await supabase
@@ -114,6 +123,21 @@ export const getEmployeeByUserId = async (userId) => {
  * Joins with hr_users to get avatar URLs from auth profiles
  */
 export const getAllEmployees = async (filters = {}) => {
+  if (isDemoMode()) {
+    console.log('🧪 Demo Mode: Returning mock employees');
+    let data = [...MOCK_EMPLOYEES];
+    
+    // Apply simple filters
+    if (filters.status) {
+      data = data.filter(e => e.status === filters.status);
+    }
+    if (filters.department) {
+      data = data.filter(e => e.department === filters.department);
+    }
+    
+    return { success: true, data };
+  }
+
   try {
     let query = supabase
       .from('employees')
@@ -158,6 +182,12 @@ export const getAllEmployees = async (filters = {}) => {
  * Get employee by ID
  */
 export const getEmployeeById = async (employeeId) => {
+  if (isDemoMode()) {
+    const emp = MOCK_EMPLOYEES.find(e => e.id === employeeId);
+    if (emp) return { success: true, data: emp };
+    return { success: false, error: 'Employee not found in demo data' };
+  }
+
   try {
     const { data, error } = await supabase
       .from('employees')
@@ -177,6 +207,16 @@ export const getEmployeeById = async (employeeId) => {
  * Create a new employee
  */
 export const createEmployee = async (employeeData) => {
+  if (isDemoMode()) {
+    const newEmployee = {
+      id: `demo-emp-${Date.now()}`,
+      ...employeeData,
+      status: employeeData.status || 'Active',
+      start_date: employeeData.startDate || new Date().toISOString().split('T')[0]
+    };
+    return { success: true, data: newEmployee };
+  }
+
   try {
     // Check if email already exists
     if (employeeData.email) {
@@ -243,6 +283,10 @@ export const createEmployee = async (employeeData) => {
  * Update an existing employee
  */
 export const updateEmployee = async (employeeId, updates) => {
+  if (isDemoMode()) {
+    return { success: true, data: { id: employeeId, ...updates } };
+  }
+
   try {
     const updateData = {};
     
@@ -314,6 +358,10 @@ export const updateEmployee = async (employeeId, updates) => {
  * Due to CASCADE constraints in the database
  */
 export const deleteEmployee = async (employeeId) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     const id = toEmployeeId(employeeId);
     
@@ -424,6 +472,26 @@ export const getEmployeesByStatus = async (status) => {
 };
 
 export const uploadEmployeePhoto = async (fileData, employeeId) => {
+  if (isDemoMode()) {
+    // Return a mock URL or the base64 data if available
+    if (typeof fileData === 'string' && fileData.startsWith('data:')) {
+      return {
+        success: true,
+        url: fileData,
+        fileName: 'demo-photo.jpg',
+        fileType: 'image/jpeg',
+        storage: 'base64'
+      };
+    }
+    return {
+      success: true,
+      url: 'https://i.pravatar.cc/150?u=demo',
+      fileName: 'demo-photo.jpg',
+      fileType: 'image/jpeg',
+      storage: 'mock'
+    };
+  }
+
   try {
     let file = fileData;
     let fileName;
@@ -510,6 +578,10 @@ export const uploadEmployeePhoto = async (fileData, employeeId) => {
  * Delete employee photo from Supabase Storage
  */
 export const deleteEmployeePhoto = async (photoUrl) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     // Extract file path from URL (just the filename)
     const urlParts = photoUrl.split('/');
@@ -649,6 +721,10 @@ export const uploadEmployeePdf = async (file, employeeId, onProgress = null) => 
  * Delete employee PDF document from Supabase Storage and database
  */
 export const deleteEmployeePdf = async (employeeId, pdfPath) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     console.log('🗑️ Deleting PDF:', pdfPath, 'for employee:', employeeId);
     

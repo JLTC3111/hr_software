@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabaseClient';
+import { isDemoMode, MOCK_GOALS, MOCK_PERFORMANCE_REVIEWS, MOCK_SKILLS, MOCK_FEEDBACK } from '../utils/demoHelper';
 
 /**
  * Performance Management Service
@@ -20,6 +21,21 @@ const toEmployeeId = (id) => {
  * Create a new performance review
  */
 export const createPerformanceReview = async (reviewData) => {
+  if (isDemoMode()) {
+    const newReview = {
+      id: `review-demo-${Date.now()}`,
+      employee_id: reviewData.employeeId,
+      reviewer_id: reviewData.reviewerId,
+      review_period: reviewData.reviewPeriod,
+      review_type: reviewData.reviewType || 'quarterly',
+      overall_rating: reviewData.overallRating || null,
+      status: reviewData.status || 'draft',
+      review_date: reviewData.reviewDate || new Date().toISOString().split('T')[0],
+      created_at: new Date().toISOString()
+    };
+    return { success: true, data: newReview };
+  }
+
   try {
     const { data, error } = await supabase
       .from('performance_reviews')
@@ -60,6 +76,22 @@ export const createPerformanceReview = async (reviewData) => {
  * Get all performance reviews
  */
 export const getAllPerformanceReviews = async (filters = {}) => {
+  if (isDemoMode()) {
+    let reviews = [...MOCK_PERFORMANCE_REVIEWS];
+    
+    if (filters.employeeId) {
+      reviews = reviews.filter(r => String(r.employee_id) === String(filters.employeeId));
+    }
+    if (filters.reviewPeriod) {
+      reviews = reviews.filter(r => r.review_period === filters.reviewPeriod);
+    }
+    if (filters.status) {
+      reviews = reviews.filter(r => r.status === filters.status);
+    }
+    
+    return { success: true, data: reviews };
+  }
+
   try {
     let query = supabase
       .from('performance_reviews')
@@ -94,6 +126,11 @@ export const getAllPerformanceReviews = async (filters = {}) => {
  * Get review by ID
  */
 export const getPerformanceReviewById = async (reviewId) => {
+  if (isDemoMode()) {
+    const review = MOCK_PERFORMANCE_REVIEWS.find(r => r.id === reviewId);
+    return { success: true, data: review || null };
+  }
+
   try {
     const { data, error } = await supabase
       .from('performance_reviews')
@@ -117,6 +154,10 @@ export const getPerformanceReviewById = async (reviewId) => {
  * Update performance review
  */
 export const updatePerformanceReview = async (reviewId, updates) => {
+  if (isDemoMode()) {
+    return { success: true, data: { id: reviewId, ...updates, updated_at: new Date().toISOString() } };
+  }
+
   try {
     const updateData = {};
     
@@ -166,6 +207,10 @@ export const updatePerformanceReview = async (reviewId, updates) => {
  * Delete performance review
  */
 export const deletePerformanceReview = async (reviewId) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     const { error } = await supabase
       .from('performance_reviews')
@@ -188,6 +233,21 @@ export const deletePerformanceReview = async (reviewId) => {
  * Create a new goal
  */
 export const createPerformanceGoal = async (goalData) => {
+  if (isDemoMode()) {
+    const newGoal = {
+      id: `goal-demo-${Date.now()}`,
+      employee_id: goalData.employeeId,
+      title: goalData.title,
+      description: goalData.description || null,
+      category: goalData.category || 'general',
+      target_date: goalData.targetDate || null,
+      status: goalData.status || 'pending',
+      progress: goalData.progressPercentage || 0,
+      created_at: new Date().toISOString()
+    };
+    return { success: true, data: newGoal };
+  }
+
   try {
     const { data, error } = await supabase
       .from('performance_goals')
@@ -221,6 +281,19 @@ export const createPerformanceGoal = async (goalData) => {
  * Get all goals
  */
 export const getAllPerformanceGoals = async (filters = {}) => {
+  if (isDemoMode()) {
+    let goals = [...MOCK_GOALS];
+    
+    if (filters.employeeId) {
+      goals = goals.filter(g => String(g.employee_id) === String(filters.employeeId));
+    }
+    if (filters.status) {
+      goals = goals.filter(g => g.status === filters.status);
+    }
+    
+    return { success: true, data: goals };
+  }
+
   try {
     let query = supabase
       .from('performance_goals')
@@ -255,6 +328,11 @@ export const getAllPerformanceGoals = async (filters = {}) => {
  * Get goal by ID with milestones
  */
 export const getPerformanceGoalById = async (goalId) => {
+  if (isDemoMode()) {
+    const goal = MOCK_GOALS.find(g => g.id === goalId);
+    return { success: true, data: goal ? { ...goal, milestones: [] } : null };
+  }
+
   try {
     const { data, error } = await supabase
       .from('performance_goals')
@@ -279,6 +357,10 @@ export const getPerformanceGoalById = async (goalId) => {
  * Update performance goal
  */
 export const updatePerformanceGoal = async (goalId, updates) => {
+  if (isDemoMode()) {
+    return { success: true, data: { id: goalId, ...updates, updated_at: new Date().toISOString() } };
+  }
+
   try {
     const updateData = {};
     
@@ -320,6 +402,10 @@ export const updatePerformanceGoal = async (goalId, updates) => {
  * Delete performance goal
  */
 export const deletePerformanceGoal = async (goalId) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     const { error } = await supabase
       .from('performance_goals')
@@ -342,6 +428,17 @@ export const deletePerformanceGoal = async (goalId) => {
  * Create goal milestone
  */
 export const createGoalMilestone = async (milestoneData) => {
+  if (isDemoMode()) {
+    const newMilestone = {
+      id: `milestone-demo-${Date.now()}`,
+      goal_id: milestoneData.goalId,
+      title: milestoneData.title,
+      status: milestoneData.status || 'pending',
+      created_at: new Date().toISOString()
+    };
+    return { success: true, data: newMilestone };
+  }
+
   try {
     const { data, error } = await supabase
       .from('goal_milestones')
@@ -369,6 +466,10 @@ export const createGoalMilestone = async (milestoneData) => {
  * Get milestones for a goal
  */
 export const getMilestonesByGoal = async (goalId) => {
+  if (isDemoMode()) {
+    return { success: true, data: [] };
+  }
+
   try {
     const { data, error } = await supabase
       .from('goal_milestones')
@@ -388,6 +489,10 @@ export const getMilestonesByGoal = async (goalId) => {
  * Update goal milestone
  */
 export const updateGoalMilestone = async (milestoneId, updates) => {
+  if (isDemoMode()) {
+    return { success: true, data: { id: milestoneId, ...updates, updated_at: new Date().toISOString() } };
+  }
+
   try {
     const updateData = {};
     
@@ -421,6 +526,10 @@ export const updateGoalMilestone = async (milestoneId, updates) => {
  * Delete goal milestone
  */
 export const deleteGoalMilestone = async (milestoneId) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     const { error } = await supabase
       .from('goal_milestones')
@@ -443,6 +552,18 @@ export const deleteGoalMilestone = async (milestoneId) => {
  * Create or update skill assessment
  */
 export const upsertSkillAssessment = async (skillData) => {
+  if (isDemoMode()) {
+    const newSkill = {
+      id: `skill-demo-${Date.now()}`,
+      employee_id: skillData.employeeId,
+      skill_name: skillData.skillName,
+      skill_category: skillData.skillCategory || 'technical',
+      rating: skillData.rating,
+      created_at: new Date().toISOString()
+    };
+    return { success: true, data: newSkill };
+  }
+
   try {
     const { data, error } = await supabase
       .from('skills_assessments')
@@ -474,6 +595,11 @@ export const upsertSkillAssessment = async (skillData) => {
 
 
 export const getSkillsByEmployee = async (employeeId) => {
+  if (isDemoMode()) {
+    const skills = MOCK_SKILLS.filter(s => String(s.employee_id) === String(employeeId));
+    return { success: true, data: skills };
+  }
+
   try {
     const { data, error } = await supabase
       .from('skills_assessments')
@@ -493,6 +619,19 @@ export const getSkillsByEmployee = async (employeeId) => {
  * Get all skills assessments
  */
 export const getAllSkillsAssessments = async (filters = {}) => {
+  if (isDemoMode()) {
+    let skills = [...MOCK_SKILLS];
+    
+    if (filters.employeeId) {
+      skills = skills.filter(s => String(s.employee_id) === String(filters.employeeId));
+    }
+    if (filters.skillCategory) {
+      skills = skills.filter(s => s.skill_category === filters.skillCategory);
+    }
+    
+    return { success: true, data: skills };
+  }
+
   try {
     let query = supabase
       .from('skills_assessments')
@@ -523,6 +662,10 @@ export const getAllSkillsAssessments = async (filters = {}) => {
  * Delete skill assessment
  */
 export const deleteSkillAssessment = async (skillId) => {
+  if (isDemoMode()) {
+    return { success: true };
+  }
+
   try {
     const { error } = await supabase
       .from('skills_assessments')
@@ -545,6 +688,19 @@ export const deleteSkillAssessment = async (skillId) => {
  * Submit employee feedback
  */
 export const submitEmployeeFeedback = async (feedbackData) => {
+  if (isDemoMode()) {
+    const newFeedback = {
+      id: `feedback-demo-${Date.now()}`,
+      employee_id: feedbackData.employeeId,
+      feedback_from: feedbackData.feedbackFrom,
+      feedback_type: feedbackData.feedbackType || 'peer',
+      rating: feedbackData.rating || null,
+      feedback_text: feedbackData.feedbackText,
+      created_at: new Date().toISOString()
+    };
+    return { success: true, data: newFeedback };
+  }
+
   try {
     const { data, error } = await supabase
       .from('employee_feedback')
@@ -573,6 +729,11 @@ export const submitEmployeeFeedback = async (feedbackData) => {
  * Get feedback for an employee
  */
 export const getFeedbackByEmployee = async (employeeId) => {
+  if (isDemoMode()) {
+    const feedback = MOCK_FEEDBACK.filter(f => String(f.employee_id) === String(employeeId));
+    return { success: true, data: feedback };
+  }
+
   try {
     const { data, error } = await supabase
       .from('employee_feedback')
@@ -599,6 +760,18 @@ export const getFeedbackByEmployee = async (employeeId) => {
  * Get employee performance summary
  */
 export const getEmployeePerformanceSummary = async (employeeId = null) => {
+  if (isDemoMode()) {
+    const mockSummary = {
+      employee_id: employeeId || 'demo-emp-1',
+      average_rating: 4.3,
+      total_reviews: 2,
+      total_goals: 2,
+      completed_goals: 1,
+      total_skills: 3
+    };
+    return { success: true, data: employeeId ? mockSummary : [mockSummary] };
+  }
+
   try {
     let query = supabase
       .from('employee_performance_summary')
@@ -622,6 +795,14 @@ export const getEmployeePerformanceSummary = async (employeeId = null) => {
  * Get goals with progress
  */
 export const getGoalsWithProgress = async (employeeId = null) => {
+  if (isDemoMode()) {
+    let goals = [...MOCK_GOALS];
+    if (employeeId) {
+      goals = goals.filter(g => String(g.employee_id) === String(employeeId));
+    }
+    return { success: true, data: goals };
+  }
+
   try {
     let query = supabase
       .from('goals_with_progress')
@@ -645,6 +826,10 @@ export const getGoalsWithProgress = async (employeeId = null) => {
  * Get skills matrix
  */
 export const getSkillsMatrix = async (department = null) => {
+  if (isDemoMode()) {
+    return { success: true, data: MOCK_SKILLS };
+  }
+
   try {
     let query = supabase
       .from('skills_matrix')
@@ -668,6 +853,18 @@ export const getSkillsMatrix = async (department = null) => {
  * Get performance statistics
  */
 export const getPerformanceStats = async () => {
+  if (isDemoMode()) {
+    return {
+      success: true,
+      data: {
+        totalReviews: MOCK_PERFORMANCE_REVIEWS.length,
+        totalGoals: MOCK_GOALS.length,
+        completedGoals: MOCK_GOALS.filter(g => g.status === 'completed').length,
+        totalSkills: MOCK_SKILLS.length
+      }
+    };
+  }
+
   try {
     const [reviewsResult, goalsResult, completedGoalsResult, skillsResult] = await Promise.all([
       supabase.from('performance_reviews').select('id', { count: 'exact', head: true }).eq('status', 'approved'),

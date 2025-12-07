@@ -143,6 +143,19 @@ export default {
     marketing: 'การตลาด',
     design: 'ดีไซน์',
     part_time_employee: 'พนักงานพาร์ทไทม์',
+    // Also support capitalized versions for compatibility
+    Management: 'การจัดการ',
+    Engineering: 'วิศวกรรม',
+    Design: 'ดีไซน์',
+    Marketing: 'การตลาด',
+    Sales: 'ขาย',
+    Finance: 'การเงิน',
+    'Human Resources': 'ทรัพยากรมนุษย์',
+    Technology: 'เทคโนโลยี',
+    Operations: 'การดำเนินงาน',
+    Support: 'สนับสนุน',
+    Legal: 'กฎหมาย',
+    IT: 'IT',
   },
 
   // Months

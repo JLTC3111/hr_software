@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../config/supabaseClient';
+import { isDemoMode } from '../utils/demoHelper';
 
 const ControlPanel = () => {
   const { isDarkMode, bg, text, border } = useTheme();
@@ -103,6 +104,15 @@ const ControlPanel = () => {
   const fetchAllUsers = async () => {
     setLoadingUsers(true);
     try {
+      if (isDemoMode()) {
+        setAllUsers([
+          { id: 'demo-user-id', full_name: 'Demo Admin', email: 'demo@example.com', role: 'admin' },
+          { id: 'mock-user-2', full_name: 'Sarah Connor', email: 'sarah@example.com', role: 'employee' }
+        ]);
+        setLoadingUsers(false);
+        return;
+      }
+
       // Fetch users from hr_users
       const { data: usersData, error: usersError } = await supabase
         .from('hr_users')
@@ -143,6 +153,15 @@ const ControlPanel = () => {
   const fetchAllEmployees = async () => {
     setLoadingEmployees(true);
     try {
+      if (isDemoMode()) {
+        setAllEmployees([
+          { id: 'demo-emp-1', name: 'Demo Admin', email: 'demo@example.com', user_id: 'demo-user-id' },
+          { id: 'mock-emp-2', name: 'Sarah Connor', email: 'sarah@example.com', user_id: 'mock-user-2' }
+        ]);
+        setLoadingEmployees(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('employees')
         .select('id, name, email, user_id')
@@ -240,14 +259,18 @@ const ControlPanel = () => {
 
     try {
       // Update to the new password directly (Supabase will verify the user is authenticated)
-      console.log('� Updating to new password...');
-      const { error } = await supabase.auth.updateUser({
-        password: passwordForm.newPassword
-      });
+      if (isDemoMode()) {
+        console.log('🔄 Simulating password change in demo mode...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } else {
+        const { error } = await supabase.auth.updateUser({
+          password: passwordForm.newPassword
+        });
 
-      if (error) {
-        console.log('❌ Password update failed:', error.message);
-        throw error;
+        if (error) {
+          console.log('❌ Password update failed:', error.message);
+          throw error;
+        }
       }
       console.log('✅ Password updated successfully in Supabase');
 
@@ -329,6 +352,21 @@ const ControlPanel = () => {
     }
 
     try {
+      if (isDemoMode()) {
+        console.log('🔄 Simulating admin password reset in demo mode...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log('✅ Password reset successfully in demo mode');
+        
+        setAdminResetSuccess(t('controlPanel.passwordResetSuccess', 'Password reset successfully'));
+        setAdminResetForm({ newPassword: '', confirmPassword: '' });
+        setSelectedUserId('');
+        
+        setTimeout(() => {
+          setAdminResetSuccess('');
+        }, 5000);
+        return;
+      }
+
       // Get the current user's session token
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -431,14 +469,19 @@ const ControlPanel = () => {
     }
 
     try {
-      // Call Supabase admin API to update employee's user password
-      const { data, error } = await supabase.auth.admin.updateUserById(
-        selectedEmployee.user_id,
-        { password: employeeResetPassword }
-      );
+      if (isDemoMode()) {
+        console.log('🔄 Simulating employee password reset in demo mode...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } else {
+        // Call Supabase admin API to update employee's user password
+        const { data, error } = await supabase.auth.admin.updateUserById(
+          selectedEmployee.user_id,
+          { password: employeeResetPassword }
+        );
 
-      if (error) {
-        throw error;
+        if (error) {
+          throw error;
+        }
       }
 
       setEmployeeResetSuccess(t('controlPanel.passwordResetSuccessEmployee', `Password reset successfully for employee ${selectedEmployee.name}!`));
@@ -495,6 +538,13 @@ const ControlPanel = () => {
         const base64Data = reader.result;
         
         try {
+          if (isDemoMode()) {
+             setAvatarUrl(base64Data);
+             setAvatarSuccess(t('controlPanel.avatarUpdated', 'Avatar updated successfully!'));
+             setUploadingAvatar(false);
+             return;
+          }
+
           // Update user profile with avatar data URL
           const { error: updateError } = await supabase
             .from('hr_users')
