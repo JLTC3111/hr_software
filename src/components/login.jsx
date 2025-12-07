@@ -397,14 +397,14 @@ const Login = () => {
                 loginAsDemo();
               }, 800);
             }}
-            className={`w-full mt-3 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 cursor-pointer ${
+            className={`w-full mt-3 py-3 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer shadow-sm hover:shadow-md ${
               isDarkMode 
-                ? 'bg-purple-900/30 hover:bg-purple-900/50 text-purple-200 border border-purple-700' 
-                : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200'
+                ? 'bg-gradient-to-r from-indigo-900 to-purple-900 hover:from-indigo-800 hover:to-purple-800 text-white border border-indigo-700' 
+                : 'bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-indigo-700 border border-indigo-200'
             }`}
             disabled={isLoading}
           >
-            <Building2 className="w-5 h-5" />
+            <Building2 className={`w-5 h-5 ${isDarkMode ? 'text-indigo-300' : 'text-indigo-600'}`} />
             <span>{t('login.tryDemo', 'Try Demo Mode')}</span>
           </button>
 

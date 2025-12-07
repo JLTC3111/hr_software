@@ -4,6 +4,7 @@ import './index.css'
 import React from 'react'
 import App from './App.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
+import { AuthProvider } from './contexts/AuthContext'
 
 // Suppress browser extension errors
 window.addEventListener('error', (e) => {
@@ -25,7 +26,9 @@ window.addEventListener('unhandledrejection', (e) => {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </ErrorBoundary>
   </StrictMode>,
 )

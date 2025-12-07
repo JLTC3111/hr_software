@@ -449,6 +449,7 @@ export default {
       regular: 'Regular',
       holiday: 'Holiday',
       weekend: 'Weekend/Overtime',
+      overtime: 'Overtime',
       bonus: 'Bonus',
       wfh: 'Working From Home (Online)'
     },

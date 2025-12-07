@@ -8,27 +8,73 @@ import { useAuth } from '../contexts/AuthContext';
 import * as employeeService from '../services/employeeService';
 
 // InputField component outside to prevent recreation
-const InputField = React.memo(({ name, label, icon: Icon, type = 'text', required, value, onChange, error, touched, textSecondary, bgPrimary, textPrimary, borderPrimary, ...props }) => (
-  <div>
-    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
-      {label} {required && <span className="text-red-500">*</span>}
-    </label>
-    <div className="relative">
-      {Icon && <Icon className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${textSecondary}`} />}
-      <input
-        type={type}
-        name={name}
-        value={value || ''}
-        onChange={onChange}
-        className={`w-full ${Icon ? 'pl-10' : 'pl-4'} pr-4 py-2 ${bgPrimary} ${textPrimary} border ${error && touched ? 'border-red-500' : borderPrimary} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none`}
-        {...props}
-      />
+const InputField = React.memo(({ name, label, icon: Icon, type = 'text', required, value, onChange, error, touched, textSecondary, bgPrimary, textPrimary, borderPrimary, className, ...props }) => {
+  const [inputType, setInputType] = useState(type === 'date' && !value ? 'text' : type);
+  const inputRef = React.useRef(null);
+
+  const handleFocus = (e) => {
+    if (type === 'date') setInputType('date');
+    if (props.onFocus) props.onFocus(e);
+  };
+
+  const handleBlur = (e) => {
+    if (type === 'date' && !value) setInputType('text');
+    if (props.onBlur) props.onBlur(e);
+  };
+
+  React.useEffect(() => {
+    if (type === 'date' && value) setInputType('date');
+  }, [type, value]);
+
+  const handleIconClick = () => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+      if (type === 'date') {
+        setInputType('date');
+        // Use setTimeout to allow state update and render to complete
+        setTimeout(() => {
+          try {
+            if (inputRef.current && typeof inputRef.current.showPicker === 'function') {
+              inputRef.current.showPicker();
+            }
+          } catch (err) {
+            console.log('Date picker not supported or failed to open', err);
+          }
+        }, 0);
+      }
+    }
+  };
+
+  return (
+    <div>
+      <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      <div className="relative">
+        {Icon && (
+          <Icon 
+            className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${textSecondary} cursor-pointer z-10`} 
+            onClick={handleIconClick}
+          />
+        )}
+        <input
+          ref={inputRef}
+          type={inputType}
+          name={name}
+          value={value || ''}
+          onChange={onChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          className={`w-full ${Icon ? 'pl-10' : 'pl-4'} pr-4 py-2 ${bgPrimary} ${textPrimary} border ${error && touched ? 'border-red-500' : borderPrimary} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${className || ''}`}
+          {...props}
+        />
+      </div>
+      {error && touched && (
+        <p className="text-red-500 text-sm mt-1">{error}</p>
+      )}
     </div>
-    {error && touched && (
-      <p className="text-red-500 text-sm mt-1">{error}</p>
-    )}
-  </div>
-));
+  );
+});
 
 InputField.displayName = 'InputField';
 

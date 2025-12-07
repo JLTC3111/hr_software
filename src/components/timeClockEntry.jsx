@@ -1570,9 +1570,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
                         (entry.hour_type || entry.hourType) === 'regular' ? (isDarkMode ? 'bg-blue-900/30 text-blue-400 group-hover:text-black' : 'bg-blue-200 text-blue-900 group-hover:text-black') :
                         (entry.hour_type || entry.hourType) === 'holiday' ? (isDarkMode ? 'bg-purple-900/30 text-purple-400 group-hover:text-black' : 'bg-purple-200 text-purple-900 group-hover:text-black') :
                         (entry.hour_type || entry.hourType) === 'weekend' ? (isDarkMode ? 'bg-green-900/30 text-green-400 group-hover:text-black' : 'bg-green-200 text-green-900 group-hover:text-black') :
+                        (entry.hour_type || entry.hourType) === 'overtime' ? (isDarkMode ? 'bg-orange-900/30 text-orange-400 group-hover:text-black' : 'bg-orange-200 text-orange-900 group-hover:text-black') :
                         (isDarkMode ? 'bg-yellow-900/30 text-yellow-400 group-hover:text-black' : 'bg-yellow-200 text-yellow-900 group-hover:text-black')
                       }`}>
-                        {hourTypes.find(t => t.value === (entry.hour_type || entry.hourType))?.label}
+                        {hourTypes.find(t => t.value === (entry.hour_type || entry.hourType))?.label || (entry.hour_type || entry.hourType)?.charAt(0).toUpperCase() + (entry.hour_type || entry.hourType)?.slice(1)}
                       </span>
                     </td>
                     <td className="p-3">

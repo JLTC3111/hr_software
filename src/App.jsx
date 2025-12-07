@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Award, FileText, Loader } from 'lucide-react'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { UploadProvider } from './contexts/UploadContext'
 import { Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, TaskListing, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager, ControlPanel, TaskReview, PersonalGoals, FlubberIconTest } from './components/index.jsx';
@@ -48,6 +48,7 @@ const Applications = [
 ];
 
 const HRManagementApp = () => {
+  const { isAuthenticated, user } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [applications, setApplications] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -89,10 +90,10 @@ const HRManagementApp = () => {
     setLoading(false);
   };
 
-  // Fetch employees on mount
+  // Fetch employees on mount and when auth changes
   useEffect(() => {
     fetchEmployees();
-  }, []);
+  }, [isAuthenticated, user]);
   
   // Refetch employees (expose this to child components)
   const refetchEmployees = async () => {
@@ -132,7 +133,7 @@ const HRManagementApp = () => {
     };
 
     fetchApplications();
-  }, []);
+  }, [isAuthenticated, user]);
 
   const handlePhotoUpdate = async (employeeId, photoData, useStorage = false) => {
     try {
@@ -220,12 +221,11 @@ const HRManagementApp = () => {
   };
 
   return (
-    <AuthProvider>
-      <LanguageProvider>
-        <ThemeProvider>
-          <UploadProvider>
-            <AppContent 
-              employees={employees}
+    <LanguageProvider>
+      <ThemeProvider>
+        <UploadProvider>
+          <AppContent 
+            employees={employees}
               applications={applications}
               selectedEmployee={selectedEmployee}
               isEditMode={isEditMode}
@@ -243,7 +243,6 @@ const HRManagementApp = () => {
           </UploadProvider>
         </ThemeProvider>
       </LanguageProvider>
-    </AuthProvider>
   );
 };
 

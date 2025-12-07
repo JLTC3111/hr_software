@@ -459,3 +459,9 @@ select::-ms-expand {
   -moz-appearance: textfield;
   appearance: none;
 }
+
+/* Hide browser default calendar icon */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
