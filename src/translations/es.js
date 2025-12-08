@@ -901,6 +901,8 @@ login: {
   common: {
     results: 'Resultados',
     update: 'Actualizar',
+    email: 'Email',
+    phone: 'Teléfono',
     updating: 'Actualizando...',
     employee: 'Empleado',
     employees: 'Empleados',

@@ -999,6 +999,13 @@ export default {
 
   // Common
   common: {
+    email: 'Email',
+    phone: 'Điện Thoại',
+    address: 'Địa Chỉ',
+    date: 'Ngày',
+    time: 'Thời Gian',
+    submit: 'Gửi',
+    submitting: 'Đang Gửi...',
     update: 'Cập Nhật',
     updating: 'Đang Cập Nhật...',
     results: 'Kết Quả',

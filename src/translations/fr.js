@@ -921,6 +921,8 @@ export default {
     updating: 'Mise à jour...', 
     employee: 'Employé',
     employees: 'Employés',
+    email: 'Email',
+    phone: 'Téléphone',
     timeEntry: 'Saisie de temps',
     task: 'Tâche',
     goal: 'Objectif',

@@ -763,6 +763,8 @@ export default {
 
   // Common
   common: {
+    email: '이메일',
+    phone: '전화번호',
     results: '결과',
     update: '업데이트',
     updating: '업데이트 중...',

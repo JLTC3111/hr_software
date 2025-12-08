@@ -776,6 +776,10 @@ export default {
   common: {
     results: '結果',
     employees: '従業員',
+    email: 'メール',
+    phone: '電話',
+    address: '住所',
+    searchPlaceholder: '検索...',
     update: '更新',
     loading: '読み込み中...',
     mainMenu: 'メインメニュー',

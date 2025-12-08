@@ -786,6 +786,8 @@ export default {
     next: 'Weiter',
     back: 'Zurück',
     type: 'Typ',
+    email: 'E-Mail',
+    phone: 'Telefon',
     filter: 'Filter',
     sort: 'Sortieren',
     save: 'Speichern',

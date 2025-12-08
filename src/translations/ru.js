@@ -856,6 +856,8 @@ export default {
 
   // Common
   common: {
+    email: 'Email',
+    phone: 'Телефон',
     results: 'Найдено результатов',
     update: 'Обновить',
     updating: 'Обновление...',

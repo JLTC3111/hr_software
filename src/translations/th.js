@@ -795,6 +795,8 @@ export default {
 
   // Common
   common: {
+    email: 'อีเมล',
+    phone: 'โทรศัพท์',
     results: 'ผลลัพธ์',
     update: 'อัปเดต',
     updating: 'กำลังอัปเดต...',
