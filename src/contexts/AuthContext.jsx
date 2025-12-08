@@ -156,6 +156,12 @@ export const AuthProvider = ({ children }) => {
   // Handle visibility change (when user returns from power saving mode / idle)
   useEffect(() => {
     const handleVisibilityChange = async () => {
+      // Skip session check if in demo mode
+      if (isDemoMode()) {
+        console.log('🧪 Demo mode active - skipping session check');
+        return;
+      }
+
       if (document.visibilityState === 'visible') {
         const now = Date.now();
         const timeSinceLastCheck = now - lastVisibilityCheck.current;

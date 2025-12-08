@@ -205,6 +205,9 @@ export default {
 
   // Recruitment
   recruitment: {
+    rating: 'Bewertung',
+    statusLabel: 'Status',
+    actions: 'Aktionen',
     total: 'Gesamt',
     shortListed: 'Vorgemerkt',
     interviews: 'Interviews',
@@ -215,7 +218,7 @@ export default {
     postNewJob: 'Neue Stelle ausschreiben',
     applications: 'Bewerbungen',
     candidate: 'Kandidat',
-    position: 'Position',
+    position: 'Posten',
     department: 'Abteilung',
     appliedDate: 'Bewerbungsdatum',
     experience: 'Erfahrung',

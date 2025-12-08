@@ -443,7 +443,11 @@ export default {
 
   // Recruitment
   recruitment: {
-    total: 'Total',
+    position: 'Poste',
+    rating: 'Évaluation',
+    statusLabel: 'Statut',
+    actions: 'Actions',
+    total: 'Ensemble',
     shortListed: 'Présélectionné',
     interviews: 'Entretiens',
     offers: 'Offres',
@@ -453,7 +457,6 @@ export default {
     postNewJob: 'Publier un nouveau poste',
     applications: 'Candidatures',
     candidate: 'Candidat',
-    position: 'Poste',
     department: 'Département',
     appliedDate: 'Date de candidature',
     experience: 'Expérience',

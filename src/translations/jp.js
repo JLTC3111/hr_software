@@ -392,6 +392,10 @@ export default {
 
   // Recruitment
   recruitment: {
+    position: '職種',
+    rating: '評価',
+    statusLabel: 'ステータス',
+    actions: 'アクション',
     total: '合計',
     shortListed: '候補リスト入り',
     interviews: '面接',

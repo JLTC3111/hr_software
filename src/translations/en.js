@@ -301,6 +301,9 @@ export default {
 
   // Recruitment
   recruitment: {
+    rating: 'Rating',
+    statusLabel: 'Status',
+    actions: 'Actions',
     total: 'Total',
     shortListed: 'Shortlisted',
     interviews: 'Interviews',

@@ -391,6 +391,10 @@ export default {
 
   // Recruitment
   recruitment: {
+    position: 'ตำแหน่ง',
+    rating: 'การให้คะแนน',
+    statusLabel: 'สถานะ',
+    actions: 'การดำเนินการ',
     total: 'ทั้งหมด',
     shortListed: 'เข้ารอบคัดเลือก',
     interviews: 'สัมภาษณ์',

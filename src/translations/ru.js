@@ -455,6 +455,10 @@ export default {
 
   // Recruitment
   recruitment: {
+    position: 'Позиция',
+    rating: 'Рейтинг',
+    statusLabel: 'Статус',
+    actions: 'Действия',
     total: 'Всего',
     shortListed: 'В шорт-листе',
     interviews: 'Собеседования',

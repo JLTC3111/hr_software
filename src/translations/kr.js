@@ -394,6 +394,10 @@ export default {
 
   // Recruitment
   recruitment: {
+    position: '직책',
+    rating: '평가',
+    statusLabel: '상태',
+    actions: '작업',
     total: '총계',
     shortListed: '최종 후보',
     interviews: '면접',

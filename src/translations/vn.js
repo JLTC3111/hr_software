@@ -433,7 +433,7 @@ export default {
 
   stats: {
     total: 'Tổng cộng',
-    underReview: 'Đang xem xét',
+    underReview: 'Đang Xem Xét',
     shortListed: 'Vào danh sách chọn lọc',
     interviewScheduled: 'Đã lên lịch phỏng vấn',
     offerExtended: 'Đã gửi thư mời làm việc',
@@ -443,6 +443,10 @@ export default {
 
   // Recruitment
   recruitment: {
+    position: 'Vị Trí',
+    rating: 'Đánh Giá',
+    statusLabel: 'Trạng Thái',
+    actions: 'Hành Động',
     total: 'Tổng Cộng',
     shortListed: 'Danh Sách Chọn Lọc',
     interviews: 'Phỏng Vấn',
@@ -456,7 +460,7 @@ export default {
     experience: 'Kinh nghiệm',
     stage: 'Giai đoạn',
     interviewScheduled: 'Đã lên lịch phỏng vấn',
-    underReview: 'Đang xem xét',
+    underReview: 'Đang Xem Xét',
     offerExtended: 'Đã đưa ra đề nghị',
     screening: 'Sàng lọc',
     technical: 'Kỹ thuật',

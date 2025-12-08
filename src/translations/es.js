@@ -467,6 +467,10 @@ login: {
 
   // Recruitment
   recruitment: {
+    position: 'Posición',
+    rating: 'Calificación',
+    statusLabel: 'Estado',
+    actions: 'Acciones',
     total: 'Total',
     shortListed: 'Preseleccionado',
     interviews: 'Entrevistas',
@@ -477,7 +481,6 @@ login: {
     postNewJob: 'Publicar Nuevo Trabajo',
     applications: 'Solicitudes',
     candidate: 'Candidato',
-    position: 'Posición',
     department: 'Departamento',
     appliedDate: 'Fecha de Solicitud',
     experience: 'Experiencia',
