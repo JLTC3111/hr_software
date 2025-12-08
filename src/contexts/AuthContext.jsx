@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, hasPermission, customStorage } from '../config/supabaseClient';
 import { linkUserToEmployee } from '../services/employeeService';
-import { isDemoMode, enableDemoMode, disableDemoMode, MOCK_USER } from '../utils/demoHelper';
+import { isDemoMode, enableDemoMode, disableDemoMode, MOCK_USER, resetAllDemoData } from '../utils/demoHelper';
 
 const AuthContext = createContext();
 
@@ -732,6 +732,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginAsDemo = () => {
+    // Ensure any persisted demo edits are cleared so built-in mock data are visible
+    try {
+      resetAllDemoData();
+    } catch (err) {
+      console.warn('Failed to reset demo data on demo login:', err);
+    }
+
     enableDemoMode();
     setUser(MOCK_USER);
     setIsAuthenticated(true);

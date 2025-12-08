@@ -1101,6 +1101,36 @@ const DEMO_GOALS_KEY = 'hr_app_demo_goals';
 const DEMO_LEAVE_REQUESTS_KEY = 'hr_app_demo_leave_requests';
 
 /**
+ * Reset demo tasks stored in localStorage so the original MOCK_TASKS reappear
+ * Useful when a user deletes demo tasks in the UI and wants to restore them
+ */
+export const resetDemoTasks = () => {
+  try {
+    localStorage.removeItem(DEMO_TASKS_KEY);
+    return true;
+  } catch (err) {
+    console.error('Failed to reset demo tasks:', err);
+    return false;
+  }
+};
+
+/**
+ * Reset all demo persistent data (tasks, goals, leave requests)
+ * This will cause the UI to fall back to the builtin MOCK_* arrays again
+ */
+export const resetAllDemoData = () => {
+  try {
+    localStorage.removeItem(DEMO_TASKS_KEY);
+    localStorage.removeItem(DEMO_GOALS_KEY);
+    localStorage.removeItem(DEMO_LEAVE_REQUESTS_KEY);
+    return true;
+  } catch (err) {
+    console.error('Failed to reset demo data:', err);
+    return false;
+  }
+};
+
+/**
  * Get all demo tasks (combines stored updates with original mock data)
  * @returns {Array} - Array of task objects
  */
