@@ -757,49 +757,67 @@ const ControlPanel = () => {
           )}
         </div>
 
-        {/* Action Buttons */}
+        {/* Reset Own Password */}
         <div className="space-y-2">
           <button
             onClick={() => {
-              // Clear the flag when manually toggling the form
+              if (isDemoMode()) return;
               localStorage.removeItem('changingPassword');
               isChangingPassword.current = false;
               setShowChangePassword(!showChangePassword);
             }}
-            className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
+            disabled={isDemoMode()}
+            title={isDemoMode() ? t('controlPanel.demoModeDisabled', 'Disabled in demo mode') : ''}
+            className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${isDemoMode() ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
             style={{
               backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6',
               color: isDarkMode ? '#ffffff' : '#111827'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = isDarkMode ? '#374151' : '#e5e7eb';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = isDarkMode ? '#1f2937' : '#f3f4f6';
-            }}
+                if (isDemoMode()) return;
+                e.currentTarget.style.backgroundColor = isDarkMode ? '#1e40af' : '#dbeafe';
+              }}
+              onMouseLeave={(e) => {
+                if (isDemoMode()) return;
+                e.currentTarget.style.backgroundColor = isDarkMode ? '#1e3a5f' : '#eff6ff';
+              }}
           >
             <Key className="w-4 h-4" />
             <span className="text-sm">{t('controlPanel.changeOwnPassword', 'Change Own Password')}</span>
+             {isDemoMode() && (
+                <span className="ml-2 text-xs" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                  {t('controlPanel.demoModeDisabledShort', 'Demo only')}
+                </span>
+              )}
           </button>
 
-          {/* Admin Password Reset Button */}
+          {/* Reset Other Employee Password */}
           {isAdmin && (
             <button
-              onClick={() => setShowAdminReset(!showAdminReset)}
-              className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors"
+              onClick={() => { if (!isDemoMode()) setShowAdminReset(!showAdminReset); }}
+              disabled={isDemoMode()}
+              title={isDemoMode() ? t('controlPanel.demoModeDisabled', 'Disabled in demo mode') : ''}
+              className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${isDemoMode() ? 'cursor-not-allowed opacity-60' : ''}`}
               style={{
                 backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff',
                 color: isDarkMode ? '#93c5fd' : '#1e40af'
               }}
               onMouseEnter={(e) => {
+                if (isDemoMode()) return;
                 e.currentTarget.style.backgroundColor = isDarkMode ? '#1e40af' : '#dbeafe';
               }}
               onMouseLeave={(e) => {
+                if (isDemoMode()) return;
                 e.currentTarget.style.backgroundColor = isDarkMode ? '#1e3a5f' : '#eff6ff';
               }}
             >
               <Users className="w-4 h-4" />
               <span className="text-sm">{t('controlPanel.resetOtherUserPassword', 'Reset Other Employee Password')}</span>
+              {isDemoMode() && (
+                <span className="ml-2 text-xs" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                  {t('controlPanel.demoModeDisabledShort', 'Demo only')}
+                </span>
+              )}
             </button>
           )}
 
