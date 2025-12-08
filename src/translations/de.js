@@ -193,8 +193,24 @@ export default {
     notes: "Notizen"
   },
 
+  stats: {
+    total: 'Gesamt',
+    underReview: 'In Prüfung',
+    shortListed: 'Vorgemerkt',
+    interviewScheduled: 'Interview geplant',
+    offerExtended: 'Angebot gemacht',
+    hired: 'Eingestellt',
+    rejected: 'Abgelehnt',
+  },
+
   // Recruitment
   recruitment: {
+    total: 'Gesamt',
+    shortListed: 'Vorgemerkt',
+    interviews: 'Interviews',
+    offers: 'Angebote',
+    hired: 'Eingestellt',
+    rejected: 'Abgelehnt',
     title: 'Rekrutierungs-Pipeline',
     postNewJob: 'Neue Stelle ausschreiben',
     applications: 'Bewerbungen',
@@ -380,28 +396,6 @@ export default {
     october: 'Oktober',
     november: 'November',
     december: 'Dezember'
-  },
-
-  // Recruitment
-  recruitment: {
-    title: 'Rekrutierungs-Pipeline',
-    postNewJob: 'Neue Stelle ausschreiben',
-    applications: 'Bewerbungen',
-    candidate: 'Kandidat',
-    position: 'Position',
-    department: 'Abteilung',
-    appliedDate: 'Bewerbungsdatum',
-    experience: 'Erfahrung',
-    status: 'Status',
-    actions: 'Aktionen',
-    stage: 'Phase',
-    interviewScheduled: 'Interview geplant',
-    underReview: 'In Überprüfung',
-    offerExtended: 'Angebot gemacht',
-    screening: 'Vorauswahl',
-    technical: 'Technisch',
-    offer: 'Angebot',
-    years: 'Jahre'
   },
 
   // Personal Goals

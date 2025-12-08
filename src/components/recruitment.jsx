@@ -128,7 +128,7 @@ const Recruitment = () => {
             active={filterStatus === 'under review'}
           />
           <StatCard
-            label={t('recruitment.shortlisted', 'Shortlisted')}
+            label={t('recruitment.shortListed', 'Shortlisted')}
             value={stats.shortlisted}
             color="blue"
             onClick={() => setFilterStatus('shortlisted')}
@@ -639,7 +639,6 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate }) => {
           </button>
         </div>
 
-        {/* Content */}
         <div className="p-6 space-y-6">
           {/* Job Details */}
           <div>

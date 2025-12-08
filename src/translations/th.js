@@ -178,26 +178,14 @@ export default {
     december: 'ธันวาคม'
   },
 
-  // Recruitment
-  recruitment: {
-    title: 'กระบวนการสรรหาบุคลากร',
-    postNewJob: 'โพสต์งานใหม่',
-    applications: 'ใบสมัคร',
-    candidate: 'ผู้สมัคร',
-    position: 'ตำแหน่ง',
-    department: 'แผนก',
-    appliedDate: 'วันที่สมัคร',
-    experience: 'ประสบการณ์',
-    status: 'สถานะ',
-    actions: 'การดำเนินการ',
-    stage: 'ขั้นตอน',
-    interviewScheduled: 'กำหนดการสัมภาษณ์',
-    underReview: 'อยู่ระหว่างการพิจารณา',
-    offerExtended: 'เสนอข้อเสนอแล้ว',
-    screening: 'การคัดกรอง',
-    technical: 'เทคนิค',
-    offer: 'ข้อเสนอ',
-    years: 'ปี'
+  stats: {
+    total: 'ทั้งหมด',
+    underReview: 'กำลังตรวจสอบ',
+    shortListed: 'เข้ารอบคัดเลือก',
+    interviewScheduled: 'นัดสัมภาษณ์แล้ว',
+    offerExtended: 'ส่งข้อเสนองานแล้ว',
+    hired: 'จ้างงานแล้ว',
+    rejected: 'ปฏิเสธ',
   },
 
   timeClock: {
@@ -403,6 +391,12 @@ export default {
 
   // Recruitment
   recruitment: {
+    total: 'ทั้งหมด',
+    shortListed: 'เข้ารอบคัดเลือก',
+    interviews: 'สัมภาษณ์',
+    offers: 'ข้อเสนอ',
+    hired: 'จ้างงานแล้ว',
+    rejected: 'ปฏิเสธ',
     title: 'กระบวนการรับสมัคร',
     applications: 'ใบสมัคร',
     candidate: 'ผู้สมัคร',

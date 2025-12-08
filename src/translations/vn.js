@@ -431,8 +431,24 @@ export default {
     maxFileSize: 'Kích thước tệp tối đa: 10MB'
   },
 
+  stats: {
+    total: 'Tổng cộng',
+    underReview: 'Đang xem xét',
+    shortListed: 'Vào danh sách chọn lọc',
+    interviewScheduled: 'Đã lên lịch phỏng vấn',
+    offerExtended: 'Đã gửi thư mời làm việc',
+    hired: 'Đã tuyển dụng',
+    rejected: 'Từ chối',
+  },
+
   // Recruitment
   recruitment: {
+    total: 'Tổng Cộng',
+    shortListed: 'Danh Sách Chọn Lọc',
+    interviews: 'Phỏng Vấn',
+    offers: 'Đề Nghị',
+    hired: 'Đã Tuyển Dụng',
+    rejected: 'Từ Chối',
     title: 'Quy trình tuyển dụng',
     applications: 'Đơn ứng tuyển',
     candidate: 'Ứng viên',

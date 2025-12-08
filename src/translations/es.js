@@ -343,28 +343,16 @@ login: {
     december: 'Diciembre'
   },
 
-  // Recruitment
-  recruitment: {
-    title: 'Pipeline de Reclutamiento',
-    postNewJob: 'Publicar Nuevo Trabajo',
-    applications: 'Aplicaciones',
-    candidate: 'Candidato',
-    position: 'Posición',
-    department: 'Departamento',
-    appliedDate: 'Fecha de Aplicación',
-    experience: 'Experiencia',
-    status: 'Estado',
-    actions: 'Acciones',
-    stage: 'Etapa',
-    interviewScheduled: 'Entrevista Programada',
-    underReview: 'En Revisión',
-    offerExtended: 'Oferta Extendida',
-    screening: 'Selección',
-    technical: 'Técnico',
-    offer: 'Oferta',
-    years: 'años'
+  stats: {
+    total: 'Total',
+    underReview: 'En revisión',
+    shortListed: 'Preseleccionado',
+    interviewScheduled: 'Entrevista programada',
+    offerExtended: 'Oferta enviada',
+    hired: 'Contratado',
+    rejected: 'Rechazado',
   },
-  
+
   // Time Tracking
   timeTracking: {
     detailedBreakdown: 'Desglose Detallado del Seguimiento de Tiempo',
@@ -479,6 +467,12 @@ login: {
 
   // Recruitment
   recruitment: {
+    total: 'Total',
+    shortListed: 'Preseleccionado',
+    interviews: 'Entrevistas',
+    offers: 'Ofertas',
+    hired: 'Contratado',
+    rejected: 'Rechazado',
     title: 'Pipeline de Reclutamiento',
     postNewJob: 'Publicar Nuevo Trabajo',
     applications: 'Solicitudes',

@@ -74,7 +74,11 @@ export const LanguageProvider = ({ children }) => {
         return fallback || key;
       }
     }
-    
+    // If the resolved value is an object (nested translations), return the fallback
+    if (value && typeof value === 'object') {
+      return fallback || key;
+    }
+
     return value || fallback || key;
   };
 

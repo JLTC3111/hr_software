@@ -162,26 +162,14 @@ export default {
     customer_support: 'Support Client',
   },
 
-  // Recruitment
-  recruitment: {
-    title: 'Pipeline de recrutement',
-    postNewJob: 'Publier un nouvel emploi',
-    applications: 'Candidatures',
-    candidate: 'Candidat',
-    position: 'Poste',
-    department: 'Département',
-    appliedDate: 'Date de candidature',
-    experience: 'Expérience',
-    status: 'Statut',
-    actions: 'Actions',
-    stage: 'Étape',
+  stats: {
+    total: 'Total',
+    underReview: 'En cours d’examen',
+    shortListed: 'Présélectionné',
     interviewScheduled: 'Entretien programmé',
-    underReview: 'En cours d\'examen',
-    offerExtended: 'Offre proposée',
-    screening: 'Sélection',
-    technical: 'Technique',
-    offer: 'Offre',
-    years: 'ans'
+    offerExtended: 'Offre envoyée',
+    hired: 'Embauché',
+    rejected: 'Rejeté',
   },
 
   timeClock: {
@@ -455,6 +443,12 @@ export default {
 
   // Recruitment
   recruitment: {
+    total: 'Total',
+    shortListed: 'Présélectionné',
+    interviews: 'Entretiens',
+    offers: 'Offres',
+    hired: 'Embauché',
+    rejected: 'Rejeté',
     title: 'Pipeline de recrutement',
     postNewJob: 'Publier un nouveau poste',
     applications: 'Candidatures',

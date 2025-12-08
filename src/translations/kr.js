@@ -181,26 +181,14 @@ export default {
     december: '12월'
   },
 
-  // Recruitment
-  recruitment: {
-    title: '채용 파이프라인',
-    postNewJob: '새 직무 게시',
-    applications: '지원서',
-    candidate: '후보자',
-    position: '포지션',
-    department: '부서',
-    appliedDate: '지원일',
-    experience: '경력',
-    status: '상태',
-    actions: '액션',
-    stage: '단계',
-    interviewScheduled: '면접 예정',
+  stats: {
+    total: '총계',
     underReview: '검토 중',
-    offerExtended: '제안 제공',
-    screening: '스크리닝',
-    technical: '기술',
-    offer: '제안',
-    years: '년'
+    shortListed: '최종 후보',
+    interviewScheduled: '면접 예정',
+    offerExtended: '오퍼 발송됨',
+    hired: '채용됨',
+    rejected: '불합격',
   },
 
   timeClock: {
@@ -406,6 +394,12 @@ export default {
 
   // Recruitment
   recruitment: {
+    total: '총계',
+    shortListed: '최종 후보',
+    interviews: '면접',
+    offers: '오퍼',
+    hired: '채용',
+    rejected: '불합격',
     title: '채용 파이프라인',
     applications: '지원서',
     candidate: '후보자',

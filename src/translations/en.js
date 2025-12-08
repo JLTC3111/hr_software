@@ -301,6 +301,12 @@ export default {
 
   // Recruitment
   recruitment: {
+    total: 'Total',
+    shortListed: 'Shortlisted',
+    interviews: 'Interviews',
+    offers: 'Offers',
+    hired: 'Hired',
+    rejected: 'Rejected',
     title: 'Recruitment Pipeline',
     postNewJob: 'Post New Job',
     applications: 'Applications',

@@ -178,26 +178,14 @@ export default {
     december: '12月'
   },
 
-  // Recruitment
-  recruitment: {
-    title: '採用パイプライン',
-    postNewJob: '新しい仕事を投稿',
-    applications: '応募',
-    candidate: '候補者',
-    position: 'ポジション',
-    department: '部署',
-    appliedDate: '応募日',
-    experience: '経験',
-    status: 'ステータス',
-    actions: 'アクション',
-    stage: 'ステージ',
-    interviewScheduled: '面接予定',
+  stats: {
+    total: '合計',
     underReview: '審査中',
-    offerExtended: 'オファー提示',
-    screening: 'スクリーニング',
-    technical: '技術',
-    offer: 'オファー',
-    years: '年'
+    shortListed: '候補リスト入り',
+    interviewScheduled: '面接予定',
+    offerExtended: 'オファー送付済み',
+    hired: '採用',
+    rejected: '不採用',
   },
 
   timeClock: {
@@ -404,6 +392,12 @@ export default {
 
   // Recruitment
   recruitment: {
+    total: '合計',
+    shortListed: '候補リスト入り',
+    interviews: '面接',
+    offers: 'オファー',
+    hired: '採用',
+    rejected: '不採用',
     title: '採用パイプライン',
     applications: '応募',
     candidate: '候補者',

@@ -193,26 +193,14 @@ export default {
     december: 'Декабрь'
   },
 
-  // Recruitment
-  recruitment: {
-    title: 'Конвейер найма',
-    postNewJob: 'Разместить новую вакансию',
-    applications: 'Заявки',
-    candidate: 'Кандидат',
-    position: 'Должность',
-    department: 'Отдел',
-    appliedDate: 'Дата подачи заявки',
-    experience: 'Опыт',
-    status: 'Статус',
-    actions: 'Действия',
-    stage: 'Этап',
-    interviewScheduled: 'Собеседование запланировано',
+  stats: {
+    total: 'Всего',
     underReview: 'На рассмотрении',
-    offerExtended: 'Предложение сделано',
-    screening: 'Отбор',
-    technical: 'Техническое',
-    offer: 'Предложение',
-    years: 'лет'
+    shortListed: 'В шорт-листе',
+    interviewScheduled: 'Собеседование назначено',
+    offerExtended: 'Оффер отправлен',
+    hired: 'Нанят',
+    rejected: 'Отклонён',
   },
 
   timeClock: {
@@ -467,6 +455,12 @@ export default {
 
   // Recruitment
   recruitment: {
+    total: 'Всего',
+    shortListed: 'В шорт-листе',
+    interviews: 'Собеседования',
+    offers: 'Офферы',
+    hired: 'Нанятые',
+    rejected: 'Отклонённые',
     title: 'Воронка набора персонала',
     applications: 'Заявки',
     candidate: 'Кандидат',
