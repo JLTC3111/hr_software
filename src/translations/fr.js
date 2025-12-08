@@ -157,6 +157,9 @@ export default {
     Support: 'Support',
     Legal: 'Juridique',
     IT: 'Informatique',
+    it: 'Informatique',
+    product: 'Produit',
+    customer_support: 'Support Client',
   },
 
   // Recruitment
@@ -496,6 +499,7 @@ export default {
     currentCompany: 'Entreprise actuelle',
     currentPosition: 'Poste actuel',
     education: 'Éducation',
+    department: 'Département',
     links: 'Liens',
     viewResume: 'Voir le CV',
     linkedinProfile: 'Profil LinkedIn',

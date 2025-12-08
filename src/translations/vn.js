@@ -157,6 +157,9 @@ export default {
     Support: 'Hỗ Trợ',
     Legal: 'Pháp Lý',
     IT: 'Công Nghệ Thông Tin',
+    it: 'Công Nghệ Thông Tin',
+    product: 'Sản Phẩm',
+    customer_support: 'Hỗ Trợ Khách Hàng'
   },
 
   // Months
@@ -173,28 +176,6 @@ export default {
     october: 'Tháng Mười',
     november: 'Tháng Mười Một',
     december: 'Tháng Mười Hai'
-  },
-
-  // Recruitment
-  recruitment: {
-    title: 'Quy Trình Tuyển Dụng',
-    postNewJob: 'Đăng Việc Làm Mới',
-    applications: 'Đơn Ứng Tuyển',
-    candidate: 'Ứng Viên',
-    position: 'Vị Trí',
-    department: 'Phòng Ban',
-    appliedDate: 'Ngày Nộp Đơn',
-    experience: 'Kinh Nghiệm',
-    status: 'Trạng Thái',
-    actions: 'Hành động',
-    stage: 'Giai đoạn',
-    interviewScheduled: 'Phỏng vấn đã lên lịch',
-    underReview: 'Đang xem xét',
-    offerExtended: 'Đã đưa ra đề nghị',
-    screening: 'Sàng lọc',
-    technical: 'Kỹ thuật',
-    offer: 'Đề nghị',
-    years: 'năm'
   },
 
   // Time Tracking
@@ -490,8 +471,10 @@ export default {
     applicantInfo: 'Thông tin ứng viên',
     currentCompany: 'Công ty hiện tại',
     currentPosition: 'Vị trí hiện tại',
-    education: 'Học vấn',
-    links: 'Liên kết',
+    education: 'Học Vấn',
+    links: 'Liên Kết',
+    department: 'Phòng Ban',
+    postNewJob: 'Đăng Tuyển Công Việc Mới',
     viewResume: 'Xem CV',
     linkedinProfile: 'Hồ sơ LinkedIn',
     notes: 'Ghi chú',

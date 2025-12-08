@@ -157,6 +157,9 @@ export default {
     Support: 'สนับสนุน',
     Legal: 'กฎหมาย',
     IT: 'IT',
+    it: 'IT',
+    product: 'ผลิตภัณฑ์',
+    customer_support: 'ฝ่ายสนับสนุนลูกค้า',
   },
 
   // Months
@@ -440,6 +443,8 @@ export default {
     currentPosition: 'ตำแหน่งปัจจุบัน',
     education: 'การศึกษา',
     links: 'ลิงก์',
+    department: 'แผนก',
+    postNewJob: 'ประกาศงานใหม่',
     viewResume: 'ดูเรซูเม่',
     linkedinProfile: 'โปรไฟล์ LinkedIn',
     notes: 'บันทึก',

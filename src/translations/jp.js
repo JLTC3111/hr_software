@@ -157,6 +157,9 @@ export default {
     Support: 'サポート',
     Legal: '法務',
     IT: 'IT',
+    it: 'IT',
+    product: '製品',
+    customer_support: 'カスタマーサポート',
   },
 
   // Months
@@ -441,6 +444,8 @@ export default {
     currentPosition: '現在の役職',
     education: '学歴',
     links: 'リンク',
+    postNewJob: '新しい求人を投稿',
+    department: '部署',
     viewResume: '履歴書を見る',
     linkedinProfile: 'LinkedIn プロフィール',
     notes: 'メモ',

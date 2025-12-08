@@ -278,6 +278,9 @@ export default {
     Support: 'Support',
     Legal: 'Legal',
     IT: 'IT',
+    it: 'IT',
+    product: 'Product',
+    customer_support: 'Customer Support'
   },
 
   // Months

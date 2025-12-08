@@ -322,6 +322,9 @@ login: {
     Support: 'Soporte',
     Legal: 'Legal',
     IT: 'TI',
+    it: 'TI',
+    product: 'Producto',
+    customer_support: 'Soporte al Cliente',
   },
 
   // Months
@@ -521,6 +524,7 @@ login: {
     currentPosition: 'Cargo actual',
     education: 'Educación',
     links: 'Enlaces',
+    department: 'Departamento',
     viewResume: 'Ver currículum',
     linkedinProfile: 'Perfil de LinkedIn',
     notes: 'Notas',

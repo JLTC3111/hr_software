@@ -160,6 +160,9 @@ export default {
     Support: '지원',
     Legal: '법무',
     IT: 'IT',
+    it: 'IT',
+    product: '제품',
+    customer_support: '고객 지원',
   },
 
   // Months
@@ -443,6 +446,8 @@ export default {
     currentPosition: '현재 직책',
     education: '학력',
     links: '링크',
+    postNewJob: '새로운 직무 게시',
+    department: '부서',
     viewResume: '이력서 보기',
     linkedinProfile: 'LinkedIn 프로필',
     notes: '메모',

@@ -159,6 +159,7 @@ export default {
     sales: 'Продажи',
     marketing: 'Маркетинг',
     design: 'Дизайн',
+    expert: 'Эксперт',
     part_time_employee: 'Сотрудник на неполный рабочий день',
     // Also support capitalized versions for compatibility
     Management: 'Управление',
@@ -167,12 +168,13 @@ export default {
     Marketing: 'Маркетинг',
     Sales: 'Продажи',
     Finance: 'Финансы',
-    'Human Resources': 'Кадры',
     Technology: 'Технологии',
     Operations: 'Операции',
     Support: 'Поддержка',
     Legal: 'Юридический',
-    IT: 'IT',
+    it: 'IT',
+    product: 'Продукт',
+    customer_support: 'Поддержка клиентов',
   },
 
   // Months
@@ -505,6 +507,8 @@ export default {
     currentPosition: 'Текущая должность',
     education: 'Образование',
     links: 'Ссылки',
+    department: 'Отдел',
+    postNewJob: 'Опубликовать новую вакансию',
     viewResume: 'Просмотреть резюме',
     linkedinProfile: 'Профиль LinkedIn',
     notes: 'Заметки',
