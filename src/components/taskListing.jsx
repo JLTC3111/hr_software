@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as workloadService from '../services/workloadService';
 import * as flubber from 'flubber';
+import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription } from '../utils/demoHelper';
 
 export const MiniFlubberAutoMorphCompleteTask = ({
   size = 24,
@@ -602,7 +603,7 @@ const TaskListing = ({ employees }) => {
               >
                 {availableEmployees.map(employee => (
                   <option key={employee.id} value={String(employee.id)}>
-                    {employee.name} - {t(`employeeDepartment.${employee.department.toLowerCase().replace(/\s+/g, '_')}`, employee.department)} ({t(`employeePosition.${employee.position.toLowerCase().replace(/\s+/g, '')}`, employee.position)})
+                    {getDemoEmployeeName(employee, t)} - {t(`employeeDepartment.${employee.department.toLowerCase().replace(/\s+/g, '_')}`, employee.department)} ({t(`employeePosition.${employee.position.toLowerCase().replace(/\s+/g, '')}`, employee.position)})
                   </option>
                 ))}
               </select>
@@ -655,7 +656,7 @@ const TaskListing = ({ employees }) => {
                         }
                       </button>
                       <h4 className={`font-semibold ${text.primary} ${task.status === 'completed' ? 'line-through' : ''}`}>
-                        {task.title}
+                        {isDemoMode() ? getDemoTaskTitle(task, t) : task.title}
                       </h4>
                       <span className={`px-2 py-1 rounded text-xs ${getPriorityColor(task.priority)} ${task.status === 'completed' ? 'line-through' : ''}`}>
                         {t(`taskListing.${task.priority}`, task.priority)}
@@ -668,11 +669,11 @@ const TaskListing = ({ employees }) => {
                       </span>
                       {canAssignTasks && task.employee && (
                         <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-white' : 'bg-blue-100 text-blue-800'}`}>
-                          {task.employee.name}
+                          {getDemoEmployeeName(task.employee, t)}
                         </span>
                       )}
                     </div>
-                    <p className={`text-sm ${text.secondary} mb-2`}>{task.description}</p>
+                    <p className={`text-sm ${text.secondary} mb-2`}>{isDemoMode() ? getDemoTaskDescription(task, t) : task.description}</p>
                     {task.due_date && (
                       <p className={`text-xs ${text.secondary} flex items-center space-x-1 mb-2`}>
                         <Calendar className="w-3 h-3" />
@@ -833,7 +834,7 @@ const TaskListing = ({ employees }) => {
                   <div className="flex items-center space-x-3">
                     <User className={`w-5 h-5 ${text.secondary}`} />
                     <div>
-                      <p className={`font-semibold ${text.primary}`}>{employee.name}</p>
+                      <p className={`font-semibold ${text.primary}`}>{getDemoEmployeeName(employee, t)}</p>
                       <p className={`text-sm ${text.secondary}`}>{t(`employeeDepartment.${employee.department}`, employee.department)}</p>
                     </div>
                   </div>
@@ -956,7 +957,7 @@ const TaskListing = ({ employees }) => {
                     <option value="">{t('taskListing.selectEmployee', 'Select Employee')}</option>
                     {employees.map(emp => (
                       <option key={emp.id} value={emp.id}>
-                        {emp.name} - {t(`employeeDepartment.${emp.department}`, emp.department)} ({t(`employeePosition.${emp.position}`, emp.position)})
+                        {getDemoEmployeeName(emp, t)} - {t(`employeeDepartment.${emp.department}`, emp.department)} ({t(`employeePosition.${emp.position}`, emp.position)})
                       </option>
                     ))}
                   </select>

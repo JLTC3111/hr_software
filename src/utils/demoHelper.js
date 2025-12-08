@@ -17,17 +17,124 @@ export const disableDemoMode = () => {
   window.isDemoMode = false;
 };
 
+/**
+ * Get translated name for a demo employee
+ * @param {Object} employee - The employee object
+ * @param {Function} t - Translation function from useLanguage hook
+ * @returns {string} - Translated name or original name
+ */
+export const getDemoEmployeeName = (employee, t) => {
+  if (!isDemoMode() || !employee || !t) return employee?.name || '';
+  
+  // Check if this is a demo employee with a nameKey
+  if (employee.nameKey) {
+    const translated = t(employee.nameKey, null);
+    // If translation exists and is different from the key, use it
+    if (translated && translated !== employee.nameKey) {
+      return translated;
+    }
+  }
+  
+  return employee.name || '';
+};
+
+/**
+ * Get translated location for a demo employee
+ * @param {Object} employee - The employee object
+ * @param {Function} t - Translation function from useLanguage hook
+ * @returns {string} - Translated location or original location
+ */
+export const getDemoEmployeeLocation = (employee, t) => {
+  if (!isDemoMode() || !employee || !t) return employee?.location || '';
+  
+  // Check if this is a demo employee with a locationKey
+  if (employee.locationKey) {
+    const translated = t(employee.locationKey, null);
+    if (translated && translated !== employee.locationKey) {
+      return translated;
+    }
+  }
+  
+  return employee.location || '';
+};
+
+/**
+ * Apply translations to a demo employee object
+ * @param {Object} employee - The employee object
+ * @param {Function} t - Translation function from useLanguage hook
+ * @returns {Object} - Employee object with translated name and location
+ */
+export const translateDemoEmployee = (employee, t) => {
+  if (!isDemoMode() || !employee || !t) return employee;
+  
+  return {
+    ...employee,
+    name: getDemoEmployeeName(employee, t),
+    location: getDemoEmployeeLocation(employee, t)
+  };
+};
+
+/**
+ * Apply translations to an array of demo employees
+ * @param {Array} employees - Array of employee objects
+ * @param {Function} t - Translation function from useLanguage hook
+ * @returns {Array} - Array of employees with translated names and locations
+ */
+export const translateDemoEmployees = (employees, t) => {
+  if (!isDemoMode() || !employees || !t) return employees;
+  
+  return employees.map(emp => translateDemoEmployee(emp, t));
+};
+
+/**
+ * Get translated title for a demo task
+ * @param {Object} task - The task object
+ * @param {Function} t - Translation function from useLanguage hook
+ * @returns {string} - Translated title or original title
+ */
+export const getDemoTaskTitle = (task, t) => {
+  if (!isDemoMode() || !task || !t) return task?.title || '';
+  
+  if (task.titleKey) {
+    const translated = t(task.titleKey, null);
+    if (translated && translated !== task.titleKey) {
+      return translated;
+    }
+  }
+  
+  return task.title || '';
+};
+
+/**
+ * Get translated description for a demo task
+ * @param {Object} task - The task object
+ * @param {Function} t - Translation function from useLanguage hook
+ * @returns {string} - Translated description or original description
+ */
+export const getDemoTaskDescription = (task, t) => {
+  if (!isDemoMode() || !task || !t) return task?.description || '';
+  
+  if (task.descriptionKey) {
+    const translated = t(task.descriptionKey, null);
+    if (translated && translated !== task.descriptionKey) {
+      return translated;
+    }
+  }
+  
+  return task.description || '';
+};
+
 // Mock Data
 export const MOCK_USER = {
   id: 'demo-user-id',
-  email: 'demo@example.com',
+  email: 'tech@company.com',
   name: 'Demo Admin',
   firstName: 'Demo',
   lastName: 'Admin',
   role: 'admin',
-  avatar_url: 'https://i.pravatar.cc/150?u=demo',
-  department: 'Management',
-  position: 'HR Manager',
+  avatar_url: 'https://randomuser.me/api/portraits/men/32.jpg',
+  department: 'human_resources',
+  position: 'hr_specialist',
   employeeId: 'demo-emp-1',
   permissions: {
     canManageUsers: true,
@@ -53,69 +160,135 @@ export const MOCK_EMPLOYEES = [
   {
     id: 'demo-emp-1',
     name: 'Demo Admin',
-    email: 'demo@example.com',
-    department: 'Management',
-    position: 'HR Manager',
+    nameKey: 'demoEmployees.demo-emp-1.name',
+    email: 'hr@company.com',
+    department: 'human_resources',
+    position: 'hr_specialist',
+    location: 'Headquarters',
+    locationKey: 'locations.headquarters',
     status: 'active',
-    photo: 'https://i.pravatar.cc/150?u=demo',
+    photo: 'https://randomuser.me/api/portraits/women/44.jpg',
     phone: '555-0101',
     hire_date: '2023-01-15',
+    dob: '1985-06-15',
     salary: 85000,
     employment_status: 'active'
   },
   {
     id: 'demo-emp-2',
-    name: 'Sarah Johnson',
-    email: 'sarah.j@example.com',
-    department: 'Engineering',
-    position: 'Senior Developer',
+    name: 'Demo Engineer',
+    nameKey: 'demoEmployees.demo-emp-2.name',
+    email: 'engineer@company.com',
+    department: 'engineering',
+    position: 'senior_developer',
+    location: 'Headquarters',
+    locationKey: 'locations.headquarters',
     status: 'active',
-    photo: 'https://i.pravatar.cc/150?u=sarah',
+    photo: 'https://randomuser.me/api/portraits/men/32.jpg',
     phone: '555-0102',
     hire_date: '2023-03-10',
+    dob: '1990-03-22',
     salary: 95000,
     employment_status: 'active'
   },
   {
     id: 'demo-emp-3',
-    name: 'Michael Chen',
-    email: 'michael.c@example.com',
-    department: 'Design',
-    position: 'UI/UX Designer',
+    name: 'Demo Designer',
+    nameKey: 'demoEmployees.demo-emp-3.name',
+    email: 'designer@company.com',
+    department: 'technology',
+    position: 'employee',
+    location: 'Remote',
+    locationKey: 'locations.remote',
     status: 'active',
-    photo: 'https://i.pravatar.cc/150?u=michael',
+    photo: 'https://randomuser.me/api/portraits/men/86.jpg',
     phone: '555-0103',
     hire_date: '2023-06-20',
+    dob: '1992-11-05',
     salary: 78000,
     employment_status: 'active'
   },
   {
     id: 'demo-emp-4',
-    name: 'Emily Davis',
-    email: 'emily.d@example.com',
-    department: 'Marketing',
-    position: 'Marketing Specialist',
+    name: 'Demo Marketing',
+    nameKey: 'demoEmployees.demo-emp-4.name',
+    email: 'marketing@company.com',
+    department: 'office_unit',
+    position: 'employee',
+    location: 'Headquarters',
+    locationKey: 'locations.headquarters',
     status: 'active',
-    photo: 'https://i.pravatar.cc/150?u=emily',
+    photo: 'https://randomuser.me/api/portraits/women/65.jpg',
     phone: '555-0104',
     hire_date: '2023-02-01',
+    dob: '1995-08-30',
     salary: 65000,
     employment_status: 'active'
   },
   {
     id: 'demo-emp-5',
-    name: 'James Wilson',
-    email: 'james.w@example.com',
-    department: 'Sales',
-    position: 'Sales Representative',
+    name: 'Demo Sales',
+    nameKey: 'demoEmployees.demo-emp-5.name',
+    email: 'sales@company.com',
+    department: 'finance',
+    position: 'employee',
+    location: 'Remote',
+    locationKey: 'locations.remote',
     status: 'active',
-    photo: 'https://i.pravatar.cc/150?u=james',
+    photo: 'https://randomuser.me/api/portraits/men/22.jpg',
     phone: '555-0105',
     hire_date: '2023-08-15',
+    dob: '1988-12-12',
     salary: 60000,
     employment_status: 'active'
   }
 ];
+
+const DEMO_EMPLOYEES_KEY = 'hr_app_demo_employees';
+
+export const getDemoEmployees = () => {
+  const stored = localStorage.getItem(DEMO_EMPLOYEES_KEY);
+  const storedEmployees = stored ? JSON.parse(stored) : [];
+  
+  // Stored employees take precedence over mock employees (allows "updating" mock data)
+  const storedIds = new Set(storedEmployees.map(e => e.id));
+  const visibleMockEmployees = MOCK_EMPLOYEES.filter(e => !storedIds.has(e.id));
+  
+  return [...visibleMockEmployees, ...storedEmployees];
+};
+
+export const addDemoEmployee = (employee) => {
+  const stored = localStorage.getItem(DEMO_EMPLOYEES_KEY);
+  const storedEmployees = stored ? JSON.parse(stored) : [];
+  storedEmployees.push(employee);
+  localStorage.setItem(DEMO_EMPLOYEES_KEY, JSON.stringify(storedEmployees));
+  return employee;
+};
+
+export const updateDemoEmployee = (employeeId, updates) => {
+  const stored = localStorage.getItem(DEMO_EMPLOYEES_KEY);
+  let storedEmployees = stored ? JSON.parse(stored) : [];
+  
+  // Check if it's already in storage
+  const storedIndex = storedEmployees.findIndex(e => e.id === employeeId);
+  if (storedIndex !== -1) {
+    storedEmployees[storedIndex] = { ...storedEmployees[storedIndex], ...updates };
+    localStorage.setItem(DEMO_EMPLOYEES_KEY, JSON.stringify(storedEmployees));
+    return storedEmployees[storedIndex];
+  }
+  
+  // If not in storage, check if it's a mock employee
+  const mockEmployee = MOCK_EMPLOYEES.find(e => e.id === employeeId);
+  if (mockEmployee) {
+    // Clone to storage with updates
+    const updatedEmployee = { ...mockEmployee, ...updates };
+    storedEmployees.push(updatedEmployee);
+    localStorage.setItem(DEMO_EMPLOYEES_KEY, JSON.stringify(storedEmployees));
+    return updatedEmployee;
+  }
+  
+  return null;
+};
 
 // Generate some random time entries for the current month
 const generateMockTimeEntries = () => {
@@ -140,6 +313,7 @@ const generateMockTimeEntries = () => {
         id: `te-${emp.id}-${day}`,
         employee_id: emp.id,
         employee_name: emp.name,
+        employee_nameKey: emp.nameKey,
         employee_department: emp.department,
         employee_position: emp.position,
         date: dateStr,
@@ -151,6 +325,7 @@ const generateMockTimeEntries = () => {
         employee: {
           id: emp.id,
           name: emp.name,
+          nameKey: emp.nameKey,
           department: emp.department,
           position: emp.position
         }
@@ -162,6 +337,7 @@ const generateMockTimeEntries = () => {
           id: `te-ot-${emp.id}-${day}`,
           employee_id: emp.id,
           employee_name: emp.name,
+          employee_nameKey: emp.nameKey,
           employee_department: emp.department,
           employee_position: emp.position,
           date: dateStr,
@@ -173,6 +349,7 @@ const generateMockTimeEntries = () => {
           employee: {
             id: emp.id,
             name: emp.name,
+            nameKey: emp.nameKey,
             department: emp.department,
             position: emp.position
           }
@@ -189,7 +366,9 @@ export const MOCK_TASKS = [
   {
     id: 'task-1',
     title: 'Q4 Report Analysis',
+    titleKey: 'demoTasks.task-1.title',
     description: 'Analyze Q4 performance metrics and prepare presentation',
+    descriptionKey: 'demoTasks.task-1.description',
     status: 'in-progress',
     priority: 'high',
     due_date: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString().split('T')[0],
@@ -199,7 +378,9 @@ export const MOCK_TASKS = [
   {
     id: 'task-2',
     title: 'Update Employee Handbook',
+    titleKey: 'demoTasks.task-2.title',
     description: 'Review and update the 2024 employee handbook',
+    descriptionKey: 'demoTasks.task-2.description',
     status: 'pending',
     priority: 'medium',
     due_date: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString().split('T')[0],
@@ -209,7 +390,9 @@ export const MOCK_TASKS = [
   {
     id: 'task-3',
     title: 'Fix Login Bug',
+    titleKey: 'demoTasks.task-3.title',
     description: 'Investigate reported login issues on mobile devices',
+    descriptionKey: 'demoTasks.task-3.description',
     status: 'completed',
     priority: 'high',
     due_date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString().split('T')[0],
@@ -222,7 +405,9 @@ export const MOCK_GOALS = [
   {
     id: 'goal-1',
     title: 'Improve Team Efficiency',
+    titleKey: 'demoGoals.goal-1.title',
     description: 'Implement new project management workflow',
+    descriptionKey: 'demoGoals.goal-1.description',
     status: 'in_progress',
     progress: 65,
     category: 'Professional',
@@ -233,7 +418,9 @@ export const MOCK_GOALS = [
   {
     id: 'goal-2',
     title: 'Learn React Native',
+    titleKey: 'demoGoals.goal-2.title',
     description: 'Complete advanced React Native course',
+    descriptionKey: 'demoGoals.goal-2.description',
     status: 'completed',
     progress: 100,
     category: 'Skills',
@@ -356,8 +543,8 @@ export const MOCK_JOB_POSTINGS = [
   {
     id: 'job-1',
     title: 'Senior Frontend Developer',
-    department: 'Engineering',
-    position: 'Senior Developer',
+    department: 'engineering',
+    position: 'senior_developer',
     status: 'active',
     posted_date: '2023-10-01',
     description: 'We are looking for an experienced Frontend Developer...',
@@ -368,8 +555,8 @@ export const MOCK_JOB_POSTINGS = [
   {
     id: 'job-2',
     title: 'Product Designer',
-    department: 'Design',
-    position: 'Designer',
+    department: 'technology',
+    position: 'employee',
     status: 'active',
     posted_date: '2023-10-05',
     description: 'Join our design team to create amazing user experiences...',

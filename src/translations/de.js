@@ -1489,4 +1489,44 @@ export default {
     customizableDuration: 'Anpassbare Animationsdauer',
     easingFunctions: 'Easing-Funktionen für natürliche Bewegung',
   },
+
+  demoEmployees: {
+    'demo-emp-1': { name: 'Administrator', location: 'Hauptsitz' },
+    'demo-emp-2': { name: 'Personalingenieur', location: 'Hauptsitz' },
+    'demo-emp-3': { name: 'UI/UX Designer', location: 'Remote' },
+    'demo-emp-4': { name: 'Marketing Spezialist', location: 'Hauptsitz' },
+    'demo-emp-5': { name: 'Vertriebsmitarbeiter', location: 'Remote' }
+  },
+  locations: {
+    headquarters: 'Hauptsitz',
+    remote: 'Remote'
+  },
+
+  // Demo tasks (for demo mode translations)
+  demoTasks: {
+    'task-1': {
+      title: 'Q4 Berichtsanalyse',
+      description: 'Analysieren Sie die Q4-Leistungskennzahlen und bereiten Sie eine Präsentation vor'
+    },
+    'task-2': {
+      title: 'Mitarbeiterhandbuch aktualisieren',
+      description: 'Überprüfen und aktualisieren Sie das Mitarbeiterhandbuch 2024'
+    },
+    'task-3': {
+      title: 'Login-Fehler beheben',
+      description: 'Untersuchen Sie gemeldete Anmeldeprobleme auf Mobilgeräten'
+    }
+  },
+
+  // Demo goals (for demo mode translations)
+  demoGoals: {
+    'goal-1': {
+      title: 'Teameffizienz verbessern',
+      description: 'Neuen Projektmanagement-Workflow implementieren'
+    },
+    'goal-2': {
+      title: 'React Native lernen',
+      description: 'Fortgeschrittenen React Native Kurs abschließen'
+    }
+  },
 };

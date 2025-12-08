@@ -3,6 +3,7 @@ import { Phone, MapPin, Mail, Award, Eye, Edit, Trash2, User, Camera, Cake, Netw
 import { useLanguage } from '../contexts/LanguageContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useAuth } from '../contexts/AuthContext'
+import { getDemoEmployeeName } from '../utils/demoHelper'
 
 const getStatusColor = (status) => {
   switch (status.toLowerCase()) {
@@ -114,7 +115,7 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
             )}
           </div>
           <div>
-            <h3 className="text-sm md:text-base font-semibold" style={{ color: style?.color }}>{employee.name}</h3>
+            <h3 className="text-sm md:text-base font-semibold" style={{ color: style?.color }}>{getDemoEmployeeName(employee, t)}</h3>
             <p className="text-sm opacity-70" style={{ color: style?.color }}>{t(`employeePosition.${employee.position.toLowerCase().replace(' ', '')}`, employee.position)}</p>
           </div>
         </div>

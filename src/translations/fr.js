@@ -1679,4 +1679,24 @@ export default {
     customizableDuration: 'Durée d\'animation personnalisable',
     easingFunctions: 'Fonctions d\'accélération pour mouvement naturel',
   },
+  demoEmployees: {
+  'demo-emp-1': { name: 'Administrateur', location: 'Siège' },
+  'demo-emp-2': { name: 'Ingénieur RH', location: 'Siège' },
+  'demo-emp-3': { name: 'Designer UI/UX', location: 'Télétravail' },
+  'demo-emp-4': { name: 'Spécialiste Marketing', location: 'Siège' },
+  'demo-emp-5': { name: 'Représentant Commercial', location: 'Télétravail' }
+  },
+  locations: {
+    headquarters: 'Siège',
+    remote: 'Télétravail'
+  },
+  demoTasks: {
+    'task-1': { title: 'Analyse des Rapports Q4', description: 'Analyse complète des métriques de performance trimestrielles et des tendances' },
+    'task-2': { title: 'Mise à Jour du Manuel des Employés', description: 'Réviser et mettre à jour le manuel des employés avec les politiques de télétravail' },
+    'task-3': { title: 'Correction du Bug de Connexion', description: 'Déboguer et résoudre les problèmes de connexion utilisateur sur les appareils mobiles' }
+  },
+  demoGoals: {
+    'goal-1': { title: 'Améliorer l\'Efficacité de l\'Équipe', description: 'Augmenter la productivité de l\'équipe de 20% au cours du prochain trimestre' },
+    'goal-2': { title: 'Apprendre React Native', description: 'Maîtriser React Native pour le développement d\'applications mobiles' }
+  }
 };

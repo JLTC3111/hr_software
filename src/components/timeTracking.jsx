@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext'
 import * as timeTrackingService from '../services/timeTrackingService'
 import { AnimatedClockIcon } from './timeClockEntry'
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh'
+import { getDemoEmployeeName } from '../utils/demoHelper'
 
 export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = false }) => {
     const mainColor = isDarkMode ? '#ffffff' : '#000000';
@@ -1108,7 +1109,7 @@ const handleRejectRequest = async (requestId) => {
           >
             {employees.map(employee => (
               <option key={employee.id} value={String(employee.id)}>
-                {employee.name}
+                {getDemoEmployeeName(employee, t)}
               </option>
             ))}
           </select>
@@ -1377,7 +1378,7 @@ const handleRejectRequest = async (requestId) => {
                   return (
                     <div key={index} className="space-y-1">
                       <div className="flex justify-between text-sm">
-                        <span className={text.secondary}>{item.employee.name}</span>
+                        <span className={text.secondary}>{getDemoEmployeeName(item.employee, t)}</span>
                         <span className={text.primary}>{item.data?.regular_hours || 0} hrs</span>
                       </div>
                       <div className={`w-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} rounded-full h-2`}>
@@ -1424,7 +1425,7 @@ const handleRejectRequest = async (requestId) => {
                   return (
                     <div key={index} className="space-y-1">
                       <div className="flex justify-between text-sm">
-                        <span className={text.secondary}>{item.employee.name}</span>
+                        <span className={text.secondary}>{getDemoEmployeeName(item.employee, t)}</span>
                         <span className={text.primary}>{overtimeTotal.toFixed(1)} hrs</span>
                       </div>
                       <div className={`w-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} rounded-full h-2`}>
@@ -1525,7 +1526,7 @@ const handleRejectRequest = async (requestId) => {
             <tbody>
               {getSortedEmployees().map((item, idx) => (
                 <tr key={item.employee.id || idx}>
-                  <td className={`text-left py-3 px-4 ${text.secondary}`}>{item.employee.name}</td>
+                  <td className={`text-left py-3 px-4 ${text.secondary}`}>{getDemoEmployeeName(item.employee, t)}</td>
                   <td className={`text-right py-3 px-4 ${text.secondary}`}>{item.data?.days_worked || 0}</td>
                   <td className={`text-right py-3 px-4 ${text.secondary}`}>{item.data?.regular_hours?.toFixed(1) || '0.0'}</td>
                   <td className={`text-right py-3 px-4 ${text.secondary}`}>{((item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0)).toFixed(1)}</td>

@@ -3,7 +3,7 @@ import { useLanguage, SUPPORTED_LANGUAGES } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from '../contexts/AuthContext';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
-import { isDemoMode } from '../utils/demoHelper';
+import { isDemoMode, getDemoEmployeeName } from '../utils/demoHelper';
 import { 
   Calendar, 
   Download, 
@@ -779,7 +779,7 @@ const Reports = () => {
           const perfSheet = workbook.addWorksheet('Employee Performance');
           
           // Header
-          perfSheet.getCell('A1').value = `${employee.name.toUpperCase()} - PERFORMANCE REPORT`;
+          perfSheet.getCell('A1').value = `${getDemoEmployeeName(employee, t).toUpperCase()} - PERFORMANCE REPORT`;
           perfSheet.getCell('A1').font = { size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
           perfSheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0070C0' } };
           perfSheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
@@ -803,7 +803,7 @@ const Reports = () => {
             perfRow++;
           };
           
-          addInfo('Name:', employee.name);
+          addInfo('Name:', getDemoEmployeeName(employee, t));
           addInfo('Department:', translateDepartment(employee.department));
           addInfo('Position:', translatePosition(employee.position));
           addInfo('Email:', employee.email || 'N/A');
@@ -2052,10 +2052,10 @@ const Reports = () => {
               </option>
               <optgroup label="──────────────────────">
                 {reportData.employees
-                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .sort((a, b) => getDemoEmployeeName(a, t).localeCompare(getDemoEmployeeName(b, t)))
                   .map(emp => (
                     <option key={emp.id} value={emp.id}>
-                      {emp.name} • {translateDepartment(emp.department)} • {translatePosition(emp.position)}
+                      {getDemoEmployeeName(emp, t)} • {translateDepartment(emp.department)} • {translatePosition(emp.position)}
                     </option>
                   ))}
               </optgroup>
@@ -2170,7 +2170,7 @@ const Reports = () => {
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h3 className={`text-xl font-bold ${text.primary} mb-1`}>
-                  {employee.name} - {t('reports.performanceSummary', "")}
+                  {getDemoEmployeeName(employee, t)} - {t('reports.performanceSummary', "")}
                 </h3>
                 <p className={`${text.secondary} text-sm`}>
                   {translateDepartment(employee.department)} • {translatePosition(employee.position)}

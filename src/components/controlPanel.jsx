@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../config/supabaseClient';
-import { isDemoMode } from '../utils/demoHelper';
+import { isDemoMode, getDemoEmployeeName } from '../utils/demoHelper';
 
 const ControlPanel = () => {
   const { isDarkMode, bg, text, border } = useTheme();
@@ -155,8 +155,8 @@ const ControlPanel = () => {
     try {
       if (isDemoMode()) {
         setAllEmployees([
-          { id: 'demo-emp-1', name: 'Demo Admin', email: 'demo@example.com', user_id: 'demo-user-id' },
-          { id: 'mock-emp-2', name: 'Sarah Connor', email: 'sarah@example.com', user_id: 'mock-user-2' }
+          { id: 'demo-emp-1', name: 'Demo Admin', email: 'tech@company.com', user_id: 'demo-user-id' },
+          { id: 'mock-emp-2', name: 'Demo Limited', email: 'limited_account@example.com', user_id: 'mock-user-2' }
         ]);
         setLoadingEmployees(false);
         return;
@@ -464,7 +464,7 @@ const ControlPanel = () => {
     }
 
     // Confirm action
-    if (!window.confirm(t('controlPanel.confirmResetEmployeePassword', `Are you sure you want to reset password for employee ${selectedEmployee.name}?`))) {
+    if (!window.confirm(t('controlPanel.confirmResetEmployeePassword', `Are you sure you want to reset password for employee ${getDemoEmployeeName(selectedEmployee, t)}?`))) {
       return;
     }
 
@@ -484,7 +484,7 @@ const ControlPanel = () => {
         }
       }
 
-      setEmployeeResetSuccess(t('controlPanel.passwordResetSuccessEmployee', `Password reset successfully for employee ${selectedEmployee.name}!`));
+      setEmployeeResetSuccess(t('controlPanel.passwordResetSuccessEmployee', `Password reset successfully for employee ${getDemoEmployeeName(selectedEmployee, t)}!`));
       setEmployeeResetPassword('');
       setEmployeeResetConfirm('');
       setSelectedEmployeeId('');
@@ -492,7 +492,7 @@ const ControlPanel = () => {
       // Show success toast
       setToast({
         show: true,
-        message: t('controlPanel.passwordResetSuccessEmployee', `Password reset successfully for employee ${selectedEmployee.name}!`),
+        message: t('controlPanel.passwordResetSuccessEmployee', `Password reset successfully for employee ${getDemoEmployeeName(selectedEmployee, t)}!`),
         type: 'success'
       });
       
@@ -1257,7 +1257,7 @@ const ControlPanel = () => {
                   <option value="">{t('controlPanel.chooseEmployee', '-- Choose an employee --')}</option>
                   {allEmployees.map((emp) => (
                     <option key={emp.id} value={emp.id}>
-                      {emp.name} ({emp.email})
+                      {getDemoEmployeeName(emp, t)} ({emp.email})
                     </option>
                   ))}
                 </select>

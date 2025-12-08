@@ -11,6 +11,7 @@ import { AnimatedClockIcon, AnimatedAlarmClockIcon } from './timeClockEntry.jsx'
 import { AnimatedCoffeeIcon, MiniFlubberMorphingLeaveStatus } from './timeTracking.jsx';
 import { MiniFlubberAutoMorphInProgress,MiniFlubberAutoMorphEmployees } from './taskReview.jsx'
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import { getDemoEmployeeName } from '../utils/demoHelper';
 
 export const MiniFlubberAutoMorphVacation = ({
   size = 24,
@@ -1149,7 +1150,8 @@ const Dashboard = ({ employees, applications }) => {
 
   // Helper function to generate display names for charts - always use last name
   const getUniqueDisplayName = (employee, allEmployees) => {
-    const nameParts = employee.name.trim().split(/\s+/).filter(part => part.length > 0);
+    const translatedName = getDemoEmployeeName(employee, t);
+    const nameParts = translatedName.trim().split(/\s+/).filter(part => part.length > 0);
     if (nameParts.length === 0) return `Employee #${employee.id}`;
     
     // Always use last name for cleaner, more compact display
@@ -1160,7 +1162,7 @@ const Dashboard = ({ employees, applications }) => {
   // Performance data for bar chart
   const performanceData = employees.map(emp => ({
     name: getUniqueDisplayName(emp, employees),
-    fullName: emp.name, // Keep full name for tooltip
+    fullName: getDemoEmployeeName(emp, t), // Keep full name for tooltip
     id: emp.id,
     performance: timeTrackingData[String(emp.id)]?.performance || 4.0,
     overtime: timeTrackingData[String(emp.id)]?.overtime || 0
@@ -1182,7 +1184,7 @@ const Dashboard = ({ employees, applications }) => {
     const empId = String(emp.id);
     return {
       name: getUniqueDisplayName(emp, employees),
-      fullName: emp.name, // Keep full name for tooltip
+      fullName: getDemoEmployeeName(emp, t), // Keep full name for tooltip
       id: emp.id,
       leaveDays: leaveRequestsData[empId] || timeTrackingData[empId]?.leaveDays || 0,
       workDays: timeTrackingData[empId]?.workDays || 0
@@ -1210,7 +1212,7 @@ const Dashboard = ({ employees, applications }) => {
     switch(metricType) {
       case 'employees':
         data = employees.map(emp => ({
-          employeeName: emp.name,
+          employeeName: getDemoEmployeeName(emp, t),
           department: emp.department,
           position: emp.position,
           status: emp.status
@@ -1220,7 +1222,7 @@ const Dashboard = ({ employees, applications }) => {
         
       case 'performance':
         data = employees.map(emp => ({
-          employeeName: emp.name,
+          employeeName: getDemoEmployeeName(emp, t),
           position: emp.position,
           department: emp.department,
           performance: timeTrackingData[String(emp.id)]?.performance || emp.performance || 0,
@@ -1231,7 +1233,7 @@ const Dashboard = ({ employees, applications }) => {
         
       case 'regularHours':
         data = employees.map(emp => ({
-          employeeName: emp.name,
+          employeeName: getDemoEmployeeName(emp, t),
           position: emp.position,
           department: emp.department,
           regularHours: timeTrackingData[String(emp.id)]?.regularHours || 0,
@@ -1242,7 +1244,7 @@ const Dashboard = ({ employees, applications }) => {
         
       case 'overtime':
         data = employees.map(emp => ({
-          employeeName: emp.name,
+          employeeName: getDemoEmployeeName(emp, t),
           position: emp.position,
           department: emp.department,
           overtime: (timeTrackingData[String(emp.id)]?.overtime || 0) + (timeTrackingData[String(emp.id)]?.holidayOvertime || 0),
@@ -1255,7 +1257,7 @@ const Dashboard = ({ employees, applications }) => {
         data = employees.map(emp => {
           const empId = String(emp.id);
           return {
-            employeeName: emp.name,
+            employeeName: getDemoEmployeeName(emp, t),
             position: emp.position,
             department: emp.department,
             leaveDays: leaveRequestsData[empId] || timeTrackingData[empId]?.leaveDays || 0,
@@ -1267,7 +1269,7 @@ const Dashboard = ({ employees, applications }) => {
       
       case 'workDays':
         data = employees.map(emp => ({
-          employeeName: emp.name,
+          employeeName: getDemoEmployeeName(emp, t),
           position: emp.position,
           department: emp.department,
           workDays: timeTrackingData[String(emp.id)]?.workDays || 0,
@@ -1861,7 +1863,7 @@ const Dashboard = ({ employees, applications }) => {
                   {emp.photo ? (
                     <img 
                       src={emp.photo} 
-                      alt={emp.name}
+                      alt={getDemoEmployeeName(emp, t)}
                       className={`w-10 h-10 rounded-full object-cover border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}
                     />
                   ) : (
@@ -1871,11 +1873,11 @@ const Dashboard = ({ employees, applications }) => {
                       index === 2 ? 'bg-orange-600' :
                       'bg-blue-500'
                     }`}>
-                      {emp.name.charAt(0)}
+                      {getDemoEmployeeName(emp, t).charAt(0)}
                     </div>
                   )}
                   <div>
-                    <p className={`font-medium ${text.primary}`}>{emp.name}</p>
+                    <p className={`font-medium ${text.primary}`}>{getDemoEmployeeName(emp, t)}</p>
                     <p className={`text-sm ${text.secondary}`}>
                       {t(`employeePosition.${emp.position}`)}
                     </p>

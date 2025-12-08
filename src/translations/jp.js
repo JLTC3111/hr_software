@@ -1586,4 +1586,24 @@ export default {
     customizableDuration: 'カスタマイズ可能なアニメーション期間',
     easingFunctions: '自然な動きのためのイージング関数',
   },
+  demoEmployees: {
+  'demo-emp-1': { name: '管理者', location: '本社' },
+  'demo-emp-2': { name: '人事エンジニア', location: '本社' },
+  'demo-emp-3': { name: 'UI/UX デザイナー', location: 'リモート' },
+  'demo-emp-4': { name: 'マーケティングスペシャリスト', location: '本社' },
+  'demo-emp-5': { name: '営業担当', location: 'リモート' }
+  },
+  locations: {
+    headquarters: '本社',
+    remote: 'リモート'
+  },
+  demoTasks: {
+    'task-1': { title: 'Q4レポート分析', description: '四半期パフォーマンス指標とトレンドの包括的な分析' },
+    'task-2': { title: '従業員ハンドブック更新', description: 'リモートワークポリシーで従業員ハンドブックを改訂・更新' },
+    'task-3': { title: 'ログインエラー修正', description: 'モバイル端末のユーザーログイン問題のデバッグと解決' }
+  },
+  demoGoals: {
+    'goal-1': { title: 'チーム効率改善', description: '次の四半期でチームの生産性を20%向上させる' },
+    'goal-2': { title: 'React Nativeを学ぶ', description: 'モバイルアプリ開発のためにReact Nativeを習得する' }
+  }
 };

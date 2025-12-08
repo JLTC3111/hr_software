@@ -55,6 +55,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as workloadService from '../services/workloadService';
+import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription } from '../utils/demoHelper';
 
 export const MiniFlubberAutoMorphTotalTasks = ({
   size = 24,
@@ -2011,14 +2012,14 @@ const TaskReview = ({ employees }) => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3 flex-1">
                       {employee.photo ? (
-                        <img src={employee.photo} alt={employee.name} className={`w-10 h-10 rounded-full object-cover border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`} />
+                        <img src={employee.photo} alt={getDemoEmployeeName(employee, t)} className={`w-10 h-10 rounded-full object-cover border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`} />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center font-bold text-white">
-                          {employee.name?.charAt(0) || 'U'}
+                          {getDemoEmployeeName(employee, t)?.charAt(0) || 'U'}
                         </div>
                       )}
                       <div className="flex-1">
-                        <p className={`font-semibold ${text.primary}`}>{employee.name}</p>
+                        <p className={`font-semibold ${text.primary}`}>{getDemoEmployeeName(employee, t)}</p>
                         <p className={`text-xs ${text.secondary}`}>
                           {t(`employeePosition.${employee.position}`) || employee.position} • {t(`employeeDepartment.${employee.department}`) || employee.department}
                         </p>
@@ -2052,7 +2053,7 @@ const TaskReview = ({ employees }) => {
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
                               <div className="flex items-center space-x-2 mb-2">
-                                <h4 className={`font-semibold ${text.primary}`}>{task.title}</h4>
+                                <h4 className={`font-semibold ${text.primary}`}>{isDemoMode() ? getDemoTaskTitle(task, t) : task.title}</h4>
                                 <span className={`px-2 py-0.5 rounded text-xs ${getStatusColor(task.status)}`}>
                                   {t(`status.${task.status}`) || task.status}
                                 </span>
@@ -2060,7 +2061,7 @@ const TaskReview = ({ employees }) => {
                                   {t(`taskListing.${task.priority}`) || task.priority}
                                 </span>
                               </div>
-                              {task.description && <p className={`text-sm ${text.secondary} mb-3`}>{task.description}</p>}
+                              {task.description && <p className={`text-sm ${text.secondary} mb-3`}>{isDemoMode() ? getDemoTaskDescription(task, t) : task.description}</p>}
                               
                               {/* Task Details Grid */}
                               <div className="grid grid-cols-2 gap-3 mb-3">
@@ -2167,14 +2168,14 @@ const TaskReview = ({ employees }) => {
         <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
           <div className="flex items-center space-x-4">
             {empData.employee.photo ? (
-              <img src={empData.employee.photo} alt={empData.employee.name} className={`w-16 h-16 rounded-full object-cover border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`} />
+              <img src={empData.employee.photo} alt={getDemoEmployeeName(empData.employee, t)} className={`w-16 h-16 rounded-full object-cover border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`} />
             ) : (
               <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center font-bold text-2xl text-white">
-                {empData.employee.name?.charAt(0) || 'U'}
+                {getDemoEmployeeName(empData.employee, t)?.charAt(0) || 'U'}
               </div>
             )}
             <div>
-              <h3 className={`text-xl font-bold ${text.primary}`}>{empData.employee.name}</h3>
+              <h3 className={`text-xl font-bold ${text.primary}`}>{getDemoEmployeeName(empData.employee, t)}</h3>
               <p className={`text-sm ${text.secondary}`}>
                 {t(`employeePosition.${empData.employee.position}`) || empData.employee.position} • {t(`employeeDepartment.${empData.employee.department}`) || empData.employee.department}
               </p>
@@ -2233,7 +2234,7 @@ const TaskReview = ({ employees }) => {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h4 className={`font-semibold ${text.primary}`}>{task.title}</h4>
+                      <h4 className={`font-semibold ${text.primary}`}>{isDemoMode() ? getDemoTaskTitle(task, t) : task.title}</h4>
                       <span className={`px-2 py-0.5 rounded text-xs ${getStatusColor(task.status)}`}>
                         {t(`status.${task.status}`) || task.status}
                       </span>
@@ -2241,7 +2242,7 @@ const TaskReview = ({ employees }) => {
                         {t(`taskListing.${task.priority}`) || task.priority}
                       </span>
                     </div>
-                    {task.description && <p className={`text-sm ${text.secondary} mb-3`}>{task.description}</p>}
+                    {task.description && <p className={`text-sm ${text.secondary} mb-3`}>{isDemoMode() ? getDemoTaskDescription(task, t) : task.description}</p>}
                     
                     {/* Task Details Grid */}
                     <div className="grid grid-cols-2 gap-3 mb-3">
@@ -2464,7 +2465,7 @@ const TaskReview = ({ employees }) => {
             <option value="">{t('taskReview.chooseEmployee')}</option>
             {availableEmployees.map(emp => (
               <option key={emp.id} value={emp.id}>
-                {emp.name} - {t(`employeePosition.${emp.position}`) || emp.position}
+                {getDemoEmployeeName(emp, t)} - {t(`employeePosition.${emp.position}`) || emp.position}
               </option>
             ))}
           </select>
@@ -2502,7 +2503,7 @@ const TaskReview = ({ employees }) => {
             <div className={`sticky top-0 ${bg.secondary} border-b ${border.primary} px-6 py-4 flex items-center justify-between`}>
               <div>
                 <h3 className={`text-xl font-bold ${text.primary}`}>{t('taskReview.reviewTask')}</h3>
-                <p className={`text-sm ${text.secondary} mt-1`}>{reviewingTask.title}</p>
+                <p className={`text-sm ${text.secondary} mt-1`}>{isDemoMode() ? getDemoTaskTitle(reviewingTask, t) : reviewingTask.title}</p>
               </div>
               <button
                 onClick={() => {
@@ -2545,7 +2546,7 @@ const TaskReview = ({ employees }) => {
                 {reviewingTask.description && (
                   <div className="mt-3">
                     <p className={`${text.secondary} font-medium`}>{t('taskReview.description')}:</p>
-                    <p className={`${text.primary} text-sm mt-1`}>{reviewingTask.description}</p>
+                    <p className={`${text.primary} text-sm mt-1`}>{isDemoMode() ? getDemoTaskDescription(reviewingTask, t) : reviewingTask.description}</p>
                   </div>
                 )}
                 {reviewingTask.self_assessment && (

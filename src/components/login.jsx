@@ -399,8 +399,8 @@ const Login = () => {
             }}
             className={`w-full mt-3 py-3 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer shadow-sm hover:shadow-md ${
               isDarkMode 
-                ? 'bg-linear-to-r from-gray-600 to-gray-900 hover:from-indigo-800 hover:to-blue-800 text-white border border-white' 
-                : 'bg-linear-to-r from-indigo-50 to-gray-50 hover:from-indigo-100 hover:to-purple-100 text-gray-700 border border-indigo-200'
+                ? 'bg-linear-to-r from-gray-600 to-gray-900 hover:from-gray-900 hover:to-blue-900 text-white border border-white' 
+                : 'bg-linear-to-r from-indigo-50 to-gray-50 hover:from-indigo-100 hover:to-yellow-100 text-gray-700 border border-indigo-200'
             }`}
             disabled={isLoading}
           >

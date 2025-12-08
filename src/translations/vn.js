@@ -1819,4 +1819,24 @@ export default {
     customizableDuration: 'Thời lượng hoạt ảnh có thể tùy chỉnh',
     easingFunctions: 'Các hàm làm mềm cho chuyển động tự nhiên',
   },
+  demoEmployees: {
+  'demo-emp-1': { name: 'Quản Trị Viên', location: 'Trụ Sở Chính' },
+  'demo-emp-2': { name: 'Kỹ Sư Nhân Sự', location: 'Trụ Sở Chính' },
+  'demo-emp-3': { name: 'Nhà Thiết Kế UI/UX', location: 'Từ Xa' },
+  'demo-emp-4': { name: 'Chuyên Viên Tiếp Thị', location: 'Trụ Sở Chính' },
+  'demo-emp-5': { name: 'Nhân Viên Kinh Doanh', location: 'Từ Xa' }
+  },
+  locations: {
+    headquarters: 'Trụ Sở Chính',
+    remote: 'Từ Xa'
+  },
+  demoTasks: {
+    'task-1': { title: 'Phân Tích Báo Cáo Q4', description: 'Phân tích toàn diện về các chỉ số hiệu suất hàng quý và xu hướng' },
+    'task-2': { title: 'Cập Nhật Sổ Tay Nhân Viên', description: 'Sửa đổi và cập nhật sổ tay nhân viên với các chính sách làm việc từ xa' },
+    'task-3': { title: 'Sửa Lỗi Đăng Nhập', description: 'Gỡ lỗi và giải quyết vấn đề đăng nhập của người dùng trên thiết bị di động' }
+  },
+  demoGoals: {
+    'goal-1': { title: 'Cải Thiện Hiệu Quả Nhóm', description: 'Tăng năng suất của nhóm lên 20% trong quý tới' },
+    'goal-2': { title: 'Học React Native', description: 'Thành thạo React Native để phát triển ứng dụng di động' }
+  }
 };

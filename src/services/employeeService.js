@@ -1,6 +1,6 @@
 import { supabase } from '../config/supabaseClient';
 import { withTimeout } from '../utils/supabaseTimeout';
-import { isDemoMode, MOCK_EMPLOYEES } from '../utils/demoHelper';
+import { isDemoMode, MOCK_EMPLOYEES, getDemoEmployees, addDemoEmployee, updateDemoEmployee } from '../utils/demoHelper';
 
 /**
  * Employee Service
@@ -125,7 +125,7 @@ export const getEmployeeByUserId = async (userId) => {
 export const getAllEmployees = async (filters = {}) => {
   if (isDemoMode()) {
     console.log('🧪 Demo Mode: Returning mock employees');
-    let data = [...MOCK_EMPLOYEES];
+    let data = getDemoEmployees();
     
     // Apply simple filters
     if (filters.status) {
@@ -183,7 +183,8 @@ export const getAllEmployees = async (filters = {}) => {
  */
 export const getEmployeeById = async (employeeId) => {
   if (isDemoMode()) {
-    const emp = MOCK_EMPLOYEES.find(e => e.id === employeeId);
+    const employees = getDemoEmployees();
+    const emp = employees.find(e => e.id === employeeId);
     if (emp) return { success: true, data: emp };
     return { success: false, error: 'Employee not found in demo data' };
   }
@@ -214,6 +215,7 @@ export const createEmployee = async (employeeData) => {
       status: employeeData.status || 'Active',
       start_date: employeeData.startDate || new Date().toISOString().split('T')[0]
     };
+    addDemoEmployee(newEmployee);
     return { success: true, data: newEmployee };
   }
 
@@ -284,7 +286,11 @@ export const createEmployee = async (employeeData) => {
  */
 export const updateEmployee = async (employeeId, updates) => {
   if (isDemoMode()) {
-    return { success: true, data: { id: employeeId, ...updates } };
+    const updated = updateDemoEmployee(employeeId, updates);
+    if (updated) {
+      return { success: true, data: updated };
+    }
+    return { success: false, error: 'Employee not found in demo data' };
   }
 
   try {

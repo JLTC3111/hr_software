@@ -1647,4 +1647,24 @@ login: {
     customizableDuration: 'Duración de animación personalizable',
     easingFunctions: 'Funciones de aceleración para movimiento natural',
   },
+  demoEmployees: {
+  'demo-emp-1': { name: 'Administrador', location: 'Oficinas Centrales' },
+  'demo-emp-2': { name: 'Ingeniero de RRHH', location: 'Oficinas Centrales' },
+  'demo-emp-3': { name: 'Diseñador UI/UX', location: 'Remoto' },
+  'demo-emp-4': { name: 'Especialista en Marketing', location: 'Oficinas Centrales' },
+  'demo-emp-5': { name: 'Representante de Ventas', location: 'Remoto' }
+  },
+  locations: {
+    headquarters: 'Oficinas Centrales',
+    remote: 'Remoto'
+  },
+  demoTasks: {
+    'task-1': { title: 'Análisis de Informes Q4', description: 'Análisis exhaustivo de métricas de rendimiento trimestrales y tendencias' },
+    'task-2': { title: 'Actualización del Manual del Empleado', description: 'Revisar y actualizar el manual del empleado con políticas de trabajo remoto' },
+    'task-3': { title: 'Corrección de Error de Inicio de Sesión', description: 'Depurar y resolver problemas de inicio de sesión de usuarios en dispositivos móviles' }
+  },
+  demoGoals: {
+    'goal-1': { title: 'Mejorar la Eficiencia del Equipo', description: 'Aumentar la productividad del equipo en un 20% durante el próximo trimestre' },
+    'goal-2': { title: 'Aprender React Native', description: 'Dominar React Native para el desarrollo de aplicaciones móviles' }
+  }
 };

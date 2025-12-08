@@ -1562,4 +1562,24 @@ export default {
     customizableDuration: '사용자 지정 가능한 애니메이션 지속 시간',
     easingFunctions: '자연스러운 움직임을 위한 이징 함수',
   },
+  demoEmployees: {
+  'demo-emp-1': { name: '관리자', location: '본사' },
+  'demo-emp-2': { name: '인사 엔지니어', location: '본사' },
+  'demo-emp-3': { name: 'UI/UX 디자이너', location: '원격' },
+  'demo-emp-4': { name: '마케팅 전문가', location: '본사' },
+  'demo-emp-5': { name: '영업 담당자', location: '원격' }
+  },
+  locations: {
+    headquarters: '본사',
+    remote: '원격'
+  },
+  demoTasks: {
+    'task-1': { title: 'Q4 보고서 분석', description: '분기별 성과 지표 및 트렌드에 대한 종합 분석' },
+    'task-2': { title: '직원 핸드북 업데이트', description: '원격 근무 정책으로 직원 핸드북 개정 및 업데이트' },
+    'task-3': { title: '로그인 오류 수정', description: '모바일 기기에서 사용자 로그인 문제 디버그 및 해결' }
+  },
+  demoGoals: {
+    'goal-1': { title: '팀 효율성 향상', description: '다음 분기에 팀 생산성을 20% 향상' },
+    'goal-2': { title: 'React Native 학습', description: '모바일 앱 개발을 위한 React Native 숙달' }
+  }
 };

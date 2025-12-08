@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUpload } from '../contexts/UploadContext';
 import { getEmployeePdfUrl, deleteEmployeePdf } from '../services/employeeService';
+import { getDemoEmployeeName } from '../utils/demoHelper';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -286,7 +287,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
 
           {/* Name & Position */}
           <h2 className={`text-2xl font-bold ${text.primary} mb-1`}>
-            {employee.name}
+            {getDemoEmployeeName(employee, t)}
           </h2>
           <p className={`${text.secondary} mb-4`}>
             {t(`employeePosition.${employee.position?.toLowerCase().replace(' ', '')}`, employee.position)}
@@ -444,7 +445,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
           {/* Basic Info Tab */}
           {activeTab === 'info' && (
             <div className="space-y-4">
-              <InfoItem icon={ClipboardList} label={t('employeeDetailModal.fullName', 'Full Name')} value={employee.name} />
+              <InfoItem icon={ClipboardList} label={t('employeeDetailModal.fullName', 'Full Name')} value={getDemoEmployeeName(employee, t)} />
               <InfoItem icon={Network} label={t('employeeDetailModal.department', 'Department')} 
                 value={t(`employeeDepartment.${employee.department?.toLowerCase().replace(' ', '')}`, employee.department)} />
               <InfoItem icon={Award} label={t('employeeDetailModal.position', 'Position')} 

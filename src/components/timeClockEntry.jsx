@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as timeTrackingService from '../services/timeTrackingService';
 import { supabase } from '../config/supabaseClient';
-import { isDemoMode } from '../utils/demoHelper';
+import { isDemoMode, getDemoEmployeeName } from '../utils/demoHelper';
 import AdminTimeEntry from './AdminTimeEntry';
 import { motion } from 'framer-motion';
 import * as flubber from 'flubber';
@@ -1497,7 +1497,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     <optgroup label={t('timeClock.specificEmployee', 'Specific Employee')}>
                       {allEmployees.map(emp => (
                         <option key={emp.id} value={emp.id}>
-                          {emp.name} - {t(`employeePosition.${emp.position}`, emp.position)}
+                          {getDemoEmployeeName(emp, t)} - {t(`employeePosition.${emp.position}`, emp.position)}
                         </option>
                       ))}
                     </optgroup>
@@ -1557,7 +1557,9 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     </td>
                     {selectedEmployeeFilter !== 'self' && (
                       <td className={`p-3 ${text.primary} text-center font-medium ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>
-                        {entry.employee_name || entry.employee?.name || 'N/A'}
+                        {isDemoMode() && entry.employee_nameKey 
+                          ? t(entry.employee_nameKey, entry.employee_name || entry.employee?.name || 'N/A')
+                          : (entry.employee_name || entry.employee?.name || 'N/A')}
                       </td>
                     )}
                     <td className={`p-3 ${text.secondary} ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>

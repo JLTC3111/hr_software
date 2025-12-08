@@ -417,7 +417,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
                   <Building2 className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${text.secondary}`} />
                   <select name="department" value={formData.department} onChange={handleChange} className={`w-full pl-10 pr-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg`}>
                     <option value="">{t('addEmployee.selectDepartment', 'Select Department')}</option>
-                    {employeeDepartment.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                    {departments.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
                   </select>
                 </div>
                 {errors.department && <p className="text-red-500 text-sm mt-1">{errors.department}</p>}
@@ -473,7 +473,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
                 <div className="grid grid-cols-2 gap-4">
                   <div><p className={`text-sm ${text.secondary}`}>{t('employees.email')}</p><p className={text.primary}>{formData.email}</p></div>
                   <div><p className={`text-sm ${text.secondary}`}>{t('employees.phone')}</p><p className={text.primary}>{formData.phone}</p></div>
-                  <div><p className={`text-sm ${text.secondary}`}>{t('employees.department')}</p><p className={text.primary}>{employeeDepartment.find(d => d.value === formData.department)?.label}</p></div>
+                  <div><p className={`text-sm ${text.secondary}`}>{t('employees.department')}</p><p className={text.primary}>{departments.find(d => d.value === formData.department)?.label}</p></div>
                   <div><p className={`text-sm ${text.secondary}`}>{t('employees.salary')}</p><p className={text.primary}>${parseFloat(formData.salary).toLocaleString()}</p></div>
                 </div>
               </div>
