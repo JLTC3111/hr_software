@@ -315,11 +315,14 @@ const TaskListing = ({ employees }) => {
     setLoading(true);
     try {
       let result;
+      console.log('fetchTasks: viewMode =', viewMode, 'selectedEmployee =', selectedEmployee);
       if (viewMode === 'individual' && selectedEmployee) {
         result = await workloadService.getEmployeeTasks(selectedEmployee);
       } else {
         result = await workloadService.getAllTasks();
       }
+      
+      console.log('fetchTasks result:', result);
       
       if (result.success) {
         setTasks(result.data);
@@ -413,21 +416,27 @@ const TaskListing = ({ employees }) => {
   const handleAddTask = async () => {
     // Validate required fields
     if (!taskForm.title || !taskForm.title.trim()) {
-      setErrorMessage('Task title is required');
+      setErrorMessage(t('taskListing.titleRequired', 'Task title is required'));
       setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
 
     // Validate employee assignment for admin/manager
     if (canAssignTasks && !taskForm.assignedTo) {
-      setErrorMessage('Please select an employee to assign this task to');
+      setErrorMessage(t('taskListing.selectEmployee', 'Please select an employee to assign this task to'));
       setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
 
+    const employeeId = canAssignTasks ? taskForm.assignedTo : selectedEmployee;
+    
+    // Debug logging
+    console.log('Creating task with employeeId:', employeeId, 'taskForm:', taskForm, 'canAssignTasks:', canAssignTasks, 'selectedEmployee:', selectedEmployee);
+    
     try {
+      // Use service for both demo and non-demo mode (service handles persistence)
       const result = await workloadService.createTask({
-        employeeId: canAssignTasks ? taskForm.assignedTo : selectedEmployee,
+        employeeId: employeeId,
         title: taskForm.title,
         description: taskForm.description || null,
         dueDate: taskForm.dueDate || null,
@@ -439,8 +448,10 @@ const TaskListing = ({ employees }) => {
         createdBy: user?.employeeId
       });
       
+      console.log('Task creation result:', result);
+      
       if (result.success) {
-        setSuccessMessage('Task created successfully');
+        setSuccessMessage(t('taskListing.taskCreated', 'Task created successfully'));
         setTimeout(() => setSuccessMessage(''), 3000);
         setTaskForm({
           title: '',
@@ -454,35 +465,36 @@ const TaskListing = ({ employees }) => {
           assignedTo: selectedEmployee
         });
         setShowAddTask(false);
-        // Refetch tasks to get complete data with employee info
+        // Refetch tasks to get complete data
         fetchTasks();
       } else {
-        setErrorMessage(result.error || 'Failed to create task');
+        setErrorMessage(result.error || t('taskListing.taskCreateError', 'Failed to create task'));
         setTimeout(() => setErrorMessage(''), 5000);
       }
     } catch (error) {
       console.error('Error creating task:', error);
-      setErrorMessage('Failed to create task');
+      setErrorMessage(t('taskListing.taskCreateError', 'Failed to create task'));
       setTimeout(() => setErrorMessage(''), 5000);
     }
   };
 
   const handleUpdateTask = async (taskId, updates) => {
     try {
+      // Use service for both demo and non-demo mode
       const result = await workloadService.updateTask(taskId, updates);
       
       if (result.success) {
-        setSuccessMessage('Task updated successfully');
+        setSuccessMessage(t('taskListing.taskUpdated', 'Task updated successfully'));
         setTimeout(() => setSuccessMessage(''), 3000);
         // Refetch tasks to get complete data with employee info
         fetchTasks();
       } else {
-        setErrorMessage(result.error || 'Failed to update task');
+        setErrorMessage(result.error || t('taskListing.taskUpdateError', 'Failed to update task'));
         setTimeout(() => setErrorMessage(''), 5000);
       }
     } catch (error) {
       console.error('Error updating task:', error);
-      setErrorMessage('Failed to update task');
+      setErrorMessage(t('taskListing.taskUpdateError', 'Failed to update task'));
       setTimeout(() => setErrorMessage(''), 5000);
     }
   };
@@ -490,20 +502,21 @@ const TaskListing = ({ employees }) => {
   const handleDeleteTask = async (taskId) => {
     if (window.confirm(t('taskListing.confirmDelete', 'Delete this task?'))) {
       try {
+        // Use service for both demo and non-demo mode
         const result = await workloadService.deleteTask(taskId);
         
         if (result.success) {
-          setSuccessMessage('Task deleted successfully');
+          setSuccessMessage(t('taskListing.taskDeleted', 'Task deleted successfully'));
           setTimeout(() => setSuccessMessage(''), 3000);
           // Refetch tasks to get complete data
           fetchTasks();
         } else {
-          setErrorMessage(result.error || 'Failed to delete task');
+          setErrorMessage(result.error || t('taskListing.taskDeleteError', 'Failed to delete task'));
           setTimeout(() => setErrorMessage(''), 5000);
         }
       } catch (error) {
         console.error('Error deleting task:', error);
-        setErrorMessage('Failed to delete task');
+        setErrorMessage(t('taskListing.taskDeleteError', 'Failed to delete task'));
         setTimeout(() => setErrorMessage(''), 5000);
       }
     }
@@ -703,6 +716,8 @@ const TaskListing = ({ employees }) => {
                         setEditingTask(task);
                         setTaskForm({
                           ...task,
+                          title: isDemoMode() ? getDemoTaskTitle(task, t) : task.title,
+                          description: isDemoMode() ? getDemoTaskDescription(task, t) : task.description,
                           assignedTo: task.employee_id
                         });
                         setModalMode('edit');

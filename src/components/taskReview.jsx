@@ -2337,13 +2337,14 @@ const TaskReview = ({ employees }) => {
   const handleReviewSubmit = async () => {
     if (!reviewingTask) return;
 
-    try {
-      const updateData = {
-        quality_rating: reviewForm.qualityRating,
-        comments: reviewForm.managerComments,
-        status: reviewForm.status
-      };
+    const updateData = {
+      quality_rating: reviewForm.qualityRating,
+      comments: reviewForm.managerComments,
+      status: reviewForm.status
+    };
 
+    try {
+      // Use service for both demo and non-demo mode (service handles persistence)
       const result = await workloadService.updateTask(reviewingTask.id, updateData);
 
       if (result.success) {

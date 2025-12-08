@@ -1,5 +1,5 @@
 import { supabase } from '../config/supabaseClient';
-import { isDemoMode, MOCK_TASKS } from '../utils/demoHelper';
+import { isDemoMode, getDemoTasks, addDemoTask, updateDemoTask, deleteDemoTask, MOCK_TASKS } from '../utils/demoHelper';
 
 /**
  * Get all tasks for a specific employee
@@ -8,7 +8,7 @@ import { isDemoMode, MOCK_TASKS } from '../utils/demoHelper';
  */
 export const getEmployeeTasks = async (employeeId) => {
   if (isDemoMode()) {
-    const tasks = MOCK_TASKS.filter(t => String(t.employee_id) === String(employeeId));
+    const tasks = getDemoTasks().filter(t => String(t.employee_id) === String(employeeId));
     return { success: true, data: tasks };
   }
 
@@ -35,7 +35,7 @@ export const getEmployeeTasks = async (employeeId) => {
  */
 export const getAllTasks = async (filters = {}) => {
   if (isDemoMode()) {
-    let tasks = [...MOCK_TASKS];
+    let tasks = getDemoTasks();
     
     if (filters.status) {
       tasks = tasks.filter(t => t.status === filters.status);
@@ -94,7 +94,7 @@ export const getAllTasks = async (filters = {}) => {
  */
 export const getTaskById = async (taskId) => {
   if (isDemoMode()) {
-    const task = MOCK_TASKS.find(t => t.id === taskId);
+    const task = getDemoTasks().find(t => t.id === taskId);
     return { success: true, data: task || null };
   }
 
@@ -123,6 +123,8 @@ export const getTaskById = async (taskId) => {
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export const createTask = async (taskData) => {
+  console.log('workloadService.createTask called, isDemoMode:', isDemoMode(), 'taskData:', taskData);
+  
   if (isDemoMode()) {
     const newTask = {
       id: `task-demo-${Date.now()}`,
@@ -132,8 +134,17 @@ export const createTask = async (taskData) => {
       due_date: taskData.dueDate,
       priority: taskData.priority || 'medium',
       status: taskData.status || 'pending',
-      created_at: new Date().toISOString()
+      self_assessment: taskData.selfAssessment || null,
+      quality_rating: taskData.qualityRating || 0,
+      comments: taskData.comments || null,
+      created_by: taskData.createdBy || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
+    // Persist to localStorage
+    console.log('Adding demo task:', newTask);
+    addDemoTask(newTask);
+    console.log('Demo tasks after add:', getDemoTasks());
     return { success: true, data: newTask };
   }
 
@@ -172,7 +183,11 @@ export const createTask = async (taskData) => {
  */
 export const updateTask = async (taskId, updates) => {
   if (isDemoMode()) {
-    return { success: true, data: { id: taskId, ...updates, updated_at: new Date().toISOString() } };
+    const updatedTask = updateDemoTask(taskId, updates);
+    if (updatedTask) {
+      return { success: true, data: updatedTask };
+    }
+    return { success: false, error: 'Task not found' };
   }
 
   try {
@@ -212,6 +227,7 @@ export const updateTask = async (taskId, updates) => {
  */
 export const deleteTask = async (taskId) => {
   if (isDemoMode()) {
+    deleteDemoTask(taskId);
     return { success: true };
   }
 
@@ -237,7 +253,7 @@ export const deleteTask = async (taskId) => {
  */
 export const getEmployeeTaskStats = async (employeeId) => {
   if (isDemoMode()) {
-    const tasks = MOCK_TASKS.filter(t => String(t.employee_id) === String(employeeId));
+    const tasks = getDemoTasks().filter(t => String(t.employee_id) === String(employeeId));
     const stats = {
       total: tasks.length,
       pending: tasks.filter(t => t.status === 'pending').length,

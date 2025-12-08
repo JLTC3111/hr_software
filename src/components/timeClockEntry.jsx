@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as timeTrackingService from '../services/timeTrackingService';
 import { supabase } from '../config/supabaseClient';
-import { isDemoMode, getDemoEmployeeName } from '../utils/demoHelper';
+import { isDemoMode, getDemoEmployeeName, getDemoLeaveRequests, addDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper';
 import AdminTimeEntry from './AdminTimeEntry';
 import { motion } from 'framer-motion';
 import * as flubber from 'flubber';
@@ -189,6 +189,44 @@ const TimeClockEntry = ({ currentLanguage }) => {
       setLoading(true);
       
       try {
+        // Demo mode: save leave request locally
+        if (isDemoMode()) {
+          const daysCount = calculateDaysBetween(leaveForm.startDate, leaveForm.endDate);
+          const newLeaveRequest = {
+            id: `demo-leave-${Date.now()}`,
+            employee_id: selectedEmployee,
+            type: leaveForm.type,
+            start_date: leaveForm.startDate,
+            end_date: leaveForm.endDate,
+            reason: leaveForm.reason,
+            days_count: daysCount,
+            status: 'pending',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          
+          // Add to persistent storage
+          addDemoLeaveRequest(newLeaveRequest);
+          
+          // Update local state immediately
+          setLeaveRequests(prev => [...prev, newLeaveRequest]);
+          
+          setSuccessMessage(t('timeTracking.leaveSuccess', 'Leave request submitted successfully!'));
+          setShowLeaveModal(false);
+          
+          // Reset form
+          setLeaveForm({
+            type: 'vacation',
+            startDate: '',
+            endDate: '',
+            reason: ''
+          });
+          
+          setLoading(false);
+          setTimeout(() => setSuccessMessage(''), 3000);
+          return;
+        }
+        
         const result = await timeTrackingService.createLeaveRequest({
           employeeId: selectedEmployee,
           type: leaveForm.type,
@@ -237,6 +275,22 @@ const TimeClockEntry = ({ currentLanguage }) => {
         setTimeout(() => setSuccessMessage(''), 3000);
       }
     };
+  
+  // Fetch leave requests for the current employee
+  const fetchLeaveRequests = async () => {
+    if (!selectedEmployee) return;
+    
+    try {
+      const result = await timeTrackingService.getLeaveRequests(selectedEmployee, {
+        year: selectedYear
+      });
+      if (result.success) {
+        setLeaveRequests(result.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching leave requests:', error);
+    }
+  };
     
   // Define loadData as a callback for reuse
   const loadData = useCallback(async () => {
@@ -244,6 +298,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
       setLoading(true);
       try {
         await fetchTimeEntries();
+        await fetchLeaveRequests();
         // Fetch all employees if user is admin or manager
         if (canManageTimeTracking) {
           await fetchAllEmployees();
@@ -256,7 +311,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
     } else {
       setLoading(false);
     }
-  }, [user, canManageTimeTracking]);
+  }, [user, canManageTimeTracking, selectedEmployee, selectedYear]);
     
   // Fetch time entries and employees when component mounts
   useEffect(() => {

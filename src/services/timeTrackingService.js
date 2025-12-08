@@ -1,6 +1,6 @@
 import { supabase } from '../config/supabaseClient';
 import { withTimeout } from '../utils/supabaseTimeout';
-import { isDemoMode, MOCK_TIME_ENTRIES } from '../utils/demoHelper';
+import { isDemoMode, MOCK_TIME_ENTRIES, getDemoLeaveRequests, addDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper';
 
 const toEmployeeId = (id) => {
   return id ? String(id) : null;
@@ -592,13 +592,27 @@ export const getProofFileSignedUrl = async (filePath) => {
  */
 export const createLeaveRequest = async (leaveData) => {
   if (isDemoMode()) {
+    const daysCount = calculateDaysBetween(leaveData.startDate, leaveData.endDate);
+    const newLeaveRequest = {
+      id: `demo-leave-${Date.now()}`,
+      employee_id: leaveData.employeeId,
+      leave_type: leaveData.type,
+      type: leaveData.type,
+      start_date: leaveData.startDate,
+      end_date: leaveData.endDate,
+      reason: leaveData.reason || null,
+      days_count: daysCount,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    // Persist to localStorage
+    addDemoLeaveRequest(newLeaveRequest);
+    
     return { 
       success: true, 
-      data: { 
-        id: `demo-leave-${Date.now()}`,
-        ...leaveData,
-        status: 'pending'
-      } 
+      data: newLeaveRequest 
     };
   }
 
@@ -653,8 +667,31 @@ export const createLeaveRequest = async (leaveData) => {
  */
 export const getLeaveRequests = async (employeeId, filters = {}) => {
   if (isDemoMode()) {
-    // Return empty array for now or add mock leave requests if needed
-    return { success: true, data: [] };
+    // Get leave requests from persistent storage
+    let requests = getDemoLeaveRequests();
+    
+    // Filter by employee if specified
+    if (employeeId) {
+      requests = requests.filter(r => String(r.employee_id) === String(employeeId));
+    }
+    
+    // Filter by status if specified
+    if (filters.status) {
+      requests = requests.filter(r => r.status === filters.status);
+    }
+    
+    // Filter by year if specified
+    if (filters.year) {
+      requests = requests.filter(r => {
+        const startYear = new Date(r.start_date).getFullYear();
+        return startYear === filters.year;
+      });
+    }
+    
+    // Sort by start_date descending
+    requests.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+    
+    return { success: true, data: requests };
   }
 
   try {
@@ -685,7 +722,18 @@ export const getLeaveRequests = async (employeeId, filters = {}) => {
 /* Get all leave requests (for HR/managers) */
 export const getAllLeaveRequests = async (filters = {}) => {
   if (isDemoMode()) {
-    return { success: true, data: [] };
+    // Get all leave requests from persistent storage
+    let requests = getDemoLeaveRequests();
+    
+    // Filter by status if specified
+    if (filters.status) {
+      requests = requests.filter(r => r.status === filters.status);
+    }
+    
+    // Sort by created_at descending
+    requests.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    return { success: true, data: requests };
   }
 
   try {

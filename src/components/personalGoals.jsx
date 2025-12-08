@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Sparkle, TrendingUp, Calendar, User, Award, Goal, ShieldEllipsis, MessageSquare, Plus, Edit, Eye, X, Save, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Star, Sparkle, TrendingUp, Calendar, User, Award, Goal, ShieldEllipsis, MessageSquare, Plus, Edit, Eye, X, Save, ChevronRight, ChevronLeft, Trash2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../config/supabaseClient';
-import { isDemoMode } from '../utils/demoHelper';
+import { isDemoMode, getDemoGoalTitle, getDemoGoalDescription } from '../utils/demoHelper';
 import * as performanceService from '../services/performanceService';
 
 const PersonalGoals = ({ employees }) => {
@@ -282,19 +282,26 @@ const PersonalGoals = ({ employees }) => {
     e.preventDefault();
     setLoading(true);
     
-    const result = await performanceService.createPerformanceGoal({
-      employeeId: selectedEmployee,
-      ...goalForm,
-      assignedBy: selectedEmployee // Could be current user in real scenario
-    });
+    try {
+      // Use service for both demo and non-demo mode (service handles persistence)
+      const result = await performanceService.createPerformanceGoal({
+        employeeId: selectedEmployee,
+        ...goalForm,
+        assignedBy: selectedEmployee
+      });
 
-    if (result.success) {
-      setShowAddGoalModal(false);
-      fetchGoalsAndReviews(); // Refresh data
-      alert(t('personalGoals.goalCreatedSuccess', 'Goal created successfully!'));
-    } else {
-      alert(t('personalGoals.goalCreatedError', 'Failed to create goal: ') + result.error);
+      if (result.success) {
+        setShowAddGoalModal(false);
+        fetchGoalsAndReviews(); // Refresh data
+        alert(t('personalGoals.goalCreatedSuccess', 'Goal created successfully!'));
+      } else {
+        alert(t('personalGoals.goalCreatedError', 'Failed to create goal: ') + result.error);
+      }
+    } catch (error) {
+      console.error('Error creating goal:', error);
+      alert(t('personalGoals.goalCreatedError', 'Failed to create goal: ') + error.message);
     }
+    
     setLoading(false);
   };
 
@@ -304,8 +311,8 @@ const PersonalGoals = ({ employees }) => {
     if (originalGoal) {
       setEditingGoal(originalGoal);
       setGoalForm({
-        title: originalGoal.title,
-        description: originalGoal.description,
+        title: isDemoMode() ? getDemoGoalTitle(originalGoal, t) : originalGoal.title,
+        description: isDemoMode() ? getDemoGoalDescription(originalGoal, t) : originalGoal.description,
         category: originalGoal.category,
         targetDate: originalGoal.target_date,
         priority: originalGoal.priority,
@@ -322,19 +329,51 @@ const PersonalGoals = ({ employees }) => {
     
     setLoading(true);
     
-    const result = await performanceService.updatePerformanceGoal(editingGoal.id, {
-      ...goalForm,
-      progressPercentage: goalForm.progressPercentage
-    });
+    try {
+      // Use service for both demo and non-demo mode (service handles persistence)
+      const result = await performanceService.updatePerformanceGoal(editingGoal.id, {
+        ...goalForm,
+        progressPercentage: goalForm.progressPercentage
+      });
 
-    if (result.success) {
-      setShowEditGoalModal(false);
-      setEditingGoal(null);
-      fetchGoalsAndReviews(); // Refresh data
-      alert(t('personalGoals.goalUpdatedSuccess', 'Goal updated successfully!'));
-    } else {
-      alert(t('personalGoals.goalUpdatedError', 'Failed to update goal: ') + result.error);
+      if (result.success) {
+        setShowEditGoalModal(false);
+        setEditingGoal(null);
+        fetchGoalsAndReviews(); // Refresh data
+        alert(t('personalGoals.goalUpdatedSuccess', 'Goal updated successfully!'));
+      } else {
+        alert(t('personalGoals.goalUpdatedError', 'Failed to update goal: ') + result.error);
+      }
+    } catch (error) {
+      console.error('Error updating goal:', error);
+      alert(t('personalGoals.goalUpdatedError', 'Failed to update goal: ') + error.message);
     }
+    
+    setLoading(false);
+  };
+
+  // Handle delete goal
+  const handleDeleteGoal = async (goalId) => {
+    if (!window.confirm(t('personalGoals.confirmDeleteGoal', 'Are you sure you want to delete this goal?'))) {
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      const result = await performanceService.deletePerformanceGoal(goalId);
+
+      if (result.success) {
+        fetchGoalsAndReviews(); // Refresh data
+        alert(t('personalGoals.goalDeletedSuccess', 'Goal deleted successfully!'));
+      } else {
+        alert(t('personalGoals.goalDeletedError', 'Failed to delete goal: ') + result.error);
+      }
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      alert(t('personalGoals.goalDeletedError', 'Failed to delete goal: ') + error.message);
+    }
+    
     setLoading(false);
   };
 
@@ -362,7 +401,7 @@ const PersonalGoals = ({ employees }) => {
         newStatus = 'in_progress';
       }
       
-      // Update both progress and status in a single call
+      // Use service for both demo and non-demo mode (service handles persistence)
       const result = await performanceService.updatePerformanceGoal(goalId, {
         progressPercentage: newProgress,
         status: newStatus
@@ -375,7 +414,6 @@ const PersonalGoals = ({ employees }) => {
           delete updated[goalId];
           return updated;
         });
-        
         fetchGoalsAndReviews(); // Refresh data
         alert(t('personalGoals.progressSaved', 'Progress saved successfully!'));
       } else {
@@ -762,7 +800,7 @@ const PersonalGoals = ({ employees }) => {
                     borderColor: 'transparent'
                   }}
                 >
-                  {goal.title}
+                  {isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title}
                 </h4>
                 <div className="flex items-center space-x-2">
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(goal.status)}`}>
@@ -782,6 +820,21 @@ const PersonalGoals = ({ employees }) => {
                     }}
                   >
                     <Edit className={`h-4.5 w-4.5 ${text.secondary}`} />
+                  </button>
+                  <button 
+                    className={`cursor-pointer ${isDarkMode ? 'hover:bg-red-900' : 'hover:bg-red-100'} rounded transition-colors border`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteGoal(goal.id);
+                    }}
+                    title={t('personalGoals.deleteGoal', 'Delete goal')}
+                    style={{
+                      backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+                      color: isDarkMode ? '#f87171' : '#dc2626',
+                      borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
+                    }}
+                  >
+                    <Trash2 className="h-4.5 w-4.5" />
                   </button>
                 </div>
               </div>
@@ -859,7 +912,7 @@ const PersonalGoals = ({ employees }) => {
                     borderColor: 'transparent'
                   }}
                 >
-                  {goal.title}
+                  {isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title}
                 </h4>
               </div>
               <div className="flex items-center space-x-2">
@@ -880,6 +933,21 @@ const PersonalGoals = ({ employees }) => {
                   }}
                 >
                   <Edit className={`h-4 w-4 ${text.secondary}`} />
+                </button>
+                <button 
+                  className={`p-2 ${isDarkMode ? 'hover:bg-red-900' : 'hover:bg-red-100'} rounded transition-colors border`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteGoal(goal.id);
+                  }}
+                  title={t('personalGoals.deleteGoal', 'Delete goal')}
+                  style={{
+                    backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+                    color: isDarkMode ? '#f87171' : '#dc2626',
+                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             </div>

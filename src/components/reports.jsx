@@ -3,7 +3,7 @@ import { useLanguage, SUPPORTED_LANGUAGES } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from '../contexts/AuthContext';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
-import { isDemoMode, getDemoEmployeeName } from '../utils/demoHelper';
+import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription, getDemoGoalTitle, getDemoGoalDescription } from '../utils/demoHelper';
 import { 
   Calendar, 
   Download, 
@@ -202,17 +202,17 @@ const Reports = () => {
               clock_out: '17:00:00',
               total_hours: 8,
               status: 'approved',
-              employee: { id: 'demo-emp-1', name: 'Demo Admin', department: 'Management', position: 'HR Manager' }
+              employee: { id: 'demo-emp-1', name: 'Demo Admin', nameKey: 'demoEmployees.demo-emp-1.name', department: 'Management', position: 'HR Manager' }
             },
             {
               id: 'mock-entry-2',
-              employee_id: 'mock-emp-2',
+              employee_id: 'demo-emp-2',
               date: startDate,
               clock_in: '08:30:00',
               clock_out: '17:30:00',
               total_hours: 9,
               status: 'approved',
-              employee: { id: 'mock-emp-2', name: 'Sarah Connor', department: 'Operations', position: 'Developer' }
+              employee: { id: 'demo-emp-2', name: 'Sarah Connor', nameKey: 'demoEmployees.demo-emp-2.name', department: 'Operations', position: 'Developer' }
             }
           ];
         } else {
@@ -504,7 +504,7 @@ const Reports = () => {
     setExporting(true);
     try {
       const exportData = reportData.timeEntries.map(entry => ({
-        [t('employees.name', 'Employee Name')]: entry.employee?.name || 'Unknown',
+        [t('employees.name', 'Employee Name')]: isDemoMode() ? getDemoEmployeeName(entry.employee, t) : (entry.employee?.name || 'Unknown'),
         [t('employees.department', 'Department')]: translateDepartment(entry.employee?.department) || '',
         [t('employees.position', 'Position')]: translatePosition(entry.employee?.position) || '',
         [t('timeTracking.date', 'Date')]: entry.date,
@@ -539,10 +539,10 @@ const Reports = () => {
     setExporting(true);
     try {
       const exportData = reportData.tasks.map(task => ({
-        [t('employees.name', 'Employee Name')]: task.employee?.name || 'Unknown',
+        [t('employees.name', 'Employee Name')]: isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || 'Unknown'),
         [t('employees.department', 'Department')]: translateDepartment(task.employee?.department) || '',
-        [t('taskListing.taskTitle', 'Task Title')]: task.title || '',
-        [t('taskListing.description', 'Description')]: task.description || '',
+        [t('taskListing.taskTitle', 'Task Title')]: isDemoMode() ? getDemoTaskTitle(task, t) : (task.title || ''),
+        [t('taskListing.description', 'Description')]: isDemoMode() ? getDemoTaskDescription(task, t) : (task.description || ''),
         [t('taskListing.priority', 'Priority')]: translatePriority(task.priority) || '',
         [t('taskListing.status', 'Status')]: translateStatus(task.status) || '',
         [t('taskListing.dueDate', 'Due Date')]: task.due_date || '',
@@ -573,10 +573,10 @@ const Reports = () => {
     setExporting(true);
     try {
       const exportData = reportData.goals.map(goal => ({
-        [t('employees.name', 'Employee Name')]: goal.employee?.name || 'Unknown',
+        [t('employees.name', 'Employee Name')]: isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || 'Unknown'),
         [t('employees.department', 'Department')]: translateDepartment(goal.employee?.department) || '',
-        [t('taskReview.goalTitle', 'Goal Title')]: goal.title || '',
-        [t('taskReview.description', 'Description')]: goal.description || '',
+        [t('taskReview.goalTitle', 'Goal Title')]: isDemoMode() ? getDemoGoalTitle(goal, t) : (goal.title || ''),
+        [t('taskReview.description', 'Description')]: isDemoMode() ? getDemoGoalDescription(goal, t) : (goal.description || ''),
         [t('taskReview.category', 'Category')]: translateCategory(goal.category) || '',
         [t('taskReview.targetDate', 'Target Date')]: goal.target_date || '',
         [t('taskReview.status', 'Status')]: translateStatus(goal.status) || '',
@@ -1042,7 +1042,7 @@ const Reports = () => {
         reportData.timeEntries.forEach((entry, idx) => {
           const rowNum = idx + 2;
           const rowData = [
-            entry.employee?.name || 'Unknown',
+            isDemoMode() ? getDemoEmployeeName(entry.employee, t) : (entry.employee?.name || 'Unknown'),
             translateDepartment(entry.employee?.department) || '',
             translatePosition(entry.employee?.position) || '',
             entry.date,
@@ -1098,10 +1098,10 @@ const Reports = () => {
           const rowNum = idx + 2;
           const variance = (task.actual_hours || 0) - (task.estimated_hours || 0);
           const rowData = [
-            task.employee?.name || 'Unknown',
+            isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || 'Unknown'),
             translateDepartment(task.employee?.department) || '',
-            task.title || '',
-            task.description || '',
+            isDemoMode() ? getDemoTaskTitle(task, t) : (task.title || ''),
+            isDemoMode() ? getDemoTaskDescription(task, t) : (task.description || ''),
             translatePriority(task.priority) || '',
             translateStatus(task.status) || '',
             task.due_date || '',
@@ -1165,10 +1165,10 @@ const Reports = () => {
         reportData.goals.forEach((goal, idx) => {
           const rowNum = idx + 2;
           const rowData = [
-            goal.employee?.name || 'Unknown',
+            isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || 'Unknown'),
             translateDepartment(goal.employee?.department) || '',
-            goal.title || '',
-            goal.description || '',
+            isDemoMode() ? getDemoGoalTitle(goal, t) : (goal.title || ''),
+            isDemoMode() ? getDemoGoalDescription(goal, t) : (goal.description || ''),
             translateCategory(goal.category) || '',
             translateStatus(goal.status) || '',
             goal.progress || 0,
@@ -1606,7 +1606,7 @@ const Reports = () => {
           yPosition += 5;
 
           const timeEntriesData = reportData.timeEntries.slice(0, 20).map(entry => [
-            cleanTextForPDF(entry.employee?.name || t('reports.unknown', 'Unknown'), unicodeFontLoaded),
+            cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(entry.employee, t) : (entry.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
             entry.date,
             `${entry.hours || 0}h`,
             cleanTextForPDF(translateHourType(entry.hour_type), unicodeFontLoaded),
@@ -1658,8 +1658,8 @@ const Reports = () => {
           yPosition += 5;
 
           const tasksData = reportData.tasks.slice(0, 20).map(task => [
-            cleanTextForPDF(task.employee?.name || t('reports.unknown', 'Unknown'), unicodeFontLoaded),
-            cleanTextForPDF(task.title.substring(0, 30), unicodeFontLoaded),
+            cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
+            cleanTextForPDF((isDemoMode() ? getDemoTaskTitle(task, t) : task.title).substring(0, 30), unicodeFontLoaded),
             cleanTextForPDF(translatePriority(task.priority), unicodeFontLoaded),
             cleanTextForPDF(translateStatus(task.status), unicodeFontLoaded),
             task.due_date || '-'
@@ -1710,8 +1710,8 @@ const Reports = () => {
           yPosition += 5;
 
           const goalsData = reportData.goals.slice(0, 20).map(goal => [
-            cleanTextForPDF(goal.employee?.name || t('reports.unknown', 'Unknown'), unicodeFontLoaded),
-            cleanTextForPDF(goal.title.substring(0, 30), unicodeFontLoaded),
+            cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
+            cleanTextForPDF((isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title).substring(0, 30), unicodeFontLoaded),
             cleanTextForPDF(translateCategory(goal.category), unicodeFontLoaded),
             cleanTextForPDF(translateStatus(goal.status), unicodeFontLoaded),
             `${goal.progress || 0}%`
@@ -1748,7 +1748,7 @@ const Reports = () => {
         }
       } else if (activeTab === 'time-entries' && reportData.timeEntries.length > 0) {
         const timeEntriesData = reportData.timeEntries.slice(0, 50).map(entry => [
-          cleanTextForPDF(entry.employee?.name || t('reports.unknown', 'Unknown'), unicodeFontLoaded),
+          cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(entry.employee, t) : (entry.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
           cleanTextForPDF(translateDepartment(entry.employee?.department) || '', unicodeFontLoaded),
           entry.date,
           entry.clock_in || '-',
@@ -1791,9 +1791,9 @@ const Reports = () => {
         });
       } else if (activeTab === 'tasks' && reportData.tasks.length > 0) {
         const tasksData = reportData.tasks.slice(0, 50).map(task => [
-          cleanTextForPDF(task.employee?.name || t('reports.unknown', 'Unknown'), unicodeFontLoaded),
+          cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
           cleanTextForPDF(translateDepartment(task.employee?.department) || '', unicodeFontLoaded),
-          cleanTextForPDF(task.title.substring(0, 40), unicodeFontLoaded),
+          cleanTextForPDF((isDemoMode() ? getDemoTaskTitle(task, t) : task.title).substring(0, 40), unicodeFontLoaded),
           cleanTextForPDF(translatePriority(task.priority), unicodeFontLoaded),
           cleanTextForPDF(translateStatus(task.status), unicodeFontLoaded),
           task.due_date || '-',
@@ -1834,9 +1834,9 @@ const Reports = () => {
         });
       } else if (activeTab === 'goals' && reportData.goals.length > 0) {
         const goalsData = reportData.goals.slice(0, 50).map(goal => [
-          cleanTextForPDF(goal.employee?.name || t('reports.unknown', 'Unknown'), unicodeFontLoaded),
+          cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
           cleanTextForPDF(translateDepartment(goal.employee?.department) || '', unicodeFontLoaded),
-          cleanTextForPDF(goal.title.substring(0, 40), unicodeFontLoaded),
+          cleanTextForPDF((isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title).substring(0, 40), unicodeFontLoaded),
           cleanTextForPDF(translateCategory(goal.category), unicodeFontLoaded),
           cleanTextForPDF(translateStatus(goal.status), unicodeFontLoaded),
           goal.target_date || '-',
@@ -2555,7 +2555,7 @@ const Reports = () => {
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
                         <div>
-                          <div className="text-sm font-medium">{item.employee?.name || 'Unknown'}</div>
+                          <div className="text-sm font-medium">{isDemoMode() ? getDemoEmployeeName(item.employee, t) : (item.employee?.name || 'Unknown')}</div>
                           <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
                         </div>
                       </td>
@@ -2585,13 +2585,13 @@ const Reports = () => {
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
                         <div>
-                          <div className="text-sm font-medium">{item.employee?.name || 'Unknown'}</div>
+                          <div className="text-sm font-medium">{isDemoMode() ? getDemoEmployeeName(item.employee, t) : (item.employee?.name || 'Unknown')}</div>
                           <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
                         </div>
                       </td>
                       <td className={`px-6 py-4 ${text.primary}`}>
-                        <div className="text-sm font-medium max-w-xs truncate">{item.title}</div>
-                        <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{item.description}</div>
+                        <div className="text-sm font-medium max-w-xs truncate">{isDemoMode() ? getDemoTaskTitle(item, t) : item.title}</div>
+                        <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{isDemoMode() ? getDemoTaskDescription(item, t) : item.description}</div>
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap`}>
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -2616,12 +2616,12 @@ const Reports = () => {
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
                         <div>
-                          <div className="text-sm font-medium">{item.employee?.name || 'Unknown'}</div>
+                          <div className="text-sm font-medium">{isDemoMode() ? getDemoEmployeeName(item.employee, t) : (item.employee?.name || 'Unknown')}</div>
                           <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
                         </div>
                       </td>
                       <td className={`px-6 py-4 ${text.primary}`}>
-                        <div className="text-sm font-medium max-w-xs truncate">{item.title}</div>
+                        <div className="text-sm font-medium max-w-xs truncate">{isDemoMode() ? getDemoGoalTitle(item, t) : item.title}</div>
                         <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{translateCategory(item.category)} - {item.status === 'completed' ? 100 : (item.progress || 0)}%</div>
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap`}>
@@ -2644,7 +2644,7 @@ const Reports = () => {
                       <>
                         <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
                           <div>
-                            <div className="text-sm font-medium">{item.employee?.name || 'Unknown'}</div>
+                            <div className="text-sm font-medium">{isDemoMode() ? getDemoEmployeeName(item.employee, t) : (item.employee?.name || 'Unknown')}</div>
                             <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
                           </div>
                         </td>
@@ -2677,13 +2677,13 @@ const Reports = () => {
                       <>
                         <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
                           <div>
-                            <div className="text-sm font-medium">{item.employee?.name || 'Unknown'}</div>
+                            <div className="text-sm font-medium">{isDemoMode() ? getDemoEmployeeName(item.employee, t) : (item.employee?.name || 'Unknown')}</div>
                             <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
                           </div>
                         </td>
                         <td className={`px-6 py-4 ${text.primary}`}>
-                          <div className="text-sm font-medium max-w-xs truncate">{item.title}</div>
-                          <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{item.description}</div>
+                          <div className="text-sm font-medium max-w-xs truncate">{isDemoMode() ? getDemoTaskTitle(item, t) : item.title}</div>
+                          <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{isDemoMode() ? getDemoTaskDescription(item, t) : item.description}</div>
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap`}>
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -2711,13 +2711,13 @@ const Reports = () => {
                       <>
                         <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
                           <div>
-                            <div className="text-sm font-medium">{item.employee?.name || 'Unknown'}</div>
+                            <div className="text-sm font-medium">{isDemoMode() ? getDemoEmployeeName(item.employee, t) : (item.employee?.name || 'Unknown')}</div>
                             <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
                           </div>
                         </td>
                         <td className={`px-6 py-4 ${text.primary}`}>
-                          <div className="text-sm font-medium max-w-xs truncate">{item.title}</div>
-                          <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{item.description}</div>
+                          <div className="text-sm font-medium max-w-xs truncate">{isDemoMode() ? getDemoGoalTitle(item, t) : item.title}</div>
+                          <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{isDemoMode() ? getDemoGoalDescription(item, t) : item.description}</div>
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{translateCategory(item.category)}</td>
                         <td className={`px-6 py-4 whitespace-nowrap`}>

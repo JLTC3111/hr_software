@@ -1,5 +1,5 @@
 import { supabase } from '../config/supabaseClient';
-import { isDemoMode, MOCK_GOALS, MOCK_PERFORMANCE_REVIEWS, MOCK_SKILLS, MOCK_FEEDBACK } from '../utils/demoHelper';
+import { isDemoMode, getDemoGoals, addDemoGoal, updateDemoGoal, deleteDemoGoal, MOCK_GOALS, MOCK_PERFORMANCE_REVIEWS, MOCK_SKILLS, MOCK_FEEDBACK } from '../utils/demoHelper';
 
 /**
  * Performance Management Service
@@ -243,8 +243,12 @@ export const createPerformanceGoal = async (goalData) => {
       target_date: goalData.targetDate || null,
       status: goalData.status || 'pending',
       progress: goalData.progressPercentage || 0,
-      created_at: new Date().toISOString()
+      priority: goalData.priority || 'medium',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
+    // Persist to localStorage
+    addDemoGoal(newGoal);
     return { success: true, data: newGoal };
   }
 
@@ -282,7 +286,7 @@ export const createPerformanceGoal = async (goalData) => {
  */
 export const getAllPerformanceGoals = async (filters = {}) => {
   if (isDemoMode()) {
-    let goals = [...MOCK_GOALS];
+    let goals = getDemoGoals();
     
     if (filters.employeeId) {
       goals = goals.filter(g => String(g.employee_id) === String(filters.employeeId));
@@ -329,7 +333,7 @@ export const getAllPerformanceGoals = async (filters = {}) => {
  */
 export const getPerformanceGoalById = async (goalId) => {
   if (isDemoMode()) {
-    const goal = MOCK_GOALS.find(g => g.id === goalId);
+    const goal = getDemoGoals().find(g => g.id === goalId);
     return { success: true, data: goal ? { ...goal, milestones: [] } : null };
   }
 
@@ -358,7 +362,24 @@ export const getPerformanceGoalById = async (goalId) => {
  */
 export const updatePerformanceGoal = async (goalId, updates) => {
   if (isDemoMode()) {
-    return { success: true, data: { id: goalId, ...updates, updated_at: new Date().toISOString() } };
+    // Map updates to proper field names
+    const mappedUpdates = {
+      title: updates.title,
+      description: updates.description,
+      category: updates.category,
+      target_date: updates.targetDate,
+      status: updates.status,
+      progress: updates.progressPercentage !== undefined ? updates.progressPercentage : undefined,
+      priority: updates.priority
+    };
+    // Remove undefined values
+    Object.keys(mappedUpdates).forEach(key => mappedUpdates[key] === undefined && delete mappedUpdates[key]);
+    
+    const updatedGoal = updateDemoGoal(goalId, mappedUpdates);
+    if (updatedGoal) {
+      return { success: true, data: updatedGoal };
+    }
+    return { success: false, error: 'Goal not found' };
   }
 
   try {
@@ -403,6 +424,7 @@ export const updatePerformanceGoal = async (goalId, updates) => {
  */
 export const deletePerformanceGoal = async (goalId) => {
   if (isDemoMode()) {
+    deleteDemoGoal(goalId);
     return { success: true };
   }
 
