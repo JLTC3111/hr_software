@@ -322,11 +322,11 @@ const Login = () => {
               </button>
             </div>
 
-            {/* Submit Button */}
+            {/* Login Button */}
             <button
               type="submit"
               disabled={isLoading}
-              className={`w-full py-3 px-4 rounded-lg font-medium bg-blue-300 text-white transition-all duration-200 cursor-pointer ${
+              className={`w-full py-3 px-4 ${isDarkMode ? 'border-blue-100' : 'border-black'} rounded-lg font-medium bg-blue-300 text-white transition-all duration-200 cursor-pointer ${
                 isLoading 
                   ? 'bg-blue-400 cursor-not-allowed' 
                   : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.98]'
@@ -399,13 +399,13 @@ const Login = () => {
             }}
             className={`w-full mt-3 py-3 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer shadow-sm hover:shadow-md ${
               isDarkMode 
-                ? 'bg-gradient-to-r from-indigo-900 to-purple-900 hover:from-indigo-800 hover:to-purple-800 text-white border border-indigo-700' 
-                : 'bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-indigo-700 border border-indigo-200'
+                ? 'bg-linear-to-r from-gray-600 to-gray-900 hover:from-indigo-800 hover:to-blue-800 text-white border border-white' 
+                : 'bg-linear-to-r from-indigo-50 to-gray-50 hover:from-indigo-100 hover:to-purple-100 text-gray-700 border border-indigo-200'
             }`}
             disabled={isLoading}
           >
-            <Building2 className={`w-5 h-5 ${isDarkMode ? 'text-indigo-300' : 'text-indigo-600'}`} />
-            <span>{t('login.tryDemo', 'Try Demo Mode')}</span>
+            <Building2 className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gray-600'}`} />
+            <span>{`${isDarkMode ? t('login.tryDemo', 'Try Demo Mode') : t('login.tryDemo', 'Try Demo Mode')}`}</span>
           </button>
 
           {/* Sign Up Link */}
