@@ -264,7 +264,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                   <td className={`text-center p-3 ${text.primary} font-semibold`}>{item.overtime}h</td>
                 )}
                 {metricType === 'leave' && (
-                  <td className={`text-center p-3 ${text.primary} font-semibold`}>{item.leaveDays} days</td>
+                  <td className={`text-center p-3 ${text.primary} font-semibold`}>{item.leaveDays} {t('common.days', 'days')}</td>
                 )}
               </tr>
             ))}
@@ -315,7 +315,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                     {t(`employeeDepartment.${item.department}`, item.department)}
                   </span>
                 </td>
-                <td className={`p-3 ${text.primary} font-semibold`}>{item.workDays} days</td>
+                <td className={`p-3 ${text.primary} font-semibold`}>{item.workDays} {t('common.days', 'days')}</td>
                 <td className={`p-3 ${text.primary}`}>{item.overtime}h</td>
               </tr>
             ))}
@@ -369,7 +369,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                     item.status === 'approved' ? isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800' :
                     isDarkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-800'
                   }`}>
-                    {item.status}
+                    {t(`timeTracking.status.${item.status}`, item.status)}
                   </span>
                 </td>
               </tr>
@@ -467,15 +467,23 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
             {filteredData.map((item, index) => (
               <tr key={index} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
                 <td className={`p-3 ${text.primary} font-medium`}>{item.candidateName}</td>
-                <td className={`p-3 ${text.secondary}`}>{item.position}</td>
-                <td className={`p-3 ${text.primary}`}>{new Date(item.appliedDate).toLocaleDateString()}</td>
+                <td className={`p-3 ${text.secondary}`}>
+                  {item.positionKey ? t(item.positionKey, item.position) : item.position}
+                </td>
+                <td className={`p-3 ${text.primary}`}>
+                  {item.appliedDate && !isNaN(new Date(item.appliedDate).getTime()) 
+                    ? new Date(item.appliedDate).toLocaleDateString() 
+                    : item.application_date && !isNaN(new Date(item.application_date).getTime())
+                      ? new Date(item.application_date).toLocaleDateString()
+                      : t('common.notAvailable', 'N/A')}
+                </td>
                 <td className="p-3">
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    item.status === 'Interview Scheduled' ? isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-800' :
-                    item.status === 'Under Review' ? isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-800' :
+                    item.status === 'Interview Scheduled' || item.status === 'interview scheduled' ? isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-800' :
+                    item.status === 'Under Review' || item.status === 'under review' ? isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-800' :
                     isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800'
                   }`}>
-                    {item.status}
+                    {t(`recruitment.status.${item.status?.toLowerCase().replace(/\s+/g, '')}`, item.status)}
                   </span>
                 </td>
               </tr>

@@ -162,6 +162,317 @@ export const getDemoGoalDescription = (goal, t) => {
   return goal.description || '';
 };
 
+// ============================================
+// PERFORMANCE REVIEW TRANSLATION HELPERS
+// ============================================
+
+/**
+ * Get translated field for a demo performance review
+ * @param {Object} review - The review object
+ * @param {string} field - Field name (strengths, areasForImprovement, achievements, comments)
+ * @param {string} keyField - Key field name
+ * @param {Function} t - Translation function
+ * @returns {string} - Translated value or original
+ */
+export const getDemoReviewField = (review, field, keyField, t) => {
+  if (!isDemoMode() || !review || !t) return review?.[field] || '';
+  
+  if (review[keyField]) {
+    const translated = t(review[keyField], null);
+    if (translated && translated !== review[keyField]) {
+      return translated;
+    }
+  }
+  
+  return review[field] || '';
+};
+
+export const getDemoReviewStrengths = (review, t) => getDemoReviewField(review, 'strengths', 'strengthsKey', t);
+export const getDemoReviewAreasForImprovement = (review, t) => getDemoReviewField(review, 'areas_for_improvement', 'areasForImprovementKey', t);
+export const getDemoReviewAchievements = (review, t) => getDemoReviewField(review, 'achievements', 'achievementsKey', t);
+export const getDemoReviewComments = (review, t) => getDemoReviewField(review, 'comments', 'commentsKey', t);
+
+// ============================================
+// SKILL TRANSLATION HELPERS
+// ============================================
+
+export const getDemoSkillName = (skill, t) => {
+  if (!isDemoMode() || !skill || !t) return skill?.skill_name || '';
+  
+  if (skill.skillNameKey) {
+    const translated = t(skill.skillNameKey, null);
+    if (translated && translated !== skill.skillNameKey) {
+      return translated;
+    }
+  }
+  
+  return skill.skill_name || '';
+};
+
+export const getDemoSkillCategory = (skill, t) => {
+  if (!isDemoMode() || !skill || !t) return skill?.skill_category || '';
+  
+  if (skill.skillCategoryKey) {
+    const translated = t(skill.skillCategoryKey, null);
+    if (translated && translated !== skill.skillCategoryKey) {
+      return translated;
+    }
+  }
+  
+  return skill.skill_category || '';
+};
+
+export const getDemoSkillProficiency = (skill, t) => {
+  if (!isDemoMode() || !skill || !t) return skill?.proficiency_level || '';
+  
+  if (skill.proficiencyLevelKey) {
+    const translated = t(skill.proficiencyLevelKey, null);
+    if (translated && translated !== skill.proficiencyLevelKey) {
+      return translated;
+    }
+  }
+  
+  return skill.proficiency_level || '';
+};
+
+// ============================================
+// FEEDBACK TRANSLATION HELPERS
+// ============================================
+
+export const getDemoFeedbackType = (feedback, t) => {
+  if (!isDemoMode() || !feedback || !t) return feedback?.feedback_type || '';
+  
+  if (feedback.feedbackTypeKey) {
+    const translated = t(feedback.feedbackTypeKey, null);
+    if (translated && translated !== feedback.feedbackTypeKey) {
+      return translated;
+    }
+  }
+  
+  return feedback.feedback_type || '';
+};
+
+export const getDemoFeedbackText = (feedback, t) => {
+  if (!isDemoMode() || !feedback || !t) return feedback?.feedback_text || '';
+  
+  if (feedback.feedbackTextKey) {
+    const translated = t(feedback.feedbackTextKey, null);
+    if (translated && translated !== feedback.feedbackTextKey) {
+      return translated;
+    }
+  }
+  
+  return feedback.feedback_text || '';
+};
+
+// ============================================
+// JOB POSTING TRANSLATION HELPERS
+// ============================================
+
+export const getDemoJobTitle = (job, t) => {
+  if (!isDemoMode() || !job || !t) return job?.title || '';
+  
+  if (job.titleKey) {
+    const translated = t(job.titleKey, null);
+    if (translated && translated !== job.titleKey) {
+      return translated;
+    }
+  }
+  
+  return job.title || '';
+};
+
+export const getDemoJobDescription = (job, t) => {
+  if (!isDemoMode() || !job || !t) return job?.description || '';
+  
+  if (job.descriptionKey) {
+    const translated = t(job.descriptionKey, null);
+    if (translated && translated !== job.descriptionKey) {
+      return translated;
+    }
+  }
+  
+  return job.description || '';
+};
+
+export const getDemoJobLocation = (job, t) => {
+  if (!isDemoMode() || !job || !t) return job?.location || '';
+  
+  if (job.locationKey) {
+    const translated = t(job.locationKey, null);
+    if (translated && translated !== job.locationKey) {
+      return translated;
+    }
+  }
+  
+  return job.location || '';
+};
+
+export const getDemoJobSalaryRange = (job, t) => {
+  if (!isDemoMode() || !job || !t) return job?.salary_range || '';
+  
+  if (job.salaryRangeKey) {
+    const translated = t(job.salaryRangeKey, null);
+    if (translated && translated !== job.salaryRangeKey) {
+      return translated;
+    }
+  }
+  
+  return job.salary_range || '';
+};
+
+// ============================================
+// APPLICANT TRANSLATION HELPERS
+// ============================================
+
+export const getDemoApplicantFirstName = (applicant, t) => {
+  if (!isDemoMode() || !applicant || !t) return applicant?.first_name || '';
+  
+  if (applicant.firstNameKey) {
+    const translated = t(applicant.firstNameKey, null);
+    if (translated && translated !== applicant.firstNameKey) {
+      return translated;
+    }
+  }
+  
+  return applicant.first_name || '';
+};
+
+export const getDemoApplicantLastName = (applicant, t) => {
+  if (!isDemoMode() || !applicant || !t) return applicant?.last_name || '';
+  
+  if (applicant.lastNameKey) {
+    const translated = t(applicant.lastNameKey, null);
+    if (translated && translated !== applicant.lastNameKey) {
+      return translated;
+    }
+  }
+  
+  return applicant.last_name || '';
+};
+
+export const getDemoApplicantFullName = (applicant, t) => {
+  const firstName = getDemoApplicantFirstName(applicant, t);
+  const lastName = getDemoApplicantLastName(applicant, t);
+  return `${firstName} ${lastName}`.trim();
+};
+
+// ============================================
+// APPLICATION TRANSLATION HELPERS
+// ============================================
+
+export const getDemoApplicationStatus = (application, t) => {
+  if (!isDemoMode() || !application || !t) return application?.status || '';
+  
+  if (application.statusKey) {
+    const translated = t(application.statusKey, null);
+    if (translated && translated !== application.statusKey) {
+      return translated;
+    }
+  }
+  
+  return application.status || '';
+};
+
+export const getDemoApplicationNotes = (application, t) => {
+  if (!isDemoMode() || !application || !t) return application?.notes || '';
+  
+  if (application.notesKey) {
+    const translated = t(application.notesKey, null);
+    if (translated && translated !== application.notesKey) {
+      return translated;
+    }
+  }
+  
+  return application.notes || '';
+};
+
+// ============================================
+// INTERVIEW TRANSLATION HELPERS
+// ============================================
+
+export const getDemoInterviewStatus = (interview, t) => {
+  if (!isDemoMode() || !interview || !t) return interview?.status || '';
+  
+  if (interview.statusKey) {
+    const translated = t(interview.statusKey, null);
+    if (translated && translated !== interview.statusKey) {
+      return translated;
+    }
+  }
+  
+  return interview.status || '';
+};
+
+export const getDemoInterviewType = (interview, t) => {
+  if (!isDemoMode() || !interview || !t) return interview?.type || '';
+  
+  if (interview.typeKey) {
+    const translated = t(interview.typeKey, null);
+    if (translated && translated !== interview.typeKey) {
+      return translated;
+    }
+  }
+  
+  return interview.type || '';
+};
+
+export const getDemoInterviewNotes = (interview, t) => {
+  if (!isDemoMode() || !interview || !t) return interview?.notes || '';
+  
+  if (interview.notesKey) {
+    const translated = t(interview.notesKey, null);
+    if (translated && translated !== interview.notesKey) {
+      return translated;
+    }
+  }
+  
+  return interview.notes || '';
+};
+
+// ============================================
+// NOTIFICATION TRANSLATION HELPERS
+// ============================================
+
+export const getDemoNotificationTitle = (notification, t) => {
+  if (!isDemoMode() || !notification || !t) return notification?.title || '';
+  
+  if (notification.titleKey) {
+    const translated = t(notification.titleKey, null);
+    if (translated && translated !== notification.titleKey) {
+      return translated;
+    }
+  }
+  
+  return notification.title || '';
+};
+
+export const getDemoNotificationMessage = (notification, t) => {
+  if (!isDemoMode() || !notification || !t) return notification?.message || '';
+  
+  if (notification.messageKey) {
+    const translated = t(notification.messageKey, null);
+    if (translated && translated !== notification.messageKey) {
+      return translated;
+    }
+  }
+  
+  return notification.message || '';
+};
+
+export const getDemoNotificationActionLabel = (notification, t) => {
+  if (!isDemoMode() || !notification || !t) return notification?.action_label || '';
+  
+  if (notification.actionLabelKey) {
+    const translated = t(notification.actionLabelKey, null);
+    if (translated && translated !== notification.actionLabelKey) {
+      return translated;
+    }
+  }
+  
+  return notification.action_label || '';
+};
+
 // Mock Data
 export const MOCK_USER = {
   id: 'demo-user-id',
@@ -474,6 +785,7 @@ export const MOCK_PERFORMANCE_REVIEWS = [
     employee_id: 'demo-emp-1',
     reviewer_id: 'demo-emp-2',
     review_period: 'Q4 2024',
+    review_periodKey: 'demoReviews.review-1.reviewPeriod',
     review_type: 'quarterly',
     overall_rating: 4.5,
     technical_skills_rating: 5,
@@ -482,9 +794,13 @@ export const MOCK_PERFORMANCE_REVIEWS = [
     teamwork_rating: 5,
     problem_solving_rating: 4,
     strengths: 'Excellent technical skills, great team player',
+    strengthsKey: 'demoReviews.review-1.strengths',
     areas_for_improvement: 'Could improve on documentation',
+    areasForImprovementKey: 'demoReviews.review-1.areasForImprovement',
     achievements: 'Led the migration to new architecture',
+    achievementsKey: 'demoReviews.review-1.achievements',
     comments: 'Outstanding performance this quarter',
+    commentsKey: 'demoReviews.review-1.comments',
     status: 'approved',
     review_date: '2024-10-15',
     employee: MOCK_EMPLOYEES[0],
@@ -495,6 +811,7 @@ export const MOCK_PERFORMANCE_REVIEWS = [
     employee_id: 'demo-emp-2',
     reviewer_id: 'demo-emp-1',
     review_period: 'Q4 2024',
+    review_periodKey: 'demoReviews.review-2.reviewPeriod',
     review_type: 'quarterly',
     overall_rating: 4.2,
     technical_skills_rating: 4,
@@ -503,9 +820,13 @@ export const MOCK_PERFORMANCE_REVIEWS = [
     teamwork_rating: 4,
     problem_solving_rating: 4,
     strengths: 'Excellent communication and problem-solving',
+    strengthsKey: 'demoReviews.review-2.strengths',
     areas_for_improvement: 'More proactive in meetings',
+    areasForImprovementKey: 'demoReviews.review-2.areasForImprovement',
     achievements: 'Improved UI design system',
+    achievementsKey: 'demoReviews.review-2.achievements',
     comments: 'Great contribution to the team',
+    commentsKey: 'demoReviews.review-2.comments',
     status: 'submitted',
     review_date: '2024-10-20',
     employee: MOCK_EMPLOYEES[1],
@@ -518,9 +839,12 @@ export const MOCK_SKILLS = [
     id: 'skill-1',
     employee_id: 'demo-emp-1',
     skill_name: 'React',
+    skillNameKey: 'demoSkills.skill-1.name',
     skill_category: 'technical',
+    skillCategoryKey: 'demoSkills.skill-1.category',
     rating: 5,
     proficiency_level: 'Expert',
+    proficiencyLevelKey: 'demoSkills.skill-1.proficiencyLevel',
     years_experience: 5,
     assessed_by: 'demo-emp-2',
     assessment_date: '2024-10-01',
@@ -530,9 +854,12 @@ export const MOCK_SKILLS = [
     id: 'skill-2',
     employee_id: 'demo-emp-1',
     skill_name: 'TypeScript',
+    skillNameKey: 'demoSkills.skill-2.name',
     skill_category: 'technical',
+    skillCategoryKey: 'demoSkills.skill-2.category',
     rating: 4,
     proficiency_level: 'Advanced',
+    proficiencyLevelKey: 'demoSkills.skill-2.proficiencyLevel',
     years_experience: 3,
     assessed_by: 'demo-emp-2',
     assessment_date: '2024-10-01',
@@ -542,9 +869,12 @@ export const MOCK_SKILLS = [
     id: 'skill-3',
     employee_id: 'demo-emp-2',
     skill_name: 'UI/UX Design',
+    skillNameKey: 'demoSkills.skill-3.name',
     skill_category: 'design',
+    skillCategoryKey: 'demoSkills.skill-3.category',
     rating: 5,
     proficiency_level: 'Expert',
+    proficiencyLevelKey: 'demoSkills.skill-3.proficiencyLevel',
     years_experience: 6,
     assessed_by: 'demo-emp-1',
     assessment_date: '2024-10-05',
@@ -558,8 +888,10 @@ export const MOCK_FEEDBACK = [
     employee_id: 'demo-emp-1',
     feedback_from: 'demo-emp-2',
     feedback_type: 'peer',
+    feedbackTypeKey: 'demoFeedback.feedback-1.type',
     rating: 5,
     feedback_text: 'Great collaboration on the project. Very helpful and knowledgeable.',
+    feedbackTextKey: 'demoFeedback.feedback-1.text',
     is_anonymous: false,
     feedback_date: '2024-10-10',
     feedback_from_employee: MOCK_EMPLOYEES[1]
@@ -569,8 +901,10 @@ export const MOCK_FEEDBACK = [
     employee_id: 'demo-emp-2',
     feedback_from: 'demo-emp-1',
     feedback_type: 'manager',
+    feedbackTypeKey: 'demoFeedback.feedback-2.type',
     rating: 4,
     feedback_text: 'Excellent work on the new design system. Keep it up!',
+    feedbackTextKey: 'demoFeedback.feedback-2.text',
     is_anonymous: false,
     feedback_date: '2024-10-12',
     feedback_from_employee: MOCK_EMPLOYEES[0]
@@ -581,26 +915,36 @@ export const MOCK_JOB_POSTINGS = [
   {
     id: 'job-1',
     title: 'Senior Frontend Developer',
+    titleKey: 'demoJobs.job-1.title',
     department: 'engineering',
     position: 'senior_developer',
     status: 'active',
     posted_date: '2023-10-01',
     description: 'We are looking for an experienced Frontend Developer...',
+    descriptionKey: 'demoJobs.job-1.description',
     requirements: ['React', 'TypeScript', 'Tailwind CSS'],
+    requirementsKeys: ['demoJobs.job-1.requirements.0', 'demoJobs.job-1.requirements.1', 'demoJobs.job-1.requirements.2'],
     location: 'Remote',
-    salary_range: '90k - 120k'
+    locationKey: 'demoJobs.job-1.location',
+    salary_range: '90k - 120k',
+    salaryRangeKey: 'demoJobs.job-1.salaryRange'
   },
   {
     id: 'job-2',
     title: 'Product Designer',
+    titleKey: 'demoJobs.job-2.title',
     department: 'technology',
     position: 'employee',
     status: 'active',
     posted_date: '2023-10-05',
     description: 'Join our design team to create amazing user experiences...',
+    descriptionKey: 'demoJobs.job-2.description',
     requirements: ['Figma', 'UI/UX', 'Prototyping'],
+    requirementsKeys: ['demoJobs.job-2.requirements.0', 'demoJobs.job-2.requirements.1', 'demoJobs.job-2.requirements.2'],
     location: 'New York',
-    salary_range: '80k - 100k'
+    locationKey: 'demoJobs.job-2.location',
+    salary_range: '80k - 100k',
+    salaryRangeKey: 'demoJobs.job-2.salaryRange'
   }
 ];
 
@@ -608,7 +952,9 @@ export const MOCK_APPLICANTS = [
   {
     id: 'app-1',
     first_name: 'John',
+    firstNameKey: 'demoApplicants.app-1.firstName',
     last_name: 'Doe',
+    lastNameKey: 'demoApplicants.app-1.lastName',
     email: 'john.doe@example.com',
     phone: '555-1111',
     resume_url: '#',
@@ -617,7 +963,9 @@ export const MOCK_APPLICANTS = [
   {
     id: 'app-2',
     first_name: 'Jane',
+    firstNameKey: 'demoApplicants.app-2.firstName',
     last_name: 'Smith',
+    lastNameKey: 'demoApplicants.app-2.lastName',
     email: 'jane.smith@example.com',
     phone: '555-2222',
     resume_url: '#',
@@ -631,9 +979,11 @@ export const MOCK_APPLICATIONS = [
     job_posting_id: 'job-1',
     applicant_id: 'app-1',
     status: 'under review',
+    statusKey: 'demoApplications.appl-1.status',
     application_date: '2023-10-10',
     rating: 4,
     notes: 'Strong candidate',
+    notesKey: 'demoApplications.appl-1.notes',
     job_posting: MOCK_JOB_POSTINGS[0],
     applicant: MOCK_APPLICANTS[0]
   },
@@ -642,9 +992,11 @@ export const MOCK_APPLICATIONS = [
     job_posting_id: 'job-2',
     applicant_id: 'app-2',
     status: 'interview scheduled',
+    statusKey: 'demoApplications.appl-2.status',
     application_date: '2023-10-12',
     rating: 5,
     notes: 'Excellent portfolio',
+    notesKey: 'demoApplications.appl-2.notes',
     job_posting: MOCK_JOB_POSTINGS[1],
     applicant: MOCK_APPLICANTS[1]
   }
@@ -657,8 +1009,11 @@ export const MOCK_INTERVIEWS = [
     scheduled_date: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
     interviewer_id: 'demo-emp-1',
     status: 'scheduled',
+    statusKey: 'demoInterviews.int-1.status',
     type: 'Technical',
+    typeKey: 'demoInterviews.int-1.type',
     notes: 'Portfolio review',
+    notesKey: 'demoInterviews.int-1.notes',
     application: MOCK_APPLICATIONS[1]
   }
 ];
@@ -668,37 +1023,46 @@ export const MOCK_NOTIFICATIONS = [
     id: 'notif-1',
     user_id: 'demo-user-id',
     title: 'Welcome to HR System',
+    titleKey: 'demoNotifications.notif-1.title',
     message: 'Welcome to the demo mode of the HR System. Feel free to explore!',
+    messageKey: 'demoNotifications.notif-1.message',
     type: 'info',
     category: 'system',
     is_read: false,
     created_at: new Date().toISOString(),
     action_url: '/dashboard',
-    action_label: 'Go to Dashboard'
+    action_label: 'Go to Dashboard',
+    actionLabelKey: 'demoNotifications.notif-1.actionLabel'
   },
   {
     id: 'notif-2',
     user_id: 'demo-user-id',
     title: 'New Task Assigned',
+    titleKey: 'demoNotifications.notif-2.title',
     message: 'You have been assigned a new task: Review Q3 Performance',
+    messageKey: 'demoNotifications.notif-2.message',
     type: 'warning',
     category: 'task',
     is_read: false,
     created_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
     action_url: '/tasks',
-    action_label: 'View Task'
+    action_label: 'View Task',
+    actionLabelKey: 'demoNotifications.notif-2.actionLabel'
   },
   {
     id: 'notif-3',
     user_id: 'demo-user-id',
     title: 'Meeting Reminder',
+    titleKey: 'demoNotifications.notif-3.title',
     message: 'Team meeting in 30 minutes',
+    messageKey: 'demoNotifications.notif-3.message',
     type: 'info',
     category: 'calendar',
     is_read: true,
     created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
     action_url: '/calendar',
-    action_label: 'View Calendar'
+    action_label: 'View Calendar',
+    actionLabelKey: 'demoNotifications.notif-3.actionLabel'
   }
 ];
 

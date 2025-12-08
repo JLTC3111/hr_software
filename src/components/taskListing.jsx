@@ -315,17 +315,14 @@ const TaskListing = ({ employees }) => {
     setLoading(true);
     try {
       let result;
-      console.log('fetchTasks: viewMode =', viewMode, 'selectedEmployee =', selectedEmployee);
       if (viewMode === 'individual' && selectedEmployee) {
         result = await workloadService.getEmployeeTasks(selectedEmployee);
       } else {
         result = await workloadService.getAllTasks();
       }
       
-      console.log('fetchTasks result:', result);
-      
       if (result.success) {
-        setTasks(result.data);
+        setTasks(result.data || []);
       } else {
         setErrorMessage(result.error || 'Failed to load tasks');
         setTimeout(() => setErrorMessage(''), 5000);
@@ -421,17 +418,15 @@ const TaskListing = ({ employees }) => {
       return;
     }
 
-    // Validate employee assignment for admin/manager
-    if (canAssignTasks && !taskForm.assignedTo) {
+    // Determine employee ID - use assignedTo if set, otherwise fall back to selectedEmployee
+    const employeeId = taskForm.assignedTo || selectedEmployee;
+    
+    // Validate employee assignment
+    if (!employeeId) {
       setErrorMessage(t('taskListing.selectEmployee', 'Please select an employee to assign this task to'));
       setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
-
-    const employeeId = canAssignTasks ? taskForm.assignedTo : selectedEmployee;
-    
-    // Debug logging
-    console.log('Creating task with employeeId:', employeeId, 'taskForm:', taskForm, 'canAssignTasks:', canAssignTasks, 'selectedEmployee:', selectedEmployee);
     
     try {
       // Use service for both demo and non-demo mode (service handles persistence)
@@ -447,8 +442,6 @@ const TaskListing = ({ employees }) => {
         comments: taskForm.comments || null,
         createdBy: user?.employeeId
       });
-      
-      console.log('Task creation result:', result);
       
       if (result.success) {
         setSuccessMessage(t('taskListing.taskCreated', 'Task created successfully'));

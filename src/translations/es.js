@@ -409,6 +409,12 @@ login: {
     approved: 'Aprobado',
     rejected: 'Rechazado',
     cancelled: 'Cancelado',
+    status: {
+      pending: 'Pendiente',
+      approved: 'Aprobado',
+      rejected: 'Rechazado',
+      cancelled: 'Cancelado',
+    },
     // Hour types for overtime
     weekend: 'Horas Extra en Fin de Semana',
     holiday: 'Horas Extra en Festivos',
@@ -487,7 +493,37 @@ login: {
     screening: 'Selección',
     technical: 'Técnica',
     offer: 'Oferta',
-    years: 'años'
+    years: 'años',
+    yearsExperience: 'años de experiencia',
+    jobTitle: 'Título del puesto',
+    enterJobTitle: 'Ingrese el título del puesto',
+    location: 'Ubicación',
+    enterLocation: 'Ingrese la ubicación',
+    employmentType: 'Tipo de empleo',
+    fullTime: 'Tiempo completo',
+    partTime: 'Medio tiempo',
+    contract: 'Contrato',
+    internship: 'Pasantía',
+    experienceLevel: 'Nivel de experiencia',
+    enterExperience: 'ej., 3-5 años',
+    salaryMin: 'Salario mínimo',
+    salaryMax: 'Salario máximo',
+    description: 'Descripción del puesto',
+    enterDescription: 'Ingrese la descripción del puesto',
+    requirements: 'Requisitos',
+    enterRequirements: 'Ingrese los requisitos del puesto',
+    postJob: 'Publicar puesto',
+    jobPosted: '¡Puesto publicado con éxito!',
+    statusUpdated: '¡Estado actualizado con éxito!',
+    jobDetails: 'Detalles del puesto',
+    applicantInfo: 'Información del candidato',
+    currentCompany: 'Empresa actual',
+    currentPosition: 'Cargo actual',
+    education: 'Educación',
+    links: 'Enlaces',
+    viewResume: 'Ver currículum',
+    linkedinProfile: 'Perfil de LinkedIn',
+    notes: 'Notas',
   },
 
   // Reports
@@ -903,7 +939,22 @@ login: {
     no: 'No',
     accessDenied: 'Acceso Denegado',
     noPermission: 'No tiene permiso para acceder a esta página.',
-    goBack: 'Volver'
+    goBack: 'Volver',
+    day: 'Día',
+    days: 'Días',
+    hour: 'Hora',
+    hours: 'Horas',
+    minute: 'Minuto',
+    minutes: 'Minutos',
+    second: 'Segundo',
+    seconds: 'Segundos',
+    of: 'de',
+    to: 'a',
+    from: 'desde',
+    // Pagination
+    itemsPerPage: 'Elementos por página',
+    page: 'Página',
+    ofPages: 'de {total} páginas',
   },
 
   // Theme
@@ -1666,5 +1717,98 @@ login: {
   demoGoals: {
     'goal-1': { title: 'Mejorar la Eficiencia del Equipo', description: 'Aumentar la productividad del equipo en un 20% durante el próximo trimestre' },
     'goal-2': { title: 'Aprender React Native', description: 'Dominar React Native para el desarrollo de aplicaciones móviles' }
+  },
+    
+  demoReviews: {
+    'review-1': {
+      reviewPeriod: 'Q4 2024',
+      strengths: 'Excelentes habilidades técnicas, gran compañero de equipo',
+      areasForImprovement: 'Podría mejorar la documentación',
+      achievements: 'Lideró la migración a la nueva arquitectura',
+      comments: 'Rendimiento sobresaliente este trimestre'
+    },
+    'review-2': {
+      reviewPeriod: 'Q4 2024',
+      strengths: 'Excelente comunicación y resolución de problemas',
+      areasForImprovement: 'Ser más proactivo en reuniones',
+      achievements: 'Mejoró el sistema de diseño UI',
+      comments: 'Gran contribución al equipo'
+    }
+  },
+
+  demoSkills: {
+    'skill-1': { name: 'React', category: 'Técnico', proficiencyLevel: 'Experto' },
+    'skill-2': { name: 'TypeScript', category: 'Técnico', proficiencyLevel: 'Avanzado' },
+    'skill-3': { name: 'UI/UX Design', category: 'Diseño', proficiencyLevel: 'Experto' }
+  },
+
+  demoFeedback: {
+    'feedback-1': {
+      type: 'Revisión de compañeros',
+      text: 'Gran colaboración en el proyecto. Muy útil y con mucho conocimiento.'
+    },
+    'feedback-2': {
+      type: 'Revisión del gerente',
+      text: 'Excelente trabajo en el nuevo sistema de diseño. ¡Sigue así!'
+    }
+  },
+
+  demoJobs: {
+    'job-1': {
+      title: 'Desarrollador Frontend Senior',
+      description: 'Buscamos un desarrollador frontend con experiencia para unirse al equipo y crear aplicaciones web increíbles.',
+      location: 'Remoto',
+      salaryRange: '$90k - $120k',
+      requirements: { 0: 'React', 1: 'TypeScript', 2: 'Tailwind CSS' }
+    },
+    'job-2': {
+      title: 'Diseñador de Producto',
+      description: 'Únete a nuestro equipo de diseño para crear experiencias de usuario increíbles y dar forma al futuro de nuestros productos.',
+      location: 'Nueva York',
+      salaryRange: '$80k - $100k',
+      requirements: { 0: 'Figma', 1: 'UI/UX', 2: 'Prototipado' }
+    }
+  },
+
+  demoApplicants: {
+    'app-1': { firstName: 'John', lastName: 'Doe' },
+    'app-2': { firstName: 'Jane', lastName: 'Smith' }
+  },
+
+  demoApplications: {
+    'appl-1': {
+      status: 'En revisión',
+      notes: 'Candidato fuerte con excelente experiencia técnica'
+    },
+    'appl-2': {
+      status: 'Entrevista programada',
+      notes: 'Excelente portafolio y habilidades de diseño'
+    }
+  },
+
+  demoInterviews: {
+    'int-1': {
+      status: 'Programada',
+      type: 'Entrevista técnica',
+      notes: 'Revisión de portafolio y evaluación técnica'
+    }
+  },
+
+  demoNotifications: {
+    'notif-1': {
+      title: 'Bienvenido al Sistema HR',
+      message: 'Bienvenido al modo demo del Sistema HR. ¡Explora todas las funciones!',
+      actionLabel: 'Ir al Panel'
+    },
+    'notif-2': {
+      title: 'Nueva tarea asignada',
+      message: 'Se te ha asignado una nueva tarea: Revisar desempeño de Q3',
+      actionLabel: 'Ver tarea'
+    },
+    'notif-3': {
+      title: 'Recordatorio de reunión',
+      message: 'Reunión del equipo en 30 minutos',
+      actionLabel: 'Ver calendario'
+    }
   }
 };

@@ -123,29 +123,30 @@ export const getTaskById = async (taskId) => {
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
 export const createTask = async (taskData) => {
-  console.log('workloadService.createTask called, isDemoMode:', isDemoMode(), 'taskData:', taskData);
-  
   if (isDemoMode()) {
-    const newTask = {
-      id: `task-demo-${Date.now()}`,
-      employee_id: taskData.employeeId,
-      title: taskData.title,
-      description: taskData.description,
-      due_date: taskData.dueDate,
-      priority: taskData.priority || 'medium',
-      status: taskData.status || 'pending',
-      self_assessment: taskData.selfAssessment || null,
-      quality_rating: taskData.qualityRating || 0,
-      comments: taskData.comments || null,
-      created_by: taskData.createdBy || null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    // Persist to localStorage
-    console.log('Adding demo task:', newTask);
-    addDemoTask(newTask);
-    console.log('Demo tasks after add:', getDemoTasks());
-    return { success: true, data: newTask };
+    try {
+      const newTask = {
+        id: `task-demo-${Date.now()}`,
+        employee_id: String(taskData.employeeId), // Ensure string for consistency
+        title: taskData.title,
+        description: taskData.description,
+        due_date: taskData.dueDate,
+        priority: taskData.priority || 'medium',
+        status: taskData.status || 'pending',
+        self_assessment: taskData.selfAssessment || null,
+        quality_rating: taskData.qualityRating || 0,
+        comments: taskData.comments || null,
+        created_by: taskData.createdBy || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      // Persist to localStorage
+      addDemoTask(newTask);
+      return { success: true, data: newTask };
+    } catch (error) {
+      console.error('Error creating demo task:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   try {

@@ -307,6 +307,7 @@ export default {
     appliedDate: 'Applied Date',
     experience: 'Experience',
     status: 'Status',
+    statusLabel: 'Status',
     actions: 'Actions',
     stage: 'Stage',
     interviewScheduled: 'Interview Scheduled',
@@ -315,7 +316,49 @@ export default {
     screening: 'Screening',
     technical: 'Technical',
     offer: 'Offer',
-    years: 'years'
+    years: 'years',
+    yearsExperience: 'years experience',
+    // Post Job Modal
+    jobTitle: 'Job Title',
+    enterJobTitle: 'Enter job title',
+    location: 'Location',
+    enterLocation: 'Enter location',
+    employmentType: 'Employment Type',
+    fullTime: 'Full Time',
+    partTime: 'Part Time',
+    contract: 'Contract',
+    internship: 'Internship',
+    experienceLevel: 'Experience Level',
+    enterExperience: 'e.g., 3-5 years',
+    salaryMin: 'Minimum Salary',
+    salaryMax: 'Maximum Salary',
+    description: 'Job Description',
+    enterDescription: 'Enter job description',
+    requirements: 'Requirements',
+    enterRequirements: 'Enter job requirements',
+    postJob: 'Post Job',
+    jobPosted: 'Job posted successfully!',
+    statusUpdated: 'Status updated successfully!',
+    // Detail Modal
+    jobDetails: 'Job Details',
+    applicantInfo: 'Applicant Information',
+    currentCompany: 'Current Company',
+    currentPosition: 'Current Position',
+    education: 'Education',
+    links: 'Links',
+    viewResume: 'View Resume',
+    linkedinProfile: 'LinkedIn Profile',
+    notes: 'Notes',
+    // Nested status translations
+    status: {
+      interviewscheduled: 'Interview Scheduled',
+      underreview: 'Under Review',
+      offerextended: 'Offer Extended',
+      hired: 'Hired',
+      rejected: 'Rejected',
+      shortlisted: 'Shortlisted',
+      pending: 'Pending'
+    }
   },
 
   // Time Tracking
@@ -365,6 +408,13 @@ export default {
     approved: 'Approved',
     rejected: 'Rejected',
     cancelled: 'Cancelled',
+    // Status translations (nested for t('timeTracking.status.pending'))
+    status: {
+      pending: 'Pending',
+      approved: 'Approved',
+      rejected: 'Rejected',
+      cancelled: 'Cancelled'
+    },
     // Hour types for overtime
     weekend: 'Weekend Overtime',
     holiday: 'Holiday Overtime',
@@ -505,6 +555,7 @@ export default {
       regular: 'Regular Hours',
       holiday: 'Holiday',
       weekend: 'Weekend/Overtime',
+      overtime: 'Overtime',
       bonus: 'Bonus Hours',
       wfh: 'Working From Home (Online)'
     },
@@ -1043,7 +1094,10 @@ export default {
     no: 'No',
     accessDenied: 'Access Denied',
     noPermission: 'You do not have permission to access this page.',
-    goBack: 'Go Back'
+    goBack: 'Go Back',
+    days: 'days',
+    day: 'day',
+    notAvailable: 'N/A',
   },
 
   // Theme
@@ -1763,6 +1817,125 @@ export default {
     'goal-2': {
       title: 'Learn React Native',
       description: 'Complete advanced React Native course'
+    }
+  },
+
+  demoReviews: {
+    'review-1': {
+      reviewPeriod: 'Q4 2024',
+      strengths: 'Excellent technical skills, great team player',
+      areasForImprovement: 'Could improve on documentation',
+      achievements: 'Led the migration to new architecture',
+      comments: 'Outstanding performance this quarter'
+    },
+    'review-2': {
+      reviewPeriod: 'Q4 2024',
+      strengths: 'Excellent communication and problem-solving',
+      areasForImprovement: 'More proactive in meetings',
+      achievements: 'Improved UI design system',
+      comments: 'Great contribution to the team'
+    }
+  },
+
+  demoSkills: {
+    'skill-1': {
+      name: 'React',
+      category: 'Technical',
+      proficiencyLevel: 'Expert'
+    },
+    'skill-2': {
+      name: 'TypeScript',
+      category: 'Technical',
+      proficiencyLevel: 'Advanced'
+    },
+    'skill-3': {
+      name: 'UI/UX Design',
+      category: 'Design',
+      proficiencyLevel: 'Expert'
+    }
+  },
+
+  demoFeedback: {
+    'feedback-1': {
+      type: 'Peer Review',
+      text: 'Great collaboration on the project. Very helpful and knowledgeable.'
+    },
+    'feedback-2': {
+      type: 'Manager Review',
+      text: 'Excellent work on the new design system. Keep it up!'
+    }
+  },
+
+  demoJobs: {
+    'job-1': {
+      title: 'Senior Frontend Developer',
+      description: 'We are looking for an experienced Frontend Developer to join our team and help build amazing web applications.',
+      location: 'Remote',
+      salaryRange: '$90k - $120k',
+      requirements: {
+        0: 'React',
+        1: 'TypeScript',
+        2: 'Tailwind CSS'
+      }
+    },
+    'job-2': {
+      title: 'Product Designer',
+      description: 'Join our design team to create amazing user experiences and shape the future of our products.',
+      location: 'New York',
+      salaryRange: '$80k - $100k',
+      requirements: {
+        0: 'Figma',
+        1: 'UI/UX',
+        2: 'Prototyping'
+      }
+    }
+  },
+
+  demoApplicants: {
+    'app-1': {
+      firstName: 'John',
+      lastName: 'Doe'
+    },
+    'app-2': {
+      firstName: 'Jane',
+      lastName: 'Smith'
+    }
+  },
+
+  demoApplications: {
+    'appl-1': {
+      status: 'Under Review',
+      notes: 'Strong candidate with excellent technical background'
+    },
+    'appl-2': {
+      status: 'Interview Scheduled',
+      notes: 'Excellent portfolio and design skills'
+    }
+  },
+
+  demoInterviews: {
+    'int-1': {
+      status: 'Scheduled',
+      type: 'Technical Interview',
+      notes: 'Portfolio review and technical assessment'
+    }
+  },
+
+  demoNotifications: {
+    'notif-1': {
+      title: 'Welcome to HR System',
+      message: 'Welcome to the demo mode of the HR System. Feel free to explore all features!',
+      actionLabel: 'Go to Dashboard'
+    },
+    'notif-2': {
+      title: 'New Task Assigned',
+      message: 'You have been assigned a new task: Review Q3 Performance',
+      actionLabel: 'View Task'
+    },
+    'notif-3': {
+      title: 'Meeting Reminder',
+      message: 'Team meeting in 30 minutes',
+      actionLabel: 'View Calendar'
     }
   },
 };

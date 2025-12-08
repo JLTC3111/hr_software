@@ -352,6 +352,12 @@ export default {
     approved: 'Одобрено',
     rejected: 'Отклонено',
     cancelled: 'Отменено',
+    status: {
+      pending: 'В ожидании',
+      approved: 'Одобрено',
+      rejected: 'Отклонено',
+      cancelled: 'Отменено',
+    },
     // Hour types for overtime
     weekend: 'Сверхурочные в Выходные',
     holiday: 'Сверхурочные в Праздники',
@@ -471,7 +477,37 @@ export default {
     screening: 'Отбор',
     technical: 'Техническое',
     offer: 'Предложение',
-    years: 'лет'
+    years: 'лет',
+    yearsExperience: 'лет опыта',
+    jobTitle: 'Название вакансии',
+    enterJobTitle: 'Введите название вакансии',
+    location: 'Местоположение',
+    enterLocation: 'Введите местоположение',
+    employmentType: 'Тип занятости',
+    fullTime: 'Полная занятость',
+    partTime: 'Частичная занятость',
+    contract: 'Контракт',
+    internship: 'Стажировка',
+    experienceLevel: 'Уровень опыта',
+    enterExperience: 'например, 3–5 лет',
+    salaryMin: 'Минимальная зарплата',
+    salaryMax: 'Максимальная зарплата',
+    description: 'Описание вакансии',
+    enterDescription: 'Введите описание вакансии',
+    requirements: 'Требования',
+    enterRequirements: 'Введите требования к вакансии',
+    postJob: 'Опубликовать вакансию',
+    jobPosted: 'Вакансия успешно опубликована!',
+    statusUpdated: 'Статус успешно обновлён!',
+    jobDetails: 'Детали вакансии',
+    applicantInfo: 'Информация о кандидате',
+    currentCompany: 'Текущая компания',
+    currentPosition: 'Текущая должность',
+    education: 'Образование',
+    links: 'Ссылки',
+    viewResume: 'Просмотреть резюме',
+    linkedinProfile: 'Профиль LinkedIn',
+    notes: 'Заметки',
   },
 
   // Reports
@@ -858,7 +894,15 @@ export default {
     no: 'Нет',
     accessDenied: 'Доступ запрещен',
     noPermission: 'У вас нет разрешения на доступ к этой странице.',
-    goBack: 'Назад'
+    goBack: 'Назад',
+    day: 'день',
+    days: 'дней',
+    hour: 'час',
+    hours: 'часов',
+    minute: 'минута',
+    minutes: 'минут',
+    second: 'секунда',
+    seconds: 'секунд'
   },
 
   // Theme
@@ -1596,5 +1640,98 @@ export default {
   demoGoals: {
     'goal-1': { title: 'Повысить Эффективность Команды', description: 'Увеличить производительность команды на 20% в следующем квартале' },
     'goal-2': { title: 'Изучить React Native', description: 'Освоить React Native для разработки мобильных приложений' }
+  },
+    
+  demoReviews: {
+    'review-1': {
+      reviewPeriod: '4 квартал 2024',
+      strengths: 'Отличные технические навыки, прекрасный командный игрок',
+      areasForImprovement: 'Можно улучшить качество документации',
+      achievements: 'Руководил переходом на новую архитектуру',
+      comments: 'Выдающаяся работа в этом квартале'
+    },
+    'review-2': {
+      reviewPeriod: '4 квартал 2024',
+      strengths: 'Отличная коммуникация и умение решать проблемы',
+      areasForImprovement: 'Следует быть более активным на совещаниях',
+      achievements: 'Улучшил систему UI-дизайна',
+      comments: 'Отличный вклад в работу команды'
+    }
+  },
+
+  demoSkills: {
+    'skill-1': { name: 'React', category: 'Техническое', proficiencyLevel: 'Эксперт' },
+    'skill-2': { name: 'TypeScript', category: 'Техническое', proficiencyLevel: 'Продвинутый' },
+    'skill-3': { name: 'UI/UX Дизайн', category: 'Дизайн', proficiencyLevel: 'Эксперт' }
+  },
+
+  demoFeedback: {
+    'feedback-1': {
+      type: 'Отзыв коллег',
+      text: 'Отличное взаимодействие в проекте. Очень полезный и знающий специалист.'
+    },
+    'feedback-2': {
+      type: 'Отзыв менеджера',
+      text: 'Отличная работа над новой системой дизайна. Так держать!'
+    }
+  },
+
+  demoJobs: {
+    'job-1': {
+      title: 'Старший фронтенд-разработчик',
+      description: 'Мы ищем опытного фронтенд-разработчика, который присоединится к нашей команде и поможет создавать отличные веб-приложения.',
+      location: 'Удалённо',
+      salaryRange: '$90k - $120k',
+      requirements: { 0: 'React', 1: 'TypeScript', 2: 'Tailwind CSS' }
+    },
+    'job-2': {
+      title: 'Продуктовый дизайнер',
+      description: 'Присоединяйтесь к нашей команде дизайнеров, чтобы создавать отличный пользовательский опыт и формировать будущее наших продуктов.',
+      location: 'Нью-Йорк',
+      salaryRange: '$80k - $100k',
+      requirements: { 0: 'Figma', 1: 'UI/UX', 2: 'Прототипирование' }
+    }
+  },
+
+  demoApplicants: {
+    'app-1': { firstName: 'John', lastName: 'Doe' },
+    'app-2': { firstName: 'Jane', lastName: 'Smith' }
+  },
+
+  demoApplications: {
+    'appl-1': {
+      status: 'На рассмотрении',
+      notes: 'Сильный кандидат с отличным техническим опытом'
+    },
+    'appl-2': {
+      status: 'Назначено интервью',
+      notes: 'Отличное портфолио и навыки дизайна'
+    }
+  },
+
+  demoInterviews: {
+    'int-1': {
+      status: 'Назначено',
+      type: 'Техническое интервью',
+      notes: 'Просмотр портфолио и техническая оценка'
+    }
+  },
+
+  demoNotifications: {
+    'notif-1': {
+      title: 'Добро пожаловать в HR-систему',
+      message: 'Добро пожаловать в демо-режим HR-системы. Исследуйте все возможности!',
+      actionLabel: 'Перейти к панели'
+    },
+    'notif-2': {
+      title: 'Назначена новая задача',
+      message: 'Вам назначена новая задача: анализ результатов за 3 квартал',
+      actionLabel: 'Просмотреть задачу'
+    },
+    'notif-3': {
+      title: 'Напоминание о встрече',
+      message: 'Командная встреча через 30 минут',
+      actionLabel: 'Открыть календарь'
+    }
   }
 };

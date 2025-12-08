@@ -6,7 +6,8 @@ import {
   getAllApplications,
   updateApplicationStatus,
   createInterviewSchedule,
-  getRecruitmentStats
+  getRecruitmentStats,
+  createJobPosting
 } from '../services/recruitmentService';
 
 const Recruitment = () => {
@@ -18,6 +19,7 @@ const Recruitment = () => {
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [showPostJobModal, setShowPostJobModal] = useState(false);
   
   useEffect(() => {
     fetchData();
@@ -80,7 +82,7 @@ const Recruitment = () => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return t('common.notAvailable', 'N/A');
     return new Date(dateString).toLocaleDateString();
   };
 
@@ -100,7 +102,8 @@ const Recruitment = () => {
           {t('recruitment.title', 'Recruitment')}
         </h2>
         <button 
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 transition-colors"
+          onClick={() => setShowPostJobModal(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 transition-colors cursor-pointer"
         >
           <Plus className="h-4 w-4" />
           <span>{t('recruitment.postNewJob', 'Post New Job')}</span>
@@ -217,21 +220,27 @@ const Recruitment = () => {
                     <td className={`px-6 py-4 whitespace-nowrap`}>
                       <div>
                         <div className={`text-sm font-medium ${text.primary}`}>
-                          {application.applicant?.full_name || 'N/A'}
+                          {application.applicant?.full_name || application.applicant?.first_name 
+                            ? `${application.applicant?.first_name || ''} ${application.applicant?.last_name || ''}`.trim() 
+                            : t('common.notAvailable', 'N/A')}
                         </div>
                         <div className={`text-sm ${text.secondary}`}>
-                          {application.applicant?.email || 'N/A'}
+                          {application.applicant?.email || t('common.notAvailable', 'N/A')}
                         </div>
                       </div>
                     </td>
                     <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>
-                      {application.job_posting?.position || 'N/A'}
+                      {application.job_posting?.position 
+                        ? t(`employeePosition.${application.job_posting.position}`, application.job_posting.position)
+                        : t('common.notAvailable', 'N/A')}
                     </td>
                     <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>
-                      {application.job_posting?.department || 'N/A'}
+                      {application.job_posting?.department 
+                        ? t(`employeeDepartment.${application.job_posting.department}`, application.job_posting.department)
+                        : t('common.notAvailable', 'N/A')}
                     </td>
                     <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>
-                      {application.applicant?.years_of_experience || 0} years
+                      {application.applicant?.years_of_experience || 0} {t('recruitment.years', 'years')}
                     </td>
                     <td className={`px-6 py-4 whitespace-nowrap`}>
                       {application.rating ? (
@@ -245,7 +254,7 @@ const Recruitment = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(application.status)}`}>
-                        {application.status}
+                        {t(`recruitment.status.${application.status?.toLowerCase().replace(/\s+/g, '')}`, application.status)}
                       </span>
                     </td>
                     <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>
@@ -302,6 +311,17 @@ const Recruitment = () => {
           onUpdate={fetchData}
         />
       )}
+
+      {/* Post Job Modal */}
+      {showPostJobModal && (
+        <PostJobModal
+          onClose={() => setShowPostJobModal(false)}
+          onSuccess={() => {
+            setShowPostJobModal(false);
+            fetchData();
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -327,6 +347,267 @@ const StatCard = ({ label, value, color, onClick, active }) => {
     >
       <div className={`text-sm font-medium ${text.secondary} mb-1`}>{label}</div>
       <div className={`text-2xl font-bold ${text.primary}`}>{value}</div>
+    </div>
+  );
+};
+
+// Post Job Modal Component
+const PostJobModal = ({ onClose, onSuccess }) => {
+  const { bg, text, border, isDarkMode } = useTheme();
+  const { t } = useLanguage();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    department: '',
+    location: '',
+    employment_type: 'full_time',
+    experience_level: '',
+    salary_min: '',
+    salary_max: '',
+    description: '',
+    requirements: '',
+    status: 'open'
+  });
+
+  const departments = [
+    { value: 'engineering', label: t('employeeDepartment.engineering', 'Engineering') },
+    { value: 'marketing', label: t('employeeDepartment.marketing', 'Marketing') },
+    { value: 'sales', label: t('employeeDepartment.sales', 'Sales') },
+    { value: 'finance', label: t('employeeDepartment.finance', 'Finance') },
+    { value: 'human_resources', label: t('employeeDepartment.human_resources', 'Human Resources') },
+    { value: 'operations', label: t('employeeDepartment.operations', 'Operations') },
+    { value: 'customer_support', label: t('employeeDepartment.customer_support', 'Customer Support') },
+    { value: 'product', label: t('employeeDepartment.product', 'Product') },
+    { value: 'design', label: t('employeeDepartment.design', 'Design') },
+    { value: 'it', label: t('employeeDepartment.it', 'IT') }
+  ];
+
+  const employmentTypes = [
+    { value: 'full_time', label: t('recruitment.fullTime', 'Full Time') },
+    { value: 'part_time', label: t('recruitment.partTime', 'Part Time') },
+    { value: 'contract', label: t('recruitment.contract', 'Contract') },
+    { value: 'internship', label: t('recruitment.internship', 'Internship') }
+  ];
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!formData.title.trim() || !formData.department) {
+      alert(t('validation.required', 'Please fill in required fields'));
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await createJobPosting({
+        ...formData,
+        salary_min: formData.salary_min ? parseInt(formData.salary_min) : null,
+        salary_max: formData.salary_max ? parseInt(formData.salary_max) : null
+      });
+
+      if (result.success) {
+        alert(t('recruitment.jobPosted', 'Job posted successfully!'));
+        onSuccess();
+      } else {
+        alert(result.error || t('errors.saveFailed', 'Failed to post job'));
+      }
+    } catch (error) {
+      console.error('Error posting job:', error);
+      alert(t('errors.saveFailed', 'Failed to post job'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  return (
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div 
+        className={`${bg.primary} rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden`}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className={`flex justify-between items-center p-6 border-b ${border.primary}`}>
+          <h2 className={`text-xl font-semibold ${text.primary}`}>{t('recruitment.postNewJob', 'Post New Job')}</h2>
+          <button 
+            onClick={onClose}
+            className={`${text.secondary} hover:${text.primary} cursor-pointer`}
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Job Title */}
+            <div className="md:col-span-2">
+              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>
+                {t('recruitment.jobTitle', 'Job Title')} *
+              </label>
+              <input
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+                placeholder={t('recruitment.enterJobTitle', 'Enter job title')}
+                required
+              />
+            </div>
+
+            {/* Department */}
+            <div>
+              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>
+                {t('recruitment.department', 'Department')} *
+              </label>
+              <select
+                name="department"
+                value={formData.department}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+                required
+              >
+                <option value="">{t('common.select', 'Select')}</option>
+                {departments.map(dept => (
+                  <option key={dept.value} value={dept.value}>{dept.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Location */}
+            <div>
+              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>
+                {t('recruitment.location', 'Location')}
+              </label>
+              <input
+                type="text"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+                placeholder={t('recruitment.enterLocation', 'Enter location')}
+              />
+            </div>
+
+            {/* Employment Type */}
+            <div>
+              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>
+                {t('recruitment.employmentType', 'Employment Type')}
+              </label>
+              <select
+                name="employment_type"
+                value={formData.employment_type}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+              >
+                {employmentTypes.map(type => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Experience Level */}
+            <div>
+              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>
+                {t('recruitment.experienceLevel', 'Experience Level')}
+              </label>
+              <input
+                type="text"
+                name="experience_level"
+                value={formData.experience_level}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+                placeholder={t('recruitment.enterExperience', 'e.g., 3-5 years')}
+              />
+            </div>
+
+            {/* Salary Range */}
+            <div>
+              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>
+                {t('recruitment.salaryMin', 'Minimum Salary')}
+              </label>
+              <input
+                type="number"
+                name="salary_min"
+                value={formData.salary_min}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+                placeholder="0"
+              />
+            </div>
+
+            <div>
+              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>
+                {t('recruitment.salaryMax', 'Maximum Salary')}
+              </label>
+              <input
+                type="number"
+                name="salary_max"
+                value={formData.salary_max}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+                placeholder="0"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="md:col-span-2">
+              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>
+                {t('recruitment.description', 'Job Description')}
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows={4}
+                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+                placeholder={t('recruitment.enterDescription', 'Enter job description')}
+              />
+            </div>
+
+            {/* Requirements */}
+            <div className="md:col-span-2">
+              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>
+                {t('recruitment.requirements', 'Requirements')}
+              </label>
+              <textarea
+                name="requirements"
+                value={formData.requirements}
+                onChange={handleChange}
+                rows={4}
+                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+                placeholder={t('recruitment.enterRequirements', 'Enter job requirements')}
+              />
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className={`flex justify-end space-x-3 mt-6 pt-4 border-t ${border.primary}`}>
+            <button
+              type="button"
+              onClick={onClose}
+              className={`px-4 py-2 ${isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'} rounded-lg cursor-pointer`}
+            >
+              {t('common.cancel', 'Cancel')}
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+            >
+              {loading ? t('common.saving', 'Saving...') : t('recruitment.postJob', 'Post Job')}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
@@ -362,32 +643,32 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate }) => {
         <div className="p-6 space-y-6">
           {/* Job Details */}
           <div>
-            <h3 className={`text-lg font-semibold ${text.primary} mb-3`}>Job Details</h3>
+            <h3 className={`text-lg font-semibold ${text.primary} mb-3`}>{t('recruitment.jobDetails', 'Job Details')}</h3>
             <div className="space-y-2">
-              <DetailRow label="Position" value={application.job_posting?.title} />
-              <DetailRow label="Department" value={application.job_posting?.department} />
-              <DetailRow label="Applied Date" value={new Date(application.application_date).toLocaleDateString()} />
-              <DetailRow label="Status" value={application.status} />
+              <DetailRow label={t('recruitment.position', 'Position')} value={application.job_posting?.title} />
+              <DetailRow label={t('recruitment.department', 'Department')} value={application.job_posting?.department ? t(`employeeDepartment.${application.job_posting.department}`, application.job_posting.department) : null} />
+              <DetailRow label={t('recruitment.appliedDate', 'Applied Date')} value={application.application_date ? new Date(application.application_date).toLocaleDateString() : null} />
+              <DetailRow label={t('recruitment.statusLabel', 'Status')} value={application.status ? t(`recruitment.status.${application.status?.toLowerCase().replace(/\\s+/g, '')}`, application.status) : null} />
             </div>
           </div>
 
           {/* Applicant Details */}
           <div>
-            <h3 className={`text-lg font-semibold ${text.primary} mb-3`}>Applicant Information</h3>
+            <h3 className={`text-lg font-semibold ${text.primary} mb-3`}>{t('recruitment.applicantInfo', 'Applicant Information')}</h3>
             <div className="space-y-2">
-              <DetailRow label="Email" value={application.applicant?.email} />
-              <DetailRow label="Phone" value={application.applicant?.phone} />
-              <DetailRow label="Experience" value={`${application.applicant?.years_of_experience || 0} years`} />
-              <DetailRow label="Current Company" value={application.applicant?.current_company || 'N/A'} />
-              <DetailRow label="Current Position" value={application.applicant?.current_position || 'N/A'} />
-              <DetailRow label="Education" value={application.applicant?.education_level || 'N/A'} />
+              <DetailRow label={t('common.email', 'Email')} value={application.applicant?.email} />
+              <DetailRow label={t('common.phone', 'Phone')} value={application.applicant?.phone} />
+              <DetailRow label={t('recruitment.experience', 'Experience')} value={`${application.applicant?.years_of_experience || 0} ${t('recruitment.years', 'years')}`} />
+              <DetailRow label={t('recruitment.currentCompany', 'Current Company')} value={application.applicant?.current_company} />
+              <DetailRow label={t('recruitment.currentPosition', 'Current Position')} value={application.applicant?.current_position} />
+              <DetailRow label={t('recruitment.education', 'Education')} value={application.applicant?.education_level} />
             </div>
           </div>
 
           {/* Links */}
           {(application.applicant?.resume_url || application.applicant?.linkedin_profile) && (
             <div>
-              <h3 className={`text-lg font-semibold ${text.primary} mb-3`}>Links</h3>
+              <h3 className={`text-lg font-semibold ${text.primary} mb-3`}>{t('recruitment.links', 'Links')}</h3>
               <div className="space-y-2">
                 {application.applicant?.resume_url && (
                   <a 
@@ -396,7 +677,7 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate }) => {
                     rel="noopener noreferrer"
                     className={`${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'} flex items-center space-x-2`}
                   >
-                    <span>View Resume</span>
+                    <span>{t('recruitment.viewResume', 'View Resume')}</span>
                   </a>
                 )}
                 {application.applicant?.linkedin_profile && (
@@ -406,7 +687,7 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate }) => {
                     rel="noopener noreferrer"
                     className={`${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'} flex items-center space-x-2`}
                   >
-                    <span>LinkedIn Profile</span>
+                    <span>{t('recruitment.linkedinProfile', 'LinkedIn Profile')}</span>
                   </a>
                 )}
               </div>
@@ -416,7 +697,7 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate }) => {
           {/* Notes */}
           {application.notes && (
             <div>
-              <h3 className={`text-lg font-semibold ${text.primary} mb-3`}>Notes</h3>
+              <h3 className={`text-lg font-semibold ${text.primary} mb-3`}>{t('recruitment.notes', 'Notes')}</h3>
               <p className={`text-sm ${text.secondary}`}>{application.notes}</p>
             </div>
           )}
@@ -426,9 +707,9 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate }) => {
         <div className={`flex justify-end p-6 border-t ${border.primary} space-x-3`}>
           <button
             onClick={onClose}
-            className={`px-4 py-2 ${isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'} rounded-lg`}
+            className={`px-4 py-2 ${isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'} rounded-lg cursor-pointer`}
           >
-            Close
+            {t('common.close', 'Close')}
           </button>
         </div>
       </div>
@@ -439,11 +720,12 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate }) => {
 // Detail Row Component
 const DetailRow = ({ label, value }) => {
   const { text } = useTheme();
+  const { t } = useLanguage();
   
   return (
     <div className="flex">
       <span className={`w-40 font-medium ${text.secondary}`}>{label}:</span>
-      <span className={`flex-1 ${text.primary}`}>{value || 'N/A'}</span>
+      <span className={`flex-1 ${text.primary}`}>{value || t('common.notAvailable', 'N/A')}</span>
     </div>
   );
 };

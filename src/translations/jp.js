@@ -334,6 +334,12 @@ export default {
     approved: '承認済み',
     rejected: '却下',
     cancelled: '取消済み', 
+    status: {
+      pending: '保留中',
+      approved: '承認済み',
+      rejected: '却下',
+      cancelled: 'キャンセル済み',
+    },
     // Hour types for overtime
     weekend: '週末残業',
     holiday: '休日残業',
@@ -407,7 +413,37 @@ export default {
     screening: 'スクリーニング',
     technical: '技術面接',
     offer: 'オファー',
-    years: '年'
+    years: '年',
+    yearsExperience: '年数の経験',
+    jobTitle: '職種名',
+    enterJobTitle: '職種名を入力',
+    location: '勤務地',
+    enterLocation: '勤務地を入力',
+    employmentType: '雇用形態',
+    fullTime: 'フルタイム',
+    partTime: 'パートタイム',
+    contract: '契約社員',
+    internship: 'インターンシップ',
+    experienceLevel: '経験レベル',
+    enterExperience: '例：3～5年',
+    salaryMin: '最低給与',
+    salaryMax: '最高給与',
+    description: '職務内容',
+    enterDescription: '職務内容を入力',
+    requirements: '応募条件',
+    enterRequirements: '応募条件を入力',
+    postJob: '求人を投稿',
+    jobPosted: '求人が正常に投稿されました！',
+    statusUpdated: 'ステータスが正常に更新されました！',
+    jobDetails: '求人詳細',
+    applicantInfo: '応募者情報',
+    currentCompany: '現在の会社',
+    currentPosition: '現在の役職',
+    education: '学歴',
+    links: 'リンク',
+    viewResume: '履歴書を見る',
+    linkedinProfile: 'LinkedIn プロフィール',
+    notes: 'メモ',
   },
 
   // Reports
@@ -791,7 +827,15 @@ export default {
     no: 'いいえ',
     accessDenied: 'アクセス拒否',
     noPermission: 'このページにアクセスする権限がありません。',
-    goBack: '戻る'
+    goBack: '戻る',
+    day: '日',
+    days: '日間',
+    hour: '時間',
+    hours: '時間',
+    minute: '分',
+    minutes: '分',
+    second: '秒',
+    seconds: '秒',
   },
 
   // Theme
@@ -1605,5 +1649,98 @@ export default {
   demoGoals: {
     'goal-1': { title: 'チーム効率改善', description: '次の四半期でチームの生産性を20%向上させる' },
     'goal-2': { title: 'React Nativeを学ぶ', description: 'モバイルアプリ開発のためにReact Nativeを習得する' }
+  },
+  
+  demoReviews: {
+    'review-1': {
+      reviewPeriod: '2024年第4四半期',
+      strengths: '優れた技術スキル、素晴らしいチームプレイヤー',
+      areasForImprovement: 'ドキュメント作成を改善できる',
+      achievements: '新しいアーキテクチャへの移行を主導',
+      comments: '今四半期の素晴らしいパフォーマンス'
+    },
+    'review-2': {
+      reviewPeriod: '2024年第4四半期',
+      strengths: '優れたコミュニケーション能力と問題解決力',
+      areasForImprovement: 'ミーティングでより積極的になると良い',
+      achievements: 'UIデザインシステムを改善',
+      comments: 'チームへの大きな貢献'
+    }
+  },
+
+  demoSkills: {
+    'skill-1': { name: 'React', category: '技術', proficiencyLevel: 'エキスパート' },
+    'skill-2': { name: 'TypeScript', category: '技術', proficiencyLevel: '上級' },
+    'skill-3': { name: 'UI/UX デザイン', category: 'デザイン', proficiencyLevel: 'エキスパート' }
+  },
+
+  demoFeedback: {
+    'feedback-1': {
+      type: '同僚レビュー',
+      text: 'プロジェクトでの素晴らしい協力。非常に助かり知識も豊富。'
+    },
+    'feedback-2': {
+      type: 'マネージャーレビュー',
+      text: '新しいデザインシステムでの優れた仕事。引き続き頑張ってください！'
+    }
+  },
+
+  demoJobs: {
+    'job-1': {
+      title: 'シニアフロントエンド開発者',
+      description: '経験豊富なフロントエンド開発者を募集しています。素晴らしいWebアプリケーションの構築を支援してください。',
+      location: 'リモート',
+      salaryRange: '$90k - $120k',
+      requirements: { 0: 'React', 1: 'TypeScript', 2: 'Tailwind CSS' }
+    },
+    'job-2': {
+      title: 'プロダクトデザイナー',
+      description: 'ユーザー体験を創造し、製品の未来を形作るデザインチームに参加しませんか？',
+      location: 'ニューヨーク',
+      salaryRange: '$80k - $100k',
+      requirements: { 0: 'Figma', 1: 'UI/UX', 2: 'プロトタイピング' }
+    }
+  },
+
+  demoApplicants: {
+    'app-1': { firstName: 'John', lastName: 'Doe' },
+    'app-2': { firstName: 'Jane', lastName: 'Smith' }
+  },
+
+  demoApplications: {
+    'appl-1': {
+      status: '審査中',
+      notes: '優れた技術的背景を持つ強力な候補者'
+    },
+    'appl-2': {
+      status: '面接予定',
+      notes: '優れたポートフォリオとデザインスキル'
+    }
+  },
+
+  demoInterviews: {
+    'int-1': {
+      status: '予定済み',
+      type: '技術面接',
+      notes: 'ポートフォリオレビューと技術評価'
+    }
+  },
+
+  demoNotifications: {
+    'notif-1': {
+      title: 'HRシステムへようこそ',
+      message: 'HRシステムのデモモードへようこそ。ぜひ全ての機能を試してください！',
+      actionLabel: 'ダッシュボードへ'
+    },
+    'notif-2': {
+      title: '新しいタスクが割り当てられました',
+      message: '新しいタスクが割り当てられました：Q3パフォーマンスのレビュー',
+      actionLabel: 'タスクを見る'
+    },
+    'notif-3': {
+      title: 'ミーティングリマインダー',
+      message: '30分後にチームミーティングがあります',
+      actionLabel: 'カレンダーを見る'
+    }
   }
 };

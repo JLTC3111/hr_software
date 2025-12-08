@@ -336,6 +336,12 @@ export default {
     approved: '승인됨',
     rejected: '거부됨',
     cancelled: '취소됨',
+    status: {
+      pending: '대기 중',
+      approved: '승인됨',
+      rejected: '거절됨',
+      cancelled: '취소됨',
+    },
     // Hour types for overtime
     weekend: '주말 초과 근무',
     holiday: '휴일 초과 근무',
@@ -409,7 +415,37 @@ export default {
     screening: '스크리닝',
     technical: '기술면접',
     offer: '제안',
-    years: '년'
+    years: '년',
+    yearsExperience: '경력 연수',
+    jobTitle: '직무 제목',
+    enterJobTitle: '직무 제목 입력',
+    location: '근무지',
+    enterLocation: '근무지 입력',
+    employmentType: '고용 형태',
+    fullTime: '정규직',
+    partTime: '파트타임',
+    contract: '계약직',
+    internship: '인턴십',
+    experienceLevel: '경력 수준',
+    enterExperience: '예: 3-5년',
+    salaryMin: '최소 연봉',
+    salaryMax: '최대 연봉',
+    description: '직무 설명',
+    enterDescription: '직무 설명 입력',
+    requirements: '요구 사항',
+    enterRequirements: '직무 요구 사항 입력',
+    postJob: '채용 게시',
+    jobPosted: '채용이 성공적으로 게시되었습니다!',
+    statusUpdated: '상태가 성공적으로 업데이트되었습니다!',
+    jobDetails: '직무 상세',
+    applicantInfo: '지원자 정보',
+    currentCompany: '현재 회사',
+    currentPosition: '현재 직책',
+    education: '학력',
+    links: '링크',
+    viewResume: '이력서 보기',
+    linkedinProfile: 'LinkedIn 프로필',
+    notes: '메모',
   },
 
   // Reports
@@ -752,7 +788,15 @@ export default {
     no: '아니오',
     accessDenied: '접근 거부',
     noPermission: '이 페이지에 접근할 권한이 없습니다.',
-    goBack: '뒤로 가기'
+    goBack: '뒤로 가기',
+    day: '일',
+    days: '일',
+    hour: '시간',
+    hours: '시간',
+    minute: '분',
+    minutes: '분',
+    second: '초',
+    seconds: '초',
   },
 
   // Theme
@@ -1581,5 +1625,98 @@ export default {
   demoGoals: {
     'goal-1': { title: '팀 효율성 향상', description: '다음 분기에 팀 생산성을 20% 향상' },
     'goal-2': { title: 'React Native 학습', description: '모바일 앱 개발을 위한 React Native 숙달' }
+  },
+  
+  demoReviews: {
+    'review-1': {
+      reviewPeriod: '2024년 4분기',
+      strengths: '탁월한 기술 역량, 훌륭한 팀 플레이어',
+      areasForImprovement: '문서화 부분에서 개선 가능',
+      achievements: '새로운 아키텍처로의 마이그레이션을 주도함',
+      comments: '이번 분기의 뛰어난 성과'
+    },
+    'review-2': {
+      reviewPeriod: '2024년 4분기',
+      strengths: '우수한 커뮤니케이션 및 문제 해결 능력',
+      areasForImprovement: '회의에서 더 적극적으로 참여 필요',
+      achievements: 'UI 디자인 시스템 개선',
+      comments: '팀에 큰 기여를 함'
+    }
+  },
+
+  demoSkills: {
+    'skill-1': { name: 'React', category: '기술', proficiencyLevel: '전문가' },
+    'skill-2': { name: 'TypeScript', category: '기술', proficiencyLevel: '고급' },
+    'skill-3': { name: 'UI/UX 디자인', category: '디자인', proficiencyLevel: '전문가' }
+  },
+
+  demoFeedback: {
+    'feedback-1': {
+      type: '동료 평가',
+      text: '프로젝트에서 훌륭한 협업을 보여줌. 매우 도움이 되고 지식이 풍부함.'
+    },
+    'feedback-2': {
+      type: '관리자 평가',
+      text: '새로운 디자인 시스템에서 훌륭한 작업을 수행함. 계속하세요!'
+    }
+  },
+
+  demoJobs: {
+    'job-1': {
+      title: '시니어 프론트엔드 개발자',
+      description: '경험 많은 프론트엔드 개발자를 찾고 있습니다. 훌륭한 웹 애플리케이션을 구축하는 데 함께해주세요.',
+      location: '원격',
+      salaryRange: '$90k - $120k',
+      requirements: { 0: 'React', 1: 'TypeScript', 2: 'Tailwind CSS' }
+    },
+    'job-2': {
+      title: '프로덕트 디자이너',
+      description: '사용자 경험을 창출하고 제품의 미래를 설계하는 디자인 팀에 합류하세요.',
+      location: '뉴욕',
+      salaryRange: '$80k - $100k',
+      requirements: { 0: 'Figma', 1: 'UI/UX', 2: '프로토타이핑' }
+    }
+  },
+
+  demoApplicants: {
+    'app-1': { firstName: 'John', lastName: 'Doe' },
+    'app-2': { firstName: 'Jane', lastName: 'Smith' }
+  },
+
+  demoApplications: {
+    'appl-1': {
+      status: '검토 중',
+      notes: '우수한 기술 배경을 가진 강력한 지원자'
+    },
+    'appl-2': {
+      status: '면접 예정',
+      notes: '훌륭한 포트폴리오와 디자인 능력 보유'
+    }
+  },
+
+  demoInterviews: {
+    'int-1': {
+      status: '예정됨',
+      type: '기술 면접',
+      notes: '포트폴리오 리뷰 및 기술 평가'
+    }
+  },
+
+  demoNotifications: {
+    'notif-1': {
+      title: 'HR 시스템에 오신 것을 환영합니다',
+      message: 'HR 시스템 데모 모드에 오신 것을 환영합니다. 모든 기능을 마음껏 탐색해보세요!',
+      actionLabel: '대시보드로 이동'
+    },
+    'notif-2': {
+      title: '새로운 작업이 할당되었습니다',
+      message: '새로운 작업이 할당되었습니다: Q3 성과 리뷰',
+      actionLabel: '작업 보기'
+    },
+    'notif-3': {
+      title: '미팅 알림',
+      message: '30분 후 팀 미팅이 있습니다',
+      actionLabel: '캘린더 보기'
+    }
   }
 };

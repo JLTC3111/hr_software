@@ -333,6 +333,12 @@ export default {
     approved: 'อนุมัติแล้ว',
     rejected: 'ถูกปฏิเสธ',
     cancelled: 'ยกเลิกแล้ว',
+    status: {
+      pending: 'รอดำเนินการ',
+      approved: 'อนุมัติแล้ว',
+      rejected: 'ปฏิเสธ',
+      cancelled: 'ยกเลิก',
+    },
     // Hour types for overtime
     weekend: 'ล่วงเวลาสุดสัปดาห์',
     holiday: 'ล่วงเวลาวันหยุด',
@@ -406,7 +412,37 @@ export default {
     screening: 'คัดกรอง',
     technical: 'เทคนิค',
     offer: 'ข้อเสนอ',
-    years: 'ปี'
+    years: 'ปี',
+    yearsExperience: 'ประสบการณ์ทำงาน (ปี)',
+    jobTitle: 'ชื่อตำแหน่งงาน',
+    enterJobTitle: 'กรอกชื่อตำแหน่งงาน',
+    location: 'สถานที่ทำงาน',
+    enterLocation: 'กรอกสถานที่ทำงาน',
+    employmentType: 'ประเภทการจ้างงาน',
+    fullTime: 'เต็มเวลา',
+    partTime: 'พาร์ทไทม์',
+    contract: 'สัญญาจ้าง',
+    internship: 'ฝึกงาน',
+    experienceLevel: 'ระดับประสบการณ์',
+    enterExperience: 'เช่น 3-5 ปี',
+    salaryMin: 'เงินเดือนขั้นต่ำ',
+    salaryMax: 'เงินเดือนสูงสุด',
+    description: 'รายละเอียดงาน',
+    enterDescription: 'กรอกรายละเอียดงาน',
+    requirements: 'คุณสมบัติ',
+    enterRequirements: 'กรอกคุณสมบัติของงาน',
+    postJob: 'ประกาศงาน',
+    jobPosted: 'ประกาศงานสำเร็จ!',
+    statusUpdated: 'อัปเดตสถานะสำเร็จ!',
+    jobDetails: 'รายละเอียดงาน',
+    applicantInfo: 'ข้อมูลผู้สมัคร',
+    currentCompany: 'บริษัทปัจจุบัน',
+    currentPosition: 'ตำแหน่งปัจจุบัน',
+    education: 'การศึกษา',
+    links: 'ลิงก์',
+    viewResume: 'ดูเรซูเม่',
+    linkedinProfile: 'โปรไฟล์ LinkedIn',
+    notes: 'บันทึก',
   },
 
   // Reports
@@ -800,7 +836,15 @@ export default {
     no: 'ไม่',
     accessDenied: 'ปิดกั้นการเข้าถึง',
     noPermission: 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้',
-    goBack: 'ย้อนกลับ'
+    goBack: 'ย้อนกลับ',
+    day: 'วัน',
+    days: 'วัน',
+    hour: 'ชั่วโมง',
+    hours: 'ชั่วโมง',
+    minute: 'นาที',
+    minutes: 'นาที',
+    second: 'วินาที',
+    seconds: 'วินาที'
   },
 
   // Theme
@@ -1644,5 +1688,98 @@ export default {
   demoGoals: {
     'goal-1': { title: 'ปรับปรุงประสิทธิภาพของทีม', description: 'เพิ่มผลผลิตของทีม 20% ในไตรมาสหน้า' },
     'goal-2': { title: 'เรียนรู้ React Native', description: 'เชี่ยวชาญ React Native สำหรับการพัฒนาแอปมือถือ' }
+  },
+   
+  demoReviews: {
+    'review-1': {
+      reviewPeriod: 'ไตรมาส 4 ปี 2024',
+      strengths: 'ทักษะด้านเทคนิคยอดเยี่ยม เป็นผู้ทำงานเป็นทีมที่ดีมาก',
+      areasForImprovement: 'ควรพัฒนาด้านการจัดทำเอกสาร',
+      achievements: 'เป็นผู้นำการย้ายระบบไปยังสถาปัตยกรรมใหม่',
+      comments: 'ผลงานยอดเยี่ยมในไตรมาสนี้'
+    },
+    'review-2': {
+      reviewPeriod: 'ไตรมาส 4 ปี 2024',
+      strengths: 'การสื่อสารและการแก้ปัญหายอดเยี่ยม',
+      areasForImprovement: 'ควรมีความกระตือรือร้นมากขึ้นในการประชุม',
+      achievements: 'พัฒนาระบบดีไซน์ UI ให้ดีขึ้น',
+      comments: 'มีส่วนร่วมที่ยอดเยี่ยมกับทีม'
+    }
+  },
+
+  demoSkills: {
+    'skill-1': { name: 'React', category: 'เทคนิค', proficiencyLevel: 'ผู้เชี่ยวชาญ' },
+    'skill-2': { name: 'TypeScript', category: 'เทคนิค', proficiencyLevel: 'ขั้นสูง' },
+    'skill-3': { name: 'UI/UX Design', category: 'ออกแบบ', proficiencyLevel: 'ผู้เชี่ยวชาญ' }
+  },
+
+  demoFeedback: {
+    'feedback-1': {
+      type: 'การประเมินจากเพื่อนร่วมงาน',
+      text: 'ร่วมงานได้ดีมาก ช่วยเหลือและมีความรู้มาก'
+    },
+    'feedback-2': {
+      type: 'การประเมินจากผู้จัดการ',
+      text: 'ทำงานได้ยอดเยี่ยมกับระบบดีไซน์ใหม่ เก็บผลงานดีแบบนี้ต่อไป!'
+    }
+  },
+
+  demoJobs: {
+    'job-1': {
+      title: 'นักพัฒนา Frontend อาวุโส',
+      description: 'เรากำลังมองหานักพัฒนา Frontend ที่มีประสบการณ์เพื่อเข้าร่วมทีมและสร้างเว็บแอปที่ยอดเยี่ยม',
+      location: 'รีโมท',
+      salaryRange: '$90k - $120k',
+      requirements: { 0: 'React', 1: 'TypeScript', 2: 'Tailwind CSS' }
+    },
+    'job-2': {
+      title: 'นักออกแบบผลิตภัณฑ์',
+      description: 'เข้าร่วมทีมออกแบบของเราเพื่อสร้างประสบการณ์ผู้ใช้ที่ยอดเยี่ยมและร่วมกำหนดอนาคตของผลิตภัณฑ์เรา',
+      location: 'นิวยอร์ก',
+      salaryRange: '$80k - $100k',
+      requirements: { 0: 'Figma', 1: 'UI/UX', 2: 'การสร้างต้นแบบ' }
+    }
+  },
+
+  demoApplicants: {
+    'app-1': { firstName: 'John', lastName: 'Doe' },
+    'app-2': { firstName: 'Jane', lastName: 'Smith' }
+  },
+
+  demoApplications: {
+    'appl-1': {
+      status: 'กำลังตรวจสอบ',
+      notes: 'ผู้สมัครที่เก่งมากและมีพื้นฐานด้านเทคนิคยอดเยี่ยม'
+    },
+    'appl-2': {
+      status: 'นัดสัมภาษณ์แล้ว',
+      notes: 'ผลงานดีมากและมีทักษะด้านดีไซน์'
+    }
+  },
+
+  demoInterviews: {
+    'int-1': {
+      status: 'นัดหมายแล้ว',
+      type: 'สัมภาษณ์ด้านเทคนิค',
+      notes: 'ตรวจสอบผลงานและทดสอบทักษะด้านเทคนิค'
+    }
+  },
+
+  demoNotifications: {
+    'notif-1': {
+      title: 'ยินดีต้อนรับสู่ระบบ HR',
+      message: 'ยินดีต้อนรับสู่โหมดสาธิตของระบบ HR กรุณาสำรวจฟีเจอร์ต่างๆ ได้ตามสบาย!',
+      actionLabel: 'ไปที่แดชบอร์ด'
+    },
+    'notif-2': {
+      title: 'มีงานใหม่สำหรับคุณ',
+      message: 'คุณได้รับงานใหม่: ตรวจสอบผลการทำงานไตรมาส 3',
+      actionLabel: 'ดูงาน'
+    },
+    'notif-3': {
+      title: 'เตือนความจำการประชุม',
+      message: 'มีประชุมทีมภายใน 30 นาที',
+      actionLabel: 'ดูปฏิทิน'
+    }
   }
 };

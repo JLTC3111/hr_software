@@ -243,6 +243,12 @@ export default {
     approved: 'Đã phê duyệt',
     rejected: 'Từ chối',
     cancelled: 'Đã hủy',
+    status: {
+      pending: 'Đang chờ xử lý',
+      approved: 'Đã phê duyệt',
+      rejected: 'Bị từ chối',
+      cancelled: 'Đã hủy',
+    },
     // Hour types for overtime
     weekend: 'Làm thêm cuối tuần',
     holiday: 'Làm thêm ngày lễ',
@@ -458,7 +464,37 @@ export default {
     screening: 'Sàng lọc',
     technical: 'Kỹ thuật',
     offer: 'Đề nghị',
-    years: 'năm'
+    years: 'Năm',
+    yearsExperience: 'năm kinh nghiệm',
+    jobTitle: 'Chức danh công việc',
+    enterJobTitle: 'Nhập chức danh công việc',
+    location: 'Địa điểm',
+    enterLocation: 'Nhập địa điểm',
+    employmentType: 'Hình thức làm việc',
+    fullTime: 'Toàn thời gian',
+    partTime: 'Bán thời gian',
+    contract: 'Hợp đồng',
+    internship: 'Thực tập',
+    experienceLevel: 'Trình độ kinh nghiệm',
+    enterExperience: 'ví dụ: 3–5 năm',
+    salaryMin: 'Lương tối thiểu',
+    salaryMax: 'Lương tối đa',
+    description: 'Mô tả công việc',
+    enterDescription: 'Nhập mô tả công việc',
+    requirements: 'Yêu cầu',
+    enterRequirements: 'Nhập yêu cầu công việc',
+    postJob: 'Đăng tuyển',
+    jobPosted: 'Đăng tuyển thành công!',
+    statusUpdated: 'Cập nhật trạng thái thành công!',
+    jobDetails: 'Chi tiết công việc',
+    applicantInfo: 'Thông tin ứng viên',
+    currentCompany: 'Công ty hiện tại',
+    currentPosition: 'Vị trí hiện tại',
+    education: 'Học vấn',
+    links: 'Liên kết',
+    viewResume: 'Xem CV',
+    linkedinProfile: 'Hồ sơ LinkedIn',
+    notes: 'Ghi chú',
   },
 
   // Reports
@@ -991,7 +1027,25 @@ export default {
     no: 'Không',
     accessDenied: 'Truy Cập Bị Từ Chối',
     noPermission: 'Bạn không có quyền truy cập trang này.',
-    goBack: 'Quay Lại'
+    goBack: 'Quay Lại',
+    week: 'Tuần',
+    weeks: 'Tuần',
+    month: 'Tháng',
+    months: 'Tháng',
+    quarter: 'Quý',
+    quarters: 'Quý',
+    year: 'Năm',
+    years: 'Năm',
+    day: 'Ngày',
+    days: 'Ngày',
+    hour: 'Giờ',
+    minute: 'Phút',
+    second: 'Giây',
+    today: 'Hôm Nay',
+    thisWeek: 'Tuần Này',
+    thisMonth: 'Tháng Này',
+    thisYear: 'Năm Này',
+    allTime: 'Tất Cả Thời Gian'
   },
 
   // Theme
@@ -1838,5 +1892,98 @@ export default {
   demoGoals: {
     'goal-1': { title: 'Cải Thiện Hiệu Quả Nhóm', description: 'Tăng năng suất của nhóm lên 20% trong quý tới' },
     'goal-2': { title: 'Học React Native', description: 'Thành thạo React Native để phát triển ứng dụng di động' }
+  },
+    
+  demoReviews: {
+    'review-1': {
+      reviewPeriod: 'Q4 2024',
+      strengths: 'Kỹ năng kỹ thuật xuất sắc, làm việc nhóm rất tốt',
+      areasForImprovement: 'Có thể cải thiện việc viết tài liệu',
+      achievements: 'Dẫn dắt quá trình chuyển đổi sang kiến trúc mới',
+      comments: 'Hiệu suất tuyệt vời trong quý này'
+    },
+    'review-2': {
+      reviewPeriod: 'Q4 2024',
+      strengths: 'Giao tiếp và giải quyết vấn đề xuất sắc',
+      areasForImprovement: 'Chủ động hơn trong các cuộc họp',
+      achievements: 'Cải tiến hệ thống thiết kế UI',
+      comments: 'Đóng góp tuyệt vời cho đội'
+    }
+  },
+
+  demoSkills: {
+    'skill-1': { name: 'React', category: 'Kỹ thuật', proficiencyLevel: 'Chuyên gia' },
+    'skill-2': { name: 'TypeScript', category: 'Kỹ thuật', proficiencyLevel: 'Nâng cao' },
+    'skill-3': { name: 'UI/UX Design', category: 'Thiết kế', proficiencyLevel: 'Chuyên gia' }
+  },
+
+  demoFeedback: {
+    'feedback-1': {
+      type: 'Đánh giá đồng nghiệp',
+      text: 'Hợp tác rất tốt trong dự án. Rất hữu ích và có nhiều kiến thức.'
+    },
+    'feedback-2': {
+      type: 'Đánh giá của quản lý',
+      text: 'Làm việc xuất sắc với hệ thống thiết kế mới. Tiếp tục phát huy nhé!'
+    }
+  },
+
+  demoJobs: {
+    'job-1': {
+      title: 'Lập trình viên Frontend Senior',
+      description: 'Chúng tôi đang tìm một lập trình viên Frontend có kinh nghiệm để tham gia đội và phát triển các ứng dụng web tuyệt vời.',
+      location: 'Làm việc từ xa',
+      salaryRange: '$90k - $120k',
+      requirements: { 0: 'React', 1: 'TypeScript', 2: 'Tailwind CSS' }
+    },
+    'job-2': {
+      title: 'Nhà thiết kế sản phẩm',
+      description: 'Tham gia đội thiết kế của chúng tôi để tạo ra trải nghiệm người dùng tuyệt vời và định hình tương lai sản phẩm.',
+      location: 'New York',
+      salaryRange: '$80k - $100k',
+      requirements: { 0: 'Figma', 1: 'UI/UX', 2: 'Lập mô hình (Prototyping)' }
+    }
+  },
+
+  demoApplicants: {
+    'app-1': { firstName: 'John', lastName: 'Doe' },
+    'app-2': { firstName: 'Jane', lastName: 'Smith' }
+  },
+
+  demoApplications: {
+    'appl-1': {
+      status: 'Đang xem xét',
+      notes: 'Ứng viên mạnh với nền tảng kỹ thuật xuất sắc'
+    },
+    'appl-2': {
+      status: 'Đã lên lịch phỏng vấn',
+      notes: 'Portfolio xuất sắc và kỹ năng thiết kế tốt'
+    }
+  },
+
+  demoInterviews: {
+    'int-1': {
+      status: 'Đã lên lịch',
+      type: 'Phỏng vấn kỹ thuật',
+      notes: 'Xem xét portfolio và đánh giá kỹ thuật'
+    }
+  },
+
+  demoNotifications: {
+    'notif-1': {
+      title: 'Chào mừng đến với hệ thống HR',
+      message: 'Chào mừng bạn đến chế độ demo của hệ thống HR. Hãy thoải mái khám phá mọi tính năng!',
+      actionLabel: 'Đi đến bảng điều khiển'
+    },
+    'notif-2': {
+      title: 'Nhiệm vụ mới được giao',
+      message: 'Bạn được giao một nhiệm vụ mới: Xem xét hiệu suất Q3',
+      actionLabel: 'Xem nhiệm vụ'
+    },
+    'notif-3': {
+      title: 'Nhắc lịch họp',
+      message: 'Họp đội trong 30 phút nữa',
+      actionLabel: 'Xem lịch'
+    }
   }
 };

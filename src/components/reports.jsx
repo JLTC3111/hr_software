@@ -202,7 +202,7 @@ const Reports = () => {
               clock_out: '17:00:00',
               total_hours: 8,
               status: 'approved',
-              employee: { id: 'demo-emp-1', name: 'Demo Admin', nameKey: 'demoEmployees.demo-emp-1.name', department: 'Management', position: 'HR Manager' }
+              employee: { id: 'demo-emp-1', name: 'Demo Admin', nameKey: 'demoEmployees.demo-emp-1.name', department: 'technology', position: 'senior_developer' }
             },
             {
               id: 'mock-entry-2',
@@ -212,7 +212,7 @@ const Reports = () => {
               clock_out: '17:30:00',
               total_hours: 9,
               status: 'approved',
-              employee: { id: 'demo-emp-2', name: 'Sarah Connor', nameKey: 'demoEmployees.demo-emp-2.name', department: 'Operations', position: 'Developer' }
+              employee: { id: 'demo-emp-2', name: 'Sarah Connor', nameKey: 'demoEmployees.demo-emp-2.name', department: 'human_resources', position: 'manager' }
             }
           ];
         } else {

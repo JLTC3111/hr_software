@@ -178,7 +178,39 @@ export default {
     screening: 'Vorauswahl',
     technical: 'Technisch',
     offer: 'Angebot',
-    years: 'Jahre'
+    years: 'Jahre',
+    yearsExperience: 'Jahre Erfahrung',
+    // Post Job Modal
+    jobTitle: 'Stellentitel',
+    enterJobTitle: 'Stellentitel eingeben',
+    location: 'Standort',
+    enterLocation: 'Standort eingeben',
+    employmentType: 'Beschäftigungsart',
+    fullTime: 'Vollzeit',
+    partTime: 'Teilzeit',
+    contract: 'Vertrag',
+    internship: 'Praktikum',
+    experienceLevel: 'Erfahrungsniveau',
+    enterExperience: 'z. B. 3–5 Jahre',
+    salaryMin: 'Mindestgehalt',
+    salaryMax: 'Höchstgehalt',
+    description: 'Stellenbeschreibung',
+    enterDescription: 'Stellenbeschreibung eingeben',
+    requirements: 'Anforderungen',
+    enterRequirements: 'Stellenanforderungen eingeben',
+    postJob: 'Stelle veröffentlichen',
+    jobPosted: 'Stelle erfolgreich veröffentlicht!',
+    statusUpdated: 'Status erfolgreich aktualisiert!',
+    // Detail Modal
+    jobDetails: 'Stellendetails',
+    applicantInfo: 'Bewerberinformationen',
+    currentCompany: 'Aktuelles Unternehmen',
+    currentPosition: 'Aktuelle Position',
+    education: 'Ausbildung',
+    links: 'Links',
+    viewResume: 'Lebenslauf ansehen',
+    linkedinProfile: 'LinkedIn-Profil',
+    notes: 'Notizen',
   },
   
   // Time Tracking
@@ -228,6 +260,12 @@ export default {
     approved: 'Genehmigt', 
     rejected: 'Abgelehnt',
     cancelled: 'Abgebrochen',
+    status: {
+      pending: 'Ausstehend',
+      approved: 'Genehmigt',
+      rejected: 'Abgelehnt',
+      cancelled: 'Storniert',
+    },
     // Hour types for overtime
     weekend: 'Wochenendüberstunden',
     holiday: 'Feiertagsüberstunden',
@@ -737,7 +775,15 @@ export default {
     no: 'Nein',
     accessDenied: 'Zugriff verweigert',
     noPermission: 'Sie haben keine Berechtigung, auf diese Seite zuzugreifen.',
-    goBack: 'Zurück'
+    goBack: 'Zurück',
+    day: 'Tag',
+    days: 'Tage',
+    hour: 'Stunde',
+    hours: 'Stunden',
+    minute: 'Minute',
+    minutes: 'Minuten',
+    second: 'Sekunde',
+    seconds: 'Sekunden',
   },
 
   // Theme
@@ -1502,7 +1548,6 @@ export default {
     remote: 'Remote'
   },
 
-  // Demo tasks (for demo mode translations)
   demoTasks: {
     'task-1': {
       title: 'Q4 Berichtsanalyse',
@@ -1518,7 +1563,6 @@ export default {
     }
   },
 
-  // Demo goals (for demo mode translations)
   demoGoals: {
     'goal-1': {
       title: 'Teameffizienz verbessern',
@@ -1529,4 +1573,97 @@ export default {
       description: 'Fortgeschrittenen React Native Kurs abschließen'
     }
   },
+  
+  demoReviews: {
+    'review-1': {
+      reviewPeriod: 'Q4 2024',
+      strengths: 'Ausgezeichnete technische Fähigkeiten, großartiger Teamplayer',
+      areasForImprovement: 'Könnte die Dokumentation verbessern',
+      achievements: 'Leitete die Migration zur neuen Architektur',
+      comments: 'Hervorragende Leistung in diesem Quartal'
+    },
+    'review-2': {
+      reviewPeriod: 'Q4 2024',
+      strengths: 'Ausgezeichnete Kommunikation und Problemlösung',
+      areasForImprovement: 'Könnte in Meetings proaktiver sein',
+      achievements: 'Verbesserte das UI-Designsystem',
+      comments: 'Großer Beitrag für das Team'
+    }
+  },
+
+  demoSkills: {
+    'skill-1': { name: 'React', category: 'Technisch', proficiencyLevel: 'Experte' },
+    'skill-2': { name: 'TypeScript', category: 'Technisch', proficiencyLevel: 'Fortgeschritten' },
+    'skill-3': { name: 'UI/UX Design', category: 'Design', proficiencyLevel: 'Experte' }
+  },
+
+  demoFeedback: {
+    'feedback-1': {
+      type: 'Peer Review',
+      text: 'Tolle Zusammenarbeit im Projekt. Sehr hilfsbereit und kompetent.'
+    },
+    'feedback-2': {
+      type: 'Manager Review',
+      text: 'Ausgezeichnete Arbeit am neuen Designsystem. Weiter so!'
+    }
+  },
+
+  demoJobs: {
+    'job-1': {
+      title: 'Senior Frontend Entwickler',
+      description: 'Wir suchen einen erfahrenen Frontend-Entwickler, der unser Team unterstützt und großartige Webanwendungen baut.',
+      location: 'Remote',
+      salaryRange: '$90k - $120k',
+      requirements: { 0: 'React', 1: 'TypeScript', 2: 'Tailwind CSS' }
+    },
+    'job-2': {
+      title: 'Produktdesigner',
+      description: 'Treten Sie unserem Designteam bei, um großartige Benutzererlebnisse zu schaffen und die Zukunft unserer Produkte zu gestalten.',
+      location: 'New York',
+      salaryRange: '$80k - $100k',
+      requirements: { 0: 'Figma', 1: 'UI/UX', 2: 'Prototyping' }
+    }
+  },
+
+  demoApplicants: {
+    'app-1': { firstName: 'John', lastName: 'Doe' },
+    'app-2': { firstName: 'Jane', lastName: 'Smith' }
+  },
+
+  demoApplications: {
+    'appl-1': {
+      status: 'In Überprüfung',
+      notes: 'Starker Kandidat mit ausgezeichnetem technischen Hintergrund'
+    },
+    'appl-2': {
+      status: 'Vorstellungsgespräch geplant',
+      notes: 'Ausgezeichnetes Portfolio und Designfähigkeiten'
+    }
+  },
+
+  demoInterviews: {
+    'int-1': {
+      status: 'Geplant',
+      type: 'Technisches Interview',
+      notes: 'Portfolio-Review und technische Bewertung'
+    }
+  },
+
+  demoNotifications: {
+    'notif-1': {
+      title: 'Willkommen im HR-System',
+      message: 'Willkommen im Demo-Modus des HR-Systems. Erkunden Sie gerne alle Funktionen!',
+      actionLabel: 'Zum Dashboard'
+    },
+    'notif-2': {
+      title: 'Neue Aufgabe zugewiesen',
+      message: 'Ihnen wurde eine neue Aufgabe zugewiesen: Überprüfung der Q3-Leistung',
+      actionLabel: 'Aufgabe ansehen'
+    },
+    'notif-3': {
+      title: 'Besprechungserinnerung',
+      message: 'Teammeeting in 30 Minuten',
+      actionLabel: 'Kalender ansehen'
+    }
+  }
 };

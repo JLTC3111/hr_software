@@ -7,7 +7,7 @@ import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import { useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { UploadProvider } from './contexts/UploadContext'
-import { Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, TaskListing, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager, ControlPanel, TaskReview, PersonalGoals, FlubberIconTest } from './components/index.jsx';
+import { Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, TaskListing, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager, ControlPanel, TaskReview, PersonalGoals, FlubberIconTest, Recruitment } from './components/index.jsx';
 import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
 
@@ -352,6 +352,10 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
                     <Route 
                       path="/reports" 
                       element={<Reports />} 
+                    />
+                    <Route 
+                      path="/recruitment" 
+                      element={<Recruitment />} 
                     />
                     <Route 
                       path="/notifications" 

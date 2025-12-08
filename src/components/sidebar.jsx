@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
-import { TrendingUp, Users, Award, FileText, Clock, AlarmClock, ChevronLeft, ChevronRight, ChevronDown, Building2, Bell, Cog, CheckSquare, Sparkles, X } from 'lucide-react'
+import { TrendingUp, Users, Award, FileText, Clock, AlarmClock, ChevronLeft, ChevronRight, ChevronDown, Building2, Bell, Cog, CheckSquare, Sparkles, X, UserPlus } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 
@@ -78,6 +78,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
             { path: '/task-review', name: t('nav.taskReview', 'Performance Review') },
           ]
         },
+        { path: '/recruitment', name: t('nav.recruitment', 'Recruitment'), icon: UserPlus },
       ]
     },
     {
