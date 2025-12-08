@@ -156,7 +156,7 @@ export default {
     Operations: 'Opérations',
     Support: 'Support',
     Legal: 'Juridique',
-    IT: 'Informatique',
+    IT: 'Technologies de l’information',
     it: 'Informatique',
     product: 'Produit',
     customer_support: 'Support Client',

@@ -156,7 +156,7 @@ export default {
     Operations: 'Vận Hành',
     Support: 'Hỗ Trợ',
     Legal: 'Pháp Lý',
-    IT: 'Công Nghệ Thông Tin',
+    IT: 'Tin Học',
     it: 'Công Nghệ Thông Tin',
     product: 'Sản Phẩm',
     customer_support: 'Hỗ Trợ Khách Hàng'

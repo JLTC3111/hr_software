@@ -172,7 +172,7 @@ export default {
     Operations: 'Операции',
     Support: 'Поддержка',
     Legal: 'Юридический',
-    it: 'IT',
+    it: 'Информатика',
     product: 'Продукт',
     customer_support: 'Поддержка клиентов',
   },
