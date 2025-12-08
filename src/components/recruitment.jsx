@@ -9,6 +9,7 @@ import {
   getRecruitmentStats,
   createJobPosting
 } from '../services/recruitmentService';
+import { isDemoMode, getDemoApplicationStatus } from '../utils/demoHelper';
 
 const Recruitment = () => {
   const { t } = useLanguage();
@@ -254,7 +255,10 @@ const Recruitment = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(application.status)}`}>
-                        {t(`recruitment.status.${application.status?.toLowerCase().replace(/\s+/g, '')}`, application.status)}
+                        {isDemoMode()
+                          ? getDemoApplicationStatus(application, t)
+                          : t(`recruitment.status.${application.status?.toLowerCase().replace(/\s+/g, '')}`, application.status)
+                        }
                       </span>
                     </td>
                     <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>
@@ -647,7 +651,10 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate }) => {
               <DetailRow label={t('recruitment.position', 'Position')} value={application.job_posting?.title} />
               <DetailRow label={t('recruitment.department', 'Department')} value={application.job_posting?.department ? t(`employeeDepartment.${application.job_posting.department}`, application.job_posting.department) : null} />
               <DetailRow label={t('recruitment.appliedDate', 'Applied Date')} value={application.application_date ? new Date(application.application_date).toLocaleDateString() : null} />
-              <DetailRow label={t('recruitment.statusLabel', 'Status')} value={application.status ? t(`recruitment.status.${application.status?.toLowerCase().replace(/\\s+/g, '')}`, application.status) : null} />
+              <DetailRow
+                label={t('recruitment.statusLabel', 'Status')}
+                value={application.status ? (isDemoMode() ? getDemoApplicationStatus(application, t) : t(`recruitment.status.${application.status?.toLowerCase().replace(/\\s+/g, '')}`, application.status)) : null}
+              />
             </div>
           </div>
 
