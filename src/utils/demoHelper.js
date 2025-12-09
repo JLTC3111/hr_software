@@ -595,16 +595,31 @@ export const MOCK_EMPLOYEES = [
 ];
 
 const DEMO_EMPLOYEES_KEY = 'hr_app_demo_employees';
+const DELETED_DEMO_EMPLOYEE_IDS_KEY = 'hr_app_demo_deleted_employee_ids';
+
+const getDeletedDemoEmployeeIds = () => {
+  const stored = localStorage.getItem(DELETED_DEMO_EMPLOYEE_IDS_KEY);
+  return stored ? JSON.parse(stored) : [];
+};
+
+const setDeletedDemoEmployeeIds = (ids) => {
+  localStorage.setItem(DELETED_DEMO_EMPLOYEE_IDS_KEY, JSON.stringify(ids));
+};
 
 export const getDemoEmployees = () => {
   const stored = localStorage.getItem(DEMO_EMPLOYEES_KEY);
   const storedEmployees = stored ? JSON.parse(stored) : [];
+  const deletedIds = new Set(getDeletedDemoEmployeeIds().map(id => String(id)));
   
   // Stored employees take precedence over mock employees (allows "updating" mock data)
   const storedIds = new Set(storedEmployees.map(e => e.id));
   const visibleMockEmployees = MOCK_EMPLOYEES.filter(e => !storedIds.has(e.id));
   
-  return [...visibleMockEmployees, ...storedEmployees];
+  // Hide any employees that have been deleted in demo mode
+  const filteredMock = visibleMockEmployees.filter(e => !deletedIds.has(String(e.id)));
+  const filteredStored = storedEmployees.filter(e => !deletedIds.has(String(e.id)));
+  
+  return [...filteredMock, ...filteredStored];
 };
 
 /**
@@ -649,6 +664,24 @@ export const updateDemoEmployee = (employeeId, updates) => {
   }
   
   return null;
+};
+
+export const deleteDemoEmployee = (employeeId) => {
+  if (!employeeId) return false;
+  const id = String(employeeId);
+
+  // Remove from stored employees
+  const stored = localStorage.getItem(DEMO_EMPLOYEES_KEY);
+  const storedEmployees = stored ? JSON.parse(stored) : [];
+  const updatedStored = storedEmployees.filter(e => String(e.id) !== id);
+  localStorage.setItem(DEMO_EMPLOYEES_KEY, JSON.stringify(updatedStored));
+
+  // Track deleted IDs so mock employees stay hidden
+  const deletedIds = new Set(getDeletedDemoEmployeeIds().map(item => String(item)));
+  deletedIds.add(id);
+  setDeletedDemoEmployeeIds(Array.from(deletedIds));
+
+  return true;
 };
 
 // Generate some random time entries for the current month

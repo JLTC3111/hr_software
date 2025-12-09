@@ -1,7 +1,7 @@
 import { supabase } from '../config/supabaseClient';
 import { withTimeout } from '../utils/supabaseTimeout';
-import { isDemoMode, MOCK_EMPLOYEES, getDemoEmployees, addDemoEmployee, updateDemoEmployee } from '../utils/demoHelper';
-import { saveDemoPdf, getDemoPdf, deleteDemoPdf, saveDemoBlob, getDemoBlob } from '../utils/demoStorage';
+import { isDemoMode, MOCK_EMPLOYEES, getDemoEmployees, addDemoEmployee, updateDemoEmployee, deleteDemoEmployee, getDemoEmployeeById } from '../utils/demoHelper';
+import { saveDemoPdf, getDemoPdf, deleteDemoPdf, saveDemoBlob, getDemoBlob, deleteDemoBlob } from '../utils/demoStorage';
 
 /* Ensure employee ID is a string (supports both integers and UUIDs) */
 const toEmployeeId = (id) => {
@@ -407,7 +407,25 @@ export const updateEmployee = async (employeeId, updates) => {
  */
 export const deleteEmployee = async (employeeId) => {
   if (isDemoMode()) {
-    return { success: true };
+    const emp = getDemoEmployeeById(employeeId);
+    // Clean up stored blobs (photo/pdf) if present
+    if (emp?.photoBlobKey) {
+      try {
+        await deleteDemoBlob(emp.photoBlobKey);
+      } catch (err) {
+        console.warn('Failed to delete demo photo blob', err);
+      }
+    }
+    try {
+      await deleteDemoPdf(employeeId);
+    } catch (err) {
+      console.warn('Failed to delete demo PDF blob', err);
+    }
+
+    const removed = deleteDemoEmployee(employeeId);
+    return removed
+      ? { success: true }
+      : { success: false, error: 'Employee not found in demo data' };
   }
 
   try {
