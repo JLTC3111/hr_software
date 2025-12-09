@@ -30,7 +30,12 @@ import {
   Hourglass,
   FileText,
   Database,
-  Loader
+  Loader,
+  CalendarArrowUp,
+  CalendarArrowDown,
+  ArrowDownAZ,
+  Timer,
+  Shield
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
@@ -107,6 +112,10 @@ const Reports = () => {
     startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0]
   });
+  
+  // Sorting state for Data Preview table
+  const [sortKey, setSortKey] = useState('date');
+  const [sortDirection, setSortDirection] = useState('desc');
 
   // Data state
   const [reportData, setReportData] = useState({
@@ -195,21 +204,33 @@ const Reports = () => {
         if (isDemoMode()) {
           // Use persisted demo time entries (includes user-created entries)
           const demoEntries = getDemoTimeEntries();
+          // Identify user-created entries (those starting with 'demo-entry-')
+          const userCreatedEntries = demoEntries.filter(e => e.id?.startsWith('demo-entry-'));
           console.log('[DEBUG Reports] Demo entries before filter:', {
             total: demoEntries.length,
+            userCreated: userCreatedEntries.length,
             dateRange: { startDate, endDate },
-            sampleDates: demoEntries.slice(0, 5).map(e => ({ id: e.id, date: e.date }))
+            sampleDates: demoEntries.slice(0, 5).map(e => ({ id: e.id, date: e.date })),
+            userCreatedDates: userCreatedEntries.map(e => ({ id: e.id, date: e.date, employee_id: e.employee_id }))
           });
           // Filter by date range and sort by date descending (like production)
           allTimeEntries = demoEntries
             .filter(entry => {
-              if (!entry.date) return false;
-              return entry.date >= startDate && entry.date <= endDate;
+              if (!entry.date) {
+                console.log('[DEBUG Reports] Entry missing date:', entry.id);
+                return false;
+              }
+              const inRange = entry.date >= startDate && entry.date <= endDate;
+              if (!inRange && entry.id?.startsWith('demo-entry-')) {
+                console.log('[DEBUG Reports] User entry outside range:', { id: entry.id, date: entry.date, startDate, endDate });
+              }
+              return inRange;
             })
             .sort((a, b) => new Date(b.date) - new Date(a.date));
           console.log('[DEBUG Reports] Demo entries after filter:', {
             count: allTimeEntries.length,
-            uniqueEmployees: [...new Set(allTimeEntries.map(e => e.employee_id))].length
+            uniqueEmployees: [...new Set(allTimeEntries.map(e => e.employee_id))].length,
+            hasUserCreated: allTimeEntries.some(e => e.id?.startsWith('demo-entry-'))
           });
         } else {
           // Use direct Supabase query with proper join - fetch all entries first
@@ -361,6 +382,16 @@ const Reports = () => {
     refreshOnOnline: true
   });
 
+  // Handle sort column click
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDirection('asc');
+    }
+  };
+
   // Get current data based on active tab
   const currentData = useMemo(() => {
     switch (activeTab) {
@@ -380,6 +411,60 @@ const Reports = () => {
         return [];
     }
   }, [activeTab, reportData]);
+
+  // Sorting function for table data
+  const getSortedData = useMemo(() => {
+    const sortArray = (arr) => {
+      if (!arr || arr.length === 0) return arr;
+      const sorted = [...arr];
+      sorted.sort((a, b) => {
+        let aValue, bValue;
+        switch (sortKey) {
+          case 'date':
+            aValue = new Date(a.date || a.due_date || a.target_date || a.created_at).getTime();
+            bValue = new Date(b.date || b.due_date || b.target_date || b.created_at).getTime();
+            break;
+          case 'employee':
+            aValue = (a.employee?.name || '').toLowerCase();
+            bValue = (b.employee?.name || '').toLowerCase();
+            break;
+          case 'hours':
+            aValue = a.hours || 0;
+            bValue = b.hours || 0;
+            break;
+          case 'status':
+            aValue = (a.status || '').toLowerCase();
+            bValue = (b.status || '').toLowerCase();
+            break;
+          case 'progress':
+            aValue = a.progress || 0;
+            bValue = b.progress || 0;
+            break;
+          case 'priority':
+            const priorityOrder = { high: 3, medium: 2, low: 1 };
+            aValue = priorityOrder[a.priority] || 0;
+            bValue = priorityOrder[b.priority] || 0;
+            break;
+          default:
+            aValue = 0;
+            bValue = 0;
+        }
+        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+      return sorted;
+    };
+
+    if (activeTab === 'all') {
+      return {
+        timeEntries: sortArray(currentData.timeEntries),
+        tasks: sortArray(currentData.tasks),
+        goals: sortArray(currentData.goals)
+      };
+    }
+    return sortArray(currentData);
+  }, [currentData, sortKey, sortDirection, activeTab]);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -2499,37 +2584,168 @@ const Reports = () => {
                 
                 {activeTab === 'time-entries' && (
                   <>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.employees', 'Employee')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.date', 'Date')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.hours', 'Hours')}</th>
+                    <th 
+                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
+                      onClick={() => handleSort('employee')}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {t('reports.employees', 'Employee')}
+                        <ArrowDownAZ
+                          className={`inline w-4 h-4 transition-all duration-300 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400'}`}
+                          style={{ transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                        />
+                      </span>
+                    </th>
+                    <th 
+                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
+                      onClick={() => handleSort('date')}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {t('reports.date', 'Date')}
+                        {sortKey === 'date' ? (
+                          sortDirection === 'asc' ? (
+                            <CalendarArrowUp className={`inline w-4 h-4 transition-all duration-300 ${isDarkMode ? 'text-white' : 'text-black'}`} />
+                          ) : (
+                            <CalendarArrowDown className={`inline w-4 h-4 transition-all duration-300 ${isDarkMode ? 'text-white' : 'text-black'}`} />
+                          )
+                        ) : (
+                          <CalendarArrowUp className="inline w-4 h-4 text-gray-400 hover:text-blue-400" />
+                        )}
+                      </span>
+                    </th>
+                    <th 
+                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
+                      onClick={() => handleSort('hours')}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {t('reports.hours', 'Hours')}
+                        <Hourglass
+                          className={`inline w-3.5 h-3.5 transition-all duration-300 ${sortKey === 'hours' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400'}`}
+                          style={{ transform: sortKey === 'hours' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                        />
+                      </span>
+                    </th>
                     <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.type', 'Type')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.status', 'Status')}</th>
+                    <th 
+                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
+                      onClick={() => handleSort('status')}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {t('reports.status', 'Status')}
+                        <Shield
+                          className={`inline w-4 h-4 transition-all duration-300 ${sortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400'}`}
+                          style={{ transform: sortKey === 'status' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                        />
+                      </span>
+                    </th>
                   </>
                 )}
                 
                 {activeTab === 'tasks' && (
                   <>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.employees', 'Employee')}</th>
+                    <th 
+                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
+                      onClick={() => handleSort('employee')}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {t('reports.employees', 'Employee')}
+                        <ArrowDownAZ
+                          className={`inline w-4 h-4 transition-all duration-300 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400'}`}
+                          style={{ transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                        />
+                      </span>
+                    </th>
                     <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.task', 'Task')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.priority', 'Priority')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.status', 'Status')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.dueDate', 'Due Date')}</th>
+                    <th 
+                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
+                      onClick={() => handleSort('priority')}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {t('reports.priority', 'Priority')}
+                        <Timer
+                          className={`inline w-4 h-4 transition-all duration-300 ${sortKey === 'priority' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400'}`}
+                          style={{ transform: sortKey === 'priority' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                        />
+                      </span>
+                    </th>
+                    <th 
+                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
+                      onClick={() => handleSort('status')}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {t('reports.status', 'Status')}
+                        <Shield
+                          className={`inline w-4 h-4 transition-all duration-300 ${sortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400'}`}
+                          style={{ transform: sortKey === 'status' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                        />
+                      </span>
+                    </th>
+                    <th 
+                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
+                      onClick={() => handleSort('date')}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {t('reports.dueDate', 'Due Date')}
+                        {sortKey === 'date' ? (
+                          sortDirection === 'asc' ? (
+                            <CalendarArrowUp className={`inline w-4 h-4 transition-all duration-300 ${isDarkMode ? 'text-white' : 'text-black'}`} />
+                          ) : (
+                            <CalendarArrowDown className={`inline w-4 h-4 transition-all duration-300 ${isDarkMode ? 'text-white' : 'text-black'}`} />
+                          )
+                        ) : (
+                          <CalendarArrowUp className="inline w-4 h-4 text-gray-400 hover:text-blue-400" />
+                        )}
+                      </span>
+                    </th>
                   </>
                 )}
                 
                 {activeTab === 'goals' && (
                   <>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.employees', 'Employee')}</th>
+                    <th 
+                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
+                      onClick={() => handleSort('employee')}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {t('reports.employees', 'Employee')}
+                        <ArrowDownAZ
+                          className={`inline w-4 h-4 transition-all duration-300 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400'}`}
+                          style={{ transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                        />
+                      </span>
+                    </th>
                     <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.goal', 'Goal')}</th>
                     <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.category', 'Category')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.status', 'Status')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.progress', 'Progress')}</th>
+                    <th 
+                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
+                      onClick={() => handleSort('status')}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {t('reports.status', 'Status')}
+                        <Shield
+                          className={`inline w-4 h-4 transition-all duration-300 ${sortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400'}`}
+                          style={{ transform: sortKey === 'status' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                        />
+                      </span>
+                    </th>
+                    <th 
+                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
+                      onClick={() => handleSort('progress')}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {t('reports.progress', 'Progress')}
+                        <Gauge
+                          className={`inline w-4 h-4 transition-all duration-300 ${sortKey === 'progress' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400'}`}
+                          style={{ transform: sortKey === 'progress' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                        />
+                      </span>
+                    </th>
                   </>
                 )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {(activeTab === 'all' ? (currentData.timeEntries?.length + currentData.tasks?.length + currentData.goals?.length === 0) : currentData.length === 0) ? (
+              {(activeTab === 'all' ? (getSortedData.timeEntries?.length + getSortedData.tasks?.length + getSortedData.goals?.length === 0) : getSortedData.length === 0) ? (
                 <tr>
                   <td colSpan={5} className={`px-6 py-12 text-center ${text.secondary}`}>
                     <div className="flex flex-col items-center">
@@ -2542,7 +2758,7 @@ const Reports = () => {
               ) : activeTab === 'all' ? (
                 <>
                   {/* Time Entries */}
-                  {(currentData.timeEntries || []).slice(0, 20).map((item, index) => (
+                  {(getSortedData.timeEntries || []).slice(0, 20).map((item, index) => (
                     <tr key={`time-${index}`} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
                       <td className={`px-6 py-4 whitespace-nowrap`}>
                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
@@ -2572,7 +2788,7 @@ const Reports = () => {
                   ))}
                   
                   {/* Tasks */}
-                  {(currentData.tasks || []).slice(0, 20).map((item, index) => (
+                  {(getSortedData.tasks || []).slice(0, 20).map((item, index) => (
                     <tr key={`task-${index}`} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
                       <td className={`px-6 py-4 whitespace-nowrap`}>
                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
@@ -2603,7 +2819,7 @@ const Reports = () => {
                   ))}
                   
                   {/* Goals */}
-                  {(currentData.goals || []).slice(0, 20).map((item, index) => (
+                  {(getSortedData.goals || []).slice(0, 20).map((item, index) => (
                     <tr key={`goal-${index}`} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
                       <td className={`px-6 py-4 whitespace-nowrap`}>
                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
@@ -2634,7 +2850,7 @@ const Reports = () => {
                   ))}
                 </>
               ) : (
-                currentData.slice(0, 50).map((item, index) => (
+                getSortedData.slice(0, 50).map((item, index) => (
                   <tr key={index} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
                     {activeTab === 'time-entries' && (
                       <>

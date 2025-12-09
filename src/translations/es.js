@@ -1781,8 +1781,8 @@ login: {
   },
 
   demoApplicants: {
-    'app-1': { firstName: 'John', lastName: 'Doe' },
-    'app-2': { firstName: 'Jane', lastName: 'Smith' }
+    'app-1': { firstName: 'John', lastName: 'Doe', education: 'Licenciatura en Informática', currentPosition: 'Desarrollador Senior' },
+    'app-2': { firstName: 'Jane', lastName: 'Smith', education: 'Maestría en Diseño', currentPosition: 'Líder de UX' }
   },
 
   demoApplications: {

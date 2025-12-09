@@ -4,7 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../config/supabaseClient';
-import { isDemoMode, getDemoGoalTitle, getDemoGoalDescription } from '../utils/demoHelper';
+import { isDemoMode, getDemoGoalTitle, getDemoGoalDescription, getDemoSkills, upsertDemoSkill } from '../utils/demoHelper';
 import * as performanceService from '../services/performanceService';
 
 const PersonalGoals = ({ employees }) => {
@@ -52,6 +52,8 @@ const PersonalGoals = ({ employees }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
   const [showEditGoalModal, setShowEditGoalModal] = useState(false);
+  const [showViewGoalModal, setShowViewGoalModal] = useState(false);
+  const [viewingGoal, setViewingGoal] = useState(null);
   const [editingGoal, setEditingGoal] = useState(null);
   const [loading, setLoading] = useState(false);
   const [goals, setGoals] = useState([]);
@@ -96,6 +98,9 @@ const PersonalGoals = ({ employees }) => {
           setShowAddGoalModal(false);
         } else if (showEditGoalModal) {
           setShowEditGoalModal(false);
+        } else if (showViewGoalModal) {
+          setShowViewGoalModal(false);
+          setViewingGoal(null);
         }
       }
     };
@@ -107,7 +112,7 @@ const PersonalGoals = ({ employees }) => {
     return () => {
       document.removeEventListener('keydown', handleEscKey);
     };
-  }, [showAddGoalModal, showEditGoalModal]);
+  }, [showAddGoalModal, showEditGoalModal, showViewGoalModal]);
 
   const fetchGoalsAndReviews = async () => {
     setLoading(true);
@@ -133,11 +138,20 @@ const PersonalGoals = ({ employees }) => {
       let skillsError = null;
 
       if (isDemoMode()) {
-        skillsData = [
-          { id: 1, employee_id: selectedEmployee, skill_name: 'React', skill_category: 'Technical', rating: 4, proficiency_level: 'advanced', assessment_date: '2023-01-01' },
-          { id: 2, employee_id: selectedEmployee, skill_name: 'Communication', skill_category: 'Soft Skills', rating: 5, proficiency_level: 'advanced', assessment_date: '2023-01-01' },
-          { id: 3, employee_id: selectedEmployee, skill_name: 'Project Management', skill_category: 'Management', rating: 3, proficiency_level: 'intermediate', assessment_date: '2023-01-01' }
-        ];
+        // Use persisted demo skills from localStorage
+        const allDemoSkills = getDemoSkills();
+        // Filter by selected employee
+        skillsData = allDemoSkills.filter(skill => 
+          String(skill.employee_id) === String(selectedEmployee)
+        );
+        // If no skills for this employee yet, provide default demo skills
+        if (skillsData.length === 0) {
+          skillsData = [
+            { id: `demo-skill-1-${selectedEmployee}`, employee_id: selectedEmployee, skill_name: 'React', skill_category: 'Technical', rating: 4, proficiency_level: 'advanced', assessment_date: '2023-01-01' },
+            { id: `demo-skill-2-${selectedEmployee}`, employee_id: selectedEmployee, skill_name: 'Communication', skill_category: 'Soft Skills', rating: 5, proficiency_level: 'advanced', assessment_date: '2023-01-01' },
+            { id: `demo-skill-3-${selectedEmployee}`, employee_id: selectedEmployee, skill_name: 'Project Management', skill_category: 'Management', rating: 3, proficiency_level: 'intermediate', assessment_date: '2023-01-01' }
+          ];
+        }
       } else {
         const { data, error } = await supabase
           .from('skills_assessments')
@@ -196,6 +210,7 @@ const PersonalGoals = ({ employees }) => {
     
     try {
       const roundedRating = Math.round(newRating * 10) / 10;
+      const proficiencyLevel = roundedRating >= 4 ? 'advanced' : roundedRating >= 3 ? 'intermediate' : 'beginner';
       
       // Update local state immediately for instant UI feedback
       setSkills(prevSkills => {
@@ -207,23 +222,35 @@ const PersonalGoals = ({ employees }) => {
           updated[existingSkillIndex] = {
             ...updated[existingSkillIndex],
             rating: roundedRating,
-            proficiency_level: roundedRating >= 4 ? 'advanced' : roundedRating >= 3 ? 'intermediate' : 'beginner'
+            proficiency_level: proficiencyLevel
           };
           return updated;
         } else {
           // Add new skill
           return [...prevSkills, {
+            id: `demo-skill-${Date.now()}`,
             employee_id: selectedEmployee,
             skill_name: skillName,
             skill_category: category,
             rating: roundedRating,
-            proficiency_level: roundedRating >= 4 ? 'advanced' : roundedRating >= 3 ? 'intermediate' : 'beginner',
+            proficiency_level: proficiencyLevel,
             assessment_date: new Date().toISOString().split('T')[0]
           }];
         }
       });
 
-      if (isDemoMode()) return;
+      if (isDemoMode()) {
+        // Persist demo skill rating to localStorage
+        upsertDemoSkill({
+          employee_id: selectedEmployee,
+          skill_name: skillName,
+          skill_category: category,
+          rating: roundedRating,
+          proficiency_level: proficiencyLevel,
+          assessment_date: new Date().toISOString().split('T')[0]
+        });
+        return;
+      }
 
       // Check if skill exists in database
       const { data: existing, error: fetchError } = await supabase
@@ -262,6 +289,12 @@ const PersonalGoals = ({ employees }) => {
       // Revert local state on error
       fetchGoalsAndReviews();
     }
+  };
+
+  // Handler for viewing goal details
+  const handleViewGoal = (goal) => {
+    setViewingGoal(goal);
+    setShowViewGoalModal(true);
   };
 
   // Handlers for modals
@@ -991,15 +1024,17 @@ const PersonalGoals = ({ employees }) => {
                 </span>
               </div>
               <button 
-                className="hidden text-blue-600 hover:text-blue-800"
+                onClick={() => handleViewGoal(goal)}
+                className="flex items-center space-x-1 px-2 py-1 rounded transition-colors cursor-pointer"
                 style={{
                   backgroundColor: 'transparent',
-                  color: '#2563eb',
+                  color: isDarkMode ? '#60a5fa' : '#2563eb',
                   borderColor: 'transparent'
                 }}
+                title={t('personalGoals.viewDetails', 'View Details')}
               >
-                <Eye className={`h-4 w-4 ${text.secondary}`} />
-                <span>{t('personalGoals.viewDetails')}</span>
+                <Eye className="h-4 w-4" />
+                <span className="text-sm">{t('personalGoals.viewDetails', 'View Details')}</span>
               </button>
             </div>
           </div>
@@ -1535,6 +1570,141 @@ const PersonalGoals = ({ employees }) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Goal Modal */}
+      {showViewGoalModal && viewingGoal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowViewGoalModal(false);
+              setViewingGoal(null);
+            }
+          }}
+        >
+          <div 
+            className="rounded-lg shadow-xl max-w-2xl w-full my-8"
+            style={{
+              backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+              color: isDarkMode ? '#ffffff' : '#111827'
+            }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b"
+              style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}
+            >
+              <div className="flex items-center space-x-3">
+                <Goal className="h-6 w-6 text-blue-500" />
+                <h2 className="text-xl font-bold">{t('personalGoals.goalDetails', 'Goal Details')}</h2>
+              </div>
+              <button
+                onClick={() => {
+                  setShowViewGoalModal(false);
+                  setViewingGoal(null);
+                }}
+                className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors cursor-pointer`}
+              >
+                <X className="h-5 w-5" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Title */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2">
+                  {isDemoMode() ? getDemoGoalTitle(viewingGoal, t) : viewingGoal.title}
+                </h3>
+                <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
+                  viewingGoal.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                  viewingGoal.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                  viewingGoal.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                }`}>
+                  {t(`personalGoals.${viewingGoal.status}`, viewingGoal.status)}
+                </span>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                  {t('personalGoals.goalDescription', 'Description')}
+                </label>
+                <p className="text-base leading-relaxed whitespace-pre-wrap" 
+                  style={{ 
+                    backgroundColor: isDarkMode ? '#374151' : '#f9fafb',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    color: isDarkMode ? '#e5e7eb' : '#374151'
+                  }}
+                >
+                  {isDemoMode() ? getDemoGoalDescription(viewingGoal, t) : (viewingGoal.description || t('common.noDescription', 'No description available'))}
+                </p>
+              </div>
+
+              {/* Details Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                    {t('personalGoals.category', 'Category')}
+                  </label>
+                  <p className="font-medium capitalize">{t(`personalGoals.${viewingGoal.category}`, viewingGoal.category)}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                    {t('personalGoals.priority', 'Priority')}
+                  </label>
+                  <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${
+                    viewingGoal.priority === 'high' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                    viewingGoal.priority === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                  }`}>
+                    {t(`personalGoals.${viewingGoal.priority}`, viewingGoal.priority)}
+                  </span>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                    {t('personalGoals.deadline', 'Deadline')}
+                  </label>
+                  <p className="font-medium flex items-center">
+                    <Calendar className="h-4 w-4 mr-2" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }} />
+                    {viewingGoal.deadline ? new Date(viewingGoal.deadline).toLocaleDateString() : '-'}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                    {t('personalGoals.progress', 'Progress')}
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <div className="flex-1 h-2 rounded-full bg-gray-200 dark:bg-gray-600">
+                      <div 
+                        className="h-2 rounded-full bg-blue-500"
+                        style={{ width: `${viewingGoal.progress || 0}%` }}
+                      />
+                    </div>
+                    <span className="font-bold text-sm">{viewingGoal.progress || 0}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end p-6 border-t"
+              style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}
+            >
+              <button
+                onClick={() => {
+                  setShowViewGoalModal(false);
+                  setViewingGoal(null);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
+              >
+                {t('common.close', 'Close')}
+              </button>
+            </div>
           </div>
         </div>
       )}

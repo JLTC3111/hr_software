@@ -1963,8 +1963,8 @@ export default {
   },
 
   demoApplicants: {
-    'app-1': { firstName: 'John', lastName: 'Doe' },
-    'app-2': { firstName: 'Jane', lastName: 'Smith' }
+    'app-1': { firstName: 'John', lastName: 'Doe', education: 'Cử nhân Khoa học Máy tính', currentPosition: 'Nhà phát triển Cao cấp' },
+    'app-2': { firstName: 'Jane', lastName: 'Smith', education: 'Thạc sĩ Thiết kế', currentPosition: 'Trưởng nhóm UX' }
   },
 
   demoApplications: {

@@ -1,0 +1,108 @@
+%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+/Resources <<
+/Font <<
+/F1 5 0 R
+>>
+>>
+>>
+endobj
+
+4 0 obj
+<<
+/Length 800
+>>
+stream
+BT
+/F1 24 Tf
+50 720 Td
+(JOHN DOE) Tj
+0 -30 Td
+/F1 12 Tf
+(Senior Frontend Developer) Tj
+0 -20 Td
+(john.doe@example.com | 555-1111) Tj
+0 -40 Td
+/F1 16 Tf
+(PROFESSIONAL SUMMARY) Tj
+0 -20 Td
+/F1 10 Tf
+(Experienced frontend developer with 5+ years of expertise in React,) Tj
+0 -15 Td
+(TypeScript, and modern web technologies. Passionate about creating) Tj
+0 -15 Td
+(intuitive user interfaces and scalable applications.) Tj
+0 -30 Td
+/F1 16 Tf
+(SKILLS) Tj
+0 -20 Td
+/F1 10 Tf
+(React, TypeScript, JavaScript, Tailwind CSS, Node.js, Git) Tj
+0 -30 Td
+/F1 16 Tf
+(EDUCATION) Tj
+0 -20 Td
+/F1 10 Tf
+(Bachelor of Computer Science - Tech University, 2018) Tj
+0 -30 Td
+/F1 16 Tf
+(EXPERIENCE) Tj
+0 -20 Td
+/F1 12 Tf
+(Senior Developer - TechCorp Inc. \(2020-Present\)) Tj
+0 -15 Td
+/F1 10 Tf
+(- Led frontend development for enterprise SaaS platform) Tj
+0 -15 Td
+(- Mentored junior developers and conducted code reviews) Tj
+0 -15 Td
+(- Improved application performance by 40%) Tj
+ET
+endstream
+endobj
+
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000266 00000 n 
+0000001118 00000 n 
+
+trailer
+<<
+/Size 6
+/Root 1 0 R
+>>
+startxref
+1195
+%%EOF

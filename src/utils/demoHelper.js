@@ -1358,7 +1358,13 @@ export const MOCK_APPLICANTS = [
     lastNameKey: 'demoApplicants.app-1.lastName',
     email: 'john.doe@example.com',
     phone: '555-1111',
-    resume_url: '#',
+    resume_url: '/demoCVs/john_doe_resume.pdf',
+    linkedin_profile: 'https://linkedin.com/in/johndoe',
+    education_level: 'Bachelor of Computer Science',
+    educationLevelKey: 'demoApplicants.app-1.education',
+    current_position: 'Senior Developer',
+    currentPositionKey: 'demoApplicants.app-1.currentPosition',
+    years_experience: 5,
     created_at: '2023-10-10'
   },
   {
@@ -1369,7 +1375,13 @@ export const MOCK_APPLICANTS = [
     lastNameKey: 'demoApplicants.app-2.lastName',
     email: 'jane.smith@example.com',
     phone: '555-2222',
-    resume_url: '#',
+    resume_url: '/demoCVs/jane_smith_resume.pdf',
+    linkedin_profile: 'https://linkedin.com/in/janesmith',
+    education_level: 'Master of Design',
+    educationLevelKey: 'demoApplicants.app-2.education',
+    current_position: 'UX Lead',
+    currentPositionKey: 'demoApplicants.app-2.currentPosition',
+    years_experience: 7,
     created_at: '2023-10-12'
   }
 ];

@@ -1688,8 +1688,8 @@ export default {
   },
 
   demoApplicants: {
-    'app-1': { firstName: 'John', lastName: 'Doe' },
-    'app-2': { firstName: 'Jane', lastName: 'Smith' }
+    'app-1': { firstName: 'John', lastName: 'Doe', education: 'Bachelor in Informatik', currentPosition: 'Senior Entwickler' },
+    'app-2': { firstName: 'Jane', lastName: 'Smith', education: 'Master in Design', currentPosition: 'UX-Leiter' }
   },
 
   demoApplications: {

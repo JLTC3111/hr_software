@@ -1705,8 +1705,8 @@ export default {
   },
 
   demoApplicants: {
-    'app-1': { firstName: 'John', lastName: 'Doe' },
-    'app-2': { firstName: 'Jane', lastName: 'Smith' }
+    'app-1': { firstName: 'Джон', lastName: 'До', education: 'Бакалавр информатики', currentPosition: 'Старший разработчик' },
+    'app-2': { firstName: 'Джейн', lastName: 'Смит', education: 'Магистр дизайна', currentPosition: 'Руководитель UX' }
   },
 
   demoApplications: {

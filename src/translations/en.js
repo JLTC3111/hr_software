@@ -1934,11 +1934,15 @@ export default {
   demoApplicants: {
     'app-1': {
       firstName: 'John',
-      lastName: 'Doe'
+      lastName: 'Doe',
+      education: 'Bachelor of Computer Science',
+      currentPosition: 'Senior Developer'
     },
     'app-2': {
       firstName: 'Jane',
-      lastName: 'Smith'
+      lastName: 'Smith',
+      education: 'Master of Design',
+      currentPosition: 'UX Lead'
     }
   },
 

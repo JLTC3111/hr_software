@@ -1691,8 +1691,8 @@ export default {
   },
 
   demoApplicants: {
-    'app-1': { firstName: 'John', lastName: 'Doe' },
-    'app-2': { firstName: 'Jane', lastName: 'Smith' }
+    'app-1': { firstName: '존', lastName: '도', education: '컴퓨터 공학 학사', currentPosition: '시니어 개발자' },
+    'app-2': { firstName: '제인', lastName: '스미스', education: '디자인 석사', currentPosition: 'UX 리드' }
   },
 
   demoApplications: {
