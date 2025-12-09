@@ -403,6 +403,12 @@ export default {
 
   // Personal Goals
   personalGoals: {
+    goalTitle: 'Zieltitel',
+    goalTitlePlaceholder: 'Zieltitel eingeben',
+    goalDescription: 'Beschreibung',
+    goalDescriptionPlaceholder: 'Beschreiben Sie die Ziele',
+    targetDate: 'Zieldatum',  
+    setTargetDate: 'Zieldatum festlegen',
     title: 'Leistungsbeurteilung',
     overallRating: 'Gesamtbewertung',
     reviewPeriod: 'Bewertungszeitraum',
@@ -1423,7 +1429,18 @@ export default {
     passwordResetSuccessEmployee: 'Passwort erfolgreich zurückgesetzt für Mitarbeiter',
     errorFetchingEmployees: 'Fehler beim Laden der Mitarbeiter',
     noEmployeesFound: 'Keine Mitarbeiter gefunden',
-    manageEmails: 'Benutzer-E-Mails verwalten'
+    manageEmails: 'Benutzer-E-Mails verwalten',
+    restoreDemoData: 'Demodaten wiederherstellen',
+    restoreDemoDataDescription: 'Stellt die standardmäßigen Demodaten für bestimmte Datentypen wieder her. Dadurch werden alle Änderungen zurückgesetzt.',
+    demoTimeEntries: 'Zeiteinträge',
+    demoGoals: 'Ziele',
+    demoTasks: 'Aufgaben',
+    demoReviews: 'Bewertungen',
+    demoSkills: 'Fähigkeiten',
+    demoLeaveRequests: 'Urlaubsanträge',
+    demoDataRestored: '{type} auf Standardwerte zurückgesetzt',
+    allDemoDataRestored: 'Alle Demodaten auf Standardwerte zurückgesetzt',
+    restoreAllDemoData: 'Alle Demodaten wiederherstellen'
   },
 
   // Email Management

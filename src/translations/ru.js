@@ -1390,7 +1390,18 @@ export default {
     passwordResetSuccessEmployee: 'Пароль успешно сброшен для сотрудника',
     errorFetchingEmployees: 'Ошибка загрузки сотрудников',
     noEmployeesFound: 'Сотрудники не найдены',
-    manageEmails: 'Управление Email пользователей'
+    manageEmails: 'Управление Email пользователей',
+    restoreDemoData: "Восстановить демо-данные",
+    restoreDemoDataDescription: "Восстанавливает демонстрационные данные по умолчанию для определённых типов данных. Это сбросит все внесённые изменения.",
+    demoTimeEntries: "Учет времени",
+    demoGoals: "Цели",
+    demoTasks: "Задачи",
+    demoReviews: "Отзывы",
+    demoSkills: "Навыки",
+    demoLeaveRequests: "Запросы на отпуск",
+    demoDataRestored: "{type} восстановлено до значений по умолчанию",
+    allDemoDataRestored: "Все демо-данные восстановлены до значений по умолчанию",
+    restoreAllDemoData: "Восстановить все демо-данные",
   },
 
   // Email Management
@@ -1420,6 +1431,8 @@ export default {
 
   // Personal Goals
   personalGoals: {
+    goalTitle: 'Название цели',
+    goalTitlePlaceholder: 'Введите название цели',
     title: 'Обзор Эффективности Задач',
     subtitle: 'Ежемесячный прогресс задач и оценка качества',
     individual: 'Индивидуальный',

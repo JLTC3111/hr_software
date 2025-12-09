@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Plus, X, Star, Check, AlertCircle, Users, Trash2 } from 'lucide-react';
+import { Mail, Plus, X, Star, Check, AlertCircle, Users, Trash2, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -159,9 +159,11 @@ const EmailManagement = () => {
         </div>
         <button
           onClick={loadUsersWithEmails}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          disabled={loading}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
         >
-          {t('common.refresh') || 'Refresh'}
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          <span>{t('common.refresh') || 'Refresh'}</span>
         </button>
       </div>
 

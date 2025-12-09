@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { Clock, Heart, AlertCircle, TreePalm, Car, Salad, Clapperboard, Laptop, Form, PhoneCall, CupSoda, Grape, BicepsFlexed, Flame, DatabaseZap, Loader, HouseWifi, Funnel, HeartPlus, Coffee, AlarmClock, Gauge, BriefcaseBusiness, WifiPen, TrendingUp, LineChart, BatteryCharging, PersonStanding, Volleyball, FileUser } from 'lucide-react'
+import { Clock, Heart, AlertCircle, TreePalm, Car, Salad, Clapperboard, Laptop, Form, PhoneCall, CupSoda, Grape, BicepsFlexed, Flame, DatabaseZap, Loader, HouseWifi, Funnel, HeartPlus, Coffee, AlarmClock, Gauge, BriefcaseBusiness, WifiPen, TrendingUp, LineChart, BatteryCharging, PersonStanding, Volleyball, FileUser, RefreshCw } from 'lucide-react'
 import StatsCard from './statsCard.jsx'
 import MetricDetailModal from './metricDetailModal.jsx'
 import { useTheme } from '../contexts/ThemeContext'
@@ -1359,9 +1359,10 @@ const Dashboard = ({ employees, applications }) => {
         
         <button
           onClick={() => window.location.reload()}
-          className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-all duration-200 hover:scale-105"
+          className="flex items-center space-x-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-all duration-200 hover:scale-105"
         >
-          {t('common.refresh', 'Refresh')}
+          <RefreshCw className="h-3 w-3" />
+          <span>{t('common.refresh', 'Refresh')}</span>
         </button>
       </div>
       

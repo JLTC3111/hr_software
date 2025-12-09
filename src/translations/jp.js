@@ -1402,7 +1402,18 @@ export default {
     passwordResetSuccessEmployee: '従業員のパスワードが正常にリセットされました',
     errorFetchingEmployees: '従業員の読み込みエラー',
     noEmployeesFound: '従業員が見つかりません',
-    manageEmails: 'ユーザーメール管理'
+    manageEmails: 'ユーザーメール管理',
+    restoreDemoData: 'デモデータを復元',
+    restoreDemoDataDescription: '特定のデータタイプのデフォルトデモデータを復元します。これにより、行った変更がリセットされます。',
+    demoTimeEntries: "タイムエントリー",
+    demoGoals: "目標",
+    demoTasks: "タスク",
+    demoReviews: "レビュー",
+    demoSkills: "スキル",
+    demoLeaveRequests: "休暇申請",
+    demoDataRestored: "{type} がデフォルトに復元されました",
+    allDemoDataRestored: "すべてのデモデータがデフォルトに復元されました",
+    restoreAllDemoData: "すべてのデモデータを復元",
   },
 
   // Email Management
@@ -1432,6 +1443,8 @@ export default {
 
   // Personal Goals
   personalGoals: {
+    goalTitle: '目標タイトル',
+    goalTitlePlaceholder: '目標タイトルを入力',
     title: 'タスクパフォーマンスレビュー',
     subtitle: '月次タスク進捗と品質評価',
     individual: '個人',

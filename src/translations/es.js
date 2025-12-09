@@ -1466,7 +1466,18 @@ login: {
     passwordResetSuccessEmployee: 'Contraseña restablecida exitosamente para el empleado',
     errorFetchingEmployees: 'Error al cargar empleados',
     noEmployeesFound: 'No se encontraron empleados',
-    manageEmails: 'Gestionar correos de usuario'
+    manageEmails: 'Gestionar correos de usuario',
+    restoreDemoData: 'Restaurar datos de demostración',
+    restoreDemoDataDescription: 'Restaura los datos de demostración predeterminados para tipos de datos específicos. Esto restablecerá cualquier cambio realizado.',
+    demoTimeEntries: 'Registros de tiempo',
+    demoGoals: 'Metas',
+    demoTasks: 'Tareas',
+    demoReviews: 'Reseñas',
+    demoSkills: 'Habilidades',
+    demoLeaveRequests: 'Solicitudes de permiso',
+    demoDataRestored: '{type} restaurado a los valores predeterminados',
+    allDemoDataRestored: 'Todos los datos de demostración restaurados a los valores predeterminados',
+    restoreAllDemoData: 'Restaurar todos los datos de demostración'
   },
 
   // Email Management
@@ -1496,6 +1507,8 @@ login: {
 
   // Personal Goals
   personalGoals: {
+    goalTitle: 'Título de la meta',
+    goalTitlePlaceholder: 'Ingrese el título de la meta',
     title: 'Revisión de Desempeño de Tareas',
     subtitle: 'Progreso mensual de tareas y evaluación de calidad',
     individual: 'Individual',

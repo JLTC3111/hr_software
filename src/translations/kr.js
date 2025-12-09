@@ -1376,7 +1376,18 @@ export default {
     passwordResetSuccessEmployee: '직원의 비밀번호가 성공적으로 재설정되었습니다',
     errorFetchingEmployees: '직원 로드 오류',
     noEmployeesFound: '직원을 찾을 수 없음',
-    manageEmails: '사용자 이메일 관리'
+    manageEmails: '사용자 이메일 관리',
+    restoreDemoData: "데모 데이터 복원",
+    restoreDemoDataDescription: "특정 데이터 유형에 대한 기본 데모 데이터를 복원합니다. 변경한 내용이 모두 초기화됩니다.",
+    demoTimeEntries: "시간 입력",
+    demoGoals: "목표",
+    demoTasks: "작업",
+    demoReviews: "리뷰",
+    demoSkills: "기술",
+    demoLeaveRequests: "휴가 요청",
+    demoDataRestored: "{type} 기본값으로 복원됨",
+    allDemoDataRestored: "모든 데모 데이터가 기본값으로 복원됨",
+    restoreAllDemoData: "모든 데모 데이터 복원",
   },
 
   // Email Management
@@ -1406,6 +1417,8 @@ export default {
 
   // Personal Goals
   personalGoals: {
+    goalTitle: '목표 제목',
+    goalTitlePlaceholder: '목표 제목을 입력하세요',
     title: '작업 성과 검토',
     subtitle: '월간 작업 진행 상황 및 품질 평가',
     individual: '개인',

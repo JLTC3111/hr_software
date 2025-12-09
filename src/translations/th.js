@@ -1421,7 +1421,18 @@ export default {
     passwordResetSuccessEmployee: 'รีเซ็ตรหัสผ่านสำเร็จสำหรับพนักงาน',
     errorFetchingEmployees: 'เกิดข้อผิดพลาดในการโหลดพนักงาน',
     noEmployeesFound: 'ไม่พบพนักงาน',
-    manageEmails: 'จัดการอีเมลผู้ใช้'
+    manageEmails: 'จัดการอีเมลผู้ใช้',
+    restoreDemoData: "กู้คืนข้อมูลสาธิต",
+    restoreDemoDataDescription: "กู้คืนข้อมูลสาธิตเริ่มต้นสำหรับประเภทข้อมูลที่กำหนด ซึ่งจะรีเซ็ตการเปลี่ยนแปลงทั้งหมดที่คุณทำ",
+    demoTimeEntries: "บันทึกเวลา",
+    demoGoals: "เป้าหมาย",
+    demoTasks: "งาน",
+    demoReviews: "รีวิว",
+    demoSkills: "ทักษะ",
+    demoLeaveRequests: "คำขอลางาน",
+    demoDataRestored: "{type} ถูกกู้คืนเป็นค่าเริ่มต้น",
+    allDemoDataRestored: "กู้คืนข้อมูลสาธิตทั้งหมดเป็นค่าเริ่มต้นแล้ว",
+    restoreAllDemoData: "กู้คืนข้อมูลสาธิตทั้งหมด",
   },
 
   // Email Management
@@ -1451,6 +1462,8 @@ export default {
 
   // Personal Goals
   personalGoals: {
+    goalTitle: 'ชื่อเป้าหมาย',
+    goalTitlePlaceholder: 'กรอกชื่อเป้าหมาย',
     title: 'การตรวจสอบผลการปฏิบัติงาน',
     subtitle: 'ความคืบหน้างานรายเดือนและการประเมินคุณภาพ',
     individual: 'รายบุคคล',

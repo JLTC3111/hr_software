@@ -1490,7 +1490,18 @@ export default {
     passwordResetSuccessEmployee: 'Mot de passe réinitialisé avec succès pour l\'employé',
     errorFetchingEmployees: 'Erreur lors du chargement des employés',
     noEmployeesFound: 'Aucun employé trouvé',
-    manageEmails: 'Gérer les e-mails des utilisateurs'
+    manageEmails: 'Gérer les e-mails des utilisateurs',
+    restoreDemoData: 'Restaurer les données de démonstration',
+    restoreDemoDataDescription: 'Restaure les données de démonstration par défaut pour certains types de données. Cela réinitialisera toutes vos modifications.',
+    demoTimeEntries: 'Entrées de temps',
+    demoGoals: 'Objectifs',
+    demoTasks: 'Tâches',
+    demoReviews: 'Avis',
+    demoSkills: 'Compétences',
+    demoLeaveRequests: 'Demandes de congé',
+    demoDataRestored: '{type} restauré aux valeurs par défaut',
+    allDemoDataRestored: 'Toutes les données de démonstration restaurées aux valeurs par défaut',
+    restoreAllDemoData: 'Restaurer toutes les données de démonstration'
   },
 
   // Email Management
@@ -1520,6 +1531,8 @@ export default {
 
   // Personal Goals
   personalGoals: {
+    goalTitle: 'Titre de l\'objectif',
+    goalTitlePlaceholder: 'Entrez le titre de l\'objectif',
     title: 'Revue de Performance des Tâches',
     subtitle: 'Progression mensuelle des tâches et évaluation de la qualité',
     individual: 'Individuel',

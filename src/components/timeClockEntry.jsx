@@ -382,53 +382,60 @@ const TimeClockEntry = ({ currentLanguage }) => {
     // Ensure timeEntries is an array before filtering
     const entries = Array.isArray(timeEntries) ? timeEntries : [];
     
-    console.log('Filtering entries - selectedEmployeeFilter:', selectedEmployeeFilter);
-    console.log('Total entries to filter:', entries.length);
+    console.log('🔍 Filtering entries - selectedEmployeeFilter:', selectedEmployeeFilter);
+    console.log('📊 Total entries to filter:', entries.length);
     
     if (selectedEmployeeFilter === 'self') {
       // Show only current user's entries
       const employeeId = user?.employee_id || user?.id;
       const filtered = entries.filter(entry => 
-        String(entry.employee_id) === String(employeeId)
+        String(entry.employee_id) === String(employeeId) || 
+        String(entry.employeeId) === String(employeeId)
       );
-      console.log('Filtering for self (employee_id:', employeeId, ') - showing', filtered.length, 'entries');
+      console.log('🎯 Filtering for self (employee_id:', employeeId, ') - showing', filtered.length, 'entries');
       setFilteredEntries(filtered);
     } else if (selectedEmployeeFilter === 'all') {
       // Show all entries (already loaded)
-      console.log('Showing all entries:', entries.length);
+      console.log('👀 Showing all entries:', entries.length);
       setFilteredEntries(entries);
     } else {
       // Filter by specific employee - compare as strings to handle both int and UUID
       const filtered = entries.filter(entry => 
-        String(entry.employee_id) === String(selectedEmployeeFilter)
+        String(entry.employee_id) === String(selectedEmployeeFilter) || 
+        String(entry.employeeId) === String(selectedEmployeeFilter)
       );
-      console.log('Filtering for employee:', selectedEmployeeFilter, '- showing', filtered.length, 'entries');
+      console.log('👤 Filtering for employee:', selectedEmployeeFilter, '- showing', filtered.length, 'entries');
       setFilteredEntries(filtered);
     }
   }, [selectedEmployeeFilter, timeEntries, user]);
 
   // Fetch time entries and leave requests from Supabase
   const fetchTimeEntries = async () => {
+    console.log('🔄 fetchTimeEntries called');
     try {
       let result;
       
       // For admins/managers, always use detailed view to get employee names
       if (canManageTimeTracking) {
+        console.log('👤 User is admin/manager, fetching all entries detailed');
         // Always fetch ALL entries and let the useEffect filter them
         result = await timeTrackingService.getAllTimeEntriesDetailed();
         
         if (result?.success && Array.isArray(result.data)) {
+          console.log('✅ Fetched', result.data.length, 'entries');
           setTimeEntries(result.data);
         } else {
           console.error('❌ Failed to load entries:', result?.error || 'No data returned');
           setTimeEntries([]);
         }
       } else {
+        console.log('👤 User is regular employee, fetching own entries');
         // Regular users - fetch only their own entries
         const employeeId = user?.employee_id || user?.id;
         if (employeeId) {
           result = await timeTrackingService.getTimeEntries(employeeId);
           if (result?.success && Array.isArray(result.data)) {
+            console.log('✅ Fetched', result.data.length, 'entries');
             setTimeEntries(result.data);
           } else {
             console.error('❌ Failed to load entries:', result?.error || 'No data returned');
@@ -724,6 +731,11 @@ const TimeClockEntry = ({ currentLanguage }) => {
   const isImageFile = (fileType, fileUrl) => {
     // First check MIME type
     if (fileType && fileType.startsWith('image/')) {
+      return true;
+    }
+
+    // Check data URL mime type
+    if (fileUrl && fileUrl.startsWith('data:image/')) {
       return true;
     }
     

@@ -609,6 +609,8 @@ export default {
   // Personal Goals
   personalGoals: {
     title: 'Personal Goals',
+    goalTitle: 'Goal Title',
+    goalTitlePlaceholder: 'Enter goal title',
     overallRating: 'Overall Rating',
     reviewPeriod: 'Review Period',
     goals: 'Goals & Objectives',
@@ -1445,7 +1447,18 @@ export default {
     manageEmails: 'Manage User Emails',
     changeOwnPassword: 'Change Own Password',
     resetOtherUserPassword: 'Reset Other Employee Password',
-    resetEmployeeTablePassword: 'Reset Employee Table Password'
+    resetEmployeeTablePassword: 'Reset Employee Table Password',
+    restoreDemoData: 'Restore Demo Data',
+    restoreDemoDataDescription: 'Restore default demo data for specific data types. This will reset any changes you made.',
+    demoTimeEntries: 'Time Entries',
+    demoGoals: 'Goals',
+    demoTasks: 'Tasks',
+    demoReviews: 'Reviews',
+    demoSkills: 'Skills',
+    demoLeaveRequests: 'Leave Requests',
+    demoDataRestored: '{type} restored to defaults',
+    allDemoDataRestored: 'All demo data restored to defaults',
+    restoreAllDemoData: 'Restore All Demo Data'
   },
 
   // Email Management
