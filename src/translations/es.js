@@ -1715,11 +1715,18 @@ login: {
   demoTasks: {
     'task-1': { title: 'Análisis de Informes Q4', description: 'Análisis exhaustivo de métricas de rendimiento trimestrales y tendencias' },
     'task-2': { title: 'Actualización del Manual del Empleado', description: 'Revisar y actualizar el manual del empleado con políticas de trabajo remoto' },
-    'task-3': { title: 'Corrección de Error de Inicio de Sesión', description: 'Depurar y resolver problemas de inicio de sesión de usuarios en dispositivos móviles' }
+    'task-3': { title: 'Corrección de Error de Inicio de Sesión', description: 'Depurar y resolver problemas de inicio de sesión de usuarios en dispositivos móviles' },
+    'task-4': { title: 'Diseñar Nuevo Dashboard', description: 'Crear wireframes y mockups para el dashboard de análisis' },
+    'task-5': { title: 'Revisión de Rendimiento de Campaña', description: 'Analizar resultados y ROI de campañas de marketing Q3' },
+    'task-6': { title: 'Incorporación de Cliente', description: 'Completar la incorporación de nuevo cliente empresarial' },
+    'task-7': { title: 'Documentación de API', description: 'Escribir documentación API completa para la versión 2.0' }
   },
   demoGoals: {
     'goal-1': { title: 'Mejorar la Eficiencia del Equipo', description: 'Aumentar la productividad del equipo en un 20% durante el próximo trimestre' },
-    'goal-2': { title: 'Aprender React Native', description: 'Dominar React Native para el desarrollo de aplicaciones móviles' }
+    'goal-2': { title: 'Aprender React Native', description: 'Dominar React Native para el desarrollo de aplicaciones móviles' },
+    'goal-3': { title: 'Certificación UX', description: 'Obtener el Certificado Profesional de Diseño UX de Google' },
+    'goal-4': { title: 'Aumentar Generación de Leads', description: 'Lograr un aumento del 30% en leads cualificados mediante campañas de marketing' },
+    'goal-5': { title: 'Cerrar Contratos Empresariales', description: 'Cerrar 5 contratos empresariales con valor superior a $500K cada uno' }
   },
     
   demoReviews: {

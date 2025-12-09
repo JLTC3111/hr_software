@@ -1625,11 +1625,18 @@ export default {
   demoTasks: {
     'task-1': { title: 'Q4 보고서 분석', description: '분기별 성과 지표 및 트렌드에 대한 종합 분석' },
     'task-2': { title: '직원 핸드북 업데이트', description: '원격 근무 정책으로 직원 핸드북 개정 및 업데이트' },
-    'task-3': { title: '로그인 오류 수정', description: '모바일 기기에서 사용자 로그인 문제 디버그 및 해결' }
+    'task-3': { title: '로그인 오류 수정', description: '모바일 기기에서 사용자 로그인 문제 디버그 및 해결' },
+    'task-4': { title: '새 대시보드 설계', description: '분석 대시보드를 위한 와이어프레임 및 목업 생성' },
+    'task-5': { title: '캠페인 성과 검토', description: 'Q3 마케팅 캠페인 결과 및 ROI 분석' },
+    'task-6': { title: '고객 온보딩', description: '새 기업 고객의 온보딩 완료' },
+    'task-7': { title: 'API 문서화', description: '버전 2.0에 대한 포괄적인 API 문서 작성' }
   },
   demoGoals: {
     'goal-1': { title: '팀 효율성 향상', description: '다음 분기에 팀 생산성을 20% 향상' },
-    'goal-2': { title: 'React Native 학습', description: '모바일 앱 개발을 위한 React Native 숙달' }
+    'goal-2': { title: 'React Native 학습', description: '모바일 앱 개발을 위한 React Native 숙달' },
+    'goal-3': { title: 'UX 자격증 취득', description: 'Google UX 디자인 전문 자격증 취득' },
+    'goal-4': { title: '리드 생성 증가', description: '마케팅 캠페인을 통해 적격 리드 30% 증가 달성' },
+    'goal-5': { title: '기업 계약 체결', description: '각 $500K 이상의 가치가 있는 5건의 기업 계약 체결' }
   },
   
   demoReviews: {

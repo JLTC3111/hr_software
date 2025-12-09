@@ -1817,6 +1817,22 @@ export default {
     'task-3': {
       title: 'Fix Login Bug',
       description: 'Investigate reported login issues on mobile devices'
+    },
+    'task-4': {
+      title: 'Design New Dashboard',
+      description: 'Create wireframes and mockups for the analytics dashboard'
+    },
+    'task-5': {
+      title: 'Campaign Performance Review',
+      description: 'Analyze Q3 marketing campaign results and ROI'
+    },
+    'task-6': {
+      title: 'Client Onboarding',
+      description: 'Complete onboarding for new enterprise client'
+    },
+    'task-7': {
+      title: 'API Documentation',
+      description: 'Write comprehensive API documentation for v2.0'
     }
   },
 
@@ -1829,6 +1845,18 @@ export default {
     'goal-2': {
       title: 'Learn React Native',
       description: 'Complete advanced React Native course'
+    },
+    'goal-3': {
+      title: 'UX Certification',
+      description: 'Obtain Google UX Design Professional Certificate'
+    },
+    'goal-4': {
+      title: 'Increase Lead Generation',
+      description: 'Achieve 30% increase in qualified leads through marketing campaigns'
+    },
+    'goal-5': {
+      title: 'Close Enterprise Deals',
+      description: 'Close 5 enterprise-level deals worth $500K+ each'
     }
   },
 

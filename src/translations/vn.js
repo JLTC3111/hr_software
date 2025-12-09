@@ -1897,11 +1897,18 @@ export default {
   demoTasks: {
     'task-1': { title: 'Phân Tích Báo Cáo Q4', description: 'Phân tích toàn diện về các chỉ số hiệu suất hàng quý và xu hướng' },
     'task-2': { title: 'Cập Nhật Sổ Tay Nhân Viên', description: 'Sửa đổi và cập nhật sổ tay nhân viên với các chính sách làm việc từ xa' },
-    'task-3': { title: 'Sửa Lỗi Đăng Nhập', description: 'Gỡ lỗi và giải quyết vấn đề đăng nhập của người dùng trên thiết bị di động' }
+    'task-3': { title: 'Sửa Lỗi Đăng Nhập', description: 'Gỡ lỗi và giải quyết vấn đề đăng nhập của người dùng trên thiết bị di động' },
+    'task-4': { title: 'Thiết Kế Dashboard Mới', description: 'Tạo wireframes và mockups cho dashboard phân tích' },
+    'task-5': { title: 'Đánh Giá Hiệu Quả Chiến Dịch', description: 'Phân tích kết quả và ROI chiến dịch marketing Q3' },
+    'task-6': { title: 'Hướng Dẫn Khách Hàng Mới', description: 'Hoàn thành quy trình onboarding cho khách hàng doanh nghiệp mới' },
+    'task-7': { title: 'Tài Liệu API', description: 'Viết tài liệu API toàn diện cho phiên bản 2.0' }
   },
   demoGoals: {
     'goal-1': { title: 'Cải Thiện Hiệu Quả Nhóm', description: 'Tăng năng suất của nhóm lên 20% trong quý tới' },
-    'goal-2': { title: 'Học React Native', description: 'Thành thạo React Native để phát triển ứng dụng di động' }
+    'goal-2': { title: 'Học React Native', description: 'Thành thạo React Native để phát triển ứng dụng di động' },
+    'goal-3': { title: 'Chứng Chỉ UX', description: 'Đạt chứng chỉ Google UX Design Professional' },
+    'goal-4': { title: 'Tăng Khách Hàng Tiềm Năng', description: 'Đạt tăng 30% khách hàng tiềm năng qua các chiến dịch marketing' },
+    'goal-5': { title: 'Ký Hợp Đồng Doanh Nghiệp', description: 'Ký 5 hợp đồng doanh nghiệp trị giá trên $500K mỗi hợp đồng' }
   },
     
   demoReviews: {

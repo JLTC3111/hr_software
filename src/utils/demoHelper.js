@@ -659,18 +659,19 @@ const generateMockTimeEntries = () => {
   const month = today.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  MOCK_EMPLOYEES.forEach((emp, empIndex) => {
-    for (let day = 1; day <= Math.min(daysInMonth, today.getDate()); day++) {
-      // Skip weekends roughly
-      const date = new Date(year, month, day);
-      if (date.getDay() === 0 || date.getDay() === 6) continue;
-
-      const dateStr = date.toISOString().split('T')[0];
-      
+  // Generate entries by day first, then by employee for better interleaving
+  for (let day = 1; day <= Math.min(daysInMonth, today.getDate()); day++) {
+    const date = new Date(year, month, day);
+    // Skip weekends
+    if (date.getDay() === 0 || date.getDay() === 6) continue;
+    
+    const dateStr = date.toISOString().split('T')[0];
+    
+    MOCK_EMPLOYEES.forEach((emp, empIndex) => {
       // Use seeded random based on emp index and day for consistent results
       // This ensures all employees have entries, not just some
       const seed = (empIndex * 31 + day) % 100;
-      if (seed > 95) continue; // Only ~5% absent rate
+      if (seed > 95) return; // Only ~5% absent rate
 
       entries.push({
         id: `te-${emp.id}-${day}`,
@@ -771,8 +772,8 @@ const generateMockTimeEntries = () => {
           }
         });
       }
-    }
-  });
+    });
+  }
 
   // Add some holiday entries for specific dates - include all employees
   const holidays = [
@@ -826,6 +827,16 @@ export const getDemoTimeEntries = () => {
   const visibleMock = MOCK_TIME_ENTRIES.filter(e => !storedIds.has(e.id));
   // Filter out deleted entries from stored entries
   const activeStoredEntries = storedEntries.filter(e => !e._deleted);
+  
+  console.log('[DEBUG getDemoTimeEntries]', {
+    storedCount: storedEntries.length,
+    activeStoredCount: activeStoredEntries.length,
+    mockCount: MOCK_TIME_ENTRIES.length,
+    visibleMockCount: visibleMock.length,
+    totalReturned: visibleMock.length + activeStoredEntries.length,
+    sampleStored: activeStoredEntries.slice(0, 2).map(e => ({ id: e.id, date: e.date, employee_id: e.employee_id }))
+  });
+  
   return [...visibleMock, ...activeStoredEntries];
 };
 
@@ -917,6 +928,54 @@ export const MOCK_TASKS = [
     due_date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString().split('T')[0],
     employee_id: 'demo-emp-2',
     employee: MOCK_EMPLOYEES[1]
+  },
+  {
+    id: 'task-4',
+    title: 'Design New Dashboard',
+    titleKey: 'demoTasks.task-4.title',
+    description: 'Create wireframes and mockups for the analytics dashboard',
+    descriptionKey: 'demoTasks.task-4.description',
+    status: 'in-progress',
+    priority: 'high',
+    due_date: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0],
+    employee_id: 'demo-emp-3',
+    employee: MOCK_EMPLOYEES[2]
+  },
+  {
+    id: 'task-5',
+    title: 'Campaign Performance Review',
+    titleKey: 'demoTasks.task-5.title',
+    description: 'Analyze Q3 marketing campaign results and ROI',
+    descriptionKey: 'demoTasks.task-5.description',
+    status: 'pending',
+    priority: 'medium',
+    due_date: new Date(new Date().setDate(new Date().getDate() + 14)).toISOString().split('T')[0],
+    employee_id: 'demo-emp-4',
+    employee: MOCK_EMPLOYEES[3]
+  },
+  {
+    id: 'task-6',
+    title: 'Client Onboarding',
+    titleKey: 'demoTasks.task-6.title',
+    description: 'Complete onboarding for new enterprise client',
+    descriptionKey: 'demoTasks.task-6.description',
+    status: 'in-progress',
+    priority: 'high',
+    due_date: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString().split('T')[0],
+    employee_id: 'demo-emp-5',
+    employee: MOCK_EMPLOYEES[4]
+  },
+  {
+    id: 'task-7',
+    title: 'API Documentation',
+    titleKey: 'demoTasks.task-7.title',
+    description: 'Write comprehensive API documentation for v2.0',
+    descriptionKey: 'demoTasks.task-7.description',
+    status: 'completed',
+    priority: 'medium',
+    due_date: new Date(new Date().setDate(new Date().getDate() - 5)).toISOString().split('T')[0],
+    employee_id: 'demo-emp-2',
+    employee: MOCK_EMPLOYEES[1]
   }
 ];
 
@@ -946,6 +1005,45 @@ export const MOCK_GOALS = [
     employee_id: 'demo-emp-2',
     target_date: '2024-11-30',
     employee: MOCK_EMPLOYEES[1]
+  },
+  {
+    id: 'goal-3',
+    title: 'UX Certification',
+    titleKey: 'demoGoals.goal-3.title',
+    description: 'Obtain Google UX Design Professional Certificate',
+    descriptionKey: 'demoGoals.goal-3.description',
+    status: 'in_progress',
+    progress: 45,
+    category: 'Skills',
+    employee_id: 'demo-emp-3',
+    target_date: '2025-03-31',
+    employee: MOCK_EMPLOYEES[2]
+  },
+  {
+    id: 'goal-4',
+    title: 'Increase Lead Generation',
+    titleKey: 'demoGoals.goal-4.title',
+    description: 'Achieve 30% increase in qualified leads through marketing campaigns',
+    descriptionKey: 'demoGoals.goal-4.description',
+    status: 'in_progress',
+    progress: 70,
+    category: 'Performance',
+    employee_id: 'demo-emp-4',
+    target_date: '2025-02-28',
+    employee: MOCK_EMPLOYEES[3]
+  },
+  {
+    id: 'goal-5',
+    title: 'Close Enterprise Deals',
+    titleKey: 'demoGoals.goal-5.title',
+    description: 'Close 5 enterprise-level deals worth $500K+ each',
+    descriptionKey: 'demoGoals.goal-5.description',
+    status: 'in_progress',
+    progress: 40,
+    category: 'Performance',
+    employee_id: 'demo-emp-5',
+    target_date: '2025-06-30',
+    employee: MOCK_EMPLOYEES[4]
   }
 ];
 

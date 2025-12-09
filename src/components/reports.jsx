@@ -195,10 +195,21 @@ const Reports = () => {
         if (isDemoMode()) {
           // Use persisted demo time entries (includes user-created entries)
           const demoEntries = getDemoTimeEntries();
-          // Filter by date range
-          allTimeEntries = demoEntries.filter(entry => {
-            if (!entry.date) return false;
-            return entry.date >= startDate && entry.date <= endDate;
+          console.log('[DEBUG Reports] Demo entries before filter:', {
+            total: demoEntries.length,
+            dateRange: { startDate, endDate },
+            sampleDates: demoEntries.slice(0, 5).map(e => ({ id: e.id, date: e.date }))
+          });
+          // Filter by date range and sort by date descending (like production)
+          allTimeEntries = demoEntries
+            .filter(entry => {
+              if (!entry.date) return false;
+              return entry.date >= startDate && entry.date <= endDate;
+            })
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
+          console.log('[DEBUG Reports] Demo entries after filter:', {
+            count: allTimeEntries.length,
+            uniqueEmployees: [...new Set(allTimeEntries.map(e => e.employee_id))].length
           });
         } else {
           // Use direct Supabase query with proper join - fetch all entries first

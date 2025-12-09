@@ -1740,11 +1740,18 @@ export default {
   demoTasks: {
     'task-1': { title: 'Analyse des Rapports Q4', description: 'Analyse complète des métriques de performance trimestrielles et des tendances' },
     'task-2': { title: 'Mise à Jour du Manuel des Employés', description: 'Réviser et mettre à jour le manuel des employés avec les politiques de télétravail' },
-    'task-3': { title: 'Correction du Bug de Connexion', description: 'Déboguer et résoudre les problèmes de connexion utilisateur sur les appareils mobiles' }
+    'task-3': { title: 'Correction du Bug de Connexion', description: 'Déboguer et résoudre les problèmes de connexion utilisateur sur les appareils mobiles' },
+    'task-4': { title: 'Concevoir Nouveau Tableau de Bord', description: 'Créer des wireframes et maquettes pour le tableau de bord analytique' },
+    'task-5': { title: 'Revue de Performance des Campagnes', description: 'Analyser les résultats et le ROI des campagnes marketing Q3' },
+    'task-6': { title: 'Intégration Client', description: 'Compléter l\'intégration du nouveau client entreprise' },
+    'task-7': { title: 'Documentation API', description: 'Rédiger une documentation API complète pour la version 2.0' }
   },
   demoGoals: {
     'goal-1': { title: 'Améliorer l\'Efficacité de l\'Équipe', description: 'Augmenter la productivité de l\'équipe de 20% au cours du prochain trimestre' },
-    'goal-2': { title: 'Apprendre React Native', description: 'Maîtriser React Native pour le développement d\'applications mobiles' }
+    'goal-2': { title: 'Apprendre React Native', description: 'Maîtriser React Native pour le développement d\'applications mobiles' },
+    'goal-3': { title: 'Certification UX', description: 'Obtenir le Certificat Professionnel Google UX Design' },
+    'goal-4': { title: 'Augmenter la Génération de Leads', description: 'Atteindre une augmentation de 30% des leads qualifiés via les campagnes marketing' },
+    'goal-5': { title: 'Conclure des Contrats Entreprise', description: 'Conclure 5 contrats entreprise d\'une valeur supérieure à 500K$ chacun' }
   },
    
   demoReviews: {

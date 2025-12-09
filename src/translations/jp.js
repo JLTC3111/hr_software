@@ -1651,11 +1651,18 @@ export default {
   demoTasks: {
     'task-1': { title: 'Q4レポート分析', description: '四半期パフォーマンス指標とトレンドの包括的な分析' },
     'task-2': { title: '従業員ハンドブック更新', description: 'リモートワークポリシーで従業員ハンドブックを改訂・更新' },
-    'task-3': { title: 'ログインエラー修正', description: 'モバイル端末のユーザーログイン問題のデバッグと解決' }
+    'task-3': { title: 'ログインエラー修正', description: 'モバイル端末のユーザーログイン問題のデバッグと解決' },
+    'task-4': { title: '新ダッシュボード設計', description: '分析ダッシュボードのワイヤーフレームとモックアップを作成' },
+    'task-5': { title: 'キャンペーン効果分析', description: 'Q3マーケティングキャンペーンの結果とROIを分析' },
+    'task-6': { title: 'クライアント導入', description: '新規エンタープライズクライアントのオンボーディングを完了' },
+    'task-7': { title: 'APIドキュメント', description: 'バージョン2.0の包括的なAPIドキュメントを作成' }
   },
   demoGoals: {
     'goal-1': { title: 'チーム効率改善', description: '次の四半期でチームの生産性を20%向上させる' },
-    'goal-2': { title: 'React Nativeを学ぶ', description: 'モバイルアプリ開発のためにReact Nativeを習得する' }
+    'goal-2': { title: 'React Nativeを学ぶ', description: 'モバイルアプリ開発のためにReact Nativeを習得する' },
+    'goal-3': { title: 'UX認定取得', description: 'Google UXデザイン専門認定を取得する' },
+    'goal-4': { title: 'リード獲得増加', description: 'マーケティングキャンペーンを通じて見込み客を30%増加させる' },
+    'goal-5': { title: 'エンタープライズ契約成立', description: '各50万ドル以上の価値がある5件のエンタープライズ契約を成立させる' }
   },
   
   demoReviews: {
