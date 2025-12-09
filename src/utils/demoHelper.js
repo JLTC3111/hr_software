@@ -659,7 +659,7 @@ const generateMockTimeEntries = () => {
   const month = today.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  MOCK_EMPLOYEES.forEach(emp => {
+  MOCK_EMPLOYEES.forEach((emp, empIndex) => {
     for (let day = 1; day <= Math.min(daysInMonth, today.getDate()); day++) {
       // Skip weekends roughly
       const date = new Date(year, month, day);
@@ -667,8 +667,10 @@ const generateMockTimeEntries = () => {
 
       const dateStr = date.toISOString().split('T')[0];
       
-      // Randomly skip some days or have different hours
-      if (Math.random() > 0.9) continue; // Absent
+      // Use seeded random based on emp index and day for consistent results
+      // This ensures all employees have entries, not just some
+      const seed = (empIndex * 31 + day) % 100;
+      if (seed > 95) continue; // Only ~5% absent rate
 
       entries.push({
         id: `te-${emp.id}-${day}`,
@@ -692,8 +694,9 @@ const generateMockTimeEntries = () => {
         }
       });
 
-      // Add some overtime (~20% of entries)
-      if (Math.random() > 0.8) {
+      // Add some overtime (~20% of entries) - use seeded value
+      const overtimeSeed = (empIndex * 37 + day * 3) % 100;
+      if (overtimeSeed < 20) {
         entries.push({
           id: `te-ot-${emp.id}-${day}`,
           employee_id: emp.id,
@@ -717,8 +720,9 @@ const generateMockTimeEntries = () => {
         });
       }
 
-      // Add some WFH days (~15% of entries)
-      if (Math.random() > 0.85) {
+      // Add some WFH days (~15% of entries) - use seeded value
+      const wfhSeed = (empIndex * 41 + day * 7) % 100;
+      if (wfhSeed < 15) {
         entries.push({
           id: `te-wfh-${emp.id}-${day}`,
           employee_id: emp.id,
@@ -742,8 +746,9 @@ const generateMockTimeEntries = () => {
         });
       }
 
-      // Add bonus hours (~5% of entries)
-      if (Math.random() > 0.95) {
+      // Add bonus hours (~5% of entries) - use seeded value
+      const bonusSeed = (empIndex * 53 + day * 11) % 100;
+      if (bonusSeed < 5) {
         entries.push({
           id: `te-bonus-${emp.id}-${day}`,
           employee_id: emp.id,
@@ -769,7 +774,7 @@ const generateMockTimeEntries = () => {
     }
   });
 
-  // Add some holiday entries for specific dates
+  // Add some holiday entries for specific dates - include all employees
   const holidays = [
     { date: `${year}-01-01`, name: 'New Year' },
     { date: `${year}-12-25`, name: 'Christmas' }
@@ -778,7 +783,7 @@ const generateMockTimeEntries = () => {
   holidays.forEach(holiday => {
     if (holiday.date >= `${year}-${String(month + 1).padStart(2, '0')}-01` && 
         holiday.date <= `${year}-${String(month + 1).padStart(2, '0')}-${daysInMonth}`) {
-      MOCK_EMPLOYEES.slice(0, 2).forEach(emp => {
+      MOCK_EMPLOYEES.forEach(emp => {
         entries.push({
           id: `te-hol-${emp.id}-${holiday.date}`,
           employee_id: emp.id,

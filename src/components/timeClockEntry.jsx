@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Clock, Upload, Coffee, AlertCircle, Check, X, FileCheck, AlarmClockPlus, Loader, Loader2, Calendar, ChevronsUpDown, CalendarClock } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Clock, Upload, Coffee, AlertCircle, Check, X, FileCheck, AlarmClockPlus, Loader, Loader2, Calendar, ChevronsUpDown, CalendarClock, ArrowDownAZ, CalendarArrowUp, CalendarArrowDown, Hourglass, Timer, Shield, FileImage } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -165,6 +165,57 @@ const TimeClockEntry = ({ currentLanguage }) => {
   const [allEmployees, setAllEmployees] = useState([]);
   const [filteredEntries, setFilteredEntries] = useState([]);
   const [approvingEntryId, setApprovingEntryId] = useState(null);
+  
+  // Sorting state for history table
+  const [sortKey, setSortKey] = useState('date');
+  const [sortDirection, setSortDirection] = useState('desc'); // 'asc' or 'desc'
+  
+  // Handle header click for sorting
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDirection('asc');
+    }
+  };
+  
+  // Sorting function for history table
+  const getSortedEntries = useMemo(() => {
+    const sorted = [...filteredEntries];
+    sorted.sort((a, b) => {
+      let aValue, bValue;
+      switch (sortKey) {
+        case 'date':
+          aValue = new Date(a.date || a.created_at).getTime();
+          bValue = new Date(b.date || b.created_at).getTime();
+          break;
+        case 'employee':
+          aValue = (a.employee_name || a.employee?.name || '').toLowerCase();
+          bValue = (b.employee_name || b.employee?.name || '').toLowerCase();
+          break;
+        case 'hours':
+          aValue = a.hours || 0;
+          bValue = b.hours || 0;
+          break;
+        case 'type':
+          aValue = (a.hour_type || '').toLowerCase();
+          bValue = (b.hour_type || '').toLowerCase();
+          break;
+        case 'status':
+          aValue = (a.status || '').toLowerCase();
+          bValue = (b.status || '').toLowerCase();
+          break;
+        default:
+          aValue = 0;
+          bValue = 0;
+      }
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [filteredEntries, sortKey, sortDirection]);
   
   // Leave request form
   const [leaveForm, setLeaveForm] = useState({
@@ -1087,12 +1138,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
                 <div
                   className="relative cursor-pointer group"
                   onClick={(e) => {
-                    // If the actual input was clicked, let the native behavior occur
-                    if (e.target === dateInputRef.current) return;
-
-                    // Ignore clicks on other interactive controls
+                    // Ignore clicks on other interactive controls (but not the input itself)
                     if (e.target.closest && e.target.closest('button, a, input[type="file"], label')) return;
 
+                    // Always try to open picker when clicking anywhere in the wrapper
                     if (dateInputRef.current) {
                       if (typeof dateInputRef.current.showPicker === 'function') {
                         try { dateInputRef.current.showPicker(); } catch (err) { dateInputRef.current.focus(); }
@@ -1149,8 +1198,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
               <div 
                 className="relative cursor-pointer group"
                 onClick={(e) => {
-                  if (e.target === clockInRef.current) return;
+                  // Ignore clicks on other interactive controls (but not the input itself)
                   if (e.target.closest && e.target.closest('button, a, input[type="file"], label')) return;
+                  
+                  // Always try to open picker when clicking anywhere in the wrapper
                   if (clockInRef.current) {
                     if (typeof clockInRef.current.showPicker === 'function') {
                       try { clockInRef.current.showPicker(); } catch (err) { clockInRef.current.focus(); }
@@ -1191,8 +1242,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
               <div 
                 className="relative cursor-pointer group"
                 onClick={(e) => {
-                  if (e.target === clockOutRef.current) return;
+                  // Ignore clicks on other interactive controls (but not the input itself)
                   if (e.target.closest && e.target.closest('button, a, input[type="file"], label')) return;
+                  
+                  // Always try to open picker when clicking anywhere in the wrapper
                   if (clockOutRef.current) {
                     if (typeof clockOutRef.current.showPicker === 'function') {
                       try { clockOutRef.current.showPicker(); } catch (err) { clockOutRef.current.focus(); }
@@ -1673,25 +1726,79 @@ const TimeClockEntry = ({ currentLanguage }) => {
               <table className="w-full items-center table-auto border-collapse">
                 <thead className="text-center">
                   <tr className={`border-b ${border.primary}`}>
-                    <th className={`text-center p-3 ${text.primary} font-semibold`}>
-                      {t('timeClock.date', 'Date')}
+                    <th 
+                      className={`text-center p-3 ${text.primary} font-semibold cursor-pointer select-none`}
+                      onClick={() => handleSort('date')}
+                    >
+                      <span className="inline-flex items-center justify-center gap-1">
+                        {t('timeClock.date', 'Date')}
+                        {sortKey === 'date' ? (
+                          sortDirection === 'asc' ? (
+                            <CalendarArrowUp
+                              className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
+                            />
+                          ) : (
+                            <CalendarArrowDown
+                              className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
+                            />
+                          )
+                        ) : (
+                          <CalendarArrowUp className="inline w-4 h-4 ml-1 transition-all duration-500 text-gray-400 hover:text-blue-400 hover:animate-pulse" />
+                        )}
+                      </span>
                     </th>
                     {selectedEmployeeFilter !== 'self' && (
-                      <th className={`text-center p-3 ${text.primary} font-semibold`}>
-                        {t('timeClock.employee', 'Employee')}
+                      <th 
+                        className={`text-center p-3 ${text.primary} font-semibold cursor-pointer select-none`}
+                        onClick={() => handleSort('employee')}
+                      >
+                        <span className="inline-flex items-center justify-center gap-1">
+                          {t('timeClock.employee', 'Employee')}
+                          <ArrowDownAZ
+                            className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
+                            style={{transition: 'transform 0.5s', transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                          />
+                        </span>
                       </th>
                     )}
                     <th className={`text-center p-3 ${text.primary} font-semibold`}>
                       {t('timeClock.time', 'Time')}
                     </th>
-                    <th className={`text-center p-3 ${text.primary} font-semibold`}>
-                      {t('timeClock.hours', 'Hours')}
+                    <th 
+                      className={`text-center p-3 ${text.primary} font-semibold cursor-pointer select-none`}
+                      onClick={() => handleSort('hours')}
+                    >
+                      <span className="inline-flex items-center justify-center gap-1">
+                        {t('timeClock.hours', 'Hours')}
+                        <Hourglass
+                          className={`inline w-3.5 h-3.5 ml-1 transition-all duration-500 ${sortKey === 'hours' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
+                          style={{transition: 'transform 0.5s', transform: sortKey === 'hours' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                        />
+                      </span>
                     </th>
-                  <th className={`text-center p-3 ${text.primary} font-semibold`}>
-                    {t('timeClock.type', 'Type')}
+                  <th 
+                    className={`text-center p-3 ${text.primary} font-semibold cursor-pointer select-none`}
+                    onClick={() => handleSort('type')}
+                  >
+                    <span className="inline-flex items-center justify-center gap-1">
+                      {t('timeClock.type', 'Type')}
+                      <Timer
+                        className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'type' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
+                        style={{transition: 'transform 0.5s', transform: sortKey === 'type' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                      />
+                    </span>
                   </th>
-                  <th className={`text-center p-3 ${text.primary} font-semibold`}>
-                    {t('timeClock.status', 'Status')}
+                  <th 
+                    className={`text-center p-3 ${text.primary} font-semibold cursor-pointer select-none`}
+                    onClick={() => handleSort('status')}
+                  >
+                    <span className="inline-flex items-center justify-center gap-1">
+                      {t('timeClock.status', 'Status')}
+                      <Shield
+                        className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
+                        style={{transition: 'transform 0.5s', transform: sortKey === 'status' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                      />
+                    </span>
                   </th>
                   <th className={`text-center p-3 ${text.primary} font-semibold`}>
                     {t('timeClock.proof', 'Proof')}
@@ -1702,7 +1809,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                 </tr>
               </thead>
               <tbody className="text-center">
-                {filteredEntries.map((entry, index) => (
+                {getSortedEntries.map((entry, index) => (
                   <tr key={entry.id} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-amber-200' : 'hover:bg-blue-600'} group transition-all duration-100 group cursor-pointer`}>
                     <td className={`p-3 ${text.primary} text-center font-medium ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>
                       {entry.date || new Date(entry.created_at).toLocaleDateString()}
