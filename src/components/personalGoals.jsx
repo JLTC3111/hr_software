@@ -478,11 +478,11 @@ const PersonalGoals = ({ employees }) => {
     overallRating: calculateOverallRating(),
     goals: goals.map(goal => ({
       id: goal.id,
-      title: goal.title,
+      title: isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title,
       status: goal.status,
       progress: goal.progress || 0,
       deadline: goal.target_date,
-      description: goal.description,
+      description: isDemoMode() ? getDemoGoalDescription(goal, t) : goal.description,
       category: goal.category,
       priority: goal.priority
     })),

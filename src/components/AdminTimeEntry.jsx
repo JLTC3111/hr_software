@@ -142,31 +142,39 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
       let proofFilePath = null;
       
       if (formData.proofFile) {
-        // Convert base64 back to file for upload
-        const base64Data = formData.proofFile.data;
-        const byteCharacters = atob(base64Data.split(',')[1]);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        
-        // Create File object - use first employee's ID for upload
-        const file = new File([byteArray], formData.proofFile.name, { 
-          type: formData.proofFile.type,
-          lastModified: Date.now()
-        });
-        
-        const uploadResult = await timeTrackingService.uploadProofFile(file, selectedEmployees[0].id);
-        if (uploadResult.success) {
-          proofFileUrl = uploadResult.url;
-          proofFileName = uploadResult.fileName;
-          proofFileType = uploadResult.fileType;
-          proofFilePath = uploadResult.storagePath;
+        if (isDemoMode()) {
+          // In demo mode, use the data URL directly to avoid upload issues
+          proofFileUrl = formData.proofFile.data;
+          proofFileName = formData.proofFile.name;
+          proofFileType = formData.proofFile.type;
+          // proofFilePath is not strictly needed for display if we have the URL
         } else {
-          setErrorMessage(`Failed to upload proof file: ${uploadResult.error}`);
-          setLoading(false);
-          return;
+          // Convert base64 back to file for upload
+          const base64Data = formData.proofFile.data;
+          const byteCharacters = atob(base64Data.split(',')[1]);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          
+          // Create File object - use first employee's ID for upload
+          const file = new File([byteArray], formData.proofFile.name, { 
+            type: formData.proofFile.type,
+            lastModified: Date.now()
+          });
+          
+          const uploadResult = await timeTrackingService.uploadProofFile(file, selectedEmployees[0].id);
+          if (uploadResult.success) {
+            proofFileUrl = uploadResult.url;
+            proofFileName = uploadResult.fileName;
+            proofFileType = uploadResult.fileType;
+            proofFilePath = uploadResult.storagePath;
+          } else {
+            setErrorMessage(`Failed to upload proof file: ${uploadResult.error}`);
+            setLoading(false);
+            return;
+          }
         }
       }
 
