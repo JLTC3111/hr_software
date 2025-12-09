@@ -360,7 +360,25 @@ export const updateTimeEntryStatus = async (entryId, status, approverId) => {
  */
 export const updateTimeEntryProof = async (entryId, file, employeeId, onProgress = null) => {
   if (isDemoMode()) {
-    return { success: true, data: { id: entryId, proof_file_name: file.name } };
+    // Simulate upload progress for demo mode
+    if (onProgress) {
+      for (let i = 0; i <= 100; i += 20) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        onProgress(i);
+      }
+    }
+    // Create a fake URL using object URL or data URL for demo display
+    const fakeUrl = URL.createObjectURL(file);
+    const updates = {
+      proof_file_url: fakeUrl,
+      proof_file_name: file.name,
+      proof_file_type: file.type,
+      proof_file_path: `demo/${employeeId}/${file.name}`
+    };
+    // Persist to demo storage
+    const { updateDemoTimeEntry } = await import('../utils/demoHelper');
+    updateDemoTimeEntry(entryId, updates);
+    return { success: true, data: { id: entryId, ...updates } };
   }
 
   try {
@@ -1596,6 +1614,12 @@ export const syncEmployeesToSupabase = async (employees) => {
  * Get all employees from Supabase
  */
 export const getAllEmployees = async () => {
+  if (isDemoMode()) {
+    // Return all demo employees from demoHelper
+    const { getDemoEmployees } = await import('../utils/demoHelper');
+    return { success: true, data: getDemoEmployees() };
+  }
+
   try {
     const { data, error } = await supabase
       .from('employees')

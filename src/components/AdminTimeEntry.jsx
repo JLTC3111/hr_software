@@ -483,7 +483,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
             {t('adminTimeEntry.date', 'Date')} *
           </label>
           <div 
-            className="relative cursor-pointer"
+            className="relative cursor-pointer group"
             onClick={() => document.getElementById('admin-date-input')?.showPicker?.()}
           >
             <input
@@ -495,7 +495,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
               className={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
               required
             />
-            <Calendar className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none`} />
+            <Calendar className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none group-hover:text-blue-500 transition-colors`} />
           </div>
         </div>
 
@@ -506,7 +506,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
               {t('adminTimeEntry.clockIn', 'Clock In')} *
             </label>
             <div 
-              className="relative cursor-pointer"
+              className="relative cursor-pointer group"
               onClick={() => {
                 const input = document.getElementById('admin-clockin-input');
                 if (input) {
@@ -528,7 +528,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                 className={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
                 required
               />
-              <LogIn className={`absolute right-3 top-1/2 transform -translate-y-1/2 rotate-180 w-5 h-5 ${text.secondary} pointer-events-none`} />
+              <LogIn className={`absolute right-3 top-1/2 transform -translate-y-1/2 rotate-180 w-5 h-5 ${text.secondary} pointer-events-none group-hover:text-blue-500 transition-colors`} />
             </div>
           </div>
           <div>
@@ -536,7 +536,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
               {t('adminTimeEntry.clockOut', 'Clock Out')} *
             </label>
             <div 
-              className="relative cursor-pointer"
+              className="relative cursor-pointer group"
               onClick={() => {
                 const input = document.getElementById('admin-clockout-input');
                 if (input) {
@@ -557,13 +557,13 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                 className={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
                 required
               />
-              <LogOut className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none`} />
+              <LogOut className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none group-hover:text-blue-500 transition-colors`} />
             </div>
           </div>
         </div>
 
         {/* Hour Type */}
-        <div className="relative w-full">
+        <div className="relative w-full group">
           <label className={`block text-sm font-medium ${text.primary} mb-2`}>
             {t('adminTimeEntry.hourType', 'Hour Type')} *
           </label>
@@ -585,7 +585,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
             <option value="bonus">{t('adminTimeEntry.hourTypes.bonus', 'Bonus Hours')}</option>
             <option value="wfh">{t('adminTimeEntry.hourTypes.wfh', 'Working From Home (Online)')}</option>
           </select>
-          <ChevronsUpDown className={`absolute top-[70%] right-3 transform -translate-y-1/2 pointer-events-none h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`} />
+          <ChevronsUpDown className={`absolute top-[70%] right-3 transform -translate-y-1/2 pointer-events-none h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-800'} group-hover:text-blue-500 transition-colors`} />
         </div>
 
         {/* Notes */}
@@ -619,9 +619,9 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
               />
               <label
                 htmlFor="admin-proof-file"
-                className="cursor-pointer flex flex-col items-center"
+                className="cursor-pointer flex flex-col items-center group"
               >
-                <Upload className={`w-8 h-8 ${text.secondary} mb-2`} />
+                <Upload className={`w-8 h-8 ${text.secondary} mb-2 group-hover:text-blue-500 transition-colors`} />
                 <span className={`text-sm ${text.primary} font-medium`}>
                   {t('timeClock.uploadFile', 'Click to upload proof of work')}
                 </span>

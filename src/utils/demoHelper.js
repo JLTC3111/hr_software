@@ -829,6 +829,28 @@ export const addDemoTimeEntry = (entry) => {
   return entry;
 };
 
+export const updateDemoTimeEntry = (entryId, updates) => {
+  const stored = localStorage.getItem(DEMO_TIME_ENTRIES_KEY);
+  const storedEntries = stored ? JSON.parse(stored) : [];
+  
+  // Check if entry exists in stored entries
+  const existingIndex = storedEntries.findIndex(e => e.id === entryId);
+  
+  if (existingIndex >= 0) {
+    // Update existing stored entry
+    storedEntries[existingIndex] = { ...storedEntries[existingIndex], ...updates };
+  } else {
+    // Entry is from MOCK_TIME_ENTRIES, need to copy and modify
+    const mockEntry = MOCK_TIME_ENTRIES.find(e => e.id === entryId);
+    if (mockEntry) {
+      storedEntries.push({ ...mockEntry, ...updates });
+    }
+  }
+  
+  localStorage.setItem(DEMO_TIME_ENTRIES_KEY, JSON.stringify(storedEntries));
+  return { id: entryId, ...updates };
+};
+
 export const MOCK_TASKS = [
   {
     id: 'task-1',
