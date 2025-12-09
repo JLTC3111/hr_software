@@ -4,6 +4,11 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { useNavigate } from 'react-router-dom';
+import {
+  getDemoNotificationTitle,
+  getDemoNotificationMessage,
+  getDemoNotificationActionLabel
+} from '../utils/demoHelper';
 
 const Notifications = () => {
   const { bg, text, border, hover, isDarkMode } = useTheme();
@@ -178,6 +183,30 @@ const Notifications = () => {
       'system': t('notifications.system', 'System'),
     };
     return categoryMap[category] || category;
+  };
+
+  const getNotificationTitleText = (notification) => {
+    const demoTitle = getDemoNotificationTitle(notification, t);
+    if (demoTitle && demoTitle !== notification.title) {
+      return demoTitle;
+    }
+    return getTranslatedTitle(notification.title || '');
+  };
+
+  const getNotificationMessageText = (notification) => {
+    const demoMessage = getDemoNotificationMessage(notification, t);
+    if (demoMessage && demoMessage !== notification.message) {
+      return demoMessage;
+    }
+    return getTranslatedMessage(notification.message || '');
+  };
+
+  const getNotificationActionLabelText = (notification) => {
+    const demoLabel = getDemoNotificationActionLabel(notification, t);
+    if (demoLabel && demoLabel !== notification.action_label) {
+      return demoLabel;
+    }
+    return getTranslatedActionLabel(notification.action_label || '');
   };
 
   if (loading && notifications.length === 0) {
@@ -384,14 +413,14 @@ const Notifications = () => {
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">
                           <h4 className={`font-semibold ${text.primary}`}>
-                            {getTranslatedTitle(notification.title)}
+                            {getNotificationTitleText(notification)}
                           </h4>
                           {!notification.is_read && (
                             <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
                           )}
                         </div>
                         <p className={`text-sm ${text.secondary} mt-1`}>
-                          {getTranslatedMessage(notification.message)}
+                          {getNotificationMessageText(notification)}
                         </p>
                         
                         {/* Action Button */}
@@ -399,7 +428,7 @@ const Notifications = () => {
                           <button
                             className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center space-x-1"
                           >
-                            <span>{getTranslatedActionLabel(notification.action_label)}</span>
+                            <span>{getNotificationActionLabelText(notification)}</span>
                             <ExternalLink className="h-3 w-3" />
                           </button>
                         )}

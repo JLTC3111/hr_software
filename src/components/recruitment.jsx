@@ -246,7 +246,7 @@ const Recruitment = () => {
                     <td className={`px-6 py-4 whitespace-nowrap`}>
                       {application.rating ? (
                         <div className="flex items-center">
-                          <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                          <Star className={`w-4 h-4 ${isDarkMode ? 'text-white fill-white' : 'text-gray-800 fill-gray-800'}`} />
                           <span className={`ml-1 text-sm ${text.primary}`}>{application.rating}/5</span>
                         </div>
                       ) : (

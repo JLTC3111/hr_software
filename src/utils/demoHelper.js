@@ -1457,7 +1457,7 @@ export const MOCK_NOTIFICATIONS = [
     type: 'warning',
     category: 'recruitment',
     is_read: false,
-    created_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+    created_at: new Date(Date.now() - 3600000).toISOString(), 
     action_url: '/recruitment',
     action_label: 'View Application',
     actionLabelKey: 'demoNotifications.notif-2.actionLabel'
