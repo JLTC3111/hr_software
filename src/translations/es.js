@@ -1643,6 +1643,9 @@ login: {
     emotionalIntelligence: 'Inteligencia Emocional',
     criticalThinking: 'Pensamiento Crítico',
     professionalDevelopment: 'Desarrollo Profesional',
+    goalDeletedSuccess: '¡Objetivo eliminado con éxito!',
+    goalDeletedError: 'Error al eliminar el objetivo',
+    goalsInProgress: 'Objetivos en Progreso',
   },
 
   // Morphing Showcase

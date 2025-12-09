@@ -1616,6 +1616,9 @@ export default {
     emotionalIntelligence: 'ความฉลาดทางอารมณ์',
     criticalThinking: 'การคิดเชิงวิพากษ์',
     professionalDevelopment: 'การพัฒนาวิชาชีพ',
+    goalDeletedSuccess: 'ลบเป้าหมายเรียบร้อยแล้ว!',
+    goalDeletedError: 'ไม่สามารถลบเป้าหมายได้',
+    goalsInProgress: 'เป้าหมายที่กำลังดำเนินการ',
   },
 
   // Morphing Showcase

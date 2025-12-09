@@ -1579,6 +1579,9 @@ export default {
     emotionalIntelligence: '感情知能',
     criticalThinking: '批判的思考',
     professionalDevelopment: '専門的成長',
+    goalDeletedSuccess: '目標を正常に削除しました！',
+    goalDeletedError: '目標の削除に失敗しました',
+    goalsInProgress: '進行中の目標',
   },
 
   // Morphing Showcase

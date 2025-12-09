@@ -11,6 +11,29 @@ export const createTimeEntry = async (timeEntryData) => {
   if (isDemoMode()) {
     // Look up employee info to attach to the entry for display
     const emp = getDemoEmployeeById(timeEntryData.employeeId);
+    
+    // Handle proof file in demo mode - save to demo storage
+    let proofFileUrl = timeEntryData.proofFileUrl || null;
+    let proofFileName = timeEntryData.proofFileName || null;
+    let proofFileType = timeEntryData.proofFileType || null;
+    let proofFilePath = timeEntryData.proofFilePath || null;
+    
+    // If we have a proof file blob/data, save it to demo storage
+    if (timeEntryData.proofFileUrl && timeEntryData.proofFileUrl.startsWith('blob:')) {
+      // Convert blob URL to data URL for persistence
+      try {
+        const response = await fetch(timeEntryData.proofFileUrl);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        proofFileUrl = await new Promise((resolve) => {
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+      } catch (e) {
+        console.warn('Failed to convert blob URL for demo storage', e);
+      }
+    }
+    
     const demoEntry = {
       id: `demo-entry-${Date.now()}`,
       ...timeEntryData,
@@ -22,6 +45,10 @@ export const createTimeEntry = async (timeEntryData) => {
       hour_type: timeEntryData.hourType,
       clock_in: timeEntryData.clockIn,
       clock_out: timeEntryData.clockOut,
+      proof_file_url: proofFileUrl,
+      proof_file_name: proofFileName,
+      proof_file_type: proofFileType,
+      proof_file_path: proofFilePath,
       employee: emp ? {
         id: emp.id,
         name: emp.name,
@@ -116,6 +143,10 @@ export const createBulkTimeEntries = async (timeEntriesData) => {
         hour_type: entry.hourType,
         clock_in: entry.clockIn,
         clock_out: entry.clockOut,
+        proof_file_url: entry.proofFileUrl || null,
+        proof_file_name: entry.proofFileName || null,
+        proof_file_type: entry.proofFileType || null,
+        proof_file_path: entry.proofFilePath || null,
         employee: emp ? {
           id: emp.id,
           name: emp.name,

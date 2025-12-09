@@ -446,6 +446,10 @@ const Reports = () => {
             aValue = priorityOrder[a.priority] || 0;
             bValue = priorityOrder[b.priority] || 0;
             break;
+          case 'type':
+            aValue = (a.hour_type || a.hourType || '').toLowerCase();
+            bValue = (b.hour_type || b.hourType || '').toLowerCase();
+            break;
           default:
             aValue = 0;
             bValue = 0;
@@ -2626,7 +2630,18 @@ const Reports = () => {
                         />
                       </span>
                     </th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.type', 'Type')}</th>
+                    <th 
+                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
+                      onClick={() => handleSort('type')}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {t('reports.type', 'Type')}
+                        <Timer
+                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'type' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
+                          style={{ transition: 'transform 0.5s', transform: sortKey === 'type' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                        />
+                      </span>
+                    </th>
                     <th 
                       className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
                       onClick={() => handleSort('status')}

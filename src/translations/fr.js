@@ -1668,6 +1668,9 @@ export default {
     emotionalIntelligence: 'Intelligence Émotionnelle',
     criticalThinking: 'Pensée Critique',
     professionalDevelopment: 'Développement Professionnel',
+    goalDeletedSuccess: 'Objectif supprimé avec succès!',
+    goalDeletedError: 'Échec de la suppression de l\'objectif',
+    goalsInProgress: 'Objectifs en Cours',
   },
 
   // Morphing Showcase

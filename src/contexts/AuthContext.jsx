@@ -732,12 +732,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginAsDemo = () => {
-    // Ensure any persisted demo edits are cleared so built-in mock data are visible
-    try {
-      resetAllDemoData();
-    } catch (err) {
-      console.warn('Failed to reset demo data on demo login:', err);
-    }
+    // Do NOT auto-reset demo data on login - let user manually restore via Control Panel
+    // Users can use the "Restore Demo Data" feature in Control Panel to reset specific data types
 
     enableDemoMode();
     setUser(MOCK_USER);

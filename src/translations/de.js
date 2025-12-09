@@ -511,6 +511,9 @@ export default {
     workEthic: 'Arbeitsmoral',
     attentionToDetail: 'Detailgenauigkeit',
     professionalDevelopment: 'Berufliche Entwicklung',
+    goalDeletedSuccess: 'Ziel erfolgreich gelöscht!',
+    goalDeletedError: 'Fehler beim Löschen des Ziels',
+    goalsInProgress: 'Ziele in Bearbeitung',
   },
 
   // Reports

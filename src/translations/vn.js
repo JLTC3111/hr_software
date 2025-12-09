@@ -1825,6 +1825,9 @@ export default {
     emotionalIntelligence: 'Trí tuệ cảm xúc',
     criticalThinking: 'Tư duy phản biện',
     professionalDevelopment: 'Phát triển chuyên nghiệp',
+    goalDeletedSuccess: 'Xóa mục tiêu thành công!',
+    goalDeletedError: 'Không thể xóa mục tiêu',
+    goalsInProgress: 'Mục Tiêu Đang Thực Hiện',
   },
 
   // Morphing Showcase

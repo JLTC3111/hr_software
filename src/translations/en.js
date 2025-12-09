@@ -578,6 +578,7 @@ export default {
       clockOutAfterClockIn: 'Clock out must be after clock in',
       submitFailed: 'Failed to submit time entry',
       deleteFailed: 'Failed to delete time entry',
+      overlapping: 'This time entry overlaps with an existing entry. Please choose a different time.',
       duplicateEntry: 'You already have a {hourType} time entry for this date. Please edit the existing entry or choose a different hour type.',
       overlappingEntry: 'This {hourType} time entry overlaps with an existing entry ({existingIn} - {existingOut}). Please choose a different time.',
       fileTooLarge: 'File size must be less than 50MB',
@@ -749,6 +750,10 @@ export default {
     project: 'Project',
     communication: 'Communication',
     professionalDevelopment: 'Professional Development',
+    // Missing toast/alert translation keys
+    goalDeletedSuccess: 'Goal deleted successfully!',
+    goalDeletedError: 'Failed to delete goal',
+    goalsInProgress: 'Goals In Progress',
   },
 
   // Reports

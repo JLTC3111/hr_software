@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Clock, Upload, Coffee, AlertCircle, Check, X, FileCheck, AlarmClockPlus, Loader, Loader2, Calendar, ChevronsUpDown, CalendarClock, ArrowDownAZ, CalendarArrowUp, CalendarArrowDown, Hourglass, Timer, Shield, FileImage } from 'lucide-react';
+import { Clock, Upload, Coffee, AlertCircle, Check, X, FileCheck, AlarmClockPlus, Loader, Loader2, Calendar, ChevronsUpDown, CalendarClock, ArrowDownAZ, CalendarArrowUp, CalendarArrowDown, Hourglass, Timer, Shield, ShieldCheck, ShieldQuestion, FileImage } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -1794,10 +1794,19 @@ const TimeClockEntry = ({ currentLanguage }) => {
                   >
                     <span className="inline-flex items-center justify-center gap-1">
                       {t('timeClock.status', 'Status')}
-                      <Shield
-                        className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                        style={{transition: 'transform 0.5s', transform: sortKey === 'status' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                      />
+                      {sortKey === 'status' ? (
+                        sortDirection === 'asc' ? (
+                          <ShieldCheck
+                            className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
+                          />
+                        ) : (
+                          <ShieldQuestion
+                            className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
+                          />
+                        )
+                      ) : (
+                        <ShieldCheck className="inline w-4 h-4 ml-1 transition-all duration-500 text-gray-400 hover:text-blue-400 hover:animate-pulse" />
+                      )}
                     </span>
                   </th>
                   <th className={`text-center p-3 ${text.primary} font-semibold`}>

@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../config/supabaseClient';
-import { isDemoMode, getDemoEmployeeName } from '../utils/demoHelper';
+import { isDemoMode, getDemoEmployeeName, resetAllDemoData, resetDemoTimeEntries, resetDemoGoals, resetDemoTasks, resetDemoReviews, resetDemoSkills, resetDemoLeaveRequests } from '../utils/demoHelper';
 
 const ControlPanel = () => {
   const { isDarkMode, bg, text, border } = useTheme();
@@ -61,6 +61,10 @@ const ControlPanel = () => {
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [showEmployeePassword, setShowEmployeePassword] = useState(false);
   const [showEmployeeConfirm, setShowEmployeeConfirm] = useState(false);
+
+  // Demo Data Management state
+  const [showDemoDataManagement, setShowDemoDataManagement] = useState(false);
+  const [restoringDemoData, setRestoringDemoData] = useState(null);
 
   // Toast notification state
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
@@ -819,6 +823,118 @@ const ControlPanel = () => {
                 </span>
               )}
             </button>
+          )}
+
+          {/* Demo Data Management - Only show in demo mode */}
+          {isDemoMode() && (
+            <button
+              onClick={() => setShowDemoDataManagement(!showDemoDataManagement)}
+              className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
+              style={{
+                backgroundColor: isDarkMode ? '#4c1d95' : '#f3e8ff',
+                color: isDarkMode ? '#c4b5fd' : '#6b21a8'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = isDarkMode ? '#5b21b6' : '#e9d5ff';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = isDarkMode ? '#4c1d95' : '#f3e8ff';
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span className="text-sm">{t('controlPanel.restoreDemoData', 'Restore Demo Data')}</span>
+            </button>
+          )}
+
+          {/* Demo Data Management Panel */}
+          {isDemoMode() && showDemoDataManagement && (
+            <div 
+              className="p-4 rounded-lg space-y-3"
+              style={{
+                backgroundColor: isDarkMode ? '#1f2937' : '#f9fafb',
+                border: '1px solid',
+                borderColor: isDarkMode ? '#374151' : '#e5e7eb'
+              }}
+            >
+              <p 
+                className="text-xs mb-3"
+                style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
+              >
+                {t('controlPanel.restoreDemoDataDescription', 'Restore default demo data for specific data types. This will reset any changes you made.')}
+              </p>
+              
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { key: 'timeEntries', label: t('controlPanel.demoTimeEntries', 'Time Entries'), fn: resetDemoTimeEntries },
+                  { key: 'goals', label: t('controlPanel.demoGoals', 'Goals'), fn: resetDemoGoals },
+                  { key: 'tasks', label: t('controlPanel.demoTasks', 'Tasks'), fn: resetDemoTasks },
+                  { key: 'reviews', label: t('controlPanel.demoReviews', 'Reviews'), fn: resetDemoReviews },
+                  { key: 'skills', label: t('controlPanel.demoSkills', 'Skills'), fn: resetDemoSkills },
+                  { key: 'leaveRequests', label: t('controlPanel.demoLeaveRequests', 'Leave Requests'), fn: resetDemoLeaveRequests },
+                ].map(({ key, label, fn }) => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      setRestoringDemoData(key);
+                      setTimeout(() => {
+                        fn();
+                        setRestoringDemoData(null);
+                        setToast({ show: true, message: t('controlPanel.demoDataRestored', '{type} restored to defaults').replace('{type}', label), type: 'success' });
+                        setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000);
+                      }, 500);
+                    }}
+                    disabled={restoringDemoData !== null}
+                    className="flex items-center justify-center space-x-1 px-2 py-2 rounded text-xs transition-colors"
+                    style={{
+                      backgroundColor: isDarkMode ? '#374151' : '#e5e7eb',
+                      color: isDarkMode ? '#ffffff' : '#111827',
+                      opacity: restoringDemoData !== null ? 0.6 : 1
+                    }}
+                  >
+                    {restoringDemoData === key ? (
+                      <Loader className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    )}
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
+              
+              <button
+                onClick={() => {
+                  setRestoringDemoData('all');
+                  setTimeout(() => {
+                    resetAllDemoData();
+                    setRestoringDemoData(null);
+                    setToast({ show: true, message: t('controlPanel.allDemoDataRestored', 'All demo data restored to defaults'), type: 'success' });
+                    setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000);
+                  }, 500);
+                }}
+                disabled={restoringDemoData !== null}
+                className="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors"
+                style={{
+                  backgroundColor: isDarkMode ? '#dc2626' : '#fef2f2',
+                  color: isDarkMode ? '#ffffff' : '#dc2626',
+                  border: '1px solid',
+                  borderColor: '#dc2626',
+                  opacity: restoringDemoData !== null ? 0.6 : 1
+                }}
+              >
+                {restoringDemoData === 'all' ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                )}
+                <span>{t('controlPanel.restoreAllDemoData', 'Restore All Demo Data')}</span>
+              </button>
+            </div>
           )}
 
           <button

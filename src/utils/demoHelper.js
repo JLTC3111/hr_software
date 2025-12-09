@@ -1528,7 +1528,7 @@ export const resetDemoTasks = () => {
 };
 
 /**
- * Reset all demo persistent data (tasks, goals, leave requests)
+ * Reset all demo persistent data (tasks, goals, leave requests, time entries, etc.)
  * This will cause the UI to fall back to the builtin MOCK_* arrays again
  */
 export const resetAllDemoData = () => {
@@ -1536,9 +1536,91 @@ export const resetAllDemoData = () => {
     localStorage.removeItem(DEMO_TASKS_KEY);
     localStorage.removeItem(DEMO_GOALS_KEY);
     localStorage.removeItem(DEMO_LEAVE_REQUESTS_KEY);
+    localStorage.removeItem(DEMO_TIME_ENTRIES_KEY);
+    localStorage.removeItem(DEMO_REVIEWS_KEY);
+    localStorage.removeItem(DEMO_SKILLS_KEY);
+    localStorage.removeItem(DEMO_EMPLOYEES_KEY);
     return true;
   } catch (err) {
     console.error('Failed to reset demo data:', err);
+    return false;
+  }
+};
+
+/**
+ * Reset demo time entries stored in localStorage
+ */
+export const resetDemoTimeEntries = () => {
+  try {
+    localStorage.removeItem(DEMO_TIME_ENTRIES_KEY);
+    return true;
+  } catch (err) {
+    console.error('Failed to reset demo time entries:', err);
+    return false;
+  }
+};
+
+/**
+ * Reset demo goals stored in localStorage
+ */
+export const resetDemoGoals = () => {
+  try {
+    localStorage.removeItem(DEMO_GOALS_KEY);
+    return true;
+  } catch (err) {
+    console.error('Failed to reset demo goals:', err);
+    return false;
+  }
+};
+
+/**
+ * Reset demo reviews stored in localStorage
+ */
+export const resetDemoReviews = () => {
+  try {
+    localStorage.removeItem(DEMO_REVIEWS_KEY);
+    return true;
+  } catch (err) {
+    console.error('Failed to reset demo reviews:', err);
+    return false;
+  }
+};
+
+/**
+ * Reset demo skills stored in localStorage
+ */
+export const resetDemoSkills = () => {
+  try {
+    localStorage.removeItem(DEMO_SKILLS_KEY);
+    return true;
+  } catch (err) {
+    console.error('Failed to reset demo skills:', err);
+    return false;
+  }
+};
+
+/**
+ * Reset demo leave requests stored in localStorage
+ */
+export const resetDemoLeaveRequests = () => {
+  try {
+    localStorage.removeItem(DEMO_LEAVE_REQUESTS_KEY);
+    return true;
+  } catch (err) {
+    console.error('Failed to reset demo leave requests:', err);
+    return false;
+  }
+};
+
+/**
+ * Reset demo employees stored in localStorage
+ */
+export const resetDemoEmployees = () => {
+  try {
+    localStorage.removeItem(DEMO_EMPLOYEES_KEY);
+    return true;
+  } catch (err) {
+    console.error('Failed to reset demo employees:', err);
     return false;
   }
 };

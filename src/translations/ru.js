@@ -1567,6 +1567,9 @@ export default {
     emotionalIntelligence: 'Эмоциональный интеллект',
     criticalThinking: 'Критическое мышление',
     professionalDevelopment: 'Профессиональное развитие',
+    goalDeletedSuccess: 'Цель успешно удалена!',
+    goalDeletedError: 'Не удалось удалить цель',
+    goalsInProgress: 'Цели в процессе',
   },
 
   // Morphing Showcase

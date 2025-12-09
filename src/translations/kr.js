@@ -1553,6 +1553,9 @@ export default {
     emotionalIntelligence: '감성 지능',
     criticalThinking: '비판적 사고',
     professionalDevelopment: '전문성 개발',
+    goalDeletedSuccess: '목표가 성공적으로 삭제되었습니다!',
+    goalDeletedError: '목표 삭제 실패',
+    goalsInProgress: '진행 중인 목표',
   },
 
   // Morphing Showcase
