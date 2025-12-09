@@ -9,7 +9,7 @@ import {
   getRecruitmentStats,
   createJobPosting
 } from '../services/recruitmentService';
-import { isDemoMode, getDemoApplicationStatus } from '../utils/demoHelper';
+import { isDemoMode, getDemoApplicationStatus, getDemoApplicationNotes, getDemoJobTitle } from '../utils/demoHelper';
 
 const Recruitment = () => {
   const { t } = useLanguage();
@@ -648,7 +648,7 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate }) => {
           <div>
             <h3 className={`text-lg font-semibold ${text.primary} mb-3`}>{t('recruitment.jobDetails', 'Job Details')}</h3>
             <div className="space-y-2">
-              <DetailRow label={t('recruitment.position', 'Position')} value={application.job_posting?.title} />
+              <DetailRow label={t('recruitment.position', 'Position')} value={isDemoMode() ? getDemoJobTitle(application.job_posting, t) : application.job_posting?.title} />
               <DetailRow label={t('recruitment.department', 'Department')} value={application.job_posting?.department ? t(`employeeDepartment.${application.job_posting.department}`, application.job_posting.department) : null} />
               <DetailRow label={t('recruitment.appliedDate', 'Applied Date')} value={application.application_date ? new Date(application.application_date).toLocaleDateString() : null} />
               <DetailRow
@@ -666,8 +666,8 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate }) => {
               <DetailRow label={t('common.phone', 'Phone')} value={application.applicant?.phone} />
               <DetailRow label={t('recruitment.experience', 'Experience')} value={`${application.applicant?.years_of_experience || 0} ${t('recruitment.years', 'years')}`} />
               <DetailRow label={t('recruitment.currentCompany', 'Current Company')} value={application.applicant?.current_company} />
-              <DetailRow label={t('recruitment.currentPosition', 'Current Position')} value={application.applicant?.current_position} />
-              <DetailRow label={t('recruitment.education', 'Education')} value={application.applicant?.education_level} />
+              <DetailRow label={t('recruitment.currentPosition', 'Current Position')} value={isDemoMode() ? t(application.applicant?.currentPositionKey, application.applicant?.current_position) : application.applicant?.current_position} />
+              <DetailRow label={t('recruitment.education', 'Education')} value={isDemoMode() ? t(application.applicant?.educationLevelKey, application.applicant?.education_level) : application.applicant?.education_level} />
             </div>
           </div>
 
@@ -704,7 +704,7 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate }) => {
           {application.notes && (
             <div>
               <h3 className={`text-lg font-semibold ${text.primary} mb-3`}>{t('recruitment.notes', 'Notes')}</h3>
-              <p className={`text-sm ${text.secondary}`}>{application.notes}</p>
+              <p className={`text-sm ${text.secondary}`}>{isDemoMode() ? getDemoApplicationNotes(application, t) : application.notes}</p>
             </div>
           )}
         </div>

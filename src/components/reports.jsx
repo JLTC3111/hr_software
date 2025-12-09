@@ -25,6 +25,7 @@ import {
   Pickaxe,
   HeartPlus,
   ShieldCheck,
+  ShieldQuestion,
   PenOff,
   Apple, 
   Hourglass,
@@ -2591,8 +2592,8 @@ const Reports = () => {
                       <span className="inline-flex items-center gap-1">
                         {t('reports.employees', 'Employee')}
                         <ArrowDownAZ
-                          className={`inline w-4 h-4 transition-all duration-300 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400'}`}
-                          style={{ transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
+                          style={{ transition: 'transform 0.5s', transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
                         />
                       </span>
                     </th>
@@ -2604,12 +2605,12 @@ const Reports = () => {
                         {t('reports.date', 'Date')}
                         {sortKey === 'date' ? (
                           sortDirection === 'asc' ? (
-                            <CalendarArrowUp className={`inline w-4 h-4 transition-all duration-300 ${isDarkMode ? 'text-white' : 'text-black'}`} />
+                            <CalendarArrowUp className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`} />
                           ) : (
-                            <CalendarArrowDown className={`inline w-4 h-4 transition-all duration-300 ${isDarkMode ? 'text-white' : 'text-black'}`} />
+                            <CalendarArrowDown className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`} />
                           )
                         ) : (
-                          <CalendarArrowUp className="inline w-4 h-4 text-gray-400 hover:text-blue-400" />
+                          <CalendarArrowUp className="inline w-4 h-4 ml-1 transition-all duration-500 text-gray-400 hover:text-blue-400 hover:animate-pulse" />
                         )}
                       </span>
                     </th>
@@ -2620,8 +2621,8 @@ const Reports = () => {
                       <span className="inline-flex items-center gap-1">
                         {t('reports.hours', 'Hours')}
                         <Hourglass
-                          className={`inline w-3.5 h-3.5 transition-all duration-300 ${sortKey === 'hours' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400'}`}
-                          style={{ transform: sortKey === 'hours' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                          className={`inline w-3.5 h-3.5 ml-1 transition-all duration-500 ${sortKey === 'hours' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
+                          style={{ transition: 'transform 0.5s', transform: sortKey === 'hours' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
                         />
                       </span>
                     </th>
@@ -2630,12 +2631,21 @@ const Reports = () => {
                       className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
                       onClick={() => handleSort('status')}
                     >
-                      <span className="inline-flex items-center gap-1">
+                      <span className="inline-flex items-center justify-center gap-1">
                         {t('reports.status', 'Status')}
-                        <Shield
-                          className={`inline w-4 h-4 transition-all duration-300 ${sortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400'}`}
-                          style={{ transform: sortKey === 'status' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                        />
+                        {sortKey === 'status' ? (
+                          sortDirection === 'asc' ? (
+                            <ShieldCheck
+                              className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
+                            />
+                          ) : (
+                            <ShieldQuestion
+                              className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
+                            />
+                          )
+                        ) : (
+                          <ShieldCheck className="inline w-4 h-4 ml-1 transition-all duration-500 text-gray-400 hover:text-blue-400 hover:animate-pulse" />
+                        )}
                       </span>
                     </th>
                   </>
@@ -2650,8 +2660,8 @@ const Reports = () => {
                       <span className="inline-flex items-center gap-1">
                         {t('reports.employees', 'Employee')}
                         <ArrowDownAZ
-                          className={`inline w-4 h-4 transition-all duration-300 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400'}`}
-                          style={{ transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
+                          style={{ transition: 'transform 0.5s', transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
                         />
                       </span>
                     </th>
@@ -2663,8 +2673,8 @@ const Reports = () => {
                       <span className="inline-flex items-center gap-1">
                         {t('reports.priority', 'Priority')}
                         <Timer
-                          className={`inline w-4 h-4 transition-all duration-300 ${sortKey === 'priority' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400'}`}
-                          style={{ transform: sortKey === 'priority' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'priority' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
+                          style={{ transition: 'transform 0.5s', transform: sortKey === 'priority' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
                         />
                       </span>
                     </th>
@@ -2672,12 +2682,21 @@ const Reports = () => {
                       className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
                       onClick={() => handleSort('status')}
                     >
-                      <span className="inline-flex items-center gap-1">
+                      <span className="inline-flex items-center justify-center gap-1">
                         {t('reports.status', 'Status')}
-                        <Shield
-                          className={`inline w-4 h-4 transition-all duration-300 ${sortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400'}`}
-                          style={{ transform: sortKey === 'status' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                        />
+                        {sortKey === 'status' ? (
+                          sortDirection === 'asc' ? (
+                            <ShieldCheck
+                              className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
+                            />
+                          ) : (
+                            <ShieldQuestion
+                              className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
+                            />
+                          )
+                        ) : (
+                          <ShieldCheck className="inline w-4 h-4 ml-1 transition-all duration-500 text-gray-400 hover:text-blue-400 hover:animate-pulse" />
+                        )}
                       </span>
                     </th>
                     <th 
@@ -2688,12 +2707,12 @@ const Reports = () => {
                         {t('reports.dueDate', 'Due Date')}
                         {sortKey === 'date' ? (
                           sortDirection === 'asc' ? (
-                            <CalendarArrowUp className={`inline w-4 h-4 transition-all duration-300 ${isDarkMode ? 'text-white' : 'text-black'}`} />
+                            <CalendarArrowUp className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`} />
                           ) : (
-                            <CalendarArrowDown className={`inline w-4 h-4 transition-all duration-300 ${isDarkMode ? 'text-white' : 'text-black'}`} />
+                            <CalendarArrowDown className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`} />
                           )
                         ) : (
-                          <CalendarArrowUp className="inline w-4 h-4 text-gray-400 hover:text-blue-400" />
+                          <CalendarArrowUp className="inline w-4 h-4 ml-1 transition-all duration-500 text-gray-400 hover:text-blue-400 hover:animate-pulse" />
                         )}
                       </span>
                     </th>
@@ -2709,8 +2728,8 @@ const Reports = () => {
                       <span className="inline-flex items-center gap-1">
                         {t('reports.employees', 'Employee')}
                         <ArrowDownAZ
-                          className={`inline w-4 h-4 transition-all duration-300 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400'}`}
-                          style={{ transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
+                          style={{ transition: 'transform 0.5s', transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
                         />
                       </span>
                     </th>
@@ -2720,12 +2739,21 @@ const Reports = () => {
                       className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
                       onClick={() => handleSort('status')}
                     >
-                      <span className="inline-flex items-center gap-1">
+                      <span className="inline-flex items-center justify-center gap-1">
                         {t('reports.status', 'Status')}
-                        <Shield
-                          className={`inline w-4 h-4 transition-all duration-300 ${sortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400'}`}
-                          style={{ transform: sortKey === 'status' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                        />
+                        {sortKey === 'status' ? (
+                          sortDirection === 'asc' ? (
+                            <ShieldCheck
+                              className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
+                            />
+                          ) : (
+                            <ShieldQuestion
+                              className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
+                            />
+                          )
+                        ) : (
+                          <ShieldCheck className="inline w-4 h-4 ml-1 transition-all duration-500 text-gray-400 hover:text-blue-400 hover:animate-pulse" />
+                        )}
                       </span>
                     </th>
                     <th 
@@ -2735,8 +2763,8 @@ const Reports = () => {
                       <span className="inline-flex items-center gap-1">
                         {t('reports.progress', 'Progress')}
                         <Gauge
-                          className={`inline w-4 h-4 transition-all duration-300 ${sortKey === 'progress' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400'}`}
-                          style={{ transform: sortKey === 'progress' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'progress' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
+                          style={{ transition: 'transform 0.5s', transform: sortKey === 'progress' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
                         />
                       </span>
                     </th>

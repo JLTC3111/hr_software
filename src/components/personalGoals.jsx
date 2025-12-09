@@ -873,24 +873,39 @@ const PersonalGoals = ({ employees }) => {
               </div>
           
               <div className="flex items-center justify-between text-sm">
-                <span 
+                <div className="flex items-center space-x-2">
+                  <span 
+                    style={{
+                      backgroundColor: 'transparent',
+                      color: isDarkMode ? '#d1d5db' : '#4b5563',
+                      borderColor: 'transparent'
+                    }}
+                  >
+                    {goal.progress}% {t('personalGoals.complete')}
+                  </span>
+                  <span 
+                    style={{
+                      backgroundColor: 'transparent',
+                      color: isDarkMode ? '#d1d5db' : '#4b5563',
+                      borderColor: 'transparent'
+                    }}
+                  >
+                    | {t('personalGoals.due')}: {new Date(goal.deadline).toLocaleDateString()}
+                  </span>
+                </div>
+                <button 
+                  onClick={() => handleViewGoal(goal)}
+                  className="flex items-center space-x-1 px-2 py-1 rounded transition-colors cursor-pointer"
                   style={{
                     backgroundColor: 'transparent',
-                    color: isDarkMode ? '#d1d5db' : '#4b5563',
+                    color: isDarkMode ? '#60a5fa' : '#2563eb',
                     borderColor: 'transparent'
                   }}
+                  title={t('personalGoals.viewDetails', 'View Details')}
                 >
-                  {goal.progress}% {t('personalGoals.complete')}
-                </span>
-                <span 
-                  style={{
-                    backgroundColor: 'transparent',
-                    color: isDarkMode ? '#d1d5db' : '#4b5563',
-                    borderColor: 'transparent'
-                  }}
-                >
-                  {t('personalGoals.due')}: {new Date(goal.deadline).toLocaleDateString()}
-                </span>
+                  <Eye className="h-4 w-4" />
+                  <span className="text-sm">{t('personalGoals.viewDetails', 'View Details')}</span>
+                </button>
               </div>
             </div>
           ))}
