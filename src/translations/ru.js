@@ -949,13 +949,34 @@ export default {
   // Recruitment Status
   recruitmentStatus: {
     active: 'Активный',
-    interviewScheduled: 'Собеседование запланировано',
-    underReview: 'На рассмотрении',
+    interviewScheduled: 'Назначено интервью',
+    underreview: 'На рассмотрении',
     offerExtended: 'Предложение сделано',
-    rejected: 'Отклонён',
-    screening: 'Отбор',
+    offer: 'Предложение',
+    hired: 'Принят',
+    rejected: 'Отклонено',
+    screening: 'Скрининг',
     technical: 'Техническое',
-    offer: 'Предложение'
+    shortlisted: 'В шорт-листе'
+  },
+
+  // Demo Notifications
+  demoNotifications: {
+    'notif-1': {
+      title: 'Добро пожаловать в HR-систему',
+      message: 'Добро пожаловать в демонстрационный режим HR-системы. Исследуйте её возможности!',
+      actionLabel: 'Перейти на панель'
+    },
+    'notif-2': {
+      title: 'Новая заявка',
+      message: 'Поступила новая заявка на позицию Senior Frontend Developer.',
+      actionLabel: 'Просмотреть заявку'
+    },
+    'notif-3': {
+      title: 'Плановая оценка эффективности',
+      message: 'Квартальные оценки эффективности должны быть выполнены на следующей неделе.',
+      actionLabel: 'Просмотреть оценки'
+    }
   },
 
   // Performance Goals

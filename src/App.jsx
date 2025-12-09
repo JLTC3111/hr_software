@@ -114,13 +114,13 @@ const HRManagementApp = () => {
         // Transform data to match expected format
         const transformedData = result.data.map(app => ({
           id: app.id,
-          candidateName: app.candidate_name,
+          candidateName: app.candidate_name || app.applicant?.name || 'Unknown',
           position: app.job_posting?.title || 'N/A',
           department: app.job_posting?.department || 'N/A',
           status: app.status,
-          appliedDate: app.applied_date,
-          email: app.email,
-          experience: `${app.experience_years} years`,
+          appliedDate: app.applied_date || app.application_date,
+          email: app.email || app.applicant?.email,
+          experience: app.experience_years ? `${app.experience_years} years` : (app.applicant?.years_experience ? `${app.applicant.years_experience} years` : 'N/A'),
           stage: app.stage
         }));
         setApplications(transformedData);

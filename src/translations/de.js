@@ -1051,13 +1051,34 @@ export default {
   // Recruitment Status
   recruitmentStatus: {
     active: 'Aktiv',
-    interviewScheduled: 'Vorstellungsgespräch geplant',
-    underReview: 'In Prüfung',
+    interviewScheduled: 'Interview geplant',
+    underreview: 'In Überprüfung',
     offerExtended: 'Angebot unterbreitet',
+    offer: 'Angebot',
+    hired: 'Eingestellt',
     rejected: 'Abgelehnt',
-    screening: 'Vorauswahl',
+    screening: 'Screening',
     technical: 'Technisch',
-    offer: 'Angebot'
+    shortlisted: 'Ausgewählt'
+  },
+
+  // Demo Notifications
+  demoNotifications: {
+    'notif-1': {
+      title: 'Willkommen im HR-System',
+      message: 'Willkommen im Demo-Modus des HR-Systems. Viel Spaß beim Erkunden!',
+      actionLabel: 'Zum Dashboard'
+    },
+    'notif-2': {
+      title: 'Neue Bewerbung',
+      message: 'Neue Bewerbung für die Position Senior Frontend Developer eingegangen.',
+      actionLabel: 'Bewerbung ansehen'
+    },
+    'notif-3': {
+      title: 'Leistungsbewertung fällig',
+      message: 'Die vierteljährlichen Leistungsbewertungen stehen nächste Woche an.',
+      actionLabel: 'Bewertungen ansehen'
+    }
   },
 
   // Performance Goals

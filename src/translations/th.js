@@ -962,13 +962,34 @@ export default {
   // Recruitment Status
   recruitmentStatus: {
     active: 'ใช้งานอยู่',
-    interviewScheduled: 'นัดสัมภาษณ์แล้ว',
-    underReview: 'อยู่ระหว่างการพิจารณา',
-    offerExtended: 'เสนอข้อเสนอแล้ว',
-    rejected: 'ถูกปฏิเสธ',
-    screening: 'การคัดกรอง',
-    technical: 'ด้านเทคนิค',
-    offer: 'ข้อเสนอ'
+    interviewScheduled: 'กำหนดสัมภาษณ์แล้ว',
+    underreview: 'อยู่ระหว่างตรวจสอบ',
+    offerExtended: 'ข้อเสนอส่งแล้ว',
+    offer: 'ข้อเสนอ',
+    hired: 'ได้รับการว่าจ้าง',
+    rejected: 'ปฏิเสธ',
+    screening: 'คัดกรอง',
+    technical: 'เทคนิค',
+    shortlisted: 'ผ่านเข้ารอบสุดท้าย'
+  },
+
+  // Demo Notifications
+  demoNotifications: {
+    'notif-1': {
+      title: 'ยินดีต้อนรับสู่ระบบ HR',
+      message: 'ยินดีต้อนรับสู่โหมดสาธิตของระบบ HR สามารถสำรวจระบบได้ตามต้องการ!',
+      actionLabel: 'ไปยังแดชบอร์ด'
+    },
+    'notif-2': {
+      title: 'ใบสมัครใหม่',
+      message: 'มีใบสมัครใหม่สำหรับตำแหน่ง Senior Frontend Developer',
+      actionLabel: 'ดูใบสมัคร'
+    },
+    'notif-3': {
+      title: 'ถึงเวลาประเมินผลการทำงาน',
+      message: 'การประเมินผลการทำงานรายไตรมาสจะถึงกำหนดในสัปดาห์หน้า',
+      actionLabel: 'ดูการประเมิน'
+    }
   },
 
   // Performance Goals

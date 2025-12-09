@@ -948,12 +948,33 @@ export default {
   recruitmentStatus: {
     active: 'アクティブ',
     interviewScheduled: '面接予定',
-    underReview: '審査中',
-    offerExtended: 'オファー提示',
-    rejected: '拒否',
-    screening: 'スクリーニング',
+    underreview: '審査中',
+    offerExtended: 'オファー提示済み',
+    offer: 'オファー',
+    hired: '採用済み',
+    rejected: '不採用',
+    screening: '書類選考',
     technical: '技術面接',
-    offer: 'オファー'
+    shortlisted: '最終候補'
+  },
+
+  // Demo Notifications
+  demoNotifications: {
+    'notif-1': {
+      title: 'HRシステムへようこそ',
+      message: 'HRシステムのデモモードへようこそ。自由に操作してみてください！',
+      actionLabel: 'ダッシュボードへ'
+    },
+    'notif-2': {
+      title: '新しい応募',
+      message: 'Senior Frontend Developerのポジションに新しい応募がありました。',
+      actionLabel: '応募を見る'
+    },
+    'notif-3': {
+      title: 'パフォーマンスレビュー期限',
+      message: '四半期ごとのパフォーマンスレビューは来週が締め切りです。',
+      actionLabel: 'レビューを見る'
+    }
   },
 
   // Performance Goals

@@ -906,13 +906,34 @@ export default {
   // Recruitment Status
   recruitmentStatus: {
     active: '활성',
-    interviewScheduled: '면접 예정',
-    underReview: '검토중',
-    offerExtended: '제안 제공',
+    interviewScheduled: '면접 일정 예정',
+    underreview: '검토 중',
+    offerExtended: '오퍼 발송됨',
+    offer: '오퍼',
+    hired: '채용됨',
     rejected: '거절됨',
-    screening: '스크리닝',
-    technical: '기술 면접',
-    offer: '제안'
+    screening: '서류심사',
+    technical: '기술면접',
+    shortlisted: '최종 후보'
+  },
+
+  // Demo Notifications
+  demoNotifications: {
+    'notif-1': {
+      title: 'HR 시스템에 오신 것을 환영합니다',
+      message: 'HR 시스템 데모 모드에 오신 것을 환영합니다. 자유롭게 탐색해보세요!',
+      actionLabel: '대시보드로 이동'
+    },
+    'notif-2': {
+      title: '새로운 지원서',
+      message: 'Senior Frontend Developer 포지션에 새로운 지원서가 접수되었습니다.',
+      actionLabel: '지원서 보기'
+    },
+    'notif-3': {
+      title: '성과 평가 예정',
+      message: '분기별 성과 평가가 다음 주에 예정되어 있습니다.',
+      actionLabel: '평가 보기'
+    }
   },
 
   // Performance Goals

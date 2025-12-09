@@ -1,7 +1,7 @@
 import { supabase } from '../config/supabaseClient';
 import { withTimeout } from '../utils/supabaseTimeout';
 import { isDemoMode, MOCK_EMPLOYEES, getDemoEmployees, addDemoEmployee, updateDemoEmployee } from '../utils/demoHelper';
-import { saveDemoPdf, getDemoPdf, deleteDemoPdf } from '../utils/demoStorage';
+import { saveDemoPdf, getDemoPdf, deleteDemoPdf, saveDemoBlob, getDemoBlob } from '../utils/demoStorage';
 
 /* Ensure employee ID is a string (supports both integers and UUIDs) */
 const toEmployeeId = (id) => {
@@ -103,6 +103,23 @@ export const getAllEmployees = async (filters = {}) => {
   if (isDemoMode()) {
     console.log('🧪 Demo Mode: Returning mock employees');
     let data = getDemoEmployees();
+
+    // Hydrate photos from IndexedDB
+    const dataWithPhotos = await Promise.all(data.map(async (emp) => {
+      if (emp.photoBlobKey && !emp.photo) {
+        try {
+          const blob = await getDemoBlob(emp.photoBlobKey);
+          if (blob) {
+            return { ...emp, photo: URL.createObjectURL(blob) };
+          }
+        } catch (e) {
+          console.error('Error loading demo photo:', e);
+        }
+      }
+      return emp;
+    }));
+    
+    data = dataWithPhotos;
     
     // Apply simple filters
     if (filters.status) {
@@ -162,7 +179,20 @@ export const getEmployeeById = async (employeeId) => {
   if (isDemoMode()) {
     const employees = getDemoEmployees();
     const emp = employees.find(e => e.id === employeeId);
-    if (emp) return { success: true, data: emp };
+    if (emp) {
+      // Hydrate photo if needed
+      if (emp.photoBlobKey && !emp.photo) {
+        try {
+          const blob = await getDemoBlob(emp.photoBlobKey);
+          if (blob) {
+            return { success: true, data: { ...emp, photo: URL.createObjectURL(blob) } };
+          }
+        } catch (e) {
+          console.error('Error loading demo photo:', e);
+        }
+      }
+      return { success: true, data: emp };
+    }
     return { success: false, error: 'Employee not found in demo data' };
   }
 
@@ -192,6 +222,25 @@ export const createEmployee = async (employeeData) => {
       status: employeeData.status || 'Active',
       start_date: employeeData.startDate || new Date().toISOString().split('T')[0]
     };
+
+    // Handle photo storage in IndexedDB to avoid localStorage quota limits
+    if (newEmployee.photo && typeof newEmployee.photo === 'string' && newEmployee.photo.startsWith('data:')) {
+      try {
+        // Convert base64 to blob
+        const response = await fetch(newEmployee.photo);
+        const blob = await response.blob();
+        const photoKey = `${newEmployee.id}_photo`;
+        await saveDemoBlob(photoKey, blob);
+        
+        // Store reference instead of huge string
+        newEmployee.photo = null; 
+        newEmployee.photoBlobKey = photoKey;
+      } catch (err) {
+        console.error('Failed to save demo photo to IndexedDB:', err);
+        newEmployee.photo = null;
+      }
+    }
+
     addDemoEmployee(newEmployee);
     return { success: true, data: newEmployee };
   }
@@ -263,6 +312,22 @@ export const createEmployee = async (employeeData) => {
  */
 export const updateEmployee = async (employeeId, updates) => {
   if (isDemoMode()) {
+    // Handle photo update
+    if (updates.photo && typeof updates.photo === 'string' && updates.photo.startsWith('data:')) {
+       try {
+        const response = await fetch(updates.photo);
+        const blob = await response.blob();
+        const photoKey = `${employeeId}_photo`;
+        await saveDemoBlob(photoKey, blob);
+        
+        updates.photo = null;
+        updates.photoBlobKey = photoKey;
+      } catch (err) {
+        console.error('Failed to save demo photo update:', err);
+        updates.photo = null;
+      }
+    }
+
     const updated = updateDemoEmployee(employeeId, updates);
     if (updated) {
       return { success: true, data: updated };

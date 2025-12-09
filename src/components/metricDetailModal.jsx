@@ -483,7 +483,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                     item.status === 'Under Review' || item.status === 'under review' ? isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-800' :
                     isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800'
                   }`}>
-                    {t(`recruitment.status.${item.status?.toLowerCase().replace(/\s+/g, '')}`, item.status)}
+                    {t(`recruitmentStatus.${item.status?.toLowerCase().replace(/\s+/g, '')}`, item.status)}
                   </span>
                 </td>
               </tr>

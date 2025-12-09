@@ -1216,12 +1216,36 @@ export default {
   recruitmentStatus: {
     active: 'Active',
     interviewScheduled: 'Interview Scheduled',
+    interviewscheduled: 'Interview Scheduled',
     underReview: 'Under Review',
+    underreview: 'Under Review',
     offerExtended: 'Offer Extended',
+    offerextended: 'Offer Extended',
     rejected: 'Rejected',
     screening: 'Screening',
     technical: 'Technical',
-    offer: 'Offer'
+    offer: 'Offer',
+    hired: 'Hired',
+    shortlisted: 'Shortlisted'
+  },
+
+  // Demo Notifications
+  demoNotifications: {
+    'notif-1': {
+      title: 'Welcome to HR System',
+      message: 'Welcome to the demo mode of the HR System. Feel free to explore!',
+      actionLabel: 'Go to Dashboard'
+    },
+    'notif-2': {
+      title: 'New Application',
+      message: 'New application received for Senior Frontend Developer position.',
+      actionLabel: 'View Application'
+    },
+    'notif-3': {
+      title: 'Performance Review Due',
+      message: 'Quarterly performance reviews are due next week.',
+      actionLabel: 'View Reviews'
+    }
   },
 
   // Performance Goals

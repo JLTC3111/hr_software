@@ -1000,13 +1000,34 @@ login: {
   // Recruitment Status
   recruitmentStatus: {
     active: 'Activo',
-    interviewScheduled: 'Entrevista Programada',
-    underReview: 'En Revisión',
-    offerExtended: 'Oferta Extendida',
+    interviewScheduled: 'Entrevista programada',
+    underreview: 'En revisión',
+    offerExtended: 'Oferta enviada',
+    offer: 'Oferta',
+    hired: 'Contratado',
     rejected: 'Rechazado',
     screening: 'Selección',
     technical: 'Técnico',
-    offer: 'Oferta'
+    shortlisted: 'Preseleccionado'
+  },
+  
+  // Demo Notifications
+  demoNotifications: {
+    'notif-1': {
+      title: 'Bienvenido al Sistema de RR.HH.',
+      message: 'Bienvenido al modo demo del Sistema de RR.HH. ¡Siéntete libre de explorar!',
+      actionLabel: 'Ir al Panel'
+    },
+    'notif-2': {
+      title: 'Nueva aplicación',
+      message: 'Se recibió una nueva aplicación para el puesto de Senior Frontend Developer.',
+      actionLabel: 'Ver aplicación'
+    },
+    'notif-3': {
+      title: 'Revisión de desempeño pendiente',
+      message: 'Las revisiones trimestrales de desempeño se deben completar la próxima semana.',
+      actionLabel: 'Ver revisiones'
+    }
   },
 
   // Performance Goals

@@ -1193,7 +1193,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     `}
                   />
                   <CalendarClock 
-                    className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-6 h-6 ${text.secondary} group-hover:text-blue-500 transition-colors`}
+                    className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-6 h-6 ${text.secondary} ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors`}
                   />
                 </div>
                 
@@ -1237,7 +1237,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                   onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
                 />
                 <div 
-                  className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none group-hover:text-blue-500 transition-colors ${text.secondary}`}
+                  className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors ${text.secondary}`}
                 >
                   <AnimatedClockIcon className="w-6 h-6" isDarkMode={isDarkMode} />
                 </div>
@@ -1281,7 +1281,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                   onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
                 />
                 <div 
-                  className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none group-hover:text-blue-500 transition-colors ${text.secondary}`}
+                  className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors ${text.secondary}`}
                 >
                   <AnimatedAlarmClockIcon className="w-6 h-6" isDarkMode={isDarkMode} />
                 </div>
@@ -1311,7 +1311,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                             <option key={type.value} value={type.value}>{type.label}</option>
                         ))}
                     </select>
-                    <ChevronsUpDown className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-800'} group-hover:text-blue-500 transition-colors`} />
+                    <ChevronsUpDown className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-800'} ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors`} />
                 </div>
               </div>
 

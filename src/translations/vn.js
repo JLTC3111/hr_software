@@ -1211,12 +1211,33 @@ export default {
   recruitmentStatus: {
     active: 'Hoạt động',
     interviewScheduled: 'Đã lên lịch phỏng vấn',
-    underReview: 'Đang xem xét',
-    offerExtended: 'Đã đưa ra đề nghị',
-    rejected: 'Bị từ chối',
+    underreview: 'Đang xem xét',
+    offerExtended: 'Đề nghị đã gửi',
+    offer: 'Đề nghị',
+    hired: 'Đã tuyển',
+    rejected: 'Từ chối',
     screening: 'Sàng lọc',
     technical: 'Kỹ thuật',
-    offer: 'Đề nghị'
+    shortlisted: 'Vào danh sách rút gọn'
+  },
+
+  // Demo Notifications
+  demoNotifications: {
+    'notif-1': {
+      title: 'Chào mừng đến với hệ thống HR',
+      message: 'Chào mừng bạn đến chế độ demo của hệ thống HR. Hãy thoải mái khám phá!',
+      actionLabel: 'Đi đến bảng điều khiển'
+    },
+    'notif-2': {
+      title: 'Ứng viên mới',
+      message: 'Đã nhận được hồ sơ mới cho vị trí Senior Frontend Developer.',
+      actionLabel: 'Xem hồ sơ'
+    },
+    'notif-3': {
+      title: 'Đến hạn đánh giá hiệu suất',
+      message: 'Các đánh giá hiệu suất hàng quý sẽ đến hạn vào tuần tới.',
+      actionLabel: 'Xem đánh giá'
+    }
   },
 
   // Performance Goals
@@ -1938,7 +1959,7 @@ export default {
   demoGoals: {
     'goal-1': { title: 'Cải Thiện Hiệu Quả Nhóm', description: 'Tăng năng suất của nhóm lên 20% trong quý tới - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm' },
     'goal-2': { title: 'Học React Native', description: 'Thành thạo React Native để phát triển ứng dụng di động - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm' },
-    'goal-3': { title: 'Chứng Chỉ UX', description: 'Đạt chứng chỉ Google UX Design Professional - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm' },
+    'goal-3': { title: 'Chứng Chỉ UX', description: 'Đạt chứng chỉ Google UX Thiết Kế Chuyên Nghiệp - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm' },
     'goal-4': { title: 'Tăng Khách Hàng Tiềm Năng', description: 'Đạt tăng 30% khách hàng tiềm năng qua các chiến dịch marketing - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm' },
     'goal-5': { title: 'Ký Hợp Đồng Doanh Nghiệp', description: 'Ký 5 hợp đồng doanh nghiệp trị giá trên $500K mỗi hợp đồng - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm' }
   },
