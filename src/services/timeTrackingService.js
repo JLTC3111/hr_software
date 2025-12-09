@@ -9,15 +9,32 @@ const toEmployeeId = (id) => {
 
 export const createTimeEntry = async (timeEntryData) => {
   if (isDemoMode()) {
-    return { 
-      success: true, 
-      data: { 
-        id: `demo-entry-${Date.now()}`,
-        ...timeEntryData,
-        status: 'pending',
-        created_at: new Date().toISOString()
-      } 
+    // Look up employee info to attach to the entry for display
+    const emp = getDemoEmployeeById(timeEntryData.employeeId);
+    const demoEntry = {
+      id: `demo-entry-${Date.now()}`,
+      ...timeEntryData,
+      employee_id: timeEntryData.employeeId,
+      employee_name: emp?.name || 'Unknown',
+      employee_nameKey: emp?.nameKey || null,
+      employee_department: emp?.department || null,
+      employee_position: emp?.position || null,
+      hour_type: timeEntryData.hourType,
+      clock_in: timeEntryData.clockIn,
+      clock_out: timeEntryData.clockOut,
+      employee: emp ? {
+        id: emp.id,
+        name: emp.name,
+        nameKey: emp.nameKey,
+        department: emp.department,
+        position: emp.position
+      } : null,
+      status: 'pending',
+      created_at: new Date().toISOString()
     };
+    // Persist to localStorage
+    try { addDemoTimeEntry(demoEntry); } catch (e) { console.warn('Failed to persist demo time entry', e); }
+    return { success: true, data: demoEntry };
   }
 
   try {
@@ -1125,25 +1142,40 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
 /* Get time tracking summary for an employee */
 export const getTimeTrackingSummary = async (employeeId, month, year) => {
   if (isDemoMode()) {
-    const entries = MOCK_TIME_ENTRIES.filter(e => {
+    // Use both MOCK_TIME_ENTRIES and persisted demo entries
+    const allEntries = getDemoTimeEntries();
+    const entries = allEntries.filter(e => {
       const d = new Date(e.date);
       return String(e.employee_id) === String(employeeId) && 
              d.getMonth() + 1 === parseInt(month) && 
              d.getFullYear() === parseInt(year);
     });
     
-    const regularHours = entries.filter(e => e.hour_type === 'regular').reduce((sum, e) => sum + e.hours, 0);
-    const overtimeHours = entries.filter(e => e.hour_type === 'overtime').reduce((sum, e) => sum + e.hours, 0);
+    // Calculate hours by type - matching production logic
+    const regularHours = entries.filter(e => e.hour_type === 'regular').reduce((sum, e) => sum + (e.hours || 0), 0);
+    const wfhHours = entries.filter(e => e.hour_type === 'wfh').reduce((sum, e) => sum + (e.hours || 0), 0);
+    const overtimeRegular = entries.filter(e => e.hour_type === 'overtime').reduce((sum, e) => sum + (e.hours || 0), 0);
+    const weekendHours = entries.filter(e => e.hour_type === 'weekend').reduce((sum, e) => sum + (e.hours || 0), 0);
+    const holidayHours = entries.filter(e => e.hour_type === 'holiday').reduce((sum, e) => sum + (e.hours || 0), 0);
+    const bonusHours = entries.filter(e => e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
     const daysWorked = new Set(entries.map(e => e.date)).size;
+    
+    // Match production calculation: overtime_hours = weekend + bonus + overtime_regular
+    const overtimeHours = weekendHours + bonusHours + overtimeRegular;
+    // holiday_overtime_hours = holiday hours
+    const holidayOvertimeHours = holidayHours;
+    // Total regular = regular + wfh
+    const totalRegular = regularHours + wfhHours;
+    const totalHours = totalRegular + overtimeHours + holidayOvertimeHours;
     
     return {
       success: true,
       data: {
-        regular_hours: regularHours,
-        overtime_hours: overtimeHours,
-        total_hours: regularHours + overtimeHours,
-        days_worked: daysWorked,
-        holiday_overtime_hours: 0
+        regular_hours: Math.round(totalRegular * 100) / 100,
+        overtime_hours: Math.round(overtimeHours * 100) / 100,
+        holiday_overtime_hours: Math.round(holidayOvertimeHours * 100) / 100,
+        total_hours: Math.round(totalHours * 100) / 100,
+        days_worked: daysWorked
       }
     };
   }
@@ -1395,6 +1427,24 @@ export const getPendingApprovals = async () => {
 };
 
 export const ensureEmployeeExists = async (employeeId, employeeData = {}) => {
+  // In demo mode, always return success - demo users can create entries
+  if (isDemoMode()) {
+    const emp = getDemoEmployeeById(employeeId);
+    if (emp) {
+      return { success: true, data: emp, created: false };
+    }
+    // For demo mode, return a fake employee if not found
+    return { 
+      success: true, 
+      data: { 
+        id: employeeId, 
+        name: employeeData.name || 'Demo User', 
+        email: employeeData.email || 'demo@example.com' 
+      }, 
+      created: false 
+    };
+  }
+  
   try {
     const id = toEmployeeId(employeeId);
     

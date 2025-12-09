@@ -123,6 +123,8 @@ const TimeClockEntry = ({ currentLanguage }) => {
 
   // Refs for clickable input wrappers
   const dateInputRef = useRef(null);
+  const clockInRef = useRef(null);
+  const clockOutRef = useRef(null);
   const leaveStartRef = useRef(null);
   const leaveEndRef = useRef(null);
 
@@ -400,7 +402,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
       if (isDemoMode()) {
         setAllEmployees([
           { id: 'demo-emp-1', name: 'Demo Admin', position: 'HR Manager', department: 'Management' },
-          { id: 'mock-emp-2', name: 'Sarah Connor', position: 'Developer', department: 'Operations' }
+          { id: 'demo-emp-2', name: 'Sarah Connor', position: 'Developer', department: 'Operations' },
+          { id: 'demo-emp-3', name: 'John Doe', position: 'Manager', department: 'IT' },
+          { id: 'demo-emp-4', name: 'Emily Chen', position: 'Designer', department: 'Design' },
+          { id: 'demo-emp-5', name: 'Michael Brown', position: 'Analyst', department: 'Finance' }
         ]);
         return;
       }
@@ -1078,7 +1083,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                 </label>
                 
                 <div
-                  className="relative"
+                  className="relative cursor-pointer"
                   onClick={(e) => {
                     // If the actual input was clicked, let the native behavior occur
                     if (e.target === dateInputRef.current) return;
@@ -1095,6 +1100,18 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     }
                   }}
                 >
+                  <style>{`
+                    input[type="date"]::-webkit-calendar-picker-indicator,
+                    input[type="date"]::-webkit-inner-spin-button {
+                      display: none;
+                      -webkit-appearance: none;
+                    }
+                    input[type="time"]::-webkit-calendar-picker-indicator,
+                    input[type="time"]::-webkit-inner-spin-button {
+                      display: none;
+                      -webkit-appearance: none;
+                    }
+                  `}</style>
                   <input
                     id="date-input"
                     ref={dateInputRef}
@@ -1112,7 +1129,19 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     pr-10 appearance-none 
                     `}
                   />
-                  <CalendarClock className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-6 h-6 ${text.secondary}`} />
+                  <CalendarClock 
+                    className={`absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer w-6 h-6 ${text.secondary} hover:text-blue-500 transition-colors`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (dateInputRef.current) {
+                        if (typeof dateInputRef.current.showPicker === 'function') {
+                          try { dateInputRef.current.showPicker(); } catch (err) { dateInputRef.current.focus(); }
+                        } else {
+                          dateInputRef.current.focus();
+                        }
+                      }
+                    }}
+                  />
                 </div>
                 
                 {errors.date && (
@@ -1125,11 +1154,25 @@ const TimeClockEntry = ({ currentLanguage }) => {
                 {t('timeClock.clockIn')}
               </label>
               
-              <div className="relative">
+              <div 
+                className="relative cursor-pointer"
+                onClick={(e) => {
+                  if (e.target === clockInRef.current) return;
+                  if (e.target.closest && e.target.closest('button, a, input[type="file"], label')) return;
+                  if (clockInRef.current) {
+                    if (typeof clockInRef.current.showPicker === 'function') {
+                      try { clockInRef.current.showPicker(); } catch (err) { clockInRef.current.focus(); }
+                    } else {
+                      clockInRef.current.focus();
+                    }
+                  }
+                }}
+              >
                 <input
                   id="clock-in-input"
+                  ref={clockInRef}
                   type="time"
-                  className={`${isDemoMode() ? 'no-native-time' : ''} w-full px-4 py-2 rounded-lg border 
+                  className={`w-full px-4 py-2 rounded-lg border 
                     ${bg.primary}
                     ${input.className} 
                     ${isDarkMode ? 'text-white bg-gray-700 border-gray-600' : 'text-gray-900 bg-white border-gray-300'} 
@@ -1138,7 +1181,21 @@ const TimeClockEntry = ({ currentLanguage }) => {
                   value={formData.clockIn}
                   onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
                 />
-                <AnimatedClockIcon className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-6 h-6 ${text.secondary}`} isDarkMode={isDarkMode} />
+                <div 
+                  className={`absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer hover:text-blue-500 transition-colors ${text.secondary}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (clockInRef.current) {
+                      if (typeof clockInRef.current.showPicker === 'function') {
+                        try { clockInRef.current.showPicker(); } catch (err) { clockInRef.current.focus(); }
+                      } else {
+                        clockInRef.current.focus();
+                      }
+                    }
+                  }}
+                >
+                  <AnimatedClockIcon className="w-6 h-6" isDarkMode={isDarkMode} />
+                </div>
               </div>
               {errors.clockIn && <p className="text-red-500 text-sm mt-1">{errors.clockIn}</p>}
             </div>
@@ -1149,11 +1206,25 @@ const TimeClockEntry = ({ currentLanguage }) => {
                 {t('timeClock.clockOut')}
               </label>
               
-              <div className="relative">
+              <div 
+                className="relative cursor-pointer"
+                onClick={(e) => {
+                  if (e.target === clockOutRef.current) return;
+                  if (e.target.closest && e.target.closest('button, a, input[type="file"], label')) return;
+                  if (clockOutRef.current) {
+                    if (typeof clockOutRef.current.showPicker === 'function') {
+                      try { clockOutRef.current.showPicker(); } catch (err) { clockOutRef.current.focus(); }
+                    } else {
+                      clockOutRef.current.focus();
+                    }
+                  }
+                }}
+              >
                 <input
                   id="clock-out-input"
+                  ref={clockOutRef}
                   type="time"
-                  className={`${isDemoMode() ? 'no-native-time' : ''} w-full px-4 py-2 rounded-lg border 
+                  className={`w-full px-4 py-2 rounded-lg border 
                     ${bg.primary}
                     ${input.className} 
                     ${isDarkMode ? 'text-white bg-gray-700 border-gray-600' : 'text-gray-900 bg-white border-gray-300'} 
@@ -1162,7 +1233,21 @@ const TimeClockEntry = ({ currentLanguage }) => {
                   value={formData.clockOut}
                   onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
                 />
-                <AnimatedAlarmClockIcon className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-6 h-6 ${text.secondary}`} isDarkMode={isDarkMode} />
+                <div 
+                  className={`absolute top-1/2 right-3 transform -translate-y-1/2 cursor-pointer hover:text-blue-500 transition-colors ${text.secondary}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (clockOutRef.current) {
+                      if (typeof clockOutRef.current.showPicker === 'function') {
+                        try { clockOutRef.current.showPicker(); } catch (err) { clockOutRef.current.focus(); }
+                      } else {
+                        clockOutRef.current.focus();
+                      }
+                    }
+                  }}
+                >
+                  <AnimatedAlarmClockIcon className="w-6 h-6" isDarkMode={isDarkMode} />
+                </div>
               </div>
               {errors.clockOut && <p className="text-red-500 text-sm mt-1">{errors.clockOut}</p>}
             </div>
@@ -1203,8 +1288,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
                         cursor-pointer
                         w-full px-4 py-2 
                         rounded-lg border 
+                        ${isDarkMode ? 'border-gray-600 hover:border-gray-500' : 'border-gray-300 hover:border-gray-400'}
+                        ${formData.proofFile ? (isDarkMode ? 'bg-green-900/30 border-green-600' : 'bg-green-50 border-green-400') : ''}
                         text-left
-                        z-1
+                        transition-colors
                     `}
                 >
                    <div className="flex items-center">
@@ -1214,12 +1301,35 @@ const TimeClockEntry = ({ currentLanguage }) => {
                         variants={uploadVariants}
                         className="flex items-center"
                     >
-                      <Upload className="w-6 h-6 mr-6 p-0.5 border-2 border-dashed border-gray-500" />
+                      <Upload className={`w-6 h-6 mr-4 p-0.5 border-2 border-dashed ${formData.proofFile ? 'border-green-500 text-green-500' : 'border-gray-500'}`} />
                     </motion.div>
-                    {t('timeClock.proof')}
-                    <span className="text-sm text-gray-500 ml-3">
-                        ({t('timeClock.optional')})
+                    <span className="flex-1">
+                      {formData.proofFile ? (
+                        <span className={`${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+                          ✓ {formData.proofFile.name}
+                        </span>
+                      ) : (
+                        <>
+                          {t('timeClock.proof')}
+                          <span className="text-sm text-gray-500 ml-3">
+                              ({t('timeClock.optional')})
+                          </span>
+                        </>
+                      )}
                     </span>
+                    {formData.proofFile && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setFormData({ ...formData, proofFile: null });
+                        }}
+                        className={`ml-2 p-1 rounded-full ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'}`}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
                 </div>
                 </label>
 

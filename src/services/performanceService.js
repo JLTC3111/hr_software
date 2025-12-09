@@ -1,14 +1,6 @@
 import { supabase } from '../config/supabaseClient';
-import { isDemoMode, getDemoGoals, addDemoGoal, updateDemoGoal, deleteDemoGoal, MOCK_GOALS, MOCK_PERFORMANCE_REVIEWS, MOCK_SKILLS, MOCK_FEEDBACK } from '../utils/demoHelper';
+import { isDemoMode, getDemoGoals, addDemoGoal, updateDemoGoal, deleteDemoGoal, MOCK_GOALS, MOCK_PERFORMANCE_REVIEWS, MOCK_SKILLS, MOCK_FEEDBACK, getDemoReviews, addDemoReview, updateDemoReview, deleteDemoReview, getDemoSkills, addDemoSkill, updateDemoSkill, upsertDemoSkill, deleteDemoSkill } from '../utils/demoHelper';
 
-/**
- * Performance Management Service
- * Handles all Supabase operations for performance reviews, goals, and skills
- */
-
-/**
- * Helper: Ensure employee ID is a string
- */
 const toEmployeeId = (id) => {
   return id ? String(id) : null;
 };
@@ -17,9 +9,6 @@ const toEmployeeId = (id) => {
 // PERFORMANCE REVIEWS
 // ============================================
 
-/**
- * Create a new performance review
- */
 export const createPerformanceReview = async (reviewData) => {
   if (isDemoMode()) {
     const newReview = {
@@ -29,10 +18,21 @@ export const createPerformanceReview = async (reviewData) => {
       review_period: reviewData.reviewPeriod,
       review_type: reviewData.reviewType || 'quarterly',
       overall_rating: reviewData.overallRating || null,
+      technical_skills_rating: reviewData.technicalSkillsRating || null,
+      communication_rating: reviewData.communicationRating || null,
+      leadership_rating: reviewData.leadershipRating || null,
+      teamwork_rating: reviewData.teamworkRating || null,
+      problem_solving_rating: reviewData.problemSolvingRating || null,
+      strengths: reviewData.strengths || null,
+      areas_for_improvement: reviewData.areasForImprovement || null,
+      achievements: reviewData.achievements || null,
+      comments: reviewData.comments || null,
       status: reviewData.status || 'draft',
       review_date: reviewData.reviewDate || new Date().toISOString().split('T')[0],
       created_at: new Date().toISOString()
     };
+    // Persist to localStorage
+    addDemoReview(newReview);
     return { success: true, data: newReview };
   }
 
@@ -77,7 +77,7 @@ export const createPerformanceReview = async (reviewData) => {
  */
 export const getAllPerformanceReviews = async (filters = {}) => {
   if (isDemoMode()) {
-    let reviews = [...MOCK_PERFORMANCE_REVIEWS];
+    let reviews = getDemoReviews();
     
     if (filters.employeeId) {
       reviews = reviews.filter(r => String(r.employee_id) === String(filters.employeeId));
@@ -127,7 +127,7 @@ export const getAllPerformanceReviews = async (filters = {}) => {
  */
 export const getPerformanceReviewById = async (reviewId) => {
   if (isDemoMode()) {
-    const review = MOCK_PERFORMANCE_REVIEWS.find(r => r.id === reviewId);
+    const review = getDemoReviews().find(r => r.id === reviewId);
     return { success: true, data: review || null };
   }
 
@@ -155,7 +155,11 @@ export const getPerformanceReviewById = async (reviewId) => {
  */
 export const updatePerformanceReview = async (reviewId, updates) => {
   if (isDemoMode()) {
-    return { success: true, data: { id: reviewId, ...updates, updated_at: new Date().toISOString() } };
+    const updatedReview = updateDemoReview(reviewId, updates);
+    if (updatedReview) {
+      return { success: true, data: updatedReview };
+    }
+    return { success: false, error: 'Review not found' };
   }
 
   try {
@@ -208,6 +212,7 @@ export const updatePerformanceReview = async (reviewId, updates) => {
  */
 export const deletePerformanceReview = async (reviewId) => {
   if (isDemoMode()) {
+    deleteDemoReview(reviewId);
     return { success: true };
   }
 
@@ -575,14 +580,17 @@ export const deleteGoalMilestone = async (milestoneId) => {
  */
 export const upsertSkillAssessment = async (skillData) => {
   if (isDemoMode()) {
-    const newSkill = {
-      id: `skill-demo-${Date.now()}`,
+    const newSkill = upsertDemoSkill({
       employee_id: skillData.employeeId,
       skill_name: skillData.skillName,
       skill_category: skillData.skillCategory || 'technical',
       rating: skillData.rating,
-      created_at: new Date().toISOString()
-    };
+      proficiency_level: skillData.proficiencyLevel || null,
+      years_experience: skillData.yearsExperience || null,
+      assessed_by: skillData.assessedBy,
+      assessment_date: skillData.assessmentDate || new Date().toISOString().split('T')[0],
+      notes: skillData.notes || null
+    });
     return { success: true, data: newSkill };
   }
 
@@ -618,7 +626,7 @@ export const upsertSkillAssessment = async (skillData) => {
 
 export const getSkillsByEmployee = async (employeeId) => {
   if (isDemoMode()) {
-    const skills = MOCK_SKILLS.filter(s => String(s.employee_id) === String(employeeId));
+    const skills = getDemoSkills().filter(s => String(s.employee_id) === String(employeeId));
     return { success: true, data: skills };
   }
 
@@ -642,7 +650,7 @@ export const getSkillsByEmployee = async (employeeId) => {
  */
 export const getAllSkillsAssessments = async (filters = {}) => {
   if (isDemoMode()) {
-    let skills = [...MOCK_SKILLS];
+    let skills = getDemoSkills();
     
     if (filters.employeeId) {
       skills = skills.filter(s => String(s.employee_id) === String(filters.employeeId));
@@ -685,6 +693,7 @@ export const getAllSkillsAssessments = async (filters = {}) => {
  */
 export const deleteSkillAssessment = async (skillId) => {
   if (isDemoMode()) {
+    deleteDemoSkill(skillId);
     return { success: true };
   }
 

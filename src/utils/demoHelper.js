@@ -485,6 +485,7 @@ export const MOCK_USER = {
   department: 'human_resources',
   position: 'hr_specialist',
   employeeId: 'demo-emp-1',
+  employee_id: 'demo-emp-1', // Add snake_case version for compatibility with filtering
   permissions: {
     canManageUsers: true,
     canManageEmployees: true,
@@ -951,6 +952,62 @@ export const MOCK_PERFORMANCE_REVIEWS = [
   }
 ];
 
+// ============================================
+// PERSISTENT DEMO PERFORMANCE REVIEWS
+// ============================================
+const DEMO_REVIEWS_KEY = 'hr_app_demo_reviews';
+
+export const getDemoReviews = () => {
+  const stored = localStorage.getItem(DEMO_REVIEWS_KEY);
+  const storedReviews = stored ? JSON.parse(stored) : [];
+  const storedIds = new Set(storedReviews.map(r => r.id));
+  const visibleMock = MOCK_PERFORMANCE_REVIEWS.filter(r => !storedIds.has(r.id));
+  return [...visibleMock, ...storedReviews];
+};
+
+export const addDemoReview = (review) => {
+  const stored = localStorage.getItem(DEMO_REVIEWS_KEY);
+  const storedReviews = stored ? JSON.parse(stored) : [];
+  storedReviews.unshift(review);
+  localStorage.setItem(DEMO_REVIEWS_KEY, JSON.stringify(storedReviews));
+  return review;
+};
+
+export const updateDemoReview = (reviewId, updates) => {
+  const stored = localStorage.getItem(DEMO_REVIEWS_KEY);
+  let storedReviews = stored ? JSON.parse(stored) : [];
+  
+  const storedIndex = storedReviews.findIndex(r => r.id === reviewId);
+  if (storedIndex !== -1) {
+    storedReviews[storedIndex] = { ...storedReviews[storedIndex], ...updates, updated_at: new Date().toISOString() };
+    localStorage.setItem(DEMO_REVIEWS_KEY, JSON.stringify(storedReviews));
+    return storedReviews[storedIndex];
+  }
+  
+  // If updating a mock review, clone it to storage
+  const mockReview = MOCK_PERFORMANCE_REVIEWS.find(r => r.id === reviewId);
+  if (mockReview) {
+    const updatedReview = { ...mockReview, ...updates, updated_at: new Date().toISOString() };
+    storedReviews.push(updatedReview);
+    localStorage.setItem(DEMO_REVIEWS_KEY, JSON.stringify(storedReviews));
+    return updatedReview;
+  }
+  
+  return null;
+};
+
+export const deleteDemoReview = (reviewId) => {
+  const stored = localStorage.getItem(DEMO_REVIEWS_KEY);
+  let storedReviews = stored ? JSON.parse(stored) : [];
+  storedReviews = storedReviews.filter(r => r.id !== reviewId);
+  // Add a tombstone for mock reviews
+  const mockReview = MOCK_PERFORMANCE_REVIEWS.find(r => r.id === reviewId);
+  if (mockReview) {
+    storedReviews.push({ id: reviewId, _deleted: true });
+  }
+  localStorage.setItem(DEMO_REVIEWS_KEY, JSON.stringify(storedReviews));
+};
+
 export const MOCK_SKILLS = [
   {
     id: 'skill-1',
@@ -998,6 +1055,83 @@ export const MOCK_SKILLS = [
     employee: MOCK_EMPLOYEES[1]
   }
 ];
+
+// ============================================
+// PERSISTENT DEMO SKILLS ASSESSMENTS
+// ============================================
+const DEMO_SKILLS_KEY = 'hr_app_demo_skills';
+
+export const getDemoSkills = () => {
+  const stored = localStorage.getItem(DEMO_SKILLS_KEY);
+  const storedSkills = stored ? JSON.parse(stored) : [];
+  const storedIds = new Set(storedSkills.map(s => s.id));
+  const deletedIds = new Set(storedSkills.filter(s => s._deleted).map(s => s.id));
+  const visibleMock = MOCK_SKILLS.filter(s => !storedIds.has(s.id) && !deletedIds.has(s.id));
+  return [...visibleMock, ...storedSkills.filter(s => !s._deleted)];
+};
+
+export const addDemoSkill = (skill) => {
+  const stored = localStorage.getItem(DEMO_SKILLS_KEY);
+  const storedSkills = stored ? JSON.parse(stored) : [];
+  storedSkills.unshift(skill);
+  localStorage.setItem(DEMO_SKILLS_KEY, JSON.stringify(storedSkills));
+  return skill;
+};
+
+export const updateDemoSkill = (skillId, updates) => {
+  const stored = localStorage.getItem(DEMO_SKILLS_KEY);
+  let storedSkills = stored ? JSON.parse(stored) : [];
+  
+  const storedIndex = storedSkills.findIndex(s => s.id === skillId);
+  if (storedIndex !== -1) {
+    storedSkills[storedIndex] = { ...storedSkills[storedIndex], ...updates, updated_at: new Date().toISOString() };
+    localStorage.setItem(DEMO_SKILLS_KEY, JSON.stringify(storedSkills));
+    return storedSkills[storedIndex];
+  }
+  
+  // If updating a mock skill, clone it to storage
+  const mockSkill = MOCK_SKILLS.find(s => s.id === skillId);
+  if (mockSkill) {
+    const updatedSkill = { ...mockSkill, ...updates, updated_at: new Date().toISOString() };
+    storedSkills.push(updatedSkill);
+    localStorage.setItem(DEMO_SKILLS_KEY, JSON.stringify(storedSkills));
+    return updatedSkill;
+  }
+  
+  return null;
+};
+
+export const upsertDemoSkill = (skillData) => {
+  // Check if skill exists for this employee with same skill_name
+  const allSkills = getDemoSkills();
+  const existing = allSkills.find(s => 
+    String(s.employee_id) === String(skillData.employee_id) && 
+    s.skill_name === skillData.skill_name
+  );
+  
+  if (existing) {
+    return updateDemoSkill(existing.id, skillData);
+  } else {
+    const newSkill = {
+      id: `skill-demo-${Date.now()}`,
+      ...skillData,
+      created_at: new Date().toISOString()
+    };
+    return addDemoSkill(newSkill);
+  }
+};
+
+export const deleteDemoSkill = (skillId) => {
+  const stored = localStorage.getItem(DEMO_SKILLS_KEY);
+  let storedSkills = stored ? JSON.parse(stored) : [];
+  storedSkills = storedSkills.filter(s => s.id !== skillId);
+  // Add tombstone for mock skills
+  const mockSkill = MOCK_SKILLS.find(s => s.id === skillId);
+  if (mockSkill) {
+    storedSkills.push({ id: skillId, _deleted: true });
+  }
+  localStorage.setItem(DEMO_SKILLS_KEY, JSON.stringify(storedSkills));
+};
 
 export const MOCK_FEEDBACK = [
   {
