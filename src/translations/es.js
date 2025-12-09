@@ -1729,20 +1729,20 @@ login: {
     remote: 'Remoto'
   },
   demoTasks: {
-    'task-1': { title: 'Análisis de Informes Q4', description: 'Análisis exhaustivo de métricas de rendimiento trimestrales y tendencias' },
-    'task-2': { title: 'Actualización del Manual del Empleado', description: 'Revisar y actualizar el manual del empleado con políticas de trabajo remoto' },
-    'task-3': { title: 'Corrección de Error de Inicio de Sesión', description: 'Depurar y resolver problemas de inicio de sesión de usuarios en dispositivos móviles' },
-    'task-4': { title: 'Diseñar Nuevo Dashboard', description: 'Crear wireframes y mockups para el dashboard de análisis' },
-    'task-5': { title: 'Revisión de Rendimiento de Campaña', description: 'Analizar resultados y ROI de campañas de marketing Q3' },
-    'task-6': { title: 'Incorporación de Cliente', description: 'Completar la incorporación de nuevo cliente empresarial' },
-    'task-7': { title: 'Documentación de API', description: 'Escribir documentación API completa para la versión 2.0' }
+    'task-1': { title: 'Análisis de Informes Q4', description: 'Análisis exhaustivo de métricas de rendimiento trimestrales y tendencias - Nota: Estos datos de demostración no se pueden editar. Por favor agregue sus propios datos para realizar pruebas.' },
+    'task-2': { title: 'Actualización del Manual del Empleado', description: 'Revisar y actualizar el manual del empleado con políticas de trabajo remoto - Nota: Estos datos de demostración no se pueden editar. Por favor agregue sus propios datos para realizar pruebas.' },
+    'task-3': { title: 'Corrección de Error de Inicio de Sesión', description: 'Depurar y resolver problemas de inicio de sesión de usuarios en dispositivos móviles - Nota: Estos datos de demostración no se pueden editar. Por favor agregue sus propios datos para realizar pruebas.' },
+    'task-4': { title: 'Diseñar Nuevo Dashboard', description: 'Crear wireframes y mockups para el dashboard de análisis - Nota: Estos datos de demostración no se pueden editar. Por favor agregue sus propios datos para realizar pruebas.' },
+    'task-5': { title: 'Revisión de Rendimiento de Campaña', description: 'Analizar resultados y ROI de campañas de marketing Q3 - Nota: Estos datos de demostración no se pueden editar. Por favor agregue sus propios datos para realizar pruebas.' },
+    'task-6': { title: 'Incorporación de Cliente', description: 'Completar la incorporación de nuevo cliente empresarial - Nota: Estos datos de demostración no se pueden editar. Por favor agregue sus propios datos para realizar pruebas.' },
+    'task-7': { title: 'Documentación de API', description: 'Escribir documentación API completa para la versión 2.0 - Nota: Estos datos de demostración no se pueden editar. Por favor agregue sus propios datos para realizar pruebas.' }
   },
   demoGoals: {
-    'goal-1': { title: 'Mejorar la Eficiencia del Equipo', description: 'Aumentar la productividad del equipo en un 20% durante el próximo trimestre' },
-    'goal-2': { title: 'Aprender React Native', description: 'Dominar React Native para el desarrollo de aplicaciones móviles' },
-    'goal-3': { title: 'Certificación UX', description: 'Obtener el Certificado Profesional de Diseño UX de Google' },
-    'goal-4': { title: 'Aumentar Generación de Leads', description: 'Lograr un aumento del 30% en leads cualificados mediante campañas de marketing' },
-    'goal-5': { title: 'Cerrar Contratos Empresariales', description: 'Cerrar 5 contratos empresariales con valor superior a $500K cada uno' }
+    'goal-1': { title: 'Mejorar la Eficiencia del Equipo', description: 'Aumentar la productividad del equipo en un 20% durante el próximo trimestre - Nota: Estos datos de demostración no se pueden editar. Por favor agregue sus propios datos para realizar pruebas.' },
+    'goal-2': { title: 'Aprender React Native', description: 'Dominar React Native para el desarrollo de aplicaciones móviles - Nota: Estos datos de demostración no se pueden editar. Por favor agregue sus propios datos para realizar pruebas.' },
+    'goal-3': { title: 'Certificación UX', description: 'Obtener el Certificado Profesional de Diseño UX de Google - Nota: Estos datos de demostración no se pueden editar. Por favor agregue sus propios datos para realizar pruebas.' },
+    'goal-4': { title: 'Aumentar Generación de Leads', description: 'Lograr un aumento del 30% en leads cualificados mediante campañas de marketing - Nota: Estos datos de demostración no se pueden editar. Por favor agregue sus propios datos para realizar pruebas.' },
+    'goal-5': { title: 'Cerrar Contratos Empresariales', description: 'Cerrar 5 contratos empresariales con valor superior a $500K cada uno - Nota: Estos datos de demostración no se pueden editar. Por favor agregue sus propios datos para realizar pruebas.' }
   },
     
   demoReviews: {

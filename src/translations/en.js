@@ -1826,31 +1826,31 @@ export default {
   demoTasks: {
     'task-1': {
       title: 'Q4 Report Analysis',
-      description: 'Analyze Q4 performance metrics and prepare presentation'
+      description: 'Analyze Q4 performance metrics and prepare presentation - NOTE: This demo task cannot be edited or deleted.',
     },
     'task-2': {
       title: 'Update Employee Handbook',
-      description: 'Review and update the 2024 employee handbook'
+      description: 'Review and update the 2024 employee handbook - NOTE: This demo task cannot be edited or deleted.'
     },
     'task-3': {
       title: 'Fix Login Bug',
-      description: 'Investigate reported login issues on mobile devices'
+      description: 'Investigate reported login issues on mobile devices - NOTE: This demo task cannot be edited or deleted.'
     },
     'task-4': {
       title: 'Design New Dashboard',
-      description: 'Create wireframes and mockups for the analytics dashboard'
+      description: 'Create wireframes and mockups for the analytics dashboard - NOTE: This demo task cannot be edited or deleted.'
     },
     'task-5': {
       title: 'Campaign Performance Review',
-      description: 'Analyze Q3 marketing campaign results and ROI'
+      description: 'Analyze Q3 marketing campaign results and ROI - NOTE: This demo task cannot be edited or deleted.'
     },
     'task-6': {
       title: 'Client Onboarding',
-      description: 'Complete onboarding for new enterprise client'
+      description: 'Complete onboarding for new enterprise client - NOTE: This demo task cannot be edited or deleted.'
     },
     'task-7': {
       title: 'API Documentation',
-      description: 'Write comprehensive API documentation for v2.0'
+      description: 'Write comprehensive API documentation for v2.0 release - NOTE: This demo task cannot be edited or deleted.'
     }
   },
 
@@ -1858,23 +1858,23 @@ export default {
   demoGoals: {
     'goal-1': {
       title: 'Improve Team Efficiency',
-      description: 'Implement new project management workflow'
+      description: 'Implement new project management workflow - NOTE: This demo goal cannot be edited or deleted.'
     },
     'goal-2': {
       title: 'Learn React Native',
-      description: 'Complete advanced React Native course'
+      description: 'Complete advanced React Native course - NOTE: This demo goal cannot be edited or deleted.'
     },
     'goal-3': {
       title: 'UX Certification',
-      description: 'Obtain Google UX Design Professional Certificate'
+      description: 'Obtain Google UX Design Professional Certificate - NOTE: This demo goal cannot be edited or deleted.'
     },
     'goal-4': {
       title: 'Increase Lead Generation',
-      description: 'Achieve 30% increase in qualified leads through marketing campaigns'
+      description: 'Achieve 30% increase in qualified leads through marketing campaigns - NOTE: This demo goal cannot be edited or deleted.'
     },
     'goal-5': {
       title: 'Close Enterprise Deals',
-      description: 'Close 5 enterprise-level deals worth $500K+ each'
+      description: 'Close 5 enterprise-level deals worth $500K+ each - NOTE: This demo goal cannot be edited or deleted.'
     }
   },
 

@@ -1605,54 +1605,54 @@ export default {
   demoTasks: {
     'task-1': {
       title: 'Q4 Berichtsanalyse',
-      description: 'Analysieren Sie die Q4-Leistungskennzahlen und bereiten Sie eine Präsentation vor'
+      description: 'Analysieren Sie die Q4-Leistungskennzahlen und bereiten Sie eine Präsentation vor - Hinweis: Diese Demo-Daten können nicht bearbeitet werden. Bitte fügen Sie eigene Daten zum Testen hinzu.'
     },
     'task-2': {
       title: 'Mitarbeiterhandbuch aktualisieren',
-      description: 'Überprüfen und aktualisieren Sie das Mitarbeiterhandbuch 2024'
+      description: 'Überprüfen und aktualisieren Sie das Mitarbeiterhandbuch 2024 - Hinweis: Diese Demo-Daten können nicht bearbeitet werden. Bitte fügen Sie eigene Daten zum Testen hinzu.'
     },
     'task-3': {
       title: 'Login-Fehler beheben',
-      description: 'Untersuchen Sie gemeldete Anmeldeprobleme auf Mobilgeräten'
+      description: 'Untersuchen Sie gemeldete Anmeldeprobleme auf Mobilgeräten - Hinweis: Diese Demo-Daten können nicht bearbeitet werden. Bitte fügen Sie eigene Daten zum Testen hinzu.'
     },
     'task-4': {
       title: 'Neues Dashboard entwerfen',
-      description: 'Wireframes und Mockups für das Analyse-Dashboard erstellen'
+      description: 'Wireframes und Mockups für das Analyse-Dashboard erstellen - Hinweis: Diese Demo-Daten können nicht bearbeitet werden. Bitte fügen Sie eigene Daten zum Testen hinzu.'
     },
     'task-5': {
       title: 'Kampagnenleistung überprüfen',
-      description: 'Q3-Marketingkampagnenergebnisse und ROI analysieren'
+      description: 'Q3-Marketingkampagnenergebnisse und ROI analysieren - Hinweis: Diese Demo-Daten können nicht bearbeitet werden. Bitte fügen Sie eigene Daten zum Testen hinzu.'
     },
     'task-6': {
       title: 'Kunden-Onboarding',
-      description: 'Onboarding für neuen Unternehmenskunden abschließen'
+      description: 'Onboarding für neuen Unternehmenskunden abschließen - Hinweis: Diese Demo-Daten können nicht bearbeitet werden. Bitte fügen Sie eigene Daten zum Testen hinzu.'
     },
     'task-7': {
       title: 'API-Dokumentation',
-      description: 'Umfassende API-Dokumentation für Version 2.0 schreiben'
+      description: 'Umfassende API-Dokumentation für Version 2.0 schreiben - Hinweis: Diese Demo-Daten können nicht bearbeitet werden. Bitte fügen Sie eigene Daten zum Testen hinzu.'
     }
   },
 
   demoGoals: {
     'goal-1': {
       title: 'Teameffizienz verbessern',
-      description: 'Neuen Projektmanagement-Workflow implementieren'
+      description: 'Neuen Projektmanagement-Workflow implementieren zur Steigerung der Teameffizienz um 20% - Hinweis: Diese Demo-Daten können nicht bearbeitet werden. Bitte fügen Sie eigene Daten zum Testen hinzu.'
     },
     'goal-2': {
       title: 'React Native lernen',
-      description: 'Fortgeschrittenen React Native Kurs abschließen'
+      description: 'Fortgeschrittenen React Native Kurs abschließen - Hinweis: Diese Demo-Daten können nicht bearbeitet werden. Bitte fügen Sie eigene Daten zum Testen hinzu.'
     },
     'goal-3': {
       title: 'UX-Zertifizierung',
-      description: 'Google UX Design Professional Zertifikat erwerben'
+      description: 'Google UX Design Professional Zertifikat erwerben - Hinweis: Diese Demo-Daten können nicht bearbeitet werden. Bitte fügen Sie eigene Daten zum Testen hinzu.'
     },
     'goal-4': {
       title: 'Lead-Generierung steigern',
-      description: '30% Steigerung qualifizierter Leads durch Marketingkampagnen erreichen'
+      description: '30% Steigerung qualifizierter Leads durch Marketingkampagnen erreichen - Hinweis: Diese Demo-Daten können nicht bearbeitet werden. Bitte fügen Sie eigene Daten zum Testen hinzu.'
     },
     'goal-5': {
       title: 'Unternehmensverträge abschließen',
-      description: '5 Unternehmensverträge im Wert von je über $500K abschließen'
+      description: '5 Unternehmensverträge im Wert von je über $500K abschließen - Hinweis: Diese Demo-Daten können nicht bearbeitet werden. Bitte fügen Sie eigene Daten zum Testen hinzu.'
     }
   },
   
