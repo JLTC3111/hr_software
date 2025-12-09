@@ -815,10 +815,13 @@ const DEMO_TIME_ENTRIES_KEY = 'hr_app_demo_time_entries';
 export const getDemoTimeEntries = () => {
   const stored = localStorage.getItem(DEMO_TIME_ENTRIES_KEY);
   const storedEntries = stored ? JSON.parse(stored) : [];
-  // Stored entries take precedence over mock entries (allow adding new ones)
+  // Get IDs of stored entries (including deleted ones)
   const storedIds = new Set(storedEntries.map(e => e.id));
+  // Filter out mock entries that have been overridden in storage
   const visibleMock = MOCK_TIME_ENTRIES.filter(e => !storedIds.has(e.id));
-  return [...visibleMock, ...storedEntries];
+  // Filter out deleted entries from stored entries
+  const activeStoredEntries = storedEntries.filter(e => !e._deleted);
+  return [...visibleMock, ...activeStoredEntries];
 };
 
 export const addDemoTimeEntry = (entry) => {
@@ -849,6 +852,28 @@ export const updateDemoTimeEntry = (entryId, updates) => {
   
   localStorage.setItem(DEMO_TIME_ENTRIES_KEY, JSON.stringify(storedEntries));
   return { id: entryId, ...updates };
+};
+
+export const deleteDemoTimeEntry = (entryId) => {
+  const stored = localStorage.getItem(DEMO_TIME_ENTRIES_KEY);
+  const storedEntries = stored ? JSON.parse(stored) : [];
+  
+  // Check if entry exists in stored entries - remove it
+  const existingIndex = storedEntries.findIndex(e => e.id === entryId);
+  
+  if (existingIndex >= 0) {
+    // Remove from stored entries
+    storedEntries.splice(existingIndex, 1);
+  } else {
+    // Entry is from MOCK_TIME_ENTRIES - mark as deleted by storing with _deleted flag
+    const mockEntry = MOCK_TIME_ENTRIES.find(e => e.id === entryId);
+    if (mockEntry) {
+      storedEntries.push({ ...mockEntry, _deleted: true });
+    }
+  }
+  
+  localStorage.setItem(DEMO_TIME_ENTRIES_KEY, JSON.stringify(storedEntries));
+  return { success: true };
 };
 
 export const MOCK_TASKS = [

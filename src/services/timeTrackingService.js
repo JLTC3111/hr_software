@@ -327,7 +327,15 @@ export const getAllTimeEntriesDetailed = async (filters = {}) => {
  */
 export const updateTimeEntryStatus = async (entryId, status, approverId) => {
   if (isDemoMode()) {
-    return { success: true, data: { id: entryId, status, approved_by: approverId } };
+    // Persist status update in demo storage
+    const { updateDemoTimeEntry } = await import('../utils/demoHelper');
+    const updates = {
+      status,
+      approved_by: approverId,
+      approved_at: new Date().toISOString()
+    };
+    updateDemoTimeEntry(entryId, updates);
+    return { success: true, data: { id: entryId, ...updates } };
   }
 
   try {
@@ -422,6 +430,14 @@ export const updateTimeEntryProof = async (entryId, file, employeeId, onProgress
  */
 export const deleteProofFile = async (entryId, filePath) => {
   if (isDemoMode()) {
+    // Update demo entry to remove proof file info
+    const { updateDemoTimeEntry } = await import('../utils/demoHelper');
+    updateDemoTimeEntry(entryId, {
+      proof_file_url: null,
+      proof_file_name: null,
+      proof_file_type: null,
+      proof_file_path: null
+    });
     return { success: true };
   }
 
@@ -468,6 +484,9 @@ export const deleteProofFile = async (entryId, filePath) => {
  */
 export const deleteTimeEntry = async (entryId) => {
   if (isDemoMode()) {
+    // Persist deletion in demo storage
+    const { deleteDemoTimeEntry } = await import('../utils/demoHelper');
+    deleteDemoTimeEntry(entryId);
     return { success: true };
   }
 
