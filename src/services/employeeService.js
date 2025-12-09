@@ -1,28 +1,13 @@
 import { supabase } from '../config/supabaseClient';
 import { withTimeout } from '../utils/supabaseTimeout';
 import { isDemoMode, MOCK_EMPLOYEES, getDemoEmployees, addDemoEmployee, updateDemoEmployee } from '../utils/demoHelper';
+import { saveDemoPdf, getDemoPdf, deleteDemoPdf } from '../utils/demoStorage';
 
-/**
- * Employee Service
- * Handles all Supabase operations for employee management
- */
-
-/**
- * Helper: Ensure employee ID is a string (supports both integers and UUIDs)
- */
+/* Ensure employee ID is a string (supports both integers and UUIDs) */
 const toEmployeeId = (id) => {
   return id ? String(id) : null;
 };
 
-// ============================================
-// USER-EMPLOYEE LINKING
-// ============================================
-
-/**
- * Link hr_user to employee by matching email addresses
- * This function finds the employee record matching the user's email
- * and updates the hr_users table with the employee_id
- */
 export const linkUserToEmployee = async (userId, userEmail) => {
   try {
     console.log(`Linking user ${userId} (${userEmail}) to employee record...`);
@@ -73,10 +58,6 @@ export const linkUserToEmployee = async (userId, userEmail) => {
   }
 };
 
-/**
- * Get employee data for a logged-in user
- * Fetches the employee record linked to the user's account
- */
 export const getEmployeeByUserId = async (userId) => {
   if (isDemoMode()) {
     // In demo mode, the user ID is 'demo-user-id' and linked to 'demo-emp-1'
@@ -118,10 +99,6 @@ export const getEmployeeByUserId = async (userId) => {
 // EMPLOYEE CRUD OPERATIONS
 // ============================================
 
-/**
- * Get all employees
- * Joins with hr_users to get avatar URLs from auth profiles
- */
 export const getAllEmployees = async (filters = {}) => {
   if (isDemoMode()) {
     console.log('🧪 Demo Mode: Returning mock employees');
@@ -620,7 +597,46 @@ export const uploadEmployeePdf = async (file, employeeId, onProgress = null) => 
       throw new Error('File size exceeds 50MB limit.');
     }
 
-    // Generate unique file path
+    // Demo mode: try localStorage first (fast) then fall back to IndexedDB
+    if (isDemoMode()) {
+      const readAsDataUrl = () => new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.onerror = (err) => reject(err);
+        fr.readAsDataURL(file);
+      });
+
+      try {
+        const dataUrl = await readAsDataUrl();
+        const demoKey = `demo_employee_pdf_${toEmployeeId(employeeId)}`;
+        try {
+          localStorage.setItem(demoKey, dataUrl);
+          // Persist demo employee record with pdf path
+          try { updateDemoEmployee(toEmployeeId(employeeId), { pdf_document_url: demoKey }); } catch (uerr) { console.warn('⚠️ updateDemoEmployee failed:', uerr); }
+          console.log('📋 Demo PDF stored in localStorage under:', demoKey);
+          return { success: true, path: demoKey, url: dataUrl };
+        } catch (lsErr) {
+          console.warn('⚠️ localStorage setItem failed, falling back to IndexedDB:', lsErr);
+          // Fall through to IndexedDB save below
+        }
+      } catch (readErr) {
+        console.warn('⚠️ Failed to read file as data URL, will try IndexedDB storage as blob:', readErr);
+      }
+
+      // Save file as Blob in IndexedDB
+      try {
+        await saveDemoPdf(toEmployeeId(employeeId), file);
+        const demoKeyIdx = `demo_employee_pdf_${toEmployeeId(employeeId)}`;
+        try { updateDemoEmployee(toEmployeeId(employeeId), { pdf_document_url: demoKeyIdx }); } catch (uerr) { console.warn('⚠️ updateDemoEmployee failed:', uerr); }
+        // We can't return a persistent public URL for an IndexedDB blob; return the key and let getEmployeePdfUrl create an object URL when needed
+        return { success: true, path: demoKeyIdx, url: null };
+      } catch (idbErr) {
+        console.error('❌ Failed to save demo PDF in IndexedDB:', idbErr);
+        return { success: false, error: 'Failed to store demo PDF' };
+      }
+    }
+
+    // Generate unique file path for production
     const timestamp = Date.now();
     const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const filePath = `${toEmployeeId(employeeId)}_${timestamp}.pdf`;
@@ -723,12 +739,18 @@ export const uploadEmployeePdf = async (file, employeeId, onProgress = null) => 
   }
 };
 
-/**
- * Delete employee PDF document from Supabase Storage and database
- */
 export const deleteEmployeePdf = async (employeeId, pdfPath) => {
   if (isDemoMode()) {
-    return { success: true };
+    try {
+      const demoKey = pdfPath || `demo_employee_pdf_${toEmployeeId(employeeId)}`;
+      try { localStorage.removeItem(demoKey); } catch (e) { /* ignore */ }
+      try { await deleteDemoPdf(toEmployeeId(employeeId)); } catch (e) { /* ignore */ }
+      try { updateDemoEmployee(toEmployeeId(employeeId), { pdf_document_url: null }); } catch (uerr) { /* ignore */ }
+      return { success: true };
+    } catch (err) {
+      console.error('❌ Error removing demo PDF from storage:', err);
+      return { success: false, error: 'Failed to remove demo PDF' };
+    }
   }
 
   try {
@@ -760,13 +782,43 @@ export const deleteEmployeePdf = async (employeeId, pdfPath) => {
   }
 };
 
-/**
- * Get employee PDF URL (public or signed)
- */
 export const getEmployeePdfUrl = async (pdfPath) => {
   try {
     if (!pdfPath) {
       return { success: false, error: 'No PDF path provided' };
+    }
+
+    // Demo mode: return data URL from localStorage or blob from IndexedDB
+    if (isDemoMode()) {
+      try {
+        const localKey = pdfPath;
+        const stored = localStorage.getItem(localKey) || localStorage.getItem(`demo_employee_pdf_${pdfPath}`) || localStorage.getItem(`demo_employee_pdf_${toEmployeeId(pdfPath)}`);
+        if (stored) {
+          return { success: true, url: stored, type: 'demo' };
+        }
+      } catch (err) {
+        console.warn('⚠️ Error reading demo PDF from localStorage:', err);
+      }
+
+      // Try IndexedDB
+      try {
+        let demoEmployeeId = null;
+        if (typeof pdfPath === 'string' && pdfPath.startsWith('demo_employee_pdf_')) {
+          demoEmployeeId = pdfPath.replace('demo_employee_pdf_', '');
+        } else {
+          demoEmployeeId = toEmployeeId(pdfPath);
+        }
+
+        const blob = await getDemoPdf(demoEmployeeId);
+        if (blob) {
+          const objectUrl = URL.createObjectURL(blob);
+          return { success: true, url: objectUrl, type: 'demo' };
+        }
+        return { success: false, error: 'Demo PDF not found' };
+      } catch (idbErr) {
+        console.error('❌ Error reading demo PDF from IndexedDB:', idbErr);
+        return { success: false, error: 'Failed to read demo PDF' };
+      }
     }
 
     // Try public URL first

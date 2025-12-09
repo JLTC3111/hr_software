@@ -10,7 +10,6 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
-// Set PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
@@ -65,6 +64,13 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
 
     generatePdfUrl();
   }, [pdfPath]);
+
+  // Update pdfPath when employee prop changes (persisted demo updates)
+  useEffect(() => {
+    if ((employee?.pdf_document_url || null) !== pdfPath) {
+      setPdfPath(employee?.pdf_document_url || null);
+    }
+  }, [employee?.pdf_document_url]);
   
   // Update PDF path when upload completes
   useEffect(() => {
