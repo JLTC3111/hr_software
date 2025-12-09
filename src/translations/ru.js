@@ -949,8 +949,11 @@ export default {
   // Recruitment Status
   recruitmentStatus: {
     active: 'Активный',
+    interviewscheduled: 'Назначено интервью',
     interviewScheduled: 'Назначено интервью',
     underreview: 'На рассмотрении',
+    underReview: 'На рассмотрении',
+    offerextended: 'Предложение сделано',
     offerExtended: 'Предложение сделано',
     offer: 'Предложение',
     hired: 'Принят',

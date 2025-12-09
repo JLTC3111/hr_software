@@ -906,8 +906,11 @@ export default {
   // Recruitment Status
   recruitmentStatus: {
     active: '활성',
+    interviewscheduled: '면접 일정 예정',
     interviewScheduled: '면접 일정 예정',
     underreview: '검토 중',
+    underReview: '검토 중',
+    offerextended: '오퍼 발송됨',
     offerExtended: '오퍼 발송됨',
     offer: '오퍼',
     hired: '채용됨',

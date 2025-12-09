@@ -1450,31 +1450,31 @@ export const MOCK_NOTIFICATIONS = [
   {
     id: 'notif-2',
     user_id: 'demo-user-id',
-    title: 'New Task Assigned',
+    title: 'New Application',
     titleKey: 'demoNotifications.notif-2.title',
-    message: 'You have been assigned a new task: Review Q3 Performance',
+    message: 'New application received for Senior Frontend Developer position.',
     messageKey: 'demoNotifications.notif-2.message',
     type: 'warning',
-    category: 'task',
+    category: 'recruitment',
     is_read: false,
     created_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-    action_url: '/tasks',
-    action_label: 'View Task',
+    action_url: '/recruitment',
+    action_label: 'View Application',
     actionLabelKey: 'demoNotifications.notif-2.actionLabel'
   },
   {
     id: 'notif-3',
     user_id: 'demo-user-id',
-    title: 'Meeting Reminder',
+    title: 'Performance Review Due',
     titleKey: 'demoNotifications.notif-3.title',
-    message: 'Team meeting in 30 minutes',
+    message: 'Quarterly performance reviews are due next week.',
     messageKey: 'demoNotifications.notif-3.message',
     type: 'info',
-    category: 'calendar',
+    category: 'performance',
     is_read: true,
     created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-    action_url: '/calendar',
-    action_label: 'View Calendar',
+    action_url: '/performance',
+    action_label: 'View Reviews',
     actionLabelKey: 'demoNotifications.notif-3.actionLabel'
   }
 ];

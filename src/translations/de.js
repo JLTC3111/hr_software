@@ -1051,8 +1051,11 @@ export default {
   // Recruitment Status
   recruitmentStatus: {
     active: 'Aktiv',
+    interviewscheduled: 'Interview geplant',
     interviewScheduled: 'Interview geplant',
+    underReview: 'In Überprüfung',
     underreview: 'In Überprüfung',
+    offerextended: 'Angebot unterbreitet',
     offerExtended: 'Angebot unterbreitet',
     offer: 'Angebot',
     hired: 'Eingestellt',

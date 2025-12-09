@@ -962,8 +962,11 @@ export default {
   // Recruitment Status
   recruitmentStatus: {
     active: 'ใช้งานอยู่',
+    interviewscheduled: 'กำหนดสัมภาษณ์แล้ว',
     interviewScheduled: 'กำหนดสัมภาษณ์แล้ว',
     underreview: 'อยู่ระหว่างตรวจสอบ',
+    underReview: 'อยู่ระหว่างตรวจสอบ',
+    offerextended: 'ข้อเสนอส่งแล้ว',
     offerExtended: 'ข้อเสนอส่งแล้ว',
     offer: 'ข้อเสนอ',
     hired: 'ได้รับการว่าจ้าง',

@@ -1000,8 +1000,11 @@ login: {
   // Recruitment Status
   recruitmentStatus: {
     active: 'Activo',
+    interviewscheduled: 'Entrevista programada',
     interviewScheduled: 'Entrevista programada',
     underreview: 'En revisión',
+    underReview: 'En revisión',
+    offerExtended: 'Oferta enviada',
     offerExtended: 'Oferta enviada',
     offer: 'Oferta',
     hired: 'Contratado',
@@ -1010,7 +1013,7 @@ login: {
     technical: 'Técnico',
     shortlisted: 'Preseleccionado'
   },
-  
+
   // Demo Notifications
   demoNotifications: {
     'notif-1': {

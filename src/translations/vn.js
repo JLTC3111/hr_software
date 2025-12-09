@@ -1210,8 +1210,11 @@ export default {
   // Recruitment Status
   recruitmentStatus: {
     active: 'Hoạt động',
+    interviewscheduled: 'Đã lên lịch phỏng vấn',
     interviewScheduled: 'Đã lên lịch phỏng vấn',
     underreview: 'Đang xem xét',
+    underReview: 'Đang xem xét',
+    offerextended: 'Đã đề nghị',
     offerExtended: 'Đề nghị đã gửi',
     offer: 'Đề nghị',
     hired: 'Đã tuyển',

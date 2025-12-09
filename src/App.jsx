@@ -114,8 +114,9 @@ const HRManagementApp = () => {
         // Transform data to match expected format
         const transformedData = result.data.map(app => ({
           id: app.id,
-          candidateName: app.candidate_name || app.applicant?.name || 'Unknown',
+          candidateName: app.candidate_name || app.applicant?.name || (app.applicant?.first_name ? `${app.applicant.first_name} ${app.applicant.last_name}` : 'Unknown'),
           position: app.job_posting?.title || 'N/A',
+          positionKey: app.job_posting?.titleKey,
           department: app.job_posting?.department || 'N/A',
           status: app.status,
           appliedDate: app.applied_date || app.application_date,

@@ -1215,17 +1215,17 @@ export default {
   // Recruitment Status
   recruitmentStatus: {
     active: 'Active',
-    interviewScheduled: 'Interview Scheduled',
     interviewscheduled: 'Interview Scheduled',
-    underReview: 'Under Review',
+    interviewScheduled: 'Interview Scheduled',
     underreview: 'Under Review',
-    offerExtended: 'Offer Extended',
+    underReview: 'Under Review',
     offerextended: 'Offer Extended',
+    offerExtended: 'Offer Extended',
+    offer: 'Offer',
+    hired: 'Hired',
     rejected: 'Rejected',
     screening: 'Screening',
     technical: 'Technical',
-    offer: 'Offer',
-    hired: 'Hired',
     shortlisted: 'Shortlisted'
   },
 

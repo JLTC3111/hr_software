@@ -1048,8 +1048,11 @@ export default {
   // Recruitment Status
   recruitmentStatus: {
     active: 'Actif',
+    interviewscheduled: 'Entretien prévu',
     interviewScheduled: 'Entretien prévu',
     underreview: 'En révision',
+    underReview: 'En révision',
+    offerextended: 'Offre étendue',
     offerExtended: 'Offre étendue',
     offer: 'Offre',
     hired: 'Embauché',
@@ -1058,7 +1061,7 @@ export default {
     technical: 'Technique',
     shortlisted: 'Sélectionné'
   },
-  
+
   // Demo Notifications
   demoNotifications: {
     'notif-1': {

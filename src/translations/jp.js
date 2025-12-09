@@ -948,8 +948,11 @@ export default {
   recruitmentStatus: {
     active: 'アクティブ',
     interviewScheduled: '面接予定',
+    interviewscheduled: '面接予定',
+    underReview: '審査中',
     underreview: '審査中',
     offerExtended: 'オファー提示済み',
+    offerextended: 'オファー提示済み',
     offer: 'オファー',
     hired: '採用済み',
     rejected: '不採用',
