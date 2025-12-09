@@ -140,6 +140,8 @@ export default {
     board_of_directors: 'Vorsitzender',
     finance: 'Finanzen',
     engineering: 'Ingenieurwesen',
+    management: 'Management',
+    operations: 'Betrieb',
     sales: 'Vertrieb',
     marketing: 'Marketing',
     design: 'Design',
@@ -827,6 +829,9 @@ export default {
     minutes: 'Minuten',
     second: 'Sekunde',
     seconds: 'Sekunden',
+    select: 'Auswählen',
+    upload: 'Hochladen',
+    download: 'Herunterladen'
   },
 
   // Theme

@@ -261,20 +261,20 @@ const Recruitment = () => {
                         }
                       </span>
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>
+                    <td className={`text-center px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>
                       {formatDate(application.application_date)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
+                      <div className="flex space-x-2 justify-center">
                         <button 
                           onClick={() => {
                             setSelectedApplication(application);
                             setShowDetailModal(true);
                           }}
-                          className={`${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-900'}`}
+                          className={`cursor-pointer ${isDarkMode ? 'text-white hover:text-blue-300' : 'text-gray-800 hover:text-blue-600'}`}
                           title={t('recruitmentActions.view', 'View')}
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className={`w-5 h-5`} />
                         </button>
                         {application.status === 'shortlisted' && (
                           <button 
@@ -288,7 +288,7 @@ const Recruitment = () => {
                         {application.status !== 'rejected' && application.status !== 'hired' && (
                           <button 
                             onClick={() => handleStatusUpdate(application.id, 'rejected')}
-                            className={`${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-900'}`}
+                            className={`cursor-pointer ${isDarkMode ? 'text-red-400 hover:rotate-360' : 'text-red-800 hover:rotate-360' } transition-transform duration-200`}
                             title={t('recruitmentActions.reject', 'Reject')}
                           >
                             <XCircle className="w-4 h-4" />

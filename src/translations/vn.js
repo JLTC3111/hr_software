@@ -143,6 +143,7 @@ export default {
     sales: 'Bán Hàng',
     marketing: 'Tiếp Thị',
     design: 'Thiết Kế',
+    operations: 'Vận Hành',
     part_time_employee: 'Nhân Viên Bán Thời Gian',
     // Also support capitalized versions for compatibility
     Management: 'Quản Lý',
@@ -1055,7 +1056,12 @@ export default {
     thisWeek: 'Tuần Này',
     thisMonth: 'Tháng Này',
     thisYear: 'Năm Này',
-    allTime: 'Tất Cả Thời Gian'
+    allTime: 'Tất Cả Thời Gian',
+    select: 'Chọn...',
+    upload: 'Tải Lên',
+    download: 'Tải Xuống',
+    reset: 'Đặt Lại',
+    optional: 'Tùy Chọn',
   },
 
   // Theme

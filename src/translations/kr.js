@@ -136,6 +136,7 @@ export default {
   employeeDepartment: {
     all: '모두',
     legal_compliance: '법적 준수',
+    operations: '운영',
     technology: '기술',
     internal_affairs: '내부 업무',
     human_resources: '인사',
@@ -802,6 +803,12 @@ export default {
     minutes: '분',
     second: '초',
     seconds: '초',
+    select: '선택하세요',
+    selectFile: '파일 선택',
+    upload: '업로드',
+    download: '다운로드',
+    viewDetails: '세부 정보 보기',
+    actions: '작업',
   },
 
   // Theme

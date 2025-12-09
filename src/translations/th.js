@@ -133,6 +133,7 @@ export default {
   employeeDepartment: {
     all: 'ทั้งหมด',
     legal_compliance: 'การปฏิบัติตามกฎหมาย',
+    operations: 'การดำเนินงาน',
     technology: 'เทคโนโลยี',
     internal_affairs: 'กิจการภายใน',
     human_resources: 'ทรัพยากรมนุษย์',
@@ -849,7 +850,12 @@ export default {
     minute: 'นาที',
     minutes: 'นาที',
     second: 'วินาที',
-    seconds: 'วินาที'
+    seconds: 'วินาที',
+    select: 'เลือก',
+    upload: 'อัปโหลด',
+    download: 'ดาวน์โหลด',
+    reset: 'รีเซ็ต',
+    optional: 'ไม่บังคับ',
   },
 
   // Theme

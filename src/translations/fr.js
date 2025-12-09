@@ -136,6 +136,7 @@ export default {
     technology: 'Technologie',
     internal_affairs: 'Affaires Internes',
     human_resources: 'Ressources Humaines',
+    operations: 'Opérations',
     office_unit: 'Unité de Bureau',
     board_of_directors: 'Conseil d\'Administration',
     finance: 'Finance',
@@ -965,7 +966,16 @@ export default {
     minute: 'minute',
     minutes: 'minutes',
     second: 'seconde',
-    seconds: 'secondes'
+    seconds: 'secondes',
+    select: 'Sélectionner',
+    upload: 'Téléverser',
+    download: 'Télécharger',
+    viewDetails: 'Voir les détails',
+    editDetails: 'Modifier les détails',
+    deleteItem: 'Supprimer l\'élément',
+    confirmDelete: 'Confirmer la suppression',
+    itemDeleted: 'Élément supprimé avec succès',
+    itemDeleteError: 'Échec de la suppression de l\'élément',
   },
 
   // Theme

@@ -258,6 +258,7 @@ export default {
     internal_affairs: 'Internal Affairs',
     human_resources: 'Human Resources',
     office_unit: 'Office Unit',
+    operations: 'Operations',
     board_of_directors: 'Board of Directors',
     finance: 'Finance',
     engineering: 'Engineering',
@@ -1117,6 +1118,18 @@ export default {
     days: 'days',
     day: 'day',
     notAvailable: 'N/A',
+    select: 'Select',
+    selectDate: 'Select Date',
+    selectEmployee: 'Select Employee',
+    uploadFile: 'Upload File',
+    dropFileHere: 'or drop file here',
+    changeFile: 'Change File',
+    removeFile: 'Remove File',
+    browseFiles: 'Browse Files',
+    fileTooLarge: 'File size exceeds the limit',
+    invalidFileType: 'Invalid file type',
+    download: 'Download',
+    viewFile: 'View File'
   },
 
   // Theme

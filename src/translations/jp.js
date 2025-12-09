@@ -134,6 +134,7 @@ export default {
     all: 'すべて',
     legal_compliance: '法令遵守',
     technology: 'テクノロジー',
+    operations: 'オペレーション',
     internal_affairs: '内部業務',
     human_resources: '人事',
     office_unit: '事務部門',
@@ -843,6 +844,12 @@ export default {
     minutes: '分',
     second: '秒',
     seconds: '秒',
+    select: '選択してください',
+    selectOption: 'オプションを選択',
+    upload: 'アップロード',
+    uploadFile: 'ファイルをアップロード',
+    uploadSuccess: 'ファイルが正常にアップロードされました',
+    uploadError: 'ファイルのアップロードに失敗しました',
   },
 
   // Theme

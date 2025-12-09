@@ -1172,7 +1172,7 @@ const PersonalGoals = ({ employees }) => {
       {activeTab === 'overview' && <OverviewTab />}
       {activeTab === 'goals' && <GoalsTab />}
 
-      {/* Add Goal Modal */}
+      {/* Add New Goal Modal */}
       {showAddGoalModal && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto"
@@ -1355,7 +1355,7 @@ const PersonalGoals = ({ employees }) => {
                   disabled={loading}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Save className={`h-4 w-4 ${text.secondary}`} />
+                  <Save className={`h-4 w-4 ${isDarkMode ? 'text-white' : 'text-white'}`} />
                   <span>{loading ? t('common.saving', 'Saving...') : t('common.save', 'Save')}</span>
                 </button>
               </div>

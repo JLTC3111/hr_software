@@ -301,6 +301,7 @@ login: {
     technology: 'Tecnología',
     internal_affairs: 'Asuntos Internos',
     human_resources: 'Recursos Humanos',
+    operations: 'Operaciones',
     office_unit: 'Oficinas',
     board_of_directors: 'Junta Directiva',
     finance: 'Finanzas',
@@ -958,6 +959,10 @@ login: {
     itemsPerPage: 'Elementos por página',
     page: 'Página',
     ofPages: 'de {total} páginas',
+    select: 'Seleccionar',
+    deselect: 'Deseleccionar',
+    selectAll: 'Seleccionar Todo',
+    deselectAll: 'Deseleccionar Todo',
   },
 
   // Theme

@@ -149,6 +149,7 @@ export default {
   employeeDepartment: {
     all: 'Все',
     legal_compliance: 'Юридическое Соответствие',
+    operations: 'Операции',
     technology: 'Технологии',
     internal_affairs: 'Внутренние Дела',
     human_resources: 'Кадры',
@@ -906,7 +907,14 @@ export default {
     minute: 'минута',
     minutes: 'минут',
     second: 'секунда',
-    seconds: 'секунд'
+    seconds: 'секунд',
+    select: 'Выбрать',
+    upload: 'Загрузить',
+    download: 'Скачать',
+    viewDetails: 'Просмотреть детали',
+    reset: 'Сбросить',
+    apply: 'Применить',
+    optional: 'необязательно'
   },
 
   // Theme
