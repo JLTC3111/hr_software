@@ -39,24 +39,31 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
   }, [onClose, isOpen]);
 
   // Department Color Tag
+  // Department Color Tag (returns classes appropriate for current theme)
   function getDepartmentColor(department) {
-    switch (department) {
-      case 'technology':
-        return 'bg-blue-100 text-blue-800';
-      case 'finance':
-        return 'bg-gray-100 text-gray-800';
-      case 'human_resources':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'board_of_directors':
-        return 'bg-blue-600 text-green-100';
-      case 'office_unit':
-        return 'bg-pink-200 text-pink-900';
-      case 'engineering':
-        return 'bg-teal-900 text-teal-100';
-      // Add more cases as needed
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+    const key = String(department || '').toLowerCase().replace(/\s+/g, '_');
+
+    const light = {
+      technology: 'bg-teal-100 text-teal-800',
+      finance: 'bg-purple-100 text-purple-800',
+      human_resources: 'bg-blue-100 text-blue-800',
+      board_of_directors: 'bg-indigo-100 text-indigo-800',
+      office_unit: 'bg-pink-100 text-pink-800',
+      engineering: 'bg-sky-100 text-sky-800',
+      default: 'bg-gray-100 text-gray-800'
+    };
+
+    const dark = {
+      technology: 'bg-teal-900 text-teal-200',
+      finance: 'bg-purple-900 text-purple-200',
+      human_resources: 'bg-blue-900 text-blue-200',
+      board_of_directors: 'bg-indigo-900 text-indigo-200',
+      office_unit: 'bg-pink-900 text-pink-200',
+      engineering: 'bg-sky-900 text-sky-200',
+      default: 'bg-gray-800 text-gray-200'
+    };
+
+    return isDarkMode ? (dark[key] || dark.default) : (light[key] || light.default);
   }
   // Sort data
   const sortedData = useMemo(() => {
@@ -284,21 +291,21 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                 </div>
               </th>
               <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('department')}>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-center space-x-2">
                   <Briefcase className="w-4 h-4" />
                   <span>{t('employees.department', 'Department')}</span>
                   <ArrowUpDown className="w-3 h-3" />
                 </div>
               </th>
               <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('workDays')}>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-center space-x-2">
                   <Calendar className="w-4 h-4" />
                   <span>{t('dashboard.totalWorkDays', 'Work Days')}</span>
                   <ArrowUpDown className="w-3 h-3" />
                 </div>
               </th>
               <th className={`text-left p-3 ${text.primary} font-semibold cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`} onClick={() => handleSort('overtime')}>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-center space-x-2">
                   <Clock className="w-4 h-4" />
                   <span>{t('dashboard.totalOvertime', 'Overtime')}</span>
                   <ArrowUpDown className="w-3 h-3" />
@@ -310,13 +317,13 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
             {filteredData.map((item, index) => (
               <tr key={index} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
                 <td className={`p-3 ${text.primary} font-medium`}>{item.employeeName}</td>
-                <td className={`p-3 ${text.secondary}`}>
+                <td className={`p-3 ${text.secondary} text-center`}>
                   <span className={`px-2 py-1 rounded text-xs ${isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-800'}`}>
                     {t(`employeeDepartment.${item.department}`, item.department)}
                   </span>
                 </td>
-                <td className={`p-3 ${text.primary} font-semibold`}>{item.workDays} {t('common.days', 'days')}</td>
-                <td className={`p-3 ${text.primary}`}>{item.overtime}h</td>
+                <td className={`p-3 ${text.primary} font-semibold text-center`}>{item.workDays} {t('common.days', 'days')}</td>
+                <td className={`p-3 ${text.primary} font-semibold text-center`}>{item.overtime}h</td>
               </tr>
             ))}
           </tbody>
