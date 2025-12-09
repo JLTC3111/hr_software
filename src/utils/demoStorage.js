@@ -58,3 +58,45 @@ export async function deleteDemoPdf(employeeId) {
     req.onerror = () => reject(req.error);
   });
 }
+
+// Generic blob helpers
+export async function saveDemoBlob(key, file) {
+  const id = String(key);
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const record = { id, blob: file, name: file.name || id, createdAt: Date.now() };
+    const req = store.put(record);
+    req.onsuccess = () => resolve(true);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function getDemoBlob(key) {
+  const id = String(key);
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.get(id);
+    req.onsuccess = () => {
+      const result = req.result;
+      if (result) resolve(result.blob);
+      else resolve(null);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function deleteDemoBlob(key) {
+  const id = String(key);
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.delete(id);
+    req.onsuccess = () => resolve(true);
+    req.onerror = () => reject(req.error);
+  });
+}

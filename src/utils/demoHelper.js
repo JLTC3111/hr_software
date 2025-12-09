@@ -606,6 +606,17 @@ export const getDemoEmployees = () => {
   return [...visibleMockEmployees, ...storedEmployees];
 };
 
+/**
+ * Find a demo employee by ID
+ * @param {string} employeeId - The employee ID to look up
+ * @returns {Object|null} - The employee object or null if not found
+ */
+export const getDemoEmployeeById = (employeeId) => {
+  if (!employeeId) return null;
+  const employees = getDemoEmployees();
+  return employees.find(e => String(e.id) === String(employeeId)) || null;
+};
+
 export const addDemoEmployee = (employee) => {
   const stored = localStorage.getItem(DEMO_EMPLOYEES_KEY);
   const storedEmployees = stored ? JSON.parse(stored) : [];
@@ -680,7 +691,7 @@ const generateMockTimeEntries = () => {
         }
       });
 
-      // Add some overtime
+      // Add some overtime (~20% of entries)
       if (Math.random() > 0.8) {
         entries.push({
           id: `te-ot-${emp.id}-${day}`,
@@ -704,12 +715,118 @@ const generateMockTimeEntries = () => {
           }
         });
       }
+
+      // Add some WFH days (~15% of entries)
+      if (Math.random() > 0.85) {
+        entries.push({
+          id: `te-wfh-${emp.id}-${day}`,
+          employee_id: emp.id,
+          employee_name: emp.name,
+          employee_nameKey: emp.nameKey,
+          employee_department: emp.department,
+          employee_position: emp.position,
+          date: dateStr,
+          hours: 8,
+          hour_type: 'wfh',
+          status: 'approved',
+          clock_in: '08:00:00',
+          clock_out: '16:00:00',
+          employee: {
+            id: emp.id,
+            name: emp.name,
+            nameKey: emp.nameKey,
+            department: emp.department,
+            position: emp.position
+          }
+        });
+      }
+
+      // Add bonus hours (~5% of entries)
+      if (Math.random() > 0.95) {
+        entries.push({
+          id: `te-bonus-${emp.id}-${day}`,
+          employee_id: emp.id,
+          employee_name: emp.name,
+          employee_nameKey: emp.nameKey,
+          employee_department: emp.department,
+          employee_position: emp.position,
+          date: dateStr,
+          hours: 4,
+          hour_type: 'bonus',
+          status: 'approved',
+          clock_in: '10:00:00',
+          clock_out: '14:00:00',
+          employee: {
+            id: emp.id,
+            name: emp.name,
+            nameKey: emp.nameKey,
+            department: emp.department,
+            position: emp.position
+          }
+        });
+      }
     }
   });
+
+  // Add some holiday entries for specific dates
+  const holidays = [
+    { date: `${year}-01-01`, name: 'New Year' },
+    { date: `${year}-12-25`, name: 'Christmas' }
+  ];
+  
+  holidays.forEach(holiday => {
+    if (holiday.date >= `${year}-${String(month + 1).padStart(2, '0')}-01` && 
+        holiday.date <= `${year}-${String(month + 1).padStart(2, '0')}-${daysInMonth}`) {
+      MOCK_EMPLOYEES.slice(0, 2).forEach(emp => {
+        entries.push({
+          id: `te-hol-${emp.id}-${holiday.date}`,
+          employee_id: emp.id,
+          employee_name: emp.name,
+          employee_nameKey: emp.nameKey,
+          employee_department: emp.department,
+          employee_position: emp.position,
+          date: holiday.date,
+          hours: 8,
+          hour_type: 'holiday',
+          status: 'approved',
+          clock_in: '09:00:00',
+          clock_out: '17:00:00',
+          notes: holiday.name,
+          employee: {
+            id: emp.id,
+            name: emp.name,
+            nameKey: emp.nameKey,
+            department: emp.department,
+            position: emp.position
+          }
+        });
+      });
+    }
+  });
+
   return entries;
 };
 
 export const MOCK_TIME_ENTRIES = generateMockTimeEntries();
+
+const DEMO_TIME_ENTRIES_KEY = 'hr_app_demo_time_entries';
+
+export const getDemoTimeEntries = () => {
+  const stored = localStorage.getItem(DEMO_TIME_ENTRIES_KEY);
+  const storedEntries = stored ? JSON.parse(stored) : [];
+  // Stored entries take precedence over mock entries (allow adding new ones)
+  const storedIds = new Set(storedEntries.map(e => e.id));
+  const visibleMock = MOCK_TIME_ENTRIES.filter(e => !storedIds.has(e.id));
+  return [...visibleMock, ...storedEntries];
+};
+
+export const addDemoTimeEntry = (entry) => {
+  const stored = localStorage.getItem(DEMO_TIME_ENTRIES_KEY);
+  const storedEntries = stored ? JSON.parse(stored) : [];
+  storedEntries.unshift(entry); // add to front
+  localStorage.setItem(DEMO_TIME_ENTRIES_KEY, JSON.stringify(storedEntries));
+  return entry;
+};
 
 export const MOCK_TASKS = [
   {

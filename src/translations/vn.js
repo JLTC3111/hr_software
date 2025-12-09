@@ -1885,7 +1885,7 @@ export default {
   },
   demoEmployees: {
   'demo-emp-1': { name: 'Quản Trị Viên', location: 'Trụ Sở Chính' },
-  'demo-emp-2': { name: 'Kỹ Sư Nhân Sự', location: 'Trụ Sở Chính' },
+  'demo-emp-2': { name: 'Kỹ Sư Công Nghệ', location: 'Trụ Sở Chính' },
   'demo-emp-3': { name: 'Nhà Thiết Kế UI/UX', location: 'Từ Xa' },
   'demo-emp-4': { name: 'Chuyên Viên Tiếp Thị', location: 'Trụ Sở Chính' },
   'demo-emp-5': { name: 'Nhân Viên Kinh Doanh', location: 'Từ Xa' }

@@ -3,7 +3,7 @@ import { useLanguage, SUPPORTED_LANGUAGES } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from '../contexts/AuthContext';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
-import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription, getDemoGoalTitle, getDemoGoalDescription } from '../utils/demoHelper';
+import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription, getDemoGoalTitle, getDemoGoalDescription, getDemoTimeEntries } from '../utils/demoHelper';
 import { 
   Calendar, 
   Download, 
@@ -193,28 +193,13 @@ const Reports = () => {
         let error = null;
 
         if (isDemoMode()) {
-          allTimeEntries = [
-            {
-              id: 'mock-entry-1',
-              employee_id: 'demo-emp-1',
-              date: startDate,
-              clock_in: '09:00:00',
-              clock_out: '17:00:00',
-              total_hours: 8,
-              status: 'approved',
-              employee: { id: 'demo-emp-1', name: 'Demo Admin', nameKey: 'demoEmployees.demo-emp-1.name', department: 'technology', position: 'senior_developer' }
-            },
-            {
-              id: 'mock-entry-2',
-              employee_id: 'demo-emp-2',
-              date: startDate,
-              clock_in: '08:30:00',
-              clock_out: '17:30:00',
-              total_hours: 9,
-              status: 'approved',
-              employee: { id: 'demo-emp-2', name: 'Sarah Connor', nameKey: 'demoEmployees.demo-emp-2.name', department: 'human_resources', position: 'manager' }
-            }
-          ];
+          // Use persisted demo time entries (includes user-created entries)
+          const demoEntries = getDemoTimeEntries();
+          // Filter by date range
+          allTimeEntries = demoEntries.filter(entry => {
+            if (!entry.date) return false;
+            return entry.date >= startDate && entry.date <= endDate;
+          });
         } else {
           // Use direct Supabase query with proper join - fetch all entries first
           const result = await supabase

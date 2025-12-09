@@ -18,7 +18,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [processedEmployeeIds, setProcessedEmployeeIds] = useState([]); // Track employees who've had entries created
+  const [processedEmployeeIds, setProcessedEmployeeIds] = useState([]); 
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],

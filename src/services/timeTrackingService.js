@@ -1,6 +1,7 @@
 import { supabase } from '../config/supabaseClient';
 import { withTimeout } from '../utils/supabaseTimeout';
-import { isDemoMode, MOCK_TIME_ENTRIES, getDemoLeaveRequests, addDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper';
+import { isDemoMode, MOCK_TIME_ENTRIES, getDemoLeaveRequests, addDemoLeaveRequest, calculateDaysBetween, getDemoTimeEntries, addDemoTimeEntry, getDemoEmployeeById } from '../utils/demoHelper';
+import { saveDemoBlob } from '../utils/demoStorage';
 
 const toEmployeeId = (id) => {
   return id ? String(id) : null;
@@ -83,14 +84,35 @@ export const createTimeEntry = async (timeEntryData) => {
  */
 export const createBulkTimeEntries = async (timeEntriesData) => {
   if (isDemoMode()) {
-    return { 
-      success: true, 
-      data: timeEntriesData.map((entry, i) => ({
+    // Persist demo time entries so they show up across reloads
+    const persisted = timeEntriesData.map((entry, i) => {
+      // Look up employee info to attach to the entry for display
+      const emp = getDemoEmployeeById(entry.employeeId);
+      const demoEntry = {
         id: `demo-bulk-${Date.now()}-${i}`,
         ...entry,
-        status: 'pending'
-      }))
-    };
+        employee_id: entry.employeeId,
+        employee_name: emp?.name || 'Unknown',
+        employee_nameKey: emp?.nameKey || null,
+        employee_department: emp?.department || null,
+        employee_position: emp?.position || null,
+        hour_type: entry.hourType,
+        clock_in: entry.clockIn,
+        clock_out: entry.clockOut,
+        employee: emp ? {
+          id: emp.id,
+          name: emp.name,
+          nameKey: emp.nameKey,
+          department: emp.department,
+          position: emp.position
+        } : null,
+        status: entry.status || 'pending',
+        created_at: new Date().toISOString()
+      };
+      try { addDemoTimeEntry(demoEntry); } catch (e) { console.warn('Failed to persist demo time entry', e); }
+      return demoEntry;
+    });
+    return { success: true, data: persisted };
   }
 
   try {
@@ -167,7 +189,7 @@ export const createBulkTimeEntries = async (timeEntriesData) => {
  */
 export const getTimeEntries = async (employeeId, filters = {}) => {
   if (isDemoMode()) {
-    let entries = MOCK_TIME_ENTRIES.filter(e => String(e.employee_id) === String(employeeId));
+    let entries = getDemoTimeEntries().filter(e => String(e.employee_id) === String(employeeId));
     
     if (filters.startDate) {
       entries = entries.filter(e => e.date >= filters.startDate);
@@ -218,7 +240,7 @@ export const getTimeEntries = async (employeeId, filters = {}) => {
  */
 export const getAllTimeEntriesDetailed = async (filters = {}) => {
   if (isDemoMode()) {
-    let entries = [...MOCK_TIME_ENTRIES];
+    let entries = getDemoTimeEntries();
     
     if (filters.startDate) {
       entries = entries.filter(e => e.date >= filters.startDate);
@@ -492,6 +514,39 @@ export const uploadProofFile = async (file, employeeId, onProgress = null) => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const fileName = `${employeeId}_${timestamp}_${sanitizedFileName}`;
     const filePath = `time-proofs/${fileName}`;
+
+    // Demo mode handling: store in localStorage (small files) or IndexedDB fallback
+    if (isDemoMode()) {
+      const readAsDataUrl = () => new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.onerror = (err) => reject(err);
+        fr.readAsDataURL(file);
+      });
+
+      try {
+        const dataUrl = await readAsDataUrl();
+        const demoKey = `demo_time_proof_${toEmployeeId(employeeId)}_${Date.now()}`;
+        try {
+          localStorage.setItem(demoKey, dataUrl);
+          return { success: true, url: dataUrl, fileName: file.name, fileType: file.type, storagePath: demoKey };
+        } catch (lsErr) {
+          console.warn('⚠️ localStorage setItem failed for proof file, falling back to IndexedDB:', lsErr);
+        }
+      } catch (readErr) {
+        console.warn('⚠️ Failed to read proof file as data URL, will try IndexedDB storage as blob:', readErr);
+      }
+
+      // Save blob in IndexedDB
+      try {
+        const demoKeyIdx = `demo_time_proof_${toEmployeeId(employeeId)}_${Date.now()}`;
+        await saveDemoBlob(demoKeyIdx, file);
+        return { success: true, url: null, fileName: file.name, fileType: file.type, storagePath: demoKeyIdx };
+      } catch (idbErr) {
+        console.error('❌ Failed to save demo proof file in IndexedDB:', idbErr);
+        return { success: false, error: 'Failed to store proof file in demo mode' };
+      }
+    }
 
     // Get signed upload URL from Supabase
     const { data: signedUrlData, error: signedUrlError } = await supabase

@@ -975,6 +975,25 @@ const TimeClockEntry = ({ currentLanguage }) => {
 
   return (
     <div key={currentLanguage} className="space-y-6 max-w-[1600px] w-full mx-auto">
+      {isDemoMode() && (
+        <style>{`
+          input.no-native-time[type="time"]::-webkit-calendar-picker-indicator {
+            display: none !important;
+            -webkit-appearance: none !important;
+            opacity: 0 !important;
+            width: 0 !important;
+            height: 0 !important;
+          }
+          input.no-native-time[type="time"]::-webkit-clear-button {
+            display: none !important;
+          }
+          input.no-native-time[type="time"] {
+            -webkit-appearance: none !important;
+            appearance: none !important;
+            -moz-appearance: textfield !important;
+          }
+        `}</style>
+      )}
       {/* Loading Overlay */}
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
@@ -1110,16 +1129,14 @@ const TimeClockEntry = ({ currentLanguage }) => {
                 <input
                   id="clock-in-input"
                   type="time"
-                  value={formData.clockIn}
-                  onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
-                  className={`
-                    w-full px-4 py-2 rounded-lg border 
+                  className={`${isDemoMode() ? 'no-native-time' : ''} w-full px-4 py-2 rounded-lg border 
                     ${bg.primary}
                     ${input.className} 
                     ${isDarkMode ? 'text-white bg-gray-700 border-gray-600' : 'text-gray-900 bg-white border-gray-300'} 
                     ${errors.clockIn ? 'border-red-500' : ''}
-                    pr-10 appearance-none
-                  `}
+                    pr-10 appearance-none`}
+                  value={formData.clockIn}
+                  onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
                 />
                 <AnimatedClockIcon className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-6 h-6 ${text.secondary}`} isDarkMode={isDarkMode} />
               </div>
@@ -1136,16 +1153,14 @@ const TimeClockEntry = ({ currentLanguage }) => {
                 <input
                   id="clock-out-input"
                   type="time"
-                  value={formData.clockOut}
-                  onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
-                  className={`
-                    w-full px-4 py-2 rounded-lg border 
+                  className={`${isDemoMode() ? 'no-native-time' : ''} w-full px-4 py-2 rounded-lg border 
                     ${bg.primary}
                     ${input.className} 
                     ${isDarkMode ? 'text-white bg-gray-700 border-gray-600' : 'text-gray-900 bg-white border-gray-300'} 
                     ${errors.clockOut ? 'border-red-500' : ''}
-                    pr-10 appearance-none
-                  `}
+                    pr-10 appearance-none`}
+                  value={formData.clockOut}
+                  onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
                 />
                 <AnimatedAlarmClockIcon className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-6 h-6 ${text.secondary}`} isDarkMode={isDarkMode} />
               </div>
@@ -1612,8 +1627,13 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     </td>
                     {selectedEmployeeFilter !== 'self' && (
                       <td className={`p-3 ${text.primary} text-center font-medium ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>
-                        {isDemoMode() && entry.employee_nameKey 
-                          ? t(entry.employee_nameKey, entry.employee_name || entry.employee?.name || 'N/A')
+                        {isDemoMode()
+                          ? (
+                              getDemoEmployeeName(
+                                { name: entry.employee_name || entry.employee?.name, nameKey: entry.employee_nameKey },
+                                t
+                              ) || entry.employee_name || entry.employee?.name || 'N/A'
+                            )
                           : (entry.employee_name || entry.employee?.name || 'N/A')}
                       </td>
                     )}

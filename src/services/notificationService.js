@@ -282,6 +282,21 @@ export const subscribeToNotifications = (userId, callback) => {
  * @returns {Promise<object>} Result with statistics
  */
 export const getNotificationStats = async (userId) => {
+  // Demo mode: return default stats without calling the backend
+  if (isDemoMode()) {
+    return {
+      success: true,
+      data: {
+        user_id: userId,
+        total_notifications: MOCK_NOTIFICATIONS.length,
+        unread_count: MOCK_NOTIFICATIONS.filter(n => !n.is_read).length,
+        error_count: MOCK_NOTIFICATIONS.filter(n => n.type === 'error').length,
+        warning_count: MOCK_NOTIFICATIONS.filter(n => n.type === 'warning').length,
+        latest_notification_at: MOCK_NOTIFICATIONS.length > 0 ? MOCK_NOTIFICATIONS[0].created_at : null
+      }
+    };
+  }
+
   try {
     const { data, error } = await supabase
       .from('notification_stats')
@@ -411,6 +426,18 @@ export const notifyUser = async (userId, title, message, options = {}) => {
  * @returns {Promise<object>} Result with count
  */
 export const getPendingApprovalsCount = async () => {
+  // Demo mode: derive from mock time entries if available (avoid network call)
+  if (isDemoMode()) {
+    try {
+      // Attempt to load demo time entries from demoHelper if present
+      // Fallback to zero if not available
+      const demoTimeEntries = [];
+      return { success: true, count: demoTimeEntries.filter(e => e.status === 'pending').length };
+    } catch (err) {
+      return { success: true, count: 0 };
+    }
+  }
+
   try {
     const { count, error } = await supabase
       .from('time_entries')
@@ -479,6 +506,11 @@ export const notifyPendingApprovals = async () => {
  * @returns {Promise<object>} Result with count of deleted notifications
  */
 export const cleanupDuplicateNotifications = async (userId, title, category) => {
+  // Demo mode: no-op (mock notifications are static in demo)
+  if (isDemoMode()) {
+    return { success: true, deletedCount: 0, message: 'Demo mode - no cleanup performed' };
+  }
+
   try {
     // Get all matching notifications ordered by created date
     const { data: notifications, error: fetchError } = await supabase
