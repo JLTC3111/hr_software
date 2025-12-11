@@ -516,8 +516,7 @@ const ControlPanel = () => {
   };
 
   const openManual = () => {
-    // Open the local USER_MANUAL.md file
-    window.open('/USER_MANUAL.md', '_blank');
+    navigate('/help-center');
   };
 
   const handleAvatarUpload = async (e) => {
@@ -776,24 +775,28 @@ const ControlPanel = () => {
             }}
             disabled={isDemoMode()}
             title={isDemoMode() ? t('controlPanel.demoModeDisabled', 'Disabled in demo mode') : ''}
-            className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${isDemoMode() ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+            className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors 
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+              ${isDemoMode() ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
+            `}
             style={{
-              backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6',
-              color: isDarkMode ? '#ffffff' : '#111827'
+              backgroundColor: isDarkMode ? '#2d3748' : '#f4f6f8',
+              color: isDarkMode ? '#ffffff' : '#111827',
+              border: isDarkMode ? '1px solid #4a5568' : '1px solid #d1d5db'
             }}
             onMouseEnter={(e) => {
-                if (isDemoMode()) return;
-                e.currentTarget.style.backgroundColor = isDarkMode ? '#1e40af' : '#dbeafe';
-              }}
-              onMouseLeave={(e) => {
-                if (isDemoMode()) return;
-                e.currentTarget.style.backgroundColor = isDarkMode ? '#1e3a5f' : '#eff6ff';
-              }}
+              if (isDemoMode()) return;
+              e.currentTarget.style.backgroundColor = isDarkMode ? '#3b4860' : '#e2e8f0';
+            }}
+            onMouseLeave={(e) => {
+              if (isDemoMode()) return;
+              e.currentTarget.style.backgroundColor = isDarkMode ? '#2d3748' : '#f4f6f8';
+            }}
           >
-            <Key className="w-4.5 h-4.5" />
+            <Key className="w-4 h-4" />
             <span className="text-sm">{t('controlPanel.changeOwnPassword', 'Change Own Password')}</span>
           </button>
-
+          
           {/* Reset Other Employee Password */}
           {isAdmin && (
             <button
@@ -803,18 +806,34 @@ const ControlPanel = () => {
               }}
               disabled={isDemoMode()}
               title={isDemoMode() ? t('controlPanel.demoModeDisabled', 'Disabled in demo mode') : ''}
-              className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${isDemoMode() ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+              className={`
+                w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200
+                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                ${isDemoMode() ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
+              `}
               style={{
-                backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff',
-                color: isDarkMode ? '#93c5fd' : '#1e40af'
+                backgroundColor: isDarkMode ? '#1f2f47' : '#eef3ff',
+                color: isDarkMode ? '#bfdbfe' : '#1e3a8a',
+                border: isDarkMode ? '1px solid #334766' : '1px solid #c7d2fe',
+                boxShadow: isDemoMode()
+                  ? 'none'
+                  : isDarkMode
+                    ? '0 1px 3px rgba(0,0,0,0.4)'
+                    : '0 1px 3px rgba(0,0,0,0.15)'
               }}
               onMouseEnter={(e) => {
                 if (isDemoMode()) return;
-                e.currentTarget.style.backgroundColor = isDarkMode ? '#1e40af' : '#dbeafe';
+                e.currentTarget.style.backgroundColor = isDarkMode ? '#28415f' : '#dbe4ff';
+                e.currentTarget.style.boxShadow = isDarkMode
+                  ? '0 2px 6px rgba(0,0,0,0.45)'
+                  : '0 2px 6px rgba(0,0,0,0.2)';
               }}
               onMouseLeave={(e) => {
                 if (isDemoMode()) return;
-                e.currentTarget.style.backgroundColor = isDarkMode ? '#1e3a5f' : '#eff6ff';
+                e.currentTarget.style.backgroundColor = isDarkMode ? '#1f2f47' : '#eef3ff';
+                e.currentTarget.style.boxShadow = isDarkMode
+                  ? '0 1px 3px rgba(0,0,0,0.4)'
+                  : '0 1px 3px rgba(0,0,0,0.15)';
               }}
             >
               <Users className="w-4 h-4" />
@@ -987,7 +1006,7 @@ const ControlPanel = () => {
               e.currentTarget.style.backgroundColor = isDarkMode ? '#1f2937' : '#f3f4f6';
             }}
           >
-            <BookOpen className="w-4.5 h-4.5 group-hover:animate-pulse transition-all" />
+            <BookOpen className="w-4 h-4 group-hover:animate-pulse transition-all" />
             <span className="text-sm cursor-pointer">{t('controlPanel.readManual', 'Read Manual')}</span>
           </button>
 
