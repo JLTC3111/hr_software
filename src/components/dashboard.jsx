@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { Clock, Heart, AlertCircle, TreePalm, Car, Salad, Clapperboard, Laptop, Form, PhoneCall, CupSoda, Grape, BicepsFlexed, Flame, DatabaseZap, Loader, HouseWifi, Funnel, HeartPlus, Coffee, AlarmClock, Gauge, BriefcaseBusiness, WifiPen, TrendingUp, LineChart, BatteryCharging, PersonStanding, Volleyball, FileUser, RefreshCw } from 'lucide-react'
+import { Clock, Heart, AlertCircle, TreePalm, Car, Salad, Clapperboard, Laptop, Form, PhoneCall, CupSoda, Grape, BicepsFlexed, Flame, DatabaseZap, Loader, HouseWifi, Funnel, HeartPlus, Coffee, AlarmClock, Gauge, BriefcaseBusiness, WifiPen, TrendingUp, LineChart, BatteryCharging, PersonStanding, Volleyball, FileUser, RefreshCw, Users, User, Speech } from 'lucide-react'
 import StatsCard from './statsCard.jsx'
 import MetricDetailModal from './metricDetailModal.jsx'
 import { useTheme } from '../contexts/ThemeContext'
@@ -17,8 +17,8 @@ export const MiniFlubberAutoMorphEmployeesDashboard = ({
   size = 24,
   className = '',
   isDarkMode = false,
-  autoMorphInterval = 10000, 
-  morphDuration = 4500, 
+  autoMorphInterval = 1000, 
+  morphDuration = 500, 
 }) => {
   const [currentIconIndex, setCurrentIconIndex] = useState(0);
   const [morphPaths, setMorphPaths] = useState([]);
@@ -258,8 +258,8 @@ export const MiniFlubberAutoMorphVacation = ({
   size = 24,
   className = '',
   isDarkMode = false,
-  autoMorphInterval = 10000, 
-  morphDuration = 4500, 
+  autoMorphInterval = 1000, 
+  morphDuration = 500, 
 }) => {
   const [currentIconIndex, setCurrentIconIndex] = useState(0);
   const [morphPaths, setMorphPaths] = useState([]);
@@ -501,8 +501,8 @@ export const MiniFlubberAutoMorphOfficeWork = ({
   size = 24,
   className = '',
   isDarkMode = false,
-  autoMorphInterval = 10000, 
-  morphDuration = 4500, 
+  autoMorphInterval = 1000, 
+  morphDuration = 500, 
 }) => {
   const [currentIconIndex, setCurrentIconIndex] = useState(0);
   const [morphPaths, setMorphPaths] = useState([]);
@@ -743,8 +743,8 @@ export const MiniFlubberAutoMorphOverTime = ({
   size = 24,
   className = '',
   isDarkMode = false,
-  autoMorphInterval = 10000, 
-  morphDuration = 4500, 
+  autoMorphInterval = 1000, 
+  morphDuration = 500, 
 }) => {
   const [currentIconIndex, setCurrentIconIndex] = useState(0);
   const [morphPaths, setMorphPaths] = useState([]);
@@ -985,8 +985,8 @@ export const MiniFlubberAutoMorphPerformance = ({
   size = 24,
   className = '',
   isDarkMode = false,
-  autoMorphInterval = 10000,
-  morphDuration = 4500, 
+  autoMorphInterval = 1000,
+  morphDuration = 500, 
 }) => {
   const [currentIconIndex, setCurrentIconIndex] = useState(0);
   const [morphPaths, setMorphPaths] = useState([]);
@@ -1613,7 +1613,9 @@ const Dashboard = ({ employees, applications }) => {
           <StatsCard 
             title={t('dashboard.totalEmployees')} 
             value={employees.length} 
-            icon={MiniFlubberAutoMorphEmployees} 
+            icon={MiniFlubberAutoMorphEmployeesDashboard} 
+            staticIcon={Users}
+            iconHoverOnly
             color={isDarkMode ? "#ffffff" : "#1f1f1f"}
             size={24}
             isDarkMode={isDarkMode}
@@ -1625,6 +1627,8 @@ const Dashboard = ({ employees, applications }) => {
             title={t('dashboard.totalRegularHours', '')} 
             value={`${totalRegularHours}h`} 
             icon={MiniFlubberAutoMorphOfficeWork} 
+            staticIcon={AlarmClock}
+            iconHoverOnly
             size={28}
             color={isDarkMode ? "#ffffff" : "#1f1f1f"}
             isDarkMode={isDarkMode}
@@ -1636,6 +1640,8 @@ const Dashboard = ({ employees, applications }) => {
             title={t('dashboard.avgPerformance')} 
             value={avgPerformance} 
             icon={MiniFlubberAutoMorphPerformance} 
+            staticIcon={Gauge}
+            iconHoverOnly
             size={28}
             isDarkMode={isDarkMode}
             color={isDarkMode ? "#ffffff" : "#1f1f1f"}
@@ -1647,6 +1653,8 @@ const Dashboard = ({ employees, applications }) => {
             title={t('dashboard.totalOvertime')} 
             value={`${totalOvertime}h`} 
             icon={MiniFlubberAutoMorphOverTime} 
+            staticIcon={HeartPlus}
+            iconHoverOnly
             size={28}
             isDarkMode={isDarkMode}
             color={isDarkMode ? "#ffffff" : "#1f1f1f"}
@@ -1658,6 +1666,8 @@ const Dashboard = ({ employees, applications }) => {
             title={t('dashboard.totalLeave')} 
             value={totalLeaveDays} 
             icon={MiniFlubberAutoMorphVacation} 
+            staticIcon={Coffee}
+            iconHoverOnly
             size={28}
             isDarkMode={isDarkMode}
             color={isDarkMode ? "#ffffff" : "#1f1f1f"}
