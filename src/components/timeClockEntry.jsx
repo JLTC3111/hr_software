@@ -1485,7 +1485,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                   value={leaveForm.startDate}
                                   onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
                                   required
-                                  className={`w-full px-4 py-2 ${isDarkMode ? 'text-white' : 'text-gray-900'} cursor-pointer rounded-lg border ${input.className} ${isDarkMode ? 'border-white' : 'border-gray-900'} no-calendar pr-10 appearance-none`}
+                                  className={`w-full px-4 py-2 cursor-pointer rounded-lg border ${isDarkMode ? 'border-white' : 'border-gray-900'} ${isDarkMode ? 'text-white' : 'text-gray-900'} no-calendar pr-10 appearance-none`}
                                 />
                                 <button
                                   type="button"
@@ -1500,7 +1500,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                       }
                                     }
                                   }}
-                                  className={`absolute top-1/2 right-3 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center`}
+                                  className={`absolute top-1/2 right-3 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center ${text.secondary}`}
                                 >
                                   <Calendar className="w-5 h-5 cursor-pointer" aria-hidden="true" />
                                 </button>
@@ -1530,7 +1530,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                   value={leaveForm.endDate}
                                   onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
                                   required
-                                  className={`w-full px-4 py-2 cursor-pointer rounded-lg border ${input.className} ${isDarkMode ? 'border-white' : 'border-gray-900'} no-calendar pr-10 appearance-none`}
+                                  className={`w-full px-4 py-2 cursor-pointer rounded-lg border ${isDarkMode ? 'border-white' : 'border-gray-900'} ${isDarkMode ? 'text-white' : 'text-gray-900'} no-calendar pr-10 appearance-none`}
                                 />
                                 <button
                                   type="button"

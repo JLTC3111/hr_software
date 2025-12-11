@@ -456,18 +456,6 @@ select::-ms-expand {
   -moz-appearance: textfield;
   appearance: none;
   /* allow the input's color class (e.g. text.primary) to control the displayed date color */
-  color: inherit;
-}
-
-/* Ensure WebKit's internal date text inherits the input color so theme classes apply */
-.no-calendar::-webkit-datetime-edit,
-.no-calendar::-webkit-datetime-edit-field,
-.no-calendar::-webkit-datetime-edit-text,
-.no-calendar::-webkit-datetime-edit-year-field,
-.no-calendar::-webkit-datetime-edit-month-field,
-.no-calendar::-webkit-datetime-edit-day-field,
-.no-calendar::-webkit-datetime-edit-fields-wrapper {
-  color: inherit;
 }
 
 /* Hide browser default calendar icon */
