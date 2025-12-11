@@ -790,7 +790,7 @@ const ControlPanel = () => {
                 e.currentTarget.style.backgroundColor = isDarkMode ? '#1e3a5f' : '#eff6ff';
               }}
           >
-            <Key className="w-4 h-4" />
+            <Key className="w-4.5 h-4.5" />
             <span className="text-sm">{t('controlPanel.changeOwnPassword', 'Change Own Password')}</span>
           </button>
 
@@ -844,7 +844,7 @@ const ControlPanel = () => {
                   e.currentTarget.style.color = isDarkMode ? '#ffffff' : '#0f172a';
                 }}
               >
-                <Expand className="w-5 h-5 group-hover:animate-spin origin-center transform transition-all" />
+                <Expand className="w-4.5 h-4.5 group-hover:animate-spin origin-center transform transition-all" />
                 <div className="flex flex-col items-start text-left">
                   <span className="text-sm font-semibold">
                     {userRole === 'demo_admin' ? t('controlPanel.switchToDemoEmployee', 'Switch to Demo Employee') : t('controlPanel.switchToDemoAdmin', 'Switch to Demo Admin')}
@@ -871,7 +871,7 @@ const ControlPanel = () => {
                   e.currentTarget.style.color = isDarkMode ? '#ffffff' : '#6b21a8';
                 }}
               >
-                <RefreshCcw className="w-5 h-5 group-hover:animate-spin origin-center transform transition-all" />
+                <RefreshCcw className="w-4.25 h-4.25 group-hover:animate-spin origin-center transform transition-all" />
                 <span className="text-sm">{t('controlPanel.restoreDemoData', 'Restore Demo Data')}</span>
               </button>
             </>
@@ -981,7 +981,7 @@ const ControlPanel = () => {
               e.currentTarget.style.backgroundColor = isDarkMode ? '#1f2937' : '#f3f4f6';
             }}
           >
-            <BookOpen className="w-5 h-5 group-hover:animate-pulse transition-all" />
+            <BookOpen className="w-4.5 h-4.5 group-hover:animate-pulse transition-all" />
             <span className="text-sm cursor-pointer">{t('controlPanel.readManual', 'Read Manual')}</span>
           </button>
 
@@ -999,7 +999,7 @@ const ControlPanel = () => {
               e.currentTarget.style.backgroundColor = '#dc2626';
             }}
           >
-            <LogOut className="w-5 h-5 group-hover:animate-ping transition-all" />
+            <LogOut className="w-4.25 h-4.25 group-hover:animate-ping transition-all" />
             <span className="text-sm">{t('controlPanel.logout', 'Log Out')}</span>
           </button>
         </div>
