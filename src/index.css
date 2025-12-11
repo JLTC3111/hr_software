@@ -432,10 +432,7 @@ select::-ms-expand {
 
 /* ============================================
    Hide native calendar icon for scoped date inputs
-   Apply the `no-calendar` class to any `input[type="date"]` you
-   want to remove the browser's calendar picker icon from.
-   This keeps the rule scoped (avoids global removal) and preserves
-   accessibility — use your own click handler or wrapper to show the picker.
+   Apply the `no-calendar` class to any `input[type="date"]`.
    ============================================ */
 .no-calendar::-webkit-calendar-picker-indicator {
   display: none;
@@ -458,7 +455,19 @@ select::-ms-expand {
   -webkit-appearance: none;
   -moz-appearance: textfield;
   appearance: none;
-  color: #e7fbe9;
+  /* allow the input's color class (e.g. text.primary) to control the displayed date color */
+  color: inherit;
+}
+
+/* Ensure WebKit's internal date text inherits the input color so theme classes apply */
+.no-calendar::-webkit-datetime-edit,
+.no-calendar::-webkit-datetime-edit-field,
+.no-calendar::-webkit-datetime-edit-text,
+.no-calendar::-webkit-datetime-edit-year-field,
+.no-calendar::-webkit-datetime-edit-month-field,
+.no-calendar::-webkit-datetime-edit-day-field,
+.no-calendar::-webkit-datetime-edit-fields-wrapper {
+  color: inherit;
 }
 
 /* Hide browser default calendar icon */

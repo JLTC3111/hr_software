@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext'
 import * as timeTrackingService from '../services/timeTrackingService'
 import { AnimatedClockIcon } from './timeClockEntry'
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh'
-import { getDemoEmployeeName } from '../utils/demoHelper'
+import { getDemoEmployeeName, isDemoMode, addDemoLeaveRequest, updateDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper'
 
 export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = false }) => {
     const mainColor = isDarkMode ? '#ffffff' : '#000000';
@@ -650,26 +650,47 @@ const handleApproveRequest = async (requestId) => {
   setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
   
   try {
-    const result = await timeTrackingService.updateLeaveRequestStatus(requestId, 'approved', user.employeeId);
-    
-    if (result.success) {
-      // Only update the specific request - preserve object references for others
-      setAllLeaveRequests(prev => prev.map(r => {
-        if (r.id === requestId) {
-          const updated = result.data || {};
-          return { 
-            ...r, 
-            ...updated, 
-            status: 'approved', 
-            approved_by_name: updated.approved_by_name || (user?.name || '-') 
-          };
+    if (isDemoMode()) {
+      // Persist approval in demo storage and update local state
+      try {
+        const updated = updateDemoLeaveRequest(requestId, {
+          status: 'approved',
+          approved_by_name: user?.name || '-',
+          updated_at: new Date().toISOString()
+        });
+
+        if (updated) {
+          setAllLeaveRequests(prev => prev.map(r => r.id === requestId ? { ...r, ...updated } : r));
+          setSuccessMessage(t('timeTracking.approveSuccess', 'Request approved'));
+        } else {
+          setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
         }
-        return r; // Keep same reference for unchanged items
-      }));
-      
-      setSuccessMessage(t('timeTracking.approveSuccess', 'Request approved'));
+      } catch (err) {
+        console.error('Demo approve error:', err);
+        setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
+      }
     } else {
-      setSuccessMessage(result.error || t('timeTracking.actionError', 'Error updating request'));
+      const result = await timeTrackingService.updateLeaveRequestStatus(requestId, 'approved', user.employeeId);
+
+      if (result.success) {
+        // Only update the specific request - preserve object references for others
+        setAllLeaveRequests(prev => prev.map(r => {
+          if (r.id === requestId) {
+            const updated = result.data || {};
+            return { 
+              ...r, 
+              ...updated, 
+              status: 'approved', 
+              approved_by_name: updated.approved_by_name || (user?.name || '-') 
+            };
+          }
+          return r; // Keep same reference for unchanged items
+        }));
+        
+        setSuccessMessage(t('timeTracking.approveSuccess', 'Request approved'));
+      } else {
+        setSuccessMessage(result.error || t('timeTracking.actionError', 'Error updating request'));
+      }
     }
   } catch (error) {
     console.error('Error approving leave request:', error);
@@ -697,21 +718,41 @@ const handleRejectRequest = async (requestId) => {
   setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
   
   try {
-    const result = await timeTrackingService.updateLeaveRequestStatus(requestId, 'rejected', user.employeeId, reason || null);
-    
-    if (result.success) {
-      // Only update the specific request - preserve object references for others
-      setAllLeaveRequests(prev => prev.map(r => {
-        if (r.id === requestId) {
-          const updated = result.data || {};
-          return { ...r, ...updated, status: 'rejected' };
+    if (isDemoMode()) {
+      try {
+        const updated = updateDemoLeaveRequest(requestId, {
+          status: 'rejected',
+          rejection_reason: reason || null,
+          updated_at: new Date().toISOString()
+        });
+
+        if (updated) {
+          setAllLeaveRequests(prev => prev.map(r => r.id === requestId ? { ...r, ...updated } : r));
+          setSuccessMessage(t('timeTracking.rejectSuccess', 'Request rejected'));
+        } else {
+          setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
         }
-        return r; // Keep same reference for unchanged items
-      }));
-      
-      setSuccessMessage(t('timeTracking.rejectSuccess', 'Request rejected'));
+      } catch (err) {
+        console.error('Demo reject error:', err);
+        setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
+      }
     } else {
-      setSuccessMessage(result.error || t('timeTracking.actionError', 'Error updating request'));
+      const result = await timeTrackingService.updateLeaveRequestStatus(requestId, 'rejected', user.employeeId, reason || null);
+
+      if (result.success) {
+        // Only update the specific request - preserve object references for others
+        setAllLeaveRequests(prev => prev.map(r => {
+          if (r.id === requestId) {
+            const updated = result.data || {};
+            return { ...r, ...updated, status: 'rejected' };
+          }
+          return r; // Keep same reference for unchanged items
+        }));
+        
+        setSuccessMessage(t('timeTracking.rejectSuccess', 'Request rejected'));
+      } else {
+        setSuccessMessage(result.error || t('timeTracking.actionError', 'Error updating request'));
+      }
     }
   } catch (error) {
     console.error('Error rejecting leave request:', error);
@@ -942,6 +983,50 @@ const handleRejectRequest = async (requestId) => {
     setLoading(true);
     
     try {
+      // Demo mode: persist leave request locally and update state
+      if (isDemoMode()) {
+        const daysCount = calculateDaysBetween(leaveForm.startDate, leaveForm.endDate);
+        const newLeaveRequest = {
+          id: `demo-leave-${Date.now()}`,
+          employee_id: selectedEmployee,
+          leave_type: leaveForm.type || leaveForm.type,
+          type: leaveForm.type,
+          start_date: leaveForm.startDate,
+          end_date: leaveForm.endDate,
+          reason: leaveForm.reason,
+          days_count: daysCount,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        try {
+          addDemoLeaveRequest(newLeaveRequest);
+        } catch (err) {
+          console.error('Failed to save demo leave request:', err);
+        }
+
+        // If we're viewing leave requests for the current employee, update local list
+        setLeaveRequests(prev => Array.isArray(prev) ? [...prev, newLeaveRequest] : [newLeaveRequest]);
+
+        // Also add to allLeaveRequests (admin view) if relevant
+        setAllLeaveRequests(prev => Array.isArray(prev) ? [...prev, newLeaveRequest] : [newLeaveRequest]);
+
+        setSuccessMessage(t('timeTracking.leaveSuccess', 'Leave request submitted successfully!'));
+        setShowLeaveModal(false);
+
+        // Reset form
+        setLeaveForm({
+          type: 'vacation',
+          startDate: '',
+          endDate: '',
+          reason: ''
+        });
+
+        setLoading(false);
+        setTimeout(() => setSuccessMessage(''), 3000);
+        return;
+      }
       const result = await timeTrackingService.createLeaveRequest({
         employeeId: selectedEmployee,
         type: leaveForm.type,

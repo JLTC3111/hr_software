@@ -1186,8 +1186,9 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     w-full px-4 py-2 
                     rounded-lg border 
                     ${bg.primary}
+                    ${text.primary}
                     ${input.className} 
-                    ${isDarkMode ? 'text-white bg-gray-700 border-gray-600' : 'text-gray-900 bg-white border-gray-300'} 
+                    ${input.border}
                     ${errors.date ? 'border-red-500' : ''}
                     pr-10 appearance-none cursor-pointer
                     `}
@@ -1437,7 +1438,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                           </h3>
                           <button onClick={() => setShowLeaveModal(false)} className={`group ${text.secondary} cursor-pointer rounded-2xl ${isDarkMode ? 'text-white' : 'text-red-600'} transition-all`}>
                             <X
-                              className="w-6 h-6 group-hover:animate-spin group-hover:scale-110 origin-center transition-transform"
+                              className="w-6 h-6 group-hover:animate-spin group-hover:scale-110 origin-center transform transition-all"
                             />
                           </button>
                         </div>
@@ -1465,7 +1466,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                 {t('timeTracking.startDate', 'Start Date')}
                               </label>
                               <div
-                                className="relative"
+                                className={`relative`}
                                 onClick={(e) => {
                                   if (e.target === leaveStartRef.current) return;
                                   if (e.target.closest && e.target.closest('button, a, input[type="file"], label')) return;
@@ -1484,7 +1485,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                   value={leaveForm.startDate}
                                   onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
                                   required
-                                  className={`w-full px-4 py-2 ${text.primary} cursor-pointer rounded-lg border ${input.className} no-calendar pr-10 appearance-none`}
+                                  className={`w-full px-4 py-2 ${isDarkMode ? 'text-white' : 'text-gray-900'} cursor-pointer rounded-lg border ${input.className} ${isDarkMode ? 'border-white' : 'border-gray-900'} no-calendar pr-10 appearance-none`}
                                 />
                                 <button
                                   type="button"
@@ -1499,7 +1500,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                       }
                                     }
                                   }}
-                                  className={`absolute top-1/2 right-3 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center ${text.secondary}`}
+                                  className={`absolute top-1/2 right-3 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center`}
                                 >
                                   <Calendar className="w-5 h-5 cursor-pointer" aria-hidden="true" />
                                 </button>
@@ -1529,7 +1530,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                                   value={leaveForm.endDate}
                                   onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
                                   required
-                                  className={`w-full px-4 py-2 ${text.primary} cursor-pointer rounded-lg border ${input.className} no-calendar pr-10 appearance-none`}
+                                  className={`w-full px-4 py-2 cursor-pointer rounded-lg border ${input.className} ${isDarkMode ? 'border-white' : 'border-gray-900'} no-calendar pr-10 appearance-none`}
                                 />
                                 <button
                                   type="button"
