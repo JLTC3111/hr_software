@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, LogOut, Key, BookOpen, Expand, Shield, Info, Camera, Loader, Users, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
+import { User, LogOut, Key, BookOpen, Expand, Shield, Info, RefreshCcw, Camera, Loader, Users, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -830,7 +830,7 @@ const ControlPanel = () => {
                   const nextRole = userRole === 'demo_admin' ? 'demo_employee' : 'demo_admin';
                   switchDemoRole?.(nextRole);
                 }}
-                className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                className="w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
                 style={{
                   backgroundColor: isDarkMode ? '#4d4d4d' : '#e0f2fe',
                   color: isDarkMode ? '#ffffff' : '#0f172a'
@@ -844,7 +844,7 @@ const ControlPanel = () => {
                   e.currentTarget.style.color = isDarkMode ? '#ffffff' : '#0f172a';
                 }}
               >
-                <Expand className="w-5 h-5" />
+                <Expand className="w-5 h-5 group-hover:animate-spin origin-center transform transition-all" />
                 <div className="flex flex-col items-start text-left">
                   <span className="text-sm font-semibold">
                     {userRole === 'demo_admin' ? t('controlPanel.switchToDemoEmployee', 'Switch to Demo Employee') : t('controlPanel.switchToDemoAdmin', 'Switch to Demo Admin')}
@@ -857,27 +857,27 @@ const ControlPanel = () => {
 
               <button
                 onClick={() => setShowDemoDataManagement(!showDemoDataManagement)}
-                className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                className="w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
                 style={{
-                  backgroundColor: isDarkMode ? '#4c1d95' : '#f3e8ff',
-                  color: isDarkMode ? '#c4b5fd' : '#6b21a8'
+                  backgroundColor: isDarkMode ? '#955aee' : '#f3e8ff',
+                  color: isDarkMode ? '#ffffff' : '#6b21a8'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#5b21b6' : '#e9d5ff';
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#ffffff' : '#e9d5ff';
+                  e.currentTarget.style.color = isDarkMode ? '#000000' : '#7e22ce';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#4c1d95' : '#f3e8ff';
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#955aee' : '#f3e8ff';
+                  e.currentTarget.style.color = isDarkMode ? '#ffffff' : '#6b21a8';
                 }}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
+                <RefreshCcw className="w-5 h-5 group-hover:animate-spin origin-center transform transition-all" />
                 <span className="text-sm">{t('controlPanel.restoreDemoData', 'Restore Demo Data')}</span>
               </button>
             </>
           )}
 
-          {/* Demo Data Management Panel */}
+          {/* Demo Data Restore */}
           {isDemoMode() && showDemoDataManagement && (
             <div 
               className="p-4 rounded-lg space-y-3"
@@ -915,7 +915,7 @@ const ControlPanel = () => {
                       }, 500);
                     }}
                     disabled={restoringDemoData !== null}
-                    className="flex items-center justify-center space-x-1 px-2 py-2 rounded text-xs transition-colors"
+                    className="flex cursor-pointer items-center justify-center space-x-1 px-2 py-2 rounded text-xs transition-colors"
                     style={{
                       backgroundColor: isDarkMode ? '#374151' : '#e5e7eb',
                       color: isDarkMode ? '#ffffff' : '#111827',
@@ -945,7 +945,7 @@ const ControlPanel = () => {
                   }, 500);
                 }}
                 disabled={restoringDemoData !== null}
-                className="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors"
+                className="w-full cursor-pointer flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors"
                 style={{
                   backgroundColor: isDarkMode ? '#dc2626' : '#fef2f2',
                   color: isDarkMode ? '#ffffff' : '#dc2626',
@@ -968,7 +968,7 @@ const ControlPanel = () => {
 
           <button
             onClick={openManual}
-            className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
+            className="w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
             style={{
               backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6',
               color: isDarkMode ? '#ffffff' : '#111827'
@@ -980,13 +980,13 @@ const ControlPanel = () => {
               e.currentTarget.style.backgroundColor = isDarkMode ? '#1f2937' : '#f3f4f6';
             }}
           >
-            <BookOpen className="w-4 h-4" />
+            <BookOpen className="w-5 h-5 group-hover:animate-pulse transition-all" />
             <span className="text-sm cursor-pointer">{t('controlPanel.readManual', 'Read Manual')}</span>
           </button>
 
           <button
             onClick={handleLogout}
-            className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
+            className="w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
             style={{
               backgroundColor: '#dc2626',
               color: '#ffffff'
@@ -998,7 +998,7 @@ const ControlPanel = () => {
               e.currentTarget.style.backgroundColor = '#dc2626';
             }}
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-5 h-5 group-hover:animate-ping transition-all" />
             <span className="text-sm">{t('controlPanel.logout', 'Log Out')}</span>
           </button>
         </div>
