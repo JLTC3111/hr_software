@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, LogOut, Key, BookOpen, Shield, Info, Camera, Loader, Users, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
+import { User, LogOut, Key, BookOpen, Expand, Shield, Info, Camera, Loader, Users, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -792,20 +792,18 @@ const ControlPanel = () => {
           >
             <Key className="w-4 h-4" />
             <span className="text-sm">{t('controlPanel.changeOwnPassword', 'Change Own Password')}</span>
-             {isDemoMode() && (
-                <span className="ml-2 text-xs" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
-                  {t('controlPanel.demoModeDisabledShort', 'Demo only')}
-                </span>
-              )}
           </button>
 
           {/* Reset Other Employee Password */}
           {isAdmin && (
             <button
-              onClick={() => { if (!isDemoMode()) setShowAdminReset(!showAdminReset); }}
+              onClick={() => {
+                if (isDemoMode()) return;
+                setShowAdminReset(!showAdminReset);
+              }}
               disabled={isDemoMode()}
               title={isDemoMode() ? t('controlPanel.demoModeDisabled', 'Disabled in demo mode') : ''}
-              className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${isDemoMode() ? 'cursor-not-allowed opacity-60' : ''}`}
+              className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${isDemoMode() ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
               style={{
                 backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff',
                 color: isDarkMode ? '#93c5fd' : '#1e40af'
@@ -821,11 +819,6 @@ const ControlPanel = () => {
             >
               <Users className="w-4 h-4" />
               <span className="text-sm">{t('controlPanel.resetOtherUserPassword', 'Reset Other Employee Password')}</span>
-              {isDemoMode() && (
-                <span className="ml-2 text-xs" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
-                  {t('controlPanel.demoModeDisabledShort', 'Demo only')}
-                </span>
-              )}
             </button>
           )}
 
@@ -847,13 +840,11 @@ const ControlPanel = () => {
                   e.currentTarget.style.color = isDarkMode ? '#16006d' : '#1e40af';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#0f172a' : '#e0f2fe';
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#4d4d4d' : '#e0f2fe';
                   e.currentTarget.style.color = isDarkMode ? '#ffffff' : '#0f172a';
                 }}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H7m6-4l-4 4m0 0l4 4m-4-4h10" />
-                </svg>
+                <Expand className="w-5 h-5" />
                 <div className="flex flex-col items-start text-left">
                   <span className="text-sm font-semibold">
                     {userRole === 'demo_admin' ? t('controlPanel.switchToDemoEmployee', 'Switch to Demo Employee') : t('controlPanel.switchToDemoAdmin', 'Switch to Demo Admin')}
