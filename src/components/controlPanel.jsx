@@ -1372,7 +1372,7 @@ const ControlPanel = () => {
             className="font-semibold mb-3 flex items-center space-x-2"
             style={{ color: isDarkMode ? '#ffffff' : '#111827' }}
           >
-            <Shield className="w-4 h-4" />
+            <Shield className="w-4.25 h-4.25" />
             <span>{t('controlPanel.resetEmployeePassword', '')}</span>
           </h4>
 
@@ -1564,7 +1564,7 @@ const ControlPanel = () => {
         }}
       >
         <div className="flex items-start space-x-2">
-          <Info className="w-4 h-4 mt-0.5" style={{ color: '#3b82f6' }} />
+          <Info className="w-4 h-4 ml-0.5" style={{ color: '#3b82f6' }} />
           <div>
             <p 
               className="text-xs font-medium mb-1"

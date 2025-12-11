@@ -41,4 +41,5 @@ export { MiniFlubberAutoMorphVacation } from './dashboard.jsx';
 export { MiniFlubberAutoMorphOverTime } from './dashboard.jsx';
 export { MiniFlubberAutoMorphOfficeWork } from './dashboard.jsx';
 export { MiniFlubberAutoMorphPerformance } from './dashboard.jsx';
+export { MiniFlubberAutoMorphDelete } from './notifications.jsx';
 // ...other exports
