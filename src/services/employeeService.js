@@ -155,7 +155,10 @@ export const getAllEmployees = async (filters = {}) => {
       query = query.eq('position', filters.position);
     }
 
-    const { data, error } = await withTimeout(query);
+    const { data, error } = await withTimeout(query, 20000).catch((err) => {
+      console.warn('getAllEmployees: initial query timed out, retrying with 30s', err);
+      return withTimeout(query, 30000);
+    });
 
     if (error) throw error;
     

@@ -814,12 +814,6 @@ const ControlPanel = () => {
               style={{
                 backgroundColor: isDarkMode ? '#1f2f47' : '#eef3ff',
                 color: isDarkMode ? '#bfdbfe' : '#1e3a8a',
-                border: isDarkMode ? '1px solid #334766' : '1px solid #c7d2fe',
-                boxShadow: isDemoMode()
-                  ? 'none'
-                  : isDarkMode
-                    ? '0 1px 3px rgba(0,0,0,0.4)'
-                    : '0 1px 3px rgba(0,0,0,0.15)'
               }}
               onMouseEnter={(e) => {
                 if (isDemoMode()) return;
@@ -1322,16 +1316,18 @@ const ControlPanel = () => {
             <div className="flex space-x-2">
               <button
                 type="submit"
-                className="flex-1 px-3 py-2 rounded text-sm font-medium transition-colors"
+                className="flex-1 px-3 py-2 cursor-pointer rounded text-sm font-medium transition-colors"
                 style={{
                   backgroundColor: isDarkMode ? '#ffffff' : '#000000',
                   color: isDarkMode ? '#000000' : '#ffffff',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#b91c1c';
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#1d4ed8' : '#2563eb';
+                  e.currentTarget.style.color = isDarkMode ? '#ffffff' : '#ffffff';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#dc2626';
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#ffffff' : '#000000';
+                  e.currentTarget.style.color = isDarkMode ? '#000000' : '#ffffff'; 
                 }}
               >
                 {t('controlPanel.resetPassword', 'Reset Password')}
@@ -1345,16 +1341,20 @@ const ControlPanel = () => {
                   setAdminResetConfirm('');
                   setAdminResetError('');
                 }}
-                className="flex-1 px-3 py-2 rounded text-sm font-medium transition-colors"
+                className="flex-1 px-3 py-2 cursor-pointer rounded text-sm font-medium transition-all duration-100"
                 style={{
                   backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6',
                   color: isDarkMode ? '#ffffff' : '#111827'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#374151' : '#e5e7eb';
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#fde68a' : '#fef3c7';
+                  e.currentTarget.style.color = isDarkMode ? '#000000' : '#000000';
+                  e.currentTarget.style.fontWeight = '700';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = isDarkMode ? '#1f2937' : '#f3f4f6';
+                  e.currentTarget.style.color = isDarkMode ? '#ffffff' : '#111827';
+                  e.currentTarget.style.fontWeight = '500';
                 }}
               >
                 {t('common.cancel', 'Cancel')}
