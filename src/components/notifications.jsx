@@ -15,7 +15,7 @@ export const MiniFlubberAutoMorphDelete = ({
   size = 16,
   className = '',
   isDarkMode = false,
-  autoMorphInterval = 2500,
+  autoMorphInterval = 1250,
   morphDuration = 500, 
 }) => {
   const [currentIconIndex, setCurrentIconIndex] = useState(0);
@@ -272,6 +272,7 @@ const Notifications = () => {
   const [showFilters, setShowFilters] = useState(true);
   const [updatingNotifications, setUpdatingNotifications] = useState(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isHoveringDeleteAll, setIsHoveringDeleteAll] = useState(false);
 
   // Track previous unread count to detect changes
   const [prevUnreadCount, setPrevUnreadCount] = useState(unreadCount);
@@ -507,6 +508,8 @@ const Notifications = () => {
             
             {notifications.length > 0 && (
               <button
+                onMouseEnter={() => setIsHoveringDeleteAll(true)}
+                onMouseLeave={() => setIsHoveringDeleteAll(false)}
                 onClick={() => {
                   if (window.confirm(t('notifications.confirmDeleteAll', 'Are you sure you want to delete all notifications?'))) {
                     deleteAllNotifications();
@@ -515,7 +518,11 @@ const Notifications = () => {
                 className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-all cursor-pointer`}
                 title={t('notifications.deleteAll', 'Delete all')}
               >
-                <MiniFlubberAutoMorphDelete isDarkMode={isDarkMode} />
+                {isHoveringDeleteAll ? (
+                  <MiniFlubberAutoMorphDelete size={16} className="h-4 w-4 transition-all" isDarkMode={isDarkMode} />
+                ) : (
+                  <Trash2 className="h-4 w-4 group-hover:scale-110 transition-all" />
+                )}
                 <span className="hidden sm:inline">{t('notifications.deleteAll', 'Delete all')}</span>
               </button>
             )}
