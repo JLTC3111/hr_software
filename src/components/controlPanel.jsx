@@ -839,14 +839,16 @@ const ControlPanel = () => {
                 }}
                 className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
                 style={{
-                  backgroundColor: isDarkMode ? '#0f172a' : '#e0f2fe',
-                  color: isDarkMode ? '#bfdbfe' : '#0f172a'
+                  backgroundColor: isDarkMode ? '#4d4d4d' : '#e0f2fe',
+                  color: isDarkMode ? '#ffffff' : '#0f172a'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#1e293b' : '#dbeafe';
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#ffffff' : '#dbeafe';
+                  e.currentTarget.style.color = isDarkMode ? '#16006d' : '#1e40af';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = isDarkMode ? '#0f172a' : '#e0f2fe';
+                  e.currentTarget.style.color = isDarkMode ? '#ffffff' : '#0f172a';
                 }}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
