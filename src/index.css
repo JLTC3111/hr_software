@@ -458,10 +458,47 @@ select::-ms-expand {
   -webkit-appearance: none;
   -moz-appearance: textfield;
   appearance: none;
+  color: #e7fbe9;
 }
 
 /* Hide browser default calendar icon */
 input[type="date"]::-webkit-calendar-picker-indicator {
   display: none;
   -webkit-appearance: none;
+  appearance: none;
+}
+
+.restoreDemoData-button {
+    position: relative;
+    bottom: 0px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(45deg, #4b51c8, #535bf4, #4b54fc, #acb0f9, #dddddd);
+    z-index: 10;
+    overflow: hidden;
+}
+
+.dark .restoreDemoData-button {
+    background: linear-gradient(45deg, #4ecdc4, #6bff6e, #96ceb4, #fffdf3, #ffffff);
+}
+
+.restoreDemoData-button::before {
+    content: ''; 
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, #6bff6e, #4ecdc4, #96ceb4, #fffdf3, #ececec);
+    z-index: -1; 
+    transform: translateX(-100%); 
+    transition: all 1.25s ease;
+}
+.restoreDemoData-button:hover::before {
+    transform: translateX(0%); 
+}
+
+.restoreDemoData-button:hover {
+    transform: translateX(-50%);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }

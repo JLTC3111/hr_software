@@ -915,19 +915,25 @@ const ControlPanel = () => {
                       }, 500);
                     }}
                     disabled={restoringDemoData !== null}
-                    className="flex cursor-pointer items-center justify-center space-x-1 px-2 py-2 rounded text-xs transition-colors"
+                    className="flex cursor-pointer group items-center justify-center space-x-1 px-2 py-2 rounded text-xs transition-colors"
                     style={{
                       backgroundColor: isDarkMode ? '#374151' : '#e5e7eb',
                       color: isDarkMode ? '#ffffff' : '#111827',
                       opacity: restoringDemoData !== null ? 0.6 : 1
                     }}
+                    onMouseEnter ={(e) => {
+                      e.currentTarget.style.backgroundColor = isDarkMode ? '#4b5563' : '#d1d5db';
+                      e.currentTarget.style.color = isDarkMode ? '#ffffff' : '#111827';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = isDarkMode ? '#374151' : '#e5e7eb';
+                      e.currentTarget.style.color = isDarkMode ? '#ffffff' : '#111827';
+                    }}
                   >
                     {restoringDemoData === key ? (
                       <Loader className="w-3 h-3 animate-spin" />
                     ) : (
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
+                      <RefreshCcw className={`${text.primary} w-3 h-3 group-hover:animate-spin origin-center transform transition-all`} />
                     )}
                     <span>{label}</span>
                   </button>
@@ -945,21 +951,22 @@ const ControlPanel = () => {
                   }, 500);
                 }}
                 disabled={restoringDemoData !== null}
-                className="w-full cursor-pointer flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors"
+                className="w-full group cursor-pointer flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm transition-all restoreDemoData-button"
                 style={{
-                  backgroundColor: isDarkMode ? '#dc2626' : '#fef2f2',
-                  color: isDarkMode ? '#ffffff' : '#dc2626',
-                  border: '1px solid',
-                  borderColor: '#dc2626',
+                  color: isDarkMode ? '#000' : '#fff',
                   opacity: restoringDemoData !== null ? 0.6 : 1
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = isDarkMode ? '#000' : '#000';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = isDarkMode ? '#000' : '#fff';
                 }}
               >
                 {restoringDemoData === 'all' ? (
                   <Loader className="w-4 h-4 animate-spin" />
                 ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
+                  <RefreshCcw className={`w-4 h-4 ${isDarkMode ? 'text-gray-900' : 'text-white'} group-hover:animate-spin origin-center transform transition-all group-hover:text-gray-900`} />
                 )}
                 <span>{t('controlPanel.restoreAllDemoData', 'Restore All Demo Data')}</span>
               </button>
