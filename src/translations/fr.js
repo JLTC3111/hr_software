@@ -1544,6 +1544,78 @@ export default {
     demoRoleOnly: 'Cette fonctionnalité est uniquement disponible en mode démo',
   },
 
+  // Help Center / Advanced Guide
+  help: {
+    containerLabel: 'Centre d\'aide',
+    title: 'Guide Avancé des Fonctionnalités',
+    subtitle: 'Présentation des fonctionnalités clés et astuces professionnelles',
+    videoSection: 'Section Vidéo',
+    videos: {
+      title: 'Tutoriels Vidéo',
+      subtitle: 'Apprenez en regardant de courtes démonstrations et astuces avancées.'
+    },
+    demoRestrictions: 'Restrictions du Mode Démo',
+    demo: {
+      title: 'IMPORTANT : Restrictions du Mode Démo !',
+      body: 'LES DONNÉES NE SONT PAS PERSISTANTES. Tous les enregistrements créés, modifications et suppressions seront supprimés lors du rafraîchissement de la page ou de la fermeture du navigateur. Certaines fonctionnalités (ex. édition par lot, export CSV) sont désactivées dans cet environnement de démonstration.'
+    },
+
+    features: {
+      section: 'Fonctionnalités Avancées & Contextuelles',
+      defaultTitle: 'Fonctionnalités Cachées & Astuces',
+      contextTitle: 'Astuces contextuelles pour {context}',
+      restricted: 'RESTREINT',
+      empty: 'Aucune astuce avancée trouvée pour le contexte : "{context}". Affichage de toutes les fonctionnalités ci-dessous.',
+
+      feature_1: {
+        title: 'Fonctionnalité cachée : Édition par lot',
+        description: 'Saviez-vous que vous pouvez modifier jusqu\'à 50 enregistrements à la fois ? Sélectionnez les cases à cocher à côté des éléments et cliquez sur l\'icône ✏️ en haut du tableau. Ceci est désactivé dans la démo actuelle.'
+      },
+      feature_2: {
+        title: 'Astuce contextuelle : Filtre rapide',
+        description: 'Utilisez l\'icône loupe (🔍) à côté d\'un en-tête de colonne pour filtrer instantanément par les valeurs uniques de cette colonne. Pas besoin d\'ouvrir le panneau de filtre complet !'
+      },
+      feature_3: {
+        title: 'Restriction Démo : Persistance des Données',
+        description: 'Toutes les modifications que vous effectuez (création, modification, suppression) seront perdues lors du rafraîchissement de la page. Il s\'agit d\'une restriction importante dans l\'environnement de démonstration.'
+      },
+      feature_4: {
+        title: 'Difficile à Trouver : Préférences Utilisateur',
+        description: 'Accédez aux préférences de mise en page du tableau de bord en cliquant sur votre avatar de profil en haut à droite. Vous pouvez activer le mode sombre et ajuster les densités de table ici.'
+      }
+    },
+
+    tags: {
+      advanced: 'Avancé',
+      hidden: 'Caché',
+      demorestricted: 'Démo Restreinte',
+      contextual: 'Contextuel',
+      quickaccess: 'Accès Rapide',
+      restriction: 'Restriction',
+      demo: 'Démo',
+      'hard-to-find': 'Difficile à Trouver',
+      personalization: 'Personnalisation'
+    }
+  },
+
+  // Video Player translations used by VideoPlayer component
+  videoPlayer: {
+    container: 'Lecteur Vidéo',
+    currentTitle: 'Titre Actuel',
+    counter: '{current}/{total}',
+    unsupported: 'Votre navigateur ne supporte pas la balise video.',
+    prev: 'Vidéo Précédente',
+    play: 'Lire',
+    pause: 'Pause',
+    playToggle: 'Lire / Pause',
+    next: 'Vidéo Suivante',
+    status: {
+      playing: 'Lecture',
+      paused: 'En pause'
+    },
+    name: 'Nom de la vidéo'
+  },
+
   // Email Management
   emailManagement: {
     title: 'Gestion des e-mails des utilisateurs',

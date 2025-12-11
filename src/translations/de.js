@@ -1478,6 +1478,78 @@ export default {
     demoRoleOnly: 'Diese Funktion ist nur im Demo-Modus verfügbar',
   },
 
+  // Help Center / Advanced Guide
+  help: {
+    containerLabel: 'Hilfezentrum',
+    title: 'Erweiterte Funktionsanleitung',
+    subtitle: 'Durchgang durch wichtige Funktionen und Profi-Tipps',
+    videoSection: 'Videoabschnitt',
+    videos: {
+      title: 'Videotutorials',
+      subtitle: 'Lernen Sie durch kurze Anleitungen und fortgeschrittene Tipps.'
+    },
+    demoRestrictions: 'Demo-Einschränkungen',
+    demo: {
+      title: 'WICHTIG: Demo-Einschränkungen!',
+      body: 'DATEN WERDEN NICHT GESPEICHERT. Alle erstellten Datensätze, Änderungen und Löschungen gehen beim Aktualisieren der Seite oder Schließen des Browsers verloren. Batch-Bearbeitung und CSV-Export sind in dieser Umgebung deaktiviert.'
+    },
+
+    features: {
+      section: 'Erweiterte & Kontextabhängige Funktionen',
+      defaultTitle: 'Versteckte Funktionen & Profi-Tipps',
+      contextTitle: 'Kontextbezogene Tipps für {context}',
+      restricted: 'EINGESCHRÄNKT',
+      empty: 'Keine spezifischen Tipps für den Kontext: "{context}" gefunden. Es werden alle Funktionen unten angezeigt.',
+
+      feature_1: {
+        title: 'Versteckte Funktion: Massenbearbeitung',
+        description: 'Wussten Sie, dass Sie bis zu 50 Datensätze gleichzeitig bearbeiten können? Wählen Sie die Kontrollkästchen neben den Einträgen und klicken Sie auf das ✏️-Symbol oben in der Tabelle. Dies ist in der aktuellen Demo deaktiviert.'
+      },
+      feature_2: {
+        title: 'Kontext-Tipp: Schneller Filter',
+        description: 'Verwenden Sie das Lupen-Symbol (🔍) neben einer Spaltenüberschrift, um sofort nach den eindeutigen Werten dieser Spalte zu filtern. Kein Öffnen des vollständigen Filterbereichs erforderlich!'
+      },
+      feature_3: {
+        title: 'Demo-Einschränkung: Datenpersistenz',
+        description: 'Alle Änderungen, die Sie vornehmen (Erstellen, Bearbeiten, Löschen), gehen beim Aktualisieren der Seite verloren. Dies ist eine wichtige Einschränkung in der Demo-Umgebung.'
+      },
+      feature_4: {
+        title: 'Schwer zu finden: Benutzerpräferenzen',
+        description: 'Greifen Sie auf Ihre Dashboard-Layout-Einstellungen zu, indem Sie auf Ihr Profil-Avatar oben rechts klicken. Sie können den Dunkelmodus aktivieren und Tabellendichten anpassen.'
+      }
+    },
+
+    tags: {
+      advanced: 'Fortgeschritten',
+      hidden: 'Versteckt',
+      demorestricted: 'Demo Eingeschränkt',
+      contextual: 'Kontextabhängig',
+      quickaccess: 'Schnellzugriff',
+      restriction: 'Einschränkung',
+      demo: 'Demo',
+      'hard-to-find': 'Schwer zu finden',
+      personalization: 'Personalisierung'
+    }
+  },
+
+    // Video Player translations used by VideoPlayer component
+    videoPlayer: {
+      container: 'Videoplayer',
+      currentTitle: 'Aktueller Titel',
+      counter: '{current}/{total}',
+      unsupported: 'Ihr Browser unterstützt das Video-Tag nicht.',
+      prev: 'Vorheriges Video',
+      play: 'Wiedergabe',
+      pause: 'Pause',
+      playToggle: 'Wiedergabe / Pause',
+      next: 'Nächstes Video',
+      status: {
+        playing: 'Wird wiedergegeben',
+        paused: 'Pausiert'
+      },
+      name: 'Videoname'
+    },
+
   // Email Management
   emailManagement: {
     title: 'Benutzer-E-Mail-Verwaltung',

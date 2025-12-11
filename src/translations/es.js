@@ -1515,6 +1515,78 @@ login: {
     demoRoleOnly: 'Esta función solo está disponible en modo demo',
   },
 
+  // Help Center / Advanced Guide
+  help: {
+    containerLabel: 'Centro de Ayuda',
+    title: 'Guía Avanzada de Funcionalidades',
+    subtitle: 'Recorrido por las capacidades clave y consejos profesionales',
+    videoSection: 'Sección de Video',
+    videos: {
+      title: 'Tutoriales en Video',
+      subtitle: 'Aprende viendo guías concisas y consejos avanzados.'
+    },
+    demoRestrictions: 'Restricciones del Modo Demo',
+    demo: {
+      title: 'IMPORTANTE: ¡Restricciones del Modo Demo!',
+      body: 'LOS DATOS NO SON PERSISTENTES. Todos los registros creados, ediciones y eliminaciones se perderán al actualizar la página o cerrar el navegador. Algunas funciones (p. ej., Edición por Lotes, Exportar CSV) están deshabilitadas en este entorno de demostración.'
+    },
+
+    features: {
+      section: 'Funciones Avanzadas y Contextuales',
+      defaultTitle: 'Funciones Ocultas y Consejos',
+      contextTitle: 'Consejos contextuales para {context}',
+      restricted: 'RESTRINGIDO',
+      empty: 'No se encontraron consejos avanzados para el contexto: "{context}". Mostrando todas las funciones a continuación.',
+
+      feature_1: {
+        title: 'Función Oculta: Edición por Lotes',
+        description: '¿Sabía que puede editar hasta 50 registros a la vez? Seleccione las casillas junto a los elementos y haga clic en el ícono ✏️ que aparece en la parte superior de la tabla. Esto está deshabilitado en la demo actual.'
+      },
+      feature_2: {
+        title: 'Consejo contextual: Filtro Rápido',
+        description: 'Use el icono de lupa (🔍) junto al encabezado de una columna para filtrar instantáneamente por los valores únicos de esa columna. ¡No es necesario abrir el panel de filtros completo!'
+      },
+      feature_3: {
+        title: 'Restricción Demo: Persistencia de Datos',
+        description: 'Cualquier cambio que realice (crear, editar, eliminar) se perderá al actualizar la página. Esta es una restricción importante en el entorno demo.'
+      },
+      feature_4: {
+        title: 'Difícil de Encontrar: Preferencias de Usuario',
+        description: 'Acceda a las preferencias de diseño del panel haciendo clic en su avatar de perfil en la esquina superior derecha. Puede cambiar al Modo Oscuro y ajustar las densidades de la tabla aquí.'
+      }
+    },
+
+    tags: {
+      advanced: 'Avanzado',
+      hidden: 'Oculto',
+      demorestricted: 'Demo Restringida',
+      contextual: 'Contextual',
+      quickaccess: 'Acceso Rápido',
+      restriction: 'Restricción',
+      demo: 'Demo',
+      'hard-to-find': 'Difícil de Encontrar',
+      personalization: 'Personalización'
+    }
+  },
+
+  // Video Player translations used by VideoPlayer component
+  videoPlayer: {
+    container: 'Reproductor de Video',
+    currentTitle: 'Título Actual',
+    counter: '{current}/{total}',
+    unsupported: 'Su navegador no admite la etiqueta de video.',
+    prev: 'Video Anterior',
+    play: 'Reproducir',
+    pause: 'Pausa',
+    playToggle: 'Reproducir / Pausa',
+    next: 'Siguiente Video',
+    status: {
+      playing: 'Reproduciendo',
+      paused: 'Pausado'
+    },
+    name: 'Nombre del video'
+  },
+
   // Email Management
   emailManagement: {
     title: 'Gestión de correos de usuario',
