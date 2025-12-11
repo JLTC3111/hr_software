@@ -21,6 +21,24 @@ export default {
     showcase: 'Trưng Bày Nhanh',
   },
 
+  // Video Player translations used by VideoPlayer component
+  videoPlayer: {
+    container: 'Trình Phát Video',
+    currentTitle: 'Tiêu Đề Hiện Tại',
+    counter: '{current}/{total}',
+    unsupported: 'Trình duyệt của bạn không hỗ trợ thẻ video.',
+    prev: 'Video Trước',
+    play: 'Phát',
+    pause: 'Tạm Dừng',
+    playToggle: 'Phát / Tạm dừng',
+    next: 'Video Tiếp Theo',
+    status: {
+      playing: 'Đang phát',
+      paused: 'Đã tạm dừng'
+    },
+    name: 'Tên video'
+  },
+
   // Header
   header: {
     title: 'Quản lý HR',
@@ -1647,6 +1665,82 @@ export default {
     switchToDemoEmployee: 'Chuyển sang nhân viên demo',
     switchToDemoAdmin: 'Chuyển sang quản trị viên demo',
     demoRoleOnly: 'Tính năng này chỉ khả dụng ở chế độ demo',
+  },
+
+  // Help Center / Advanced Guide
+  help: {
+    containerLabel: 'Trung Tâm Trợ Giúp',
+    title: 'Hướng Dẫn Tính Năng Nâng Cao',
+    subtitle: 'Hướng dẫn các tính năng chính và mẹo chuyên nghiệp',
+    videoSection: 'Phần Video',
+    videos: {
+      title: 'Hướng Dẫn Bằng Video',
+      subtitle: 'Học qua các video hướng dẫn ngắn và mẹo nâng cao.'
+    },
+    demoRestrictions: 'Hạn Chế Bản Demo',
+    demo: {
+      title: 'QUAN TRỌNG: Hạn Chế Bản Demo!',
+      body: 'DỮ LIỆU KHÔNG LƯU TRỮ. Tất cả bản ghi được tạo, chỉnh sửa hoặc xóa sẽ bị xóa khi làm mới trang hoặc đóng trình duyệt. Một số tính năng (ví dụ: Batch Edit, Export CSV) bị vô hiệu hóa trong môi trường demo.'
+    },
+
+    features: {
+      section: 'Tính năng Nâng Cao & Theo Ngữ Cảnh',
+      defaultTitle: 'Tính Năng Ẩn & Mẹo Chuyên Nghiệp',
+      contextTitle: 'Mẹo theo ngữ cảnh cho {context}',
+      restricted: 'BỊ HẠN CHẾ',
+      empty: 'Không tìm thấy mẹo nâng cao cho ngữ cảnh: "{context}". Hiển thị tất cả các tính năng bên dưới.',
+
+      // Per-feature entries (match HELP_FEATURES ids used by components)
+      feature_1: {
+        title: 'Tính năng ẩn: Chỉnh Sửa Hàng Loạt',
+        description: 'Bạn có thể chỉnh sửa tới 50 bản ghi cùng lúc. Chọn hộp kiểm bên cạnh mục và nhấp vào biểu tượng ✏️ ở đầu bảng. Tính năng này bị vô hiệu hóa trong bản demo hiện tại.'
+      },
+      feature_2: {
+        title: 'Mẹo theo ngữ cảnh: Bộ Lọc Nhanh',
+        description: 'Sử dụng biểu tượng kính lúp (🔍) bên cạnh tiêu đề cột để lọc ngay theo các giá trị duy nhất của cột đó. Không cần mở bảng lọc đầy đủ.'
+      },
+      feature_3: {
+        title: 'Hạn Chế Demo: Tính Bền Dữ Liệu',
+        description: 'Mọi thay đổi bạn thực hiện (tạo, chỉnh sửa, xóa) sẽ bị mất khi bạn làm mới trang. Đây là một hạn chế quan trọng trong môi trường demo.'
+      },
+      feature_4: {
+        title: 'Khó Tìm: Tùy Chọn Người Dùng',
+        description: 'Truy cập cài đặt bố cục bảng điều khiển bằng cách nhấp avatar hồ sơ ở góc trên bên phải. Bạn có thể chuyển sang Chế độ Tối và điều chỉnh mật độ bảng ở đây.'
+      }
+    },
+
+    // Individual feature translations (map to HELP_FEATURES ids)
+    features_map: {
+      feature_1: {
+        title: 'Tính năng ẩn: Chỉnh Sửa Hàng Loạt',
+        description: 'Bạn có thể chỉnh sửa tới 50 bản ghi cùng lúc. Chọn hộp kiểm bên cạnh mục và nhấp vào biểu tượng ✏️ ở đầu bảng. Tính năng này bị vô hiệu hóa trong bản demo hiện tại.'
+      },
+      feature_2: {
+        title: 'Mẹo theo ngữ cảnh: Bộ Lọc Nhanh',
+        description: 'Sử dụng biểu tượng kính lúp (🔍) bên cạnh tiêu đề cột để lọc ngay theo các giá trị duy nhất của cột đó. Không cần mở bảng lọc đầy đủ.'
+      },
+      feature_3: {
+        title: 'Hạn Chế Demo: Tính Bền Dữ Liệu',
+        description: 'Mọi thay đổi bạn thực hiện (tạo, chỉnh sửa, xóa) sẽ bị mất khi bạn làm mới trang. Đây là một hạn chế quan trọng trong môi trường demo.'
+      },
+      feature_4: {
+        title: 'Khó Tìm: Tùy Chọn Người Dùng',
+        description: 'Truy cập cài đặt bố cục bảng điều khiển bằng cách nhấp avatar hồ sơ ở góc trên bên phải. Bạn có thể chuyển sang Chế độ Tối và điều chỉnh mật độ bảng ở đây.'
+      }
+    },
+
+    // Tag translations (keys are normalized by removing spaces and lowercasing)
+    tags: {
+      advanced: 'Nâng Cao',
+      hidden: 'Ẩn',
+      demorestricted: 'Bản Demo Hạn Chế',
+      contextual: 'Theo Ngữ Cảnh',
+      quickaccess: 'Truy Cập Nhanh',
+      restriction: 'Hạn Chế',
+      demo: 'Demo',
+      'hard-to-find': 'Khó Tìm',
+      personalization: 'Cá Nhân Hóa'
+    }
   },
 
   // Email Management
