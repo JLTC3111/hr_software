@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, LogOut, Key, BookOpen, Expand, Shield, Info, RefreshCcw, Camera, Loader, Users, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
+import { User, LogOut, Key, BookOpen, Expand, Shield, Info, RefreshCcw, Camera, KeySquare, Loader, Users, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -1030,15 +1030,14 @@ const ControlPanel = () => {
           className="rounded-lg shadow-sm p-4"
           style={{
             backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-            borderColor: isDarkMode ? '#4b5563' : '#e5e7eb',
-            border: '1px solid'
+        
           }}
         >
           <h4 
             className="font-semibold mb-3 flex items-center space-x-2"
             style={{ color: isDarkMode ? '#ffffff' : '#111827' }}
           >
-            <Key className="w-4 h-4" />
+            <KeySquare className="w-4 h-4 -rotate-90 transition-all duration-75" />
             <span>{t('controlPanel.changePassword', 'Change Password')}</span>
           </h4>
 
@@ -1134,14 +1133,18 @@ const ControlPanel = () => {
                 type="submit"
                 className="flex-1 px-3 py-2 rounded text-sm font-medium transition-colors cursor-pointer"
                 style={{
-                  backgroundColor: '#3b82f6',
-                  color: '#ffffff'
+                  backgroundColor: isDarkMode ? '#2563eb' : '#3b82f6',
+                  color: '#ffffff',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#2563eb';
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#fff' : '#000';
+                  e.currentTarget.style.color = isDarkMode ? '#000000' : '#ffffff';
+                  e.currentTarget.style.fontWeight = '700';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#3b82f6';
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#2563eb' : '#3b82f6';  
+                  e.currentTarget.style.color = isDarkMode ? '#fff' : '#fff';
+                  e.currentTarget.style.fontWeight = '500';
                 }}
               >
                 {t('common.save', 'Save')}
@@ -1162,10 +1165,14 @@ const ControlPanel = () => {
                   color: isDarkMode ? '#ffffff' : '#111827'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#374151' : '#e5e7eb';
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#fde68a' : '#fef3c7';
+                  e.currentTarget.style.color = isDarkMode ? '#000000' : '#000000';
+                  e.currentTarget.style.fontWeight = '700';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = isDarkMode ? '#1f2937' : '#f3f4f6';
+                  e.currentTarget.style.color = isDarkMode ? '#ffffff' : '#111827';
+                  e.currentTarget.style.fontWeight = '500';
                 }}
               >
                 {t('common.cancel', 'Cancel')}
