@@ -956,8 +956,14 @@ const ControlPanel = () => {
                   color: isDarkMode ? '#000' : '#fff',
                   opacity: restoringDemoData !== null ? 0.6 : 1
                 }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.fontWeight = isDarkMode ? '700' : '700';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.fontWeight = isDarkMode ? '500' : '500';
+                  }}
               >
-                {restoringDemoData === 'all' ? (
+                {restoringDemoData === 'all' ? ( 
                   <Loader className="w-4 h-4 animate-spin" />
                 ) : (
                   <RefreshCcw className={`w-4 h-4 ${isDarkMode ? 'text-gray-900' : 'text-white'} group-hover:animate-spin origin-center transform transition-all`} />

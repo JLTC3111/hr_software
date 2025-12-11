@@ -479,7 +479,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .dark .restoreDemoData-button {
-    background: linear-gradient(45deg, #4ecdc4, #6bff6e, #96ceb4, #fffdf3, #ffffff);
+    background: linear-gradient(45deg, #1f5f5b, #2f7e79, #4ecdc4, #8ad7c6, #e3f7ee);
 }
 
 .restoreDemoData-button::before {
@@ -491,7 +491,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     height: 100%;
     background: linear-gradient(45deg, #1d2497, #343cdb, #4b54fc, #7f85f3, #dddddd);
     z-index: -1; 
-    transform: translateX(-100%); 
+    transform: translateX(-105%); 
     transition: all 1.25s ease;
 }
 
