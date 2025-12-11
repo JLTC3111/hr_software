@@ -1436,9 +1436,9 @@ const TimeClockEntry = ({ currentLanguage }) => {
                           <h3 className={`text-xl font-semibold ${text.primary}`}>
                             {t('timeTracking.requestLeave', 'Request Leave')}
                           </h3>
-                          <button onClick={() => setShowLeaveModal(false)} className={`group ${text.secondary} cursor-pointer rounded-2xl ${isDarkMode ? 'text-white' : 'text-red-600'} transition-all`}>
+                          <button onClick={() => setShowLeaveModal(false)} className={`group ${text.secondary} cursor-pointer rounded-2xl ${isDarkMode ? 'text-white' : 'text-red-500'} transition-all`}>
                             <X
-                              className="w-6 h-6 group-hover:animate-spin group-hover:scale-110 origin-center transform transition-all"
+                              className={`w-6 h-6 group-hover:animate-spin group-hover:scale-110 ${isDarkMode ? 'group-hover:bg-transparent' : 'group-hover:bg-black'} origin-center transform transition-all rounded-2xl`}
                             />
                           </button>
                         </div>
