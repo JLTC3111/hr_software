@@ -1594,7 +1594,9 @@ export default {
       hrManager: 'Quản Lý Nhân Sự',
       manager: 'Quản Lý',
       employee: 'Nhân Viên',
-      viewer: 'Người Xem'
+      viewer: 'Người Xem',
+      demoAdmin: 'Quản Trị Viên-Demo',
+      hrAdmin: 'Quản Trị Viên Nhân Sự',
     },
     roleDesc: {
       admin: 'Quyền truy cập toàn bộ hệ thống với tất cả các đặc quyền quản trị bao gồm quản lý người dùng, cài đặt hệ thống và kiểm soát dữ liệu hoàn toàn',
@@ -1602,7 +1604,8 @@ export default {
       hrManager: 'Quản lý nhân viên, đánh giá hiệu suất, tuyển dụng và các hoạt động nhân sự',
       manager: 'Giám sát thành viên nhóm, phê duyệt chấm công và quản lý đánh giá hiệu suất',
       employee: 'Truy cập thông tin cá nhân, gửi bản ghi giờ làm và xem dữ liệu hiệu suất của bản thân',
-      viewer: 'Quyền truy cập chỉ xem đối với báo cáo, bảng điều khiển và thông tin hệ thống hạn chế'
+      viewer: 'Quyền truy cập chỉ xem đối với báo cáo, bảng điều khiển và thông tin hệ thống hạn chế',
+      demoAdmin: 'Chế độ demo sử dụng localstorage để mô phỏng quyền quản trị; phiên bản chính thức sử dụng cơ sở dữ liệu backend để đồng bộ dữ liệu',
     },
     uploadAvatar: 'Tải lên ảnh đại diện',
     avatarUpdated: 'Cập nhật ảnh đại diện thành công!',
@@ -1641,6 +1644,9 @@ export default {
     demoDataRestored: "{type} đã được khôi phục về mặc định",
     allDemoDataRestored: "Tất cả dữ liệu demo đã được khôi phục về mặc định",
     restoreAllDemoData: "Khôi phục tất cả dữ liệu demo",
+    switchToDemoEmployee: 'Chuyển sang nhân viên demo',
+    switchToDemoAdmin: 'Chuyển sang quản trị viên demo',
+    demoRoleOnly: 'Tính năng này chỉ khả dụng ở chế độ demo',
   },
 
   // Email Management

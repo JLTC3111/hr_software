@@ -10,7 +10,7 @@ import { isDemoMode, getDemoEmployeeName, resetAllDemoData, resetDemoTimeEntries
 const ControlPanel = () => {
   const { isDarkMode, bg, text, border } = useTheme();
   const { t } = useLanguage();
-  const { user, signOut } = useAuth();
+  const { user, signOut, switchDemoRole } = useAuth();
   const navigate = useNavigate();
   const [showChangePassword, setShowChangePassword] = useState(false);
   const isChangingPassword = useRef(false);
@@ -185,10 +185,12 @@ const ControlPanel = () => {
   const getTranslatedRole = (role) => {
     const roleMap = {
       'admin': t('controlPanel.roles.admin', 'Admin'),
+      'demo_admin': t('controlPanel.roles.demoAdmin', 'Demo Admin'),
       'hr_manager': t('controlPanel.roles.hrManager', 'HR Manager'),
       'manager': t('controlPanel.roles.manager', 'Manager'),
       'employee': t('controlPanel.roles.employee', 'Employee'),
       'viewer': t('controlPanel.roles.viewer', 'Viewer'),
+      'Demo Admin': t('controlPanel.roles.demoAdmin', 'Demo Admin'),
       'Admin': t('controlPanel.roles.admin', 'Admin'),
       'HR Manager': t('controlPanel.roles.hrManager', 'HR Manager'),
       'Manager': t('controlPanel.roles.manager', 'Manager'),
@@ -201,9 +203,11 @@ const ControlPanel = () => {
   // Role descriptions with detailed permissions
   const roleDescriptions = {
     'admin': t('controlPanel.roleDesc.admin', 'Full system access with all administrative privileges'),
+    'demo_admin': t('controlPanel.roleDesc.demoAdmin', 'Demo admin access: full UI visibility but actions are simulated and limited.'),
     'manager': t('controlPanel.roleDesc.hrManager', 'Manage employees, performance reviews, and HR operations'),
     'employee': t('controlPanel.roleDesc.employee', 'Access personal information and submit time entries'),
     'viewer': t('controlPanel.roleDesc.viewer', 'View-only access to reports and dashboards'),
+    'Demo Admin': t('controlPanel.roleDesc.demoAdmin', 'Demo admin access: full UI visibility but actions are simulated and limited.'),
     'Admin': t('controlPanel.roleDesc.admin', 'Full system access with all administrative privileges'),
     'HR Manager': t('controlPanel.roleDesc.hrManager', 'Manage employees, performance reviews, and HR operations'),
     'Manager': t('controlPanel.roleDesc.manager', 'Supervise team members and approve time tracking'),
@@ -827,25 +831,57 @@ const ControlPanel = () => {
 
           {/* Demo Data Management - Only show in demo mode */}
           {isDemoMode() && (
-            <button
-              onClick={() => setShowDemoDataManagement(!showDemoDataManagement)}
-              className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
-              style={{
-                backgroundColor: isDarkMode ? '#4c1d95' : '#f3e8ff',
-                color: isDarkMode ? '#c4b5fd' : '#6b21a8'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = isDarkMode ? '#5b21b6' : '#e9d5ff';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = isDarkMode ? '#4c1d95' : '#f3e8ff';
-              }}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              <span className="text-sm">{t('controlPanel.restoreDemoData', 'Restore Demo Data')}</span>
-            </button>
+            <>
+              <button
+                onClick={() => {
+                  const nextRole = userRole === 'demo_admin' ? 'demo_employee' : 'demo_admin';
+                  switchDemoRole?.(nextRole);
+                }}
+                className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                style={{
+                  backgroundColor: isDarkMode ? '#0f172a' : '#e0f2fe',
+                  color: isDarkMode ? '#bfdbfe' : '#0f172a'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#1e293b' : '#dbeafe';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#0f172a' : '#e0f2fe';
+                }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H7m6-4l-4 4m0 0l4 4m-4-4h10" />
+                </svg>
+                <div className="flex flex-col items-start text-left">
+                  <span className="text-sm font-semibold">
+                    {userRole === 'demo_admin' ? t('controlPanel.switchToDemoEmployee', 'Switch to Demo Employee') : t('controlPanel.switchToDemoAdmin', 'Switch to Demo Admin')}
+                  </span>
+                  <span className="text-xs" style={{ color: isDarkMode ? '#94a3b8' : '#475569' }}>
+                    {t('controlPanel.demoRoleOnly', 'Demo mode only; toggles demo roles')}
+                  </span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setShowDemoDataManagement(!showDemoDataManagement)}
+                className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                style={{
+                  backgroundColor: isDarkMode ? '#4c1d95' : '#f3e8ff',
+                  color: isDarkMode ? '#c4b5fd' : '#6b21a8'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#5b21b6' : '#e9d5ff';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#4c1d95' : '#f3e8ff';
+                }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span className="text-sm">{t('controlPanel.restoreDemoData', 'Restore Demo Data')}</span>
+              </button>
+            </>
           )}
 
           {/* Demo Data Management Panel */}

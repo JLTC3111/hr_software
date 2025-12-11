@@ -1460,7 +1460,9 @@ login: {
       hrManager: 'Gerente de RRHH',
       manager: 'Gerente',
       employee: 'Empleado',
-      viewer: 'Visor'
+      viewer: 'Visor',
+      demoAdmin: 'Administrador de demostración',
+      hrAdmin: 'Administrador de RRHH',
     },
     roleDesc: {
       admin: 'Acceso completo al sistema con todos los privilegios administrativos incluyendo gestión de usuarios, configuración del sistema y control total de datos',
@@ -1468,7 +1470,8 @@ login: {
       hrManager: 'Gestionar empleados, evaluaciones de rendimiento, reclutamiento y operaciones de RRHH',
       manager: 'Supervisar miembros del equipo, aprobar seguimiento de tiempo y gestionar evaluaciones de rendimiento',
       employee: 'Acceder a información personal, enviar registros de tiempo y ver datos de rendimiento propios',
-      viewer: 'Acceso de solo lectura a informes, paneles e información limitada del sistema'
+      viewer: 'Acceso de solo lectura a informes, paneles e información limitada del sistema',
+      demoAdmin: 'El modo demo utiliza el almacenamiento local para simular el acceso de administrador; la versión oficial usa una base de datos backend para sincronizar los datos',
     },
     uploadAvatar: 'Subir avatar',
     avatarUpdated: '¡Avatar actualizado exitosamente!',
@@ -1506,7 +1509,10 @@ login: {
     demoLeaveRequests: 'Solicitudes de permiso',
     demoDataRestored: '{type} restaurado a los valores predeterminados',
     allDemoDataRestored: 'Todos los datos de demostración restaurados a los valores predeterminados',
-    restoreAllDemoData: 'Restaurar todos los datos de demostración'
+    restoreAllDemoData: 'Restaurar todos los datos de demostración',
+    switchToDemoEmployee: 'Cambiar a empleado de demostración',
+    switchToDemoAdmin: 'Cambiar a administrador de demostración',
+    demoRoleOnly: 'Esta función solo está disponible en modo demo',
   },
 
   // Email Management

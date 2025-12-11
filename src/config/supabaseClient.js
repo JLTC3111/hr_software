@@ -132,6 +132,39 @@ export const Permissions = {
     canManageRoles: true,
     canViewAuditLogs: true
   },
+    // Demo admin: special demo-only admin role (UI-level admin access; actions may be simulated)
+    'demo_admin': {
+      canManageUsers: true,
+      canManageEmployees: true,
+      canViewReports: true,
+      canManageRecruitment: true,
+      canManagePerformance: true,
+      canManageTimeTracking: true,
+      canExportData: true,
+      canViewSalaries: true,
+      canManageDepartments: true,
+      canManageRoles: true,
+      canViewAuditLogs: true
+    },
+    'demo_employee': {
+      canManageUsers: false,
+      canManageEmployees: false,
+      canViewReports: false,
+      canManageRecruitment: false,
+      canManagePerformance: false,
+      canManageTimeTracking: false,
+      canExportData: false,
+      canViewSalaries: false,
+      canManageDepartments: false,
+      canManageRoles: false,
+      canViewAuditLogs: false,
+      // Employee-specific permissions
+      canViewOwnProfile: true,
+      canUpdateOwnProfile: true,
+      canViewOwnTimeTracking: true,
+      canSubmitTimeoff: true,
+      canViewOwnPerformance: true
+    },
   [UserRoles.HR_ADMIN]: {
     canManageUsers: true,
     canManageEmployees: true,

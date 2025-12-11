@@ -1398,7 +1398,9 @@ export default {
       hrManager: 'HR マネージャー',
       manager: 'マネージャー',
       employee: '従業員',
-      viewer: '閲覧者'
+      viewer: '閲覧者',
+      demoAdmin: 'デモ管理者',
+      hrAdmin: 'HR 管理者',
     },
     roleDesc: {
       admin: 'ユーザー管理、システム設定、完全なデータ制御を含むすべての管理権限を持つ完全なシステムアクセス',
@@ -1406,7 +1408,8 @@ export default {
       hrManager: '従業員、業績評価、採用、HR業務を管理',
       manager: 'チームメンバーを監督し、時間追跡を承認し、業績評価を管理',
       employee: '個人情報にアクセスし、時間記録を提出し、自分の業績データを表示',
-      viewer: 'レポート、ダッシュボード、限られたシステム情報への読み取り専用アクセス'
+      viewer: 'レポート、ダッシュボード、限られたシステム情報への読み取り専用アクセス',
+      demoAdmin: 'デモモードは管理者アクセスをシミュレーションするためにローカルストレージを使用しますが、正式版はデータ同期にバックエンドデータベースを使用します',
     },
     uploadAvatar: 'アバターをアップロード',
     avatarUpdated: 'アバターが正常に更新されました！',
@@ -1445,6 +1448,9 @@ export default {
     demoDataRestored: "{type} がデフォルトに復元されました",
     allDemoDataRestored: "すべてのデモデータがデフォルトに復元されました",
     restoreAllDemoData: "すべてのデモデータを復元",
+    switchToDemoEmployee: 'デモ従業員に切り替え',
+    switchToDemoAdmin: 'デモ管理者に切り替え',
+    demoRoleOnly: 'この機能はデモモードでのみ利用できます',
   },
 
   // Email Management

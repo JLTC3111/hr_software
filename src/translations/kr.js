@@ -1372,7 +1372,9 @@ export default {
       hrManager: 'HR 관리자',
       manager: '매니저',
       employee: '직원',
-      viewer: '열람자'
+      viewer: '열람자',
+      demoAdmin: '데모 관리자',
+      hrAdmin: 'HR 관리자',
     },
     roleDesc: {
       admin: '사용자 관리, 시스템 설정 및 완전한 데이터 제어를 포함한 모든 관리 권한을 가진 전체 시스템 액세스',
@@ -1380,7 +1382,8 @@ export default {
       hrManager: '직원, 성과 평가, 채용 및 HR 운영 관리',
       manager: '팀원 감독, 근무 시간 승인 및 성과 평가 관리',
       employee: '개인 정보 액세스, 근무 기록 제출 및 자신의 성과 데이터 보기',
-      viewer: '보고서, 대시보드 및 제한된 시스템 정보에 대한 읽기 전용 액세스'
+      viewer: '보고서, 대시보드 및 제한된 시스템 정보에 대한 읽기 전용 액세스',
+      demoAdmin: '데모 모드는 관리자 액세스를 시뮬레이션하기 위해 로컬 스토리지를 사용하며, 공식 버전은 데이터 동기화를 위해 백엔드 데이터베이스를 사용합니다',
     },
     uploadAvatar: '아바타 업로드',
     avatarUpdated: '아바타가 성공적으로 업데이트되었습니다!',
@@ -1419,6 +1422,9 @@ export default {
     demoDataRestored: "{type} 기본값으로 복원됨",
     allDemoDataRestored: "모든 데모 데이터가 기본값으로 복원됨",
     restoreAllDemoData: "모든 데모 데이터 복원",
+    switchToDemoEmployee: '데모 직원으로 전환',
+    switchToDemoAdmin: '데모 관리자로 전환',
+    demoRoleOnly: '이 기능은 데모 모드에서만 사용할 수 있습니다',
   },
 
   // Email Management

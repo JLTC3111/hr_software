@@ -480,7 +480,7 @@ export const MOCK_USER = {
   name: 'Demo Admin',
   firstName: 'Demo',
   lastName: 'Admin',
-  role: 'admin',
+  role: 'demo_admin',
   avatar_url: 'https://randomuser.me/api/portraits/men/32.jpg',
   department: 'human_resources',
   position: 'hr_specialist',

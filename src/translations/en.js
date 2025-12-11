@@ -1446,7 +1446,9 @@ export default {
       hrManager: 'HR Manager',
       manager: 'Manager',
       employee: 'Employee',
-      viewer: 'Viewer'
+      viewer: 'Viewer',
+      demoAdmin: 'Demo Admin',
+      hrAdmin: 'HR Admin',
     },
     roleDesc: {
       admin: 'Full system access with all administrative privileges including user management, system settings, and complete data control',
@@ -1454,7 +1456,8 @@ export default {
       hrManager: 'Manage employees, performance reviews, recruitment, and HR operations',
       manager: 'Supervise team members, approve time tracking, and manage performance reviews',
       employee: 'Access personal information, submit time entries, and view own performance data',
-      viewer: 'View-only access to reports, dashboards, and limited system information'
+      viewer: 'View-only access to reports, dashboards, and limited system information',
+      demoAdmin: 'Demo mode uses localstorage to simulate admin access, official version uses backend databse to sync data',
     },
     uploadAvatar: 'Upload avatar',
     avatarUpdated: 'Avatar updated successfully!',
@@ -1495,7 +1498,10 @@ export default {
     demoLeaveRequests: 'Leave Requests',
     demoDataRestored: '{type} restored to defaults',
     allDemoDataRestored: 'All demo data restored to defaults',
-    restoreAllDemoData: 'Restore All Demo Data'
+    restoreAllDemoData: 'Restore All Demo Data',
+    switchToDemoEmployee: 'Switch to Demo Employee',
+    switchToDemoAdmin: 'Switch to Demo Admin',
+    demoRoleOnly: 'This feature is only available in demo mode',
   },
 
   // Email Management

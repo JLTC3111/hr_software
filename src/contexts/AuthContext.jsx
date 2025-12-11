@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { supabase, hasPermission, customStorage } from '../config/supabaseClient';
+import { supabase, hasPermission, Permissions, customStorage } from '../config/supabaseClient';
 import { linkUserToEmployee } from '../services/employeeService';
 import { isDemoMode, enableDemoMode, disableDemoMode, MOCK_USER, resetAllDemoData } from '../utils/demoHelper';
 
@@ -731,6 +731,21 @@ export const AuthProvider = ({ children }) => {
     return hasPermission(user.role, permission);
   };
 
+  // Demo-only: switch between demo_admin and demo_employee roles
+  const switchDemoRole = (nextRole) => {
+    if (!isDemoMode()) return;
+    if (nextRole !== 'demo_admin' && nextRole !== 'demo_employee') return;
+
+    setUser((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        role: nextRole,
+        permissions: Permissions[nextRole] || prev.permissions
+      };
+    });
+  };
+
   const loginAsDemo = () => {
     // Do NOT auto-reset demo data on login - let user manually restore via Control Panel
     // Users can use the "Restore Demo Data" feature in Control Panel to reset specific data types
@@ -749,6 +764,7 @@ export const AuthProvider = ({ children }) => {
     login,
     loginWithGithub,
     loginAsDemo,
+    switchDemoRole,
     logout,
     signOut: logout, // Alias for backward compatibility
     forgotPassword,

@@ -1489,7 +1489,9 @@ export default {
       hrManager: 'Responsable RH',
       manager: 'Gestionnaire',
       employee: 'Employé',
-      viewer: 'Observateur'
+      viewer: 'Observateur',
+      demoAdmin: 'Administrateur de démonstration',
+      hrAdmin: 'Admin RH',
     },
     roleDesc: {
       admin: 'Accès complet au système avec tous les privilèges administratifs incluant la gestion des utilisateurs, les paramètres système et le contrôle complet des données',
@@ -1497,7 +1499,8 @@ export default {
       hrManager: 'Gérer les employés, les évaluations de performance, le recrutement et les opérations RH',
       manager: 'Superviser les membres de l\'équipe, approuver le suivi du temps et gérer les évaluations de performance',
       employee: 'Accéder aux informations personnelles, soumettre des entrées de temps et voir ses propres données de performance',
-      viewer: 'Accès en lecture seule aux rapports, tableaux de bord et informations système limitées'
+      viewer: 'Accès en lecture seule aux rapports, tableaux de bord et informations système limitées',
+      demoAdmin: 'Le mode démo utilise le stockage local pour simuler l’accès administrateur ; la version officielle utilise une base de données backend pour synchroniser les données',
     },
     uploadAvatar: 'Télécharger l\'avatar',
     avatarUpdated: 'Avatar mis à jour avec succès!',
@@ -1535,7 +1538,10 @@ export default {
     demoLeaveRequests: 'Demandes de congé',
     demoDataRestored: '{type} restauré aux valeurs par défaut',
     allDemoDataRestored: 'Toutes les données de démonstration restaurées aux valeurs par défaut',
-    restoreAllDemoData: 'Restaurer toutes les données de démonstration'
+    restoreAllDemoData: 'Restaurer toutes les données de démonstration',
+    switchToDemoEmployee: 'Passer à l’employé démo',
+    switchToDemoAdmin: 'Passer à l’administrateur démo',
+    demoRoleOnly: 'Cette fonctionnalité est uniquement disponible en mode démo',
   },
 
   // Email Management

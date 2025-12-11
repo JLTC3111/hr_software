@@ -1423,7 +1423,9 @@ export default {
       hrManager: 'HR-Manager',
       manager: 'Manager',
       employee: 'Mitarbeiter',
-      viewer: 'Betrachter'
+      viewer: 'Betrachter',
+      demoAdmin: 'Demo-Administrator',
+      hrAdmin: 'HR-Administrator',
     },
     roleDesc: {
       admin: 'Vollständiger Systemzugriff mit allen administrativen Berechtigungen einschließlich Benutzerverwaltung, Systemeinstellungen und vollständiger Datenkontrolle',
@@ -1431,7 +1433,8 @@ export default {
       hrManager: 'Mitarbeiter, Leistungsbeurteilungen, Rekrutierung und HR-Betrieb verwalten',
       manager: 'Teammitglieder überwachen, Zeiterfassung genehmigen und Leistungsbeurteilungen verwalten',
       employee: 'Zugriff auf persönliche Informationen, Zeiteinträge einreichen und eigene Leistungsdaten anzeigen',
-      viewer: 'Nur-Lesen-Zugriff auf Berichte, Dashboards und begrenzte Systeminformationen'
+      viewer: 'Nur-Lesen-Zugriff auf Berichte, Dashboards und begrenzte Systeminformationen',
+      demoAdmin: 'Der Demomodus verwendet den LocalStorage, um Administratorzugriff zu simulieren; die offizielle Version verwendet eine Backend-Datenbank zur Datensynchronisierung',
     },
     uploadAvatar: 'Avatar hochladen',
     avatarUpdated: 'Avatar erfolgreich aktualisiert!',
@@ -1469,7 +1472,10 @@ export default {
     demoLeaveRequests: 'Urlaubsanträge',
     demoDataRestored: '{type} auf Standardwerte zurückgesetzt',
     allDemoDataRestored: 'Alle Demodaten auf Standardwerte zurückgesetzt',
-    restoreAllDemoData: 'Alle Demodaten wiederherstellen'
+    restoreAllDemoData: 'Alle Demodaten wiederherstellen',
+    switchToDemoEmployee: 'Zu Demo-Mitarbeiter wechseln',
+    switchToDemoAdmin: 'Zu Demo-Administrator wechseln',
+    demoRoleOnly: 'Diese Funktion ist nur im Demo-Modus verfügbar',
   },
 
   // Email Management
