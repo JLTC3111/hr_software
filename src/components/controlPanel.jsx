@@ -775,7 +775,7 @@ const ControlPanel = () => {
             }}
             disabled={isDemoMode()}
             title={isDemoMode() ? t('controlPanel.demoModeDisabled', 'Disabled in demo mode') : ''}
-            className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors 
+            className={`w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors 
               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
               ${isDemoMode() ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
             `}
@@ -793,7 +793,7 @@ const ControlPanel = () => {
               e.currentTarget.style.backgroundColor = isDarkMode ? '#2d3748' : '#f4f6f8';
             }}
           >
-            <Key className="w-4 h-4" />
+            <Key className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />
             <span className="text-sm">{t('controlPanel.changeOwnPassword', 'Change Own Password')}</span>
           </button>
           
@@ -807,8 +807,8 @@ const ControlPanel = () => {
               disabled={isDemoMode()}
               title={isDemoMode() ? t('controlPanel.demoModeDisabled', 'Disabled in demo mode') : ''}
               className={`
-                w-full flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200
-                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200
+                hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus-visible:ring-2 focus-visible:ring-blue-500
                 ${isDemoMode() ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
               `}
               style={{
@@ -818,19 +818,13 @@ const ControlPanel = () => {
               onMouseEnter={(e) => {
                 if (isDemoMode()) return;
                 e.currentTarget.style.backgroundColor = isDarkMode ? '#28415f' : '#dbe4ff';
-                e.currentTarget.style.boxShadow = isDarkMode
-                  ? '0 2px 6px rgba(0,0,0,0.45)'
-                  : '0 2px 6px rgba(0,0,0,0.2)';
               }}
               onMouseLeave={(e) => {
                 if (isDemoMode()) return;
                 e.currentTarget.style.backgroundColor = isDarkMode ? '#1f2f47' : '#eef3ff';
-                e.currentTarget.style.boxShadow = isDarkMode
-                  ? '0 1px 3px rgba(0,0,0,0.4)'
-                  : '0 1px 3px rgba(0,0,0,0.15)';
               }}
             >
-              <Users className="w-4 h-4" />
+              <Users className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
               <span className="text-sm">{t('controlPanel.resetOtherUserPassword', 'Reset Other Employee Password')}</span>
             </button>
           )}
