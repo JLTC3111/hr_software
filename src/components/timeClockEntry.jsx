@@ -1569,13 +1569,13 @@ const TimeClockEntry = ({ currentLanguage }) => {
                             <button
                               type="button"
                               onClick={() => setShowLeaveModal(false)}
-                              className={`flex-1 px-4 py-2 border ${text.primary} cursor-pointer ${isDarkMode ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-300 hover:bg-gray-50'} rounded-lg transition-colors`}
+                              className={`flex-1 px-4 py-2 group border ${text.primary} cursor-pointer ${isDarkMode ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-300 hover:bg-gray-50'} rounded-lg transition-colors`}
                             >
                               {t('common.cancel', 'Cancel')}
                             </button>
                             <button 
                               type="submit"
-                              className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors cursor-pointer"
+                              className={`flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors cursor-pointer`}
                             >
                               {t('common.leaveRequest', 'Submit Request')}
                             </button>
