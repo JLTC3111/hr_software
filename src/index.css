@@ -489,11 +489,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(45deg, #6bff6e, #4ecdc4, #96ceb4, #fffdf3, #ececec);
+    background: linear-gradient(45deg, #1d2497, #343cdb, #4b54fc, #7f85f3, #dddddd);
     z-index: -1; 
     transform: translateX(-100%); 
     transition: all 1.25s ease;
 }
+
+.dark .restoreDemoData-button::before {
+    background: linear-gradient(45deg, #6bff6e, #4ecdc4, #96ceb4, #fffdf3, #ececec);
+}
+
 .restoreDemoData-button:hover::before {
     transform: translateX(0%); 
 }

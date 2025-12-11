@@ -956,17 +956,11 @@ const ControlPanel = () => {
                   color: isDarkMode ? '#000' : '#fff',
                   opacity: restoringDemoData !== null ? 0.6 : 1
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = isDarkMode ? '#000' : '#000';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = isDarkMode ? '#000' : '#fff';
-                }}
               >
                 {restoringDemoData === 'all' ? (
                   <Loader className="w-4 h-4 animate-spin" />
                 ) : (
-                  <RefreshCcw className={`w-4 h-4 ${isDarkMode ? 'text-gray-900' : 'text-white'} group-hover:animate-spin origin-center transform transition-all group-hover:text-gray-900`} />
+                  <RefreshCcw className={`w-4 h-4 ${isDarkMode ? 'text-gray-900' : 'text-white'} group-hover:animate-spin origin-center transform transition-all`} />
                 )}
                 <span>{t('controlPanel.restoreAllDemoData', 'Restore All Demo Data')}</span>
               </button>
