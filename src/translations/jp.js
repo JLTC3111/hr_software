@@ -1453,6 +1453,78 @@ export default {
     demoRoleOnly: 'この機能はデモモードでのみ利用できます',
   },
 
+  // Help Center / Advanced Guide
+  help: {
+    containerLabel: 'ヘルプセンター',
+    title: '高度な機能ガイド',
+    subtitle: '主要な機能とプロのヒントのウォークスルー',
+    videoSection: 'ビデオセクション',
+    videos: {
+      title: 'ビデオチュートリアル',
+      subtitle: '簡潔なウォークスルーと高度なヒントで学ぶ'
+    },
+    demoRestrictions: 'デモの制限',
+    demo: {
+      title: '重要: デモの制限!',
+      body: 'データは永続化されません。作成、編集、削除されたレコードはページを更新するかブラウザを閉じると消去されます。バッチ編集やCSVエクスポートなどの機能はこの環境では無効です。'
+    },
+
+    features: {
+      section: '高度 & コンテキスト別の機能',
+      defaultTitle: '隠れた機能とプロのヒント',
+      contextTitle: '{context} に対するコンテキスト別のヒント',
+      restricted: '制限あり',
+      empty: '{context} に対する特定のヒントは見つかりませんでした。以下にすべての機能を表示しています。',
+
+      feature_1: {
+        title: '隠れた機能：一括編集',
+        description: '最大50件のレコードを一度に編集できます。項目の横のチェックボックスを選択し、テーブル上部の✏️アイコンをクリックしてください。現在のデモでは無効になっています。'
+      },
+      feature_2: {
+        title: 'コンテキストヒント：クイックフィルター',
+        description: '列ヘッダーの横にある虫眼鏡アイコン（🔍）を使用して、その列のユニークな値で即座にフィルタリングします。フィルターパネルを開く必要はありません。'
+      },
+      feature_3: {
+        title: 'デモ制限：データ永続性',
+        description: '作成、編集、削除した変更はページの更新時に失われます。これはデモ環境での重要な制限です。'
+      },
+      feature_4: {
+        title: '見つけにくい：ユーザー設定',
+        description: '右上のプロフィールアバターをクリックしてダッシュボードのレイアウト設定にアクセスします。ダークモードに切り替えたり、テーブルの密度を調整したりできます。'
+      }
+    },
+
+    tags: {
+      advanced: '高度',
+      hidden: '非表示',
+      demorestricted: 'デモ制限',
+      contextual: 'コンテキスト',
+      quickaccess: 'クイックアクセス',
+      restriction: '制限',
+      demo: 'デモ',
+      'hard-to-find': '見つけにくい',
+      personalization: 'パーソナライズ'
+    }
+  },
+
+  // Video Player translations used by VideoPlayer component
+  videoPlayer: {
+    container: 'ビデオプレーヤー',
+    currentTitle: '現在のタイトル',
+    counter: '{current}/{total}',
+    unsupported: 'お使いのブラウザは video タグをサポートしていません。',
+    prev: '前のビデオ',
+    play: '再生',
+    pause: '一時停止',
+    playToggle: '再生 / 一時停止',
+    next: '次のビデオ',
+    status: {
+      playing: '再生中',
+      paused: '一時停止中'
+    },
+    name: 'ビデオ名'
+  },
+
   // Email Management
   emailManagement: {
     title: 'ユーザーメール管理',

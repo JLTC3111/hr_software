@@ -1427,6 +1427,78 @@ export default {
     demoRoleOnly: '이 기능은 데모 모드에서만 사용할 수 있습니다',
   },
 
+  // Help Center / Advanced Guide
+  help: {
+    containerLabel: '도움말 센터',
+    title: '고급 기능 가이드',
+    subtitle: '핵심 기능 및 전문가 팁 안내',
+    videoSection: '비디오 섹션',
+    videos: {
+      title: '비디오 튜토리얼',
+      subtitle: '간결한 데모와 고급 팁으로 학습하세요.'
+    },
+    demoRestrictions: '데모 제한',
+    demo: {
+      title: '중요: 데모 제한!',
+      body: '데이터는 영구 저장되지 않습니다. 생성, 수정, 삭제된 레코드는 페이지 새로고침 또는 브라우저 종료 시 삭제됩니다. 배치 편집 및 CSV 내보내기 등 일부 기능은 이 환경에서 비활성화됩니다.'
+    },
+
+    features: {
+      section: '고급 및 컨텍스트별 기능',
+      defaultTitle: '숨겨진 기능 및 전문가 팁',
+      contextTitle: '{context}에 대한 컨텍스트 팁',
+      restricted: '제한됨',
+      empty: '{context}에 대한 특정 고급 팁을 찾을 수 없습니다. 아래에 모든 기능을 표시합니다.',
+
+      feature_1: {
+        title: '숨겨진 기능: 일괄 편집',
+        description: '한 번에 최대 50개의 레코드를 편집할 수 있습니다. 항목 옆의 체크박스를 선택하고 테이블 상단의 ✏️ 아이콘을 클릭하세요. 현재 데모에서는 비활성화되어 있습니다.'
+      },
+      feature_2: {
+        title: '컨텍스트 팁: 빠른 필터',
+        description: '열 헤더 옆의 돋보기 아이콘(🔍)을 사용하여 해당 열의 고유 값으로 즉시 필터링하세요. 전체 필터 패널을 열 필요가 없습니다.'
+      },
+      feature_3: {
+        title: '데모 제한: 데이터 지속성',
+        description: '생성, 수정, 삭제한 모든 변경 사항은 페이지를 새로 고치면 손실됩니다. 데모 환경에서 중요한 제한사항입니다.'
+      },
+      feature_4: {
+        title: '찾기 어려움: 사용자 환경설정',
+        description: '오른쪽 상단의 프로필 아바타를 클릭하여 대시보드 레이아웃 환경설정에 접근하세요. 다크 모드로 전환하고 테이블 밀도를 조정할 수 있습니다.'
+      }
+    },
+
+    tags: {
+      advanced: '고급',
+      hidden: '숨김',
+      demorestricted: '데모 제한',
+      contextual: '컨텍스트',
+      quickaccess: '빠른 접근',
+      restriction: '제한',
+      demo: '데모',
+      'hard-to-find': '찾기 어려움',
+      personalization: '개인화'
+    }
+  },
+
+  // Video Player translations used by VideoPlayer component
+  videoPlayer: {
+    container: '비디오 플레이어',
+    currentTitle: '현재 제목',
+    counter: '{current}/{total}',
+    unsupported: '사용 중인 브라우저는 비디오 태그를 지원하지 않습니다.',
+    prev: '이전 비디오',
+    play: '재생',
+    pause: '일시정지',
+    playToggle: '재생 / 일시정지',
+    next: '다음 비디오',
+    status: {
+      playing: '재생 중',
+      paused: '일시정지'
+    },
+    name: '비디오 이름'
+  },
+
   // Email Management
   emailManagement: {
     title: '사용자 이메일 관리',
