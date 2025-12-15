@@ -84,17 +84,38 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       'Content-Type': 'application/json',
       'Prefer': 'return=representation'
     },
-    fetch: (url, options = {}) => {
+    fetch: async (url, options = {}) => {
       // Add timeout to all fetch requests to prevent hanging
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-      
-      return fetch(url, {
-        ...options,
-        signal: controller.signal
-      }).finally(() => {
+
+      try {
+        const resp = await fetch(url, {
+          ...options,
+          signal: controller.signal
+        });
+
+        // Lightweight diagnostic logging for visits REST calls that return errors
+        try {
+          if (typeof url === 'string' && url.includes('/rest/v1/visits') && resp.status >= 400) {
+            const clone = resp.clone();
+            const text = await clone.text().catch(() => '<no-body>');
+            console.error('supabaseClient: visits request failed', {
+              url,
+              method: options.method || 'GET',
+              hasAuthorization: !!(options.headers && (options.headers.Authorization || options.headers.authorization)),
+              status: resp.status,
+              body: text
+            });
+          }
+        } catch (logErr) {
+          // swallow logging errors
+        }
+
+        return resp;
+      } finally {
         clearTimeout(timeoutId);
-      });
+      }
     }
   },
   db: {

@@ -43,8 +43,13 @@ serve(async (req)=>{
     const forwarded = req.headers.get("x-forwarded-for") || "";
     const realIp = forwarded.split(",")[0].trim() || req.headers.get("x-real-ip") || null;
     const ua = req.headers.get("user-agent") || null;
+    // Prefer explicit demo role header if provided (client will send `x-demo-role`)
+    const demoRoleHeader = (req.headers.get('x-demo-role') || '').trim();
     const isDemoHeader = (req.headers.get('x-demo-mode') || '').toLowerCase();
-    const isDemo = isDemoHeader === '1' || isDemoHeader === 'true';
+    const isDemoModeFlag = isDemoHeader === '1' || isDemoHeader === 'true';
+    const isDemo = !!demoRoleHeader || isDemoModeFlag;
+    // If a role header is supplied, use it. Otherwise default demo role to 'demo_admin'.
+    const roleValue = demoRoleHeader || (isDemo ? 'demo_admin' : null);
     const body = await req.json().catch(()=>({}));
     const path = body?.path ?? null;
     const referrer = body?.referrer ?? null;
@@ -56,7 +61,7 @@ serve(async (req)=>{
       path,
       referrer,
       is_demo: isDemo,
-      role: isDemo ? 'demo' : null
+      role: roleValue
     });
     return new Response(null, {
       status: 204,

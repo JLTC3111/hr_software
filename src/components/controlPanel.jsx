@@ -636,7 +636,8 @@ const ControlPanel = () => {
         style={{
           backgroundColor: isDarkMode ? '#374151' : '#ffffff',
           borderColor: isDarkMode ? '#4b5563' : '#e5e7eb',
-          border: '1px solid'
+          borderWidth: '1px',
+          borderStyle: 'solid'
         }}
       >
         <div className="flex items-center space-x-3 mb-4">
@@ -698,7 +699,8 @@ const ControlPanel = () => {
             style={{
               backgroundColor: isDarkMode ? '#14532d' : '#dcfce7',
               color: isDarkMode ? '#86efac' : '#166534',
-              border: '1px solid',
+              borderWidth: '1px',
+              borderStyle: 'solid',
               borderColor: isDarkMode ? '#166534' : '#86efac'
             }}
           >
@@ -716,7 +718,8 @@ const ControlPanel = () => {
           className="p-3 rounded-lg mb-3"
           style={{
             backgroundColor: isDarkMode ? '#1f2937' : '#f9fafb',
-            border: '1px solid',
+            borderWidth: '1px',
+            borderStyle: 'solid',
             borderColor: isDarkMode ? '#374151' : '#e5e7eb'
           }}
         >
@@ -742,7 +745,8 @@ const ControlPanel = () => {
           className="p-3 rounded-lg mb-3 space-y-2"
           style={{
             backgroundColor: isDarkMode ? '#1f2937' : '#f9fafb',
-            border: '1px solid',
+            borderWidth: '1px',
+            borderStyle: 'solid',
             borderColor: isDarkMode ? '#374151' : '#e5e7eb'
           }}
         >
@@ -755,10 +759,11 @@ const ControlPanel = () => {
             </span>
             <code 
               className="text-xs px-2 py-1 rounded font-mono"
-              style={{
+                style={{
                 backgroundColor: isDarkMode ? '#111827' : '#f3f4f6',
                 color: isDarkMode ? '#60a5fa' : '#2563eb',
-                border: '1px solid',
+                borderWidth: '1px',
+                borderStyle: 'solid',
                 borderColor: isDarkMode ? '#374151' : '#e5e7eb'
               }}
               title={userId}
@@ -780,7 +785,8 @@ const ControlPanel = () => {
                 style={{
                   backgroundColor: isDarkMode ? '#111827' : '#f3f4f6',
                   color: isDarkMode ? '#34d399' : '#059669',
-                  border: '1px solid',
+                  borderWidth: '1px',
+                  borderStyle: 'solid',
                   borderColor: isDarkMode ? '#374151' : '#e5e7eb'
                 }}
               >
@@ -899,7 +905,7 @@ const ControlPanel = () => {
                   <span>{visitError}</span>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="grid grid-cols-5 gap-2 text-xs">
                   <div>
                     <p className="text-slate-500">{t('controlPanel.visit.total', 'Total')}</p>
                     <p className="text-sm">{visitSummary.total}</p>
@@ -911,6 +917,14 @@ const ControlPanel = () => {
                   <div>
                     <p className="text-slate-500">{t('controlPanel.visit.distinctIps', 'Distinct IPs')}</p>
                     <p className="text-sm">{visitSummary.distinctIps}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">{t('controlPanel.visit.demoCount', 'Demo Sessions')}</p>
+                    <p className="text-sm">{visitSummary.demoCount ?? 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">{t('controlPanel.visit.authorized', 'Authorized Sessions')}</p>
+                    <p className="text-sm">{visitSummary.authorizedSessions ?? 0}</p>
                   </div>
                 </div>
               )}
@@ -994,7 +1008,8 @@ const ControlPanel = () => {
               className="p-4 rounded-lg space-y-3"
               style={{
                 backgroundColor: isDarkMode ? '#1f2937' : '#f9fafb',
-                border: '1px solid',
+                borderWidth: '1px',
+                borderStyle: 'solid',
                 borderColor: isDarkMode ? '#374151' : '#e5e7eb'
               }}
             >
@@ -1287,7 +1302,8 @@ const ControlPanel = () => {
           style={{
             backgroundColor: isDarkMode ? '#374151' : '#ffffff',
             borderColor: isDarkMode ? '#4b5563' : '#e5e7eb',
-            border: '1px solid'
+            borderWidth: '1px',
+            borderStyle: 'solid'
           }}
         >
           <h4 
@@ -1473,7 +1489,8 @@ const ControlPanel = () => {
             style={{
               backgroundColor: isDarkMode ? '#7c2d12' : '#fed7aa',
               color: isDarkMode ? '#fbbf24' : '#92400e',
-              border: '1px solid',
+              borderWidth: '1px',
+              borderStyle: 'solid',
               borderColor: isDarkMode ? '#92400e' : '#fbbf24'
             }}
           >
@@ -1489,7 +1506,8 @@ const ControlPanel = () => {
           style={{
             backgroundColor: isDarkMode ? '#374151' : '#ffffff',
             borderColor: isDarkMode ? '#4b5563' : '#e5e7eb',
-            border: '1px solid'
+            borderWidth: '1px',
+            borderStyle: 'solid'
           }}
         >
           <h4 
@@ -1669,7 +1687,8 @@ const ControlPanel = () => {
             style={{
               backgroundColor: isDarkMode ? '#7c2d12' : '#fed7aa',
               color: isDarkMode ? '#fbbf24' : '#92400e',
-              border: '1px solid',
+              borderWidth: '1px',
+              borderStyle: 'solid',
               borderColor: isDarkMode ? '#92400e' : '#fbbf24'
             }}
           >
@@ -1684,7 +1703,8 @@ const ControlPanel = () => {
         style={{
           backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff',
           borderColor: isDarkMode ? '#1e40af' : '#bfdbfe',
-          border: '1px solid'
+          borderWidth: '1px',
+          borderStyle: 'solid'
         }}
       >
         <div className="flex items-start space-x-2">

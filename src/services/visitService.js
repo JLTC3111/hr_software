@@ -32,10 +32,12 @@ export const logVisit = async () => {
     // If demo mode is active, mark the request so the function can treat it specially
     if (isDemoMode()) {
       headers['x-demo-mode'] = '1';
+      // Inform the Edge Function which demo role this should be recorded as
+      headers['x-demo-role'] = 'demo_admin';
     }
 
     // Debug: report whether Authorization header is present (don't log token value)
-    console.debug('visitService.logVisit: sending visit to', edgeUrl, { hasAuthorization: !!headers.Authorization, hasApikey: !!headers.apikey, isDemo: !!headers['x-demo-mode'] });
+    console.debug('visitService.logVisit: sending visit to', edgeUrl, { hasAuthorization: !!headers.Authorization, hasApikey: !!headers.apikey, isDemo: !!headers['x-demo-mode'], demoRole: !!headers['x-demo-role'] });
 
     const resp = await fetch(edgeUrl, {
       method: 'POST',
@@ -60,27 +62,55 @@ export const fetchVisitSummary = async () => {
     total: 0,
     last24h: 0,
     distinctIps: 0,
+    demoCount: 0,
+    authorizedSessions: 0,
     recent: [],
   };
 
   try {
     // Total count
-    const totalResp = await supabase.from('visits').select('id', { count: 'exact', head: true });
+    const totalResp = await supabase.from('visits').select('id', { count: 'exact' }).limit(1);
     summary.total = totalResp.count || 0;
 
     // Last 24h count
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const lastResp = await supabase
       .from('visits')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', since);
+      .select('id', { count: 'exact' })
+      .gte('created_at', since)
+      .limit(1);
     summary.last24h = lastResp.count || 0;
 
     // Distinct IP count
     const distinctResp = await supabase
       .from('visits')
-      .select('ip', { count: 'exact', head: true, distinct: true });
+      .select('ip', { count: 'exact', distinct: true })
+      .limit(1);
     summary.distinctIps = distinctResp.count || 0;
+
+    // Demo visits count (marked by is_demo boolean)
+    try {
+      const demoResp = await supabase
+        .from('visits')
+        .select('id', { count: 'exact' })
+        .eq('is_demo', true)
+        .limit(1);
+      summary.demoCount = demoResp.count || 0;
+    } catch (e) {
+      summary.demoCount = 0;
+    }
+
+    // Authorized sessions: visits where a user_id is present
+    try {
+      const authResp = await supabase
+        .from('visits')
+        .select('id', { count: 'exact' })
+        .not('user_id', 'is', null)
+        .limit(1);
+      summary.authorizedSessions = authResp.count || 0;
+    } catch (e) {
+      summary.authorizedSessions = 0;
+    }
 
     // Recent rows
     const recentResp = await supabase
