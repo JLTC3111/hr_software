@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, LogOut, Key, BookOpen, Expand, Shield, Info, RefreshCcw, Camera, KeySquare, Loader, Users, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
+import { User, LogOut, Key, BookOpen, Expand, Shield, Info, RefreshCcw, Activity, Camera, KeySquare, Loader, Users, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../config/supabaseClient';
 import { isDemoMode, getDemoEmployeeName, resetAllDemoData, resetDemoTimeEntries, resetDemoGoals, resetDemoTasks, resetDemoReviews, resetDemoSkills, resetDemoLeaveRequests } from '../utils/demoHelper';
+import { fetchVisitSummary } from '../services/visitService';
 
 const ControlPanel = () => {
   const { isDarkMode, bg, text, border } = useTheme();
@@ -69,6 +70,11 @@ const ControlPanel = () => {
   // Toast notification state
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
 
+  // Visit analytics (admin only)
+  const [visitSummary, setVisitSummary] = useState({ total: 0, last24h: 0, distinctIps: 0, recent: [] });
+  const [loadingVisits, setLoadingVisits] = useState(false);
+  const [visitError, setVisitError] = useState('');
+
   // Get user role and info
   const userRole = user?.user_metadata?.role || user?.role || 'Employee';
   const userName = user?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
@@ -104,6 +110,24 @@ const ControlPanel = () => {
       fetchAllEmployees();
     }
   }, [isAdmin, showEmployeeReset]);
+
+  // Load visit analytics for admins
+  useEffect(() => {
+    const loadVisits = async () => {
+      if (!isAdmin) return;
+      setLoadingVisits(true);
+      setVisitError('');
+      const result = await fetchVisitSummary();
+      if (result.success) {
+        setVisitSummary(result.data);
+      } else {
+        setVisitError(result.error || 'Failed to load visit summary');
+      }
+      setLoadingVisits(false);
+    };
+
+    loadVisits();
+  }, [isAdmin]);
 
   const fetchAllUsers = async () => {
     setLoadingUsers(true);
@@ -516,7 +540,8 @@ const ControlPanel = () => {
   };
 
   const openManual = () => {
-    navigate('/help-center');
+    // In demo, route to AdvancedHelpCenter; in production, route to ProductionHelpCenter
+    navigate(isDemoMode() ? '/help-center' : '/production-help');
   };
 
   const handleAvatarUpload = async (e) => {
@@ -829,6 +854,64 @@ const ControlPanel = () => {
             </button>
           )}
 
+          {/* Visit analytics (admin only) */}
+          {isAdmin && (
+            <div
+              className="w-full rounded-lg border p-3 space-y-2"
+              style={{
+                backgroundColor: isDarkMode ? '#0f172a' : '#f8fafc',
+                borderColor: isDarkMode ? '#1e293b' : '#e2e8f0',
+                color: isDarkMode ? '#e2e8f0' : '#0f172a'
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Activity className={`w-4 h-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`} />
+                  <span className="text-sm font-semibold">Visit analytics</span>
+                </div>
+                {loadingVisits && <Loader className="w-4 h-4 animate-spin text-indigo-500" />}
+              </div>
+
+              {visitError ? (
+                <div className="text-xs text-red-500 flex items-center space-x-2">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>{visitError}</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <p className="text-slate-500">Total</p>
+                    <p className="text-sm font-bold">{visitSummary.total}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">Last 24h</p>
+                    <p className="text-sm font-bold">{visitSummary.last24h}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">Distinct IPs</p>
+                    <p className="text-sm font-bold">{visitSummary.distinctIps}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-1 max-h-48 overflow-auto text-xs">
+                {visitSummary.recent?.length === 0 && !visitError && (
+                  <p className="text-slate-500">No visits logged yet.</p>
+                )}
+                {visitSummary.recent?.map((row) => (
+                  <div key={row.id} className="p-2 rounded border" style={{ borderColor: isDarkMode ? '#1f2937' : '#e2e8f0' }}>
+                    <div className="flex justify-between">
+                      <span className="font-semibold">{row.ip || 'unknown IP'}</span>
+                      <span className="text-slate-500">{new Date(row.created_at).toLocaleString()}</span>
+                    </div>
+                    <p className="text-slate-500 truncate">{row.path || '/'}</p>
+                    {row.referrer && <p className="text-slate-500 truncate">Ref: {row.referrer}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Demo Data Management - Only show in demo mode */}
           {isDemoMode() && (
             <>
@@ -995,7 +1078,7 @@ const ControlPanel = () => {
             }}
           >
             <BookOpen className="w-4 h-4 group-hover:animate-pulse transition-all" />
-            <span className="text-sm cursor-pointer">{t('controlPanel.readManual', 'Read Manual')}</span>
+            <span className="text-sm">{t('controlPanel.readManual', 'Read Manual')}</span>
           </button>
 
           <button

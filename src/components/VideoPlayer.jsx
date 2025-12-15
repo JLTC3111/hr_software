@@ -59,7 +59,7 @@ const VideoPlayer = ({ videos }) => {
           </h3>
         </div>
         <span className={`text-xs font-medium px-2 py-1 rounded-full ${isDarkMode ? 'bg-gray-800 text-gray-200' : 'bg-indigo-50 text-indigo-700'}`} data-i18n="videoPlayer.counter">
-          {t('videoPlayer.counter', '{current}/{total}', { current: currentVideoIndex + 1, total: videos.length })}
+          {t('videoPlayer.counter', videoCountLabel)}
         </span>
       </div>
 

@@ -23,6 +23,7 @@
     "jspdf": "^3.0.3",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.555.0",
+    "matter-js": "^0.20.0",
     "pdfjs-dist": "^5.4.296",
     "psql": "^0.0.1",
     "react": "^19.1.1",

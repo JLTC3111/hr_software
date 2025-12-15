@@ -25,10 +25,10 @@ const AdvancedHelpCenter = ({ contextHint = null }) => {
 
   return (
     <div
-      className="relative overflow-hidden p-6 md:p-8 rounded-2xl shadow-2xl space-y-8 bg-gradient-to-br from-indigo-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-slate-900 transition-colors"
+      className="relative overflow-hidden p-6 md:p-8 rounded-2xl shadow-2xl space-y-8 bg-gradient-to-br from-indigo-50 via-white to-blue-50 dark:bg-slate-950 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 transition-colors"
       aria-label={t('help.containerLabel', 'Help Center Container')}
     >
-      <div className="absolute inset-0 pointer-events-none opacity-50 bg-[radial-gradient(circle_at_20%_20%,rgba(99,102,241,0.18),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(34,197,94,0.18),transparent_30%)]" />
+      <div className="absolute inset-0 pointer-events-none opacity-30 dark:opacity-20 bg-[radial-gradient(circle_at_20%_20%,rgba(99,102,241,0.22),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(34,197,94,0.2),transparent_30%)]" />
       <div className="relative z-10 space-y-6">
         <div className="flex items-center gap-3 border-b pb-3 border-indigo-200/70 dark:border-indigo-700/60">
           <LucideIcons.BookOpenText className="h-8 w-8 text-indigo-600 dark:text-indigo-300" aria-hidden="true" />
