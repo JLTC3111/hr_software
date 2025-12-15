@@ -43,6 +43,8 @@ serve(async (req)=>{
     const forwarded = req.headers.get("x-forwarded-for") || "";
     const realIp = forwarded.split(",")[0].trim() || req.headers.get("x-real-ip") || null;
     const ua = req.headers.get("user-agent") || null;
+    const isDemoHeader = (req.headers.get('x-demo-mode') || '').toLowerCase();
+    const isDemo = isDemoHeader === '1' || isDemoHeader === 'true';
     const body = await req.json().catch(()=>({}));
     const path = body?.path ?? null;
     const referrer = body?.referrer ?? null;
@@ -52,7 +54,9 @@ serve(async (req)=>{
       anonymized_ip: anonIp,
       user_agent: ua,
       path,
-      referrer
+      referrer,
+      is_demo: isDemo,
+      role: isDemo ? 'demo' : null
     });
     return new Response(null, {
       status: 204,

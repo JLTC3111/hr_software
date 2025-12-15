@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabaseClient';
+import { isDemoMode } from '../utils/demoHelper';
 
 const edgeUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/record-visit`;
 
@@ -8,8 +9,16 @@ export const logVisit = async () => {
   const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : null;
 
   try {
-    // Get session to include Authorization header
+
+    // Get session to decide whether to call the function
     const { data: { session } } = await supabase.auth.getSession();
+
+    // If there's no logged-in session and we're not in demo mode, skip sending visits
+    if (!session && !isDemoMode()) {
+      console.debug('visitService.logVisit: no session and not demo mode — skipping visit call');
+      return;
+    }
+
     const headers = {
       'Content-Type': 'application/json',
       'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
@@ -20,11 +29,26 @@ export const logVisit = async () => {
       headers['Authorization'] = `Bearer ${session.access_token}`;
     }
 
-    await fetch(edgeUrl, {
+    // If demo mode is active, mark the request so the function can treat it specially
+    if (isDemoMode()) {
+      headers['x-demo-mode'] = '1';
+    }
+
+    // Debug: report whether Authorization header is present (don't log token value)
+    console.debug('visitService.logVisit: sending visit to', edgeUrl, { hasAuthorization: !!headers.Authorization, hasApikey: !!headers.apikey, isDemo: !!headers['x-demo-mode'] });
+
+    const resp = await fetch(edgeUrl, {
       method: 'POST',
       headers,
       body: JSON.stringify({ path, referrer, userAgent }),
     });
+
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '<no-body>');
+      console.warn('visitService.logVisit: record-visit returned', resp.status, text);
+    } else {
+      console.debug('visitService.logVisit: record-visit OK', resp.status);
+    }
   } catch (error) {
     // Silently fail - visit tracking is non-critical
     // 401 errors expected until Edge Function is redeployed with correct env vars
