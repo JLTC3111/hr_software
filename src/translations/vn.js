@@ -1607,6 +1607,11 @@ export default {
     needHelp: 'Cần Trợ Giúp?',
     helpText: 'Xem hướng dẫn để biết chi tiết về cách sử dụng hệ thống.',
     standardAccess: 'Quyền truy cập người dùng tiêu chuẩn',
+    visitAnalytics: 'Phân Tích Lượt Truy Cập',
+    visitAnalyticsDesc: 'Theo dõi và phân tích lượt truy cập vào hệ thống của bạn.',
+    visitAnalyticsSubtitle: 'Theo dõi lượt truy cập, nguồn giới thiệu và trình duyệt',
+    visitAnalyticsTitle: 'Phân Tích Lượt Truy Cập',
+    visitAnalyticsHelp: 'Xem hướng dẫn để biết cách sử dụng phân tích lượt truy cập.',
     visit: {
       total: 'Tổng',
       last24h: '24 giờ qua',
@@ -1692,7 +1697,7 @@ export default {
   // Production Help Center (vi)
   prodHelp: {
     title: 'Hướng Dẫn Sử Dụng',
-    highlight: 'Hướng Dẫn',
+    highlight: 'Hướng',
     subtitle: 'Mẹo Vặt',
     lede: 'Bộ hướng dẫn ngắn gọn dành riêng: phát hành an toàn, duy trì ổn định và phản ứng nhanh khi có sự cố.',
     checklist: 'Danh sách kiểm tra vận hành',
@@ -1733,7 +1738,7 @@ export default {
     },
   },
 
-  // Help Center / Advanced Guide
+  // Demo Help Center
   help: {
     containerLabel: 'Trung Tâm Trợ Giúp',
     title: 'Hướng Dẫn Tính Năng Nâng Cao',

@@ -1382,6 +1382,9 @@ export default {
     needHelp: 'Нужна Помощь?',
     helpText: 'Ознакомьтесь с руководством для получения подробных инструкций по использованию системы.',
     standardAccess: 'Стандартный пользовательский доступ',
+    visitAnalytics: 'Аналитика Посещений',
+    visitAnalyticsDesc: 'Просмотр и анализ посещений системы пользователями',
+    visitAnalyticsSubtitle: 'Отслеживайте посещения, уникальные IP-адреса и рефереры',
     visit: {
       total: 'Всего',
       last24h: 'Последние 24 часа',
@@ -1504,7 +1507,7 @@ export default {
     },
   },
 
-  // Help Center / Advanced Guide
+  // Demo Help Center 
   help: {
     containerLabel: 'Центр справки',
     title: 'Руководство по расширенным функциям',

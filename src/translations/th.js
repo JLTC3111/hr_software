@@ -1411,6 +1411,9 @@ export default {
     needHelp: 'ต้องการความช่วยเหลือ?',
     helpText: 'ดูคู่มือสำหรับคำแนะนำโดยละเอียดเกี่ยวกับการใช้ระบบ',
     standardAccess: 'การเข้าถึงผู้ใช้มาตรฐาน',
+    visitAnalytics: 'การวิเคราะห์การเข้าชม',
+    visitAnalyticsDesc: 'ดูสถิติการเข้าชมเว็บไซต์และข้อมูลผู้ใช้',
+    userManagement: 'การจัดการผู้ใช้',
     visit: {
       total: 'รวมทั้งหมด',
       last24h: '24 ชั่วโมงล่าสุด',
@@ -1493,7 +1496,7 @@ export default {
   // Production Help Center (th)
   prodHelp: {
     title: 'ศูนย์ช่วยเหลือระบบโปรดักชัน',
-    highlight: 'โปรดักชัน',
+    highlight: 'ศูนย์ช่วยเห',
     subtitle: 'เคล็ดลับและเพลย์บุ๊กสำหรับโปรดักชัน',
     lede: 'ชุดคำแนะนำสำหรับโปรดักชันโดยเฉพาะ: การปล่อยระบบอย่างปลอดภัย การรักษาความเสถียร และการตอบสนองอย่างรวดเร็วเมื่อเกิดปัญหา',
     checklist: 'เช็กลิสต์ผู้ดูแลระบบ',
@@ -1534,7 +1537,7 @@ export default {
     },
   },
 
-  // Help Center / Advanced Guide
+  // Demo Help Center 
   help: {
     containerLabel: 'ศูนย์ช่วยเหลือ',
     title: 'คู่มือฟีเจอร์ขั้นสูง',

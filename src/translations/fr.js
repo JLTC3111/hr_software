@@ -1484,6 +1484,9 @@ export default {
     needHelp: 'Besoin d\'Aide?',
     helpText: 'Consultez le manuel pour des instructions détaillées sur l\'utilisation du système.',
     standardAccess: 'Accès utilisateur standard',
+    visitAnalytics: 'Analyse des Visites',
+    visitAnalyticsDesc: 'Voir les statistiques de visite des utilisateurs',
+    userManagement: 'Gestion des Utilisateurs',
     visit: {
       total: 'Total',
       last24h: 'Dernières 24h',
@@ -1563,7 +1566,7 @@ export default {
   // Production Help Center (fr)
   prodHelp: {
     title: 'Centre d’aide à la production',
-    highlight: 'Production',
+    highlight: 'production',
     subtitle: 'Conseils et playbooks de production',
     lede: 'Un ensemble concis de conseils uniquement pour la production : déployer en toute sécurité, maintenir le service et réagir rapidement en cas de problème.',
     checklist: 'Liste de contrôle opérateur',
@@ -1604,7 +1607,7 @@ export default {
     },
   },
 
-  // Help Center / Advanced Guide
+  // Demo Help Center 
   help: {
     containerLabel: 'Centre d\'aide',
     title: 'Guide Avancé des Fonctionnalités',

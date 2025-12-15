@@ -1455,6 +1455,11 @@ login: {
     needHelp: '¿Necesita Ayuda?',
     helpText: 'Consulte el manual para obtener instrucciones detalladas sobre el uso del sistema.',
     standardAccess: 'Acceso de usuario estándar',
+    visitAnalytics: 'Análisis de Visitas',
+    visitAnalyticsDesc: 'Analiza las visitas a la plataforma, incluyendo IPs, referencias y detalles de visitas',
+    visitAnalyticsTitle: 'Análisis de Visitas',
+    visitAnalyticsSubtitle: 'Analiza las visitas a la plataforma',
+    visitAnalyticsLede: 'Obtén información sobre las visitas a la plataforma, incluyendo IPs, referencias y detalles de visitas',
     visit: {
       total: 'Total',
       last24h: 'Últimas 24h',
@@ -1473,7 +1478,7 @@ login: {
       visitSource: 'Fuente de Visita',
       visitBrowser: 'Navegador de Visita',
       visitOs: 'Sistema Operativo de Visita',
-    }
+    },
     roles: {
       admin: 'Admin',
       hrManager: 'Gerente de RRHH',
@@ -1578,7 +1583,7 @@ login: {
     },
   },
 
-  // Help Center / Advanced Guide
+  // Demo Help Center 
   help: {
     containerLabel: 'Centro de Ayuda',
     title: 'Guía Avanzada de Funcionalidades',

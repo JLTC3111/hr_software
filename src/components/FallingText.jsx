@@ -13,7 +13,7 @@ const FallingText = ({
   gravity = 1,
   mouseConstraintStiffness = 0.9,
   fontSize = "1rem",
-  antiGravityDelay = 2500,
+  antiGravityDelay = 1500,
   preFallDelay = 120,
 }) => {
   const containerRef = useRef(null);
@@ -21,17 +21,18 @@ const FallingText = ({
   const canvasContainerRef = useRef(null);
   const antiTimerRef = useRef(null);
   const preFallTimerRef = useRef(null);
-  const returnConstraintsRef = useRef(null);
-  const checkTimerRef = useRef(null);
 
   const [effectStarted, setEffectStarted] = useState(trigger === "auto");
 
   useEffect(() => {
     if (!textRef.current) return;
-    const words = text.split(" ");
+    const words = text.split(/\s+/);
+    const lowerHighlights = (highlightWords || []).map((hw) => (hw || "").toString().toLowerCase());
     const newHTML = words
       .map((word) => {
         const isHighlighted = highlightWords.some((hw) => word.startsWith(hw));
+        // Normalize by stripping leading/trailing punctuation and lowercasing
+        const cleaned = word.replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, "").toLowerCase();
         return `<span class="word ${isHighlighted ? highlightClass : ""}">${word}</span>`;
       })
       .join(" ");
@@ -187,101 +188,28 @@ const FallingText = ({
       });
     }
 
-    // Schedule anti-gravity reversal after delay (pull words upward then return them to original positions)
+    // Schedule anti-gravity reversal after delay (pull words upward)
     if (antiGravityDelay > 0) {
       antiTimerRef.current = setTimeout(() => {
         try {
-          const { Constraint } = Matter;
-
-          // record original positions (based on where we created bodies)
-          // create constraints to pull each body toward its original place
-          const constraints = wordBodies.map(({ body, elem }) => {
-            // calculate original point relative to world (we used body.position when creating)
-            const px = body.position.x;
-            const py = body.position.y;
-            return Constraint.create({
-              pointA: { x: px, y: py },
-              bodyB: body,
-              pointB: { x: 0, y: 0 },
-              length: 0,
-              stiffness: 0.06,
-              damping: 0.1,
-            });
-          });
-          returnConstraintsRef.current = constraints;
-          World.add(engine.world, constraints);
-
-          // invert gravity briefly to create the anti-gravity pull
+          // Set upward gravity to create an anti-gravity pull
           engine.world.gravity.y = -Math.abs(gravity);
+
+          // Compute center target
+          const targetY = height / 2;
+          const targetX = width / 2;
+
+          // Pull each word toward the center of the container
           wordBodies.forEach(({ body }) => {
-            Matter.Body.applyForce(body, body.position, { x: 0, y: -0.02 });
+            const { x, y } = body.position;
+            // velocity toward center (smoothed)
+            const vY = (targetY - y) * 0.3; // negative if below center -> moves up
+            const vX = (targetX - x) * 0.06; // gentle horizontal centering
+            Matter.Body.setVelocity(body, { x: vX, y: vY });
+            Matter.Body.setAngularVelocity(body, 0);
+            // slight reduction in air friction to allow smoother travel
+            body.frictionAir = 0.02;
           });
-
-          // after a short moment, reduce gravity and watch for settling near original points
-          setTimeout(() => {
-            try { engine.world.gravity.y = 0; } catch (err) {}
-
-            // poll to detect when bodies are close to their anchor points
-            checkTimerRef.current = setInterval(() => {
-              try {
-                const allNear = wordBodies.every(({ body }) => {
-                  // find any constraint that anchors this body
-                  const near = constraints.find((c) => c.bodyB === body);
-                  if (!near) return false;
-                  const dx = body.position.x - near.pointA.x;
-                  const dy = body.position.y - near.pointA.y;
-                  return Math.hypot(dx, dy) < 4;
-                });
-                if (allNear) {
-                  // settled: remove constraints, stop physics and restore DOM layout
-                  if (checkTimerRef.current) { clearInterval(checkTimerRef.current); checkTimerRef.current = null; }
-                  if (returnConstraintsRef.current) {
-                    try { World.remove(engine.world, returnConstraintsRef.current); } catch (err) {}
-                    returnConstraintsRef.current = null;
-                  }
-
-                  try { Render.stop(render); Runner.stop(runner); } catch (err) {}
-                  if (render.canvas && canvasContainerRef.current) {
-                    try {
-                      if (render.canvas.parentNode === canvasContainerRef.current) {
-                        canvasContainerRef.current.removeChild(render.canvas);
-                      }
-                    } catch (err) {}
-                  }
-                  try { World.clear(engine.world); Engine.clear(engine); } catch (err) {}
-
-                  // clear inline styles so words flow back into their original positions
-                  wordBodies.forEach(({ elem }) => {
-                    elem.style.position = "";
-                    elem.style.left = "";
-                    elem.style.top = "";
-                    elem.style.transform = "";
-                  });
-                }
-              } catch (err) {}
-            }, 80);
-
-            // fallback: force restore after 3s
-            setTimeout(() => {
-              if (checkTimerRef.current) { clearInterval(checkTimerRef.current); checkTimerRef.current = null; }
-              if (returnConstraintsRef.current) { try { World.remove(engine.world, returnConstraintsRef.current); } catch (err) {} returnConstraintsRef.current = null; }
-              try { Render.stop(render); Runner.stop(runner); } catch (err) {}
-              if (render.canvas && canvasContainerRef.current) {
-                try {
-                  if (render.canvas.parentNode === canvasContainerRef.current) {
-                    canvasContainerRef.current.removeChild(render.canvas);
-                  }
-                } catch (err) {}
-              }
-              try { World.clear(engine.world); Engine.clear(engine); } catch (err) {}
-              wordBodies.forEach(({ elem }) => {
-                elem.style.position = "";
-                elem.style.left = "";
-                elem.style.top = "";
-                elem.style.transform = "";
-              });
-            }, 3000);
-          }, 200);
         } catch (err) {
           // ignore if engine cleared
         }
@@ -304,12 +232,8 @@ const FallingText = ({
       Render.stop(render);
       Runner.stop(runner);
       if (render.canvas && canvasContainerRef.current) {
-        try {
-          // eslint-disable-next-line react-hooks/exhaustive-deps
-          if (render.canvas.parentNode === canvasContainerRef.current) {
-            canvasContainerRef.current.removeChild(render.canvas);
-          }
-        } catch (err) {}
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        canvasContainerRef.current.removeChild(render.canvas);
       }
       World.clear(engine.world);
       Engine.clear(engine);
@@ -319,13 +243,6 @@ const FallingText = ({
       if (preFallTimerRef.current) {
         clearTimeout(preFallTimerRef.current);
       }
-      if (checkTimerRef.current) {
-        clearInterval(checkTimerRef.current);
-      }
-      if (returnConstraintsRef.current) {
-        try { World.remove(engine.world, returnConstraintsRef.current); } catch (err) {}
-        returnConstraintsRef.current = null;
-      }
     };
   }, [
     effectStarted,
@@ -334,7 +251,6 @@ const FallingText = ({
     backgroundColor,
     mouseConstraintStiffness,
     antiGravityDelay,
-    preFallDelay,
   ]);
 
   const handleTrigger = () => {

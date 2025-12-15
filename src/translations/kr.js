@@ -1367,6 +1367,12 @@ export default {
     needHelp: '도움이 필요하신가요?',
     helpText: '시스템 사용에 대한 자세한 지침은 매뉴얼을 확인하세요.',
     standardAccess: '표준 사용자 액세스',
+    visitAnalytics: '방문 분석',
+    visitAnalyticsDesc: '시스템 방문 기록 및 분석',
+    visitAnalyticsSubtitle: '방문 기록, 고유 IP, 리퍼러 및 사용자 에이전트 분석',
+    visitAnalyticsTitle: '방문 기록',
+    visitAnalyticsSubtitle: '시스템 방문 기록 및 분석',
+    visitAnalyticsDesc: '방문 기록, 고유 IP, 리퍼러 및 사용자 에이전트 분석',
     visit: {
       total: '총합',
       last24h: '지난 24시간',
@@ -1488,7 +1494,7 @@ export default {
     },
   },
 
-  // Help Center / Advanced Guide
+  // Demo Help Center 
   help: {
     containerLabel: '도움말 센터',
     title: '고급 기능 가이드',

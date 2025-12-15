@@ -1393,6 +1393,7 @@ export default {
     needHelp: 'ヘルプが必要ですか？',
     helpText: 'システムの使用方法の詳細については、マニュアルをご覧ください。',
     standardAccess: '標準ユーザーアクセス',
+    visitAnalytics: '訪問分析',
     visit: {
       total: '合計',
       last24h: '過去24時間',
@@ -1407,7 +1408,7 @@ export default {
       visitDetails: '訪問詳細',
       visitHistory: '訪問履歴',
       noVisitsFound: '訪問が見つかりません',
-    }
+    },
     roles: {
       admin: '管理者',
       hrManager: 'HR マネージャー',
@@ -1468,7 +1469,7 @@ export default {
     demoRoleOnly: 'この機能はデモモードでのみ利用できます',
   },
 
-  // Production Help Center (ja)
+  // Production Help Center
   prodHelp: {
     title: '本番ヘルプセンター',
     highlight: '本番',
@@ -1512,7 +1513,7 @@ export default {
     },
   },
 
-  // Help Center / Advanced Guide
+  // Demo Help Center 
   help: {
     containerLabel: 'ヘルプセンター',
     title: '高度な機能ガイド',

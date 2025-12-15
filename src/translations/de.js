@@ -1418,6 +1418,10 @@ export default {
     needHelp: 'Brauchen Sie Hilfe?',
     helpText: 'Schauen Sie sich das Handbuch für detaillierte Anweisungen zur Verwendung des Systems an.',
     standardAccess: 'Standard-Benutzerzugriff',
+    visitAnalytics: 'Besuchsanalytik',
+    visitAnalyticsDesc: 'Verfolgen Sie Benutzerbesuche, IP-Adressen und Aktivitäten',
+    visitAnalyticsTitle: 'Besuchsanalytik',
+    visitAnalyticsSubtitle: 'Verfolgen Sie Benutzerbesuche, IP-Adressen und Aktivitäten',
     visit: {
       total: 'Gesamt',
       last24h: 'Letzte 24 Stunden',
@@ -1497,7 +1501,7 @@ export default {
 
   // Production Help Center (de)
   prodHelp: {
-    title: 'Produktions-Hilfezentrum',
+    title: 'Produktions Hilfezentrum',
     highlight: 'Produktion',
     subtitle: 'Produktions-Tipps & Playbooks',
     lede: 'Eine kompakte Sammlung reiner Produktionstipps: sicheres Ausliefern, Stabilität gewährleisten und schnelles Reagieren, wenn etwas schiefläuft.',
@@ -1539,7 +1543,7 @@ export default {
     },
   },
 
-  // Help Center / Advanced Guide
+  // Demo Help Center
   help: {
     containerLabel: 'Hilfezentrum',
     title: 'Erweiterte Funktionsanleitung',
