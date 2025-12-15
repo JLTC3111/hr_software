@@ -83,6 +83,9 @@ const ControlPanel = () => {
   const employeeId = user?.employee_id || user?.employeeId || null;
   const isAdmin = userRole === 'admin' || userRole === 'Admin';
 
+  // Unique gradient id for inline SVG to avoid id collisions
+  const gradIdRef = useRef('grad-' + Math.random().toString(36).slice(2, 9));
+
   // Debug: Monitor showChangePassword state changes
   useEffect(() => {
     // Check both ref and localStorage
@@ -864,8 +867,28 @@ const ControlPanel = () => {
             >
               <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                  <Activity className={`w-4 h-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`} />
-                  <span className="text-sm font-semibold">{t('controlPanel.visitAnalytics', 'Visit analytics')}</span>
+                  <span className="inline-block w-4 h-4" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+                      <defs>
+                        <linearGradient id={gradIdRef.current} x1="0%" y1="0%" x2="100%" y2="0%" gradientUnits="objectBoundingBox">
+                          {/* animate the gradient transform to create a moving band effect */}
+                          <animateTransform
+                            attributeName="gradientTransform"
+                            type="translate"
+                            from="-1 0"
+                            to="1 0"
+                            dur="2.5s"
+                            repeatCount="indefinite"
+                          />
+                          <stop offset="0%" stopColor="#06b6d4" />
+                          <stop offset="50%" stopColor="#7c3aed" />
+                          <stop offset="100%" stopColor="#06b6d4" />
+                        </linearGradient>
+                      </defs>
+                      <path d="M3 12h3l3 8 4-16 3 8h3" fill="none" stroke={`url(#${gradIdRef.current})`} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                  <span className={`text-sm transition-all ${isDarkMode ? 'text-amber-200' : 'text-blue-500'}`}>{t('controlPanel.visitAnalytics', 'Visit analytics')}</span>
                 </div>
                 {loadingVisits && <Loader className="w-4 h-4 animate-spin text-indigo-500" />}
               </div>
@@ -879,15 +902,15 @@ const ControlPanel = () => {
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div>
                     <p className="text-slate-500">{t('controlPanel.visit.total', 'Total')}</p>
-                    <p className="text-sm font-bold">{visitSummary.total}</p>
+                    <p className="text-sm">{visitSummary.total}</p>
                   </div>
                   <div>
                     <p className="text-slate-500">{t('controlPanel.visit.last24h', 'Last 24h')}</p>
-                    <p className="text-sm font-bold">{visitSummary.last24h}</p>
+                    <p className="text-sm">{visitSummary.last24h}</p>
                   </div>
                   <div>
                     <p className="text-slate-500">{t('controlPanel.visit.distinctIps', 'Distinct IPs')}</p>
-                    <p className="text-sm font-bold">{visitSummary.distinctIps}</p>
+                    <p className="text-sm">{visitSummary.distinctIps}</p>
                   </div>
                 </div>
               )}
