@@ -8,12 +8,21 @@ export const logVisit = async () => {
   const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : null;
 
   try {
+    // Get session to include Authorization header
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers = {
+      'Content-Type': 'application/json',
+      'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+    };
+
+    // Add Authorization header if user is logged in
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+
     await fetch(edgeUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-      },
+      headers,
       body: JSON.stringify({ path, referrer, userAgent }),
     });
   } catch (error) {

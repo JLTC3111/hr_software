@@ -7,18 +7,18 @@ const FallingText = ({
   text = '',
   highlightWords = [],
   highlightClass = "highlighted",
-  trigger = "auto",
+  trigger = "hover",
   backgroundColor = "transparent",
   wireframes = false,
   gravity = 1,
-  mouseConstraintStiffness = 0.2,
-  fontSize = "1rem"
+  mouseConstraintStiffness = 0.9,
+  fontSize = "1rem",
 }) => {
   const containerRef = useRef(null);
   const textRef = useRef(null);
   const canvasContainerRef = useRef(null);
 
-  const [effectStarted, setEffectStarted] = useState(false);
+  const [effectStarted, setEffectStarted] = useState(trigger === "click");
 
   useEffect(() => {
     if (!textRef.current) return;
@@ -50,6 +50,7 @@ const FallingText = ({
       observer.observe(containerRef.current);
       return () => observer.disconnect();
     }
+    // For hover and click, effectStarted is set by handleTrigger
   }, [trigger]);
 
   useEffect(() => {
@@ -120,9 +121,9 @@ const FallingText = ({
 
     wordBodies.forEach(({ elem, body }) => {
       elem.style.position = "absolute";
-      elem.style.left = `${body.position.x - body.bounds.max.x + body.bounds.min.x / 2}px`;
-      elem.style.top = `${body.position.y - body.bounds.max.y + body.bounds.min.y / 2}px`;
-      elem.style.transform = "none";
+      elem.style.left = `${body.position.x}px`;
+      elem.style.top = `${body.position.y}px`;
+      elem.style.transform = "translate(-50%, -50%)";
     });
 
     const mouse = Mouse.create(containerRef.current);
@@ -155,7 +156,6 @@ const FallingText = ({
         elem.style.top = `${y}px`;
         elem.style.transform = `translate(-50%, -50%) rotate(${body.angle}rad)`;
       });
-      Matter.Engine.update(engine);
       requestAnimationFrame(updateLoop);
     };
     updateLoop();

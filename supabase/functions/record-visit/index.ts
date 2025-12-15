@@ -6,8 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const supabaseUrl = Deno.env.get("VITE_SUPABASE_URL=https://idkfmgdfzcsydrqnjcla.supabase.co") ?? "";
-const serviceRoleKey = Deno.env.get("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlka2ZtZ2RmemNzeWRycW5qY2xhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3Mzk2NjMsImV4cCI6MjA2NjMxNTY2M30.PDwYk60IZyQqBXlxAdRniroHxF-c211NN4TgY8rAV1M") ?? "";
+const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
 const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
   auth: {
@@ -53,12 +53,31 @@ serve(async (req) => {
 
     const anonIp = anonymizeIp(realIp);
 
+    // Extract user info from Authorization header if present
+    let userId: string | null = null;
+    let userRole: string | null = null;
+    const authHeader = req.headers.get("authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.substring(7);
+      try {
+        const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+        if (user) {
+          userId = user.id;
+          userRole = user.user_metadata?.role || user.app_metadata?.role || null;
+        }
+      } catch (authError) {
+        console.warn("Failed to extract user from token", authError);
+      }
+    }
+
     await supabaseAdmin.from("visits").insert({
       ip: realIp,
       anonymized_ip: anonIp,
       user_agent: ua,
       path,
       referrer,
+      user_id: userId,
+      role: userRole,
     });
 
     return new Response(null, { status: 204, headers: corsHeaders });
