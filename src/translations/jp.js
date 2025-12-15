@@ -1393,6 +1393,21 @@ export default {
     needHelp: 'ヘルプが必要ですか？',
     helpText: 'システムの使用方法の詳細については、マニュアルをご覧ください。',
     standardAccess: '標準ユーザーアクセス',
+    visit: {
+      total: '合計',
+      last24h: '過去24時間',
+      distinctIps: '異なるIP',
+      noVisits: 'まだ訪問は記録されていません。',
+      unknownIp: '不明なIP',
+      ref: 'Ref',
+      userAgent: 'ユーザーエージェント',
+      lastVisit: '最終訪問',
+      firstVisit: '初回訪問',
+      visits: '訪問',
+      visitDetails: '訪問詳細',
+      visitHistory: '訪問履歴',
+      noVisitsFound: '訪問が見つかりません',
+    }
     roles: {
       admin: '管理者',
       hrManager: 'HR マネージャー',

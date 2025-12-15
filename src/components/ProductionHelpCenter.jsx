@@ -84,7 +84,10 @@ const ProductionHelpCenter = ({ isDarkMode: isDarkModeProp = null }) => {
   };
 
   return (
-    <div className={`relative p-6 md:p-8 rounded-2xl shadow-2xl space-y-8 transition-colors ${palette.container}`}>
+    <div
+      aria-label={t('prodHelp.containerLabel', 'Production Help Container')}
+      className={`relative p-6 md:p-8 rounded-2xl shadow-2xl space-y-8 transition-colors ${palette.container}`}
+    >
       <div className={`absolute inset-0 pointer-events-none ${palette.overlay}`} />
       <div className="relative z-10 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -118,7 +121,11 @@ const ProductionHelpCenter = ({ isDarkMode: isDarkModeProp = null }) => {
               <p className="text-xs" style={{ color: palette.textSecondary }}>
                 {t('prodHelp.checklist', 'Operator checklist')}
               </p>
-              <ul className="mt-1 text-sm space-y-1" style={{ color: palette.checklistText }}>
+              <ul
+                aria-label={t('prodHelp.checklistList', 'Operator checklist items')}
+                className="mt-1 text-sm space-y-1"
+                style={{ color: palette.checklistText }}
+              >
                 <li>• {t('prodHelp.item.observability', 'Dashboards & alerts active')}</li>
                 <li>• {t('prodHelp.item.rollbacks', 'Rollback plan tested')}</li>
                 <li>• {t('prodHelp.item.backups', 'Backups verified')}</li>
@@ -135,10 +142,11 @@ const ProductionHelpCenter = ({ isDarkMode: isDarkModeProp = null }) => {
                 initial={{ opacity: 0, y: 8, scale: 0.99 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ delay: idx * 0.05, duration: 0.25 }}
+                aria-label={t(`prodHelp.${tip.id}.cardLabel`, tip.titleDefault)}
                 className={`p-4 border rounded-lg backdrop-blur-sm transition-all hover:shadow-lg hover:-translate-y-0.5 ${palette.cardBg} ${palette.cardBorder}`}
               >
                 <div className="flex items-center mb-2 space-x-3">
-                  <Icon name={tip.icon} className="h-6 w-6" aria-hidden="true" style={{ color: palette.icon }} />
+                  <Icon name={tip.icon} className="h-6 w-6" aria-hidden="true" title={t(`prodHelp.${tip.id}.iconTitle`, tip.titleDefault)} style={{ color: palette.icon }} />
                   <h3 className="text-lg font-bold" style={{ color: palette.textPrimary }}>
                     {t(tip.titleKey, tip.titleDefault)}
                   </h3>
@@ -146,7 +154,7 @@ const ProductionHelpCenter = ({ isDarkMode: isDarkModeProp = null }) => {
                 <p className="text-sm" style={{ color: palette.textSecondary }}>
                   {t(tip.descriptionKey, tip.descriptionDefault)}
                 </p>
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap gap-2" aria-label={t(`prodHelp.${tip.id}.tagsLabel`, 'Tags')}>
                   {tip.tags.map((tag) => (
                     <span
                       key={tag}
@@ -156,6 +164,7 @@ const ProductionHelpCenter = ({ isDarkMode: isDarkModeProp = null }) => {
                         color: palette.chipText,
                         border: isDarkMode ? '1px solid #0ea5e9' : '1px solid #7dd3fc'
                       }}
+                      aria-label={t(`prodHelp.tags.${tag}`, tag)}
                     >
                       <LucideIcons.Hash className="h-3 w-3" aria-hidden="true" />
                       {t(`prodHelp.tags.${tag}`, tag)}

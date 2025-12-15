@@ -540,7 +540,6 @@ const ControlPanel = () => {
   };
 
   const openManual = () => {
-    // In demo, route to AdvancedHelpCenter; in production, route to ProductionHelpCenter
     navigate(isDemoMode() ? '/help-center' : '/production-help');
   };
 
@@ -562,8 +561,7 @@ const ControlPanel = () => {
     setUploadingAvatar(true);
 
     try {
-      // For now, convert to base64 data URL instead of using storage
-      // This avoids the storage bucket requirement
+      // For now, convert to base64 data URL and store directly in profile
       const reader = new FileReader();
       
       reader.onloadend = async () => {
@@ -865,9 +863,9 @@ const ControlPanel = () => {
               }}
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2">
                   <Activity className={`w-4 h-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`} />
-                  <span className="text-sm font-semibold">Visit analytics</span>
+                  <span className="text-sm font-semibold">{t('controlPanel.visitAnalytics', 'Visit analytics')}</span>
                 </div>
                 {loadingVisits && <Loader className="w-4 h-4 animate-spin text-indigo-500" />}
               </div>
@@ -880,15 +878,15 @@ const ControlPanel = () => {
               ) : (
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div>
-                    <p className="text-slate-500">Total</p>
+                    <p className="text-slate-500">{t('controlPanel.visit.total', 'Total')}</p>
                     <p className="text-sm font-bold">{visitSummary.total}</p>
                   </div>
                   <div>
-                    <p className="text-slate-500">Last 24h</p>
+                    <p className="text-slate-500">{t('controlPanel.visit.last24h', 'Last 24h')}</p>
                     <p className="text-sm font-bold">{visitSummary.last24h}</p>
                   </div>
                   <div>
-                    <p className="text-slate-500">Distinct IPs</p>
+                    <p className="text-slate-500">{t('controlPanel.visit.distinctIps', 'Distinct IPs')}</p>
                     <p className="text-sm font-bold">{visitSummary.distinctIps}</p>
                   </div>
                 </div>
@@ -896,16 +894,16 @@ const ControlPanel = () => {
 
               <div className="space-y-1 max-h-48 overflow-auto text-xs">
                 {visitSummary.recent?.length === 0 && !visitError && (
-                  <p className="text-slate-500">No visits logged yet.</p>
+                  <p className="text-slate-500">{t('controlPanel.visit.noVisits', 'No visits logged yet.')}</p>
                 )}
                 {visitSummary.recent?.map((row) => (
                   <div key={row.id} className="p-2 rounded border" style={{ borderColor: isDarkMode ? '#1f2937' : '#e2e8f0' }}>
                     <div className="flex justify-between">
-                      <span className="font-semibold">{row.ip || 'unknown IP'}</span>
+                      <span className="font-semibold">{row.ip || t('controlPanel.visit.unknownIp', 'unknown IP')}</span>
                       <span className="text-slate-500">{new Date(row.created_at).toLocaleString()}</span>
                     </div>
                     <p className="text-slate-500 truncate">{row.path || '/'}</p>
-                    {row.referrer && <p className="text-slate-500 truncate">Ref: {row.referrer}</p>}
+                    {row.referrer && <p className="text-slate-500 truncate">{t('controlPanel.visit.ref', 'Ref')}: {row.referrer}</p>}
                   </div>
                 ))}
               </div>

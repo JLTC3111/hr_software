@@ -1529,6 +1529,15 @@ export default {
     errorFetchingEmployees: 'Error loading employees',
     noEmployeesFound: 'No employees found',
     manageEmails: 'Manage User Emails',
+    visitAnalytics: 'Visit analytics',
+    visit: {
+      total: 'Total',
+      last24h: 'Last 24h',
+      distinctIps: 'Distinct IPs',
+      noVisits: 'No visits logged yet.',
+      unknownIp: 'unknown IP',
+      ref: 'Ref'
+    },
     changeOwnPassword: 'Change Own Password',
     resetOtherUserPassword: 'Reset Other Employee Password',
     resetEmployeeTablePassword: 'Reset Employee Table Password',
