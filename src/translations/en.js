@@ -1536,7 +1536,9 @@ export default {
       distinctIps: 'Distinct IPs',
       noVisits: 'No visits logged yet.',
       unknownIp: 'unknown IP',
-      ref: 'Ref'
+      ref: 'Ref',
+      demoCount: 'Demo Counts',
+      authorized: 'Authorised Sessions',
     },
     changeOwnPassword: 'Change Own Password',
     resetOtherUserPassword: 'Reset Other Employee Password',

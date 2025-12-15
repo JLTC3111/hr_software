@@ -1423,6 +1423,11 @@ export default {
     visitAnalyticsTitle: 'Besuchsanalytik',
     visitAnalyticsSubtitle: 'Verfolgen Sie Benutzerbesuche, IP-Adressen und Aktivitäten',
     visit: {
+      demoCount: 'Im Demo-Modus werden Besuche nicht verfolgt.',
+      totalVisits: 'Gesamtbesuche',
+      uniqueVisitors: 'Eindeutige Besucher',
+      authorized: 'Autorisierte Besuche',
+      unauthorized: 'Nicht autorisierte Besuche',
       total: 'Gesamt',
       last24h: 'Letzte 24 Stunden',
       distinctIps: 'Eindeutige IPs',

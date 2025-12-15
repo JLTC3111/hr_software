@@ -1386,6 +1386,12 @@ export default {
     visitAnalyticsDesc: 'Просмотр и анализ посещений системы пользователями',
     visitAnalyticsSubtitle: 'Отслеживайте посещения, уникальные IP-адреса и рефереры',
     visit: {
+      demoCount: 'Демо-посещения',
+      totalCount: 'Всего посещений',
+      uniqueIps: 'Уникальные IP-адреса',
+      authorized: 'Авторизованные посещения',
+      unauthorized: 'Неавторизованные посещения',
+      visitStatistics: 'Статистика посещений',
       total: 'Всего',
       last24h: 'Последние 24 часа',
       distinctIps: 'Уникальные IP',

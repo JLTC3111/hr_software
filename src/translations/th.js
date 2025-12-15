@@ -1415,6 +1415,10 @@ export default {
     visitAnalyticsDesc: 'ดูสถิติการเข้าชมเว็บไซต์และข้อมูลผู้ใช้',
     userManagement: 'การจัดการผู้ใช้',
     visit: {
+      demoCount: 'การเข้าชมสาธิต: {count}',
+      totalCount: 'การเข้าชมทั้งหมด: {count}',
+      authorized: 'ผู้ใช้ที่ได้รับอนุญาต',
+      unauthorized: 'ผู้ใช้ที่ไม่ได้รับอนุญาต',
       total: 'รวมทั้งหมด',
       last24h: '24 ชั่วโมงล่าสุด',
       distinctIps: 'ไอพีที่แตกต่าง',

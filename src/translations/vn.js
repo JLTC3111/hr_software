@@ -1613,6 +1613,8 @@ export default {
     visitAnalyticsTitle: 'Phân Tích Lượt Truy Cập',
     visitAnalyticsHelp: 'Xem hướng dẫn để biết cách sử dụng phân tích lượt truy cập.',
     visit: {
+      demoCount: 'Lượt Truy Cập Demo',
+      authorized: 'Đăng Nhập Uỷ Quyền',
       total: 'Tổng',
       last24h: '24 giờ qua',
       distinctIps: 'IP riêng biệt',

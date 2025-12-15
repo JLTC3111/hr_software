@@ -78,11 +78,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storageKey: 'sb-auth-token',
     flowType: 'pkce' // Use PKCE flow for better security
   },
-  global: {
+    global: {
     headers: {
       'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation'
+      'Content-Type': 'application/json'
     },
     fetch: async (url, options = {}) => {
       // Add timeout to all fetch requests to prevent hanging

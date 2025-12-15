@@ -1395,6 +1395,9 @@ export default {
     standardAccess: '標準ユーザーアクセス',
     visitAnalytics: '訪問分析',
     visit: {
+      demoCount: 'デモ訪問数',
+      totalCount: '総訪問数',
+      authorized: '認証済み訪問数',  
       total: '合計',
       last24h: '過去24時間',
       distinctIps: '異なるIP',

@@ -1461,6 +1461,12 @@ login: {
     visitAnalyticsSubtitle: 'Analiza las visitas a la plataforma',
     visitAnalyticsLede: 'Obtén información sobre las visitas a la plataforma, incluyendo IPs, referencias y detalles de visitas',
     visit: {
+      demoCount: 'Conteo de visitas de demostración',
+      authorized: 'Autorizado',
+      unauthorized: 'No autorizado',
+      ipAddress: 'Dirección IP',
+      country: 'País',
+      city: 'Ciudad',
       total: 'Total',
       last24h: 'Últimas 24h',
       distinctIps: 'IPs distintas',

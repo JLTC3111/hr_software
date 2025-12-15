@@ -11,6 +11,7 @@ import { Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, TaskLi
 import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
 import { logVisit } from './services/visitService';
+import { isDemoMode } from './utils/demoHelper';
 
 const Applications = [
   {
@@ -255,10 +256,12 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
   const { isAuthenticated } = useAuth();
   const { currentLanguage } = useLanguage();
 
-  // Record a visit once per app render
+  // Record a visit when auth state becomes available (or when in demo mode)
   useEffect(() => {
-    logVisit();
-  }, []);
+    if (isAuthenticated || isDemoMode()) {
+      logVisit();
+    }
+  }, [isAuthenticated]);
 
   // Show loading state while fetching data
   if (loading && isAuthenticated) {

@@ -1374,6 +1374,11 @@ export default {
     visitAnalyticsSubtitle: '시스템 방문 기록 및 분석',
     visitAnalyticsDesc: '방문 기록, 고유 IP, 리퍼러 및 사용자 에이전트 분석',
     visit: {
+      demoCount: '데모 방문 횟수',
+      totalCount: '총 방문 횟수',
+      authorized: '인증된 방문 횟수',
+      unauthorized: '비인증 방문 횟수',
+      accessDenied: '접근 거부된 방문 횟수',
       total: '총합',
       last24h: '지난 24시간',
       distinctIps: '고유 IP',
