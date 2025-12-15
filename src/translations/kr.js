@@ -1427,6 +1427,50 @@ export default {
     demoRoleOnly: '이 기능은 데모 모드에서만 사용할 수 있습니다',
   },
 
+  // Production Help Center (ko)
+  prodHelp: {
+    title: '프로덕션 도움말 센터',
+    highlight: '프로덕션',
+    subtitle: '프로덕션 팁 및 플레이북',
+    lede: '안전한 배포, 안정적인 운영, 문제가 발생했을 때 빠른 대응을 위한 프로덕션 전용 간결한 팁 모음입니다.',
+    checklist: '운영자 체크리스트',
+    cards: '프로덕션 가이드',
+    item: {
+      observability: '대시보드 및 알림 활성화',
+      rollbacks: '롤백 계획 검증 완료',
+      backups: '백업 확인 완료',
+    },
+    observability: {
+      title: '관측 가능성: 로그, 메트릭, 트레이스',
+      description: '에러 버짓, 구조화된 로그, 95/99 지연 시간 대시보드 및 프로덕션용 트레이스 샘플링을 보장합니다.',
+    },
+    rollouts: {
+      title: '안전한 롤아웃 및 기능 플래그',
+      description: '헬스 체크, 롤백 플레이북, 위험한 코드 경로를 빠르게 비활성화할 수 있는 플래그를 사용한 점진적 배포를 활용하세요.',
+    },
+    security: {
+      title: '보안 및 시크릿 위생',
+      description: '키를 주기적으로 교체하고, 최소 권한을 적용하며, 감사 로그를 활성화하고 관리자 역할에 MFA를 요구하세요.',
+    },
+    performance: {
+      title: '성능 예산',
+      description: '콜드 스타트 및 핫 패스 시간을 추적하고 API 지연, SQL 쿼리, 프론트엔드 TTI에 대한 예산을 설정하세요.',
+    },
+    resilience: {
+      title: '백업 및 복원력',
+      description: '자동 백업, DR 전략, 속도 제한 및 다운스트림 의존성을 위한 서킷 브레이커를 검증하세요.',
+    },
+    tags: {
+      reliability: '신뢰성',
+      metrics: '메트릭',
+      release: '릴리스',
+      safety: '안전',
+      security: '보안',
+      performance: '성능',
+      resilience: '복원력',
+    },
+  },
+
   // Help Center / Advanced Guide
   help: {
     containerLabel: '도움말 센터',

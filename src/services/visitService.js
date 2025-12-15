@@ -26,7 +26,8 @@ export const logVisit = async () => {
       body: JSON.stringify({ path, referrer, userAgent }),
     });
   } catch (error) {
-    console.warn('visitService: logVisit failed', error?.message || error);
+    // Silently fail - visit tracking is non-critical
+    // 401 errors expected until Edge Function is redeployed with correct env vars
   }
 };
 

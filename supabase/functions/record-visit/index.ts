@@ -6,8 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const supabaseUrl = Deno.env.get("https://idkfmgdfzcsydrqnjcla.supabase.co") ?? "";
+const serviceRoleKey = Deno.env.get("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlka2ZtZ2RmemNzeWRycW5qY2xhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3Mzk2NjMsImV4cCI6MjA2NjMxNTY2M30.PDwYk60IZyQqBXlxAdRniroHxF-c211NN4TgY8rAV1M") ?? "";
 
 const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
   auth: {

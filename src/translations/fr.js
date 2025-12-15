@@ -1543,6 +1543,50 @@ export default {
     switchToDemoAdmin: 'Passer à l’administrateur démo',
     demoRoleOnly: 'Cette fonctionnalité est uniquement disponible en mode démo',
   },
+  
+  // Production Help Center (fr)
+  prodHelp: {
+    title: 'Centre d’aide à la production',
+    highlight: 'Production',
+    subtitle: 'Conseils et playbooks de production',
+    lede: 'Un ensemble concis de conseils uniquement pour la production : déployer en toute sécurité, maintenir le service et réagir rapidement en cas de problème.',
+    checklist: 'Liste de contrôle opérateur',
+    cards: 'Guides de production',
+    item: {
+      observability: 'Tableaux de bord et alertes actifs',
+      rollbacks: 'Plan de rollback testé',
+      backups: 'Sauvegardes vérifiées',
+    },
+    observability: {
+      title: 'Observabilité : logs, métriques, traces',
+      description: 'Garantir les budgets d’erreur, des logs structurés, des tableaux de latence 95e/99e percentile et un échantillonnage de traces adapté à la production.',
+    },
+    rollouts: {
+      title: 'Déploiements sûrs et feature flags',
+      description: 'Utilisez des déploiements progressifs avec des contrôles de santé, des playbooks de rollback et des flags pour désactiver rapidement les chemins risqués.',
+    },
+    security: {
+      title: 'Sécurité et hygiène des secrets',
+      description: 'Faites tourner les clés, appliquez le moindre privilège, activez l’audit et exigez le MFA pour les rôles administrateurs.',
+    },
+    performance: {
+      title: 'Budgets de performance',
+      description: 'Suivez les temps de cold start et de hot path. Définissez des budgets pour la latence API, les requêtes SQL et le TTI frontend.',
+    },
+    resilience: {
+      title: 'Sauvegardes et résilience',
+      description: 'Vérifiez les sauvegardes automatisées, la stratégie de reprise après sinistre, le rate limiting et les circuit breakers.',
+    },
+    tags: {
+      reliability: 'fiabilité',
+      metrics: 'métriques',
+      release: 'déploiement',
+      safety: 'sécurité',
+      security: 'sécurité',
+      performance: 'performance',
+      resilience: 'résilience',
+    },
+  },
 
   // Help Center / Advanced Guide
   help: {

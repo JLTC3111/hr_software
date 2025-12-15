@@ -54,7 +54,7 @@ const PRODUCTION_TIPS = [
     titleDefault: 'Backups & resilience',
     descriptionKey: 'prodHelp.resilience.description',
     descriptionDefault: 'Verify automated backups, DR strategy, rate limiting, and circuit breakers for downstream dependencies.',
-    icon: 'Shield',
+    icon: 'DatabaseBackup',
     tags: ['resilience'],
   },
 ];
@@ -84,7 +84,7 @@ const ProductionHelpCenter = ({ isDarkMode: isDarkModeProp = null }) => {
   };
 
   return (
-    <div className={`relative overflow-hidden p-6 md:p-8 rounded-2xl shadow-2xl space-y-8 transition-colors ${palette.container}`}>
+    <div className={`relative p-6 md:p-8 rounded-2xl shadow-2xl space-y-8 transition-colors ${palette.container}`}>
       <div className={`absolute inset-0 pointer-events-none ${palette.overlay}`} />
 
       <div className="relative z-10 space-y-6">
@@ -101,6 +101,7 @@ const ProductionHelpCenter = ({ isDarkMode: isDarkModeProp = null }) => {
               fontSize="2.4rem"
               className="h-48 md:h-28"
               trigger="hover"
+              resetDuration={5000}
             />
             <p className="text-sm mt-2 max-w-3xl" style={{ color: palette.textSecondary }}>
               {t('prodHelp.lede', 'A concise set of production-only tips: shipping safely, keeping the lights on, and reacting fast when things go sideways.')}

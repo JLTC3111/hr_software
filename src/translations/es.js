@@ -1515,6 +1515,50 @@ login: {
     demoRoleOnly: 'Esta función solo está disponible en modo demo',
   },
 
+  // Production Help Center (es)
+  prodHelp: {
+    title: 'Centro de Ayuda de Producción',
+    highlight: 'Producción',
+    subtitle: 'Consejos y playbooks de producción',
+    lede: 'Un conjunto conciso de consejos solo para producción: despliegues seguros, mantener el servicio activo y reaccionar rápido cuando algo sale mal.',
+    checklist: 'Lista de verificación del operador',
+    cards: 'Guías de producción',
+    item: {
+      observability: 'Paneles y alertas activos',
+      rollbacks: 'Plan de rollback probado',
+      backups: 'Copias de seguridad verificadas',
+    },
+    observability: {
+      title: 'Observabilidad: logs, métricas, trazas',
+      description: 'Asegura presupuestos de error, logs estructurados, paneles de latencia 95/99 y muestreo de trazas ajustado para producción.',
+    },
+    rollouts: {
+      title: 'Despliegues seguros y feature flags',
+      description: 'Usa despliegues graduales con health checks, playbooks de rollback y flags para desactivar rutas de código riesgosas rápidamente.',
+    },
+    security: {
+      title: 'Seguridad e higiene de secretos',
+      description: 'Rota claves, aplica mínimo privilegio, habilita auditoría y requiere MFA para roles administrativos.',
+    },
+    performance: {
+      title: 'Presupuestos de rendimiento',
+      description: 'Controla tiempos de cold start y hot path. Define presupuestos para latencia de API, consultas SQL y TTI del frontend.',
+    },
+    resilience: {
+      title: 'Backups y resiliencia',
+      description: 'Verifica backups automáticos, estrategia de DR, limitación de tasa y circuit breakers para dependencias externas.',
+    },
+    tags: {
+      reliability: 'confiabilidad',
+      metrics: 'métricas',
+      release: 'lanzamiento',
+      safety: 'seguridad',
+      security: 'seguridad',
+      performance: 'rendimiento',
+      resilience: 'resiliencia',
+    },
+  },
+
   // Help Center / Advanced Guide
   help: {
     containerLabel: 'Centro de Ayuda',

@@ -1667,6 +1667,50 @@ export default {
     demoRoleOnly: 'Tính năng này chỉ khả dụng ở chế độ demo',
   },
 
+  // Production Help Center (vi)
+  prodHelp: {
+    title: 'Hướng Dẫn Sử Dụng',
+    highlight: 'Hướng Dẫn',
+    subtitle: 'Mẹo Vặt',
+    lede: 'Bộ hướng dẫn ngắn gọn dành riêng: phát hành an toàn, duy trì ổn định và phản ứng nhanh khi có sự cố.',
+    checklist: 'Danh sách kiểm tra vận hành',
+    cards: 'Hướng dẫn',
+    item: {
+      observability: 'Bảng điều khiển và cảnh báo đang hoạt động',
+      rollbacks: 'Kế hoạch rollback đã được kiểm thử',
+      backups: 'Sao lưu đã được xác minh',
+    },
+    observability: {
+      title: 'Khả năng quan sát: log, metric, trace',
+      description: 'Đảm bảo ngân sách lỗi, log có cấu trúc, bảng điều khiển độ trễ 95/99 và lấy mẫu trace phù hợp cho production.',
+    },
+    rollouts: {
+      title: 'Triển khai an toàn và feature flag',
+      description: 'Sử dụng triển khai dần dần với health check, playbook rollback và flag để nhanh chóng vô hiệu hóa các đường dẫn mã rủi ro.',
+    },
+    security: {
+      title: 'Bảo mật và quản lý bí mật',
+      description: 'Xoay vòng khóa, áp dụng đặc quyền tối thiểu, bật audit log và yêu cầu MFA cho vai trò quản trị.',
+    },
+    performance: {
+      title: 'Ngân sách hiệu năng',
+      description: 'Theo dõi thời gian cold start và hot path. Đặt ngân sách cho độ trễ API, truy vấn SQL và TTI frontend.',
+    },
+    resilience: {
+      title: 'Sao lưu và khả năng phục hồi',
+      description: 'Xác minh sao lưu tự động, chiến lược DR, giới hạn tốc độ và circuit breaker cho các phụ thuộc phía dưới.',
+    },
+    tags: {
+      reliability: 'độ tin cậy',
+      metrics: 'chỉ số',
+      release: 'phát hành',
+      safety: 'an toàn',
+      security: 'bảo mật',
+      performance: 'hiệu năng',
+      resilience: 'khả năng phục hồi',
+    },
+  },
+
   // Help Center / Advanced Guide
   help: {
     containerLabel: 'Trung Tâm Trợ Giúp',

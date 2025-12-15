@@ -1478,6 +1478,50 @@ export default {
     demoRoleOnly: 'Diese Funktion ist nur im Demo-Modus verfügbar',
   },
 
+  // Production Help Center (de)
+  prodHelp: {
+    title: 'Produktions-Hilfezentrum',
+    highlight: 'Produktion',
+    subtitle: 'Produktions-Tipps & Playbooks',
+    lede: 'Eine kompakte Sammlung reiner Produktionstipps: sicheres Ausliefern, Stabilität gewährleisten und schnelles Reagieren, wenn etwas schiefläuft.',
+    checklist: 'Checkliste für Operatoren',
+    cards: 'Produktionsleitfäden',
+    item: {
+      observability: 'Dashboards & Warnmeldungen aktiv',
+      rollbacks: 'Rollback-Plan getestet',
+      backups: 'Backups überprüft',
+    },
+    observability: {
+      title: 'Observability: Logs, Metriken, Traces',
+      description: 'Stelle Fehlerbudgets, strukturierte Logs, 95./99.-Perzentil-Latenz-Dashboards und Trace-Sampling für die Produktion sicher.',
+    },
+    rollouts: {
+      title: 'Sichere Rollouts & Feature-Flags',
+      description: 'Nutze schrittweise Rollouts mit Health-Checks, Rollback-Playbooks und Flags, um riskante Codepfade schnell zu deaktivieren.',
+    },
+    security: {
+      title: 'Sicherheit & Geheimnis-Hygiene',
+      description: 'Rotiere Schlüssel, setze Least Privilege durch, aktiviere Audit-Logs und verlange MFA für Admin-Rollen.',
+    },
+    performance: {
+      title: 'Performance-Budgets',
+      description: 'Überwache Cold-Start- und Hot-Path-Zeiten. Setze Budgets für API-Latenz, SQL-Abfragen und Frontend-TTI.',
+    },
+    resilience: {
+      title: 'Backups & Resilienz',
+      description: 'Überprüfe automatische Backups, DR-Strategie, Rate-Limiting und Circuit Breaker für nachgelagerte Abhängigkeiten.',
+    },
+    tags: {
+      reliability: 'Zuverlässigkeit',
+      metrics: 'Metriken',
+      release: 'Release',
+      safety: 'Sicherheit',
+      security: 'Security',
+      performance: 'Performance',
+      resilience: 'Resilienz',
+    },
+  },
+
   // Help Center / Advanced Guide
   help: {
     containerLabel: 'Hilfezentrum',

@@ -226,8 +226,9 @@ const HRManagementApp = () => {
     <LanguageProvider>
       <ThemeProvider>
         <UploadProvider>
-          <AppContent 
-            employees={employees}
+          <NotificationProvider>
+            <AppContent 
+              employees={employees}
               applications={applications}
               selectedEmployee={selectedEmployee}
               isEditMode={isEditMode}
@@ -242,9 +243,10 @@ const HRManagementApp = () => {
               isMobileMenuOpen={isMobileMenuOpen}
               setIsMobileMenuOpen={setIsMobileMenuOpen}
             />
-          </UploadProvider>
-        </ThemeProvider>
-      </LanguageProvider>
+          </NotificationProvider>
+        </UploadProvider>
+      </ThemeProvider>
+    </LanguageProvider>
   );
 };
 
@@ -288,13 +290,12 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
   }
 
   return (
-    <NotificationProvider>
-      <Router>
-        <Routes>
-          {/* Public Route - Login */}
-          <Route path="/login" element={
-            isAuthenticated ? <Navigate to="/time-clock" replace /> : <Login />
-          } />
+    <Router>
+      <Routes>
+        {/* Public Route - Login */}
+        <Route path="/login" element={
+          isAuthenticated ? <Navigate to="/time-clock" replace /> : <Login />
+        } />
           
           {/* Private Route - Login first) */}
           <Route path="/flubber-test" element={<FlubberIconTest />} />
@@ -404,7 +405,6 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
         } />
       </Routes>
     </Router>
-    </NotificationProvider>
   );
 };
 

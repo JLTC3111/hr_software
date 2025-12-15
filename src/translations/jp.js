@@ -1453,6 +1453,50 @@ export default {
     demoRoleOnly: 'この機能はデモモードでのみ利用できます',
   },
 
+  // Production Help Center (ja)
+  prodHelp: {
+    title: '本番ヘルプセンター',
+    highlight: '本番',
+    subtitle: '本番向けのヒントとプレイブック',
+    lede: '安全なリリース、安定運用、問題発生時の迅速な対応に焦点を当てた、本番専用の簡潔なヒント集です。',
+    checklist: '運用者チェックリスト',
+    cards: '本番運用ガイダンス',
+    item: {
+      observability: 'ダッシュボードとアラートが有効',
+      rollbacks: 'ロールバック計画を検証済み',
+      backups: 'バックアップを確認済み',
+    },
+    observability: {
+      title: '可観測性：ログ、メトリクス、トレース',
+      description: 'エラーバジェット、構造化ログ、95/99パーセンタイルのレイテンシダッシュボード、トレースサンプリングを本番向けに最適化します。',
+    },
+    rollouts: {
+      title: '安全なロールアウトとフィーチャーフラグ',
+      description: 'ヘルスチェック、ロールバック用プレイブック、リスクの高いコードパスを素早く無効化できるフラグを使って段階的に展開します。',
+    },
+    security: {
+      title: 'セキュリティとシークレット管理',
+      description: 'キーのローテーション、最小権限の適用、監査ログの有効化、管理者ロールへのMFA必須化を行います。',
+    },
+    performance: {
+      title: 'パフォーマンスバジェット',
+      description: 'コールドスタートとホットパスの時間を追跡し、APIレイテンシ、SQLクエリ、フロントエンドTTIの予算を設定します。',
+    },
+    resilience: {
+      title: 'バックアップと耐障害性',
+      description: '自動バックアップ、DR戦略、レート制限、下流依存関係向けのサーキットブレーカーを確認します。',
+    },
+    tags: {
+      reliability: '信頼性',
+      metrics: 'メトリクス',
+      release: 'リリース',
+      safety: '安全性',
+      security: 'セキュリティ',
+      performance: 'パフォーマンス',
+      resilience: '耐障害性',
+    },
+  },
+
   // Help Center / Advanced Guide
   help: {
     containerLabel: 'ヘルプセンター',

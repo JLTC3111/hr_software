@@ -85,6 +85,50 @@ export default {
     settings: 'SETTINGS',
   },
 
+  // Production Help Center
+  prodHelp: {
+    title: 'Production Help Center',
+    highlight: 'Production',
+    subtitle: 'Production tips & playbooks',
+    lede: 'A concise set of production-only tips: shipping safely, keeping the lights on, and reacting fast when things go sideways.',
+    checklist: 'Operator checklist',
+    cards: 'Production guidance',
+    item: {
+      observability: 'Dashboards & alerts active',
+      rollbacks: 'Rollback plan tested',
+      backups: 'Backups verified',
+    },
+    observability: {
+      title: 'Observability: logs, metrics, traces',
+      description: 'Ensure error budgets, structured logs, 95th/99th latency dashboards, and trace sampling tuned for prod.',
+    },
+    rollouts: {
+      title: 'Safe rollouts & feature flags',
+      description: 'Use gradual rollouts with health checks, rollback playbooks, and flags to disable risky code paths quickly.',
+    },
+    security: {
+      title: 'Security & secrets hygiene',
+      description: 'Rotate keys, enforce least privilege, enable audit logging, and require MFA for admin roles.',
+    },
+    performance: {
+      title: 'Performance budgets',
+      description: 'Track cold-start and hot-path timings. Set budgets for API latency, SQL queries, and frontend TTI.',
+    },
+    resilience: {
+      title: 'Backups & resilience',
+      description: 'Verify automated backups, DR strategy, rate limiting, and circuit breakers for downstream dependencies.',
+    },
+    tags: {
+      reliability: 'reliability',
+      metrics: 'metrics',
+      release: 'release',
+      safety: 'safety',
+      security: 'security',
+      performance: 'performance',
+      resilience: 'resilience',
+    },
+  },
+
   // Dashboard
   dashboard: {
     regularAndOvertimeByEmployee: 'Regular & Overtime by Employee',

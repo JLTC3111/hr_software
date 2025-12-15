@@ -13,12 +13,14 @@ const FallingText = ({
   gravity = 1,
   mouseConstraintStiffness = 0.9,
   fontSize = "1rem",
+  resetDuration = 5000, // Time in ms before auto-resetting (0 = no auto-reset)
 }) => {
   const containerRef = useRef(null);
   const textRef = useRef(null);
   const canvasContainerRef = useRef(null);
+  const resetTimerRef = useRef(null);
 
-  const [effectStarted, setEffectStarted] = useState(trigger === "click");
+  const [effectStarted, setEffectStarted] = useState(trigger === "auto");
 
   useEffect(() => {
     if (!textRef.current) return;
@@ -55,6 +57,19 @@ const FallingText = ({
 
   useEffect(() => {
     if (!effectStarted) return;
+
+    // Clear any existing reset timer
+    if (resetTimerRef.current) {
+      clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = null;
+    }
+
+    // Schedule auto-reset if configured
+    if (resetDuration > 0 && trigger !== "auto") {
+      resetTimerRef.current = setTimeout(() => {
+        setEffectStarted(false);
+      }, resetDuration);
+    }
 
     const {
       Engine,
@@ -169,6 +184,9 @@ const FallingText = ({
       }
       World.clear(engine.world);
       Engine.clear(engine);
+      if (resetTimerRef.current) {
+        clearTimeout(resetTimerRef.current);
+      }
     };
   }, [
     effectStarted,
@@ -179,8 +197,9 @@ const FallingText = ({
   ]);
 
   const handleTrigger = () => {
-    if (!effectStarted && (trigger === "click" || trigger === "hover")) {
-      setEffectStarted(true);
+    if (trigger === "click" || trigger === "hover") {
+      // Toggle effect: start if not started, reset if already started
+      setEffectStarted(!effectStarted);
     }
   };
 
