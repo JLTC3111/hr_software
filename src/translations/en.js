@@ -1548,6 +1548,104 @@ export default {
     demoRoleOnly: 'This feature is only available in demo mode',
   },
 
+  // Production Help Center (de)
+  prodHelp: {
+    title: 'Production Help Center',
+    highlight: 'Production',
+    subtitle: 'Production Tips & Playbooks',
+    lede: 'A compact collection of pure production tips: safe delivery, ensuring stability, and quick response when something goes wrong.',
+    checklist: 'Operator Checklist',
+    cards: 'Production Guides',
+    item: {
+      observability: 'Dashboards & Alerts Active',
+      rollbacks: 'Rollback Plan Tested',
+      backups: 'Backups Verified',
+    },
+    observability: {
+      title: 'Observability: Logs, Metrics, Traces',
+      description: 'Ensure error budgets, structured logs, 95th/99th percentile latency dashboards, and trace sampling for production.',
+    },
+    rollouts: {
+      title: 'Safe Rollouts & Feature Flags',
+      description: 'Use gradual rollouts with health checks, rollback playbooks, and flags to quickly disable risky code paths.',
+    },
+    security: {
+      title: 'Security & Secret Hygiene',
+      description: 'Rotate keys, enforce least privilege, enable audit logs, and require MFA for admin roles.',
+    },
+    performance: {
+      title: 'Performance Budgets',
+      description: 'Monitor cold start and hot path times. Set budgets for API latency, SQL queries, and frontend TTI.',
+    },
+    resilience: {
+      title: 'Backups & Resilience',
+      description: 'Verify automated backups, DR strategy, rate limiting, and circuit breakers for downstream dependencies.',
+    },
+    tags: {
+      reliability: 'Reliability',
+      metrics: 'Metrics',
+      release: 'Release',
+      safety: 'Safety',
+      security: 'Security',
+      performance: 'Performance',
+      resilience: 'Resilience',
+    },
+  },
+
+  // Help Center / Advanced Guide
+  help: {
+    containerLabel: 'Help Center',
+    title: 'Advanced Feature Guide',
+    subtitle: 'Walkthrough of key features and pro tips',
+    videoSection: 'Video Section',
+    videos: {
+      title: 'Video Tutorials',
+      subtitle: 'Learn through short guides and advanced tips.'
+    },
+    demoRestrictions: 'Demo Restrictions',
+    demo: {
+      title: 'IMPORTANT: Demo Restrictions!',
+      body: 'DATA IS NOT SAVED. All created records, changes, and deletions will be lost when refreshing the page or closing the browser. Batch editing and CSV export are disabled in this environment.'
+    },
+
+    features: {
+      section: 'Advanced & Contextual Features',
+      defaultTitle: 'Hidden Features & Pro Tips',
+      contextTitle: 'Contextual Tips for {context}',
+      restricted: 'RESTRICTED',
+      empty: 'No specific tips found for context: "{context}". All features are shown below.',
+
+      feature_1: {
+        title: 'Hidden Feature: Batch Editing',
+        description: 'Did you know you can edit up to 50 records at once? Select the checkboxes next to the entries and click the ✏️ icon at the top of the table. This is disabled in the current demo.'
+      },
+      feature_2: {
+        title: 'Contextual Tip: Quick Filter',
+        description: 'Use the magnifying glass icon (🔍) next to a column header to instantly filter by the unique values in that column. No need to open the full filter panel!'
+      },
+      feature_3: {
+        title: 'Demo Restriction: Data Persistence',
+        description: 'All changes you make (create, edit, delete) will be lost when refreshing the page. This is an important restriction in the demo environment.'
+      },
+      feature_4: {
+        title: 'Hard-to-Find: User Preferences',
+        description: 'Access your dashboard layout settings by clicking your profile avatar in the top right. You can enable dark mode and adjust table densities.'
+      }
+    },
+
+    tags: {
+      advanced: 'Advanced',
+      hidden: 'Hidden',
+      demorestricted: 'Demo Restricted',
+      contextual: 'Contextual',
+      quickaccess: 'Quick Access',
+      restriction: 'Restriction',
+      demo: 'Demo',
+      'hard-to-find': 'Hard to Find',
+      personalization: 'Personalization'
+    }
+  },
+
   // Email Management
   emailManagement: {
     title: 'User Email Management',

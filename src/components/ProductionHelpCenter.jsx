@@ -86,7 +86,6 @@ const ProductionHelpCenter = ({ isDarkMode: isDarkModeProp = null }) => {
   return (
     <div className={`relative p-6 md:p-8 rounded-2xl shadow-2xl space-y-8 transition-colors ${palette.container}`}>
       <div className={`absolute inset-0 pointer-events-none ${palette.overlay}`} />
-
       <div className="relative z-10 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex-1">
@@ -99,7 +98,7 @@ const ProductionHelpCenter = ({ isDarkMode: isDarkModeProp = null }) => {
               backgroundColor="transparent"
               gravity={0.45}
               fontSize="2.4rem"
-              className="h-48 md:h-28"
+              className="h-full w-full font-extrabold leading-tight"
               trigger="hover"
               resetDuration={5000}
             />

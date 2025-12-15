@@ -1562,19 +1562,18 @@ export default {
         description: 'Greifen Sie auf Ihre Dashboard-Layout-Einstellungen zu, indem Sie auf Ihr Profil-Avatar oben rechts klicken. Sie können den Dunkelmodus aktivieren und Tabellendichten anpassen.'
       }
     },
-
-    tags: {
-      advanced: 'Fortgeschritten',
-      hidden: 'Versteckt',
-      demorestricted: 'Demo Eingeschränkt',
-      contextual: 'Kontextabhängig',
-      quickaccess: 'Schnellzugriff',
-      restriction: 'Einschränkung',
-      demo: 'Demo',
-      'hard-to-find': 'Schwer zu finden',
-      personalization: 'Personalisierung'
-    }
-  },
+      tags: {
+        advanced: 'Fortgeschritten',
+        hidden: 'Versteckt',
+        demorestricted: 'Demo Eingeschränkt',
+        contextual: 'Kontextabhängig',
+        quickaccess: 'Schnellzugriff',
+        restriction: 'Einschränkung',
+        demo: 'Demo',
+        'hard-to-find': 'Schwer zu finden',
+        personalization: 'Personalisierung'
+      }
+    },
 
     // Video Player translations used by VideoPlayer component
     videoPlayer: {
