@@ -16,9 +16,19 @@
     display: inline-block;
     margin: 0 2px;
     user-select: none;
+    color: #333;
+  }
+
+  .dark .word {
+    color: #f0f0f0;
   }
   
   .highlighted {
+    color: burlywood;
+    font-weight: bold;
+  }
+
+  .dark .highlighted {
     color: cyan;
     font-weight: bold;
   }
