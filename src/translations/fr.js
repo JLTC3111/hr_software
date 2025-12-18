@@ -1493,7 +1493,6 @@ export default {
       totalDistinctIps: 'Total des IPs Distinctes',
       averageVisitsPerUser: 'Visites Moyennes par Utilisateur',
       mostActiveUsers: 'Utilisateurs les Plus Actifs',
-      userDetails: 'Détails de l\'Utilisateur',
       authorized: 'Autorisé',
       visits: 'Visites',
       total: 'Total',
@@ -1628,7 +1627,7 @@ export default {
     demoRestrictions: 'Restrictions du Mode Démo',
     demo: {
       title: 'IMPORTANT : Restrictions du Mode Démo !',
-      body: 'LES DONNÉES NE SONT PAS PERSISTANTES. Tous les enregistrements créés, modifications et suppressions seront supprimés lors du rafraîchissement de la page ou de la fermeture du navigateur. Certaines fonctionnalités (ex. édition par lot, export CSV) sont désactivées dans cet environnement de démonstration.'
+      body: 'LES DONNÉES SONT ENREGISTRÉES LOCALLEMENT - Ne se synchronisent pas entre les appareils. Les données peuvent être restaurées dans le panneau de contrôle.'
     },
 
     features: {

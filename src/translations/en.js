@@ -1615,8 +1615,8 @@ export default {
     },
     demoRestrictions: 'Demo Restrictions',
     demo: {
-      title: 'IMPORTANT: Demo Restrictions!',
-      body: 'DATA IS NOT SAVED. All created records, changes, and deletions will be lost when refreshing the page or closing the browser. Batch editing and CSV export are disabled in this environment.'
+      title: 'IMPORTANT: Help Center!',
+      body: 'DATA IS SAVED LOCALLY - Does Not Sync Across Devices. Data Can Be Restored In Control Panel.'
     },
 
     features: {

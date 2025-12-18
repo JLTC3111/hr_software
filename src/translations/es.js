@@ -1591,7 +1591,7 @@ login: {
 
   // Demo Help Center 
   help: {
-    containerLabel: 'Centro de Ayuda',
+    containerLabel: 'Centro de Ayuda de Funcionalidades Avanzadas',
     title: 'Guía Avanzada de Funcionalidades',
     subtitle: 'Recorrido por las capacidades clave y consejos profesionales',
     videoSection: 'Sección de Video',
@@ -1602,7 +1602,7 @@ login: {
     demoRestrictions: 'Restricciones del Modo Demo',
     demo: {
       title: 'IMPORTANTE: ¡Restricciones del Modo Demo!',
-      body: 'LOS DATOS NO SON PERSISTENTES. Todos los registros creados, ediciones y eliminaciones se perderán al actualizar la página o cerrar el navegador. Algunas funciones (p. ej., Edición por Lotes, Exportar CSV) están deshabilitadas en este entorno de demostración.'
+      body: 'LOS DATOS SE GUARDAN LOCALMENTE - No se sincronizan entre dispositivos. Los datos se pueden restaurar en el Panel de Control.'
     },
 
     features: {

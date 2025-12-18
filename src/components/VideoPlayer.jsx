@@ -33,7 +33,6 @@ const VideoPlayer = ({ videos }) => {
     }
   };
 
-  // When video source changes, ensure it's paused and ready to play
   const handleLoadedData = () => {
     if (videoRef.current) {
       videoRef.current.pause();
@@ -67,16 +66,16 @@ const VideoPlayer = ({ videos }) => {
       <div className="relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-black">
         <video
           ref={videoRef}
-          key={currentVideo.src} // Key forces video element refresh on source change
+          key={currentVideo.src} 
           src={currentVideo.src}
           onLoadedData={handleLoadedData}
           className="w-full h-auto max-h-96"
-          poster="/video-placeholder.jpg" // Optional: Add a placeholder image
-          controls={false} // Custom controls below
+          poster="/video-placeholder.jpg" 
+          controls={false} 
         >
           {t('videoPlayer.unsupported', 'Your browser does not support the video tag.')}
         </video>
-        <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" aria-hidden="true" />
+        <div className="absolute inset-x-0 bottom-0 h-14 bg-linear-to-t from-black/60 to-transparent pointer-events-none" aria-hidden="true" />
       </div>
 
       {/* Custom Controls */}

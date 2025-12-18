@@ -1551,7 +1551,7 @@ export default {
   // Demo Help Center
   help: {
     containerLabel: 'Hilfezentrum',
-    title: 'Erweiterte Funktionsanleitung',
+    title: 'Erweiterte Funktionsanleitung & Videotutorials',
     subtitle: 'Durchgang durch wichtige Funktionen und Profi-Tipps',
     videoSection: 'Videoabschnitt',
     videos: {
@@ -1561,7 +1561,7 @@ export default {
     demoRestrictions: 'Demo-Einschränkungen',
     demo: {
       title: 'WICHTIG: Demo-Einschränkungen!',
-      body: 'DATEN WERDEN NICHT GESPEICHERT. Alle erstellten Datensätze, Änderungen und Löschungen gehen beim Aktualisieren der Seite oder Schließen des Browsers verloren. Batch-Bearbeitung und CSV-Export sind in dieser Umgebung deaktiviert.'
+      body: 'DATEN WERDEN LOKAL GESPEICHERT - Synchronisieren nicht über Geräte hinweg. Daten können im Kontrollzentrum wiederhergestellt werden.'
     },
 
     features: {

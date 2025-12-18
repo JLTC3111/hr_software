@@ -1743,7 +1743,7 @@ export default {
   // Demo Help Center
   help: {
     containerLabel: 'Trung Tâm Trợ Giúp',
-    title: 'Hướng Dẫn Tính Năng Nâng Cao',
+    title: 'Hướng Dẫn Tính Năng Nâng Cao Chế Độ Dùng Thử',
     subtitle: 'Hướng dẫn các tính năng chính và mẹo chuyên nghiệp',
     videoSection: 'Phần Video',
     videos: {
@@ -1753,7 +1753,7 @@ export default {
     demoRestrictions: 'Hạn Chế Bản Demo',
     demo: {
       title: 'QUAN TRỌNG: Hạn Chế Bản Demo!',
-      body: 'DỮ LIỆU KHÔNG LƯU TRỮ. Tất cả bản ghi được tạo, chỉnh sửa hoặc xóa sẽ bị xóa khi làm mới trang hoặc đóng trình duyệt. Một số tính năng (ví dụ: Batch Edit, Export CSV) bị vô hiệu hóa trong môi trường demo.'
+      body: 'DỮ LIỆU ĐƯỢC LƯU TRỮ CỤC BỘ - Không Đồng Bộ Qua Các Thiết Bị. Dữ liệu có thể được khôi phục trong Bảng Điều Khiển.'
     },
 
     features: {

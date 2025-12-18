@@ -34,18 +34,17 @@ h1 {
   line-height: 1.1;
 }
 
-/* Base styling for the track to ensure consistent appearance */
 input[type="range"] {
-  -webkit-appearance: none; /* Hide default thumb on Chrome/Safari */
+  -webkit-appearance: none; 
   appearance: none;
-  background: transparent; /* Make track transparent so our custom gradient shows */
+  background: transparent; 
   width: 100%;
-  height: 8px; /* Match your height-2 */
+  height: 8px; 
 }
 
 /* Style for the Webkit (Chrome, Safari, Edge) thumb */
 input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none; /* Hide default thumb */
+  -webkit-appearance: none;
   appearance: none;
   width: 14px; 
   height: 14px; 
