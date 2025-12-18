@@ -68,13 +68,13 @@ const AdvancedHelpCenter = ({ contextHint = null }) => {
           aria-label={t('help.demoRestrictions', 'Demo Restrictions')}
         >
           <div className="flex items-start">
-            <LucideIcons.AlertTriangle className="h-6 w-6 text-red-500 mr-3 mt-1 shrink-0" aria-hidden="true" />
+            <LucideIcons.AlertTriangle className={`h-6 w-6 ${isDarkMode ? 'text-red-300' : 'text-red-600'} mr-3 mt-1 shrink-0`} aria-hidden="true" />
             <div>
               <h3 className={`text-xl font-bold ${isDarkMode ? 'text-red-300' : 'text-red-800'}`} data-i18n="help.demo.title">
                 {t('help.demo.title', 'IMPORTANT: Demo Restrictions!')}
               </h3>
               <p className={`mt-1 text-sm ${isDarkMode ? 'text-red-400' : 'text-red-700'}`} data-i18n="help.demo.body">
-                {t(
+                {t('help.demo.body',
                   'DATA IS NOT PERSISTENT. All created records, edits, and deletions will be wiped upon page refresh or closing the browser. Batch Edit and Export to CSV features are disabled in this environment.'
                 )}
               </p>
@@ -85,8 +85,8 @@ const AdvancedHelpCenter = ({ contextHint = null }) => {
       {/* 4. Advanced & Contextual Features List */}
         <section aria-label={t('help.features.section', 'Advanced & Contextual Features')} className="space-y-4">
           <div className="flex items-center gap-2">
-            <LucideIcons.Lightbulb className="h-6 w-6 text-yellow-500 fill-yellow-500" aria-hidden="true" />
-            <h2 className={`text-2xl font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`} data-i18n="help.features.title">
+            <LucideIcons.Lightbulb className={`h-6 w-6 ${isDarkMode ? 'text-yellow-300' : 'text-yellow-500'} fill-yellow-500`} aria-hidden="true" />
+            <h2 className={`text-2xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`} data-i18n="help.features.title">
               {contextHint
                 ? t('help.features.contextTitle', 'Contextual Tips for {context}', { context: contextHint })
                 : t('help.features.defaultTitle', 'Hidden Features & Pro Tips')}
