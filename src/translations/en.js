@@ -1654,6 +1654,43 @@ export default {
       demo: 'Demo',
       'hard-to-find': 'Hard to Find',
       personalization: 'Personalization'
+    },
+
+    showcase: {
+      section: 'Animated product walkthrough',
+      label: 'Animated product walkthrough',
+      badge: 'Live app walkthrough',
+      title: 'Erleben Sie die 4 Hauptfunktionen in Bewegung'
+      subtitle: 'Follow the flow from time capture to reporting, with data moving across modules in real time.',
+      control: 'Control panel',
+      sync: 'Everything stays in sync',
+      syncDesc: 'Entries, files, and goals update dashboards and reports instantly.',
+      live: 'Live',
+
+      time: {
+        title: 'Time management',
+        desc: 'Track time entries, approvals, overtime, and worklogs in one place.'
+      },
+
+      upload: {
+        title: 'Upload files',
+        desc: 'Securely store contracts, IDs, and evidence with audit-ready history.'
+      },
+
+      dashboard: {
+        title: 'Dashboard & charts',
+        desc: 'Visualize utilization, attendance, and health scores in real time.'
+      },
+
+      tasks: {
+        title: 'Tasks & goals',
+        desc: 'Assign owners, due dates, and checklists that sync with people data.'
+      },
+
+      reporting: {
+        title: 'Reporting',
+        desc: 'Export PDFs/CSV and schedule recurring digests for managers.'
+      }
     }
   },
 

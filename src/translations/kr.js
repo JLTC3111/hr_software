@@ -1550,10 +1550,47 @@ export default {
       demo: '데모',
       'hard-to-find': '찾기 어려움',
       personalization: '개인화'
+    },
+
+    showcase: {
+      section: '애니메이션 제품 워크스루',
+      label: '애니메이션 제품 워크스루',
+      badge: '라이브 앱 데모',
+      title: '4가지 주요 기능을 직접 확인하세요'
+      subtitle: '시간 기록부터 보고까지, 모듈 간 데이터를 실시간으로 흐름에 따라 확인할 수 있습니다.',
+      control: '제어 패널',
+      sync: '모든 것이 동기화됩니다',
+      syncDesc: '입력, 파일, 목표가 대시보드와 보고서를 즉시 업데이트합니다.',
+      live: '라이브',
+
+      time: {
+        title: '시간 관리',
+        desc: '근무 시간 입력, 승인, 초과 근무 및 작업 로그를 한곳에서 관리하세요.'
+      },
+
+      upload: {
+        title: '파일 업로드',
+        desc: '계약서, 신분증, 증빙 자료를 감사 대비 이력과 함께 안전하게 저장합니다.'
+      },
+
+      dashboard: {
+        title: '대시보드 및 차트',
+        desc: '활용도, 출석, 상태 지표를 실시간으로 시각화합니다.'
+      },
+
+      tasks: {
+        title: '작업 및 목표',
+        desc: '담당자, 마감일, 체크리스트를 지정하고 인사 데이터와 동기화합니다.'
+      },
+
+      reporting: {
+        title: '보고서',
+        desc: 'PDF/CSV로 내보내고 관리자를 위한 정기 요약을 예약하세요.'
+      }
     }
   },
 
-  // Video Player translations used by VideoPlayer component
+  // Video Player
   videoPlayer: {
     container: '비디오 플레이어',
     currentTitle: '현재 제목',

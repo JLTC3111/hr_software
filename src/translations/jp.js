@@ -1567,10 +1567,47 @@ export default {
       demo: 'デモ',
       'hard-to-find': '見つけにくい',
       personalization: 'パーソナライズ'
-    }
+    },
+
+    showcase: {
+      section: 'アニメーション製品ウォークスルー',
+      label: 'アニメーション製品ウォークスルー',
+      badge: 'ライブアプリデモ',
+      title: '4つの主要機能を動きで確認'
+      subtitle: '時間の記録からレポート作成までの流れを、モジュール間でリアルタイムに動くデータとともに確認できます。',
+      control: 'コントロールパネル',
+      sync: 'すべてが同期',
+      syncDesc: '入力、ファイル、目標はダッシュボードとレポートを即座に更新します。',
+      live: 'ライブ',
+
+      time: {
+        title: '時間管理',
+        desc: '時間入力、承認、残業、作業ログを一元管理します。'
+      },
+
+      upload: {
+        title: 'ファイルのアップロード',
+        desc: '契約書、ID、証跡を監査対応の履歴付きで安全に保存します。'
+      },
+
+      dashboard: {
+        title: 'ダッシュボードとチャート',
+        desc: '稼働率、出勤状況、健全性スコアをリアルタイムで可視化します。'
+      },
+
+      tasks: {
+        title: 'タスクと目標',
+        desc: '担当者、期限、チェックリストを割り当て、人事データと同期します。'
+      },
+
+      reporting: {
+        title: 'レポート',
+        desc: 'PDF/CSVをエクスポートし、管理者向けの定期レポートをスケジュールできます。'
+      }
+    },
   },
 
-  // Video Player translations used by VideoPlayer component
+  // Video Player 
   videoPlayer: {
     container: 'ビデオプレーヤー',
     currentTitle: '現在のタイトル',

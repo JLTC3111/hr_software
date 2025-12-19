@@ -1813,6 +1813,43 @@ export default {
       demo: 'Demo',
       'hard-to-find': 'Khó Tìm',
       personalization: 'Cá Nhân Hóa'
+    },
+
+    showcase: {
+      section: 'Hướng dẫn sản phẩm dạng hoạt hình',
+      label: 'Hướng dẫn sản phẩm dạng hoạt hình',
+      badge: 'Demo ứng dụng trực tiếp',
+      title: 'Xem 4 Chức Năng Chính',
+      subtitle: 'Theo dõi luồng từ ghi nhận thời gian đến báo cáo, với dữ liệu di chuyển giữa các mô-đun theo thời gian thực.',
+      control: 'Bảng điều khiển',
+      sync: 'Mọi thứ luôn được đồng bộ',
+      syncDesc: 'Các mục nhập, tệp và mục tiêu cập nhật bảng điều khiển và báo cáo ngay lập tức.',
+      live: 'Trực tiếp',
+
+      time: {
+        title: 'Quản lý thời gian',
+        desc: 'Theo dõi chấm công, phê duyệt, làm thêm giờ và nhật ký công việc tại một nơi.'
+      },
+
+      upload: {
+        title: 'Tải lên tệp',
+        desc: 'Lưu trữ an toàn hợp đồng, giấy tờ tùy thân và bằng chứng với lịch sử sẵn sàng cho kiểm toán.'
+      },
+
+      dashboard: {
+        title: 'Bảng điều khiển & biểu đồ',
+        desc: 'Trực quan hóa mức độ sử dụng, chuyên cần và chỉ số sức khỏe theo thời gian thực.'
+      },
+
+      tasks: {
+        title: 'Công việc & mục tiêu',
+        desc: 'Gán người phụ trách, thời hạn và danh sách kiểm tra được đồng bộ với dữ liệu nhân sự.'
+      },
+
+      reporting: {
+        title: 'Báo cáo',
+        desc: 'Xuất PDF/CSV và lên lịch bản tổng hợp định kỳ cho quản lý.'
+      }
     }
   },
 

@@ -3,8 +3,8 @@ import * as LucideIcons from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
-import VideoPlayer from './VideoPlayer';
-import { VIDEO_FILES, HELP_FEATURES } from '../services/helpData';
+import FeatureShowcase from './FeatureShowcase';
+import { HELP_FEATURES } from '../services/helpData';
 
 // Helper function to dynamically select Lucide Icons
 const Icon = ({ name, ...props }) => {
@@ -42,23 +42,23 @@ const AdvancedHelpCenter = ({ contextHint = null }) => {
           </div>
         </div>
 
-      {/* 2. Custom Video Player Section */}
-        <section aria-label={t('help.videoSection', 'Video Tutorials Section')} className="space-y-3">
+      {/* 2. Animated Feature Showcase */}
+        <section aria-label={t('help.showcase.section', 'Animated product walkthrough')} className="space-y-3">
           <div className="flex items-center gap-2">
-            <LucideIcons.Tv className={`h-6 w-6 ${isDarkMode ? 'text-green-300' : 'text-green-600'}`} aria-hidden="true" />
-            <h2 className={`text-2xl font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`} data-i18n="help.videos.title">
-              {t('help.videos.title', 'Video Tutorials')}
+            <LucideIcons.Sparkles className={`h-6 w-6 ${isDarkMode ? 'text-green-300' : 'text-green-600'}`} aria-hidden="true" />
+            <h2 className={`text-2xl font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`} data-i18n="help.showcase.title">
+              {t('help.showcase.title', 'See the platform in motion')}
             </h2>
           </div>
-          <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} data-i18n="help.videos.subtitle">
-            {t('help.videos.subtitle', 'Learn by watching concise walkthroughs and advanced tips.')}
+          <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} data-i18n="help.showcase.subtitle">
+            {t('help.showcase.subtitle', 'Animated path across time, files, dashboards, goals, and reporting.')}
           </p>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, ease: 'easeOut' }}
           >
-            <VideoPlayer videos={VIDEO_FILES} />
+            <FeatureShowcase />
           </motion.div>
         </section>
 

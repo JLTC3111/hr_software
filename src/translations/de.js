@@ -1598,10 +1598,41 @@ export default {
         demo: 'Demo',
         'hard-to-find': 'Schwer zu finden',
         personalization: 'Personalisierung'
-      }
     },
-
-    // Video Player translations used by VideoPlayer component
+      showcase: {
+        section: 'Animierte Produktführung',
+        label: 'Animierte Produktführung',
+        badge: 'Live-App-Demo',
+        title: 'Erleben Sie die 4 Säulen in Bewegung',
+        subtitle: 'Verfolgen Sie den Ablauf von der Zeiterfassung bis zum Reporting – mit Daten, die sich in Echtzeit über Module hinweg bewegen.',
+        control: 'Bedienfeld',
+        sync: 'Alles bleibt synchron',
+        syncDesc: 'Einträge, Dateien und Ziele aktualisieren Dashboards und Berichte sofort.',
+        live: 'Live',
+        time: {
+          title: 'Zeitmanagement',
+          desc: 'Erfassen Sie Zeiteinträge, Genehmigungen, Überstunden und Arbeitsprotokolle an einem Ort.'
+        },
+        upload: {
+          title: 'Dateien hochladen',
+          desc: 'Verträge, Ausweise und Nachweise sicher speichern – mit revisionssicherer Historie.'
+        },
+        dashboard: {
+          title: 'Dashboard & Diagramme',
+          desc: 'Visualisieren Sie Auslastung, Anwesenheit und Gesundheitskennzahlen in Echtzeit.'
+        },
+        tasks: {
+          title: 'Aufgaben & Ziele',
+          desc: 'Weisen Sie Verantwortliche, Fälligkeiten und Checklisten zu, die mit Personaldaten synchronisiert sind.'
+        },
+        reporting: {
+          title: 'Berichte',
+          desc: 'Exportieren Sie PDFs/CSV und planen Sie wiederkehrende Übersichten für Manager.'
+        }
+      },
+  },
+    
+    // Video Player  
     videoPlayer: {
       container: 'Videoplayer',
       currentTitle: 'Aktueller Titel',

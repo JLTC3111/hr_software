@@ -1665,10 +1665,47 @@ export default {
       demo: 'Démo',
       'hard-to-find': 'Difficile à Trouver',
       personalization: 'Personnalisation'
-    }
-  },
+    },
 
-  // Video Player translations used by VideoPlayer component
+    showcase: {
+      section: 'Parcours produit animé',
+      label: 'Parcours produit animé',
+      badge: 'Démo de l’application en direct',
+      title: 'Découvrez les 4 fonctions principales en action'
+      subtitle: 'Suivez le flux de la saisie du temps au reporting, avec des données qui circulent entre les modules en temps réel.',
+      control: 'Panneau de contrôle',
+      sync: 'Tout reste synchronisé',
+      syncDesc: 'Les entrées, fichiers et objectifs mettent à jour instantanément les tableaux de bord et rapports.',
+      live: 'En direct',
+
+      time: {
+        title: 'Gestion du temps',
+        desc: 'Suivez les saisies de temps, validations, heures supplémentaires et journaux de travail en un seul endroit.'
+      },
+
+      upload: {
+        title: 'Téléverser des fichiers',
+        desc: 'Stockez en toute sécurité contrats, identités et preuves avec un historique prêt pour audit.'
+      },
+
+      dashboard: {
+        title: 'Tableau de bord et graphiques',
+        desc: 'Visualisez l’utilisation, la présence et les indicateurs de santé en temps réel.'
+      },
+
+      tasks: {
+        title: 'Tâches et objectifs',
+        desc: 'Assignez des responsables, des échéances et des check-lists synchronisées avec les données du personnel.'
+      },
+
+      reporting: {
+        title: 'Rapports',
+        desc: 'Exportez des PDF/CSV et planifiez des synthèses récurrentes pour les managers.'
+      }
+    },
+  },
+  
+  // Video Player  
   videoPlayer: {
     container: 'Lecteur Vidéo',
     currentTitle: 'Titre Actuel',

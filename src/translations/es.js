@@ -1640,10 +1640,47 @@ login: {
       demo: 'Demo',
       'hard-to-find': 'Difícil de Encontrar',
       personalization: 'Personalización'
-    }
+    },
+
+    showcase: {
+      section: 'Recorrido animado del producto',
+      label: 'Recorrido animado del producto',
+      badge: 'Demostración en vivo de la app',
+      title: 'Vea las 4 funciones principales en acción'
+      subtitle: 'Siga el flujo desde la captura de tiempo hasta los informes, con datos moviéndose entre módulos en tiempo real.',
+      control: 'Panel de control',
+      sync: 'Todo permanece sincronizado',
+      syncDesc: 'Las entradas, archivos y objetivos actualizan paneles e informes al instante.',
+      live: 'En vivo',
+
+      time: {
+        title: 'Gestión del tiempo',
+        desc: 'Registre entradas de tiempo, aprobaciones, horas extra y registros de trabajo en un solo lugar.'
+      },
+
+      upload: {
+        title: 'Subir archivos',
+        desc: 'Almacene de forma segura contratos, identificaciones y evidencias con historial listo para auditoría.'
+      },
+
+      dashboard: {
+        title: 'Panel y gráficos',
+        desc: 'Visualice la utilización, asistencia y métricas de salud en tiempo real.'
+      },
+
+      tasks: {
+        title: 'Tareas y objetivos',
+        desc: 'Asigne responsables, fechas límite y listas de verificación sincronizadas con los datos de personas.'
+      },
+
+      reporting: {
+        title: 'Informes',
+        desc: 'Exporte PDF/CSV y programe resúmenes recurrentes para los gerentes.'
+      }
+    },
   },
 
-  // Video Player translations used by VideoPlayer component
+  // Video Player 
   videoPlayer: {
     container: 'Reproductor de Video',
     currentTitle: 'Título Actual',
