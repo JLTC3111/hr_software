@@ -47,7 +47,7 @@ const LanguageSelector = () => {
           <img src={currentLangData?.flag} alt={currentLangData?.name} className="w-5 h-5 rounded" />
           <span>{currentLangData?.name}</span>
         </span>
-        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 transition-all ${isOpen ? 'rotate-180' : ''} duration-450 origin-center`} />
       </button>
 
       {isOpen && (
