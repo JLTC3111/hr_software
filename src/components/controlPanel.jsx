@@ -13,8 +13,8 @@ export const MiniFlubberAutoMorphChangeRole = ({
   size = 18,
   className = '',
   isDarkMode = false,
-  autoMorphInterval = 4500, 
-  morphDuration = 2500, 
+  autoMorphInterval = 1500, 
+  morphDuration = 1000, 
 }) => {
   const [currentIconIndex, setCurrentIconIndex] = useState(0);
   const [morphPaths, setMorphPaths] = useState([]);
@@ -1331,7 +1331,7 @@ const ControlPanel = () => {
               e.currentTarget.style.backgroundColor = isDarkMode ? '#1f2937' : '#f3f4f6';
             }}
           >
-            <BookOpen className="w-4 h-4 translate-y-px group-hover:animate-pulse" />
+            <BookOpen className="w-3.75 h-3.75 translate-y-px group-hover:animate-pulse" />
             <span className="text-sm font-semibold">{t('controlPanel.readManual', 'Read Manual')}</span>
           </button>
 
