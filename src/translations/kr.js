@@ -1347,6 +1347,9 @@ export default {
 
   // Control Panel
   controlPanel: {
+    demoModeDisabled: '이 기능은 잠겨 있습니다',
+    title: '관리자 제어판',
+    subtitle: '시스템 설정 및 사용자 관리',
     role: '역할',
     userUuid: '사용자 UUID',
     employeeId: '직원 ID',
@@ -1556,7 +1559,7 @@ export default {
       section: '애니메이션 제품 워크스루',
       label: '애니메이션 제품 워크스루',
       badge: '라이브 앱 데모',
-      title: '4가지 주요 기능을 직접 확인하세요'
+      title: '4가지 주요 기능을 직접 확인하세요',
       subtitle: '시간 기록부터 보고까지, 모듈 간 데이터를 실시간으로 흐름에 따라 확인할 수 있습니다.',
       control: '제어 패널',
       sync: '모든 것이 동기화됩니다',

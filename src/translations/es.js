@@ -1435,6 +1435,9 @@ login: {
 
   // Control Panel
   controlPanel: {
+    demoModeDisabled: 'La función está bloqueada',
+    title: 'Panel de Control de Usuario',
+    subtitle: 'Gestiona la configuración de tu cuenta y preferencias',
     role: 'Rol',
     userUuid: 'UUID de Usuario',
     employeeId: 'ID de Empleado',
@@ -1646,7 +1649,7 @@ login: {
       section: 'Recorrido animado del producto',
       label: 'Recorrido animado del producto',
       badge: 'Demostración en vivo de la app',
-      title: 'Vea las 4 funciones principales en acción'
+      title: 'Vea las 4 funciones principales en acción',
       subtitle: 'Siga el flujo desde la captura de tiempo hasta los informes, con datos moviéndose entre módulos en tiempo real.',
       control: 'Panel de control',
       sync: 'Todo permanece sincronizado',

@@ -1398,6 +1398,9 @@ export default {
 
   // Control Panel
   controlPanel: {
+    demoModeDisabled: 'Funktion ist gesperrt',
+    title: 'Kontrollzentrum',
+    subtitle: 'Verwalten Sie Benutzereinstellungen, Rollen und Passwörter',
     role: 'Rolle',
     userUuid: 'Benutzer-UUID',
     employeeId: 'Mitarbeiter-ID',

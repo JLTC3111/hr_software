@@ -1465,6 +1465,9 @@ export default {
 
   // Control Panel
   controlPanel: {
+    demoModeDisabled: 'Function is locked',
+    title: 'Control Panel',
+    subtitle: 'Manage your account and system settings',
     role: 'Role',
     userUuid: 'User UUID',
     employeeId: 'Employee ID',
@@ -1660,7 +1663,7 @@ export default {
       section: 'Animated product walkthrough',
       label: 'Animated product walkthrough',
       badge: 'Live app walkthrough',
-      title: 'Erleben Sie die 4 Hauptfunktionen in Bewegung'
+      title: 'See the Platform in Motion',
       subtitle: 'Follow the flow from time capture to reporting, with data moving across modules in real time.',
       control: 'Control panel',
       sync: 'Everything stays in sync',

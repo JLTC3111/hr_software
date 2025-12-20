@@ -1464,6 +1464,9 @@ export default {
 
   // Control Panel
   controlPanel: {
+    demoModeDisabled: 'La fonction est verrouillée',
+    title: 'Panneau de Contrôle',
+    subtitle: 'Gérer les paramètres du système et les utilisateurs',
     role: 'Rôle',
     userUuid: 'UUID Utilisateur',
     employeeId: 'ID Employé',
@@ -1671,7 +1674,7 @@ export default {
       section: 'Parcours produit animé',
       label: 'Parcours produit animé',
       badge: 'Démo de l’application en direct',
-      title: 'Découvrez les 4 fonctions principales en action'
+      title: 'Découvrez les 4 fonctions principales en action',
       subtitle: 'Suivez le flux de la saisie du temps au reporting, avec des données qui circulent entre les modules en temps réel.',
       control: 'Panneau de contrôle',
       sync: 'Tout reste synchronisé',

@@ -982,22 +982,10 @@ const ControlPanel = () => {
 
               <button
                 onClick={() => setShowDemoDataManagement(!showDemoDataManagement)}
-                className="w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
-                style={{
-                  backgroundColor: isDarkMode ? '#955aee' : '#f3e8ff',
-                  color: isDarkMode ? '#ffffff' : '#6b21a8'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#ffffff' : '#e9d5ff';
-                  e.currentTarget.style.color = isDarkMode ? '#000000' : '#7e22ce';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#955aee' : '#f3e8ff';
-                  e.currentTarget.style.color = isDarkMode ? '#ffffff' : '#6b21a8';
-                }}
+                className={`w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${isDarkMode ? 'bg-slate-500 text-gray-100' : 'bg-purple-100 text-gray-800'}`}
               >
-                <RefreshCcw className="w-4.25 h-4.25 group-hover:animate-spin origin-center transform transition-all" />
-                <span className="text-sm">{t('controlPanel.restoreDemoData', 'Restore Demo Data')}</span>
+                <RefreshCcw className="w-4 h-4 group-hover:animate-spin origin-center transform transition-all" />
+                <span className={`text-sm font-semibold group-hover:font-bold`}>{t('controlPanel.restoreDemoData', 'Restore Demo Data')}</span>
               </button>
             </>
           )}
@@ -1113,8 +1101,8 @@ const ControlPanel = () => {
               e.currentTarget.style.backgroundColor = isDarkMode ? '#1f2937' : '#f3f4f6';
             }}
           >
-            <BookOpen className="w-4 h-4 group-hover:animate-pulse transition-all" />
-            <span className="text-sm">{t('controlPanel.readManual', 'Read Manual')}</span>
+            <BookOpen className="w-4 h-4 translate-y-px group-hover:animate-pulse" />
+            <span className="text-sm font-semibold">{t('controlPanel.readManual', 'Read Manual')}</span>
           </button>
 
           <button

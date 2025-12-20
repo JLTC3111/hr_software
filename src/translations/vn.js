@@ -1587,6 +1587,9 @@ export default {
 
   // Control Panel
   controlPanel: {
+    demoModeDisabled: 'Chức Năng Bị Khoá',
+    title: 'Bảng Điều Khiển Quản Trị',
+    subtitle: 'Quản lý cài đặt hệ thống và tài khoản người dùng',
     role: 'Vai Trò',
     userUuid: 'UUID Người Dùng',
     employeeId: 'Mã Nhân Viên',
@@ -1819,7 +1822,7 @@ export default {
       section: 'Hướng dẫn sản phẩm dạng hoạt hình',
       label: 'Hướng dẫn sản phẩm dạng hoạt hình',
       badge: 'Demo ứng dụng trực tiếp',
-      title: 'Xem 4 Chức Năng Chính',
+      title: 'Xem 4 Chức Năng Chính Đang Vận Hành',
       subtitle: 'Theo dõi luồng từ ghi nhận thời gian đến báo cáo, với dữ liệu di chuyển giữa các mô-đun theo thời gian thực.',
       control: 'Bảng điều khiển',
       sync: 'Mọi thứ luôn được đồng bộ',

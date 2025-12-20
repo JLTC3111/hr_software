@@ -1373,6 +1373,9 @@ export default {
 
   // Control Panel
   controlPanel: {
+    demoModeDisabled: 'この機能はロックされています',
+    title: '管理者コントロールパネル',
+    subtitle: 'システム設定とユーザー管理を行います',
     role: '役割',
     userUuid: 'ユーザーUUID',
     employeeId: '従業員ID',
@@ -1573,7 +1576,7 @@ export default {
       section: 'アニメーション製品ウォークスルー',
       label: 'アニメーション製品ウォークスルー',
       badge: 'ライブアプリデモ',
-      title: '4つの主要機能を動きで確認'
+      title: '4つの主要機能を動きで確認',
       subtitle: '時間の記録からレポート作成までの流れを、モジュール間でリアルタイムに動くデータとともに確認できます。',
       control: 'コントロールパネル',
       sync: 'すべてが同期',
