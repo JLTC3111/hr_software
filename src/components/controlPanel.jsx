@@ -15,11 +15,11 @@ const getDemoRolePresentation = (role, isDarkMode, adminLabel = 'Demo Admin', em
     label: isAdminRole ? adminLabel : employeeLabel,
     textClass: isAdminRole
       ? isDarkMode
-        ? 'text-emerald-300'
-        : 'text-gray-900'
+        ? 'text-emerald-400'
+        : 'text-blue-900'
       : isDarkMode
         ? 'text-amber-300'
-        : 'text-gray-900'
+        : 'text-red-900'
   };
 };
 
@@ -1257,7 +1257,7 @@ const ControlPanel = () => {
                   const nextRole = userRole === 'demo_admin' ? 'demo_employee' : 'demo_admin';
                   switchDemoRole?.(nextRole);
                 }}
-                className={`w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${isDarkMode ? 'bg-slate-600 text-white' : 'bg-blue-100 text-blue-800'}`}
+                className={`w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${isDarkMode ? 'bg-slate-600 text-white' : 'bg-blue-50 text-gray-800'}`}
               >
                 <MiniFlubberAutoMorphChangeRole isDarkMode={isDarkMode} className="group-hover:scale-105 origin-center transform transition-all duration-300" />
                 <div className="flex flex-col items-start text-left">
@@ -1280,7 +1280,7 @@ const ControlPanel = () => {
 
               <button
                 onClick={() => setShowDemoDataManagement(!showDemoDataManagement)}
-                className={`w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${isDarkMode ? 'bg-slate-500 text-gray-100' : 'bg-purple-100 text-gray-800'}`}
+                className={`w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${isDarkMode ? 'bg-slate-500 text-gray-100' : 'bg-purple-50 text-gray-800'}`}
               >
                 <RefreshCcw className="w-3.75 h-3.75 group-hover:animate-spin origin-center transform transition-all" />
                 <span className={`text-sm font-semibold group-hover:font-bold`}>{t('controlPanel.restoreDemoData', 'Restore Demo Data')}</span>
