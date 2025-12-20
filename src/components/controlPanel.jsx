@@ -9,6 +9,66 @@ import { isDemoMode, getDemoEmployeeName, resetAllDemoData, resetDemoTimeEntries
 import { fetchVisitSummary } from '../services/visitService';
 import * as flubber from 'flubber';
 
+const getDemoRolePresentation = (role, isDarkMode, adminLabel = 'Demo Admin', employeeLabel = 'Demo Employee') => {
+  const isAdminRole = role === 'demo_admin';
+  return {
+    label: isAdminRole ? adminLabel : employeeLabel,
+    textClass: isAdminRole
+      ? isDarkMode
+        ? 'text-emerald-300'
+        : 'text-gray-900'
+      : isDarkMode
+        ? 'text-amber-300'
+        : 'text-gray-900'
+  };
+};
+
+const RollingDemoRoleLabel = ({ role, isDarkMode, adminLabel, employeeLabel }) => {
+  const [currentRole, setCurrentRole] = useState(role);
+  const [nextRole, setNextRole] = useState(null);
+  const [isRolling, setIsRolling] = useState(false);
+  const timeoutRef = useRef(null);
+
+  useEffect(() => {
+    if (role === currentRole) return;
+    setNextRole(role);
+    setIsRolling(true);
+    timeoutRef.current = setTimeout(() => {
+      setCurrentRole(role);
+      setNextRole(null);
+      setIsRolling(false);
+    }, 320);
+
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [role, currentRole]);
+
+  const { label: currentLabel, textClass: currentClass } = getDemoRolePresentation(currentRole, isDarkMode, adminLabel, employeeLabel);
+  const nextPresentation = nextRole ? getDemoRolePresentation(nextRole, isDarkMode, adminLabel, employeeLabel) : null;
+
+  return (
+    <div className="relative h-5 overflow-hidden min-w-48">
+      <span
+        className={`absolute inset-0 flex translate-y-1.25 items-center text-sm font-semibold whitespace-nowrap transition-all duration-300 ease-out ${
+          isRolling ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
+        } ${currentClass}`}
+      >
+        {currentLabel}
+      </span>
+      {nextPresentation && (
+        <span
+          className={`absolute inset-0 flex items-center text-sm font-semibold whitespace-nowrap transition-all duration-300 ease-out ${
+            isRolling ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
+          } ${nextPresentation.textClass}`}
+        >
+          {nextPresentation.label}
+        </span>
+      )}
+    </div>
+  );
+};
+
 export const MiniFlubberAutoMorphChangeRole = ({
   size = 18,
   className = '',
@@ -1201,9 +1261,17 @@ const ControlPanel = () => {
               >
                 <MiniFlubberAutoMorphChangeRole isDarkMode={isDarkMode} className="group-hover:scale-105 origin-center transform transition-all duration-300" />
                 <div className="flex flex-col items-start text-left">
-                  <span className="text-sm font-semibold">
-                    {userRole === 'demo_admin' ? t('controlPanel.switchToDemoEmployee', 'Switch to Demo Employee') : t('controlPanel.switchToDemoAdmin', 'Switch to Demo Admin')}
-                  </span>
+                  <div className="flex items-baseline space-x-1">
+                    <span className="text-sm font-semibold">
+                      {t('controlPanel.switchToPrefix', 'Switch to')}
+                    </span>
+                    <RollingDemoRoleLabel
+                      role={userRole === 'demo_admin' ? 'demo_employee' : 'demo_admin'}
+                      isDarkMode={isDarkMode}
+                      adminLabel={t('controlPanel.demoAdminLabel', 'Demo Admin')}
+                      employeeLabel={t('controlPanel.demoEmployeeLabel', 'Demo Employee')}
+                    />
+                  </div>
                   <span className="text-xs group-hover:font-bold">
                     {t('controlPanel.demoRoleOnly', 'Demo mode only; toggles demo roles')}
                   </span>

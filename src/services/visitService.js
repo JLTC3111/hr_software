@@ -10,12 +10,18 @@ export const logVisit = async () => {
 
   try {
 
+    // In demo mode, skip calling the Edge Function to avoid CORS noise
+    if (isDemoMode()) {
+      console.debug('visitService.logVisit: demo mode — skipping visit call');
+      return;
+    }
+
     // Get session to decide whether to call the function
     const { data: { session } } = await supabase.auth.getSession();
 
-    // If there's no logged-in session and we're not in demo mode, skip sending visits
-    if (!session && !isDemoMode()) {
-      console.debug('visitService.logVisit: no session and not demo mode — skipping visit call');
+    // If there's no logged-in session, skip sending visits
+    if (!session) {
+      console.debug('visitService.logVisit: no session — skipping visit call');
       return;
     }
 
@@ -30,11 +36,7 @@ export const logVisit = async () => {
     }
 
     // If demo mode is active, mark the request so the function can treat it specially
-    if (isDemoMode()) {
-      headers['x-demo-mode'] = '1';
-      // Inform the Edge Function which demo role this should be recorded as
-      headers['x-demo-role'] = 'demo_admin';
-    }
+    // (disabled in demo per above)
 
     // Debug: report whether Authorization header is present (don't log token value)
     console.debug('visitService.logVisit: sending visit to', edgeUrl, { hasAuthorization: !!headers.Authorization, hasApikey: !!headers.apikey, isDemo: !!headers['x-demo-mode'], demoRole: !!headers['x-demo-role'] });
