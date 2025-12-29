@@ -48,6 +48,29 @@ import { getAllTasks } from '../services/workloadService';
 import performanceService from '../services/performanceService';
 import { supabase } from '../config/supabaseClient';
 
+// Helper to load fonts for PDF
+const loadFontHelper = async (doc, url, vfsName, fontName) => {
+  const fontResponse = await fetch(url);
+  if (!fontResponse.ok) throw new Error(`Font fetch failed: ${url}`);
+  const fontData = await fontResponse.arrayBuffer();
+  
+  // Optimized base64 conversion for large font files (like CJK fonts)
+  const base64Font = await new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      // remove data URL prefix
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.readAsDataURL(new Blob([fontData]));
+  });
+
+  doc.addFileToVFS(vfsName, base64Font);
+  doc.addFont(vfsName, fontName, 'normal');
+  doc.setFont(fontName);
+};
+
 const Reports = () => {
   const { t, currentLanguage } = useLanguage();
   const { isDarkMode } = useTheme();
@@ -711,50 +734,73 @@ const Reports = () => {
         return Number.isFinite(num) ? num : fallback;
       };
 
+      // Safe filename part: trim, replace spaces with underscores, sanitize Excel string
+      const toFilePart = (value, fallback = '') => {
+        const raw = value ?? fallback;
+        const safe = String(raw).trim().replace(/\s+/g, '_');
+        return sanitize(safe || fallback);
+      };
+
+      // Localized label helper
+      const tr = (key, fallback) => t(key, fallback);
+
       const workbook = new ExcelJS.Workbook();
       workbook.creator = 'HR Management System';
       workbook.created = new Date();
+
+      const sheetNames = {
+        summary: tr('reports.excel.sheets.summary', 'Summary'),
+        performance: tr('reports.excel.sheets.performance', 'Employee Performance'),
+        charts: tr('reports.excel.sheets.charts', 'Charts & Metrics'),
+        timeEntries: tr('reports.excel.sheets.timeEntries', 'Time Entries'),
+        tasks: tr('reports.excel.sheets.tasks', 'Tasks'),
+        goals: tr('reports.excel.sheets.goals', 'Goals')
+      };
       
       // Employee name for filename
       const employeeName = selectedEmployee !== 'all' ? 
         reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_') : 
-        'All_Employees';
+        tr('reports.allEmployees', 'All Employees').replace(/\s+/g, '_');
 
       // ==================== SUMMARY/METRICS SHEET WITH STYLING ====================
-      const summarySheet = workbook.addWorksheet('Summary', {
+      const summarySheet = workbook.addWorksheet(sheetNames.summary, {
         views: [{ state: 'frozen', xSplit: 0, ySplit: 1 }]
       });
       
       // Header styling
-      summarySheet.getCell('A1').value = 'HR REPORT SUMMARY';
+      summarySheet.getCell('A1').value = tr('reports.excel.summaryTitle', 'HR Report Summary');
       summarySheet.getCell('A1').font = { size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
       summarySheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
       summarySheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
-      summarySheet.mergeCells('A1:B1');
+      summarySheet.mergeCells('A1:C1');
       summarySheet.getRow(1).height = 30;
       
       // Report Info
       let currentRow = 3;
-      summarySheet.getCell(`A${currentRow}`).value = 'Generated:';
+      summarySheet.getCell(`A${currentRow}`).value = tr('reports.excel.generated', 'Generated');
       summarySheet.getCell(`B${currentRow}`).value = new Date().toLocaleString();
       summarySheet.getCell(`A${currentRow}`).font = { bold: true };
       currentRow++;
       
-      summarySheet.getCell(`A${currentRow}`).value = 'Date Range:';
-      summarySheet.getCell(`B${currentRow}`).value = `${filters.startDate} to ${filters.endDate}`;
+      summarySheet.getCell(`A${currentRow}`).value = tr('reports.excel.dateRange', 'Date Range');
+      summarySheet.getCell(`B${currentRow}`).value = `${filters.startDate} ${tr('reports.to', 'to')} ${filters.endDate}`;
       summarySheet.getCell(`A${currentRow}`).font = { bold: true };
       currentRow++;
       
-      summarySheet.getCell(`A${currentRow}`).value = 'Employee:';
-      summarySheet.getCell(`B${currentRow}`).value = selectedEmployee === 'all' ? 'All Employees' : employeeName;
+      summarySheet.getCell(`A${currentRow}`).value = tr('reports.excel.employee', 'Employee');
+      summarySheet.getCell(`B${currentRow}`).value = selectedEmployee === 'all' ? tr('reports.allEmployees', 'All Employees') : employeeName;
       summarySheet.getCell(`A${currentRow}`).font = { bold: true };
       currentRow++;
       
       const languageName = SUPPORTED_LANGUAGES[currentLanguage]?.name || 'English';
-      summarySheet.getCell(`A${currentRow}`).value = 'Report Language:';
+      summarySheet.getCell(`A${currentRow}`).value = tr('reports.excel.reportLanguage', 'Report Language');
       summarySheet.getCell(`B${currentRow}`).value = languageName;
       summarySheet.getCell(`A${currentRow}`).font = { bold: true };
       currentRow += 2;
+
+      summarySheet.getCell('C2').value = tr('reports.excel.visual', 'Visual');
+      summarySheet.getCell('C2').font = { bold: true };
+      summarySheet.getCell('C2').alignment = { horizontal: 'center' };
       
       // Time Entries Metrics with Styling
       if (reportData.timeEntries.length > 0) {
@@ -767,28 +813,42 @@ const Reports = () => {
         const approvedEntries = reportData.timeEntries.filter(e => e.status === 'approved').length;
         
         // Section Header
-        summarySheet.getCell(`A${currentRow}`).value = 'TIME TRACKING SUMMARY';
+        summarySheet.getCell(`A${currentRow}`).value = tr('reports.excel.timeTracking', 'Time Tracking Summary');
         summarySheet.getCell(`A${currentRow}`).font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
         summarySheet.getCell(`A${currentRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF70AD47' } };
-        summarySheet.mergeCells(`A${currentRow}:B${currentRow}`);
+        summarySheet.mergeCells(`A${currentRow}:C${currentRow}`);
         currentRow++;
         
-        // Metrics
-        const addMetric = (label, value, isNumeric = false) => {
+        const timeBarRows = [];
+        const addMetric = (label, value, isNumeric = false, trackBar = false) => {
           summarySheet.getCell(`A${currentRow}`).value = label;
-          summarySheet.getCell(`B${currentRow}`).value = isNumeric ? toNumber(value) : sanitize(value);
+          const numericValue = isNumeric ? toNumber(value) : sanitize(value);
+          summarySheet.getCell(`B${currentRow}`).value = numericValue;
           summarySheet.getCell(`A${currentRow}`).font = { bold: true };
           summarySheet.getCell(`B${currentRow}`).alignment = { horizontal: 'right' };
+          const barCell = summarySheet.getCell(`C${currentRow}`);
+          barCell.value = isNumeric ? numericValue : '';
+          if (trackBar && isNumeric) {
+            timeBarRows.push(currentRow);
+          }
           currentRow++;
         };
 
-        addMetric('Total Time Entries:', reportData.timeEntries.length, true);
-        addMetric('Total Hours Logged:', totalHours, true);
-        addMetric('Regular Hours:', regularHours, true);
-        addMetric('Overtime Hours:', overtimeHours, true);
-        addMetric('WFH Hours:', wfhHours, true);
-        addMetric('Pending Approvals:', pendingEntries, true);
-        addMetric('Approved Entries:', approvedEntries, true);
+        addMetric(tr('reports.excel.metrics.totalTimeEntries', 'Total Time Entries'), reportData.timeEntries.length, true, true);
+        addMetric(tr('reports.excel.metrics.totalHours', 'Total Hours Logged'), totalHours, true, true);
+        addMetric(tr('reports.excel.metrics.regularHours', 'Regular Hours'), regularHours, true, true);
+        addMetric(tr('reports.excel.metrics.overtimeHours', 'Overtime Hours'), overtimeHours, true, true);
+        addMetric(tr('reports.excel.metrics.wfhHours', 'WFH Hours'), wfhHours, true, true);
+        addMetric(tr('reports.excel.metrics.pendingApprovals', 'Pending Approvals'), pendingEntries, true, true);
+        addMetric(tr('reports.excel.metrics.approvedEntries', 'Approved Entries'), approvedEntries, true, true);
+        if (timeBarRows.length) {
+          const start = Math.min(...timeBarRows);
+          const end = Math.max(...timeBarRows);
+          summarySheet.addConditionalFormatting({
+            ref: `C${start}:C${end}`,
+            rules: [{ type: 'dataBar', cfvo: [{ type: 'min' }, { type: 'max' }], color: 'FF70AD47', showValue: false }]
+          });
+        }
         currentRow++;
       }
       
@@ -801,27 +861,42 @@ const Reports = () => {
         const totalActual = reportData.tasks.reduce((sum, t) => sum + (t.actual_hours || 0), 0);
         
         // Section Header
-        summarySheet.getCell(`A${currentRow}`).value = 'WORKLOAD SUMMARY';
+        summarySheet.getCell(`A${currentRow}`).value = tr('reports.excel.workload', 'Workload Summary');
         summarySheet.getCell(`A${currentRow}`).font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
         summarySheet.getCell(`A${currentRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC000' } };
-        summarySheet.mergeCells(`A${currentRow}:B${currentRow}`);
+        summarySheet.mergeCells(`A${currentRow}:C${currentRow}`);
         currentRow++;
         
-        const addMetric = (label, value, isNumeric = false) => {
+        const taskBarRows = [];
+        const addMetric = (label, value, isNumeric = false, trackBar = false) => {
           summarySheet.getCell(`A${currentRow}`).value = label;
-          summarySheet.getCell(`B${currentRow}`).value = isNumeric ? toNumber(value) : sanitize(value);
+          const numericValue = isNumeric ? toNumber(value) : sanitize(value);
+          summarySheet.getCell(`B${currentRow}`).value = numericValue;
           summarySheet.getCell(`A${currentRow}`).font = { bold: true };
           summarySheet.getCell(`B${currentRow}`).alignment = { horizontal: 'right' };
+          const barCell = summarySheet.getCell(`C${currentRow}`);
+          barCell.value = isNumeric ? numericValue : '';
+          if (trackBar && isNumeric) {
+            taskBarRows.push(currentRow);
+          }
           currentRow++;
         };
 
-        addMetric('Total Tasks:', reportData.tasks.length, true);
-        addMetric('Completed Tasks:', completedTasks, true);
-        addMetric('In Progress:', inProgressTasks, true);
-        addMetric('High Priority Tasks:', highPriority, true);
-        addMetric('Estimated Hours:', totalEstimated, true);
-        addMetric('Actual Hours:', totalActual, true);
-        addMetric('Variance:', totalActual - totalEstimated, true);
+        addMetric(tr('reports.excel.metrics.totalTasks', 'Total Tasks'), reportData.tasks.length, true, true);
+        addMetric(tr('reports.excel.metrics.completedTasks', 'Completed Tasks'), completedTasks, true, true);
+        addMetric(tr('reports.excel.metrics.inProgress', 'In Progress'), inProgressTasks, true, true);
+        addMetric(tr('reports.excel.metrics.highPriorityTasks', 'High Priority Tasks'), highPriority, true, true);
+        addMetric(tr('reports.excel.metrics.estimatedHours', 'Estimated Hours'), totalEstimated, true, true);
+        addMetric(tr('reports.excel.metrics.actualHours', 'Actual Hours'), totalActual, true, true);
+        addMetric(tr('reports.excel.metrics.variance', 'Variance'), totalActual - totalEstimated, true, true);
+        if (taskBarRows.length) {
+          const start = Math.min(...taskBarRows);
+          const end = Math.max(...taskBarRows);
+          summarySheet.addConditionalFormatting({
+            ref: `C${start}:C${end}`,
+            rules: [{ type: 'dataBar', cfvo: [{ type: 'min' }, { type: 'max' }], color: 'FFFFC000', showValue: false }]
+          });
+        }
         currentRow++;
       }
       
@@ -832,29 +907,45 @@ const Reports = () => {
         const avgProgress = (reportData.goals.reduce((sum, g) => sum + (g.status === 'completed' ? 100 : (g.progress || 0)), 0) / reportData.goals.length).toFixed(1);
         
         // Section Header
-        summarySheet.getCell(`A${currentRow}`).value = 'GOALS SUMMARY';
+        summarySheet.getCell(`A${currentRow}`).value = tr('reports.excel.goals', 'Goals Summary');
         summarySheet.getCell(`A${currentRow}`).font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
         summarySheet.getCell(`A${currentRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF5B9BD5' } };
-        summarySheet.mergeCells(`A${currentRow}:B${currentRow}`);
+        summarySheet.mergeCells(`A${currentRow}:C${currentRow}`);
         currentRow++;
         
-        const addMetric = (label, value, isNumeric = false) => {
+        const goalBarRows = [];
+        const addMetric = (label, value, isNumeric = false, trackBar = false) => {
           summarySheet.getCell(`A${currentRow}`).value = label;
-          summarySheet.getCell(`B${currentRow}`).value = isNumeric ? toNumber(value) : sanitize(value);
+          const numericValue = isNumeric ? toNumber(value) : sanitize(value);
+          summarySheet.getCell(`B${currentRow}`).value = numericValue;
           summarySheet.getCell(`A${currentRow}`).font = { bold: true };
           summarySheet.getCell(`B${currentRow}`).alignment = { horizontal: 'right' };
+          const barCell = summarySheet.getCell(`C${currentRow}`);
+          barCell.value = isNumeric ? numericValue : '';
+          if (trackBar && isNumeric) {
+            goalBarRows.push(currentRow);
+          }
           currentRow++;
         };
 
-        addMetric('Total Goals:', reportData.goals.length, true);
-        addMetric('Completed Goals:', completedGoals, true);
-        addMetric('In Progress:', inProgressGoals, true);
-        addMetric('Average Progress:', parseFloat(avgProgress) || 0, true);
+        addMetric(tr('reports.excel.metrics.totalGoals', 'Total Goals'), reportData.goals.length, true, true);
+        addMetric(tr('reports.excel.metrics.completedGoals', 'Completed Goals'), completedGoals, true, true);
+        addMetric(tr('reports.excel.metrics.inProgress', 'In Progress'), inProgressGoals, true, true);
+        addMetric(tr('reports.excel.metrics.avgProgress', 'Average Progress'), parseFloat(avgProgress) || 0, true, true);
+        if (goalBarRows.length) {
+          const start = Math.min(...goalBarRows);
+          const end = Math.max(...goalBarRows);
+          summarySheet.addConditionalFormatting({
+            ref: `C${start}:C${end}`,
+            rules: [{ type: 'dataBar', cfvo: [{ type: 'min' }, { type: 'max' }], color: 'FF5B9BD5', showValue: false }]
+          });
+        }
       }
 
       // Set column widths for summary sheet
       summarySheet.getColumn(1).width = 30;
       summarySheet.getColumn(2).width = 20;
+      summarySheet.getColumn(3).width = 18;
       // Format second column for numbers (metrics)
       summarySheet.getColumn(2).numFmt = '#,##0.00';
 
@@ -862,10 +953,12 @@ const Reports = () => {
       if (selectedEmployee !== 'all') {
         const employee = reportData.employees.find(emp => String(emp.id) === String(selectedEmployee));
         if (employee) {
-          const perfSheet = workbook.addWorksheet('Employee Performance');
+          const perfSheet = workbook.addWorksheet(sheetNames.performance);
           
           // Header
-          perfSheet.getCell('A1').value = `${getDemoEmployeeName(employee, t).toUpperCase()} - PERFORMANCE REPORT`;
+          const perfHeader = tr('reports.excel.performance.header', 'Performance Report');
+          const employeeDisplayName = getDemoEmployeeName(employee, t);
+          perfSheet.getCell('A1').value = `${employeeDisplayName} - ${perfHeader}`;
           perfSheet.getCell('A1').font = { size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
           perfSheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0070C0' } };
           perfSheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
@@ -875,7 +968,7 @@ const Reports = () => {
           let perfRow = 3;
           
           // Employee Info Section
-          perfSheet.getCell(`A${perfRow}`).value = 'EMPLOYEE INFORMATION';
+          perfSheet.getCell(`A${perfRow}`).value = tr('reports.excel.performance.employeeInfo', 'Employee Information');
           perfSheet.getCell(`A${perfRow}`).font = { size: 12, bold: true };
           perfSheet.getCell(`A${perfRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } };
           perfSheet.mergeCells(`A${perfRow}:D${perfRow}`);
@@ -889,11 +982,11 @@ const Reports = () => {
             perfRow++;
           };
           
-          addInfo('Name:', getDemoEmployeeName(employee, t));
-          addInfo('Department:', translateDepartment(employee.department));
-          addInfo('Position:', translatePosition(employee.position));
-          addInfo('Email:', employee.email || 'N/A');
-          addInfo('Report Period:', `${filters.startDate} to ${filters.endDate}`);
+          addInfo(tr('reports.excel.performance.name', 'Name'), getDemoEmployeeName(employee, t));
+          addInfo(tr('reports.excel.performance.department', 'Department'), translateDepartment(employee.department));
+          addInfo(tr('reports.excel.performance.position', 'Position'), translatePosition(employee.position));
+          addInfo(tr('reports.excel.performance.email', 'Email'), employee.email || 'N/A');
+          addInfo(tr('reports.excel.performance.reportPeriod', 'Report Period'), `${filters.startDate} ${tr('reports.to', 'to')} ${filters.endDate}`);
           perfRow++;
           
           // Performance Metrics Section
@@ -901,14 +994,19 @@ const Reports = () => {
           const employeeTasks = reportData.tasks.filter(t => t.employee_id === employee.id);
           const employeeGoals = reportData.goals.filter(g => g.employee_id === employee.id);
           
-          perfSheet.getCell(`A${perfRow}`).value = 'PERFORMANCE METRICS';
+          perfSheet.getCell(`A${perfRow}`).value = tr('reports.excel.performance.performanceMetrics', 'Performance Metrics');
           perfSheet.getCell(`A${perfRow}`).font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
           perfSheet.getCell(`A${perfRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF70AD47' } };
           perfSheet.mergeCells(`A${perfRow}:D${perfRow}`);
           perfRow++;
           
           // Metrics table header
-          ['Metric', 'Value', 'Status', 'Notes'].forEach((header, idx) => {
+          [
+            tr('reports.excel.performance.tableHeaders.metric', 'Metric'),
+            tr('reports.excel.performance.tableHeaders.value', 'Value'),
+            tr('reports.excel.performance.tableHeaders.status', 'Status'),
+            tr('reports.excel.performance.tableHeaders.notes', 'Notes')
+          ].forEach((header, idx) => {
             const cell = perfSheet.getCell(perfRow, idx + 1);
             cell.value = header;
             cell.font = { bold: true };
@@ -924,6 +1022,38 @@ const Reports = () => {
           const overtimeHours = employeeTimeEntries.filter(e => e.hour_type === 'overtime' || e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
           const wfhHours = employeeTimeEntries.filter(e => e.hour_type === 'wfh').reduce((sum, e) => sum + (e.hours || 0), 0);
           const approvedEntries = employeeTimeEntries.filter(e => e.status === 'approved').length;
+
+          const perfLabels = {
+            totalHours: tr('reports.excel.metrics.totalHours', 'Total Hours Logged'),
+            regularHours: tr('reports.excel.metrics.regularHours', 'Regular Hours'),
+            overtimeHours: tr('reports.excel.metrics.overtimeHours', 'Overtime Hours'),
+            wfhHours: tr('reports.excel.metrics.wfhHours', 'WFH Hours'),
+            approvalRate: tr('reports.excel.performance.approvalRate', 'Approval Rate'),
+            totalTasks: tr('reports.excel.metrics.totalTasks', 'Total Tasks'),
+            taskCompletionRate: tr('reports.excel.performance.taskCompletionRate', 'Task Completion Rate'),
+            totalGoals: tr('reports.excel.metrics.totalGoals', 'Total Goals'),
+            avgGoalProgress: tr('reports.excel.performance.avgGoalProgress', 'Average Goal Progress'),
+            entries: tr('reports.excel.entries', 'entries'),
+            ofTotal: tr('reports.excel.ofTotal', 'of total'),
+            completed: tr('reports.excel.completedShort', 'completed')
+          };
+
+          const statusLabels = {
+            high: tr('reports.excel.status.high', 'High'),
+            normal: tr('reports.excel.status.normal', 'Normal'),
+            tracked: tr('reports.excel.status.tracked', 'Tracked'),
+            pending: tr('reports.excel.status.pending', 'Pending'),
+            allApproved: tr('reports.excel.status.allApproved', 'All Approved'),
+            active: tr('reports.excel.status.active', 'Active'),
+            noTasks: tr('reports.excel.status.noTasks', 'No Tasks'),
+            excellent: tr('reports.excel.status.excellent', 'Excellent'),
+            good: tr('reports.excel.status.good', 'Good'),
+            needsImprovement: tr('reports.excel.status.needsImprovement', 'Needs Improvement'),
+            set: tr('reports.excel.status.set', 'Set'),
+            onTrack: tr('reports.excel.status.onTrack', 'On Track'),
+            progressing: tr('reports.excel.status.progressing', 'Progressing'),
+            behind: tr('reports.excel.status.behind', 'Behind')
+          };
           
           const addMetric = (metric, value, status, notes) => {
             perfSheet.getCell(`A${perfRow}`).value = metric;
@@ -933,32 +1063,80 @@ const Reports = () => {
             perfSheet.getCell(`B${perfRow}`).alignment = { horizontal: 'right' };
             perfRow++;
           };
+          const entriesCountLabel = `${employeeTimeEntries.length} ${perfLabels.entries}`;
+          const totalHoursDenominator = totalHours > 0 ? totalHours : 1;
+          const approvalPercent = employeeTimeEntries.length > 0 ? ((approvedEntries / employeeTimeEntries.length) * 100).toFixed(0) : '0';
           
-          addMetric('Total Hours Logged', totalHours.toFixed(1), totalHours > 160 ? '⚠️ High' : '✅ Normal', `${employeeTimeEntries.length} entries`);
-          addMetric('Regular Hours', regularHours.toFixed(1), '✅ Tracked', `${(regularHours/totalHours*100).toFixed(0)}% of total`);
-          addMetric('Overtime Hours', overtimeHours.toFixed(1), overtimeHours > 20 ? '⚠️ High' : '✅ Normal', `${(overtimeHours/totalHours*100).toFixed(0)}% of total`);
-          addMetric('WFH Hours', wfhHours.toFixed(1), '✅ Tracked', `${totalHours > 0 ? (wfhHours/totalHours*100).toFixed(0) : 0}% of total`);
-          addMetric('Approval Rate', `${approvedEntries}/${employeeTimeEntries.length}`, approvedEntries === employeeTimeEntries.length ? '✅ All Approved' : '⏳ Pending', `${((approvedEntries/employeeTimeEntries.length)*100).toFixed(0)}%`);
+          addMetric(
+            perfLabels.totalHours,
+            totalHours.toFixed(1),
+            totalHours > 160 ? `⚠️ ${statusLabels.high}` : `✅ ${statusLabels.normal}`,
+            entriesCountLabel
+          );
+          addMetric(
+            perfLabels.regularHours,
+            regularHours.toFixed(1),
+            `✅ ${statusLabels.tracked}`,
+            `${((regularHours / totalHoursDenominator) * 100).toFixed(0)}% ${perfLabels.ofTotal}`
+          );
+          addMetric(
+            perfLabels.overtimeHours,
+            overtimeHours.toFixed(1),
+            overtimeHours > 20 ? `⚠️ ${statusLabels.high}` : `✅ ${statusLabels.normal}`,
+            `${((overtimeHours / totalHoursDenominator) * 100).toFixed(0)}% ${perfLabels.ofTotal}`
+          );
+          addMetric(
+            perfLabels.wfhHours,
+            wfhHours.toFixed(1),
+            `✅ ${statusLabels.tracked}`,
+            `${totalHours > 0 ? (wfhHours / totalHours * 100).toFixed(0) : 0}% ${perfLabels.ofTotal}`
+          );
+          addMetric(
+            perfLabels.approvalRate,
+            `${approvedEntries}/${employeeTimeEntries.length}`,
+            approvedEntries === employeeTimeEntries.length ? `✅ ${statusLabels.allApproved}` : `⏳ ${statusLabels.pending}`,
+            `${approvalPercent}%`
+          );
           perfRow++;
           
           // Task Performance
           const completedTasks = employeeTasks.filter(t => t.status === 'completed').length;
           const taskCompletionRate = employeeTasks.length > 0 ? ((completedTasks / employeeTasks.length) * 100).toFixed(1) : 0;
           
-          addMetric('Total Tasks', employeeTasks.length, employeeTasks.length > 0 ? '✅ Active' : '⚠️ No Tasks', `${completedTasks} completed`);
-          addMetric('Task Completion Rate', `${taskCompletionRate}%`, taskCompletionRate >= 80 ? '✅ Excellent' : taskCompletionRate >= 60 ? '⚠️ Good' : '❌ Needs Improvement', `${completedTasks}/${employeeTasks.length} done`);
+          addMetric(
+            perfLabels.totalTasks,
+            employeeTasks.length,
+            employeeTasks.length > 0 ? `✅ ${statusLabels.active}` : `⚠️ ${statusLabels.noTasks}`,
+            `${completedTasks} ${perfLabels.completed}`
+          );
+          addMetric(
+            perfLabels.taskCompletionRate,
+            `${taskCompletionRate}%`,
+            taskCompletionRate >= 80 ? `✅ ${statusLabels.excellent}` : taskCompletionRate >= 60 ? `⚠️ ${statusLabels.good}` : `❌ ${statusLabels.needsImprovement}`,
+            `${completedTasks}/${employeeTasks.length} ${perfLabels.completed}`
+          );
           perfRow++;
           
           // Goals Performance
           const completedGoals = employeeGoals.filter(g => g.status === 'completed').length;
           const avgProgress = employeeGoals.length > 0 ? (employeeGoals.reduce((sum, g) => sum + (g.status === 'completed' ? 100 : (g.progress || 0)), 0) / employeeGoals.length).toFixed(1) : 0;
           
-          addMetric('Total Goals', employeeGoals.length, employeeGoals.length > 0 ? '✅ Set' : '⚠️ No Goals', `${completedGoals} completed`);
-          addMetric('Average Goal Progress', `${avgProgress}%`, avgProgress >= 75 ? '✅ On Track' : avgProgress >= 50 ? '⚠️ Progressing' : '❌ Behind', `${employeeGoals.length} goals tracked`);
+          addMetric(
+            perfLabels.totalGoals,
+            employeeGoals.length,
+            employeeGoals.length > 0 ? `✅ ${statusLabels.set}` : `⚠️ ${statusLabels.noTasks}`,
+            `${completedGoals} ${perfLabels.completed}`
+          );
+          addMetric(
+            perfLabels.avgGoalProgress,
+            `${avgProgress}%`,
+            avgProgress >= 75 ? `✅ ${statusLabels.onTrack}` : avgProgress >= 50 ? `⚠️ ${statusLabels.progressing}` : `❌ ${statusLabels.behind}`,
+            `${employeeGoals.length} ${tr('reports.goals', 'Goals')} ${statusLabels.tracked}`
+          );
           perfRow += 2;
           
           // Performance Summary
-          perfSheet.getCell(`A${perfRow}`).value = 'OVERALL PERFORMANCE RATING';
+          perfSheet.getCell(`A${perfRow}`).value = tr('reports.excel.performance.overallRating', 'Overall Performance Rating');
           perfSheet.getCell(`A${perfRow}`).font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
           perfSheet.getCell(`A${perfRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC000' } };
           perfSheet.mergeCells(`A${perfRow}:D${perfRow}`);
@@ -970,7 +1148,7 @@ const Reports = () => {
           const goalScore = parseFloat(avgProgress);
           const overallScore = ((timeScore + taskScore + goalScore) / 3).toFixed(1);
           
-          perfSheet.getCell(`A${perfRow}`).value = 'Overall Performance Score:';
+          perfSheet.getCell(`A${perfRow}`).value = tr('reports.excel.performance.overallScore', 'Overall Performance Score:');
           perfSheet.getCell(`B${perfRow}`).value = `${overallScore}%`;
           perfSheet.getCell(`A${perfRow}`).font = { bold: true, size: 14 };
           perfSheet.getCell(`B${perfRow}`).font = { bold: true, size: 16, color: { argb: overallScore >= 80 ? 'FF00B050' : overallScore >= 60 ? 'FFFFC000' : 'FFFF0000' } };
@@ -978,8 +1156,16 @@ const Reports = () => {
           perfSheet.mergeCells(`B${perfRow}:D${perfRow}`);
           perfRow++;
           
-          perfSheet.getCell(`A${perfRow}`).value = 'Rating:';
-          const rating = overallScore >= 90 ? '⭐⭐⭐⭐⭐ Outstanding' : overallScore >= 80 ? '⭐⭐⭐⭐ Excellent' : overallScore >= 70 ? '⭐⭐⭐ Good' : overallScore >= 60 ? '⭐⭐ Satisfactory' : '⭐ Needs Improvement';
+          perfSheet.getCell(`A${perfRow}`).value = tr('reports.excel.performance.ratingLabel', 'Rating:');
+          const rating = overallScore >= 90
+            ? `⭐⭐⭐⭐⭐ ${tr('reports.excel.rating.outstanding', 'Outstanding')}`
+            : overallScore >= 80
+            ? `⭐⭐⭐⭐ ${tr('reports.excel.rating.excellent', 'Excellent')}`
+            : overallScore >= 70
+            ? `⭐⭐⭐ ${tr('reports.excel.rating.good', 'Good')}`
+            : overallScore >= 60
+            ? `⭐⭐ ${tr('reports.excel.rating.satisfactory', 'Satisfactory')}`
+            : `⭐ ${tr('reports.excel.rating.needsImprovement', 'Needs Improvement')}`;
           perfSheet.getCell(`B${perfRow}`).value = rating;
           perfSheet.getCell(`A${perfRow}`).font = { bold: true };
           perfSheet.getCell(`B${perfRow}`).font = { bold: true, size: 12 };
@@ -994,20 +1180,20 @@ const Reports = () => {
 
       // ==================== CHARTS SHEET WITH DATA ====================
       if (reportData.timeEntries.length > 0 || reportData.tasks.length > 0) {
-        const chartsSheet = workbook.addWorksheet('Charts & Metrics');
+        const chartsSheet = workbook.addWorksheet(sheetNames.charts);
         
         let chartRow = 1;
         
         // Hours by Type Chart Data
         if (reportData.timeEntries.length > 0) {
-          chartsSheet.getCell(`A${chartRow}`).value = 'HOURS BY TYPE';
+          chartsSheet.getCell(`A${chartRow}`).value = tr('reports.excel.charts.hoursByType', 'Hours by Type').toUpperCase();
           chartsSheet.getCell(`A${chartRow}`).font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
           chartsSheet.getCell(`A${chartRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
           chartsSheet.mergeCells(`A${chartRow}:B${chartRow}`);
           chartRow++;
           
-          chartsSheet.getCell(`A${chartRow}`).value = 'Type';
-          chartsSheet.getCell(`B${chartRow}`).value = 'Hours';
+          chartsSheet.getCell(`A${chartRow}`).value = tr('reports.excel.headers.type', 'Type');
+          chartsSheet.getCell(`B${chartRow}`).value = tr('reports.excel.headers.hours', 'Hours');
           chartsSheet.getRow(chartRow).font = { bold: true };
           chartsSheet.getRow(chartRow).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
           chartRow++;
@@ -1019,21 +1205,21 @@ const Reports = () => {
           });
           
           Object.entries(hoursByType).forEach(([type, hours]) => {
-            chartsSheet.getCell(`A${chartRow}`).value = type;
+            chartsSheet.getCell(`A${chartRow}`).value = translateHourType(type) || type;
             chartsSheet.getCell(`B${chartRow}`).value = parseFloat(hours.toFixed(2));
             chartRow++;
           });
           chartRow += 2;
           
           // Status Distribution
-          chartsSheet.getCell(`A${chartRow}`).value = 'STATUS DISTRIBUTION';
+          chartsSheet.getCell(`A${chartRow}`).value = tr('reports.excel.charts.statusDistribution', 'Status Distribution').toUpperCase();
           chartsSheet.getCell(`A${chartRow}`).font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
           chartsSheet.getCell(`A${chartRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF70AD47' } };
           chartsSheet.mergeCells(`A${chartRow}:B${chartRow}`);
           chartRow++;
           
-          chartsSheet.getCell(`A${chartRow}`).value = 'Status';
-          chartsSheet.getCell(`B${chartRow}`).value = 'Count';
+          chartsSheet.getCell(`A${chartRow}`).value = tr('reports.excel.headers.status', 'Status');
+          chartsSheet.getCell(`B${chartRow}`).value = tr('reports.excel.headers.count', 'Count');
           chartsSheet.getRow(chartRow).font = { bold: true };
           chartsSheet.getRow(chartRow).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
           chartRow++;
@@ -1045,7 +1231,7 @@ const Reports = () => {
           });
           
           Object.entries(statusCounts).forEach(([status, count]) => {
-            chartsSheet.getCell(`A${chartRow}`).value = status;
+            chartsSheet.getCell(`A${chartRow}`).value = translateStatus(status) || status;
             chartsSheet.getCell(`B${chartRow}`).value = count;
             chartRow++;
           });
@@ -1054,14 +1240,14 @@ const Reports = () => {
         
         // Task Metrics
         if (reportData.tasks.length > 0) {
-          chartsSheet.getCell(`A${chartRow}`).value = 'TASK STATUS DISTRIBUTION';
+          chartsSheet.getCell(`A${chartRow}`).value = tr('reports.excel.charts.taskStatusDistribution', 'Task Status Distribution').toUpperCase();
           chartsSheet.getCell(`A${chartRow}`).font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
           chartsSheet.getCell(`A${chartRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC000' } };
           chartsSheet.mergeCells(`A${chartRow}:B${chartRow}`);
           chartRow++;
           
-          chartsSheet.getCell(`A${chartRow}`).value = 'Status';
-          chartsSheet.getCell(`B${chartRow}`).value = 'Count';
+          chartsSheet.getCell(`A${chartRow}`).value = tr('reports.excel.headers.status', 'Status');
+          chartsSheet.getCell(`B${chartRow}`).value = tr('reports.excel.headers.count', 'Count');
           chartsSheet.getRow(chartRow).font = { bold: true };
           chartsSheet.getRow(chartRow).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE699' } };
           chartRow++;
@@ -1073,21 +1259,21 @@ const Reports = () => {
           });
           
           Object.entries(taskStatus).forEach(([status, count]) => {
-            chartsSheet.getCell(`A${chartRow}`).value = status;
+            chartsSheet.getCell(`A${chartRow}`).value = translateStatus(status) || status;
             chartsSheet.getCell(`B${chartRow}`).value = count;
             chartRow++;
           });
           chartRow += 2;
           
           // Task Priority
-          chartsSheet.getCell(`A${chartRow}`).value = 'TASK PRIORITY DISTRIBUTION';
+          chartsSheet.getCell(`A${chartRow}`).value = tr('reports.excel.charts.taskPriorityDistribution', 'Task Priority Distribution').toUpperCase();
           chartsSheet.getCell(`A${chartRow}`).font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
           chartsSheet.getCell(`A${chartRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFED7D31' } };
           chartsSheet.mergeCells(`A${chartRow}:B${chartRow}`);
           chartRow++;
           
-          chartsSheet.getCell(`A${chartRow}`).value = 'Priority';
-          chartsSheet.getCell(`B${chartRow}`).value = 'Count';
+          chartsSheet.getCell(`A${chartRow}`).value = tr('reports.excel.headers.priority', 'Priority');
+          chartsSheet.getCell(`B${chartRow}`).value = tr('reports.excel.headers.count', 'Count');
           chartsSheet.getRow(chartRow).font = { bold: true };
           chartsSheet.getRow(chartRow).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4B084' } };
           chartRow++;
@@ -1099,7 +1285,7 @@ const Reports = () => {
           });
           
           Object.entries(taskPriority).forEach(([priority, count]) => {
-            chartsSheet.getCell(`A${chartRow}`).value = priority;
+            chartsSheet.getCell(`A${chartRow}`).value = translatePriority(priority) || priority;
             chartsSheet.getCell(`B${chartRow}`).value = count;
             chartRow++;
           });
@@ -1112,10 +1298,22 @@ const Reports = () => {
 
       // ==================== TIME ENTRIES SHEET WITH STYLING ====================
       if (reportData.timeEntries.length > 0) {
-        const timeEntriesSheet = workbook.addWorksheet('Time Entries');
+        const timeEntriesSheet = workbook.addWorksheet(sheetNames.timeEntries);
         
         // Headers
-        const headers = ['Employee', 'Department', 'Position', 'Date', 'Clock In', 'Clock Out', 'Hours', 'Hour Type', 'Status', 'Notes', 'Created At'];
+        const headers = [
+          tr('reports.excel.headers.employee', 'Employee'),
+          tr('reports.excel.headers.department', 'Department'),
+          tr('reports.excel.headers.position', 'Position'),
+          tr('reports.excel.headers.date', 'Date'),
+          tr('reports.excel.headers.clockIn', 'Clock In'),
+          tr('reports.excel.headers.clockOut', 'Clock Out'),
+          tr('reports.excel.headers.hours', 'Hours'),
+          tr('reports.excel.headers.hourType', 'Hour Type'),
+          tr('reports.excel.headers.status', 'Status'),
+          tr('reports.excel.headers.notes', 'Notes'),
+          tr('reports.excel.headers.createdAt', 'Created At')
+        ];
         headers.forEach((header, idx) => {
           const cell = timeEntriesSheet.getCell(1, idx + 1);
           cell.value = header;
@@ -1167,10 +1365,22 @@ const Reports = () => {
 
       // ==================== TASKS SHEET WITH STYLING ====================
       if (reportData.tasks.length > 0) {
-        const tasksSheet = workbook.addWorksheet('Tasks');
+        const tasksSheet = workbook.addWorksheet(sheetNames.tasks);
         
         // Headers
-        const headers = ['Employee', 'Department', 'Task Title', 'Description', 'Priority', 'Status', 'Due Date', 'Estimated Hours', 'Actual Hours', 'Variance', 'Created At'];
+        const headers = [
+          tr('reports.excel.headers.employee', 'Employee'),
+          tr('reports.excel.headers.department', 'Department'),
+          tr('reports.excel.headers.taskTitle', 'Task Title'),
+          tr('reports.excel.headers.description', 'Description'),
+          tr('reports.excel.headers.priority', 'Priority'),
+          tr('reports.excel.headers.status', 'Status'),
+          tr('reports.excel.headers.dueDate', 'Due Date'),
+          tr('reports.excel.headers.estimatedHours', 'Estimated Hours'),
+          tr('reports.excel.headers.actualHours', 'Actual Hours'),
+          tr('reports.excel.headers.variance', 'Variance'),
+          tr('reports.excel.headers.createdAt', 'Created At')
+        ];
         headers.forEach((header, idx) => {
           const cell = tasksSheet.getCell(1, idx + 1);
           cell.value = header;
@@ -1235,10 +1445,22 @@ const Reports = () => {
 
       // ==================== GOALS SHEET WITH STYLING ====================
       if (reportData.goals.length > 0) {
-        const goalsSheet = workbook.addWorksheet('Goals');
+        const goalsSheet = workbook.addWorksheet(sheetNames.goals);
         
         // Headers
-        const headers = ['Employee', 'Department', 'Goal Title', 'Description', 'Category', 'Status', 'Progress (%)', 'Target Date', 'Notes', 'Created At', 'Updated At'];
+        const headers = [
+          tr('reports.excel.headers.employee', 'Employee'),
+          tr('reports.excel.headers.department', 'Department'),
+          tr('reports.excel.headers.goalTitle', 'Goal Title'),
+          tr('reports.excel.headers.description', 'Description'),
+          tr('reports.excel.headers.category', 'Category'),
+          tr('reports.excel.headers.status', 'Status'),
+          tr('reports.excel.headers.progress', 'Progress (%)'),
+          tr('reports.excel.headers.targetDate', 'Target Date'),
+          tr('reports.excel.headers.notes', 'Notes'),
+          tr('reports.excel.headers.createdAt', 'Created At'),
+          tr('reports.excel.headers.updatedAt', 'Updated At')
+        ];
         headers.forEach((header, idx) => {
           const cell = goalsSheet.getCell(1, idx + 1);
           cell.value = header;
@@ -1309,9 +1531,14 @@ const Reports = () => {
 
       // Write the file with ExcelJS
       // Safe filename and export
-      const safeEmployee = sanitize(employeeName || 'All_Employees');
-      const rawFilename = `${safeEmployee}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.xlsx`;
-      const filename = encodeURIComponent(rawFilename);
+      const filenamePrefixRaw = tr('reports.filenamePrefix', 'HR_Report_');
+      const prefixPart = toFilePart(filenamePrefixRaw || 'HR_Report_');
+      const normalizedPrefix = prefixPart.endsWith('_') ? prefixPart : `${prefixPart}_`;
+      const safeEmployee = toFilePart(employeeName || tr('reports.allEmployees', 'All Employees'));
+      const rangeSeparator = toFilePart(tr('reports.to', 'to'), 'to');
+      const rawFilename = `${normalizedPrefix}${safeEmployee}_${filters.startDate}_${rangeSeparator}_${filters.endDate}_${currentLanguage.toUpperCase()}.xlsx`;
+      // Use raw filename so browsers keep readable Unicode names; safe parts already sanitized
+      const filename = rawFilename;
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = URL.createObjectURL(blob);
@@ -1412,9 +1639,8 @@ const Reports = () => {
     cleaned = cleaned.replace(/[^\x20-\x7E]/g, (match) => {
       // If character is in our map, use the mapped value
       if (charMap[match]) return charMap[match];
-      // Otherwise, try to get the base character or remove it
       const base = match.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      return base !== match ? base : '';
+      return base !== match ? base : '?';
     });
     
     // Step 5: Remove zero-width characters and control characters
@@ -1503,96 +1729,85 @@ const Reports = () => {
     return notes;
   };
 
+
   // PDF Export with Charts and Tables
-  const exportToPDF = async () => {
+  const exportToPDF = async function() {
     setExporting(true);
     try {
       const doc = new jsPDF('p', 'mm', 'a4');
       
       // ENHANCED: Language-specific font loading for proper Unicode support
       let unicodeFontLoaded = false;
-      
-      // Determine which font to load based on current language
-      const getFontUrlForLanguage = (lang) => {
+
+      const getFontConfigForLanguage = (lang) => {
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        
+        // Use a reliable CDN for Noto fonts
+        const GOOGLE_FONTS_CDN = 'https://fonts.gstatic.com/s';
+
         switch (lang) {
           case 'jp':
             return {
-              primary: 'https://cdn.jsdelivr.net/gh/googlefonts/noto-cjk/NotoSansJP-Regular.otf',
-              fallback: 'https://fonts.gstatic.com/s/notosansjp/v52/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFBEi75vY0rw-oME.woff2',
-              name: 'Noto Sans JP'
+              primary: `${origin}/fonts/NotoSansCJKjp-Regular.otf`,
+              // Updated to a more stable Noto CJK distribution
+              fallback: 'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf',
+              vfsName: 'NotoSansCJKjp-Regular.otf',
+              fontName: 'NotoSansJP',
+              logName: 'Noto Sans JP'
             };
           case 'kr':
             return {
-              primary: 'https://cdn.jsdelivr.net/gh/googlefonts/noto-cjk/NotoSansKR-Regular.otf',
-              fallback: 'https://fonts.gstatic.com/s/notosanskr/v36/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyeLTq8H4hfeE.woff2',
-              name: 'Noto Sans KR'
+              primary: `${origin}/fonts/NotoSansKR-Regular.otf`,
+              fallback: 'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf',
+              vfsName: 'NotoSansCJKkr-Regular.otf',
+              fontName: 'NotoSansKR',
+              logName: 'Noto Sans KR'
             };
           case 'th':
             return {
-              primary: 'https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSansThai/NotoSansThai-Regular.ttf',
-              fallback: 'https://fonts.gstatic.com/s/notosansthai/v20/iJWnBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcd1MKVQt_So_9CdU5RtpzF-QRvzzXg.woff2',
-              name: 'Noto Sans Thai'
+              primary: `${origin}/fonts/NotoSansThai-Regular.ttf`,
+              // Pointing to the newer specialized Thai repo path
+              fallback: 'https://cdn.jsdelivr.net/gh/notofonts/thai@main/fonts/NotoSansThai/ttf/NotoSansThai-Regular.ttf',
+              vfsName: 'NotoSansThai-Regular.ttf',
+              fontName: 'NotoSansThai',
+              logName: 'Noto Sans Thai'
             };
           case 'ru':
-            return {
-              primary: 'https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSans/NotoSans-Regular.ttf',
-              fallback: 'https://fonts.gstatic.com/s/notosans/v30/o-0IIpQlx3QUlC5A4PNr5TRG.ttf',
-              name: 'Noto Sans'
-            };
           case 'vn':
           case 'en':
           case 'de':
-          case 'fr':
           case 'es':
           default:
             return {
-              primary: 'https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSans/NotoSans-Regular.ttf',
-              fallback: 'https://fonts.gstatic.com/s/notosans/v30/o-0IIpQlx3QUlC5A4PNr5TRG.ttf',
-              name: 'Noto Sans'
+              // Use local font for reliability
+              primary: `${origin}/fonts/NotoSans-Regular.ttf`,
+              fallback: 'https://cdn.jsdelivr.net/gh/notofonts/latin-greek-cyrillic@main/fonts/NotoSans/ttf/NotoSans-Regular.ttf',
+              vfsName: 'NotoSans-Regular.ttf',
+              fontName: 'NotoSans',
+              logName: 'Noto Sans'
             };
         }
       };
       
-      const fontConfig = getFontUrlForLanguage(currentLanguage);
-      
+      const fontConfig = getFontConfigForLanguage(currentLanguage);
+      const hasFontWithWidths = (name) => {
+        const list = doc.getFontList?.();
+        const font = list ? list[name] : undefined;
+        return !!(font && font.metadata && font.metadata.widths);
+      };
+
       try {
-        console.log(`Loading ${fontConfig.name} for language: ${currentLanguage}`);
-        
-        // Try loading primary font URL
-        const fontResponse = await fetch(fontConfig.primary);
-        if (!fontResponse.ok) throw new Error('Primary font fetch failed');
-        
-        const fontData = await fontResponse.arrayBuffer();
-        const base64Font = btoa(
-          new Uint8Array(fontData).reduce((data, byte) => data + String.fromCharCode(byte), '')
-        );
-        
-        doc.addFileToVFS('NotoSans-Regular.ttf', base64Font);
-        doc.addFont('NotoSans-Regular.ttf', 'NotoSans', 'normal');
-        doc.setFont('NotoSans');
-        unicodeFontLoaded = true;
-        
-        console.log(`✓ ${fontConfig.name} loaded successfully for PDF export`);
+        console.log(`Loading ${fontConfig.logName} for language: ${currentLanguage}`);
+        // Using promise chain to avoid await parser issue
+        await loadFontHelper(doc, fontConfig.primary, fontConfig.vfsName, fontConfig.fontName);
+        unicodeFontLoaded = hasFontWithWidths(fontConfig.fontName);
+        console.log(`✓ ${fontConfig.logName} loaded successfully for PDF export`);
       } catch (fontError) {
-        console.warn(`Failed to load ${fontConfig.name} from primary CDN, trying fallback...`, fontError);
-        
-        // Try fallback URL
+        console.warn(`Failed to load ${fontConfig.logName} from primary source, trying fallback...`, fontError);
         try {
-          const fontResponse = await fetch(fontConfig.fallback);
-          
-          if (fontResponse.ok) {
-            const fontData = await fontResponse.arrayBuffer();
-            const base64Font = btoa(
-              new Uint8Array(fontData).reduce((data, byte) => data + String.fromCharCode(byte), '')
-            );
-            
-            doc.addFileToVFS('NotoSans.ttf', base64Font);
-            doc.addFont('NotoSans.ttf', 'NotoSans', 'normal');
-            doc.setFont('NotoSans');
-            unicodeFontLoaded = true;
-            
-            console.log(`✓ ${fontConfig.name} loaded from fallback CDN`);
-          }
+          await loadFontHelper(doc, fontConfig.fallback, fontConfig.vfsName, fontConfig.fontName);
+          unicodeFontLoaded = hasFontWithWidths(fontConfig.fontName);
+          console.log(`✓ ${fontConfig.logName} loaded from fallback source`);
         } catch (fallbackError) {
           console.warn('Fallback font also failed, using sanitization:', fallbackError);
         }
@@ -1604,8 +1819,8 @@ const Reports = () => {
         console.log('⚠ Using Helvetica with character sanitization (Unicode font unavailable)');
       }
       
-      // Helper to get the correct font name for autoTable
-      const getTableFont = () => unicodeFontLoaded ? 'NotoSans' : 'helvetica';
+      // Helper to get the correct font name for autoTable (fallback to helvetica if font not registered)
+      const getTableFont = () => (unicodeFontLoaded && hasFontWithWidths(fontConfig.fontName)) ? fontConfig.fontName : 'helvetica';
       
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
@@ -1623,21 +1838,21 @@ const Reports = () => {
       // Header
       doc.setFontSize(20);
       doc.setTextColor(40, 44, 52);
-      doc.text(t('reports.performanceReport', 'HR PERFORMANCE REPORT').toUpperCase(), pageWidth / 2, yPosition, { align: 'center' });
+      doc.text(cleanTextForPDF(t('reports.performanceReport', 'HR PERFORMANCE REPORT').toUpperCase(), unicodeFontLoaded), pageWidth / 2, yPosition, { align: 'center' });
       
       yPosition += 10;
       doc.setFontSize(10);
       doc.setTextColor(100, 100, 100);
-      doc.text(`${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}`, pageWidth / 2, yPosition, { align: 'center' });
+      doc.text(cleanTextForPDF(`${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}`, unicodeFontLoaded), pageWidth / 2, yPosition, { align: 'center' });
       
       yPosition += 5;
-      doc.text(`${t('reports.period', 'Period')}: ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}`, pageWidth / 2, yPosition, { align: 'center' });
+      doc.text(cleanTextForPDF(`${t('reports.period', 'Period')}: ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}`, unicodeFontLoaded), pageWidth / 2, yPosition, { align: 'center' });
       
       yPosition += 5;
       const displayEmployeeName = selectedEmployee === 'all' ? 
         t('reports.allEmployees', 'All Employees') : 
         (unicodeFontLoaded ? rawEmployeeName : cleanTextForPDF(rawEmployeeName, false));
-      doc.text(`${t('reports.employee', 'Employee')}: ${displayEmployeeName}`, pageWidth / 2, yPosition, { align: 'center' });
+      doc.text(cleanTextForPDF(`${t('reports.employee', 'Employee')}: ${displayEmployeeName}`, unicodeFontLoaded), pageWidth / 2, yPosition, { align: 'center' });
       
       yPosition += 15;
 
@@ -1647,37 +1862,37 @@ const Reports = () => {
       
       doc.setFontSize(14);
       doc.setTextColor(40, 44, 52);
-      doc.text(t('reports.summaryOverview', 'SUMMARY OVERVIEW').toUpperCase(), pageWidth / 2, yPosition + 8, { align: 'center' });
+      doc.text(cleanTextForPDF(t('reports.summaryOverview', 'SUMMARY OVERVIEW').toUpperCase(), unicodeFontLoaded), pageWidth / 2, yPosition + 8, { align: 'center' });
       
       yPosition += 15;
       doc.setFontSize(10);
       doc.setTextColor(60, 60, 60);
       
       if (activeTab === 'all') {
-        doc.text(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, 25, yPosition);
-        doc.text(`${t('reports.timeEntries', 'Time Entries')}: ${stats.timeEntriesCount}`, 25, yPosition + 6);
-        doc.text(`${t('reports.tasks', 'Tasks')}: ${stats.tasksCount}`, 25, yPosition + 12);
-        doc.text(`${t('reports.goals', 'Goals')}: ${stats.goalsCount}`, 25, yPosition + 18);
+        doc.text(cleanTextForPDF(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, unicodeFontLoaded), 25, yPosition);
+        doc.text(cleanTextForPDF(`${t('reports.timeEntries', 'Time Entries')}: ${stats.timeEntriesCount}`, unicodeFontLoaded), 25, yPosition + 6);
+        doc.text(cleanTextForPDF(`${t('reports.tasks', 'Tasks')}: ${stats.tasksCount}`, unicodeFontLoaded), 25, yPosition + 12);
+        doc.text(cleanTextForPDF(`${t('reports.goals', 'Goals')}: ${stats.goalsCount}`, unicodeFontLoaded), 25, yPosition + 18);
         
-        doc.text(`${t('reports.totalHours', 'Total Hours')}: ${stats.totalHours}h`, pageWidth - 85, yPosition);
-        doc.text(`${t('reports.approved', 'Approved')}: ${stats.approvedTime}`, pageWidth - 85, yPosition + 6);
-        doc.text(`${t('reports.completedTasks', 'Completed Tasks')}: ${stats.completedTasks}`, pageWidth - 85, yPosition + 12);
-        doc.text(`${t('reports.achievedGoals', 'Achieved Goals')}: ${stats.achievedGoals}`, pageWidth - 85, yPosition + 18);
+        doc.text(cleanTextForPDF(`${t('reports.totalHours', 'Total Hours')}: ${stats.totalHours}h`, unicodeFontLoaded), pageWidth - 85, yPosition);
+        doc.text(cleanTextForPDF(`${t('reports.approved', 'Approved')}: ${stats.approvedTime}`, unicodeFontLoaded), pageWidth - 85, yPosition + 6);
+        doc.text(cleanTextForPDF(`${t('reports.completedTasks', 'Completed Tasks')}: ${stats.completedTasks}`, unicodeFontLoaded), pageWidth - 85, yPosition + 12);
+        doc.text(cleanTextForPDF(`${t('reports.achievedGoals', 'Achieved Goals')}: ${stats.achievedGoals}`, unicodeFontLoaded), pageWidth - 85, yPosition + 18);
       } else if (activeTab === 'time-entries') {
-        doc.text(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, 25, yPosition);
-        doc.text(`${t('reports.totalHours', 'Total Hours')}: ${stats.totalHours}h`, 25, yPosition + 6);
-        doc.text(`${t('reports.approved', 'Approved')}: ${stats.approved}`, pageWidth - 85, yPosition);
-        doc.text(`${t('reports.pending', 'Pending')}: ${stats.pending}`, pageWidth - 85, yPosition + 6);
+        doc.text(cleanTextForPDF(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, unicodeFontLoaded), 25, yPosition);
+        doc.text(cleanTextForPDF(`${t('reports.totalHours', 'Total Hours')}: ${stats.totalHours}h`, unicodeFontLoaded), 25, yPosition + 6);
+        doc.text(cleanTextForPDF(`${t('reports.approved', 'Approved')}: ${stats.approved}`, unicodeFontLoaded), pageWidth - 85, yPosition);
+        doc.text(cleanTextForPDF(`${t('reports.pending', 'Pending')}: ${stats.pending}`, unicodeFontLoaded), pageWidth - 85, yPosition + 6);
       } else if (activeTab === 'tasks') {
-        doc.text(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, 25, yPosition);
-        doc.text(`${t('reports.completed', 'Completed')}: ${stats.completed}`, 25, yPosition + 6);
-        doc.text(`${t('reports.inProgress', 'In Progress')}: ${stats.inProgress}`, pageWidth - 85, yPosition);
-        doc.text(`${t('reports.completionRate', 'Completion Rate')}: ${stats.completionRate}%`, pageWidth - 85, yPosition + 6);
+        doc.text(cleanTextForPDF(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, unicodeFontLoaded), 25, yPosition);
+        doc.text(cleanTextForPDF(`${t('reports.completed', 'Completed')}: ${stats.completed}`, unicodeFontLoaded), 25, yPosition + 6);
+        doc.text(cleanTextForPDF(`${t('reports.inProgress', 'In Progress')}: ${stats.inProgress}`, unicodeFontLoaded), pageWidth - 85, yPosition);
+        doc.text(cleanTextForPDF(`${t('reports.completionRate', 'Completion Rate')}: ${stats.completionRate}%`, unicodeFontLoaded), pageWidth - 85, yPosition + 6);
       } else if (activeTab === 'goals') {
-        doc.text(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, 25, yPosition);
-        doc.text(`${t('reports.achieved', 'Achieved')}: ${stats.achieved}`, 25, yPosition + 6);
-        doc.text(`${t('reports.inProgress', 'In Progress')}: ${stats.inProgress}`, pageWidth - 85, yPosition);
-        doc.text(`${t('reports.avgProgress', 'Avg Progress')}: ${stats.averageProgress}%`, pageWidth - 85, yPosition + 6);
+        doc.text(cleanTextForPDF(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, unicodeFontLoaded), 25, yPosition);
+        doc.text(cleanTextForPDF(`${t('reports.achieved', 'Achieved')}: ${stats.achieved}`, unicodeFontLoaded), 25, yPosition + 6);
+        doc.text(cleanTextForPDF(`${t('reports.inProgress', 'In Progress')}: ${stats.inProgress}`, unicodeFontLoaded), pageWidth - 85, yPosition);
+        doc.text(cleanTextForPDF(`${t('reports.avgProgress', 'Avg Progress')}: ${stats.averageProgress}%`, unicodeFontLoaded), pageWidth - 85, yPosition + 6);
       }
       
       yPosition += 35;
@@ -1688,7 +1903,7 @@ const Reports = () => {
         if (reportData.timeEntries.length > 0) {
           doc.setFontSize(12);
           doc.setTextColor(40, 44, 52);
-          doc.text(t('reports.timeEntries', 'TIME ENTRIES').toUpperCase(), 15, yPosition);
+          doc.text(cleanTextForPDF(t('reports.timeEntries', 'TIME ENTRIES').toUpperCase(), unicodeFontLoaded), 15, yPosition);
           yPosition += 5;
 
           const timeEntriesData = reportData.timeEntries.slice(0, 20).map(entry => [
@@ -1702,11 +1917,11 @@ const Reports = () => {
           autoTable(doc, {
             startY: yPosition,
             head: [[
-              unicodeFontLoaded ? t('reports.employee', 'Employee') : cleanTextForPDF(t('reports.employee', 'Employee')),
-              unicodeFontLoaded ? t('reports.date', 'Date') : cleanTextForPDF(t('reports.date', 'Date')),
-              unicodeFontLoaded ? t('reports.hours', 'Hours') : cleanTextForPDF(t('reports.hours', 'Hours')),
-              unicodeFontLoaded ? t('reports.type', 'Type') : cleanTextForPDF(t('reports.type', 'Type')),
-              unicodeFontLoaded ? t('reports.status', 'Status') : cleanTextForPDF(t('reports.status', 'Status'))
+              cleanTextForPDF(t('reports.pdf.headers.employee', 'Employee'), unicodeFontLoaded),
+              cleanTextForPDF(t('reports.pdf.headers.date', 'Date'), unicodeFontLoaded),
+              cleanTextForPDF(t('reports.pdf.headers.hours', 'Hours'), unicodeFontLoaded),
+              cleanTextForPDF(t('reports.pdf.headers.hourType', 'Type'), unicodeFontLoaded),
+              cleanTextForPDF(t('reports.pdf.headers.status', 'Status'), unicodeFontLoaded)
             ]],
             body: timeEntriesData,
             theme: 'striped',
@@ -1740,7 +1955,7 @@ const Reports = () => {
         if (reportData.tasks.length > 0) {
           doc.setFontSize(12);
           doc.setTextColor(40, 44, 52);
-          doc.text(t('reports.tasks', 'TASKS').toUpperCase(), 15, yPosition);
+          doc.text(cleanTextForPDF(t('reports.tasks', 'TASKS').toUpperCase(), unicodeFontLoaded), 15, yPosition);
           yPosition += 5;
 
           const tasksData = reportData.tasks.slice(0, 20).map(task => [
@@ -1754,11 +1969,11 @@ const Reports = () => {
           autoTable(doc, {
             startY: yPosition,
             head: [[
-              unicodeFontLoaded ? t('reports.employee', 'Employee') : cleanTextForPDF(t('reports.employee', 'Employee')),
-              unicodeFontLoaded ? t('reports.task', 'Task') : cleanTextForPDF(t('reports.task', 'Task')),
-              unicodeFontLoaded ? t('reports.priority', 'Priority') : cleanTextForPDF(t('reports.priority', 'Priority')),
-              unicodeFontLoaded ? t('reports.status', 'Status') : cleanTextForPDF(t('reports.status', 'Status')),
-              unicodeFontLoaded ? t('reports.dueDate', 'Due Date') : cleanTextForPDF(t('reports.dueDate', 'Due Date'))
+              cleanTextForPDF(t('reports.pdf.headers.employee', 'Employee'), unicodeFontLoaded),
+              cleanTextForPDF(t('reports.pdf.headers.taskTitle', 'Task'), unicodeFontLoaded),
+              cleanTextForPDF(t('reports.pdf.headers.priority', 'Priority'), unicodeFontLoaded),
+              cleanTextForPDF(t('reports.pdf.headers.status', 'Status'), unicodeFontLoaded),
+              cleanTextForPDF(t('reports.pdf.headers.dueDate', 'Due Date'), unicodeFontLoaded)
             ]],
             body: tasksData,
             theme: 'striped',
@@ -1792,7 +2007,7 @@ const Reports = () => {
         if (reportData.goals.length > 0) {
           doc.setFontSize(12);
           doc.setTextColor(40, 44, 52);
-          doc.text(t('reports.personalGoals', 'PERSONAL GOALS').toUpperCase(), 15, yPosition);
+          doc.text(cleanTextForPDF(t('reports.personalGoals', 'PERSONAL GOALS').toUpperCase(), unicodeFontLoaded), 15, yPosition);
           yPosition += 5;
 
           const goalsData = reportData.goals.slice(0, 20).map(goal => [
@@ -1806,11 +2021,11 @@ const Reports = () => {
           autoTable(doc, {
             startY: yPosition,
             head: [[
-              unicodeFontLoaded ? t('reports.employee', 'Employee') : cleanTextForPDF(t('reports.employee', 'Employee')),
-              unicodeFontLoaded ? t('reports.goal', 'Goal') : cleanTextForPDF(t('reports.goal', 'Goal')),
-              unicodeFontLoaded ? t('reports.category', 'Category') : cleanTextForPDF(t('reports.category', 'Category')),
-              unicodeFontLoaded ? t('reports.status', 'Status') : cleanTextForPDF(t('reports.status', 'Status')),
-              unicodeFontLoaded ? t('reports.progress', 'Progress') : cleanTextForPDF(t('reports.progress', 'Progress'))
+              cleanTextForPDF(t('reports.pdf.headers.employee', 'Employee'), unicodeFontLoaded),
+              cleanTextForPDF(t('reports.pdf.headers.goalTitle', 'Goal'), unicodeFontLoaded),
+              cleanTextForPDF(t('reports.pdf.headers.category', 'Category'), unicodeFontLoaded),
+              cleanTextForPDF(t('reports.pdf.headers.status', 'Status'), unicodeFontLoaded),
+              cleanTextForPDF(t('reports.pdf.headers.progress', 'Progress'), unicodeFontLoaded)
             ]],
             body: goalsData,
             theme: 'striped',
@@ -1847,14 +2062,14 @@ const Reports = () => {
         autoTable(doc, {
           startY: yPosition,
           head: [[
-            unicodeFontLoaded ? t('reports.employee', 'Employee') : cleanTextForPDF(t('reports.employee', 'Employee')),
-            unicodeFontLoaded ? t('reports.department', 'Department') : cleanTextForPDF(t('reports.department', 'Department')),
-            unicodeFontLoaded ? t('reports.date', 'Date') : cleanTextForPDF(t('reports.date', 'Date')),
-            unicodeFontLoaded ? t('reports.clockIn', 'Clock In') : cleanTextForPDF(t('reports.clockIn', 'Clock In')),
-            unicodeFontLoaded ? t('reports.clockOut', 'Clock Out') : cleanTextForPDF(t('reports.clockOut', 'Clock Out')),
-            unicodeFontLoaded ? t('reports.hours', 'Hours') : cleanTextForPDF(t('reports.hours', 'Hours')),
-            unicodeFontLoaded ? t('reports.type', 'Type') : cleanTextForPDF(t('reports.type', 'Type')),
-            unicodeFontLoaded ? t('reports.status', 'Status') : cleanTextForPDF(t('reports.status', 'Status'))
+            cleanTextForPDF(t('reports.pdf.headers.employee', 'Employee'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.department', 'Department'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.date', 'Date'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.clockIn', 'Clock In'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.clockOut', 'Clock Out'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.hours', 'Hours'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.hourType', 'Type'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.status', 'Status'), unicodeFontLoaded)
           ]],
           body: timeEntriesData,
           theme: 'striped',
@@ -1890,14 +2105,14 @@ const Reports = () => {
         autoTable(doc, {
           startY: yPosition,
           head: [[
-            unicodeFontLoaded ? t('reports.employee', 'Employee') : cleanTextForPDF(t('reports.employee', 'Employee')),
-            unicodeFontLoaded ? t('reports.department', 'Department') : cleanTextForPDF(t('reports.department', 'Department')),
-            unicodeFontLoaded ? t('reports.task', 'Task') : cleanTextForPDF(t('reports.task', 'Task')),
-            unicodeFontLoaded ? t('reports.priority', 'Priority') : cleanTextForPDF(t('reports.priority', 'Priority')),
-            unicodeFontLoaded ? t('reports.status', 'Status') : cleanTextForPDF(t('reports.status', 'Status')),
-            unicodeFontLoaded ? t('reports.dueDate', 'Due Date') : cleanTextForPDF(t('reports.dueDate', 'Due Date')),
-            unicodeFontLoaded ? t('reports.est', 'Est.') : cleanTextForPDF(t('reports.est', 'Est.')),
-            unicodeFontLoaded ? t('reports.actual', 'Actual') : cleanTextForPDF(t('reports.actual', 'Actual'))
+            cleanTextForPDF(t('reports.pdf.headers.employee', 'Employee'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.department', 'Department'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.taskTitle', 'Task'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.priority', 'Priority'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.status', 'Status'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.dueDate', 'Due Date'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.estimatedHours', 'Est.'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.actualHours', 'Actual'), unicodeFontLoaded)
           ]],
           body: tasksData,
           theme: 'striped',
@@ -1932,13 +2147,13 @@ const Reports = () => {
         autoTable(doc, {
           startY: yPosition,
           head: [[
-            unicodeFontLoaded ? t('reports.employee', 'Employee') : cleanTextForPDF(t('reports.employee', 'Employee')),
-            unicodeFontLoaded ? t('reports.department', 'Department') : cleanTextForPDF(t('reports.department', 'Department')),
-            unicodeFontLoaded ? t('reports.goal', 'Goal') : cleanTextForPDF(t('reports.goal', 'Goal')),
-            unicodeFontLoaded ? t('reports.category', 'Category') : cleanTextForPDF(t('reports.category', 'Category')),
-            unicodeFontLoaded ? t('reports.status', 'Status') : cleanTextForPDF(t('reports.status', 'Status')),
-            unicodeFontLoaded ? t('reports.targetDate', 'Target Date') : cleanTextForPDF(t('reports.targetDate', 'Target Date')),
-            unicodeFontLoaded ? t('reports.progress', 'Progress') : cleanTextForPDF(t('reports.progress', 'Progress'))
+            cleanTextForPDF(t('reports.pdf.headers.employee', 'Employee'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.department', 'Department'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.goalTitle', 'Goal'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.category', 'Category'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.status', 'Status'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.targetDate', 'Target Date'), unicodeFontLoaded),
+            cleanTextForPDF(t('reports.pdf.headers.progress', 'Progress'), unicodeFontLoaded)
           ]],
           body: goalsData,
           theme: 'striped',
@@ -1961,6 +2176,18 @@ const Reports = () => {
         });
       }
 
+      // If no data at all
+      const hasNoData = activeTab === 'all' ? 
+        (reportData.timeEntries.length === 0 && reportData.tasks.length === 0 && reportData.goals.length === 0) :
+        (activeTab === 'time-entries' ? reportData.timeEntries.length === 0 : 
+         activeTab === 'tasks' ? reportData.tasks.length === 0 : reportData.goals.length === 0);
+
+      if (hasNoData) {
+        doc.setFontSize(12);
+        doc.setTextColor(100, 100, 100);
+        doc.text(cleanTextForPDF(t('reports.noData', 'No data available for the selected period'), unicodeFontLoaded), pageWidth / 2, yPosition + 20, { align: 'center' });
+      }
+
       // Footer on all pages
       const pageCount = doc.internal.getNumberOfPages();
       const languageName = SUPPORTED_LANGUAGES[currentLanguage]?.name || 'English';
@@ -1969,14 +2196,14 @@ const Reports = () => {
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
         doc.text(
-          `${t('reports.page', 'Page')} ${i} ${t('reports.of', 'of')} ${pageCount} | ${t('reports.generatedBy', 'Generated by HR Management System')}`,
+          cleanTextForPDF(`${t('reports.page', 'Page')} ${i} ${t('reports.of', 'of')} ${pageCount} | ${t('reports.generatedBy', 'Generated by HR Management System')}`, unicodeFontLoaded),
           pageWidth / 2,
           pageHeight - 10,
           { align: 'center' }
         );
         // Add language indicator on the right
         doc.text(
-          `${t('reports.language', 'Language')}: ${languageName}`,
+          cleanTextForPDF(`${t('reports.language', 'Language')}: ${languageName}`, unicodeFontLoaded),
           pageWidth - 15,
           pageHeight - 10,
           { align: 'right' }
@@ -2069,7 +2296,7 @@ const Reports = () => {
                 else if (activeTab === 'goals') exportGoals();
               }}
               disabled={exporting || (activeTab === 'all' ? stats.totalRecords === 0 : currentData.length === 0)}
-              className={`px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg flex items-center gap-2 transition-colors font-medium`}
+              className={`px-6 py-3 cursor-pointer bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg flex items-center gap-2 transition-colors font-medium`}
             >
               {exporting ? (
                 <Loader className="w-5 h-5 animate-spin" />
@@ -2082,7 +2309,7 @@ const Reports = () => {
             <button
               onClick={exportToExcel}
               disabled={exporting || (reportData.timeEntries.length === 0 && reportData.tasks.length === 0 && reportData.goals.length === 0)}
-              className={`px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg flex items-center gap-2 transition-colors font-medium`}
+              className={`px-6 py-3 cursor-pointer bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg flex items-center gap-2 transition-colors font-medium`}
               title="Export with metrics, charts data, and formatted tables"
             >
               {exporting ? (
@@ -2096,7 +2323,7 @@ const Reports = () => {
             <button
               onClick={exportToPDF}
               disabled={exporting || (reportData.timeEntries.length === 0 && reportData.tasks.length === 0 && reportData.goals.length === 0)}
-              className={`px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg flex items-center gap-2 transition-colors font-medium`}
+              className={`px-6 py-3 cursor-pointer bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg flex items-center gap-2 transition-colors font-medium`}
               title="Export as PDF with summary and tables"
             >
               {exporting ? (
