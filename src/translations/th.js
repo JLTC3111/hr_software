@@ -596,6 +596,13 @@ export default {
     inProgress: 'กำลังดำเนินการ',
     completionRate: 'อัตราการเสร็จสิ้น',
     pending: 'รอดำเนินการ',
+    // Status translations used by translateStatus()
+    statusPending: 'รอดำเนินการ',
+    statusApproved: 'อนุมัติ',
+    statusRejected: 'ปฏิเสธ',
+    statusCompleted: 'เสร็จสิ้น',
+    statusInProgress: 'กำลังดำเนินการ',
+    statusNotStarted: 'ยังไม่เริ่ม',
     hours: 'ชั่วโมงทำงาน',
     attendance: 'การเข้าร่วม',
     performance: 'ประสิทธิภาพ',
