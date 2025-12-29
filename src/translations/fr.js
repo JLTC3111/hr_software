@@ -935,7 +935,6 @@ export default {
       }
     },
     prebuiltReports: 'Rapports prédéfinis',
-    // Pre-built report names
     monthlyPerformanceReview: 'Évaluation de performance mensuelle',
     comprehensivePerformanceAnalysis: 'Analyse complète des performances',
     salaryBenchmarking: 'Benchmark des salaires',

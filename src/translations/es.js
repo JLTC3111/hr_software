@@ -917,7 +917,6 @@ login: {
       }
     },
     prebuiltReports: 'Informes Predefinidos',
-    // Pre-built report names
     monthlyPerformanceReview: 'Revisión de Rendimiento Mensual',
     comprehensivePerformanceAnalysis: 'Análisis integral de rendimiento',
     salaryBenchmarking: 'Evaluación Comparativa de Salarios',

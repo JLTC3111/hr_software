@@ -820,7 +820,6 @@ export default {
     },
     exportToExcel: 'Excelに出力',
     prebuiltReports: '事前構築レポート',
-    // Pre-built report names
     monthlyPerformanceReview: '月次パフォーマンスレビュー',
     comprehensivePerformanceAnalysis: '包括的パフォーマンス分析',
     salaryBenchmarking: '給与ベンチマーキング',

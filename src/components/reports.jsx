@@ -1562,18 +1562,14 @@ const Reports = () => {
   const cleanTextForPDF = (text, unicodeFont = false) => {
     if (!text) return '';
     
-    // If Unicode font is loaded, return text with minimal cleaning
     if (unicodeFont) {
-      // Only remove control characters and zero-width characters
       let cleaned = String(text)
         .replace(/[\u200B-\u200D\uFEFF\u0000-\u001F\u007F-\u009F]/g, '')
         .replace(/\s+/g, ' ')
         .trim();
       return cleaned || 'N/A';
     }
-    
-    // Fallback: Full sanitization for Helvetica font
-    // Special character mapping for Vietnamese and other diacritics
+
     const charMap = {
       // Vietnamese lowercase
       'à': 'a', 'á': 'a', 'ả': 'a', 'ã': 'a', 'ạ': 'a',
@@ -1622,38 +1618,27 @@ const Reports = () => {
       'ÿ': 'y', 'Ÿ': 'Y'
     };
     
-    // Convert to string first
     let cleaned = String(text);
     
-    // Step 1: Apply character map for known characters
     cleaned = cleaned.split('').map(char => charMap[char] || char).join('');
     
-    // Step 2: Normalize to NFD (decomposed form) to separate base characters from diacritics
     cleaned = cleaned.normalize('NFD');
     
-    // Step 3: Remove combining diacritical marks
     cleaned = cleaned.replace(/[\u0300-\u036f]/g, '');
     
-    // Step 4: Handle any remaining non-ASCII characters that might cause issues
-    // Keep only printable ASCII characters (32-126), digits, and common punctuation
     cleaned = cleaned.replace(/[^\x20-\x7E]/g, (match) => {
-      // If character is in our map, use the mapped value
       if (charMap[match]) return charMap[match];
       const base = match.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       return base !== match ? base : '?';
     });
     
-    // Step 5: Remove zero-width characters and control characters
     cleaned = cleaned.replace(/[\u200B-\u200D\uFEFF\u0000-\u001F\u007F-\u009F]/g, '');
     
-    // Step 6: Clean up excessive spaces
     cleaned = cleaned.replace(/\s+/g, ' ').trim();
     
-    // Step 7: Ensure no empty result - return a placeholder if needed
     return cleaned || 'N/A';
   };
 
-  // Helper function to translate hour types
   const translateHourType = (hourType) => {
     if (!hourType) return '';
     const type = hourType.toLowerCase();
@@ -1735,21 +1720,16 @@ const Reports = () => {
     setExporting(true);
     try {
       const doc = new jsPDF('p', 'mm', 'a4');
-      
-      // ENHANCED: Language-specific font loading for proper Unicode support
       let unicodeFontLoaded = false;
 
       const getFontConfigForLanguage = (lang) => {
         const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        
-        // Use a reliable CDN for Noto fonts
         const GOOGLE_FONTS_CDN = 'https://fonts.gstatic.com/s';
 
         switch (lang) {
           case 'jp':
             return {
               primary: `${origin}/fonts/NotoSansCJKjp-Regular.otf`,
-              // Updated to a more stable Noto CJK distribution
               fallback: 'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf',
               vfsName: 'NotoSansCJKjp-Regular.otf',
               fontName: 'NotoSansJP',
@@ -1757,7 +1737,7 @@ const Reports = () => {
             };
           case 'kr':
             return {
-              primary: `${origin}/fonts/NotoSansKR-Regular.otf`,
+              primary: `${origin}/fonts/NotoSanskr-Regular.otf`,
               fallback: 'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf',
               vfsName: 'NotoSansCJKkr-Regular.otf',
               fontName: 'NotoSansKR',
@@ -1766,20 +1746,18 @@ const Reports = () => {
           case 'th':
             return {
               primary: `${origin}/fonts/NotoSansThai-Regular.ttf`,
-              // Pointing to the newer specialized Thai repo path
               fallback: 'https://cdn.jsdelivr.net/gh/notofonts/thai@main/fonts/NotoSansThai/ttf/NotoSansThai-Regular.ttf',
               vfsName: 'NotoSansThai-Regular.ttf',
               fontName: 'NotoSansThai',
               logName: 'Noto Sans Thai'
             };
-          case 'ru':
           case 'vn':
+          case 'ru':
           case 'en':
           case 'de':
           case 'es':
           default:
             return {
-              // Use local font for reliability
               primary: `${origin}/fonts/NotoSans-Regular.ttf`,
               fallback: 'https://cdn.jsdelivr.net/gh/notofonts/latin-greek-cyrillic@main/fonts/NotoSans/ttf/NotoSans-Regular.ttf',
               vfsName: 'NotoSans-Regular.ttf',
@@ -1790,23 +1768,29 @@ const Reports = () => {
       };
       
       const fontConfig = getFontConfigForLanguage(currentLanguage);
-      const hasFontWithWidths = (name) => {
-        const list = doc.getFontList?.();
-        const font = list ? list[name] : undefined;
-        return !!(font && font.metadata && font.metadata.widths);
+      const isFontAvailable = (fontName) => {
+        try {
+          doc.setFont(fontName);
+          if (typeof doc.getTextWidth !== 'function') return true; // best-effort: assume available
+          const asciiWidth = doc.getTextWidth('A');
+          const sampleNonAscii = 'Ă';
+          const nonAsciiWidth = doc.getTextWidth(sampleNonAscii);
+          return typeof asciiWidth === 'number' && typeof nonAsciiWidth === 'number' && (asciiWidth > 0 || nonAsciiWidth > 0);
+        } catch (e) {
+          return false;
+        }
       };
 
       try {
         console.log(`Loading ${fontConfig.logName} for language: ${currentLanguage}`);
-        // Using promise chain to avoid await parser issue
         await loadFontHelper(doc, fontConfig.primary, fontConfig.vfsName, fontConfig.fontName);
-        unicodeFontLoaded = hasFontWithWidths(fontConfig.fontName);
+        unicodeFontLoaded = isFontAvailable(fontConfig.fontName);
         console.log(`✓ ${fontConfig.logName} loaded successfully for PDF export`);
       } catch (fontError) {
         console.warn(`Failed to load ${fontConfig.logName} from primary source, trying fallback...`, fontError);
         try {
           await loadFontHelper(doc, fontConfig.fallback, fontConfig.vfsName, fontConfig.fontName);
-          unicodeFontLoaded = hasFontWithWidths(fontConfig.fontName);
+          unicodeFontLoaded = isFontAvailable(fontConfig.fontName);
           console.log(`✓ ${fontConfig.logName} loaded from fallback source`);
         } catch (fallbackError) {
           console.warn('Fallback font also failed, using sanitization:', fallbackError);
@@ -1820,7 +1804,7 @@ const Reports = () => {
       }
       
       // Helper to get the correct font name for autoTable (fallback to helvetica if font not registered)
-      const getTableFont = () => (unicodeFontLoaded && hasFontWithWidths(fontConfig.fontName)) ? fontConfig.fontName : 'helvetica';
+      const getTableFont = () => (unicodeFontLoaded && isFontAvailable(fontConfig.fontName)) ? fontConfig.fontName : 'helvetica';
       
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();

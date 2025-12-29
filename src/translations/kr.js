@@ -781,7 +781,6 @@ export default {
     },
     exportToExcel: 'Excel로 내보내기',
     prebuiltReports: '사전 구축된 보고서',
-    // Pre-built report names
     monthlyPerformanceReview: '월간 성과 리뷰',
     comprehensivePerformanceAnalysis: '종합 성과 분석',
     salaryBenchmarking: '급여 벤치마킹',

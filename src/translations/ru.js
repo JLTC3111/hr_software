@@ -866,35 +866,7 @@ export default {
       }
     },
     exportToExcel: 'Экспорт в Excel',
-    pdf: {
-      headers: {
-        employee: 'Сотрудник',
-        department: 'Отдел',
-        position: 'Должность',
-        date: 'Дата',
-        clockIn: 'Приход',
-        clockOut: 'Уход',
-        hours: 'Часы',
-        hourType: 'Тип часов',
-        status: 'Статус',
-        notes: 'Примечания',
-        createdAt: 'Создано',
-        taskTitle: 'Название задачи',
-        description: 'Описание',
-        priority: 'Приоритет',
-        dueDate: 'Срок',
-        estimatedHours: 'Оценка времени',
-        actualHours: 'Фактическое время',
-        variance: 'Отклонение',
-        goalTitle: 'Название цели',
-        category: 'Категория',
-        progress: 'Прогресс (%)',
-        targetDate: 'Целевая дата',
-        updatedAt: 'Обновлено'
-      }
-    },
     prebuiltReports: 'Готовые отчёты',
-    // Pre-built report names
     monthlyPerformanceReview: 'Ежемесячная оценка производительности',
     comprehensivePerformanceAnalysis: 'Комплексный анализ производительности',
     salaryBenchmarking: 'Бенчмаркинг зарплат',

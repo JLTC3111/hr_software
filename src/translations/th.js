@@ -801,7 +801,6 @@ export default {
     },
     exportToExcel: 'ส่งออกเป็น Excel',
     prebuiltReports: 'รายงานที่สร้างไว้แล้ว',
-    // Pre-built report names
     monthlyPerformanceReview: 'การทบทวนประสิทธิภาพรายเดือน',
     comprehensivePerformanceAnalysis: 'การวิเคราะห์ประสิทธิภาพอย่างครอบคลุม',
     salaryBenchmarking: 'การเปรียบเทียบเงินเดือน',

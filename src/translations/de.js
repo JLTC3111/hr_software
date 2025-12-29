@@ -645,7 +645,7 @@ export default {
         category: 'Kategorie',
         progress: 'Fortschritt (%)',
         targetDate: 'Zieldatum',
-        updatedAt: 'Aktualisiert am'
+        updatedAt: 'Aktualisiert am',
       }
     },
     achieved: 'Erreicht',

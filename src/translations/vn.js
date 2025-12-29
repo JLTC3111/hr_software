@@ -769,7 +769,7 @@ export default {
     customReport: 'Báo cáo tùy chỉnh',
     exportToCSV: 'Xuất sang CSV',
     exportToPDF: 'Xuất sang PDF',
-    exportToExcel: 'Xuất sang Excel',
+    exportToExcel: 'Xuất Sang Excel',
     reportParameters: 'Tham số báo cáo',
     individualReport: 'Báo cáo cá nhân',
     selectDateRange: 'Chọn khoảng thời gian',
@@ -781,7 +781,6 @@ export default {
     employeePerformance: 'Hiệu suất nhân viên',
     recruitmentMetrics: 'Chỉ số tuyển dụng',
     departmentComparison: 'So sánh phòng ban',
-    // Pre-built report names
     monthlyPerformanceReview: 'Đánh giá hiệu suất hàng tháng',
     comprehensivePerformanceAnalysis: 'Phân tích hiệu suất toàn diện',
     salaryBenchmarking: 'Đánh giá mức lương',
@@ -794,7 +793,6 @@ export default {
     analyzeRetentionRates: 'Phân tích tỷ lệ giữ chân và nghỉ việc',
     trainingEffectiveness: 'Hiệu quả đào tạo',
     measureTrainingSuccess: 'Đo lường thành công chương trình đào tạo',
-    // Report Dashboard
     reportDashboard: 'Bảng điều khiển báo cáo',
     selectReport: 'Chọn báo cáo để xem chi tiết',
     employeeGrowth: 'Tăng trưởng nhân viên',
@@ -820,17 +818,14 @@ export default {
     recruitment: 'Tuyển Dụng',
     department: 'Phòng Ban',
     all: 'Tất Cả',
-    // Navigation
     overview: 'Tổng Quan',
     detailedReports: 'Báo Cáo Chi Tiết',
     filters: 'Bộ Lọc',
     exportAll: 'Xuất Tất Cả',
-    // Charts
     departmentOverview: 'Tổng Quan Phòng Ban',
     attendanceOverview: 'Tổng Quan Chấm Công',
     recruitmentFunnel: 'Phễu Tuyển Dụng',
     performanceTrend: 'Xu Hướng Hiệu Suất',
-    // Stats
     totalEmployees: 'Tổng Số Nhân Viên',
     newHires: 'Nhân Viên Mới',
     thisQuarter: 'Quý Này',
@@ -839,17 +834,14 @@ export default {
     avgSalary: 'Lương Trung Bình',
     satisfaction: 'Hài Lòng',
     productivity: 'Năng Suất',
-    // Attendance
     present: 'Có Mặt',
     onLeave: 'Nghỉ Phép',
     absent: 'Vắng Mặt',
-    // Recruitment labels
     totalApplications: 'Tổng Đơn Ứng Tuyển',
     interviewed: 'Đã Phỏng Vấn',
     hired: 'Được Tuyển',
     rejected: 'Bị Từ Chối',
     employees: 'Nhân Viên',
-    // Report generation
     generateCustomReport: 'Tạo Báo Cáo Tùy Chỉnh',
     reportType: 'Loại Báo Cáo',
     employeePerformance: 'Hiệu Suất Nhân Viên',
@@ -857,7 +849,6 @@ export default {
     attendanceReport: 'Báo Cáo Chấm Công',
     recruitmentMetrics: 'Chỉ Số Tuyển Dụng',
     departmentComparison: 'So Sánh Phòng Ban',
-    exportToPDF: 'Xuất Sang PDF',
     pdf: {
       headers: {
         employee: 'Nhân viên',
@@ -884,7 +875,6 @@ export default {
         targetDate: 'Ngày mục tiêu',
       },
     },
-    exportToExcel: 'Xuất Sang Excel',
     excel: {
       headers: {
         employee: 'Nhân viên',
@@ -910,9 +900,85 @@ export default {
         progress: 'Tiến độ (%)',
         targetDate: 'Ngày mục tiêu',
       },
+      sheets: {
+        summary: 'Tóm tắt',
+        performance: 'Hiệu suất nhân viên',
+        charts: 'Biểu đồ & Chỉ số',
+        timeEntries: 'Mục nhập thời gian',
+        tasks: 'Nhiệm vụ',
+        goals: 'Mục tiêu'
+      },
+      summaryTitle: 'Tóm tắt báo cáo nhân sự',
+      generated: 'Được tạo',
+      dateRange: 'Phạm vi ngày',
+      employee: 'Nhân viên',
+      reportLanguage: 'Ngôn ngữ báo cáo',
+      visual: 'Trực quan',
+      timeTracking: 'Tóm tắt theo dõi thời gian',
+      workload: 'Tóm tắt khối lượng công việc',
+      personalGoals: 'Tóm tắt mục tiêu cá nhân',
+      metrics: {
+        totalTimeEntries: 'Tổng số mục nhập thời gian',
+        totalHours: 'Tổng số giờ đã ghi',
+        regularHours: 'Giờ hành chính',
+        overtimeHours: 'Giờ làm thêm',
+        wfhHours: 'Giờ làm việc tại nhà',
+        pendingApprovals: 'Chờ phê duyệt',
+        approvedEntries: 'Mục nhập đã duyệt',
+        totalTasks: 'Tổng số nhiệm vụ',
+        completedTasks: 'Nhiệm vụ hoàn thành',
+        inProgress: 'Đang thực hiện',
+        highPriorityTasks: 'Nhiệm vụ ưu tiên cao',
+        estimatedHours: 'Giờ ước tính',
+        actualHours: 'Giờ thực tế',
+        variance: 'Chênh lệch',
+        totalGoals: 'Tổng số mục tiêu',
+        achievedGoals: 'Mục tiêu đạt được',
+        inProgressGoals: 'Mục tiêu đang thực hiện',
+        avgProgress: 'Tiến độ trung bình'
+      },
+      performance: {
+        title: 'Đánh giá hiệu suất',
+        overallScore: 'Điểm hiệu suất tổng thể',
+        ratingLabel: 'Xếp loại',
+        tableHeaders: {
+          metric: 'Chỉ số',
+          value: 'Giá trị',
+          status: 'Trạng thái',
+          notes: 'Ghi chú'
+        },
+        approvalRate: 'Tỷ lệ phê duyệt',
+        taskCompletionRate: 'Tỷ lệ hoàn thành nhiệm vụ',
+        avgGoalProgress: 'Tiến độ mục tiêu trung bình'
+      },
+      rating: {
+        outstanding: 'Xuất sắc',
+        excellent: 'Tuyệt vời',
+        good: 'Tốt',
+        satisfactory: 'Đạt yêu cầu',
+        needsImprovement: 'Cần cải thiện'
+      },
+      entries: 'mục',
+      ofTotal: 'trên tổng số',
+      completedShort: 'hoàn thành',
+      status: {
+        high: 'Cao',
+        normal: 'Bình thường',
+        tracked: 'Đã theo dõi',
+        pending: 'Chờ xử lý',
+        allApproved: 'Đã duyệt tất cả',
+        active: 'Đang hoạt động',
+        noTasks: 'Không có nhiệm vụ',
+        excellent: 'Tuyệt vời',
+        good: 'Tốt'
+      },
+      charts: {
+        hoursByType: 'Giờ theo loại',
+        taskStatus: 'Trạng thái nhiệm vụ',
+        goalProgress: 'Tiến độ mục tiêu'
+      }
     },
     prebuiltReports: 'Báo Cáo Có Sẵn',
-    // Pre-built report names
     monthlyPerformanceReview: 'Đánh Giá Hiệu Suất Hàng Tháng',
     comprehensivePerformanceAnalysis: 'Phân Tích Hiệu Suất Toàn Diện',
     salaryBenchmarking: 'Đánh Giá Mức Lương',

@@ -1020,7 +1020,6 @@ export default {
         updatedAt: 'Updated At'
       }
     },
-    exportToExcel: 'Export to Excel',
     exportToCSV: 'Export to CSV',
     performanceReportSubtitle: "Generate detailed reports on employee performance, attendance, and recruitment metrics",
     subtitle: "Generate detailed reports on employee performance, attendance, and recruitment metrics",
