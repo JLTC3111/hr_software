@@ -68,9 +68,11 @@ export default {
     githubError: 'Échec de la connexion avec GitHub',
     noAccount: 'Vous n\'avez pas de compte?',
     signUp: 'S\'inscrire',
-    footer: '© 2024 Gestionnaire RH. Tous droits réservés.'
+    footer: '© 2024 Gestionnaire RH. Tous droits réservés.',
+    tryDemoLoading: 'Chargement de la démo...',
   },
 
+  // Sidebar
   sidebar: {
     main: 'PRINCIPAL',
     analytics: 'ANALYSES',
@@ -1488,6 +1490,9 @@ export default {
     helpText: 'Consultez le manuel pour des instructions détaillées sur l\'utilisation du système.',
     standardAccess: 'Accès utilisateur standard',
     visitAnalytics: 'Analyse des Visites',
+    refreshVisitAnalytics: 'Rafraîchir les statistiques de visites',
+    refresh: 'Rafraîchir',
+    refreshing: 'Actualisation...',
     visitAnalyticsDesc: 'Voir les statistiques de visite des utilisateurs',
     userManagement: 'Gestion des Utilisateurs',
     visit: {

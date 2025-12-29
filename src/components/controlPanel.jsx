@@ -420,19 +420,24 @@ const ControlPanel = () => {
   useEffect(() => {
     const loadVisits = async () => {
       if (!isAdmin) return;
-      setLoadingVisits(true);
-      setVisitError('');
-      const result = await fetchVisitSummary();
-      if (result.success) {
-        setVisitSummary(result.data);
-      } else {
-        setVisitError(result.error || 'Failed to load visit summary');
-      }
-      setLoadingVisits(false);
+      await handleRefreshVisits();
     };
 
     loadVisits();
   }, [isAdmin]);
+
+  const handleRefreshVisits = async () => {
+    if (!isAdmin) return;
+    setLoadingVisits(true);
+    setVisitError('');
+    const result = await fetchVisitSummary();
+    if (result.success) {
+      setVisitSummary(result.data);
+    } else {
+      setVisitError(result.error || 'Failed to load visit summary');
+    }
+    setLoadingVisits(false);
+  };
 
   const fetchAllUsers = async () => {
     setLoadingUsers(true);
@@ -1198,7 +1203,22 @@ const ControlPanel = () => {
                   </span>
                   <span className={`text-sm transition-all ${isDarkMode ? 'text-amber-200' : 'text-blue-500'}`}>{t('controlPanel.visitAnalytics', 'Visit analytics')}</span>
                 </div>
-                {loadingVisits && <Loader className="w-4 h-4 animate-spin text-indigo-500" />}
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={handleRefreshVisits}
+                    disabled={loadingVisits}
+                    className={`text-xs px-2 py-1 rounded border ${loadingVisits ? 'opacity-60 cursor-not-allowed' : 'hover:bg-indigo-50 dark:hover:bg-slate-800'}`}
+                    style={{
+                      borderColor: isDarkMode ? '#1e293b' : '#e2e8f0',
+                      color: isDarkMode ? '#cbd5e1' : '#1e293b',
+                      backgroundColor: isDarkMode ? '#0f172a' : '#f8fafc'
+                    }}
+                    title={t('controlPanel.refreshVisitAnalytics', 'Refresh visit analytics')}
+                  >
+                    {loadingVisits ? t('controlPanel.refreshing', 'Refreshing...') : t('controlPanel.refresh', 'Refresh')}
+                  </button>
+                  {loadingVisits && <Loader className="w-4 h-4 animate-spin text-indigo-500" />}
+                </div>
               </div>
 
               {visitError ? (

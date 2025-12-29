@@ -2,6 +2,17 @@ import { supabase } from '../config/supabaseClient';
 import { isDemoMode } from '../utils/demoHelper';
 
 const edgeUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/record-visit`;
+const summaryUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/visit-summary`;
+
+const fetchWithTimeout = async (url, options = {}, timeoutMs = 6000) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
 
 export const logVisit = async () => {
   const path = typeof window !== 'undefined' ? window.location.pathname + window.location.search : null;
@@ -10,20 +21,8 @@ export const logVisit = async () => {
 
   try {
 
-    // In demo mode, skip calling the Edge Function to avoid CORS noise
-    if (isDemoMode()) {
-      console.debug('visitService.logVisit: demo mode — skipping visit call');
-      return;
-    }
-
-    // Get session to decide whether to call the function
+    // Get session (optional). We still send visits without a session.
     const { data: { session } } = await supabase.auth.getSession();
-
-    // If there's no logged-in session, skip sending visits
-    if (!session) {
-      console.debug('visitService.logVisit: no session — skipping visit call');
-      return;
-    }
 
     const headers = {
       'Content-Type': 'application/json',
@@ -35,8 +34,7 @@ export const logVisit = async () => {
       headers['Authorization'] = `Bearer ${session.access_token}`;
     }
 
-    // If demo mode is active, mark the request so the function can treat it specially
-    // (disabled in demo per above)
+    // Avoid custom headers in demo to prevent CORS issues; simply log anonymously when in demo
 
     // Debug: report whether Authorization header is present (don't log token value)
     console.debug('visitService.logVisit: sending visit to', edgeUrl, { hasAuthorization: !!headers.Authorization, hasApikey: !!headers.apikey, isDemo: !!headers['x-demo-mode'], demoRole: !!headers['x-demo-role'] });
@@ -70,35 +68,37 @@ export const fetchVisitSummary = async () => {
   };
 
   try {
+    // Use direct Supabase queries (JS client handles auth automatically, no CORS issues)
+
     // Total count
-    const totalResp = await supabase.from('visits').select('id', { count: 'exact' }).limit(1);
-    summary.total = totalResp.count || 0;
+    const totalResp = await supabase.from('visits').select('id', { count: 'exact', head: true });
+    summary.total = totalResp.count ?? 0;
 
     // Last 24h count
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const lastResp = await supabase
       .from('visits')
-      .select('id', { count: 'exact' })
-      .gte('created_at', since)
-      .limit(1);
-    summary.last24h = lastResp.count || 0;
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', since);
+    summary.last24h = lastResp.count ?? 0;
 
-    // Distinct IP count
+    // Distinct IP count (approx via grouping)
     const distinctResp = await supabase
       .from('visits')
-      .select('ip', { count: 'exact', distinct: true })
-      .limit(1);
-    summary.distinctIps = distinctResp.count || 0;
+      .select('ip')
+      .not('ip', 'is', null)
+      .limit(1000);
+    const uniqueIps = new Set((distinctResp.data || []).map((r) => r.ip));
+    summary.distinctIps = uniqueIps.size;
 
     // Demo visits count (marked by is_demo boolean)
     try {
       const demoResp = await supabase
         .from('visits')
-        .select('id', { count: 'exact' })
-        .eq('is_demo', true)
-        .limit(1);
-      summary.demoCount = demoResp.count || 0;
-    } catch (e) {
+        .select('id', { count: 'exact', head: true })
+        .eq('is_demo', true);
+      summary.demoCount = demoResp.count ?? 0;
+    } catch {
       summary.demoCount = 0;
     }
 
@@ -106,11 +106,10 @@ export const fetchVisitSummary = async () => {
     try {
       const authResp = await supabase
         .from('visits')
-        .select('id', { count: 'exact' })
-        .not('user_id', 'is', null)
-        .limit(1);
-      summary.authorizedSessions = authResp.count || 0;
-    } catch (e) {
+        .select('id', { count: 'exact', head: true })
+        .not('user_id', 'is', null);
+      summary.authorizedSessions = authResp.count ?? 0;
+    } catch {
       summary.authorizedSessions = 0;
     }
 

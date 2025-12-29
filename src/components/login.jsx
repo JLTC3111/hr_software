@@ -23,8 +23,10 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true); // Default to true for better UX
   const [isLoading, setIsLoading] = useState(false);
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [isGithubLoading, setIsGithubLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const isFormBusy = isLoading || isDemoLoading;
   
   // Forgot password states
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
@@ -223,7 +225,7 @@ const Login = () => {
                   } ${errors.email ? 'border-red-500 focus:ring-red-500' : ''}`}
                   placeholder={t('login.emailPlaceholder', 'you@example.com')}
                   autoComplete="email"
-                  disabled={isLoading}
+                  disabled={isFormBusy}
                 />
               </div>
               {errors.email && (
@@ -255,7 +257,7 @@ const Login = () => {
                   } ${errors.password ? 'border-red-500 focus:ring-red-500' : ''}`}
                   placeholder={t('login.passwordPlaceholder', '••••••••')}
                   autoComplete="current-password"
-                  disabled={isLoading}
+                  disabled={isFormBusy}
                 />
                 <button
                   type="button"
@@ -306,7 +308,7 @@ const Login = () => {
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="w-4 h-4 accent-blue-600 border-gray-900 rounded focus:ring-blue-500 cursor-pointer"
-                disabled={isLoading}
+                disabled={isFormBusy}
               />
                 <span className={`ml-2 text-sm ${text.secondary} cursor-pointer`}>
                   {t('login.rememberMe')}
@@ -316,7 +318,7 @@ const Login = () => {
                 type="button"
                 onClick={handleForgotPasswordClick}
                 className="text-sm text-blue-600 hover:text-blue-500 font-medium cursor-pointer"
-                disabled={isLoading}
+                disabled={isFormBusy}
               >
                 {t('login.forgotPassword')}
               </button>
@@ -325,7 +327,7 @@ const Login = () => {
             {/* Login Button */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isDemoLoading}
               className={`w-full py-3 px-4 ${isDarkMode ? 'border-blue-100' : 'border-black'} rounded-lg font-medium bg-blue-300 text-white transition-all duration-200 cursor-pointer ${
                 isLoading 
                   ? 'bg-blue-400 cursor-not-allowed' 
@@ -390,22 +392,39 @@ const Login = () => {
           {/* Demo Mode Button */}
           <button
             type="button"
-            onClick={() => {
-              setIsLoading(true);
-              // Simulate a small delay for better UX
-              setTimeout(() => {
-                loginAsDemo();
-              }, 800);
+            onClick={async () => {
+              setLoginError('');
+              setIsDemoLoading(true);
+              try {
+                // Brief delay to ensure the spinner is visible even on fast responses
+                await new Promise((resolve) => setTimeout(resolve, 150));
+                await loginAsDemo();
+              } catch (err) {
+                setLoginError(err?.message || t('login.invalidCredentials', 'Invalid email or password'));
+                setIsDemoLoading(false);
+              }
             }}
             className={`w-full mt-3 py-3 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer shadow-sm hover:shadow-md ${
               isDarkMode 
                 ? 'bg-linear-to-r from-gray-600 to-gray-900 hover:from-gray-900 hover:to-blue-900 text-white border border-white' 
                 : 'bg-linear-to-r from-indigo-50 to-gray-50 hover:from-indigo-100 hover:to-yellow-100 text-gray-700 border border-indigo-200'
-            }`}
-            disabled={isLoading}
+            } ${isDemoLoading ? 'opacity-80' : ''}`}
+            disabled={isFormBusy}
           >
-            <Building2 className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gray-600'}`} />
-            <span>{`${isDarkMode ? t('login.tryDemo', 'Try Demo Mode') : t('login.tryDemo', 'Try Demo Mode')}`}</span>
+            {isDemoLoading ? (
+              <>
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                <span>{t('login.tryDemoLoading', 'Loading demo...')}</span>
+              </>
+            ) : (
+              <>
+                <Building2 className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gray-600'}`} />
+                <span>{t('login.tryDemo', 'Try Demo Mode')}</span>
+              </>
+            )}
           </button>
 
           {/* Sign Up Link */}

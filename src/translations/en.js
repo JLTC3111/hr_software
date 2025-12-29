@@ -26,7 +26,7 @@ export default {
     welcome: 'Welcome Back,',
     user: 'HR Team',
     logout: 'Logout',
-    notifications: 'Notifications'
+    notifications: 'Notifications',
   },
 
   // Login
@@ -69,7 +69,8 @@ export default {
     githubError: 'Failed to login with GitHub',
     noAccount: "Don't have an account?",
     signUp: 'Sign up',
-    footer: '© 2024 HR Manager. All rights reserved.'
+    footer: '© 2024 HR Manager. All rights reserved.',
+    tryDemoLoading: 'Loading demo...',
   },
 
   // Global Errors
@@ -79,6 +80,7 @@ export default {
     fileReadError: 'Error reading file. Please try again.'
   },
 
+  // Sidebar
   sidebar: {
     main: 'MAIN',
     analytics: 'ANALYTICS',
@@ -1533,6 +1535,9 @@ export default {
     noEmployeesFound: 'No employees found',
     manageEmails: 'Manage User Emails',
     visitAnalytics: 'Visit analytics',
+    refreshVisitAnalytics: 'Refresh visit analytics',
+    refresh: 'Refresh',
+    refreshing: 'Refreshing...',
     visit: {
       total: 'Total',
       last24h: 'Last 24h',
