@@ -179,42 +179,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
     }
   };
   
-  // Sorting function for history table
-  const getSortedEntries = useMemo(() => {
-    const sorted = [...filteredEntries];
-    sorted.sort((a, b) => {
-      let aValue, bValue;
-      switch (sortKey) {
-        case 'date':
-          aValue = new Date(a.date || a.created_at).getTime();
-          bValue = new Date(b.date || b.created_at).getTime();
-          break;
-        case 'employee':
-          aValue = (a.employee_name || a.employee?.name || '').toLowerCase();
-          bValue = (b.employee_name || b.employee?.name || '').toLowerCase();
-          break;
-        case 'hours':
-          aValue = a.hours || 0;
-          bValue = b.hours || 0;
-          break;
-        case 'type':
-          aValue = (a.hour_type || '').toLowerCase();
-          bValue = (b.hour_type || '').toLowerCase();
-          break;
-        case 'status':
-          aValue = (a.status || '').toLowerCase();
-          bValue = (b.status || '').toLowerCase();
-          break;
-        default:
-          aValue = 0;
-          bValue = 0;
-      }
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-    return sorted;
-  }, [filteredEntries, sortKey, sortDirection]);
+  // Sorting function for history table (moved below to ensure leave data exists)
   
   // Leave request form
   const [leaveForm, setLeaveForm] = useState({
@@ -327,21 +292,30 @@ const TimeClockEntry = ({ currentLanguage }) => {
       }
     };
   
-  // Fetch leave requests for the current employee
-  const fetchLeaveRequests = async () => {
-    if (!selectedEmployee) return;
-    
+  // Fetch leave requests (all for admins/managers, self for regular users)
+  const fetchLeaveRequests = useCallback(async () => {
     try {
-      const result = await timeTrackingService.getLeaveRequests(selectedEmployee, {
-        year: selectedYear
-      });
-      if (result.success) {
+      let result;
+
+      if (canManageTimeTracking) {
+        // Admin/manager: fetch all leave requests to show who is on leave today
+        result = await timeTrackingService.getAllLeaveRequests({});
+      } else if (selectedEmployee) {
+        // Regular employee: fetch their own leave requests
+        result = await timeTrackingService.getLeaveRequests(selectedEmployee, {
+          year: selectedYear
+        });
+      } else {
+        return;
+      }
+
+      if (result?.success) {
         setLeaveRequests(result.data || []);
       }
     } catch (error) {
       console.error('Error fetching leave requests:', error);
     }
-  };
+  }, [canManageTimeTracking, selectedEmployee, selectedYear]);
     
   // Define loadData as a callback for reuse
   const loadData = useCallback(async () => {
@@ -362,7 +336,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
     } else {
       setLoading(false);
     }
-  }, [user, canManageTimeTracking, selectedEmployee, selectedYear]);
+  }, [user, canManageTimeTracking, fetchLeaveRequests]);
     
   // Fetch time entries and employees when component mounts
   useEffect(() => {
@@ -375,6 +349,22 @@ const TimeClockEntry = ({ currentLanguage }) => {
     refreshOnFocus: true,
     refreshOnOnline: true
   });
+
+  // Subscribe to leave request changes so approved requests appear automatically
+  useEffect(() => {
+    if (isDemoMode()) return undefined;
+
+    const channel = supabase
+      .channel('leave-requests-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => {
+        fetchLeaveRequests();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchLeaveRequests]);
   
   // Filter entries based on selected employee
   useEffect(() => {
@@ -998,8 +988,100 @@ const TimeClockEntry = ({ currentLanguage }) => {
     { value: 'weekend', label: t('timeClock.hourTypes.weekend'), color: 'green' },
     { value: 'overtime', label: t('timeClock.hourTypes.overtime'), color: 'orange' },
     { value: 'bonus', label: t('timeClock.hourTypes.bonus'), color: 'yellow' },
-    { value: 'wfh', label: t('timeClock.hourTypes.wfh'), color: 'cyan' }
+    { value: 'wfh', label: t('timeClock.hourTypes.wfh'), color: 'cyan' },
+    { value: 'on_leave', label: t('timeClock.hourTypes.onLeave', 'On Leave'), color: 'pink' }
   ];
+
+  // Employees on leave for the selected date (admin/managers see all; employees see their own)
+  const onLeaveForSelectedDate = useMemo(() => {
+    if (!Array.isArray(leaveRequests) || !formData.date) return [];
+    const target = new Date(formData.date);
+
+    return leaveRequests
+      .filter((req) => {
+        if (!req?.start_date || !req?.end_date) return false;
+        const status = (req.status || '').toLowerCase();
+        if (['rejected', 'cancelled'].includes(status)) return false;
+
+        const start = new Date(req.start_date);
+        const end = new Date(req.end_date);
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) return false;
+
+        return start <= target && end >= target;
+      })
+      .map((req) => {
+        const fallbackName = Array.isArray(allEmployees)
+          ? allEmployees.find((e) => String(e.id) === String(req.employee_id))?.name
+          : null;
+        const displayName = req.employee?.name || req.employee_name || fallbackName || t('timeClock.unknownEmployee', 'Unknown');
+        return { ...req, displayName };
+      });
+  }, [leaveRequests, formData.date, allEmployees, t]);
+
+  // Sorting function for history table (includes leave rows for selected date)
+  const getSortedEntries = useMemo(() => {
+    const leaveRows = onLeaveForSelectedDate
+      .filter((leave) => {
+        if (selectedEmployeeFilter === 'self') {
+          const employeeId = user?.employee_id || user?.id;
+          return String(leave.employee_id) === String(employeeId);
+        }
+        if (selectedEmployeeFilter === 'all') return true;
+        return String(leave.employee_id) === String(selectedEmployeeFilter);
+      })
+      .map((leave) => ({
+        id: `leave-${leave.id}-${formData.date}`,
+        date: formData.date,
+        hours: 0,
+        hour_type: 'on_leave',
+        status: leave.status || 'approved',
+        employee_name: leave.displayName,
+        employee_id: leave.employee_id,
+        employee: leave.employee || null,
+        clock_in: null,
+        clock_out: null,
+        notes: leave.reason || '',
+        proof_file_url: null,
+        proof_file_type: null,
+        created_at: leave.created_at || leave.submitted_at || leave.start_date || formData.date
+      }));
+
+    const combined = [...filteredEntries, ...leaveRows];
+
+    const sorted = [...combined];
+    sorted.sort((a, b) => {
+      let aValue, bValue;
+      switch (sortKey) {
+        case 'date':
+          aValue = new Date(a.date || a.created_at).getTime();
+          bValue = new Date(b.date || b.created_at).getTime();
+          break;
+        case 'employee':
+          aValue = (a.employee_name || a.employee?.name || '').toLowerCase();
+          bValue = (b.employee_name || b.employee?.name || '').toLowerCase();
+          break;
+        case 'hours':
+          aValue = a.hours || 0;
+          bValue = b.hours || 0;
+          break;
+        case 'type':
+          aValue = (a.hour_type || a.hourType || '').toLowerCase();
+          bValue = (b.hour_type || b.hourType || '').toLowerCase();
+          break;
+        case 'status':
+          aValue = (a.status || '').toLowerCase();
+          bValue = (b.status || '').toLowerCase();
+          break;
+        default:
+          aValue = 0;
+          bValue = 0;
+      }
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [filteredEntries, onLeaveForSelectedDate, selectedEmployeeFilter, user, sortKey, sortDirection, formData.date]);
 
   // Helper function to translate status
   const translateStatus = (status) => {
@@ -1674,6 +1756,37 @@ const TimeClockEntry = ({ currentLanguage }) => {
               </div>
             </div>
           </div>
+
+          {/* On Leave for Selected Date */}
+          <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>
+            <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
+              {t('timeClock.onLeaveForDate', 'On Leave for {date}').replace('{date}', formData.date || t('timeClock.selectedDate', 'selected date'))}
+            </h3>
+            {(!Array.isArray(onLeaveForSelectedDate) || onLeaveForSelectedDate.length === 0) ? (
+              <p className={`${text.secondary} text-sm`}>
+                {t('timeClock.noOneOnLeave', 'No employees on leave for this date')}
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {onLeaveForSelectedDate.map((leave) => (
+                  <div key={leave.id} className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'} flex items-start justify-between`}>
+                    <div>
+                      <div className={`font-semibold ${text.primary}`}>{leave.displayName}</div>
+                      <div className={`text-sm ${text.secondary}`}>
+                        {t('timeTracking.leaveType', 'Leave Type')}: {t(`timeTracking.${leave.leave_type || leave.type}`, leave.leave_type || leave.type || 'Leave')}
+                      </div>
+                      <div className={`text-sm ${text.secondary}`}>
+                        {t('timeTracking.period', 'Period')}: {leave.start_date} - {leave.end_date}
+                      </div>
+                    </div>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(leave.status || 'pending')}`}>
+                      {translateStatus(leave.status || 'pending')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
       
@@ -1767,8 +1880,8 @@ const TimeClockEntry = ({ currentLanguage }) => {
                         <span className="inline-flex items-center justify-center gap-1">
                           {t('timeClock.employee', 'Employee')}
                           <ArrowDownAZ
-                            className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                            style={{transition: 'transform 0.5s', transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                            className={`inline w-4 h-4 ml-1 transition-all duration-1500 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
+                            style={{transition: 'transform 1.5s', transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
                           />
                         </span>
                       </th>
@@ -1783,8 +1896,8 @@ const TimeClockEntry = ({ currentLanguage }) => {
                       <span className="inline-flex items-center justify-center gap-1">
                         {t('timeClock.hours', 'Hours')}
                         <Hourglass
-                          className={`inline w-3.5 h-3.5 ml-1 transition-all duration-500 ${sortKey === 'hours' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                          style={{transition: 'transform 0.5s', transform: sortKey === 'hours' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                          className={`inline w-3.5 h-3.5 ml-1 transition-all duration-1500 ${sortKey === 'hours' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
+                          style={{transition: 'transform 1.5s', transform: sortKey === 'hours' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
                         />
                       </span>
                     </th>
@@ -1795,8 +1908,8 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     <span className="inline-flex items-center justify-center gap-1">
                       {t('timeClock.type', 'Type')}
                       <Timer
-                        className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'type' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                        style={{transition: 'transform 0.5s', transform: sortKey === 'type' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                        className={`inline w-4 h-4 ml-1 transition-all duration-1500 ${sortKey === 'type' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
+                        style={{transition: 'transform 1.5s', transform: sortKey === 'type' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
                       />
                     </span>
                   </th>
@@ -1859,6 +1972,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                         (entry.hour_type || entry.hourType) === 'holiday' ? (isDarkMode ? 'bg-purple-900/30 text-purple-400 group-hover:text-black' : 'bg-purple-200 text-purple-900 group-hover:text-black') :
                         (entry.hour_type || entry.hourType) === 'weekend' ? (isDarkMode ? 'bg-green-900/30 text-green-400 group-hover:text-black' : 'bg-green-200 text-green-900 group-hover:text-black') :
                         (entry.hour_type || entry.hourType) === 'overtime' ? (isDarkMode ? 'bg-orange-900/30 text-orange-400 group-hover:text-black' : 'bg-orange-200 text-orange-900 group-hover:text-black') :
+                        (entry.hour_type || entry.hourType) === 'on_leave' ? (isDarkMode ? 'bg-pink-900/30 text-pink-400 group-hover:text-black' : 'bg-pink-200 text-pink-900 group-hover:text-black') :
                         (isDarkMode ? 'bg-yellow-900/30 text-yellow-400 group-hover:text-black' : 'bg-yellow-200 text-yellow-900 group-hover:text-black')
                       }`}>
                         {hourTypes.find(t => t.value === (entry.hour_type || entry.hourType))?.label || (entry.hour_type || entry.hourType)?.charAt(0).toUpperCase() + (entry.hour_type || entry.hourType)?.slice(1)}
