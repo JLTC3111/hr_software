@@ -1729,7 +1729,7 @@ const Reports = () => {
         switch (lang) {
           case 'jp':
             return {
-              primary: `${origin}/fonts/NotoSansCJKjp-Regular.otf`,
+              primary: `${origin}/fonts/NotoSansCJKjp-Regular.ttf`,
               fallback: 'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf',
               vfsName: 'NotoSansCJKjp-Regular.otf',
               fontName: 'NotoSansJP',
