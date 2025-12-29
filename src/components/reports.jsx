@@ -1802,8 +1802,7 @@ const Reports = () => {
         doc.setFont('helvetica', 'normal');
         console.log('⚠ Using Helvetica with character sanitization (Unicode font unavailable)');
       }
-      
-      // Helper to get the correct font name for autoTable (fallback to helvetica if font not registered)
+
       const getTableFont = () => (unicodeFontLoaded && isFontAvailable(fontConfig.fontName)) ? fontConfig.fontName : 'helvetica';
       
       const pageWidth = doc.internal.pageSize.getWidth();
