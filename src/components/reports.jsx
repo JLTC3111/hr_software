@@ -1746,7 +1746,7 @@ const Reports = () => {
           case 'th':
             return {
               primary: `${origin}/fonts/NotoSansThai-Regular.ttf`,
-              fallback: 'https://cdn.jsdelivr.net/gh/notofonts/thai@main/fonts/NotoSansThai/ttf/NotoSansThai-Regular.ttf',
+              fallback: 'https://cdn.jsdelivr.net/gh/notofonts/thai@main/fonts/NotoSansThai/ttf/NotoSansThai-Regular.otf',
               vfsName: 'NotoSansThai-Regular.ttf',
               fontName: 'NotoSansThai',
               logName: 'Noto Sans Thai'
@@ -1768,6 +1768,7 @@ const Reports = () => {
       };
       
       const fontConfig = getFontConfigForLanguage(currentLanguage);
+      const fontConfigForLang = fontConfig;
       const isFontAvailable = (fontName) => {
         try {
           doc.setFont(fontName);
@@ -1781,17 +1782,58 @@ const Reports = () => {
         }
       };
 
+      // Detect Thai characters quickly
+      const containsThai = (s) => /[\u0E00-\u0E7F]/.test(String(s || ''));
+
+      // Choose the best-available font for a given piece of text
+      const chooseFontForText = (text) => {
+        if (!unicodeFontLoaded) return 'helvetica';
+        if (containsThai(text) && isFontAvailable('NotoSansThai')) return 'NotoSansThai';
+        if (isFontAvailable('NotoSans')) return 'NotoSans';
+        if (isFontAvailable(fontConfigForLang.fontName)) return fontConfigForLang.fontName;
+        return 'helvetica';
+      };
+
+      // Helper to set font then draw text with the same options as doc.text
+      const drawText = (text, x, y, opts) => {
+        const cleaned = cleanTextForPDF(text, unicodeFontLoaded);
+        const chosen = chooseFontForText(cleaned);
+        try { doc.setFont(chosen); } catch (e) {}
+        if (opts) doc.text(cleaned, x, y, opts); else doc.text(cleaned, x, y);
+      };
+
       try {
-        console.log(`Loading ${fontConfig.logName} for language: ${currentLanguage}`);
-        await loadFontHelper(doc, fontConfig.primary, fontConfig.vfsName, fontConfig.fontName);
-        unicodeFontLoaded = isFontAvailable(fontConfig.fontName);
-        console.log(`✓ ${fontConfig.logName} loaded successfully for PDF export`);
+        console.log(`Loading ${fontConfigForLang.logName} for language: ${currentLanguage}`);
+        await loadFontHelper(doc, fontConfigForLang.primary, fontConfigForLang.vfsName, fontConfigForLang.fontName);
+        unicodeFontLoaded = isFontAvailable(fontConfigForLang.fontName);
+        console.log(`✓ ${fontConfigForLang.logName} loaded successfully for PDF export`);
+
+        // For Thai we also want the Latin Noto available so mixed text (names/dates) render correctly.
+        if (currentLanguage === 'th') {
+          try {
+            const latinCfg = getFontConfigForLanguage('en');
+            await loadFontHelper(doc, latinCfg.primary, latinCfg.vfsName, latinCfg.fontName);
+            console.log('✓ Latin Noto loaded alongside Thai font');
+          } catch (e) {
+            console.warn('Could not load Latin Noto alongside Thai font', e);
+          }
+        }
       } catch (fontError) {
-        console.warn(`Failed to load ${fontConfig.logName} from primary source, trying fallback...`, fontError);
+        console.warn(`Failed to load ${fontConfigForLang.logName} from primary source, trying fallback...`, fontError);
         try {
-          await loadFontHelper(doc, fontConfig.fallback, fontConfig.vfsName, fontConfig.fontName);
-          unicodeFontLoaded = isFontAvailable(fontConfig.fontName);
-          console.log(`✓ ${fontConfig.logName} loaded from fallback source`);
+          await loadFontHelper(doc, fontConfigForLang.fallback, fontConfigForLang.vfsName, fontConfigForLang.fontName);
+          unicodeFontLoaded = isFontAvailable(fontConfigForLang.fontName);
+          console.log(`✓ ${fontConfigForLang.logName} loaded from fallback source`);
+
+          if (currentLanguage === 'th') {
+            try {
+              const latinCfg = getFontConfigForLanguage('en');
+              await loadFontHelper(doc, latinCfg.fallback || latinCfg.primary, latinCfg.vfsName, latinCfg.fontName);
+              console.log('✓ Latin Noto loaded from fallback alongside Thai font');
+            } catch (e) {
+              console.warn('Could not load Latin Noto fallback alongside Thai font', e);
+            }
+          }
         } catch (fallbackError) {
           console.warn('Fallback font also failed, using sanitization:', fallbackError);
         }
@@ -1803,7 +1845,7 @@ const Reports = () => {
         console.log('⚠ Using Helvetica with character sanitization (Unicode font unavailable)');
       }
 
-      const getTableFont = () => (unicodeFontLoaded && isFontAvailable(fontConfig.fontName)) ? fontConfig.fontName : 'helvetica';
+      const getTableFont = () => (unicodeFontLoaded && isFontAvailable(fontConfigForLang.fontName)) ? fontConfigForLang.fontName : 'helvetica';
       
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
@@ -1821,21 +1863,21 @@ const Reports = () => {
       // Header
       doc.setFontSize(20);
       doc.setTextColor(40, 44, 52);
-      doc.text(cleanTextForPDF(t('reports.performanceReport', 'HR PERFORMANCE REPORT').toUpperCase(), unicodeFontLoaded), pageWidth / 2, yPosition, { align: 'center' });
+      drawText(t('reports.performanceReport', 'HR PERFORMANCE REPORT').toUpperCase(), pageWidth / 2, yPosition, { align: 'center' });
       
       yPosition += 10;
       doc.setFontSize(10);
       doc.setTextColor(100, 100, 100);
-      doc.text(cleanTextForPDF(`${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}`, unicodeFontLoaded), pageWidth / 2, yPosition, { align: 'center' });
+      drawText(`${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}`, pageWidth / 2, yPosition, { align: 'center' });
       
       yPosition += 5;
-      doc.text(cleanTextForPDF(`${t('reports.period', 'Period')}: ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}`, unicodeFontLoaded), pageWidth / 2, yPosition, { align: 'center' });
+      drawText(`${t('reports.period', 'Period')}: ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}`, pageWidth / 2, yPosition, { align: 'center' });
       
       yPosition += 5;
       const displayEmployeeName = selectedEmployee === 'all' ? 
         t('reports.allEmployees', 'All Employees') : 
         (unicodeFontLoaded ? rawEmployeeName : cleanTextForPDF(rawEmployeeName, false));
-      doc.text(cleanTextForPDF(`${t('reports.employee', 'Employee')}: ${displayEmployeeName}`, unicodeFontLoaded), pageWidth / 2, yPosition, { align: 'center' });
+      drawText(`${t('reports.employee', 'Employee')}: ${displayEmployeeName}`, pageWidth / 2, yPosition, { align: 'center' });
       
       yPosition += 15;
 
@@ -1845,37 +1887,37 @@ const Reports = () => {
       
       doc.setFontSize(14);
       doc.setTextColor(40, 44, 52);
-      doc.text(cleanTextForPDF(t('reports.summaryOverview', 'SUMMARY OVERVIEW').toUpperCase(), unicodeFontLoaded), pageWidth / 2, yPosition + 8, { align: 'center' });
+      drawText(t('reports.summaryOverview', 'SUMMARY OVERVIEW').toUpperCase(), pageWidth / 2, yPosition + 8, { align: 'center' });
       
       yPosition += 15;
       doc.setFontSize(10);
       doc.setTextColor(60, 60, 60);
       
       if (activeTab === 'all') {
-        doc.text(cleanTextForPDF(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, unicodeFontLoaded), 25, yPosition);
-        doc.text(cleanTextForPDF(`${t('reports.timeEntries', 'Time Entries')}: ${stats.timeEntriesCount}`, unicodeFontLoaded), 25, yPosition + 6);
-        doc.text(cleanTextForPDF(`${t('reports.tasks', 'Tasks')}: ${stats.tasksCount}`, unicodeFontLoaded), 25, yPosition + 12);
-        doc.text(cleanTextForPDF(`${t('reports.goals', 'Goals')}: ${stats.goalsCount}`, unicodeFontLoaded), 25, yPosition + 18);
+        drawText(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, 25, yPosition);
+        drawText(`${t('reports.timeEntries', 'Time Entries')}: ${stats.timeEntriesCount}`, 25, yPosition + 6);
+        drawText(`${t('reports.tasks', 'Tasks')}: ${stats.tasksCount}`, 25, yPosition + 12);
+        drawText(`${t('reports.goals', 'Goals')}: ${stats.goalsCount}`, 25, yPosition + 18);
         
-        doc.text(cleanTextForPDF(`${t('reports.totalHours', 'Total Hours')}: ${stats.totalHours}h`, unicodeFontLoaded), pageWidth - 85, yPosition);
-        doc.text(cleanTextForPDF(`${t('reports.approved', 'Approved')}: ${stats.approvedTime}`, unicodeFontLoaded), pageWidth - 85, yPosition + 6);
-        doc.text(cleanTextForPDF(`${t('reports.completedTasks', 'Completed Tasks')}: ${stats.completedTasks}`, unicodeFontLoaded), pageWidth - 85, yPosition + 12);
-        doc.text(cleanTextForPDF(`${t('reports.achievedGoals', 'Achieved Goals')}: ${stats.achievedGoals}`, unicodeFontLoaded), pageWidth - 85, yPosition + 18);
+        drawText(`${t('reports.totalHours', 'Total Hours')}: ${stats.totalHours}h`, pageWidth - 85, yPosition);
+        drawText(`${t('reports.approved', 'Approved')}: ${stats.approvedTime}`, pageWidth - 85, yPosition + 6);
+        drawText(`${t('reports.completedTasks', 'Completed Tasks')}: ${stats.completedTasks}`, pageWidth - 85, yPosition + 12);
+        drawText(`${t('reports.achievedGoals', 'Achieved Goals')}: ${stats.achievedGoals}`, pageWidth - 85, yPosition + 18);
       } else if (activeTab === 'time-entries') {
-        doc.text(cleanTextForPDF(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, unicodeFontLoaded), 25, yPosition);
-        doc.text(cleanTextForPDF(`${t('reports.totalHours', 'Total Hours')}: ${stats.totalHours}h`, unicodeFontLoaded), 25, yPosition + 6);
-        doc.text(cleanTextForPDF(`${t('reports.approved', 'Approved')}: ${stats.approved}`, unicodeFontLoaded), pageWidth - 85, yPosition);
-        doc.text(cleanTextForPDF(`${t('reports.pending', 'Pending')}: ${stats.pending}`, unicodeFontLoaded), pageWidth - 85, yPosition + 6);
+        drawText(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, 25, yPosition);
+        drawText(`${t('reports.totalHours', 'Total Hours')}: ${stats.totalHours}h`, 25, yPosition + 6);
+        drawText(`${t('reports.approved', 'Approved')}: ${stats.approved}`, pageWidth - 85, yPosition);
+        drawText(`${t('reports.pending', 'Pending')}: ${stats.pending}`, pageWidth - 85, yPosition + 6);
       } else if (activeTab === 'tasks') {
-        doc.text(cleanTextForPDF(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, unicodeFontLoaded), 25, yPosition);
-        doc.text(cleanTextForPDF(`${t('reports.completed', 'Completed')}: ${stats.completed}`, unicodeFontLoaded), 25, yPosition + 6);
-        doc.text(cleanTextForPDF(`${t('reports.inProgress', 'In Progress')}: ${stats.inProgress}`, unicodeFontLoaded), pageWidth - 85, yPosition);
-        doc.text(cleanTextForPDF(`${t('reports.completionRate', 'Completion Rate')}: ${stats.completionRate}%`, unicodeFontLoaded), pageWidth - 85, yPosition + 6);
+        drawText(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, 25, yPosition);
+        drawText(`${t('reports.completed', 'Completed')}: ${stats.completed}`, 25, yPosition + 6);
+        drawText(`${t('reports.inProgress', 'In Progress')}: ${stats.inProgress}`, pageWidth - 85, yPosition);
+        drawText(`${t('reports.completionRate', 'Completion Rate')}: ${stats.completionRate}%`, pageWidth - 85, yPosition + 6);
       } else if (activeTab === 'goals') {
-        doc.text(cleanTextForPDF(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, unicodeFontLoaded), 25, yPosition);
-        doc.text(cleanTextForPDF(`${t('reports.achieved', 'Achieved')}: ${stats.achieved}`, unicodeFontLoaded), 25, yPosition + 6);
-        doc.text(cleanTextForPDF(`${t('reports.inProgress', 'In Progress')}: ${stats.inProgress}`, unicodeFontLoaded), pageWidth - 85, yPosition);
-        doc.text(cleanTextForPDF(`${t('reports.avgProgress', 'Avg Progress')}: ${stats.averageProgress}%`, unicodeFontLoaded), pageWidth - 85, yPosition + 6);
+        drawText(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, 25, yPosition);
+        drawText(`${t('reports.achieved', 'Achieved')}: ${stats.achieved}`, 25, yPosition + 6);
+        drawText(`${t('reports.inProgress', 'In Progress')}: ${stats.inProgress}`, pageWidth - 85, yPosition);
+        drawText(`${t('reports.avgProgress', 'Avg Progress')}: ${stats.averageProgress}%`, pageWidth - 85, yPosition + 6);
       }
       
       yPosition += 35;
@@ -1886,7 +1928,7 @@ const Reports = () => {
         if (reportData.timeEntries.length > 0) {
           doc.setFontSize(12);
           doc.setTextColor(40, 44, 52);
-          doc.text(cleanTextForPDF(t('reports.timeEntries', 'TIME ENTRIES').toUpperCase(), unicodeFontLoaded), 15, yPosition);
+          drawText(t('reports.timeEntries', 'TIME ENTRIES').toUpperCase(), 15, yPosition);
           yPosition += 5;
 
           const timeEntriesData = reportData.timeEntries.slice(0, 20).map(entry => [
@@ -1921,7 +1963,8 @@ const Reports = () => {
               fontStyle: 'normal'
             },
             didParseCell: function(data) {
-              data.cell.styles.font = getTableFont();
+              const cellText = Array.isArray(data.cell.text) ? data.cell.text.join(' ') : String(data.cell.text || '');
+              data.cell.styles.font = chooseFontForText(cellText);
             },
             margin: { left: 15, right: 15 }
           });
@@ -1938,7 +1981,7 @@ const Reports = () => {
         if (reportData.tasks.length > 0) {
           doc.setFontSize(12);
           doc.setTextColor(40, 44, 52);
-          doc.text(cleanTextForPDF(t('reports.tasks', 'TASKS').toUpperCase(), unicodeFontLoaded), 15, yPosition);
+          drawText(t('reports.tasks', 'TASKS').toUpperCase(), 15, yPosition);
           yPosition += 5;
 
           const tasksData = reportData.tasks.slice(0, 20).map(task => [
@@ -1973,7 +2016,8 @@ const Reports = () => {
               fontStyle: 'normal'
             },
             didParseCell: function(data) {
-              data.cell.styles.font = getTableFont();
+              const cellText = Array.isArray(data.cell.text) ? data.cell.text.join(' ') : String(data.cell.text || '');
+              data.cell.styles.font = chooseFontForText(cellText);
             },
             margin: { left: 15, right: 15 }
           });
@@ -1990,7 +2034,7 @@ const Reports = () => {
         if (reportData.goals.length > 0) {
           doc.setFontSize(12);
           doc.setTextColor(40, 44, 52);
-          doc.text(cleanTextForPDF(t('reports.personalGoals', 'PERSONAL GOALS').toUpperCase(), unicodeFontLoaded), 15, yPosition);
+          drawText(t('reports.personalGoals', 'PERSONAL GOALS').toUpperCase(), 15, yPosition);
           yPosition += 5;
 
           const goalsData = reportData.goals.slice(0, 20).map(goal => [
@@ -2025,7 +2069,8 @@ const Reports = () => {
               fontStyle: 'normal'
             },
             didParseCell: function(data) {
-              data.cell.styles.font = getTableFont();
+              const cellText = Array.isArray(data.cell.text) ? data.cell.text.join(' ') : String(data.cell.text || '');
+              data.cell.styles.font = chooseFontForText(cellText);
             },
             margin: { left: 15, right: 15 }
           });
@@ -2068,9 +2113,10 @@ const Reports = () => {
             font: getTableFont(),
             fontStyle: 'normal'
           },
-          didParseCell: function(data) {
-            data.cell.styles.font = getTableFont();
-          },
+            didParseCell: function(data) {
+              const cellText = Array.isArray(data.cell.text) ? data.cell.text.join(' ') : String(data.cell.text || '');
+              data.cell.styles.font = chooseFontForText(cellText);
+            },
           margin: { left: 15, right: 15 }
         });
       } else if (activeTab === 'tasks' && reportData.tasks.length > 0) {
@@ -2111,9 +2157,10 @@ const Reports = () => {
             font: getTableFont(),
             fontStyle: 'normal'
           },
-          didParseCell: function(data) {
-            data.cell.styles.font = getTableFont();
-          },
+            didParseCell: function(data) {
+              const cellText = Array.isArray(data.cell.text) ? data.cell.text.join(' ') : String(data.cell.text || '');
+              data.cell.styles.font = chooseFontForText(cellText);
+            },
           margin: { left: 15, right: 15 }
         });
       } else if (activeTab === 'goals' && reportData.goals.length > 0) {
@@ -2153,7 +2200,8 @@ const Reports = () => {
             fontStyle: 'normal'
           },
           didParseCell: function(data) {
-            data.cell.styles.font = getTableFont();
+            const cellText = Array.isArray(data.cell.text) ? data.cell.text.join(' ') : String(data.cell.text || '');
+            data.cell.styles.font = chooseFontForText(cellText);
           },
           margin: { left: 15, right: 15 }
         });
@@ -2168,7 +2216,7 @@ const Reports = () => {
       if (hasNoData) {
         doc.setFontSize(12);
         doc.setTextColor(100, 100, 100);
-        doc.text(cleanTextForPDF(t('reports.noData', 'No data available for the selected period'), unicodeFontLoaded), pageWidth / 2, yPosition + 20, { align: 'center' });
+        drawText(t('reports.noData', 'No data available for the selected period'), pageWidth / 2, yPosition + 20, { align: 'center' });
       }
 
       // Footer on all pages
@@ -2178,19 +2226,9 @@ const Reports = () => {
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
-        doc.text(
-          cleanTextForPDF(`${t('reports.page', 'Page')} ${i} ${t('reports.of', 'of')} ${pageCount} | ${t('reports.generatedBy', 'Generated by HR Management System')}`, unicodeFontLoaded),
-          pageWidth / 2,
-          pageHeight - 10,
-          { align: 'center' }
-        );
+        drawText(`${t('reports.page', 'Page')} ${i} ${t('reports.of', 'of')} ${pageCount} | ${t('reports.generatedBy', 'Generated by HR Management System')}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
         // Add language indicator on the right
-        doc.text(
-          cleanTextForPDF(`${t('reports.language', 'Language')}: ${languageName}`, unicodeFontLoaded),
-          pageWidth - 15,
-          pageHeight - 10,
-          { align: 'right' }
-        );
+        drawText(`${t('reports.language', 'Language')}: ${languageName}`, pageWidth - 15, pageHeight - 10, { align: 'right' });
       }
 
       // Save the PDF
