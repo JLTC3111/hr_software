@@ -763,7 +763,7 @@ export default {
     recruitmentOverview: 'Tổng quan tuyển dụng',
     salaryAnalysis: 'Phân tích lương',
     attendanceReport: 'Báo cáo chấm công',
-    performanceReport: 'Báo cáo hiệu suất',
+    performanceReport: 'Báo Cáo Hiệu Suất',
     recruitmentReport: 'Báo cáo tuyển dụng',
     salaryReport: 'Báo cáo lương',
     customReport: 'Báo cáo tùy chỉnh',
@@ -1055,7 +1055,7 @@ export default {
     // PDF Export specific translations
     generated: 'Tạo Lúc',
     period: 'Kỳ',
-    summaryOverview: 'Tổng quan',
+    summaryOverview: 'Tổng Quan',
     totalRecords: 'Tất Cả',
     achievedGoals: 'Mục tiêu đạt được',
     completedTasks: 'Nhiệm vụ hoàn thành',

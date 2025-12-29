@@ -945,7 +945,7 @@ export default {
     departmentComparison: 'Department Comparison',
     // Report Categories
     categories: 'Report Categories',
-    performanceReports: 'Performance Reports',
+    performanceReport: 'Performance Reports',
     attendanceReports: 'Attendance Reports',
     recruitmentReports: 'Recruitment Reports',
     salaryReports: 'Salary Reports',
@@ -983,7 +983,6 @@ export default {
     reportGenerated: 'Report generated successfully!',
     reportError: 'Failed to generate report',
     performance: 'Performance',
-    performanceReport: 'Performance Report',
     personalGoals: 'Personal Goals',
     personalGoalsReport: 'Personal Goals Report',
     attendance: 'Attendance',

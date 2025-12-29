@@ -575,8 +575,12 @@ export default {
       }
     },
     language: '言語',
+    performanceReport: 'パフォーマンスレポート',
     generated: '生成日',
     achieved: '達成',
+    summaryOverview: '概要サマリー',
+    completedTasks: '完了したタスク',
+    achievedGoals: '達成した目標',
     avgProgress: '平均進捗',
     personalGoals: '個人目標',
     type: 'レポートタイプ',

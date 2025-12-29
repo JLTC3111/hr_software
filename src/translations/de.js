@@ -649,8 +649,12 @@ export default {
       }
     },
     achieved: 'Erreicht',
+    performanceReport: 'Leistungsbericht',
     language: 'Sprache',
+    summaryOverview: 'Zusammenfassungsübersicht',
     generated: 'Erstellt',
+    completedTasks: 'Abgeschlossene Aufgaben',
+    achievedGoals: 'Erreichte Ziele',
     personalGoals: 'Persönliche Ziele',
     avgProgress: 'Durchschnittlicher Fortschritt',
     type: 'Typ',
