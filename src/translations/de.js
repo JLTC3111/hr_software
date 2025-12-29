@@ -68,7 +68,8 @@ export default {
     githubError: 'Anmeldung mit GitHub fehlgeschlagen',
     noAccount: 'Sie haben noch kein Konto?',
     signUp: 'Registrieren',
-    footer: ' 2024 HR-Manager. Alle Rechte vorbehalten.'
+    footer: ' 2024 HR-Manager. Alle Rechte vorbehalten.',
+    tryDemoLoading: 'Lade Demo...',
   },
 
   sidebar: {

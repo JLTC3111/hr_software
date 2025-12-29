@@ -68,7 +68,8 @@ export default {
     githubError: 'เข้าสู่ระบบด้วย GitHub ล้มเหลว',
     noAccount: 'ยังไม่มีบัญชี?',
     signUp: 'สมัครสมาชิก',
-    footer: '© 2024 ผู้จัดการ HR สงวนลิขสิทธิ์'
+    footer: '© 2024 ผู้จัดการ HR สงวนลิขสิทธิ์',
+    tryDemoLoading: 'กำลังโหลดโหมดสาธิต...',
   },
 
   sidebar: {

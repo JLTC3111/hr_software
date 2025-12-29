@@ -69,7 +69,8 @@ login: {
   orContinueWith: 'O continuar con',
   noAccount: '¿No tienes una cuenta?',
   signUp: 'Registrarse',
-  footer: '© 2024 Gerente de RH. Todos los derechos reservados.'
+  footer: '© 2024 Gerente de RH. Todos los derechos reservados.',
+  tryDemoLoading: 'Cargando demo...',
 },
     totalEmployees: 'Total de Empleados',
     activeEmployees: 'Empleados Activos',

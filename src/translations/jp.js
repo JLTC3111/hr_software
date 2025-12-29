@@ -68,7 +68,8 @@ export default {
     githubError: 'GitHubでのログインに失敗しました',
     noAccount: 'アカウントをお持ちでないですか？',
     signUp: '新規登録',
-    footer: '© 2024 HRマネージャー. All rights reserved.'
+    footer: '© 2024 HRマネージャー. All rights reserved.',
+    tryDemoLoading: 'デモを読み込み中...',
   },
 
   sidebar: {

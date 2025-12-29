@@ -86,7 +86,8 @@ export default {
     githubError: 'Đăng nhập với GitHub thất bại',
     noAccount: 'Chưa có tài khoản?',
     signUp: 'Đăng ký',
-    footer: '© 2024 Quản lý HR. Tất cả quyền được bảo lưu.'
+    footer: '© 2024 Quản lý HR. Tất cả quyền được bảo lưu.',
+    tryDemoLoading: 'Đang tải bản demo...',
   },
 
   sidebar: {

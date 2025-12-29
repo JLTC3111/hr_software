@@ -68,7 +68,8 @@ export default {
     githubError: 'Не удалось войти через GitHub',
     noAccount: 'Нет аккаунта?',
     signUp: 'Зарегистрироваться',
-    footer: '© 2024 HR Менеджер. Все права защищены.'
+    footer: '© 2024 HR Менеджер. Все права защищены.',
+    tryDemoLoading: 'Загрузка демо...',
   },
 
   sidebar: {

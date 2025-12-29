@@ -68,7 +68,8 @@ export default {
     githubError: 'GitHub 로그인에 실패했습니다',
     noAccount: '계정이 없으신가요?',
     signUp: '회원가입',
-    footer: '© 2024 HR 매니저. All rights reserved.'
+    footer: '© 2024 HR 매니저. All rights reserved.',
+    tryDemoLoading: '데모 로딩 중...',
   },
 
   sidebar: {
