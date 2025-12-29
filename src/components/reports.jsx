@@ -1737,7 +1737,7 @@ const Reports = () => {
             };
           case 'kr':
             return {
-              primary: `${origin}/fonts/NotoSanskr-Regular.otf`,
+              primary: `${origin}/fonts/NotoSansCJKkr-Regular.ttf`,
               fallback: 'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf',
               vfsName: 'NotoSansCJKkr-Regular.otf',
               fontName: 'NotoSansKR',
