@@ -344,9 +344,9 @@ const TimeClockEntry = ({ currentLanguage }) => {
   }, [canManageTimeTracking, selectedEmployee, selectedYear, withTimeout]);
     
   // Define loadData as a callback for reuse
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async ({ silent = false } = {}) => {
     if (user) {
-      setLoading(true);
+      if (!silent) setLoading(true);
       try {
         await fetchTimeEntries();
         await fetchLeaveRequests();
@@ -357,7 +357,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {
-        setLoading(false);
+        if (!silent) setLoading(false);
       }
     } else {
       setLoading(false);
@@ -370,7 +370,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
   }, [loadData]);
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
-  useVisibilityRefresh(loadData, {
+  useVisibilityRefresh(() => loadData({ silent: true }), {
     staleTime: 120000, // 2 minutes - refresh if data is older than this
     refreshOnFocus: true,
     refreshOnOnline: true

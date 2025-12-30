@@ -576,9 +576,9 @@ const TimeTracking = ({ employees }) => {
   }, []);
 
   // Define fetch function that can be reused for visibility refresh
-  const fetchTimeTrackingData = useCallback(async () => {
+  const fetchTimeTrackingData = useCallback(async ({ silent = false } = {}) => {
     if (!selectedEmployee) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       // Fetch summary data
       const summaryResult = await withTimeout(
@@ -617,7 +617,7 @@ const TimeTracking = ({ employees }) => {
       console.error('Error fetching time tracking data:', error);
       setSuccessMessage('');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [selectedEmployee, selectedMonth, selectedYear, withTimeout]);
   
@@ -627,7 +627,7 @@ const TimeTracking = ({ employees }) => {
   }, [fetchTimeTrackingData]);
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
-  useVisibilityRefresh(fetchTimeTrackingData, {
+  useVisibilityRefresh(() => fetchTimeTrackingData({ silent: true }), {
     staleTime: 120000, // 2 minutes - refresh if data is older than this
     refreshOnFocus: true,
     refreshOnOnline: true
@@ -640,7 +640,7 @@ const TimeTracking = ({ employees }) => {
     const channel = supabase
       .channel('leave-requests-changes-timetracking')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => {
-        fetchTimeTrackingData();
+        fetchTimeTrackingData({ silent: true });
         fetchAllLeaveRequests();
       })
       .subscribe();
