@@ -349,7 +349,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
       return;
     }
 
-    // Safety: auto-clear loading in case a network call hangs (only when we actually trigger loads)
     if (!silent && userId) {
       loadSafetyTimer.current = setTimeout(() => {
         if (isMounted.current) {
@@ -362,11 +361,13 @@ const TimeClockEntry = ({ currentLanguage }) => {
     }
 
     try {
-      // Keep the loading overlay tied to the core data (time entries) only.
-      // Employee list fetch can happen in the background to avoid the UI getting stuck
-      // if that query is slow/hangs.
       await fetchTimeEntries();
       if (import.meta?.env?.DEV) console.log(`[TimeClockEntry] loadData fetched entries #${seq}`);
+      Promise.resolve(fetchLeaveRequests()).then(() => {
+        if (import.meta?.env?.DEV) console.log(`[TimeClockEntry] leave requests fetched #${seq}`);
+      }).catch((e) => {
+        console.error('Error fetching leave requests (background):', e);
+      });
 
       if (canManageTimeTracking) {
         Promise.resolve(fetchAllEmployees())
@@ -539,6 +540,38 @@ const TimeClockEntry = ({ currentLanguage }) => {
       setAllEmployees(data || []);
     } catch (error) {
       console.error('Error fetching employees:', error);
+    }
+  };
+
+  // Fetch leave requests for current user (used by leave-days summary)
+  const fetchLeaveRequests = async ({ year } = {}) => {
+    try {
+      if (isDemoMode()) {
+        setLeaveRequests([]);
+        return;
+      }
+
+      if (!userEmployeeId) {
+        setLeaveRequests([]);
+        return;
+      }
+
+      const currentYear = year || new Date().getFullYear();
+      const result = await withTimeout(
+        () => timeTrackingService.getLeaveRequests(userEmployeeId, { year: currentYear }),
+        15000,
+        'fetch leave requests'
+      );
+
+      if (result?.success && Array.isArray(result.data)) {
+        setLeaveRequests(result.data);
+      } else {
+        if (import.meta?.env?.DEV) console.log('No leave requests returned or error:', result?.error);
+        setLeaveRequests([]);
+      }
+    } catch (error) {
+      console.error('Error fetching leave requests:', error);
+      setLeaveRequests([]);
     }
   };
 
