@@ -318,7 +318,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
       let result;
 
       if (canManageTimeTracking) {
-        // Admin/manager: fetch all leave requests to show who is on leave today
         result = await withTimeout(
           () => timeTrackingService.getAllLeaveRequests({}),
           15000,
@@ -344,25 +343,55 @@ const TimeClockEntry = ({ currentLanguage }) => {
   }, [canManageTimeTracking, selectedEmployee, selectedYear, withTimeout]);
     
   // Define loadData as a callback for reuse
+  const loadInFlight = useRef(false);
+  const loadSafetyTimer = useRef(null);
+
   const loadData = useCallback(async ({ silent = false } = {}) => {
-    if (user) {
-      if (!silent) setLoading(true);
-      try {
+    if (loadInFlight.current) return;
+    loadInFlight.current = true;
+
+    if (loadSafetyTimer.current) {
+      clearTimeout(loadSafetyTimer.current);
+      loadSafetyTimer.current = null;
+    }
+
+    if (user && !silent) setLoading(true);
+
+    // Safety: auto-clear loading in case a network call hangs
+    if (!silent) {
+      loadSafetyTimer.current = setTimeout(() => {
+        setLoading(false);
+        loadSafetyTimer.current = null;
+        loadInFlight.current = false;
+      }, 16000);
+    }
+
+    try {
+      if (user) {
         await fetchTimeEntries();
         await fetchLeaveRequests();
-        // Fetch all employees if user is admin or manager
         if (canManageTimeTracking) {
           await fetchAllEmployees();
         }
-      } catch (error) {
-        console.error('Error loading data:', error);
-      } finally {
-        if (!silent) setLoading(false);
       }
-    } else {
-      setLoading(false);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      if (loadSafetyTimer.current) {
+        clearTimeout(loadSafetyTimer.current);
+        loadSafetyTimer.current = null;
+      }
+      if (!silent) setLoading(false);
+      loadInFlight.current = false;
     }
   }, [user, canManageTimeTracking, fetchLeaveRequests]);
+
+  useEffect(() => () => {
+    if (loadSafetyTimer.current) {
+      clearTimeout(loadSafetyTimer.current);
+      loadSafetyTimer.current = null;
+    }
+  }, []);
     
   // Fetch time entries and employees when component mounts
   useEffect(() => {
@@ -1031,7 +1060,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
     { value: 'on_leave', label: t('timeClock.hourTypes.onLeave', 'On Leave'), color: 'pink' }
   ];
 
-  // Employees on leave for the selected date (admin/managers see all; employees see their own)
   const onLeaveForSelectedDate = useMemo(() => {
     if (!Array.isArray(leaveRequests) || !formData.date) return [];
     const target = new Date(formData.date);
