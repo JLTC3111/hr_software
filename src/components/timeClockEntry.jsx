@@ -200,6 +200,26 @@ const TimeClockEntry = ({ currentLanguage }) => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [summaryData, setSummaryData] = useState(null);
 
+  // Guard long-running network calls so UI can recover if Supabase hangs
+  const withTimeout = useCallback(async (promiseOrFactory, ms = 15000, label = 'request') => {
+    const controller = new AbortController();
+    const makePromise = () => (typeof promiseOrFactory === 'function' ? promiseOrFactory(controller.signal) : promiseOrFactory);
+
+    let timer;
+    const timeoutPromise = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        controller.abort();
+        reject(new Error(`Timeout: ${label} exceeded ${ms}ms`));
+      }, ms);
+    });
+
+    try {
+      return await Promise.race([makePromise(), timeoutPromise]);
+    } finally {
+      clearTimeout(timer);
+    }
+  }, []);
+
    const handleLeaveSubmit = async (e) => {
       e.preventDefault();
       setLoading(true);
@@ -299,12 +319,18 @@ const TimeClockEntry = ({ currentLanguage }) => {
 
       if (canManageTimeTracking) {
         // Admin/manager: fetch all leave requests to show who is on leave today
-        result = await timeTrackingService.getAllLeaveRequests({});
+        result = await withTimeout(
+          () => timeTrackingService.getAllLeaveRequests({}),
+          15000,
+          'load leave requests (all)'
+        );
       } else if (selectedEmployee) {
         // Regular employee: fetch their own leave requests
-        result = await timeTrackingService.getLeaveRequests(selectedEmployee, {
-          year: selectedYear
-        });
+        result = await withTimeout(
+          () => timeTrackingService.getLeaveRequests(selectedEmployee, { year: selectedYear }),
+          15000,
+          'load leave requests (self)'
+        );
       } else {
         return;
       }
@@ -315,7 +341,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
     } catch (error) {
       console.error('Error fetching leave requests:', error);
     }
-  }, [canManageTimeTracking, selectedEmployee, selectedYear]);
+  }, [canManageTimeTracking, selectedEmployee, selectedYear, withTimeout]);
     
   // Define loadData as a callback for reuse
   const loadData = useCallback(async () => {
@@ -408,7 +434,11 @@ const TimeClockEntry = ({ currentLanguage }) => {
       if (canManageTimeTracking) {
         console.log('👤 User is admin/manager, fetching all entries detailed');
         // Always fetch ALL entries and let the useEffect filter them
-        result = await timeTrackingService.getAllTimeEntriesDetailed();
+        result = await withTimeout(
+          () => timeTrackingService.getAllTimeEntriesDetailed(),
+          15000,
+          'fetch time entries (all)'
+        );
         
         if (result?.success && Array.isArray(result.data)) {
           console.log('✅ Fetched', result.data.length, 'entries');
@@ -422,7 +452,11 @@ const TimeClockEntry = ({ currentLanguage }) => {
         // Regular users - fetch only their own entries
         const employeeId = user?.employee_id || user?.id;
         if (employeeId) {
-          result = await timeTrackingService.getTimeEntries(employeeId);
+          result = await withTimeout(
+            () => timeTrackingService.getTimeEntries(employeeId),
+            15000,
+            'fetch time entries (self)'
+          );
           if (result?.success && Array.isArray(result.data)) {
             console.log('✅ Fetched', result.data.length, 'entries');
             setTimeEntries(result.data);
@@ -456,11 +490,16 @@ const TimeClockEntry = ({ currentLanguage }) => {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('employees')
-        .select('id, name, position, department')
-        .eq('status', 'Active')
-        .order('name');
+      const { data, error } = await withTimeout(
+        () =>
+          supabase
+            .from('employees')
+            .select('id, name, position, department')
+            .eq('status', 'Active')
+            .order('name'),
+        15000,
+        'fetch employees'
+      );
       
       if (error) throw error;
       setAllEmployees(data || []);

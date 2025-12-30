@@ -555,34 +555,61 @@ const TimeTracking = ({ employees }) => {
     }
   }, [user]);
 
+  // Guard long-running network calls so UI can recover if Supabase hangs
+  const withTimeout = useCallback(async (promiseOrFactory, ms = 15000, label = 'request') => {
+    const controller = new AbortController();
+    const makePromise = () => (typeof promiseOrFactory === 'function' ? promiseOrFactory(controller.signal) : promiseOrFactory);
+
+    let timer;
+    const timeoutPromise = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        controller.abort();
+        reject(new Error(`Timeout: ${label} exceeded ${ms}ms`));
+      }, ms);
+    });
+
+    try {
+      return await Promise.race([makePromise(), timeoutPromise]);
+    } finally {
+      clearTimeout(timer);
+    }
+  }, []);
+
   // Define fetch function that can be reused for visibility refresh
   const fetchTimeTrackingData = useCallback(async () => {
     if (!selectedEmployee) return;
     setLoading(true);
     try {
       // Fetch summary data
-      const summaryResult = await timeTrackingService.getTimeTrackingSummary(
-        selectedEmployee,
-        selectedMonth,
-        selectedYear
+      const summaryResult = await withTimeout(
+        () => timeTrackingService.getTimeTrackingSummary(selectedEmployee, selectedMonth, selectedYear),
+        15000,
+        'load time tracking summary'
       );
       if (summaryResult.success) {
         setSummaryData(summaryResult.data);
       }
       // Fetch leave requests for selected employee
-      const leaveResult = await timeTrackingService.getLeaveRequests(selectedEmployee, {
-        year: selectedYear
-      });
+      const leaveResult = await withTimeout(
+        () => timeTrackingService.getLeaveRequests(selectedEmployee, { year: selectedYear }),
+        15000,
+        'load leave requests (selected employee)'
+      );
       if (leaveResult.success) {
         setLeaveRequests(leaveResult.data);
       }
       // Fetch time entries (includes overtime)
       const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
       const endDate = new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0];
-      const entriesResult = await timeTrackingService.getTimeEntries(selectedEmployee, {
-        startDate: startDate,
-        endDate: endDate
-      });
+      const entriesResult = await withTimeout(
+        () =>
+          timeTrackingService.getTimeEntries(selectedEmployee, {
+            startDate: startDate,
+            endDate: endDate
+          }),
+        15000,
+        'load time entries (selected employee)'
+      );
       if (entriesResult.success) {
         setTimeEntries(entriesResult.data);
       }
@@ -592,7 +619,7 @@ const TimeTracking = ({ employees }) => {
     } finally {
       setLoading(false);
     }
-  }, [selectedEmployee, selectedMonth, selectedYear]);
+  }, [selectedEmployee, selectedMonth, selectedYear, withTimeout]);
   
   // Fetch data from Supabase when employee or period changes
   useEffect(() => {
@@ -640,7 +667,11 @@ const TimeTracking = ({ employees }) => {
     if (activeTab !== 'leaveRequests' && hasPrefetchedAll.current) return;
 
     try {
-      const result = await timeTrackingService.getAllLeaveRequests({});
+      const result = await withTimeout(
+        () => timeTrackingService.getAllLeaveRequests({}),
+        15000,
+        'fetch all leave requests'
+      );
       console.log('[DEBUG] getAllLeaveRequests result:', result);
       if (result.success && Array.isArray(result.data)) {
         setAllLeaveRequests(result.data);
@@ -652,7 +683,7 @@ const TimeTracking = ({ employees }) => {
       console.error('Error fetching all leave requests:', error);
       setAllLeaveRequests([]);
     }
-  }, [canViewOverview, activeTab]);
+  }, [canViewOverview, activeTab, withTimeout]);
 
   useEffect(() => {
     fetchAllLeaveRequests();
