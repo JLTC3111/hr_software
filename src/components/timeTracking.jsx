@@ -624,6 +624,7 @@ const TimeTracking = ({ employees }) => {
   }, [fetchTimeTrackingData, fetchAllLeaveRequests]);
 
   // Fetch all leave requests for all employees (admin/manager only)
+  const hasPrefetchedAll = useRef(false);
   const fetchAllLeaveRequests = useCallback(async () => {
     // Use the same permission guard that shows the Overview tab
     // (some installs grant a 'canViewReports' capability rather than 'admin'/'manager')
@@ -636,8 +637,7 @@ const TimeTracking = ({ employees }) => {
     }
 
     // Prefetch once for admins so the Leave Requests tab shows immediately when opened.
-    // Avoid extra queries: if we're not on the tab but already have data, skip.
-    if (activeTab !== 'leaveRequests' && Array.isArray(allLeaveRequests) && allLeaveRequests.length > 0) return;
+    if (activeTab !== 'leaveRequests' && hasPrefetchedAll.current) return;
 
     try {
       const result = await timeTrackingService.getAllLeaveRequests({});
@@ -647,11 +647,12 @@ const TimeTracking = ({ employees }) => {
       } else {
         setAllLeaveRequests([]);
       }
+      hasPrefetchedAll.current = true;
     } catch (error) {
       console.error('Error fetching all leave requests:', error);
       setAllLeaveRequests([]);
     }
-  }, [canViewOverview, activeTab, allLeaveRequests]);
+  }, [canViewOverview, activeTab]);
 
   useEffect(() => {
     fetchAllLeaveRequests();
