@@ -1825,37 +1825,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
               </div>
             </div>
           </div>
-
-          {/* On Leave for Selected Date */}
-          <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>
-            <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-              {t('timeClock.onLeaveForDate', 'On Leave for {date}').replace('{date}', formData.date || t('timeClock.selectedDate', 'selected date'))}
-            </h3>
-            {(!Array.isArray(onLeaveForSelectedDate) || onLeaveForSelectedDate.length === 0) ? (
-              <p className={`${text.secondary} text-sm`}>
-                {t('timeClock.noOneOnLeave', 'No employees on leave for this date')}
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {onLeaveForSelectedDate.map((leave) => (
-                  <div key={leave.id} className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'} flex items-start justify-between`}>
-                    <div>
-                      <div className={`font-semibold ${text.primary}`}>{leave.displayName}</div>
-                      <div className={`text-sm ${text.secondary}`}>
-                        {t('timeTracking.leaveType', 'Leave Type')}: {t(`timeTracking.${leave.leave_type || leave.type}`, leave.leave_type || leave.type || 'Leave')}
-                      </div>
-                      <div className={`text-sm ${text.secondary}`}>
-                        {t('timeTracking.period', 'Period')}: {leave.start_date} - {leave.end_date}
-                      </div>
-                    </div>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(leave.status || 'pending')}`}>
-                      {translateStatus(leave.status || 'pending')}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
       </div>
       
