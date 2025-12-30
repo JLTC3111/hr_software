@@ -1807,20 +1807,20 @@ const TimeClockEntry = ({ currentLanguage }) => {
             </h3>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className={`text-sm ${text.secondary}`}>{t('timeClock.thisWeek', 'This Week')}</span>
-                <span className={`font-semibold ${text.primary}`}>
+                <span className={`text-sm ml-2 ${text.primary}`}>{t('timeClock.thisWeek', 'This Week')}</span>
+                <span className={`font-semibold text-sm ${text.primary}`}>
                   {calculateLeaveDays('week').toFixed(1)} {t('timeClock.days')}
                 </span>
               </div>
               <div className={`pt-3 border-t ${border.primary} flex justify-between items-center`}>
-                <span className={`font-semibold ${text.primary}`}>
+                <span className={`text-sm ml-2 ${text.primary}`}>
                   {t('timeClock.thisMonth', 'This Month')}
                 </span>
-                <span className={`font-bold text-lg ${text.primary}`}>
+                <span className={`font-semibold text-sm ${text.primary}`}>
                   {calculateLeaveDays('month').toFixed(1)} {t('timeClock.days')}
                 </span>
               </div>
-              <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-2`}>
+              <div className={`text-xs italic ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-2`}>
                 {t('timeClock.includesPending', '* Includes pending & approved')}
               </div>
             </div>
