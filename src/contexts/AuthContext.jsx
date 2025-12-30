@@ -316,6 +316,11 @@ export const AuthProvider = ({ children }) => {
         .select('*')
         .eq('id', hrUserId)
         .single();
+
+      // If no record found, mark for creation
+      if (!data && !error) {
+        shouldCreateProfile = true;
+      }
       
       // If successful, try to fetch employee name by matching email
       if (data && data.email && !error) {

@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as timeTrackingService from '../services/timeTrackingService';
 import { supabase } from '../config/supabaseClient';
-import { isDemoMode, getDemoEmployeeName, getDemoLeaveRequests, addDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper';
+import { isDemoMode, getDemoEmployeeName, addDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper';
 import AdminTimeEntry from './AdminTimeEntry';
 import { motion } from 'framer-motion';
 import * as flubber from 'flubber';
@@ -105,9 +105,11 @@ const TimeClockEntry = ({ currentLanguage }) => {
   const { isDarkMode, bg, text, button, input, border } = useTheme();
   const { t } = useLanguage();
   const { user } = useAuth();
-  
+  const userId = user?.id || null;
+  const userEmployeeId = user?.employee_id || user?.employeeId || null;
+  const userRole = user?.role || null;
   // Check if user can manage time tracking (admin or manager)
-  const canManageTimeTracking = user && (user.role === 'admin' || user.role === 'manager');
+  const canManageTimeTracking = userRole === 'admin' || userRole === 'manager';
 
   // Form state
   const [formData, setFormData] = useState({
@@ -144,7 +146,8 @@ const TimeClockEntry = ({ currentLanguage }) => {
   // Time entries state
   const [timeEntries, setTimeEntries] = useState([]);
   const [leaveRequests, setLeaveRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   const [errors, setErrors] = useState({});
@@ -191,14 +194,11 @@ const TimeClockEntry = ({ currentLanguage }) => {
   
   // Get the current employeeId for leave requests
   const getCurrentEmployeeId = () => {
-    if (user?.employeeId) return user.employeeId;
-    if (user?.id) return user.id;
+    if (userEmployeeId) return userEmployeeId;
+    if (userId) return userId;
     return null;
   };
   const [selectedEmployee, setSelectedEmployee] = useState(getCurrentEmployeeId());
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [summaryData, setSummaryData] = useState(null);
 
   // Guard long-running network calls so UI can recover if Supabase hangs
   const withTimeout = useCallback(async (promiseOrFactory, ms = 15000, label = 'request') => {
@@ -270,29 +270,26 @@ const TimeClockEntry = ({ currentLanguage }) => {
           endDate: leaveForm.endDate,
           reason: leaveForm.reason
         });
-        
+
         if (result.success) {
           setSuccessMessage(t('timeTracking.leaveSuccess', 'Leave request submitted successfully!'));
           setShowLeaveModal(false);
-          
-          // Refresh leave requests and summary data
-          const leaveResult = await timeTrackingService.getLeaveRequests(selectedEmployee, {
-            year: selectedYear
-          });
-          if (leaveResult.success) {
-            setLeaveRequests(leaveResult.data);
-          }
-          
-          // Refresh summary to update leave days count
-          const summaryResult = await timeTrackingService.getTimeTrackingSummary(
-            selectedEmployee,
-            selectedMonth,
-            selectedYear
-          );
-          if (summaryResult.success) {
-            setSummaryData(summaryResult.data);
-          }
-          
+
+          // Keep local-only representation so UI can show the request without pulling from Supabase
+          const newLeaveRequest = {
+            id: result.data?.id || `local-leave-${Date.now()}`,
+            employee_id: selectedEmployee,
+            leave_type: leaveForm.type,
+            type: leaveForm.type,
+            start_date: leaveForm.startDate,
+            end_date: leaveForm.endDate,
+            reason: leaveForm.reason,
+            status: result.data?.status || 'pending',
+            created_at: result.data?.created_at || new Date().toISOString(),
+            updated_at: result.data?.updated_at || new Date().toISOString()
+          };
+          setLeaveRequests((prev) => [...prev, newLeaveRequest]);
+
           // Reset form
           setLeaveForm({
             type: 'vacation',
@@ -312,42 +309,27 @@ const TimeClockEntry = ({ currentLanguage }) => {
       }
     };
   
-  // Fetch leave requests (all for admins/managers, self for regular users)
-  const fetchLeaveRequests = useCallback(async () => {
-    try {
-      let result;
-
-      if (canManageTimeTracking) {
-        result = await withTimeout(
-          () => timeTrackingService.getAllLeaveRequests({}),
-          15000,
-          'load leave requests (all)'
-        );
-      } else if (selectedEmployee) {
-        // Regular employee: fetch their own leave requests
-        result = await withTimeout(
-          () => timeTrackingService.getLeaveRequests(selectedEmployee, { year: selectedYear }),
-          15000,
-          'load leave requests (self)'
-        );
-      } else {
-        return;
-      }
-
-      if (result?.success) {
-        setLeaveRequests(result.data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching leave requests:', error);
-    }
-  }, [canManageTimeTracking, selectedEmployee, selectedYear, withTimeout]);
-    
   // Define loadData as a callback for reuse
   const loadInFlight = useRef(false);
   const loadSafetyTimer = useRef(null);
+  const isMounted = useRef(true);
+  const loadSeq = useRef(0);
 
   const loadData = useCallback(async ({ silent = false } = {}) => {
-    if (loadInFlight.current) return;
+    const seq = ++loadSeq.current;
+    if (import.meta?.env?.DEV) {
+      console.log(`[TimeClockEntry] loadData start #${seq}`, {
+        silent,
+        userId,
+        canManageTimeTracking,
+        inFlight: loadInFlight.current,
+      });
+    }
+
+    if (loadInFlight.current || !isMounted.current) {
+      if (import.meta?.env?.DEV) console.log(`[TimeClockEntry] loadData skip #${seq}`);
+      return;
+    }
     loadInFlight.current = true;
 
     if (loadSafetyTimer.current) {
@@ -355,24 +337,45 @@ const TimeClockEntry = ({ currentLanguage }) => {
       loadSafetyTimer.current = null;
     }
 
-    if (user && !silent) setLoading(true);
-
-    // Safety: auto-clear loading in case a network call hangs
-    if (!silent) {
-      loadSafetyTimer.current = setTimeout(() => {
+    if (userId && !silent && isMounted.current) setLoading(true);
+    if (!userId) {
+      // No user available yet; clear loading so UI does not hang
+      if (isMounted.current) {
         setLoading(false);
+        setInitialLoadComplete(true);
+      }
+      loadInFlight.current = false;
+      if (import.meta?.env?.DEV) console.log(`[TimeClockEntry] loadData no-user exit #${seq}`);
+      return;
+    }
+
+    // Safety: auto-clear loading in case a network call hangs (only when we actually trigger loads)
+    if (!silent && userId) {
+      loadSafetyTimer.current = setTimeout(() => {
+        if (isMounted.current) {
+          setLoading(false);
+          setInitialLoadComplete(true);
+        }
         loadSafetyTimer.current = null;
         loadInFlight.current = false;
       }, 16000);
     }
 
     try {
-      if (user) {
-        await fetchTimeEntries();
-        await fetchLeaveRequests();
-        if (canManageTimeTracking) {
-          await fetchAllEmployees();
-        }
+      // Keep the loading overlay tied to the core data (time entries) only.
+      // Employee list fetch can happen in the background to avoid the UI getting stuck
+      // if that query is slow/hangs.
+      await fetchTimeEntries();
+      if (import.meta?.env?.DEV) console.log(`[TimeClockEntry] loadData fetched entries #${seq}`);
+
+      if (canManageTimeTracking) {
+        Promise.resolve(fetchAllEmployees())
+          .then(() => {
+            if (import.meta?.env?.DEV) console.log(`[TimeClockEntry] background employee fetch done #${seq}`);
+          })
+          .catch((e) => {
+            console.error('Error fetching employees (background):', e);
+          });
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -381,57 +384,66 @@ const TimeClockEntry = ({ currentLanguage }) => {
         clearTimeout(loadSafetyTimer.current);
         loadSafetyTimer.current = null;
       }
-      if (!silent) setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+        setInitialLoadComplete(true);
+      }
       loadInFlight.current = false;
+      if (import.meta?.env?.DEV) {
+        console.log(`[TimeClockEntry] loadData done #${seq}`, {
+          loadingCleared: true,
+        });
+      }
     }
-  }, [user, canManageTimeTracking, fetchLeaveRequests]);
+  }, [userId, canManageTimeTracking]);
 
   useEffect(() => () => {
+    isMounted.current = false;
     if (loadSafetyTimer.current) {
       clearTimeout(loadSafetyTimer.current);
       loadSafetyTimer.current = null;
     }
   }, []);
     
-  // Fetch time entries and employees when component mounts
+  // Fetch time entries and employees when component mounts (only if user is present)
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (userId) {
+      loadData();
+    } else {
+      setLoading(false);
+      setInitialLoadComplete(true);
+    }
+  }, [loadData, userId]);
+
+  // If entries are already on screen, never keep the full-screen overlay.
+  // This protects against rare cases where `loading` gets stuck true while data has arrived.
+  useEffect(() => {
+    const hasEntries = Array.isArray(timeEntries) && timeEntries.length > 0;
+    if (loading && !initialLoadComplete && hasEntries) {
+      setLoading(false);
+      setInitialLoadComplete(true);
+      if (import.meta?.env?.DEV) {
+        console.log('[TimeClockEntry] cleared stuck overlay: entries present');
+      }
+    }
+  }, [loading, initialLoadComplete, timeEntries]);
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
   useVisibilityRefresh(() => loadData({ silent: true }), {
-    staleTime: 120000, // 2 minutes - refresh if data is older than this
+    staleTime: 120000, 
     refreshOnFocus: true,
     refreshOnOnline: true
   });
 
-  // Subscribe to leave request changes so approved requests appear automatically
   useEffect(() => {
-    if (isDemoMode()) return undefined;
-
-    const channel = supabase
-      .channel('leave-requests-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => {
-        fetchLeaveRequests();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchLeaveRequests]);
-  
-  // Filter entries based on selected employee
-  useEffect(() => {
-    // Ensure timeEntries is an array before filtering
     const entries = Array.isArray(timeEntries) ? timeEntries : [];
     
     console.log('🔍 Filtering entries - selectedEmployeeFilter:', selectedEmployeeFilter);
     console.log('📊 Total entries to filter:', entries.length);
     
     if (selectedEmployeeFilter === 'self') {
-      // Show only current user's entries
-      const employeeId = user?.employee_id || user?.id;
+
+      const employeeId = userEmployeeId || userId;
       const filtered = entries.filter(entry => 
         String(entry.employee_id) === String(employeeId) || 
         String(entry.employeeId) === String(employeeId)
@@ -439,11 +451,9 @@ const TimeClockEntry = ({ currentLanguage }) => {
       console.log('🎯 Filtering for self (employee_id:', employeeId, ') - showing', filtered.length, 'entries');
       setFilteredEntries(filtered);
     } else if (selectedEmployeeFilter === 'all') {
-      // Show all entries (already loaded)
       console.log('👀 Showing all entries:', entries.length);
       setFilteredEntries(entries);
     } else {
-      // Filter by specific employee - compare as strings to handle both int and UUID
       const filtered = entries.filter(entry => 
         String(entry.employee_id) === String(selectedEmployeeFilter) || 
         String(entry.employeeId) === String(selectedEmployeeFilter)
@@ -451,18 +461,16 @@ const TimeClockEntry = ({ currentLanguage }) => {
       console.log('👤 Filtering for employee:', selectedEmployeeFilter, '- showing', filtered.length, 'entries');
       setFilteredEntries(filtered);
     }
-  }, [selectedEmployeeFilter, timeEntries, user]);
+  }, [selectedEmployeeFilter, timeEntries, userId, userEmployeeId]);
 
-  // Fetch time entries and leave requests from Supabase
+  // Fetch time entries from Supabase
   const fetchTimeEntries = async () => {
     console.log('🔄 fetchTimeEntries called');
     try {
       let result;
-      
-      // For admins/managers, always use detailed view to get employee names
+     
       if (canManageTimeTracking) {
         console.log('👤 User is admin/manager, fetching all entries detailed');
-        // Always fetch ALL entries and let the useEffect filter them
         result = await withTimeout(
           () => timeTrackingService.getAllTimeEntriesDetailed(),
           15000,
@@ -478,11 +486,9 @@ const TimeClockEntry = ({ currentLanguage }) => {
         }
       } else {
         console.log('👤 User is regular employee, fetching own entries');
-        // Regular users - fetch only their own entries
-        const employeeId = user?.employee_id || user?.id;
-        if (employeeId) {
+        if (userEmployeeId) {
           result = await withTimeout(
-            () => timeTrackingService.getTimeEntries(employeeId),
+            () => timeTrackingService.getTimeEntries(userEmployeeId),
             15000,
             'fetch time entries (self)'
           );
@@ -505,7 +511,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
     }
   };
 
-  // Fetch all employees for dropdown
   const fetchAllEmployees = async () => {
     try {
       if (isDemoMode()) {
@@ -537,7 +542,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
     }
   };
 
-  // Validation
   const validateForm = () => {
     const newErrors = {};
 
@@ -552,8 +556,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
     if (!formData.clockOut) {
       newErrors.clockOut = t('timeClock.errors.clockOutRequired');
     }
-
-    // Check if clock-out is after clock-in
     if (formData.clockIn && formData.clockOut) {
       const clockInTime = new Date(`${formData.date}T${formData.clockIn}`);
       const clockOutTime = new Date(`${formData.date}T${formData.clockOut}`);
@@ -1057,7 +1059,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
     { value: 'overtime', label: t('timeClock.hourTypes.overtime'), color: 'orange' },
     { value: 'bonus', label: t('timeClock.hourTypes.bonus'), color: 'yellow' },
     { value: 'wfh', label: t('timeClock.hourTypes.wfh'), color: 'cyan' },
-    { value: 'on_leave', label: t('timeClock.hourTypes.onLeave', 'On Leave'), color: 'pink' }
+    { value: 'on_leave', label: t('timeClock.hourTypes.onLeave', 'On Leave'), color: 'pink', t: 'timeClock.hourTypes.onLeave' }
   ];
 
   const onLeaveForSelectedDate = useMemo(() => {
@@ -1080,17 +1082,17 @@ const TimeClockEntry = ({ currentLanguage }) => {
         const fallbackName = Array.isArray(allEmployees)
           ? allEmployees.find((e) => String(e.id) === String(req.employee_id))?.name
           : null;
-        const displayName = req.employee?.name || req.employee_name || fallbackName || t('timeClock.unknownEmployee', 'Unknown');
+          const displayName = req.employee?.name || req.employee_name || fallbackName || t('timeClock.unknownEmployee', 'Unknown');
         return { ...req, displayName };
       });
-  }, [leaveRequests, formData.date, allEmployees, t]);
+        }, [leaveRequests, formData.date, allEmployees, t, userEmployeeId, userId]);
 
   // Sorting function for history table (includes leave rows for selected date)
   const getSortedEntries = useMemo(() => {
     const leaveRows = onLeaveForSelectedDate
       .filter((leave) => {
         if (selectedEmployeeFilter === 'self') {
-          const employeeId = user?.employee_id || user?.id;
+          const employeeId = userEmployeeId || userId;
           return String(leave.employee_id) === String(employeeId);
         }
         if (selectedEmployeeFilter === 'all') return true;
@@ -1213,7 +1215,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
         `}</style>
       )}
       {/* Loading Overlay */}
-      {loading && (
+      {loading && !initialLoadComplete && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
           <div className={`${bg.secondary} rounded-lg p-6 flex items-center space-x-3`}>
             <Loader className="w-6 h-6 animate-spin text-blue-600" />
