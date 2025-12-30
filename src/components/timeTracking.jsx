@@ -633,23 +633,6 @@ const TimeTracking = ({ employees }) => {
     refreshOnOnline: true
   });
 
-  // Subscribe to leave request changes so approvals sync automatically
-  useEffect(() => {
-    if (isDemoMode()) return undefined;
-
-    const channel = supabase
-      .channel('leave-requests-changes-timetracking')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => {
-        fetchTimeTrackingData({ silent: true });
-        fetchAllLeaveRequests();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchTimeTrackingData, fetchAllLeaveRequests]);
-
   // Fetch all leave requests for all employees (admin/manager only)
   const hasPrefetchedAll = useRef(false);
   const fetchAllLeaveRequests = useCallback(async () => {
@@ -685,9 +668,29 @@ const TimeTracking = ({ employees }) => {
     }
   }, [canViewOverview, activeTab, withTimeout]);
 
+  // Subscribe to leave request changes so approvals sync automatically
+  useEffect(() => {
+    if (isDemoMode()) return undefined;
+
+    const channel = supabase
+      .channel('leave-requests-changes-timetracking')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => {
+        fetchTimeTrackingData({ silent: true });
+        fetchAllLeaveRequests();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchTimeTrackingData, fetchAllLeaveRequests]);
+
+  // Initial load of all leave requests (prefetch for admins/managers)
   useEffect(() => {
     fetchAllLeaveRequests();
   }, [fetchAllLeaveRequests]);
+
+  
 
   // Approve / Reject handlers for admin actions on leave requests
 const handleApproveRequest = async (requestId) => {
