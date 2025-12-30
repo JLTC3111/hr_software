@@ -7,6 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import * as timeTrackingService from '../services/timeTrackingService'
+import { supabase } from '../config/supabaseClient'
 import { AnimatedClockIcon } from './timeClockEntry'
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh'
 import { getDemoEmployeeName, isDemoMode, addDemoLeaveRequest, updateDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper'
@@ -605,39 +606,56 @@ const TimeTracking = ({ employees }) => {
     refreshOnOnline: true
   });
 
-  // Fetch all leave requests for all employees (admin/manager only)
+  // Subscribe to leave request changes so approvals sync automatically
   useEffect(() => {
-    const fetchAllLeaveRequests = async () => {
+    if (isDemoMode()) return undefined;
 
-      // Use the same permission guard that shows the Overview tab
-      // (some installs grant a 'canViewReports' capability rather than 'admin'/'manager')
-      console.log('[DEBUG] fetchAllLeaveRequests canViewOverview:', canViewOverview, 'activeTab:', activeTab);
+    const channel = supabase
+      .channel('leave-requests-changes-timetracking')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => {
+        fetchTimeTrackingData();
+        fetchAllLeaveRequests();
+      })
+      .subscribe();
 
-      if (!canViewOverview) {
-        console.log('[DEBUG] fetchAllLeaveRequests: user lacks canViewReports permission — skipping');
-        setAllLeaveRequests([]);
-        return;
-      }
-
-      // Prefetch once for admins so the Leave Requests tab shows immediately when opened.
-      // Avoid extra queries: if we're not on the tab but already have data, skip.
-      if (activeTab !== 'leaveRequests' && Array.isArray(allLeaveRequests) && allLeaveRequests.length > 0) return;
-
-      try {
-        const result = await timeTrackingService.getAllLeaveRequests({});
-        console.log('[DEBUG] getAllLeaveRequests result:', result);
-        if (result.success && Array.isArray(result.data)) {
-          setAllLeaveRequests(result.data);
-        } else {
-          setAllLeaveRequests([]);
-        }
-      } catch (error) {
-        console.error('Error fetching all leave requests:', error);
-        setAllLeaveRequests([]);
-      }
+    return () => {
+      supabase.removeChannel(channel);
     };
+  }, [fetchTimeTrackingData, fetchAllLeaveRequests]);
+
+  // Fetch all leave requests for all employees (admin/manager only)
+  const fetchAllLeaveRequests = useCallback(async () => {
+    // Use the same permission guard that shows the Overview tab
+    // (some installs grant a 'canViewReports' capability rather than 'admin'/'manager')
+    console.log('[DEBUG] fetchAllLeaveRequests canViewOverview:', canViewOverview, 'activeTab:', activeTab);
+
+    if (!canViewOverview) {
+      console.log('[DEBUG] fetchAllLeaveRequests: user lacks canViewReports permission — skipping');
+      setAllLeaveRequests([]);
+      return;
+    }
+
+    // Prefetch once for admins so the Leave Requests tab shows immediately when opened.
+    // Avoid extra queries: if we're not on the tab but already have data, skip.
+    if (activeTab !== 'leaveRequests' && Array.isArray(allLeaveRequests) && allLeaveRequests.length > 0) return;
+
+    try {
+      const result = await timeTrackingService.getAllLeaveRequests({});
+      console.log('[DEBUG] getAllLeaveRequests result:', result);
+      if (result.success && Array.isArray(result.data)) {
+        setAllLeaveRequests(result.data);
+      } else {
+        setAllLeaveRequests([]);
+      }
+    } catch (error) {
+      console.error('Error fetching all leave requests:', error);
+      setAllLeaveRequests([]);
+    }
+  }, [canViewOverview, activeTab, allLeaveRequests]);
+
+  useEffect(() => {
     fetchAllLeaveRequests();
-  }, [canViewOverview, activeTab, selectedMonth, selectedYear]);
+  }, [fetchAllLeaveRequests]);
 
   // Approve / Reject handlers for admin actions on leave requests
 const handleApproveRequest = async (requestId) => {
