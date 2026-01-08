@@ -1258,7 +1258,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
   };
 
   return (
-    <div key={currentLanguage} className="space-y-6 max-w-[1600px] w-full mx-auto">
+    <div key={currentLanguage} className="space-y-6 max-w-400 w-full mx-auto">
       {isDemoMode() && (
         <style>{`
           input.no-native-time[type="time"]::-webkit-calendar-picker-indicator {

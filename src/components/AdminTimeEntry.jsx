@@ -252,7 +252,11 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
       // If all employees have overlapping entries, show error
       if (employeesWithoutOverlaps.length === 0) {
         const names = employeesWithOverlaps.map(e => e.name).join(', ');
-        const hourTypeLabel = t(`adminTimeEntry.hourTypes.${formData.hourType}`, formData.hourType);
+        const hourTypeKey = formData.hourType.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+        const hourTypeLabel = t(
+          `adminTimeEntry.hourTypes.${hourTypeKey}`,
+          t(`timeClock.hourTypes.${hourTypeKey}`, formData.hourType)
+        );
         setErrorMessage(t('adminTimeEntry.errors.allOverlapping', 'All selected employees have overlapping {hourType} time entries for {date}: {names}').replace('{hourType}', hourTypeLabel).replace('{date}', formData.date).replace('{names}', names));
         setLoading(false);
         return;
@@ -290,7 +294,11 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
       if (result.success) {
         const processedNames = employeesWithoutEntries.map(e => e.name).join(', ');
         const processedIds = employeesWithoutEntries.map(e => e.id);
-        const hourTypeLabel = t(`adminTimeEntry.hourTypes.${formData.hourType}`, formData.hourType);
+        const hourTypeKey = formData.hourType.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+        const hourTypeLabel = t(
+          `adminTimeEntry.hourTypes.${hourTypeKey}`,
+          t(`timeClock.hourTypes.${hourTypeKey}`, formData.hourType)
+        );
         
         let message = employeesWithoutEntries.length === 1 
           ? `${hourTypeLabel} ${t('adminTimeEntry.entryAddedSuccess', 'time entry added successfully for')} ${processedNames}`
