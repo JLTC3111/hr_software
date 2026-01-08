@@ -239,6 +239,7 @@ export default {
       overtime: '초과 근무',
       bonus: '보너스 근무',
       wfh: '재택근무',
+      onLeave: '휴가 중'
     },
     errors: {
       dateRequired: '날짜를 선택하세요',
@@ -1036,6 +1037,7 @@ export default {
       overtime: '초과 근무',
       bonus: '보너스',
       wfh: '재택근무',
+      onLeave: '휴가중'
     },
     errors: {
       checkFailed: '기존 입력 확인 실패',

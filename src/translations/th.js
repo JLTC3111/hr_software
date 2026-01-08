@@ -236,6 +236,7 @@ export default {
       overtime: 'ชั่วโมงล่วงเวลา',
       bonus: 'ชั่วโมงพิเศษ',
       wfh: 'ชั่วโมงทำงานจากระยะไกล',
+      onLeave: 'ชั่วโมงลา'
     },
     errors: {
       dateRequired: 'กรุณาเลือกวันที่',
@@ -1097,6 +1098,7 @@ export default {
       overtime: 'ชั่วโมงล่วงเวลา',
       bonus: 'โบนัส',
       wfh: 'ชั่วโมงทำงานจากระยะไกล',
+      onLeave: 'ลาพักงาน'
     },
     errors: {
       checkFailed: 'ไม่สามารถตรวจสอบรายการที่มีอยู่',

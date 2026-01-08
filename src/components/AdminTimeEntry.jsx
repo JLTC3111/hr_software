@@ -18,7 +18,6 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [processedEmployeeIds, setProcessedEmployeeIds] = useState([]); 
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -28,6 +27,8 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
     notes: '',
     proofFile: null
   });
+
+  const isOnLeave = formData.hourType === 'on_leave';
 
   // Check if user has permission
   const canManageTimeTracking = checkPermission('canManageTimeTracking');
@@ -46,6 +47,13 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
       fetchEmployees();
     }
   }, [canManageTimeTracking]);
+
+  // When switching to on-leave, clear any existing times so the UI shows empty fields
+  useEffect(() => {
+    if (isOnLeave) {
+      setFormData((prev) => ({ ...prev, clockIn: '', clockOut: '' }));
+    }
+  }, [isOnLeave]);
 
   const fetchEmployees = async () => {
     if (isDemoMode()) {
@@ -110,7 +118,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
       return;
     }
 
-    if (!formData.clockIn || !formData.clockOut) {
+    if (!isOnLeave && (!formData.clockIn || !formData.clockOut)) {
       setErrorMessage('Please enter both clock in and clock out times');
       return;
     }
@@ -120,17 +128,20 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
     setSuccessMessage('');
 
     try {
+      const LEAVE_CLOCK_IN = '09:00:00';
+      const LEAVE_CLOCK_OUT = '09:01:00';
+
       // Format times as HH:MM:SS for PostgreSQL time type
-      const clockInTime = `${formData.clockIn}:00`;
-      const clockOutTime = `${formData.clockOut}:00`;
+      const clockInTime = isOnLeave ? LEAVE_CLOCK_IN : `${formData.clockIn}:00`;
+      const clockOutTime = isOnLeave ? LEAVE_CLOCK_OUT : `${formData.clockOut}:00`;
 
       // Calculate hours using Date objects for validation
-      const clockInDate = new Date(`${formData.date}T${formData.clockIn}`);
-      const clockOutDate = new Date(`${formData.date}T${formData.clockOut}`);
-      const diffMs = clockOutDate - clockInDate;
-      const hours = diffMs / (1000 * 60 * 60);
+      const clockInDate = isOnLeave ? null : new Date(`${formData.date}T${formData.clockIn}`);
+      const clockOutDate = isOnLeave ? null : new Date(`${formData.date}T${formData.clockOut}`);
+      const diffMs = isOnLeave ? 0 : (clockOutDate - clockInDate);
+      const hours = isOnLeave ? 0 : diffMs / (1000 * 60 * 60);
 
-      if (hours <= 0) {
+      if (!isOnLeave && hours <= 0) {
         setErrorMessage('Clock out time must be after clock in time');
         setLoading(false);
         return;
@@ -212,20 +223,22 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
         const empExistingEntries = existingEntries.filter(e => e.employee_id === emp.id);
         let hasOverlap = false;
         
-        for (const entry of empExistingEntries) {
-          const existingClockIn = entry.clock_in;
-          const existingClockOut = entry.clock_out;
-          
-          // Check if times overlap
-          const isOverlapping = (
-            (clockInTime >= existingClockIn && clockInTime < existingClockOut) ||
-            (clockOutTime > existingClockIn && clockOutTime <= existingClockOut) ||
-            (clockInTime <= existingClockIn && clockOutTime >= existingClockOut)
-          );
-          
-          if (isOverlapping) {
-            hasOverlap = true;
-            break;
+        if (!isOnLeave) {
+          for (const entry of empExistingEntries) {
+            const existingClockIn = entry.clock_in;
+            const existingClockOut = entry.clock_out;
+            
+            // Check if times overlap
+            const isOverlapping = (
+              (clockInTime >= existingClockIn && clockInTime < existingClockOut) ||
+              (clockOutTime > existingClockIn && clockOutTime <= existingClockOut) ||
+              (clockInTime <= existingClockIn && clockOutTime >= existingClockOut)
+            );
+            
+            if (isOverlapping) {
+              hasOverlap = true;
+              break;
+            }
           }
         }
         
@@ -290,8 +303,6 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
         }
         
         setSuccessMessage(message);
-        // Track processed employees to prevent re-selection (for this submission only)
-        setProcessedEmployeeIds(prev => [...prev, ...processedIds]);
         // Reset form and allow all employees to be selectable again
         setFormData({
           date: new Date().toISOString().split('T')[0],
@@ -303,7 +314,6 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
         });
         setSelectedEmployees([]);
         setSearchTerm('');
-        setProcessedEmployeeIds([]); // Clear processed employees so they reappear in the list
         // Notify parent component to refresh time entries
         if (onEntriesChanged) {
           onEntriesChanged();
@@ -336,9 +346,6 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
 
   // Filter out employees who have already had entries created in this session
   const filteredEmployees = employees.filter(emp => {
-    // Don't show employees that were already processed in this session
-    if (processedEmployeeIds.includes(emp.id)) return false;
-    
     // Don't show employees that are already selected
     if (selectedEmployees.some(e => e.id === emp.id)) return false;
     
@@ -512,11 +519,12 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-              {t('adminTimeEntry.clockIn', 'Clock In')} *
+              {t('adminTimeEntry.clockIn', 'Clock In')} {isOnLeave ? '' : '*'}
             </label>
             <div 
               className="relative cursor-pointer group"
               onClick={() => {
+                if (isOnLeave) return;
                 const input = document.getElementById('admin-clockin-input');
                 if (input) {
                   // If no value yet, set a default before opening the picker so picker shows it
@@ -532,21 +540,23 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
               <input
                 id="admin-clockin-input"
                 type="time"
-                value={formData.clockIn}
+                value={isOnLeave ? '' : formData.clockIn}
                 onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
                 className={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
-                required
+                required={!isOnLeave}
+                disabled={isOnLeave}
               />
               <LogIn className={`absolute right-3 top-1/2 transform -translate-y-1/2 rotate-180 w-5 h-5 ${text.secondary} pointer-events-none ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors`} />
             </div>
           </div>
           <div>
             <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-              {t('adminTimeEntry.clockOut', 'Clock Out')} *
+              {t('adminTimeEntry.clockOut', 'Clock Out')} {isOnLeave ? '' : '*'}
             </label>
             <div 
               className="relative cursor-pointer group"
               onClick={() => {
+                if (isOnLeave) return;
                 const input = document.getElementById('admin-clockout-input');
                 if (input) {
                   if (!formData.clockOut) {
@@ -561,10 +571,11 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
               <input
                 id="admin-clockout-input"
                 type="time"
-                value={formData.clockOut}
+                value={isOnLeave ? '' : formData.clockOut}
                 onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
                 className={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
-                required
+                required={!isOnLeave}
+                disabled={isOnLeave}
               />
               <LogOut className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors`} />
             </div>
@@ -593,6 +604,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
             <option value="holiday">{t('adminTimeEntry.hourTypes.holiday', 'Holiday')}</option>
             <option value="bonus">{t('adminTimeEntry.hourTypes.bonus', 'Bonus Hours')}</option>
             <option value="wfh">{t('adminTimeEntry.hourTypes.wfh', 'Working From Home (Online)')}</option>
+            <option value="on_leave">{t('adminTimeEntry.hourTypes.onLeave', 'On Leave')}</option>
           </select>
           <ChevronsUpDown className={`absolute top-[70%] right-3 transform -translate-y-1/2 pointer-events-none h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-800'} ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors`} />
         </div>

@@ -1044,6 +1044,7 @@ export default {
       overtime: 'Überstunden',
       bonus: 'Bonusstunden',
       wfh: 'Homeoffice Stunden',
+      onLeave: 'Im Urlaub'
     },
     errors: {
       dateRequired: 'Datum ist erforderlich',
@@ -1139,6 +1140,7 @@ export default {
       overtime: 'Überstunden',
       bonus: 'Bonus',
       wfh: 'Homeoffice Stunden',
+      onLeave: 'Im Urlaub'
     },
     errors: {
       checkFailed: 'Fehler beim Überprüfen vorhandener Einträge',

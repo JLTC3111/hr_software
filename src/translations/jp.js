@@ -236,6 +236,7 @@ export default {
       overtime: '残業',
       bonus: '特別勤務',
       wfh: '在宅勤務',
+      onLeave: '休暇中'
     },
     errors: {
       dateRequired: '日付を選択してください',
@@ -1105,6 +1106,7 @@ export default {
       overtime: '残業',
       bonus: 'ボーナス',
       wfh: '在宅勤務',
+      onLeave: '休暇中'
     },
     errors: {
       checkFailed: '既存のエントリの確認に失敗しました',

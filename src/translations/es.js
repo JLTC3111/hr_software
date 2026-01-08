@@ -204,6 +204,7 @@ login: {
       overtime: 'Horas extra',
       bonus: 'Bono',
       wfh: 'Horas de teletrabajo',
+      onLeave: 'En permiso'
     },
     errors: {
       checkFailed: 'Error al verificar entradas existentes',
@@ -255,6 +256,7 @@ login: {
       overtime: 'Horas extra',
       bonus: 'Horas Bonus',
       wfh: 'Horas de teletrabajo',
+      onLeave: 'En permiso'
     },
     errors: {
       dateRequired: 'La fecha es requerida',

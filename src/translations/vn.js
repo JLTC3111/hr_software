@@ -334,7 +334,8 @@ export default {
       weekend: 'Cuối Tuần/Tăng Ca',
       overtime: 'Giờ Làm Thêm',
       bonus: 'Giờ Làm Thêm',
-      wfh: 'Làm Việc Tại Nhà (Trực Tuyến)'
+      wfh: 'Làm Việc Tại Nhà (Trực Tuyến)',
+      onLeave: 'Nghỉ Phép'
     },
     errors: {
       checkFailed: 'Không thể kiểm tra các mục nhập hiện tại',
@@ -1160,7 +1161,8 @@ export default {
       weekend: 'Cuối Tuần',
       overtime: 'Giờ Làm Thêm',
       bonus: 'Giờ Thưởng',
-      wfh: 'Làm Việc Tại Nhà (Trực Tuyến)'
+      wfh: 'Làm Việc Tại Nhà (Trực Tuyến)',
+      onLeave: 'Nghỉ Phép',
     },
     errors: {
       dateRequired: 'Vui lòng chọn ngày',

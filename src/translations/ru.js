@@ -254,6 +254,7 @@ export default {
       overtime: 'Сверхурочные',
       bonus: 'Дополнительные часы',
       wfh: 'Часы удаленной работы',
+      onLeave: 'В отпуске'
     },
     errors: {
       dateRequired: 'Пожалуйста, выберите дату',
@@ -417,6 +418,7 @@ export default {
       overtime: 'Сверхурочные',
       bonus: 'Бонусные',
       wfh: 'Часы удаленной работы',
+      onLeave: 'В отпуске'
     },
     errors: {
       checkFailed: 'Не удалось проверить существующие записи',

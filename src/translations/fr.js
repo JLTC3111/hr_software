@@ -222,6 +222,7 @@ export default {
       overtime: 'Heures supplémentaires',
       bonus: 'Heures supplémentaires (bonus)',
       wfh: 'Heures de télétravail',
+      onLeave: 'En congé'
     },
     errors: {
       dateRequired: 'Veuillez sélectionner une date',
@@ -384,6 +385,7 @@ export default {
       weekend: 'Week-end/Heures supplémentaires',
       bonus: 'Bonus',
       wfh: 'Heures de télétravail',
+      onLeave: 'En congé'
     },
     errors: {
       checkFailed: 'Échec de la vérification des entrées existantes',
