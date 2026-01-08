@@ -38,7 +38,8 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
     { value: 'weekend', label: t('timeClock.hourTypes.weekend'), color: 'green' },
     { value: 'overtime', label: t('timeClock.hourTypes.overtime'), color: 'orange' },
     { value: 'bonus', label: t('timeClock.hourTypes.bonus'), color: 'yellow' },
-    { value: 'wfh', label: t('timeClock.hourTypes.wfh'), color: 'cyan' }
+    { value: 'wfh', label: t('timeClock.hourTypes.wfh'), color: 'cyan' },
+    { value: 'on_leave', label: t('timeClock.hourTypes.onLeave', 'On Leave'), color: 'pink', t: 'timeClock.hourTypes.onLeave' }
   ];
   useEffect(() => {
     if (canManageTimeTracking) {

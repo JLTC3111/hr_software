@@ -464,6 +464,16 @@ const TimeClockEntry = ({ currentLanguage }) => {
     }
   }, [selectedEmployeeFilter, timeEntries, userId, userEmployeeId]);
 
+  // Normalize entries so on-leave rows don't show placeholder times
+  const normalizeEntries = (entries) =>
+    Array.isArray(entries)
+      ? entries.map((entry) =>
+          entry?.hour_type === 'on_leave'
+            ? { ...entry, clock_in: null, clock_out: null, hours: 0 }
+            : entry
+        )
+      : [];
+
   // Fetch time entries from Supabase
   const fetchTimeEntries = async () => {
     console.log('🔄 fetchTimeEntries called');
@@ -480,7 +490,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
         
         if (result?.success && Array.isArray(result.data)) {
           console.log('✅ Fetched', result.data.length, 'entries');
-          setTimeEntries(result.data);
+          setTimeEntries(normalizeEntries(result.data));
         } else {
           console.error('❌ Failed to load entries:', result?.error || 'No data returned');
           setTimeEntries([]);
@@ -495,7 +505,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
           );
           if (result?.success && Array.isArray(result.data)) {
             console.log('✅ Fetched', result.data.length, 'entries');
-            setTimeEntries(result.data);
+            setTimeEntries(normalizeEntries(result.data));
           } else {
             console.error('❌ Failed to load entries:', result?.error || 'No data returned');
             setTimeEntries([]);
@@ -577,51 +587,56 @@ const TimeClockEntry = ({ currentLanguage }) => {
 
   const validateForm = () => {
     const newErrors = {};
+    const isOnLeave = formData.hourType === 'on_leave';
 
     if (!formData.date) {
       newErrors.date = t('timeClock.errors.dateRequired');
     }
 
-    if (!formData.clockIn) {
-      newErrors.clockIn = t('timeClock.errors.clockInRequired');
-    }
-
-    if (!formData.clockOut) {
-      newErrors.clockOut = t('timeClock.errors.clockOutRequired');
-    }
-    if (formData.clockIn && formData.clockOut) {
-      const clockInTime = new Date(`${formData.date}T${formData.clockIn}`);
-      const clockOutTime = new Date(`${formData.date}T${formData.clockOut}`);
-      
-      if (clockOutTime <= clockInTime) {
-        newErrors.clockOut = t('timeClock.errors.clockOutAfterClockIn');
+    if (!isOnLeave) {
+      if (!formData.clockIn) {
+        newErrors.clockIn = t('timeClock.errors.clockInRequired');
       }
 
-      // Check for reasonable hours (max 24 hours in a day)
-      const hoursDiff = (clockOutTime - clockInTime) / (1000 * 60 * 60);
-      if (hoursDiff > 24) {
-        newErrors.clockOut = t('timeClock.errors.tooManyHours');
+      if (!formData.clockOut) {
+        newErrors.clockOut = t('timeClock.errors.clockOutRequired');
       }
-    }
 
-    // Check for overlapping shifts on the same day
-    const overlapping = timeEntries.some(entry => {
-      if (entry.date !== formData.date) return false;
-      
-      const existingClockIn = new Date(`${entry.date}T${entry.clockIn}`);
-      const existingClockOut = new Date(`${entry.date}T${entry.clockOut}`);
-      const newClockIn = new Date(`${formData.date}T${formData.clockIn}`);
-      const newClockOut = new Date(`${formData.date}T${formData.clockOut}`);
+      if (formData.clockIn && formData.clockOut) {
+        const clockInTime = new Date(`${formData.date}T${formData.clockIn}`);
+        const clockOutTime = new Date(`${formData.date}T${formData.clockOut}`);
+        
+        if (clockOutTime <= clockInTime) {
+          newErrors.clockOut = t('timeClock.errors.clockOutAfterClockIn');
+        }
 
-      return (
-        (newClockIn >= existingClockIn && newClockIn < existingClockOut) ||
-        (newClockOut > existingClockIn && newClockOut <= existingClockOut) ||
-        (newClockIn <= existingClockIn && newClockOut >= existingClockOut)
-      );
-    });
+        // Check for reasonable hours (max 24 hours in a day)
+        const hoursDiff = (clockOutTime - clockInTime) / (1000 * 60 * 60);
+        if (hoursDiff > 24) {
+          newErrors.clockOut = t('timeClock.errors.tooManyHours');
+        }
+      }
 
-    if (overlapping) {
-      newErrors.general = t('timeClock.errors.overlapping');
+      // Check for overlapping shifts on the same day (only when times provided)
+      const overlapping = timeEntries.some(entry => {
+        if (entry.date !== formData.date) return false;
+        if (!entry.clockIn || !entry.clockOut) return false;
+        
+        const existingClockIn = new Date(`${entry.date}T${entry.clockIn}`);
+        const existingClockOut = new Date(`${entry.date}T${entry.clockOut}`);
+        const newClockIn = new Date(`${formData.date}T${formData.clockIn}`);
+        const newClockOut = new Date(`${formData.date}T${formData.clockOut}`);
+
+        return (
+          (newClockIn >= existingClockIn && newClockIn < existingClockOut) ||
+          (newClockOut > existingClockIn && newClockOut <= existingClockOut) ||
+          (newClockIn <= existingClockIn && newClockOut >= existingClockOut)
+        );
+      });
+
+      if (overlapping) {
+        newErrors.general = t('timeClock.errors.overlapping');
+      }
     }
 
     setErrors(newErrors);
@@ -672,7 +687,11 @@ const TimeClockEntry = ({ currentLanguage }) => {
     setIsSubmitting(true);
 
     try {
-      const hours = calculateHours(formData.clockIn, formData.clockOut, formData.date);
+      const isOnLeave = formData.hourType === 'on_leave';
+      const hours = isOnLeave ? 0 : calculateHours(formData.clockIn, formData.clockOut, formData.date);
+      // Some DB schemas require non-null clock fields; use subtle placeholders for leave
+      const LEAVE_CLOCK_IN = '09:00';
+      const LEAVE_CLOCK_OUT = '09:01';
       
       // Upload proof file if exists
       let proofFileUrl = null;
@@ -751,8 +770,20 @@ const TimeClockEntry = ({ currentLanguage }) => {
         return;
       }
       
-      // Check for time overlaps
+      // Check for overlaps or duplicates
       if (existingEntries && existingEntries.length > 0) {
+        if (isOnLeave) {
+          // Prevent duplicate on-leave entries for the same day/hour type
+          const hourTypeLabel = t(`timeClock.hourTypes.${formData.hourType}`, formData.hourType);
+          const errorMsg = t('timeClock.errors.overlappingEntry', 'This {hourType} time entry overlaps with an existing entry ({existingIn} - {existingOut})')
+            .replace('{hourType}', hourTypeLabel)
+            .replace('{existingIn}', existingEntries[0].clock_in || 'N/A')
+            .replace('{existingOut}', existingEntries[0].clock_out || 'N/A');
+          setErrors({ general: errorMsg });
+          setIsSubmitting(false);
+          return;
+        }
+
         const newClockIn = formData.clockIn;
         const newClockOut = formData.clockOut;
         
@@ -781,8 +812,8 @@ const TimeClockEntry = ({ currentLanguage }) => {
       const result = await timeTrackingService.createTimeEntry({
         employeeId: employeeId,
         date: formData.date,
-        clockIn: formData.clockIn,
-        clockOut: formData.clockOut,
+        clockIn: isOnLeave ? LEAVE_CLOCK_IN : formData.clockIn,
+        clockOut: isOnLeave ? LEAVE_CLOCK_OUT : formData.clockOut,
         hours: parseFloat(hours),
         hourType: formData.hourType,
         notes: formData.notes,
