@@ -1506,6 +1506,8 @@ export default {
 
   // Control Panel
   controlPanel: {
+    refresh: 'Обновить данные',
+    refreshing: 'Обновление данных...',
     demoModeDisabled: 'Функция заблокирована',
     title: 'Панель Управления',
     subtitle: 'Управление настройками аккаунта и системными предпочтениями',

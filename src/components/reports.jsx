@@ -1655,6 +1655,8 @@ const Reports = () => {
         return t('timeClock.hourTypes.bonus', 'Bonus Hours');
       case 'wfh':
         return t('timeClock.hourTypes.wfh', 'Working From Home');
+      case 'on_leave':
+        return t('timeClock.hourTypes.onLeave', 'On Leave');  
       default:
         return hourType;
     }

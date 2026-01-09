@@ -1613,6 +1613,8 @@ export default {
 
   // Control Panel
   controlPanel: {
+    refreshing: 'Refreshing...',
+    refresh: 'Refresh',
     demoModeDisabled: 'Function is locked',
     title: 'Control Panel',
     subtitle: 'Manage your account and system settings',

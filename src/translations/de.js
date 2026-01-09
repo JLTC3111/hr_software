@@ -1550,6 +1550,8 @@ export default {
 
   // Control Panel
   controlPanel: {
+    refreshing: 'Aktualisieren...',
+    refresh: 'Aktualisieren',
     demoModeDisabled: 'Funktion ist gesperrt',
     title: 'Kontrollzentrum',
     subtitle: 'Verwalten Sie Benutzereinstellungen, Rollen und Passwörter',

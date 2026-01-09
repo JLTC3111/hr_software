@@ -1548,6 +1548,8 @@ export default {
 
   // Control Panel
   controlPanel: {
+    refresh: 'รีเฟรชข้อมูลระบบ',
+    refreshing: 'กำลังรีเฟรชข้อมูลระบบ...',
     demoModeDisabled: 'ฟังก์ชันนี้ถูกล็อกไว้',
     title: 'แผงควบคุมผู้ดูแลระบบ',
     subtitle: 'จัดการการตั้งค่าระบบและบัญชีผู้ใช้',

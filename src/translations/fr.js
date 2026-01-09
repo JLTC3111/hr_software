@@ -1616,6 +1616,11 @@ export default {
 
   // Control Panel
   controlPanel: {
+    refreshing: 'Actualisation...',
+    refresh: 'Rafraîchir',
+    refreshData: 'Rafraîchir les données du système',
+    dataRefreshed: 'Données du système rafraîchies avec succès!',
+    dataRefreshError: 'Erreur lors du rafraîchissement des données du système',
     demoModeDisabled: 'La fonction est verrouillée',
     title: 'Panneau de Contrôle',
     subtitle: 'Gérer les paramètres du système et les utilisateurs',

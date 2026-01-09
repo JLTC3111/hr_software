@@ -1586,6 +1586,10 @@ login: {
 
   // Control Panel
   controlPanel: {
+    refreshing: 'Actualizando datos...',
+    refresh: 'Actualizar',
+    refreshData: 'Actualizar Datos',
+    lastUpdated: 'Última Actualización:',
     demoModeDisabled: 'La función está bloqueada',
     title: 'Panel de Control de Usuario',
     subtitle: 'Gestiona la configuración de tu cuenta y preferencias',

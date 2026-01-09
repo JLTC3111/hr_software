@@ -1498,6 +1498,8 @@ export default {
 
   // Control Panel
   controlPanel: {
+    refreshing: '새로 고침 중...',
+    refresh: '새로 고침',
     demoModeDisabled: '이 기능은 잠겨 있습니다',
     title: '관리자 제어판',
     subtitle: '시스템 설정 및 사용자 관리',

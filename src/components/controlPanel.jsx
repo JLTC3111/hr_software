@@ -430,13 +430,19 @@ const ControlPanel = () => {
     if (!isAdmin) return;
     setLoadingVisits(true);
     setVisitError('');
-    const result = await fetchVisitSummary();
-    if (result.success) {
-      setVisitSummary(result.data);
-    } else {
-      setVisitError(result.error || 'Failed to load visit summary');
+    try {
+      const result = await fetchVisitSummary();
+      if (result && result.success) {
+        setVisitSummary(result.data);
+      } else {
+        setVisitError((result && result.error) || 'Failed to load visit summary');
+      }
+    } catch (err) {
+      console.error('handleRefreshVisits error', err);
+      setVisitError('Failed to load visit summary');
+    } finally {
+      setLoadingVisits(false);
     }
-    setLoadingVisits(false);
   };
 
   const fetchAllUsers = async () => {
@@ -1207,7 +1213,7 @@ const ControlPanel = () => {
                   <button
                     onClick={handleRefreshVisits}
                     disabled={loadingVisits}
-                    className={`text-xs px-2 py-1 rounded border ${loadingVisits ? 'opacity-60 cursor-not-allowed' : 'hover:bg-indigo-50 dark:hover:bg-slate-800'}`}
+                    className={`text-xs px-2 py-1 cursor-pointer rounded border ${loadingVisits ? 'opacity-60 cursor-not-allowed' : 'hover:bg-indigo-50 dark:hover:bg-slate-800'}`}
                     style={{
                       borderColor: isDarkMode ? '#1e293b' : '#e2e8f0',
                       color: isDarkMode ? '#cbd5e1' : '#1e293b',

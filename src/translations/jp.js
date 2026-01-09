@@ -1552,6 +1552,8 @@ export default {
 
   // Control Panel
   controlPanel: {
+    refreshing: '更新中...',
+    refresh: '更新',
     demoModeDisabled: 'この機能はロックされています',
     title: '管理者コントロールパネル',
     subtitle: 'システム設定とユーザー管理を行います',

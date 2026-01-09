@@ -1762,6 +1762,13 @@ export default {
 
   // Control Panel
   controlPanel: {
+    refresh: 'Làm Mới',
+    refreshing: 'Đang làm mới...',
+    refreshData: 'Làm mới Dữ liệu',
+    lastUpdated: 'Cập nhật lần cuối',
+    updateAvailable: 'Cập nhật mới có sẵn!',
+    updateAvailableDesc: 'Phiên bản mới đã sẵn sàng để tải xuống. Vui lòng truy cập trang GitHub để tải phiên bản mới nhất.',
+    downloadLink: 'Tải xuống tại đây',
     demoModeDisabled: 'Chức Năng Bị Khoá',
     title: 'Bảng Điều Khiển Quản Trị',
     subtitle: 'Quản lý cài đặt hệ thống và tài khoản người dùng',
