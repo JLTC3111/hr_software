@@ -989,7 +989,7 @@ const TaskListing = ({ employees }) => {
                   <select
                     value={taskForm.assignedTo}
                     onChange={(e) => setTaskForm({ ...taskForm, assignedTo: e.target.value })}
-                    className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
+                    className={`w-full px-4 py-2 rounded-lg ${text.secondary} ${border.primary}`}
                   >
                     <option value="">{t('taskListing.selectEmployee', 'Select Employee')}</option>
                     {employees.map(emp => (
@@ -1008,7 +1008,7 @@ const TaskListing = ({ employees }) => {
                   type="text"
                   value={taskForm.title}
                   onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
-                  className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
+                  className={`w-full px-4 py-2 rounded-lg border border-gray-300 ${text.secondary} ${border.primary}`}
                 />
               </div>
               <div>
@@ -1019,7 +1019,7 @@ const TaskListing = ({ employees }) => {
                   value={taskForm.description}
                   onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
                   rows="3"
-                  className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
+                  className={`w-full border-gray-300 px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
                 />
               </div>
               <div>
@@ -1032,7 +1032,7 @@ const TaskListing = ({ employees }) => {
                     type="date"
                     value={taskForm.dueDate}
                     onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
-                    className={`cursor-pointer w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary} [&::-webkit-calendar-picker-indicator]:opacity-0`}
+                    className={`cursor-pointer border-gray-300 w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary} [&::-webkit-calendar-picker-indicator]:opacity-0`}
                   />
                   <button
                     type="button"
@@ -1061,7 +1061,7 @@ const TaskListing = ({ employees }) => {
                   <select
                     value={taskForm.priority}
                     onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}
-                    className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
+                    className={`w-full px-4 border-gray-300 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
                   >
                     <option value="low">{t('taskListing.priorityLow', '')}</option>
                     <option value="medium">{t('taskListing.priorityMedium', '')}</option>
@@ -1075,7 +1075,7 @@ const TaskListing = ({ employees }) => {
                   <select
                     value={taskForm.status}
                     onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value })}
-                    className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
+                    className={`w-full px-4 border-gray-300 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
                   >
                     <option value="pending">{t('taskListing.statusPending', '')}</option>
                     <option value="in-progress">{t('taskListing.statusInProgress', '')}</option>
@@ -1092,7 +1092,7 @@ const TaskListing = ({ employees }) => {
                   onChange={(e) => setTaskForm({ ...taskForm, selfAssessment: e.target.value })}
                   rows="2"
                   placeholder={t('taskListing.selfAssessmentPlaceholder', 'How did you perform on this task?')}
-                  className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
+                  className={`w-full border-gray-300 px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
                 />
               </div>
               <div>
@@ -1105,7 +1105,7 @@ const TaskListing = ({ employees }) => {
                   max="5"
                   value={taskForm.qualityRating}
                   onChange={(e) => setTaskForm({ ...taskForm, qualityRating: parseInt(e.target.value) })}
-                  className={`w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
+                  className={`w-full px-4 border-gray-300 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
                 />
               </div>
               <div className="flex space-x-3 pt-4">
