@@ -261,6 +261,7 @@ const TaskListing = ({ employees }) => {
   
   // Modal ref for outside click detection
   const modalRef = React.useRef(null);
+  const dueDateInputRef = useRef(null);
 
   // Check if user can view all employees (admin/manager)
   const canViewAllEmployees = checkPermission('canViewReports');
@@ -682,7 +683,35 @@ const TaskListing = ({ employees }) => {
                     <p className={`text-sm ${text.secondary} mb-2`}>{isDemoMode() ? getDemoTaskDescription(task, t) : task.description}</p>
                     {task.due_date && (
                       <p className={`text-xs ${text.secondary} flex items-center space-x-1 mb-2`}>
-                        <Calendar className="w-3 h-3" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingTask(task);
+                            setTaskForm({
+                              ...task,
+                              title: isDemoMode() ? getDemoTaskTitle(task, t) : task.title,
+                              description: isDemoMode() ? getDemoTaskDescription(task, t) : task.description,
+                              dueDate: task.due_date,
+                              assignedTo: task.employee_id
+                            });
+                            setModalMode('edit');
+                            setShowAddTask(true);
+                            setTimeout(() => {
+                              const el = dueDateInputRef.current;
+                              if (!el) return;
+                              if (typeof el.showPicker === 'function') {
+                                el.showPicker();
+                              } else {
+                                el.focus();
+                                if (typeof el.click === 'function') el.click();
+                              }
+                            }, 250);
+                          }}
+                          className="inline-flex items-center justify-center w-4 h-4"
+                          aria-label={t('taskListing.openDueDatePicker', 'Open due date picker')}
+                        >
+                          <Calendar className="w-3 h-3" />
+                        </button>
                         <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
                       </p>
                     )}
@@ -997,14 +1026,31 @@ const TaskListing = ({ employees }) => {
                 <label className={`block text-sm font-medium ${text.primary} mb-2`}>
                   {t('taskListing.dueDate', 'Due Date')}
                 </label>
-                <div className="relative">
+                  <div className="relative">
                   <input
+                    ref={dueDateInputRef}
                     type="date"
                     value={taskForm.dueDate}
                     onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
                     className={`cursor-pointer w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary} [&::-webkit-calendar-picker-indicator]:opacity-0`}
                   />
-                  <Calendar className={`cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none`} />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = dueDateInputRef.current;
+                      if (!el) return;
+                      if (typeof el.showPicker === 'function') {
+                        el.showPicker();
+                      } else {
+                        el.focus();
+                        if (typeof el.click === 'function') el.click();
+                      }
+                    }}
+                    className={`cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center ${text.secondary}`}
+                    aria-label={t('taskListing.openDatePicker', 'Open date picker')}
+                  >
+                    <Calendar className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
