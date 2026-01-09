@@ -28,7 +28,27 @@ A reusable utility that:
 - `validateAndRefreshSession()`: Validates and refreshes session
 - `withSessionValidation(fetchFn)`: Wrapper for fetch functions (for future use)
 
-### 2. Added Error State UI to Components
+### 2. Created Retry Helper Utility (`src/utils/retryHelper.js`)
+
+A robust retry mechanism with exponential backoff that:
+- Automatically retries failed API calls
+- Uses exponential backoff (1s, 2s, 4s, etc.)
+- Identifies retryable errors (network, timeout, 5xx, rate limiting)
+- Limits maximum retry attempts (default: 2)
+- Provides retry progress logging
+
+**Key Functions**:
+- `retryWithBackoff(fn, options)`: Wraps function with retry logic
+- `isRetryableError(error)`: Determines if error should trigger retry
+- `withRetryAndSession(fetchFn, validateSession)`: Combined wrapper
+
+**Retryable Errors**:
+- Network failures (timeout, fetch failed, aborted)
+- Server errors (HTTP 5xx)
+- Rate limiting (HTTP 429)
+- Temporary session errors
+
+### 3. Added Error State UI to Components
 
 **Files Modified**:
 - `src/components/dashboard.jsx`
@@ -44,7 +64,7 @@ A reusable utility that:
   - Uses appropriate colors for dark/light themes
   - Slides in with animation for better UX
 
-### 3. Enhanced Fetch Functions with Session Validation
+### 4. Enhanced Fetch Functions with Session Validation and Retry Logic
 
 **Before**:
 ```javascript
@@ -78,9 +98,18 @@ const fetchDashboardData = useCallback(async (options = {}) => {
       throw new Error(sessionValidation.error);
     }
     
-    // API calls proceed with valid session
-    const result = await timeTrackingService.getTimeTrackingSummary(...);
-    // ...
+    // Wrap with retry mechanism
+    await retryWithBackoff(async () => {
+      // API calls proceed with valid session
+      const result = await timeTrackingService.getTimeTrackingSummary(...);
+      // ...
+    }, {
+      maxRetries: 2,
+      shouldRetry: isRetryableError,
+      onRetry: (error, attempt, delay) => {
+        console.log(`🔄 Dashboard: Retrying fetch (${attempt}/2) after ${delay}ms...`);
+      }
+    });
   } catch (error) {
     console.error('Error:', error);
     // Show error to user
@@ -135,31 +164,69 @@ The session helper performs these checks:
 1. **User Visibility**: Users now see when data fetching fails instead of silently failing
 2. **Easy Recovery**: "Try Again" button allows instant retry without page refresh
 3. **Session Management**: Automatic session refresh prevents expired-session errors
-4. **Better Debugging**: Console logs show session state for developers
-5. **Consistent UX**: Same error handling pattern across dashboard, reports, and time clock components
-6. **Graceful Degradation**: Even if session refresh fails, the error is surfaced to users
+4. **Automatic Retry**: Network/timeout errors automatically retry with exponential backoff
+5. **Smart Error Detection**: Only retries errors that are likely to succeed on retry
+6. **Better Debugging**: Console logs show session state and retry attempts for developers
+7. **Consistent UX**: Same error handling and retry pattern across dashboard, reports, and time clock components
+8. **Graceful Degradation**: Even if session refresh or retry fails, the error is surfaced to users
+9. **Reduced User Friction**: Transient failures resolve automatically without user intervention
+
+## Retry Strategy
+
+The retry mechanism uses exponential backoff:
+- **Attempt 1**: Immediate (0ms delay)
+- **Attempt 2**: 1 second delay
+- **Attempt 3**: 2 seconds delay
+- **Max retries**: 2 (total of 3 attempts)
+- **Max delay**: 10 seconds
+
+**Example Console Output**:
+```
+🔄 Retry attempt 1/2 after 1000ms: Network request failed
+🔄 Dashboard: Retrying fetch (1/2) after 1000ms...
+✅ Session valid, expires in: 45 minutes
+```
 
 ## Testing Recommendations
 
 1. **Idle Scenario**: Leave the app idle for 10+ minutes, then switch components
+   - Expected: Session refreshes automatically, data loads successfully
+   - If fails: Automatic retry with exponential backoff
+   - Final fallback: Error banner with "Try Again" button
+
 2. **Session Expiry**: Wait for session to expire (check Supabase auth settings), then navigate
-3. **Network Issues**: Disable network briefly, then re-enable and try fetching data
-4. **Manual Refresh**: Test the "Try Again" button in error banners
+   - Expected: Session validation catches expiry and refreshes
+   - Fallback: Clear error message prompting re-login
+
+3. **Network Issues**: 
+   - Test 1: Disable network briefly, then re-enable
+   - Expected: Automatic retry after 1s, 2s delays until success
+   - Test 2: Keep network disabled
+   - Expected: All retries exhausted, error banner shown
+
+4. **Manual Retry**: Test the "Try Again" button in error banners
+   - Expected: Clears error, validates session, retries fetch
+
+5. **Server Errors**: Simulate 5xx server errors
+   - Expected: Automatic retry with backoff
 
 ## Future Enhancements
 
-- Add retry logic with exponential backoff for transient failures
+- ~~Add retry logic with exponential backoff for transient failures~~ ✅ **COMPLETED**
 - Implement optimistic updates to show cached data while fetching
 - Add network status indicator in the UI
 - Consider implementing a global error boundary for uncaught errors
 - Add telemetry/logging to track fetch failure rates in production
+- Fine-tune retry delays based on production data
+- Add retry count to error messages ("Failed after 3 attempts")
 
 ## Files Changed
 
 1. `src/utils/sessionHelper.js` - **NEW**: Session validation utility
-2. `src/components/dashboard.jsx` - Error state + session validation
-3. `src/components/reports.jsx` - Error state + session validation
-4. `src/components/timeClockEntry.jsx` - Error state + session validation
+2. `src/utils/retryHelper.js` - **NEW**: Retry logic with exponential backoff
+3. `src/components/dashboard.jsx` - Error state + session validation + retry logic
+4. `src/components/reports.jsx` - Error state + session validation + retry logic
+5. `src/components/timeClockEntry.jsx` - Error state + session validation + retry logic
 
 ## Related Issues
 

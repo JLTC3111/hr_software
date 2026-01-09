@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence, useMotionValue, animate } from 'framer-motion'
 import * as flubber from 'flubber'
-import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, ArrowUp01, Sailboat, Stamp, CircleQuestionMark, Funnel, ListFilterPlus, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart } from 'lucide-react'
+import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, ArrowUp01, Sailboat, Stamp, CircleQuestionMark, Funnel, ListFilterPlus, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart, AlertCircle } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import * as timeTrackingService from '../services/timeTrackingService'
+import { validateAndRefreshSession } from '../utils/sessionHelper';
+import { retryWithBackoff, isRetryableError } from '../utils/retryHelper';
 import { supabase } from '../config/supabaseClient'
 import { AnimatedClockIcon } from './timeClockEntry'
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh'
@@ -408,6 +410,7 @@ const TimeTracking = ({ employees }) => {
   
   // Loading and data states
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [summaryData, setSummaryData] = useState(null);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [allLeaveRequests, setAllLeaveRequests] = useState([]);
@@ -578,10 +581,21 @@ const TimeTracking = ({ employees }) => {
   // Define fetch function that can be reused for visibility refresh
   const fetchTimeTrackingData = useCallback(async ({ silent = false } = {}) => {
     if (!selectedEmployee) return;
-    if (!silent) setLoading(true);
+    if (!silent) {
+      setLoading(true);
+      setFetchError(null);
+    }
     try {
-      // Fetch summary data
-      const summaryResult = await withTimeout(
+      // Validate session before fetching
+      const sessionValidation = await validateAndRefreshSession();
+      if (!sessionValidation.success) {
+        throw new Error(sessionValidation.error);
+      }
+      
+      // Wrap fetch with retry mechanism
+      await retryWithBackoff(async () => {
+        // Fetch summary data
+        const summaryResult = await withTimeout(
         () => timeTrackingService.getTimeTrackingSummary(selectedEmployee, selectedMonth, selectedYear),
         15000,
         'load time tracking summary'
@@ -613,8 +627,18 @@ const TimeTracking = ({ employees }) => {
       if (entriesResult.success) {
         setTimeEntries(entriesResult.data);
       }
+      }, {
+        maxRetries: 2,
+        shouldRetry: isRetryableError,
+        onRetry: (error, attempt, delay) => {
+          console.log(`🔄 TimeTracking: Retrying fetch (${attempt}/2) after ${delay}ms...`);
+        }
+      });
     } catch (error) {
       console.error('Error fetching time tracking data:', error);
+      if (!silent) {
+        setFetchError(error.message || 'Failed to load time tracking data. Please try refreshing.');
+      }
       setSuccessMessage('');
     } finally {
       if (!silent) setLoading(false);
@@ -1269,6 +1293,37 @@ const handleRejectRequest = async (requestId) => {
           </select>
         </div>
       </div>
+
+      {/* Error Banner */}
+      {fetchError && (
+        <div className={`${isDarkMode ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-300'} rounded-lg border p-4 flex items-start space-x-3 slide-in-top`}>
+          <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'} shrink-0 mt-0.5`} />
+          <div className="flex-1">
+            <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-red-400' : 'text-red-800'}`}>
+              {t('common.error', 'Error')}
+            </h3>
+            <p className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-700'} mt-1`}>
+              {fetchError}
+            </p>
+            <button
+              onClick={() => {
+                setFetchError(null);
+                fetchTimeTrackingData();
+              }}
+              className={`mt-2 text-xs font-medium ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} underline`}
+            >
+              {t('common.retry', 'Try Again')}
+            </button>
+          </div>
+          <button
+            onClick={() => setFetchError(null)}
+            className={`${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} transition-colors text-xl font-bold leading-none`}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Time Tracking Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

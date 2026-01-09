@@ -7,6 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ComposedChart } from 'recharts'
 import * as timeTrackingService from '../services/timeTrackingService'
 import { validateAndRefreshSession } from '../utils/sessionHelper';
+import { retryWithBackoff, isRetryableError } from '../utils/retryHelper';
 import * as flubber from 'flubber';
 import { AnimatedClockIcon, AnimatedAlarmClockIcon } from './timeClockEntry.jsx'
 import { AnimatedCoffeeIcon, MiniFlubberMorphingLeaveStatus } from './timeTracking.jsx';
@@ -1262,9 +1263,10 @@ const Dashboard = ({ employees, applications }) => {
         throw new Error(sessionValidation.error);
       }
       
-      
-      // Fetch time tracking summaries for all employees for SELECTED month
-      const summariesPromises = employees.map(emp => 
+      // Wrap the fetch logic with retry mechanism
+      await retryWithBackoff(async () => {
+        // Fetch time tracking summaries for all employees for SELECTED month
+        const summariesPromises = employees.map(emp => 
         timeTrackingService.getTimeTrackingSummary(String(emp.id), selectedMonth, selectedYear)
       );
       
@@ -1367,6 +1369,13 @@ const Dashboard = ({ employees, applications }) => {
           console.warn('Failed to fetch pending approvals details:', approvalsDetailResult.error);
           setPendingApprovals([]);
         }
+      }, {
+        maxRetries: 2,
+        shouldRetry: isRetryableError,
+        onRetry: (error, attempt, delay) => {
+          console.log(`🔄 Dashboard: Retrying fetch (${attempt}/2) after ${delay}ms...`);
+        }
+      });
         
       } catch (error) {
         console.error('Error fetching dashboard data:', error);

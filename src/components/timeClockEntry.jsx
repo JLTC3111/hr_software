@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as timeTrackingService from '../services/timeTrackingService';
 import { validateAndRefreshSession } from '../utils/sessionHelper';
+import { retryWithBackoff, isRetryableError } from '../utils/retryHelper';
 import { supabase } from '../config/supabaseClient';
 import { isDemoMode, getDemoEmployeeName, addDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper';
 import AdminTimeEntry from './AdminTimeEntry';
@@ -492,8 +493,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
         throw new Error(sessionValidation.error);
       }
       
-      await fetchTimeEntries();
-      if (import.meta?.env?.DEV) console.log(`[TimeClockEntry] loadData fetched entries #${seq}`);
+      // Wrap fetch with retry mechanism
+      await retryWithBackoff(async () => {
+        await fetchTimeEntries();
+        if (import.meta?.env?.DEV) console.log(`[TimeClockEntry] loadData fetched entries #${seq}`);
       Promise.resolve(fetchLeaveRequests()).then(() => {
         if (import.meta?.env?.DEV) console.log(`[TimeClockEntry] leave requests fetched #${seq}`);
       }).catch((e) => {
@@ -509,6 +512,13 @@ const TimeClockEntry = ({ currentLanguage }) => {
             console.error('Error fetching employees (background):', e);
           });
       }
+      }, {
+        maxRetries: 2,
+        shouldRetry: isRetryableError,
+        onRetry: (error, attempt, delay) => {
+          console.log(`🔄 TimeClockEntry: Retrying fetch (${attempt}/2) after ${delay}ms...`);
+        }
+      });
     } catch (error) {
       console.error('Error loading data:', error);
       // Set user-visible error message

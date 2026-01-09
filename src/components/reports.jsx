@@ -48,6 +48,7 @@ import timeTrackingService from '../services/timeTrackingService';
 import { getAllTasks } from '../services/workloadService';
 import performanceService from '../services/performanceService';
 import { validateAndRefreshSession } from '../utils/sessionHelper';
+import { retryWithBackoff, isRetryableError } from '../utils/retryHelper';
 import { supabase } from '../config/supabaseClient';
 
 // Helper to load fonts for PDF
@@ -220,9 +221,11 @@ const Reports = () => {
         throw new Error(sessionValidation.error);
       }
       
-      const { startDate, endDate } = filters;
-      // Don't parse as int - IDs might be UUIDs
-      const employeeId = selectedEmployee === 'all' ? null : selectedEmployee;
+      // Wrap fetch logic with retry mechanism
+      await retryWithBackoff(async () => {
+        const { startDate, endDate } = filters;
+        // Don't parse as int - IDs might be UUIDs
+        const employeeId = selectedEmployee === 'all' ? null : selectedEmployee;
       
       console.log('Fetching data for:', { selectedEmployee, employeeId, activeTab, startDate, endDate });
 
@@ -391,6 +394,13 @@ const Reports = () => {
       } else {
         console.log('=== SKIPPING GOALS FETCH ===', { activeTab });
       }
+      }, {
+        maxRetries: 2,
+        shouldRetry: isRetryableError,
+        onRetry: (error, attempt, delay) => {
+          console.log(`🔄 Reports: Retrying fetch (${attempt}/2) after ${delay}ms...`);
+        }
+      });
     } catch (error) {
       console.error('Error fetching report data:', error);
       // Set user-visible error message
