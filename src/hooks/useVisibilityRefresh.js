@@ -1,8 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 
 /**
- * Hook to handle data refresh when the page becomes visible again
- * after being in power saving mode or idle state.
  * 
  * @param {Function} refreshCallback - Function to call when data needs refreshing
  * @param {Object} options - Configuration options

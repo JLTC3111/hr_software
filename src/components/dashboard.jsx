@@ -1244,10 +1244,11 @@ const Dashboard = ({ employees, applications }) => {
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
   // Define fetch function that can be reused
-  const fetchDashboardData = useCallback(async () => {
+  const fetchDashboardData = useCallback(async (options = {}) => {
+    const { silent = false } = options;
     if (employees.length === 0) return;
     
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       
       // Fetch time tracking summaries for all employees for SELECTED month
@@ -1358,8 +1359,8 @@ const Dashboard = ({ employees, applications }) => {
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
-        setLoading(false);
-      }
+          if (!silent) setLoading(false);
+        }
   }, [employees, selectedMonth, selectedYear]);
 
   // Fetch data on mount and when dependencies change
@@ -1370,7 +1371,7 @@ const Dashboard = ({ employees, applications }) => {
   }, [fetchDashboardData]);
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
-  useVisibilityRefresh(fetchDashboardData, {
+  useVisibilityRefresh(() => fetchDashboardData({ silent: true }), {
     staleTime: 120000, // 2 minutes - refresh if data is older than this
     refreshOnFocus: true,
     refreshOnOnline: true

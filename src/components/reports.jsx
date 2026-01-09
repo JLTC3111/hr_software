@@ -211,8 +211,9 @@ const Reports = () => {
     }
   }, [filters, selectedEmployee, activeTab, reportData.employees]);
 
-  const fetchReportData = async () => {
-    setLoading(true);
+  const fetchReportData = async (options = {}) => {
+    const { silent = false } = options;
+    if (!silent) setLoading(true);
     try {
       const { startDate, endDate } = filters;
       // Don't parse as int - IDs might be UUIDs
@@ -388,14 +389,14 @@ const Reports = () => {
     } catch (error) {
       console.error('Error fetching report data:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   // Memoize fetchReportData for use in visibility hook
   const memoizedFetchReportData = useCallback(() => {
     if (reportData.employees.length > 0) {
-      fetchReportData();
+      fetchReportData({ silent: true });
     }
   }, [filters, selectedEmployee, activeTab, reportData.employees]);
 
