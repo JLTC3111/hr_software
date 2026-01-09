@@ -204,14 +204,7 @@ const Reports = () => {
   }, [dateRange]);
 
   // Fetch data when filters change
-  useEffect(() => {
-    // Only fetch if employees are loaded
-    if (reportData.employees.length > 0) {
-      fetchReportData();
-    }
-  }, [filters, selectedEmployee, activeTab, reportData.employees]);
-
-  const fetchReportData = async (options = {}) => {
+  const fetchReportData = useCallback(async (options = {}) => {
     const { silent = false } = options;
     if (!silent) setLoading(true);
     try {
@@ -391,14 +384,21 @@ const Reports = () => {
     } finally {
       if (!silent) setLoading(false);
     }
-  };
+  }, [filters, selectedEmployee, activeTab]);
+
+  // Effect to fetch data when filters/tab/employee changes
+  useEffect(() => {
+    if (reportData.employees.length > 0) {
+      fetchReportData();
+    }
+  }, [fetchReportData, reportData.employees]);
 
   // Memoize fetchReportData for use in visibility hook
   const memoizedFetchReportData = useCallback(() => {
     if (reportData.employees.length > 0) {
       fetchReportData({ silent: true });
     }
-  }, [filters, selectedEmployee, activeTab, reportData.employees]);
+  }, [fetchReportData, reportData.employees]);
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
   useVisibilityRefresh(memoizedFetchReportData, {
