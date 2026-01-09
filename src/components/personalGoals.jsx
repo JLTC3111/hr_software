@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Star, Sparkle, TrendingUp, Calendar, User, Award, Goal, ShieldEllipsis, MessageSquare, Plus, Edit, Eye, X, Save, ChevronRight, ChevronLeft, Trash2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -71,6 +71,8 @@ const PersonalGoals = ({ employees }) => {
     status: 'pending',
     progressPercentage: 0
   });
+
+  const dateInputRef = useRef(null);
 
   // Helper functions to translate department and position values
   const translateDepartment = (department) => {
@@ -1292,6 +1294,7 @@ const PersonalGoals = ({ employees }) => {
                   </label>
                   <div className="relative">
                     <input
+                      ref={dateInputRef}
                       type="date"
                       value={goalForm.targetDate}
                       onChange={(e) => setGoalForm({...goalForm, targetDate: e.target.value})}
@@ -1302,12 +1305,28 @@ const PersonalGoals = ({ employees }) => {
                         color: isDarkMode ? '#ffffff' : '#111827'
                       }}
                     />
-                    <Calendar 
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none"
-                      style={{
-                        color: isDarkMode ? '#9ca3af' : '#6b7280'
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const el = dateInputRef.current;
+                        if (!el) return;
+                        if (typeof el.showPicker === 'function') {
+                          el.showPicker();
+                        } else {
+                          el.focus();
+                          if (typeof el.click === 'function') el.click();
+                        }
                       }}
-                    />
+                      className="absolute right-3 cursor-pointer top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center"
+                      aria-label={t('personalGoals.openDatePicker', 'Open date picker')}
+                    >
+                      <Calendar
+                        className="w-5 h-5"
+                        style={{
+                          color: isDarkMode ? '#9ca3af' : '#6b7280'
+                        }}
+                      />
+                    </button>
                   </div>
                 </div>
 
@@ -1514,6 +1533,7 @@ const PersonalGoals = ({ employees }) => {
                   </label>
                   <div className="relative">
                     <input
+                      ref={dateInputRef}
                       type="date"
                       value={goalForm.targetDate}
                       onChange={(e) => setGoalForm({...goalForm, targetDate: e.target.value})}
@@ -1524,12 +1544,28 @@ const PersonalGoals = ({ employees }) => {
                         color: isDarkMode ? '#ffffff' : '#111827'
                       }}
                     />
-                    <Calendar 
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none"
-                      style={{
-                        color: isDarkMode ? '#9ca3af' : '#6b7280'
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const el = dateInputRef.current;
+                        if (!el) return;
+                        if (typeof el.showPicker === 'function') {
+                          el.showPicker();
+                        } else {
+                          el.focus();
+                          if (typeof el.click === 'function') el.click();
+                        }
                       }}
-                    />
+                      className="absolute cursor-pointer right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center"
+                      aria-label={t('personalGoals.openDatePicker', 'Open date picker')}
+                    >
+                      <Calendar
+                        className="w-5 h-5"
+                        style={{
+                          color: isDarkMode ? '#9ca3af' : '#6b7280'
+                        }}
+                      />
+                    </button>
                   </div>
                 </div>
 
