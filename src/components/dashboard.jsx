@@ -1363,6 +1363,11 @@ const Dashboard = ({ employees, applications }) => {
         }
   }, [employees, selectedMonth, selectedYear]);
 
+  // Memoize the silent refresh callback
+  const silentRefresh = useCallback(() => {
+    fetchDashboardData({ silent: true });
+  }, [fetchDashboardData]);
+
   // Fetch data on mount and when dependencies change
   useEffect(() => {
     if (employees.length > 0) {
@@ -1371,7 +1376,7 @@ const Dashboard = ({ employees, applications }) => {
   }, [fetchDashboardData]);
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
-  useVisibilityRefresh(() => fetchDashboardData({ silent: true }), {
+  useVisibilityRefresh(silentRefresh, {
     staleTime: 120000, // 2 minutes - refresh if data is older than this
     refreshOnFocus: true,
     refreshOnOnline: true
