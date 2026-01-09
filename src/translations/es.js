@@ -359,6 +359,7 @@ login: {
 
   // Time Tracking
   timeTracking: {
+    on_leave: 'En Permiso',
     detailedBreakdown: 'Desglose Detallado del Seguimiento de Tiempo',
     title: 'Tableau de bord de suivi du temps',
     overview: 'Aperçu',

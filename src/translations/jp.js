@@ -283,6 +283,7 @@ export default {
   
   // Time Tracking
   timeTracking: {
+    on_leave: '休暇中',
     detailedBreakdown: '詳細な勤怠管理の内訳',
     title: '勤怠管理ダッシュボード',
     overview: '概要',

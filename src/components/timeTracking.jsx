@@ -1149,7 +1149,7 @@ const handleRejectRequest = async (requestId) => {
         clockIn: clockIn,
         clockOut: clockOut,
         hours: overtimeHours,
-        hourType: 'weekend', // Log as weekend overtime (goes to overtime_hours in summary)
+        hourType: 'weekend', 
         notes: overtimeForm.reason || 'Overtime work'
       });
       
@@ -1439,14 +1439,17 @@ const handleRejectRequest = async (requestId) => {
                         <td className={`p-3 ${text.primary} text-centerfont-medium`}>
                             {record.employee_name || employees.find(emp => String(emp.id) === String(record.employee_id))?.name || employees.find(emp => String(emp.id) === selectedEmployee)?.name || '-'}
                         </td>
-                        <td className={`p-3 ${text.secondary}`}>
-                            {record.clock_in || record.clockIn} - {record.clock_out || record.clockOut}
+                        <td className={`p-3 text-center ${text.secondary}`}>
+                            {(record.hour_type === 'on_leave' || record.hourType === 'on_leave') 
+                              ? '-' 
+                              : `${record.clock_in || record.clockIn} - ${record.clock_out || record.clockOut}`}
                         </td>
                         <td className={`${text.primary} py-3 px-4 text-center`}>
                           <span className={`inline-flex items-center px-2 py-1 text-xs font-medium ${
                             (record.hour_type || record.hourType) === 'regular' ? (isDarkMode ? 'bg-blue-900/30 text-blue-400 group-hover:text-white' : 'bg-blue-200 text-blue-900 group-hover:text-black')  :
                             (record.hour_type || record.hourType) === 'holiday' ? (isDarkMode ? 'bg-purple-900/30 text-purple-400 group-hover:text-white' : 'bg-purple-200 text-purple-900 group-hover:text-black') :
                             (record.hour_type || record.hourType) === 'weekend' ? (isDarkMode ? 'bg-green-900/30 text-green-400 group-hover:text-white' : 'bg-green-200 text-green-900 group-hover:text-black') :
+                            (record.hour_type || record.hourType) === 'on_leave' ? (isDarkMode ? 'bg-orange-900/30 text-orange-400 group-hover:text-white' : 'bg-orange-200 text-orange-900 group-hover:text-black') :
                             (isDarkMode ? 'bg-yellow-900/30 text-yellow-400 group-hover:text-white' : 'bg-yellow-200 text-yellow-900 group-hover:text-black')
                           }`}>
                             {t(`timeTracking.${record.hour_type || 'regular'}`, record.hour_type || 'regular')}

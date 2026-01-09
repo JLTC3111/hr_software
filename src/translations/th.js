@@ -282,6 +282,7 @@ export default {
 
   // Time Tracking
   timeTracking: {
+    on_leave: 'ลา',
     detailedBreakdown: 'รายละเอียดการติดตามเวลาอย่างละเอียด',
     title: 'แดชบอร์ดการติดตามเวลา',
     overview: 'ภาพรวม',

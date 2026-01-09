@@ -285,6 +285,7 @@ export default {
   
   // Time Tracking
   timeTracking: {
+    on_leave: '휴가 중',
     detailedBreakdown: '상세 근무 시간 추적 내역',
     title: '시간 추적 대시보드',
     overview: '개요',

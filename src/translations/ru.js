@@ -300,6 +300,7 @@ export default {
 
   // Time Tracking
   timeTracking: {
+    on_leave: 'В отпуске',
     detailedBreakdown: 'Подробный анализ учета времени',
     title: 'Панель управления учетом времени',
     overview: 'Обзор',

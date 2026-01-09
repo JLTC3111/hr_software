@@ -268,6 +268,7 @@ export default {
 
   // Time Tracking
   timeTracking: {
+    on_leave: 'En congé',
     detailedBreakdown: 'Répartition détaillée du suivi du temps',
     title: 'Tableau de bord de suivi du temps',
     overview: 'Aperçu',

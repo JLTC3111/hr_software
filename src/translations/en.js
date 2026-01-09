@@ -479,6 +479,7 @@ export default {
     holiday: 'Holiday Overtime',
     bonus: 'Bonus Hours',
     regular: 'Regular Hours',
+    on_leave: 'On Leave',
     startDate: 'Start Date',
     endDate: 'End Date',
     reason: 'Reason',

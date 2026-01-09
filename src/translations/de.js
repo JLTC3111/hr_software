@@ -272,6 +272,7 @@ export default {
   
   // Time Tracking
   timeTracking: {
+    on_leave: 'Im Urlaub',
     detailedBreakdown: 'Detaillierte Aufschlüsselung der Zeiterfassung',
     title: 'Zeiterfassungs-Dashboard',
     overview: 'Übersicht',

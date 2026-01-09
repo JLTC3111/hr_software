@@ -200,6 +200,7 @@ export default {
 
   // Time Tracking
   timeTracking: {
+    on_leave: 'Đang Nghỉ Phép',
     detailedBreakdown: 'Phân Tích Chi Tiết Theo Dõi Thời Gian',
     title: 'Bảng Điều Khiển',
     overview: 'Tổng quan',
