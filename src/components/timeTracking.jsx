@@ -1224,16 +1224,6 @@ const handleRejectRequest = async (requestId) => {
 
   return (
     <div className="space-y-4 md:space-y-6 px-2 sm:px-0">
-      {/* Loading Overlay */}
-      {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className={`${bg.secondary} rounded-lg p-6 flex items-center space-x-3`}>
-            <Loader className="w-6 h-6 animate-spin text-blue-600" />
-            <span className={text.primary}>{t('common.loading', 'Loading...')}</span>
-          </div>
-        </div>
-      )}
-      
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className={`font-bold ${text.primary}`} style={{fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'}}>{t('timeTracking.title')}</h2>

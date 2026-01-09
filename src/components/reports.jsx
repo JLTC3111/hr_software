@@ -2249,16 +2249,6 @@ const Reports = () => {
 
   return (
     <div className="space-y-6 p-6">
-      {/* Loading overlay */}
-      {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className={`${bg.secondary} rounded-lg p-6 flex items-center space-x-3`}>
-            <Loader className="w-6 h-6 animate-spin text-blue-600" />
-            <span className={text.primary}>{t('common.loading', 'Loading reports...')}</span>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div className={`${bg.secondary} rounded-lg border ${border.primary} p-6`}>
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">

@@ -1277,15 +1277,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
           }
         `}</style>
       )}
-      {/* Loading Overlay */}
-      {loading && !initialLoadComplete && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className={`${bg.secondary} rounded-lg p-6 flex items-center space-x-3`}>
-            <Loader className="w-6 h-6 animate-spin text-blue-600" />
-            <span className={text.primary}>{t('common.loading', 'Loading...')}</span>
-          </div>
-        </div>
-      )}
 
       {/* Toast Notification for Upload */}
       {uploadToast.show && (
