@@ -4,6 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as timeTrackingService from '../services/timeTrackingService';
+import { validateAndRefreshSession } from '../utils/sessionHelper';
 import { supabase } from '../config/supabaseClient';
 import { isDemoMode, getDemoEmployeeName, addDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper';
 import AdminTimeEntry from './AdminTimeEntry';
@@ -149,6 +150,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
   const [loading, setLoading] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
 
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
@@ -457,7 +459,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
       loadSafetyTimer.current = null;
     }
 
-    if (userId && !silent && isMounted.current) setLoading(true);
+    if (userId && !silent && isMounted.current) {
+      setLoading(true);
+      setFetchError(null); // Clear any previous errors
+    }
     if (!userId) {
       // No user available yet; clear loading so UI does not hang
       if (isMounted.current) {
@@ -481,6 +486,12 @@ const TimeClockEntry = ({ currentLanguage }) => {
     }
 
     try {
+      // Validate session before fetching
+      const sessionValidation = await validateAndRefreshSession();
+      if (!sessionValidation.success) {
+        throw new Error(sessionValidation.error);
+      }
+      
       await fetchTimeEntries();
       if (import.meta?.env?.DEV) console.log(`[TimeClockEntry] loadData fetched entries #${seq}`);
       Promise.resolve(fetchLeaveRequests()).then(() => {
@@ -500,6 +511,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
       }
     } catch (error) {
       console.error('Error loading data:', error);
+      // Set user-visible error message
+      if (!silent && isMounted.current) {
+        setFetchError(error.message || 'Failed to load time tracking data. Please try refreshing the page.');
+      }
     } finally {
       if (loadSafetyTimer.current) {
         clearTimeout(loadSafetyTimer.current);
@@ -1330,6 +1345,37 @@ const TimeClockEntry = ({ currentLanguage }) => {
         <div className={`p-4 ${isDarkMode ? 'bg-red-900/30 border-red-700' : 'bg-red-100 border-red-400'} border rounded-lg flex items-center space-x-2`}>
           <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
           <span className={isDarkMode ? 'text-red-400' : 'text-red-700'}>{errors.general}</span>
+        </div>
+      )}
+
+      {/* Fetch Error Banner */}
+      {fetchError && (
+        <div className={`${isDarkMode ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-300'} rounded-lg border p-4 flex items-start space-x-3 slide-in-top`}>
+          <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'} flex-shrink-0 mt-0.5`} />
+          <div className="flex-1">
+            <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-red-400' : 'text-red-800'}`}>
+              {t('common.error', 'Error')}
+            </h3>
+            <p className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-700'} mt-1`}>
+              {fetchError}
+            </p>
+            <button
+              onClick={() => {
+                setFetchError(null);
+                loadData();
+              }}
+              className={`mt-2 text-xs font-medium ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} underline`}
+            >
+              {t('common.retry', 'Try Again')}
+            </button>
+          </div>
+          <button
+            onClick={() => setFetchError(null)}
+            className={`${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} transition-colors text-xl font-bold leading-none`}
+            aria-label="Close"
+          >
+            ×
+          </button>
         </div>
       )}
 

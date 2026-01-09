@@ -36,7 +36,8 @@ import {
   CalendarArrowDown,
   ArrowDownAZ,
   Timer,
-  Shield
+  Shield,
+  AlertCircle
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
@@ -46,6 +47,7 @@ import html2canvas from 'html2canvas';
 import timeTrackingService from '../services/timeTrackingService';
 import { getAllTasks } from '../services/workloadService';
 import performanceService from '../services/performanceService';
+import { validateAndRefreshSession } from '../utils/sessionHelper';
 import { supabase } from '../config/supabaseClient';
 
 // Helper to load fonts for PDF
@@ -128,6 +130,7 @@ const Reports = () => {
 
   // State
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [selectedEmployee, setSelectedEmployee] = useState('all');
@@ -206,8 +209,17 @@ const Reports = () => {
   // Fetch data when filters change
   const fetchReportData = useCallback(async (options = {}) => {
     const { silent = false } = options;
-    if (!silent) setLoading(true);
+    if (!silent) {
+      setLoading(true);
+      setFetchError(null); // Clear any previous errors
+    }
     try {
+      // Validate session before fetching
+      const sessionValidation = await validateAndRefreshSession();
+      if (!sessionValidation.success) {
+        throw new Error(sessionValidation.error);
+      }
+      
       const { startDate, endDate } = filters;
       // Don't parse as int - IDs might be UUIDs
       const employeeId = selectedEmployee === 'all' ? null : selectedEmployee;
@@ -381,6 +393,8 @@ const Reports = () => {
       }
     } catch (error) {
       console.error('Error fetching report data:', error);
+      // Set user-visible error message
+      setFetchError(error.message || 'Failed to load report data. Please try refreshing the page.');
     } finally {
       if (!silent) setLoading(false);
     }
@@ -2269,6 +2283,37 @@ const Reports = () => {
           </div>
         </div>
       </div>
+
+      {/* Error Banner */}
+      {fetchError && (
+        <div className={`${isDarkMode ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-300'} rounded-lg border p-4 flex items-start space-x-3 slide-in-top`}>
+          <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'} flex-shrink-0 mt-0.5`} />
+          <div className="flex-1">
+            <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-red-400' : 'text-red-800'}`}>
+              {t('common.error', 'Error')}
+            </h3>
+            <p className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-700'} mt-1`}>
+              {fetchError}
+            </p>
+            <button
+              onClick={() => {
+                setFetchError(null);
+                fetchReportData();
+              }}
+              className={`mt-2 text-xs font-medium ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} underline`}
+            >
+              {t('common.retry', 'Try Again')}
+            </button>
+          </div>
+          <button
+            onClick={() => setFetchError(null)}
+            className={`${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} transition-colors text-xl font-bold leading-none`}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Export Button - shows current tab data count */}
       <div className={`${bg.secondary} rounded-lg border ${border.primary} p-4`}>

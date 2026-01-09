@@ -6,6 +6,7 @@ import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ComposedChart } from 'recharts'
 import * as timeTrackingService from '../services/timeTrackingService'
+import { validateAndRefreshSession } from '../utils/sessionHelper';
 import * as flubber from 'flubber';
 import { AnimatedClockIcon, AnimatedAlarmClockIcon } from './timeClockEntry.jsx'
 import { AnimatedCoffeeIcon, MiniFlubberMorphingLeaveStatus } from './timeTracking.jsx';
@@ -1238,6 +1239,7 @@ const Dashboard = ({ employees, applications }) => {
   
   const [modalOpen, setModalOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState({ type: '', data: [], title: '' });
+  const [fetchError, setFetchError] = useState(null);
   
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
@@ -1248,8 +1250,18 @@ const Dashboard = ({ employees, applications }) => {
     const { silent = false } = options;
     if (employees.length === 0) return;
     
-    if (!silent) setLoading(true);
+    if (!silent) {
+      setLoading(true);
+      setFetchError(null); // Clear any previous errors
+    }
+    
     try {
+      // Validate and refresh session if needed
+      const sessionValidation = await validateAndRefreshSession();
+      if (!sessionValidation.success) {
+        throw new Error(sessionValidation.error);
+      }
+      
       
       // Fetch time tracking summaries for all employees for SELECTED month
       const summariesPromises = employees.map(emp => 
@@ -1358,6 +1370,8 @@ const Dashboard = ({ employees, applications }) => {
         
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+        // Set user-visible error message
+        setFetchError(error.message || 'Failed to load dashboard data. Please try refreshing the page.');
       } finally {
           if (!silent) setLoading(false);
         }
@@ -1604,6 +1618,37 @@ const Dashboard = ({ employees, applications }) => {
           <span>{t('common.refresh', 'Refresh')}</span>
         </button>
       </div>
+      
+      {/* Error Banner */}
+      {fetchError && (
+        <div className={`${isDarkMode ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-300'} rounded-lg border p-4 flex items-start space-x-3 slide-in-top`}>
+          <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'} flex-shrink-0 mt-0.5`} />
+          <div className="flex-1">
+            <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-red-400' : 'text-red-800'}`}>
+              {t('common.error', 'Error')}
+            </h3>
+            <p className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-700'} mt-1`}>
+              {fetchError}
+            </p>
+            <button
+              onClick={() => {
+                setFetchError(null);
+                fetchDashboardData();
+              }}
+              className={`mt-2 text-xs font-medium ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} underline`}
+            >
+              {t('common.retry', 'Try Again')}
+            </button>
+          </div>
+          <button
+            onClick={() => setFetchError(null)}
+            className={`${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} transition-colors`}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+      )}
       
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
