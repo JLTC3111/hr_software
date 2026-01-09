@@ -263,19 +263,6 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
     }
   }, [isAuthenticated]);
 
-  // Show loading state while fetching data
-  if (loading && isAuthenticated) {
-    return (
-      <div className={`min-h-screen ${bg.primary} flex items-center justify-center`}>
-        <div className="text-center">
-          <Loader className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className={`text-lg ${text.primary}`}>Loading HR Management System...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show error state if data fetch failed
   if (error && isAuthenticated) {
     return (
       <div className={`min-h-screen ${bg.primary} flex items-center justify-center`}>
