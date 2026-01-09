@@ -10,7 +10,7 @@ import { useEffect, useRef, useCallback } from 'react';
  */
 export const useVisibilityRefresh = (refreshCallback, options = {}) => {
   const {
-    staleTime = 60000, // 1 minute default
+    staleTime = 60000, 
     refreshOnFocus = true,
     refreshOnOnline = true
   } = options;
@@ -47,12 +47,15 @@ export const useVisibilityRefresh = (refreshCallback, options = {}) => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
+        // Force next refresh by resetting timer when user returns
+        lastRefreshTime.current = 0;
         handleRefresh();
       }
     };
 
     const handleFocus = () => {
       if (refreshOnFocus) {
+        lastRefreshTime.current = 0;
         handleRefresh();
       }
     };
