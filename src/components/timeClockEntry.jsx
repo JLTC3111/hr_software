@@ -315,6 +315,16 @@ const TimeClockEntry = ({ currentLanguage }) => {
   const isMounted = useRef(true);
   const loadSeq = useRef(0);
 
+  // Normalize entries so on-leave rows don't show placeholder times
+  const normalizeEntries = useCallback((entries) =>
+    Array.isArray(entries)
+      ? entries.map((entry) =>
+          entry?.hour_type === 'on_leave'
+            ? { ...entry, clock_in: null, clock_out: null, hours: 0 }
+            : entry
+        )
+      : [], []);
+
   // Fetch time entries from Supabase
   const fetchTimeEntries = useCallback(async () => {
     console.log('🔄 fetchTimeEntries called');
@@ -361,7 +371,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
       console.error('Stack:', error.stack);
       setTimeEntries([]); // Ensure it's an empty array on error
     }
-  }, [canManageTimeTracking, userEmployeeId, withTimeout]);
+  }, [canManageTimeTracking, userEmployeeId, withTimeout, normalizeEntries]);
 
   const fetchAllEmployees = useCallback(async () => {
     try {
@@ -573,17 +583,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
       setFilteredEntries(filtered);
     }
   }, [selectedEmployeeFilter, timeEntries, userId, userEmployeeId]);
-
-  // Normalize entries so on-leave rows don't show placeholder times
-  const normalizeEntries = (entries) =>
-    Array.isArray(entries)
-      ? entries.map((entry) =>
-          entry?.hour_type === 'on_leave'
-            ? { ...entry, clock_in: null, clock_out: null, hours: 0 }
-            : entry
-        )
-      : [];
-
 
   const validateForm = () => {
     const newErrors = {};
