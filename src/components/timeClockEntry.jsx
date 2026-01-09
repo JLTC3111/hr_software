@@ -315,6 +315,116 @@ const TimeClockEntry = ({ currentLanguage }) => {
   const isMounted = useRef(true);
   const loadSeq = useRef(0);
 
+  // Fetch time entries from Supabase
+  const fetchTimeEntries = useCallback(async () => {
+    console.log('🔄 fetchTimeEntries called');
+    try {
+      let result;
+     
+      if (canManageTimeTracking) {
+        console.log('👤 User is admin/manager, fetching all entries detailed');
+        result = await withTimeout(
+          () => timeTrackingService.getAllTimeEntriesDetailed(),
+          15000,
+          'fetch time entries (all)'
+        );
+        
+        if (result?.success && Array.isArray(result.data)) {
+          console.log('✅ Fetched', result.data.length, 'entries');
+          setTimeEntries(normalizeEntries(result.data));
+        } else {
+          console.error('❌ Failed to load entries:', result?.error || 'No data returned');
+          setTimeEntries([]);
+        }
+      } else {
+        console.log('👤 User is regular employee, fetching own entries');
+        if (userEmployeeId) {
+          result = await withTimeout(
+            () => timeTrackingService.getTimeEntries(userEmployeeId),
+            15000,
+            'fetch time entries (self)'
+          );
+          if (result?.success && Array.isArray(result.data)) {
+            console.log('✅ Fetched', result.data.length, 'entries');
+            setTimeEntries(normalizeEntries(result.data));
+          } else {
+            console.error('❌ Failed to load entries:', result?.error || 'No data returned');
+            setTimeEntries([]);
+          }
+        } else {
+          console.warn('⚠️ No employee ID found for user');
+          setTimeEntries([]);
+        }
+      }
+    } catch (error) {
+      console.error('💥 Exception in fetchTimeEntries:', error);
+      console.error('Stack:', error.stack);
+      setTimeEntries([]); // Ensure it's an empty array on error
+    }
+  }, [canManageTimeTracking, userEmployeeId, withTimeout]);
+
+  const fetchAllEmployees = useCallback(async () => {
+    try {
+      if (isDemoMode()) {
+        setAllEmployees([
+          { id: 'demo-emp-1', name: 'Demo Admin', position: 'HR Manager', department: 'Management' },
+          { id: 'demo-emp-2', name: 'Sarah Connor', position: 'Developer', department: 'Operations' },
+          { id: 'demo-emp-3', name: 'John Doe', position: 'Manager', department: 'IT' },
+          { id: 'demo-emp-4', name: 'Emily Chen', position: 'Designer', department: 'Design' },
+          { id: 'demo-emp-5', name: 'Michael Brown', position: 'Analyst', department: 'Finance' }
+        ]);
+        return;
+      }
+
+      const { data, error } = await withTimeout(
+        () =>
+          supabase
+            .from('employees')
+            .select('id, name, position, department')
+            .eq('status', 'Active')
+            .order('name'),
+        15000,
+        'fetch employees'
+      );
+      
+      if (error) throw error;
+      setAllEmployees(data || []);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  }, [withTimeout]);
+
+  const fetchLeaveRequests = useCallback(async ({ year } = {}) => {
+    try {
+      if (isDemoMode()) {
+        setLeaveRequests([]);
+        return;
+      }
+
+      if (!userEmployeeId) {
+        setLeaveRequests([]);
+        return;
+      }
+
+      const currentYear = year || new Date().getFullYear();
+      const result = await withTimeout(
+        () => timeTrackingService.getLeaveRequests(userEmployeeId, { year: currentYear }),
+        15000,
+        'fetch leave requests'
+      );
+
+      if (result?.success && Array.isArray(result.data)) {
+        setLeaveRequests(result.data);
+      } else {
+        if (import.meta?.env?.DEV) console.log('No leave requests returned or error:', result?.error);
+        setLeaveRequests([]);
+      }
+    } catch (error) {
+      console.error('Error fetching leave requests:', error);
+      setLeaveRequests([]);
+    }
+  }, [userEmployeeId, withTimeout]);
+
   const loadData = useCallback(async ({ silent = false } = {}) => {
     const seq = ++loadSeq.current;
     if (import.meta?.env?.DEV) {
@@ -396,7 +506,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
         });
       }
     }
-  }, [userId, canManageTimeTracking]);
+  }, [userId, canManageTimeTracking, fetchTimeEntries, fetchLeaveRequests, fetchAllEmployees]);
 
   useEffect(() => () => {
     isMounted.current = false;
@@ -474,116 +584,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
         )
       : [];
 
-  // Fetch time entries from Supabase
-  const fetchTimeEntries = async () => {
-    console.log('🔄 fetchTimeEntries called');
-    try {
-      let result;
-     
-      if (canManageTimeTracking) {
-        console.log('👤 User is admin/manager, fetching all entries detailed');
-        result = await withTimeout(
-          () => timeTrackingService.getAllTimeEntriesDetailed(),
-          15000,
-          'fetch time entries (all)'
-        );
-        
-        if (result?.success && Array.isArray(result.data)) {
-          console.log('✅ Fetched', result.data.length, 'entries');
-          setTimeEntries(normalizeEntries(result.data));
-        } else {
-          console.error('❌ Failed to load entries:', result?.error || 'No data returned');
-          setTimeEntries([]);
-        }
-      } else {
-        console.log('👤 User is regular employee, fetching own entries');
-        if (userEmployeeId) {
-          result = await withTimeout(
-            () => timeTrackingService.getTimeEntries(userEmployeeId),
-            15000,
-            'fetch time entries (self)'
-          );
-          if (result?.success && Array.isArray(result.data)) {
-            console.log('✅ Fetched', result.data.length, 'entries');
-            setTimeEntries(normalizeEntries(result.data));
-          } else {
-            console.error('❌ Failed to load entries:', result?.error || 'No data returned');
-            setTimeEntries([]);
-          }
-        } else {
-          console.warn('⚠️ No employee ID found for user');
-          setTimeEntries([]);
-        }
-      }
-    } catch (error) {
-      console.error('💥 Exception in fetchTimeEntries:', error);
-      console.error('Stack:', error.stack);
-      setTimeEntries([]); // Ensure it's an empty array on error
-    }
-  };
-
-  const fetchAllEmployees = async () => {
-    try {
-      if (isDemoMode()) {
-        setAllEmployees([
-          { id: 'demo-emp-1', name: 'Demo Admin', position: 'HR Manager', department: 'Management' },
-          { id: 'demo-emp-2', name: 'Sarah Connor', position: 'Developer', department: 'Operations' },
-          { id: 'demo-emp-3', name: 'John Doe', position: 'Manager', department: 'IT' },
-          { id: 'demo-emp-4', name: 'Emily Chen', position: 'Designer', department: 'Design' },
-          { id: 'demo-emp-5', name: 'Michael Brown', position: 'Analyst', department: 'Finance' }
-        ]);
-        return;
-      }
-
-      const { data, error } = await withTimeout(
-        () =>
-          supabase
-            .from('employees')
-            .select('id, name, position, department')
-            .eq('status', 'Active')
-            .order('name'),
-        15000,
-        'fetch employees'
-      );
-      
-      if (error) throw error;
-      setAllEmployees(data || []);
-    } catch (error) {
-      console.error('Error fetching employees:', error);
-    }
-  };
-
-  // Fetch leave requests for current user (used by leave-days summary)
-  const fetchLeaveRequests = async ({ year } = {}) => {
-    try {
-      if (isDemoMode()) {
-        setLeaveRequests([]);
-        return;
-      }
-
-      if (!userEmployeeId) {
-        setLeaveRequests([]);
-        return;
-      }
-
-      const currentYear = year || new Date().getFullYear();
-      const result = await withTimeout(
-        () => timeTrackingService.getLeaveRequests(userEmployeeId, { year: currentYear }),
-        15000,
-        'fetch leave requests'
-      );
-
-      if (result?.success && Array.isArray(result.data)) {
-        setLeaveRequests(result.data);
-      } else {
-        if (import.meta?.env?.DEV) console.log('No leave requests returned or error:', result?.error);
-        setLeaveRequests([]);
-      }
-    } catch (error) {
-      console.error('Error fetching leave requests:', error);
-      setLeaveRequests([]);
-    }
-  };
 
   const validateForm = () => {
     const newErrors = {};
