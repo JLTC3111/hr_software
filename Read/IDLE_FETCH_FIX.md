@@ -48,7 +48,17 @@ A robust retry mechanism with exponential backoff that:
 - Rate limiting (HTTP 429)
 - Temporary session errors
 
-### 3. Added Error State UI to Components
+### 3. Force Logout on Session Failure
+
+When retries are exhausted and the error is session-related:
+- Detects authentication/session errors (containing "session", "authentication", or "no active session")
+- Displays "Your session has expired. Redirecting to login..." message
+- Automatically logs out the user after 2 seconds
+- Redirects to login page
+
+This ensures users don't remain stuck with invalid sessions and provides a clear path to re-authenticate.
+
+### 4. Added Error State UI to Components
 
 **Files Modified**:
 - `src/components/dashboard.jsx`
@@ -224,9 +234,40 @@ The retry mechanism uses exponential backoff:
 
 1. `src/utils/sessionHelper.js` - **NEW**: Session validation utility
 2. `src/utils/retryHelper.js` - **NEW**: Retry logic with exponential backoff
-3. `src/components/dashboard.jsx` - Error state + session validation + retry logic
-4. `src/components/reports.jsx` - Error state + session validation + retry logic
-5. `src/components/timeClockEntry.jsx` - Error state + session validation + retry logic
+3. `src/components/dashboard.jsx` - Error state + session validation + retry logic + force logout
+4. `src/components/reports.jsx` - Error state + session validation + retry logic + force logout
+5. `src/components/timeClockEntry.jsx` - Error state + session validation + retry logic + force logout
+6. `src/components/timeTracking.jsx` - Error state + session validation + retry logic + force logout
+
+## User Flow
+
+**Successful Flow**:
+1. User is idle or switches components
+2. Session validation runs → Session valid or auto-refreshed
+3. Data fetches successfully → User sees fresh data
+
+**Network Error Flow**:
+1. Network request fails
+2. Automatic retry after 1s → Success
+3. User sees fresh data (seamless)
+
+**Session Expired Flow**:
+1. Session validation detects expiry
+2. Auto-refresh session → Success
+3. Data fetches successfully → User sees fresh data
+
+**Complete Session Failure Flow** (New):
+1. Session validation fails
+2. Retry attempt 1 → Still fails
+3. Retry attempt 2 → Still fails
+4. Error detected as session-related
+5. Display: "Your session has expired. Redirecting to login..."
+6. Wait 2 seconds (so user can read message)
+7. Call `logout()` to clear auth state
+8. Redirect to login page
+9. User can re-authenticate
+
+This ensures no user gets stuck with an invalid session and provides a clear recovery path.
 
 ## Related Issues
 

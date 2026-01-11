@@ -636,6 +636,20 @@ const TimeTracking = ({ employees }) => {
       });
     } catch (error) {
       console.error('Error fetching time tracking data:', error);
+      
+      // Check if this is a session/auth error - force logout
+      const errorMsg = error.message?.toLowerCase() || '';
+      if (errorMsg.includes('session') || errorMsg.includes('authentication') || errorMsg.includes('no active session')) {
+        console.error('🚪 Session invalid after retries, forcing logout...');
+        if (!silent) {
+          setFetchError('Your session has expired. Redirecting to login...');
+        }
+        setTimeout(() => {
+          logout();
+        }, 2000);
+        return;
+      }
+      
       if (!silent) {
         setFetchError(error.message || 'Failed to load time tracking data. Please try refreshing.');
       }

@@ -1379,7 +1379,19 @@ const Dashboard = ({ employees, applications }) => {
         
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
-        // Set user-visible error message
+        
+        // Check if this is a session/auth error - force logout
+        const errorMsg = error.message?.toLowerCase() || '';
+        if (errorMsg.includes('session') || errorMsg.includes('authentication') || errorMsg.includes('no active session')) {
+          console.error('🚪 Session invalid after retries, forcing logout...');
+          setFetchError('Your session has expired. Redirecting to login...');
+          setTimeout(() => {
+            logout();
+          }, 2000);
+          return;
+        }
+        
+        // Set user-visible error message for other errors
         setFetchError(error.message || 'Failed to load dashboard data. Please try refreshing the page.');
       } finally {
           if (!silent) setLoading(false);

@@ -521,7 +521,23 @@ const TimeClockEntry = ({ currentLanguage }) => {
       });
     } catch (error) {
       console.error('Error loading data:', error);
-      // Set user-visible error message
+      
+      // Check if this is a session/auth error - force logout
+      const errorMsg = error.message?.toLowerCase() || '';
+      if (errorMsg.includes('session') || errorMsg.includes('authentication') || errorMsg.includes('no active session')) {
+        console.error('🚪 Session invalid after retries, forcing logout...');
+        if (!silent && isMounted.current) {
+          setFetchError('Your session has expired. Redirecting to login...');
+        }
+        setTimeout(() => {
+          logout();
+        }, 2000);
+        // Don't continue to finally block processing
+        loadInFlight.current = false;
+        return;
+      }
+      
+      // Set user-visible error message for other errors
       if (!silent && isMounted.current) {
         setFetchError(error.message || 'Failed to load time tracking data. Please try refreshing the page.');
       }
