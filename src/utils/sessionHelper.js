@@ -31,20 +31,33 @@ export const validateAndRefreshSession = async () => {
       const now = new Date();
       const timeUntilExpiry = expiresAt.getTime() - now.getTime();
       const fiveMinutes = 5 * 60 * 1000;
-      
+
       if (timeUntilExpiry < fiveMinutes) {
         console.log('🔄 Session expiring soon, refreshing...');
-        const { data: { session: newSession }, error: refreshError } = await supabase.auth.refreshSession();
-        
+        const { data: { session: newSession } = {}, error: refreshError } = await supabase.auth.refreshSession();
+
         if (refreshError) {
           console.warn('⚠️ Session refresh failed:', refreshError);
-            // Don't throw - the proactive refresh hook will handle it
-            return {
-              success: true,
-              warning: 'Session refresh failed but will be retried by background refresh'
+          // Don't throw - the proactive refresh hook will handle it
+          return {
+            success: true,
+            warning: 'Session refresh failed but will be retried by background refresh'
+          };
+        }
+
+        if (!newSession) {
+          return {
+            success: false,
+            error: 'Failed to refresh session. Please sign in again.'
+          };
+        }
+
+        console.log('✅ Session refreshed successfully');
+      } else {
+        console.log('✅ Session valid, expires in:', Math.round(timeUntilExpiry / 60000), 'minutes');
       }
     }
-    
+
     return { success: true };
     
   } catch (error) {
