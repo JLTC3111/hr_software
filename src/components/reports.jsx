@@ -45,6 +45,8 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import timeTrackingService from '../services/timeTrackingService';
+import { withTimeout } from '../utils/supabaseTimeout';
+import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts';
 import { getAllTasks } from '../services/workloadService';
 import performanceService from '../services/performanceService';
 import { validateAndRefreshSession } from '../utils/sessionHelper';
@@ -267,15 +269,18 @@ const Reports = () => {
           });
         } else {
           // Use direct Supabase query with proper join - fetch all entries first
-          const result = await supabase
-            .from('time_entries')
-            .select(`
-              *,
-              employee:employees!time_entries_employee_id_fkey(id, name, department, position)
-            `)
-            .gte('date', startDate)
-            .lte('date', endDate)
-            .order('date', { ascending: false });
+          const result = await withTimeout(
+            supabase
+              .from('time_entries')
+              .select(`
+                *,
+                employee:employees!time_entries_employee_id_fkey(id, name, department, position)
+              `)
+              .gte('date', startDate)
+              .lte('date', endDate)
+              .order('date', { ascending: false }),
+            DEFAULT_REQUEST_TIMEOUT
+          );
           allTimeEntries = result.data;
           error = result.error;
         }
@@ -438,7 +443,7 @@ const Reports = () => {
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
   useVisibilityRefresh(memoizedFetchReportData, {
-    staleTime: 120000, // 2 minutes - refresh if data is older than this
+    staleTime: DEFAULT_REQUEST_TIMEOUT, // match centralized request timeout
     refreshOnFocus: true,
     refreshOnOnline: true
   });

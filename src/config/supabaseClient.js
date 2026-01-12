@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts';
 
 // Supabase configuration
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -86,7 +87,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     fetch: async (url, options = {}) => {
       // Add timeout to all fetch requests to prevent hanging
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), DEFAULT_REQUEST_TIMEOUT);
 
       try {
         const resp = await fetch(url, {

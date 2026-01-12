@@ -6,6 +6,8 @@ import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ComposedChart } from 'recharts'
 import * as timeTrackingService from '../services/timeTrackingService'
+import { withTimeout } from '../utils/supabaseTimeout';
+import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts';
 import { validateAndRefreshSession } from '../utils/sessionHelper';
 import { retryWithBackoff, isRetryableError } from '../utils/retryHelper';
 import * as flubber from 'flubber';
@@ -1267,18 +1269,18 @@ const Dashboard = ({ employees, applications }) => {
       await retryWithBackoff(async () => {
         // Fetch time tracking summaries for all employees for SELECTED month
         const summariesPromises = employees.map(emp => 
-        timeTrackingService.getTimeTrackingSummary(String(emp.id), selectedMonth, selectedYear)
-      );
-      
-      const summariesResults = await Promise.all(summariesPromises);
-      
-      // Fetch leave requests for all employees
-      const leavePromises = employees.map(emp => 
-        timeTrackingService.getLeaveRequests(String(emp.id), {
-          year: selectedYear
-        })
+          timeTrackingService.getTimeTrackingSummary(String(emp.id), selectedMonth, selectedYear)
         );
-        const leaveResults = await Promise.all(leavePromises);
+
+        const summariesResults = await withTimeout(Promise.all(summariesPromises), DEFAULT_REQUEST_TIMEOUT);
+
+        // Fetch leave requests for all employees
+        const leavePromises = employees.map(emp => 
+          timeTrackingService.getLeaveRequests(String(emp.id), {
+            year: selectedYear
+          })
+        );
+        const leaveResults = await withTimeout(Promise.all(leavePromises), DEFAULT_REQUEST_TIMEOUT);
         
         // Calculate leave days from leave_requests (pending + approved)
         const leaveData = {};
@@ -1412,7 +1414,7 @@ const Dashboard = ({ employees, applications }) => {
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
   useVisibilityRefresh(silentRefresh, {
-    staleTime: 120000, // 2 minutes - refresh if data is older than this
+    staleTime: DEFAULT_REQUEST_TIMEOUT, // match centralized request timeout
     refreshOnFocus: true,
     refreshOnOnline: true
   });

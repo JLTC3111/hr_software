@@ -4,8 +4,10 @@
  * @param {number} timeoutMs - Timeout in milliseconds (default 10000)
  * @returns {Promise} - The result of the query or throws an error on timeout
  */
-// Default timeout increased from 10s to 30s to reduce transient request timeouts
-export const withTimeout = (promise, timeoutMs = 30000) => {
+import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts';
+
+// Default timeout increased to centralized DEFAULT_REQUEST_TIMEOUT to reduce transient request timeouts
+export const withTimeout = (promise, timeoutMs = DEFAULT_REQUEST_TIMEOUT) => {
   let timeoutId;
   const timeoutPromise = new Promise((_, reject) => {
     timeoutId = setTimeout(() => {

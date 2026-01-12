@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import * as timeTrackingService from '../services/timeTrackingService';
 import { validateAndRefreshSession } from '../utils/sessionHelper';
 import { retryWithBackoff, isRetryableError } from '../utils/retryHelper';
+import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts';
 import { supabase } from '../config/supabaseClient';
 import { isDemoMode, getDemoEmployeeName, addDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper';
 import AdminTimeEntry from './AdminTimeEntry';
@@ -204,7 +205,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
   const [selectedEmployee, setSelectedEmployee] = useState(getCurrentEmployeeId());
 
   // Guard long-running network calls so UI can recover if Supabase hangs
-  const withTimeout = useCallback(async (promiseOrFactory, ms = 15000, label = 'request') => {
+  const withTimeout = useCallback(async (promiseOrFactory, ms = DEFAULT_REQUEST_TIMEOUT, label = 'request') => {
     const controller = new AbortController();
     const makePromise = () => (typeof promiseOrFactory === 'function' ? promiseOrFactory(controller.signal) : promiseOrFactory);
 
@@ -338,7 +339,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
         console.log('👤 User is admin/manager, fetching all entries detailed');
         result = await withTimeout(
           () => timeTrackingService.getAllTimeEntriesDetailed(),
-          15000,
+            DEFAULT_REQUEST_TIMEOUT,
           'fetch time entries (all)'
         );
         
@@ -354,7 +355,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
         if (userEmployeeId) {
           result = await withTimeout(
             () => timeTrackingService.getTimeEntries(userEmployeeId),
-            15000,
+            DEFAULT_REQUEST_TIMEOUT,
             'fetch time entries (self)'
           );
           if (result?.success && Array.isArray(result.data)) {
@@ -396,7 +397,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
             .select('id, name, position, department')
             .eq('status', 'Active')
             .order('name'),
-        15000,
+        DEFAULT_REQUEST_TIMEOUT,
         'fetch employees'
       );
       
@@ -422,7 +423,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
       const currentYear = year || new Date().getFullYear();
       const result = await withTimeout(
         () => timeTrackingService.getLeaveRequests(userEmployeeId, { year: currentYear }),
-        15000,
+        DEFAULT_REQUEST_TIMEOUT,
         'fetch leave requests'
       );
 
@@ -483,7 +484,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
         }
         loadSafetyTimer.current = null;
         loadInFlight.current = false;
-      }, 16000);
+      }, DEFAULT_REQUEST_TIMEOUT);
     }
 
     try {
@@ -592,7 +593,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
   useVisibilityRefresh(() => loadData({ silent: true }), {
-    staleTime: 120000, 
+    staleTime: DEFAULT_REQUEST_TIMEOUT, 
     refreshOnFocus: true,
     refreshOnOnline: true
   });

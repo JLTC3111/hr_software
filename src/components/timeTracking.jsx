@@ -13,6 +13,7 @@ import { supabase } from '../config/supabaseClient'
 import { AnimatedClockIcon } from './timeClockEntry'
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh'
 import { getDemoEmployeeName, isDemoMode, addDemoLeaveRequest, updateDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper'
+import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts';
 
 export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = false }) => {
     const mainColor = isDarkMode ? '#ffffff' : '#000000';
@@ -559,7 +560,7 @@ const TimeTracking = ({ employees }) => {
   }, [user]);
 
   // Guard long-running network calls so UI can recover if Supabase hangs
-  const withTimeout = useCallback(async (promiseOrFactory, ms = 15000, label = 'request') => {
+  const withTimeout = useCallback(async (promiseOrFactory, ms = DEFAULT_REQUEST_TIMEOUT, label = 'request') => {
     const controller = new AbortController();
     const makePromise = () => (typeof promiseOrFactory === 'function' ? promiseOrFactory(controller.signal) : promiseOrFactory);
 
@@ -596,9 +597,9 @@ const TimeTracking = ({ employees }) => {
       await retryWithBackoff(async () => {
         // Fetch summary data
         const summaryResult = await withTimeout(
-        () => timeTrackingService.getTimeTrackingSummary(selectedEmployee, selectedMonth, selectedYear),
-        15000,
-        'load time tracking summary'
+          () => timeTrackingService.getTimeTrackingSummary(selectedEmployee, selectedMonth, selectedYear),
+          DEFAULT_REQUEST_TIMEOUT,
+          'load time tracking summary'
       );
       if (summaryResult.success) {
         setSummaryData(summaryResult.data);
@@ -606,7 +607,7 @@ const TimeTracking = ({ employees }) => {
       // Fetch leave requests for selected employee
       const leaveResult = await withTimeout(
         () => timeTrackingService.getLeaveRequests(selectedEmployee, { year: selectedYear }),
-        15000,
+        DEFAULT_REQUEST_TIMEOUT,
         'load leave requests (selected employee)'
       );
       if (leaveResult.success) {
@@ -621,7 +622,7 @@ const TimeTracking = ({ employees }) => {
             startDate: startDate,
             endDate: endDate
           }),
-        15000,
+        DEFAULT_REQUEST_TIMEOUT,
         'load time entries (selected employee)'
       );
       if (entriesResult.success) {
@@ -666,7 +667,7 @@ const TimeTracking = ({ employees }) => {
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
   useVisibilityRefresh(() => fetchTimeTrackingData({ silent: true }), {
-    staleTime: 120000, // 2 minutes - refresh if data is older than this
+    staleTime: DEFAULT_REQUEST_TIMEOUT, // match centralized request timeout
     refreshOnFocus: true,
     refreshOnOnline: true
   });
@@ -690,7 +691,7 @@ const TimeTracking = ({ employees }) => {
     try {
       const result = await withTimeout(
         () => timeTrackingService.getAllLeaveRequests({}),
-        15000,
+        DEFAULT_REQUEST_TIMEOUT,
         'fetch all leave requests'
       );
       console.log('[DEBUG] getAllLeaveRequests result:', result);

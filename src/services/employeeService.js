@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabaseClient';
 import { withTimeout } from '../utils/supabaseTimeout';
+import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts';
 import { isDemoMode, MOCK_EMPLOYEES, getDemoEmployees, addDemoEmployee, updateDemoEmployee, deleteDemoEmployee, getDemoEmployeeById } from '../utils/demoHelper';
 import { saveDemoPdf, getDemoPdf, deleteDemoPdf, saveDemoBlob, getDemoBlob, deleteDemoBlob } from '../utils/demoStorage';
 
@@ -155,9 +156,9 @@ export const getAllEmployees = async (filters = {}) => {
       query = query.eq('position', filters.position);
     }
 
-    const { data, error } = await withTimeout(query, 20000).catch((err) => {
-      console.warn('getAllEmployees: initial query timed out, retrying with 30s', err);
-      return withTimeout(query, 30000);
+    const { data, error } = await withTimeout(query, DEFAULT_REQUEST_TIMEOUT).catch((err) => {
+      console.warn('getAllEmployees: initial query timed out, retrying with DEFAULT_REQUEST_TIMEOUT', err);
+      return withTimeout(query, DEFAULT_REQUEST_TIMEOUT);
     });
 
     if (error) throw error;
