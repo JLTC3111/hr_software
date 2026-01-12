@@ -5,6 +5,7 @@ import { Award, FileText, Loader } from 'lucide-react'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import { useAuth } from './contexts/AuthContext'
+import { useSessionKeepAlive } from './hooks/useSessionKeepAlive'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { UploadProvider } from './contexts/UploadContext'
 import { Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, TaskListing, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager, ControlPanel, TaskReview, PersonalGoals, FlubberIconTest, Recruitment, AdvancedHelpCenter, ProductionHelpCenter } from './components/index.jsx';
@@ -255,6 +256,9 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
   const { bg, text } = useTheme();
   const { isAuthenticated } = useAuth();
   const { currentLanguage } = useLanguage();
+  
+  // Keep session alive proactively (like Google/YouTube)
+  useSessionKeepAlive();
 
   // Record a visit when auth state becomes available (or when in demo mode)
   useEffect(() => {

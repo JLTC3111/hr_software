@@ -38,23 +38,10 @@ export const validateAndRefreshSession = async () => {
         
         if (refreshError) {
           console.warn('⚠️ Session refresh failed:', refreshError);
-          // Return success anyway - let the actual API call fail if needed
-          return {
-            success: true,
-            warning: 'Session refresh failed but will attempt request anyway'
-          };
-        }
-        
-        if (!newSession) {
-          return {
-            success: false,
-            error: 'Failed to refresh session. Please sign in again.'
-          };
-        }
-        
-        console.log('✅ Session refreshed successfully');
-      } else {
-        console.log('✅ Session valid, expires in:', Math.round(timeUntilExpiry / 60000), 'minutes');
+            // Don't throw - the proactive refresh hook will handle it
+            return {
+              success: true,
+              warning: 'Session refresh failed but will be retried by background refresh'
       }
     }
     

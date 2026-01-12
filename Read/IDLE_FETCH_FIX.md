@@ -232,12 +232,37 @@ The retry mechanism uses exponential backoff:
 
 ## Files Changed
 
-1. `src/utils/sessionHelper.js` - **NEW**: Session validation utility
+1. `src/utils/sessionHelper.js` - **UPDATED**: Better handling of refresh failures with background hook fallback
 2. `src/utils/retryHelper.js` - **NEW**: Retry logic with exponential backoff
-3. `src/components/dashboard.jsx` - Error state + session validation + retry logic + force logout
-4. `src/components/reports.jsx` - Error state + session validation + retry logic + force logout
-5. `src/components/timeClockEntry.jsx` - Error state + session validation + retry logic + force logout
-6. `src/components/timeTracking.jsx` - Error state + session validation + retry logic + force logout
+3. `src/hooks/useSessionKeepAlive.js` - **NEW**: Proactive session refresh (Google/YouTube style)
+4. `src/App.jsx` - **UPDATED**: Integrated session keep-alive hook
+5. `src/components/dashboard.jsx` - Error state + session validation + retry logic + force logout
+6. `src/components/reports.jsx` - Error state + session validation + retry logic + force logout
+7. `src/components/timeClockEntry.jsx` - Error state + session validation + retry logic + force logout
+8. `src/components/timeTracking.jsx` - Error state + session validation + retry logic + force logout
+
+## Session Keep-Alive Features
+
+### Proactive Refresh (New ✨)
+- Checks session expiry every 5 minutes
+- Automatically refreshes tokens 10 minutes before expiry
+- Runs in background - user never sees interruption
+- **Like Google/YouTube**: Refresh happens *before* expiry, not reactively
+
+### Activity-Based Refresh (New ✨)
+- Monitors user activity (clicks, keypress, scroll, mouse)
+- Refreshes session if user is active and token expires within 15 minutes
+- Debounced to avoid excessive checks
+- Ensures active users never get logged out
+
+### How It Works Together
+1. **Background Interval**: Checks every 5 minutes, refreshes if expiring within 10 minutes
+2. **User Activity**: On activity, checks if expiring within 15 minutes, refreshes if needed
+3. **Reactive Validation**: On API calls, validates session and refreshes if needed
+4. **Retry Logic**: If request fails, retries with exponential backoff
+5. **Force Logout**: If all retries fail with session error, logs out user
+
+This triple-layer approach ensures maximum uptime while maintaining security.
 
 ## User Flow
 
