@@ -1,5 +1,8 @@
 import { supabase } from '../config/supabaseClient';
 
+// Global promise used to serialize session refresh calls so only one refresh runs at a time
+let refreshInProgress = null;
+
 /**
  * Validates the current Supabase session and refreshes if needed
  * @returns {Promise<{success: boolean, error?: string}>}
@@ -34,25 +37,47 @@ export const validateAndRefreshSession = async () => {
 
       if (timeUntilExpiry < fiveMinutes) {
         console.log('🔄 Session expiring soon, refreshing...');
-        const { data: { session: newSession } = {}, error: refreshError } = await supabase.auth.refreshSession();
 
-        if (refreshError) {
-          console.warn('⚠️ Session refresh failed:', refreshError);
-          // Don't throw - the proactive refresh hook will handle it
-          return {
-            success: true,
-            warning: 'Session refresh failed but will be retried by background refresh'
-          };
+        try {
+          // If another refresh is in progress, wait for it instead of starting a new one
+          if (refreshInProgress) {
+            const res = await refreshInProgress;
+            const newSession = res?.data?.session;
+            const refreshError = res?.error;
+
+            if (refreshError) {
+              console.warn('⚠️ Session refresh (concurrent) failed:', refreshError);
+              return { success: false, error: refreshError.message || 'Session refresh failed' };
+            }
+
+            if (!newSession) {
+              return { success: false, error: 'Failed to refresh session. Please sign in again.' };
+            }
+
+            console.log('✅ Session refreshed by concurrent worker');
+          } else {
+            // Start a refresh and store the promise so other callers can await it
+            refreshInProgress = supabase.auth.refreshSession();
+            const { data: { session: newSession } = {}, error: refreshError } = await refreshInProgress;
+            refreshInProgress = null;
+
+            if (refreshError) {
+              console.warn('⚠️ Session refresh failed:', refreshError);
+              return { success: false, error: refreshError.message || 'Session refresh failed' };
+            }
+
+            if (!newSession) {
+              return { success: false, error: 'Failed to refresh session. Please sign in again.' };
+            }
+
+            console.log('✅ Session refreshed successfully');
+          }
+        } catch (err) {
+          // Ensure the global promise is cleared on unexpected errors
+          refreshInProgress = null;
+          console.error('❌ Unexpected error during session refresh:', err);
+          return { success: false, error: err.message || 'Session refresh failed' };
         }
-
-        if (!newSession) {
-          return {
-            success: false,
-            error: 'Failed to refresh session. Please sign in again.'
-          };
-        }
-
-        console.log('✅ Session refreshed successfully');
       } else {
         console.log('✅ Session valid, expires in:', Math.round(timeUntilExpiry / 60000), 'minutes');
       }
