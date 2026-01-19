@@ -47,6 +47,7 @@ export default {
     forgotPassword: 'パスワードをお忘れですか？',
     forgotPasswordModal: {
       title: 'パスワードのリセット',
+      success: 'パスワード再設定メールを送信しました。受信トレイを確認してください。',
       description: 'メールアドレスを入力してください。パスワードをリセットするためのリンクをお送りします。',
       emailLabel: 'メールアドレス',
       emailPlaceholder: 'you@example.com',

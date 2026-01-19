@@ -47,6 +47,7 @@ export default {
     forgotPassword: 'Забыли пароль?',
     forgotPasswordModal: {
       title: 'Сброс Пароля',
+      success: 'Письмо для сброса пароля отправлено. Пожалуйста, проверьте свой почтовый ящик.',
       description: 'Введите свой адрес электронной почты, и мы отправим вам ссылку для сброса пароля.',
       emailLabel: 'Адрес Электронной Почты',
       emailPlaceholder: 'you@example.com',

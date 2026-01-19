@@ -8,7 +8,7 @@ import { useAuth } from './contexts/AuthContext'
 import { useSessionKeepAlive } from './hooks/useSessionKeepAlive'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { UploadProvider } from './contexts/UploadContext'
-import { Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, TaskListing, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager, ControlPanel, TaskReview, PersonalGoals, FlubberIconTest, Recruitment, AdvancedHelpCenter, ProductionHelpCenter } from './components/index.jsx';
+import { Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, ResetPassword, TaskListing, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager, ControlPanel, TaskReview, PersonalGoals, FlubberIconTest, Recruitment, AdvancedHelpCenter, ProductionHelpCenter } from './components/index.jsx';
 import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
 import { logVisit } from './services/visitService';
@@ -286,9 +286,13 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
   return (
     <Router>
       <Routes>
-        {/* Public Route - Login */}
+        {/* Public Routes */}
         <Route path="/login" element={
           isAuthenticated ? <Navigate to="/time-clock" replace /> : <Login />
+        } />
+        
+        <Route path="/reset-password" element={
+          isAuthenticated ? <Navigate to="/time-clock" replace /> : <ResetPassword />
         } />
           
           {/* Private Route - Login first) */}

@@ -48,6 +48,7 @@ login: {
   forgotPassword: '¿Olvidaste tu contraseña?',
   forgotPasswordModal: {
     title: 'Restablecer Contraseña',
+    success: 'Correo electrónico de restablecimiento de contraseña enviado. Por favor, revise su bandeja de entrada.',
     description: 'Ingresa tu dirección de correo electrónico y te enviaremos un enlace para restablecer tu contraseña.',
     emailLabel: 'Dirección de Correo Electrónico',
     emailPlaceholder: 'tu@ejemplo.com',

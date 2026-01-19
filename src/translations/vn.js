@@ -50,6 +50,7 @@ export default {
   // Login
   login: {
     tryDemo: 'Thử Chế Độ Demo',
+    success: 'Email đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư đến của bạn.',
     title: 'Quản lý HR',
     subtitle: 'Đăng nhập để truy cập bảng điều khiển',
     email: 'Địa chỉ Email',

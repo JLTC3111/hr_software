@@ -6,6 +6,7 @@ export { default as EmployeeModal } from './employeeModal.jsx';
 export { default as Header } from './header.jsx';
 export { default as LanguageSelector } from './LanguageSelector.jsx';
 export { default as Login } from './login.jsx';
+export { default as ResetPassword } from './ResetPassword.jsx';
 export { default as TaskListing } from './taskListing.jsx';
 export { default as ProductionHelpCenter } from './ProductionHelpCenter';
 export { default as PlaceHolder } from './placeHolder.jsx';

@@ -32,6 +32,7 @@ export default {
   // Login
   login: {
     tryDemo: 'Demo ausprobieren',
+    success: 'E-Mail zum Zurücksetzen des Passworts gesendet. Bitte überprüfen Sie Ihren Posteingang.',
     title: 'HR-Manager',
     subtitle: 'Melden Sie sich an, um auf Ihr Dashboard zuzugreifen',
     email: 'E-Mail-Adresse',
@@ -47,6 +48,7 @@ export default {
     forgotPassword: 'Passwort vergessen?',
     forgotPasswordModal: {
       title: 'Passwort Zurücksetzen',
+      success: 'E-Mail zum Zurücksetzen des Passworts gesendet. Bitte überprüfen Sie Ihren Posteingang.',
       description: 'Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen Link zum Zurücksetzen Ihres Passworts.',
       emailLabel: 'E-Mail-Adresse',
       emailPlaceholder: 'sie@beispiel.com',

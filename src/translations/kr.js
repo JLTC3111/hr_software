@@ -47,6 +47,7 @@ export default {
     forgotPassword: '비밀번호를 잊으셨나요?',
     forgotPasswordModal: {
       title: '비밀번호 재설정',
+      success: '비밀번호 재설정 이메일이 전송되었습니다. 받은 편지함을 확인해 주세요.',
       description: '이메일 주소를 입력하시면 비밀번호를 재설정할 수 있는 링크를 보내드립니다.',
       emailLabel: '이메일 주소',
       emailPlaceholder: 'you@example.com',

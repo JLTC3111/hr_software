@@ -15,6 +15,12 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
+  const appBaseUrl =
+    import.meta.env.VITE_APP_URL ||
+    import.meta.env.VITE_SITE_URL ||
+    (import.meta.env.PROD
+      ? ''
+      : (typeof window !== 'undefined' ? window.location.origin : ''));
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -636,15 +642,25 @@ export const AuthProvider = ({ children }) => {
   const forgotPassword = async (email) => {
     try {
       console.log('📧 Sending password reset email to:', email);
-      
+
+      if (!appBaseUrl) {
+        throw new Error('Missing app base URL for reset link. Set VITE_APP_URL or VITE_SITE_URL.');
+      }
+
+      const redirectTo = `${appBaseUrl}/reset-password`;
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo,
       });
 
       if (error) throw error;
 
       console.log('✅ Password reset email sent successfully');
-      return { success: true, message: 'Password reset email sent. Please check your inbox.' };
+      return {
+        success: true,
+        message: 'Password reset email sent. Please check your inbox.',
+        t: 'login.forgotPasswordModal.success'
+      };
     } catch (error) {
       console.error('❌ Forgot password error:', error);
       

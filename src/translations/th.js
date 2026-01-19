@@ -47,6 +47,7 @@ export default {
     forgotPassword: 'ลืมรหัสผ่าน?',
     forgotPasswordModal: {
       title: 'รีเซ็ตรหัสผ่าน',
+      success: 'ส่งอีเมลรีเซ็ตรหัสผ่านแล้ว โปรดตรวจสอบกล่องจดหมายของคุณ',
       description: 'กรอกที่อยู่อีเมลของคุณและเราจะส่งลิงก์สำหรับรีเซ็ตรหัสผ่านให้คุณ',
       emailLabel: 'ที่อยู่อีเมล',
       emailPlaceholder: 'you@example.com',

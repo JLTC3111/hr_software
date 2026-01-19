@@ -47,6 +47,7 @@ export default {
     forgotPassword: 'Mot de passe oublié?',
     forgotPasswordModal: {
       title: 'Réinitialiser le Mot de Passe',
+      success: 'E-mail de réinitialisation du mot de passe envoyé. Veuillez consulter votre boîte de réception.',
       description: 'Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.',
       emailLabel: 'Adresse E-mail',
       emailPlaceholder: 'vous@exemple.com',

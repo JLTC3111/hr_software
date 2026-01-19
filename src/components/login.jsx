@@ -147,7 +147,9 @@ const Login = () => {
     setIsSendingReset(false);
     
     if (result.success) {
-      setForgotPasswordSuccess(result.message || t('login.forgotPasswordModal.success', 'Password reset email sent. Please check your inbox.'));
+      setForgotPasswordSuccess(
+        result.t ? t(result.t, result.message) : (result.message || t('login.forgotPasswordModal.success', 'Password reset email sent. Please check your inbox.'))
+      );
       // Clear form after 3 seconds and close modal
       setTimeout(() => {
         setShowForgotPasswordModal(false);
