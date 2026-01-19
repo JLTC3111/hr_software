@@ -85,7 +85,7 @@ export default {
     signingIn: 'กำลังเข้าสู่ระบบ...',
     orContinueWith: 'หรือดำเนินการต่อด้วย',
     continueWithGithub: 'ดำเนินการต่อด้วย GitHub',
-    redirecting: 'กำลังเปลี่ยนเส้นทางไปยัง GitHub...',
+    redirecting: 'กำลังเปลี่ยนเส้นทางไปยังหน้าเข้าสู่ระบบ...',
     githubError: 'เข้าสู่ระบบด้วย GitHub ล้มเหลว',
     noAccount: 'ยังไม่มีบัญชี?',
     signUp: 'สมัครสมาชิก',

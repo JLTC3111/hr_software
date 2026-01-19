@@ -85,7 +85,7 @@ export default {
     signingIn: '로그인 중...',
     orContinueWith: '또는 다음으로 계속',
     continueWithGithub: 'GitHub로 계속',
-    redirecting: 'GitHub로 리디렉션 중...',
+    redirecting: '로그인 페이지로 이동 중...',
     githubError: 'GitHub 로그인에 실패했습니다',
     noAccount: '계정이 없으신가요?',
     signUp: '회원가입',

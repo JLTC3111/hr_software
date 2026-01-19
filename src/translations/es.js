@@ -85,7 +85,7 @@ login: {
   signIn: 'Iniciar Sesión',
   signingIn: 'Iniciando sesión...',
   continueWithGithub: 'Continuar con GitHub',
-  redirecting: 'Redirigiendo a GitHub...',
+  redirecting: 'Redirigiendo al inicio de sesión...',
   githubError: 'Error al iniciar sesión con GitHub',
   orContinueWith: 'O continuar con',
   noAccount: '¿No tienes una cuenta?',

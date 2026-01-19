@@ -85,7 +85,7 @@ export default {
     signingIn: 'Signing in...',
     orContinueWith: 'Or continue with',
     continueWithGithub: 'Continue with GitHub',
-    redirecting: 'Redirecting to GitHub...',
+    redirecting: 'Weiterleitung zum Login...',
     githubError: 'Failed to login with GitHub',
     noAccount: "Don't have an account?",
     signUp: 'Sign up',

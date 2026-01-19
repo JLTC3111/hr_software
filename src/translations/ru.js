@@ -85,7 +85,7 @@ export default {
     signingIn: 'Вход...',
     orContinueWith: 'Или продолжить с',
     continueWithGithub: 'Продолжить с GitHub',
-    redirecting: 'Перенаправление на GitHub...',
+    redirecting: 'Перенаправление на страницу входа...',
     githubError: 'Не удалось войти через GitHub',
     noAccount: 'Нет аккаунта?',
     signUp: 'Зарегистрироваться',

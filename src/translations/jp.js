@@ -85,7 +85,7 @@ export default {
     signingIn: 'サインイン中...',
     orContinueWith: 'または続ける',
     continueWithGithub: 'GitHubで続ける',
-    redirecting: 'GitHubにリダイレクト中...',
+    redirecting: 'ログイン画面に移動しています...',
     githubError: 'GitHubでのログインに失敗しました',
     noAccount: 'アカウントをお持ちでないですか？',
     signUp: '新規登録',

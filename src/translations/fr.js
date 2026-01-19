@@ -85,7 +85,7 @@ export default {
     signingIn: 'Connexion en cours...',
     orContinueWith: 'Ou continuer avec',
     continueWithGithub: 'Continuer avec GitHub',
-    redirecting: 'Redirection vers GitHub...',
+    redirecting: 'Redirection vers la page de connexion...',
     githubError: 'Échec de la connexion avec GitHub',
     noAccount: 'Vous n\'avez pas de compte?',
     signUp: 'S\'inscrire',
