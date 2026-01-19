@@ -36,8 +36,17 @@ const ResetPassword = () => {
         const refreshToken = hashParams.get('refresh_token');
         const type = hashParams.get('type');
         const code = searchParams.get('code');
+        const devMode = searchParams.get('dev'); // For localhost testing
 
-        console.log('Reset link params:', { hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken, hasCode: !!code, type });
+        console.log('Reset link params:', { hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken, hasCode: !!code, type, devMode });
+
+        // Allow dev mode on localhost for UI testing (no actual password reset will work)
+        if (devMode === 'true' && window.location.hostname === 'localhost') {
+          console.log('⚠️ DEV MODE: Skipping session validation (UI testing only)');
+          setHasValidSession(true);
+          setSessionLoading(false);
+          return;
+        }
 
         if ((!accessToken && !code) || type !== 'recovery') {
           setError(t('resetPassword.invalidLink', 'Invalid or expired reset link. Please request a new password reset.'));
