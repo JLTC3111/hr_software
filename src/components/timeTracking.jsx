@@ -336,7 +336,7 @@ export const MiniFlubberMorphingLeaveStatus = ({
   };
 
 const TimeTracking = ({ employees }) => {
-  const { user, checkPermission } = useAuth();
+  const { user, checkPermission, logout } = useAuth();
   const { isDarkMode, toggleTheme, button, bg, text, border, hover, input } = useTheme();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -658,7 +658,7 @@ const TimeTracking = ({ employees }) => {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [selectedEmployee, selectedMonth, selectedYear, withTimeout]);
+  }, [selectedEmployee, selectedMonth, selectedYear, withTimeout, logout]);
   
   // Fetch data from Supabase when employee or period changes
   useEffect(() => {

@@ -4,6 +4,7 @@ import StatsCard from './statsCard.jsx'
 import MetricDetailModal from './metricDetailModal.jsx'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAuth } from '../contexts/AuthContext'
 import { Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ComposedChart } from 'recharts'
 import * as timeTrackingService from '../services/timeTrackingService'
 import { withTimeout } from '../utils/supabaseTimeout';
@@ -1232,6 +1233,7 @@ export const MiniFlubberAutoMorphPerformance = ({
 const Dashboard = ({ employees, applications }) => {
   const { isDarkMode, bg, text, border } = useTheme();
   const { t } = useLanguage();
+  const { logout } = useAuth();
   
   const [loading, setLoading] = useState(true);
   const [timeTrackingData, setTimeTrackingData] = useState({});
@@ -1398,7 +1400,7 @@ const Dashboard = ({ employees, applications }) => {
       } finally {
           if (!silent) setLoading(false);
         }
-  }, [employees, selectedMonth, selectedYear]);
+  }, [employees, selectedMonth, selectedYear, logout]);
 
   // Memoize the silent refresh callback
   const silentRefresh = useCallback(() => {

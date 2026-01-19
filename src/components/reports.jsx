@@ -77,6 +77,7 @@ const loadFontHelper = async (doc, url, vfsName, fontName) => {
 };
 
 const Reports = () => {
+  const { logout } = useAuth();
   const { t, currentLanguage } = useLanguage();
   const { isDarkMode } = useTheme();
   
@@ -425,7 +426,7 @@ const Reports = () => {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [filters, selectedEmployee, activeTab]);
+  }, [filters, selectedEmployee, activeTab, logout]);
 
   // Effect to fetch data when filters/tab/employee changes
   useEffect(() => {

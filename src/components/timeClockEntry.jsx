@@ -107,7 +107,7 @@ export const AnimatedClockIcon = ({ className, isDarkMode }) => {
 const TimeClockEntry = ({ currentLanguage }) => {
   const { isDarkMode, bg, text, button, input, border } = useTheme();
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const userId = user?.id || null;
   const userEmployeeId = user?.employee_id || user?.employeeId || null;
   const userRole = user?.role || null;
@@ -558,7 +558,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
         });
       }
     }
-  }, [userId, canManageTimeTracking, fetchTimeEntries, fetchLeaveRequests, fetchAllEmployees]);
+  }, [userId, canManageTimeTracking, fetchTimeEntries, fetchLeaveRequests, fetchAllEmployees, logout]);
 
   useEffect(() => () => {
     isMounted.current = false;
