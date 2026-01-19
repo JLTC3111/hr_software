@@ -113,20 +113,30 @@ const ResetPassword = () => {
     setLoading(true);
 
     try {
+      console.log('⚠️ Resetting password...');
       const result = await resetPassword(newPassword);
+      
+      console.log('Reset result:', result);
       
       if (result.success) {
         setSuccess(true);
         setError('');
         
-        // Redirect to login after 3 seconds
+        console.log('✅ Password reset successful, signing out and redirecting to login...');
+        
+        // Sign out the user to clear the recovery session
+        await supabase.auth.signOut();
+        
+        // Redirect to login after 2 seconds
         setTimeout(() => {
           navigate('/login');
-        }, 3000);
+        }, 2000);
       } else {
+        console.error('❌ Password reset failed:', result.error);
         setError(result.error || t('resetPassword.error', 'Failed to reset password. Please try again.'));
       }
     } catch (err) {
+      console.error('❌ Exception during password reset:', err);
       setError(err.message || t('resetPassword.error', 'Failed to reset password. Please try again.'));
     } finally {
       setLoading(false);
