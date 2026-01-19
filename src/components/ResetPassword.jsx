@@ -27,8 +27,8 @@ const ResetPassword = () => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // Give Supabase a moment to process the hash token
-        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log('🔍 Starting session check...');
+        console.log('Current URL:', window.location.href);
         
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const searchParams = new URLSearchParams(window.location.search);
@@ -38,7 +38,14 @@ const ResetPassword = () => {
         const code = searchParams.get('code');
         const devMode = searchParams.get('dev'); // For localhost testing
 
-        console.log('Reset link params:', { hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken, hasCode: !!code, type, devMode });
+        console.log('Reset link params:', { 
+          hasAccessToken: !!accessToken, 
+          hasRefreshToken: !!refreshToken, 
+          hasCode: !!code, 
+          type, 
+          devMode,
+          fullCode: code 
+        });
 
         // Allow dev mode on localhost for UI testing (no actual password reset will work)
         if (devMode === 'true' && window.location.hostname === 'localhost') {
@@ -48,9 +55,23 @@ const ResetPassword = () => {
           return;
         }
 
+        // First check if there's already an active session (Supabase might have auto-processed it)
+        console.log('Checking for existing session...');
+        const { data: { session: existingSession }, error: existingSessionError } = await supabase.auth.getSession();
+        
+        if (existingSession && !existingSessionError) {
+          console.log('✅ Found existing session for user:', existingSession.user?.email);
+          setHasValidSession(true);
+          setSessionLoading(false);
+          return;
+        }
+
+        console.log('No existing session, attempting to establish one...');
+
         // Validate we have either tokens or code for password reset
         // PKCE flow uses code without type parameter, hash tokens use type=recovery
         if (!accessToken && !code) {
+          console.error('❌ No access token or code found in URL');
           setError(t('resetPassword.invalidLink', 'Invalid or expired reset link. Please request a new password reset.'));
           setSessionLoading(false);
           setHasValidSession(false);
@@ -59,6 +80,7 @@ const ResetPassword = () => {
 
         // If using hash tokens, verify it's a recovery type
         if (accessToken && type !== 'recovery') {
+          console.error('❌ Access token present but type is not recovery:', type);
           setError(t('resetPassword.invalidLink', 'Invalid or expired reset link. Please request a new password reset.'));
           setSessionLoading(false);
           setHasValidSession(false);
@@ -82,10 +104,21 @@ const ResetPassword = () => {
           }
           console.log('Session set successfully:', !!data.session);
         } else if (code) {
-          console.log('Exchanging code for session...');
+          console.log('📝 Exchanging code for session...');
+          console.log('Code value:', code);
+          
           const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          
+          console.log('Exchange result:', { 
+            hasData: !!data, 
+            hasSession: !!data?.session, 
+            hasError: !!exchangeError,
+            errorMessage: exchangeError?.message,
+            errorDetails: exchangeError
+          });
+          
           if (exchangeError) {
-            console.error('Code exchange error:', exchangeError);
+            console.error('❌ Code exchange error:', exchangeError);
             // Provide more specific error messages
             let errorMsg = t('resetPassword.invalidLink', 'Invalid or expired reset link. Please request a new password reset.');
             if (exchangeError.message?.includes('already been used')) {
@@ -98,22 +131,28 @@ const ResetPassword = () => {
             setHasValidSession(false);
             return;
           }
-          console.log('Code exchanged successfully:', !!data.session);
           
-          if (!data.session) {
-            console.error('Code exchange succeeded but no session returned');
+          console.log('✅ Code exchanged successfully');
+          
+          if (!data?.session) {
+            console.error('❌ Code exchange succeeded but no session returned');
             setError(t('resetPassword.invalidLink', 'Failed to establish session. Please request a new password reset.'));
             setSessionLoading(false);
             setHasValidSession(false);
             return;
           }
+          
+          console.log('✅ Session established for user:', data.session.user?.email);
+          setHasValidSession(true);
+          setSessionLoading(false);
+          return;
         }
 
-        // Verify the session is established
+        // Final verification
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError || !session) {
-          console.error('Session verification failed:', sessionError || 'No session found');
+          console.error('❌ Session verification failed:', sessionError || 'No session found');
           console.error('Full error details:', { sessionError, hasSession: !!session });
           setError(t('resetPassword.invalidLink', 'Invalid or expired reset link. Please request a new password reset.'));
           setHasValidSession(false);
@@ -122,7 +161,7 @@ const ResetPassword = () => {
           setHasValidSession(true);
         }
       } catch (err) {
-        console.error('Error checking session:', err);
+        console.error('❌ Error checking session:', err);
         setError(t('resetPassword.error', 'An error occurred. Please try again.'));
         setHasValidSession(false);
       } finally {
