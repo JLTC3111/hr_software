@@ -77,7 +77,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
     storage: customStorage,
     storageKey: 'sb-auth-token',
-    flowType: 'implicit' // Use implicit flow for password reset compatibility
+    // PKCE is the default and recommended flow
+    // Password reset links are handled automatically by detectSessionInUrl
   },
     global: {
     headers: {
