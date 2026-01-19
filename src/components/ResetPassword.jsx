@@ -194,12 +194,14 @@ const ResetPassword = () => {
             aria-label="Change language"
           >
             <Languages className="w-5 h-5" />
-            <img 
-              src={languages.find(l => l.code === language)?.flagPath} 
-              alt="" 
-              className="w-5 h-5 rounded-sm object-cover"
-              onError={(e) => { e.target.style.display = 'none'; }}
-            />
+            {languages.find(l => l.code === language)?.flagPath && (
+              <img 
+                src={languages.find(l => l.code === language)?.flagPath} 
+                alt="" 
+                className="w-5 h-5 rounded-sm object-cover"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+            )}
           </button>
 
           {/* Language Dropdown */}
@@ -226,12 +228,14 @@ const ResetPassword = () => {
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <img 
-                    src={lang.flagPath} 
-                    alt="" 
-                    className="w-5 h-5 rounded-sm object-cover"
-                    onError={(e) => { e.target.style.display = 'none'; }}
-                  />
+                  {lang.flagPath && (
+                    <img 
+                      src={lang.flagPath} 
+                      alt="" 
+                      className="w-5 h-5 rounded-sm object-cover"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  )}
                   <span className="text-sm font-medium">{lang.name}</span>
                 </button>
               ))}
@@ -320,7 +324,27 @@ const ResetPassword = () => {
                   disabled={loading}
                   autoComplete="new-password"
                   data-form-type="other"
+                  style={{
+                    WebkitTextSecurity: showPassword ? 'none' : 'disc',
+                  }}
                 />
+                <style>{`
+                  input[type="password"]::-ms-reveal,
+                  input[type="password"]::-ms-clear,
+                  input[type="text"]::-ms-reveal,
+                  input[type="text"]::-ms-clear {
+                    display: none;
+                  }
+                  input[type="password"]::-webkit-credentials-auto-fill-button,
+                  input[type="password"]::-webkit-contacts-auto-fill-button,
+                  input[type="text"]::-webkit-credentials-auto-fill-button,
+                  input[type="text"]::-webkit-contacts-auto-fill-button {
+                    visibility: hidden;
+                    pointer-events: none;
+                    position: absolute;
+                    right: 0;
+                  }
+                `}</style>
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -361,6 +385,9 @@ const ResetPassword = () => {
                   disabled={loading}
                   autoComplete="new-password"
                   data-form-type="other"
+                  style={{
+                    WebkitTextSecurity: showConfirmPassword ? 'none' : 'disc',
+                  }}
                 />
                 <button
                   type="button"
