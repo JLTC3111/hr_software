@@ -291,9 +291,8 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
           isAuthenticated ? <Navigate to="/time-clock" replace /> : <Login />
         } />
         
-        <Route path="/reset-password" element={
-          isAuthenticated ? <Navigate to="/time-clock" replace /> : <ResetPassword />
-        } />
+        {/* Allow reset-password even when authenticated (user needs to complete password change) */}
+        <Route path="/reset-password" element={<ResetPassword />} />
           
           {/* Private Route - Login first) */}
           <Route path="/flubber-test" element={<FlubberIconTest />} />
