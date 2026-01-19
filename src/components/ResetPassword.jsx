@@ -86,12 +86,27 @@ const ResetPassword = () => {
           const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) {
             console.error('Code exchange error:', exchangeError);
-            setError(t('resetPassword.invalidLink', 'Failed to establish session. Please request a new password reset.'));
+            // Provide more specific error messages
+            let errorMsg = t('resetPassword.invalidLink', 'Invalid or expired reset link. Please request a new password reset.');
+            if (exchangeError.message?.includes('already been used')) {
+              errorMsg = 'This reset link has already been used. Please request a new password reset.';
+            } else if (exchangeError.message?.includes('expired')) {
+              errorMsg = 'This reset link has expired. Please request a new password reset.';
+            }
+            setError(errorMsg);
             setSessionLoading(false);
             setHasValidSession(false);
             return;
           }
           console.log('Code exchanged successfully:', !!data.session);
+          
+          if (!data.session) {
+            console.error('Code exchange succeeded but no session returned');
+            setError(t('resetPassword.invalidLink', 'Failed to establish session. Please request a new password reset.'));
+            setSessionLoading(false);
+            setHasValidSession(false);
+            return;
+          }
         }
 
         // Verify the session is established
@@ -99,6 +114,7 @@ const ResetPassword = () => {
         
         if (sessionError || !session) {
           console.error('Session verification failed:', sessionError || 'No session found');
+          console.error('Full error details:', { sessionError, hasSession: !!session });
           setError(t('resetPassword.invalidLink', 'Invalid or expired reset link. Please request a new password reset.'));
           setHasValidSession(false);
         } else {
