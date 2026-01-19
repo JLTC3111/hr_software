@@ -46,7 +46,7 @@ import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import timeTrackingService from '../services/timeTrackingService';
 import { withTimeout } from '../utils/supabaseTimeout';
-import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts';
+import { DEFAULT_REQUEST_TIMEOUT, VISIBILITY_STALE_TIMEOUT } from '../config/requestTimeouts';
 import { getAllTasks } from '../services/workloadService';
 import performanceService from '../services/performanceService';
 import { validateAndRefreshSession } from '../utils/sessionHelper';
@@ -444,9 +444,10 @@ const Reports = () => {
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
   useVisibilityRefresh(memoizedFetchReportData, {
-    staleTime: DEFAULT_REQUEST_TIMEOUT, // match centralized request timeout
+    staleTime: VISIBILITY_STALE_TIMEOUT,
     refreshOnFocus: true,
-    refreshOnOnline: true
+    refreshOnOnline: true,
+    onStaleTimeout: () => logout()
   });
 
   // Handle sort column click

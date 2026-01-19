@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import * as timeTrackingService from '../services/timeTrackingService';
 import { validateAndRefreshSession } from '../utils/sessionHelper';
 import { retryWithBackoff, isRetryableError } from '../utils/retryHelper';
-import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts';
+import { DEFAULT_REQUEST_TIMEOUT, VISIBILITY_STALE_TIMEOUT } from '../config/requestTimeouts';
 import { supabase } from '../config/supabaseClient';
 import { isDemoMode, getDemoEmployeeName, addDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper';
 import AdminTimeEntry from './AdminTimeEntry';
@@ -593,9 +593,10 @@ const TimeClockEntry = ({ currentLanguage }) => {
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
   useVisibilityRefresh(() => loadData({ silent: true }), {
-    staleTime: DEFAULT_REQUEST_TIMEOUT, 
+    staleTime: VISIBILITY_STALE_TIMEOUT,
     refreshOnFocus: true,
-    refreshOnOnline: true
+    refreshOnOnline: true,
+    onStaleTimeout: () => logout()
   });
 
   useEffect(() => {

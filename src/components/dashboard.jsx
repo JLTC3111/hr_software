@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ComposedChart } from 'recharts'
 import * as timeTrackingService from '../services/timeTrackingService'
 import { withTimeout } from '../utils/supabaseTimeout';
-import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts';
+import { DEFAULT_REQUEST_TIMEOUT, VISIBILITY_STALE_TIMEOUT } from '../config/requestTimeouts';
 import { validateAndRefreshSession } from '../utils/sessionHelper';
 import { retryWithBackoff, isRetryableError } from '../utils/retryHelper';
 import * as flubber from 'flubber';
@@ -1416,9 +1416,10 @@ const Dashboard = ({ employees, applications }) => {
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
   useVisibilityRefresh(silentRefresh, {
-    staleTime: DEFAULT_REQUEST_TIMEOUT, // match centralized request timeout
+    staleTime: VISIBILITY_STALE_TIMEOUT,
     refreshOnFocus: true,
-    refreshOnOnline: true
+    refreshOnOnline: true,
+    onStaleTimeout: () => logout()
   });
 
   // Calculate aggregate stats

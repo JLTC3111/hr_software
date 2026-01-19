@@ -4,15 +4,17 @@ import { useEffect, useRef, useCallback } from 'react';
  * 
  * @param {Function} refreshCallback - Function to call when data needs refreshing
  * @param {Object} options - Configuration options
- * @param {number} options.staleTime - Time in ms after which data is considered stale (default: 60000 = 1 minute)
+ * @param {number} options.staleTime - Time in ms after which data is considered stale (default: 90000 = 90 seconds)
  * @param {boolean} options.refreshOnFocus - Whether to refresh on window focus (default: true)
  * @param {boolean} options.refreshOnOnline - Whether to refresh when coming back online (default: true)
+ * @param {Function} options.onStaleTimeout - Callback to run when stale time is exceeded (optional)
  */
 export const useVisibilityRefresh = (refreshCallback, options = {}) => {
   const {
-    staleTime = 60000, 
+    staleTime = 90000, 
     refreshOnFocus = true,
-    refreshOnOnline = true
+    refreshOnOnline = true,
+    onStaleTimeout
   } = options;
 
   const lastRefreshTime = useRef(Date.now());
@@ -36,13 +38,17 @@ export const useVisibilityRefresh = (refreshCallback, options = {}) => {
     lastRefreshTime.current = now;
 
     try {
+      if (onStaleTimeout) {
+        await onStaleTimeout({ timeSinceLastRefresh, staleTime });
+        return;
+      }
       await refreshCallback();
     } catch (error) {
       console.error('Error during visibility refresh:', error);
     } finally {
       isRefreshing.current = false;
     }
-  }, [refreshCallback, staleTime]);
+  }, [refreshCallback, staleTime, onStaleTimeout]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {

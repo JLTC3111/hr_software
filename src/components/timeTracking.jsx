@@ -13,7 +13,7 @@ import { supabase } from '../config/supabaseClient'
 import { AnimatedClockIcon } from './timeClockEntry'
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh'
 import { getDemoEmployeeName, isDemoMode, addDemoLeaveRequest, updateDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper'
-import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts';
+import { DEFAULT_REQUEST_TIMEOUT, VISIBILITY_STALE_TIMEOUT } from '../config/requestTimeouts';
 
 export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = false }) => {
     const mainColor = isDarkMode ? '#ffffff' : '#000000';
@@ -667,9 +667,10 @@ const TimeTracking = ({ employees }) => {
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
   useVisibilityRefresh(() => fetchTimeTrackingData({ silent: true }), {
-    staleTime: DEFAULT_REQUEST_TIMEOUT, // match centralized request timeout
+    staleTime: VISIBILITY_STALE_TIMEOUT,
     refreshOnFocus: true,
-    refreshOnOnline: true
+    refreshOnOnline: true,
+    onStaleTimeout: () => logout()
   });
 
   // Fetch all leave requests for all employees (admin/manager only)
