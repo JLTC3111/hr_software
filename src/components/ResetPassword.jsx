@@ -114,7 +114,14 @@ const ResetPassword = () => {
 
     try {
       console.log('⚠️ Resetting password...');
+      
+      // Set flag to prevent profile reload on USER_UPDATED event
+      localStorage.setItem('changingPassword', 'true');
+      
       const result = await resetPassword(newPassword);
+      
+      // Clear the flag
+      localStorage.removeItem('changingPassword');
       
       console.log('Reset result:', result);
       console.log('Result success value:', result?.success);
@@ -140,6 +147,7 @@ const ResetPassword = () => {
       }
     } catch (err) {
       console.error('❌ Exception during password reset:', err);
+      localStorage.removeItem('changingPassword');
       setError(err.message || t('resetPassword.error', 'Failed to reset password. Please try again.'));
       setLoading(false);
     }
