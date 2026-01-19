@@ -53,23 +53,30 @@ export const useVisibilityRefresh = (refreshCallback, options = {}) => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        // Force next refresh by resetting timer when user returns
-        lastRefreshTime.current = 0;
+        // If using stale-time logout, don't force refresh; just evaluate staleness
+        if (!onStaleTimeout) {
+          // Force next refresh by resetting timer when user returns
+          lastRefreshTime.current = 0;
+        }
         handleRefresh();
       }
     };
 
     const handleFocus = () => {
       if (refreshOnFocus) {
-        lastRefreshTime.current = 0;
+        if (!onStaleTimeout) {
+          lastRefreshTime.current = 0;
+        }
         handleRefresh();
       }
     };
 
     const handleOnline = () => {
       if (refreshOnOnline) {
-        // Reset stale time to force refresh when coming back online
-        lastRefreshTime.current = 0;
+        if (!onStaleTimeout) {
+          // Reset stale time to force refresh when coming back online
+          lastRefreshTime.current = 0;
+        }
         handleRefresh();
       }
     };
@@ -93,7 +100,23 @@ export const useVisibilityRefresh = (refreshCallback, options = {}) => {
         window.removeEventListener('online', handleOnline);
       }
     };
-  }, [handleRefresh, refreshOnFocus, refreshOnOnline]);
+  }, [handleRefresh, refreshOnFocus, refreshOnOnline, onStaleTimeout]);
+
+  // Enforce staleness even while staying on the same visible tab
+  useEffect(() => {
+    if (!staleTime) return undefined;
+
+    const interval = Math.max(1000, Math.min(30000, Math.floor(staleTime / 2)));
+    const timerId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        handleRefresh();
+      }
+    }, interval);
+
+    return () => {
+      clearInterval(timerId);
+    };
+  }, [handleRefresh, staleTime]);
 
   // Return a function to manually trigger refresh and reset the timer
   const manualRefresh = useCallback(async () => {
