@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, hasPermission, Permissions, customStorage } from '../config/supabaseClient';
+import { validateAndRefreshSession } from '../utils/sessionHelper';
 import { linkUserToEmployee } from '../services/employeeService';
 import { isDemoMode, enableDemoMode, disableDemoMode, MOCK_USER, resetAllDemoData } from '../utils/demoHelper';
 
@@ -165,10 +166,7 @@ export const AuthProvider = ({ children }) => {
       if (document.visibilityState === 'visible') {
         const now = Date.now();
         const timeSinceLastCheck = now - lastVisibilityCheck.current;
-        
-        // Only refresh if more than 30 seconds have passed since last check
-        // This prevents excessive refreshing
-        if (timeSinceLastCheck < 30000) {
+        if (timeSinceLastCheck < 60000) {
           console.log('⏭️ Skipping session refresh - checked recently');
           return;
         }
@@ -201,22 +199,22 @@ export const AuthProvider = ({ children }) => {
             
             console.log(`🔐 Session expires in ${expiresInSeconds} seconds`);
             
-            // If token expires in less than 5 minutes, try to refresh
+            // If token expires in less than 5 minutes, try to refresh via centralized helper
             if (expiresInSeconds < 300) {
-              console.log('🔄 Token expiring soon - refreshing session...');
-              const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-              
-              if (refreshError) {
-                console.error('Session refresh failed:', refreshError);
+              console.log('🔄 Token expiring soon - refreshing session via helper...');
+              const refreshResult = await validateAndRefreshSession();
+
+              if (!refreshResult.success) {
+                console.error('Session refresh failed (helper):', refreshResult.error || refreshResult.warning);
                 // Session is invalid - need to re-login
                 await clearAuthState();
                 return;
               }
-              
-              if (refreshData.session) {
-                console.log('✅ Session refreshed successfully');
-                setSession(refreshData.session);
-              }
+
+              console.log('✅ Session refreshed successfully (helper)');
+              // Update session from supabase client
+              const { data: { session: updatedSession } } = await supabase.auth.getSession();
+              if (updatedSession) setSession(updatedSession);
             } else {
               // Session is still valid
               console.log('✅ Session is still valid');
@@ -704,19 +702,28 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      // Sign out from Supabase (this will trigger SIGNED_OUT event)
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error('Logout error:', error);
-      }
-      
-      // Clear state immediately
+      // Clear state immediately so UI can move on even if signOut hangs
       setUser(null);
       setIsAuthenticated(false);
       setSession(null);
       setLoading(false);
-      
+
+      // Sign out from Supabase (this will trigger SIGNED_OUT event)
+      // Guard against stalled network after long idle by using a timeout
+      const signOutPromise = supabase.auth.signOut();
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Sign out timeout')), 5000);
+      });
+
+      try {
+        const { error } = await Promise.race([signOutPromise, timeoutPromise]);
+        if (error) {
+          console.error('Logout error:', error);
+        }
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+
       console.log('✅ Logged out successfully');
     } catch (error) {
       console.error('Logout error:', error);
