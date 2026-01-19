@@ -78,6 +78,7 @@ export default {
     success: 'パスワードが正常にリセットされました！',
     redirecting: 'ログインページにリダイレクト中...',
     resetting: 'リセット中...',
+    verifying: 'リセットリンクを検証しています...',
     resetButton: 'パスワードをリセット',
     backToLogin: 'ログインに戻る',
     invalidLink: '無効または期限切れのリセットリンクです。新しいパスワードリセットをリクエストしてください。',

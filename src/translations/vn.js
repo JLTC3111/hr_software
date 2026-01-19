@@ -106,6 +106,7 @@ export default {
     success: 'Đặt lại mật khẩu thành công!',
     redirecting: 'Đang chuyển hướng đến trang đăng nhập...',
     resetting: 'Đang đặt lại...',
+    verifying: 'Đang xác minh liên kết đặt lại...',
     resetButton: 'Đặt Lại Mật Khẩu',
     backToLogin: 'Quay Lại Đăng Nhập',
     invalidLink: 'Liên kết đặt lại không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu đặt lại mật khẩu mới.',

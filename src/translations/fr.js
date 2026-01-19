@@ -78,6 +78,7 @@ export default {
     success: 'Mot de passe réinitialisé avec succès!',
     redirecting: 'Redirection vers la connexion...',
     resetting: 'Réinitialisation...',
+    verifying: 'Vérification du lien de réinitialisation...',
     resetButton: 'Réinitialiser le Mot de Passe',
     backToLogin: 'Retour à la Connexion',
     invalidLink: 'Lien de réinitialisation invalide ou expiré. Veuillez demander une nouvelle réinitialisation du mot de passe.',

@@ -249,7 +249,7 @@ const ResetPassword = () => {
         {sessionLoading && (
           <div className="text-center py-12">
             <Loader className={`w-12 h-12 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'} animate-spin mx-auto mb-4`} />
-            <p className={`${text.secondary}`}>Verifying reset link...</p>
+            <p className={`${text.secondary}`}>{t('resetPassword.verifying', 'Verifying reset link...')}</p>
           </div>
         )}
 

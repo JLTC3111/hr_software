@@ -79,6 +79,7 @@ login: {
     success: '¡Contraseña restablecida exitosamente!',
     redirecting: 'Redirigiendo al inicio de sesión...',
     resetting: 'Restableciendo...',
+    verifying: 'Verificando enlace de restablecimiento...',
     resetButton: 'Restablecer Contraseña',
     backToLogin: 'Volver al Inicio de Sesión',
     invalidLink: 'Enlace de restablecimiento inválido o expirado. Por favor solicita un nuevo restablecimiento de contraseña.',

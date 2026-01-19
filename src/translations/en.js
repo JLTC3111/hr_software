@@ -78,6 +78,7 @@ export default {
     success: 'Password reset successfully!',
     redirecting: 'Redirecting to login...',
     resetting: 'Resetting...',
+    verifying: 'Verifying reset link...',
     resetButton: 'Reset Password',
     backToLogin: 'Back to Login',
     invalidLink: 'Invalid or expired reset link. Please request a new password reset.',

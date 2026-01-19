@@ -78,6 +78,7 @@ export default {
     success: '비밀번호가 성공적으로 재설정되었습니다!',
     redirecting: '로그인 페이지로 이동 중...',
     resetting: '재설정 중...',
+    verifying: '재설정 링크를 확인 중입니다...',
     resetButton: '비밀번호 재설정',
     backToLogin: '로그인으로 돌아가기',
     invalidLink: '유효하지 않거나 만료된 재설정 링크입니다. 새로운 비밀번호 재설정을 요청해주세요.',
