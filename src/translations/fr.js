@@ -61,6 +61,26 @@ export default {
       rateLimitError: 'Trop de demandes. Veuillez réessayer plus tard',
       networkError: 'Erreur réseau. Veuillez vérifier votre connexion'
     },
+  },
+
+  // Reset Password Page
+  resetPassword: {
+    title: 'Réinitialiser le Mot de Passe',
+    subtitle: 'Entrez votre nouveau mot de passe ci-dessous',
+    newPassword: 'Nouveau Mot de Passe',
+    confirmPassword: 'Confirmer le Mot de Passe',
+    newPasswordPlaceholder: 'Entrez le nouveau mot de passe',
+    confirmPasswordPlaceholder: 'Confirmez le nouveau mot de passe',
+    allFieldsRequired: 'Tous les champs sont requis',
+    passwordTooShort: 'Le mot de passe doit contenir au moins 6 caractères',
+    passwordsDontMatch: 'Les mots de passe ne correspondent pas',
+    error: 'Échec de la réinitialisation du mot de passe. Veuillez réessayer.',
+    success: 'Mot de passe réinitialisé avec succès!',
+    redirecting: 'Redirection vers la connexion...',
+    resetting: 'Réinitialisation...',
+    resetButton: 'Réinitialiser le Mot de Passe',
+    backToLogin: 'Retour à la Connexion',
+    invalidLink: 'Lien de réinitialisation invalide ou expiré. Veuillez demander une nouvelle réinitialisation du mot de passe.',
     signIn: 'Se Connecter',
     signingIn: 'Connexion en cours...',
     orContinueWith: 'Ou continuer avec',

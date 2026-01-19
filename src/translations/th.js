@@ -61,6 +61,26 @@ export default {
       rateLimitError: 'มีคำขอมากเกินไป กรุณาลองใหม่ภายหลัง',
       networkError: 'ข้อผิดพลาดเครือข่าย กรุณาตรวจสอบการเชื่อมต่อของคุณ'
     },
+  },
+
+  // Reset Password Page
+  resetPassword: {
+    title: 'รีเซ็ตรหัสผ่าน',
+    subtitle: 'กรอกรหัสผ่านใหม่ด้านล่าง',
+    newPassword: 'รหัสผ่านใหม่',
+    confirmPassword: 'ยืนยันรหัสผ่าน',
+    newPasswordPlaceholder: 'กรอกรหัสผ่านใหม่',
+    confirmPasswordPlaceholder: 'ยืนยันรหัสผ่านใหม่',
+    allFieldsRequired: 'กรุณากรอกข้อมูลให้ครบทุกช่อง',
+    passwordTooShort: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',
+    passwordsDontMatch: 'รหัสผ่านไม่ตรงกัน',
+    error: 'ไม่สามารถรีเซ็ตรหัสผ่านได้ กรุณาลองอีกครั้ง',
+    success: 'รีเซ็ตรหัสผ่านสำเร็จ!',
+    redirecting: 'กำลังนำไปยังหน้าเข้าสู่ระบบ...',
+    resetting: 'กำลังรีเซ็ต...',
+    resetButton: 'รีเซ็ตรหัสผ่าน',
+    backToLogin: 'กลับไปหน้าเข้าสู่ระบบ',
+    invalidLink: 'ลิงก์รีเซ็ตไม่ถูกต้องหรือหมดอายุแล้ว กรุณาขอรีเซ็ตรหัสผ่านใหม่',
     signIn: 'เข้าสู่ระบบ',
     signingIn: 'กำลังเข้าสู่ระบบ...',
     orContinueWith: 'หรือดำเนินการต่อด้วย',

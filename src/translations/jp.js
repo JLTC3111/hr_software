@@ -61,6 +61,26 @@ export default {
       rateLimitError: 'リクエストが多すぎます。しばらくしてからお試しください',
       networkError: 'ネットワークエラーです。接続を確認してください'
     },
+  },
+
+  // Reset Password Page
+  resetPassword: {
+    title: 'パスワードのリセット',
+    subtitle: '新しいパスワードを下記に入力してください',
+    newPassword: '新しいパスワード',
+    confirmPassword: 'パスワードの確認',
+    newPasswordPlaceholder: '新しいパスワードを入力',
+    confirmPasswordPlaceholder: '新しいパスワードを確認',
+    allFieldsRequired: 'すべてのフィールドは必須です',
+    passwordTooShort: 'パスワードは6文字以上である必要があります',
+    passwordsDontMatch: 'パスワードが一致しません',
+    error: 'パスワードのリセットに失敗しました。もう一度お試しください。',
+    success: 'パスワードが正常にリセットされました！',
+    redirecting: 'ログインページにリダイレクト中...',
+    resetting: 'リセット中...',
+    resetButton: 'パスワードをリセット',
+    backToLogin: 'ログインに戻る',
+    invalidLink: '無効または期限切れのリセットリンクです。新しいパスワードリセットをリクエストしてください。',
     signIn: 'サインイン',
     signingIn: 'サインイン中...',
     orContinueWith: 'または続ける',

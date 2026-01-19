@@ -61,6 +61,26 @@ export default {
       rateLimitError: 'Too many requests. Please try again later',
       networkError: 'Network error. Please check your connection'
     },
+  },
+
+  // Reset Password Page
+  resetPassword: {
+    title: 'Reset Password',
+    subtitle: 'Enter your new password below',
+    newPassword: 'New Password',
+    confirmPassword: 'Confirm Password',
+    newPasswordPlaceholder: 'Enter new password',
+    confirmPasswordPlaceholder: 'Confirm new password',
+    allFieldsRequired: 'All fields are required',
+    passwordTooShort: 'Password must be at least 6 characters',
+    passwordsDontMatch: 'Passwords do not match',
+    error: 'Failed to reset password. Please try again.',
+    success: 'Password reset successfully!',
+    redirecting: 'Redirecting to login...',
+    resetting: 'Resetting...',
+    resetButton: 'Reset Password',
+    backToLogin: 'Back to Login',
+    invalidLink: 'Invalid or expired reset link. Please request a new password reset.',
     signIn: 'Sign In',
     signingIn: 'Signing in...',
     orContinueWith: 'Or continue with',

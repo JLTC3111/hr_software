@@ -61,6 +61,26 @@ export default {
       rateLimitError: '요청이 너무 많습니다. 나중에 다시 시도해주세요',
       networkError: '네트워크 오류입니다. 연결을 확인해주세요'
     },
+  },
+
+  // Reset Password Page
+  resetPassword: {
+    title: '비밀번호 재설정',
+    subtitle: '아래에 새 비밀번호를 입력하세요',
+    newPassword: '새 비밀번호',
+    confirmPassword: '비밀번호 확인',
+    newPasswordPlaceholder: '새 비밀번호 입력',
+    confirmPasswordPlaceholder: '새 비밀번호 확인',
+    allFieldsRequired: '모든 필드는 필수입니다',
+    passwordTooShort: '비밀번호는 최소 6자 이상이어야 합니다',
+    passwordsDontMatch: '비밀번호가 일치하지 않습니다',
+    error: '비밀번호 재설정에 실패했습니다. 다시 시도해주세요.',
+    success: '비밀번호가 성공적으로 재설정되었습니다!',
+    redirecting: '로그인 페이지로 이동 중...',
+    resetting: '재설정 중...',
+    resetButton: '비밀번호 재설정',
+    backToLogin: '로그인으로 돌아가기',
+    invalidLink: '유효하지 않거나 만료된 재설정 링크입니다. 새로운 비밀번호 재설정을 요청해주세요.',
     signIn: '로그인',
     signingIn: '로그인 중...',
     orContinueWith: '또는 다음으로 계속',

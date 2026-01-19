@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, Loader, Sun, Moon, Languages } from 'lucide-react';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
   const { resetPassword } = useAuth();
-  const { isDarkMode, bg, text } = useTheme();
-  const { t } = useLanguage();
+  const { isDarkMode, bg, text, toggleTheme } = useTheme();
+  const { language, changeLanguage, t } = useLanguage();
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -18,6 +18,7 @@ const ResetPassword = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
 
   // Check if we have a valid session (user clicked the reset link)
   useEffect(() => {
@@ -79,8 +80,83 @@ const ResetPassword = () => {
     }
   };
 
+  const languages = [
+    { code: 'en', name: 'English', flag: '🇬🇧' },
+    { code: 'vn', name: 'Tiếng Việt', flag: '🇻🇳' },
+    { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+    { code: 'es', name: 'Español', flag: '🇪🇸' },
+    { code: 'fr', name: 'Français', flag: '🇫🇷' },
+    { code: 'jp', name: '日本語', flag: '🇯🇵' },
+    { code: 'kr', name: '한국어', flag: '🇰🇷' },
+    { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+    { code: 'th', name: 'ไทย', flag: '🇹🇭' },
+  ];
+
   return (
     <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} transition-colors duration-200 p-4`}>
+      {/* Theme and Language Switchers - Top Right */}
+      <div className="fixed top-4 right-4 flex items-center gap-2 z-50">
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className={`p-2.5 rounded-lg transition-all duration-200 ${
+            isDarkMode
+              ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700'
+              : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
+          }`}
+          aria-label="Toggle theme"
+        >
+          {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </button>
+
+        {/* Language Selector */}
+        <div className="relative">
+          <button
+            onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+            className={`p-2.5 rounded-lg transition-all duration-200 flex items-center gap-2 ${
+              isDarkMode
+                ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
+            }`}
+            aria-label="Change language"
+          >
+            <Languages className="w-5 h-5" />
+            <span className="text-xl">{languages.find(l => l.code === language)?.flag}</span>
+          </button>
+
+          {/* Language Dropdown */}
+          {showLanguageMenu && (
+            <div
+              className={`absolute right-0 mt-2 w-48 rounded-lg shadow-xl overflow-hidden ${
+                isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+              }`}
+            >
+              {languages.map((lang) => (
+                <button
+                  key={lang.code}
+                  onClick={() => {
+                    changeLanguage(lang.code);
+                    setShowLanguageMenu(false);
+                  }}
+                  className={`w-full px-4 py-2.5 flex items-center gap-3 transition-colors ${
+                    language === lang.code
+                      ? isDarkMode
+                        ? 'bg-blue-900/50 text-blue-300'
+                        : 'bg-blue-50 text-blue-600'
+                      : isDarkMode
+                      ? 'text-gray-300 hover:bg-gray-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="text-xl">{lang.flag}</span>
+                  <span className="text-sm font-medium">{lang.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className={`max-w-md w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-8`}>
         {/* Header */}
         <div className="text-center mb-8">

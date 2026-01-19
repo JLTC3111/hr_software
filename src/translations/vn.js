@@ -91,6 +91,26 @@ export default {
     tryDemoLoading: 'Đang tải bản demo...',
   },
 
+  // Reset Password Page
+  resetPassword: {
+    title: 'Đặt Lại Mật Khẩu',
+    subtitle: 'Nhập mật khẩu mới của bạn bên dưới',
+    newPassword: 'Mật Khẩu Mới',
+    confirmPassword: 'Xác Nhận Mật Khẩu',
+    newPasswordPlaceholder: 'Nhập mật khẩu mới',
+    confirmPasswordPlaceholder: 'Xác nhận mật khẩu mới',
+    allFieldsRequired: 'Tất cả các trường là bắt buộc',
+    passwordTooShort: 'Mật khẩu phải có ít nhất 6 ký tự',
+    passwordsDontMatch: 'Mật khẩu không khớp',
+    error: 'Không thể đặt lại mật khẩu. Vui lòng thử lại.',
+    success: 'Đặt lại mật khẩu thành công!',
+    redirecting: 'Đang chuyển hướng đến trang đăng nhập...',
+    resetting: 'Đang đặt lại...',
+    resetButton: 'Đặt Lại Mật Khẩu',
+    backToLogin: 'Quay Lại Đăng Nhập',
+    invalidLink: 'Liên kết đặt lại không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu đặt lại mật khẩu mới.',
+  },
+
   sidebar: {
     main: 'Chính',
     analytics: 'Phân Tích',

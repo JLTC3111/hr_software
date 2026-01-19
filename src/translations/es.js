@@ -62,6 +62,26 @@ login: {
     rateLimitError: 'Demasiadas solicitudes. Por favor intenta más tarde',
     networkError: 'Error de red. Por favor verifica tu conexión'
   },
+},
+
+  // Reset Password Page
+  resetPassword: {
+    title: 'Restablecer Contraseña',
+    subtitle: 'Ingresa tu nueva contraseña a continuación',
+    newPassword: 'Nueva Contraseña',
+    confirmPassword: 'Confirmar Contraseña',
+    newPasswordPlaceholder: 'Ingresa nueva contraseña',
+    confirmPasswordPlaceholder: 'Confirma nueva contraseña',
+    allFieldsRequired: 'Todos los campos son obligatorios',
+    passwordTooShort: 'La contraseña debe tener al menos 6 caracteres',
+    passwordsDontMatch: 'Las contraseñas no coinciden',
+    error: 'Error al restablecer la contraseña. Por favor intenta de nuevo.',
+    success: '¡Contraseña restablecida exitosamente!',
+    redirecting: 'Redirigiendo al inicio de sesión...',
+    resetting: 'Restableciendo...',
+    resetButton: 'Restablecer Contraseña',
+    backToLogin: 'Volver al Inicio de Sesión',
+    invalidLink: 'Enlace de restablecimiento inválido o expirado. Por favor solicita un nuevo restablecimiento de contraseña.',
   signIn: 'Iniciar Sesión',
   signingIn: 'Iniciando sesión...',
   continueWithGithub: 'Continuar con GitHub',

@@ -61,6 +61,26 @@ export default {
       rateLimitError: 'Слишком много запросов. Пожалуйста, попробуйте позже',
       networkError: 'Ошибка сети. Пожалуйста, проверьте ваше соединение'
     },
+  },
+
+  // Reset Password Page
+  resetPassword: {
+    title: 'Сброс Пароля',
+    subtitle: 'Введите новый пароль ниже',
+    newPassword: 'Новый Пароль',
+    confirmPassword: 'Подтвердите Пароль',
+    newPasswordPlaceholder: 'Введите новый пароль',
+    confirmPasswordPlaceholder: 'Подтвердите новый пароль',
+    allFieldsRequired: 'Все поля обязательны для заполнения',
+    passwordTooShort: 'Пароль должен содержать не менее 6 символов',
+    passwordsDontMatch: 'Пароли не совпадают',
+    error: 'Не удалось сбросить пароль. Пожалуйста, попробуйте еще раз.',
+    success: 'Пароль успешно сброшен!',
+    redirecting: 'Перенаправление на страницу входа...',
+    resetting: 'Сброс...',
+    resetButton: 'Сбросить Пароль',
+    backToLogin: 'Вернуться на Страницу Входа',
+    invalidLink: 'Недействительная или истекшая ссылка для сброса. Пожалуйста, запросите новый сброс пароля.',
     signIn: 'Войти',
     signingIn: 'Вход...',
     orContinueWith: 'Или продолжить с',

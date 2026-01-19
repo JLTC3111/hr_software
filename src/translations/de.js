@@ -62,6 +62,26 @@ export default {
       rateLimitError: 'Zu viele Anfragen. Bitte versuchen Sie es später erneut',
       networkError: 'Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung'
     },
+  },
+
+  // Reset Password Page
+  resetPassword: {
+    title: 'Passwort Zurücksetzen',
+    subtitle: 'Geben Sie unten Ihr neues Passwort ein',
+    newPassword: 'Neues Passwort',
+    confirmPassword: 'Passwort Bestätigen',
+    newPasswordPlaceholder: 'Neues Passwort eingeben',
+    confirmPasswordPlaceholder: 'Neues Passwort bestätigen',
+    allFieldsRequired: 'Alle Felder sind erforderlich',
+    passwordTooShort: 'Passwort muss mindestens 6 Zeichen lang sein',
+    passwordsDontMatch: 'Passwörter stimmen nicht überein',
+    error: 'Fehler beim Zurücksetzen des Passworts. Bitte versuchen Sie es erneut.',
+    success: 'Passwort erfolgreich zurückgesetzt!',
+    redirecting: 'Weiterleitung zur Anmeldung...',
+    resetting: 'Zurücksetzen...',
+    resetButton: 'Passwort Zurücksetzen',
+    backToLogin: 'Zurück zur Anmeldung',
+    invalidLink: 'Ungültiger oder abgelaufener Zurücksetzungslink. Bitte fordern Sie eine neue Passwortrücksetzung an.',
     signIn: 'Anmelden',
     signingIn: 'Anmeldung läuft...',
     orContinueWith: 'Oder fortfahren mit',
