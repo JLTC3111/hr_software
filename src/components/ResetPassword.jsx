@@ -197,7 +197,8 @@ const ResetPassword = () => {
             <img 
               src={languages.find(l => l.code === language)?.flagPath} 
               alt="" 
-              className="w-5 h-5 rounded-sm"
+              className="w-5 h-5 rounded-sm object-cover"
+              onError={(e) => { e.target.style.display = 'none'; }}
             />
           </button>
 
@@ -228,7 +229,8 @@ const ResetPassword = () => {
                   <img 
                     src={lang.flagPath} 
                     alt="" 
-                    className="w-5 h-5 rounded-sm"
+                    className="w-5 h-5 rounded-sm object-cover"
+                    onError={(e) => { e.target.style.display = 'none'; }}
                   />
                   <span className="text-sm font-medium">{lang.name}</span>
                 </button>
@@ -316,6 +318,8 @@ const ResetPassword = () => {
                   }`}
                   placeholder={t('resetPassword.newPasswordPlaceholder', 'Enter new password')}
                   disabled={loading}
+                  autoComplete="new-password"
+                  data-form-type="other"
                 />
                 <button
                   type="button"
@@ -355,6 +359,8 @@ const ResetPassword = () => {
                   }`}
                   placeholder={t('resetPassword.confirmPasswordPlaceholder', 'Confirm new password')}
                   disabled={loading}
+                  autoComplete="new-password"
+                  data-form-type="other"
                 />
                 <button
                   type="button"
