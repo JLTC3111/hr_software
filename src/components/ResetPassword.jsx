@@ -119,26 +119,25 @@ const ResetPassword = () => {
       console.log('Reset result:', result);
       
       if (result.success) {
+        console.log('✅ Password reset successful!');
         setSuccess(true);
         setError('');
+        setLoading(false);
         
-        console.log('✅ Password reset successful, signing out and redirecting to login...');
-        
-        // Sign out the user to clear the recovery session
-        await supabase.auth.signOut();
-        
-        // Redirect to login after 2 seconds
-        setTimeout(() => {
-          navigate('/login');
-        }, 2000);
+        // Wait to show success message, then sign out and redirect
+        setTimeout(async () => {
+          console.log('Signing out and redirecting to login...');
+          await supabase.auth.signOut();
+          navigate('/login', { replace: true });
+        }, 2500);
       } else {
         console.error('❌ Password reset failed:', result.error);
         setError(result.error || t('resetPassword.error', 'Failed to reset password. Please try again.'));
+        setLoading(false);
       }
     } catch (err) {
       console.error('❌ Exception during password reset:', err);
       setError(err.message || t('resetPassword.error', 'Failed to reset password. Please try again.'));
-    } finally {
       setLoading(false);
     }
   };
