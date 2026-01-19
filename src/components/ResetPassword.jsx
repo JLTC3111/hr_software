@@ -143,15 +143,15 @@ const ResetPassword = () => {
   };
 
   const languages = [
-    { code: 'en', name: 'English', flag: '🇬🇧' },
-    { code: 'vn', name: 'Tiếng Việt', flag: '🇻🇳' },
-    { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-    { code: 'es', name: 'Español', flag: '🇪🇸' },
-    { code: 'fr', name: 'Français', flag: '🇫🇷' },
-    { code: 'jp', name: '日本語', flag: '🇯🇵' },
-    { code: 'kr', name: '한국어', flag: '🇰🇷' },
-    { code: 'ru', name: 'Русский', flag: '🇷🇺' },
-    { code: 'th', name: 'ไทย', flag: '🇹🇭' },
+    { code: 'en', name: 'English', flagPath: '/flags/gb.svg' },
+    { code: 'vn', name: 'Tiếng Việt', flagPath: '/flags/vn.svg' },
+    { code: 'de', name: 'Deutsch', flagPath: '/flags/de.svg' },
+    { code: 'es', name: 'Español', flagPath: '/flags/es.svg' },
+    { code: 'fr', name: 'Français', flagPath: '/flags/fr.svg' },
+    { code: 'jp', name: '日本語', flagPath: '/flags/jp.svg' },
+    { code: 'kr', name: '한국어', flagPath: '/flags/kr.svg' },
+    { code: 'ru', name: 'Русский', flagPath: '/flags/ru.svg' },
+    { code: 'th', name: 'ไทย', flagPath: '/flags/th.svg' },
   ];
 
   return (
@@ -183,7 +183,11 @@ const ResetPassword = () => {
             aria-label="Change language"
           >
             <Languages className="w-5 h-5" />
-            <span className="text-xl">{languages.find(l => l.code === language)?.flag}</span>
+            <img 
+              src={languages.find(l => l.code === language)?.flagPath} 
+              alt="" 
+              className="w-5 h-5 rounded-sm"
+            />
           </button>
 
           {/* Language Dropdown */}
@@ -210,7 +214,11 @@ const ResetPassword = () => {
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <span className="text-xl">{lang.flag}</span>
+                  <img 
+                    src={lang.flagPath} 
+                    alt="" 
+                    className="w-5 h-5 rounded-sm"
+                  />
                   <span className="text-sm font-medium">{lang.name}</span>
                 </button>
               ))}
