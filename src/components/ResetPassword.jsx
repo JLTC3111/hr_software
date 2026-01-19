@@ -117,12 +117,15 @@ const ResetPassword = () => {
       const result = await resetPassword(newPassword);
       
       console.log('Reset result:', result);
+      console.log('Result success value:', result?.success);
       
-      if (result.success) {
-        console.log('✅ Password reset successful!');
+      if (result && result.success) {
+        console.log('✅ Password reset successful! Setting success state...');
+        setLoading(false);
         setSuccess(true);
         setError('');
-        setLoading(false);
+        
+        console.log('Success state set, waiting 2.5s before redirect...');
         
         // Wait to show success message, then sign out and redirect
         setTimeout(async () => {
@@ -131,8 +134,8 @@ const ResetPassword = () => {
           navigate('/login', { replace: true });
         }, 2500);
       } else {
-        console.error('❌ Password reset failed:', result.error);
-        setError(result.error || t('resetPassword.error', 'Failed to reset password. Please try again.'));
+        console.error('❌ Password reset failed:', result?.error);
+        setError(result?.error || t('resetPassword.error', 'Failed to reset password. Please try again.'));
         setLoading(false);
       }
     } catch (err) {
