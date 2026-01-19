@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, Loader, Sun, Moon, Languages } from 'lucide-react';
+import { supabase } from '../config/supabaseClient';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -19,18 +20,57 @@ const ResetPassword = () => {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  const [sessionLoading, setSessionLoading] = useState(true);
 
   // Check if we have a valid session (user clicked the reset link)
   useEffect(() => {
     const checkSession = async () => {
-      // Supabase automatically handles the token from the URL hash
-      // We just need to verify the user is in a password reset flow
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = hashParams.get('access_token');
-      const type = hashParams.get('type');
+      try {
+        // Give Supabase a moment to process the hash token
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const searchParams = new URLSearchParams(window.location.search);
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        const type = hashParams.get('type');
+        const code = searchParams.get('code');
 
-      if (!accessToken || type !== 'recovery') {
-        setError(t('resetPassword.invalidLink', 'Invalid or expired reset link. Please request a new password reset.'));
+        if ((!accessToken && !code) || type !== 'recovery') {
+          setError(t('resetPassword.invalidLink', 'Invalid or expired reset link. Please request a new password reset.'));
+          setSessionLoading(false);
+          return;
+        }
+
+        // Establish session from recovery tokens in the URL hash
+        if (accessToken && refreshToken) {
+          const { error: setSessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (setSessionError) {
+            console.error('Session setup error:', setSessionError);
+          }
+        } else if (code) {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) {
+            console.error('Code exchange error:', exchangeError);
+          }
+        }
+
+        // Verify the session is established
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !session) {
+          console.error('Session error:', sessionError);
+          setError(t('resetPassword.invalidLink', 'Invalid or expired reset link. Please request a new password reset.'));
+        }
+      } catch (err) {
+        console.error('Error checking session:', err);
+        setError(t('resetPassword.error', 'An error occurred. Please try again.'));
+      } finally {
+        setSessionLoading(false);
       }
     };
 
@@ -158,18 +198,29 @@ const ResetPassword = () => {
       </div>
 
       <div className={`max-w-md w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-8`}>
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${isDarkMode ? 'bg-blue-900' : 'bg-blue-100'}`}>
-            <Lock className={`w-8 h-8 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+        {/* Loading State */}
+        {sessionLoading && (
+          <div className="text-center py-12">
+            <Loader className={`w-12 h-12 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'} animate-spin mx-auto mb-4`} />
+            <p className={`${text.secondary}`}>Verifying reset link...</p>
           </div>
-          <h1 className={`text-3xl font-bold ${text.primary} mb-2`}>
-            {t('resetPassword.title', 'Reset Password')}
-          </h1>
-          <p className={`text-sm ${text.secondary}`}>
-            {t('resetPassword.subtitle', 'Enter your new password below')}
-          </p>
-        </div>
+        )}
+
+        {/* Content - Show only when session is verified */}
+        {!sessionLoading && (
+          <>
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${isDarkMode ? 'bg-blue-900' : 'bg-blue-100'}`}>
+                <Lock className={`w-8 h-8 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+              </div>
+              <h1 className={`text-3xl font-bold ${text.primary} mb-2`}>
+                {t('resetPassword.title', 'Reset Password')}
+              </h1>
+              <p className={`text-sm ${text.secondary}`}>
+                {t('resetPassword.subtitle', 'Enter your new password below')}
+              </p>
+            </div>
 
         {/* Success Message */}
         {success && (
@@ -302,14 +353,18 @@ const ResetPassword = () => {
         )}
 
         {/* Back to Login */}
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => navigate('/login')}
-            className={`text-sm ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'} transition-colors`}
-          >
-            {t('resetPassword.backToLogin', 'Back to Login')}
-          </button>
-        </div>
+        {!sessionLoading && (
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => navigate('/login')}
+              className={`text-sm ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'} transition-colors`}
+            >
+              {t('resetPassword.backToLogin', 'Back to Login')}
+            </button>
+          </div>
+        )}
+          </>
+        )}
       </div>
     </div>
   );
