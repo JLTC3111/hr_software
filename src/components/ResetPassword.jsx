@@ -48,7 +48,17 @@ const ResetPassword = () => {
           return;
         }
 
-        if ((!accessToken && !code) || type !== 'recovery') {
+        // Validate we have either tokens or code for password reset
+        // PKCE flow uses code without type parameter, hash tokens use type=recovery
+        if (!accessToken && !code) {
+          setError(t('resetPassword.invalidLink', 'Invalid or expired reset link. Please request a new password reset.'));
+          setSessionLoading(false);
+          setHasValidSession(false);
+          return;
+        }
+
+        // If using hash tokens, verify it's a recovery type
+        if (accessToken && type !== 'recovery') {
           setError(t('resetPassword.invalidLink', 'Invalid or expired reset link. Please request a new password reset.'));
           setSessionLoading(false);
           setHasValidSession(false);
