@@ -21,6 +21,7 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
+  const [hasValidSession, setHasValidSession] = useState(false);
 
   // Check if we have a valid session (user clicked the reset link)
   useEffect(() => {
@@ -36,39 +37,59 @@ const ResetPassword = () => {
         const type = hashParams.get('type');
         const code = searchParams.get('code');
 
+        console.log('Reset link params:', { hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken, hasCode: !!code, type });
+
         if ((!accessToken && !code) || type !== 'recovery') {
           setError(t('resetPassword.invalidLink', 'Invalid or expired reset link. Please request a new password reset.'));
           setSessionLoading(false);
+          setHasValidSession(false);
           return;
         }
 
         // Establish session from recovery tokens in the URL hash
         if (accessToken && refreshToken) {
-          const { error: setSessionError } = await supabase.auth.setSession({
+          console.log('Setting session from tokens...');
+          const { data, error: setSessionError } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           });
 
           if (setSessionError) {
             console.error('Session setup error:', setSessionError);
+            setError(t('resetPassword.invalidLink', 'Failed to establish session. Please request a new password reset.'));
+            setSessionLoading(false);
+            setHasValidSession(false);
+            return;
           }
+          console.log('Session set successfully:', !!data.session);
         } else if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          console.log('Exchanging code for session...');
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) {
             console.error('Code exchange error:', exchangeError);
+            setError(t('resetPassword.invalidLink', 'Failed to establish session. Please request a new password reset.'));
+            setSessionLoading(false);
+            setHasValidSession(false);
+            return;
           }
+          console.log('Code exchanged successfully:', !!data.session);
         }
 
         // Verify the session is established
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError || !session) {
-          console.error('Session error:', sessionError);
+          console.error('Session verification failed:', sessionError || 'No session found');
           setError(t('resetPassword.invalidLink', 'Invalid or expired reset link. Please request a new password reset.'));
+          setHasValidSession(false);
+        } else {
+          console.log('✅ Valid session established for user:', session.user?.email);
+          setHasValidSession(true);
         }
       } catch (err) {
         console.error('Error checking session:', err);
         setError(t('resetPassword.error', 'An error occurred. Please try again.'));
+        setHasValidSession(false);
       } finally {
         setSessionLoading(false);
       }
@@ -249,8 +270,8 @@ const ResetPassword = () => {
           </div>
         )}
 
-        {/* Form */}
-        {!success && (
+        {/* Form - Only show if we have a valid session */}
+        {!success && hasValidSession && (
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* New Password */}
             <div>
