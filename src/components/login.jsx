@@ -319,7 +319,7 @@ const Login = () => {
               <button
                 type="button"
                 onClick={handleForgotPasswordClick}
-                className="text-sm text-blue-600 hover:text-blue-500 font-medium cursor-pointer"
+                className={`text-sm ${isDarkMode ? 'text-indigo-300 hover:text-indigo-200' : 'text-blue-600 hover:text-amber-900'}  font-medium cursor-pointer transition-color duration-500 focus:ring-blue-500`}
                 disabled={isFormBusy}
               >
                 {t('login.forgotPassword')}
@@ -428,18 +428,6 @@ const Login = () => {
               </>
             )}
           </button>
-
-          {/* Sign Up Link */}
-          <p className={`mt-6 text-center text-sm ${text.secondary}`}>
-            {t('login.noAccount', "Don't have an account?")}{' '}
-            <button
-              type="button"
-              className="text-blue-600 hover:text-blue-500 font-medium"
-              disabled={isLoading}
-            >
-              {t('login.signUp', 'Sign up')}
-            </button>
-          </p>
         </div>
 
         {/* Footer */}
@@ -463,10 +451,10 @@ const Login = () => {
 
             {/* Title */}
             <div className="mb-6">
-              <h2 className={`text-2xl font-bold ${text.primary} mb-2`}>
+              <h2 className={`text-2xl cursor-pointer font-bold ${text.primary} mb-2`}>
                 {t('login.forgotPasswordModal.title', 'Reset Password')}
               </h2>
-              <p className={`text-sm ${text.secondary}`}>
+              <p className={`text-sm cursor-pointer ${text.secondary}`}>
                 {t('login.forgotPasswordModal.description', 'Enter your email address and we\'ll send you a link to reset your password.')}
               </p>
             </div>
