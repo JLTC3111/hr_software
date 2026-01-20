@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Lock, Mail, Building2, AlertCircle, X, CheckCircle } from 'lucide-react';
+import { Eye, Car, EyeOff, Lock, Mail, Building2, AlertCircle, X, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -423,7 +423,10 @@ const Login = () => {
               </>
             ) : (
               <>
-                <Building2 className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gray-600'}`} />
+                <Car
+                  className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gray-600'}`}
+                  style={{ transform: 'scaleX(-1)' }}
+                />
                 <span>{t('login.tryDemo', 'Try Demo Mode')}</span>
               </>
             )}
