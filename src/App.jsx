@@ -63,7 +63,9 @@ const HRManagementApp = () => {
   // Fetch employees from Supabase
   const fetchEmployees = async () => {
     setLoading(true);
+    console.log('🔄 [App] Fetching employees, isDemoMode:', isDemoMode());
     const result = await employeeService.getAllEmployees();
+    console.log('📊 [App] Employees fetched:', { success: result.success, count: result.data?.length, isDemoMode: isDemoMode() });
     if (result.success) {
       setEmployees(result.data);
       

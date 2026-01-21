@@ -1253,7 +1253,11 @@ const Dashboard = ({ employees, applications }) => {
   // Define fetch function that can be reused
   const fetchDashboardData = useCallback(async (options = {}) => {
     const { silent = false } = options;
-    if (employees.length === 0) return;
+    console.log('📊 [Dashboard] fetchDashboardData called:', { employeeCount: employees.length, silent, isDemoMode: isDemoMode() });
+    if (employees.length === 0) {
+      console.warn('⚠️ [Dashboard] No employees to fetch data for');
+      return;
+    }
     
     if (!silent) {
       setLoading(true);
