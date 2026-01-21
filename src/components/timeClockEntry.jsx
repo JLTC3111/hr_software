@@ -488,10 +488,13 @@ const TimeClockEntry = ({ currentLanguage }) => {
     }
 
     try {
-      // Validate session before fetching
-      const sessionValidation = await validateAndRefreshSession();
-      if (!sessionValidation.success) {
-        throw new Error(sessionValidation.error);
+      // Skip session validation in demo mode - demo data doesn't require authentication
+      if (!isDemoMode()) {
+        // Validate session before fetching
+        const sessionValidation = await validateAndRefreshSession();
+        if (!sessionValidation.success) {
+          throw new Error(sessionValidation.error);
+        }
       }
       
       // Wrap fetch with retry mechanism
@@ -526,6 +529,14 @@ const TimeClockEntry = ({ currentLanguage }) => {
       // Check if this is a session/auth error - force logout
       const errorMsg = error.message?.toLowerCase() || '';
       if (errorMsg.includes('session') || errorMsg.includes('authentication') || errorMsg.includes('no active session')) {
+        if (isDemoMode()) {
+          console.warn('🧪 Demo mode session not ready, skipping forced logout');
+          if (!silent && isMounted.current) {
+            setFetchError('Demo session is initializing. Please try again in a moment.');
+          }
+          loadInFlight.current = false;
+          return;
+        }
         console.error('🚪 Session invalid after retries, forcing logout...');
         if (!silent && isMounted.current) {
           setFetchError('Your session has expired. Redirecting to login...');

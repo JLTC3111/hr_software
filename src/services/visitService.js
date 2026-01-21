@@ -21,18 +21,20 @@ export const logVisit = async () => {
 
   try {
 
-    // Get session (optional). We still send visits without a session.
+    // Get session; skip visit logging if there's no access token
     const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      console.debug('visitService.logVisit: skipped (no active session)');
+      return;
+    }
 
     const headers = {
       'Content-Type': 'application/json',
       'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
     };
 
-    // Add Authorization header if user is logged in
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`;
-    }
+    // Add Authorization header
+    headers['Authorization'] = `Bearer ${session.access_token}`;
 
     // Avoid custom headers in demo to prevent CORS issues; simply log anonymously when in demo
 
