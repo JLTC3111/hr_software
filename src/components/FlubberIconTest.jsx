@@ -572,8 +572,81 @@ const FlubberIconTest = () => {
 
   const CurrentIcon = icons[currentIconIndex].Icon;
 
+  // Compute slider fill percentages for inline gradient fallback
+  const durationPct = Math.max(0, Math.min(100, Math.round(((duration - 500) / (3000 - 500)) * 100)));
+  const smoothPct = Math.max(0, Math.min(100, Math.round(((maxSegmentLength - 1) / (10 - 1)) * 100)));
+
   return (
     <div className={`min-h-screen ${bg.primary} p-8`}>
+      <style>{` 
+        .custom-range {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 100%;
+          height: 8px;
+          background: transparent;
+          border-radius: 9999px;
+          outline: none;
+          accent-color: #2563eb; /* Chromium accent fallback */
+        }
+
+        /* WebKit browsers (Chrome, Safari, Edge Chromium) */
+        .custom-range::-webkit-slider-runnable-track {
+          height: 8px;
+          background: linear-gradient(90deg, #2563eb var(--pct, 0%), #bfdbfe var(--pct, 0%));
+          border-radius: 9999px;
+        }
+        .custom-range::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          margin-top: -4px; /* center the thumb */
+          width: 16px;
+          height: 16px;
+          background: #2563eb; /* blue-600 */
+          border-radius: 9999px;
+          box-shadow: 0 0 0 4px rgba(37,99,235,0.12);
+          cursor: pointer;
+        }
+        .custom-range::-webkit-slider-thumb:active {
+          transform: scale(0.98);
+        }
+
+        /* Firefox */
+        .custom-range::-moz-range-track {
+          height: 8px;
+          background: #bfdbfe;
+          border-radius: 9999px;
+        }
+        .custom-range::-moz-range-thumb {
+          width: 16px;
+          height: 16px;
+          background: #2563eb;
+          border-radius: 9999px;
+          box-shadow: 0 0 0 4px rgba(37,99,235,0.12);
+          cursor: pointer;
+        }
+        .custom-range::-moz-range-progress {
+          background: #2563eb;
+          height: 8px;
+          border-radius: 9999px;
+        }
+
+        /* Edge / IE legacy (best-effort) */
+        .custom-range::-ms-fill-lower {
+          background: #2563eb;
+          border-radius: 9999px;
+        }
+        .custom-range::-ms-fill-upper {
+          background: #bfdbfe;
+          border-radius: 9999px;
+        }
+
+        /* Provide a fallback visible track using background gradient; this will be overridden
+           by the pseudo-element styles in most browsers, but works when those are ignored. */
+        .custom-range.filled-blue {
+          background: linear-gradient(90deg, #2563eb var(--pct, 0%), #bfdbfe var(--pct, 0%));
+        }
+      `}</style>
       <div className="max-w-4xl mx-auto">
         <h1 className={`text-3xl font-bold ${text.primary} mb-8`}>
           Flubber Icon Morphing Test
@@ -660,7 +733,8 @@ const FlubberIconTest = () => {
                     step="100"
                     value={duration}
                     onChange={(e) => setDuration(Number(e.target.value))}
-                    className="w-full"
+                    className="w-full custom-range filled-blue"
+                    style={{ ['--pct']: `${durationPct}%` }}
                   />
                 </div>
                 
@@ -676,7 +750,8 @@ const FlubberIconTest = () => {
                     step="0.5"
                     value={maxSegmentLength}
                     onChange={(e) => setMaxSegmentLength(Number(e.target.value))}
-                    className="w-full"
+                    className="w-full custom-range filled-blue"
+                    style={{ ['--pct']: `${smoothPct}%` }}
                   />
                 </div>
               </div>
