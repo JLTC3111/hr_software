@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback, useMemo, memo } from 'react'
 import { Phone, MapPin, Mail, Award, Eye, Edit, Trash2, User, Camera, Cake, Network, Loader } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useTheme } from '../contexts/ThemeContext'
@@ -20,7 +20,7 @@ const getStatusColor = (status) => {
   }
 };
 
-const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate, style }) => {
+const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate, style }) => {
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
   const { user } = useAuth();
@@ -30,7 +30,16 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
   // Check if user has permission to edit/delete (not employee role)
   const canEditOrDelete = user?.role !== 'employee';
 
-  const handlePhotoUpload = async (e) => {
+  // Memoize avatar style to prevent recreation
+  const avatarStyle = useMemo(() => ({
+    borderColor: isDarkMode ? '#ffffff' : 'transparent',
+    boxShadow: isDarkMode ? '0 0 0 2px rgba(255, 255, 255, 0.3)' : 'none'
+  }), [isDarkMode]);
+
+  // Memoize icon color
+  const iconColor = useMemo(() => isDarkMode ? '#ffffff' : '#000000', [isDarkMode]);
+
+  const handlePhotoUpload = useCallback(async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     
@@ -66,13 +75,33 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
         setUploading(false);
       }
     }
-  };
+  }, [employee?.id, onPhotoUpdate, t]);
+
+  // Memoize click handlers
+  const handleCardClick = useCallback(() => {
+    onViewDetails && onViewDetails(employee);
+  }, [onViewDetails, employee]);
+
+  const handleViewClick = useCallback((e) => {
+    e.stopPropagation();
+    onViewDetails(employee);
+  }, [onViewDetails, employee]);
+
+  const handleEditClick = useCallback((e) => {
+    e.stopPropagation();
+    onEdit && onEdit(employee);
+  }, [onEdit, employee]);
+
+  const handleDeleteClick = useCallback((e) => {
+    e.stopPropagation();
+    onDelete && onDelete(employee);
+  }, [onDelete, employee]);
   
   return (
     <div 
       className="rounded-lg shadow-sm border hover:shadow-lg transition-all duration-300 hover:-translate-y-1 slide-in-up cursor-pointer" 
       style={style}
-      onClick={() => onViewDetails && onViewDetails(employee)}
+      onClick={handleCardClick}
     >
     <div className="p-6">
       <div className="flex items-start justify-between mb-4">
@@ -80,10 +109,7 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
           <div className="relative group/avatar">
             <div 
               className={`w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border-2 transition-all ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}
-              style={{
-                borderColor: isDarkMode ? '#ffffff' : 'transparent',
-                boxShadow: isDarkMode ? '0 0 0 2px rgba(255, 255, 255, 0.3)' : 'none'
-              }}
+              style={avatarStyle}
             >
               {uploading ? (
                 <Loader className="w-6 h-6 text-blue-600 animate-spin" />
@@ -95,7 +121,7 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
                   onError={() => setPhotoError(true)}
                 />
               ) : (
-                <User className="w-6 h-6" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
+                <User className="w-6 h-6" style={{ color: iconColor }} />
               )}
             </div>
             {!uploading && canEditOrDelete && (
@@ -153,36 +179,27 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
       
       <div className={`flex justify-space-between space-x-2 mt-4 pt-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onViewDetails(employee);
-          }}
+          onClick={handleViewClick}
           className="p-2 rounded-lg transition-all duration-200 cursor-pointer"
           title={t('employees.view', 'View Details')}
         >
-          <Eye className="h-4 w-4" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
+          <Eye className="h-4 w-4" style={{ color: iconColor }} />
         </button>
         {canEditOrDelete && (
           <>
             <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit && onEdit(employee);
-              }}
+              onClick={handleEditClick}
               className="p-2 rounded-lg transition-all duration-200 cursor-pointer"
               title={t('employees.edit', 'Edit')}
             >
-              <Edit className="h-4 w-4" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
+              <Edit className="h-4 w-4" style={{ color: iconColor }} />
             </button>
             <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete && onDelete(employee);
-              }}
+              onClick={handleDeleteClick}
               className="p-2 rounded-lg transition-all duration-200 cursor-pointer"
               title={t('employees.delete', 'Delete')}
             >
-              <Trash2 className="h-4 w-4" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
+              <Trash2 className="h-4 w-4" style={{ color: iconColor }} />
             </button>
           </>
         )}
@@ -190,6 +207,9 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
     </div>
   </div>
   );
-};
+});
+
+// Display name for debugging
+EmployeeCard.displayName = 'EmployeeCard';
 
 export default EmployeeCard;

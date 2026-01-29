@@ -1,4 +1,35 @@
+import { useMemo, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+
+// Default permissions object (used when no user is logged in)
+const defaultPermissions = {
+  // All permissions false if no user
+  canManageUsers: false,
+  canManageEmployees: false,
+  canViewReports: false,
+  canManageRecruitment: false,
+  canManagePerformance: false,
+  canManageTimeTracking: false,
+  canExportData: false,
+  canViewSalaries: false,
+  canManageDepartments: false,
+  canManageRoles: false,
+  canViewAuditLogs: false,
+  // Employee-specific
+  canViewOwnProfile: false,
+  canUpdateOwnProfile: false,
+  canViewOwnTimeTracking: false,
+  canSubmitTimeoff: false,
+  canViewOwnPerformance: false,
+  // Role flags
+  isAdmin: false,
+  isManager: false,
+  isEmployee: false,
+  isContractor: false,
+  // User info
+  user: null,
+  role: null
+};
 
 /**
  * usePermissions Hook
@@ -9,78 +40,60 @@ import { useAuth } from '../contexts/AuthContext';
 export const usePermissions = () => {
   const { user, checkPermission } = useAuth();
   
-  if (!user) {
-    return {
-      // All permissions false if no user
-      canManageUsers: false,
-      canManageEmployees: false,
-      canViewReports: false,
-      canManageRecruitment: false,
-      canManagePerformance: false,
-      canManageTimeTracking: false,
-      canExportData: false,
-      canViewSalaries: false,
-      canManageDepartments: false,
-      canManageRoles: false,
-      canViewAuditLogs: false,
-      // Employee-specific
-      canViewOwnProfile: false,
-      canUpdateOwnProfile: false,
-      canViewOwnTimeTracking: false,
-      canSubmitTimeoff: false,
-      canViewOwnPerformance: false,
-      // Role flags
-      isAdmin: false,
-      isManager: false,
-      isEmployee: false,
-      isContractor: false,
-      // User info
-      user: null,
-      role: null
-    };
-  }
-  
-  return {
-    // Admin permissions
-    canManageUsers: checkPermission('canManageUsers'),
-    canManageEmployees: checkPermission('canManageEmployees'),
-    canViewReports: checkPermission('canViewReports'),
-    canManageRecruitment: checkPermission('canManageRecruitment'),
-    canManagePerformance: checkPermission('canManagePerformance'),
-    canManageTimeTracking: checkPermission('canManageTimeTracking'),
-    canExportData: checkPermission('canExportData'),
-    canViewSalaries: checkPermission('canViewSalaries'),
-    canManageDepartments: checkPermission('canManageDepartments'),
-    canManageRoles: checkPermission('canManageRoles'),
-    canViewAuditLogs: checkPermission('canViewAuditLogs'),
-    
-    // Employee-specific permissions
-    canViewOwnProfile: checkPermission('canViewOwnProfile'),
-    canUpdateOwnProfile: checkPermission('canUpdateOwnProfile'),
-    canViewOwnTimeTracking: checkPermission('canViewOwnTimeTracking'),
-    canSubmitTimeoff: checkPermission('canSubmitTimeoff'),
-    canViewOwnPerformance: checkPermission('canViewOwnPerformance'),
-    
-    // Role flags for easy checking
-    isAdmin: user?.role === 'admin',
-    isManager: user?.role === 'manager',
-    isEmployee: user?.role === 'employee',
-    isContractor: user?.role === 'contractor',
-    
-    // User information
-    user,
-    role: user?.role,
-    
-    // Helper function to check if user can perform action on resource
-    canAccessResource: (resourceOwnerId) => {
-      // Admin and Manager can access all resources
-      if (user?.role === 'admin' || user?.role === 'manager') {
-        return true;
-      }
-      // Regular users can only access their own resources
-      return String(user?.id) === String(resourceOwnerId);
+  // Memoize canAccessResource helper
+  const canAccessResource = useCallback((resourceOwnerId) => {
+    // Admin and Manager can access all resources
+    if (user?.role === 'admin' || user?.role === 'manager') {
+      return true;
     }
-  };
+    // Regular users can only access their own resources
+    return String(user?.id) === String(resourceOwnerId);
+  }, [user?.role, user?.id]);
+
+  // Memoize the entire permissions object
+  return useMemo(() => {
+    if (!user) {
+      return {
+        ...defaultPermissions,
+        canAccessResource: () => false
+      };
+    }
+    
+    return {
+      // Admin permissions
+      canManageUsers: checkPermission('canManageUsers'),
+      canManageEmployees: checkPermission('canManageEmployees'),
+      canViewReports: checkPermission('canViewReports'),
+      canManageRecruitment: checkPermission('canManageRecruitment'),
+      canManagePerformance: checkPermission('canManagePerformance'),
+      canManageTimeTracking: checkPermission('canManageTimeTracking'),
+      canExportData: checkPermission('canExportData'),
+      canViewSalaries: checkPermission('canViewSalaries'),
+      canManageDepartments: checkPermission('canManageDepartments'),
+      canManageRoles: checkPermission('canManageRoles'),
+      canViewAuditLogs: checkPermission('canViewAuditLogs'),
+      
+      // Employee-specific permissions
+      canViewOwnProfile: checkPermission('canViewOwnProfile'),
+      canUpdateOwnProfile: checkPermission('canUpdateOwnProfile'),
+      canViewOwnTimeTracking: checkPermission('canViewOwnTimeTracking'),
+      canSubmitTimeoff: checkPermission('canSubmitTimeoff'),
+      canViewOwnPerformance: checkPermission('canViewOwnPerformance'),
+      
+      // Role flags for easy checking
+      isAdmin: user?.role === 'admin',
+      isManager: user?.role === 'manager',
+      isEmployee: user?.role === 'employee',
+      isContractor: user?.role === 'contractor',
+      
+      // User information
+      user,
+      role: user?.role,
+      
+      // Helper function to check if user can perform action on resource
+      canAccessResource
+    };
+  }, [user, checkPermission, canAccessResource]);
 };
 
 export default usePermissions;

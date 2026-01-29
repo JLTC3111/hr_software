@@ -1,14 +1,42 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react'
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { Award, FileText, Loader } from 'lucide-react'
+import { Loader } from 'lucide-react'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import { useAuth } from './contexts/AuthContext'
 import { useSessionKeepAlive } from './hooks/useSessionKeepAlive'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { UploadProvider } from './contexts/UploadContext'
-import { Dashboard, Employee, EmployeeCard, EmployeeModal, Header, Login, ResetPassword, TaskListing, PlaceHolder, Reports, Search, Sidebar, StatsCard, TimeTracking, TimeClockEntry, Notifications, Settings, AddNewEmployee, DeleteEmployeeManager, ControlPanel, TaskReview, PersonalGoals, FlubberIconTest, Recruitment, AdvancedHelpCenter, ProductionHelpCenter } from './components/index.jsx';
+// Eagerly loaded components (needed immediately)
+import { Header, Sidebar, Login, EmployeeModal } from './components/index.jsx';
+
+// Lazy loaded route components for code splitting
+const Dashboard = lazy(() => import('./components/dashboard.jsx'));
+const Employee = lazy(() => import('./components/employee.jsx'));
+const TimeTracking = lazy(() => import('./components/timeTracking.jsx'));
+const TimeClockEntry = lazy(() => import('./components/timeClockEntry.jsx'));
+const TaskListing = lazy(() => import('./components/taskListing.jsx'));
+const TaskReview = lazy(() => import('./components/taskReview.jsx'));
+const PersonalGoals = lazy(() => import('./components/personalGoals.jsx'));
+const Reports = lazy(() => import('./components/reports.jsx'));
+const Recruitment = lazy(() => import('./components/recruitment.jsx'));
+const Notifications = lazy(() => import('./components/notifications.jsx'));
+const Settings = lazy(() => import('./components/settings.jsx'));
+const AddNewEmployee = lazy(() => import('./components/addNewEmployee.jsx'));
+const DeleteEmployeeManager = lazy(() => import('./components/deleteEmployeeManager.jsx'));
+const ControlPanel = lazy(() => import('./components/controlPanel.jsx'));
+const AdvancedHelpCenter = lazy(() => import('./components/AdvancedHelpCenter.jsx'));
+const ProductionHelpCenter = lazy(() => import('./components/ProductionHelpCenter.jsx'));
+const FlubberIconTest = lazy(() => import('./components/FlubberIconTest.jsx'));
+const ResetPassword = lazy(() => import('./components/ResetPassword.jsx'));
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <Loader className="w-8 h-8 animate-spin text-blue-500" />
+  </div>
+);
 import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
 import { logVisit } from './services/visitService';
@@ -141,7 +169,7 @@ const HRManagementApp = () => {
     fetchApplications();
   }, [isAuthenticated, user]);
 
-  const handlePhotoUpdate = async (employeeId, photoData, useStorage = false) => {
+  const handlePhotoUpdate = useCallback(async (employeeId, photoData, useStorage = false) => {
     try {
       let photoUrl = photoData;
       
@@ -177,19 +205,19 @@ const HRManagementApp = () => {
       alert('An error occurred while updating the photo.');
       return { success: false, error: error.message };
     }
-  };
+  }, []);
 
-  const handleEditEmployee = (employee) => {
+  const handleEditEmployee = useCallback((employee) => {
     setSelectedEmployee(employee);
     setIsEditMode(true);
-  };
+  }, []);
 
-  const handleViewEmployee = (employee) => {
+  const handleViewEmployee = useCallback((employee) => {
     setSelectedEmployee(employee);
     setIsEditMode(false);
-  };
+  }, []);
 
-  const handleDeleteEmployee = async (employee) => {
+  const handleDeleteEmployee = useCallback(async (employee) => {
     const confirmMessage = `⚠️ WARNING: This will PERMANENTLY delete ${employee.name} and ALL their data including:\n\n` +
                           `• Time entries\n` +
                           `• Leave requests\n` +
@@ -219,12 +247,18 @@ const HRManagementApp = () => {
         alert('An unexpected error occurred while deleting the employee.');
       }
     }
-  };
+  }, [refetchEmployees]);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setSelectedEmployee(null);
     setIsEditMode(false);
-  };
+  }, []);
+
+  // Memoize active employees filter to prevent recalculation
+  const activeEmployees = useMemo(() => 
+    employees.filter(emp => emp.status !== 'Inactive' && emp.status !== 'inactive'),
+    [employees]
+  );
 
   return (
     <LanguageProvider>
@@ -233,6 +267,7 @@ const HRManagementApp = () => {
           <NotificationProvider>
             <AppContent 
               employees={employees}
+              activeEmployees={activeEmployees}
               applications={applications}
               selectedEmployee={selectedEmployee}
               isEditMode={isEditMode}
@@ -254,7 +289,7 @@ const HRManagementApp = () => {
   );
 };
 
-const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onViewEmployee, onEditEmployee, onDeleteEmployee, onCloseModal, onPhotoUpdate, refetchEmployees, loading, error, isMobileMenuOpen, setIsMobileMenuOpen }) => {
+const AppContent = ({ employees, activeEmployees, applications, selectedEmployee, isEditMode, onViewEmployee, onEditEmployee, onDeleteEmployee, onCloseModal, onPhotoUpdate, refetchEmployees, loading, error, isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const { bg, text } = useTheme();
   const { isAuthenticated } = useAuth();
   const { currentLanguage } = useLanguage();
@@ -318,6 +353,7 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
                 
                 {/* Main Content - Full width utilization */}
                 <div className="flex-1 p-3 sm:p-4 lg:p-8 w-full mx-auto">
+                  <Suspense fallback={<PageLoader />}>
                   <Routes>
                     <Route path="/" element={<Navigate to="/time-clock" replace />} />
                     <Route 
@@ -326,7 +362,7 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
                     />
                     <Route 
                       path="/dashboard" 
-                      element={<Dashboard employees={employees.filter(emp => emp.status !== 'Inactive' && emp.status !== 'inactive')} applications={applications} />} 
+                      element={<Dashboard employees={activeEmployees} applications={applications} />} 
                     />
                     <Route 
                       path="/employees" 
@@ -385,6 +421,7 @@ const AppContent = ({ employees, applications, selectedEmployee, isEditMode, onV
                       element={<DeleteEmployeeManager />} 
                     />
                   </Routes>
+                  </Suspense>
                 </div>
               </div>
 

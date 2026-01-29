@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 
 const LanguageContext = createContext();
 
@@ -54,16 +54,18 @@ export const LanguageProvider = ({ children }) => {
     }
   }, []);
 
-  const changeLanguage = (languageCode) => {
+  // Memoize changeLanguage to prevent recreation on each render
+  const changeLanguage = useCallback((languageCode) => {
     if (SUPPORTED_LANGUAGES[languageCode]) {
       setIsChanging(true);
       setCurrentLanguage(languageCode);
       localStorage.setItem('hr-app-language', languageCode);
       setTimeout(() => setIsChanging(false), 600);
     }
-  };
+  }, []);
 
-  const t = (key, fallback = key) => {
+  // Memoize the translation function to prevent recreation
+  const t = useCallback((key, fallback = key) => {
     const keys = key.split('.');
     let value = translations;
     
@@ -80,16 +82,17 @@ export const LanguageProvider = ({ children }) => {
     }
 
     return value || fallback || key;
-  };
+  }, [translations]);
 
-  const value = {
+  // Memoize the entire context value
+  const value = useMemo(() => ({
     currentLanguage,
     changeLanguage,
     t,
     languages: SUPPORTED_LANGUAGES,
     isRTL: currentLanguage === 'ar', // Add if Arabic support needed
     isChanging
-  };
+  }), [currentLanguage, changeLanguage, t, isChanging]);
 
   return (
     <LanguageContext.Provider value={value}>

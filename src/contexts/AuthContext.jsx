@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase, hasPermission, Permissions, customStorage } from '../config/supabaseClient';
 import { validateAndRefreshSession } from '../utils/sessionHelper';
 import { linkUserToEmployee } from '../services/employeeService';
@@ -751,16 +751,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Check if user has specific permission
-  const checkPermission = (permission) => {
+  // Check if user has specific permission - memoized
+  const checkPermission = useCallback((permission) => {
     if (!user || !user.role) return false;
     // In demo mode, admin has all permissions
     if (isDemoMode() && user.role === 'admin') return true;
     return hasPermission(user.role, permission);
-  };
+  }, [user]);
 
-  // Demo-only: switch between demo_admin and demo_employee roles
-  const switchDemoRole = (nextRole) => {
+  // Demo-only: switch between demo_admin and demo_employee roles - memoized
+  const switchDemoRole = useCallback((nextRole) => {
     if (!isDemoMode()) return;
     if (nextRole !== 'demo_admin' && nextRole !== 'demo_employee') return;
 
@@ -772,9 +772,9 @@ export const AuthProvider = ({ children }) => {
         permissions: Permissions[nextRole] || prev.permissions
       };
     });
-  };
+  }, []);
 
-  const loginAsDemo = () => {
+  const loginAsDemo = useCallback(() => {
     // Do NOT auto-reset demo data on login - let user manually restore via Control Panel
     // Users can use the "Restore Demo Data" feature in Control Panel to reset specific data types
 
@@ -782,9 +782,10 @@ export const AuthProvider = ({ children }) => {
     setUser(MOCK_USER);
     setIsAuthenticated(true);
     setLoading(false);
-  };
+  }, []);
 
-  const value = {
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     isAuthenticated,
     user,
     session,
@@ -798,7 +799,7 @@ export const AuthProvider = ({ children }) => {
     forgotPassword,
     resetPassword,
     checkPermission
-  };
+  }), [isAuthenticated, user, session, loading, login, loginWithGithub, loginAsDemo, switchDemoRole, logout, forgotPassword, resetPassword, checkPermission]);
 
   return (
     <AuthContext.Provider value={value}>

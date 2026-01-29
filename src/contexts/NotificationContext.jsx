@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import * as notificationService from '../services/notificationService';
 
@@ -348,8 +348,8 @@ export const NotificationProvider = ({ children }) => {
     return await notificationService.createNotification(notification);
   };
 
-  // Get filtered notifications
-  const getFilteredNotifications = (filters) => {
+  // Get filtered notifications - memoized
+  const getFilteredNotifications = useCallback((filters) => {
     let filtered = [...notifications];
 
     if (filters.isRead !== undefined) {
@@ -365,10 +365,10 @@ export const NotificationProvider = ({ children }) => {
     }
 
     return filtered;
-  };
+  }, [notifications]);
 
-  // Show browser notification (if permission granted)
-  const showBrowserNotification = (title, options = {}) => {
+  // Show browser notification (if permission granted) - memoized
+  const showBrowserNotification = useCallback((title, options = {}) => {
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification(title, {
         icon: '/favicon.ico',
@@ -376,18 +376,19 @@ export const NotificationProvider = ({ children }) => {
         ...options
       });
     }
-  };
+  }, []);
 
-  // Request browser notification permission
-  const requestNotificationPermission = async () => {
+  // Request browser notification permission - memoized
+  const requestNotificationPermission = useCallback(async () => {
     if ('Notification' in window) {
       const permission = await Notification.requestPermission();
       return permission === 'granted';
     }
     return false;
-  };
+  }, []);
 
-  const value = {
+  // Memoize context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     notifications,
     unreadCount,
     loading,
@@ -401,7 +402,21 @@ export const NotificationProvider = ({ children }) => {
     getFilteredNotifications,
     showBrowserNotification,
     requestNotificationPermission
-  };
+  }), [
+    notifications, 
+    unreadCount, 
+    loading, 
+    stats, 
+    fetchNotifications, 
+    markAsRead, 
+    markAllAsRead, 
+    deleteNotification, 
+    deleteAllNotifications, 
+    createNotification, 
+    getFilteredNotifications, 
+    showBrowserNotification, 
+    requestNotificationPermission
+  ]);
 
   return (
     <NotificationContext.Provider value={value}>

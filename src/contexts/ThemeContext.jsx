@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 
 const ThemeContext = createContext();
 
@@ -31,11 +31,13 @@ export const ThemeProvider = ({ children }) => {
     }
   }, [isDarkMode]);
 
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-  };
+  // Memoize toggleTheme to prevent recreating on each render
+  const toggleTheme = useCallback(() => {
+    setIsDarkMode(prev => !prev);
+  }, []);
 
-  const theme = {
+  // Memoize the entire theme object to prevent unnecessary re-renders
+  const theme = useMemo(() => ({
     isDarkMode,
     toggleTheme,
     // Theme-aware classes
@@ -69,7 +71,7 @@ export const ThemeProvider = ({ children }) => {
         ? 'bg-gray-700 hover:bg-gray-600 text-gray-300 border-gray-600' 
         : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-300',
     }
-  };
+  }), [isDarkMode, toggleTheme]);
 
   return (
     <ThemeContext.Provider value={theme}>

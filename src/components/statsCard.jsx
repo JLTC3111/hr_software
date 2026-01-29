@@ -1,15 +1,19 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback, memo } from 'react'
 import { useTheme } from '../contexts/ThemeContext'
 
-const StatsCard = ({ title, value, icon: Icon, staticIcon: StaticIcon, color, size, onClick, isDarkMode, iconProps = {}, staticIconProps = {}, iconHoverOnly = false }) => {
+const StatsCard = memo(({ title, value, icon: Icon, staticIcon: StaticIcon, color, size, onClick, isDarkMode, iconProps = {}, staticIconProps = {}, iconHoverOnly = false }) => {
   const { bg, text, border } = useTheme();
   const [isHovering, setIsHovering] = useState(false);
+  
+  // Memoize hover handlers
+  const handleMouseEnter = useCallback(() => setIsHovering(true), []);
+  const handleMouseLeave = useCallback(() => setIsHovering(false), []);
   
   return (
     <div 
       onClick={onClick}
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className={`${bg.secondary} p-6 rounded-lg shadow-sm border ${border.primary} transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${onClick ? 'cursor-pointer' : ''} group scale-in`}
     >
       <div className="flex items-center justify-between">
@@ -29,6 +33,9 @@ const StatsCard = ({ title, value, icon: Icon, staticIcon: StaticIcon, color, si
       </div>
     </div>
   );
-};
+});
+
+// Display name for debugging
+StatsCard.displayName = 'StatsCard';
 
 export default StatsCard;
