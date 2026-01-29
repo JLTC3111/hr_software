@@ -388,6 +388,9 @@ export default {
   employees: {
     title: 'การจัดการพนักงาน',
     directory: 'รายการพนักงาน',
+    cards: 'การ์ด',
+    viewCards: 'มุมมองการ์ด',
+    viewDirectory: 'มุมมองไดเรกทอรี',
     addNew: 'เพิ่มใหม่',
     searchPlaceholder: 'ค้นหาพนักงาน...',
     quickStats: 'สถิติอย่างรวดเร็ว',

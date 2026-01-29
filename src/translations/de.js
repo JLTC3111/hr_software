@@ -379,6 +379,9 @@ export default {
   employees: {
     title: 'Mitarbeiterverwaltung',
     directory: 'Verzeichnis',
+    cards: 'Karten',
+    viewCards: 'Kartenansicht',
+    viewDirectory: 'Verzeichnisansicht',
     addNew: 'Neu hinzufügen',
     searchPlaceholder: 'Mitarbeiter suchen...',
     quickStats: 'Schnellstatistik',

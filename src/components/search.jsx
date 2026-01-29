@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react'
 import { Search, Filter } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 
-const SearchAndFilter = memo(({ searchTerm, setSearchTerm, filterDepartment, setFilterDepartment, employeeDepartment, style }) => {
+const SearchAndFilter = memo(({ searchTerm, setSearchTerm, filterDepartment, setFilterDepartment, departments, employeeDepartment, style }) => {
   const { t } = useLanguage();
+  const filterSelectRef = useRef(null);
   
   // Local state for immediate input feedback
   const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
@@ -43,6 +44,14 @@ const SearchAndFilter = memo(({ searchTerm, setSearchTerm, filterDepartment, set
 
   // Memoize icon color
   const iconColor = useMemo(() => ({ color: style?.color || '#9ca3af' }), [style?.color]);
+
+  const departmentOptions = useMemo(() => {
+    return (departments || employeeDepartment || []);
+  }, [departments, employeeDepartment]);
+
+  const handleFilterIconClick = useCallback(() => {
+    filterSelectRef.current?.focus();
+  }, []);
   
   return (
     <div className="p-4 rounded-lg shadow-sm border" style={style}>
@@ -59,14 +68,23 @@ const SearchAndFilter = memo(({ searchTerm, setSearchTerm, filterDepartment, set
           />
         </div>
         <div className="relative">
-          <Filter className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 cursor-pointer" style={iconColor} />
+          <button
+            type="button"
+            onClick={handleFilterIconClick}
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-md hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            aria-label={t('search.filter', 'Filter')}
+            title={t('search.filter', 'Filter')}
+          >
+            <Filter className="h-5 w-5" style={iconColor} />
+          </button>
           <select
+            ref={filterSelectRef}
             value={filterDepartment}
             onChange={handleFilterChange}
             className="pl-10 pr-8 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 cursor-pointer focus:border-blue-500 appearance-none"
             style={inputStyle}
           >
-            {(employeeDepartment || []).map(dept => (
+            {departmentOptions.map(dept => (
               <option key={dept.value} value={dept.value}>{dept.label}</option>
             ))}
           </select>

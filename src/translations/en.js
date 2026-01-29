@@ -203,6 +203,9 @@ export default {
   employees: {
     title: 'Employee Management',
     directory: 'Directory',
+    cards: 'Cards',
+    viewCards: 'Card view',
+    viewDirectory: 'Directory view',
     addNew: 'Add New Employee',
     quickStats: 'Quick Stats',
     searchPlaceholder: 'Search employees...',

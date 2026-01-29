@@ -24,6 +24,9 @@ const EmployeeRow = memo(function EmployeeRow({ employee, onViewDetails, onEdit,
   const employeeStatus = String(employee?.status || 'pending');
   const employeeStatusKey = useMemo(() => normalizeKey(employeeStatus), [employeeStatus]);
 
+  const employeePosition = String(employee?.position || '');
+  const employeePositionKey = useMemo(() => normalizeKey(employeePosition), [employeePosition]);
+
   const performanceValue = useMemo(() => clampPerformance(employee?.performance), [employee?.performance]);
 
   const handleRowClick = useCallback(() => onViewDetails?.(employee), [onViewDetails, employee]);
@@ -79,7 +82,9 @@ const EmployeeRow = memo(function EmployeeRow({ employee, onViewDetails, onEdit,
             {getDemoEmployeeName(employee, t)}
           </div>
           <div className={`text-sm truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            {employee?.position || t('common.notAvailable', 'N/A')}
+            {employeePosition
+              ? t(`employeePosition.${employeePositionKey}`, employeePosition)
+              : t('common.notAvailable', 'N/A')}
           </div>
         </div>
       </div>

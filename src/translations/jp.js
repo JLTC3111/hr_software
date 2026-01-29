@@ -389,6 +389,9 @@ export default {
   employees: {
     title: '従業員管理',
     directory: 'ディレクトリ',
+    cards: 'カード',
+    viewCards: 'カード表示',
+    viewDirectory: 'ディレクトリ表示',
     addNew: '新規追加',
     searchPlaceholder: '従業員を検索...',
     quickStats: 'クイック統計',

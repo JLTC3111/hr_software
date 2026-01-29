@@ -391,6 +391,9 @@ export default {
   employees: {
     title: '직원 관리',
     directory: '디렉토리',
+    cards: '카드',
+    viewCards: '카드 보기',
+    viewDirectory: '디렉토리 보기',
     addNew: '새로운 직원 추가',
     searchPlaceholder: '직원 검색...',
     quickStats: '빠른 통계',

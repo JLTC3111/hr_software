@@ -30,7 +30,19 @@ export const UploadProvider = ({ children }) => {
     }));
 
     // Start the upload (this continues even if component unmounts)
-    uploadEmployeePdf(file, employeeId)
+    uploadEmployeePdf(file, employeeId, (progress) => {
+      setUploads(prev => {
+        const existing = prev[employeeId];
+        if (!existing) return prev;
+        return {
+          ...prev,
+          [employeeId]: {
+            ...existing,
+            progress: progress ?? existing.progress
+          }
+        };
+      });
+    })
       .then(result => {
         console.log('✅ Background upload completed for employee:', employeeId, result);
         

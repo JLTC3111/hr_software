@@ -420,6 +420,9 @@ export default {
   employees: {
     title: 'Gestion des employés',
     directory: 'Annuaire',
+    cards: 'Cartes',
+    viewCards: 'Vue en cartes',
+    viewDirectory: 'Vue annuaire',
     addNew: 'Ajouter nouveau',
     searchPlaceholder: 'Rechercher des employés...',
     quickStats: 'Statistiques Rapides',

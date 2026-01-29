@@ -465,6 +465,9 @@ login: {
   employees: {
     title: 'Gestión de Empleados',
     directory: 'Directorio',
+    cards: 'Tarjetas',
+    viewCards: 'Vista de tarjetas',
+    viewDirectory: 'Vista de directorio',
     addNew: 'Añadir nuevo',
     searchPlaceholder: 'Buscar empleados...',
     addEmployee: 'Añadir Empleado',

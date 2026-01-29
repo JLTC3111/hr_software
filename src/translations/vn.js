@@ -372,6 +372,9 @@ export default {
   employees: {
     title: 'Quản Lý Nhân Viên',
     directory: 'Danh Mục Nhân Viên',
+    cards: 'Thẻ',
+    viewCards: 'Chế độ thẻ',
+    viewDirectory: 'Chế độ danh mục',
     quickStats: 'Thống Kê Nhanh',
     addNew: 'Thêm Người Mới',
     searchPlaceholder: 'Tìm Kiếm Nhân Viên...',

@@ -519,7 +519,12 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                         {uploadStatus?.status === 'uploading' ? (
                           <>
                             <Loader className="w-5 h-5 animate-spin" />
-                            <span className={text.primary}>{t('employeeDetailModal.uploading', 'Uploading...')}</span>
+                            <span className={text.primary}>
+                              {t('employeeDetailModal.uploading', 'Uploading...')}{' '}
+                              <span className={text.secondary}>
+                                ({Math.max(0, Math.min(100, Number(uploadStatus?.progress ?? 0)))}%)
+                              </span>
+                            </span>
                           </>
                         ) : (
                           <>
@@ -540,11 +545,18 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                     <Loader className="w-4 h-4 animate-spin" />
                     <span>{t('employeeDetailModal.uploadBackground', '⚡ Upload continues in background - you can close this window safely')}</span>
                   </div>
+
+                  <div className={`mt-2 h-2 rounded-full overflow-hidden ${isDarkMode ? 'bg-blue-950/60' : 'bg-blue-100'}`}>
+                    <div
+                      className={`${isDarkMode ? 'bg-blue-400/70' : 'bg-blue-600'} h-full transition-all`}
+                      style={{ width: `${Math.max(0, Math.min(100, Number(uploadStatus?.progress ?? 0)))}%` }}
+                    />
+                  </div>
                 </div>
               )}
 
               {/* PDF Viewer */}
-              <div className={`border-2 border-dashed ${border.primary} rounded-lg p-4 min-h-[400px] ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+              <div className={`border-2 border-dashed ${border.primary} rounded-lg p-4 min-h-100 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                 {pdfUrl ? (
                   <div className="flex flex-col items-center">
                     {useIframe ? (

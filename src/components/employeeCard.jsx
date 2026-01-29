@@ -124,6 +124,16 @@ const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoU
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
+  const [isPinned, setIsPinned] = useState(() => {
+    try {
+      const id = employee?.id
+      if (!id) return false
+      return window.localStorage.getItem(`employeePinned:${id}`) === '1'
+    } catch {
+      return false
+    }
+  })
+
   // Check if user has permission to edit/delete (not employee role)
   const canEditOrDelete = user?.role !== 'employee';
 
@@ -175,6 +185,25 @@ const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoU
       }
     },
     [employeeEmail]
+  )
+
+  const handleTogglePinned = useCallback(
+    (e) => {
+      e.stopPropagation()
+      setIsPinned((prev) => {
+        const next = !prev
+        try {
+          const id = employee?.id
+          if (id) {
+            window.localStorage.setItem(`employeePinned:${id}`, next ? '1' : '0')
+          }
+        } catch {
+          // ignore
+        }
+        return next
+      })
+    },
+    [employee?.id]
   )
 
   const handlePhotoUpload = useCallback(async (e) => {
@@ -284,9 +313,28 @@ const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoU
 
       <div className="relative">
       {/* Header */}
-      <div className="relative h-24" style={headerStyle}>
+      <div className="relative h-28" style={headerStyle}>
         <div className="absolute inset-0 bg-linear-to-b from-white/15 via-white/5 to-black/25" />
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-linear-to-r from-transparent via-white/10 to-transparent" />
+
+        {/* Left: performance + pin */}
+        <div className="absolute top-3 left-3 flex items-center gap-2">
+          <div className="px-2.5 py-1 rounded-full bg-black/30 text-white text-xs font-semibold backdrop-blur-sm flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span className="tabular-nums">{performanceLabel}</span>
+            <span className="text-white/80">/5</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleTogglePinned}
+            className="p-2 rounded-lg bg-black/20 hover:bg-black/30 text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            title={isPinned ? t('employees.unpin', 'Unpin') : t('employees.pin', 'Pin')}
+            aria-label={isPinned ? t('employees.unpin', 'Unpin') : t('employees.pin', 'Pin')}
+          >
+            <Star className={`h-4 w-4 ${isPinned ? 'text-amber-300' : 'text-white/90'}`} fill={isPinned ? 'currentColor' : 'none'} />
+          </button>
+        </div>
 
         {/* Status badge */}
         <div className={`absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 ${statusConfig.bg} ${statusConfig.text} ring-1 ${statusConfig.ring} backdrop-blur-sm`}>
@@ -296,13 +344,37 @@ const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoU
 
         {/* Department chip */}
         {employeeDepartment && (
-          <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-full bg-black/30 text-white text-xs font-medium backdrop-blur-sm flex items-center gap-1.5">
+          <div className="absolute bottom-3 left-[20%] px-2.5 py-1 rounded-full bg-black/30 text-white text-xs font-medium backdrop-blur-sm flex items-center gap-1.5">
             <Building2 className="h-3.5 w-3.5" />
             <span className="max-w-45 truncate">
               {t(`employeeDepartment.${employeeDepartmentKey}`, toTitleCase(employeeDepartment) || employeeDepartment)}
             </span>
           </div>
         )}
+
+        {/* Quick header actions (hover/focus) */}
+        <div className="absolute bottom-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+          {canEditOrDelete && (
+            <button
+              type="button"
+              onClick={handleEditClick}
+              className="p-2 rounded-lg bg-black/20 hover:bg-black/30 text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+              title={t('employees.edit', 'Edit')}
+              aria-label={t('employees.edit', 'Edit')}
+            >
+              <Edit className="h-4 w-4" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleViewClick}
+            className="p-2 rounded-lg bg-black/20 hover:bg-black/30 text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            title={t('employees.view', 'View Details')}
+            aria-label={t('employees.view', 'View Details')}
+          >
+            <Eye className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Avatar + Top Summary */}
@@ -357,11 +429,6 @@ const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoU
                 ? t(`employeePosition.${normalizeKey(employeePosition)}`, employeePosition)
                 : t('common.notAvailable', 'N/A')}
             </p>
-          </div>
-          <div className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full ${isDarkMode ? 'bg-gray-700/60 text-gray-100' : 'bg-gray-100 text-gray-800'}`}>
-            <Sparkles className="h-3.5 w-3.5" />
-            <span className={`text-xs font-semibold ${performanceColor}`}>{performanceLabel}</span>
-            <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>/5</span>
           </div>
         </div>
 

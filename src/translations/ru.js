@@ -453,6 +453,9 @@ export default {
   employees: {
     title: 'Управление сотрудниками',
     directory: 'Директория',
+    cards: 'Карточки',
+    viewCards: 'Вид карточками',
+    viewDirectory: 'Вид справочником',
     addNew: 'Добавить новый',
     searchPlaceholder: 'Поиск сотрудников...',
     quickStats: 'Быстрая Статистика',
