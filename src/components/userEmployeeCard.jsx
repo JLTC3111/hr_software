@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Phone, MapPin, Mail, Award, User, Camera, Cake, Network, Loader, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { getEmployeePositionI18nKey } from '../utils/employeePositionKey';
 import { useAuth } from '../contexts/AuthContext';
 import { getEmployeeByUserId, updateEmployee } from '../services/employeeService';
 import { supabase } from '../config/supabaseClient';
@@ -209,7 +210,7 @@ const UserEmployeeCard = ({ style }) => {
                 {employee.name}
               </h3>
               <p className="text-sm opacity-70" style={{ color: style?.color }}>
-                {t(`employeePosition.${employee.position?.toLowerCase().replace(' ', '')}`, employee.position)}
+                {t(`employeePosition.${getEmployeePositionI18nKey(employee.position)}`, employee.position)}
               </p>
             </div>
           </div>

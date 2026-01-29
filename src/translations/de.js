@@ -1335,6 +1335,7 @@ export default {
     contract_manager: 'Vertragsmanager',
     managing_director: 'Geschäftsführender Direktor',
     support_staff: 'Unterstützung',
+    expertGroup: 'Expertengruppe',
     employee: 'Mitarbeiter',
   }, 
 

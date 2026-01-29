@@ -1506,6 +1506,7 @@ export default {
     contract_manager: 'Contract Manager',
     managing_director: 'Managing Director',
     support_staff: 'Support Staff',
+    expertGroup: 'Experts Group',
     employee: 'Employee',
   },
 

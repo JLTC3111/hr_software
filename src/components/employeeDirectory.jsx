@@ -4,6 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { getDemoEmployeeName } from '../utils/demoHelper';
+import { getEmployeePositionI18nKey } from '../utils/employeePositionKey';
 
 const normalizeKey = (value) =>
   String(value || '')
@@ -25,7 +26,7 @@ const EmployeeRow = memo(function EmployeeRow({ employee, onViewDetails, onEdit,
   const employeeStatusKey = useMemo(() => normalizeKey(employeeStatus), [employeeStatus]);
 
   const employeePosition = String(employee?.position || '');
-  const employeePositionKey = useMemo(() => normalizeKey(employeePosition), [employeePosition]);
+  const employeePositionKey = useMemo(() => getEmployeePositionI18nKey(employeePosition), [employeePosition]);
 
   const performanceValue = useMemo(() => clampPerformance(employee?.performance), [employee?.performance]);
 

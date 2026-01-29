@@ -610,7 +610,7 @@ const TaskListing = ({ employees }) => {
               >
                 {availableEmployees.map(employee => (
                   <option key={employee.id} value={String(employee.id)}>
-                    {getDemoEmployeeName(employee, t)} - {t(`employeeDepartment.${employee.department.toLowerCase().replace(/\s+/g, '_')}`, employee.department)} ({t(`employeePosition.${employee.position.toLowerCase().replace(/\s+/g, '')}`, employee.position)})
+                    {getDemoEmployeeName(employee, t)} - {t(`employeeDepartment.${employee.department.toLowerCase().replace(/\s+/g, '_')}`, employee.department)} ({t(`employeePosition.${getEmployeePositionI18nKey(employee.position)}`, employee.position)})
                   </option>
                 ))}
               </select>

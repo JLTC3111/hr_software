@@ -1260,6 +1260,7 @@ export default {
     contract_manager: '契約管理者',
     managing_director: '所長 / 院長',
     support_staff: 'サポートスタッフ',
+    expertGroup: 'エキスパートグループ',
     employee: '従業員',
   }, 
 

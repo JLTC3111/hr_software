@@ -19,6 +19,7 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useAuth } from '../contexts/AuthContext'
 import { getDemoEmployeeName } from '../utils/demoHelper'
+import { getEmployeePositionI18nKey } from '../utils/employeePositionKey'
 
 const normalizeKey = (value) =>
   String(value || '')
@@ -426,7 +427,7 @@ const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoU
             </h3>
             <p className={`text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'} truncate`}>
               {employeePosition
-                ? t(`employeePosition.${normalizeKey(employeePosition)}`, employeePosition)
+                ? t(`employeePosition.${getEmployeePositionI18nKey(employeePosition)}`, employeePosition)
                 : t('common.notAvailable', 'N/A')}
             </p>
           </div>

@@ -67,6 +67,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
     { value: 'contract_manager', label: t('employeePosition.contract_manager', 'Contract Manager') },
     { value: 'managing_director', label: t('employeePosition.managing_director', 'Managing Director') },
     { value: 'support_staff', label: t('employeePosition.support_staff', 'Support Staff') },
+    { value: 'expertGroup', label: t('employeePosition.expertGroup', 'Experts Group') },
     { value: 'employee', label: t('employeePosition.employee', 'Employee') }
   ];
 

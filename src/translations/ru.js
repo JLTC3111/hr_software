@@ -1228,6 +1228,7 @@ export default {
     contract_manager: 'Менеджер по контрактам',
     managing_director: 'Исполнительный директор',
     support_staff: 'Вспомогательный персонал',
+    expertGroup: 'Группа экспертов',
     employee: 'Сотрудник',
   }, 
 

@@ -1191,6 +1191,7 @@ export default {
     contract_manager: '계약 담당자',
     managing_director: '원장',
     support_staff: '지원팀',
+    expertGroup: '전문가 그룹',
     employee: '직원',
   }, 
 

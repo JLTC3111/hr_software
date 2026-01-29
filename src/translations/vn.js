@@ -1400,6 +1400,7 @@ export default {
     contract_manager: 'Phụ Trách Đấu Thầu',
     managing_director: 'Viện Trưởng',
     support_staff: 'Hỗ Trợ',
+    expertGroup: 'Khối Chuyên Gia',
     employee: 'Nhân Viên',
   },  
 

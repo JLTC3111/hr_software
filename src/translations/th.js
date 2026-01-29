@@ -1252,6 +1252,7 @@ export default {
     contract_manager: 'ผู้จัดการสัญญา/การประมูล',
     managing_director: 'ผู้อำนวยการ',
     support_staff: 'เจ้าหน้าที่สนับสนุน',
+    expertGroup: 'กลุ่มผู้เชี่ยวชาญ',
     employee: 'พนักงาน',
   }, 
 

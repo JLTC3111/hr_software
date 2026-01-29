@@ -1336,6 +1336,7 @@ export default {
     contract_manager: 'Responsable des marchés',
     managing_director: 'Directeur (d\'Institut)',
     support_staff: 'Personnel de soutien',
+    expertGroup: 'Groupe d\'experts',
     employee: 'Employé',
   }, 
 

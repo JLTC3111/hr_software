@@ -1283,6 +1283,7 @@ login: {
     contract_manager: 'Gerente de contratos',
     managing_director: 'Director Gerente',
     support_staff: 'Personal de apoyo',
+    expertGroup: 'Grupo de Expertos',
     employee: 'Empleado',
   }, 
 

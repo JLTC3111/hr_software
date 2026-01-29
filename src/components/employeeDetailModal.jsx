@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUpload } from '../contexts/UploadContext';
 import { getEmployeePdfUrl, deleteEmployeePdf, uploadEmployeeRequestDocument, listEmployeeRequestDocuments, deleteEmployeeRequestDocument, getEmployeeRequestDocumentUrl } from '../services/employeeService';
 import { getDemoEmployeeName } from '../utils/demoHelper';
+import { getEmployeePositionI18nKey } from '../utils/employeePositionKey';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -488,7 +489,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
             {getDemoEmployeeName(employee, t)}
           </h2>
           <p className={`${text.secondary} mb-4`}>
-            {t(`employeePosition.${employee.position?.toLowerCase().replace(' ', '')}`, employee.position)}
+            {t(`employeePosition.${getEmployeePositionI18nKey(employee.position)}`, employee.position)}
           </p>
 
           {/* Action Buttons */}
@@ -647,7 +648,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
               <InfoItem icon={Network} label={t('employeeDetailModal.department', 'Department')} 
                 value={t(`employeeDepartment.${employee.department?.toLowerCase().replace(' ', '')}`, employee.department)} />
               <InfoItem icon={Award} label={t('employeeDetailModal.position', 'Position')} 
-                value={t(`employeePosition.${employee.position?.toLowerCase().replace(' ', '')}`, employee.position)} />
+                value={t(`employeePosition.${getEmployeePositionI18nKey(employee.position)}`, employee.position)} />
               <InfoItem icon={Cake} label={t('employeeDetailModal.dateOfBirth', 'Date of Birth')} value={employee.dob} />
               <InfoItem icon={Calendar} label={t('employeeDetailModal.startDate', 'Start Date')} 
                 value={employee.start_date || employee.startDate || 'N/A'} />
