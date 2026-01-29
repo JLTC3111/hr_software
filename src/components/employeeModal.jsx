@@ -181,7 +181,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
         if (onUpdate) {
           onUpdate(result.data);
         }
-        alert(t('employees.updateSuccess', 'Employee updated successfully!'));
+        alert(t('employees.updateSuccess', 'Employee details have been successfully updated!'));
       } else {
         alert(t('employees.updateError', 'Failed to update employee: ') + result.error);
       }
@@ -246,7 +246,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
             </h3>
             <button
               onClick={onClose}
-              className={`${textSecondary} hover:${textPrimary}`}
+              className={`${textSecondary} hover:${textPrimary} cursor-pointer`}
             >
               <X className="h-6 w-6" />
             </button>
@@ -521,7 +521,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                 <button
                   onClick={handleCancel}
                   disabled={isSaving}
-                  className={`px-4 py-2 ${textSecondary} hover:${textPrimary} disabled:opacity-50`}
+                  className={`px-4 py-2 ${textSecondary} hover:${textPrimary} disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed`}
                 >
                   <X className="h-4 w-4 inline mr-2" />
                   {t('common.cancel', 'Cancel')}
@@ -529,7 +529,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                 <button
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 flex items-center"
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 flex items-center cursor-pointer disabled:cursor-not-allowed"
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {isSaving ? t('common.saving', 'Saving...') : t('common.save', 'Save')}
@@ -539,14 +539,14 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
               <>
                 <button
                   onClick={onClose}
-                  className={`px-4 py-2 ${textSecondary} hover:${textPrimary}`}
+                  className={`px-4 py-2 ${textSecondary} hover:${textPrimary} cursor-pointer`}
                 >
                   {t('common.close', 'Close')}
                 </button>
                 {canEdit && (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center cursor-pointer"
                   >
                     <Edit2 className="h-4 w-4 mr-2" />
                     {t('employees.editEmployee', 'Edit Employee')}

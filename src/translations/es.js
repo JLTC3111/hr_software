@@ -500,6 +500,7 @@ login: {
     phonePlaceholder: 'Número de teléfono',
     dobPlaceholder: 'Fecha de nacimiento',
     addressPlaceholder: 'Dirección',
+    updateSuccess: 'Los detalles del empleado se han actualizado correctamente.'
   },
 
   // Recruitment

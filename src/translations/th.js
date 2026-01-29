@@ -423,6 +423,7 @@ export default {
     phonePlaceholder: 'เบอร์โทรศัพท์',
     dobPlaceholder: 'วันเกิด',
     addressPlaceholder: 'ที่อยู่',
+    updateSuccess: 'อัปเดตรายละเอียดพนักงานเรียบร้อยแล้ว'
   },
 
   // Recruitment

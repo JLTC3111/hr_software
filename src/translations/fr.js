@@ -456,6 +456,7 @@ export default {
     phonePlaceholder: 'Numéro de téléphone',
     dobPlaceholder: 'Date de naissance',
     addressPlaceholder: 'Adresse',
+    updateSuccess: "Les informations de l’employé ont été mises à jour avec succès !"
   },
 
   // Search

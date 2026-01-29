@@ -414,6 +414,7 @@ export default {
     phonePlaceholder: 'Telefonnummer',
     dobPlaceholder: 'Geburtsdatum',
     addressPlaceholder: 'Adresse',
+    updateSuccess: 'Mitarbeiterdetails wurden erfolgreich aktualisiert!'
   },
 
   // Search

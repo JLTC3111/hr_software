@@ -488,6 +488,7 @@ export default {
     phonePlaceholder: 'Телефон',
     dobPlaceholder: 'Дата рождения',
     addressPlaceholder: 'Адрес',
+    updateSuccess: 'Данные сотрудника успешно обновлены.'
   },
 
   // Recruitment

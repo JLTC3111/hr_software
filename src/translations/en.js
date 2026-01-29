@@ -246,7 +246,8 @@ export default {
     restore: 'Restore',
     confirmRestore: 'Are you sure you want to restore this employee?',
     restoreSuccess: 'Employee restored successfully!',
-    restoreError: 'Failed to restore employee'
+    restoreError: 'Failed to restore employee',
+    updateSuccess: 'Employee details have been successfully updated!'
   },
 
   // Add Employee Modal

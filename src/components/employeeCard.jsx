@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState, memo } from 'react'
+import React, { useMemo, useCallback, useState } from 'react'
 import {
   Building2,
   Camera,
@@ -116,7 +116,7 @@ const getPerformanceColor = (performance, isDarkMode) => {
   return isDarkMode ? 'text-rose-400' : 'text-rose-600'
 }
 
-const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate, style }) => {
+const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate, style }) => {
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
   const { user } = useAuth();
@@ -589,7 +589,9 @@ const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoU
       </div>
     </div>
   );
-});
+
+};
+
 
 // Display name for debugging
 EmployeeCard.displayName = 'EmployeeCard';

@@ -2340,7 +2340,7 @@ const Reports = () => {
       {/* Error Banner */}
       {fetchError && (
         <div className={`${isDarkMode ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-300'} rounded-lg border p-4 flex items-start space-x-3 slide-in-top`}>
-          <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'} flex-shrink-0 mt-0.5`} />
+          <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'} shrink-0 mt-0.5`} />
           <div className="flex-1">
             <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-red-400' : 'text-red-800'}`}>
               {t('common.error', 'Error')}

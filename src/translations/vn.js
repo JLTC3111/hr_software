@@ -404,6 +404,7 @@ export default {
     phonePlaceholder: 'Số điện thoại',
     dobPlaceholder: 'Ngày sinh',
     addressPlaceholder: 'Địa chỉ',
+    updateSuccess: 'Đã cập nhật thông tin nhân viên thành công!'
   },
 
   // Add Employee Modal

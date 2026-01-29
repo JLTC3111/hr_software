@@ -464,7 +464,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
           onClick={onClose}
           className="absolute top-4 right-4 z-10 p-2 rounded-lg hover:bg-transparent transition-colors"
         >
-          <X className="w-5 h-5" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
+          <X className="w-5 h-5 cursor-pointer " style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
         </button>
 
         {/* Header Section */}
@@ -675,7 +675,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                     <button
                       type="button"
                       onClick={() => setDocumentsSubTab('pdf')}
-                      className={`px-3 py-2 text-sm font-medium flex items-center gap-2 transition-colors ${
+                      className={`px-3 py-2 text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer ${
                         documentsSubTab === 'pdf'
                           ? isDarkMode
                             ? 'bg-gray-700 text-white'
@@ -693,7 +693,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                     <button
                       type="button"
                       onClick={() => setDocumentsSubTab('requests')}
-                      className={`px-3 py-2 text-sm font-medium flex items-center gap-2 transition-colors ${
+                      className={`px-3 py-2 text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer ${
                         documentsSubTab === 'requests'
                           ? isDarkMode
                             ? 'bg-gray-700 text-white'
@@ -718,7 +718,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                       <>
                         <button
                           onClick={handlePdfDownload}
-                          className={`px-4 py-2 text-white rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
+                          className={`px-4 py-2 text-white cursor-pointer rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
                         >
                           <Download className="w-4 h-4" />
                           <span>{t('employeeDetailModal.download', 'Download')}</span>
@@ -726,7 +726,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                         {canEdit && (
                           <button
                             onClick={handlePdfDelete}
-                            className={`px-4 py-2 text-white rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-red-700 hover:bg-red-600' : 'bg-red-600 hover:bg-red-700'}`}
+                            className={`px-4 py-2 text-white cursor-pointer rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-red-700 hover:bg-red-600' : 'bg-red-600 hover:bg-red-700'}`}
                           >
                             <Trash2 className="w-4 h-4" />
                             <span>{t('employeeDetailModal.delete', 'Delete')}</span>
@@ -775,7 +775,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                     <button
                       type="button"
                       onClick={loadRequestDocs}
-                      className={`px-4 py-2 text-white rounded-lg flex items-center gap-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-sky-700 hover:bg-sky-600' : 'bg-sky-600 hover:bg-sky-700'} ${requestDocsLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      className={`px-4 py-2 text-white rounded-lg cursor-pointer flex items-center gap-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-sky-700 hover:bg-sky-600' : 'bg-sky-600 hover:bg-sky-700'} ${requestDocsLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
                       disabled={requestDocsLoading}
                       title={t('employeeDetailModal.requestDocsRefresh', 'Refresh')}
                       aria-label={t('employeeDetailModal.requestDocsRefresh', 'Refresh')}

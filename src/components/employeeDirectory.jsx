@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState, memo } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { ChevronDown, Eye, Edit, Trash2, Mail, Phone, Star, User } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -18,7 +18,7 @@ const clampPerformance = (value) => {
   return Math.max(0, Math.min(5, n));
 };
 
-const EmployeeRow = memo(function EmployeeRow({ employee, onViewDetails, onEdit, onDelete, canEditOrDelete }) {
+function EmployeeRow({ employee, onViewDetails, onEdit, onDelete, canEditOrDelete }) {
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
 
@@ -174,7 +174,7 @@ const EmployeeRow = memo(function EmployeeRow({ employee, onViewDetails, onEdit,
       </div>
     </div>
   );
-});
+}
 
 const EmployeeDirectory = ({ employees, onViewDetails, onEdit, onDelete }) => {
   const { t } = useLanguage();
@@ -207,7 +207,7 @@ const EmployeeDirectory = ({ employees, onViewDetails, onEdit, onDelete }) => {
     <div className="space-y-4">
       <div className={`rounded-xl border px-4 py-3 ${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-          {t('employees.results', 'Results')}: <span className="font-semibold">{employees.length}</span>
+          {t('common.results', 'Results')}: <span className="font-semibold">{employees.length}</span>
         </div>
       </div>
 

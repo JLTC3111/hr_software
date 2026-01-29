@@ -426,6 +426,7 @@ export default {
     phonePlaceholder: '전화번호',
     dobPlaceholder: '생년월일',
     addressPlaceholder: '주소',
+    updateSuccess: '직원 상세 정보가 성공적으로 업데이트되었습니다.'
   },
 
   // Recruitment

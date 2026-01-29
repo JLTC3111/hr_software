@@ -424,6 +424,7 @@ export default {
     phonePlaceholder: '電話番号',
     dobPlaceholder: '生年月日',
     addressPlaceholder: '住所',
+    updateSuccess: '従業員の詳細が正常に更新されました。'
   },
 
   // Recruitment
