@@ -1120,6 +1120,7 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
     
     // Calculate metrics by hour type
     const uniqueDays = new Set();
+    const leaveDates = new Set();
     let regularHours = 0;
     let holidayHours = 0;
     let weekendHours = 0;
@@ -1128,39 +1129,57 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
     (timeEntries || []).forEach(entry => {
       // Only count pending or approved
       if (entry.status === 'pending' || entry.status === 'approved') {
-        uniqueDays.add(entry.date);
         const hours = Math.round(parseFloat(entry.hours || 0) * 100) / 100;
         
-        switch (entry.hour_type) {
-          case 'regular':
-            regularHours += hours;
-            break;
-          case 'holiday':
-            holidayHours += hours;
-            break;
-          case 'weekend':
-            weekendHours += hours;
-            break;
-          case 'bonus':
-            bonusHours += hours;
-            break;
-          default:
-            regularHours += hours;
+        // Handle hour types
+        if (entry.hour_type === 'on_leave' || entry.hour_type === 'vacation' || entry.hour_type === 'sick_leave') {
+            leaveDates.add(entry.date);
+        } else {
+            uniqueDays.add(entry.date);
+            
+            switch (entry.hour_type) {
+              case 'regular':
+                regularHours += hours;
+                break;
+              case 'holiday':
+                holidayHours += hours;
+                break;
+              case 'weekend':
+                weekendHours += hours;
+                break;
+              case 'bonus':
+                bonusHours += hours;
+                break;
+              default:
+                regularHours += hours;
+            }
+        }
+      }
+    });
+
+    // Remove duplicates between worked days and leave days (if any)
+    // If a day is worked, it shouldn't count as leave? Or vice versa?
+    // Prioritize work? If I worked, I am not on leave.
+    // But maybe I took half day leave. 
+    // For now, let's keep them somewhat separate but ensure on_leave entries don't add to regularHours.
+    
+    const daysWorked = uniqueDays.size;
+    
+    // Calculate leave days (from requests, merging with entry-based leave)
+    (leaveRequests || []).forEach(req => {
+      const start = new Date(req.start_date);
+      const end = new Date(req.end_date);
+      
+      // Iterate days in the request
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        // Only count if within the requested month
+        if (d >= new Date(startDate) && d <= new Date(endDate)) {
+          leaveDates.add(d.toISOString().split('T')[0]);
         }
       }
     });
     
-    const daysWorked = uniqueDays.size;
-    
-    // Calculate leave days (only approved)
-    let leaveDays = 0;
-    (leaveRequests || []).forEach(req => {
-      const start = new Date(req.start_date);
-      const end = new Date(req.end_date);
-      const diffTime = Math.abs(end - start);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-      leaveDays += diffDays;
-    });
+    const leaveDays = leaveDates.size;
     
     // Calculate overtime from overtime_logs
     let overtimeRegular = 0;
@@ -1226,7 +1245,14 @@ export const getTimeTrackingSummary = async (employeeId, month, year) => {
     const weekendHours = entries.filter(e => e.hour_type === 'weekend').reduce((sum, e) => sum + (e.hours || 0), 0);
     const holidayHours = entries.filter(e => e.hour_type === 'holiday').reduce((sum, e) => sum + (e.hours || 0), 0);
     const bonusHours = entries.filter(e => e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
-    const daysWorked = new Set(entries.map(e => e.date)).size;
+    
+    // Correctly calculate days worked (exclude leave)
+    const workEntries = entries.filter(e => e.hour_type !== 'on_leave' && e.hour_type !== 'vacation' && e.hour_type !== 'sick_leave');
+    const daysWorked = new Set(workEntries.map(e => e.date)).size;
+    
+    // Calculate leave days from entries
+    const leaveEntries = entries.filter(e => e.hour_type === 'on_leave' || e.hour_type === 'vacation' || e.hour_type === 'sick_leave');
+    const leaveDays = new Set(leaveEntries.map(e => e.date)).size;
     
     // Match production calculation: overtime_hours = weekend + bonus + overtime_regular
     const overtimeHours = weekendHours + bonusHours + overtimeRegular;
@@ -1243,7 +1269,8 @@ export const getTimeTrackingSummary = async (employeeId, month, year) => {
         overtime_hours: Math.round(overtimeHours * 100) / 100,
         holiday_overtime_hours: Math.round(holidayOvertimeHours * 100) / 100,
         total_hours: Math.round(totalHours * 100) / 100,
-        days_worked: daysWorked
+        days_worked: daysWorked,
+        leave_days: leaveDays
       }
     };
   }

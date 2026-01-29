@@ -13,7 +13,6 @@
   "dependencies": {
     "@fontsource/noto-sans": "^5.2.10",
     "@supabase/supabase-js": "^2.58.0",
-    "@tailwindcss/vite": "^4.1.12",
     "aos": "^2.3.4",
     "exceljs": "^4.4.0",
     "flubber": "^0.4.2",

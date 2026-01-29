@@ -1331,7 +1331,7 @@ const Dashboard = ({ employees, applications }) => {
           if (result.success && result.data) {
             trackingData[empId] = {
               workDays: result.data.days_worked || 0,
-              leaveDays: leaveData[empId] || 0, // Use calculated leave days
+              leaveDays: Math.max(result.data.leave_days || 0, leaveData[empId] || 0), // Use max of service calculated (includes Time Entries) or requests
               overtime: result.data.overtime_hours || 0,
               holidayOvertime: result.data.holiday_overtime_hours || 0,
               regularHours: result.data.regular_hours || 0,
