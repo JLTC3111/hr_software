@@ -1094,6 +1094,7 @@ export default {
 
   // Common
   common: {
+    viewDetails: 'Voir les détails',
     results: 'résultats',
     update: 'Mettre à jour',
     updating: 'Mise à jour...', 

@@ -1076,6 +1076,7 @@ login: {
 
   // Common
   common: {
+    viewDetails: 'Ver Detalles',
     results: 'Resultados',
     update: 'Actualizar',
     email: 'Email',

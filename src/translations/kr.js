@@ -939,6 +939,7 @@ export default {
 
   // Common
   common: {
+    viewDetails: '세부 정보 보기',
     email: '이메일',
     phone: '전화번호',
     results: '결과',

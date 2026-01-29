@@ -1263,6 +1263,7 @@ export default {
 
   // Common
   common: {
+    viewDetails: 'Xem Chi Tiết',
     email: 'Email',
     phone: 'Điện Thoại',
     address: 'Địa Chỉ',

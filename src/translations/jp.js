@@ -978,6 +978,7 @@ export default {
 
   // Common
   common: {
+    viewDetails: '詳細を見る',
     results: '結果',
     employees: '従業員',
     email: 'メール',

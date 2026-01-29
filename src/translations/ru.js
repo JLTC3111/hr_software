@@ -1026,6 +1026,7 @@ export default {
 
   // Common
   common: {
+    viewDetails: 'Просмотреть детали',
     email: 'Email',
     phone: 'Телефон',
     results: 'Найдено результатов',

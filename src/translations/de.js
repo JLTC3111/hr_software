@@ -964,6 +964,7 @@ export default {
 
   // Common
   common: {
+    viewDetails: 'Details anzeigen',
     results: 'Ergebnisse',
     total: 'Gesamt',
     employee: 'Mitarbeiter',

@@ -1310,6 +1310,7 @@ export default {
 
   // Common
   common: {
+    viewDetails: 'View Details',
     results: 'Results',
     total: 'Total',
     update: 'Update',

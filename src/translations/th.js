@@ -977,6 +977,7 @@ export default {
 
   // Common
   common: {
+    viewDetails: 'ดูรายละเอียด',
     email: 'อีเมล',
     phone: 'โทรศัพท์',
     results: 'ผลลัพธ์',

@@ -1,9 +1,46 @@
-import React, { useState, useCallback, useMemo, memo } from 'react'
-import { Phone, MapPin, Mail, Eye, Edit, Trash2, User, Camera, Network, Loader, TrendingUp, ChevronRight } from 'lucide-react'
+import React, { useMemo, useCallback, useState, memo } from 'react'
+import {
+  Building2,
+  Camera,
+  Copy,
+  Eye,
+  Edit,
+  Loader,
+  Mail,
+  MapPin,
+  Network,
+  Phone,
+  Sparkles,
+  Star,
+  Trash2,
+  User
+} from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useAuth } from '../contexts/AuthContext'
 import { getDemoEmployeeName } from '../utils/demoHelper'
+
+const normalizeKey = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '')
+
+const safeText = (value, fallback = '') => {
+  if (value == null) return fallback
+  if (typeof value === 'string') return value
+  if (typeof value === 'number') return String(value)
+  return fallback
+}
+
+const toTitleCase = (value) => {
+  const s = safeText(value, '').trim()
+  if (!s) return ''
+  return s
+    .split(/\s+/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
 
 const getStatusConfig = (status, isDarkMode) => {
   const configs = {
@@ -31,38 +68,114 @@ const getStatusConfig = (status, isDarkMode) => {
       dot: 'bg-gray-500',
       ring: 'ring-gray-500/20'
     }
-  };
-  return configs[status?.toLowerCase()] || configs.pending;
-};
+  }
+  return configs[status?.toLowerCase()] || configs.pending
+}
+
+const getDepartmentAccent = (departmentKey) => {
+  // Intentional: use stable palette so cards feel consistent across sessions.
+  // Values are hex so we can use inline gradients without Tailwind class churn.
+  const palette = {
+    // Tightened enterprise palette: consistent deep base + restrained accent.
+    engineering: { from: '#0B1220', via: '#1E3A8A', to: '#0F766E' },
+    technology: { from: '#0B1220', via: '#1E40AF', to: '#155E75' },
+    design: { from: '#0B1220', via: '#1E3A8A', to: '#4F46E5' },
+    marketing: { from: '#0B1220', via: '#334155', to: '#92400E' },
+    sales: { from: '#0B1220', via: '#0F766E', to: '#1E40AF' },
+    finance: { from: '#020617', via: '#1E293B', to: '#1E3A8A' },
+    human_resources: { from: '#111827', via: '#1E3A8A', to: '#6D28D9' },
+    operations: { from: '#0B1220', via: '#155E75', to: '#0F766E' },
+    internal_affairs: { from: '#020617', via: '#1E293B', to: '#334155' },
+    legal_compliance: { from: '#020617', via: '#0F172A', to: '#1E293B' },
+    office_unit: { from: '#0B1220', via: '#0F766E', to: '#15803D' },
+    board_of_directors: { from: '#020617', via: '#111827', to: '#1E293B' },
+    part_time_employee: { from: '#0B1220', via: '#334155', to: '#0F766E' },
+    unknown: { from: '#0B1220', via: '#1E293B', to: '#334155' }
+  }
+
+  return palette[departmentKey] || palette.unknown
+}
+
+const clampPerformance = (value) => {
+  const n = Number(value)
+  if (Number.isNaN(n)) return 0
+  return Math.max(0, Math.min(5, n))
+}
+
+const formatPerformance = (value) => {
+  const n = clampPerformance(value)
+  return n % 1 === 0 ? String(n.toFixed(0)) : String(n.toFixed(1))
+}
 
 const getPerformanceColor = (performance, isDarkMode) => {
-  if (performance >= 4.5) return isDarkMode ? 'text-green-400' : 'text-green-600';
-  if (performance >= 3.5) return isDarkMode ? 'text-blue-400' : 'text-blue-600';
-  if (performance >= 2.5) return isDarkMode ? 'text-yellow-400' : 'text-yellow-600';
-  return isDarkMode ? 'text-red-400' : 'text-red-600';
-};
+  const n = clampPerformance(performance)
+  if (n >= 4.5) return isDarkMode ? 'text-emerald-400' : 'text-emerald-600'
+  if (n >= 3.5) return isDarkMode ? 'text-sky-400' : 'text-sky-600'
+  if (n >= 2.5) return isDarkMode ? 'text-amber-400' : 'text-amber-600'
+  return isDarkMode ? 'text-rose-400' : 'text-rose-600'
+}
 
 const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate, style }) => {
   const { t } = useLanguage();
-  const { isDarkMode, bg, text, border } = useTheme();
+  const { isDarkMode } = useTheme();
   const { user } = useAuth();
   const [photoError, setPhotoError] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   // Check if user has permission to edit/delete (not employee role)
   const canEditOrDelete = user?.role !== 'employee';
 
+  const employeeStatus = safeText(employee?.status, 'pending')
+  const employeeStatusKey = useMemo(() => normalizeKey(employeeStatus), [employeeStatus])
+  const employeeDepartment = safeText(employee?.department, '')
+  const employeeDepartmentKey = useMemo(() => normalizeKey(employeeDepartment), [employeeDepartment])
+  const employeePosition = safeText(employee?.position, '')
+  const employeeEmail = safeText(employee?.email, '')
+  const employeePhone = safeText(employee?.phone, '')
+
   // Memoize status config
-  const statusConfig = useMemo(() => getStatusConfig(employee.status, isDarkMode), [employee.status, isDarkMode]);
+  const statusConfig = useMemo(() => getStatusConfig(employeeStatus, isDarkMode), [employeeStatus, isDarkMode])
 
   // Memoize performance color
-  const performanceColor = useMemo(() => getPerformanceColor(employee.performance, isDarkMode), [employee.performance, isDarkMode]);
+  const performanceColor = useMemo(
+    () => getPerformanceColor(employee?.performance, isDarkMode),
+    [employee?.performance, isDarkMode]
+  )
 
-  // Memoize avatar style to prevent recreation
-  const avatarStyle = useMemo(() => ({
-    borderColor: isDarkMode ? '#3b82f6' : '#2563eb',
-  }), [isDarkMode]);
+  const performanceValue = useMemo(() => clampPerformance(employee?.performance), [employee?.performance])
+  const performanceLabel = useMemo(() => formatPerformance(employee?.performance), [employee?.performance])
+  const performancePct = useMemo(() => (performanceValue / 5) * 100, [performanceValue])
+
+  const accent = useMemo(() => getDepartmentAccent(employeeDepartmentKey), [employeeDepartmentKey])
+
+  const headerStyle = useMemo(
+    () => ({
+      backgroundImage: `linear-gradient(135deg, ${accent.from}, ${accent.via}, ${accent.to})`
+    }),
+    [accent]
+  )
+
+  const avatarStyle = useMemo(
+    () => ({
+      borderColor: isDarkMode ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.9)'
+    }),
+    [isDarkMode]
+  )
+
+  const handleCopyEmail = useCallback(
+    async (e) => {
+      e.stopPropagation()
+      if (!employeeEmail) return
+      try {
+        await navigator.clipboard.writeText(employeeEmail)
+      } catch (err) {
+        console.warn('Clipboard write failed', err)
+      }
+    },
+    [employeeEmail]
+  )
 
   const handlePhotoUpload = useCallback(async (e) => {
     const file = e.target.files[0];
@@ -102,46 +215,97 @@ const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoU
     }
   }, [employee?.id, onPhotoUpdate, t]);
 
-  // Memoize click handlers
   const handleCardClick = useCallback(() => {
-    onViewDetails && onViewDetails(employee);
-  }, [onViewDetails, employee]);
+    onViewDetails && onViewDetails(employee)
+  }, [onViewDetails, employee])
 
-  const handleViewClick = useCallback((e) => {
-    e.stopPropagation();
-    onViewDetails(employee);
-  }, [onViewDetails, employee]);
+  const handleCardKeyDown = useCallback(
+    (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        onViewDetails && onViewDetails(employee)
+      }
+    },
+    [onViewDetails, employee]
+  )
 
-  const handleEditClick = useCallback((e) => {
-    e.stopPropagation();
-    onEdit && onEdit(employee);
-  }, [onEdit, employee]);
+  const handleViewClick = useCallback(
+    (e) => {
+      e.stopPropagation()
+      onViewDetails(employee)
+    },
+    [onViewDetails, employee]
+  )
 
-  const handleDeleteClick = useCallback((e) => {
-    e.stopPropagation();
-    onDelete && onDelete(employee);
-  }, [onDelete, employee]);
+  const handleEditClick = useCallback(
+    (e) => {
+      e.stopPropagation()
+      onEdit && onEdit(employee)
+    },
+    [onEdit, employee]
+  )
+
+  const handleDeleteClick = useCallback(
+    (e) => {
+      e.stopPropagation()
+      onDelete && onDelete(employee)
+    },
+    [onDelete, employee]
+  )
   
   return (
     <div 
-      className={`rounded-xl shadow-sm border transition-all duration-300 cursor-pointer overflow-hidden ${
+      role="button"
+      tabIndex={0}
+      onKeyDown={handleCardKeyDown}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => setIsFocused(false)}
+      className={`group relative rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 ${
         isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-      } ${isHovered ? 'shadow-xl -translate-y-2 scale-[1.02]' : 'hover:shadow-lg hover:-translate-y-1'}`}
+      } ${
+        isHovered || isFocused
+          ? 'shadow-xl -translate-y-2 ring-2 ring-blue-500/30 ring-offset-2 ring-offset-white/60'
+          : 'hover:shadow-lg hover:-translate-y-1'
+      } ${isDarkMode ? 'ring-offset-gray-900' : ''}`}
       style={style}
       onClick={handleCardClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Header with gradient background */}
-      <div className={`relative h-20 ${isDarkMode ? 'bg-gradient-to-r from-blue-900 to-purple-900' : 'bg-gradient-to-r from-blue-500 to-purple-500'}`}>
-        {/* Status indicator */}
-        <div className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-medium flex items-center space-x-1.5 ${statusConfig.bg} ${statusConfig.text} ring-2 ${statusConfig.ring}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot} animate-pulse`}></span>
-          <span>{t(`employeeStatus.${employee.status.toLowerCase().replace(' ', '')}`, employee.status)}</span>
+      {/* Subtle card tint (keeps background from feeling flat) */}
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute inset-0 ${
+          isDarkMode
+            ? 'bg-linear-to-b from-white/[0.035] via-transparent to-black/8'
+            : 'bg-linear-to-b from-slate-50 via-white to-white'
+        }`}
+      />
+
+      <div className="relative">
+      {/* Header */}
+      <div className="relative h-24" style={headerStyle}>
+        <div className="absolute inset-0 bg-linear-to-b from-white/15 via-white/5 to-black/25" />
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-linear-to-r from-transparent via-white/10 to-transparent" />
+
+        {/* Status badge */}
+        <div className={`absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 ${statusConfig.bg} ${statusConfig.text} ring-1 ${statusConfig.ring} backdrop-blur-sm`}>
+          <span className={`w-2 h-2 rounded-full ${statusConfig.dot} ${employeeStatusKey === 'active' ? 'animate-pulse' : ''}`} />
+          <span>{t(`employeeStatus.${employeeStatusKey}`, toTitleCase(employeeStatus) || 'Pending')}</span>
         </div>
+
+        {/* Department chip */}
+        {employeeDepartment && (
+          <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-full bg-black/30 text-white text-xs font-medium backdrop-blur-sm flex items-center gap-1.5">
+            <Building2 className="h-3.5 w-3.5" />
+            <span className="max-w-45 truncate">
+              {t(`employeeDepartment.${employeeDepartmentKey}`, toTitleCase(employeeDepartment) || employeeDepartment)}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Avatar overlapping header */}
+      {/* Avatar + Top Summary */}
       <div className="relative px-4 -mt-10">
         <div className="relative group/avatar inline-block">
           <div 
@@ -155,7 +319,7 @@ const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoU
             ) : employee.photo && !photoError ? (
               <img 
                 src={employee.photo} 
-                alt={employee.name}
+                alt={safeText(employee?.name, t('employees.employee', 'Employee'))}
                 className="w-full h-full object-cover"
                 onError={() => setPhotoError(true)}
               />
@@ -183,95 +347,177 @@ const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoU
 
       {/* Content */}
       <div className="px-4 pt-3 pb-4">
-        {/* Name and Position */}
-        <div className="mb-4">
-          <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            {getDemoEmployeeName(employee, t)}
-          </h3>
-          <p className={`text-sm font-medium ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
-            {t(`employeePosition.${employee.position.toLowerCase().replace(' ', '')}`, employee.position)}
-          </p>
-        </div>
-
-        {/* Quick Info Grid */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className={`flex items-center space-x-2 p-2 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
-            <Network className={`h-4 w-4 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
-            <span className={`text-xs truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-              {t(`employeeDepartment.${employee.department.toLowerCase().replace(' ', '')}`, employee.department)}
-            </span>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} truncate`}>
+              {getDemoEmployeeName(employee, t)}
+            </h3>
+            <p className={`text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'} truncate`}>
+              {employeePosition
+                ? t(`employeePosition.${normalizeKey(employeePosition)}`, employeePosition)
+                : t('common.notAvailable', 'N/A')}
+            </p>
           </div>
-          <div className={`flex items-center space-x-2 p-2 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
-            <TrendingUp className={`h-4 w-4 ${performanceColor}`} />
-            <span className={`text-xs font-semibold ${performanceColor}`}>
-              {employee.performance}/5.0
-            </span>
+          <div className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full ${isDarkMode ? 'bg-gray-700/60 text-gray-100' : 'bg-gray-100 text-gray-800'}`}>
+            <Sparkles className="h-3.5 w-3.5" />
+            <span className={`text-xs font-semibold ${performanceColor}`}>{performanceLabel}</span>
+            <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>/5</span>
           </div>
         </div>
 
-        {/* Contact Info */}
-        <div className={`space-y-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          <div className="flex items-center space-x-2">
-            <Mail className={`h-4 w-4 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
-            <span className="truncate">{employee.email}</span>
+        {/* Performance bar + stars */}
+        <div className="mt-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((idx) => (
+                <Star
+                  key={idx}
+                  className={`h-3.5 w-3.5 ${idx <= Math.round(performanceValue) ? performanceColor : isDarkMode ? 'text-gray-600' : 'text-gray-300'}`}
+                  fill={idx <= Math.round(performanceValue) ? 'currentColor' : 'none'}
+                />
+              ))}
+            </div>
+            <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              {t('employees.performance', 'Performance')}
+            </span>
           </div>
-          <div className="flex items-center space-x-2">
-            <Phone className={`h-4 w-4 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
-            <span>{employee.phone}</span>
+          <div className={`mt-2 h-2 rounded-full overflow-hidden ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+            <div className={`h-full ${isDarkMode ? 'bg-white/30' : 'bg-gray-900/20'}`} style={{ width: `${performancePct}%` }} />
           </div>
-          <div className="flex items-center space-x-2">
+        </div>
+
+        {/* Primary metadata */}
+        <div className={`mt-4 grid grid-cols-1 gap-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+          {employeeEmail && (
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Mail className={`h-4 w-4 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                <span className="truncate" title={employeeEmail}>{employeeEmail}</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleCopyEmail}
+                className={`${isDarkMode ? 'text-gray-300 hover:text-white hover:bg-gray-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'} p-1.5 rounded-lg transition-colors`}
+                title={t('common.copy', 'Copy')}
+                aria-label={t('common.copy', 'Copy')}
+              >
+                <Copy className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          {employeePhone && (
+            <div className="flex items-center gap-2">
+              <Phone className={`h-4 w-4 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+              <span className="truncate" title={employeePhone}>{employeePhone}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
             <MapPin className={`h-4 w-4 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
-            <span className="truncate">{employee.address ? employee.address.toLocaleString() : 'N/A'}</span>
+            <span className="truncate" title={safeText(employee?.address, '')}>
+              {employee?.address ? String(employee.address) : t('common.notAvailable', 'N/A')}
+            </span>
           </div>
+        </div>
+
+        {/* Secondary chips */}
+        <div className="mt-4 flex flex-wrap gap-2">
+          {employeeDepartment && (
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${isDarkMode ? 'bg-gray-700/50 text-gray-200' : 'bg-gray-100 text-gray-800'}`}>
+              <Network className="h-3.5 w-3.5" />
+              {t(`employeeDepartment.${employeeDepartmentKey}`, toTitleCase(employeeDepartment) || employeeDepartment)}
+            </span>
+          )}
+          {!!employee?.id && (
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${isDarkMode ? 'bg-gray-700/30 text-gray-300' : 'bg-gray-50 text-gray-600'}`}>
+              {t('employees.id', 'ID')}: {String(employee.id).slice(0, 8)}
+            </span>
+          )}
         </div>
       </div>
 
       {/* Footer Actions */}
-      <div className={`flex items-center justify-between px-4 py-3 border-t ${isDarkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-100 bg-gray-50/50'}`}>
-        <div className="flex items-center space-x-1">
+      <div className={`flex items-center justify-between px-4 py-3 border-t ${isDarkMode ? 'border-gray-700 bg-gray-800/40' : 'border-gray-100 bg-gray-50/60'}`}>
+        <div className="flex items-center gap-1">
           <button
+            type="button"
             onClick={handleViewClick}
-            className={`p-2 rounded-lg transition-all duration-200 cursor-pointer ${
-              isDarkMode ? 'hover:bg-gray-700 text-gray-400 hover:text-blue-400' : 'hover:bg-gray-200 text-gray-500 hover:text-blue-600'
+            className={`p-2 cursor-pointer rounded-lg transition-colors ${
+              isDarkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
             }`}
             title={t('employees.view', 'View Details')}
+            aria-label={t('employees.view', 'View Details')}
           >
             <Eye className="h-4 w-4" />
           </button>
+
+          {employeeEmail && (
+            <a
+              href={`mailto:${employeeEmail}`}
+              onClick={(e) => e.stopPropagation()}
+              className={`p-2 cursor-pointer rounded-lg transition-colors ${
+                isDarkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-amber-500' : 'hover:bg-gray-200 text-gray-600 hover:text-amber-700'
+              }`}
+              title={t('common.email', 'Email')}
+              aria-label={t('common.email', 'Email')}
+            >
+              <Mail className="h-4 w-4" />
+            </a>
+          )}
+
+          {employeePhone && (
+            <a
+              href={`tel:${employeePhone}`}
+              onClick={(e) => e.stopPropagation()}
+              className={`p-2 rounded-lg transition-colors ${
+                isDarkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-blue-500' : 'hover:bg-gray-200 text-gray-600 hover:text-blue-500'
+              }`}
+              title={t('common.phone', 'Phone')}
+              aria-label={t('common.phone', 'Phone')}
+            >
+              <Phone className="h-4 w-4" />
+            </a>
+          )}
+
           {canEditOrDelete && (
             <>
-              <button 
+              <button
+                type="button"
                 onClick={handleEditClick}
-                className={`p-2 rounded-lg transition-all duration-200 cursor-pointer ${
-                  isDarkMode ? 'hover:bg-gray-700 text-gray-400 hover:text-green-400' : 'hover:bg-gray-200 text-gray-500 hover:text-green-600'
+                className={`p-2 cursor-pointer rounded-lg transition-colors ${
+                  isDarkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-emerald-300' : 'hover:bg-gray-200 text-gray-600 hover:text-emerald-700'
                 }`}
                 title={t('employees.edit', 'Edit')}
+                aria-label={t('employees.edit', 'Edit')}
               >
                 <Edit className="h-4 w-4" />
               </button>
-              <button 
+              <button
+                type="button"
                 onClick={handleDeleteClick}
-                className={`p-2 rounded-lg transition-all duration-200 cursor-pointer ${
-                  isDarkMode ? 'hover:bg-gray-700 text-gray-400 hover:text-red-400' : 'hover:bg-gray-200 text-gray-500 hover:text-red-600'
+                className={`p-2 cursor-pointer rounded-lg transition-colors ${
+                  isDarkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-rose-300' : 'hover:bg-gray-200 text-gray-600 hover:text-rose-700'
                 }`}
                 title={t('employees.delete', 'Delete')}
+                aria-label={t('employees.delete', 'Delete')}
               >
                 <Trash2 className="h-4 w-4" />
               </button>
             </>
           )}
         </div>
+
         <button
+          type="button"
           onClick={handleViewClick}
-          className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-            isDarkMode 
-              ? 'bg-blue-900/50 text-blue-400 hover:bg-blue-800' 
-              : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+            isDarkMode
+              ? 'bg-white/10 text-white hover:bg-white/15'
+              : 'bg-gray-900 text-white hover:bg-gray-800'
           }`}
         >
-          <span>{t('common.viewDetails', 'View')}</span>
-          <ChevronRight className="h-3 w-3" />
+          {t('common.viewDetails', 'View')}
         </button>
+      </div>
       </div>
     </div>
   );
