@@ -488,6 +488,7 @@ export default {
 
   // Reports
   reports: {
+    daysWorked: '勤務日数',
     title: 'レポート・分析',
     allEmployees: '全従業員',
     filenamePrefix: '人事報告書_',

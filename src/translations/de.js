@@ -561,6 +561,7 @@ export default {
 
   // Reports
   reports: {
+    daysWorked: "Gearbeitete Tage",
     leaveDays: "Urlaubstage",
     title: 'Berichte & Analysen',
     allEmployees: 'Alle_Mitarbeiter',

@@ -567,6 +567,7 @@ login: {
 
   // Reports
   reports: {
+    daysWorked: 'Días Trabajados',
     leaveDays: 'Días de Permiso',
     title: 'Informes y Análisis',
     allEmployees: 'Todos_los_Empleados',

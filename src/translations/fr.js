@@ -544,6 +544,7 @@ export default {
 
   // Reports
   reports: {
+    daysWorked: 'Jours travaillés',
     title: 'Rapports et analyses',
     allEmployees: 'Tous_les_employés',
     filenamePrefix: 'Rapport_RH',

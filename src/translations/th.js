@@ -487,6 +487,7 @@ export default {
 
   // Reports
   reports: {
+    daysWorked: 'วันทำงาน',
     leaveDays: 'วันลา',
     title: 'รายงานและการวิเคราะห์',
     filenamePrefix: 'รายงาน_',

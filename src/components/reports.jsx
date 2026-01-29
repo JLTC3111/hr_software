@@ -2585,6 +2585,8 @@ const Reports = () => {
         const wfhHours = employeeTimeEntries.filter(e => e.hour_type === 'wfh').reduce((sum, e) => sum + (e.hours || 0), 0);
         // Leave days (on_leave entries count as days)
         const leaveDays = employeeTimeEntries.filter(e => e.hour_type === 'on_leave').length;
+        // Days worked (count unique dates with time entries)
+        const daysWorked = new Set(employeeTimeEntries.map(e => e.date)).size;
         const pendingEntries = employeeTimeEntries.filter(e => e.status === 'pending').length;
         const approvedEntries = employeeTimeEntries.filter(e => e.status === 'approved').length;
 
@@ -2647,6 +2649,12 @@ const Reports = () => {
                     <Apple className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                     <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.leaveDays', 'Leave Days')}</p>
                     <p className={`text-2xl font-bold ${text.primary}`}>{leaveDays}</p>
+                  </div>
+                  
+                  <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                    <Calendar className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
+                    <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.daysWorked', 'Days Worked')}</p>
+                    <p className={`text-2xl font-bold ${text.primary}`}>{daysWorked}</p>
                   </div>
                 </>
               )}
