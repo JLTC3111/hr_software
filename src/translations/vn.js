@@ -1855,7 +1855,7 @@ export default {
     sales: 'Bán Hàng',
     marketing: 'Tiếp Thị',
     design: 'Thiết Kế',
-    part_time_employee: 'Nhân Viên Bán Thời Gian',
+    part_time_employee: 'Khối Chuyên Gia',
   },
 
   // Control Panel
