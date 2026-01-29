@@ -1059,6 +1059,8 @@ login: {
     pending: 'Pendiente',
     rejected: 'Rechazado',
     completed: 'Completado',
+    active: 'Activo',
+    delayed: 'Retrasado',
     'in-progress': 'En progreso',
     'not-started': 'No iniciado',
     achieved: 'Logrado',

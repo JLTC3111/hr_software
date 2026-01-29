@@ -947,6 +947,8 @@ export default {
     pending: 'Ausstehend',
     rejected: 'Abgelehnt',
     completed: 'Abgeschlossen',
+    active: 'Aktiv',
+    delayed: 'Verzögert',
     'in-progress': 'In Bearbeitung',
     'not-started': 'Nicht begonnen',
     achieved: 'Erreicht',

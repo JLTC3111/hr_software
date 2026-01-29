@@ -1009,6 +1009,8 @@ export default {
     pending: 'В ожидании',
     rejected: 'Отклонено',
     completed: 'Завершено',
+    active: 'Активный',
+    delayed: 'Задержан',
     'in-progress': 'В процессе',
     'not-started': 'Не начато',
     achieved: 'Достигнуто',

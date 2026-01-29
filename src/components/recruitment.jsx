@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Calendar, Eye, X, Check, XCircle, Star } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { Plus, Calendar, Eye, X, Check, XCircle, Star, FileText, Users, ClipboardCheck, UserCheck, ChevronRight, ChevronDown, Briefcase, Clock, TrendingUp, ArrowRight } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import {
@@ -21,6 +21,8 @@ const Recruitment = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
   const [showPostJobModal, setShowPostJobModal] = useState(false);
+  const [viewMode, setViewMode] = useState('pipeline'); // 'pipeline' or 'table'
+  const [expandedStage, setExpandedStage] = useState(null);
   
   useEffect(() => {
     fetchData();
@@ -66,9 +68,88 @@ const Recruitment = () => {
     await handleStatusUpdate(application.id, 'interview scheduled');
   };
 
-  const filteredApplications = filterStatus === 'all' 
-    ? applications 
-    : applications.filter(app => app.status === filterStatus);
+  const filteredApplications = useMemo(() => {
+    return filterStatus === 'all' 
+      ? applications 
+      : applications.filter(app => app.status === filterStatus);
+  }, [applications, filterStatus]);
+
+  // Group applications by pipeline stage
+  const pipelineData = useMemo(() => {
+    const stages = {
+      'under review': { 
+        key: 'underReview',
+        label: t('recruitment.pipeline.screening', 'Screening'),
+        description: t('recruitment.pipeline.screeningDesc', 'Initial application review'),
+        icon: FileText,
+        color: 'yellow',
+        applications: []
+      },
+      'shortlisted': { 
+        key: 'shortlisted',
+        label: t('recruitment.pipeline.shortlisted', 'Shortlisted'),
+        description: t('recruitment.pipeline.shortlistedDesc', 'Qualified candidates'),
+        icon: Users,
+        color: 'blue',
+        applications: []
+      },
+      'interview scheduled': { 
+        key: 'interview',
+        label: t('recruitment.pipeline.interview', 'Interview'),
+        description: t('recruitment.pipeline.interviewDesc', 'Interview process'),
+        icon: ClipboardCheck,
+        color: 'purple',
+        applications: []
+      },
+      'offer extended': { 
+        key: 'offer',
+        label: t('recruitment.pipeline.offer', 'Offer'),
+        description: t('recruitment.pipeline.offerDesc', 'Job offer extended'),
+        icon: Briefcase,
+        color: 'orange',
+        applications: []
+      },
+      'hired': { 
+        key: 'hired',
+        label: t('recruitment.pipeline.hired', 'Hired'),
+        description: t('recruitment.pipeline.hiredDesc', 'Successfully hired'),
+        icon: UserCheck,
+        color: 'green',
+        applications: []
+      },
+      'rejected': { 
+        key: 'rejected',
+        label: t('recruitment.pipeline.rejected', 'Rejected'),
+        description: t('recruitment.pipeline.rejectedDesc', 'Not proceeding'),
+        icon: XCircle,
+        color: 'red',
+        applications: []
+      }
+    };
+
+    applications.forEach(app => {
+      const status = app.status?.toLowerCase() || 'under review';
+      if (stages[status]) {
+        stages[status].applications.push(app);
+      }
+    });
+
+    return stages;
+  }, [applications, t]);
+
+  // Calculate pipeline metrics
+  const pipelineMetrics = useMemo(() => {
+    const total = applications.length;
+    const activeInPipeline = applications.filter(a => 
+      !['hired', 'rejected'].includes(a.status?.toLowerCase())
+    ).length;
+    const conversionRate = total > 0 
+      ? ((pipelineData.hired.applications.length / total) * 100).toFixed(1)
+      : 0;
+    const avgTimeToHire = '14'; // Placeholder - would calculate from actual data
+    
+    return { total, activeInPipeline, conversionRate, avgTimeToHire };
+  }, [applications, pipelineData]);
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -99,20 +180,94 @@ const Recruitment = () => {
     <div className="space-y-6 px-2 sm:px-0">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-        <h2 className={`text-2xl font-bold ${text.primary}`}>
-          {t('recruitment.title', 'Recruitment')}
-        </h2>
-        <button 
-          onClick={() => setShowPostJobModal(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 transition-colors cursor-pointer"
-        >
-          <Plus className="h-4 w-4" />
-          <span>{t('recruitment.postNewJob', 'Post New Job')}</span>
-        </button>
+        <div>
+          <h2 className={`text-2xl font-bold ${text.primary}`}>
+            {t('recruitment.title', 'Recruitment')}
+          </h2>
+          <p className={`text-sm ${text.secondary} mt-1`}>
+            {t('recruitment.subtitle', 'Manage your hiring pipeline and track candidates')}
+          </p>
+        </div>
+        <div className="flex items-center space-x-3">
+          {/* View Toggle */}
+          <div className={`flex rounded-lg border ${border.primary} overflow-hidden`}>
+            <button
+              onClick={() => setViewMode('pipeline')}
+              className={`px-3 py-2 text-sm font-medium transition-colors cursor-pointer ${
+                viewMode === 'pipeline'
+                  ? 'bg-blue-600 text-white'
+                  : `${bg.secondary} ${text.secondary} hover:${bg.tertiary}`
+              }`}
+            >
+              {t('recruitment.pipelineView', 'Pipeline')}
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`px-3 py-2 text-sm font-medium transition-colors cursor-pointer ${
+                viewMode === 'table'
+                  ? 'bg-blue-600 text-white'
+                  : `${bg.secondary} ${text.secondary} hover:${bg.tertiary}`
+              }`}
+            >
+              {t('recruitment.tableView', 'Table')}
+            </button>
+          </div>
+          <button 
+            onClick={() => setShowPostJobModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 transition-colors cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">{t('recruitment.postNewJob', 'Post New Job')}</span>
+          </button>
+        </div>
       </div>
 
-      {/* Stats Cards */}
-      {stats && (
+      {/* Pipeline Metrics Summary */}
+      <div className={`grid grid-cols-2 md:grid-cols-4 gap-4`}>
+        <MetricCard
+          icon={Users}
+          label={t('recruitment.metrics.totalCandidates', 'Total Candidates')}
+          value={pipelineMetrics.total}
+          color="blue"
+        />
+        <MetricCard
+          icon={TrendingUp}
+          label={t('recruitment.metrics.activeInPipeline', 'Active in Pipeline')}
+          value={pipelineMetrics.activeInPipeline}
+          color="purple"
+        />
+        <MetricCard
+          icon={UserCheck}
+          label={t('recruitment.metrics.conversionRate', 'Conversion Rate')}
+          value={`${pipelineMetrics.conversionRate}%`}
+          color="green"
+        />
+        <MetricCard
+          icon={Clock}
+          label={t('recruitment.metrics.avgTimeToHire', 'Avg. Time to Hire')}
+          value={`${pipelineMetrics.avgTimeToHire} ${t('common.days', 'days')}`}
+          color="orange"
+        />
+      </div>
+
+      {/* Visual Pipeline Timeline */}
+      {viewMode === 'pipeline' && (
+        <RecruitmentPipeline
+          pipelineData={pipelineData}
+          expandedStage={expandedStage}
+          setExpandedStage={setExpandedStage}
+          onViewApplication={(app) => {
+            setSelectedApplication(app);
+            setShowDetailModal(true);
+          }}
+          onStatusUpdate={handleStatusUpdate}
+          formatDate={formatDate}
+          getStatusColor={getStatusColor}
+        />
+      )}
+
+      {/* Stats Cards - Only show in table view */}
+      {viewMode === 'table' && stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
           <StatCard
             label={t('recruitment.total', 'Total')}
@@ -166,7 +321,8 @@ const Recruitment = () => {
         </div>
       )}
 
-      {/* Applications Table */}
+      {/* Applications Table - Only show in table view */}
+      {viewMode === 'table' && (
       <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} overflow-hidden`}>
         <div className={`p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
           <h3 className={`text-lg font-semibold ${text.primary}`}>
@@ -303,6 +459,7 @@ const Recruitment = () => {
           </table>
         </div>
       </div>
+      )}
 
       {/* Application Detail Modal */}
       {showDetailModal && selectedApplication && (
@@ -354,6 +511,340 @@ const StatCard = ({ label, value, color, onClick, active }) => {
     </div>
   );
 };
+
+// Metric Card Component
+const MetricCard = memo(({ icon: Icon, label, value, color }) => {
+  const { text, border, isDarkMode, bg } = useTheme();
+  
+  const colorConfig = {
+    blue: { bg: isDarkMode ? 'bg-blue-900/50' : 'bg-blue-50', icon: isDarkMode ? 'text-blue-400' : 'text-blue-600' },
+    purple: { bg: isDarkMode ? 'bg-purple-900/50' : 'bg-purple-50', icon: isDarkMode ? 'text-purple-400' : 'text-purple-600' },
+    green: { bg: isDarkMode ? 'bg-green-900/50' : 'bg-green-50', icon: isDarkMode ? 'text-green-400' : 'text-green-600' },
+    orange: { bg: isDarkMode ? 'bg-orange-900/50' : 'bg-orange-50', icon: isDarkMode ? 'text-orange-400' : 'text-orange-600' }
+  };
+
+  const config = colorConfig[color] || colorConfig.blue;
+
+  return (
+    <div className={`${bg.secondary} rounded-xl p-4 border ${border.primary} hover:shadow-md transition-shadow`}>
+      <div className="flex items-center space-x-3">
+        <div className={`p-2 rounded-lg ${config.bg}`}>
+          <Icon className={`w-5 h-5 ${config.icon}`} />
+        </div>
+        <div>
+          <p className={`text-xs font-medium ${text.secondary}`}>{label}</p>
+          <p className={`text-xl font-bold ${text.primary}`}>{value}</p>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+MetricCard.displayName = 'MetricCard';
+
+// Recruitment Pipeline Component
+const RecruitmentPipeline = memo(({ 
+  pipelineData, 
+  expandedStage, 
+  setExpandedStage, 
+  onViewApplication, 
+  onStatusUpdate,
+  formatDate,
+  getStatusColor
+}) => {
+  const { t } = useLanguage();
+  const { isDarkMode, bg, text, border } = useTheme();
+
+  const stages = ['under review', 'shortlisted', 'interview scheduled', 'offer extended', 'hired'];
+  
+  const colorConfig = {
+    yellow: { 
+      bg: isDarkMode ? 'bg-yellow-900/30' : 'bg-yellow-50',
+      border: 'border-yellow-500',
+      text: isDarkMode ? 'text-yellow-400' : 'text-yellow-700',
+      dot: 'bg-yellow-500'
+    },
+    blue: { 
+      bg: isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50',
+      border: 'border-blue-500',
+      text: isDarkMode ? 'text-blue-400' : 'text-blue-700',
+      dot: 'bg-blue-500'
+    },
+    purple: { 
+      bg: isDarkMode ? 'bg-purple-900/30' : 'bg-purple-50',
+      border: 'border-purple-500',
+      text: isDarkMode ? 'text-purple-400' : 'text-purple-700',
+      dot: 'bg-purple-500'
+    },
+    orange: { 
+      bg: isDarkMode ? 'bg-orange-900/30' : 'bg-orange-50',
+      border: 'border-orange-500',
+      text: isDarkMode ? 'text-orange-400' : 'text-orange-700',
+      dot: 'bg-orange-500'
+    },
+    green: { 
+      bg: isDarkMode ? 'bg-green-900/30' : 'bg-green-50',
+      border: 'border-green-500',
+      text: isDarkMode ? 'text-green-400' : 'text-green-700',
+      dot: 'bg-green-500'
+    },
+    red: { 
+      bg: isDarkMode ? 'bg-red-900/30' : 'bg-red-50',
+      border: 'border-red-500',
+      text: isDarkMode ? 'text-red-400' : 'text-red-700',
+      dot: 'bg-red-500'
+    }
+  };
+
+  return (
+    <div className={`${bg.secondary} rounded-xl border ${border.primary} p-6`}>
+      {/* Pipeline Header */}
+      <div className="flex items-center justify-between mb-6">
+        <h3 className={`text-lg font-semibold ${text.primary}`}>
+          {t('recruitment.pipeline.title', 'Recruitment Pipeline')}
+        </h3>
+        <div className={`text-sm ${text.secondary}`}>
+          {t('recruitment.pipeline.clickToExpand', 'Click stages to view candidates')}
+        </div>
+      </div>
+
+      {/* Visual Pipeline Timeline */}
+      <div className="relative">
+        {/* Connection Line */}
+        <div className="absolute top-8 left-0 right-0 h-1 bg-linear-to-r from-yellow-500 via-purple-500 to-green-500 rounded-full opacity-30" />
+        
+        {/* Stages */}
+        <div className="grid grid-cols-5 gap-2 md:gap-4 relative z-10">
+          {stages.map((stageKey, index) => {
+            const stage = pipelineData[stageKey];
+            if (!stage) return null;
+            
+            const Icon = stage.icon;
+            const config = colorConfig[stage.color];
+            const isExpanded = expandedStage === stageKey;
+            const count = stage.applications.length;
+
+            return (
+              <div key={stageKey} className="flex flex-col items-center">
+                {/* Stage Circle */}
+                <button
+                  onClick={() => setExpandedStage(isExpanded ? null : stageKey)}
+                  className={`relative w-14 h-14 md:w-16 md:h-16 rounded-full ${config.bg} border-2 ${config.border} flex items-center justify-center transition-all duration-300 hover:scale-110 cursor-pointer ${isExpanded ? 'ring-4 ring-offset-2 ring-offset-gray-900 ' + config.border.replace('border-', 'ring-') : ''}`}
+                >
+                  <Icon className={`w-6 h-6 md:w-7 md:h-7 ${config.text}`} />
+                  {/* Count Badge */}
+                  {count > 0 && (
+                    <span className={`absolute -top-1 -right-1 w-5 h-5 md:w-6 md:h-6 ${config.dot} text-white text-xs font-bold rounded-full flex items-center justify-center`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+
+                {/* Stage Label */}
+                <div className="mt-3 text-center">
+                  <p className={`text-xs md:text-sm font-medium ${text.primary} line-clamp-1`}>
+                    {stage.label}
+                  </p>
+                  <p className={`text-xs ${text.secondary} hidden md:block`}>
+                    {count} {t('recruitment.candidates', 'candidates')}
+                  </p>
+                </div>
+
+                {/* Arrow */}
+                {index < stages.length - 1 && (
+                  <div className="absolute top-8 hidden md:block" style={{ left: `${(index + 1) * 20 - 2}%` }}>
+                    <ArrowRight className={`w-4 h-4 ${text.secondary}`} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Expanded Stage Details */}
+      {expandedStage && pipelineData[expandedStage] && (
+        <div className={`mt-6 pt-6 border-t ${border.primary}`}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              {(() => {
+                const stage = pipelineData[expandedStage];
+                const Icon = stage.icon;
+                const config = colorConfig[stage.color];
+                return (
+                  <>
+                    <div className={`p-2 rounded-lg ${config.bg}`}>
+                      <Icon className={`w-5 h-5 ${config.text}`} />
+                    </div>
+                    <div>
+                      <h4 className={`font-semibold ${text.primary}`}>{stage.label}</h4>
+                      <p className={`text-sm ${text.secondary}`}>{stage.description}</p>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+            <button
+              onClick={() => setExpandedStage(null)}
+              className={`p-1 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors cursor-pointer`}
+            >
+              <X className={`w-5 h-5 ${text.secondary}`} />
+            </button>
+          </div>
+
+          {/* Candidates List */}
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {pipelineData[expandedStage].applications.length === 0 ? (
+              <div className={`text-center py-8 ${text.secondary}`}>
+                {t('recruitment.pipeline.noCandidates', 'No candidates in this stage')}
+              </div>
+            ) : (
+              pipelineData[expandedStage].applications.map(app => (
+                <CandidateCard
+                  key={app.id}
+                  application={app}
+                  onView={() => onViewApplication(app)}
+                  onStatusUpdate={onStatusUpdate}
+                  formatDate={formatDate}
+                  currentStage={expandedStage}
+                  stages={stages}
+                />
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Rejected Section (Separate) */}
+      {pipelineData.rejected?.applications.length > 0 && (
+        <div className={`mt-6 pt-6 border-t ${border.primary}`}>
+          <button
+            onClick={() => setExpandedStage(expandedStage === 'rejected' ? null : 'rejected')}
+            className={`flex items-center justify-between w-full p-3 rounded-lg ${colorConfig.red.bg} border ${colorConfig.red.border} cursor-pointer transition-all hover:opacity-80`}
+          >
+            <div className="flex items-center space-x-3">
+              <XCircle className={`w-5 h-5 ${colorConfig.red.text}`} />
+              <span className={`font-medium ${colorConfig.red.text}`}>
+                {t('recruitment.pipeline.rejected', 'Rejected')} ({pipelineData.rejected.applications.length})
+              </span>
+            </div>
+            {expandedStage === 'rejected' ? (
+              <ChevronDown className={`w-5 h-5 ${colorConfig.red.text}`} />
+            ) : (
+              <ChevronRight className={`w-5 h-5 ${colorConfig.red.text}`} />
+            )}
+          </button>
+
+          {expandedStage === 'rejected' && (
+            <div className="mt-3 space-y-3 max-h-64 overflow-y-auto">
+              {pipelineData.rejected.applications.map(app => (
+                <CandidateCard
+                  key={app.id}
+                  application={app}
+                  onView={() => onViewApplication(app)}
+                  formatDate={formatDate}
+                  currentStage="rejected"
+                  isRejected
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+});
+
+RecruitmentPipeline.displayName = 'RecruitmentPipeline';
+
+// Candidate Card Component
+const CandidateCard = memo(({ application, onView, onStatusUpdate, formatDate, currentStage, stages, isRejected }) => {
+  const { t } = useLanguage();
+  const { isDarkMode, bg, text, border } = useTheme();
+
+  // Get next stage in pipeline
+  const getNextStage = () => {
+    if (!stages || isRejected) return null;
+    const currentIndex = stages.indexOf(currentStage);
+    if (currentIndex === -1 || currentIndex >= stages.length - 1) return null;
+    return stages[currentIndex + 1];
+  };
+
+  const nextStage = getNextStage();
+
+  const stageLabels = {
+    'under review': t('recruitment.status.underreview', 'Under Review'),
+    'shortlisted': t('recruitment.status.shortlisted', 'Shortlisted'),
+    'interview scheduled': t('recruitment.status.interviewscheduled', 'Interview'),
+    'offer extended': t('recruitment.status.offerextended', 'Offer'),
+    'hired': t('recruitment.status.hired', 'Hired')
+  };
+
+  return (
+    <div className={`${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'} rounded-lg p-4 border ${border.primary} hover:shadow-md transition-all`}>
+      <div className="flex items-start justify-between">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center space-x-2">
+            <h5 className={`font-medium ${text.primary} truncate`}>
+              {application.applicant?.full_name || 
+               `${application.applicant?.first_name || ''} ${application.applicant?.last_name || ''}`.trim() ||
+               t('common.notAvailable', 'N/A')}
+            </h5>
+            {application.rating && (
+              <div className="flex items-center">
+                <Star className={`w-3 h-3 ${isDarkMode ? 'text-yellow-400 fill-yellow-400' : 'text-yellow-500 fill-yellow-500'}`} />
+                <span className={`text-xs ${text.secondary} ml-1`}>{application.rating}</span>
+              </div>
+            )}
+          </div>
+          <p className={`text-sm ${text.secondary} truncate`}>
+            {isDemoMode() ? getDemoJobTitle(application.job_posting, t) : application.job_posting?.title || application.job_posting?.position}
+          </p>
+          <div className="flex items-center space-x-3 mt-2">
+            <span className={`text-xs ${text.secondary}`}>
+              {application.applicant?.years_of_experience || 0} {t('recruitment.yearsExperience', 'years exp.')}
+            </span>
+            <span className={`text-xs ${text.secondary}`}>
+              {formatDate(application.application_date)}
+            </span>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-2 ml-4">
+          <button
+            onClick={onView}
+            className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'} transition-colors cursor-pointer`}
+            title={t('common.view', 'View')}
+          >
+            <Eye className={`w-4 h-4 ${text.secondary}`} />
+          </button>
+          
+          {nextStage && onStatusUpdate && (
+            <button
+              onClick={() => onStatusUpdate(application.id, nextStage)}
+              className={`p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors cursor-pointer`}
+              title={`${t('recruitment.moveTo', 'Move to')} ${stageLabels[nextStage] || nextStage}`}
+            >
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
+          
+          {!isRejected && onStatusUpdate && currentStage !== 'hired' && (
+            <button
+              onClick={() => onStatusUpdate(application.id, 'rejected')}
+              className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-red-900/50' : 'hover:bg-red-50'} transition-colors cursor-pointer`}
+              title={t('recruitment.reject', 'Reject')}
+            >
+              <XCircle className={`w-4 h-4 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
+
+CandidateCard.displayName = 'CandidateCard';
 
 // Post Job Modal Component
 const PostJobModal = ({ onClose, onSuccess }) => {

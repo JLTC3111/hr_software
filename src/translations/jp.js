@@ -961,6 +961,8 @@ export default {
     pending: '保留中',
     rejected: '却下',
     completed: '完了',
+    active: 'アクティブ',
+    delayed: '遅延',
     'in-progress': '進行中',
     'not-started': '未開始',
     achieved: '達成',

@@ -544,6 +544,48 @@ export default {
     viewResume: 'Xem CV',
     linkedinProfile: 'Hồ sơ LinkedIn',
     notes: 'Ghi chú',
+    // Nested status translations
+    status: {
+      interviewscheduled: 'Đã lên lịch phỏng vấn',
+      underreview: 'Đang xem xét',
+      offerextended: 'Đã đưa ra đề nghị',
+      hired: 'Đã tuyển dụng',
+      rejected: 'Từ chối',
+      shortlisted: 'Danh sách chọn lọc',
+      pending: 'Đang chờ'
+    },
+    // Pipeline View
+    subtitle: 'Quản lý quy trình tuyển dụng và theo dõi ứng viên',
+    pipelineView: 'Quy trình',
+    tableView: 'Bảng',
+    candidates: 'ứng viên',
+    moveTo: 'Chuyển đến',
+    reject: 'Từ chối',
+    // Pipeline stages
+    pipeline: {
+      title: 'Quy Trình Tuyển Dụng',
+      clickToExpand: 'Nhấn vào các giai đoạn để xem ứng viên',
+      noCandidates: 'Không có ứng viên trong giai đoạn này',
+      screening: 'Sàng Lọc Hồ Sơ',
+      screeningDesc: 'Xem xét đơn ứng tuyển ban đầu',
+      shortlisted: 'Danh Sách Chọn Lọc',
+      shortlistedDesc: 'Ứng viên đã vượt qua vòng sàng lọc',
+      interview: 'Phỏng Vấn',
+      interviewDesc: 'Biên bản phỏng vấn',
+      offer: 'Đề Nghị Tuyển Dụng',
+      offerDesc: 'Quyết định tuyển dụng',
+      hired: 'Đã Tuyển Dụng',
+      hiredDesc: 'Đã nhận việc thành công',
+      rejected: 'Từ Chối',
+      rejectedDesc: 'Không tiếp tục'
+    },
+    // Pipeline metrics
+    metrics: {
+      totalCandidates: 'Tổng Số Ứng Viên',
+      activeInPipeline: 'Đang Trong Quy Trình',
+      conversionRate: 'Tỷ Lệ Chuyển Đổi',
+      avgTimeToHire: 'Thời Gian TB Tuyển Dụng'
+    }
   },
 
   // Reports
@@ -1120,6 +1162,8 @@ export default {
     pending: 'Chờ xử lý',
     rejected: 'Bị từ chối',
     completed: 'Hoàn thành',
+    active: 'Đang hoạt động',
+    delayed: 'Bị trì hoãn',
     'in-progress': 'Đang thực hiện',
     'not-started': 'Chưa bắt đầu',
     achieved: 'Đã đạt được',

@@ -1074,9 +1074,11 @@ export default {
   // Status translations
   status: {
     approved: 'Approuvé',
-    pending: 'En attente',
+    pending: 'En Attente',
     rejected: 'Rejeté',
     completed: 'Terminé',
+    active: 'Actif',
+    delayed: 'Retardé',
     'in-progress': 'En cours',
     'not-started': 'Non commencé',
     achieved: 'Atteint',

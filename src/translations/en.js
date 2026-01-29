@@ -438,6 +438,38 @@ export default {
       rejected: 'Rejected',
       shortlisted: 'Shortlisted',
       pending: 'Pending'
+    },
+    // Pipeline View
+    subtitle: 'Manage your hiring pipeline and track candidates',
+    pipelineView: 'Pipeline',
+    tableView: 'Table',
+    candidates: 'candidates',
+    moveTo: 'Move to',
+    reject: 'Reject',
+    // Pipeline stages
+    pipeline: {
+      title: 'Recruitment Pipeline',
+      clickToExpand: 'Click stages to view candidates',
+      noCandidates: 'No candidates in this stage',
+      screening: 'Screening',
+      screeningDesc: 'Initial application review',
+      shortlisted: 'Shortlisted',
+      shortlistedDesc: 'Candidates passed initial screening',
+      interview: 'Interview',
+      interviewDesc: 'Interview scheduled or in progress',
+      offer: 'Offer',
+      offerDesc: 'Job offer extended',
+      hired: 'Hired',
+      hiredDesc: 'Successfully hired',
+      rejected: 'Rejected',
+      rejectedDesc: 'Not proceeding'
+    },
+    // Pipeline metrics
+    metrics: {
+      totalCandidates: 'Total Candidates',
+      activeInPipeline: 'Active in Pipeline',
+      conversionRate: 'Conversion Rate',
+      avgTimeToHire: 'Avg. Time to Hire'
     }
   },
 
@@ -1261,6 +1293,8 @@ export default {
     pending: 'Pending',
     rejected: 'Rejected',
     completed: 'Completed',
+    active: 'Active',
+    delayed: 'Delayed',
     'in-progress': 'In Progress',
     'not-started': 'Not Started',
     achieved: 'Achieved',

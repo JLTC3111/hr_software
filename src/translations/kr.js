@@ -922,6 +922,8 @@ export default {
     pending: '대기 중',
     rejected: '거부됨',
     completed: '완료',
+    active: '활성',
+    delayed: '지연됨',
     'in-progress': '진행 중',
     'not-started': '시작 안 함',
     achieved: '달성',

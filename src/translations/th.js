@@ -960,6 +960,8 @@ export default {
     pending: 'รอดำเนินการ',
     rejected: 'ปฏิเสธ',
     completed: 'เสร็จสมบูรณ์',
+    active: 'ใช้งานอยู่',
+    delayed: 'ล่าช้า',
     'in-progress': 'กำลังดำเนินการ',
     'not-started': 'ยังไม่เริ่ม',
     achieved: 'ทำสำเร็จ',
