@@ -488,8 +488,9 @@ export default {
     approved: 'Approved',
     rejected: 'Rejected',
     cancelled: 'Cancelled',
-    // Status translations (nested for t('timeTracking.status.pending'))
-    status: {
+    enteredByAdmin: 'Entered by admin:',
+    // Renamed to avoid collision with status label
+    requestStatus: {
       pending: 'Pending',
       approved: 'Approved',
       rejected: 'Rejected',

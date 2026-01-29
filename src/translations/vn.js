@@ -267,7 +267,9 @@ export default {
     approved: 'Đã phê duyệt',
     rejected: 'Từ chối',
     cancelled: 'Đã hủy',
-    status: {
+    enteredByAdmin: 'Được nhập bởi quản trị viên:',
+    // Renamed to avoid collision with status label
+    requestStatus: {
       pending: 'Đang chờ xử lý',
       approved: 'Đã phê duyệt',
       rejected: 'Bị từ chối',

@@ -644,10 +644,11 @@ const Reports = () => {
         ...data.map(row => 
           headers.map(header => {
             const value = row[header] || '';
-            // Escape quotes and wrap in quotes if contains comma or quotes
-            return typeof value === 'string' && (value.includes(',') || value.includes('"')) 
-              ? `"${value.replace(/"/g, '""')}"` 
-              : value;
+            const stringValue = String(value);
+            // Escape quotes and wrap in quotes if contains comma, quotes or newlines
+            return stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes('\r')
+              ? `"${stringValue.replace(/"/g, '""')}"` 
+              : stringValue;
           }).join(',')
         )
       ].join('\n');
@@ -671,6 +672,7 @@ const Reports = () => {
 
   // Export time entries
   const exportTimeEntries = () => {
+    if (!reportData.timeEntries || reportData.timeEntries.length === 0) return;
     setExporting(true);
     try {
       const exportData = reportData.timeEntries.map(entry => ({
@@ -706,6 +708,7 @@ const Reports = () => {
 
   // Export tasks
   const exportTasks = () => {
+    if (!reportData.tasks || reportData.tasks.length === 0) return;
     setExporting(true);
     try {
       const exportData = reportData.tasks.map(task => ({
@@ -740,6 +743,7 @@ const Reports = () => {
 
   // Export goals
   const exportGoals = () => {
+    if (!reportData.goals || reportData.goals.length === 0) return;
     setExporting(true);
     try {
       const exportData = reportData.goals.map(goal => ({
@@ -1768,11 +1772,14 @@ const Reports = () => {
   // Helper function to translate notes with "Entered by admin:" prefix
   const translateNotes = (notes) => {
     if (!notes) return '';
-    // Check if notes starts with "Entered by admin:"
-    const adminPrefix = 'Entered by admin:';
-    if (notes.startsWith(adminPrefix)) {
+    // Check if notes starts with "Entered by admin:" (case insensitive, optional colon)
+    const adminPrefixRegex = /^Entered by admin:?\s*/i;
+    const match = notes.match(adminPrefixRegex);
+
+    if (match) {
       const translatedPrefix = t('timeTracking.enteredByAdmin', 'Entered by admin:');
-      return notes.replace(adminPrefix, translatedPrefix);
+      // Replace the matched prefix with the translated one and ensure a space follows
+      return notes.replace(match[0], translatedPrefix + ' '); 
     }
     return notes;
   };
