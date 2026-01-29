@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Phone, Mail, MapPin, Award, Cake, Network, Calendar, DollarSign, User, ClipboardList, FileText, Download, Upload, Loader, Edit2, Briefcase, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { X, Phone, Mail, MapPin, Award, Cake, Network, Calendar, DollarSign, User, ClipboardList, FileText, Download, Upload, Loader, Edit2, Briefcase, Trash2, RefreshCw, Eye } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUpload } from '../contexts/UploadContext';
-import { getEmployeePdfUrl, deleteEmployeePdf } from '../services/employeeService';
+import { getEmployeePdfUrl, deleteEmployeePdf, uploadEmployeeRequestDocument, listEmployeeRequestDocuments, deleteEmployeeRequestDocument, getEmployeeRequestDocumentUrl } from '../services/employeeService';
 import { getDemoEmployeeName } from '../utils/demoHelper';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -20,7 +20,9 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
   
   // Check if user has permission to edit (not employee role)
   const canEdit = user?.role !== 'employee';
+  const canUploadRequestDocs = user?.role === 'admin' || user?.role === 'hr' || user?.role === 'manager';
   const [activeTab, setActiveTab] = useState('info'); // 'info', 'contact', 'documents'
+  const [documentsSubTab, setDocumentsSubTab] = useState('pdf'); // 'pdf' | 'requests'
   const [pdfPath, setPdfPath] = useState(employee?.pdf_document_url || null);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [numPages, setNumPages] = useState(null);
@@ -31,6 +33,13 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
   const [useIframe, setUseIframe] = useState(true); // Use iframe by default
   const modalRef = useRef(null);
   const resizeRef = useRef(null);
+
+  // Request docs state
+  const [requestDocs, setRequestDocs] = useState([]);
+  const [requestDocsLoading, setRequestDocsLoading] = useState(false);
+  const [requestDocsError, setRequestDocsError] = useState(null);
+  const [requestDocCategory, setRequestDocCategory] = useState('leave');
+  const [requestDocUpload, setRequestDocUpload] = useState({ status: 'idle', progress: 0, error: null });
   
   // Get upload status from context
   const uploadStatus = getUploadStatus(employee?.id);
@@ -71,6 +80,31 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
       setPdfPath(employee?.pdf_document_url || null);
     }
   }, [employee?.pdf_document_url]);
+
+  const loadRequestDocs = async () => {
+    if (!employee?.id) return;
+    setRequestDocsLoading(true);
+    setRequestDocsError(null);
+    try {
+      const result = await listEmployeeRequestDocuments(employee.id);
+      if (result.success) {
+        setRequestDocs(result.data || []);
+      } else {
+        setRequestDocsError(result.error || 'Failed to load documents');
+      }
+    } catch (err) {
+      setRequestDocsError(err?.message || 'Failed to load documents');
+    } finally {
+      setRequestDocsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab !== 'documents') return;
+    if (documentsSubTab !== 'requests') return;
+    loadRequestDocs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, documentsSubTab, employee?.id]);
   
   // Update PDF path when upload completes
   useEffect(() => {
@@ -156,6 +190,73 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
     // Reset file input
     e.target.value = '';
   };
+
+  const handleRequestDocUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setRequestDocUpload({ status: 'uploading', progress: 0, error: null });
+
+    try {
+      const result = await uploadEmployeeRequestDocument(
+        file,
+        employee.id,
+        requestDocCategory,
+        (percent) => setRequestDocUpload((prev) => ({ ...prev, progress: percent }))
+      );
+
+      if (!result.success) {
+        throw new Error(result.error || 'Upload failed');
+      }
+
+      setRequestDocUpload({ status: 'completed', progress: 100, error: null });
+      await loadRequestDocs();
+      alert(t('employeeDetailModal.requestDocUploaded', 'Document uploaded successfully!'));
+    } catch (err) {
+      setRequestDocUpload({ status: 'error', progress: 0, error: err?.message || 'Upload failed' });
+      alert(t('errors.uploadFailed', 'Failed to upload: ') + (err?.message || 'Unknown error'));
+    } finally {
+      e.target.value = '';
+      setTimeout(() => {
+        setRequestDocUpload((prev) => (prev.status === 'completed' ? { status: 'idle', progress: 0, error: null } : prev));
+      }, 1200);
+    }
+  };
+
+  const handleRequestDocView = async (doc) => {
+    try {
+      const result = await getEmployeeRequestDocumentUrl(doc.path);
+      if (!result.success) throw new Error(result.error || 'Failed to open document');
+      window.open(result.url, '_blank');
+    } catch (err) {
+      alert(t('errors.fileOpenFailed', 'Failed to open document: ') + (err?.message || 'Unknown error'));
+    }
+  };
+
+  const handleRequestDocDelete = async (doc) => {
+    const confirmDelete = window.confirm(
+      t('employeeDetailModal.confirmDelete', 'Are you sure you want to delete this document?')
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const result = await deleteEmployeeRequestDocument(employee.id, doc.path);
+      if (!result.success) throw new Error(result.error || 'Delete failed');
+      await loadRequestDocs();
+      alert(t('employeeDetailModal.documentDeleted', 'Document deleted successfully'));
+    } catch (err) {
+      alert(t('employeeDetailModal.documentDeleteError', 'Failed to delete document') + ': ' + (err?.message || ''));
+    }
+  };
+
+  const formattedRequestDocs = useMemo(() => {
+    return (requestDocs || []).map((doc) => {
+      const dateValue = doc.updatedAt || doc.createdAt;
+      const dateLabel = dateValue ? new Date(dateValue).toLocaleDateString() : '';
+      const sizeLabel = typeof doc.size === 'number' ? `${Math.round(doc.size / 1024)} KB` : '';
+      return { ...doc, dateLabel, sizeLabel };
+    });
+  }, [requestDocs]);
 
   const handlePdfDownload = () => {
     if (pdfUrl) {
@@ -477,69 +578,169 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
           {activeTab === 'documents' && (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center gap-3">
+                  <div className={`inline-flex rounded-lg border overflow-hidden ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
+                    <button
+                      type="button"
+                      onClick={() => setDocumentsSubTab('pdf')}
+                      className={`px-3 py-2 text-sm font-medium flex items-center gap-2 transition-colors ${
+                        documentsSubTab === 'pdf'
+                          ? isDarkMode
+                            ? 'bg-gray-700 text-white'
+                            : 'bg-gray-900 text-white'
+                          : isDarkMode
+                            ? 'bg-gray-800 text-gray-200 hover:bg-gray-700'
+                            : 'bg-white text-gray-700 hover:bg-gray-50'
+                      }`}
+                      title={t('employeeDetailModal.pdfTab', 'PDF')}
+                      aria-label={t('employeeDetailModal.pdfTab', 'PDF')}
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span className="hidden sm:inline">{t('employeeDetailModal.pdfTab', 'PDF')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDocumentsSubTab('requests')}
+                      className={`px-3 py-2 text-sm font-medium flex items-center gap-2 transition-colors ${
+                        documentsSubTab === 'requests'
+                          ? isDarkMode
+                            ? 'bg-gray-700 text-white'
+                            : 'bg-gray-900 text-white'
+                          : isDarkMode
+                            ? 'bg-gray-800 text-gray-200 hover:bg-gray-700'
+                            : 'bg-white text-gray-700 hover:bg-gray-50'
+                      }`}
+                      title={t('employeeDetailModal.requestDocsTab', 'Requests')}
+                      aria-label={t('employeeDetailModal.requestDocsTab', 'Requests')}
+                    >
+                      <Upload className="h-4 w-4" />
+                      <span className="hidden sm:inline">{t('employeeDetailModal.requestDocsTab', 'Requests')}</span>
+                    </button>
+                  </div>
                 </div>
-                <div className="flex space-x-2">
-                  {pdfUrl && (
-                    <>
-                      <button
-                        onClick={handlePdfDownload}
-                        className={`px-4 py-2 text-white rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>{t('employeeDetailModal.download', 'Download')}</span>
-                      </button>
-                      {canEdit && (
+
+                {/* Right side actions vary per sub-tab */}
+                {documentsSubTab === 'pdf' ? (
+                  <div className="flex space-x-2">
+                    {pdfUrl && (
+                      <>
                         <button
-                          onClick={handlePdfDelete}
-                          className={`px-4 py-2 text-white rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-red-700 hover:bg-red-600' : 'bg-red-600 hover:bg-red-700'}`}
+                          onClick={handlePdfDownload}
+                          className={`px-4 py-2 text-white rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
                         >
-                          <Trash2 className="w-4 h-4" />
-                          <span>{t('employeeDetailModal.delete', 'Delete')}</span>
+                          <Download className="w-4 h-4" />
+                          <span>{t('employeeDetailModal.download', 'Download')}</span>
                         </button>
-                      )}
-                    </>
-                  )}
-                  {canEdit && (
-                    <>
-                      <input
-                        type="file"
-                        accept="application/pdf"
-                        onChange={handlePdfUpload}
-                        disabled={uploadStatus?.status === 'uploading'}
-                        className="hidden"
-                        id="pdf-upload"
-                      />
-                      <label
-                        htmlFor="pdf-upload"
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${border.primary} ${bg.primary} cursor-pointer hover:bg-transparent transition-all shadow-sm hover:shadow-md ${
-                          uploadStatus?.status === 'uploading' ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
-                      >
-                        {uploadStatus?.status === 'uploading' ? (
-                          <>
-                            <Loader className="w-5 h-5 animate-spin" />
-                            <span className={text.primary}>
-                              {t('employeeDetailModal.uploading', 'Uploading...')}{' '}
-                              <span className={text.secondary}>
-                                ({Math.max(0, Math.min(100, Number(uploadStatus?.progress ?? 0)))}%)
-                              </span>
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <Upload className={`w-5 h-5 ${text.primary}`} />
-                            <span className={text.primary}>{t('employeeDetailModal.uploadPdf', 'Upload PDF')}</span>
-                          </>
+                        {canEdit && (
+                          <button
+                            onClick={handlePdfDelete}
+                            className={`px-4 py-2 text-white rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-red-700 hover:bg-red-600' : 'bg-red-600 hover:bg-red-700'}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span>{t('employeeDetailModal.delete', 'Delete')}</span>
+                          </button>
                         )}
-                      </label>
-                    </>
-                  )}
-                </div>
+                      </>
+                    )}
+                    {canEdit && (
+                      <>
+                        <input
+                          type="file"
+                          accept="application/pdf"
+                          onChange={handlePdfUpload}
+                          disabled={uploadStatus?.status === 'uploading'}
+                          className="hidden"
+                          id="pdf-upload"
+                        />
+                        <label
+                          htmlFor="pdf-upload"
+                          className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${border.primary} ${bg.primary} cursor-pointer hover:bg-transparent transition-all shadow-sm hover:shadow-md ${
+                            uploadStatus?.status === 'uploading' ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                        >
+                          {uploadStatus?.status === 'uploading' ? (
+                            <>
+                              <Loader className="w-5 h-5 animate-spin" />
+                              <span className={text.primary}>
+                                {t('employeeDetailModal.uploading', 'Uploading...')}{' '}
+                                <span className={text.secondary}>
+                                  ({Math.max(0, Math.min(100, Number(uploadStatus?.progress ?? 0)))}%)
+                                </span>
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className={`w-5 h-5 ${text.primary}`} />
+                              <span className={text.primary}>{t('employeeDetailModal.uploadPdf', 'Upload PDF')}</span>
+                            </>
+                          )}
+                        </label>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={loadRequestDocs}
+                      className={`px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} flex items-center gap-2 text-sm transition-all shadow-sm hover:shadow-md`}
+                      disabled={requestDocsLoading}
+                      title={t('common.refresh', 'Refresh')}
+                      aria-label={t('common.refresh', 'Refresh')}
+                    >
+                      {requestDocsLoading ? <Loader className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                      <span className={text.primary}>{t('common.refresh', 'Refresh')}</span>
+                    </button>
+
+                    {canUploadRequestDocs && (
+                      <>
+                        <select
+                          value={requestDocCategory}
+                          onChange={(e) => setRequestDocCategory(e.target.value)}
+                          className={`px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} text-sm ${text.primary}`}
+                          title={t('employeeDetailModal.docCategory', 'Category')}
+                          aria-label={t('employeeDetailModal.docCategory', 'Category')}
+                        >
+                          <option value="leave">{t('employeeDetailModal.categoryLeave', 'Leave request')}</option>
+                          <option value="other">{t('employeeDetailModal.categoryOther', 'Other')}</option>
+                        </select>
+
+                        <input
+                          type="file"
+                          onChange={handleRequestDocUpload}
+                          disabled={requestDocUpload.status === 'uploading'}
+                          className="hidden"
+                          id="request-doc-upload"
+                        />
+                        <label
+                          htmlFor="request-doc-upload"
+                          className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${border.primary} ${bg.primary} cursor-pointer hover:bg-transparent transition-all shadow-sm hover:shadow-md ${
+                            requestDocUpload.status === 'uploading' ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                        >
+                          {requestDocUpload.status === 'uploading' ? (
+                            <>
+                              <Loader className="w-5 h-5 animate-spin" />
+                              <span className={text.primary}>
+                                {t('employeeDetailModal.uploading', 'Uploading...')}{' '}
+                                <span className={text.secondary}>({Math.max(0, Math.min(100, Number(requestDocUpload.progress ?? 0)))}%)</span>
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className={`w-5 h-5 ${text.primary}`} />
+                              <span className={text.primary}>{t('employeeDetailModal.uploadRequestDoc', 'Upload Document')}</span>
+                            </>
+                          )}
+                        </label>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
               
               {/* Background Upload Indicator */}
-              {uploadStatus?.status === 'uploading' && (
+              {documentsSubTab === 'pdf' && uploadStatus?.status === 'uploading' && (
                 <div className={`mt-2 p-3 border rounded-lg ${isDarkMode ? 'bg-blue-900/30 border-blue-700' : 'bg-blue-50 border-blue-200'}`}>
                   <div className={`flex items-center space-x-2 text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
                     <Loader className="w-4 h-4 animate-spin" />
@@ -555,95 +756,177 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                 </div>
               )}
 
-              {/* PDF Viewer */}
-              <div className={`border-2 border-dashed ${border.primary} rounded-lg p-4 min-h-100 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                {pdfUrl ? (
-                  <div className="flex flex-col items-center">
-                    {useIframe ? (
-                      // Iframe Viewer (More reliable)
-                      <div className="w-full" style={{ height: '600px' }}>
-                        <iframe
-                          src={pdfUrl}
-                          type="application/pdf"
-                          className="w-full h-full border-0 rounded"
-                          title="PDF Viewer"
-                          onLoad={() => console.log('✅ Iframe loaded successfully')}
-                          onError={(e) => {
-                            console.error('❌ Iframe error:', e);
-                            console.error('PDF URL:', pdfUrl);
-                            setPdfError('Failed to load PDF in iframe. Check console for details.');
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      // PDF.js Viewer
-                      pdfError ? (
-                        <div className="flex flex-col items-center justify-center h-64 text-red-500">
-                          <FileText className={`w-16 h-16 mb-4 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
-                          <p className={`text-center ${text.secondary} font-semibold`}>{pdfError}</p>
-                          <button
-                            onClick={() => setUseIframe(true)}
-                            className={`mt-4 px-4 py-2 text-white rounded-lg transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
-                          >
-                            {t('employeeDetailModal.switchToIframe', 'Switch to Iframe Viewer')}
-                          </button>
+              {/* PDF Viewer / Request Docs */}
+              {documentsSubTab === 'pdf' ? (
+                <div className={`border-2 border-dashed ${border.primary} rounded-lg p-4 min-h-100 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                  {pdfUrl ? (
+                    <div className="flex flex-col items-center">
+                      {useIframe ? (
+                        <div className="w-full" style={{ height: '600px' }}>
+                          <iframe
+                            src={pdfUrl}
+                            type="application/pdf"
+                            className="w-full h-full border-0 rounded"
+                            title="PDF Viewer"
+                            onLoad={() => console.log('✅ Iframe loaded successfully')}
+                            onError={(e) => {
+                              console.error('❌ Iframe error:', e);
+                              console.error('PDF URL:', pdfUrl);
+                              setPdfError('Failed to load PDF in iframe. Check console for details.');
+                            }}
+                          />
                         </div>
                       ) : (
-                        <Document
-                          key={pdfUrl}
-                          file={pdfUrl}
-                          onLoadSuccess={onDocumentLoadSuccess}
-                          onLoadError={onDocumentLoadError}
-                          loading={
-                            <div className="flex flex-col items-center justify-center h-64">
-                              <Loader className="w-8 h-8 animate-spin text-blue-600" />
-                              <p className={`mt-4 ${text.secondary}`}>Loading PDF...</p>
+                        pdfError ? (
+                          <div className="flex flex-col items-center justify-center h-64 text-red-500">
+                            <FileText className={`w-16 h-16 mb-4 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
+                            <p className={`text-center ${text.secondary} font-semibold`}>{pdfError}</p>
+                            <button
+                              onClick={() => setUseIframe(true)}
+                              className={`mt-4 px-4 py-2 text-white rounded-lg transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
+                            >
+                              {t('employeeDetailModal.switchToIframe', 'Switch to Iframe Viewer')}
+                            </button>
+                          </div>
+                        ) : (
+                          <Document
+                            key={pdfUrl}
+                            file={pdfUrl}
+                            onLoadSuccess={onDocumentLoadSuccess}
+                            onLoadError={onDocumentLoadError}
+                            loading={
+                              <div className="flex flex-col items-center justify-center h-64">
+                                <Loader className="w-8 h-8 animate-spin text-blue-600" />
+                                <p className={`mt-4 ${text.secondary}`}>Loading PDF...</p>
+                              </div>
+                            }
+                          >
+                            <Page 
+                              pageNumber={pageNumber} 
+                              width={Math.min(modalWidth - 100, 800)}
+                              renderTextLayer={false}
+                              renderAnnotationLayer={false}
+                            />
+                          </Document>
+                        )
+                      )}
+
+                      {!useIframe && !pdfError && numPages && numPages > 1 && (
+                        <div className="flex items-center space-x-4 mt-4">
+                          <button
+                            onClick={() => setPageNumber(Math.max(1, pageNumber - 1))}
+                            disabled={pageNumber <= 1}
+                            className="px-3 py-1 bg-blue-600 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
+                          >
+                            ←
+                          </button>
+                          <span className={text.primary}>
+                            Page {pageNumber} of {numPages}
+                          </span>
+                          <button
+                            onClick={() => setPageNumber(Math.min(numPages, pageNumber + 1))}
+                            disabled={pageNumber >= numPages}
+                            className="px-3 py-1 bg-blue-600 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
+                          >
+                            →
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                      <FileText className={`w-16 h-16 mb-4 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
+                      <p className={`text-center ${text.secondary} font-semibold`}>
+                        {t('employees.noPdfDocument', 'Chưa có tài liệu')}
+                      </p>
+                      <p className={`text-sm text-center ${text.secondary} mt-2`}>
+                        {t('employees.uploadPdfPrompt', 'Tải lên tài liệu PDF để hiển thị ở đây')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className={`border ${border.primary} rounded-lg p-4 ${isDarkMode ? 'bg-gray-800/50' : 'bg-white'}`}>
+                  {!canUploadRequestDocs && (
+                    <div className={`mb-3 text-sm ${text.secondary}`}>
+                      {t('employeeDetailModal.requestDocsRestricted', 'Only Admin/HR/Manager can upload request documents.')}
+                    </div>
+                  )}
+
+                  {requestDocsError && (
+                    <div className={`mb-3 text-sm ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>
+                      {requestDocsError}
+                    </div>
+                  )}
+
+                  {requestDocUpload.status === 'error' && requestDocUpload.error && (
+                    <div className={`mb-3 text-sm ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>
+                      {requestDocUpload.error}
+                    </div>
+                  )}
+
+                  {formattedRequestDocs.length === 0 && !requestDocsLoading ? (
+                    <div className={`flex flex-col items-center justify-center h-40 ${text.secondary}`}>
+                      <FileText className={`w-10 h-10 mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-500'}`} />
+                      <div className="font-semibold">{t('employeeDetailModal.noRequestDocs', 'No documents uploaded')}</div>
+                      <div className="text-sm">{t('employeeDetailModal.requestDocsHint', 'Upload leave-request evidence, certificates, or other supporting files.')}</div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {formattedRequestDocs.map((doc) => (
+                        <div
+                          key={doc.path}
+                          className={`flex items-center justify-between gap-3 rounded-lg border ${border.primary} px-3 py-2 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}
+                        >
+                          <div className="min-w-0">
+                            <div className={`font-semibold truncate ${text.primary}`} title={doc.name}>{doc.name}</div>
+                            <div className={`text-xs ${text.secondary} flex flex-wrap gap-2`}>
+                              <span className={`px-2 py-0.5 rounded-full ${isDarkMode ? 'bg-gray-700 text-gray-100' : 'bg-white text-gray-700'} border ${border.primary}`}>
+                                {doc.category === 'leave'
+                                  ? t('employeeDetailModal.categoryLeave', 'Leave request')
+                                  : t('employeeDetailModal.categoryOther', 'Other')}
+                              </span>
+                              {doc.sizeLabel && <span>{doc.sizeLabel}</span>}
+                              {doc.dateLabel && <span>{doc.dateLabel}</span>}
                             </div>
-                          }
-                        >
-                          <Page 
-                            pageNumber={pageNumber} 
-                            width={Math.min(modalWidth - 100, 800)}
-                            renderTextLayer={false}
-                            renderAnnotationLayer={false}
-                          />
-                        </Document>
-                      )
-                    )}
-                    {!useIframe && !pdfError && numPages && numPages > 1 && (
-                      <div className="flex items-center space-x-4 mt-4">
-                        <button
-                          onClick={() => setPageNumber(Math.max(1, pageNumber - 1))}
-                          disabled={pageNumber <= 1}
-                          className="px-3 py-1 bg-blue-600 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
-                        >
-                          ←
-                        </button>
-                        <span className={text.primary}>
-                          Page {pageNumber} of {numPages}
-                        </span>
-                        <button
-                          onClick={() => setPageNumber(Math.min(numPages, pageNumber + 1))}
-                          disabled={pageNumber >= numPages}
-                          className="px-3 py-1 bg-blue-600 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
-                        >
-                          →
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                    <FileText className={`w-16 h-16 mb-4 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
-                    <p className={`text-center ${text.secondary} font-semibold`}>
-                      {t('employees.noPdfDocument', 'Chưa có tài liệu')}
-                    </p>
-                    <p className={`text-sm text-center ${text.secondary} mt-2`}>
-                      {t('employees.uploadPdfPrompt', 'Tải lên tài liệu PDF để hiển thị ở đây')}
-                    </p>
-                  </div>
-                )}
-              </div>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleRequestDocView(doc)}
+                              className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700 text-gray-200' : 'hover:bg-gray-200 text-gray-700'}`}
+                              title={t('employeeDetailModal.viewDocument', 'View Document')}
+                              aria-label={t('employeeDetailModal.viewDocument', 'View Document')}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+
+                            {canUploadRequestDocs && (
+                              <button
+                                type="button"
+                                onClick={() => handleRequestDocDelete(doc)}
+                                className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700 text-rose-200' : 'hover:bg-gray-200 text-rose-700'}`}
+                                title={t('employeeDetailModal.deleteDocument', 'Delete Document')}
+                                aria-label={t('employeeDetailModal.deleteDocument', 'Delete Document')}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {requestDocsLoading && (
+                    <div className={`mt-3 flex items-center gap-2 text-sm ${text.secondary}`}>
+                      <Loader className="w-4 h-4 animate-spin" />
+                      <span>{t('common.loading', 'Loading...')}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

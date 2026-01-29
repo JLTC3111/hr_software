@@ -133,7 +133,7 @@ const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoU
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Header with gradient background */}
-      <div className={`relative h-20 ${isDarkMode ? 'bg-gradient-to-r from-blue-900 to-purple-900' : 'bg-gradient-to-r from-blue-500 to-purple-500'}`}>
+      <div className={`relative h-20 ${isDarkMode ? 'bg-linear-to-r from-blue-900 to-purple-900' : 'bg-gradient-to-r from-blue-500 to-purple-500'}`}>
         {/* Status indicator */}
         <div className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-medium flex items-center space-x-1.5 ${statusConfig.bg} ${statusConfig.text} ring-2 ${statusConfig.ring}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot} animate-pulse`}></span>

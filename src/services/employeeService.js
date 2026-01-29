@@ -826,6 +826,247 @@ export const uploadEmployeePdf = async (file, employeeId, onProgress = null) => 
   }
 };
 
+// ============================================
+// EMPLOYEE REQUEST / OTHER DOCUMENTS
+// Stored in `employee-documents` bucket under `request-documents/`
+// Filename format: `${employeeId}__${category}__${timestamp}__${sanitizedFileName}`
+// ============================================
+
+const sanitizeFileName = (fileName) => {
+  return String(fileName || 'document')
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9._-]/g, '_');
+};
+
+const normalizeDocCategory = (category) => {
+  const c = String(category || '').toLowerCase().trim();
+  if (c === 'leave' || c === 'leave_request' || c === 'leave-request') return 'leave';
+  if (c === 'other' || c === 'misc') return 'other';
+  return 'other';
+};
+
+const parseRequestDocName = (fileName) => {
+  // expected: employeeId__category__timestamp__original
+  const parts = String(fileName || '').split('__');
+  if (parts.length < 4) {
+    return { employeeId: null, category: 'other', timestamp: null, originalName: fileName };
+  }
+  const [employeeId, category, timestamp, ...rest] = parts;
+  return {
+    employeeId,
+    category: normalizeDocCategory(category),
+    timestamp: Number(timestamp) || null,
+    originalName: rest.join('__') || fileName
+  };
+};
+
+export const uploadEmployeeRequestDocument = async (file, employeeId, category = 'leave', onProgress = null) => {
+  try {
+    if (!file) throw new Error('No file provided');
+
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (file.size > maxSize) {
+      throw new Error('File size exceeds 50MB limit.');
+    }
+
+    const employeeIdStr = toEmployeeId(employeeId);
+    const docCategory = normalizeDocCategory(category);
+    const timestamp = Date.now();
+    const sanitizedFileName = sanitizeFileName(file.name);
+
+    // Demo mode: store blob + metadata list in localStorage
+    if (isDemoMode()) {
+      const blobKey = `demo_emp_reqdoc_${employeeIdStr}__${docCategory}__${timestamp}__${sanitizedFileName}`;
+      await saveDemoBlob(blobKey, file);
+
+      const listKey = `demo_employee_request_docs_${employeeIdStr}`;
+      const existingRaw = (() => {
+        try { return localStorage.getItem(listKey); } catch { return null; }
+      })();
+      const existing = (() => {
+        try { return existingRaw ? JSON.parse(existingRaw) : []; } catch { return []; }
+      })();
+
+      const next = [
+        {
+          blobKey,
+          name: file.name,
+          size: file.size,
+          mimeType: file.type,
+          category: docCategory,
+          createdAt: new Date(timestamp).toISOString()
+        },
+        ...existing
+      ];
+
+      try { localStorage.setItem(listKey, JSON.stringify(next)); } catch { /* ignore */ }
+
+      return { success: true, path: blobKey, url: null };
+    }
+
+    const filePath = `request-documents/${employeeIdStr}__${docCategory}__${timestamp}__${sanitizedFileName}`;
+
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      .from('employee-documents')
+      .createSignedUploadUrl(filePath);
+
+    if (signedUrlError) throw signedUrlError;
+
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', signedUrlData.signedUrl, true);
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && onProgress) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          onProgress(percent);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status === 200) return resolve();
+        return reject(new Error(`Upload failed with status ${xhr.status}`));
+      };
+
+      xhr.onerror = () => reject(new Error('Network error during upload'));
+
+      xhr.send(file);
+    });
+
+    return { success: true, path: filePath, url: null };
+  } catch (error) {
+    console.error('❌ Error uploading request document:', error);
+    return { success: false, error: error.message || 'Failed to upload document' };
+  }
+};
+
+export const listEmployeeRequestDocuments = async (employeeId) => {
+  try {
+    const employeeIdStr = toEmployeeId(employeeId);
+    if (!employeeIdStr) throw new Error('Invalid employee id');
+
+    if (isDemoMode()) {
+      const listKey = `demo_employee_request_docs_${employeeIdStr}`;
+      const raw = (() => {
+        try { return localStorage.getItem(listKey); } catch { return null; }
+      })();
+      const items = (() => {
+        try { return raw ? JSON.parse(raw) : []; } catch { return []; }
+      })();
+
+      return {
+        success: true,
+        data: items.map((it) => ({
+          path: it.blobKey,
+          name: it.name,
+          category: normalizeDocCategory(it.category),
+          size: it.size || null,
+          mimeType: it.mimeType || null,
+          createdAt: it.createdAt || null,
+          updatedAt: it.createdAt || null
+        }))
+      };
+    }
+
+    const { data, error } = await supabase.storage
+      .from('employee-documents')
+      .list('request-documents', {
+        limit: 100,
+        offset: 0,
+        search: `${employeeIdStr}__`,
+        sortBy: { column: 'updated_at', order: 'desc' }
+      });
+
+    if (error) throw error;
+
+    const mapped = (data || []).map((item) => {
+      const parsed = parseRequestDocName(item.name);
+      return {
+        path: `request-documents/${item.name}`,
+        name: parsed.originalName,
+        category: parsed.category,
+        size: item.metadata?.size ?? null,
+        mimeType: item.metadata?.mimetype ?? null,
+        createdAt: item.created_at ?? null,
+        updatedAt: item.updated_at ?? null
+      };
+    });
+
+    return { success: true, data: mapped };
+  } catch (error) {
+    console.error('❌ Error listing request documents:', error);
+    return { success: false, error: error.message || 'Failed to list documents' };
+  }
+};
+
+export const deleteEmployeeRequestDocument = async (employeeId, docPath) => {
+  try {
+    const employeeIdStr = toEmployeeId(employeeId);
+    if (!employeeIdStr) throw new Error('Invalid employee id');
+    if (!docPath) throw new Error('No document path provided');
+
+    if (isDemoMode()) {
+      const listKey = `demo_employee_request_docs_${employeeIdStr}`;
+      const raw = (() => {
+        try { return localStorage.getItem(listKey); } catch { return null; }
+      })();
+      const items = (() => {
+        try { return raw ? JSON.parse(raw) : []; } catch { return []; }
+      })();
+
+      const next = items.filter((it) => it.blobKey !== docPath);
+      try { localStorage.setItem(listKey, JSON.stringify(next)); } catch { /* ignore */ }
+      try { await deleteDemoBlob(docPath); } catch { /* ignore */ }
+      return { success: true };
+    }
+
+    const { error } = await supabase.storage
+      .from('employee-documents')
+      .remove([docPath]);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Error deleting request document:', error);
+    return { success: false, error: error.message || 'Failed to delete document' };
+  }
+};
+
+export const getEmployeeRequestDocumentUrl = async (docPath) => {
+  try {
+    if (!docPath) return { success: false, error: 'No document path provided' };
+
+    if (isDemoMode()) {
+      const blob = await getDemoBlob(docPath);
+      if (!blob) return { success: false, error: 'Demo document not found' };
+      return { success: true, url: URL.createObjectURL(blob), type: 'demo' };
+    }
+
+    const { data: publicData } = supabase.storage
+      .from('employee-documents')
+      .getPublicUrl(docPath);
+
+    try {
+      const head = await fetch(publicData.publicUrl, { method: 'HEAD' });
+      if (head.ok) return { success: true, url: publicData.publicUrl, type: 'public' };
+    } catch {
+      // ignore and fall back to signed
+    }
+
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from('employee-documents')
+      .createSignedUrl(docPath, 31536000);
+
+    if (signedError) throw signedError;
+    return { success: true, url: signedData.signedUrl, type: 'signed' };
+  } catch (error) {
+    console.error('❌ Error getting request document URL:', error);
+    return { success: false, error: error.message || 'Failed to get document URL' };
+  }
+};
+
 export const deleteEmployeePdf = async (employeeId, pdfPath) => {
   if (isDemoMode()) {
     try {
@@ -1107,6 +1348,12 @@ export default {
   uploadEmployeePdf,
   deleteEmployeePdf,
   getEmployeePdfUrl,
+
+  // Request / Other Documents
+  uploadEmployeeRequestDocument,
+  listEmployeeRequestDocuments,
+  deleteEmployeeRequestDocument,
+  getEmployeeRequestDocumentUrl,
   
   // Statistics
   getEmployeeStats,
