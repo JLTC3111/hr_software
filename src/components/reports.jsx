@@ -184,9 +184,13 @@ const Reports = () => {
         const startOfWeek = new Date(today);
         startOfWeek.setDate(today.getDate() - today.getDay());
         startDate = startOfWeek.toISOString().split('T')[0];
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endDate = endOfWeek.toISOString().split('T')[0];
         break;
       case 'this-month':
         startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
         break;
       case 'last-month':
         const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
@@ -196,9 +200,11 @@ const Reports = () => {
       case 'this-quarter':
         const quarter = Math.floor(today.getMonth() / 3);
         startDate = new Date(today.getFullYear(), quarter * 3, 1).toISOString().split('T')[0];
+        endDate = new Date(today.getFullYear(), (quarter * 3) + 3, 0).toISOString().split('T')[0];
         break;
       case 'this-year':
         startDate = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+        endDate = new Date(today.getFullYear(), 11, 31).toISOString().split('T')[0];
         break;
       default:
     
@@ -273,6 +279,7 @@ const Reports = () => {
           });
         } else {
           // Use direct Supabase query with proper join - fetch all entries first
+          // Supabase defaults to 1000 rows, so we need to increase limit for reports
           const result = await withTimeout(
             supabase
               .from('time_entries')
@@ -282,7 +289,8 @@ const Reports = () => {
               `)
               .gte('date', startDate)
               .lte('date', endDate)
-              .order('date', { ascending: false }),
+              .order('date', { ascending: false })
+              .limit(10000), 
             DEFAULT_REQUEST_TIMEOUT
           );
           allTimeEntries = result.data;
@@ -1986,7 +1994,7 @@ const Reports = () => {
           drawText(t('reports.timeEntries', 'TIME ENTRIES').toUpperCase(), 15, yPosition);
           yPosition += 5;
 
-          const timeEntriesData = reportData.timeEntries.slice(0, 20).map(entry => [
+          const timeEntriesData = reportData.timeEntries.map(entry => [
             cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(entry.employee, t) : (entry.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
             entry.date,
             `${entry.hours || 0}h`,
@@ -2039,7 +2047,7 @@ const Reports = () => {
           drawText(t('reports.tasks', 'TASKS').toUpperCase(), 15, yPosition);
           yPosition += 5;
 
-          const tasksData = reportData.tasks.slice(0, 20).map(task => [
+          const tasksData = reportData.tasks.map(task => [
             cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
             cleanTextForPDF((isDemoMode() ? getDemoTaskTitle(task, t) : task.title).substring(0, 30), unicodeFontLoaded),
             cleanTextForPDF(translatePriority(task.priority), unicodeFontLoaded),
@@ -2092,7 +2100,7 @@ const Reports = () => {
           drawText(t('reports.personalGoals', 'PERSONAL GOALS').toUpperCase(), 15, yPosition);
           yPosition += 5;
 
-          const goalsData = reportData.goals.slice(0, 20).map(goal => [
+          const goalsData = reportData.goals.map(goal => [
             cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
             cleanTextForPDF((isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title).substring(0, 30), unicodeFontLoaded),
             cleanTextForPDF(translateCategory(goal.category), unicodeFontLoaded),
@@ -2131,7 +2139,7 @@ const Reports = () => {
           });
         }
       } else if (activeTab === 'time-entries' && reportData.timeEntries.length > 0) {
-        const timeEntriesData = reportData.timeEntries.slice(0, 50).map(entry => [
+        const timeEntriesData = reportData.timeEntries.map(entry => [
           cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(entry.employee, t) : (entry.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
           cleanTextForPDF(translateDepartment(entry.employee?.department) || '', unicodeFontLoaded),
           entry.date,
@@ -2175,7 +2183,7 @@ const Reports = () => {
           margin: { left: 15, right: 15 }
         });
       } else if (activeTab === 'tasks' && reportData.tasks.length > 0) {
-        const tasksData = reportData.tasks.slice(0, 50).map(task => [
+        const tasksData = reportData.tasks.map(task => [
           cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
           cleanTextForPDF(translateDepartment(task.employee?.department) || '', unicodeFontLoaded),
           cleanTextForPDF((isDemoMode() ? getDemoTaskTitle(task, t) : task.title).substring(0, 40), unicodeFontLoaded),
@@ -2219,7 +2227,7 @@ const Reports = () => {
           margin: { left: 15, right: 15 }
         });
       } else if (activeTab === 'goals' && reportData.goals.length > 0) {
-        const goalsData = reportData.goals.slice(0, 50).map(goal => [
+        const goalsData = reportData.goals.map(goal => [
           cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
           cleanTextForPDF(translateDepartment(goal.employee?.department) || '', unicodeFontLoaded),
           cleanTextForPDF((isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title).substring(0, 40), unicodeFontLoaded),
@@ -2891,9 +2899,6 @@ const Reports = () => {
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <h3 className={`text-lg font-semibold ${text.primary}`}>
             {t('reports.dataPreview', 'Data Preview')} 
-            <span className={`text-sm font-normal ${text.secondary} ml-2`}>
-              ({t('reports.showingFirst50', 'Showing first 50 records')})
-            </span>
           </h3>
         </div>
         
@@ -3125,7 +3130,7 @@ const Reports = () => {
               ) : activeTab === 'all' ? (
                 <>
                   {/* Time Entries */}
-                  {(getSortedData.timeEntries || []).slice(0, 20).map((item, index) => (
+                  {(getSortedData.timeEntries || []).map((item, index) => (
                     <tr key={`time-${index}`} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
                       <td className={`px-6 py-4 whitespace-nowrap`}>
                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
@@ -3155,7 +3160,7 @@ const Reports = () => {
                   ))}
                   
                   {/* Tasks */}
-                  {(getSortedData.tasks || []).slice(0, 20).map((item, index) => (
+                  {(getSortedData.tasks || []).map((item, index) => (
                     <tr key={`task-${index}`} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
                       <td className={`px-6 py-4 whitespace-nowrap`}>
                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
@@ -3186,7 +3191,7 @@ const Reports = () => {
                   ))}
                   
                   {/* Goals */}
-                  {(getSortedData.goals || []).slice(0, 20).map((item, index) => (
+                  {(getSortedData.goals || []).map((item, index) => (
                     <tr key={`goal-${index}`} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
                       <td className={`px-6 py-4 whitespace-nowrap`}>
                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
@@ -3217,7 +3222,7 @@ const Reports = () => {
                   ))}
                 </>
               ) : (
-                getSortedData.slice(0, 50).map((item, index) => (
+                getSortedData.map((item, index) => (
                   <tr key={index} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
                     {activeTab === 'time-entries' && (
                       <>

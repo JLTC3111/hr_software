@@ -1029,6 +1029,7 @@ export default {
     thisQuarter: 'Quý Này',
     thisYear: 'Năm Nay',
     // Data Types
+    totalEntries: 'Chấm Công',
     tasks: 'Nhiệm Vụ',
     goals: 'Mục Tiêu Cá Nhân',
     // Filter Labels
