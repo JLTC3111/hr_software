@@ -174,7 +174,7 @@ export default {
     sales: '営業',
     marketing: 'マーケティング',
     design: 'デザイン',
-    part_time_employee: 'パートタイム従業員',
+    part_time_employee: 'エキスパートグループ',
     // Also support capitalized versions for compatibility
     Management: '管理',
     Engineering: 'エンジニアリング',
@@ -1607,7 +1607,7 @@ export default {
     sales: '営業',
     marketing: 'マーケティング',
     design: 'デザイン',
-    part_time_employee: 'パートタイム従業員',
+    part_time_employee: 'エキスパートグループ',
   },
 
   // Control Panel

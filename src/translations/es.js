@@ -341,7 +341,7 @@ login: {
     sales: 'Ventas',
     marketing: 'Marketing',
     design: 'Diseño',
-    part_time_employee: 'Empleado a Tiempo Parcial',
+    part_time_employee: 'Grupo de Expertos',
     // Also support capitalized versions for compatibility
     Management: 'Gestión',
     Engineering: 'Ingeniería',
@@ -1641,7 +1641,7 @@ login: {
     sales: 'Ventas',
     marketing: 'Marketing',
     design: 'Diseño',
-    part_time_employee: 'Empleado a Tiempo Parcial',
+    part_time_employee: 'Grupo de Expertos',
   },
 
   // Control Panel

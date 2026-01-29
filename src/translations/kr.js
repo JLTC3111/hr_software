@@ -177,7 +177,7 @@ export default {
     sales: '영업',
     marketing: '마케팅',
     design: '디자인',
-    part_time_employee: '파트타임 직원',
+    part_time_employee: '전문가 그룹',
     // Also support capitalized versions for compatibility
     Management: '관리',
     Engineering: '엔지니어링',
@@ -1553,7 +1553,7 @@ export default {
     sales: '영업',
     marketing: '마케팅',
     design: '디자인',
-    part_time_employee: '파트타임 직원',
+    part_time_employee: '전문가 그룹',
   },
 
   // Control Panel

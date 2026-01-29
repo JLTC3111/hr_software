@@ -185,8 +185,7 @@ export default {
     marketing: 'Tiếp Thị',
     design: 'Thiết Kế',
     operations: 'Vận Hành',
-    part_time_employee: 'Nhân Viên Bán Thời Gian',
-    // Also support capitalized versions for compatibility
+    part_time_employee: 'Khối Chuyên Gia',
     Management: 'Quản Lý',
     Engineering: 'Kỹ Thuật',
     Design: 'Thiết Kế',

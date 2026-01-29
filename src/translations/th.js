@@ -174,7 +174,7 @@ export default {
     sales: 'ขาย',
     marketing: 'การตลาด',
     design: 'ดีไซน์',
-    part_time_employee: 'พนักงานพาร์ทไทม์',
+    part_time_employee: 'กลุ่มผู้เชี่ยวชาญ',
     // Also support capitalized versions for compatibility
     Management: 'การจัดการ',
     Engineering: 'วิศวกรรม',
@@ -1603,7 +1603,7 @@ export default {
     sales: 'การขาย',
     marketing: 'การตลาด',
     design: 'ดีไซน์',
-    part_time_employee: 'พนักงานพาร์ทไทม์',
+    part_time_employee: 'กลุ่มผู้เชี่ยวชาญ',
   },
 
   // Control Panel

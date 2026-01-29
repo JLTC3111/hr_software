@@ -2216,7 +2216,7 @@ export default {
     sales: 'Sales',
     marketing: 'Marketing',
     design: 'Design',
-    part_time_employee: 'Part-Time Employee',
+    part_time_employee: 'Experts Group',
   },
 
   // Morphing Showcase

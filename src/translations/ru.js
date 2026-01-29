@@ -191,7 +191,7 @@ export default {
     marketing: 'Маркетинг',
     design: 'Дизайн',
     expert: 'Эксперт',
-    part_time_employee: 'Сотрудник на неполный рабочий день',
+    part_time_employee: 'Группа экспертов',
     // Also support capitalized versions for compatibility
     Management: 'Управление',
     Engineering: 'Инженерия',
@@ -1561,7 +1561,7 @@ export default {
     sales: 'Продажи',
     marketing: 'Маркетинг',
     design: 'Дизайн',
-    part_time_employee: 'Сотрудник на неполный рабочий день',
+    part_time_employee: 'Группа экспертов',
   },
 
   // Control Panel

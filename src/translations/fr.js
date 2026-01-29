@@ -175,7 +175,7 @@ export default {
     sales: 'Ventes',
     marketing: 'Marketing',
     design: 'Design',
-    part_time_employee: 'Employé à temps partiel',
+    part_time_employee: 'Groupe d\'experts',
     // Also support capitalized versions for compatibility
     Management: 'Direction',
     Engineering: 'Ingénierie',
@@ -1670,7 +1670,7 @@ export default {
     sales: 'Ventes',
     marketing: 'Marketing',
     design: 'Design',
-    part_time_employee: 'Employé à temps partiel',
+    part_time_employee: 'Groupe d\'experts',
   },
 
   // Control Panel
