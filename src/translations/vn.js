@@ -617,6 +617,7 @@ export default {
 
   // Reports
   reports: {
+    leaveDays: 'Số Ngày Nghỉ Phép',
     title: 'Báo cáo và phân tích',
     allEmployees: 'Tất_Cả_Nhân_Viên',
     filenamePrefix: 'Báo_Cáo_HR',

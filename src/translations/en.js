@@ -1271,6 +1271,7 @@ export default {
     totalHours: 'Total Hours',
     regularHours: 'Regular Hours',
     overtime: 'Overtime',
+    leaveDays: 'Leave Days',
     tasksDone: 'Tasks Done',
     completion: 'Completion Rate',
     goalProgress: 'Goal Progress',

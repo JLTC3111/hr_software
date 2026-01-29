@@ -490,6 +490,7 @@ export default {
 
   // Reports
   reports: {
+    leaveDays: '휴가 일수',
     title: '보고서 및 분석',
     filenamePrefix: 'HR_보고서_',
     allEmployees: '모든_직원',

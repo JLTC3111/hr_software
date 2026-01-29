@@ -552,6 +552,7 @@ export default {
 
   // Reports
   reports: {
+    leaveDays: 'Дни отпуска',
     title: 'Отчёты и аналитика',
     filenamePrefix: 'HRMS_Отчет',
     to: 'до',

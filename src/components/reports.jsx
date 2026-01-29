@@ -477,25 +477,31 @@ const Reports = () => {
     }
   };
 
-  // Get current data based on active tab
+  // Get current data based on active tab (filtered by selectedEmployee if not 'all')
   const currentData = useMemo(() => {
+    // Helper to filter data by selected employee
+    const filterByEmployee = (data) => {
+      if (selectedEmployee === 'all') return data;
+      return data.filter(item => String(item.employee_id) === String(selectedEmployee));
+    };
+
     switch (activeTab) {
       case 'all':
         return {
-          timeEntries: reportData.timeEntries,
-          tasks: reportData.tasks,
-          goals: reportData.goals
+          timeEntries: filterByEmployee(reportData.timeEntries),
+          tasks: filterByEmployee(reportData.tasks),
+          goals: filterByEmployee(reportData.goals)
         };
       case 'time-entries':
-        return reportData.timeEntries;
+        return filterByEmployee(reportData.timeEntries);
       case 'tasks':
-        return reportData.tasks;
+        return filterByEmployee(reportData.tasks);
       case 'goals':
-        return reportData.goals;
+        return filterByEmployee(reportData.goals);
       default:
         return [];
     }
-  }, [activeTab, reportData]);
+  }, [activeTab, reportData, selectedEmployee]);
 
   // Sorting function for table data
   const getSortedData = useMemo(() => {
@@ -2577,6 +2583,8 @@ const Reports = () => {
         // Include both overtime and bonus as overtime hours
         const overtimeHours = employeeTimeEntries.filter(e => e.hour_type === 'overtime' || e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
         const wfhHours = employeeTimeEntries.filter(e => e.hour_type === 'wfh').reduce((sum, e) => sum + (e.hours || 0), 0);
+        // Leave days (on_leave entries count as days)
+        const leaveDays = employeeTimeEntries.filter(e => e.hour_type === 'on_leave').length;
         const pendingEntries = employeeTimeEntries.filter(e => e.status === 'pending').length;
         const approvedEntries = employeeTimeEntries.filter(e => e.status === 'approved').length;
 
@@ -2633,6 +2641,12 @@ const Reports = () => {
                     <Laptop className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                     <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.wfh', 'Working From Home')}</p>
                     <p className={`text-2xl font-bold ${text.primary}`}>{wfhHours.toFixed(1)}</p>
+                  </div>
+                  
+                  <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                    <Apple className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
+                    <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.leaveDays', 'Leave Days')}</p>
+                    <p className={`text-2xl font-bold ${text.primary}`}>{leaveDays}</p>
                   </div>
                 </>
               )}
@@ -2695,6 +2709,10 @@ const Reports = () => {
                     <div className="flex justify-between">
                       <span className={text.secondary}>{t('reports.wfh', 'WFH')}:</span>
                       <span className={`font-medium ${text.primary}`}>{wfhHours.toFixed(1)}h</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className={text.secondary}>{t('reports.leaveDays', 'Leave Days')}:</span>
+                      <span className={`font-medium ${text.primary}`}>{leaveDays}</span>
                     </div>
                   </div>
                 </div>

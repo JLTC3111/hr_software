@@ -561,6 +561,7 @@ export default {
 
   // Reports
   reports: {
+    leaveDays: "Urlaubstage",
     title: 'Berichte & Analysen',
     allEmployees: 'Alle_Mitarbeiter',
     filenamePrefix: 'HR_Bericht',
@@ -705,6 +706,7 @@ export default {
     date: 'Datum',
     hours: 'Stunden',
     approved: 'Genehmigt',
+    eaveDays: 'Urlaubstage',
     pending: 'Ausstehend',
     completed: 'Abgeschlossen',
     inProgress: 'In Bearbeitung',
