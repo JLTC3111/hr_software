@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Phone, Mail, MapPin, Award, Cake, Network, Calendar, DollarSign, User, ClipboardList, FileText, Download, Upload, Loader, Edit2, Briefcase, Trash2, RefreshCw, Eye } from 'lucide-react';
+import { X, Phone, Mail, MapPin, Award, Cake, Network, Calendar, DollarSign, User, ClipboardList, FileText, Download, Upload, Loader, Edit2, Briefcase, Trash2, RefreshCw, Eye, ExternalLink, Files, ListFilter } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -40,6 +40,8 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
   const [requestDocsError, setRequestDocsError] = useState(null);
   const [requestDocCategory, setRequestDocCategory] = useState('leave');
   const [requestDocUpload, setRequestDocUpload] = useState({ status: 'idle', progress: 0, error: null });
+  const [requestDocPreview, setRequestDocPreview] = useState({ status: 'idle', doc: null, url: null, error: null });
+  const [requestDocsAutoPreviewArmed, setRequestDocsAutoPreviewArmed] = useState(true);
   
   // Get upload status from context
   const uploadStatus = getUploadStatus(employee?.id);
@@ -102,8 +104,24 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
   useEffect(() => {
     if (activeTab !== 'documents') return;
     if (documentsSubTab !== 'requests') return;
+    // Arm auto-preview when entering the Requests sub-tab or switching employees.
+    setRequestDocsAutoPreviewArmed(true);
     loadRequestDocs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, documentsSubTab, employee?.id]);
+
+  // Cleanup preview when switching away
+  useEffect(() => {
+    setRequestDocPreview((prev) => {
+      if (prev?.url && typeof prev.url === 'string' && prev.url.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(prev.url);
+        } catch {
+          // ignore
+        }
+      }
+      return { status: 'idle', doc: null, url: null, error: null };
+    });
   }, [activeTab, documentsSubTab, employee?.id]);
   
   // Update PDF path when upload completes
@@ -223,7 +241,14 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
     }
   };
 
-  const handleRequestDocView = async (doc) => {
+  const isPreviewableImageName = (name) => {
+    if (!name || typeof name !== 'string') return false;
+    const lowered = name.toLowerCase();
+    const ext = lowered.includes('.') ? lowered.split('.').pop() : '';
+    return ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext);
+  };
+
+  const handleRequestDocOpen = async (doc) => {
     try {
       const result = await getEmployeeRequestDocumentUrl(doc.path);
       if (!result.success) throw new Error(result.error || 'Failed to open document');
@@ -231,6 +256,43 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
     } catch (err) {
       alert(t('errors.fileOpenFailed', 'Failed to open document: ') + (err?.message || 'Unknown error'));
     }
+  };
+
+  const handleRequestDocPreview = async (doc) => {
+    try {
+      setRequestDocPreview((prev) => {
+        if (prev?.url && typeof prev.url === 'string' && prev.url.startsWith('blob:')) {
+          try {
+            URL.revokeObjectURL(prev.url);
+          } catch {
+            // ignore
+          }
+        }
+        return { status: 'loading', doc, url: null, error: null };
+      });
+
+      const result = await getEmployeeRequestDocumentUrl(doc.path);
+      if (!result.success) throw new Error(result.error || 'Failed to open document');
+
+      setRequestDocPreview({ status: 'ready', doc, url: result.url, error: null });
+    } catch (err) {
+      setRequestDocPreview({ status: 'error', doc, url: null, error: err?.message || 'Failed to preview' });
+    }
+  };
+
+  const clearRequestDocPreview = () => {
+    // If the user collapses the preview, don't immediately auto-open it again.
+    setRequestDocsAutoPreviewArmed(false);
+    setRequestDocPreview((prev) => {
+      if (prev?.url && typeof prev.url === 'string' && prev.url.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(prev.url);
+        } catch {
+          // ignore
+        }
+      }
+      return { status: 'idle', doc: null, url: null, error: null };
+    });
   };
 
   const handleRequestDocDelete = async (doc) => {
@@ -257,6 +319,30 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
       return { ...doc, dateLabel, sizeLabel };
     });
   }, [requestDocs]);
+
+  // Auto-open preview on initial load (first previewable image).
+  useEffect(() => {
+    if (activeTab !== 'documents' || documentsSubTab !== 'requests') return;
+    if (!requestDocsAutoPreviewArmed) return;
+    if (requestDocPreview.status !== 'idle') return;
+    if (!formattedRequestDocs?.length) return;
+
+    const sorted = [...formattedRequestDocs].sort((a, b) => {
+      const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return bTime - aTime;
+    });
+
+    const firstImage = sorted.find((doc) => isPreviewableImageName(doc?.originalName || doc?.name));
+    if (!firstImage) {
+      setRequestDocsAutoPreviewArmed(false);
+      return;
+    }
+
+    setRequestDocsAutoPreviewArmed(false);
+    handleRequestDocPreview(firstImage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, documentsSubTab, formattedRequestDocs, requestDocsAutoPreviewArmed, requestDocPreview.status]);
 
   const handlePdfDownload = () => {
     if (pdfUrl) {
@@ -316,7 +402,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
 
   // Calculate work duration
   const calculateWorkDuration = () => {
-    if (!employee.start_date && !employee.startDate) return 'N/A';
+    if (!employee.start_date && !employee.startDate) return t('employeeDetailModal.workDurationNA', 'N/A');
     const startDate = new Date(employee.start_date || employee.startDate);
     const now = new Date();
     
@@ -330,14 +416,19 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
     }
     
     const totalMonths = years * 12 + months;
+
+    const yearUnit = (value) => (value === 1 ? t('employeeDetailModal.yearUnit', 'year') : t('employeeDetailModal.yearsUnit', 'years'));
+    const monthUnit = (value) => (value === 1 ? t('employeeDetailModal.monthUnit', 'month') : t('employeeDetailModal.monthsUnit', 'months'));
+    const unitSep = t('employeeDetailModal.durationUnitSeparator', ' ');
+    const partSep = t('employeeDetailModal.durationPartSeparator', ' ');
     
     if (totalMonths >= 12) {
       if (months === 0) {
-        return `${years} năm`;
+        return `${years}${unitSep}${yearUnit(years)}`;
       }
-      return `${years} năm ${months} tháng`;
+      return `${years}${unitSep}${yearUnit(years)}${partSep}${months}${unitSep}${monthUnit(months)}`;
     }
-    return `${totalMonths} tháng`;
+    return `${totalMonths}${unitSep}${monthUnit(totalMonths)}`;
   };
 
   return (
@@ -613,7 +704,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                       title={t('employeeDetailModal.requestDocsTab', 'Requests')}
                       aria-label={t('employeeDetailModal.requestDocsTab', 'Requests')}
                     >
-                      <Upload className="h-4 w-4" />
+                      <Files className="h-4 w-4" />
                       <span className="hidden sm:inline">{t('employeeDetailModal.requestDocsTab', 'Requests')}</span>
                     </button>
                   </div>
@@ -683,27 +774,32 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                     <button
                       type="button"
                       onClick={loadRequestDocs}
-                      className={`px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} flex items-center gap-2 text-sm transition-all shadow-sm hover:shadow-md`}
+                      className={`px-4 py-2 text-white rounded-lg flex items-center gap-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-sky-700 hover:bg-sky-600' : 'bg-sky-600 hover:bg-sky-700'} ${requestDocsLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
                       disabled={requestDocsLoading}
-                      title={t('common.refresh', 'Refresh')}
-                      aria-label={t('common.refresh', 'Refresh')}
+                      title={t('employeeDetailModal.requestDocsRefresh', 'Refresh')}
+                      aria-label={t('employeeDetailModal.requestDocsRefresh', 'Refresh')}
                     >
                       {requestDocsLoading ? <Loader className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                      <span className={text.primary}>{t('common.refresh', 'Refresh')}</span>
+                      <span>{t('employeeDetailModal.requestDocsRefresh', 'Refresh')}</span>
                     </button>
 
                     {canUploadRequestDocs && (
                       <>
-                        <select
-                          value={requestDocCategory}
-                          onChange={(e) => setRequestDocCategory(e.target.value)}
-                          className={`px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} text-sm ${text.primary}`}
+                        <div
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-white shadow-md ${isDarkMode ? 'bg-violet-700' : 'bg-violet-600'} border border-transparent focus-within:outline-none focus-within:ring-2 focus-within:ring-violet-400`}
                           title={t('employeeDetailModal.docCategory', 'Category')}
                           aria-label={t('employeeDetailModal.docCategory', 'Category')}
                         >
-                          <option value="leave">{t('employeeDetailModal.categoryLeave', 'Leave request')}</option>
-                          <option value="other">{t('employeeDetailModal.categoryOther', 'Other')}</option>
-                        </select>
+                          <ListFilter className="w-4 h-4" />
+                          <select
+                            value={requestDocCategory}
+                            onChange={(e) => setRequestDocCategory(e.target.value)}
+                            className="bg-transparent outline-none border-none pr-1 cursor-pointer"
+                          >
+                            <option value="leave">{t('employeeDetailModal.categoryLeave', 'Leave request')}</option>
+                            <option value="other">{t('employeeDetailModal.categoryOther', 'Other')}</option>
+                          </select>
+                        </div>
 
                         <input
                           type="file"
@@ -714,22 +810,22 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                         />
                         <label
                           htmlFor="request-doc-upload"
-                          className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${border.primary} ${bg.primary} cursor-pointer hover:bg-transparent transition-all shadow-sm hover:shadow-md ${
-                            requestDocUpload.status === 'uploading' ? 'opacity-50 cursor-not-allowed' : ''
-                          }`}
+                          className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-white cursor-pointer transition-all shadow-md hover:shadow-lg ${
+                            requestDocUpload.status === 'uploading' ? 'opacity-60 cursor-not-allowed' : ''
+                          } ${isDarkMode ? 'bg-emerald-700 hover:bg-emerald-600' : 'bg-emerald-600 hover:bg-emerald-700'}`}
                         >
                           {requestDocUpload.status === 'uploading' ? (
                             <>
                               <Loader className="w-5 h-5 animate-spin" />
-                              <span className={text.primary}>
+                              <span>
                                 {t('employeeDetailModal.uploading', 'Uploading...')}{' '}
-                                <span className={text.secondary}>({Math.max(0, Math.min(100, Number(requestDocUpload.progress ?? 0)))}%)</span>
+                                <span className={isDarkMode ? 'text-emerald-100' : 'text-emerald-100'}>({Math.max(0, Math.min(100, Number(requestDocUpload.progress ?? 0)))}%)</span>
                               </span>
                             </>
                           ) : (
                             <>
-                              <Upload className={`w-5 h-5 ${text.primary}`} />
-                              <span className={text.primary}>{t('employeeDetailModal.uploadRequestDoc', 'Upload Document')}</span>
+                              <Upload className="w-4 h-4" />
+                              <span>{t('employeeDetailModal.uploadRequestDoc', 'Upload Document')}</span>
                             </>
                           )}
                         </label>
@@ -865,6 +961,73 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                     </div>
                   )}
 
+                  {requestDocPreview.status !== 'idle' && (
+                    <div className={`mb-3 rounded-lg border ${border.primary} p-3 ${isDarkMode ? 'bg-gray-900/30' : 'bg-gray-50'}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className={`font-semibold truncate ${text.primary}`} title={requestDocPreview.doc?.name}>
+                            {requestDocPreview.doc?.name}
+                          </div>
+                          <div className={`text-xs ${text.secondary}`}>
+                            {requestDocPreview.doc?.category === 'leave'
+                              ? t('employeeDetailModal.categoryLeave', 'Leave request')
+                              : t('employeeDetailModal.categoryOther', 'Other')}
+                            {requestDocPreview.doc?.sizeLabel ? ` • ${requestDocPreview.doc.sizeLabel}` : ''}
+                            {requestDocPreview.doc?.dateLabel ? ` • ${requestDocPreview.doc.dateLabel}` : ''}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {requestDocPreview.url && (
+                            <button
+                              type="button"
+                              onClick={() => window.open(requestDocPreview.url, '_blank')}
+                              className={`px-4 py-2 text-white rounded-lg flex items-center gap-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
+                              title={t('employeeDetailModal.requestDocsOpenInNewTab', 'Open in new tab')}
+                              aria-label={t('employeeDetailModal.requestDocsOpenInNewTab', 'Open in new tab')}
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                              <span>{t('employeeDetailModal.requestDocsOpenInNewTab', 'Open in new tab')}</span>
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={clearRequestDocPreview}
+                            className={`p-2 text-white rounded-lg transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-600 hover:bg-gray-700'}`}
+                            title={t('employeeDetailModal.requestDocsClosePreview', 'Close preview')}
+                            aria-label={t('employeeDetailModal.requestDocsClosePreview', 'Close preview')}
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex justify-center">
+                        {requestDocPreview.status === 'loading' && (
+                          <div className={`flex items-center gap-2 text-sm ${text.secondary}`}>
+                            <Loader className="w-4 h-4 animate-spin" />
+                            <span>{t('employeeDetailModal.requestDocsLoading', 'Loading...')}</span>
+                          </div>
+                        )}
+
+                        {requestDocPreview.status === 'error' && (
+                          <div className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>
+                            {requestDocPreview.error || t('errors.fileOpenFailed', 'Failed to open document')}
+                          </div>
+                        )}
+
+                        {requestDocPreview.status === 'ready' && requestDocPreview.url && (
+                          <img
+                            src={requestDocPreview.url}
+                            alt={requestDocPreview.doc?.name || t('employeeDetailModal.requestDocsPreview', 'Preview')}
+                            className={`max-h-[60vh] w-auto rounded-md border ${border.primary} ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {formattedRequestDocs.length === 0 && !requestDocsLoading ? (
                     <div className={`flex flex-col items-center justify-center h-40 ${text.secondary}`}>
                       <FileText className={`w-10 h-10 mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-500'}`} />
@@ -894,10 +1057,33 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                           <div className="flex items-center gap-1">
                             <button
                               type="button"
-                              onClick={() => handleRequestDocView(doc)}
-                              className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700 text-gray-200' : 'hover:bg-gray-200 text-gray-700'}`}
-                              title={t('employeeDetailModal.viewDocument', 'View Document')}
-                              aria-label={t('employeeDetailModal.viewDocument', 'View Document')}
+                              onClick={() => {
+                                const name = doc?.originalName || doc?.name;
+                                if (isPreviewableImageName(name)) {
+                                  const isSameDoc = requestDocPreview?.doc?.path && requestDocPreview.doc.path === doc.path;
+                                  if (requestDocPreview.status !== 'idle' && isSameDoc) {
+                                    clearRequestDocPreview();
+                                    return;
+                                  }
+                                  setRequestDocsAutoPreviewArmed(false);
+                                  handleRequestDocPreview(doc);
+                                  return;
+                                }
+                                handleRequestDocOpen(doc);
+                              }}
+                              className={`p-2 text-white rounded-lg transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-indigo-700 hover:bg-indigo-600' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                              title={(() => {
+                                const name = doc?.originalName || doc?.name;
+                                return isPreviewableImageName(name)
+                                  ? t('employeeDetailModal.requestDocsPreview', 'Preview')
+                                  : t('employeeDetailModal.requestDocsOpen', 'Open');
+                              })()}
+                              aria-label={(() => {
+                                const name = doc?.originalName || doc?.name;
+                                return isPreviewableImageName(name)
+                                  ? t('employeeDetailModal.requestDocsPreview', 'Preview')
+                                  : t('employeeDetailModal.requestDocsOpen', 'Open');
+                              })()}
                             >
                               <Eye className="w-4 h-4" />
                             </button>
@@ -906,9 +1092,9 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                               <button
                                 type="button"
                                 onClick={() => handleRequestDocDelete(doc)}
-                                className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700 text-rose-200' : 'hover:bg-gray-200 text-rose-700'}`}
-                                title={t('employeeDetailModal.deleteDocument', 'Delete Document')}
-                                aria-label={t('employeeDetailModal.deleteDocument', 'Delete Document')}
+                                className={`p-2 text-white rounded-lg transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-red-700 hover:bg-red-600' : 'bg-red-600 hover:bg-red-700'}`}
+                                title={t('employeeDetailModal.requestDocsDelete', 'Delete')}
+                                aria-label={t('employeeDetailModal.requestDocsDelete', 'Delete')}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -922,7 +1108,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                   {requestDocsLoading && (
                     <div className={`mt-3 flex items-center gap-2 text-sm ${text.secondary}`}>
                       <Loader className="w-4 h-4 animate-spin" />
-                      <span>{t('common.loading', 'Loading...')}</span>
+                      <span>{t('employeeDetailModal.requestDocsLoading', 'Loading...')}</span>
                     </div>
                   )}
                 </div>
