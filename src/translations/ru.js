@@ -442,11 +442,11 @@ export default {
     employees: 'сотрудников',
     skippedEmployees: 'Пропущено {count} сотрудник(ов) с существующими записями: {names}',
     hourTypes: {
-      regular: 'Обычные',
-      holiday: 'Праздничные',
-      weekend: 'Выходные/Сверхурочные',
+      regular: 'Обычные часы',
+      holiday: 'Праздничные дни',
+      weekend: 'Выходные',
       overtime: 'Сверхурочные',
-      bonus: 'Бонусные',
+      bonus: 'Дополнительные часы',
       wfh: 'Часы удаленной работы',
       onLeave: 'В отпуске'
     },

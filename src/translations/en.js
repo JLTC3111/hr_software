@@ -646,11 +646,11 @@ export default {
     employees: 'employees',
     skippedEmployees: 'Skipped {count} employee(s) with existing entries: {names}',
     hourTypes: {
-      regular: 'Regular',
+      regular: 'Regular Hours',
       holiday: 'Holiday',
       weekend: 'Weekend/Overtime',
       overtime: 'Overtime',
-      bonus: 'Bonus',
+      bonus: 'Bonus Hours',
       wfh: 'Working From Home (Online)',
       onLeave: 'On Leave'
     },

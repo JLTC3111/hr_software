@@ -410,10 +410,11 @@ export default {
     employees: 'employés',
     skippedEmployees: '{count} employé(s) ignoré(s) avec des entrées existantes: {names}',
     hourTypes: {
-      regular: 'Régulier',
+      regular: 'Heures normales',
       holiday: 'Jour férié',
-      weekend: 'Week-end/Heures supplémentaires',
-      bonus: 'Bonus',
+      weekend: 'Week-end',
+      overtime: 'Heures supplémentaires',
+      bonus: 'Heures supplémentaires (bonus)',
       wfh: 'Heures de télétravail',
       onLeave: 'En congé'
     },

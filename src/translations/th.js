@@ -1155,13 +1155,13 @@ export default {
     error: 'ไม่สามารถสร้างการบันทึกเวลาได้',
     skippedEmployees: 'ข้าม {count} พนักงานที่มีรายการอยู่แล้ว: {names}',
     hourTypes: {
-      regular: 'ปกติ',
-      holiday: 'วันหยุด',
-      weekend: 'สุดสัปดาห์/ล่วงเวลา',
+      regular: 'เวลาปกติ',
+      holiday: 'วันหยุดนักขัตฤกษ์',
+      weekend: 'วันหยุดสุดสัปดาห์',
       overtime: 'ชั่วโมงล่วงเวลา',
-      bonus: 'โบนัส',
+      bonus: 'ชั่วโมงพิเศษ',
       wfh: 'ชั่วโมงทำงานจากระยะไกล',
-      onLeave: 'ลาพักงาน'
+      onLeave: 'ชั่วโมงลา'
     },
     errors: {
       checkFailed: 'ไม่สามารถตรวจสอบรายการที่มีอยู่',

@@ -1198,11 +1198,11 @@ export default {
     employees: 'Mitarbeiter',
     skippedEmployees: '{count} Mitarbeiter mit vorhandenen Einträgen übersprungen: {names}',
     hourTypes: {
-      regular: 'Regulär',
+      regular: 'Reguläre Stunden',
       holiday: 'Feiertag',
-      weekend: 'Wochenende/Überstunden',
+      weekend: 'Wochenende',
       overtime: 'Überstunden',
-      bonus: 'Bonus',
+      bonus: 'Bonusstunden',
       wfh: 'Homeoffice Stunden',
       onLeave: 'Im Urlaub'
     },

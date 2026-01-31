@@ -1162,11 +1162,11 @@ export default {
     employees: '名の従業員',
     skippedEmployees: '既存のエントリがある{count}名の従業員をスキップしました：{names}',
     hourTypes: {
-      regular: '通常',
-      holiday: '祝日',
-      weekend: '週末/残業',
+      regular: '通常勤務',
+      holiday: '祝日勤務',
+      weekend: '週末勤務',
       overtime: '残業',
-      bonus: 'ボーナス',
+      bonus: '特別勤務',
       wfh: '在宅勤務',
       onLeave: '休暇中'
     },

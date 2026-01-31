@@ -1094,13 +1094,13 @@ export default {
     employees: '명의 직원',
     skippedEmployees: '기존 입력이 있는 {count}명의 직원을 건너뛰었습니다: {names}',
     hourTypes: {
-      regular: '정규',
-      holiday: '휴일',
-      weekend: '주말/초과 근무',
+      regular: '일반 근무',
+      holiday: '공휴일 근무',
+      weekend: '주말 근무',
       overtime: '초과 근무',
-      bonus: '보너스',
+      bonus: '보너스 근무',
       wfh: '재택근무',
-      onLeave: '휴가중'
+      onLeave: '휴가 중'
     },
     errors: {
       checkFailed: '기존 입력 확인 실패',

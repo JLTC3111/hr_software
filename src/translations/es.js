@@ -227,11 +227,11 @@ login: {
     employees: 'empleados',
     skippedEmployees: '{count} empleado(s) omitido(s) con entradas existentes: {names}',
     hourTypes: {
-      regular: 'Regular',
-      holiday: 'Día festivo',
-      weekend: 'Fin de semana/Horas extras',
+      regular: 'Horas Regulares',
+      holiday: 'Festivo',
+      weekend: 'Fin de Semana',
       overtime: 'Horas extra',
-      bonus: 'Bono',
+      bonus: 'Horas Bonus',
       wfh: 'Horas de teletrabajo',
       onLeave: 'En permiso'
     },
