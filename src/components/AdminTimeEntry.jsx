@@ -608,6 +608,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                         `}
           >
             <option value="regular">{t('adminTimeEntry.hourTypes.regular', 'Regular Hours')}</option>
+            <option value="overtime">{t('adminTimeEntry.hourTypes.overtime', 'Overtime')}</option>
             <option value="weekend">{t('adminTimeEntry.hourTypes.weekend', 'Weekend/Overtime')}</option>
             <option value="holiday">{t('adminTimeEntry.hourTypes.holiday', 'Holiday')}</option>
             <option value="bonus">{t('adminTimeEntry.hourTypes.bonus', 'Bonus Hours')}</option>
