@@ -55,6 +55,13 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
     }
   }, [isOnLeave]);
 
+  // Auto-hide success message after a short timeout
+  useEffect(() => {
+    if (!successMessage) return;
+    const id = setTimeout(() => setSuccessMessage(''), 1500); // 1.5s
+    return () => clearTimeout(id);
+  }, [successMessage]);
+
   const fetchEmployees = async () => {
     if (isDemoMode()) {
       setEmployees(MOCK_EMPLOYEES);
