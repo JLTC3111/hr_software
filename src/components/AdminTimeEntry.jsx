@@ -191,6 +191,19 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
       }
 
       // Check for overlapping time entries for the selected employees on this date with the same hour type
+      const timeStringToSeconds = (value) => {
+        if (value == null) return null;
+        const str = typeof value === 'string' ? value : String(value);
+        // Accept HH:MM, HH:MM:SS, and variants like HH:MM:SS+00
+        const match = str.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+        if (!match) return null;
+        const hours = Number(match[1]);
+        const minutes = Number(match[2]);
+        const seconds = Number(match[3] || 0);
+        if (!Number.isFinite(hours) || !Number.isFinite(minutes) || !Number.isFinite(seconds)) return null;
+        return hours * 3600 + minutes * 60 + seconds;
+      };
+
       const employeeIds = selectedEmployees.map(e => e.id);
       let existingEntries = [];
       let checkError = null;
@@ -218,22 +231,31 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
       // Check for time overlaps for each employee
       const employeesWithOverlaps = [];
       const employeesWithoutOverlaps = [];
+
+      const newClockInSeconds = isOnLeave ? null : timeStringToSeconds(clockInTime);
+      const newClockOutSeconds = isOnLeave ? null : timeStringToSeconds(clockOutTime);
       
       for (const emp of selectedEmployees) {
-        const empExistingEntries = existingEntries.filter(e => e.employee_id === emp.id);
+        const empExistingEntries = existingEntries.filter(e => String(e.employee_id) === String(emp.id));
         let hasOverlap = false;
         
         if (!isOnLeave) {
+          if (newClockInSeconds == null || newClockOutSeconds == null) {
+            setErrorMessage(t('adminTimeEntry.errors.invalidTime', 'Invalid clock-in or clock-out time'));
+            setLoading(false);
+            return;
+          }
+
           for (const entry of empExistingEntries) {
-            const existingClockIn = entry.clock_in;
-            const existingClockOut = entry.clock_out;
-            
-            // Check if times overlap
-            const isOverlapping = (
-              (clockInTime >= existingClockIn && clockInTime < existingClockOut) ||
-              (clockOutTime > existingClockIn && clockOutTime <= existingClockOut) ||
-              (clockInTime <= existingClockIn && clockOutTime >= existingClockOut)
-            );
+            const existingClockInSeconds = timeStringToSeconds(entry.clock_in);
+            const existingClockOutSeconds = timeStringToSeconds(entry.clock_out);
+            if (existingClockInSeconds == null || existingClockOutSeconds == null) continue;
+
+            // Overlap check using half-open intervals: [start, end)
+            // This allows back-to-back entries (e.g., 10:00-12:00 after 08:00-10:00).
+            const isOverlapping =
+              newClockInSeconds < existingClockOutSeconds &&
+              newClockOutSeconds > existingClockInSeconds;
             
             if (isOverlapping) {
               hasOverlap = true;
