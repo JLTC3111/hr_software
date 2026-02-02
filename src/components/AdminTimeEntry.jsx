@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import _React, { useState, useEffect } from 'react';
 import { Clock, UserPlus, Save, X, Search, AlertCircle, Calendar, LogIn, LogOut, Check, Upload, FileText, ChevronsUpDown, Users } from 'lucide-react';
-import { useTheme } from '../contexts/ThemeContext';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../contexts/AuthContext';
-import * as timeTrackingService from '../services/timeTrackingService';
-import { supabase } from '../config/supabaseClient';
-import { isDemoMode, MOCK_EMPLOYEES, getDemoEmployeeName } from '../utils/demoHelper';
+import { useTheme } from '../contexts/ThemeContext.jsx';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import * as timeTrackingService from '../services/timeTrackingService.js';
+import { supabase } from '../config/supabaseClient.js';
+import { isDemoMode, MOCK_EMPLOYEES, getDemoEmployeeName } from '../utils/demoHelper.js';
 
 const AdminTimeEntry = ({ onEntriesChanged }) => {
   const { isDarkMode, bg, text, border } = useTheme();
@@ -33,7 +33,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
   // Check if user has permission
   const canManageTimeTracking = checkPermission('canManageTimeTracking');
 
-  const hourTypes = [
+  const _hourTypes = [
     { value: 'regular', label: t('timeClock.hourTypes.regular'), color: 'blue' },
     { value: 'holiday', label: t('timeClock.hourTypes.holiday'), color: 'purple' },
     { value: 'weekend', label: t('timeClock.hourTypes.weekend'), color: 'green' },
@@ -322,7 +322,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
 
       if (result.success) {
         const processedNames = employeesWithoutEntries.map(e => e.name).join(', ');
-        const processedIds = employeesWithoutEntries.map(e => e.id);
+        const _processedIds = employeesWithoutEntries.map(e => e.id);
         const hourTypeKey = formData.hourType.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
         const hourTypeLabel = t(
           `adminTimeEntry.hourTypes.${hourTypeKey}`,
