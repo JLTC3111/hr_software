@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import _React, { useState, useEffect } from 'react';
 import { Trash2, AlertTriangle, Search, Filter, User, Shield, Loader, CheckCircle, XCircle } from 'lucide-react';
-import { useTheme } from '../contexts/ThemeContext';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../contexts/AuthContext';
-import * as employeeService from '../services/employeeService';
+import { useTheme } from '../contexts/ThemeContext.jsx';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import * as employeeService from '../services/employeeService.js';
 
 const DeleteEmployeeManager = () => {
   const { isDarkMode, bg, text, border } = useTheme();
-  const { t } = useLanguage();
+  const { _t } = useLanguage();
   const { user } = useAuth();
   
   const [employees, setEmployees] = useState([]);
@@ -41,7 +41,7 @@ const DeleteEmployeeManager = () => {
   const handlePermanentDelete = async (employee) => {
     const confirmMessage = `⚠️ PERMANENT DELETE WARNING ⚠️\n\nYou are about to PERMANENTLY delete:\n\nEmployee: ${employee.name}\nID: ${employee.id}\nEmail: ${employee.email}\n\nThis action:\n• Cannot be undone\n• Will remove ALL employee data\n• Will delete time tracking records\n• Will delete performance reviews\n• Will delete all associated files\n\nType "DELETE" to confirm this permanent action.`;
     
-    const userInput = window.prompt(confirmMessage);
+    const userInput = globalThis.prompt(confirmMessage);
     
     if (userInput === 'DELETE') {
       setDeleting(employee.id);
@@ -102,7 +102,7 @@ const DeleteEmployeeManager = () => {
         {/* Header with Warning */}
         <div className={`${bg.secondary} rounded-lg shadow-lg p-6 border-2 border-red-500`}>
           <div className="flex items-start space-x-4">
-            <AlertTriangle className="w-8 h-8 text-red-600 flex-shrink-0 mt-1" />
+            <AlertTriangle className="w-8 h-8 text-red-600 shrink-0 mt-1" />
             <div>
               <h1 className={`text-2xl font-bold ${text.primary} mb-2`}>
                 Employee Deletion Manager
@@ -209,6 +209,7 @@ const DeleteEmployeeManager = () => {
                       </div>
                     </div>
                     <button
+                    type ="button"
                       onClick={() => handlePermanentDelete(employee)}
                       disabled={deleting === employee.id}
                       className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 ${

@@ -1,11 +1,11 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, _useMemo } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Briefcase, Building2, DollarSign, Save, X, Upload, Check, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useTheme } from '../contexts/ThemeContext';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useNotifications } from '../contexts/NotificationContext';
-import { useAuth } from '../contexts/AuthContext';
-import * as employeeService from '../services/employeeService';
+import { useTheme } from '../contexts/ThemeContext.jsx';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
+import { useNotifications } from '../contexts/NotificationContext.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import * as employeeService from '../services/employeeService.js';
 
 // InputField component outside to prevent recreation
 const InputField = React.memo(({ name, label, icon: Icon, type = 'text', required, value, onChange, error, touched, textSecondary, bgPrimary, textPrimary, borderPrimary, className, ...props }) => {
@@ -105,6 +105,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
             {t('common.noPermission', 'You do not have permission to access this page.')}
           </p>
           <button
+            type = "button"
             onClick={() => navigate(-1)}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
@@ -276,7 +277,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
   return (
     <div className={`min-h-screen ${bg.primary} p-4 md:p-8`}>
       <div className="max-w-4xl mx-auto">
-        <button onClick={() => navigate('/employees')} className={`flex items-center space-x-2 ${text.secondary} ${hover.bg} px-4 py-2 rounded-lg mb-6`}>
+        <button type ="button" onClick={() => navigate('/employees')} className={`flex items-center space-x-2 ${text.secondary} ${hover.bg} px-4 py-2 rounded-lg mb-6`}>
           <ArrowLeft className="h-4 w-4" />
           <span>{t('common.back', 'Back')}</span>
         </button>
@@ -483,14 +484,14 @@ const AddNewEmployee = ({ refetchEmployees }) => {
           )}
 
           <div className="flex justify-between mt-8 pt-6 border-t">
-            <button onClick={step === 1 ? () => navigate('/employees') : handleBack} className={`px-6 py-2 rounded-lg border-2 ${border.primary} ${text.primary} ${hover.bg} font-medium transition-all hover:scale-105 hover:shadow-md`}>
+            <button type="button" onClick={step === 1 ? () => navigate('/employees') : handleBack} className={`px-6 py-2 rounded-lg border-2 ${border.primary} ${text.primary} ${hover.bg} font-medium transition-all hover:scale-105 hover:shadow-md`}>
               <X className="h-4 w-4 inline mr-2" />
               {step === 1 ? t('common.cancel') : t('common.back')}
             </button>
             {step < 3 ? (
-              <button onClick={handleNext} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{t('common.next', 'Next')}</button>
+              <button type="button" onClick={handleNext} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{t('common.next', 'Next')}</button>
             ) : (
-              <button onClick={handleSubmit} disabled={saving} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
+              <button type="button"   onClick={handleSubmit} disabled={saving} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
                 {saving ? <span>{t('common.saving', 'Saving...')}</span> : <><Save className="h-4 w-4 inline mr-2" />{t('common.save', 'Save')}</>}
               </button>
             )}

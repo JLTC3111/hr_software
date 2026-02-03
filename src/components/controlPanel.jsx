@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { User, LogOut, Key, BookOpen, Shield, Info, RefreshCcw, Activity, UserPen, UserCheck, UserX, UserMinus, Camera, KeySquare, Loader, Users, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
-import { useTheme } from '../contexts/ThemeContext';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../contexts/AuthContext';
+import _React, { useState, useEffect, useRef } from 'react';
+import { User, LogOut, Key, BookOpen, Shield, Info, RefreshCcw, UserPen, UserCheck, UserX, UserMinus, Camera, KeySquare, Loader, Users, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext.jsx';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../config/supabaseClient';
-import { isDemoMode, getDemoEmployeeName, resetAllDemoData, resetDemoTimeEntries, resetDemoGoals, resetDemoTasks, resetDemoReviews, resetDemoSkills, resetDemoLeaveRequests } from '../utils/demoHelper';
-import { fetchVisitSummary } from '../services/visitService';
+import { supabase } from '../config/supabaseClient.js';
+import { isDemoMode, getDemoEmployeeName, resetAllDemoData, resetDemoTimeEntries, resetDemoGoals, resetDemoTasks, resetDemoReviews, resetDemoSkills, resetDemoLeaveRequests } from '../utils/demoHelper.js';
+import { fetchVisitSummary } from '../services/visitService.js';
 import * as flubber from 'flubber';
 
 const getDemoRolePresentation = (role, isDarkMode, adminLabel = 'Demo Admin', employeeLabel = 'Demo Employee') => {
@@ -311,7 +311,7 @@ export const MiniFlubberAutoMorphChangeRole = ({
 };
 
 const ControlPanel = () => {
-  const { isDarkMode, bg, text, border } = useTheme();
+  const { isDarkMode, _bg, text, _border } = useTheme();
   const { t } = useLanguage();
   const { user, signOut, switchDemoRole } = useAuth();
   const navigate = useNavigate();
@@ -556,7 +556,7 @@ const ControlPanel = () => {
   };
 
   const handleLogout = async () => {
-    if (window.confirm(t('controlPanel.confirmLogout', 'Are you sure you want to log out?'))) {
+    if (globalThis.confirm(t('controlPanel.confirmLogout', 'Are you sure you want to log out?'))) {
       await signOut();
       navigate('/login');
     }
@@ -695,7 +695,7 @@ const ControlPanel = () => {
 
     // Confirm action
     const confirmMessage = `Are you sure you want to reset password for ${selectedUser.full_name || selectedUser.email}?\n\nUser: ${selectedUser.full_name}\nEmail: ${selectedUser.email}\nRole: ${getTranslatedRole(selectedUser.role)}`;
-    if (!window.confirm(confirmMessage)) {
+    if (!globalThis.confirm(confirmMessage)) {
       return;
     }
 
@@ -812,7 +812,7 @@ const ControlPanel = () => {
     }
 
     // Confirm action
-    if (!window.confirm(t('controlPanel.confirmResetEmployeePassword', `Are you sure you want to reset password for employee ${getDemoEmployeeName(selectedEmployee, t)}?`))) {
+    if (!globalThis.confirm(t('controlPanel.confirmResetEmployeePassword', `Are you sure you want to reset password for employee ${getDemoEmployeeName(selectedEmployee, t)}?`))) {
       return;
     }
 
@@ -822,7 +822,7 @@ const ControlPanel = () => {
         await new Promise(resolve => setTimeout(resolve, 1000));
       } else {
         // Call Supabase admin API to update employee's user password
-        const { data, error } = await supabase.auth.admin.updateUserById(
+        const { _data, error } = await supabase.auth.admin.updateUserById(
           selectedEmployee.user_id,
           { password: employeeResetPassword }
         );
@@ -859,7 +859,7 @@ const ControlPanel = () => {
     navigate(isDemoMode() ? '/help-center' : '/production-help');
   };
 
-  const handleAvatarUpload = async (e) => {
+  const handleAvatarUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -1112,6 +1112,7 @@ const ControlPanel = () => {
         {/* Reset Own Password */}
         <div className="space-y-2">
           <button
+            type="button"
             onClick={() => {
               if (isDemoMode()) return;
               localStorage.removeItem('changingPassword');
@@ -1145,6 +1146,7 @@ const ControlPanel = () => {
           {/* Reset Other Employee Password */}
           {isAdmin && (
             <button
+              type="button"
               onClick={() => {
                 if (isDemoMode()) return;
                 setShowAdminReset(!showAdminReset);
@@ -1211,6 +1213,7 @@ const ControlPanel = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
+                    type = "button"
                     onClick={handleRefreshVisits}
                     disabled={loadingVisits}
                     className={`text-xs px-2 py-1 cursor-pointer rounded border ${loadingVisits ? 'opacity-60 cursor-not-allowed' : 'hover:bg-indigo-50 dark:hover:bg-slate-800'}`}
@@ -1279,6 +1282,7 @@ const ControlPanel = () => {
           {isDemoMode() && (
             <>
               <button
+                type="button"
                 onClick={() => {
                   const nextRole = userRole === 'demo_admin' ? 'demo_employee' : 'demo_admin';
                   switchDemoRole?.(nextRole);
@@ -1305,6 +1309,7 @@ const ControlPanel = () => {
               </button>
 
               <button
+                type="button"
                 onClick={() => setShowDemoDataManagement(!showDemoDataManagement)}
                 className={`w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${isDarkMode ? 'bg-slate-500 text-gray-100' : 'bg-purple-50 text-gray-800'}`}
               >
@@ -1342,6 +1347,7 @@ const ControlPanel = () => {
                   { key: 'leaveRequests', label: t('controlPanel.demoLeaveRequests', 'Leave Requests'), fn: resetDemoLeaveRequests },
                 ].map(({ key, label, fn }) => (
                   <button
+                    type="button"
                     key={key}
                     onClick={() => {
                       setRestoringDemoData(key);
@@ -1379,6 +1385,7 @@ const ControlPanel = () => {
               </div>
               
               <button
+                type="button"
                 onClick={() => {
                   setRestoringDemoData('all');
                   setTimeout(() => {
@@ -1412,6 +1419,7 @@ const ControlPanel = () => {
           )}
 
           <button
+            type="button"
             onClick={openManual}
             className="w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
             style={{
@@ -1430,6 +1438,7 @@ const ControlPanel = () => {
           </button>
 
           <button
+            type="button"
             onClick={handleLogout}
             className="w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
             style={{

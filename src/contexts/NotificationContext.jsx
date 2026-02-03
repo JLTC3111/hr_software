@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { useAuth } from './AuthContext';
-import * as notificationService from '../services/notificationService';
+import _React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { useAuth } from './AuthContext.jsx';
+import * as notificationService from '../services/notificationService.js';
 
 const NotificationContext = createContext();
 
@@ -214,7 +214,7 @@ export const NotificationProvider = ({ children }) => {
     }
 
     // Import supabase client dynamically to avoid circular dependencies
-    import('../config/supabaseClient').then(({ supabase }) => {
+    import('../config/supabaseClient.js').then(({ supabase }) => {
       const channel = supabase
         .channel('time_entries_changes')
         .on(

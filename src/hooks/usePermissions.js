@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext.jsx';
 
 // Default permissions object (used when no user is logged in)
 const defaultPermissions = {

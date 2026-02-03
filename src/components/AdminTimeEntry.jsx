@@ -568,7 +568,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                   if (!formData.clockIn) {
                     const defaultIn = '09:00';
                     setFormData(fd => ({ ...fd, clockIn: defaultIn }));
-                    try { input.value = defaultIn; } catch (e) {}
+                    try { input.value = defaultIn; } catch (_e) {}
                   }
                   input.showPicker?.();
                 }
@@ -599,7 +599,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                   if (!formData.clockOut) {
                     const defaultOut = '17:00';
                     setFormData(fd => ({ ...fd, clockOut: defaultOut }));
-                    try { input.value = defaultOut; } catch (e) {}
+                    try { input.value = defaultOut; } catch (_e) {}
                   }
                   input.showPicker?.();
                 }

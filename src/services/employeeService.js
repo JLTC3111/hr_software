@@ -1,8 +1,8 @@
-import { supabase } from '../config/supabaseClient';
-import { withTimeout } from '../utils/supabaseTimeout';
-import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts';
-import { isDemoMode, MOCK_EMPLOYEES, getDemoEmployees, addDemoEmployee, updateDemoEmployee, deleteDemoEmployee, getDemoEmployeeById } from '../utils/demoHelper';
-import { saveDemoPdf, getDemoPdf, deleteDemoPdf, saveDemoBlob, getDemoBlob, deleteDemoBlob } from '../utils/demoStorage';
+import { supabase } from '../config/supabaseClient.js';
+import { withTimeout } from '../utils/supabaseTimeout.js';
+import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts.js';
+import { isDemoMode, MOCK_EMPLOYEES, getDemoEmployees, addDemoEmployee, updateDemoEmployee, deleteDemoEmployee, getDemoEmployeeById } from '../utils/demoHelper.js';
+import { saveDemoPdf, getDemoPdf, deleteDemoPdf, saveDemoBlob, getDemoBlob, deleteDemoBlob } from '../utils/demoStorage.js';
 
 /* Ensure employee ID is a string (supports both integers and UUIDs) */
 const toEmployeeId = (id) => {
@@ -31,7 +31,7 @@ export const linkUserToEmployee = async (userId, userEmail) => {
     }
 
     // Update hr_users table with employee_id
-    const { data: updatedUser, error: updateError } = await supabase
+    const { data: _updatedUser, error: updateError } = await supabase
       .from('hr_users')
       .update({ employee_id: employee.id })
       .eq('id', userId)
@@ -592,7 +592,7 @@ export const uploadEmployeePhoto = async (fileData, employeeId) => {
     const filePath = `${fileName}`;
 
     // Try to upload to storage (will fail gracefully if bucket doesn't exist)
-    const { data, error } = await supabase.storage
+    const { _data, error } = await supabase.storage
       .from('employee-photos')
       .upload(filePath, file, {
         cacheControl: '3600',
@@ -725,7 +725,7 @@ export const uploadEmployeePdf = async (file, employeeId, onProgress = null) => 
 
     // Generate unique file path for production
     const timestamp = Date.now();
-    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const _sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const filePath = `${toEmployeeId(employeeId)}_${timestamp}.pdf`;
 
     console.log('📋 File path:', filePath);
@@ -1071,9 +1071,9 @@ export const deleteEmployeePdf = async (employeeId, pdfPath) => {
   if (isDemoMode()) {
     try {
       const demoKey = pdfPath || `demo_employee_pdf_${toEmployeeId(employeeId)}`;
-      try { localStorage.removeItem(demoKey); } catch (e) { /* ignore */ }
-      try { await deleteDemoPdf(toEmployeeId(employeeId)); } catch (e) { /* ignore */ }
-      try { updateDemoEmployee(toEmployeeId(employeeId), { pdf_document_url: null }); } catch (uerr) { /* ignore */ }
+      try { localStorage.removeItem(demoKey); } catch (_e) { /* ignore */ }
+      try { await deleteDemoPdf(toEmployeeId(employeeId)); } catch (_e) { /* ignore */ }
+      try { updateDemoEmployee(toEmployeeId(employeeId), { pdf_document_url: null }); } catch (_uerr) { /* ignore */ }
       return { success: true };
     } catch (err) {
       console.error('❌ Error removing demo PDF from storage:', err);

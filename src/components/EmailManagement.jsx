@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import _React, { useState, useEffect } from 'react';
 import { Mail, Plus, X, Star, Check, AlertCircle, Users, Trash2, RefreshCw } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
-import { useLanguage } from '../contexts/LanguageContext';
-import * as userEmailService from '../services/userEmailService';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import { useTheme } from '../contexts/ThemeContext.jsx';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
+import * as userEmailService from '../services/userEmailService.js';
 
 const EmailManagement = () => {
-  const { user } = useAuth();
+  const { _user } = useAuth();
   const { isDarkMode } = useTheme();
   const { t } = useLanguage();
   

@@ -1,22 +1,22 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { Clock, Heart, AlertCircle, TreePalm, Car, Salad, Clapperboard, Laptop, Form, PhoneCall, CupSoda, Grape, BicepsFlexed, Flame, DatabaseZap, Loader, HouseWifi, Funnel, HeartPlus, Coffee, AlarmClock, Gauge, BriefcaseBusiness, WifiPen, TrendingUp, LineChart, BatteryCharging, PersonStanding, Volleyball, FileUser, RefreshCw, Users, User, Speech } from 'lucide-react'
+import _React, { useState, useRef, useEffect, useCallback } from 'react'
+import { Heart, AlertCircle, TreePalm, Car, Salad, Clapperboard, Laptop, Form, PhoneCall, CupSoda, Flame, DatabaseZap, HouseWifi, Funnel, HeartPlus, Coffee, AlarmClock, Gauge, BriefcaseBusiness, WifiPen, TrendingUp, LineChart, BatteryCharging, PersonStanding, Volleyball, FileUser, RefreshCw, Users, User, Speech } from 'lucide-react'
 import StatsCard from './statsCard.jsx'
 import MetricDetailModal from './metricDetailModal.jsx'
-import { useTheme } from '../contexts/ThemeContext'
-import { useLanguage } from '../contexts/LanguageContext'
-import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext.jsx'
+import { useLanguage } from '../contexts/LanguageContext.jsx'
+import { useAuth } from '../contexts/AuthContext.jsx'
 import { Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ComposedChart } from 'recharts'
-import * as timeTrackingService from '../services/timeTrackingService'
-import { withTimeout } from '../utils/supabaseTimeout';
-import { DEFAULT_REQUEST_TIMEOUT, VISIBILITY_STALE_TIMEOUT } from '../config/requestTimeouts';
-import { validateAndRefreshSession } from '../utils/sessionHelper';
-import { retryWithBackoff, isRetryableError } from '../utils/retryHelper';
+import * as timeTrackingService from '../services/timeTrackingService.js'
+import { withTimeout } from '../utils/supabaseTimeout.js';
+import { DEFAULT_REQUEST_TIMEOUT, VISIBILITY_STALE_TIMEOUT } from '../config/requestTimeouts.js';
+import { validateAndRefreshSession } from '../utils/sessionHelper.js';
+import { retryWithBackoff, isRetryableError } from '../utils/retryHelper.js';
 import * as flubber from 'flubber';
-import { AnimatedClockIcon, AnimatedAlarmClockIcon } from './timeClockEntry.jsx'
-import { AnimatedCoffeeIcon, MiniFlubberMorphingLeaveStatus } from './timeTracking.jsx';
-import { MiniFlubberAutoMorphInProgress,MiniFlubberAutoMorphEmployees } from './taskReview.jsx'
-import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
-import { getDemoEmployeeName, isDemoMode } from '../utils/demoHelper';
+import { AnimatedClockIcon, _AnimatedAlarmClockIcon } from './timeClockEntry.jsx'
+import { _AnimatedCoffeeIcon, _MiniFlubberMorphingLeaveStatus } from './timeTracking.jsx';
+import { MiniFlubberAutoMorphInProgress,_MiniFlubberAutoMorphEmployees } from './taskReview.jsx'
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh.js';
+import { getDemoEmployeeName, isDemoMode } from '../utils/demoHelper.js';
 
 export const MiniFlubberAutoMorphEmployeesDashboard = ({
   size = 24,
@@ -1235,7 +1235,7 @@ const Dashboard = ({ employees, applications }) => {
   const { t } = useLanguage();
   const { logout } = useAuth();
   
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [timeTrackingData, setTimeTrackingData] = useState({});
   const [allEmployeesData, setAllEmployeesData] = useState([]);
   const [leaveRequestsData, setLeaveRequestsData] = useState({});
@@ -1383,7 +1383,7 @@ const Dashboard = ({ employees, applications }) => {
       }, {
         maxRetries: 2,
         shouldRetry: isRetryableError,
-        onRetry: (error, attempt, delay) => {
+        onRetry: (_error, attempt, delay) => {
           console.log(`🔄 Dashboard: Retrying fetch (${attempt}/2) after ${delay}ms...`);
         }
       });
@@ -1448,7 +1448,7 @@ const Dashboard = ({ employees, applications }) => {
   const hasRealData = trackingDataValues.some(emp => emp?.workDays > 0 || emp?.overtime > 0);
 
   // Helper function to generate display names for charts - always use last name
-  const getUniqueDisplayName = (employee, allEmployees) => {
+  const getUniqueDisplayName = (employee, _allEmployees) => {
     const translatedName = getDemoEmployeeName(employee, t);
     const nameParts = translatedName.trim().split(/\s+/).filter(part => part.length > 0);
     if (nameParts.length === 0) return `Employee #${employee.id}`;
@@ -1491,7 +1491,7 @@ const Dashboard = ({ employees, applications }) => {
   });
 
   // Chart colors
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
+  const _COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
   
   // Top performers
   const topPerformers = employees
@@ -1648,8 +1648,9 @@ const Dashboard = ({ employees, applications }) => {
           </select>
         </div>
         
-        <button
-          onClick={() => window.location.reload()}
+        <button 
+          type = "button"
+          onClick={() => globalThis.location.reload()}
           className="flex items-center space-x-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-all duration-200 hover:scale-105"
         >
           <RefreshCw className="h-3 w-3" />
@@ -1660,7 +1661,7 @@ const Dashboard = ({ employees, applications }) => {
       {/* Error Banner */}
       {fetchError && (
         <div className={`${isDarkMode ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-300'} rounded-lg border p-4 flex items-start space-x-3 slide-in-top`}>
-          <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'} flex-shrink-0 mt-0.5`} />
+          <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'} shrink-0 mt-0.5`} />
           <div className="flex-1">
             <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-red-400' : 'text-red-800'}`}>
               {t('common.error', 'Error')}
@@ -1669,6 +1670,7 @@ const Dashboard = ({ employees, applications }) => {
               {fetchError}
             </p>
             <button
+              type = "button"
               onClick={() => {
                 setFetchError(null);
                 fetchDashboardData();
@@ -1679,6 +1681,7 @@ const Dashboard = ({ employees, applications }) => {
             </button>
           </div>
           <button
+            type = "button"
             onClick={() => setFetchError(null)}
             className={`${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} transition-colors`}
             aria-label="Close"
@@ -1824,7 +1827,7 @@ const Dashboard = ({ employees, applications }) => {
                         </div>
                         {unique.map((p, idx) => {
                           const isPerformance = p.dataKey === 'performance' || String(p.name || '').toLowerCase().includes(String(t('dashboard.performanceRating', 'Performance Rating')).toLowerCase());
-                          const isLine = p.payload && p.payload.hasOwnProperty('performance') && p.type === 'line';
+                          const _isLine = p.payload && Object.prototype.hasOwnProperty.call(p.payload, 'performance') && p.type === 'line';
 
                           const swatchStyle = isPerformance
                             ? {
@@ -1933,7 +1936,7 @@ const Dashboard = ({ employees, applications }) => {
                 dataKey="value"
                 style={{ fontSize: '13px' }}
               >
-                {departmentData.map((entry, index) => (
+                {departmentData.map((_entry, index) => (
                   <Cell key={`cell-${index}`} fill={`url(#pieGradient${index % 7})`} />
                 ))}
               </Pie>

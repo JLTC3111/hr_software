@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import _React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 
 const LanguageContext = createContext();
 
@@ -34,7 +34,7 @@ export const LanguageProvider = ({ children }) => {
       try {
         const translationModule = await import(`../translations/${currentLanguage}.js`);
         setTranslations(translationModule.default);
-      } catch (error) {
+      } catch (_error) {
         console.warn(`Failed to load translations for ${currentLanguage}, falling back to English`);
         if (currentLanguage !== 'en') {
           const englishModule = await import('../translations/en.js');

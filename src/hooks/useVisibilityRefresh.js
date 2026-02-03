@@ -84,20 +84,20 @@ export const useVisibilityRefresh = (refreshCallback, options = {}) => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
     if (refreshOnFocus) {
-      window.addEventListener('focus', handleFocus);
+      globalThis.addEventListener('focus', handleFocus);
     }
     
     if (refreshOnOnline) {
-      window.addEventListener('online', handleOnline);
+      globalThis.addEventListener('online', handleOnline);
     }
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (refreshOnFocus) {
-        window.removeEventListener('focus', handleFocus);
+        globalThis.removeEventListener('focus', handleFocus);
       }
       if (refreshOnOnline) {
-        window.removeEventListener('online', handleOnline);
+        globalThis.removeEventListener('online', handleOnline);
       }
     };
   }, [handleRefresh, refreshOnFocus, refreshOnOnline, onStaleTimeout]);

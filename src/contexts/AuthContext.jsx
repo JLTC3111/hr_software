@@ -272,7 +272,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     // Handle online/offline events
-    const handleOnline = async () => {
+    const handleOnline = () => {
       console.log('🌐 Network came online - checking session...');
       // Trigger a visibility check when coming back online
       lastVisibilityCheck.current = 0; // Reset to force check
@@ -330,7 +330,7 @@ export const AuthProvider = ({ children }) => {
       }
       
       // Fetch user from hr_users table using the resolved hr_user_id
-      let { data, error } = await supabase
+      const { data, error } = await supabase
         .from('hr_users')
         .select('*')
         .eq('id', hrUserId)
@@ -560,10 +560,10 @@ export const AuthProvider = ({ children }) => {
       // Set storage type based on rememberMe checkbox
       if (typeof window !== 'undefined') {
         if (rememberMe) {
-          customStorage.setStorage(window.localStorage);
+          customStorage.setStorage(globalThis.localStorage);
           console.log('✅ Using localStorage (persistent session)');
         } else {
-          customStorage.setStorage(window.sessionStorage);
+          customStorage.setStorage(globalThis.sessionStorage);
           console.log('✅ Using sessionStorage (session-only)');
         }
       }
@@ -622,10 +622,10 @@ export const AuthProvider = ({ children }) => {
       console.log('🔐 GitHub OAuth: Setting storage to localStorage for session persistence');
       customStorage.setStorage(localStorage);
       
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { _data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${window.location.origin}/time-clock`,
+          redirectTo: `${globalThis.location.origin}/time-clock`,
           skipBrowserRedirect: false
         }
       });

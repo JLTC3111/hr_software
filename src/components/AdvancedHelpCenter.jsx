@@ -1,10 +1,10 @@
-import React, { useMemo } from 'react';
+import _React, { useMemo } from 'react';
 import * as LucideIcons from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useTheme } from '../contexts/ThemeContext';
-import FeatureShowcase from './FeatureShowcase';
-import { HELP_FEATURES } from '../services/helpData';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
+import { useTheme } from '../contexts/ThemeContext.jsx';
+import FeatureShowcase from './FeatureShowcase.jsx';
+import { HELP_FEATURES } from '../services/helpData.js';
 
 // Helper function to dynamically select Lucide Icons
 const Icon = ({ name, ...props }) => {

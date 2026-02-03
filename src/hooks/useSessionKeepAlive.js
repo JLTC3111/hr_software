@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { supabase } from '../config/supabaseClient';
+import { supabase } from '../config/supabaseClient.js';
 
 /**
  * Hook to keep user session alive with proactive token refresh
@@ -118,16 +118,16 @@ export const useSessionKeepAlive = () => {
     };
 
     // Listen to user activity
-    window.addEventListener('click', handleActivity);
-    window.addEventListener('keypress', handleActivity);
-    window.addEventListener('scroll', handleActivity);
-    window.addEventListener('mousemove', handleActivity);
+    globalThis.addEventListener('click', handleActivity);
+    globalThis.addEventListener('keypress', handleActivity);
+    globalThis.addEventListener('scroll', handleActivity);
+    globalThis.addEventListener('mousemove', handleActivity);
 
     return () => {
-      window.removeEventListener('click', handleActivity);
-      window.removeEventListener('keypress', handleActivity);
-      window.removeEventListener('scroll', handleActivity);
-      window.removeEventListener('mousemove', handleActivity);
+      globalThis.removeEventListener('click', handleActivity);
+      globalThis.removeEventListener('keypress', handleActivity);
+      globalThis.removeEventListener('scroll', handleActivity);
+      globalThis.removeEventListener('mousemove', handleActivity);
       clearTimeout(activityTimeout);
     };
   }, []);
