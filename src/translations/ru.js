@@ -552,6 +552,7 @@ export default {
 
   // Reports
   reports: {
+    bonusHours: 'Бонусные часы',
     daysWorked: 'Отработанные дни',
     leaveDays: 'Дни отпуска',
     title: 'Отчёты и аналитика',

@@ -561,6 +561,7 @@ export default {
 
   // Reports
   reports: {
+    bonusHours: "Bonusstunden",
     daysWorked: "Gearbeitete Tage",
     leaveDays: "Urlaubstage",
     title: 'Berichte & Analysen',

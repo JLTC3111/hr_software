@@ -490,6 +490,7 @@ export default {
 
   // Reports
   reports: {
+    bonusHours: '보너스 시간',
     daysWorked: '근무 일수',
     leaveDays: '휴가 일수',
     title: '보고서 및 분석',

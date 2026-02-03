@@ -899,6 +899,7 @@ export default {
 
   // Reports
   reports: {
+    bonusHours: 'Bonus Hours',
     title: 'Reports & Analytics',
     allEmployees: 'All_Employees',
     filenamePrefix: 'HR_Report_',

@@ -488,6 +488,7 @@ export default {
 
   // Reports
   reports: {
+    bonusHours: 'ボーナス時間',
     daysWorked: '勤務日数',
     title: 'レポート・分析',
     allEmployees: '全従業員',

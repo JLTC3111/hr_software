@@ -567,6 +567,7 @@ login: {
 
   // Reports
   reports: {
+    bonusHours: 'Horas Bonus',
     daysWorked: 'Días Trabajados',
     leaveDays: 'Días de Permiso',
     title: 'Informes y Análisis',

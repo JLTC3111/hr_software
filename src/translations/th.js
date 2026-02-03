@@ -487,6 +487,7 @@ export default {
 
   // Reports
   reports: {
+    bonusHours: 'ชั่วโมงโบนัส',
     daysWorked: 'วันทำงาน',
     leaveDays: 'วันลา',
     title: 'รายงานและการวิเคราะห์',

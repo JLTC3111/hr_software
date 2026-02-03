@@ -335,7 +335,7 @@ export default {
     regularHours: 'Giờ Làm Thường',
     weekendOvertime: 'Cuối Tuần/Tăng Ca',
     holiday: 'Ngày Lễ',
-    bonusHours: 'Giờ Làm Thêm',
+    bonusHours: 'Giờ Cộng Thêm',
     notes: 'Ghi Chú',
     notesPlaceholder: 'Thêm Ghi Chú: VD: Làm tại VP, Đi họp tại...Đi công tác ở...',
     submitButton: 'Gửi Mục Nhập Giờ',
@@ -617,6 +617,7 @@ export default {
 
   // Reports
   reports: {
+    bonusHours: 'Giờ Cộng Thêm',
     daysWorked: 'Số Ngày Làm Việc',
     leaveDays: 'Số Ngày Nghỉ Phép',
     title: 'Báo cáo và phân tích',
