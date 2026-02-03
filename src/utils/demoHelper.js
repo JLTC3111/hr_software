@@ -6,15 +6,33 @@ export const isDemoMode = () => {
   return localStorage.getItem(DEMO_STORAGE_KEY) === 'true';
 };
 
+// Demo configuration - toggle behaviors used during demo mode
+const DEMO_RANDOM_FACES_KEY = 'hr_app_demo_random_faces';
+export const DEMO_CONFIG = {
+  // When true, demo will fetch seeded RandomUser faces (experimental).
+  // Default reads from localStorage; falls back to false.
+  enableRandomFaces: localStorage.getItem(DEMO_RANDOM_FACES_KEY) === 'true'
+};
+
+export const setEnableDemoRandomFaces = (value) => {
+  const v = !!value;
+  DEMO_CONFIG.enableRandomFaces = v;
+  try {
+    localStorage.setItem(DEMO_RANDOM_FACES_KEY, v ? 'true' : 'false');
+  } catch (_e) {
+    // ignore
+  }
+};
+
 export const enableDemoMode = () => {
   localStorage.setItem(DEMO_STORAGE_KEY, 'true');
   // Also set a flag for the current session
-  window.isDemoMode = true;
+  globalThis.isDemoMode = true;
 };
 
 export const disableDemoMode = () => {
   localStorage.removeItem(DEMO_STORAGE_KEY);
-  window.isDemoMode = false;
+  globalThis.isDemoMode = false;
 };
 
 /**
@@ -85,6 +103,119 @@ export const translateDemoEmployees = (employees, t) => {
   
   return employees.map(emp => translateDemoEmployee(emp, t));
 };
+
+// ============================================
+// DETERMINISTIC NON-HUMAN AVATAR HELPERS
+// Use identicons or initials-based avatars for demo mode
+// These do not attempt to represent real people's ethnicity or appearance.
+// ============================================
+
+const hashToNumber = (str, max = 100) => {
+  let h = 0;
+  for (let i = 0; i < String(str).length; i++) {
+    h = (h << 5) - h + String(str).charCodeAt(i);
+    h |= 0; // convert to 32bit int
+  }
+  return Math.abs(h) % max;
+};
+
+/**
+ * Return a deterministic avatar URL for demo employees.
+ * style: 'identicon' | 'initials'
+ */
+export const getDemoAvatarUrl = (seed, { style = 'identicon', bg = 'ffffff', color = '0D8ABC' } = {}) => {
+  const s = String(seed || 'demo');
+  if (style === 'initials') {
+    const name = encodeURIComponent(s.replace(/[-_]/g, ' '));
+    return `https://ui-avatars.com/api/?name=${name}&background=${bg}&color=${color}&size=256`;
+  }
+
+  // Default to DiceBear Identicon (SVG)
+  // Use hashed seed to keep variety but deterministic
+  const seedStr = `${s}-${hashToNumber(s, 1000)}`;
+  // New DiceBear API endpoint (the old `avatars.dicebear.com` endpoint can return 410)
+  return `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(seedStr)}`;
+};
+
+const DEMO_PHOTO_CACHE_KEY = 'hr_app_demo_photo_cache_v1';
+
+const readPhotoCache = () => {
+  try {
+    const raw = localStorage.getItem(DEMO_PHOTO_CACHE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (_e) {
+    return {};
+  }
+};
+
+const writePhotoCache = (cache) => {
+  try {
+    localStorage.setItem(DEMO_PHOTO_CACHE_KEY, JSON.stringify(cache));
+  } catch (_e) {
+    // ignore
+  }
+};
+
+/**
+ * Fetch a seeded RandomUser photo URL (large) and cache it in localStorage.
+ * seed: string used to make the result deterministic (e.g., employee id)
+ * options: { nat: 'us'|'gb'|..., gender: 'male'|'female' (optional) }
+ * Returns: Promise<string> photoUrl or fallback identicon URL on error
+ */
+export const fetchSeededRandomUserPhoto = async (seed, { nat, _gender } = {}) => {
+  if (!seed) return getDemoAvatarUrl(seed);
+
+  const cache = readPhotoCache();
+  if (cache[seed]) return cache[seed];
+
+  try {
+    const params = new URLSearchParams();
+    params.set('seed', String(seed));
+    if (nat) params.set('nat', String(nat));
+    // include picture only for smaller payload
+    params.set('inc', 'picture');
+
+    const url = `https://randomuser.me/api/?${params.toString()}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('randomuser fetch failed');
+    const json = await res.json();
+    const picture = json?.results?.[0]?.picture;
+    const photoUrl = picture?.large || picture?.medium || picture?.thumbnail;
+    if (photoUrl) {
+      cache[seed] = photoUrl;
+      writePhotoCache(cache);
+      return photoUrl;
+    }
+  } catch (_err) {
+    // fallback to identicon
+    return getDemoAvatarUrl(seed);
+  }
+
+  return getDemoAvatarUrl(seed);
+};
+
+/**
+ * Attach seeded RandomUser photos to an array of employees.
+ * This will fetch photos for each employee using their `id` as seed and
+ * update the `photo` property in-place. Returns a Promise that resolves
+ * to the updated employees array.
+ */
+export const attachSeededRandomUserPhotos = (employees, opts = {}) => {
+  if (!Array.isArray(employees)) return employees;
+  const promises = employees.map(async (emp) => {
+    try {
+      const url = await fetchSeededRandomUserPhoto(emp.id || emp.employee_id || emp.employeeId, opts);
+      emp.photo = url;
+    } catch (_e) {
+      emp.photo = getDemoAvatarUrl(emp.id || emp.employee_id || emp.employeeId);
+    }
+    return emp;
+  });
+
+  return Promise.all(promises);
+};
+
+
 
 /**
  * Get translated title for a demo task
@@ -517,7 +648,7 @@ export const MOCK_EMPLOYEES = [
     location: 'Headquarters',
     locationKey: 'locations.headquarters',
     status: 'active',
-    photo: 'https://randomuser.me/api/portraits/women/44.jpg',
+    photo: getDemoAvatarUrl('demo-emp-1'),
     phone: '555-0101',
     hire_date: '2023-01-15',
     dob: '1985-06-15',
@@ -534,7 +665,7 @@ export const MOCK_EMPLOYEES = [
     location: 'Headquarters',
     locationKey: 'locations.headquarters',
     status: 'active',
-    photo: 'https://randomuser.me/api/portraits/men/32.jpg',
+    photo: getDemoAvatarUrl('demo-emp-2'),
     phone: '555-0102',
     hire_date: '2023-03-10',
     dob: '1990-03-22',
@@ -551,7 +682,7 @@ export const MOCK_EMPLOYEES = [
     location: 'Remote',
     locationKey: 'locations.remote',
     status: 'active',
-    photo: 'https://randomuser.me/api/portraits/men/86.jpg',
+    photo: getDemoAvatarUrl('demo-emp-3'),
     phone: '555-0103',
     hire_date: '2023-06-20',
     dob: '1992-11-05',
@@ -568,7 +699,7 @@ export const MOCK_EMPLOYEES = [
     location: 'Headquarters',
     locationKey: 'locations.headquarters',
     status: 'active',
-    photo: 'https://randomuser.me/api/portraits/women/65.jpg',
+    photo: getDemoAvatarUrl('demo-emp-4'),
     phone: '555-0104',
     hire_date: '2023-02-01',
     dob: '1995-08-30',
@@ -585,7 +716,7 @@ export const MOCK_EMPLOYEES = [
     location: 'Remote',
     locationKey: 'locations.remote',
     status: 'active',
-    photo: 'https://randomuser.me/api/portraits/men/22.jpg',
+    photo: getDemoAvatarUrl('demo-emp-5'),
     phone: '555-0105',
     hire_date: '2023-08-15',
     dob: '1988-12-12',
@@ -619,7 +750,18 @@ export const getDemoEmployees = () => {
   const filteredMock = visibleMockEmployees.filter(e => !deletedIds.has(String(e.id)));
   const filteredStored = storedEmployees.filter(e => !deletedIds.has(String(e.id)));
   
-  return [...filteredMock, ...filteredStored];
+  const merged = [...filteredMock, ...filteredStored];
+
+  // If we have cached seeded photos, apply them to the returned employees
+  try {
+    const photoCache = readPhotoCache();
+    return merged.map(emp => ({
+      ...emp,
+      photo: photoCache[emp.id] || emp.photo
+    }));
+  } catch (_e) {
+    return merged;
+  }
 };
 
 /**
@@ -643,7 +785,7 @@ export const addDemoEmployee = (employee) => {
 
 export const updateDemoEmployee = (employeeId, updates) => {
   const stored = localStorage.getItem(DEMO_EMPLOYEES_KEY);
-  let storedEmployees = stored ? JSON.parse(stored) : [];
+  const storedEmployees = stored ? JSON.parse(stored) : [];
   
   // Check if it's already in storage
   const storedIndex = storedEmployees.findIndex(e => e.id === employeeId);
@@ -1158,7 +1300,7 @@ export const addDemoReview = (review) => {
 
 export const updateDemoReview = (reviewId, updates) => {
   const stored = localStorage.getItem(DEMO_REVIEWS_KEY);
-  let storedReviews = stored ? JSON.parse(stored) : [];
+  const storedReviews = stored ? JSON.parse(stored) : [];
   
   const storedIndex = storedReviews.findIndex(r => r.id === reviewId);
   if (storedIndex !== -1) {
@@ -1263,7 +1405,7 @@ export const addDemoSkill = (skill) => {
 
 export const updateDemoSkill = (skillId, updates) => {
   const stored = localStorage.getItem(DEMO_SKILLS_KEY);
-  let storedSkills = stored ? JSON.parse(stored) : [];
+  const storedSkills = stored ? JSON.parse(stored) : [];
   
   const storedIndex = storedSkills.findIndex(s => s.id === skillId);
   if (storedIndex !== -1) {
@@ -1693,7 +1835,7 @@ export const addDemoTask = (task) => {
  */
 export const updateDemoTask = (taskId, updates) => {
   const stored = localStorage.getItem(DEMO_TASKS_KEY);
-  let storedTasks = stored ? JSON.parse(stored) : [];
+  const storedTasks = stored ? JSON.parse(stored) : [];
   
   // Check if it's already in storage
   const storedIndex = storedTasks.findIndex(t => t.id === taskId);
@@ -1722,7 +1864,7 @@ export const updateDemoTask = (taskId, updates) => {
  */
 export const deleteDemoTask = (taskId) => {
   const stored = localStorage.getItem(DEMO_TASKS_KEY);
-  let storedTasks = stored ? JSON.parse(stored) : [];
+  const storedTasks = stored ? JSON.parse(stored) : [];
   
   // Check if it exists in storage
   const storedIndex = storedTasks.findIndex(t => t.id === taskId);
@@ -1777,7 +1919,7 @@ export const addDemoGoal = (goal) => {
  */
 export const updateDemoGoal = (goalId, updates) => {
   const stored = localStorage.getItem(DEMO_GOALS_KEY);
-  let storedGoals = stored ? JSON.parse(stored) : [];
+  const storedGoals = stored ? JSON.parse(stored) : [];
   
   // Check if it's already in storage
   const storedIndex = storedGoals.findIndex(g => g.id === goalId);
@@ -1806,7 +1948,7 @@ export const updateDemoGoal = (goalId, updates) => {
  */
 export const deleteDemoGoal = (goalId) => {
   const stored = localStorage.getItem(DEMO_GOALS_KEY);
-  let storedGoals = stored ? JSON.parse(stored) : [];
+  const storedGoals = stored ? JSON.parse(stored) : [];
   
   const storedIndex = storedGoals.findIndex(g => g.id === goalId);
   if (storedIndex !== -1) {
@@ -1849,7 +1991,7 @@ export const addDemoLeaveRequest = (leaveRequest) => {
  */
 export const updateDemoLeaveRequest = (requestId, updates) => {
   const stored = localStorage.getItem(DEMO_LEAVE_REQUESTS_KEY);
-  let storedRequests = stored ? JSON.parse(stored) : [];
+  const storedRequests = stored ? JSON.parse(stored) : [];
   
   const index = storedRequests.findIndex(r => r.id === requestId);
   if (index !== -1) {

@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import _React, { useState, useEffect, useRef, useMemo } from 'react';
 import { X, Phone, Mail, MapPin, Award, Cake, Network, Calendar, DollarSign, User, ClipboardList, FileText, Download, Upload, Loader, Edit2, Briefcase, Trash2, RefreshCw, Eye, ExternalLink, Files, ListFilter } from 'lucide-react';
-import { useTheme } from '../contexts/ThemeContext';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../contexts/AuthContext';
-import { useUpload } from '../contexts/UploadContext';
-import { getEmployeePdfUrl, deleteEmployeePdf, uploadEmployeeRequestDocument, listEmployeeRequestDocuments, deleteEmployeeRequestDocument, getEmployeeRequestDocumentUrl } from '../services/employeeService';
-import { getDemoEmployeeName } from '../utils/demoHelper';
-import { getEmployeePositionI18nKey } from '../utils/employeePositionKey';
+import { useTheme } from '../contexts/ThemeContext.jsx';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import { useUpload } from '../contexts/UploadContext.jsx';
+import { getEmployeePdfUrl, deleteEmployeePdf, uploadEmployeeRequestDocument, listEmployeeRequestDocuments, deleteEmployeeRequestDocument, getEmployeeRequestDocumentUrl } from '../services/employeeService.js';
+import { getDemoEmployeeName } from '../utils/demoHelper.js';
+import { getEmployeePositionI18nKey } from '../utils/employeePositionKey.js';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -144,8 +144,8 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
         onClose();
       }
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+    globalThis.addEventListener('keydown', handleEsc);
+    return () => globalThis.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
   // Resizable width handler
@@ -172,13 +172,13 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
     };
 
     if (isResizing) {
-      window.addEventListener('mousemove', handleMouseMove, { capture: true, passive: false });
-      window.addEventListener('mouseup', handleMouseUp, { capture: true, passive: false });
+      globalThis.addEventListener('mousemove', handleMouseMove, { capture: true, passive: false });
+      globalThis.addEventListener('mouseup', handleMouseUp, { capture: true, passive: false });
     }
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove, { capture: true });
-      window.removeEventListener('mouseup', handleMouseUp, { capture: true });
+      globalThis.removeEventListener('mousemove', handleMouseMove, { capture: true });
+      globalThis.removeEventListener('mouseup', handleMouseUp, { capture: true });
     };
   }, [isResizing]);
 
@@ -253,7 +253,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
     try {
       const result = await getEmployeeRequestDocumentUrl(doc.path);
       if (!result.success) throw new Error(result.error || 'Failed to open document');
-      window.open(result.url, '_blank');
+      globalThis.open(result.url, '_blank');
     } catch (err) {
       alert(t('errors.fileOpenFailed', 'Failed to open document: ') + (err?.message || 'Unknown error'));
     }
@@ -297,7 +297,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
   };
 
   const handleRequestDocDelete = async (doc) => {
-    const confirmDelete = window.confirm(
+    const confirmDelete = globalThis.confirm(
       t('employeeDetailModal.confirmDelete', 'Are you sure you want to delete this document?')
     );
     if (!confirmDelete) return;
@@ -347,14 +347,14 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
 
   const handlePdfDownload = () => {
     if (pdfUrl) {
-      window.open(pdfUrl, '_blank');
+      globalThis.open(pdfUrl, '_blank');
     }
   };
 
   const handlePdfDelete = async () => {
     if (!pdfPath) return;
 
-    const confirmDelete = window.confirm(
+    const confirmDelete = globalThis.confirm(
       t('employeeDetailModal.confirmDeletePdf', 'Are you sure you want to delete this PDF document? This action cannot be undone.')
     );
 
@@ -461,6 +461,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
 
         {/* Close Button */}
         <button
+          type ="button"
           onClick={onClose}
           className="absolute top-4 right-4 z-10 p-2 rounded-lg hover:bg-transparent transition-colors"
         >
@@ -538,6 +539,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
             </a>
             {canEdit && (
               <button
+              type ="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (onEdit) {
@@ -607,6 +609,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
         {/* Basic Information */}
         <div className={`flex border-b ${border.primary} px-6`}>
           <button
+            type ="button"
             onClick={() => setActiveTab('info')}
             className={`flex items-center cursor-pointer space-x-2 px-4 py-3 font-medium transition-colors relative ${
               activeTab === 'info'
@@ -618,6 +621,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
             <span>{t('employeeDetailModal.basicInfo', '')}</span>
           </button>
           <button
+            type ="button"
             onClick={() => setActiveTab('contact')}
             className={`flex items-center cursor-pointer space-x-2 px-4 py-3 font-medium transition-colors relative ${
               activeTab === 'contact'
@@ -629,6 +633,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
             <span>{t('employeeDetailModal.contact', '')}</span>
           </button>
           <button
+            type ="button"
             onClick={() => setActiveTab('documents')}
             className={`flex items-center cursor-pointer space-x-2 px-4 py-3 font-medium transition-colors relative ${
               activeTab === 'documents'
@@ -717,6 +722,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                     {pdfUrl && (
                       <>
                         <button
+                          type ="button"
                           onClick={handlePdfDownload}
                           className={`px-4 py-2 text-white cursor-pointer rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
                         >
@@ -725,6 +731,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                         </button>
                         {canEdit && (
                           <button
+                          type ="button"
                             onClick={handlePdfDelete}
                             className={`px-4 py-2 text-white cursor-pointer rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-red-700 hover:bg-red-600' : 'bg-red-600 hover:bg-red-700'}`}
                           >
@@ -879,6 +886,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                             <FileText className={`w-16 h-16 mb-4 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
                             <p className={`text-center ${text.secondary} font-semibold`}>{pdfError}</p>
                             <button
+                              type ="button"
                               onClick={() => setUseIframe(true)}
                               className={`mt-4 px-4 py-2 text-white rounded-lg transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
                             >
@@ -911,6 +919,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                       {!useIframe && !pdfError && numPages && numPages > 1 && (
                         <div className="flex items-center space-x-4 mt-4">
                           <button
+                            type ="button"
                             onClick={() => setPageNumber(Math.max(1, pageNumber - 1))}
                             disabled={pageNumber <= 1}
                             className="px-3 py-1 bg-blue-600 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
@@ -921,6 +930,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                             Page {pageNumber} of {numPages}
                           </span>
                           <button
+                            type ="button"
                             onClick={() => setPageNumber(Math.min(numPages, pageNumber + 1))}
                             disabled={pageNumber >= numPages}
                             className="px-3 py-1 bg-blue-600 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
@@ -982,7 +992,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                           {requestDocPreview.url && (
                             <button
                               type="button"
-                              onClick={() => window.open(requestDocPreview.url, '_blank')}
+                              onClick={() => globalThis.open(requestDocPreview.url, '_blank')}
                               className={`px-4 py-2 text-white rounded-lg flex items-center gap-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
                               title={t('employeeDetailModal.requestDocsOpenInNewTab', 'Open in new tab')}
                               aria-label={t('employeeDetailModal.requestDocsOpenInNewTab', 'Open in new tab')}

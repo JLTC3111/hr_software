@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState } from 'react'
+import _React, { useMemo, useCallback, useState } from 'react'
 import {
   Building2,
   Camera,
@@ -15,11 +15,11 @@ import {
   Trash2,
   User
 } from 'lucide-react'
-import { useLanguage } from '../contexts/LanguageContext'
-import { useTheme } from '../contexts/ThemeContext'
-import { useAuth } from '../contexts/AuthContext'
-import { getDemoEmployeeName } from '../utils/demoHelper'
-import { getEmployeePositionI18nKey } from '../utils/employeePositionKey'
+import { useLanguage } from '../contexts/LanguageContext.jsx'
+import { useTheme } from '../contexts/ThemeContext.jsx'
+import { useAuth } from '../contexts/AuthContext.jsx'
+import { getDemoEmployeeName } from '../utils/demoHelper.js'
+import { getEmployeePositionI18nKey } from '../utils/employeePositionKey.js'
 
 const normalizeKey = (value) =>
   String(value || '')
@@ -129,7 +129,7 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
     try {
       const id = employee?.id
       if (!id) return false
-      return window.localStorage.getItem(`employeePinned:${id}`) === '1'
+      return globalThis.localStorage.getItem(`employeePinned:${id}`) === '1'
     } catch {
       return false
     }
@@ -196,7 +196,7 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
         try {
           const id = employee?.id
           if (id) {
-            window.localStorage.setItem(`employeePinned:${id}`, next ? '1' : '0')
+            globalThis.localStorage.setItem(`employeePinned:${id}`, next ? '1' : '0')
           }
         } catch {
           // ignore

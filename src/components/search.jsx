@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react'
+import _React, { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react'
 import { Search, Filter } from 'lucide-react'
-import { useLanguage } from '../contexts/LanguageContext'
+import { useLanguage } from '../contexts/LanguageContext.jsx'
 
 const SearchAndFilter = memo(({ searchTerm, setSearchTerm, filterDepartment, setFilterDepartment, departments, employeeDepartment, style }) => {
   const { t } = useLanguage();
@@ -46,7 +46,28 @@ const SearchAndFilter = memo(({ searchTerm, setSearchTerm, filterDepartment, set
   const iconColor = useMemo(() => ({ color: style?.color || '#9ca3af' }), [style?.color]);
 
   const departmentOptions = useMemo(() => {
-    return (departments || employeeDepartment || []);
+    const raw = (departments || employeeDepartment || []);
+    const map = new Map();
+
+    for (const item of raw) {
+      const value = typeof item === 'string'
+        ? item
+        : (item?.value ?? item?.id ?? item?.name ?? '');
+      const label = typeof item === 'string'
+        ? item
+        : (item?.label ?? item?.name ?? String(value));
+
+      // Skip completely empty entries
+      if (!value && !label) continue;
+
+      // Deduplicate by value (or label fallback)
+      const key = String(value || label);
+      if (!map.has(key)) {
+        map.set(key, { value: String(value || label), label: String(label || value) });
+      }
+    }
+
+    return Array.from(map.values());
   }, [departments, employeeDepartment]);
 
   const handleFilterIconClick = useCallback(() => {
@@ -84,7 +105,7 @@ const SearchAndFilter = memo(({ searchTerm, setSearchTerm, filterDepartment, set
             className="pl-10 pr-8 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 cursor-pointer focus:border-blue-500 appearance-none"
             style={inputStyle}
           >
-            {departmentOptions.map(dept => (
+            {departmentOptions.map((dept) => (
               <option key={dept.value} value={dept.value}>{dept.label}</option>
             ))}
           </select>

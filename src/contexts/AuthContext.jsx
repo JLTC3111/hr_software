@@ -1,8 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { supabase, hasPermission, Permissions, customStorage } from '../config/supabaseClient';
-import { validateAndRefreshSession } from '../utils/sessionHelper';
-import { linkUserToEmployee } from '../services/employeeService';
-import { isDemoMode, enableDemoMode, disableDemoMode, MOCK_USER, resetAllDemoData } from '../utils/demoHelper';
+import _React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { supabase, hasPermission, Permissions, customStorage } from '../config/supabaseClient.js';
+import { validateAndRefreshSession } from '../utils/sessionHelper.js';
+import { isDemoMode, enableDemoMode, disableDemoMode, MOCK_USER, getDemoEmployees, attachSeededRandomUserPhotos, DEMO_CONFIG } from '../utils/demoHelper.js';
 
 const AuthContext = createContext();
 
@@ -20,7 +19,7 @@ export const AuthProvider = ({ children }) => {
     import.meta.env.VITE_SITE_URL ||
     (import.meta.env.PROD
       ? ''
-      : (typeof window !== 'undefined' ? window.location.origin : ''));
+      : (typeof window !== 'undefined' ? globalThis.location.origin : ''));
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -56,6 +55,22 @@ export const AuthProvider = ({ children }) => {
           console.log('🧪 Demo mode detected');
           setUser(MOCK_USER);
           setIsAuthenticated(true);
+
+          // If demo config requests seeded RandomUser faces, prefetch them (non-blocking)
+          try {
+            if (DEMO_CONFIG && DEMO_CONFIG.enableRandomFaces) {
+              const demoEmployees = getDemoEmployees();
+              // fire-and-forget; this will populate the photo cache so subsequent calls use the photos
+              attachSeededRandomUserPhotos(demoEmployees).then(() => {
+                console.log('📸 Prefetched seeded demo photos');
+              }).catch(err => {
+                console.warn('Failed to prefetch seeded demo photos', err);
+              });
+            }
+          } catch (err) {
+            console.warn('Error during demo photo prefetch setup', err);
+          }
+
           setLoading(false);
           return;
         }
@@ -265,7 +280,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('online', handleOnline);
+    globalThis.addEventListener('online', handleOnline);
     
     // Also handle focus events for additional reliability
     const handleFocus = () => {
@@ -275,12 +290,12 @@ export const AuthProvider = ({ children }) => {
         handleVisibilityChange();
       }
     };
-    window.addEventListener('focus', handleFocus);
+    globalThis.addEventListener('focus', handleFocus);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('focus', handleFocus);
+      globalThis.removeEventListener('online', handleOnline);
+      globalThis.removeEventListener('focus', handleFocus);
     };
   }, [isAuthenticated, user]);
 
