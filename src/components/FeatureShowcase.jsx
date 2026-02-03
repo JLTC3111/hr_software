@@ -1,8 +1,8 @@
-import React, { useMemo } from 'react';
+import _React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Clock3, UploadCloud, BarChart3, CheckCircle2, FileBarChart } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
+import { useTheme } from '../contexts/ThemeContext.jsx';
 
 const FeatureShowcase = () => {
   const { t } = useLanguage();

@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
+import process from "node:process";
 
 /**
  * Error Boundary Component
@@ -15,7 +16,7 @@ class ErrorBoundary extends React.Component {
     };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(_error) {
     // Update state so the next render will show the fallback UI
     return { hasError: true };
   }
@@ -44,7 +45,7 @@ class ErrorBoundary extends React.Component {
   };
 
   handleReload = () => {
-    window.location.reload();
+    globalThis.location.reload();
   };
 
   render() {
@@ -91,6 +92,7 @@ class ErrorBoundary extends React.Component {
               {/* Action Buttons */}
               <div className="space-y-3">
                 <button
+                  type="button"
                   onClick={this.handleReload}
                   className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
                 >
@@ -100,6 +102,7 @@ class ErrorBoundary extends React.Component {
 
                 {this.props.onReset && (
                   <button
+                    type="button"
                     onClick={() => {
                       this.handleReset();
                       this.props.onReset();

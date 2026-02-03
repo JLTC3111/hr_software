@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useMemo, memo } from 'react'
+import _React, { useState, useCallback, useMemo, memo } from 'react'
 import { Phone, MapPin, Mail, Eye, Edit, Trash2, User, Camera, Network, Loader, TrendingUp, ChevronRight } from 'lucide-react'
-import { useLanguage } from '../contexts/LanguageContext'
-import { useTheme } from '../contexts/ThemeContext'
-import { useAuth } from '../contexts/AuthContext'
-import { getDemoEmployeeName } from '../utils/demoHelper'
+import { useLanguage } from '../contexts/LanguageContext.jsx'
+import { useTheme } from '../contexts/ThemeContext.jsx'
+import { useAuth } from '../contexts/AuthContext.jsx'
+import { getDemoEmployeeName } from '../utils/demoHelper.js'
 
 const getStatusConfig = (status, isDarkMode) => {
   const configs = {
@@ -44,7 +44,7 @@ const getPerformanceColor = (performance, isDarkMode) => {
 
 const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate, style }) => {
   const { t } = useLanguage();
-  const { isDarkMode, bg, text, border } = useTheme();
+  const { isDarkMode, _bg, _text, _border } = useTheme();
   const { user } = useAuth();
   const [photoError, setPhotoError] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -64,7 +64,7 @@ const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoU
     borderColor: isDarkMode ? '#3b82f6' : '#2563eb',
   }), [isDarkMode]);
 
-  const handlePhotoUpload = useCallback(async (e) => {
+  const handlePhotoUpload = useCallback((e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -133,7 +133,7 @@ const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoU
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Header with gradient background */}
-      <div className={`relative h-20 ${isDarkMode ? 'bg-linear-to-r from-blue-900 to-purple-900' : 'bg-gradient-to-r from-blue-500 to-purple-500'}`}>
+      <div className={`relative h-20 ${isDarkMode ? 'bg-linear-to-r from-blue-900 to-purple-900' : 'bg-linear-to-r from-blue-500 to-purple-500'}`}>
         {/* Status indicator */}
         <div className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-medium flex items-center space-x-1.5 ${statusConfig.bg} ${statusConfig.text} ring-2 ${statusConfig.ring}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot} animate-pulse`}></span>
@@ -230,6 +230,7 @@ const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoU
       <div className={`flex items-center justify-between px-4 py-3 border-t ${isDarkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-100 bg-gray-50/50'}`}>
         <div className="flex items-center space-x-1">
           <button
+            type = "button"
             onClick={handleViewClick}
             className={`p-2 rounded-lg transition-all duration-200 cursor-pointer ${
               isDarkMode ? 'hover:bg-gray-700 text-gray-400 hover:text-blue-400' : 'hover:bg-gray-200 text-gray-500 hover:text-blue-600'
@@ -241,6 +242,7 @@ const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoU
           {canEditOrDelete && (
             <>
               <button
+                type = "button"
                 onClick={handleEditClick}
                 className={`p-2 rounded-lg transition-all duration-200 cursor-pointer ${
                   isDarkMode ? 'hover:bg-gray-700 text-gray-400 hover:text-green-400' : 'hover:bg-gray-200 text-gray-500 hover:text-green-600'
@@ -250,6 +252,7 @@ const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoU
                 <Edit className="h-4 w-4" />
               </button>
               <button
+                type = "button"
                 onClick={handleDeleteClick}
                 className={`p-2 rounded-lg transition-all duration-200 cursor-pointer ${
                   isDarkMode ? 'hover:bg-gray-700 text-gray-400 hover:text-red-400' : 'hover:bg-gray-200 text-gray-500 hover:text-red-600'
@@ -262,6 +265,7 @@ const EmployeeCard = memo(({ employee, onViewDetails, onEdit, onDelete, onPhotoU
           )}
         </div>
         <button
+          type = "button"
           onClick={handleViewClick}
           className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
             isDarkMode

@@ -207,7 +207,7 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
     [employee?.id]
   )
 
-  const handlePhotoUpload = useCallback(async (e) => {
+  const handlePhotoUpload = useCallback((e) => {
     const file = e.target.files[0];
     if (!file) return;
     

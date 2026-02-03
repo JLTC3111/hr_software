@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import _React, { useState, useCallback, useEffect } from 'react'
 import { Mail, Phone, MapPin, Briefcase, Calendar, Award, Edit2, Save, X, User } from 'lucide-react'
-import { useLanguage } from '../contexts/LanguageContext'
-import { useTheme } from '../contexts/ThemeContext'
-import { useAuth } from '../contexts/AuthContext'
-import * as employeeService from '../services/employeeService'
+import { useLanguage } from '../contexts/LanguageContext.jsx'
+import { useTheme } from '../contexts/ThemeContext.jsx'
+import { useAuth } from '../contexts/AuthContext.jsx'
+import * as employeeService from '../services/employeeService.js'
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -245,6 +245,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
               {isEditing ? t('employees.editEmployee', 'Edit Employee') : t('employees.employeeDetails', 'Employee Details')}
             </h3>
             <button
+              type = "button"
               onClick={onClose}
               className={`${textSecondary} hover:${textPrimary} cursor-pointer`}
             >
@@ -519,6 +520,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
             {isEditing ? (
               <>
                 <button
+                  type = "button"
                   onClick={handleCancel}
                   disabled={isSaving}
                   className={`px-4 py-2 ${textSecondary} hover:${textPrimary} disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed`}
@@ -527,6 +529,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                   {t('common.cancel', 'Cancel')}
                 </button>
                 <button
+                  type="button"
                   onClick={handleSave}
                   disabled={isSaving}
                   className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 flex items-center cursor-pointer disabled:cursor-not-allowed"
@@ -538,6 +541,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
             ) : (
               <>
                 <button
+                  type = "button"
                   onClick={onClose}
                   className={`px-4 py-2 ${textSecondary} hover:${textPrimary} cursor-pointer`}
                 >
@@ -545,6 +549,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                 </button>
                 {canEdit && (
                   <button
+                    type="button"
                     onClick={() => setIsEditing(true)}
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center cursor-pointer"
                   >

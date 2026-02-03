@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import _React, { useState, useEffect } from 'react';
 import { LayoutGrid, List, Plus } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useTheme } from '../contexts/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
+import { useTheme } from '../contexts/ThemeContext.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import SearchAndFilter from './search.jsx';
 import EmployeeCard from './employeeCard.jsx';
 import EmployeeDirectory from './employeeDirectory.jsx';
 import EmployeeDetailModal from './employeeDetailModal.jsx';
 
-const Employees = ({ employees, onViewEmployee, onEditEmployee, onDeleteEmployee, onPhotoUpdate, refetchEmployees }) => {
+const Employees = ({ employees, onEditEmployee, onDeleteEmployee, onPhotoUpdate, refetchEmployees }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('all');
@@ -17,14 +17,14 @@ const Employees = ({ employees, onViewEmployee, onEditEmployee, onDeleteEmployee
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [viewMode, setViewMode] = useState(() => {
     try {
-      return window.localStorage.getItem('employeesViewMode') || 'cards';
+      return globalThis.localStorage.getItem('employeesViewMode') || 'cards';
     } catch {
       return 'cards';
     }
   });
   const location = useLocation();
   const { t } = useLanguage();
-  const { isDarkMode, bg, text, border } = useTheme();
+  const { isDarkMode, _bg, text, _border } = useTheme();
   const { user } = useAuth();
 
   // Check if user has permission to add employees (not employee role)
@@ -51,13 +51,13 @@ const Employees = ({ employees, onViewEmployee, onEditEmployee, onDeleteEmployee
     if (location.state?.refresh && refetchEmployees) {
       refetchEmployees();
       // Clear the state to prevent refetching on every render
-      window.history.replaceState({}, document.title);
+      globalThis.history.replaceState({}, document.title);
     }
   }, [location, refetchEmployees]);
 
   useEffect(() => {
     try {
-      window.localStorage.setItem('employeesViewMode', viewMode);
+      globalThis.localStorage.setItem('employeesViewMode', viewMode);
     } catch {
       // ignore
     }
@@ -138,6 +138,7 @@ const Employees = ({ employees, onViewEmployee, onEditEmployee, onDeleteEmployee
 
           {canAddEmployee && (
             <button 
+              type ="button"
               onClick={() => navigate('/employees/add')}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg"
               style={{

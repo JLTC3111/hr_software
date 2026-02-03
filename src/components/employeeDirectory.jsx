@@ -1,10 +1,10 @@
-import React, { useMemo, useCallback, useState } from 'react';
+import _React, { useMemo, useCallback, useState } from 'react';
 import { ChevronDown, Eye, Edit, Trash2, Mail, Phone, Star, User } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useTheme } from '../contexts/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
-import { getDemoEmployeeName } from '../utils/demoHelper';
-import { getEmployeePositionI18nKey } from '../utils/employeePositionKey';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
+import { useTheme } from '../contexts/ThemeContext.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import { getDemoEmployeeName } from '../utils/demoHelper.js';
+import { getEmployeePositionI18nKey } from '../utils/employeePositionKey.js';
 
 const normalizeKey = (value) =>
   String(value || '')

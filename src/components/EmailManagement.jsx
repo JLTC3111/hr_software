@@ -68,7 +68,7 @@ const EmailManagement = () => {
   }, []);
 
   // Set primary email
-  const handleSetPrimaryEmail = async (authUserId, hrUserId) => {
+  const handleSetPrimaryEmail = async (authUserId, _hrUserId) => {
     try {
       await userEmailService.setPrimaryEmail(authUserId);
       showToast(t('emailManagement.primaryEmailSet') || 'Primary email updated successfully');
@@ -86,7 +86,7 @@ const EmailManagement = () => {
       return;
     }
     
-    if (window.confirm(t('emailManagement.confirmUnlink', { email }) || `Are you sure you want to unlink ${email}?`)) {
+    if (globalThis.confirm(t('emailManagement.confirmUnlink', { email }) || `Are you sure you want to unlink ${email}?`)) {
       try {
         await userEmailService.unlinkEmailFromUser(authUserId);
         showToast(t('emailManagement.emailUnlinked') || 'Email unlinked successfully');
@@ -158,6 +158,7 @@ const EmailManagement = () => {
           <h2 className="text-2xl font-bold">{t('emailManagement.title') || 'User Email Management'}</h2>
         </div>
         <button
+        type ="button"
           onClick={loadUsersWithEmails}
           disabled={loading}
           className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
@@ -204,6 +205,7 @@ const EmailManagement = () => {
                 </span>
               </div>
               <button
+                type ="button"
                 onClick={() => {
                   setSelectedUserForEmail(userGroup);
                   setShowAddEmailModal(true);
@@ -234,6 +236,7 @@ const EmailManagement = () => {
                   <div className="flex items-center space-x-2">
                     {!emailData.is_primary && (
                       <button
+                        type ="button"
                         onClick={() => handleSetPrimaryEmail(emailData.auth_user_id, userGroup.hr_user_id)}
                         className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200 transition-colors"
                         title={t('emailManagement.setPrimary') || 'Set as primary'}
@@ -242,6 +245,7 @@ const EmailManagement = () => {
                       </button>
                     )}
                     <button
+                    type ="button"
                       onClick={() => handleUnlinkEmail(emailData.auth_user_id, emailData.email, userGroup.emails.length)}
                       className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200 transition-colors"
                       title={t('emailManagement.unlink') || 'Unlink'}
@@ -264,6 +268,7 @@ const EmailManagement = () => {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold">{t('emailManagement.addEmailFor') || 'Add Email for'} {selectedUserForEmail?.first_name} {selectedUserForEmail?.last_name}</h3>
               <button
+                type ="button"
                 onClick={() => {
                   setShowAddEmailModal(false);
                   setNewEmail('');
@@ -308,6 +313,7 @@ const EmailManagement = () => {
 
               <div className="flex justify-end space-x-3 mt-6">
                 <button
+                  type ="button"
                   onClick={() => {
                     setShowAddEmailModal(false);
                     setNewEmail('');
@@ -319,6 +325,7 @@ const EmailManagement = () => {
                   {t('common.cancel') || 'Cancel'}
                 </button>
                 <button
+                  type ="button"
                   onClick={handleLinkEmail}
                   disabled={addingEmail}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"

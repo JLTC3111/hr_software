@@ -27,12 +27,12 @@ const FallingText = ({
   useEffect(() => {
     if (!textRef.current) return;
     const words = text.split(/\s+/);
-    const lowerHighlights = (highlightWords || []).map((hw) => (hw || "").toString().toLowerCase());
+    const _lowerHighlights = (highlightWords || []).map((hw) => (hw || "").toString().toLowerCase());
     const newHTML = words
       .map((word) => {
         const isHighlighted = highlightWords.some((hw) => word.startsWith(hw));
         // Normalize by stripping leading/trailing punctuation and lowercasing
-        const cleaned = word.replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, "").toLowerCase();
+        const _cleaned = word.replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, "").toLowerCase();
         return `<span class="word ${isHighlighted ? highlightClass : ""}">${word}</span>`;
       })
       .join(" ");
@@ -172,7 +172,7 @@ const FallingText = ({
             });
             Matter.Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.08);
           });
-        } catch (err) {
+        } catch (_err) {
           // ignore if engine cleared
         }
       }, preFallDelay);
@@ -210,7 +210,7 @@ const FallingText = ({
             // slight reduction in air friction to allow smoother travel
             body.frictionAir = 0.02;
           });
-        } catch (err) {
+        } catch (_err) {
           // ignore if engine cleared
         }
       }, antiGravityDelay);
