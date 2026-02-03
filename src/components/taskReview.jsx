@@ -51,11 +51,11 @@ import {
   TimerOff,
   CalendarX,
 } from 'lucide-react';
-import { useTheme } from '../contexts/ThemeContext';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../contexts/AuthContext';
-import * as workloadService from '../services/workloadService';
-import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription } from '../utils/demoHelper';
+import { useTheme } from '../contexts/ThemeContext.jsx';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import * as workloadService from '../services/workloadService.js';
+import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription } from '../utils/demoHelper.js';
 
 export const MiniFlubberAutoMorphTotalTasks = ({
   size = 24,
@@ -1948,7 +1948,26 @@ const TaskReview = ({ employees }) => {
 
   // Organization View
   const OrganizationView = () => {
-    const filteredEmployees = employees.filter(emp => String(emp.id) !== String(user.employeeId || user.id));
+    const currentUserEmployeeId = String(user?.employeeId || user?.id || '');
+    const filteredEmployees = employees.filter(emp => String(emp.id) !== currentUserEmployeeId);
+
+    const breakdownRows = (() => {
+      const allRows = Object.values(tasksByEmployee);
+      const hasTasks = ({ tasks }) => (tasks?.length || 0) > 0;
+
+      const rowsExcludingSelf = allRows
+        .filter(({ employee }) => filteredEmployees.some(e => String(e.id) === String(employee.id)))
+        .filter(hasTasks);
+
+      // If excluding the current user would result in no content (common in demo setups),
+      // fall back to showing anyone who has tasks (including the current user).
+      if (rowsExcludingSelf.length === 0) {
+        return allRows.filter(hasTasks);
+      }
+
+      return rowsExcludingSelf;
+    })();
+
     return (
       <div className="space-y-6">
         {orgStats && (
@@ -2002,7 +2021,13 @@ const TaskReview = ({ employees }) => {
           {t('taskReview.employeeBreakdown')}
         </h3>
         <div className="space-y-3">
-          {Object.values(tasksByEmployee).filter(({ employee }) => filteredEmployees.some(e => e.id === employee.id)).filter(({ tasks }) => tasks.length > 0).map(({ employee, tasks: empTasks }) => {
+          {breakdownRows.length === 0 ? (
+            <div className="text-center py-10">
+              <p className={text.secondary}>
+                {t('taskReview.noEmployeesWithTasks', 'No tasks match the selected filters.')}
+              </p>
+            </div>
+          ) : breakdownRows.map(({ employee, tasks: empTasks }) => {
             const isExpanded = expandedEmployee === employee.id;
             const progress = calculateProgress(empTasks);
             const avgQuality = calculateAvgQuality(empTasks);
@@ -2124,6 +2149,7 @@ const TaskReview = ({ employees }) => {
                             {/* Review Button */}
                             {checkPermission('canViewReports') && (
                               <button
+                                type = "button"
                                 onClick={() => {
                                   setReviewingTask(task);
                                   setReviewForm({
@@ -2305,6 +2331,7 @@ const TaskReview = ({ employees }) => {
                   {/* Review Button */}
                   {checkPermission('canViewReports') && (
                     <button
+                      type = "button"
                       onClick={() => {
                         setReviewingTask(task);
                         setReviewForm({
@@ -2382,8 +2409,8 @@ const TaskReview = ({ employees }) => {
       }
     };
 
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
+    globalThis.addEventListener('keydown', handleEscape);
+    return () => globalThis.removeEventListener('keydown', handleEscape);
   }, [reviewingTask]);
 
   // Handle outside click to close modal
@@ -2410,7 +2437,7 @@ const TaskReview = ({ employees }) => {
             <CheckCircle className="w-5 h-5 text-green-500" />
             <p className={`font-medium ${text.primary}`}>{successMessage}</p>
           </div>
-          <button onClick={() => setSuccessMessage('')} className={text.secondary}>
+          <button type="button" onClick={() => setSuccessMessage('')} className={text.secondary}>
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -2421,7 +2448,7 @@ const TaskReview = ({ employees }) => {
             <AlertCircle className="w-5 h-5 text-red-500" />
             <p className={`font-medium ${text.primary}`}>{errorMessage}</p>
           </div>
-          <button onClick={() => setErrorMessage('')} className={text.secondary}>
+          <button type="button" onClick={() => setErrorMessage('')} className={text.secondary}>
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -2435,12 +2462,14 @@ const TaskReview = ({ employees }) => {
         {canViewAllEmployees && (
           <div className="flex space-x-2">
             <button
+              type="button"
               onClick={() => { setViewMode('organization'); setSelectedEmployee(null); }}
               className={`px-4 py-2 rounded-lg cursor-pointer transition-colors ${viewMode === 'organization' ? 'bg-blue-600 text-white' : isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
             >
               <School className="w-4 h-4 inline-block mr-2 -translate-y-0.5" />{t('taskReview.organization')}
             </button>
-            <button
+            <button 
+              type="button"
               onClick={() => {
                 setViewMode('individual');
                 if (!selectedEmployee && user?.employeeId) {
@@ -2477,17 +2506,17 @@ const TaskReview = ({ employees }) => {
           <Filter className={`w-5 h-5 ${text.secondary}`} />
           <div className="flex items-center space-x-2">
             <span className={`text-sm ${text.secondary}`}>{t('taskReview.status')}:</span>
-            <button onClick={() => setFilterStatus('all')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'all' ? 'bg-blue-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.all')}</button>
-            <button onClick={() => setFilterStatus('completed')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'completed' ? 'bg-green-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.completed')}</button>
-            <button onClick={() => setFilterStatus('in-progress')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'in-progress' ? 'bg-amber-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.inProgress')}</button>
-            <button onClick={() => setFilterStatus('pending')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'pending' ? 'bg-gray-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.pending')}</button>
+            <button type="button" onClick={() => setFilterStatus('all')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'all' ? 'bg-blue-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.all')}</button>
+            <button type="button" onClick={() => setFilterStatus('completed')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'completed' ? 'bg-green-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.completed')}</button>
+            <button type="button" onClick={() => setFilterStatus('in-progress')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'in-progress' ? 'bg-amber-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.inProgress')}</button>
+            <button type="button" onClick={() => setFilterStatus('pending')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'pending' ? 'bg-gray-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.pending')}</button>
           </div>
           <div className="flex items-center space-x-2">
             <span className={`text-sm ${text.secondary}`}>{t('taskReview.priority')}:</span>
-            <button onClick={() => setFilterPriority('all')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'all' ? 'bg-blue-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.all')}</button>
-            <button onClick={() => setFilterPriority('high')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'high' ? 'bg-red-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.high')}</button>
-            <button onClick={() => setFilterPriority('medium')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'medium' ? 'bg-yellow-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.medium')}</button>
-            <button onClick={() => setFilterPriority('low')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'low' ? 'bg-green-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.low')}</button>
+            <button type="button" onClick={() => setFilterPriority('all')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'all' ? 'bg-blue-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.all')}</button>
+            <button type="button" onClick={() => setFilterPriority('high')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'high' ? 'bg-red-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.high')}</button>
+            <button type="button" onClick={() => setFilterPriority('medium')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'medium' ? 'bg-yellow-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.medium')}</button>
+            <button type="button" onClick={() => setFilterPriority('low')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'low' ? 'bg-green-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.low')}</button>
           </div>
         </div>
       </div>
@@ -2507,6 +2536,7 @@ const TaskReview = ({ employees }) => {
                 <p className={`text-sm ${text.secondary} mt-1`}>{isDemoMode() ? getDemoTaskTitle(reviewingTask, t) : reviewingTask.title}</p>
               </div>
               <button
+                type="button"
                 onClick={() => {
                   setReviewingTask(null);
                   setReviewForm({ qualityRating: 0, managerComments: '', status: 'pending' });
@@ -2566,6 +2596,7 @@ const TaskReview = ({ employees }) => {
                 <div className="flex items-center space-x-2">
                   {[1, 2, 3, 4, 5].map(rating => (
                     <button
+                      type="button"
                       key={rating}
                       onClick={() => setReviewForm({ ...reviewForm, qualityRating: rating })}
                       className={`transition-all cursor-pointer ${reviewForm.qualityRating >= rating ? 'text-yellow-400 scale-110' : isDarkMode ? 'text-gray-600' : 'text-gray-300'} hover:scale-125`}
@@ -2614,6 +2645,7 @@ const TaskReview = ({ employees }) => {
               {/* Action Buttons */}
               <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button
+                  type="button"
                   onClick={() => {
                     setReviewingTask(null);
                     setReviewForm({ qualityRating: 0, managerComments: '', status: 'pending' });
@@ -2624,6 +2656,7 @@ const TaskReview = ({ employees }) => {
                   <span>{t('taskReview.cancel')}</span>
                 </button>
                 <button
+                  type="button"
                   onClick={handleReviewSubmit}
                   className={`px-6 py-2 rounded-lg ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white transition-colors cursor-pointer flex items-center space-x-2`}
                 >

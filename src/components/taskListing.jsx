@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { CheckCircle, Circle, Edit2, Trash2, Plus, Calendar, User, TrendingUp, BarChart3, MessageSquare, Loader, Star, Users } from 'lucide-react';
-import { useTheme } from '../contexts/ThemeContext';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../contexts/AuthContext';
-import * as workloadService from '../services/workloadService';
+import { CheckCircle, Circle, Edit2, Trash2, Plus, Calendar, User, Loader, Users } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext.jsx';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import * as workloadService from '../services/workloadService.js';
 import * as flubber from 'flubber';
-import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription } from '../utils/demoHelper';
+import { getEmployeePositionI18nKey } from '../utils/employeePositionKey.js';
+import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription } from '../utils/demoHelper.js';
 
 export const MiniFlubberAutoMorphCompleteTask = ({
   size = 24,
@@ -494,7 +495,7 @@ const TaskListing = ({ employees }) => {
   };
 
   const handleDeleteTask = async (taskId) => {
-    if (window.confirm(t('taskListing.confirmDelete', 'Delete this task?'))) {
+    if (globalThis.confirm(t('taskListing.confirmDelete', 'Delete this task?'))) {
       try {
         // Use service for both demo and non-demo mode
         const result = await workloadService.deleteTask(taskId);
@@ -625,7 +626,8 @@ const TaskListing = ({ employees }) => {
             <h3 className={`text-lg font-semibold ${text.primary}`}>
               {canAssignTasks ? t('taskListing.manageTasks', '') : t('taskListing.myTasks', '')}
             </h3>
-            <button
+            <button 
+              type ="button"
               onClick={() => {
                 setTaskForm({
                   title: '',
@@ -654,7 +656,7 @@ const TaskListing = ({ employees }) => {
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
-                      <button onClick={() => handleUpdateTask(task.id, { 
+                      <button type="button" onClick={() => handleUpdateTask(task.id, { 
                         status: task.status === 'completed' ? 'pending' : 'completed' 
                       })}>
                         {task.status === 'completed' ? 
@@ -734,6 +736,7 @@ const TaskListing = ({ employees }) => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <button 
+                      type ="button"
                       onClick={() => {
                         setEditingTask(task);
                         setTaskForm({
@@ -749,7 +752,8 @@ const TaskListing = ({ employees }) => {
                     >
                       <Edit2 className={`w-4 h-4 ${text.primary}`} />
                     </button>
-                    <button     
+                    <button  
+                      type ="button"   
                       onClick={() => handleDeleteTask(task.id)}
                       className={`p-2 rounded text-red-600 cursor-pointer ${isDarkMode ? 'hover:bg-red-900' : 'hover:bg-red-100'}`}
                     >
@@ -842,6 +846,7 @@ const TaskListing = ({ employees }) => {
             </h3>
             {canAssignTasks && (
               <button
+                type ="button"
                 onClick={() => {
                   setTaskForm({
                     title: '',
@@ -924,6 +929,7 @@ const TaskListing = ({ employees }) => {
         </h2>
         <div className="flex space-x-2">
           <button
+            type ="button"
             onClick={() => setViewMode('individual')}
             className={`
               px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer
@@ -941,6 +947,7 @@ const TaskListing = ({ employees }) => {
           {/* Only show organization tab for admin/manager */}
           {canViewOrganization && (
             <button
+              type ="button"
               onClick={() => setViewMode('organization')}
               className={`
                 px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer
@@ -1110,12 +1117,14 @@ const TaskListing = ({ employees }) => {
               </div>
               <div className="flex space-x-3 pt-4">
                 <button
+                  type ="button"
                   onClick={closeModal}
                   className={`flex-1 px-4 py-2 border rounded-lg cursor-pointer ${text.secondary} ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
                 >
                   {t('common.cancel', 'Cancel')}
                 </button>
                 <button
+                  type ="button"
                   onClick={() => {
                     if (editingTask) {
                     
