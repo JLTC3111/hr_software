@@ -12,9 +12,9 @@ import { DEFAULT_REQUEST_TIMEOUT, VISIBILITY_STALE_TIMEOUT } from '../config/req
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 import { retryWithBackoff, isRetryableError } from '../utils/retryHelper.js';
 import * as flubber from 'flubber';
-import { AnimatedClockIcon, _AnimatedAlarmClockIcon } from './timeClockEntry.jsx'
-import { _AnimatedCoffeeIcon, _MiniFlubberMorphingLeaveStatus } from './timeTracking.jsx';
-import { MiniFlubberAutoMorphInProgress,_MiniFlubberAutoMorphEmployees } from './taskReview.jsx'
+import { AnimatedClockIcon, AnimatedAlarmClockIcon } from './timeClockEntry.jsx'
+import { AnimatedCoffeeIcon, MiniFlubberMorphingLeaveStatus } from './timeTracking.jsx';
+import { MiniFlubberAutoMorphInProgress, MiniFlubberAutoMorphEmployees } from './taskReview.jsx'
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh.js';
 import { getDemoEmployeeName, isDemoMode } from '../utils/demoHelper.js';
 
