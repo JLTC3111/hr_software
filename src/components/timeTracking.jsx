@@ -679,8 +679,7 @@ const TimeTracking = ({ employees }) => {
   useVisibilityRefresh(() => fetchTimeTrackingData({ silent: true }), {
     staleTime: VISIBILITY_STALE_TIMEOUT,
     refreshOnFocus: true,
-    refreshOnOnline: true,
-    onStaleTimeout: () => logout()
+    refreshOnOnline: true
   });
 
   // Fetch all leave requests for all employees (admin/manager only)

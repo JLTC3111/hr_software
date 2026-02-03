@@ -1430,8 +1430,7 @@ const Dashboard = ({ employees, applications }) => {
   useVisibilityRefresh(silentRefresh, {
     staleTime: VISIBILITY_STALE_TIMEOUT,
     refreshOnFocus: true,
-    refreshOnOnline: true,
-    onStaleTimeout: () => logout()
+    refreshOnOnline: true
   });
 
   // Calculate aggregate stats

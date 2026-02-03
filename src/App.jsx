@@ -6,6 +6,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import { useAuth } from './contexts/AuthContext'
 import { useSessionKeepAlive } from './hooks/useSessionKeepAlive'
+import { useIdleLogout } from './hooks/useIdleLogout'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { UploadProvider } from './contexts/UploadContext'
 // Eagerly loaded components (needed immediately)
@@ -41,6 +42,7 @@ import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
 import { logVisit } from './services/visitService';
 import { isDemoMode } from './utils/demoHelper';
+import { IDLE_LOGOUT_TIMEOUT } from './config/requestTimeouts.js';
 
 const Applications = [
   {
@@ -291,11 +293,20 @@ const HRManagementApp = () => {
 
 const AppContent = ({ employees, activeEmployees, applications, selectedEmployee, isEditMode, onViewEmployee, onEditEmployee, onDeleteEmployee, onCloseModal, onPhotoUpdate, refetchEmployees, loading, error, isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const { bg, text } = useTheme();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   const { currentLanguage } = useLanguage();
   
   // Keep session alive proactively (like Google/YouTube)
   useSessionKeepAlive();
+
+  // Force logout after user inactivity (applies to ALL routes/components)
+  useIdleLogout({
+    enabled: isAuthenticated,
+    timeoutMs: IDLE_LOGOUT_TIMEOUT,
+    onIdle: async () => {
+      await logout();
+    }
+  });
 
   // Record a visit when auth state becomes available (or when in demo mode)
   useEffect(() => {
