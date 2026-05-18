@@ -21,10 +21,11 @@ export const logVisit = async () => {
 
   try {
 
-    // Get session; skip visit logging if there's no access token
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      console.debug('visitService.logVisit: skipped (no active session)');
+    const demo = isDemoMode();
+
+    if (!session?.access_token && !demo) {
+      console.debug('visitService.logVisit: skipped (no session and not demo mode)');
       return;
     }
 
@@ -33,10 +34,13 @@ export const logVisit = async () => {
       'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
     };
 
-    // Add Authorization header
-    headers['Authorization'] = `Bearer ${session.access_token}`;
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
 
-    // Avoid custom headers in demo to prevent CORS issues; simply log anonymously when in demo
+    if (demo) {
+      headers['x-demo-mode'] = '1';
+    }
 
     // Debug: report whether Authorization header is present (don't log token value)
     console.debug('visitService.logVisit: sending visit to', edgeUrl, { hasAuthorization: !!headers.Authorization, hasApikey: !!headers.apikey, isDemo: !!headers['x-demo-mode'], demoRole: !!headers['x-demo-role'] });
