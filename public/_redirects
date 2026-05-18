@@ -1,1 +1,9 @@
-/*    /index.html   200
+# Netlify / compatible hosts: serve static files as-is; SPA fallback only for app routes.
+# Do NOT let missing /assets/*.js fall through to index.html (causes MIME type errors).
+
+/assets/*   /assets/:splat   200
+/logoIcons/*   /logoIcons/:splat   200
+/flags/*   /flags/:splat   200
+/demoCVs/*   /demoCVs/:splat   200
+
+/*   /index.html   200
