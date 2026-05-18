@@ -7,6 +7,7 @@ import { disableDemoMode } from '../utils/demoHelper';
 import ThemeToggle from './themeToggle';
 import LanguageSelector from './LanguageSelector';
 import { useNavigate } from 'react-router-dom';
+import { LOGOUT_REASON_KEY } from '../config/requestTimeouts.js';
 
 const Login = () => {
   const { login, loginWithGithub, loginAsDemo, forgotPassword, isAuthenticated, user, loading } = useAuth();
@@ -26,7 +27,18 @@ const Login = () => {
   const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [isGithubLoading, setIsGithubLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [idleLogoutNotice, setIdleLogoutNotice] = useState('');
   const isFormBusy = isLoading || isDemoLoading;
+
+  useEffect(() => {
+    const reason = sessionStorage.getItem(LOGOUT_REASON_KEY);
+    if (reason === 'idle') {
+      setIdleLogoutNotice(
+        t('login.idleLogoutMessage', 'You were signed out after a period of inactivity. Please sign in again.')
+      );
+      sessionStorage.removeItem(LOGOUT_REASON_KEY);
+    }
+  }, [t]);
   
   // Forgot password states
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
@@ -195,6 +207,13 @@ const Login = () => {
               {t('login.subtitle', 'Sign in to access your dashboard')}
             </p>
           </div>
+
+          {idleLogoutNotice && (
+            <div className={`mb-6 p-3 ${isDarkMode ? 'bg-amber-900/30 border-amber-700 text-amber-200' : 'bg-amber-50 border-amber-300 text-amber-900'} border rounded-lg flex items-center space-x-2`} role="status">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              <span className="text-sm">{idleLogoutNotice}</span>
+            </div>
+          )}
 
           {/* Login Error */}
           {loginError && (

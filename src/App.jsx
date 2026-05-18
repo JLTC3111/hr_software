@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react'
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Loader } from 'lucide-react'
@@ -42,7 +42,11 @@ import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
 import { logVisit } from './services/visitService';
 import { isDemoMode } from './utils/demoHelper';
-import { IDLE_LOGOUT_TIMEOUT } from './config/requestTimeouts.js';
+import {
+  IDLE_LOGOUT_TIMEOUT,
+  IDLE_LOGOUT_WARN_BEFORE_MS,
+  LOGOUT_REASON_KEY,
+} from './config/requestTimeouts.js';
 
 const Applications = [
   {
@@ -295,17 +299,36 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
   const { bg, text } = useTheme();
   const { isAuthenticated, logout } = useAuth();
   const { currentLanguage } = useLanguage();
-  
-  // Keep session alive proactively (like Google/YouTube)
-  useSessionKeepAlive();
+  const idleLogoutInProgressRef = useRef(false);
 
-  // Force logout after user inactivity (applies to ALL routes/components)
-  useIdleLogout({
-    enabled: isAuthenticated,
-    timeoutMs: IDLE_LOGOUT_TIMEOUT,
-    onIdle: async () => {
+  const sessionHooksEnabled = isAuthenticated && !isDemoMode();
+
+  // Refresh JWT only while the user is still active (see activityTracker)
+  useSessionKeepAlive({ enabled: sessionHooksEnabled });
+
+  const handleIdleLogout = useCallback(async () => {
+    if (idleLogoutInProgressRef.current) return;
+    idleLogoutInProgressRef.current = true;
+    try {
+      sessionStorage.setItem(LOGOUT_REASON_KEY, 'idle');
       await logout();
+    } finally {
+      idleLogoutInProgressRef.current = false;
     }
+  }, [logout]);
+
+  const handleIdleWarning = useCallback(({ remainingMs }) => {
+    const minutes = Math.max(1, Math.ceil(remainingMs / 60000));
+    console.warn(`Session will end in ~${minutes} min due to inactivity.`);
+  }, []);
+
+  // Force logout after user inactivity (skipped in demo mode)
+  useIdleLogout({
+    enabled: sessionHooksEnabled,
+    timeoutMs: IDLE_LOGOUT_TIMEOUT,
+    warnBeforeMs: IDLE_LOGOUT_WARN_BEFORE_MS,
+    onWarning: handleIdleWarning,
+    onIdle: handleIdleLogout,
   });
 
   // Record a visit when auth state becomes available (or when in demo mode)

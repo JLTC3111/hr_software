@@ -246,8 +246,11 @@ export const AuthProvider = ({ children }) => {
             const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
             
             if (userError || !currentUser) {
-              console.error('User verification failed:', userError);
-              await clearAuthState();
+              console.warn('User verification failed after visibility change:', userError);
+              const retryRefresh = await validateAndRefreshSession();
+              if (!retryRefresh.success && isAuthenticated) {
+                await clearAuthState();
+              }
               return;
             }
             
@@ -257,8 +260,17 @@ export const AuthProvider = ({ children }) => {
               await fetchUserProfile(currentUser.id);
             }
           } else {
-            // No session - user needs to log in
-            console.log('❌ No session found after visibility change');
+            // No session in memory — try one recovery refresh before signing out
+            console.log('⚠️ No session found after visibility change — attempting recovery');
+            const refreshResult = await validateAndRefreshSession();
+            if (refreshResult.success) {
+              const { data: { session: recovered } } = await supabase.auth.getSession();
+              if (recovered) {
+                setSession(recovered);
+                console.log('✅ Session recovered after visibility change');
+                return;
+              }
+            }
             if (isAuthenticated) {
               await clearAuthState();
             }
