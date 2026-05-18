@@ -313,7 +313,7 @@ export const MiniFlubberAutoMorphChangeRole = ({
 const ControlPanel = () => {
   const { isDarkMode, _bg, text, _border } = useTheme();
   const { t } = useLanguage();
-  const { user, signOut, switchDemoRole } = useAuth();
+  const { user, signOut, switchDemoRole, checkPermission } = useAuth();
   const navigate = useNavigate();
   const [showChangePassword, setShowChangePassword] = useState(false);
   const isChangingPassword = useRef(false);
@@ -384,6 +384,7 @@ const ControlPanel = () => {
   const userId = user?.id || '';
   const employeeId = user?.employee_id || user?.employeeId || null;
   const isAdmin = userRole === 'admin' || userRole === 'Admin';
+  const canViewVisitAnalytics = checkPermission('canViewAuditLogs');
 
   // Unique gradient id for inline SVG to avoid id collisions
   const gradIdRef = useRef('grad-' + Math.random().toString(36).slice(2, 9));
@@ -416,18 +417,18 @@ const ControlPanel = () => {
     }
   }, [isAdmin, showEmployeeReset]);
 
-  // Load visit analytics for admins
+  // Load visit analytics for users with audit-log permission (admin + demo_admin)
   useEffect(() => {
     const loadVisits = async () => {
-      if (!isAdmin) return;
+      if (!canViewVisitAnalytics) return;
       await handleRefreshVisits();
     };
 
     loadVisits();
-  }, [isAdmin]);
+  }, [canViewVisitAnalytics]);
 
   const handleRefreshVisits = async () => {
-    if (!isAdmin) return;
+    if (!canViewVisitAnalytics) return;
     setLoadingVisits(true);
     setVisitError('');
     try {
@@ -1176,8 +1177,8 @@ const ControlPanel = () => {
             </button>
           )}
 
-          {/* Visit analytics (admin only) */}
-          {isAdmin && (
+          {/* Visit analytics (admin / demo_admin) */}
+          {canViewVisitAnalytics && (
             <div
               className="w-full rounded-lg border p-3 space-y-2"
               style={{
@@ -1239,23 +1240,23 @@ const ControlPanel = () => {
                 <div className="grid grid-cols-5 gap-2 text-xs">
                   <div>
                     <p className="text-slate-500">{t('controlPanel.visit.total', 'Total')}</p>
-                    <p className="text-sm">{visitSummary.total}</p>
+                    <p className="text-sm font-medium" style={{ color: isDarkMode ? '#f1f5f9' : '#0f172a' }}>{visitSummary.total}</p>
                   </div>
                   <div>
                     <p className="text-slate-500">{t('controlPanel.visit.last24h', 'Last 24h')}</p>
-                    <p className="text-sm">{visitSummary.last24h}</p>
+                    <p className="text-sm font-medium" style={{ color: isDarkMode ? '#f1f5f9' : '#0f172a' }}>{visitSummary.last24h}</p>
                   </div>
                   <div>
                     <p className="text-slate-500">{t('controlPanel.visit.distinctIps', 'Distinct IPs')}</p>
-                    <p className="text-sm">{visitSummary.distinctIps}</p>
+                    <p className="text-sm font-medium" style={{ color: isDarkMode ? '#f1f5f9' : '#0f172a' }}>{visitSummary.distinctIps}</p>
                   </div>
                   <div>
                     <p className="text-slate-500">{t('controlPanel.visit.demoCount', 'Demo Sessions')}</p>
-                    <p className="text-sm">{visitSummary.demoCount ?? 0}</p>
+                    <p className="text-sm font-medium" style={{ color: isDarkMode ? '#f1f5f9' : '#0f172a' }}>{visitSummary.demoCount ?? 0}</p>
                   </div>
                   <div>
                     <p className="text-slate-500">{t('controlPanel.visit.authorized', 'Authorized Sessions')}</p>
-                    <p className="text-sm">{visitSummary.authorizedSessions ?? 0}</p>
+                    <p className="text-sm font-medium" style={{ color: isDarkMode ? '#f1f5f9' : '#0f172a' }}>{visitSummary.authorizedSessions ?? 0}</p>
                   </div>
                 </div>
               )}
@@ -1267,7 +1268,7 @@ const ControlPanel = () => {
                 {visitSummary.recent?.map((row) => (
                   <div key={row.id} className="p-2 rounded border" style={{ borderColor: isDarkMode ? '#1f2937' : '#e2e8f0' }}>
                     <div className="flex justify-between">
-                      <span className="font-semibold">{row.ip || t('controlPanel.visit.unknownIp', 'unknown IP')}</span>
+                      <span className="font-semibold" style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{row.ip || t('controlPanel.visit.unknownIp', 'unknown IP')}</span>
                       <span className="text-slate-500">{new Date(row.created_at).toLocaleString()}</span>
                     </div>
                     <p className="text-slate-500 truncate">{row.path || '/'}</p>

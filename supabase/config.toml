@@ -1,0 +1,6 @@
+# Allow record-visit to accept anon-key requests (demo mode has no JWT)
+[functions.record-visit]
+verify_jwt = false
+
+[functions.visit-summary]
+verify_jwt = true
