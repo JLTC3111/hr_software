@@ -31,6 +31,7 @@ export default {
 
   // Login
   login: {
+    idleLogoutMessage: '一定期間の非アクティブ状態が続いたため、サインアウトしました。再度サインインしてください。',
     tryDemo: 'デモモードを試す',
     title: 'HRマネージャー',
     subtitle: 'ダッシュボードにアクセスするにはサインインしてください',

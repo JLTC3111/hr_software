@@ -32,6 +32,7 @@ header: {
 
 // Login
 login: {
+  idleLogoutMessage: 'Se cerró la sesión después de un período de inactividad. Por favor, inicie sesión nuevamente.',
   tryDemo: 'Probar modo demo',
   title: 'Gerente de RH',
   subtitle: 'Inicia sesión para acceder a tu panel',

@@ -31,6 +31,7 @@ export default {
 
   // Login
   login: {
+    idleLogoutMessage: 'You were signed out after a period of inactivity. Please sign in again.',
     tryDemo: 'Try Demo Mode',
     title: 'HR Manager',
     subtitle: 'Sign in to access your dashboard',

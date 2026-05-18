@@ -31,6 +31,7 @@ export default {
 
   // Login
   login: {
+    idleLogoutMessage: '일정 시간 동안 비활성 상태가 되어 로그아웃되었습니다. 다시 로그인해주세요.',
     tryDemo: '데모 모드 사용해보기',
     title: 'HR 매니저',
     subtitle: '대시보드에 액세스하려면 로그인하세요',

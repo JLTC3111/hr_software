@@ -31,6 +31,7 @@ export default {
 
   // Login
   login: {
+    idleLogoutMessage: 'Sie wurden nach einem Zeitraum der Inaktivität abgemeldet. Bitte melden Sie sich erneut an.',
     tryDemo: 'Demo ausprobieren',
     success: 'E-Mail zum Zurücksetzen des Passworts gesendet. Bitte überprüfen Sie Ihren Posteingang.',
     title: 'HR-Manager',

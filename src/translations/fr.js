@@ -31,6 +31,7 @@ export default {
 
   // Login
   login: {
+    idleLogoutMessage: 'Vous avez été déconnecté après une période d\'inactivité. Veuillez vous reconnecter.',
     tryDemo: 'Essayer le mode démo',
     title: 'Gestionnaire RH',
     subtitle: 'Connectez-vous pour accéder à votre tableau de bord',

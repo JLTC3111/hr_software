@@ -49,6 +49,7 @@ export default {
 
   // Login
   login: {
+    idleLogoutMessage: 'Bạn đã bị đăng xuất sau khi không hoạt động trong một thời gian. Vui lòng đăng nhập lại.',
     tryDemo: 'Thử Chế Độ Demo',
     success: 'Email đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư đến của bạn.',
     title: 'Quản lý HR',
