@@ -10,10 +10,13 @@ import {
   createJobPosting
 } from '../services/recruitmentService';
 import { isDemoMode, getDemoApplicationStatus, getDemoApplicationNotes, getDemoJobTitle } from '../utils/demoHelper';
+import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
+import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 
 const Recruitment = () => {
   const { t } = useLanguage();
   const { isDarkMode, bg, text, border } = useTheme();
+  const { handleSessionAuthError } = useSessionGuard();
   const [applications, setApplications] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,9 +31,17 @@ const Recruitment = () => {
     fetchData();
   }, []);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (options = {}) => {
+    const { silent = false } = options;
+    if (!silent) setLoading(true);
     try {
+      if (!isDemoMode()) {
+        const sessionValidation = await validateAndRefreshSession();
+        if (!sessionValidation.success) {
+          throw new Error(sessionValidation.error);
+        }
+      }
+
       const [applicationsResult, statsResult] = await Promise.all([
         getAllApplications(),
         getRecruitmentStats()
@@ -44,10 +55,13 @@ const Recruitment = () => {
       }
     } catch (error) {
       console.error('Error fetching recruitment data:', error);
+      handleSessionAuthError(error, { silent });
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
+
+  useAuthenticatedPageRefresh(() => fetchData({ silent: true }));
 
   const handleStatusUpdate = async (applicationId, newStatus) => {
     try {

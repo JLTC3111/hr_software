@@ -7,6 +7,8 @@ import * as workloadService from '../services/workloadService.js';
 import * as flubber from 'flubber';
 import { getEmployeePositionI18nKey } from '../utils/employeePositionKey.js';
 import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription } from '../utils/demoHelper.js';
+import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
+import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 
 export const MiniFlubberAutoMorphCompleteTask = ({
   size = 24,
@@ -249,6 +251,7 @@ export const MiniFlubberAutoMorphCompleteTask = ({
 
 const TaskListing = ({ employees }) => {
   const { user, checkPermission } = useAuth();
+  const { handleSessionAuthError } = useSessionGuard();
   const { bg, text, border, isDarkMode } = useTheme();
   const { t } = useLanguage();
   
@@ -313,9 +316,17 @@ const TaskListing = ({ employees }) => {
   }, [user, employees, availableEmployees, selectedEmployee]);
 
   // Load tasks from backend
-  const fetchTasks = async () => {
-    setLoading(true);
+  const fetchTasks = async (options = {}) => {
+    const { silent = false } = options;
+    if (!silent) setLoading(true);
     try {
+      if (!isDemoMode()) {
+        const sessionValidation = await validateAndRefreshSession();
+        if (!sessionValidation.success) {
+          throw new Error(sessionValidation.error);
+        }
+      }
+
       let result;
       if (viewMode === 'individual' && selectedEmployee) {
         result = await workloadService.getEmployeeTasks(selectedEmployee);
@@ -331,12 +342,19 @@ const TaskListing = ({ employees }) => {
       }
     } catch (error) {
       console.error('Error fetching tasks:', error);
-      setErrorMessage('Failed to load tasks');
-      setTimeout(() => setErrorMessage(''), 5000);
+      if (handleSessionAuthError(error, { silent })) {
+        return;
+      }
+      if (!silent) {
+        setErrorMessage('Failed to load tasks');
+        setTimeout(() => setErrorMessage(''), 5000);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
+
+  useAuthenticatedPageRefresh(() => fetchTasks({ silent: true }));
 
   useEffect(() => {
     if (selectedEmployee) {

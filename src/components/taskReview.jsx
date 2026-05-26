@@ -55,6 +55,8 @@ import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import * as workloadService from '../services/workloadService.js';
+import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
+import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription } from '../utils/demoHelper.js';
 
 export const MiniFlubberAutoMorphTotalTasks = ({
@@ -1750,6 +1752,7 @@ export const MiniFlubberAutoMorphOverdueTasks = ({
 
 const TaskReview = ({ employees }) => {
   const { user, checkPermission } = useAuth();
+  const { handleSessionAuthError } = useSessionGuard();
   const { isDarkMode, bg, text, border } = useTheme();
   const { t } = useLanguage();
   
@@ -1800,9 +1803,17 @@ const TaskReview = ({ employees }) => {
   }, [user, employees, selectedEmployee]);
 
   // Fetch tasks from Supabase
-  const fetchTasks = async () => {
-    setLoading(true);
+  const fetchTasks = async (options = {}) => {
+    const { silent = false } = options;
+    if (!silent) setLoading(true);
     try {
+      if (!isDemoMode()) {
+        const sessionValidation = await validateAndRefreshSession();
+        if (!sessionValidation.success) {
+          throw new Error(sessionValidation.error);
+        }
+      }
+
       let result;
       if (viewMode === 'individual' && selectedEmployee) {
         result = await workloadService.getEmployeeTasks(selectedEmployee);
@@ -1815,10 +1826,13 @@ const TaskReview = ({ employees }) => {
       }
     } catch (error) {
       console.error('Error fetching tasks:', error);
+      handleSessionAuthError(error, { silent });
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
+
+  useAuthenticatedPageRefresh(() => fetchTasks({ silent: true }));
 
   // Fetch organization statistics
   const fetchOrgStats = async () => {

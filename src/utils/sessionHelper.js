@@ -1,4 +1,51 @@
 import { supabase } from '../config/supabaseClient';
+import { isDemoMode } from './demoHelper.js';
+import { LOGOUT_REASON_KEY } from '../config/requestTimeouts.js';
+
+export const SESSION_LOGOUT_DELAY_MS = 2000;
+
+export const isSessionAuthError = (error) => {
+  const errorMsg = (error?.message || String(error || '')).toLowerCase();
+  return (
+    errorMsg.includes('session') ||
+    errorMsg.includes('authentication') ||
+    errorMsg.includes('no active session') ||
+    errorMsg.includes('jwt expired') ||
+    errorMsg.includes('invalid jwt')
+  );
+};
+
+/**
+ * Force logout when a fetch fails due to an invalid/expired session.
+ * Returns true if the error was handled (caller should stop further error UI).
+ */
+export const handleSessionAuthError = (error, { logout, silent = false, setFetchError, demoMessage } = {}) => {
+  if (!isSessionAuthError(error)) {
+    return false;
+  }
+
+  if (isDemoMode()) {
+    console.warn('🧪 Demo mode session not ready, skipping forced logout');
+    if (!silent && typeof setFetchError === 'function') {
+      setFetchError(
+        demoMessage || 'Demo session is initializing. Please try again in a moment.'
+      );
+    }
+    return true;
+  }
+
+  console.error('🚪 Session invalid after retries, forcing logout...');
+  if (!silent && typeof setFetchError === 'function') {
+    setFetchError('Your session has expired. Redirecting to login...');
+  }
+
+  sessionStorage.setItem(LOGOUT_REASON_KEY, 'session');
+  setTimeout(() => {
+    logout?.();
+  }, SESSION_LOGOUT_DELAY_MS);
+
+  return true;
+};
 
 // Global promise used to serialize session refresh calls so only one refresh runs at a time
 let refreshInProgress = null;

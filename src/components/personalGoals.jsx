@@ -6,11 +6,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../config/supabaseClient';
 import { isDemoMode, getDemoGoalTitle, getDemoGoalDescription, getDemoSkills, upsertDemoSkill } from '../utils/demoHelper';
 import * as performanceService from '../services/performanceService';
+import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
+import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 
 const PersonalGoals = ({ employees }) => {
   const { t } = useLanguage();
   const { isDarkMode, text, bg, border } = useTheme();
   const { user, checkPermission } = useAuth();
+  const { handleSessionAuthError } = useSessionGuard();
 
   // Helper to compute the current year-quarter string, e.g. '2025-q4'
   const getCurrentQuarter = (date = new Date()) => {
@@ -116,9 +119,17 @@ const PersonalGoals = ({ employees }) => {
     };
   }, [showAddGoalModal, showEditGoalModal, showViewGoalModal]);
 
-  const fetchGoalsAndReviews = async () => {
-    setLoading(true);
+  const fetchGoalsAndReviews = async (options = {}) => {
+    const { silent = false } = options;
+    if (!silent) setLoading(true);
     try {
+      if (!isDemoMode()) {
+        const sessionValidation = await validateAndRefreshSession();
+        if (!sessionValidation.success) {
+          throw new Error(sessionValidation.error);
+        }
+      }
+
       // Fetch goals
       const goalsResult = await performanceService.getAllPerformanceGoals({
         employeeId: selectedEmployee
@@ -171,10 +182,15 @@ const PersonalGoals = ({ employees }) => {
       }
     } catch (error) {
       console.error('Error fetching performance data:', error);
+      if (handleSessionAuthError(error, { silent })) {
+        return;
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
+
+  useAuthenticatedPageRefresh(() => fetchGoalsAndReviews({ silent: true }));
 
   // Handler to update employee performance rating
   const handleUpdatePerformanceRating = async (newRating) => {

@@ -4,7 +4,6 @@ import StatsCard from './statsCard.jsx'
 import MetricDetailModal from './metricDetailModal.jsx'
 import { useTheme } from '../contexts/ThemeContext.jsx'
 import { useLanguage } from '../contexts/LanguageContext.jsx'
-import { useAuth } from '../contexts/AuthContext.jsx'
 import { Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ComposedChart } from 'recharts'
 import * as timeTrackingService from '../services/timeTrackingService.js'
 import { withTimeout } from '../utils/supabaseTimeout.js';
@@ -16,6 +15,7 @@ import { AnimatedClockIcon, AnimatedAlarmClockIcon } from './timeClockEntry.jsx'
 import { AnimatedCoffeeIcon, MiniFlubberMorphingLeaveStatus } from './timeTracking.jsx';
 import { MiniFlubberAutoMorphInProgress, MiniFlubberAutoMorphEmployees } from './taskReview.jsx'
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh.js';
+import { useSessionGuard } from '../hooks/useSessionGuard.js';
 import { getDemoEmployeeName, isDemoMode } from '../utils/demoHelper.js';
 
 export const MiniFlubberAutoMorphEmployeesDashboard = ({
@@ -1233,7 +1233,7 @@ export const MiniFlubberAutoMorphPerformance = ({
 const Dashboard = ({ employees, applications }) => {
   const { isDarkMode, bg, text, border } = useTheme();
   const { t } = useLanguage();
-  const { logout } = useAuth();
+  const { handleSessionAuthError } = useSessionGuard();
   
   const [_loading, setLoading] = useState(true);
   const [timeTrackingData, setTimeTrackingData] = useState({});
@@ -1390,20 +1390,8 @@ const Dashboard = ({ employees, applications }) => {
         
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
-        
-        // Check if this is a session/auth error - force logout
-        const errorMsg = error.message?.toLowerCase() || '';
-        if (errorMsg.includes('session') || errorMsg.includes('authentication') || errorMsg.includes('no active session')) {
-          if (isDemoMode()) {
-            console.warn('🧪 Demo mode session not ready, skipping forced logout');
-            setFetchError('Demo session is initializing. Please try again in a moment.');
-            return;
-          }
-          console.error('🚪 Session invalid after retries, forcing logout...');
-          setFetchError('Your session has expired. Redirecting to login...');
-          setTimeout(() => {
-            logout();
-          }, 2000);
+
+        if (handleSessionAuthError(error, { setFetchError })) {
           return;
         }
         
@@ -1412,7 +1400,7 @@ const Dashboard = ({ employees, applications }) => {
       } finally {
           if (!silent) setLoading(false);
         }
-  }, [employees, selectedMonth, selectedYear, logout]);
+  }, [employees, selectedMonth, selectedYear, handleSessionAuthError]);
 
   // Memoize the silent refresh callback
   const silentRefresh = useCallback(() => {

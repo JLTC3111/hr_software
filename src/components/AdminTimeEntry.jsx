@@ -6,11 +6,13 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import * as timeTrackingService from '../services/timeTrackingService.js';
 import { supabase } from '../config/supabaseClient.js';
 import { isDemoMode, MOCK_EMPLOYEES, getDemoEmployeeName } from '../utils/demoHelper.js';
+import { useSessionGuard } from '../hooks/useSessionGuard.js';
 
 const AdminTimeEntry = ({ onEntriesChanged }) => {
   const { isDarkMode, bg, text, border } = useTheme();
   const { t } = useLanguage();
   const { user, checkPermission } = useAuth();
+  const { handleSessionAuthError } = useSessionGuard();
 
   const [employees, setEmployees] = useState([]);
   const [selectedEmployees, setSelectedEmployees] = useState([]);
@@ -119,6 +121,9 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
       setEmployees(data || []);
     } catch (error) {
       console.error('Error fetching employees:', error);
+      if (handleSessionAuthError(error)) {
+        return;
+      }
       setErrorMessage(t('adminTimeEntry.errorLoadEmployees', 'Failed to load employees'));
     }
   };

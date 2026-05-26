@@ -12,6 +12,7 @@ import { retryWithBackoff, isRetryableError } from '../utils/retryHelper';
 import { supabase } from '../config/supabaseClient'
 import { AnimatedClockIcon } from './timeClockEntry'
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh'
+import { useSessionGuard } from '../hooks/useSessionGuard.js'
 import { getDemoEmployeeName, isDemoMode, addDemoLeaveRequest, updateDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper'
 import { DEFAULT_REQUEST_TIMEOUT, VISIBILITY_STALE_TIMEOUT } from '../config/requestTimeouts';
 
@@ -336,7 +337,8 @@ export const MiniFlubberMorphingLeaveStatus = ({
   };
 
 const TimeTracking = ({ employees }) => {
-  const { user, checkPermission, logout } = useAuth();
+  const { user, checkPermission } = useAuth();
+  const { handleSessionAuthError } = useSessionGuard();
   const { isDarkMode, toggleTheme, button, bg, text, border, hover, input } = useTheme();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -640,24 +642,8 @@ const TimeTracking = ({ employees }) => {
       });
     } catch (error) {
       console.error('Error fetching time tracking data:', error);
-      
-      // Check if this is a session/auth error - force logout
-      const errorMsg = error.message?.toLowerCase() || '';
-      if (errorMsg.includes('session') || errorMsg.includes('authentication') || errorMsg.includes('no active session')) {
-        if (isDemoMode()) {
-          console.warn('🧪 Demo mode session not ready, skipping forced logout');
-          if (!silent) {
-            setFetchError('Demo session is initializing. Please try again in a moment.');
-          }
-          return;
-        }
-        console.error('🚪 Session invalid after retries, forcing logout...');
-        if (!silent) {
-          setFetchError('Your session has expired. Redirecting to login...');
-        }
-        setTimeout(() => {
-          logout();
-        }, 2000);
+
+      if (handleSessionAuthError(error, { silent, setFetchError })) {
         return;
       }
       
@@ -668,7 +654,7 @@ const TimeTracking = ({ employees }) => {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [selectedEmployee, selectedMonth, selectedYear, withTimeout, logout]);
+  }, [selectedEmployee, selectedMonth, selectedYear, withTimeout, handleSessionAuthError]);
   
   // Fetch data from Supabase when employee or period changes
   useEffect(() => {

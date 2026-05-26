@@ -5,8 +5,6 @@ import { Loader } from 'lucide-react'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import { useAuth } from './contexts/AuthContext'
-import { useSessionKeepAlive } from './hooks/useSessionKeepAlive'
-import { useIdleLogout } from './hooks/useIdleLogout'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { UploadProvider } from './contexts/UploadContext'
 // Eagerly loaded components (needed immediately)
@@ -42,11 +40,6 @@ import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
 import { logVisit } from './services/visitService';
 import { isDemoMode } from './utils/demoHelper';
-import {
-  IDLE_LOGOUT_TIMEOUT,
-  IDLE_LOGOUT_WARN_BEFORE_MS,
-  LOGOUT_REASON_KEY,
-} from './config/requestTimeouts.js';
 
 const Applications = [
   {
@@ -297,39 +290,8 @@ const HRManagementApp = () => {
 
 const AppContent = ({ employees, activeEmployees, applications, selectedEmployee, isEditMode, onViewEmployee, onEditEmployee, onDeleteEmployee, onCloseModal, onPhotoUpdate, refetchEmployees, loading, error, isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const { bg, text } = useTheme();
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { currentLanguage } = useLanguage();
-  const idleLogoutInProgressRef = useRef(false);
-
-  const sessionHooksEnabled = isAuthenticated && !isDemoMode();
-
-  // Refresh JWT only while the user is still active (see activityTracker)
-  useSessionKeepAlive({ enabled: sessionHooksEnabled });
-
-  const handleIdleLogout = useCallback(async () => {
-    if (idleLogoutInProgressRef.current) return;
-    idleLogoutInProgressRef.current = true;
-    try {
-      sessionStorage.setItem(LOGOUT_REASON_KEY, 'idle');
-      await logout();
-    } finally {
-      idleLogoutInProgressRef.current = false;
-    }
-  }, [logout]);
-
-  const handleIdleWarning = useCallback(({ remainingMs }) => {
-    const minutes = Math.max(1, Math.ceil(remainingMs / 60000));
-    console.warn(`Session will end in ~${minutes} min due to inactivity.`);
-  }, []);
-
-  // Force logout after user inactivity (skipped in demo mode)
-  useIdleLogout({
-    enabled: sessionHooksEnabled,
-    timeoutMs: IDLE_LOGOUT_TIMEOUT,
-    warnBeforeMs: IDLE_LOGOUT_WARN_BEFORE_MS,
-    onWarning: handleIdleWarning,
-    onIdle: handleIdleLogout,
-  });
 
   // Record a visit when auth state becomes available (or when in demo mode)
   useEffect(() => {

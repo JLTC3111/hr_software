@@ -2,6 +2,13 @@ import _React, { createContext, useContext, useState, useEffect, useCallback, us
 import { supabase, hasPermission, Permissions, customStorage } from '../config/supabaseClient.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 import { isDemoMode, enableDemoMode, disableDemoMode, MOCK_USER, getDemoEmployees, attachSeededRandomUserPhotos, DEMO_CONFIG } from '../utils/demoHelper.js';
+import { useSessionKeepAlive } from '../hooks/useSessionKeepAlive.js';
+import { useIdleLogout } from '../hooks/useIdleLogout.js';
+import {
+  IDLE_LOGOUT_TIMEOUT,
+  IDLE_LOGOUT_WARN_BEFORE_MS,
+  LOGOUT_REASON_KEY,
+} from '../config/requestTimeouts.js';
 
 const AuthContext = createContext();
 
@@ -810,6 +817,37 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(true);
     setLoading(false);
   }, []);
+
+  const logoutRef = useRef(null);
+  logoutRef.current = logout;
+
+  const sessionHooksEnabled = isAuthenticated && !isDemoMode();
+  useSessionKeepAlive({ enabled: sessionHooksEnabled });
+
+  const idleLogoutInProgressRef = useRef(false);
+  const handleIdleLogout = useCallback(async () => {
+    if (idleLogoutInProgressRef.current) return;
+    idleLogoutInProgressRef.current = true;
+    try {
+      sessionStorage.setItem(LOGOUT_REASON_KEY, 'idle');
+      await logoutRef.current?.();
+    } finally {
+      idleLogoutInProgressRef.current = false;
+    }
+  }, []);
+
+  const handleIdleWarning = useCallback(({ remainingMs }) => {
+    const minutes = Math.max(1, Math.ceil(remainingMs / 60000));
+    console.warn(`Session will end in ~${minutes} min due to inactivity.`);
+  }, []);
+
+  useIdleLogout({
+    enabled: sessionHooksEnabled,
+    timeoutMs: IDLE_LOGOUT_TIMEOUT,
+    warnBeforeMs: IDLE_LOGOUT_WARN_BEFORE_MS,
+    onWarning: handleIdleWarning,
+    onIdle: handleIdleLogout,
+  });
 
   // Memoize the context value to prevent unnecessary re-renders
   const value = useMemo(() => ({

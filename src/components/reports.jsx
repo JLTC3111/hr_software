@@ -3,6 +3,7 @@ import { useLanguage, SUPPORTED_LANGUAGES } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from '../contexts/AuthContext';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import { useSessionGuard } from '../hooks/useSessionGuard.js';
 import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription, getDemoGoalTitle, getDemoGoalDescription, getDemoTimeEntries } from '../utils/demoHelper';
 import { 
   Calendar, 
@@ -68,7 +69,7 @@ import {
 } from '../utils/pdfFontLoader.js';
 
 const Reports = () => {
-  const { logout } = useAuth();
+  const { handleSessionAuthError } = useSessionGuard();
   const { t, currentLanguage } = useLanguage();
   const { isDarkMode } = useTheme();
   
@@ -411,21 +412,9 @@ const Reports = () => {
       });
     } catch (error) {
       console.error('Error fetching report data:', error);
-      
-      // Check if this is a session/auth error - force logout
-      const errorMsg = error.message?.toLowerCase() || '';
-      if (errorMsg.includes('session') || errorMsg.includes('authentication') || errorMsg.includes('no active session')) {
-        if (isDemoMode()) {
-          console.warn('🧪 Demo mode session not ready, skipping forced logout');
-          setFetchError('Demo session is initializing. Please try again in a moment.');
-          if (!silent) setLoading(false);
-          return;
-        }
-        console.error('🚪 Session invalid after retries, forcing logout...');
-        setFetchError('Your session has expired. Redirecting to login...');
-        setTimeout(() => {
-          logout();
-        }, 2000);
+
+      if (handleSessionAuthError(error, { silent, setFetchError })) {
+        if (!silent) setLoading(false);
         return;
       }
       
@@ -434,7 +423,7 @@ const Reports = () => {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [filters, selectedEmployee, activeTab, logout]);
+  }, [filters, selectedEmployee, activeTab, handleSessionAuthError]);
 
   const loadAllReportDataForExport = useCallback(async () => {
     const { startDate, endDate } = filters;

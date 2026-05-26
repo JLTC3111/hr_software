@@ -32,7 +32,7 @@ const Login = () => {
 
   useEffect(() => {
     const reason = sessionStorage.getItem(LOGOUT_REASON_KEY);
-    if (reason === 'idle') {
+    if (reason === 'idle' || reason === 'session') {
       setIdleLogoutNotice(
         t('login.idleLogoutMessage', 'You were signed out after a period of inactivity. Please sign in again.')
       );
