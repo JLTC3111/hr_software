@@ -813,6 +813,14 @@ export default {
     exportToPDF: 'PDFに出力',
     pdf: {
       visualAnalytics: '視覚分析',
+      charts: {
+        hoursByType: 'タイプ別時間',
+        statusDistribution: '時間記録ステータス分布',
+        taskStatusDistribution: 'タスクステータス分布',
+        taskPriorityDistribution: 'タスク優先度分布',
+        goalStatusDistribution: '目標ステータス分布',
+        goalCategoryDistribution: '目標カテゴリ分布'
+      },
       headers: {
         employee: '従業員',
         department: '部署',

@@ -828,6 +828,14 @@ export default {
     exportToPDF: 'ส่งออกเป็น PDF',
     pdf: {
       visualAnalytics: 'การวิเคราะห์ด้วยภาพ',
+      charts: {
+        hoursByType: 'ชั่วโมงตามประเภท',
+        statusDistribution: 'สัดส่วนสถานะการบันทึกเวลา',
+        taskStatusDistribution: 'สัดส่วนสถานะงาน',
+        taskPriorityDistribution: 'สัดส่วนลำดับความสำคัญงาน',
+        goalStatusDistribution: 'สัดส่วนสถานะเป้าหมาย',
+        goalCategoryDistribution: 'สัดส่วนหมวดหมู่เป้าหมาย'
+      },
       headers: {
         employee: 'พนักงาน',
         department: 'แผนก',

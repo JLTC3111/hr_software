@@ -797,6 +797,14 @@ export default {
     exportToExcel: 'Als Excel exportieren',
     pdf: {
       visualAnalytics: 'Visual Analyse',
+      charts: {
+        hoursByType: 'Stunden nach Typ',
+        statusDistribution: 'Verteilung der Zeiteintrags-Status',
+        taskStatusDistribution: 'Aufgabenstatusverteilung',
+        taskPriorityDistribution: 'Aufgabenprioritätsverteilung',
+        goalStatusDistribution: 'Zielstatusverteilung',
+        goalCategoryDistribution: 'Zielkategorieverteilung'
+      },
       headers: {
         employee: 'Mitarbeiter',
         department: 'Abteilung',

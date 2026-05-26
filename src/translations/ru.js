@@ -910,6 +910,14 @@ export default {
     exportToPDF: 'Экспорт в PDF',
     pdf: {
       visualAnalytics: 'Аналитика визуальных данных',
+      charts: {
+        hoursByType: 'Часы по типам',
+        statusDistribution: 'Распределение записей времени по статусам',
+        taskStatusDistribution: 'Распределение задач по статусам',
+        taskPriorityDistribution: 'Распределение задач по приоритетам',
+        goalStatusDistribution: 'Распределение целей по статусам',
+        goalCategoryDistribution: 'Распределение целей по категориям'
+      },
       headers: {
         employee: 'Сотрудник',
         department: 'Отдел',

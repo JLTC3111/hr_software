@@ -591,11 +591,6 @@ export default {
       entries: '건',
       completedShort: '완료',
       ofTotal: '/',
-      charts: {
-        hoursByType: '유형별 시간',
-        taskStatusDistribution: '작업 상태 분포',
-        taskPriorityDistribution: '작업 우선순위 분포'
-      },
       headers: {
         dataType: '데이터 유형',
         type: '유형',
@@ -806,6 +801,14 @@ export default {
     exportToPDF: 'PDF로 내보내기',
     pdf: {
       visualAnalytics: '시각적 분석',
+      charts: {
+        hoursByType: '유형별 시간',
+        statusDistribution: '시간 기록 상태 분포',
+        taskStatusDistribution: '작업 상태 분포',
+        taskPriorityDistribution: '작업 우선순위 분포',
+        goalStatusDistribution: '목표 상태 분포',
+        goalCategoryDistribution: '목표 카테고리 분포'
+      },
       headers: {
         employee: '직원',
         department: '부서',

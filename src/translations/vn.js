@@ -646,6 +646,14 @@ export default {
     allEmployees: 'Tất_Cả_Nhân_Viên',
     filenamePrefix: 'Báo_Cáo_HR',
     excel: {
+      charts: {
+        hoursByType: 'Giờ theo loại',
+        statusDistribution: 'Phân bổ trạng thái chấm công',
+        taskStatusDistribution: 'Phân bổ trạng thái công việc',
+        taskPriorityDistribution: 'Phân bổ ưu tiên công việc',
+        goalStatusDistribution: 'Phân bổ trạng thái mục tiêu',
+        goalCategoryDistribution: 'Phân bổ danh mục mục tiêu'
+      },
       sheets: {
         summary: 'Tổng quan',
         performance: 'Hiệu suất nhân viên',
@@ -731,14 +739,6 @@ export default {
       entries: 'mục',
       completedShort: 'đã hoàn thành',
       ofTotal: 'trên tổng số',
-      charts: {
-        hoursByType: 'Giờ theo loại',
-        statusDistribution: 'Phân bổ trạng thái chấm công',
-        taskStatusDistribution: 'Phân bổ trạng thái công việc',
-        taskPriorityDistribution: 'Phân bổ ưu tiên công việc',
-        goalStatusDistribution: 'Phân bổ trạng thái mục tiêu',
-        goalCategoryDistribution: 'Phân bổ danh mục mục tiêu'
-      },
       headers: {
         dataType: 'Loại dữ liệu',
         type: 'Loại',
@@ -780,9 +780,9 @@ export default {
     applyFilters: 'Áp dụng bộ lọc',
     resetFilters: 'Đặt lại bộ lọc',
     exportFormat: 'Định dạng xuất',
-    pdf: 'PDF',
-    excel: 'Excel',
-    csv: 'CSV',
+    formatPdf: 'PDF',
+    formatExcel: 'Excel',
+    formatCsv: 'CSV',
     generating: 'Đang tạo báo cáo...',
     exporting: 'Đang xuất báo cáo...',
     noData: 'Không có dữ liệu để hiển thị cho các tiêu chí đã chọn',
@@ -976,6 +976,14 @@ export default {
     departmentComparison: 'So Sánh Phòng Ban',
     pdf: {
       visualAnalytics: 'Phân Tích Trực Quan',
+      charts: {
+        hoursByType: 'Giờ theo loại',
+        statusDistribution: 'Phân bổ trạng thái chấm công',
+        taskStatusDistribution: 'Phân bổ trạng thái công việc',
+        taskPriorityDistribution: 'Phân bổ ưu tiên công việc',
+        goalStatusDistribution: 'Phân bổ trạng thái mục tiêu',
+        goalCategoryDistribution: 'Phân bổ danh mục mục tiêu'
+      },
       headers: {
         employee: 'Nhân viên',
         department: 'Phòng ban',

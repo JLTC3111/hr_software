@@ -2140,31 +2140,31 @@ const Reports = () => {
       const pdfCharts = [];
       if (timeEntries.length > 0) {
         pdfCharts.push({
-          title: t('reports.excel.charts.hoursByType', 'Hours by Type'),
+          title: t('reports.pdf.charts.hoursByType', 'Hours by Type'),
           items: toChartItems(aggregateHoursByType(timeEntries), translateHourType)
         });
         pdfCharts.push({
-          title: t('reports.excel.charts.statusDistribution', 'Time Entry Status Distribution'),
+          title: t('reports.pdf.charts.statusDistribution', 'Time Entry Status Distribution'),
           items: toChartItems(aggregateCounts(timeEntries, 'status'), translateStatus)
         });
       }
       if (tasks.length > 0) {
         pdfCharts.push({
-          title: t('reports.excel.charts.taskStatusDistribution', 'Task Status Distribution'),
+          title: t('reports.pdf.charts.taskStatusDistribution', 'Task Status Distribution'),
           items: toChartItems(aggregateCounts(tasks, 'status'), translateStatus)
         });
         pdfCharts.push({
-          title: t('reports.excel.charts.taskPriorityDistribution', 'Task Priority Distribution'),
+          title: t('reports.pdf.charts.taskPriorityDistribution', 'Task Priority Distribution'),
           items: toChartItems(aggregateCounts(tasks, 'priority'), translatePriority)
         });
       }
       if (goals.length > 0) {
         pdfCharts.push({
-          title: t('reports.excel.charts.goalStatusDistribution', 'Goal Status Distribution'),
+          title: t('reports.pdf.charts.goalStatusDistribution', 'Goal Status Distribution'),
           items: toChartItems(aggregateCounts(goals, 'status'), translateStatus)
         });
         pdfCharts.push({
-          title: t('reports.excel.charts.goalCategoryDistribution', 'Goal Category Distribution'),
+          title: t('reports.pdf.charts.goalCategoryDistribution', 'Goal Category Distribution'),
           items: toChartItems(aggregateCounts(goals, 'category'), translateCategory)
         });
       }

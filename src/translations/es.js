@@ -961,6 +961,14 @@ login: {
     exportToExcel: 'Exportar a Excel',
     pdf: {
       visualAnalytics: 'Análisis Visual',
+      charts: {
+        hoursByType: 'Horas por Tipo',
+        statusDistribution: 'Distribución de Estado de Registros de Tiempo',
+        taskStatusDistribution: 'Distribución por Estado de Tarea',
+        taskPriorityDistribution: 'Distribución por Prioridad de Tarea',
+        goalStatusDistribution: 'Distribución por Estado de Objetivo',
+        goalCategoryDistribution: 'Distribución por Categoría de Objetivo'
+      },
       headers: {
         employee: 'Empleado',
         department: 'Departamento',

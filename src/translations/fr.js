@@ -761,8 +761,8 @@ export default {
     recruitmentReport: 'Rapport de recrutement',
     exportReport: 'Exporter le rapport',
     exportFormat: 'Format d\'exportation',
-    pdf: 'PDF',
-    excel: 'Excel',
+    formatPdf: 'PDF',
+    formatExcel: 'Excel',
     csv: 'CSV',
     generating: 'Génération du rapport...',
     generatedSuccess: 'Rapport généré avec succès!',
@@ -976,6 +976,14 @@ export default {
     exportToExcel: 'Exporter en Excel',
     pdf: {
       visualAnalytics: 'Analyse visuelle',
+      charts: {
+        hoursByType: 'Heures par type',
+        statusDistribution: 'Répartition des statuts des pointages',
+        taskStatusDistribution: 'Répartition du statut des tâches',
+        taskPriorityDistribution: 'Répartition des priorités des tâches',
+        goalStatusDistribution: 'Répartition des statuts des objectifs',
+        goalCategoryDistribution: 'Répartition des catégories des objectifs'
+      },
       headers: {
         employee: 'Employé',
         department: 'Département',

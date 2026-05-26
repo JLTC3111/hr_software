@@ -1019,14 +1019,6 @@ export default {
       entries: 'entries',
       completedShort: 'completed',
       ofTotal: 'of total',
-      charts: {
-        hoursByType: 'Hours by Type',
-        statusDistribution: 'Status Distribution',
-        taskStatusDistribution: 'Task Status Distribution',
-        taskPriorityDistribution: 'Task Priority Distribution',
-        goalStatusDistribution: 'Goal Status Distribution',
-        goalCategoryDistribution: 'Goal Category Distribution'
-      },
       headers: {
         dataType: 'Data Type',
         type: 'Type',
@@ -1121,6 +1113,14 @@ export default {
     exportToPDF: 'Export to PDF',
     pdf: {
       visualAnalytics: 'Visual Analytics',
+      charts: {
+        hoursByType: 'Hours by Type',
+        statusDistribution: 'Time Entry Status Distribution',
+        taskStatusDistribution: 'Task Status Distribution',
+        taskPriorityDistribution: 'Task Priority Distribution',
+        goalStatusDistribution: 'Goal Status Distribution',
+        goalCategoryDistribution: 'Goal Category Distribution'
+      },
       headers: {
         employee: 'Employee',
         department: 'Department',
