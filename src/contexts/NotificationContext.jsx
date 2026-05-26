@@ -1,6 +1,7 @@
 import _React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext.jsx';
 import { ensureValidSession } from '../hooks/useSessionGuard.js';
+import * as notificationService from '../services/notificationService.js';
 
 const NotificationContext = createContext();
 
