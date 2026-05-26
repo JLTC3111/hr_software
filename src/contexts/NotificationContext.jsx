@@ -1,5 +1,6 @@
 import _React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext.jsx';
+import { ensureValidSession } from '../hooks/useSessionGuard.js';
 import * as notificationService from '../services/notificationService.js';
 
 const NotificationContext = createContext();
@@ -13,7 +14,7 @@ export const useNotifications = () => {
 };
 
 export const NotificationProvider = ({ children }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, handleSessionAuthError } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -30,38 +31,54 @@ export const NotificationProvider = ({ children }) => {
     if (!user?.id) return;
 
     setLoading(true);
-    const result = await notificationService.getUserNotifications(user.id, filters);
+    try {
+      await ensureValidSession();
+      const result = await notificationService.getUserNotifications(user.id, filters);
     
-    if (result.success) {
-      setNotifications(result.data);
-    } else {
-      console.error('Failed to fetch notifications:', result.error);
+      if (result.success) {
+        setNotifications(result.data);
+      } else {
+        console.error('Failed to fetch notifications:', result.error);
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+      handleSessionAuthError(error, { silent: true });
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
-  }, [user?.id]);
+  }, [user?.id, handleSessionAuthError]);
 
   // Fetch unread count
   const fetchUnreadCount = useCallback(async () => {
     if (!user?.id) return;
 
-    const result = await notificationService.getUnreadCount(user.id);
+    try {
+      await ensureValidSession();
+      const result = await notificationService.getUnreadCount(user.id);
     
-    if (result.success) {
-      setUnreadCount(result.count);
+      if (result.success) {
+        setUnreadCount(result.count);
+      }
+    } catch (error) {
+      handleSessionAuthError(error, { silent: true });
     }
-  }, [user?.id]);
+  }, [user?.id, handleSessionAuthError]);
 
   // Fetch notification stats
   const fetchStats = useCallback(async () => {
     if (!user?.id) return;
 
-    const result = await notificationService.getNotificationStats(user.id);
+    try {
+      await ensureValidSession();
+      const result = await notificationService.getNotificationStats(user.id);
     
-    if (result.success && result.data) {
-      setStats(result.data);
+      if (result.success && result.data) {
+        setStats(result.data);
+      }
+    } catch (error) {
+      handleSessionAuthError(error, { silent: true });
     }
-  }, [user?.id]);
+  }, [user?.id, handleSessionAuthError]);
 
   // Initial fetch when user logs in
   useEffect(() => {
@@ -159,9 +176,9 @@ export const NotificationProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Error fetching pending approvals:', error);
-      // Silently fail - don't disrupt user experience
+      handleSessionAuthError(error, { silent: true });
     }
-  }, [user?.id, notifications, fetchNotifications]);
+  }, [user?.id, notifications, fetchNotifications, handleSessionAuthError]);
 
   // Subscribe to real-time updates
   useEffect(() => {

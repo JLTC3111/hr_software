@@ -486,6 +486,7 @@ const TaskListing = ({ employees }) => {
       }
     } catch (error) {
       console.error('Error creating task:', error);
+      if (handleSessionAuthError(error)) return;
       setErrorMessage(t('taskListing.taskCreateError', 'Failed to create task'));
       setTimeout(() => setErrorMessage(''), 5000);
     }
@@ -507,6 +508,7 @@ const TaskListing = ({ employees }) => {
       }
     } catch (error) {
       console.error('Error updating task:', error);
+      if (handleSessionAuthError(error)) return;
       setErrorMessage(t('taskListing.taskUpdateError', 'Failed to update task'));
       setTimeout(() => setErrorMessage(''), 5000);
     }
@@ -529,6 +531,7 @@ const TaskListing = ({ employees }) => {
         }
       } catch (error) {
         console.error('Error deleting task:', error);
+        if (handleSessionAuthError(error)) return;
         setErrorMessage(t('taskListing.taskDeleteError', 'Failed to delete task'));
         setTimeout(() => setErrorMessage(''), 5000);
       }

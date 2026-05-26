@@ -119,7 +119,7 @@ const getPerformanceColor = (performance, isDarkMode) => {
 const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate, style }) => {
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
-  const { user } = useAuth();
+  const { user, handleSessionAuthError } = useAuth();
   const [photoError, setPhotoError] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -240,6 +240,7 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
         reader.readAsDataURL(file);
       } catch (error) {
         console.error('Photo upload error:', error);
+        handleSessionAuthError(error, { silent: true });
         setUploading(false);
       }
     }

@@ -26,7 +26,7 @@ const getStatusColor = (status) => {
 const UserEmployeeCard = ({ style }) => {
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
-  const { user } = useAuth();
+  const { user, handleSessionAuthError } = useAuth();
   
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -54,6 +54,7 @@ const UserEmployeeCard = ({ style }) => {
         }
       } catch (err) {
         console.error('Error fetching employee data:', err);
+        if (handleSessionAuthError(err, { silent: true })) return;
         setError('An error occurred while loading your profile');
       } finally {
         setLoading(false);
@@ -107,6 +108,7 @@ const UserEmployeeCard = ({ style }) => {
           }
         } catch (error) {
           console.error('Photo update error:', error);
+          if (handleSessionAuthError(error, { silent: true })) return;
           alert(t('employees.photoUpdateError', 'Failed to update photo'));
         } finally {
           setUploading(false);
@@ -121,6 +123,7 @@ const UserEmployeeCard = ({ style }) => {
       reader.readAsDataURL(file);
     } catch (error) {
       console.error('Photo upload error:', error);
+      handleSessionAuthError(error, { silent: true });
       setUploading(false);
     }
   };

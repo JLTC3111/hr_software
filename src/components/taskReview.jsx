@@ -1843,6 +1843,7 @@ const TaskReview = ({ employees }) => {
       }
     } catch (error) {
       console.error('Error fetching org stats:', error);
+      handleSessionAuthError(error, { silent: true });
     }
   };
 
@@ -1858,6 +1859,7 @@ const TaskReview = ({ employees }) => {
       }
     } catch (error) {
       console.error('Error fetching employee stats:', error);
+      handleSessionAuthError(error, { silent: true });
     }
   };
 
@@ -2409,6 +2411,7 @@ const TaskReview = ({ employees }) => {
       }
     } catch (error) {
       console.error('Error submitting review:', error);
+      if (handleSessionAuthError(error)) return;
       setErrorMessage(t('taskReview.reviewSubmitError'));
       setTimeout(() => setErrorMessage(''), 3000);
     }

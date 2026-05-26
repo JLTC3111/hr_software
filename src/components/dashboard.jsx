@@ -7,15 +7,14 @@ import { useLanguage } from '../contexts/LanguageContext.jsx'
 import { Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ComposedChart } from 'recharts'
 import * as timeTrackingService from '../services/timeTrackingService.js'
 import { withTimeout } from '../utils/supabaseTimeout.js';
-import { DEFAULT_REQUEST_TIMEOUT, VISIBILITY_STALE_TIMEOUT } from '../config/requestTimeouts.js';
+import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 import { retryWithBackoff, isRetryableError } from '../utils/retryHelper.js';
 import * as flubber from 'flubber';
 import { AnimatedClockIcon, AnimatedAlarmClockIcon } from './timeClockEntry.jsx'
 import { AnimatedCoffeeIcon, MiniFlubberMorphingLeaveStatus } from './timeTracking.jsx';
 import { MiniFlubberAutoMorphInProgress, MiniFlubberAutoMorphEmployees } from './taskReview.jsx'
-import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh.js';
-import { useSessionGuard } from '../hooks/useSessionGuard.js';
+import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { getDemoEmployeeName, isDemoMode } from '../utils/demoHelper.js';
 
 export const MiniFlubberAutoMorphEmployeesDashboard = ({
@@ -1415,11 +1414,7 @@ const Dashboard = ({ employees, applications }) => {
   }, [fetchDashboardData]);
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
-  useVisibilityRefresh(silentRefresh, {
-    staleTime: VISIBILITY_STALE_TIMEOUT,
-    refreshOnFocus: true,
-    refreshOnOnline: true
-  });
+  useAuthenticatedPageRefresh(silentRefresh);
 
   // Calculate aggregate stats
   const trackingDataValues = Object.values(timeTrackingData);

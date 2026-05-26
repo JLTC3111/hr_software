@@ -83,7 +83,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
   const { t } = useLanguage();
   const { createNotification } = useNotifications();
   const { isDarkMode, bg, text, border, hover } = useTheme();
-  const { checkPermission } = useAuth();
+  const { checkPermission, handleSessionAuthError } = useAuth();
   
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -267,6 +267,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
         console.error('Error creating employee:', result.error);
       }
     } catch (error) {
+      if (handleSessionAuthError(error)) return;
       setErrors({ submit: error.message || 'An unexpected error occurred.' });
       console.error('Unexpected error:', error);
     } finally {

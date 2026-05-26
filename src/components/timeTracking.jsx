@@ -11,10 +11,9 @@ import { validateAndRefreshSession } from '../utils/sessionHelper';
 import { retryWithBackoff, isRetryableError } from '../utils/retryHelper';
 import { supabase } from '../config/supabaseClient'
 import { AnimatedClockIcon } from './timeClockEntry'
-import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh'
-import { useSessionGuard } from '../hooks/useSessionGuard.js'
+import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js'
 import { getDemoEmployeeName, isDemoMode, addDemoLeaveRequest, updateDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper'
-import { DEFAULT_REQUEST_TIMEOUT, VISIBILITY_STALE_TIMEOUT } from '../config/requestTimeouts';
+import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts';
 
 export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = false }) => {
     const mainColor = isDarkMode ? '#ffffff' : '#000000';
@@ -662,11 +661,7 @@ const TimeTracking = ({ employees }) => {
   }, [fetchTimeTrackingData]);
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
-  useVisibilityRefresh(() => fetchTimeTrackingData({ silent: true }), {
-    staleTime: VISIBILITY_STALE_TIMEOUT,
-    refreshOnFocus: true,
-    refreshOnOnline: true
-  });
+  useAuthenticatedPageRefresh(() => fetchTimeTrackingData({ silent: true }));
 
   // Fetch all leave requests for all employees (admin/manager only)
   const hasPrefetchedAll = useRef(false);
@@ -699,9 +694,10 @@ const TimeTracking = ({ employees }) => {
       hasPrefetchedAll.current = true;
     } catch (error) {
       console.error('Error fetching all leave requests:', error);
+      handleSessionAuthError(error, { silent: true });
       setAllLeaveRequests([]);
     }
-  }, [canViewOverview, activeTab, withTimeout]);
+  }, [canViewOverview, activeTab, withTimeout, handleSessionAuthError]);
 
   // Subscribe to leave request changes so approvals sync automatically
   useEffect(() => {
@@ -782,6 +778,7 @@ const handleApproveRequest = async (requestId) => {
     }
   } catch (error) {
     console.error('Error approving leave request:', error);
+    if (handleSessionAuthError(error, { silent: true })) return;
     setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
   } finally {
     setProcessingRequests(prev => { 
@@ -844,6 +841,7 @@ const handleRejectRequest = async (requestId) => {
     }
   } catch (error) {
     console.error('Error rejecting leave request:', error);
+    if (handleSessionAuthError(error, { silent: true })) return;
     setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
   } finally {
     setProcessingRequests(prev => { 
@@ -875,6 +873,7 @@ const handleRejectRequest = async (requestId) => {
         setAllEmployeesData(results);
       } catch (error) {
         console.error('Error fetching all employees data:', error);
+        handleSessionAuthError(error, { silent: true });
       }
     };
     
@@ -1157,6 +1156,7 @@ const handleRejectRequest = async (requestId) => {
       }
     } catch (error) {
       console.error('Error submitting leave:', error);
+      if (handleSessionAuthError(error, { silent: true })) return;
       setSuccessMessage(t('timeTracking.leaveError', 'Error submitting leave request'));
     } finally {
       setLoading(false);
@@ -1213,6 +1213,7 @@ const handleRejectRequest = async (requestId) => {
       }
     } catch (error) {
       console.error('Error submitting overtime:', error);
+      if (handleSessionAuthError(error, { silent: true })) return;
       setSuccessMessage(t('timeTracking.overtimeError', 'Error logging overtime'));
     } finally {
       setLoading(false);

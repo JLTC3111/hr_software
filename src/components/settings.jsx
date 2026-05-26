@@ -23,12 +23,14 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
+import { useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
+import { ensureValidSession } from '../hooks/useSessionGuard.js';
 import * as settingsService from '../services/settingsService';
 
 const Settings = () => {
   const { bg, text, border, hover, isDarkMode, toggleTheme } = useTheme();
   const { t, changeLanguage, currentLanguage } = useLanguage();
-  const { user } = useAuth();
+  const { user, handleSessionAuthError } = useAuth();
   const { requestNotificationPermission } = useNotifications();
 
   const [activeTab, setActiveTab] = useState('notifications');
@@ -47,14 +49,22 @@ const Settings = () => {
     if (!user?.id) return;
 
     setLoading(true);
-    const result = await settingsService.getUserSettings(user.id);
+    try {
+      await ensureValidSession();
+      const result = await settingsService.getUserSettings(user.id);
     
-    if (result.success) {
-      setSettings(result.data);
+      if (result.success) {
+        setSettings(result.data);
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      handleSessionAuthError(error, { silent: true });
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
+
+  useAuthenticatedPageRefresh(() => loadSettings());
 
   const handleSettingChange = (field, value) => {
     setSettings(prev => ({ ...prev, [field]: value }));
@@ -66,30 +76,36 @@ const Settings = () => {
     if (!user?.id || !settings) return;
 
     setSaving(true);
-    const result = await settingsService.updateUserSettings(user.id, settings);
+    try {
+      await ensureValidSession();
+      const result = await settingsService.updateUserSettings(user.id, settings);
     
-    if (result.success) {
-      setSettings(result.data);
-      setHasChanges(false);
-      setSaveSuccess(true);
-      
-      // Apply theme if changed
-      if (result.data.theme !== 'system') {
-        const shouldBeDark = result.data.theme === 'dark';
-        if (shouldBeDark !== isDarkMode) {
-          toggleTheme();
+      if (result.success) {
+        setSettings(result.data);
+        setHasChanges(false);
+        setSaveSuccess(true);
+        
+        // Apply theme if changed
+        if (result.data.theme !== 'system') {
+          const shouldBeDark = result.data.theme === 'dark';
+          if (shouldBeDark !== isDarkMode) {
+            toggleTheme();
+          }
         }
-      }
 
-      // Apply language if changed
-      if (result.data.language !== currentLanguage) {
-        changeLanguage(result.data.language);
-      }
+        // Apply language if changed
+        if (result.data.language !== currentLanguage) {
+          changeLanguage(result.data.language);
+        }
 
-      setTimeout(() => setSaveSuccess(false), 3000);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      handleSessionAuthError(error);
+    } finally {
+      setSaving(false);
     }
-    
-    setSaving(false);
   };
 
   const resetSettings = async () => {

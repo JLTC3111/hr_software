@@ -1,6 +1,6 @@
 import _React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase, hasPermission, Permissions, customStorage } from '../config/supabaseClient.js';
-import { validateAndRefreshSession } from '../utils/sessionHelper.js';
+import { validateAndRefreshSession, handleSessionAuthError as handleSessionAuthErrorUtil } from '../utils/sessionHelper.js';
 import { isDemoMode, enableDemoMode, disableDemoMode, MOCK_USER, getDemoEmployees, attachSeededRandomUserPhotos, DEMO_CONFIG } from '../utils/demoHelper.js';
 import { useSessionKeepAlive } from '../hooks/useSessionKeepAlive.js';
 import { useIdleLogout } from '../hooks/useIdleLogout.js';
@@ -849,6 +849,12 @@ export const AuthProvider = ({ children }) => {
     onIdle: handleIdleLogout,
   });
 
+  const handleSessionAuthError = useCallback(
+    (error, options = {}) =>
+      handleSessionAuthErrorUtil(error, { logout, ...options }),
+    [logout]
+  );
+
   // Memoize the context value to prevent unnecessary re-renders
   const value = useMemo(() => ({
     isAuthenticated,
@@ -861,10 +867,11 @@ export const AuthProvider = ({ children }) => {
     switchDemoRole,
     logout,
     signOut: logout, // Alias for backward compatibility
+    handleSessionAuthError,
     forgotPassword,
     resetPassword,
     checkPermission
-  }), [isAuthenticated, user, session, loading, login, loginWithGithub, loginAsDemo, switchDemoRole, logout, forgotPassword, resetPassword, checkPermission]);
+  }), [isAuthenticated, user, session, loading, login, loginWithGithub, loginAsDemo, switchDemoRole, logout, handleSessionAuthError, forgotPassword, resetPassword, checkPermission]);
 
   return (
     <AuthContext.Provider value={value}>
