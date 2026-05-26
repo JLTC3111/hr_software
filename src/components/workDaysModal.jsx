@@ -2,11 +2,13 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X, Search, Download, ArrowUp, ArrowDown, Calendar, Clock, Loader, Sunrise, Sunset, ClipboardCheck } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import * as timeTrackingService from '../services/timeTrackingService';
 
 const WorkDaysModal = ({ isOpen, onClose, employeeId, month }) => {
   const { isDarkMode, bg, text, input, border } = useTheme();
   const { t } = useLanguage();
+  const { handleSessionAuthError } = useAuth();
 
   const [timeEntries, setTimeEntries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +41,7 @@ const WorkDaysModal = ({ isOpen, onClose, employeeId, month }) => {
           }
         } catch (error) {
           console.error("Error fetching time entries:", error);
+          handleSessionAuthError(error, { silent: true });
         } finally {
           setLoading(false);
         }

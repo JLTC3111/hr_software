@@ -406,6 +406,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
       }
     } catch (error) {
       console.error('Error submitting time entries:', error);
+      if (handleSessionAuthError(error)) return;
       console.error('Error details:', error.message, error.stack);
       setErrorMessage(`Failed to submit time entries: ${error.message || error.toString()}`);
     } finally {
@@ -472,6 +473,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
       }
     } catch (error) {
       console.error('Error filling standard hours:', error);
+      if (handleSessionAuthError(error)) return;
       setErrorMessage(getBulkFillErrorMessage(error.message || error.toString()));
     } finally {
       setBulkFillLoading(false);

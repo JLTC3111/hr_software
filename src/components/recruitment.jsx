@@ -72,6 +72,7 @@ const Recruitment = () => {
       }
     } catch (error) {
       console.error('Error updating status:', error);
+      if (handleSessionAuthError(error)) return;
       alert(t('errors.updateFailed', 'Failed to update status'));
     }
   };
@@ -922,6 +923,7 @@ const PostJobModal = ({ onClose, onSuccess }) => {
       }
     } catch (error) {
       console.error('Error posting job:', error);
+      if (handleSessionAuthError(error)) return;
       alert(t('errors.saveFailed', 'Failed to post job'));
     } finally {
       setLoading(false);

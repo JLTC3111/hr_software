@@ -313,7 +313,7 @@ export const MiniFlubberAutoMorphChangeRole = ({
 const ControlPanel = () => {
   const { isDarkMode, _bg, text, _border } = useTheme();
   const { t } = useLanguage();
-  const { user, signOut, switchDemoRole, checkPermission } = useAuth();
+  const { user, signOut, switchDemoRole, checkPermission, handleSessionAuthError } = useAuth();
   const navigate = useNavigate();
   const [showChangePassword, setShowChangePassword] = useState(false);
   const isChangingPassword = useRef(false);
@@ -489,6 +489,7 @@ const ControlPanel = () => {
       setAllUsers(usersWithPrimaryEmail);
     } catch (error) {
       console.error('Error fetching users:', error);
+      if (handleSessionAuthError(error)) return;
       setAdminResetError(t('controlPanel.errorFetchingUsers', 'Error loading users'));
     } finally {
       setLoadingUsers(false);
@@ -516,6 +517,7 @@ const ControlPanel = () => {
       setAllEmployees(data || []);
     } catch (error) {
       console.error('Error fetching employees:', error);
+      if (handleSessionAuthError(error)) return;
       setEmployeeResetError(t('controlPanel.errorFetchingEmployees', 'Error loading employees'));
     } finally {
       setLoadingEmployees(false);
@@ -656,6 +658,7 @@ const ControlPanel = () => {
       }, 4000);
     } catch (error) {
       console.error('❌ Password change error:', error);
+      if (handleSessionAuthError(error)) return;
       setPasswordError(error.message || t('controlPanel.passwordChangeError', 'Error changing password'));
       isChangingPassword.current = false;
       localStorage.removeItem('changingPassword');
@@ -771,6 +774,7 @@ const ControlPanel = () => {
       }, 3000);
     } catch (error) {
       console.error('Admin password reset error:', error);
+      if (handleSessionAuthError(error)) return;
       setAdminResetError(error.message || t('controlPanel.passwordResetError', 'Error resetting password. You may need admin service role access.'));
     }
   };
@@ -852,6 +856,7 @@ const ControlPanel = () => {
       }, 3000);
     } catch (error) {
       console.error('Employee password reset error:', error);
+      if (handleSessionAuthError(error)) return;
       setEmployeeResetError(error.message || t('controlPanel.passwordResetError', 'Error resetting password. You may need admin service role access.'));
     }
   };
@@ -922,6 +927,7 @@ const ControlPanel = () => {
           }, 5000);
         } catch (error) {
           console.error('Error updating avatar:', error);
+          if (handleSessionAuthError(error)) return;
           alert(t('controlPanel.avatarError', 'Error uploading avatar'));
           setUploadingAvatar(false);
         }
@@ -936,6 +942,7 @@ const ControlPanel = () => {
       reader.readAsDataURL(file);
     } catch (error) {
       console.error('Error uploading avatar:', error);
+      if (handleSessionAuthError(error)) return;
       setAvatarSuccess('');
       alert(t('controlPanel.avatarError', 'Error uploading avatar'));
       setUploadingAvatar(false);

@@ -218,6 +218,7 @@ const PersonalGoals = ({ employees }) => {
       }
     } catch (error) {
       console.error('Error updating performance rating:', error);
+      if (handleSessionAuthError(error)) return;
       alert(t('personalGoals.ratingUpdateError', 'Failed to update performance rating'));
     }
   };
@@ -304,6 +305,7 @@ const PersonalGoals = ({ employees }) => {
       }
     } catch (error) {
       console.error('Error updating skill rating:', error);
+      if (handleSessionAuthError(error, { silent: true })) return;
       // Revert local state on error
       fetchGoalsAndReviews();
     }
@@ -350,6 +352,7 @@ const PersonalGoals = ({ employees }) => {
       }
     } catch (error) {
       console.error('Error creating goal:', error);
+      if (handleSessionAuthError(error)) return;
       alert(t('personalGoals.goalCreatedError', 'Failed to create goal: ') + error.message);
     }
     
@@ -397,6 +400,7 @@ const PersonalGoals = ({ employees }) => {
       }
     } catch (error) {
       console.error('Error updating goal:', error);
+      if (handleSessionAuthError(error)) return;
       alert(t('personalGoals.goalUpdatedError', 'Failed to update goal: ') + error.message);
     }
     
@@ -422,6 +426,7 @@ const PersonalGoals = ({ employees }) => {
       }
     } catch (error) {
       console.error('Error deleting goal:', error);
+      if (handleSessionAuthError(error)) return;
       alert(t('personalGoals.goalDeletedError', 'Failed to delete goal: ') + error.message);
     }
     
@@ -472,6 +477,7 @@ const PersonalGoals = ({ employees }) => {
       }
     } catch (error) {
       console.error('Error saving progress:', error);
+      if (handleSessionAuthError(error)) return;
       alert(t('personalGoals.progressSaveError', 'Failed to save progress: ') + error.message);
     }
     

@@ -21,7 +21,7 @@ const getStatusColor = (status) => {
 const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false }) => {
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
-  const { user } = useAuth();
+  const { user, handleSessionAuthError } = useAuth();
   
   // Check if user has permission to edit (not employee role)
   const canEdit = user?.role !== 'employee';
@@ -187,6 +187,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
       }
     } catch (error) {
       console.error('Error updating employee:', error);
+      if (handleSessionAuthError(error)) return;
       alert(t('employees.updateError', 'An error occurred while updating the employee.'));
     } finally {
       setIsSaving(false);

@@ -2,8 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useLanguage, SUPPORTED_LANGUAGES } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from '../contexts/AuthContext';
-import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
-import { useSessionGuard } from '../hooks/useSessionGuard.js';
+import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription, getDemoGoalTitle, getDemoGoalDescription, getDemoTimeEntries } from '../utils/demoHelper';
 import { 
   Calendar, 
@@ -47,7 +46,7 @@ import autoTable from 'jspdf-autotable';
 import _html2canvas from 'html2canvas';
 import timeTrackingService from '../services/timeTrackingService';
 import { withTimeout } from '../utils/supabaseTimeout';
-import { DEFAULT_REQUEST_TIMEOUT, VISIBILITY_STALE_TIMEOUT } from '../config/requestTimeouts';
+import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts';
 import { getAllTasks } from '../services/workloadService';
 import performanceService from '../services/performanceService';
 import { validateAndRefreshSession } from '../utils/sessionHelper';
@@ -69,7 +68,7 @@ import {
 } from '../utils/pdfFontLoader.js';
 
 const Reports = () => {
-  const { handleSessionAuthError } = useSessionGuard();
+  const { handleSessionAuthError, runGuarded } = useSessionGuard();
   const { t, currentLanguage } = useLanguage();
   const { isDarkMode } = useTheme();
   
@@ -158,6 +157,7 @@ const Reports = () => {
         setReportData(prev => ({ ...prev, employees }));
       } catch (error) {
         console.error('Error fetching employees:', error);
+        handleSessionAuthError(error);
       }
     };
     fetchEmployees();
@@ -501,11 +501,7 @@ const Reports = () => {
   }, [fetchReportData, reportData.employees]);
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
-  useVisibilityRefresh(memoizedFetchReportData, {
-    staleTime: VISIBILITY_STALE_TIMEOUT,
-    refreshOnFocus: true,
-    refreshOnOnline: true
-  });
+  useAuthenticatedPageRefresh(memoizedFetchReportData);
 
   // Handle sort column click
   const handleSort = (key) => {
@@ -892,6 +888,7 @@ const Reports = () => {
       alert(t('reports.csvExportSuccess', 'CSV report exported successfully with all data types in one file!'));
     } catch (error) {
       console.error('Error exporting combined CSV:', error);
+      if (handleSessionAuthError(error)) return;
       alert(t('reports.errorExporting', 'Error exporting data') + ': ' + error.message);
     } finally {
       setExporting(false);
@@ -1847,6 +1844,7 @@ const Reports = () => {
       alert(t('reports.exportSuccess', 'Excel report exported successfully with styled tables, metrics, and chart data!'));
     } catch (error) {
       console.error('Error exporting Excel:', error);
+      if (handleSessionAuthError(error)) return;
       alert(t('reports.errorExporting', 'Error exporting Excel file') + ': ' + error.message);
     } finally {
       setExporting(false);
@@ -2341,6 +2339,7 @@ const Reports = () => {
       alert(t('reports.pdfExportSuccess', 'PDF report exported successfully!'));
     } catch (error) {
       console.error('Error exporting PDF:', error);
+      if (handleSessionAuthError(error)) return;
       alert(t('reports.errorExporting', 'Error exporting PDF file') + ': ' + error.message);
     } finally {
       setExporting(false);

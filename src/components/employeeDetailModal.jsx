@@ -16,7 +16,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/$
 const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
   const { bg, text, border, isDarkMode } = useTheme();
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, handleSessionAuthError } = useAuth();
   const { startPdfUpload, getUploadStatus } = useUpload();
   
   // Check if user has permission to edit (not employee role)
@@ -70,6 +70,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
         }
       } catch (error) {
         console.error('❌ Error generating PDF URL:', error);
+        handleSessionAuthError(error, { silent: true });
         setPdfError('Failed to load PDF document');
       }
     };
@@ -381,6 +382,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
       }
     } catch (error) {
       console.error('❌ Error deleting PDF:', error);
+      if (handleSessionAuthError(error)) return;
       alert(t('errors.deleteFailed', 'Failed to delete PDF: ') + error.message);
     }
   };

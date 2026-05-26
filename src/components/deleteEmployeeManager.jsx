@@ -8,7 +8,7 @@ import * as employeeService from '../services/employeeService.js';
 const DeleteEmployeeManager = () => {
   const { isDarkMode, bg, text, border } = useTheme();
   const { _t } = useLanguage();
-  const { user } = useAuth();
+  const { user, handleSessionAuthError } = useAuth();
   
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -56,6 +56,7 @@ const DeleteEmployeeManager = () => {
         }
       } catch (error) {
         console.error('Error deleting employee:', error);
+        if (handleSessionAuthError(error)) return;
         alert('❌ An unexpected error occurred during deletion.');
       } finally {
         setDeleting(null);
