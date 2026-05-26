@@ -39,11 +39,11 @@ import {
   Shield,
   AlertCircle
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import * as _XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import html2canvas from 'html2canvas';
+import _html2canvas from 'html2canvas';
 import timeTrackingService from '../services/timeTrackingService';
 import { withTimeout } from '../utils/supabaseTimeout';
 import { DEFAULT_REQUEST_TIMEOUT, VISIBILITY_STALE_TIMEOUT } from '../config/requestTimeouts';
@@ -52,29 +52,20 @@ import performanceService from '../services/performanceService';
 import { validateAndRefreshSession } from '../utils/sessionHelper';
 import { retryWithBackoff, isRetryableError } from '../utils/retryHelper';
 import { supabase } from '../config/supabaseClient';
-
-// Helper to load fonts for PDF
-const loadFontHelper = async (doc, url, vfsName, fontName) => {
-  const fontResponse = await fetch(url);
-  if (!fontResponse.ok) throw new Error(`Font fetch failed: ${url}`);
-  const fontData = await fontResponse.arrayBuffer();
-  
-  // Optimized base64 conversion for large font files (like CJK fonts)
-  const base64Font = await new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      // remove data URL prefix
-      const base64 = result.split(',')[1];
-      resolve(base64);
-    };
-    reader.readAsDataURL(new Blob([fontData]));
-  });
-
-  doc.addFileToVFS(vfsName, base64Font);
-  doc.addFont(vfsName, fontName, 'normal');
-  doc.setFont(fontName);
-};
+import {
+  aggregateCounts,
+  aggregateHoursByType,
+  buildCombinedCsvContent,
+  computeEmployeePerformance,
+  computeExportStats,
+  drawPdfChartsSection,
+  PDF_CHART_COLORS
+} from '../utils/reportExportHelpers.js';
+import {
+  choosePdfFont,
+  getPdfTableFont,
+  loadPdfFonts
+} from '../utils/pdfFontLoader.js';
 
 const Reports = () => {
   const { logout } = useAuth();
@@ -445,6 +436,67 @@ const Reports = () => {
     }
   }, [filters, selectedEmployee, activeTab, logout]);
 
+  const loadAllReportDataForExport = useCallback(async () => {
+    const { startDate, endDate } = filters;
+    const employeeId = selectedEmployee === 'all' ? null : selectedEmployee;
+
+    if (!isDemoMode()) {
+      const sessionValidation = await validateAndRefreshSession();
+      if (!sessionValidation.success) {
+        throw new Error(sessionValidation.error);
+      }
+    }
+
+    let allTimeEntries = [];
+    if (isDemoMode()) {
+      allTimeEntries = getDemoTimeEntries()
+        .filter((entry) => entry.date && entry.date >= startDate && entry.date <= endDate)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+    } else {
+      const { data, error } = await withTimeout(
+        supabase
+          .from('time_entries')
+          .select(`
+            *,
+            employee:employees!time_entries_employee_id_fkey(id, name, department, position)
+          `)
+          .gte('date', startDate)
+          .lte('date', endDate)
+          .order('date', { ascending: false })
+          .limit(10000),
+        DEFAULT_REQUEST_TIMEOUT
+      );
+      if (error) throw error;
+      allTimeEntries = data || [];
+    }
+
+    if (employeeId) {
+      allTimeEntries = allTimeEntries.filter((entry) => String(entry.employee_id) === String(employeeId));
+    }
+
+    const tasksResponse = await getAllTasks(employeeId ? { employeeId } : {});
+    let tasks = tasksResponse.success ? tasksResponse.data || [] : [];
+    if (employeeId) {
+      tasks = tasks.filter((task) => String(task.employee_id) === String(employeeId));
+    }
+
+    const goalsResponse = await performanceService.getAllPerformanceGoals(employeeId ? { employeeId } : {});
+    let goals = goalsResponse.success ? goalsResponse.data || [] : [];
+    if (employeeId) {
+      goals = goals.filter((goal) => String(goal.employee_id) === String(employeeId));
+    }
+
+    const exportData = {
+      timeEntries: allTimeEntries,
+      tasks,
+      goals,
+      employees: reportData.employees
+    };
+
+    setReportData((prev) => ({ ...prev, timeEntries: allTimeEntries, tasks, goals }));
+    return exportData;
+  }, [filters, selectedEmployee, reportData.employees]);
+
   // Effect to fetch data when filters/tab/employee changes
   useEffect(() => {
     if (reportData.employees.length > 0) {
@@ -629,154 +681,229 @@ const Reports = () => {
     return { totalRecords };
   }, [activeTab, currentData]);
 
-  // CSV Export function
-  const exportToCSV = (data, filename, headers) => {
+  const buildTimeEntryCsvRows = (timeEntries) => {
+    const headers = [
+      t('reports.excel.headers.dataType', 'Data Type'),
+      t('employees.name', 'Employee Name'),
+      t('employees.department', 'Department'),
+      t('employees.position', 'Position'),
+      t('timeTracking.date', 'Date'),
+      t('timeTracking.clockIn', 'Clock In'),
+      t('timeTracking.clockOut', 'Clock Out'),
+      t('timeTracking.amountHours', 'Hours'),
+      t('timeTracking.hourType', 'Hour Type'),
+      t('timeTracking.status', 'Status'),
+      t('timeTracking.notes', 'Notes'),
+      t('timeTracking.createdAt', 'Created At')
+    ];
+
+    const rows = timeEntries.map((entry) => [
+      t('reports.timeEntries', 'Time Entries'),
+      isDemoMode() ? getDemoEmployeeName(entry.employee, t) : (entry.employee?.name || 'Unknown'),
+      translateDepartment(entry.employee?.department) || '',
+      translatePosition(entry.employee?.position) || '',
+      entry.date,
+      entry.clock_in || '',
+      entry.clock_out || '',
+      entry.hours || 0,
+      translateHourType(entry.hour_type) || '',
+      translateStatus(entry.status) || '',
+      translateNotes(entry.notes) || '',
+      new Date(entry.created_at).toLocaleString()
+    ]);
+
+    return { headers, rows };
+  };
+
+  const buildTaskCsvRows = (tasks) => {
+    const headers = [
+      t('reports.excel.headers.dataType', 'Data Type'),
+      t('employees.name', 'Employee Name'),
+      t('employees.department', 'Department'),
+      t('reports.excel.headers.taskTitle', 'Task Title'),
+      t('reports.excel.headers.description', 'Description'),
+      t('reports.excel.headers.priority', 'Priority'),
+      t('reports.excel.headers.status', 'Status'),
+      t('reports.excel.headers.dueDate', 'Due Date'),
+      t('taskListing.completionDate', 'Completion Date'),
+      t('reports.excel.headers.estimatedHours', 'Estimated Hours'),
+      t('reports.excel.headers.actualHours', 'Actual Hours'),
+      t('reports.excel.headers.variance', 'Variance'),
+      t('reports.excel.headers.createdAt', 'Created At'),
+      t('reports.excel.headers.updatedAt', 'Updated At')
+    ];
+
+    const rows = tasks.map((task) => [
+      t('reports.tasks', 'Tasks'),
+      isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || 'Unknown'),
+      translateDepartment(task.employee?.department) || '',
+      isDemoMode() ? getDemoTaskTitle(task, t) : (task.title || ''),
+      isDemoMode() ? getDemoTaskDescription(task, t) : (task.description || ''),
+      translatePriority(task.priority) || '',
+      translateStatus(task.status) || '',
+      task.due_date || '',
+      task.completion_date || '',
+      task.estimated_hours || 0,
+      task.actual_hours || 0,
+      (task.actual_hours || 0) - (task.estimated_hours || 0),
+      new Date(task.created_at).toLocaleString(),
+      new Date(task.updated_at).toLocaleString()
+    ]);
+
+    return { headers, rows };
+  };
+
+  const buildGoalCsvRows = (goals) => {
+    const headers = [
+      t('reports.excel.headers.dataType', 'Data Type'),
+      t('employees.name', 'Employee Name'),
+      t('employees.department', 'Department'),
+      t('reports.excel.headers.goalTitle', 'Goal Title'),
+      t('reports.excel.headers.description', 'Description'),
+      t('reports.excel.headers.category', 'Category'),
+      t('reports.excel.headers.status', 'Status'),
+      t('reports.excel.headers.progress', 'Progress (%)'),
+      t('reports.excel.headers.targetDate', 'Target Date'),
+      t('reports.excel.headers.notes', 'Notes'),
+      t('reports.excel.headers.createdAt', 'Created At'),
+      t('reports.excel.headers.updatedAt', 'Updated At')
+    ];
+
+    const rows = goals.map((goal) => [
+      t('reports.personalGoals', 'Personal Goals'),
+      isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || 'Unknown'),
+      translateDepartment(goal.employee?.department) || '',
+      isDemoMode() ? getDemoGoalTitle(goal, t) : (goal.title || ''),
+      isDemoMode() ? getDemoGoalDescription(goal, t) : (goal.description || ''),
+      translateCategory(goal.category) || '',
+      translateStatus(goal.status) || '',
+      goal.progress || 0,
+      goal.target_date || '',
+      goal.notes || '',
+      new Date(goal.created_at).toLocaleString(),
+      new Date(goal.updated_at).toLocaleString()
+    ]);
+
+    return { headers, rows };
+  };
+
+  const exportAllToCSV = async () => {
+    setExporting(true);
     try {
+      const exportData = await loadAllReportDataForExport();
+      const { timeEntries, tasks, goals, employees } = exportData;
+      const exportStats = computeExportStats(timeEntries, tasks, goals);
+
+      if (exportStats.totalRecords === 0) {
+        alert(t('reports.noData', 'No data available for the selected period'));
+        return;
+      }
+
       const languageName = SUPPORTED_LANGUAGES[currentLanguage]?.name || 'English';
-      const csvContent = [
-        // Add metadata row
+      const employeeName = selectedEmployee !== 'all'
+        ? employees.find((emp) => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_')
+        : t('reports.allEmployees', 'All Employees');
+
+      const metadataRows = [
+        `"${t('reports.performanceReport', 'HR PERFORMANCE REPORT')}"`,
         `"${t('reports.language', 'Report Language')}: ${languageName}"`,
         `"${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}"`,
-        '', // Empty row for separation
-        // Add headers
-        headers.map(header => {
-          // Escape and quote header if needed
-          return typeof header === 'string' && (header.includes(',') || header.includes('"')) 
-            ? `"${header.replace(/"/g, '""')}"` 
-            : header;
-        }).join(','),
-        // Add data rows
-        ...data.map(row => 
-          headers.map(header => {
-            const value = row[header] || '';
-            const stringValue = String(value);
-            // Escape quotes and wrap in quotes if contains comma, quotes or newlines
-            return stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes('\r')
-              ? `"${stringValue.replace(/"/g, '""')}"` 
-              : stringValue;
-          }).join(',')
-        )
-      ].join('\n');
+        `"${t('reports.period', 'Period')}: ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}"`,
+        `"${t('reports.employee', 'Employee')}: ${selectedEmployee === 'all' ? t('reports.allEmployees', 'All Employees') : (employees.find((emp) => String(emp.id) === String(selectedEmployee))?.name || '')}"`
+      ];
 
+      const sections = [{
+        title: t('reports.summaryOverview', 'SUMMARY OVERVIEW'),
+        headers: [t('reports.excel.performance.tableHeaders.metric', 'Metric'), t('reports.excel.performance.tableHeaders.value', 'Value')],
+        rows: [
+          [t('reports.totalRecords', 'Total Records'), exportStats.totalRecords],
+          [t('reports.timeEntries', 'Time Entries'), exportStats.timeEntriesCount],
+          [t('reports.tasks', 'Tasks'), exportStats.tasksCount],
+          [t('reports.goals', 'Goals'), exportStats.goalsCount],
+          [t('reports.totalHours', 'Total Hours'), `${exportStats.totalHours}h`],
+          [t('reports.approved', 'Approved'), exportStats.approvedTime],
+          [t('reports.completedTasks', 'Completed Tasks'), exportStats.completedTasks],
+          [t('reports.achievedGoals', 'Achieved Goals'), exportStats.achievedGoals]
+        ]
+      }];
+
+      if (timeEntries.length > 0) {
+        const timeSection = buildTimeEntryCsvRows(timeEntries);
+        sections.push({ title: t('reports.timeEntries', 'TIME ENTRIES').toUpperCase(), ...timeSection });
+      }
+      if (tasks.length > 0) {
+        const taskSection = buildTaskCsvRows(tasks);
+        sections.push({ title: t('reports.tasks', 'TASKS').toUpperCase(), ...taskSection });
+      }
+      if (goals.length > 0) {
+        const goalSection = buildGoalCsvRows(goals);
+        sections.push({ title: t('reports.personalGoals', 'PERSONAL GOALS').toUpperCase(), ...goalSection });
+      }
+
+      if (selectedEmployee !== 'all') {
+        const employee = employees.find((emp) => String(emp.id) === String(selectedEmployee));
+        if (employee) {
+          const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals);
+          sections.push({
+            title: t('reports.excel.performance.header', 'EMPLOYEE PERFORMANCE').toUpperCase(),
+            headers: [
+              t('reports.excel.performance.tableHeaders.metric', 'Metric'),
+              t('reports.excel.performance.tableHeaders.value', 'Value')
+            ],
+            rows: [
+              [t('reports.excel.performance.name', 'Name'), getDemoEmployeeName(employee, t)],
+              [t('reports.excel.metrics.totalHours', 'Total Hours Logged'), performance.totalHours.toFixed(1)],
+              [t('reports.excel.metrics.totalTasks', 'Total Tasks'), performance.tasksCount],
+              [t('reports.excel.performance.taskCompletionRate', 'Task Completion Rate'), `${performance.taskCompletionRate}%`],
+              [t('reports.excel.metrics.totalGoals', 'Total Goals'), performance.goalsCount],
+              [t('reports.excel.performance.avgGoalProgress', 'Average Goal Progress'), `${performance.avgGoalProgress}%`],
+              [t('reports.excel.performance.overallScore', 'Overall Performance Score:'), `${performance.overallScore}%`]
+            ]
+          });
+        }
+      } else if (employees.length > 0) {
+        sections.push({
+          title: t('reports.excel.sheets.allEmployeesOverview', 'ALL EMPLOYEES OVERVIEW').toUpperCase(),
+          headers: [
+            t('reports.excel.performance.name', 'Name'),
+            t('reports.excel.performance.department', 'Department'),
+            t('reports.excel.metrics.totalHours', 'Total Hours Logged'),
+            t('reports.excel.metrics.totalTasks', 'Total Tasks'),
+            t('reports.excel.metrics.completedTasks', 'Completed Tasks'),
+            t('reports.excel.metrics.totalGoals', 'Total Goals'),
+            t('reports.excel.performance.overallScore', 'Overall Score')
+          ],
+          rows: employees.map((employee) => {
+            const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals);
+            return [
+              getDemoEmployeeName(employee, t),
+              translateDepartment(employee.department),
+              performance.totalHours.toFixed(1),
+              performance.tasksCount,
+              performance.completedTasks,
+              performance.goalsCount,
+              `${performance.overallScore}%`
+            ];
+          })
+        });
+      }
+
+      const csvContent = buildCombinedCsvContent({ metadataRows, sections });
+      const filename = `${t('reports.filenamePrefix', 'HR_Report')}_${employeeName}_${filters.startDate}_${t('reports.to', 'to')}_${filters.endDate}_${currentLanguage.toUpperCase()}.csv`;
       const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
-      
       const link = document.createElement('a');
       link.href = url;
       link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
       URL.revokeObjectURL(url);
+
+      alert(t('reports.csvExportSuccess', 'CSV report exported successfully with all data types in one file!'));
     } catch (error) {
-      console.error('Error exporting CSV:', error);
+      console.error('Error exporting combined CSV:', error);
       alert(t('reports.errorExporting', 'Error exporting data') + ': ' + error.message);
-    }
-  };
-
-  // Export time entries
-  const exportTimeEntries = () => {
-    if (!reportData.timeEntries || reportData.timeEntries.length === 0) return;
-    setExporting(true);
-    try {
-      const exportData = reportData.timeEntries.map(entry => ({
-        [t('employees.name', 'Employee Name')]: isDemoMode() ? getDemoEmployeeName(entry.employee, t) : (entry.employee?.name || 'Unknown'),
-        [t('employees.department', 'Department')]: translateDepartment(entry.employee?.department) || '',
-        [t('employees.position', 'Position')]: translatePosition(entry.employee?.position) || '',
-        [t('timeTracking.date', 'Date')]: entry.date,
-        [t('timeTracking.clockIn', 'Clock In')]: entry.clock_in || '',
-        [t('timeTracking.clockOut', 'Clock Out')]: entry.clock_out || '',
-        [t('timeTracking.amountHours', 'Hours')]: entry.hours || 0,
-        [t('timeTracking.hourType', 'Hour Type')]: translateHourType(entry.hour_type) || '',
-        [t('timeTracking.status', 'Status')]: translateStatus(entry.status) || '',
-        [t('timeTracking.notes', 'Notes')]: translateNotes(entry.notes) || '',
-        [t('timeTracking.createdAt', 'Created At')]: new Date(entry.created_at).toLocaleString()
-      }));
-
-      const employeeName = selectedEmployee !== 'all' ? 
-        `_${reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_')}` : 
-        '';
-      
-      const reportType = t('reports.timeEntries', 'Time Entries').replace(/\s+/g, '_');
-      const filename = `${reportType}${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.csv`;
-      const headers = Object.keys(exportData[0] || {});
-      
-      exportToCSV(exportData, filename, headers);
-    } catch (error) {
-      console.error('Error exporting time entries:', error);
-      alert(t('reports.errorExporting', 'Error exporting data'));
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  // Export tasks
-  const exportTasks = () => {
-    if (!reportData.tasks || reportData.tasks.length === 0) return;
-    setExporting(true);
-    try {
-      const exportData = reportData.tasks.map(task => ({
-        [t('employees.name', 'Employee Name')]: isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || 'Unknown'),
-        [t('employees.department', 'Department')]: translateDepartment(task.employee?.department) || '',
-        [t('taskListing.taskTitle', 'Task Title')]: isDemoMode() ? getDemoTaskTitle(task, t) : (task.title || ''),
-        [t('taskListing.description', 'Description')]: isDemoMode() ? getDemoTaskDescription(task, t) : (task.description || ''),
-        [t('taskListing.priority', 'Priority')]: translatePriority(task.priority) || '',
-        [t('taskListing.status', 'Status')]: translateStatus(task.status) || '',
-        [t('taskListing.dueDate', 'Due Date')]: task.due_date || '',
-        [t('taskListing.completionDate', 'Completion Date')]: task.completion_date || '',
-        [t('taskListing.createdAt', 'Created At')]: new Date(task.created_at).toLocaleString(),
-        [t('taskListing.updatedAt', 'Updated At')]: new Date(task.updated_at).toLocaleString()
-      }));
-
-      const employeeName = selectedEmployee !== 'all' ? 
-        `_${reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_')}` : 
-        '';
-      
-      const reportType = t('reports.tasks', 'Tasks').replace(/\s+/g, '_');
-      const filename = `${reportType}${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.csv`;
-      const headers = Object.keys(exportData[0] || {});
-      
-      exportToCSV(exportData, filename, headers);
-    } catch (error) {
-      console.error('Error exporting tasks:', error);
-      alert(t('reports.errorExporting', 'Error exporting data'));
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  // Export goals
-  const exportGoals = () => {
-    if (!reportData.goals || reportData.goals.length === 0) return;
-    setExporting(true);
-    try {
-      const exportData = reportData.goals.map(goal => ({
-        [t('employees.name', 'Employee Name')]: isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || 'Unknown'),
-        [t('employees.department', 'Department')]: translateDepartment(goal.employee?.department) || '',
-        [t('taskReview.goalTitle', 'Goal Title')]: isDemoMode() ? getDemoGoalTitle(goal, t) : (goal.title || ''),
-        [t('taskReview.description', 'Description')]: isDemoMode() ? getDemoGoalDescription(goal, t) : (goal.description || ''),
-        [t('taskReview.category', 'Category')]: translateCategory(goal.category) || '',
-        [t('taskReview.targetDate', 'Target Date')]: goal.target_date || '',
-        [t('taskReview.status', 'Status')]: translateStatus(goal.status) || '',
-        [t('taskReview.progress', 'Progress')]: goal.progress || 0,
-        [t('taskReview.notes', 'Notes')]: goal.notes || '',
-        [t('taskReview.createdAt', 'Created At')]: new Date(goal.created_at).toLocaleString(),
-        [t('taskReview.updatedAt', 'Updated At')]: new Date(goal.updated_at).toLocaleString()
-      }));
-
-      const employeeName = selectedEmployee !== 'all' ? 
-        `_${reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_')}` : 
-        '';
-      
-      const reportType = t('reports.personalGoals', 'Personal Goals').replace(/\s+/g, '_');
-      const filename = `${reportType}${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.csv`;
-      const headers = Object.keys(exportData[0] || {});
-      
-      exportToCSV(exportData, filename, headers);
-    } catch (error) {
-      console.error('Error exporting goals:', error);
-      alert(t('reports.errorExporting', 'Error exporting data'));
     } finally {
       setExporting(false);
     }
@@ -786,6 +913,17 @@ const Reports = () => {
   const exportToExcel = async () => {
     setExporting(true);
     try {
+      const exportSnapshot = await loadAllReportDataForExport();
+      const timeEntries = exportSnapshot.timeEntries;
+      const tasks = exportSnapshot.tasks;
+      const goals = exportSnapshot.goals;
+      const employees = exportSnapshot.employees;
+
+      if (timeEntries.length === 0 && tasks.length === 0 && goals.length === 0) {
+        alert(t('reports.noData', 'No data available for the selected period'));
+        return;
+      }
+
       // Helpers for safe values and typing
       const sanitize = (v) => {
         if (v == null) return '';
@@ -829,7 +967,7 @@ const Reports = () => {
       
       // Employee name for filename
       const employeeName = selectedEmployee !== 'all' ? 
-        reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_') : 
+        employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_') : 
         tr('reports.allEmployees', 'All Employees').replace(/\s+/g, '_');
 
       // ==================== SUMMARY/METRICS SHEET WITH STYLING ====================
@@ -873,14 +1011,14 @@ const Reports = () => {
       summarySheet.getCell('C2').alignment = { horizontal: 'center' };
       
       // Time Entries Metrics with Styling
-      if (reportData.timeEntries.length > 0) {
-        const totalHours = reportData.timeEntries.reduce((sum, entry) => sum + (entry.hours || 0), 0);
-        const regularHours = reportData.timeEntries.filter(e => e.hour_type === 'regular').reduce((sum, e) => sum + (e.hours || 0), 0);
+      if (timeEntries.length > 0) {
+        const totalHours = timeEntries.reduce((sum, entry) => sum + (entry.hours || 0), 0);
+        const regularHours = timeEntries.filter(e => e.hour_type === 'regular').reduce((sum, e) => sum + (e.hours || 0), 0);
         // Include both overtime and bonus as overtime hours
-        const overtimeHours = reportData.timeEntries.filter(e => e.hour_type === 'overtime' || e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
-        const wfhHours = reportData.timeEntries.filter(e => e.hour_type === 'wfh').reduce((sum, e) => sum + (e.hours || 0), 0);
-        const pendingEntries = reportData.timeEntries.filter(e => e.status === 'pending').length;
-        const approvedEntries = reportData.timeEntries.filter(e => e.status === 'approved').length;
+        const overtimeHours = timeEntries.filter(e => e.hour_type === 'overtime' || e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
+        const wfhHours = timeEntries.filter(e => e.hour_type === 'wfh').reduce((sum, e) => sum + (e.hours || 0), 0);
+        const pendingEntries = timeEntries.filter(e => e.status === 'pending').length;
+        const approvedEntries = timeEntries.filter(e => e.status === 'approved').length;
         
         // Section Header
         summarySheet.getCell(`A${currentRow}`).value = tr('reports.excel.timeTracking', 'Time Tracking Summary');
@@ -904,7 +1042,7 @@ const Reports = () => {
           currentRow++;
         };
 
-        addMetric(tr('reports.excel.metrics.totalTimeEntries', 'Total Time Entries'), reportData.timeEntries.length, true, true);
+        addMetric(tr('reports.excel.metrics.totalTimeEntries', 'Total Time Entries'), timeEntries.length, true, true);
         addMetric(tr('reports.excel.metrics.totalHours', 'Total Hours Logged'), totalHours, true, true);
         addMetric(tr('reports.excel.metrics.regularHours', 'Regular Hours'), regularHours, true, true);
         addMetric(tr('reports.excel.metrics.overtimeHours', 'Overtime Hours'), overtimeHours, true, true);
@@ -923,12 +1061,12 @@ const Reports = () => {
       }
       
       // Tasks Metrics with Styling
-      if (reportData.tasks.length > 0) {
-        const completedTasks = reportData.tasks.filter(t => t.status === 'completed').length;
-        const inProgressTasks = reportData.tasks.filter(t => t.status === 'in_progress').length;
-        const highPriority = reportData.tasks.filter(t => t.priority === 'high').length;
-        const totalEstimated = reportData.tasks.reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
-        const totalActual = reportData.tasks.reduce((sum, t) => sum + (t.actual_hours || 0), 0);
+      if (tasks.length > 0) {
+        const completedTasks = tasks.filter(t => t.status === 'completed').length;
+        const inProgressTasks = tasks.filter(t => t.status === 'in_progress').length;
+        const highPriority = tasks.filter(t => t.priority === 'high').length;
+        const totalEstimated = tasks.reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
+        const totalActual = tasks.reduce((sum, t) => sum + (t.actual_hours || 0), 0);
         
         // Section Header
         summarySheet.getCell(`A${currentRow}`).value = tr('reports.excel.workload', 'Workload Summary');
@@ -952,7 +1090,7 @@ const Reports = () => {
           currentRow++;
         };
 
-        addMetric(tr('reports.excel.metrics.totalTasks', 'Total Tasks'), reportData.tasks.length, true, true);
+        addMetric(tr('reports.excel.metrics.totalTasks', 'Total Tasks'), tasks.length, true, true);
         addMetric(tr('reports.excel.metrics.completedTasks', 'Completed Tasks'), completedTasks, true, true);
         addMetric(tr('reports.excel.metrics.inProgress', 'In Progress'), inProgressTasks, true, true);
         addMetric(tr('reports.excel.metrics.highPriorityTasks', 'High Priority Tasks'), highPriority, true, true);
@@ -971,10 +1109,10 @@ const Reports = () => {
       }
       
       // Goals Metrics with Styling
-      if (reportData.goals.length > 0) {
-        const completedGoals = reportData.goals.filter(g => g.status === 'completed').length;
-        const inProgressGoals = reportData.goals.filter(g => g.status === 'in_progress').length;
-        const avgProgress = (reportData.goals.reduce((sum, g) => sum + (g.status === 'completed' ? 100 : (g.progress || 0)), 0) / reportData.goals.length).toFixed(1);
+      if (goals.length > 0) {
+        const completedGoals = goals.filter(g => g.status === 'completed').length;
+        const inProgressGoals = goals.filter(g => g.status === 'in_progress').length;
+        const avgProgress = (goals.reduce((sum, g) => sum + (g.status === 'completed' ? 100 : (g.progress || 0)), 0) / goals.length).toFixed(1);
         
         // Section Header
         summarySheet.getCell(`A${currentRow}`).value = tr('reports.excel.goals', 'Goals Summary');
@@ -998,7 +1136,7 @@ const Reports = () => {
           currentRow++;
         };
 
-        addMetric(tr('reports.excel.metrics.totalGoals', 'Total Goals'), reportData.goals.length, true, true);
+        addMetric(tr('reports.excel.metrics.totalGoals', 'Total Goals'), goals.length, true, true);
         addMetric(tr('reports.excel.metrics.completedGoals', 'Completed Goals'), completedGoals, true, true);
         addMetric(tr('reports.excel.metrics.inProgress', 'In Progress'), inProgressGoals, true, true);
         addMetric(tr('reports.excel.metrics.avgProgress', 'Average Progress'), parseFloat(avgProgress) || 0, true, true);
@@ -1021,7 +1159,7 @@ const Reports = () => {
 
       // ==================== INDIVIDUAL EMPLOYEE PERFORMANCE SHEET ====================
       if (selectedEmployee !== 'all') {
-        const employee = reportData.employees.find(emp => String(emp.id) === String(selectedEmployee));
+        const employee = employees.find(emp => String(emp.id) === String(selectedEmployee));
         if (employee) {
           const perfSheet = workbook.addWorksheet(sheetNames.performance);
           
@@ -1060,9 +1198,9 @@ const Reports = () => {
           perfRow++;
           
           // Performance Metrics Section
-          const employeeTimeEntries = reportData.timeEntries.filter(e => e.employee_id === employee.id);
-          const employeeTasks = reportData.tasks.filter(t => t.employee_id === employee.id);
-          const employeeGoals = reportData.goals.filter(g => g.employee_id === employee.id);
+          const employeeTimeEntries = timeEntries.filter(e => e.employee_id === employee.id);
+          const employeeTasks = tasks.filter(t => t.employee_id === employee.id);
+          const employeeGoals = goals.filter(g => g.employee_id === employee.id);
           
           perfSheet.getCell(`A${perfRow}`).value = tr('reports.excel.performance.performanceMetrics', 'Performance Metrics');
           perfSheet.getCell(`A${perfRow}`).font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -1248,14 +1386,70 @@ const Reports = () => {
         }
       }
 
+      if (selectedEmployee === 'all' && employees.length > 0) {
+        const overviewSheet = workbook.addWorksheet(tr('reports.excel.sheets.allEmployeesOverview', 'All Employees Overview'));
+        const overviewHeaders = [
+          tr('reports.excel.performance.name', 'Name'),
+          tr('reports.excel.performance.department', 'Department'),
+          tr('reports.excel.performance.position', 'Position'),
+          tr('reports.excel.metrics.totalHours', 'Total Hours Logged'),
+          tr('reports.excel.metrics.totalTasks', 'Total Tasks'),
+          tr('reports.excel.metrics.completedTasks', 'Completed Tasks'),
+          tr('reports.excel.metrics.totalGoals', 'Total Goals'),
+          tr('reports.excel.performance.avgGoalProgress', 'Average Goal Progress'),
+          tr('reports.excel.performance.overallScore', 'Overall Score')
+        ];
+
+        overviewHeaders.forEach((header, idx) => {
+          const cell = overviewSheet.getCell(1, idx + 1);
+          cell.value = header;
+          cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7030A0' } };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        });
+
+        employees.forEach((employee, idx) => {
+          const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals);
+          const rowNum = idx + 2;
+          const rowData = [
+            getDemoEmployeeName(employee, t),
+            translateDepartment(employee.department),
+            translatePosition(employee.position),
+            Number(performance.totalHours.toFixed(1)),
+            performance.tasksCount,
+            performance.completedTasks,
+            performance.goalsCount,
+            Number(performance.avgGoalProgress),
+            Number(performance.overallScore)
+          ];
+
+          rowData.forEach((value, colIdx) => {
+            const cell = overviewSheet.getCell(rowNum, colIdx + 1);
+            cell.value = value;
+            if (colIdx >= 3) {
+              cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            }
+            if (idx % 2 === 0) {
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3E8FF' } };
+            }
+          });
+        });
+
+        overviewSheet.columns = [
+          { width: 22 }, { width: 16 }, { width: 16 }, { width: 14 },
+          { width: 12 }, { width: 14 }, { width: 12 }, { width: 16 }, { width: 14 }
+        ];
+        overviewSheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
+      }
+
       // ==================== CHARTS SHEET WITH DATA ====================
-      if (reportData.timeEntries.length > 0 || reportData.tasks.length > 0) {
+      if (timeEntries.length > 0 || tasks.length > 0 || goals.length > 0) {
         const chartsSheet = workbook.addWorksheet(sheetNames.charts);
         
         let chartRow = 1;
         
         // Hours by Type Chart Data
-        if (reportData.timeEntries.length > 0) {
+        if (timeEntries.length > 0) {
           chartsSheet.getCell(`A${chartRow}`).value = tr('reports.excel.charts.hoursByType', 'Hours by Type').toUpperCase();
           chartsSheet.getCell(`A${chartRow}`).font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
           chartsSheet.getCell(`A${chartRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
@@ -1269,7 +1463,7 @@ const Reports = () => {
           chartRow++;
           
           const hoursByType = {};
-          reportData.timeEntries.forEach(entry => {
+          timeEntries.forEach(entry => {
             const type = entry.hour_type || 'unknown';
             hoursByType[type] = (hoursByType[type] || 0) + (entry.hours || 0);
           });
@@ -1295,7 +1489,7 @@ const Reports = () => {
           chartRow++;
           
           const statusCounts = {};
-          reportData.timeEntries.forEach(entry => {
+          timeEntries.forEach(entry => {
             const status = entry.status || 'unknown';
             statusCounts[status] = (statusCounts[status] || 0) + 1;
           });
@@ -1309,7 +1503,7 @@ const Reports = () => {
         }
         
         // Task Metrics
-        if (reportData.tasks.length > 0) {
+        if (tasks.length > 0) {
           chartsSheet.getCell(`A${chartRow}`).value = tr('reports.excel.charts.taskStatusDistribution', 'Task Status Distribution').toUpperCase();
           chartsSheet.getCell(`A${chartRow}`).font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
           chartsSheet.getCell(`A${chartRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC000' } };
@@ -1323,7 +1517,7 @@ const Reports = () => {
           chartRow++;
           
           const taskStatus = {};
-          reportData.tasks.forEach(task => {
+          tasks.forEach(task => {
             const status = task.status || 'unknown';
             taskStatus[status] = (taskStatus[status] || 0) + 1;
           });
@@ -1349,13 +1543,53 @@ const Reports = () => {
           chartRow++;
           
           const taskPriority = {};
-          reportData.tasks.forEach(task => {
+          tasks.forEach(task => {
             const priority = task.priority || 'unknown';
             taskPriority[priority] = (taskPriority[priority] || 0) + 1;
           });
           
           Object.entries(taskPriority).forEach(([priority, count]) => {
             chartsSheet.getCell(`A${chartRow}`).value = translatePriority(priority) || priority;
+            chartsSheet.getCell(`B${chartRow}`).value = count;
+            chartRow++;
+          });
+          chartRow += 2;
+        }
+
+        if (goals.length > 0) {
+          chartsSheet.getCell(`A${chartRow}`).value = tr('reports.excel.charts.goalStatusDistribution', 'Goal Status Distribution').toUpperCase();
+          chartsSheet.getCell(`A${chartRow}`).font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+          chartsSheet.getCell(`A${chartRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF5B9BD5' } };
+          chartsSheet.mergeCells(`A${chartRow}:B${chartRow}`);
+          chartRow++;
+
+          chartsSheet.getCell(`A${chartRow}`).value = tr('reports.excel.headers.status', 'Status');
+          chartsSheet.getCell(`B${chartRow}`).value = tr('reports.excel.headers.count', 'Count');
+          chartsSheet.getRow(chartRow).font = { bold: true };
+          chartsSheet.getRow(chartRow).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCE6F1' } };
+          chartRow++;
+
+          Object.entries(aggregateCounts(goals, 'status')).forEach(([status, count]) => {
+            chartsSheet.getCell(`A${chartRow}`).value = translateStatus(status) || status;
+            chartsSheet.getCell(`B${chartRow}`).value = count;
+            chartRow++;
+          });
+          chartRow += 2;
+
+          chartsSheet.getCell(`A${chartRow}`).value = tr('reports.excel.charts.goalCategoryDistribution', 'Goal Category Distribution').toUpperCase();
+          chartsSheet.getCell(`A${chartRow}`).font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+          chartsSheet.getCell(`A${chartRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF8064A2' } };
+          chartsSheet.mergeCells(`A${chartRow}:B${chartRow}`);
+          chartRow++;
+
+          chartsSheet.getCell(`A${chartRow}`).value = tr('reports.excel.headers.category', 'Category');
+          chartsSheet.getCell(`B${chartRow}`).value = tr('reports.excel.headers.count', 'Count');
+          chartsSheet.getRow(chartRow).font = { bold: true };
+          chartsSheet.getRow(chartRow).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE4DFEC' } };
+          chartRow++;
+
+          Object.entries(aggregateCounts(goals, 'category')).forEach(([category, count]) => {
+            chartsSheet.getCell(`A${chartRow}`).value = translateCategory(category) || category;
             chartsSheet.getCell(`B${chartRow}`).value = count;
             chartRow++;
           });
@@ -1367,7 +1601,7 @@ const Reports = () => {
       }
 
       // ==================== TIME ENTRIES SHEET WITH STYLING ====================
-      if (reportData.timeEntries.length > 0) {
+      if (timeEntries.length > 0) {
         const timeEntriesSheet = workbook.addWorksheet(sheetNames.timeEntries);
         
         // Headers
@@ -1393,7 +1627,7 @@ const Reports = () => {
         });
         
         // Data rows with alternating colors
-        reportData.timeEntries.forEach((entry, idx) => {
+        timeEntries.forEach((entry, idx) => {
           const rowNum = idx + 2;
           const rowData = [
             isDemoMode() ? getDemoEmployeeName(entry.employee, t) : (entry.employee?.name || 'Unknown'),
@@ -1434,7 +1668,7 @@ const Reports = () => {
       }
 
       // ==================== TASKS SHEET WITH STYLING ====================
-      if (reportData.tasks.length > 0) {
+      if (tasks.length > 0) {
         const tasksSheet = workbook.addWorksheet(sheetNames.tasks);
         
         // Headers
@@ -1446,10 +1680,12 @@ const Reports = () => {
           tr('reports.excel.headers.priority', 'Priority'),
           tr('reports.excel.headers.status', 'Status'),
           tr('reports.excel.headers.dueDate', 'Due Date'),
+          tr('taskListing.completionDate', 'Completion Date'),
           tr('reports.excel.headers.estimatedHours', 'Estimated Hours'),
           tr('reports.excel.headers.actualHours', 'Actual Hours'),
           tr('reports.excel.headers.variance', 'Variance'),
-          tr('reports.excel.headers.createdAt', 'Created At')
+          tr('reports.excel.headers.createdAt', 'Created At'),
+          tr('reports.excel.headers.updatedAt', 'Updated At')
         ];
         headers.forEach((header, idx) => {
           const cell = tasksSheet.getCell(1, idx + 1);
@@ -1460,7 +1696,7 @@ const Reports = () => {
         });
         
         // Data rows with conditional formatting
-        reportData.tasks.forEach((task, idx) => {
+        tasks.forEach((task, idx) => {
           const rowNum = idx + 2;
           const variance = (task.actual_hours || 0) - (task.estimated_hours || 0);
           const rowData = [
@@ -1471,28 +1707,27 @@ const Reports = () => {
             translatePriority(task.priority) || '',
             translateStatus(task.status) || '',
             task.due_date || '',
+            task.completion_date || '',
             task.estimated_hours || 0,
             task.actual_hours || 0,
             variance,
-            new Date(task.created_at).toLocaleString()
+            new Date(task.created_at).toLocaleString(),
+            new Date(task.updated_at).toLocaleString()
           ];
           
           rowData.forEach((value, colIdx) => {
             const cell = tasksSheet.getCell(rowNum, colIdx + 1);
             cell.value = value;
             
-            // Center align specific columns: Priority(5), Status(6), Due Date(7), Estimated(8), Actual(9), Variance(10)
-            if ([4, 5, 6, 7, 8, 9].includes(colIdx)) {
+            if ([4, 5, 6, 7, 8, 9, 10, 11].includes(colIdx)) {
               cell.alignment = { horizontal: 'center', vertical: 'middle' };
             }
             
-            // Alternating row colors
             if (idx % 2 === 0) {
               cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFF0' } };
             }
             
-            // Highlight variance column with colors
-            if (colIdx === 9) { // Variance column
+            if (colIdx === 10) {
               if (variance > 0) {
                 cell.font = { color: { argb: 'FFFF0000' } }; // Red for over
               } else if (variance < 0) {
@@ -1505,8 +1740,8 @@ const Reports = () => {
         // Set column widths
         tasksSheet.columns = [
           { width: 20 }, { width: 15 }, { width: 25 }, { width: 35 },
-          { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 },
-          { width: 12 }, { width: 12 }, { width: 20 }
+          { width: 12 }, { width: 12 }, { width: 12 }, { width: 14 },
+          { width: 12 }, { width: 12 }, { width: 12 }, { width: 20 }, { width: 20 }
         ];
         
         // Freeze header row
@@ -1514,7 +1749,7 @@ const Reports = () => {
       }
 
       // ==================== GOALS SHEET WITH STYLING ====================
-      if (reportData.goals.length > 0) {
+      if (goals.length > 0) {
         const goalsSheet = workbook.addWorksheet(sheetNames.goals);
         
         // Headers
@@ -1540,7 +1775,7 @@ const Reports = () => {
         });
         
         // Data rows with progress bar visualization
-        reportData.goals.forEach((goal, idx) => {
+        goals.forEach((goal, idx) => {
           const rowNum = idx + 2;
           const rowData = [
             isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || 'Unknown'),
@@ -1794,133 +2029,35 @@ const Reports = () => {
   const exportToPDF = async function() {
     setExporting(true);
     try {
+      const exportSnapshot = await loadAllReportDataForExport();
+      const timeEntries = exportSnapshot.timeEntries;
+      const tasks = exportSnapshot.tasks;
+      const goals = exportSnapshot.goals;
+      const employees = exportSnapshot.employees;
+      const exportStats = computeExportStats(timeEntries, tasks, goals);
+
+      if (exportStats.totalRecords === 0) {
+        alert(t('reports.noData', 'No data available for the selected period'));
+        return;
+      }
+
       const doc = new jsPDF('p', 'mm', 'a4');
-      let unicodeFontLoaded = false;
+      const loadedFonts = await loadPdfFonts(doc, currentLanguage);
+      const unicodeFontLoaded = loadedFonts.unicodeReady;
 
-      const getFontConfigForLanguage = (lang) => {
-        const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        const GOOGLE_FONTS_CDN = 'https://fonts.gstatic.com/s';
-
-        switch (lang) {
-          case 'jp':
-            return {
-              primary: `${origin}/fonts/NotoSansCJKjp-Regular.ttf`,
-              fallback: 'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf',
-              vfsName: 'NotoSansCJKjp-Regular.otf',
-              fontName: 'NotoSansJP',
-              logName: 'Noto Sans JP'
-            };
-          case 'kr':
-            return {
-              primary: `${origin}/fonts/NotoSansCJKkr-Regular.ttf`,
-              fallback: 'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf',
-              vfsName: 'NotoSansCJKkr-Regular.otf',
-              fontName: 'NotoSansKR',
-              logName: 'Noto Sans KR'
-            };
-          case 'th':
-            return {
-              primary: `${origin}/fonts/NotoSansThai-Regular.ttf`,
-              fallback: 'https://cdn.jsdelivr.net/gh/notofonts/thai@main/fonts/NotoSansThai/ttf/NotoSansThai-Regular.otf',
-              vfsName: 'NotoSansThai-Regular.ttf',
-              fontName: 'NotoSansThai',
-              logName: 'Noto Sans Thai'
-            };
-          case 'vn':
-          case 'ru':
-          case 'en':
-          case 'de':
-          case 'es':
-          default:
-            return {
-              primary: `${origin}/fonts/NotoSans-Regular.ttf`,
-              fallback: 'https://cdn.jsdelivr.net/gh/notofonts/latin-greek-cyrillic@main/fonts/NotoSans/ttf/NotoSans-Regular.ttf',
-              vfsName: 'NotoSans-Regular.ttf',
-              fontName: 'NotoSans',
-              logName: 'Noto Sans'
-            };
-        }
-      };
-      
-      const fontConfig = getFontConfigForLanguage(currentLanguage);
-      const fontConfigForLang = fontConfig;
-      const isFontAvailable = (fontName) => {
-        try {
-          doc.setFont(fontName);
-          if (typeof doc.getTextWidth !== 'function') return true; // best-effort: assume available
-          const asciiWidth = doc.getTextWidth('A');
-          const sampleNonAscii = 'Ă';
-          const nonAsciiWidth = doc.getTextWidth(sampleNonAscii);
-          return typeof asciiWidth === 'number' && typeof nonAsciiWidth === 'number' && (asciiWidth > 0 || nonAsciiWidth > 0);
-        } catch (e) {
-          return false;
-        }
-      };
-
-      // Detect Thai characters quickly
-      const containsThai = (s) => /[\u0E00-\u0E7F]/.test(String(s || ''));
-
-      // Choose the best-available font for a given piece of text
-      const chooseFontForText = (text) => {
-        if (!unicodeFontLoaded) return 'helvetica';
-        if (containsThai(text) && isFontAvailable('NotoSansThai')) return 'NotoSansThai';
-        if (isFontAvailable('NotoSans')) return 'NotoSans';
-        if (isFontAvailable(fontConfigForLang.fontName)) return fontConfigForLang.fontName;
-        return 'helvetica';
-      };
-
-      // Helper to set font then draw text with the same options as doc.text
       const drawText = (text, x, y, opts) => {
         const cleaned = cleanTextForPDF(text, unicodeFontLoaded);
-        const chosen = chooseFontForText(cleaned);
-        try { doc.setFont(chosen); } catch (e) {}
+        const chosen = choosePdfFont(cleaned, loadedFonts);
+        try { doc.setFont(chosen, 'normal'); } catch (e) {}
         if (opts) doc.text(cleaned, x, y, opts); else doc.text(cleaned, x, y);
       };
 
-      try {
-        console.log(`Loading ${fontConfigForLang.logName} for language: ${currentLanguage}`);
-        await loadFontHelper(doc, fontConfigForLang.primary, fontConfigForLang.vfsName, fontConfigForLang.fontName);
-        unicodeFontLoaded = isFontAvailable(fontConfigForLang.fontName);
-        console.log(`✓ ${fontConfigForLang.logName} loaded successfully for PDF export`);
-
-        // For Thai we also want the Latin Noto available so mixed text (names/dates) render correctly.
-        if (currentLanguage === 'th') {
-          try {
-            const latinCfg = getFontConfigForLanguage('en');
-            await loadFontHelper(doc, latinCfg.primary, latinCfg.vfsName, latinCfg.fontName);
-            console.log('✓ Latin Noto loaded alongside Thai font');
-          } catch (e) {
-            console.warn('Could not load Latin Noto alongside Thai font', e);
-          }
-        }
-      } catch (fontError) {
-        console.warn(`Failed to load ${fontConfigForLang.logName} from primary source, trying fallback...`, fontError);
-        try {
-          await loadFontHelper(doc, fontConfigForLang.fallback, fontConfigForLang.vfsName, fontConfigForLang.fontName);
-          unicodeFontLoaded = isFontAvailable(fontConfigForLang.fontName);
-          console.log(`✓ ${fontConfigForLang.logName} loaded from fallback source`);
-
-          if (currentLanguage === 'th') {
-            try {
-              const latinCfg = getFontConfigForLanguage('en');
-              await loadFontHelper(doc, latinCfg.fallback || latinCfg.primary, latinCfg.vfsName, latinCfg.fontName);
-              console.log('✓ Latin Noto loaded from fallback alongside Thai font');
-            } catch (e) {
-              console.warn('Could not load Latin Noto fallback alongside Thai font', e);
-            }
-          }
-        } catch (fallbackError) {
-          console.warn('Fallback font also failed, using sanitization:', fallbackError);
-        }
-      }
-      
-      // If Unicode font fails to load, use helvetica with aggressive sanitization
       if (!unicodeFontLoaded) {
         doc.setFont('helvetica', 'normal');
         console.log('⚠ Using Helvetica with character sanitization (Unicode font unavailable)');
       }
 
-      const getTableFont = () => (unicodeFontLoaded && isFontAvailable(fontConfigForLang.fontName)) ? fontConfigForLang.fontName : 'helvetica';
+      const getTableFont = () => getPdfTableFont(loadedFonts, currentLanguage);
       
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
@@ -1928,7 +2065,7 @@ const Reports = () => {
 
       // Employee name for filename - sanitize for safe filename
       const rawEmployeeName = selectedEmployee !== 'all' ? 
-        reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name : 
+        employees.find(emp => String(emp.id) === String(selectedEmployee))?.name : 
         t('reports.allEmployees', 'All Employees');
       // Only sanitize filename if Unicode font failed to load, otherwise keep original
       const employeeName = unicodeFontLoaded ? 
@@ -1958,7 +2095,7 @@ const Reports = () => {
 
       // Summary Box
       doc.setFillColor(240, 242, 245);
-      doc.rect(15, yPosition, pageWidth - 30, 40, 'F');
+      doc.rect(15, yPosition, pageWidth - 30, selectedEmployee !== 'all' ? 48 : 40, 'F');
       
       doc.setFontSize(14);
       doc.setTextColor(40, 44, 52);
@@ -1967,331 +2104,233 @@ const Reports = () => {
       yPosition += 15;
       doc.setFontSize(10);
       doc.setTextColor(60, 60, 60);
-      
-      if (activeTab === 'all') {
-        drawText(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, 25, yPosition);
-        drawText(`${t('reports.timeEntries', 'Time Entries')}: ${stats.timeEntriesCount}`, 25, yPosition + 6);
-        drawText(`${t('reports.tasks', 'Tasks')}: ${stats.tasksCount}`, 25, yPosition + 12);
-        drawText(`${t('reports.goals', 'Goals')}: ${stats.goalsCount}`, 25, yPosition + 18);
-        
-        drawText(`${t('reports.totalHours', 'Total Hours')}: ${stats.totalHours}h`, pageWidth - 85, yPosition);
-        drawText(`${t('reports.approved', 'Approved')}: ${stats.approvedTime}`, pageWidth - 85, yPosition + 6);
-        drawText(`${t('reports.completedTasks', 'Completed Tasks')}: ${stats.completedTasks}`, pageWidth - 85, yPosition + 12);
-        drawText(`${t('reports.achievedGoals', 'Achieved Goals')}: ${stats.achievedGoals}`, pageWidth - 85, yPosition + 18);
-      } else if (activeTab === 'time-entries') {
-        drawText(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, 25, yPosition);
-        drawText(`${t('reports.totalHours', 'Total Hours')}: ${stats.totalHours}h`, 25, yPosition + 6);
-        drawText(`${t('reports.approved', 'Approved')}: ${stats.approved}`, pageWidth - 85, yPosition);
-        drawText(`${t('reports.pending', 'Pending')}: ${stats.pending}`, pageWidth - 85, yPosition + 6);
-      } else if (activeTab === 'tasks') {
-        drawText(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, 25, yPosition);
-        drawText(`${t('reports.completed', 'Completed')}: ${stats.completed}`, 25, yPosition + 6);
-        drawText(`${t('reports.inProgress', 'In Progress')}: ${stats.inProgress}`, pageWidth - 85, yPosition);
-        drawText(`${t('reports.completionRate', 'Completion Rate')}: ${stats.completionRate}%`, pageWidth - 85, yPosition + 6);
-      } else if (activeTab === 'goals') {
-        drawText(`${t('reports.totalRecords', 'Total Records')}: ${stats.totalRecords}`, 25, yPosition);
-        drawText(`${t('reports.achieved', 'Achieved')}: ${stats.achieved}`, 25, yPosition + 6);
-        drawText(`${t('reports.inProgress', 'In Progress')}: ${stats.inProgress}`, pageWidth - 85, yPosition);
-        drawText(`${t('reports.avgProgress', 'Avg Progress')}: ${stats.averageProgress}%`, pageWidth - 85, yPosition + 6);
+
+      drawText(`${t('reports.totalRecords', 'Total Records')}: ${exportStats.totalRecords}`, 25, yPosition);
+      drawText(`${t('reports.timeEntries', 'Time Entries')}: ${exportStats.timeEntriesCount}`, 25, yPosition + 6);
+      drawText(`${t('reports.tasks', 'Tasks')}: ${exportStats.tasksCount}`, 25, yPosition + 12);
+      drawText(`${t('reports.goals', 'Goals')}: ${exportStats.goalsCount}`, 25, yPosition + 18);
+
+      drawText(`${t('reports.totalHours', 'Total Hours')}: ${exportStats.totalHours}h`, pageWidth - 85, yPosition);
+      drawText(`${t('reports.approved', 'Approved')}: ${exportStats.approvedTime}`, pageWidth - 85, yPosition + 6);
+      drawText(`${t('reports.completedTasks', 'Completed Tasks')}: ${exportStats.completedTasks}`, pageWidth - 85, yPosition + 12);
+      drawText(`${t('reports.achievedGoals', 'Achieved Goals')}: ${exportStats.achievedGoals}`, pageWidth - 85, yPosition + 18);
+
+      if (selectedEmployee !== 'all') {
+        const employee = employees.find((emp) => String(emp.id) === String(selectedEmployee));
+        if (employee) {
+          const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals);
+          drawText(
+            `${t('reports.excel.performance.overallScore', 'Overall Performance Score:')} ${performance.overallScore}%`,
+            pageWidth / 2,
+            yPosition + 26,
+            { align: 'center' }
+          );
+        }
       }
-      
-      yPosition += 35;
 
-      // Data Tables
-      if (activeTab === 'all') {
-        // Time Entries Table
-        if (reportData.timeEntries.length > 0) {
-          doc.setFontSize(12);
-          doc.setTextColor(40, 44, 52);
-          drawText(t('reports.timeEntries', 'TIME ENTRIES').toUpperCase(), 15, yPosition);
-          yPosition += 5;
+      yPosition += selectedEmployee !== 'all' ? 43 : 35;
 
-          const timeEntriesData = reportData.timeEntries.map(entry => [
-            cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(entry.employee, t) : (entry.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
-            entry.date,
-            `${entry.hours || 0}h`,
-            cleanTextForPDF(translateHourType(entry.hour_type), unicodeFontLoaded),
-            cleanTextForPDF(translateStatus(entry.status), unicodeFontLoaded)
-          ]);
+      const toChartItems = (countsMap, translateFn) =>
+        Object.entries(countsMap).map(([key, value], index) => ({
+          label: translateFn ? (translateFn(key) || key) : key,
+          value,
+          color: PDF_CHART_COLORS[index % PDF_CHART_COLORS.length]
+        }));
 
-          autoTable(doc, {
-            startY: yPosition,
-            head: [[
-              cleanTextForPDF(t('reports.pdf.headers.employee', 'Employee'), unicodeFontLoaded),
-              cleanTextForPDF(t('reports.pdf.headers.date', 'Date'), unicodeFontLoaded),
-              cleanTextForPDF(t('reports.pdf.headers.hours', 'Hours'), unicodeFontLoaded),
-              cleanTextForPDF(t('reports.pdf.headers.hourType', 'Type'), unicodeFontLoaded),
-              cleanTextForPDF(t('reports.pdf.headers.status', 'Status'), unicodeFontLoaded)
-            ]],
-            body: timeEntriesData,
-            theme: 'striped',
-            headStyles: { 
-              fillColor: [70, 173, 71], 
-              textColor: 255, 
-              fontStyle: 'normal',
-              font: getTableFont()
-            },
-            styles: { 
-              fontSize: 8, 
-              cellPadding: 2,
-              font: getTableFont(),
-              fontStyle: 'normal'
-            },
-            didParseCell: function(data) {
-              const cellText = Array.isArray(data.cell.text) ? data.cell.text.join(' ') : String(data.cell.text || '');
-              data.cell.styles.font = chooseFontForText(cellText);
-            },
-            margin: { left: 15, right: 15 }
-          });
-
-          yPosition = doc.lastAutoTable.finalY + 10;
-
-          if (yPosition > pageHeight - 60) {
-            doc.addPage();
-            yPosition = 20;
-          }
-        }
-
-        // Tasks Table
-        if (reportData.tasks.length > 0) {
-          doc.setFontSize(12);
-          doc.setTextColor(40, 44, 52);
-          drawText(t('reports.tasks', 'TASKS').toUpperCase(), 15, yPosition);
-          yPosition += 5;
-
-          const tasksData = reportData.tasks.map(task => [
-            cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
-            cleanTextForPDF((isDemoMode() ? getDemoTaskTitle(task, t) : task.title).substring(0, 30), unicodeFontLoaded),
-            cleanTextForPDF(translatePriority(task.priority), unicodeFontLoaded),
-            cleanTextForPDF(translateStatus(task.status), unicodeFontLoaded),
-            task.due_date || '-'
-          ]);
-
-          autoTable(doc, {
-            startY: yPosition,
-            head: [[
-              cleanTextForPDF(t('reports.pdf.headers.employee', 'Employee'), unicodeFontLoaded),
-              cleanTextForPDF(t('reports.pdf.headers.taskTitle', 'Task'), unicodeFontLoaded),
-              cleanTextForPDF(t('reports.pdf.headers.priority', 'Priority'), unicodeFontLoaded),
-              cleanTextForPDF(t('reports.pdf.headers.status', 'Status'), unicodeFontLoaded),
-              cleanTextForPDF(t('reports.pdf.headers.dueDate', 'Due Date'), unicodeFontLoaded)
-            ]],
-            body: tasksData,
-            theme: 'striped',
-            headStyles: { 
-              fillColor: [255, 192, 0], 
-              textColor: 0, 
-              fontStyle: 'normal',
-              font: getTableFont()
-            },
-            styles: { 
-              fontSize: 8, 
-              cellPadding: 2,
-              font: getTableFont(),
-              fontStyle: 'normal'
-            },
-            didParseCell: function(data) {
-              const cellText = Array.isArray(data.cell.text) ? data.cell.text.join(' ') : String(data.cell.text || '');
-              data.cell.styles.font = chooseFontForText(cellText);
-            },
-            margin: { left: 15, right: 15 }
-          });
-
-          yPosition = doc.lastAutoTable.finalY + 10;
-
-          if (yPosition > pageHeight - 60) {
-            doc.addPage();
-            yPosition = 20;
-          }
-        }
-
-        // Goals Table
-        if (reportData.goals.length > 0) {
-          doc.setFontSize(12);
-          doc.setTextColor(40, 44, 52);
-          drawText(t('reports.personalGoals', 'PERSONAL GOALS').toUpperCase(), 15, yPosition);
-          yPosition += 5;
-
-          const goalsData = reportData.goals.map(goal => [
-            cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
-            cleanTextForPDF((isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title).substring(0, 30), unicodeFontLoaded),
-            cleanTextForPDF(translateCategory(goal.category), unicodeFontLoaded),
-            cleanTextForPDF(translateStatus(goal.status), unicodeFontLoaded),
-            `${goal.progress || 0}%`
-          ]);
-
-          autoTable(doc, {
-            startY: yPosition,
-            head: [[
-              cleanTextForPDF(t('reports.pdf.headers.employee', 'Employee'), unicodeFontLoaded),
-              cleanTextForPDF(t('reports.pdf.headers.goalTitle', 'Goal'), unicodeFontLoaded),
-              cleanTextForPDF(t('reports.pdf.headers.category', 'Category'), unicodeFontLoaded),
-              cleanTextForPDF(t('reports.pdf.headers.status', 'Status'), unicodeFontLoaded),
-              cleanTextForPDF(t('reports.pdf.headers.progress', 'Progress'), unicodeFontLoaded)
-            ]],
-            body: goalsData,
-            theme: 'striped',
-            headStyles: { 
-              fillColor: [91, 155, 213], 
-              textColor: 255, 
-              fontStyle: 'normal',
-              font: getTableFont()
-            },
-            styles: { 
-              fontSize: 8, 
-              cellPadding: 2,
-              font: getTableFont(),
-              fontStyle: 'normal'
-            },
-            didParseCell: function(data) {
-              const cellText = Array.isArray(data.cell.text) ? data.cell.text.join(' ') : String(data.cell.text || '');
-              data.cell.styles.font = chooseFontForText(cellText);
-            },
-            margin: { left: 15, right: 15 }
-          });
-        }
-      } else if (activeTab === 'time-entries' && reportData.timeEntries.length > 0) {
-        const timeEntriesData = reportData.timeEntries.map(entry => [
-          cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(entry.employee, t) : (entry.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
-          cleanTextForPDF(translateDepartment(entry.employee?.department) || '', unicodeFontLoaded),
-          entry.date,
-          entry.clock_in || '-',
-          entry.clock_out || '-',
-          `${entry.hours || 0}h`,
-          cleanTextForPDF(translateHourType(entry.hour_type), unicodeFontLoaded),
-          cleanTextForPDF(translateStatus(entry.status), unicodeFontLoaded)
-        ]);
-
-        autoTable(doc, {
-          startY: yPosition,
-          head: [[
-            cleanTextForPDF(t('reports.pdf.headers.employee', 'Employee'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.department', 'Department'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.date', 'Date'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.clockIn', 'Clock In'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.clockOut', 'Clock Out'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.hours', 'Hours'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.hourType', 'Type'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.status', 'Status'), unicodeFontLoaded)
-          ]],
-          body: timeEntriesData,
-          theme: 'striped',
-          headStyles: { 
-            fillColor: [70, 173, 71], 
-            textColor: 255, 
-            fontStyle: 'normal',
-            font: getTableFont()
-          },
-          styles: { 
-            fontSize: 7, 
-            cellPadding: 1.5,
-            font: getTableFont(),
-            fontStyle: 'normal'
-          },
-            didParseCell: function(data) {
-              const cellText = Array.isArray(data.cell.text) ? data.cell.text.join(' ') : String(data.cell.text || '');
-              data.cell.styles.font = chooseFontForText(cellText);
-            },
-          margin: { left: 15, right: 15 }
+      const pdfCharts = [];
+      if (timeEntries.length > 0) {
+        pdfCharts.push({
+          title: t('reports.excel.charts.hoursByType', 'Hours by Type'),
+          items: toChartItems(aggregateHoursByType(timeEntries), translateHourType)
         });
-      } else if (activeTab === 'tasks' && reportData.tasks.length > 0) {
-        const tasksData = reportData.tasks.map(task => [
-          cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
-          cleanTextForPDF(translateDepartment(task.employee?.department) || '', unicodeFontLoaded),
-          cleanTextForPDF((isDemoMode() ? getDemoTaskTitle(task, t) : task.title).substring(0, 40), unicodeFontLoaded),
-          cleanTextForPDF(translatePriority(task.priority), unicodeFontLoaded),
-          cleanTextForPDF(translateStatus(task.status), unicodeFontLoaded),
-          task.due_date || '-',
-          `${task.estimated_hours || 0}h`,
-          `${task.actual_hours || 0}h`
-        ]);
-
-        autoTable(doc, {
-          startY: yPosition,
-          head: [[
-            cleanTextForPDF(t('reports.pdf.headers.employee', 'Employee'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.department', 'Department'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.taskTitle', 'Task'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.priority', 'Priority'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.status', 'Status'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.dueDate', 'Due Date'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.estimatedHours', 'Est.'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.actualHours', 'Actual'), unicodeFontLoaded)
-          ]],
-          body: tasksData,
-          theme: 'striped',
-          headStyles: { 
-            fillColor: [255, 192, 0], 
-            textColor: 0, 
-            fontStyle: 'normal',
-            font: getTableFont()
-          },
-          styles: { 
-            fontSize: 7, 
-            cellPadding: 1.5,
-            font: getTableFont(),
-            fontStyle: 'normal'
-          },
-            didParseCell: function(data) {
-              const cellText = Array.isArray(data.cell.text) ? data.cell.text.join(' ') : String(data.cell.text || '');
-              data.cell.styles.font = chooseFontForText(cellText);
-            },
-          margin: { left: 15, right: 15 }
+        pdfCharts.push({
+          title: t('reports.excel.charts.statusDistribution', 'Time Entry Status Distribution'),
+          items: toChartItems(aggregateCounts(timeEntries, 'status'), translateStatus)
         });
-      } else if (activeTab === 'goals' && reportData.goals.length > 0) {
-        const goalsData = reportData.goals.map(goal => [
-          cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
-          cleanTextForPDF(translateDepartment(goal.employee?.department) || '', unicodeFontLoaded),
-          cleanTextForPDF((isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title).substring(0, 40), unicodeFontLoaded),
-          cleanTextForPDF(translateCategory(goal.category), unicodeFontLoaded),
-          cleanTextForPDF(translateStatus(goal.status), unicodeFontLoaded),
-          goal.target_date || '-',
-          `${goal.progress || 0}%`
-        ]);
+      }
+      if (tasks.length > 0) {
+        pdfCharts.push({
+          title: t('reports.excel.charts.taskStatusDistribution', 'Task Status Distribution'),
+          items: toChartItems(aggregateCounts(tasks, 'status'), translateStatus)
+        });
+        pdfCharts.push({
+          title: t('reports.excel.charts.taskPriorityDistribution', 'Task Priority Distribution'),
+          items: toChartItems(aggregateCounts(tasks, 'priority'), translatePriority)
+        });
+      }
+      if (goals.length > 0) {
+        pdfCharts.push({
+          title: t('reports.excel.charts.goalStatusDistribution', 'Goal Status Distribution'),
+          items: toChartItems(aggregateCounts(goals, 'status'), translateStatus)
+        });
+        pdfCharts.push({
+          title: t('reports.excel.charts.goalCategoryDistribution', 'Goal Category Distribution'),
+          items: toChartItems(aggregateCounts(goals, 'category'), translateCategory)
+        });
+      }
+
+      if (pdfCharts.length > 0) {
+        if (yPosition > pageHeight - 40) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        yPosition = drawPdfChartsSection({
+          doc,
+          pageWidth,
+          pageHeight,
+          startY: yPosition,
+          charts: pdfCharts,
+          drawText,
+          sectionTitle: t('reports.pdf.visualAnalytics', 'VISUAL ANALYTICS').toUpperCase()
+        });
+      }
+
+      const addPdfTable = (title, head, body, headColor, fontSize = 7) => {
+        if (body.length === 0) return;
+        if (yPosition > pageHeight - 40) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        doc.setFontSize(12);
+        doc.setTextColor(40, 44, 52);
+        drawText(title, 15, yPosition);
+        yPosition += 5;
 
         autoTable(doc, {
           startY: yPosition,
-          head: [[
-            cleanTextForPDF(t('reports.pdf.headers.employee', 'Employee'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.department', 'Department'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.goalTitle', 'Goal'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.category', 'Category'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.status', 'Status'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.targetDate', 'Target Date'), unicodeFontLoaded),
-            cleanTextForPDF(t('reports.pdf.headers.progress', 'Progress'), unicodeFontLoaded)
-          ]],
-          body: goalsData,
+          head: [head],
+          body,
           theme: 'striped',
-          headStyles: { 
-            fillColor: [91, 155, 213], 
-            textColor: 255, 
+          headStyles: {
+            fillColor: headColor,
+            textColor: headColor[0] === 255 && headColor[1] === 192 ? 0 : 255,
             fontStyle: 'normal',
             font: getTableFont()
           },
-          styles: { 
-            fontSize: 7, 
+          styles: {
+            fontSize,
             cellPadding: 1.5,
             font: getTableFont(),
             fontStyle: 'normal'
           },
           didParseCell: function(data) {
             const cellText = Array.isArray(data.cell.text) ? data.cell.text.join(' ') : String(data.cell.text || '');
-            data.cell.styles.font = chooseFontForText(cellText);
+            data.cell.styles.font = choosePdfFont(cellText, loadedFonts);
           },
           margin: { left: 15, right: 15 }
         });
+
+        yPosition = doc.lastAutoTable.finalY + 10;
+      };
+
+      const pdfHead = (key, fallback) => cleanTextForPDF(t(key, fallback), unicodeFontLoaded);
+
+      if (timeEntries.length > 0) {
+        addPdfTable(
+          t('reports.timeEntries', 'TIME ENTRIES').toUpperCase(),
+          [
+            pdfHead('reports.pdf.headers.employee', 'Employee'),
+            pdfHead('reports.pdf.headers.department', 'Department'),
+            pdfHead('reports.pdf.headers.date', 'Date'),
+            pdfHead('reports.pdf.headers.clockIn', 'Clock In'),
+            pdfHead('reports.pdf.headers.clockOut', 'Clock Out'),
+            pdfHead('reports.pdf.headers.hours', 'Hours'),
+            pdfHead('reports.pdf.headers.hourType', 'Type'),
+            pdfHead('reports.pdf.headers.status', 'Status')
+          ],
+          timeEntries.map((entry) => [
+            cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(entry.employee, t) : (entry.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
+            cleanTextForPDF(translateDepartment(entry.employee?.department) || '', unicodeFontLoaded),
+            entry.date,
+            entry.clock_in || '-',
+            entry.clock_out || '-',
+            `${entry.hours || 0}h`,
+            cleanTextForPDF(translateHourType(entry.hour_type), unicodeFontLoaded),
+            cleanTextForPDF(translateStatus(entry.status), unicodeFontLoaded)
+          ]),
+          [70, 173, 71]
+        );
       }
 
-      // If no data at all
-      const hasNoData = activeTab === 'all' ? 
-        (reportData.timeEntries.length === 0 && reportData.tasks.length === 0 && reportData.goals.length === 0) :
-        (activeTab === 'time-entries' ? reportData.timeEntries.length === 0 : 
-         activeTab === 'tasks' ? reportData.tasks.length === 0 : reportData.goals.length === 0);
+      if (tasks.length > 0) {
+        addPdfTable(
+          t('reports.tasks', 'TASKS').toUpperCase(),
+          [
+            pdfHead('reports.pdf.headers.employee', 'Employee'),
+            pdfHead('reports.pdf.headers.department', 'Department'),
+            pdfHead('reports.pdf.headers.taskTitle', 'Task'),
+            pdfHead('reports.pdf.headers.priority', 'Priority'),
+            pdfHead('reports.pdf.headers.status', 'Status'),
+            pdfHead('reports.pdf.headers.dueDate', 'Due Date'),
+            pdfHead('reports.pdf.headers.estimatedHours', 'Est.'),
+            pdfHead('reports.pdf.headers.actualHours', 'Actual')
+          ],
+          tasks.map((task) => [
+            cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
+            cleanTextForPDF(translateDepartment(task.employee?.department) || '', unicodeFontLoaded),
+            cleanTextForPDF((isDemoMode() ? getDemoTaskTitle(task, t) : task.title).substring(0, 40), unicodeFontLoaded),
+            cleanTextForPDF(translatePriority(task.priority), unicodeFontLoaded),
+            cleanTextForPDF(translateStatus(task.status), unicodeFontLoaded),
+            task.due_date || '-',
+            `${task.estimated_hours || 0}h`,
+            `${task.actual_hours || 0}h`
+          ]),
+          [255, 192, 0]
+        );
+      }
 
-      if (hasNoData) {
-        doc.setFontSize(12);
-        doc.setTextColor(100, 100, 100);
-        drawText(t('reports.noData', 'No data available for the selected period'), pageWidth / 2, yPosition + 20, { align: 'center' });
+      if (goals.length > 0) {
+        addPdfTable(
+          t('reports.personalGoals', 'PERSONAL GOALS').toUpperCase(),
+          [
+            pdfHead('reports.pdf.headers.employee', 'Employee'),
+            pdfHead('reports.pdf.headers.department', 'Department'),
+            pdfHead('reports.pdf.headers.goalTitle', 'Goal'),
+            pdfHead('reports.pdf.headers.category', 'Category'),
+            pdfHead('reports.pdf.headers.status', 'Status'),
+            pdfHead('reports.pdf.headers.targetDate', 'Target Date'),
+            pdfHead('reports.pdf.headers.progress', 'Progress')
+          ],
+          goals.map((goal) => [
+            cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
+            cleanTextForPDF(translateDepartment(goal.employee?.department) || '', unicodeFontLoaded),
+            cleanTextForPDF((isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title).substring(0, 40), unicodeFontLoaded),
+            cleanTextForPDF(translateCategory(goal.category), unicodeFontLoaded),
+            cleanTextForPDF(translateStatus(goal.status), unicodeFontLoaded),
+            goal.target_date || '-',
+            `${goal.progress || 0}%`
+          ]),
+          [91, 155, 213]
+        );
+      }
+
+      if (selectedEmployee === 'all' && employees.length > 0) {
+        addPdfTable(
+          t('reports.excel.sheets.allEmployeesOverview', 'ALL EMPLOYEES OVERVIEW').toUpperCase(),
+          [
+            pdfHead('reports.excel.performance.name', 'Name'),
+            pdfHead('reports.excel.performance.department', 'Department'),
+            pdfHead('reports.excel.metrics.totalHours', 'Hours'),
+            pdfHead('reports.excel.metrics.totalTasks', 'Tasks'),
+            pdfHead('reports.excel.metrics.completedTasks', 'Completed'),
+            pdfHead('reports.excel.metrics.totalGoals', 'Goals'),
+            pdfHead('reports.excel.performance.overallScore', 'Score')
+          ],
+          employees.map((employee) => {
+            const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals);
+            return [
+              cleanTextForPDF(getDemoEmployeeName(employee, t), unicodeFontLoaded),
+              cleanTextForPDF(translateDepartment(employee.department), unicodeFontLoaded),
+              performance.totalHours.toFixed(1),
+              String(performance.tasksCount),
+              String(performance.completedTasks),
+              String(performance.goalsCount),
+              `${performance.overallScore}%`
+            ];
+          }),
+          [112, 48, 160],
+          6
+        );
       }
 
       // Footer on all pages
@@ -2402,18 +2441,10 @@ const Reports = () => {
           
           <div className="flex flex-wrap gap-3">
             <button
-              onClick={() => {
-                if (activeTab === 'all') {
-                  // Export all data types when "all" is selected
-                  exportTimeEntries();
-                  setTimeout(() => exportTasks(), 500);
-                  setTimeout(() => exportGoals(), 1000);
-                } else if (activeTab === 'time-entries') exportTimeEntries();
-                else if (activeTab === 'tasks') exportTasks();
-                else if (activeTab === 'goals') exportGoals();
-              }}
-              disabled={exporting || (activeTab === 'all' ? stats.totalRecords === 0 : currentData.length === 0)}
+              onClick={exportAllToCSV}
+              disabled={exporting}
               className={`px-6 py-3 cursor-pointer bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg flex items-center gap-2 transition-colors font-medium`}
+              title={t('reports.exportingIncludes', 'Exporting will include all filtered data, not just previewed records')}
             >
               {exporting ? (
                 <Loader className="w-5 h-5 animate-spin" />
@@ -2425,9 +2456,9 @@ const Reports = () => {
             
             <button
               onClick={exportToExcel}
-              disabled={exporting || (reportData.timeEntries.length === 0 && reportData.tasks.length === 0 && reportData.goals.length === 0)}
+              disabled={exporting}
               className={`px-6 py-3 cursor-pointer bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg flex items-center gap-2 transition-colors font-medium`}
-              title="Export with metrics, charts data, and formatted tables"
+              title={t('reports.excelExportHint', 'Export all data types with summary, charts, and detailed sheets')}
             >
               {exporting ? (
                 <Loader className="w-5 h-5 animate-spin" />
@@ -2439,9 +2470,9 @@ const Reports = () => {
 
             <button
               onClick={exportToPDF}
-              disabled={exporting || (reportData.timeEntries.length === 0 && reportData.tasks.length === 0 && reportData.goals.length === 0)}
+              disabled={exporting}
               className={`px-6 py-3 cursor-pointer bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg flex items-center gap-2 transition-colors font-medium`}
-              title="Export as PDF with summary and tables"
+              title={t('reports.pdfExportHint', 'Export PDF with visual charts, summary, and detailed tables for all data types')}
             >
               {exporting ? (
                 <Loader className="w-5 h-5 animate-spin" />

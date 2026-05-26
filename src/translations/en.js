@@ -659,6 +659,27 @@ export default {
       checkFailed: 'Failed to check for existing entries',
       allDuplicates: 'All selected employees already have time entries for {date}: {names}',
       allOverlapping: 'All selected employees have overlapping {hourType} time entries for {date}: {names}'
+    },
+    bulkStandardHours: {
+      title: 'Bulk Standard Hours',
+      description: 'Automatically create 9:00 AM – 5:00 PM regular hour entries for all employees on weekdays only. Saturdays and Sundays are excluded. Existing overlapping entries are skipped.',
+      startDate: 'Start Date',
+      endDate: 'End Date',
+      fillButton: 'Fill 9 AM – 5 PM for All Employees',
+      filling: 'Filling standard hours...',
+      confirmTitle: 'Confirm Bulk Standard Hours',
+      confirmMessage: 'Create 9 AM – 5 PM regular hour entries for all employees from {start} to {end}? Saturdays and Sundays will be excluded. Employees with overlapping entries will be skipped.',
+      confirmButton: 'Yes, Fill Hours',
+      cancelButton: 'Cancel',
+      success: 'Created {created} standard hour entries across {dates} weekday(s) for {employees} employee(s). Skipped {skipped} slot(s) with existing entries. Excluded {weekends} weekend day(s).',
+      noEntriesCreated: 'No entries were created. All employees already have overlapping entries for the selected dates.',
+      noWeekdaysInRange: 'No entries were created. The selected range contains only weekends, which are excluded automatically.',
+      invalidRange: 'End date must be on or after start date',
+      invalidDate: 'Invalid date range.',
+      rangeTooLarge: 'Date range cannot exceed {max} days',
+      noEmployeesFound: 'No employees found to fill hours for.',
+      errorGeneric: 'Failed to fill standard hours. Please try again.',
+      errorWithDetail: 'Failed to fill standard hours: {message}'
     }
   },
 
@@ -905,9 +926,18 @@ export default {
     allEmployees: 'All_Employees',
     filenamePrefix: 'HR_Report_',
     excel: {
+      charts: {
+        hoursByType: 'Hours by Type',
+        statusDistribution: 'Status Distribution',
+        taskStatusDistribution: 'Task Status Distribution',
+        taskPriorityDistribution: 'Task Priority Distribution',
+        goalStatusDistribution: 'Goal Status Distribution',
+        goalCategoryDistribution: 'Goal Category Distribution'
+      },
       sheets: {
         summary: 'Summary',
         performance: 'Employee Performance',
+        allEmployeesOverview: 'All Employees Overview',
         charts: 'Charts & Metrics',
         timeEntries: 'Time Entries',
         tasks: 'Tasks',
@@ -993,9 +1023,12 @@ export default {
         hoursByType: 'Hours by Type',
         statusDistribution: 'Status Distribution',
         taskStatusDistribution: 'Task Status Distribution',
-        taskPriorityDistribution: 'Task Priority Distribution'
+        taskPriorityDistribution: 'Task Priority Distribution',
+        goalStatusDistribution: 'Goal Status Distribution',
+        goalCategoryDistribution: 'Goal Category Distribution'
       },
       headers: {
+        dataType: 'Data Type',
         type: 'Type',
         hours: 'Hours',
         status: 'Status',
@@ -1087,6 +1120,7 @@ export default {
     salaryReport: 'Salary Report',
     exportToPDF: 'Export to PDF',
     pdf: {
+      visualAnalytics: 'Visual Analytics',
       headers: {
         employee: 'Employee',
         department: 'Department',
@@ -1267,6 +1301,9 @@ export default {
     subtitle: 'Export comprehensive data for time entries, tasks, and personal goals',
     errorExporting: 'Error exporting data',
     exportSuccess: 'Data exported successfully',
+    csvExportSuccess: 'CSV report exported successfully with all data types in one file!',
+    excelExportHint: 'Export all data types with summary, charts, and detailed sheets',
+    pdfExportHint: 'Export PDF with visual charts, summary, and detailed tables for all data types',
     pdfExportSuccess: 'PDF report exported successfully!',
     reportPeriod: 'Report Period',
     to: 'to',

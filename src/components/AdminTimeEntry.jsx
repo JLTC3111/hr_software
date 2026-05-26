@@ -1,5 +1,5 @@
 import _React, { useState, useEffect } from 'react';
-import { Clock, UserPlus, Save, X, Search, AlertCircle, Calendar, LogIn, LogOut, Check, Upload, FileText, ChevronsUpDown, Users } from 'lucide-react';
+import { Clock, UserPlus, Save, X, Search, AlertCircle, Calendar, LogIn, LogOut, Check, Upload, FileText, ChevronsUpDown, Users, CalendarRange } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
@@ -27,6 +27,46 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
     notes: '',
     proofFile: null
   });
+
+  const [bulkFillData, setBulkFillData] = useState({
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0]
+  });
+  const [bulkFillLoading, setBulkFillLoading] = useState(false);
+  const [showBulkConfirmModal, setShowBulkConfirmModal] = useState(false);
+
+  const dateInputClassName = `w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`;
+
+  const openDatePicker = (inputId) => {
+    document.getElementById(inputId)?.showPicker?.();
+  };
+
+  const getBulkFillErrorMessage = (error) => {
+    if (!error) {
+      return t('adminTimeEntry.bulkStandardHours.errorGeneric', 'Failed to fill standard hours. Please try again.');
+    }
+
+    if (error.includes('End date must be on or after')) {
+      return t('adminTimeEntry.bulkStandardHours.invalidRange', 'End date must be on or after start date');
+    }
+
+    if (error.includes('Date range cannot exceed')) {
+      const maxMatch = error.match(/(\d+)/);
+      return t('adminTimeEntry.bulkStandardHours.rangeTooLarge', 'Date range cannot exceed {max} days')
+        .replace('{max}', maxMatch?.[1] || '366');
+    }
+
+    if (error === 'No employees found') {
+      return t('adminTimeEntry.bulkStandardHours.noEmployeesFound', 'No employees found to fill hours for.');
+    }
+
+    if (error === 'Invalid date range') {
+      return t('adminTimeEntry.bulkStandardHours.invalidDate', 'Invalid date range.');
+    }
+
+    return t('adminTimeEntry.bulkStandardHours.errorWithDetail', 'Failed to fill standard hours: {message}')
+      .replace('{message}', error);
+  };
 
   const isOnLeave = formData.hourType === 'on_leave';
 
@@ -368,6 +408,71 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
     }
   };
 
+  const handleBulkStandardHoursFill = (e) => {
+    e.preventDefault();
+
+    if (bulkFillData.endDate < bulkFillData.startDate) {
+      setErrorMessage(t('adminTimeEntry.bulkStandardHours.invalidRange', 'End date must be on or after start date'));
+      return;
+    }
+
+    setShowBulkConfirmModal(true);
+  };
+
+  const executeBulkStandardHoursFill = async () => {
+    setShowBulkConfirmModal(false);
+    setBulkFillLoading(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      const result = await timeTrackingService.fillStandardHoursForAllEmployees({
+        startDate: bulkFillData.startDate,
+        endDate: bulkFillData.endDate,
+        adminName: user.full_name || user.email
+      });
+
+      if (result.success) {
+        if (result.created === 0) {
+          setSuccessMessage(
+            result.noWeekdaysInRange
+              ? t(
+                  'adminTimeEntry.bulkStandardHours.noWeekdaysInRange',
+                  'No entries were created. The selected range contains only weekends, which are excluded automatically.'
+                )
+              : t(
+                  'adminTimeEntry.bulkStandardHours.noEntriesCreated',
+                  'No entries were created. All employees already have overlapping entries for the selected dates.'
+                )
+          );
+        } else {
+          setSuccessMessage(
+            t(
+              'adminTimeEntry.bulkStandardHours.success',
+              'Created {created} standard hour entries across {dates} weekday(s) for {employees} employee(s). Skipped {skipped} slot(s) with existing entries. Excluded {weekends} weekend day(s).'
+            )
+              .replace('{created}', String(result.created))
+              .replace('{dates}', String(result.datesProcessed))
+              .replace('{employees}', String(result.employeesProcessed))
+              .replace('{skipped}', String(result.skipped))
+              .replace('{weekends}', String(result.weekendsExcluded || 0))
+          );
+        }
+
+        if (onEntriesChanged) {
+          onEntriesChanged();
+        }
+      } else {
+        setErrorMessage(getBulkFillErrorMessage(result.error));
+      }
+    } catch (error) {
+      console.error('Error filling standard hours:', error);
+      setErrorMessage(getBulkFillErrorMessage(error.message || error.toString()));
+    } finally {
+      setBulkFillLoading(false);
+    }
+  };
+
   const toggleEmployeeSelection = (employee) => {
     setSelectedEmployees(prev => {
       const isSelected = prev.some(e => e.id === employee.id);
@@ -545,7 +650,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               max={new Date().toISOString().split('T')[0]}
-              className={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
+              className={dateInputClassName}
               required
             />
             <Calendar className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors`} />
@@ -739,6 +844,153 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
           )}
         </button>
       </form>
+
+      <div className={`mt-8 pt-8 border-t ${border.primary}`}>
+        <div className="flex items-center space-x-3 mb-4">
+          <CalendarRange className={`w-6 h-6 ${isDarkMode ? 'text-white' : 'text-black'}`} />
+          <h4 className={`text-lg font-bold ${text.primary}`}>
+            {t('adminTimeEntry.bulkStandardHours.title', 'Bulk Standard Hours')}
+          </h4>
+        </div>
+
+        <p className={`${text.secondary} mb-4`}>
+          {t(
+            'adminTimeEntry.bulkStandardHours.description',
+            'Automatically create 9:00 AM – 5:00 PM regular hour entries for all employees on weekdays only. Saturdays and Sundays are excluded. Existing overlapping entries are skipped.'
+          )}
+        </p>
+
+        <form onSubmit={handleBulkStandardHoursFill} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="admin-bulk-start-date" className={`block text-sm font-medium ${text.primary} mb-2`}>
+                {t('adminTimeEntry.bulkStandardHours.startDate', 'Start Date')} *
+              </label>
+              <div
+                className="relative cursor-pointer group"
+                onClick={() => openDatePicker('admin-bulk-start-date')}
+              >
+                <input
+                  id="admin-bulk-start-date"
+                  type="date"
+                  value={bulkFillData.startDate}
+                  onChange={(e) => {
+                    const startDate = e.target.value;
+                    setBulkFillData((prev) => ({
+                      startDate,
+                      endDate: prev.endDate < startDate ? startDate : prev.endDate
+                    }));
+                  }}
+                  max={new Date().toISOString().split('T')[0]}
+                  className={dateInputClassName}
+                  required
+                />
+                <Calendar className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors`} />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="admin-bulk-end-date" className={`block text-sm font-medium ${text.primary} mb-2`}>
+                {t('adminTimeEntry.bulkStandardHours.endDate', 'End Date')} *
+              </label>
+              <div
+                className="relative cursor-pointer group"
+                onClick={() => openDatePicker('admin-bulk-end-date')}
+              >
+                <input
+                  id="admin-bulk-end-date"
+                  type="date"
+                  value={bulkFillData.endDate}
+                  onChange={(e) => setBulkFillData((prev) => ({ ...prev, endDate: e.target.value }))}
+                  min={bulkFillData.startDate}
+                  max={new Date().toISOString().split('T')[0]}
+                  className={dateInputClassName}
+                  required
+                />
+                <Calendar className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors`} />
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={bulkFillLoading || loading}
+            className={`w-full flex items-center justify-center space-x-2 px-6 py-3 cursor-pointer text-white rounded-lg transition-colors shadow-lg hover:shadow-xl ${
+              isDarkMode
+                ? 'bg-emerald-700 hover:bg-emerald-600 disabled:bg-gray-600'
+                : 'bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400'
+            } disabled:cursor-not-allowed`}
+          >
+            {bulkFillLoading ? (
+              <>
+                <Clock className="w-5 h-5 animate-spin" />
+                <span>{t('adminTimeEntry.bulkStandardHours.filling', 'Filling standard hours...')}</span>
+              </>
+            ) : (
+              <>
+                <CalendarRange className="w-5 h-5" />
+                <span>
+                  {t('adminTimeEntry.bulkStandardHours.fillButton', 'Fill 9 AM – 5 PM for All Employees')}
+                </span>
+              </>
+            )}
+          </button>
+        </form>
+      </div>
+
+      {showBulkConfirmModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          onClick={() => setShowBulkConfirmModal(false)}
+        >
+          <div
+            className={`w-full max-w-md rounded-lg shadow-xl border ${border.primary} ${bg.secondary} p-6`}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="bulk-fill-confirm-title"
+          >
+            <div className="flex items-start space-x-3 mb-4">
+              <AlertCircle className={`w-6 h-6 flex-shrink-0 ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`} />
+              <div>
+                <h5 id="bulk-fill-confirm-title" className={`text-lg font-bold ${text.primary}`}>
+                  {t('adminTimeEntry.bulkStandardHours.confirmTitle', 'Confirm Bulk Standard Hours')}
+                </h5>
+                <p className={`mt-2 text-sm ${text.secondary}`}>
+                  {t(
+                    'adminTimeEntry.bulkStandardHours.confirmMessage',
+                    'Create 9 AM – 5 PM regular hour entries for all employees from {start} to {end}? Saturdays and Sundays will be excluded. Employees with overlapping entries will be skipped.'
+                  )
+                    .replace('{start}', bulkFillData.startDate)
+                    .replace('{end}', bulkFillData.endDate)}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowBulkConfirmModal(false)}
+                className={`px-4 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary} transition-colors ${
+                  isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                }`}
+              >
+                {t('adminTimeEntry.bulkStandardHours.cancelButton', 'Cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={executeBulkStandardHoursFill}
+                className={`px-4 py-2 rounded-lg text-white transition-colors ${
+                  isDarkMode
+                    ? 'bg-emerald-700 hover:bg-emerald-600'
+                    : 'bg-emerald-600 hover:bg-emerald-700'
+                }`}
+              >
+                {t('adminTimeEntry.bulkStandardHours.confirmButton', 'Yes, Fill Hours')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

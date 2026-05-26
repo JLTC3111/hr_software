@@ -569,9 +569,18 @@ export default {
     allEmployees: 'Alle_Mitarbeiter',
     filenamePrefix: 'HR_Bericht',
     excel: {
+      charts: {
+        hoursByType: 'Stunden nach Typ',
+        statusDistribution: 'Statusverteilung',
+        taskStatusDistribution: 'Aufgabenstatusverteilung',
+        taskPriorityDistribution: 'Aufgabenprioritätsverteilung',
+        goalStatusDistribution: 'Zielstatusverteilung',
+        goalCategoryDistribution: 'Zielkategorieverteilung'
+      },
       sheets: {
         summary: 'Zusammenfassung',
         performance: 'Mitarbeiterleistung',
+        allEmployeesOverview: 'Übersicht aller Mitarbeiter',
         charts: 'Diagramme & Kennzahlen',
         timeEntries: 'Zeiteinträge',
         tasks: 'Aufgaben',
@@ -653,12 +662,8 @@ export default {
       entries: 'Einträge',
       completedShort: 'abgeschlossen',
       ofTotal: 'von insgesamt',
-      charts: {
-        hoursByType: 'Stunden nach Typ',
-        taskStatusDistribution: 'Verteilung Aufgabenstatus',
-        taskPriorityDistribution: 'Verteilung Aufgabenpriorität'
-      },
       headers: {
+        dataType: 'Datentyp',
         type: 'Typ',
         hours: 'Stunden',
         status: 'Status',
@@ -791,6 +796,7 @@ export default {
     exportToPDF: 'Als PDF exportieren',
     exportToExcel: 'Als Excel exportieren',
     pdf: {
+      visualAnalytics: 'Visual Analyse',
       headers: {
         employee: 'Mitarbeiter',
         department: 'Abteilung',
@@ -868,6 +874,10 @@ export default {
     errorExporting: 'Fehler beim Exportieren der Daten',
     exportToCSV: 'Als CSV exportieren',
     exportSuccess: 'Daten erfolgreich exportiert',
+    csvExportSuccess: 'CSV-Bericht mit allen Datentypen in einer Datei erfolgreich exportiert!',
+    excelExportHint: 'Alle Datentypen mit Zusammenfassung, Diagrammen und Detailblättern exportieren',
+    pdfExportHint: 'PDF mit visuellen Diagrammen, Zusammenfassung und Detailtabellen für alle Datentypen exportieren',
+    pdfExportSuccess: 'PDF-Bericht erfolgreich exportiert!',
     for: 'für',
     from: 'von',
     priorityLow: 'Priorität Niedrig',
@@ -1211,6 +1221,27 @@ export default {
     errors: {
       checkFailed: 'Fehler beim Überprüfen vorhandener Einträge',
       allDuplicates: 'Alle ausgewählten Mitarbeiter haben bereits Zeiteinträge für {date}: {names}'
+    },
+    bulkStandardHours: {
+      title: 'Standardstunden Massenfüllung',
+      description: 'Automatisch reguläre Zeiteinträge von 9:00 bis 17:00 Uhr für alle Mitarbeiter nur an Werktagen erstellen. Samstag und Sonntag werden ausgeschlossen. Bestehende überlappende Einträge werden übersprungen.',
+      startDate: 'Startdatum',
+      endDate: 'Enddatum',
+      fillButton: '9–17 Uhr für Alle Mitarbeiter Ausfüllen',
+      filling: 'Standardstunden werden ausgefüllt...',
+      confirmTitle: 'Massenfüllung Bestätigen',
+      confirmMessage: 'Reguläre Zeiteinträge von 9–17 Uhr für alle Mitarbeiter vom {start} bis {end} erstellen? Samstag und Sonntag werden ausgeschlossen. Mitarbeiter mit überlappenden Einträgen werden übersprungen.',
+      confirmButton: 'Ja, Stunden Ausfüllen',
+      cancelButton: 'Abbrechen',
+      success: '{created} Standardstunden-Einträge über {dates} Werktag(e) für {employees} Mitarbeiter erstellt. {skipped} Slot(s) mit vorhandenen Einträgen übersprungen. {weekends} Wochenendtag(e) ausgeschlossen.',
+      noEntriesCreated: 'Keine Einträge erstellt. Alle Mitarbeiter haben bereits überlappende Einträge für die ausgewählten Daten.',
+      noWeekdaysInRange: 'Keine Einträge erstellt. Der ausgewählte Zeitraum enthält nur Wochenenden, die automatisch ausgeschlossen werden.',
+      invalidRange: 'Das Enddatum muss am oder nach dem Startdatum liegen',
+      invalidDate: 'Ungültiger Datumsbereich.',
+      rangeTooLarge: 'Der Datumsbereich darf {max} Tage nicht überschreiten',
+      noEmployeesFound: 'Keine Mitarbeiter zum Ausfüllen der Stunden gefunden.',
+      errorGeneric: 'Standardstunden konnten nicht ausgefüllt werden. Bitte erneut versuchen.',
+      errorWithDetail: 'Standardstunden konnten nicht ausgefüllt werden: {message}'
     }
   },
 

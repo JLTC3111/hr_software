@@ -495,9 +495,18 @@ export default {
     allEmployees: '全従業員',
     filenamePrefix: '人事報告書_',
     excel: {
+      charts: {
+        hoursByType: 'タイプ別時間',
+        statusDistribution: '時間記録ステータス分布',
+        taskStatusDistribution: 'タスクステータス分布',
+        taskPriorityDistribution: 'タスク優先度分布',
+        goalStatusDistribution: '目標ステータス分布',
+        goalCategoryDistribution: '目標カテゴリ分布'
+      },
       sheets: {
         summary: '概要',
         performance: '従業員パフォーマンス',
+        allEmployeesOverview: '全従業員概要',
         charts: 'チャートと指標',
         timeEntries: 'タイムエントリー',
         tasks: 'タスク',
@@ -579,12 +588,8 @@ export default {
       entries: '件',
       completedShort: '完了',
       ofTotal: '/',
-      charts: {
-        hoursByType: 'タイプ別時間',
-        taskStatusDistribution: 'タスクステータス分布',
-        taskPriorityDistribution: 'タスク優先度分布'
-      },
       headers: {
+        dataType: 'データタイプ',
         type: 'タイプ',
         hours: '時間',
         status: 'ステータス',
@@ -807,33 +812,7 @@ export default {
     departmentComparison: '部署比較',
     exportToPDF: 'PDFに出力',
     pdf: {
-      headers: {
-        employee: '従業員',
-        department: '部署',
-        position: '役職',
-        date: '日付',
-        clockIn: '出勤',
-        clockOut: '退勤',
-        hours: '時間',
-        hourType: '時間種別',
-        status: 'ステータス',
-        notes: '備考',
-        createdAt: '作成日時',
-        taskTitle: 'タスク名',
-        description: '説明',
-        priority: '優先度',
-        dueDate: '期日',
-        estimatedHours: '見積時間',
-        actualHours: '実績時間',
-        variance: '差異',
-        goalTitle: '目標名',
-        category: 'カテゴリー',
-        progress: '進捗率 (%)',
-        targetDate: '目標日',
-        updatedAt: '更新日時'
-      }
-    },
-    pdf: {
+      visualAnalytics: '視覚分析',
       headers: {
         employee: '従業員',
         department: '部署',
@@ -893,6 +872,12 @@ export default {
     statusCompleted: '完了',
     statusInProgress: '進行中',
     statusNotStarted: '未開始',
+    errorExporting: 'データのエクスポート中にエラーが発生しました',
+    exportSuccess: 'データが正常にエクスポートされました',
+    csvExportSuccess: 'すべてのデータタイプを1つのファイルに含むCSVレポートを正常にエクスポートしました！',
+    excelExportHint: '概要、チャート、詳細シートですべてのデータタイプをエクスポート',
+    pdfExportHint: '視覚的なチャート、概要、すべてのデータタイプの詳細テーブルを含むPDFをエクスポート',
+    pdfExportSuccess: 'PDFレポートが正常にエクスポートされました！',
   },
 
   // Add Employee
@@ -1175,6 +1160,27 @@ export default {
     errors: {
       checkFailed: '既存のエントリの確認に失敗しました',
       allDuplicates: '選択されたすべての従業員には、{date}の勤怠入力が既に存在します：{names}'
+    },
+    bulkStandardHours: {
+      title: '一括標準勤務時間',
+      description: '全従業員に9:00 AM～5:00 PMの通常勤務エントリを平日のみ自動作成します。土曜日と日曜日は除外されます。既存の重複エントリはスキップされます。',
+      startDate: '開始日',
+      endDate: '終了日',
+      fillButton: '全従業員に9 AM～5 PMを入力',
+      filling: '標準勤務時間を入力中...',
+      confirmTitle: '一括入力の確認',
+      confirmMessage: '{start}から{end}まで、全従業員に9 AM～5 PMの通常勤務エントリを作成しますか？土曜日と日曜日は除外されます。重複する既存エントリがある従業員はスキップされます。',
+      confirmButton: 'はい、入力する',
+      cancelButton: 'キャンセル',
+      success: '{employees}名の従業員に対し{dates}平日分、{created}件の標準勤務エントリを作成しました。既存エントリがある{skipped}件はスキップしました。{weekends}日の週末を除外しました。',
+      noEntriesCreated: 'エントリは作成されませんでした。選択した日付ですべての従業員に重複エントリが既に存在します。',
+      noWeekdaysInRange: 'エントリは作成されませんでした。選択した期間は週末のみで、自動的に除外されます。',
+      invalidRange: '終了日は開始日以降である必要があります',
+      invalidDate: '無効な日付範囲です。',
+      rangeTooLarge: '日付範囲は{max}日を超えることはできません',
+      noEmployeesFound: '時間を入力する従業員が見つかりません。',
+      errorGeneric: '標準勤務時間の入力に失敗しました。もう一度お試しください。',
+      errorWithDetail: '標準勤務時間の入力に失敗しました：{message}'
     }
   },
 

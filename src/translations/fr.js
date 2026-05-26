@@ -422,6 +422,27 @@ export default {
     errors: {
       checkFailed: 'Échec de la vérification des entrées existantes',
       allDuplicates: 'Tous les employés sélectionnés ont déjà des saisies de temps pour {date}: {names}'
+    },
+    bulkStandardHours: {
+      title: 'Heures Standard en Masse',
+      description: 'Créer automatiquement des saisies d\'heures régulières de 9h00 à 17h00 pour tous les employés en jours ouvrables uniquement. Samedi et dimanche sont exclus. Les saisies chevauchantes existantes seront ignorées.',
+      startDate: 'Date de Début',
+      endDate: 'Date de Fin',
+      fillButton: 'Remplir 9h – 17h pour Tous les Employés',
+      filling: 'Remplissage des heures standard...',
+      confirmTitle: 'Confirmer le Remplissage en Masse',
+      confirmMessage: 'Créer des saisies d\'heures régulières de 9h à 17h pour tous les employés du {start} au {end} ? Samedi et dimanche seront exclus. Les employés avec des saisies chevauchantes seront ignorés.',
+      confirmButton: 'Oui, Remplir les Heures',
+      cancelButton: 'Annuler',
+      success: '{created} saisies d\'heures standard créées sur {dates} jour(s) ouvrable(s) pour {employees} employé(s). {skipped} case(s) ignorée(s) avec des saisies existantes. {weekends} jour(s) de week-end exclus.',
+      noEntriesCreated: 'Aucune saisie créée. Tous les employés ont déjà des saisies chevauchantes pour les dates sélectionnées.',
+      noWeekdaysInRange: 'Aucune saisie créée. La plage sélectionnée ne contient que des week-ends, exclus automatiquement.',
+      invalidRange: 'La date de fin doit être égale ou postérieure à la date de début',
+      invalidDate: 'Plage de dates invalide.',
+      rangeTooLarge: 'La plage de dates ne peut pas dépasser {max} jours',
+      noEmployeesFound: 'Aucun employé trouvé pour remplir les heures.',
+      errorGeneric: 'Échec du remplissage des heures standard. Veuillez réessayer.',
+      errorWithDetail: 'Échec du remplissage des heures standard : {message}'
     }
   },
 
@@ -551,9 +572,18 @@ export default {
     allEmployees: 'Tous_les_employés',
     filenamePrefix: 'Rapport_RH',
     excel: {
+      charts: {
+        hoursByType: 'Heures par type',
+        statusDistribution: 'Répartition des statuts',
+        taskStatusDistribution: 'Répartition du statut des tâches',
+        taskPriorityDistribution: 'Répartition des priorités des tâches',
+        goalStatusDistribution: 'Répartition des statuts des objectifs',
+        goalCategoryDistribution: 'Répartition des catégories des objectifs'
+      },
       sheets: {
         summary: 'Résumé',
         performance: 'Performance de l\'employé',
+        allEmployeesOverview: 'Aperçu de tous les employés',
         charts: 'Graphiques et mesures',
         timeEntries: 'Entrées de temps',
         tasks: 'Tâches',
@@ -635,13 +665,8 @@ export default {
       entries: 'entrées',
       completedShort: 'terminées',
       ofTotal: 'du total',
-      charts: {
-        hoursByType: 'Heures par type',
-        statusDistribution: 'Répartition des statuts',
-        taskStatusDistribution: 'Répartition du statut des tâches',
-        taskPriorityDistribution: 'Répartition des priorités des tâches'
-      },
       headers: {
+        dataType: 'Type de données',
         type: 'Type',
         hours: 'Heures',
         status: 'Statut',
@@ -950,6 +975,7 @@ export default {
     exportToPDF: 'Exporter en PDF',
     exportToExcel: 'Exporter en Excel',
     pdf: {
+      visualAnalytics: 'Analyse visuelle',
       headers: {
         employee: 'Employé',
         department: 'Département',
@@ -1007,6 +1033,12 @@ export default {
     statusCompleted: 'Terminé',
     statusInProgress: 'En cours',
     statusNotStarted: 'Non commencé',
+    errorExporting: 'Erreur lors de l\'exportation des données',
+    exportSuccess: 'Données exportées avec succès',
+    csvExportSuccess: 'Rapport CSV exporté avec succès, tous les types de données dans un seul fichier !',
+    excelExportHint: 'Exporter tous les types de données avec résumé, graphiques et feuilles détaillées',
+    pdfExportHint: 'Exporter un PDF avec graphiques visuels, résumé et tableaux détaillés pour tous les types de données',
+    pdfExportSuccess: 'Rapport PDF exporté avec succès !',
   },
 
   // Add Employee

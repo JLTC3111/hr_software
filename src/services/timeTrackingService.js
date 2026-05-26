@@ -1,6 +1,6 @@
 import { supabase } from '../config/supabaseClient';
 import { withTimeout } from '../utils/supabaseTimeout';
-import { isDemoMode, MOCK_TIME_ENTRIES, getDemoLeaveRequests, addDemoLeaveRequest, calculateDaysBetween, getDemoTimeEntries, addDemoTimeEntry, getDemoEmployeeById } from '../utils/demoHelper';
+import { isDemoMode, MOCK_EMPLOYEES, MOCK_TIME_ENTRIES, getDemoLeaveRequests, addDemoLeaveRequest, calculateDaysBetween, getDemoTimeEntries, addDemoTimeEntry, getDemoEmployeeById } from '../utils/demoHelper';
 import { saveDemoBlob } from '../utils/demoStorage';
 
 const toEmployeeId = (id) => {
@@ -228,6 +228,230 @@ export const createBulkTimeEntries = async (timeEntriesData) => {
     return { 
       success: false, 
       error: error.message || 'Failed to create time entries'
+    };
+  }
+};
+
+const STANDARD_CLOCK_IN = '09:00:00';
+const STANDARD_CLOCK_OUT = '17:00:00';
+const STANDARD_HOURS = 8;
+const MAX_BULK_FILL_DAYS = 366;
+
+const timeStringToSeconds = (value) => {
+  if (value == null) return null;
+  const str = typeof value === 'string' ? value : String(value);
+  const match = str.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const seconds = Number(match[3] || 0);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes) || !Number.isFinite(seconds)) return null;
+  return hours * 3600 + minutes * 60 + seconds;
+};
+
+const formatLocalDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const isWeekend = (date) => {
+  const day = date.getDay();
+  return day === 0 || day === 6;
+};
+
+const buildDateRange = (startDate, endDate) => {
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return { error: 'Invalid date range' };
+  }
+  if (end < start) {
+    return { error: 'End date must be on or after start date' };
+  }
+
+  const calendarDayCount = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+  if (calendarDayCount > MAX_BULK_FILL_DAYS) {
+    return { error: `Date range cannot exceed ${MAX_BULK_FILL_DAYS} days` };
+  }
+
+  const dates = [];
+  let weekendsExcluded = 0;
+  const current = new Date(start);
+  while (current <= end) {
+    if (isWeekend(current)) {
+      weekendsExcluded += 1;
+    } else {
+      dates.push(formatLocalDate(current));
+    }
+    current.setDate(current.getDate() + 1);
+  }
+
+  return {
+    dates,
+    weekendsExcluded,
+    noWeekdaysInRange: dates.length === 0 && weekendsExcluded > 0
+  };
+};
+
+const hasOverlappingEntry = (existingEntries, clockInSeconds, clockOutSeconds) => {
+  for (const entry of existingEntries) {
+    const existingClockInSeconds = timeStringToSeconds(entry.clock_in);
+    const existingClockOutSeconds = timeStringToSeconds(entry.clock_out);
+    if (existingClockInSeconds == null || existingClockOutSeconds == null) continue;
+
+    const isOverlapping =
+      clockInSeconds < existingClockOutSeconds &&
+      clockOutSeconds > existingClockInSeconds;
+
+    if (isOverlapping) return true;
+  }
+  return false;
+};
+
+/**
+ * Create standard 9 AM – 5 PM regular hour entries for all employees across a date range.
+ * Skips employees/dates that already have overlapping entries for the same hour type.
+ */
+export const fillStandardHoursForAllEmployees = async ({
+  startDate,
+  endDate = startDate,
+  adminName = 'Admin',
+  hourType = 'regular',
+  employeeIds = null,
+  notes = null
+}) => {
+  try {
+    const { dates, weekendsExcluded, noWeekdaysInRange, error: rangeError } = buildDateRange(startDate, endDate);
+    if (rangeError) {
+      return { success: false, error: rangeError };
+    }
+
+    if (noWeekdaysInRange) {
+      return {
+        success: true,
+        created: 0,
+        skipped: 0,
+        datesProcessed: 0,
+        weekendsExcluded,
+        employeesProcessed: 0,
+        noWeekdaysInRange: true
+      };
+    }
+
+    let employees = [];
+    if (isDemoMode()) {
+      employees = MOCK_EMPLOYEES.map((emp) => ({ id: emp.id, name: emp.name }));
+    } else {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('id, name')
+        .order('name');
+
+      if (error) throw error;
+      employees = data || [];
+    }
+
+    if (employeeIds?.length) {
+      const allowedIds = new Set(employeeIds.map((id) => String(id)));
+      employees = employees.filter((emp) => allowedIds.has(String(emp.id)));
+    }
+
+    if (employees.length === 0) {
+      return { success: false, error: 'No employees found' };
+    }
+
+    const employeeIdList = employees.map((emp) => emp.id);
+    let existingEntries = [];
+
+    if (isDemoMode()) {
+      existingEntries = getDemoTimeEntries().filter((entry) =>
+        dates.includes(entry.date) &&
+        employeeIdList.some((id) => String(id) === String(entry.employee_id)) &&
+        entry.hour_type === hourType
+      );
+    } else {
+      const { data, error } = await supabase
+        .from('time_entries')
+        .select('employee_id, date, hour_type, clock_in, clock_out')
+        .in('employee_id', employeeIdList)
+        .in('date', dates)
+        .eq('hour_type', hourType);
+
+      if (error) throw error;
+      existingEntries = data || [];
+    }
+
+    const existingByEmployeeDate = new Map();
+    for (const entry of existingEntries) {
+      const key = `${entry.employee_id}-${entry.date}`;
+      if (!existingByEmployeeDate.has(key)) {
+        existingByEmployeeDate.set(key, []);
+      }
+      existingByEmployeeDate.get(key).push(entry);
+    }
+
+    const newClockInSeconds = timeStringToSeconds(STANDARD_CLOCK_IN);
+    const newClockOutSeconds = timeStringToSeconds(STANDARD_CLOCK_OUT);
+    const defaultNotes = notes || `Standard hours filled by admin: ${adminName}`;
+    const entriesToCreate = [];
+    let skipped = 0;
+
+    for (const date of dates) {
+      for (const employee of employees) {
+        const key = `${employee.id}-${date}`;
+        const dayEntries = existingByEmployeeDate.get(key) || [];
+
+        if (hasOverlappingEntry(dayEntries, newClockInSeconds, newClockOutSeconds)) {
+          skipped += 1;
+          continue;
+        }
+
+        entriesToCreate.push({
+          employeeId: employee.id,
+          date,
+          clockIn: STANDARD_CLOCK_IN,
+          clockOut: STANDARD_CLOCK_OUT,
+          hours: STANDARD_HOURS,
+          hourType,
+          notes: defaultNotes,
+          status: 'approved'
+        });
+      }
+    }
+
+    if (entriesToCreate.length === 0) {
+      return {
+        success: true,
+        created: 0,
+        skipped,
+        datesProcessed: dates.length,
+        weekendsExcluded,
+        employeesProcessed: employees.length,
+        message: 'No entries were created. All employees already have overlapping entries for the selected dates.'
+      };
+    }
+
+    const result = await createBulkTimeEntries(entriesToCreate);
+    if (!result.success) {
+      return result;
+    }
+
+    return {
+      success: true,
+      created: entriesToCreate.length,
+      skipped,
+      datesProcessed: dates.length,
+      weekendsExcluded,
+      employeesProcessed: employees.length,
+      data: result.data
+    };
+  } catch (error) {
+    console.error('Error filling standard hours:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to fill standard hours'
     };
   }
 };

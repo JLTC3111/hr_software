@@ -365,6 +365,27 @@ export default {
     errors: {
       checkFailed: 'Không thể kiểm tra các mục nhập hiện tại',
       allDuplicates: 'Tất cả nhân viên đã chọn đã có mục nhập giờ cho {date}: {names}'
+    },
+    bulkStandardHours: {
+      title: 'Giờ Chuẩn Hàng Loạt',
+      description: 'Tự động tạo mục nhập giờ làm thường từ 9:00 SA – 5:00 CH cho tất cả nhân viên chỉ vào ngày trong tuần. Thứ Bảy và Chủ Nhật sẽ được loại trừ. Các mục trùng lặp hiện có sẽ được bỏ qua.',
+      startDate: 'Ngày Bắt Đầu',
+      endDate: 'Ngày Kết Thúc',
+      fillButton: 'Điền 9 SA – 5 CH cho Tất Cả Nhân Viên',
+      filling: 'Đang điền giờ chuẩn...',
+      confirmTitle: 'Xác Nhận Điền Giờ Hàng Loạt',
+      confirmMessage: 'Tạo mục nhập giờ làm thường 9 SA – 5 CH cho tất cả nhân viên từ {start} đến {end}? Thứ Bảy và Chủ Nhật sẽ được loại trừ. Nhân viên có mục trùng lặp sẽ được bỏ qua.',
+      confirmButton: 'Có, Điền Giờ',
+      cancelButton: 'Hủy',
+      success: 'Đã tạo {created} mục giờ chuẩn trong {dates} ngày trong tuần cho {employees} nhân viên. Đã bỏ qua {skipped} ô có mục hiện tại. Đã loại trừ {weekends} ngày cuối tuần.',
+      noEntriesCreated: 'Không có mục nào được tạo. Tất cả nhân viên đã có mục trùng lặp cho các ngày đã chọn.',
+      noWeekdaysInRange: 'Không có mục nào được tạo. Phạm vi đã chọn chỉ gồm cuối tuần, được loại trừ tự động.',
+      invalidRange: 'Ngày kết thúc phải bằng hoặc sau ngày bắt đầu',
+      invalidDate: 'Phạm vi ngày không hợp lệ.',
+      rangeTooLarge: 'Phạm vi ngày không được vượt quá {max} ngày',
+      noEmployeesFound: 'Không tìm thấy nhân viên để điền giờ.',
+      errorGeneric: 'Không thể điền giờ chuẩn. Vui lòng thử lại.',
+      errorWithDetail: 'Không thể điền giờ chuẩn: {message}'
     }
   },
 
@@ -628,6 +649,7 @@ export default {
       sheets: {
         summary: 'Tổng quan',
         performance: 'Hiệu suất nhân viên',
+        allEmployeesOverview: 'Tổng quan tất cả nhân viên',
         charts: 'Biểu đồ & Chỉ số',
         timeEntries: 'Chấm công',
         tasks: 'Công việc',
@@ -711,10 +733,14 @@ export default {
       ofTotal: 'trên tổng số',
       charts: {
         hoursByType: 'Giờ theo loại',
+        statusDistribution: 'Phân bổ trạng thái chấm công',
         taskStatusDistribution: 'Phân bổ trạng thái công việc',
-        taskPriorityDistribution: 'Phân bổ ưu tiên công việc'
+        taskPriorityDistribution: 'Phân bổ ưu tiên công việc',
+        goalStatusDistribution: 'Phân bổ trạng thái mục tiêu',
+        goalCategoryDistribution: 'Phân bổ danh mục mục tiêu'
       },
       headers: {
+        dataType: 'Loại dữ liệu',
         type: 'Loại',
         hours: 'Giờ',
         status: 'Trạng thái',
@@ -949,6 +975,7 @@ export default {
     recruitmentMetrics: 'Chỉ Số Tuyển Dụng',
     departmentComparison: 'So Sánh Phòng Ban',
     pdf: {
+      visualAnalytics: 'Phân Tích Trực Quan',
       headers: {
         employee: 'Nhân viên',
         department: 'Phòng ban',
@@ -972,112 +999,10 @@ export default {
         category: 'Danh mục',
         progress: 'Tiến độ (%)',
         targetDate: 'Ngày mục tiêu',
-      },
-    },
-    excel: {
-      headers: {
-        employee: 'Nhân viên',
-        department: 'Phòng ban',
-        position: 'Chức vụ',
-        date: 'Ngày',
-        clockIn: 'Giờ vào',
-        clockOut: 'Giờ ra',
-        hours: 'Số giờ',
-        hourType: 'Loại giờ',
-        status: 'Trạng thái',
-        notes: 'Ghi chú',
-        createdAt: 'Ngày tạo',
-        taskTitle: 'Tên nhiệm vụ',
-        description: 'Mô tả',
-        priority: 'Độ ưu tiên',
-        dueDate: 'Hạn chót',
-        estimatedHours: 'Giờ ước tính',
-        actualHours: 'Giờ thực tế',
-        variance: 'Chênh lệch',
-        goalTitle: 'Tên mục tiêu',
-        category: 'Danh mục',
-        progress: 'Tiến độ (%)',
-        targetDate: 'Ngày mục tiêu',
-      },
-      sheets: {
-        summary: 'Tóm tắt',
-        performance: 'Hiệu suất nhân viên',
-        charts: 'Biểu đồ & Chỉ số',
-        timeEntries: 'Mục nhập thời gian',
-        tasks: 'Nhiệm vụ',
-        goals: 'Mục tiêu'
-      },
-      summaryTitle: 'Tóm tắt báo cáo nhân sự',
-      generated: 'Được tạo',
-      dateRange: 'Phạm vi ngày',
-      employee: 'Nhân viên',
-      reportLanguage: 'Ngôn ngữ báo cáo',
-      visual: 'Trực quan',
-      timeTracking: 'Tóm tắt theo dõi thời gian',
-      workload: 'Tóm tắt khối lượng công việc',
-      personalGoals: 'Tóm tắt mục tiêu cá nhân',
-      metrics: {
-        totalTimeEntries: 'Tổng số mục nhập thời gian',
-        totalHours: 'Tổng số giờ đã ghi',
-        regularHours: 'Giờ hành chính',
-        overtimeHours: 'Giờ làm thêm',
-        wfhHours: 'Giờ làm việc tại nhà',
-        pendingApprovals: 'Chờ phê duyệt',
-        approvedEntries: 'Mục nhập đã duyệt',
-        totalTasks: 'Tổng số nhiệm vụ',
-        completedTasks: 'Nhiệm vụ hoàn thành',
-        inProgress: 'Đang thực hiện',
-        highPriorityTasks: 'Nhiệm vụ ưu tiên cao',
-        estimatedHours: 'Giờ ước tính',
-        actualHours: 'Giờ thực tế',
-        variance: 'Chênh lệch',
-        totalGoals: 'Tổng số mục tiêu',
-        achievedGoals: 'Mục tiêu đạt được',
-        inProgressGoals: 'Mục tiêu đang thực hiện',
-        avgProgress: 'Tiến độ trung bình'
-      },
-      performance: {
-        title: 'Đánh giá hiệu suất',
-        overallScore: 'Điểm hiệu suất tổng thể',
-        ratingLabel: 'Xếp loại',
-        tableHeaders: {
-          metric: 'Chỉ số',
-          value: 'Giá trị',
-          status: 'Trạng thái',
-          notes: 'Ghi chú'
-        },
-        approvalRate: 'Tỷ lệ phê duyệt',
-        taskCompletionRate: 'Tỷ lệ hoàn thành nhiệm vụ',
-        avgGoalProgress: 'Tiến độ mục tiêu trung bình'
-      },
-      rating: {
-        outstanding: 'Xuất sắc',
-        excellent: 'Tuyệt vời',
-        good: 'Tốt',
-        satisfactory: 'Đạt yêu cầu',
-        needsImprovement: 'Cần cải thiện'
-      },
-      entries: 'mục',
-      ofTotal: 'trên tổng số',
-      completedShort: 'hoàn thành',
-      status: {
-        high: 'Cao',
-        normal: 'Bình thường',
-        tracked: 'Đã theo dõi',
-        pending: 'Chờ xử lý',
-        allApproved: 'Đã duyệt tất cả',
-        active: 'Đang hoạt động',
-        noTasks: 'Không có nhiệm vụ',
-        excellent: 'Tuyệt vời',
-        good: 'Tốt'
-      },
-      charts: {
-        hoursByType: 'Giờ theo loại',
-        taskStatus: 'Trạng thái nhiệm vụ',
-        goalProgress: 'Tiến độ mục tiêu'
+        updatedAt: 'Cập nhật cuối'
       }
     },
-    prebuiltReports: 'Báo Cáo Có Sẵn',
+    exportToExcel: 'Xuất Excel',
     monthlyPerformanceReview: 'Đánh Giá Hiệu Suất Hàng Tháng',
     comprehensivePerformanceAnalysis: 'Phân Tích Hiệu Suất Toàn Diện',
     salaryBenchmarking: 'Đánh Giá Mức Lương',
@@ -1129,6 +1054,9 @@ export default {
     errorExporting: 'Lỗi xuất dữ liệu',
     exportToCSV: 'Xuất CSV',
     exportSuccess: 'Xuất dữ liệu thành công',
+    csvExportSuccess: 'Xuất báo cáo CSV thành công với tất cả loại dữ liệu trong một tệp!',
+    excelExportHint: 'Xuất tất cả loại dữ liệu kèm tóm tắt, biểu đồ và bảng chi tiết',
+    pdfExportHint: 'Xuất PDF với biểu đồ trực quan, tóm tắt và bảng chi tiết cho tất cả loại dữ liệu',
     pdfExportSuccess: 'Xuất báo cáo PDF thành công!',
     reportPeriod: 'Kỳ báo cáo',
     to: 'đến',

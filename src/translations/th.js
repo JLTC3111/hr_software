@@ -495,9 +495,18 @@ export default {
     filenamePrefix: 'รายงาน_',
     allEmployees: 'พนักงานทั้งหมด',
     excel: {
+      charts: {
+        hoursByType: 'ชั่วโมงตามประเภท',
+        statusDistribution: 'สัดส่วนสถานะการบันทึกเวลา',
+        taskStatusDistribution: 'สัดส่วนสถานะงาน',
+        taskPriorityDistribution: 'สัดส่วนลำดับความสำคัญงาน',
+        goalStatusDistribution: 'สัดส่วนสถานะเป้าหมาย',
+        goalCategoryDistribution: 'สัดส่วนหมวดหมู่เป้าหมาย'
+      },
       sheets: {
         summary: 'สรุปผล',
         performance: 'ประสิทธิภาพพนักงาน',
+        allEmployeesOverview: 'ภาพรวมพนักงานทั้งหมด',
         charts: 'กราฟและตัวชี้วัด',
         timeEntries: 'การบันทึกเวลา',
         tasks: 'งาน',
@@ -579,12 +588,8 @@ export default {
       entries: 'รายการ',
       completedShort: 'เสร็จสิ้น',
       ofTotal: 'จากทั้งหมด',
-      charts: {
-        hoursByType: 'ชั่วโมงตามประเภท',
-        taskStatusDistribution: 'สัดส่วนสถานะงาน',
-        taskPriorityDistribution: 'สัดส่วนลำดับความสำคัญงาน'
-      },
       headers: {
+        dataType: 'ประเภทข้อมูล',
         type: 'ประเภท',
         hours: 'ชั่วโมง',
         status: 'สถานะ',
@@ -822,6 +827,7 @@ export default {
     departmentComparison: 'การเปรียบเทียบแผนก',
     exportToPDF: 'ส่งออกเป็น PDF',
     pdf: {
+      visualAnalytics: 'การวิเคราะห์ด้วยภาพ',
       headers: {
         employee: 'พนักงาน',
         department: 'แผนก',
@@ -871,6 +877,12 @@ export default {
     customRange:	'ช่วงเวลาที่กำหนดเอง (Chûang welā thī̂ kamnot ē ng)',
     for: 'สำหรับ',
     from: 'จาก',
+    errorExporting: 'เกิดข้อผิดพลาดในการส่งออกข้อมูล',
+    exportSuccess: 'ส่งออกข้อมูลสำเร็จ',
+    csvExportSuccess: 'ส่งออกรายงาน CSV สำเร็จพร้อมทุกประเภทข้อมูลในไฟล์เดียว!',
+    excelExportHint: 'ส่งออกทุกประเภทข้อมูลพร้อมสรุป กราฟ และแผ่นงานรายละเอียด',
+    pdfExportHint: 'ส่งออก PDF พร้อมกราฟภาพ สรุป และตารางรายละเอียดสำหรับทุกประเภทข้อมูล',
+    pdfExportSuccess: 'ส่งออกรายงาน PDF สำเร็จ!',
   },
 
   // Add Employee
@@ -1168,6 +1180,27 @@ export default {
     errors: {
       checkFailed: 'ไม่สามารถตรวจสอบรายการที่มีอยู่',
       allDuplicates: 'พนักงานที่เลือกทั้งหมดมีรายการบันทึกเวลาสำหรับ {date} อยู่แล้ว: {names}'
+    },
+    bulkStandardHours: {
+      title: 'เติมชั่วโมงมาตรฐานแบบกลุ่ม',
+      description: 'สร้างรายการชั่วโมงปกติ 9:00 น. – 17:00 น. ให้พนักงานทุกคนเฉพาะวันทำงาน วันเสาร์และวันอาทิตย์จะถูกยกเว้น รายการที่ทับซ้อนอยู่แล้วจะถูกข้าม',
+      startDate: 'วันที่เริ่มต้น',
+      endDate: 'วันที่สิ้นสุด',
+      fillButton: 'เติม 9 โมง – 5 โมงเย็น ให้พนักงานทุกคน',
+      filling: 'กำลังเติมชั่วโมงมาตรฐาน...',
+      confirmTitle: 'ยืนยันการเติมชั่วโมงแบบกลุ่ม',
+      confirmMessage: 'สร้างรายการชั่วโมงปกติ 9 โมง – 5 โมงเย็น ให้พนักงานทุกคนตั้งแต่ {start} ถึง {end} หรือไม่? วันเสาร์และวันอาทิตย์จะถูกยกเว้น พนักงานที่มีรายการทับซ้อนจะถูกข้าม',
+      confirmButton: 'ใช่ เติมชั่วโมง',
+      cancelButton: 'ยกเลิก',
+      success: 'สร้างรายการชั่วโมงมาตรฐาน {created} รายการ ใน {dates} วันทำงาน สำหรับพนักงาน {employees} คน ข้าม {skipped} ช่องที่มีรายการอยู่แล้ว ยกเว้นวันหยุดสุดสัปดาห์ {weekends} วัน',
+      noEntriesCreated: 'ไม่มีการสร้างรายการ  พนักงานทุกคนมีรายการทับซ้อนสำหรับวันที่ที่เลือกแล้ว',
+      noWeekdaysInRange: 'ไม่มีการสร้างรายการ ช่วงที่เลือกมีเฉพาะวันหยุดสุดสัปดาห์ ซึ่งถูกยกเว้นโดยอัตโนมัติ',
+      invalidRange: 'วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่มต้น',
+      invalidDate: 'ช่วงวันที่ไม่ถูกต้อง',
+      rangeTooLarge: 'ช่วงวันที่ต้องไม่เกิน {max} วัน',
+      noEmployeesFound: 'ไม่พบพนักงานสำหรับเติมชั่วโมง',
+      errorGeneric: 'ไม่สามารถเติมชั่วโมงมาตรฐานได้ โปรดลองอีกครั้ง',
+      errorWithDetail: 'ไม่สามารถเติมชั่วโมงมาตรฐานได้: {message}'
     }
   },
 

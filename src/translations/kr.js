@@ -498,9 +498,18 @@ export default {
     filenamePrefix: 'HR_보고서_',
     allEmployees: '모든_직원',
     excel: {
+      charts: {
+        hoursByType: '유형별 시간',
+        statusDistribution: '시간 기록 상태 분포',
+        taskStatusDistribution: '작업 상태 분포',
+        taskPriorityDistribution: '작업 우선순위 분포',
+        goalStatusDistribution: '목표 상태 분포',
+        goalCategoryDistribution: '목표 카테고리 분포'
+      },
       sheets: {
         summary: '요약',
         performance: '직원 성과',
+        allEmployeesOverview: '전체 직원 개요',
         charts: '차트 및 지표',
         timeEntries: '시간 기록',
         tasks: '작업',
@@ -588,6 +597,7 @@ export default {
         taskPriorityDistribution: '작업 우선순위 분포'
       },
       headers: {
+        dataType: '데이터 유형',
         type: '유형',
         hours: '시간',
         status: '상태',
@@ -795,6 +805,7 @@ export default {
     departmentComparison: '부서 비교',
     exportToPDF: 'PDF로 내보내기',
     pdf: {
+      visualAnalytics: '시각적 분석',
       headers: {
         employee: '직원',
         department: '부서',
@@ -854,6 +865,12 @@ export default {
     statusCompleted: '완료',
     statusInProgress: '진행 중',
     statusNotStarted: '시작 안 함',
+    errorExporting: '데이터 내보내기 중 오류가 발생했습니다',
+    exportSuccess: '데이터가 성공적으로 내보내졌습니다',
+    csvExportSuccess: '모든 데이터 유형이 하나의 파일에 포함된 CSV 보고서를 성공적으로 내보냈습니다!',
+    excelExportHint: '요약, 차트 및 상세 시트와 함께 모든 데이터 유형 내보내기',
+    pdfExportHint: '시각적 차트, 요약 및 모든 데이터 유형의 상세 테이블이 포함된 PDF 내보내기',
+    pdfExportSuccess: 'PDF 보고서가 성공적으로 내보내졌습니다!',
   },
 
   // Add Employee
@@ -1107,6 +1124,27 @@ export default {
     errors: {
       checkFailed: '기존 입력 확인 실패',
       allDuplicates: '선택한 모든 직원이 {date}에 대한 근무 입력을 이미 가지고 있습니다: {names}'
+    },
+    bulkStandardHours: {
+      title: '일괄 표준 근무 시간',
+      description: '모든 직원에 대해 평일에만 오전 9시~오후 5시 정규 근무 입력을 자동으로 생성합니다. 토요일과 일요일은 제외됩니다. 기존 중복 입력은 건너뜁니다.',
+      startDate: '시작일',
+      endDate: '종료일',
+      fillButton: '모든 직원 9 AM – 5 PM 입력',
+      filling: '표준 근무 시간 입력 중...',
+      confirmTitle: '일괄 입력 확인',
+      confirmMessage: '{start}부터 {end}까지 모든 직원에 대해 9 AM – 5 PM 정규 근무 입력을 생성하시겠습니까? 토요일과 일요일은 제외됩니다. 중복 입력이 있는 직원은 건너뜁니다.',
+      confirmButton: '예, 입력',
+      cancelButton: '취소',
+      success: '{employees}명의 직원에 대해 {dates}평일 동안 {created}개의 표준 근무 입력을 생성했습니다. 기존 입력이 있는 {skipped}개 슬롯을 건너뛰었습니다. {weekends}일의 주말을 제외했습니다.',
+      noEntriesCreated: '생성된 입력이 없습니다. 선택한 날짜에 모든 직원에게 이미 중복 입력이 있습니다.',
+      noWeekdaysInRange: '생성된 입력이 없습니다. 선택한 기간은 주말만 포함되어 자동으로 제외됩니다.',
+      invalidRange: '종료일은 시작일 이후여야 합니다',
+      invalidDate: '유효하지 않은 날짜 범위입니다.',
+      rangeTooLarge: '날짜 범위는 {max}일을 초과할 수 없습니다',
+      noEmployeesFound: '시간을 입력할 직원을 찾을 수 없습니다.',
+      errorGeneric: '표준 근무 시간 입력에 실패했습니다. 다시 시도해 주세요.',
+      errorWithDetail: '표준 근무 시간 입력에 실패했습니다: {message}'
     }
   },
 

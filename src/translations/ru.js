@@ -454,6 +454,27 @@ export default {
     errors: {
       checkFailed: 'Не удалось проверить существующие записи',
       allDuplicates: 'У всех выбранных сотрудников уже есть записи времени на {date}: {names}'
+    },
+    bulkStandardHours: {
+      title: 'Массовое Заполнение Стандартных Часов',
+      description: 'Автоматически создавать записи обычных часов с 9:00 до 17:00 для всех сотрудников только в будние дни. Суббота и воскресенье исключаются. Существующие пересекающиеся записи будут пропущены.',
+      startDate: 'Дата Начала',
+      endDate: 'Дата Окончания',
+      fillButton: 'Заполнить 9:00–17:00 для Всех Сотрудников',
+      filling: 'Заполнение стандартных часов...',
+      confirmTitle: 'Подтвердить Массовое Заполнение',
+      confirmMessage: 'Создать записи обычных часов 9:00–17:00 для всех сотрудников с {start} по {end}? Суббота и воскресенье будут исключены. Сотрудники с пересекающимися записями будут пропущены.',
+      confirmButton: 'Да, Заполнить Часы',
+      cancelButton: 'Отмена',
+      success: 'Создано {created} записей стандартных часов за {dates} будн. дн. для {employees} сотрудников. Пропущено {skipped} ячеек с существующими записями. Исключено {weekends} выходных дней.',
+      noEntriesCreated: 'Записи не созданы. У всех сотрудников уже есть пересекающиеся записи для выбранных дат.',
+      noWeekdaysInRange: 'Записи не созданы. Выбранный диапазон содержит только выходные, которые исключаются автоматически.',
+      invalidRange: 'Дата окончания должна быть не раньше даты начала',
+      invalidDate: 'Недопустимый диапазон дат.',
+      rangeTooLarge: 'Диапазон дат не может превышать {max} дней',
+      noEmployeesFound: 'Не найдено сотрудников для заполнения часов.',
+      errorGeneric: 'Не удалось заполнить стандартные часы. Попробуйте снова.',
+      errorWithDetail: 'Не удалось заполнить стандартные часы: {message}'
     }
   },
 
@@ -561,9 +582,18 @@ export default {
     to: 'до',
     allEmployees: 'Все сотрудники',
     excel: {
+      charts: {
+        hoursByType: 'Часы по типам',
+        statusDistribution: 'Распределение записей времени по статусам',
+        taskStatusDistribution: 'Распределение задач по статусам',
+        taskPriorityDistribution: 'Распределение задач по приоритетам',
+        goalStatusDistribution: 'Распределение целей по статусам',
+        goalCategoryDistribution: 'Распределение целей по категориям'
+      },
       sheets: {
         summary: 'Сводка',
         performance: 'Эффективность сотрудника',
+        allEmployeesOverview: 'Обзор всех сотрудников',
         charts: 'Графики и метрики',
         timeEntries: 'Записи времени',
         tasks: 'Задачи',
@@ -645,12 +675,8 @@ export default {
       entries: 'записей',
       completedShort: 'завершено',
       ofTotal: 'из',
-      charts: {
-        hoursByType: 'Часы по типам',
-        taskStatusDistribution: 'Распределение задач по статусам',
-        taskPriorityDistribution: 'Распределение задач по приоритетам'
-      },
       headers: {
+        dataType: 'Тип данных',
         type: 'Тип',
         hours: 'Часы',
         status: 'Статус',
@@ -883,6 +909,7 @@ export default {
     departmentComparison: 'Сравнение отделов',
     exportToPDF: 'Экспорт в PDF',
     pdf: {
+      visualAnalytics: 'Аналитика визуальных данных',
       headers: {
         employee: 'Сотрудник',
         department: 'Отдел',
@@ -941,6 +968,12 @@ export default {
     statusCompleted: 'Завершено',
     statusInProgress: 'В процессе',
     statusNotStarted: 'Не начато',
+    errorExporting: 'Ошибка экспорта данных',
+    exportSuccess: 'Данные успешно экспортированы',
+    csvExportSuccess: 'CSV-отчёт успешно экспортирован со всеми типами данных в одном файле!',
+    excelExportHint: 'Экспорт всех типов данных со сводкой, графиками и детальными листами',
+    pdfExportHint: 'Экспорт PDF с визуальными графиками, сводкой и подробными таблицами для всех типов данных',
+    pdfExportSuccess: 'PDF-отчёт успешно экспортирован!',
   },
 
   // Add Employee

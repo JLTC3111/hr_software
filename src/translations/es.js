@@ -239,6 +239,27 @@ login: {
     errors: {
       checkFailed: 'Error al verificar entradas existentes',
       allDuplicates: 'Todos los empleados seleccionados ya tienen entradas de tiempo para {date}: {names}'
+    },
+    bulkStandardHours: {
+      title: 'Horas Estándar en Masa',
+      description: 'Crear automáticamente entradas de horas regulares de 9:00 AM a 5:00 PM para todos los empleados solo en días laborables. Sábados y domingos se excluyen. Se omitirán las entradas superpuestas existentes.',
+      startDate: 'Fecha de Inicio',
+      endDate: 'Fecha de Fin',
+      fillButton: 'Completar 9 AM – 5 PM para Todos los Empleados',
+      filling: 'Completando horas estándar...',
+      confirmTitle: 'Confirmar Completado en Masa',
+      confirmMessage: '¿Crear entradas de horas regulares de 9 AM a 5 PM para todos los empleados del {start} al {end}? Sábados y domingos se excluirán. Se omitirán los empleados con entradas superpuestas.',
+      confirmButton: 'Sí, Completar Horas',
+      cancelButton: 'Cancelar',
+      success: 'Se crearon {created} entradas de horas estándar en {dates} día(s) laborable(s) para {employees} empleado(s). Se omitieron {skipped} casillas con entradas existentes. Se excluyeron {weekends} día(s) de fin de semana.',
+      noEntriesCreated: 'No se crearon entradas. Todos los empleados ya tienen entradas superpuestas para las fechas seleccionadas.',
+      noWeekdaysInRange: 'No se crearon entradas. El rango seleccionado contiene solo fines de semana, que se excluyen automáticamente.',
+      invalidRange: 'La fecha de fin debe ser igual o posterior a la fecha de inicio',
+      invalidDate: 'Rango de fechas no válido.',
+      rangeTooLarge: 'El rango de fechas no puede superar {max} días',
+      noEmployeesFound: 'No se encontraron empleados para completar horas.',
+      errorGeneric: 'No se pudieron completar las horas estándar. Inténtelo de nuevo.',
+      errorWithDetail: 'No se pudieron completar las horas estándar: {message}'
     }
   },
 
@@ -575,9 +596,18 @@ login: {
     allEmployees: 'Todos_los_Empleados',
     filenamePrefix: 'Informe_RH',
     excel: {
+      charts: {
+        hoursByType: 'Horas por Tipo',
+        statusDistribution: 'Distribución por Estado',
+        taskStatusDistribution: 'Distribución por Estado de Tarea',
+        taskPriorityDistribution: 'Distribución por Prioridad de Tarea',
+        goalStatusDistribution: 'Distribución por Estado de Objetivo',
+        goalCategoryDistribution: 'Distribución por Categoría de Objetivo'
+      },
       sheets: {
         summary: 'Resumen',
         performance: 'Rendimiento del Empleado',
+        allEmployeesOverview: 'Resumen de Todos los Empleados',
         charts: 'Gráficos y Métricas',
         timeEntries: 'Entradas de Tiempo',
         tasks: 'Tareas',
@@ -659,12 +689,8 @@ login: {
       entries: 'entradas',
       completedShort: 'completado',
       ofTotal: 'del total',
-      charts: {
-        hoursByType: 'Horas por Tipo',
-        taskStatusDistribution: 'Distribución por Estado de Tarea',
-        taskPriorityDistribution: 'Distribución por Prioridad de Tarea'
-      },
       headers: {
+        dataType: 'Tipo de Datos',
         type: 'Tipo',
         hours: 'Horas',
         status: 'Estado',
@@ -934,6 +960,7 @@ login: {
     exportToPDF: 'Exportar a PDF',
     exportToExcel: 'Exportar a Excel',
     pdf: {
+      visualAnalytics: 'Análisis Visual',
       headers: {
         employee: 'Empleado',
         department: 'Departamento',
@@ -991,6 +1018,12 @@ login: {
     statusCompleted: 'Completado',
     statusInProgress: 'En progreso',
     statusNotStarted: 'No iniciado',
+    errorExporting: 'Error al exportar datos',
+    exportSuccess: 'Datos exportados correctamente',
+    csvExportSuccess: '¡Informe CSV exportado correctamente con todos los tipos de datos en un solo archivo!',
+    excelExportHint: 'Exportar todos los tipos de datos con resumen, gráficos y hojas detalladas',
+    pdfExportHint: 'Exportar PDF con gráficos visuales, resumen y tablas detalladas para todos los tipos de datos',
+    pdfExportSuccess: '¡Informe PDF exportado correctamente!',
   },
 
   // Add Employee
