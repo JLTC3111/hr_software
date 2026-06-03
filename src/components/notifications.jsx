@@ -263,7 +263,7 @@ const Notifications = () => {
     markAllAsRead,
     deleteNotification,
     deleteAllNotifications,
-    fetchNotifications
+    refreshNotificationData
   } = useNotifications();
 
   const [filter, setFilter] = useState('all'); // all, unread, read
@@ -287,7 +287,7 @@ const Notifications = () => {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await fetchNotifications();
+      await refreshNotificationData();
     } finally {
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current);

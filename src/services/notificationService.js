@@ -1,5 +1,43 @@
 import { supabase } from '../config/supabaseClient';
-import { isDemoMode, MOCK_NOTIFICATIONS } from '../utils/demoHelper';
+import {
+  isDemoMode,
+  getDemoNotifications,
+  addDemoNotification,
+  updateDemoNotification,
+  deleteDemoNotification,
+  clearDemoNotifications,
+  getDemoPendingApprovalsCount
+} from '../utils/demoHelper';
+
+const filterDemoNotifications = (data, filters = {}) => {
+  let result = [...data];
+  if (filters.isRead !== undefined) {
+    result = result.filter((n) => n.is_read === filters.isRead);
+  }
+  if (filters.type) {
+    result = result.filter((n) => n.type === filters.type);
+  }
+  if (filters.category) {
+    result = result.filter((n) => n.category === filters.category);
+  }
+  if (filters.title) {
+    result = result.filter((n) => n.title === filters.title);
+  }
+  if (filters.limit) {
+    result = result.slice(0, filters.limit);
+  }
+  return result;
+};
+
+const buildDemoStats = (userId, notifications) => ({
+  user_id: userId,
+  total_notifications: notifications.length,
+  unread_count: notifications.filter((n) => !n.is_read).length,
+  error_count: notifications.filter((n) => n.type === 'error').length,
+  warning_count: notifications.filter((n) => n.type === 'warning').length,
+  latest_notification_at:
+    notifications.length > 0 ? notifications[0].created_at : null
+});
 
 /**
  * Get all notifications for a user
@@ -9,19 +47,7 @@ import { isDemoMode, MOCK_NOTIFICATIONS } from '../utils/demoHelper';
  */
 export const getUserNotifications = async (userId, filters = {}) => {
   if (isDemoMode()) {
-    let data = [...MOCK_NOTIFICATIONS];
-    if (filters.isRead !== undefined) {
-      data = data.filter(n => n.is_read === filters.isRead);
-    }
-    if (filters.type) {
-      data = data.filter(n => n.type === filters.type);
-    }
-    if (filters.category) {
-      data = data.filter(n => n.category === filters.category);
-    }
-    if (filters.limit) {
-      data = data.slice(0, filters.limit);
-    }
+    const data = filterDemoNotifications(getDemoNotifications(), filters);
     return { success: true, data };
   }
 
@@ -41,6 +67,9 @@ export const getUserNotifications = async (userId, filters = {}) => {
     }
     if (filters.category) {
       query = query.eq('category', filters.category);
+    }
+    if (filters.title) {
+      query = query.eq('title', filters.title);
     }
     if (filters.limit) {
       query = query.limit(filters.limit);
@@ -67,7 +96,7 @@ export const getUserNotifications = async (userId, filters = {}) => {
  */
 export const getUnreadCount = async (userId) => {
   if (isDemoMode()) {
-    const count = MOCK_NOTIFICATIONS.filter(n => !n.is_read).length;
+    const count = getDemoNotifications().filter((n) => !n.is_read).length;
     return { success: true, count };
   }
 
@@ -109,7 +138,7 @@ export const createNotification = async (notification) => {
       metadata: notification.metadata || {},
       expires_at: notification.expiresAt
     };
-    // In a real app we would push to MOCK_NOTIFICATIONS but here we just return success
+    addDemoNotification(newNotification);
     return { success: true, data: newNotification };
   }
 
@@ -140,12 +169,69 @@ export const createNotification = async (notification) => {
 };
 
 /**
+ * Update an existing notification
+ * @param {string} notificationId - Notification ID
+ * @param {object} updates - Fields to update
+ * @returns {Promise<object>} Result with updated notification
+ */
+export const updateNotification = async (notificationId, updates) => {
+  if (isDemoMode()) {
+    const payload = {
+      ...(updates.title !== undefined && { title: updates.title }),
+      ...(updates.message !== undefined && { message: updates.message }),
+      ...(updates.type !== undefined && { type: updates.type }),
+      ...(updates.category !== undefined && { category: updates.category }),
+      ...(updates.actionUrl !== undefined && { action_url: updates.actionUrl }),
+      ...(updates.actionLabel !== undefined && { action_label: updates.actionLabel }),
+      ...(updates.metadata !== undefined && { metadata: updates.metadata }),
+      ...(updates.isRead !== undefined && { is_read: updates.isRead }),
+      ...(updates.readAt !== undefined && { read_at: updates.readAt })
+    };
+    updateDemoNotification(notificationId, payload);
+    const updated = getDemoNotifications().find((n) => n.id === notificationId);
+    return { success: true, data: updated };
+  }
+
+  try {
+    const row = {
+      ...(updates.title !== undefined && { title: updates.title }),
+      ...(updates.message !== undefined && { message: updates.message }),
+      ...(updates.type !== undefined && { type: updates.type }),
+      ...(updates.category !== undefined && { category: updates.category }),
+      ...(updates.actionUrl !== undefined && { action_url: updates.actionUrl }),
+      ...(updates.actionLabel !== undefined && { action_label: updates.actionLabel }),
+      ...(updates.metadata !== undefined && { metadata: updates.metadata }),
+      ...(updates.isRead !== undefined && { is_read: updates.isRead }),
+      ...(updates.readAt !== undefined && { read_at: updates.readAt })
+    };
+
+    const { data, error } = await supabase
+      .from('hr_notifications')
+      .update(row)
+      .eq('id', notificationId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error updating notification:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
  * Mark a notification as read
  * @param {string} notificationId - Notification ID
  * @returns {Promise<object>} Result
  */
 export const markAsRead = async (notificationId) => {
   if (isDemoMode()) {
+    updateDemoNotification(notificationId, {
+      is_read: true,
+      read_at: new Date().toISOString()
+    });
     return { success: true };
   }
 
@@ -174,6 +260,10 @@ export const markAsRead = async (notificationId) => {
  */
 export const markAllAsRead = async (userId) => {
   if (isDemoMode()) {
+    const readAt = new Date().toISOString();
+    getDemoNotifications()
+      .filter((n) => !n.is_read)
+      .forEach((n) => updateDemoNotification(n.id, { is_read: true, read_at: readAt }));
     return { success: true };
   }
 
@@ -203,6 +293,7 @@ export const markAllAsRead = async (userId) => {
  */
 export const deleteNotification = async (notificationId) => {
   if (isDemoMode()) {
+    deleteDemoNotification(notificationId);
     return { success: true };
   }
 
@@ -228,6 +319,7 @@ export const deleteNotification = async (notificationId) => {
  */
 export const deleteAllNotifications = async (userId) => {
   if (isDemoMode()) {
+    clearDemoNotifications();
     return { success: true };
   }
 
@@ -284,16 +376,10 @@ export const subscribeToNotifications = (userId, callback) => {
 export const getNotificationStats = async (userId) => {
   // Demo mode: return default stats without calling the backend
   if (isDemoMode()) {
+    const notifications = getDemoNotifications();
     return {
       success: true,
-      data: {
-        user_id: userId,
-        total_notifications: MOCK_NOTIFICATIONS.length,
-        unread_count: MOCK_NOTIFICATIONS.filter(n => !n.is_read).length,
-        error_count: MOCK_NOTIFICATIONS.filter(n => n.type === 'error').length,
-        warning_count: MOCK_NOTIFICATIONS.filter(n => n.type === 'warning').length,
-        latest_notification_at: MOCK_NOTIFICATIONS.length > 0 ? MOCK_NOTIFICATIONS[0].created_at : null
-      }
+      data: buildDemoStats(userId, notifications)
     };
   }
 
@@ -428,14 +514,7 @@ export const notifyUser = async (userId, title, message, options = {}) => {
 export const getPendingApprovalsCount = async () => {
   // Demo mode: derive from mock time entries if available (avoid network call)
   if (isDemoMode()) {
-    try {
-      // Attempt to load demo time entries from demoHelper if present
-      // Fallback to zero if not available
-      const demoTimeEntries = [];
-      return { success: true, count: demoTimeEntries.filter(e => e.status === 'pending').length };
-    } catch (err) {
-      return { success: true, count: 0 };
-    }
+    return { success: true, count: getDemoPendingApprovalsCount() };
   }
 
   try {
@@ -508,7 +587,19 @@ export const notifyPendingApprovals = async () => {
 export const cleanupDuplicateNotifications = async (userId, title, category) => {
   // Demo mode: no-op (mock notifications are static in demo)
   if (isDemoMode()) {
-    return { success: true, deletedCount: 0, message: 'Demo mode - no cleanup performed' };
+    const matches = filterDemoNotifications(getDemoNotifications(), {
+      category,
+      title,
+      isRead: false
+    }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    if (matches.length <= 1) {
+      return { success: true, deletedCount: 0, message: 'No duplicates found' };
+    }
+
+    const toDelete = matches.slice(1);
+    toDelete.forEach((n) => deleteDemoNotification(n.id));
+    return { success: true, deletedCount: toDelete.length };
   }
 
   try {

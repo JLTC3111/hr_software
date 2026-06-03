@@ -993,6 +993,12 @@ export const MOCK_TIME_ENTRIES = generateMockTimeEntries();
 
 const DEMO_TIME_ENTRIES_KEY = 'hr_app_demo_time_entries';
 
+const notifyDemoTimeEntriesChanged = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('demo-time-entries-changed'));
+  }
+};
+
 export const getDemoTimeEntries = () => {
   const stored = localStorage.getItem(DEMO_TIME_ENTRIES_KEY);
   const storedEntries = stored ? JSON.parse(stored) : [];
@@ -1020,6 +1026,7 @@ export const addDemoTimeEntry = (entry) => {
   const storedEntries = stored ? JSON.parse(stored) : [];
   storedEntries.unshift(entry); // add to front
   localStorage.setItem(DEMO_TIME_ENTRIES_KEY, JSON.stringify(storedEntries));
+  notifyDemoTimeEntriesChanged();
   return entry;
 };
 
@@ -1042,6 +1049,7 @@ export const updateDemoTimeEntry = (entryId, updates) => {
   }
   
   localStorage.setItem(DEMO_TIME_ENTRIES_KEY, JSON.stringify(storedEntries));
+  notifyDemoTimeEntriesChanged();
   return { id: entryId, ...updates };
 };
 
@@ -1064,6 +1072,7 @@ export const deleteDemoTimeEntry = (entryId) => {
   }
   
   localStorage.setItem(DEMO_TIME_ENTRIES_KEY, JSON.stringify(storedEntries));
+  notifyDemoTimeEntriesChanged();
   return { success: true };
 };
 
@@ -1605,6 +1614,96 @@ export const MOCK_INTERVIEWS = [
     application: MOCK_APPLICATIONS[1]
   }
 ];
+
+const DEMO_NOTIFICATIONS_KEY = 'hr_app_demo_notifications';
+
+export const getDemoNotifications = () => {
+  let stored = [];
+  try {
+    const raw = localStorage.getItem(DEMO_NOTIFICATIONS_KEY);
+    stored = raw ? JSON.parse(raw) : [];
+  } catch {
+    stored = [];
+  }
+
+  const deletedIds = new Set(stored.filter((n) => n._deleted).map((n) => n.id));
+  const overrides = new Map();
+  stored
+    .filter((n) => !n._deleted)
+    .forEach((n) => overrides.set(n.id, n));
+
+  const mockIds = new Set(MOCK_NOTIFICATIONS.map((n) => n.id));
+  const merged = MOCK_NOTIFICATIONS.filter((n) => !deletedIds.has(n.id)).map(
+    (n) => overrides.get(n.id) || n
+  );
+
+  stored
+    .filter((n) => !n._deleted && !mockIds.has(n.id))
+    .forEach((n) => merged.unshift(n));
+
+  return merged.sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+};
+
+export const addDemoNotification = (notification) => {
+  const stored = JSON.parse(localStorage.getItem(DEMO_NOTIFICATIONS_KEY) || '[]');
+  stored.unshift(notification);
+  localStorage.setItem(DEMO_NOTIFICATIONS_KEY, JSON.stringify(stored));
+  return notification;
+};
+
+export const updateDemoNotification = (notificationId, updates) => {
+  const stored = JSON.parse(localStorage.getItem(DEMO_NOTIFICATIONS_KEY) || '[]');
+  const existingIndex = stored.findIndex((n) => n.id === notificationId);
+
+  if (existingIndex >= 0) {
+    stored[existingIndex] = { ...stored[existingIndex], ...updates };
+  } else {
+    const mockEntry = MOCK_NOTIFICATIONS.find((n) => n.id === notificationId);
+    if (mockEntry) {
+      stored.push({ ...mockEntry, ...updates });
+    }
+  }
+
+  localStorage.setItem(DEMO_NOTIFICATIONS_KEY, JSON.stringify(stored));
+  return { success: true };
+};
+
+export const deleteDemoNotification = (notificationId) => {
+  const stored = JSON.parse(localStorage.getItem(DEMO_NOTIFICATIONS_KEY) || '[]');
+  const existingIndex = stored.findIndex((n) => n.id === notificationId);
+
+  if (existingIndex >= 0) {
+    stored.splice(existingIndex, 1);
+  } else {
+    const mockEntry = MOCK_NOTIFICATIONS.find((n) => n.id === notificationId);
+    if (mockEntry) {
+      stored.push({ ...mockEntry, _deleted: true });
+    }
+  }
+
+  localStorage.setItem(DEMO_NOTIFICATIONS_KEY, JSON.stringify(stored));
+  return { success: true };
+};
+
+export const clearDemoNotifications = () => {
+  const stored = JSON.parse(localStorage.getItem(DEMO_NOTIFICATIONS_KEY) || '[]');
+  const allIds = [
+    ...MOCK_NOTIFICATIONS.map((n) => n.id),
+    ...stored.filter((n) => !n._deleted).map((n) => n.id)
+  ];
+  const uniqueIds = [...new Set(allIds)];
+  const deleted = uniqueIds.map((id) => {
+    const mockEntry = MOCK_NOTIFICATIONS.find((n) => n.id === id);
+    return mockEntry ? { ...mockEntry, _deleted: true } : { id, _deleted: true };
+  });
+  localStorage.setItem(DEMO_NOTIFICATIONS_KEY, JSON.stringify(deleted));
+  return { success: true };
+};
+
+export const getDemoPendingApprovalsCount = () =>
+  getDemoTimeEntries().filter((entry) => entry.status === 'pending').length;
 
 export const MOCK_NOTIFICATIONS = [
   {

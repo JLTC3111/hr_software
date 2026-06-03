@@ -1658,6 +1658,10 @@ export default {
     daysAgo: '{0}d ago',
     markAsRead: 'Mark as read',
     delete: 'Delete',
+    actionFailedMarkRead: 'Could not mark notification as read. Please try again.',
+    actionFailedMarkAllRead: 'Could not mark all notifications as read. Please try again.',
+    actionFailedDelete: 'Could not delete notification. Please try again.',
+    actionFailedDeleteAll: 'Could not delete all notifications. Please try again.',
     // Notification titles
     pendingApprovals: 'Pending Approvals',
     timeEntryApproved: 'Time Entry Approved',
