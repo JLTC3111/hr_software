@@ -1,9 +1,29 @@
-import _React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from './AuthContext.jsx';
 import { ensureValidSession } from '../hooks/useSessionGuard.js';
+import { supabase } from '../config/supabaseClient.js';
 import * as notificationService from '../services/notificationService.js';
 
 const NotificationContext = createContext();
+
+const PENDING_APPROVAL_TITLE = 'Pending Approvals';
+
+const EMPTY_STATS = {
+  total_notifications: 0,
+  unread_count: 0,
+  error_count: 0,
+  warning_count: 0,
+  latest_notification_at: null
+};
+
+/** Supabase realtime payloads use eventType; some clients expose event */
+const getRealtimeEventType = (payload) => payload?.eventType || payload?.event;
+
+const isPendingApprovalNotification = (notification, { unreadOnly = false } = {}) =>
+  notification.category === 'time_tracking' &&
+  notification.type === 'warning' &&
+  notification.title === PENDING_APPROVAL_TITLE &&
+  (!unreadOnly || !notification.is_read);
 
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
@@ -18,15 +38,9 @@ export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    total_notifications: 0,
-    unread_count: 0,
-    error_count: 0,
-    warning_count: 0,
-    latest_notification_at: null
-  });
+  const [stats, setStats] = useState(EMPTY_STATS);
+  const pendingApprovalsDebounceRef = useRef(null);
 
-  // Fetch notifications
   const fetchNotifications = useCallback(async (filters = {}) => {
     if (!user?.id) return;
 
@@ -34,7 +48,7 @@ export const NotificationProvider = ({ children }) => {
     try {
       await ensureValidSession();
       const result = await notificationService.getUserNotifications(user.id, filters);
-    
+
       if (result.success) {
         setNotifications(result.data);
       } else {
@@ -48,14 +62,13 @@ export const NotificationProvider = ({ children }) => {
     }
   }, [user?.id, handleSessionAuthError]);
 
-  // Fetch unread count
   const fetchUnreadCount = useCallback(async () => {
     if (!user?.id) return;
 
     try {
       await ensureValidSession();
       const result = await notificationService.getUnreadCount(user.id);
-    
+
       if (result.success) {
         setUnreadCount(result.count);
       }
@@ -64,14 +77,13 @@ export const NotificationProvider = ({ children }) => {
     }
   }, [user?.id, handleSessionAuthError]);
 
-  // Fetch notification stats
   const fetchStats = useCallback(async () => {
     if (!user?.id) return;
 
     try {
       await ensureValidSession();
       const result = await notificationService.getNotificationStats(user.id);
-    
+
       if (result.success && result.data) {
         setStats(result.data);
       }
@@ -80,311 +92,328 @@ export const NotificationProvider = ({ children }) => {
     }
   }, [user?.id, handleSessionAuthError]);
 
-  // Initial fetch when user logs in
-  useEffect(() => {
-    if (isAuthenticated && user?.id) {
-      fetchNotifications();
-      fetchUnreadCount();
-      fetchStats();
-      
-      // Check for pending approvals if user is admin/manager
-      if (user.role === 'admin' || user.role === 'manager') {
-        checkPendingApprovals();
-      }
-    } else {
-      setNotifications([]);
-      setUnreadCount(0);
-      setLoading(false);
-    }
-  }, [isAuthenticated, user?.id, fetchNotifications, fetchUnreadCount, fetchStats]);
+  const refreshNotificationData = useCallback(async () => {
+    await Promise.all([fetchNotifications(), fetchUnreadCount(), fetchStats()]);
+  }, [fetchNotifications, fetchUnreadCount, fetchStats]);
 
-  // Check for pending approvals and create notification if needed
+  const loadPendingApprovalNotifications = useCallback(async (unreadOnly = false) => {
+    if (!user?.id) return [];
+
+    const result = await notificationService.getUserNotifications(user.id, {
+      category: 'time_tracking',
+      type: 'warning',
+      ...(unreadOnly ? { isRead: false } : {})
+    });
+
+    if (!result.success) return [];
+    return result.data.filter((n) => isPendingApprovalNotification(n, { unreadOnly }));
+  }, [user?.id]);
+
   const checkPendingApprovals = useCallback(async () => {
     if (!user?.id) return;
+    if (user.role !== 'admin' && user.role !== 'manager') return;
 
     try {
-      // First, clean up any duplicate pending approval notifications
       await notificationService.cleanupDuplicateNotifications(
         user.id,
-        'Pending Approvals',
+        PENDING_APPROVAL_TITLE,
         'time_tracking'
       );
 
       const result = await notificationService.getPendingApprovalsCount();
-    
-      if (result.success && result.count > 0) {
-        // Check if there's already ANY unread notification about pending approvals
-        const existingPendingNotifications = notifications.filter(n => 
-          n.category === 'time_tracking' && 
-          n.type === 'warning' &&
-          n.title === 'Pending Approvals' &&
-          !n.is_read
-        );
+      if (!result.success) return;
 
-        if (existingPendingNotifications.length === 0) {
-          // No existing notification, create new one
+      const pendingMessage = (count) =>
+        `You have ${count} time ${count === 1 ? 'entry' : 'entries'} awaiting approval`;
+
+      const notifyOptions = (count) => ({
+        type: 'warning',
+        category: 'time_tracking',
+        actionUrl: '/time-clock',
+        actionLabel: 'Review Now',
+        metadata: { pendingCount: count }
+      });
+
+      if (result.count > 0) {
+        const existingUnread = await loadPendingApprovalNotifications(true);
+
+        if (existingUnread.length === 0) {
           await notificationService.notifyUser(
             user.id,
-            'Pending Approvals',
-            `You have ${result.count} time ${result.count === 1 ? 'entry' : 'entries'} awaiting approval`,
-            {
-              type: 'warning',
-              category: 'time_tracking',
-              actionUrl: '/time-clock',
-              actionLabel: 'Review Now',
-              metadata: { pendingCount: result.count }
-            }
+            PENDING_APPROVAL_TITLE,
+            pendingMessage(result.count),
+            notifyOptions(result.count)
           );
-          // Refresh notifications to show the new one
-          fetchNotifications();
+          await refreshNotificationData();
         } else {
-          // Check if count has changed and update if needed
-          const currentCount = existingPendingNotifications[0].metadata?.pendingCount || 0;
+          const currentCount = existingUnread[0].metadata?.pendingCount ?? 0;
           if (currentCount !== result.count) {
-            // Delete old and create new with updated count
-            await notificationService.deleteNotification(existingPendingNotifications[0].id);
+            await notificationService.deleteNotification(existingUnread[0].id);
             await notificationService.notifyUser(
               user.id,
-              'Pending Approvals',
-              `You have ${result.count} time ${result.count === 1 ? 'entry' : 'entries'} awaiting approval`,
-              {
-                type: 'warning',
-                category: 'time_tracking',
-                actionUrl: '/time-clock',
-                actionLabel: 'Review Now',
-                metadata: { pendingCount: result.count }
-              }
+              PENDING_APPROVAL_TITLE,
+              pendingMessage(result.count),
+              notifyOptions(result.count)
             );
-            fetchNotifications();
+            await refreshNotificationData();
           }
         }
-      } else if (result.success && result.count === 0) {
-        // No pending approvals, delete any existing pending approval notifications
-        const existingPendingNotifications = notifications.filter(n => 
-          n.category === 'time_tracking' && 
-          n.type === 'warning' &&
-          n.title === 'Pending Approvals'
-        );
-        
-        for (const notification of existingPendingNotifications) {
-          await notificationService.deleteNotification(notification.id);
-        }
-        
-        if (existingPendingNotifications.length > 0) {
-          fetchNotifications();
+      } else {
+        const existing = await loadPendingApprovalNotifications(false);
+
+        if (existing.length > 0) {
+          for (const notification of existing) {
+            await notificationService.deleteNotification(notification.id);
+          }
+          await refreshNotificationData();
         }
       }
     } catch (error) {
-      console.error('Error fetching pending approvals:', error);
+      console.error('Error checking pending approvals:', error);
       handleSessionAuthError(error, { silent: true });
     }
-  }, [user?.id, notifications, fetchNotifications, handleSessionAuthError]);
+  }, [
+    user?.id,
+    user?.role,
+    loadPendingApprovalNotifications,
+    refreshNotificationData,
+    handleSessionAuthError
+  ]);
 
-  // Subscribe to real-time updates
+  // Initial fetch when user logs in; run pending-approval check after data is loaded
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) {
+      setNotifications([]);
+      setUnreadCount(0);
+      setStats(EMPTY_STATS);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const initialize = async () => {
+      await Promise.all([fetchNotifications(), fetchUnreadCount(), fetchStats()]);
+      if (!cancelled && (user.role === 'admin' || user.role === 'manager')) {
+        await checkPendingApprovals();
+      }
+    };
+
+    initialize();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isAuthenticated,
+    user?.id,
+    user?.role,
+    fetchNotifications,
+    fetchUnreadCount,
+    fetchStats,
+    checkPendingApprovals
+  ]);
+
+  const handleRealtimePayload = useCallback((payload) => {
+    const eventType = getRealtimeEventType(payload);
+
+    if (eventType === 'INSERT' && payload.new) {
+      setNotifications((prev) => {
+        if (prev.some((n) => n.id === payload.new.id)) return prev;
+        return [payload.new, ...prev];
+      });
+      if (!payload.new.is_read) {
+        setUnreadCount((prev) => prev + 1);
+      }
+      fetchStats();
+      return;
+    }
+
+    if (eventType === 'UPDATE' && payload.new) {
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === payload.new.id ? payload.new : n))
+      );
+      if (payload.old && payload.new.is_read !== payload.old.is_read) {
+        fetchUnreadCount();
+        fetchStats();
+      }
+      return;
+    }
+
+    if (eventType === 'DELETE' && payload.old) {
+      setNotifications((prev) => prev.filter((n) => n.id !== payload.old.id));
+      if (!payload.old.is_read) {
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
+      fetchStats();
+    }
+  }, [fetchUnreadCount, fetchStats]);
+
+  // Subscribe to real-time notification updates
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
 
     const subscription = notificationService.subscribeToNotifications(
       user.id,
-      (payload) => {
-        console.log('Notification update:', payload);
-
-        if (payload.eventType === 'INSERT') {
-          // New notification
-          setNotifications(prev => [payload.new, ...prev]);
-          setUnreadCount(prev => prev + 1);
-          fetchStats();
-        } else if (payload.eventType === 'UPDATE') {
-          // Updated notification
-          setNotifications(prev =>
-            prev.map(n => n.id === payload.new.id ? payload.new : n)
-          );
-          if (payload.new.is_read !== payload.old.is_read) {
-            fetchUnreadCount();
-            fetchStats();
-          }
-        } else if (payload.eventType === 'DELETE') {
-          // Deleted notification
-          setNotifications(prev =>
-            prev.filter(n => n.id !== payload.old.id)
-          );
-          if (!payload.old.is_read) {
-            setUnreadCount(prev => Math.max(0, prev - 1));
-          }
-          fetchStats();
-        }
-      }
+      handleRealtimePayload
     );
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [isAuthenticated, user?.id, fetchUnreadCount, fetchStats]);
+  }, [isAuthenticated, user?.id, handleRealtimePayload]);
 
-  // Subscribe to time entries changes to update pending approvals notification in real-time
+  // Subscribe to time entry changes for pending-approval notifications (managers/admins)
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
-    
-    // Only subscribe if user is admin/manager
-    if (user.role !== 'admin' && user.role !== 'manager') {
-      return;
-    }
+    if (user.role !== 'admin' && user.role !== 'manager') return;
 
-    // Import supabase client dynamically to avoid circular dependencies
-    import('../config/supabaseClient.js').then(({ supabase }) => {
-      const channel = supabase
-        .channel('time_entries_changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*', // Listen to INSERT, UPDATE, DELETE
-            schema: 'public',
-            table: 'time_entries',
-            filter: `approval_status=in.(pending,approved,rejected)`
-          },
-          (payload) => {
-            console.log('Time entry changed:', payload);
-            
-            // Debounce the check to avoid too many calls
-            setTimeout(() => {
-              checkPendingApprovals();
-            }, 500);
+    const channel = supabase
+      .channel(`time_entries_pending_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'time_entries',
+          filter: 'status=eq.pending'
+        },
+        () => {
+          if (pendingApprovalsDebounceRef.current) {
+            clearTimeout(pendingApprovalsDebounceRef.current);
           }
-        )
-        .subscribe();
+          pendingApprovalsDebounceRef.current = setTimeout(() => {
+            checkPendingApprovals();
+          }, 500);
+        }
+      )
+      .subscribe();
 
-      return () => {
-        channel.unsubscribe();
-      };
-    });
+    return () => {
+      if (pendingApprovalsDebounceRef.current) {
+        clearTimeout(pendingApprovalsDebounceRef.current);
+        pendingApprovalsDebounceRef.current = null;
+      }
+      channel.unsubscribe();
+    };
   }, [isAuthenticated, user?.id, user?.role, checkPendingApprovals]);
 
-  // Mark notification as read
-  const markAsRead = async (notificationId) => {
+  const markAsRead = useCallback(async (notificationId) => {
     const result = await notificationService.markAsRead(notificationId);
-    
+
     if (result.success) {
-      setNotifications(prev =>
-        prev.map(n => 
-          n.id === notificationId 
+      let wasUnread = false;
+      setNotifications((prev) => {
+        const target = prev.find((n) => n.id === notificationId);
+        wasUnread = Boolean(target && !target.is_read);
+        return prev.map((n) =>
+          n.id === notificationId
             ? { ...n, is_read: true, read_at: new Date().toISOString() }
             : n
-        )
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
-      
-      // Update stats immediately
-      setStats(prev => ({
-        ...prev,
-        unread_count: Math.max(0, prev.unread_count - 1)
-      }));
+        );
+      });
+      if (wasUnread) {
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+        setStats((prev) => ({
+          ...prev,
+          unread_count: Math.max(0, prev.unread_count - 1)
+        }));
+      }
     }
-    
-    return result;
-  };
 
-  // Mark all as read
-  const markAllAsRead = async () => {
-    if (!user?.id) return;
+    return result;
+  }, []);
+
+  const markAllAsRead = useCallback(async () => {
+    if (!user?.id) return { success: false, error: 'Not authenticated' };
 
     const result = await notificationService.markAllAsRead(user.id);
-    
+
     if (result.success) {
-      setNotifications(prev =>
-        prev.map(n => ({ ...n, is_read: true, read_at: new Date().toISOString() }))
+      setNotifications((prev) =>
+        prev.map((n) => ({ ...n, is_read: true, read_at: new Date().toISOString() }))
       );
       setUnreadCount(0);
-      
-      // Update stats immediately
-      setStats(prev => ({
+      setStats((prev) => ({
         ...prev,
         unread_count: 0
       }));
     }
-    
-    return result;
-  };
 
-  // Delete notification
-  const deleteNotification = async (notificationId) => {
-    const notification = notifications.find(n => n.id === notificationId);
+    return result;
+  }, [user?.id]);
+
+  const deleteNotification = useCallback(async (notificationId) => {
     const result = await notificationService.deleteNotification(notificationId);
-    
+
     if (result.success) {
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
-      if (notification && !notification.is_read) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
-        
-        // Update stats immediately
-        setStats(prev => ({
+      let removed = null;
+      setNotifications((prev) => {
+        removed = prev.find((n) => n.id === notificationId);
+        return prev.filter((n) => n.id !== notificationId);
+      });
+
+      if (removed) {
+        if (!removed.is_read) {
+          setUnreadCount((prev) => Math.max(0, prev - 1));
+        }
+        setStats((prev) => ({
           ...prev,
           total_notifications: Math.max(0, prev.total_notifications - 1),
-          unread_count: Math.max(0, prev.unread_count - 1),
-          error_count: notification.type === 'error' ? Math.max(0, prev.error_count - 1) : prev.error_count,
-          warning_count: notification.type === 'warning' ? Math.max(0, prev.warning_count - 1) : prev.warning_count
-        }));
-      } else if (notification) {
-        // Even if read, update total count
-        setStats(prev => ({
-          ...prev,
-          total_notifications: Math.max(0, prev.total_notifications - 1),
-          error_count: notification.type === 'error' ? Math.max(0, prev.error_count - 1) : prev.error_count,
-          warning_count: notification.type === 'warning' ? Math.max(0, prev.warning_count - 1) : prev.warning_count
+          unread_count: removed.is_read
+            ? prev.unread_count
+            : Math.max(0, prev.unread_count - 1),
+          error_count:
+            removed.type === 'error'
+              ? Math.max(0, prev.error_count - 1)
+              : prev.error_count,
+          warning_count:
+            removed.type === 'warning'
+              ? Math.max(0, prev.warning_count - 1)
+              : prev.warning_count
         }));
       }
     }
-    
-    return result;
-  };
 
-  // Delete all notifications
-  const deleteAllNotifications = async () => {
-    if (!user?.id) return;
+    return result;
+  }, []);
+
+  const deleteAllNotifications = useCallback(async () => {
+    if (!user?.id) return { success: false, error: 'Not authenticated' };
 
     const result = await notificationService.deleteAllNotifications(user.id);
-    
+
     if (result.success) {
       setNotifications([]);
       setUnreadCount(0);
-      
-      // Reset stats immediately
-      setStats({
-        total_notifications: 0,
-        unread_count: 0,
-        error_count: 0,
-        warning_count: 0,
-        latest_notification_at: null
-      });
+      setStats(EMPTY_STATS);
     }
-    
+
     return result;
-  };
+  }, [user?.id]);
 
-  // Create notification (for system use)
-  const createNotification = async (notification) => {
-    return await notificationService.createNotification(notification);
-  };
+  const createNotification = useCallback(async (notification) => {
+    return notificationService.createNotification(notification);
+  }, []);
 
-  // Get filtered notifications - memoized
   const getFilteredNotifications = useCallback((filters) => {
     let filtered = [...notifications];
 
     if (filters.isRead !== undefined) {
-      filtered = filtered.filter(n => n.is_read === filters.isRead);
+      filtered = filtered.filter((n) => n.is_read === filters.isRead);
     }
 
     if (filters.type) {
-      filtered = filtered.filter(n => n.type === filters.type);
+      filtered = filtered.filter((n) => n.type === filters.type);
     }
 
     if (filters.category) {
-      filtered = filtered.filter(n => n.category === filters.category);
+      filtered = filtered.filter((n) => n.category === filters.category);
     }
 
     return filtered;
   }, [notifications]);
 
-  // Show browser notification (if permission granted) - memoized
   const showBrowserNotification = useCallback((title, options = {}) => {
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification(title, {
@@ -395,7 +424,6 @@ export const NotificationProvider = ({ children }) => {
     }
   }, []);
 
-  // Request browser notification permission - memoized
   const requestNotificationPermission = useCallback(async () => {
     if ('Notification' in window) {
       const permission = await Notification.requestPermission();
@@ -404,36 +432,38 @@ export const NotificationProvider = ({ children }) => {
     return false;
   }, []);
 
-  // Memoize context value to prevent unnecessary re-renders
-  const value = useMemo(() => ({
-    notifications,
-    unreadCount,
-    loading,
-    stats,
-    fetchNotifications,
-    markAsRead,
-    markAllAsRead,
-    deleteNotification,
-    deleteAllNotifications,
-    createNotification,
-    getFilteredNotifications,
-    showBrowserNotification,
-    requestNotificationPermission
-  }), [
-    notifications, 
-    unreadCount, 
-    loading, 
-    stats, 
-    fetchNotifications, 
-    markAsRead, 
-    markAllAsRead, 
-    deleteNotification, 
-    deleteAllNotifications, 
-    createNotification, 
-    getFilteredNotifications, 
-    showBrowserNotification, 
-    requestNotificationPermission
-  ]);
+  const value = useMemo(
+    () => ({
+      notifications,
+      unreadCount,
+      loading,
+      stats,
+      fetchNotifications,
+      markAsRead,
+      markAllAsRead,
+      deleteNotification,
+      deleteAllNotifications,
+      createNotification,
+      getFilteredNotifications,
+      showBrowserNotification,
+      requestNotificationPermission
+    }),
+    [
+      notifications,
+      unreadCount,
+      loading,
+      stats,
+      fetchNotifications,
+      markAsRead,
+      markAllAsRead,
+      deleteNotification,
+      deleteAllNotifications,
+      createNotification,
+      getFilteredNotifications,
+      showBrowserNotification,
+      requestNotificationPermission
+    ]
+  );
 
   return (
     <NotificationContext.Provider value={value}>

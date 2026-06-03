@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, CheckCheck, Trash2, X, Filter, AlertCircle, Trash, Info, CheckCircle, AlertTriangle, Inbox, ExternalLink, RefreshCw } from 'lucide-react';
+import { Bell, CheckCheck, Trash2, Filter, AlertCircle, Trash, Info, CheckCircle, AlertTriangle, Inbox, ExternalLink, RefreshCw } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -273,23 +273,27 @@ const Notifications = () => {
   const [updatingNotifications, setUpdatingNotifications] = useState(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isHoveringDeleteAll, setIsHoveringDeleteAll] = useState(false);
+  const [isBulkActionRunning, setIsBulkActionRunning] = useState(false);
+  const refreshTimeoutRef = useRef(null);
 
-  // Track previous unread count to detect changes
-  const [prevUnreadCount, setPrevUnreadCount] = useState(unreadCount);
-
-  // Show a subtle animation when unread count changes
   useEffect(() => {
-    if (prevUnreadCount !== unreadCount && !loading) {
-      console.log('📊 Unread count updated:', prevUnreadCount, '→', unreadCount);
-      setPrevUnreadCount(unreadCount);
-    }
-  }, [unreadCount, prevUnreadCount, loading]);
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
+  }, []);
 
-  // Manual refresh function
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await fetchNotifications();
-    setTimeout(() => setIsRefreshing(false), 500);
+    try {
+      await fetchNotifications();
+    } finally {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+      refreshTimeoutRef.current = setTimeout(() => setIsRefreshing(false), 500);
+    }
   };
 
   // Filter notifications based on selected filters
@@ -323,7 +327,7 @@ const Notifications = () => {
       case 'error':
         return isDarkMode ? 'border-red-700 bg-red-900/20' : 'border-red-200 bg-red-50';
       case 'warning':
-        return isDarkMode ? 'border-yellow-700 bg-blue-900/20' : 'border-yellow-200 bg-yellow-50';
+        return isDarkMode ? 'border-yellow-700 bg-yellow-900/20' : 'border-yellow-200 bg-yellow-50';
       default:
         return isDarkMode ? 'border-blue-700 bg-blue-900/20' : 'border-blue-200 bg-blue-50';
     }
@@ -331,7 +335,9 @@ const Notifications = () => {
 
   // Format timestamp
   const formatTime = (timestamp) => {
+    if (!timestamp) return '';
     const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return '';
     const now = new Date();
     const diff = now - date;
     const minutes = Math.floor(diff / 60000);
@@ -345,19 +351,24 @@ const Notifications = () => {
     return date.toLocaleDateString();
   };
 
+  const clearUpdatingNotification = (notificationId) => {
+    setUpdatingNotifications(prev => {
+      const next = new Set(prev);
+      next.delete(notificationId);
+      return next;
+    });
+  };
+
   const handleNotificationClick = async (notification) => {
-    // Mark as read if unread
     if (!notification.is_read) {
       setUpdatingNotifications(prev => new Set(prev).add(notification.id));
-      await markAsRead(notification.id);
-      setUpdatingNotifications(prev => {
-        const next = new Set(prev);
-        next.delete(notification.id);
-        return next;
-      });
+      try {
+        await markAsRead(notification.id);
+      } finally {
+        clearUpdatingNotification(notification.id);
+      }
     }
 
-    // Navigate if action URL exists
     if (notification.action_url) {
       navigate(notification.action_url);
     }
@@ -366,19 +377,44 @@ const Notifications = () => {
   const handleDelete = async (e, notificationId) => {
     e.stopPropagation();
     setUpdatingNotifications(prev => new Set(prev).add(notificationId));
-    await deleteNotification(notificationId);
-    // No need to remove from updatingNotifications as the notification is deleted
+    try {
+      await deleteNotification(notificationId);
+    } finally {
+      clearUpdatingNotification(notificationId);
+    }
   };
 
   const handleMarkAsRead = async (e, notificationId) => {
     e.stopPropagation();
     setUpdatingNotifications(prev => new Set(prev).add(notificationId));
-    await markAsRead(notificationId);
-    setUpdatingNotifications(prev => {
-      const next = new Set(prev);
-      next.delete(notificationId);
-      return next;
-    });
+    try {
+      await markAsRead(notificationId);
+    } finally {
+      clearUpdatingNotification(notificationId);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    if (isBulkActionRunning) return;
+    setIsBulkActionRunning(true);
+    try {
+      await markAllAsRead();
+    } finally {
+      setIsBulkActionRunning(false);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (isBulkActionRunning) return;
+    if (!window.confirm(t('notifications.confirmDeleteAll', 'Are you sure you want to delete all notifications?'))) {
+      return;
+    }
+    setIsBulkActionRunning(true);
+    try {
+      await deleteAllNotifications();
+    } finally {
+      setIsBulkActionRunning(false);
+    }
   };
 
   // Helper function to translate notification titles
@@ -478,7 +514,7 @@ const Notifications = () => {
           <div className="flex items-center space-x-2 flex-wrap gap-2">
             <button
               onClick={handleRefresh}
-              disabled={isRefreshing}
+              disabled={isRefreshing || isBulkActionRunning}
               className={`px-4 py-2 rounded-lg group ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer disabled:opacity-50`}
               title={t('notifications.refresh', 'Refresh')}
             >
@@ -497,8 +533,9 @@ const Notifications = () => {
             
             {unreadCount > 0 && (
               <button
-                onClick={markAllAsRead}
-                className={`px-4 py-2 group rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer`}
+                onClick={handleMarkAllAsRead}
+                disabled={isBulkActionRunning}
+                className={`px-4 py-2 group rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
                 title={t('notifications.markAllRead', 'Mark all as read')}
               >
                 <CheckCheck className="h-4 w-4 group-hover:animate-ping origin-center transform transition-all" />
@@ -510,12 +547,9 @@ const Notifications = () => {
               <button
                 onMouseEnter={() => setIsHoveringDeleteAll(true)}
                 onMouseLeave={() => setIsHoveringDeleteAll(false)}
-                onClick={() => {
-                  if (window.confirm(t('notifications.confirmDeleteAll', 'Are you sure you want to delete all notifications?'))) {
-                    deleteAllNotifications();
-                  }
-                }}
-                className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-all cursor-pointer`}
+                onClick={handleDeleteAll}
+                disabled={isBulkActionRunning}
+                className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
                 title={t('notifications.deleteAll', 'Delete all')}
               >
                 {isHoveringDeleteAll ? (
@@ -635,11 +669,19 @@ const Notifications = () => {
             {filteredNotifications.map((notification) => (
               <div
                 key={notification.id}
+                role={notification.action_url ? 'button' : undefined}
+                tabIndex={notification.action_url ? 0 : undefined}
                 onClick={() => handleNotificationClick(notification)}
-                className={`rounded-lg shadow-sm
+                onKeyDown={(e) => {
+                  if (notification.action_url && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    handleNotificationClick(notification);
+                  }
+                }}
+                className={`rounded-lg shadow-sm border
                   ${getTypeColor(notification.type)}
                   ${notification.action_url ? 'cursor-pointer hover:shadow-md' : ''}
-                  ${!notification.is_read ? 'border-l-blue-600' : border.primary}
+                  ${!notification.is_read ? 'border-l-4 border-l-blue-600' : border.primary}
                   ${updatingNotifications.has(notification.id) ? 'opacity-50 pointer-events-none' : ''}
                   p-4 transition-all duration-200
                 `}
@@ -672,12 +714,10 @@ const Notifications = () => {
                         
                         {/* Action Button */}
                         {notification.action_url && notification.action_label && (
-                          <button
-                            className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center space-x-1"
-                          >
+                          <span className="mt-2 text-sm text-blue-600 font-medium inline-flex items-center space-x-1">
                             <span>{getNotificationActionLabelText(notification)}</span>
                             <ExternalLink className="h-3 w-3" />
-                          </button>
+                          </span>
                         )}
                       </div>
 

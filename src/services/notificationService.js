@@ -258,7 +258,7 @@ export const subscribeToNotifications = (userId, callback) => {
   }
 
   const subscription = supabase
-    .channel('notifications')
+    .channel(`hr_notifications_${userId}`)
     .on(
       'postgres_changes',
       {
