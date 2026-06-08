@@ -12,7 +12,6 @@ import * as settingsService from '../services/settingsService.js';
 
 const NotificationContext = createContext();
 
-const PENDING_APPROVAL_TITLE = 'Pending Approvals';
 const DEMO_TIME_ENTRIES_KEY = 'hr_app_demo_time_entries';
 const NOTIFICATIONS_PAGE_SIZE = 20;
 
@@ -150,6 +149,7 @@ export const NotificationProvider = ({ children }) => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
   const pendingApprovalsDebounceRef = useRef(null);
+  const pendingApprovalsCheckRef = useRef(null);
   const toastTimeoutRef = useRef(null);
   const notificationPrefsRef = useRef(DEFAULT_NOTIFICATION_PREFS);
   const loadedOffsetRef = useRef(0);
@@ -245,16 +245,20 @@ export const NotificationProvider = ({ children }) => {
         });
 
         if (result.success) {
+          const deduped = notificationService.dedupeNotifications(result.data);
           if (append) {
             setNotifications((prev) => {
-              const ids = new Set(prev.map((n) => n.id));
-              const newOnes = result.data.filter((n) => !ids.has(n.id));
+              const merged = notificationService.dedupeNotifications([
+                ...prev,
+                ...deduped.filter((n) => !prev.some((p) => p.id === n.id))
+              ]);
+              const newOnes = deduped.filter((n) => !prev.some((p) => p.id === n.id));
               loadedOffsetRef.current += newOnes.length;
-              return [...prev, ...newOnes];
+              return merged;
             });
           } else {
-            setNotifications(result.data);
-            loadedOffsetRef.current = result.data.length;
+            setNotifications(deduped);
+            loadedOffsetRef.current = deduped.length;
           }
           setHasMoreNotifications(Boolean(result.hasMore));
         } else {
@@ -347,89 +351,32 @@ export const NotificationProvider = ({ children }) => {
     [showBrowserNotification]
   );
 
-  const loadPendingApprovalNotifications = useCallback(
-    async (unreadOnly = false) => {
-      if (!user?.id) return [];
-
-      const result = await notificationService.getUserNotifications(user.id, {
-        title: PENDING_APPROVAL_TITLE,
-        category: 'time_tracking',
-        type: 'warning',
-        ...(unreadOnly ? { isRead: false } : {})
-      });
-
-      return result.success ? result.data : [];
-    },
-    [user?.id]
-  );
-
   const checkPendingApprovals = useCallback(async () => {
     if (!user?.id) return;
     if (user.role !== 'admin' && user.role !== 'manager') return;
 
-    try {
-      await notificationService.cleanupDuplicateNotifications(
-        user.id,
-        PENDING_APPROVAL_TITLE,
-        'time_tracking'
-      );
-
-      const result = await notificationService.getPendingApprovalsCount();
-      if (!result.success) return;
-
-      const pendingMessage = (count) =>
-        `You have ${count} time ${count === 1 ? 'entry' : 'entries'} awaiting approval`;
-
-      const notifyOptions = (count) => ({
-        type: 'warning',
-        category: 'time_tracking',
-        actionUrl: '/time-clock?review=pending',
-        actionLabel: 'Review Now',
-        metadata: { pendingCount: count }
-      });
-
-      if (result.count > 0) {
-        const existingUnread = await loadPendingApprovalNotifications(true);
-
-        if (existingUnread.length === 0) {
-          await notificationService.notifyUser(
-            user.id,
-            PENDING_APPROVAL_TITLE,
-            pendingMessage(result.count),
-            notifyOptions(result.count)
-          );
-          await refreshNotificationData();
-        } else {
-          const currentCount = existingUnread[0].metadata?.pendingCount ?? 0;
-          if (currentCount !== result.count) {
-            await notificationService.updateNotification(existingUnread[0].id, {
-              message: pendingMessage(result.count),
-              metadata: { pendingCount: result.count }
-            });
-            await refreshNotificationData();
-          }
-        }
-      } else {
-        const existing = await loadPendingApprovalNotifications(false);
-
-        if (existing.length > 0) {
-          for (const notification of existing) {
-            await notificationService.deleteNotification(notification.id);
-          }
-          await refreshNotificationData();
-        }
-      }
-    } catch (error) {
-      console.error('Error checking pending approvals:', error);
-      handleSessionAuthError(error, { silent: true });
+    if (pendingApprovalsCheckRef.current) {
+      return pendingApprovalsCheckRef.current;
     }
-  }, [
-    user?.id,
-    user?.role,
-    loadPendingApprovalNotifications,
-    refreshNotificationData,
-    handleSessionAuthError
-  ]);
+
+    const runCheck = (async () => {
+      try {
+        const result = await notificationService.getPendingApprovalsCount();
+        if (!result.success) return;
+
+        await notificationService.syncPendingApprovalNotification(user.id, result.count);
+        await refreshNotificationData();
+      } catch (error) {
+        console.error('Error checking pending approvals:', error);
+        handleSessionAuthError(error, { silent: true });
+      } finally {
+        pendingApprovalsCheckRef.current = null;
+      }
+    })();
+
+    pendingApprovalsCheckRef.current = runCheck;
+    return runCheck;
+  }, [user?.id, user?.role, refreshNotificationData, handleSessionAuthError]);
 
   // Initial fetch when user logs in
   useEffect(() => {
@@ -503,20 +450,49 @@ export const NotificationProvider = ({ children }) => {
       const eventType = getRealtimeEventType(payload);
 
       if (eventType === 'INSERT' && payload.new) {
+        const isPendingApprovalInsert =
+          payload.new.title === notificationService.PENDING_APPROVAL_TITLE &&
+          payload.new.category === notificationService.PENDING_APPROVAL_CATEGORY;
+
+        let deleteDuplicateInsert = false;
         setNotifications((prev) => {
           if (prev.some((n) => n.id === payload.new.id)) return prev;
-          return [payload.new, ...prev];
+
+          if (
+            isPendingApprovalInsert &&
+            prev.some(
+              (n) =>
+                n.title === notificationService.PENDING_APPROVAL_TITLE &&
+                n.category === notificationService.PENDING_APPROVAL_CATEGORY
+            )
+          ) {
+            deleteDuplicateInsert = true;
+            return prev;
+          }
+
+          return notificationService.dedupeNotifications([payload.new, ...prev]);
         });
-        setStats((prev) => ({
-          ...prev,
-          total_notifications: prev.total_notifications + 1,
-          unread_count: !payload.new.is_read ? prev.unread_count + 1 : prev.unread_count,
-          error_count:
-            payload.new.type === 'error' ? prev.error_count + 1 : prev.error_count,
-          warning_count:
-            payload.new.type === 'warning' ? prev.warning_count + 1 : prev.warning_count,
-          latest_notification_at: payload.new.created_at || prev.latest_notification_at
-        }));
+
+        if (deleteDuplicateInsert) {
+          notificationService.deleteNotification(payload.new.id);
+        }
+
+        if (isPendingApprovalInsert) {
+          fetchUnreadCount();
+          fetchStats();
+        } else {
+          setStats((prev) => ({
+            ...prev,
+            total_notifications: prev.total_notifications + 1,
+            unread_count: !payload.new.is_read ? prev.unread_count + 1 : prev.unread_count,
+            error_count:
+              payload.new.type === 'error' ? prev.error_count + 1 : prev.error_count,
+            warning_count:
+              payload.new.type === 'warning' ? prev.warning_count + 1 : prev.warning_count,
+            latest_notification_at: payload.new.created_at || prev.latest_notification_at
+          }));
+        }
+
         deliverNotificationAlert(payload.new);
         return;
       }

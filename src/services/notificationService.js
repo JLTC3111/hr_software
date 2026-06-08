@@ -9,6 +9,23 @@ import {
   getDemoPendingApprovalsCount
 } from '../utils/demoHelper';
 
+export const PENDING_APPROVAL_TITLE = 'Pending Approvals';
+export const PENDING_APPROVAL_CATEGORY = 'time_tracking';
+
+/** Keep only the newest pending-approval notification when duplicates exist in a list */
+export const dedupeNotifications = (notifications) => {
+  let pendingApprovalKept = false;
+  return notifications.filter((notification) => {
+    const isPendingApproval =
+      notification.title === PENDING_APPROVAL_TITLE &&
+      notification.category === PENDING_APPROVAL_CATEGORY;
+    if (!isPendingApproval) return true;
+    if (pendingApprovalKept) return false;
+    pendingApprovalKept = true;
+    return true;
+  });
+};
+
 const filterDemoNotifications = (data, filters = {}) => {
   let result = [...data];
   if (filters.isRead !== undefined) {
@@ -59,7 +76,7 @@ const buildDemoStats = (userId, notifications) => ({
 export const getUserNotifications = async (userId, filters = {}) => {
   if (isDemoMode()) {
     const { data, hasMore } = filterDemoNotifications(getDemoNotifications(), filters);
-    return { success: true, data, hasMore };
+    return { success: true, data: dedupeNotifications(data), hasMore };
   }
 
   try {
@@ -102,7 +119,7 @@ export const getUserNotifications = async (userId, filters = {}) => {
     const hasMore = Boolean(limit && rows.length > limit);
     const items = hasMore ? rows.slice(0, limit) : rows;
 
-    return { success: true, data: items, hasMore };
+    return { success: true, data: dedupeNotifications(items), hasMore };
   } catch (error) {
     console.error('Error fetching notifications:', error);
     return { success: false, error: error.message };
@@ -561,6 +578,67 @@ export const notifyUser = async (userId, title, message, options = {}) => {
   });
 };
 
+const buildPendingApprovalMessage = (pendingCount) =>
+  `You have ${pendingCount} time ${pendingCount === 1 ? 'entry' : 'entries'} awaiting approval`;
+
+const pendingApprovalOptions = (pendingCount) => ({
+  type: 'warning',
+  category: PENDING_APPROVAL_CATEGORY,
+  actionUrl: '/time-clock?review=pending',
+  actionLabel: 'Review Now',
+  metadata: { pendingCount, kind: 'pending_approvals' }
+});
+
+/**
+ * Ensure at most one pending-approval notification exists; update or remove as needed.
+ * Safe to call concurrently — callers should still serialize via a mutex when possible.
+ */
+export const syncPendingApprovalNotification = async (userId, pendingCount) => {
+  await cleanupDuplicateNotifications(
+    userId,
+    PENDING_APPROVAL_TITLE,
+    PENDING_APPROVAL_CATEGORY,
+    { unreadOnly: false }
+  );
+
+  const existingResult = await getUserNotifications(userId, {
+    title: PENDING_APPROVAL_TITLE,
+    category: PENDING_APPROVAL_CATEGORY,
+    type: 'warning'
+  });
+  const existing = existingResult.success ? existingResult.data : [];
+  const message = buildPendingApprovalMessage(pendingCount);
+
+  if (pendingCount <= 0) {
+    for (const notification of existing) {
+      await deleteNotification(notification.id);
+    }
+    return { success: true, action: 'cleared', deletedCount: existing.length };
+  }
+
+  if (existing.length > 0) {
+    const target = existing[0];
+    const currentCount = target.metadata?.pendingCount ?? 0;
+    const isUpToDate =
+      currentCount === pendingCount &&
+      target.is_read === false &&
+      target.message === message;
+
+    if (isUpToDate) {
+      return { success: true, action: 'unchanged', data: target };
+    }
+
+    return updateNotification(target.id, {
+      message,
+      metadata: { pendingCount, kind: 'pending_approvals' },
+      isRead: false,
+      readAt: null
+    });
+  }
+
+  return notifyUser(userId, PENDING_APPROVAL_TITLE, message, pendingApprovalOptions(pendingCount));
+};
+
 /**
  * Get count of pending time entry approvals
  * @returns {Promise<object>} Result with count
@@ -638,34 +716,44 @@ export const notifyPendingApprovals = async () => {
  * @param {string} category - Notification category to match
  * @returns {Promise<object>} Result with count of deleted notifications
  */
-export const cleanupDuplicateNotifications = async (userId, title, category) => {
-  // Demo mode: no-op (mock notifications are static in demo)
+export const cleanupDuplicateNotifications = async (
+  userId,
+  title,
+  category,
+  { unreadOnly = true } = {}
+) => {
   if (isDemoMode()) {
-    const matches = filterDemoNotifications(getDemoNotifications(), {
+    const { data: matches } = filterDemoNotifications(getDemoNotifications(), {
       category,
       title,
-      isRead: false
-    }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      ...(unreadOnly ? { isRead: false } : {})
+    });
+    const sorted = [...matches].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
 
-    if (matches.length <= 1) {
+    if (sorted.length <= 1) {
       return { success: true, deletedCount: 0, message: 'No duplicates found' };
     }
 
-    const toDelete = matches.slice(1);
-    toDelete.forEach((n) => deleteDemoNotification(n.id));
-    return { success: true, deletedCount: toDelete.length };
+    sorted.slice(1).forEach((n) => deleteDemoNotification(n.id));
+    return { success: true, deletedCount: sorted.length - 1 };
   }
 
   try {
-    // Get all matching notifications ordered by created date
-    const { data: notifications, error: fetchError } = await supabase
+    let query = supabase
       .from('hr_notifications')
       .select('*')
       .eq('user_id', userId)
       .eq('title', title)
       .eq('category', category)
-      .eq('is_read', false)
       .order('created_at', { ascending: false });
+
+    if (unreadOnly) {
+      query = query.eq('is_read', false);
+    }
+
+    const { data: notifications, error: fetchError } = await query;
 
     if (fetchError) throw fetchError;
 
