@@ -1758,6 +1758,7 @@ export const MOCK_SETTINGS = {
   email_notifications: true,
   push_notifications: true,
   desktop_notifications: false,
+  notification_sound: false,
   notification_frequency: 'realtime',
   notify_time_tracking: true,
   notify_performance: true,

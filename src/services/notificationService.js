@@ -23,10 +23,21 @@ const filterDemoNotifications = (data, filters = {}) => {
   if (filters.title) {
     result = result.filter((n) => n.title === filters.title);
   }
+
+  const offset = filters.offset || 0;
   if (filters.limit) {
-    result = result.slice(0, filters.limit);
+    const page = result.slice(offset, offset + filters.limit + 1);
+    const hasMore = page.length > filters.limit;
+    return {
+      data: hasMore ? page.slice(0, filters.limit) : page,
+      hasMore
+    };
   }
-  return result;
+
+  if (offset) {
+    result = result.slice(offset);
+  }
+  return { data: result, hasMore: false };
 };
 
 const buildDemoStats = (userId, notifications) => ({
@@ -47,8 +58,8 @@ const buildDemoStats = (userId, notifications) => ({
  */
 export const getUserNotifications = async (userId, filters = {}) => {
   if (isDemoMode()) {
-    const data = filterDemoNotifications(getDemoNotifications(), filters);
-    return { success: true, data };
+    const { data, hasMore } = filterDemoNotifications(getDemoNotifications(), filters);
+    return { success: true, data, hasMore };
   }
 
   try {
@@ -71,8 +82,13 @@ export const getUserNotifications = async (userId, filters = {}) => {
     if (filters.title) {
       query = query.eq('title', filters.title);
     }
-    if (filters.limit) {
-      query = query.limit(filters.limit);
+    const offset = filters.offset || 0;
+    const limit = filters.limit;
+
+    if (limit) {
+      query = query.range(offset, offset + limit);
+    } else if (offset) {
+      query = query.range(offset, offset + 999);
     }
 
     // Filter out expired notifications
@@ -82,7 +98,11 @@ export const getUserNotifications = async (userId, filters = {}) => {
 
     if (error) throw error;
 
-    return { success: true, data };
+    const rows = data || [];
+    const hasMore = Boolean(limit && rows.length > limit);
+    const items = hasMore ? rows.slice(0, limit) : rows;
+
+    return { success: true, data: items, hasMore };
   } catch (error) {
     console.error('Error fetching notifications:', error);
     return { success: false, error: error.message };
@@ -258,6 +278,40 @@ export const markAsRead = async (notificationId) => {
  * @param {string} userId - User ID
  * @returns {Promise<object>} Result
  */
+export const markManyAsRead = async (notificationIds) => {
+  if (!notificationIds?.length) {
+    return { success: true };
+  }
+
+  const uniqueIds = [...new Set(notificationIds)];
+
+  if (isDemoMode()) {
+    const readAt = new Date().toISOString();
+    uniqueIds.forEach((id) => {
+      updateDemoNotification(id, { is_read: true, read_at: readAt });
+    });
+    return { success: true };
+  }
+
+  try {
+    const { error } = await supabase
+      .from('hr_notifications')
+      .update({
+        is_read: true,
+        read_at: new Date().toISOString()
+      })
+      .in('id', uniqueIds)
+      .eq('is_read', false);
+
+    if (error) throw error;
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error marking notifications as read:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 export const markAllAsRead = async (userId) => {
   if (isDemoMode()) {
     const readAt = new Date().toISOString();

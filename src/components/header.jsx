@@ -1,18 +1,17 @@
 import React from 'react'
-import { Users, LogOut, Bell, Menu, X } from 'lucide-react'
+import { LogOut, Menu, X } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
-import { useNotifications } from '../contexts/NotificationContext'
 import { useNavigate } from 'react-router-dom'
 import ThemeToggle from './themeToggle'
 import LanguageSelector from './LanguageSelector'
+import NotificationDropdown from './NotificationDropdown'
 
 const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
-  const { bg, text, border, hover, isDarkMode } = useTheme();
+  const { bg, text, border, isDarkMode } = useTheme();
   const { t } = useLanguage();
   const { user, logout } = useAuth();
-  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   
   const handleLogout = () => {
@@ -66,23 +65,8 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
             </div>
             <ThemeToggle />
             
-            {/* Notification Bell */}
-            <button
-              onClick={() => navigate('/notifications')}
-              className={`relative p-2 rounded-lg transition-colors cursor-pointer ${
-                isDarkMode 
-                  ? 'hover:bg-gray-700 text-gray-300' 
-                  : 'hover:bg-gray-200 text-gray-700'
-              }`}
-              title={t('header.notifications', 'Notifications')}
-            >
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </button>
+            <NotificationDropdown />
+
             <button
               onClick={handleLogout}
               className={`flex group hover:scale-105 items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-250 cursor-pointer ${

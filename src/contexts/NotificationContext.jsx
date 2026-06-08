@@ -5,6 +5,8 @@ import { useLanguage } from './LanguageContext.jsx';
 import { ensureValidSession } from '../hooks/useSessionGuard.js';
 import { supabase } from '../config/supabaseClient.js';
 import { isDemoMode } from '../utils/demoHelper.js';
+import { getRealtimeEventType } from '../utils/realtimeHelpers.js';
+import { playNotificationSound } from '../utils/notificationSound.js';
 import * as notificationService from '../services/notificationService.js';
 import * as settingsService from '../services/settingsService.js';
 
@@ -12,6 +14,7 @@ const NotificationContext = createContext();
 
 const PENDING_APPROVAL_TITLE = 'Pending Approvals';
 const DEMO_TIME_ENTRIES_KEY = 'hr_app_demo_time_entries';
+const NOTIFICATIONS_PAGE_SIZE = 20;
 
 const EMPTY_STATS = {
   total_notifications: 0,
@@ -21,15 +24,47 @@ const EMPTY_STATS = {
   latest_notification_at: null
 };
 
+export const NOTIFICATION_PREFS_CHANGED_EVENT = 'notification-prefs-changed';
+
+const NOTIFICATION_PREF_KEYS = [
+  'push_notifications',
+  'desktop_notifications',
+  'notification_sound',
+  'notification_frequency',
+  'notify_time_tracking',
+  'notify_performance',
+  'notify_employee_updates',
+  'notify_recruitment',
+  'notify_system'
+];
+
 const DEFAULT_NOTIFICATION_PREFS = {
   push_notifications: true,
   desktop_notifications: false,
+  notification_sound: false,
   notification_frequency: 'realtime',
   notify_time_tracking: true,
   notify_performance: true,
   notify_employee_updates: true,
   notify_recruitment: true,
   notify_system: true
+};
+
+const pickNotificationPrefs = (settings) => {
+  if (!settings) return { ...DEFAULT_NOTIFICATION_PREFS };
+
+  const picked = { ...DEFAULT_NOTIFICATION_PREFS };
+  NOTIFICATION_PREF_KEYS.forEach((key) => {
+    if (settings[key] !== undefined) {
+      picked[key] = settings[key];
+    }
+  });
+  return picked;
+};
+
+const applyNotificationPrefs = (setPrefs, ref, prefs) => {
+  setPrefs(prefs);
+  ref.current = prefs;
 };
 
 const CATEGORY_PREF_KEYS = {
@@ -40,9 +75,6 @@ const CATEGORY_PREF_KEYS = {
   system: 'notify_system',
   general: 'notify_system'
 };
-
-/** Supabase realtime payloads use eventType; some clients expose event */
-const getRealtimeEventType = (payload) => payload?.eventType || payload?.event;
 
 const isCategoryEnabled = (prefs, category) => {
   const key = CATEGORY_PREF_KEYS[category] || 'notify_system';
@@ -56,6 +88,15 @@ const shouldDeliverBrowserNotification = (prefs, notification) => {
   }
   if (!isCategoryEnabled(prefs, notification.category)) return false;
   return Boolean(prefs.push_notifications || prefs.desktop_notifications);
+};
+
+const shouldPlayNotificationSound = (prefs, notification) => {
+  if (!notification || notification.is_read) return false;
+  if (!prefs.notification_sound || !prefs.push_notifications) return false;
+  if (prefs.notification_frequency && prefs.notification_frequency !== 'realtime') {
+    return false;
+  }
+  return isCategoryEnabled(prefs, notification.category);
 };
 
 export const useNotifications = () => {
@@ -105,10 +146,13 @@ export const NotificationProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(EMPTY_STATS);
   const [notificationPrefs, setNotificationPrefs] = useState(DEFAULT_NOTIFICATION_PREFS);
+  const [hasMoreNotifications, setHasMoreNotifications] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
   const pendingApprovalsDebounceRef = useRef(null);
   const toastTimeoutRef = useRef(null);
   const notificationPrefsRef = useRef(DEFAULT_NOTIFICATION_PREFS);
+  const loadedOffsetRef = useRef(0);
 
   const unreadCount = stats.unread_count;
 
@@ -139,39 +183,105 @@ export const NotificationProvider = ({ children }) => {
     };
   }, []);
 
+  const updateNotificationPrefs = useCallback((settings) => {
+    const picked = pickNotificationPrefs(settings);
+    applyNotificationPrefs(setNotificationPrefs, notificationPrefsRef, picked);
+    return picked;
+  }, []);
+
   const loadNotificationPrefs = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      applyNotificationPrefs(
+        setNotificationPrefs,
+        notificationPrefsRef,
+        DEFAULT_NOTIFICATION_PREFS
+      );
+      return DEFAULT_NOTIFICATION_PREFS;
+    }
 
     try {
       const result = await settingsService.getUserSettings(user.id);
       if (result.success && result.data) {
-        setNotificationPrefs((prev) => ({ ...prev, ...result.data }));
+        return updateNotificationPrefs(result.data);
       }
     } catch (error) {
       handleSessionAuthError(error, { silent: true });
     }
-  }, [user?.id, handleSessionAuthError]);
 
-  const fetchNotifications = useCallback(async (filters = {}) => {
-    if (!user?.id) return;
+    return notificationPrefsRef.current;
+  }, [user?.id, handleSessionAuthError, updateNotificationPrefs]);
 
-    setLoading(true);
-    try {
-      await ensureValidSession();
-      const result = await notificationService.getUserNotifications(user.id, filters);
-
-      if (result.success) {
-        setNotifications(result.data);
+  // Sync prefs when settings are saved elsewhere (e.g. Settings page)
+  useEffect(() => {
+    const handlePrefsChanged = (event) => {
+      if (event.detail) {
+        updateNotificationPrefs(event.detail);
       } else {
-        console.error('Failed to fetch notifications:', result.error);
+        loadNotificationPrefs();
       }
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
-      handleSessionAuthError(error, { silent: true });
+    };
+
+    window.addEventListener(NOTIFICATION_PREFS_CHANGED_EVENT, handlePrefsChanged);
+    return () => {
+      window.removeEventListener(NOTIFICATION_PREFS_CHANGED_EVENT, handlePrefsChanged);
+    };
+  }, [updateNotificationPrefs, loadNotificationPrefs]);
+
+  const fetchNotifications = useCallback(
+    async (options = {}) => {
+      const { append = false, filters = {} } = options;
+      if (!user?.id) return;
+
+      if (!append) {
+        setLoading(true);
+      }
+
+      try {
+        await ensureValidSession();
+        const result = await notificationService.getUserNotifications(user.id, {
+          ...filters,
+          limit: NOTIFICATIONS_PAGE_SIZE,
+          offset: append ? loadedOffsetRef.current : 0
+        });
+
+        if (result.success) {
+          if (append) {
+            setNotifications((prev) => {
+              const ids = new Set(prev.map((n) => n.id));
+              const newOnes = result.data.filter((n) => !ids.has(n.id));
+              loadedOffsetRef.current += newOnes.length;
+              return [...prev, ...newOnes];
+            });
+          } else {
+            setNotifications(result.data);
+            loadedOffsetRef.current = result.data.length;
+          }
+          setHasMoreNotifications(Boolean(result.hasMore));
+        } else {
+          console.error('Failed to fetch notifications:', result.error);
+        }
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+        handleSessionAuthError(error, { silent: true });
+      } finally {
+        if (!append) {
+          setLoading(false);
+        }
+      }
+    },
+    [user?.id, handleSessionAuthError]
+  );
+
+  const loadMoreNotifications = useCallback(async () => {
+    if (!user?.id || loadingMore || !hasMoreNotifications) return;
+
+    setLoadingMore(true);
+    try {
+      await fetchNotifications({ append: true });
     } finally {
-      setLoading(false);
+      setLoadingMore(false);
     }
-  }, [user?.id, handleSessionAuthError]);
+  }, [user?.id, loadingMore, hasMoreNotifications, fetchNotifications]);
 
   const fetchUnreadCount = useCallback(async () => {
     if (!user?.id) return;
@@ -217,17 +327,22 @@ export const NotificationProvider = ({ children }) => {
     }
   }, []);
 
-  const maybeShowBrowserNotification = useCallback(
+  const deliverNotificationAlert = useCallback(
     (notification) => {
       const prefs = notificationPrefsRef.current;
-      if (!shouldDeliverBrowserNotification(prefs, notification)) return;
 
-      if ('Notification' in window && Notification.permission !== 'granted') return;
+      if (shouldDeliverBrowserNotification(prefs, notification)) {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          showBrowserNotification(notification.title, {
+            body: notification.message,
+            tag: notification.id
+          });
+        }
+      }
 
-      showBrowserNotification(notification.title, {
-        body: notification.message,
-        tag: notification.id
-      });
+      if (shouldPlayNotificationSound(prefs, notification)) {
+        playNotificationSound();
+      }
     },
     [showBrowserNotification]
   );
@@ -321,6 +436,13 @@ export const NotificationProvider = ({ children }) => {
     if (!isAuthenticated || !user?.id) {
       setNotifications([]);
       setStats(EMPTY_STATS);
+      setHasMoreNotifications(false);
+      loadedOffsetRef.current = 0;
+      applyNotificationPrefs(
+        setNotificationPrefs,
+        notificationPrefsRef,
+        DEFAULT_NOTIFICATION_PREFS
+      );
       setLoading(false);
       return;
     }
@@ -395,7 +517,7 @@ export const NotificationProvider = ({ children }) => {
             payload.new.type === 'warning' ? prev.warning_count + 1 : prev.warning_count,
           latest_notification_at: payload.new.created_at || prev.latest_notification_at
         }));
-        maybeShowBrowserNotification(payload.new);
+        deliverNotificationAlert(payload.new);
         return;
       }
 
@@ -429,7 +551,7 @@ export const NotificationProvider = ({ children }) => {
         }));
       }
     },
-    [fetchUnreadCount, fetchStats, maybeShowBrowserNotification]
+    [fetchUnreadCount, fetchStats, deliverNotificationAlert]
   );
 
   // Subscribe to real-time notification updates
@@ -501,6 +623,46 @@ export const NotificationProvider = ({ children }) => {
       window.removeEventListener('demo-time-entries-changed', handleDemoTimeEntriesChanged);
     };
   }, [isAuthenticated, user?.id, user?.role, checkPendingApprovals]);
+
+  const markManyAsRead = useCallback(
+    async (notificationIds) => {
+      if (!notificationIds?.length) {
+        return { success: true };
+      }
+
+      const uniqueIds = [...new Set(notificationIds)];
+      const snapshot = { notifications, stats };
+      const idSet = new Set(uniqueIds);
+      let unreadDelta = 0;
+
+      setNotifications((prev) =>
+        prev.map((n) => {
+          if (idSet.has(n.id) && !n.is_read) {
+            unreadDelta += 1;
+            return { ...n, is_read: true, read_at: new Date().toISOString() };
+          }
+          return n;
+        })
+      );
+
+      if (unreadDelta > 0) {
+        setStats((prev) => ({
+          ...prev,
+          unread_count: Math.max(0, prev.unread_count - unreadDelta)
+        }));
+      }
+
+      const result = await notificationService.markManyAsRead(uniqueIds);
+
+      if (!result.success) {
+        setNotifications(snapshot.notifications);
+        setStats(snapshot.stats);
+      }
+
+      return result;
+    },
+    [notifications, stats]
+  );
 
   const markAsRead = useCallback(
     async (notificationId) => {
@@ -637,9 +799,32 @@ export const NotificationProvider = ({ children }) => {
     return result;
   }, [user?.id, notifications, stats, showActionError, t]);
 
-  const createNotification = useCallback(async (notification) => {
-    return notificationService.createNotification(notification);
-  }, []);
+  const createNotification = useCallback(
+    async (notification) => {
+      const result = await notificationService.createNotification(notification);
+
+      if (result.success && result.data && notification.userId === user?.id) {
+        setNotifications((prev) => {
+          if (prev.some((n) => n.id === result.data.id)) return prev;
+          return [result.data, ...prev];
+        });
+        setStats((prev) => ({
+          ...prev,
+          total_notifications: prev.total_notifications + 1,
+          unread_count: result.data.is_read ? prev.unread_count : prev.unread_count + 1,
+          error_count:
+            result.data.type === 'error' ? prev.error_count + 1 : prev.error_count,
+          warning_count:
+            result.data.type === 'warning' ? prev.warning_count + 1 : prev.warning_count,
+          latest_notification_at: result.data.created_at || prev.latest_notification_at
+        }));
+        deliverNotificationAlert(result.data);
+      }
+
+      return result;
+    },
+    [user?.id, deliverNotificationAlert]
+  );
 
   const getFilteredNotifications = useCallback((filters) => {
     let filtered = [...notifications];
@@ -676,7 +861,11 @@ export const NotificationProvider = ({ children }) => {
       notificationPrefs,
       fetchNotifications,
       refreshNotificationData,
+      loadMoreNotifications,
+      hasMoreNotifications,
+      loadingMore,
       markAsRead,
+      markManyAsRead,
       markAllAsRead,
       deleteNotification,
       deleteAllNotifications,
@@ -684,7 +873,8 @@ export const NotificationProvider = ({ children }) => {
       getFilteredNotifications,
       showBrowserNotification,
       requestNotificationPermission,
-      loadNotificationPrefs
+      loadNotificationPrefs,
+      updateNotificationPrefs
     }),
     [
       notifications,
@@ -694,7 +884,11 @@ export const NotificationProvider = ({ children }) => {
       notificationPrefs,
       fetchNotifications,
       refreshNotificationData,
+      loadMoreNotifications,
+      hasMoreNotifications,
+      loadingMore,
       markAsRead,
+      markManyAsRead,
       markAllAsRead,
       deleteNotification,
       deleteAllNotifications,
@@ -702,7 +896,8 @@ export const NotificationProvider = ({ children }) => {
       getFilteredNotifications,
       showBrowserNotification,
       requestNotificationPermission,
-      loadNotificationPrefs
+      loadNotificationPrefs,
+      updateNotificationPrefs
     ]
   );
 

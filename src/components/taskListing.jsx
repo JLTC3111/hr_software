@@ -9,6 +9,7 @@ import { getEmployeePositionI18nKey } from '../utils/employeePositionKey.js';
 import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription } from '../utils/demoHelper.js';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
+import { isRealtimeMutation } from '../utils/realtimeHelpers.js';
 
 export const MiniFlubberAutoMorphCompleteTask = ({
   size = 24,
@@ -370,7 +371,7 @@ const TaskListing = ({ employees }) => {
         console.log('Task change:', payload);
         
         // Refetch tasks to get complete data with employee info
-        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE' || payload.eventType === 'DELETE') {
+        if (isRealtimeMutation(payload)) {
           fetchTasks();
         }
       }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Bell, CheckCheck, Trash2, Filter, AlertCircle, Trash, Info, CheckCircle, AlertTriangle, Inbox, ExternalLink, RefreshCw } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -263,7 +263,11 @@ const Notifications = () => {
     markAllAsRead,
     deleteNotification,
     deleteAllNotifications,
-    refreshNotificationData
+    refreshNotificationData,
+    loadMoreNotifications,
+    hasMoreNotifications,
+    loadingMore,
+    markManyAsRead
   } = useNotifications();
 
   const [filter, setFilter] = useState('all'); // all, unread, read
@@ -275,6 +279,9 @@ const Notifications = () => {
   const [isHoveringDeleteAll, setIsHoveringDeleteAll] = useState(false);
   const [isBulkActionRunning, setIsBulkActionRunning] = useState(false);
   const refreshTimeoutRef = useRef(null);
+  const filteredUnreadIdsRef = useRef([]);
+  const markManyAsReadRef = useRef(markManyAsRead);
+  markManyAsReadRef.current = markManyAsRead;
 
   useEffect(() => {
     return () => {
@@ -283,6 +290,12 @@ const Notifications = () => {
       }
     };
   }, []);
+
+  const clearFilters = () => {
+    setFilter('all');
+    setCategoryFilter('all');
+    setTypeFilter('all');
+  };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -296,14 +309,37 @@ const Notifications = () => {
     }
   };
 
-  // Filter notifications based on selected filters
-  const filteredNotifications = notifications.filter(notification => {
-    if (filter === 'unread' && notification.is_read) return false;
-    if (filter === 'read' && !notification.is_read) return false;
-    if (categoryFilter !== 'all' && notification.category !== categoryFilter) return false;
-    if (typeFilter !== 'all' && notification.type !== typeFilter) return false;
-    return true;
+  const hasActiveFilters =
+    filter !== 'all' || categoryFilter !== 'all' || typeFilter !== 'all';
+
+  const filteredNotifications = useMemo(
+    () =>
+      notifications.filter((notification) => {
+        if (filter === 'unread' && notification.is_read) return false;
+        if (filter === 'read' && !notification.is_read) return false;
+        if (categoryFilter !== 'all' && notification.category !== categoryFilter) {
+          return false;
+        }
+        if (typeFilter !== 'all' && notification.type !== typeFilter) return false;
+        return true;
+      }),
+    [notifications, filter, categoryFilter, typeFilter]
+  );
+
+  useEffect(() => {
+    filteredUnreadIdsRef.current = filteredNotifications
+      .filter((n) => !n.is_read)
+      .map((n) => n.id);
   });
+
+  useEffect(() => {
+    return () => {
+      const ids = filteredUnreadIdsRef.current;
+      if (ids.length > 0) {
+        markManyAsReadRef.current(ids);
+      }
+    };
+  }, []);
 
   // Get icon for notification type
   const getTypeIcon = (type) => {
@@ -433,7 +469,9 @@ const Notifications = () => {
   // Helper function to translate notification messages
   const getTranslatedMessage = (message) => {
     // Handle dynamic messages with patterns
-    const timeEntriesMatch = message.match(/You have (\d+) time entries awaiting approval/);
+    const timeEntriesMatch = message.match(
+      /You have (\d+) time (?:entry|entries) awaiting approval/
+    );
     if (timeEntriesMatch) {
       return t('notifications.timeEntriesAwaiting', '').replace('{0}', timeEntriesMatch[1]);
     }
@@ -657,11 +695,20 @@ const Notifications = () => {
                 {t('notifications.noNotifications', 'No notifications')}
               </h3>
               <p className={`${text.secondary}`}>
-                {filter !== 'all' 
+                {hasActiveFilters || notifications.length > 0
                   ? t('notifications.noNotificationsFilter', 'No notifications match your filters')
                   : t('notifications.noNotificationsYet', 'You don\'t have any notifications yet')
                 }
               </p>
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="mt-4 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 cursor-pointer"
+                >
+                  {t('notifications.clearFilters', 'Clear filters')}
+                </button>
+              )}
             </div>
           </div>
         ) : (
@@ -755,6 +802,21 @@ const Notifications = () => {
                 </div>
               </div>
             ))}
+
+            {hasMoreNotifications && (
+              <div className="flex justify-center pt-2">
+                <button
+                  type="button"
+                  onClick={loadMoreNotifications}
+                  disabled={loadingMore}
+                  className={`px-6 py-2 rounded-lg border ${border.primary} ${hover.bg} ${text.secondary} text-sm font-medium transition-colors cursor-pointer disabled:opacity-50`}
+                >
+                  {loadingMore
+                    ? t('notifications.loadingMore', 'Loading...')
+                    : t('notifications.loadMore', 'Load more')}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
