@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 import { TrendingUp, Users, Award, FileText, Clock, AlarmClock, ChevronLeft, ChevronRight, ChevronDown, Building2, Bell, Cog, CheckSquare, Sparkles, X, UserPlus } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useNotifications } from '../contexts/NotificationContext'
 
 const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -13,6 +14,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const sidebarRef = useRef(null);
   const { bg, text, hover, isDarkMode } = useTheme();
   const { t } = useLanguage();
+  const { unreadCount } = useNotifications();
   
   // Handle resize
   const startResizing = (e) => {
@@ -244,7 +246,21 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                           title={isCollapsed ? item.name : ''}
                         >
                           <Icon className="h-5 w-5 shrink-0" />
-                          {!isCollapsed && <span className="font-medium">{item.name}</span>}
+                          {!isCollapsed && (
+                            <span className="font-medium flex-1">{item.name}</span>
+                          )}
+                          {item.path === '/notifications' && unreadCount > 0 && (
+                            <span
+                              className={`${
+                                isCollapsed
+                                  ? 'absolute -top-1 -right-1'
+                                  : 'ml-auto'
+                              } bg-red-500 text-white text-xs font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center`}
+                              aria-hidden="true"
+                            >
+                              {unreadCount > 9 ? '9+' : unreadCount}
+                            </span>
+                          )}
                           
                           {/* Tooltip for collapsed state */}
                           {isCollapsed && hoveredItem === item.name && (

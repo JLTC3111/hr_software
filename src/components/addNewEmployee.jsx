@@ -83,7 +83,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
   const { t } = useLanguage();
   const { createNotification } = useNotifications();
   const { isDarkMode, bg, text, border, hover } = useTheme();
-  const { checkPermission, handleSessionAuthError } = useAuth();
+  const { user, checkPermission, handleSessionAuthError } = useAuth();
   
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -243,13 +243,17 @@ const AddNewEmployee = ({ refetchEmployees }) => {
       if (result.success) {
         // Create success notification
         try {
-          await createNotification({
-            userId: result.data.id,
-            title: t('notifications.employeeAdded', 'Employee Added'),
-            message: `${formData.name} ${t('notifications.addedTo', 'added to')} ${formData.department}`,
-            type: 'success',
-            category: 'employee'
-          });
+          if (user?.id) {
+            await createNotification({
+              userId: user.id,
+              title: t('notifications.employeeAdded', 'Employee Added'),
+              message: `${formData.name} ${t('notifications.addedTo', 'added to')} ${formData.department}`,
+              type: 'success',
+              category: 'employee',
+              actionUrl: '/employees',
+              actionLabel: t('notifications.viewDetails', 'View Details')
+            });
+          }
         } catch (notifError) {
           console.error('Notification error:', notifError);
           // Continue even if notification fails

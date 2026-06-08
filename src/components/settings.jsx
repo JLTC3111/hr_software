@@ -22,7 +22,10 @@ import {
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import { useNotifications } from '../contexts/NotificationContext';
+import {
+  useNotifications,
+  NOTIFICATION_PREFS_CHANGED_EVENT
+} from '../contexts/NotificationContext';
 import { useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { ensureValidSession } from '../hooks/useSessionGuard.js';
 import * as settingsService from '../services/settingsService';
@@ -31,7 +34,7 @@ const Settings = () => {
   const { bg, text, border, hover, isDarkMode, toggleTheme } = useTheme();
   const { t, changeLanguage, currentLanguage } = useLanguage();
   const { user, handleSessionAuthError } = useAuth();
-  const { requestNotificationPermission } = useNotifications();
+  const { requestNotificationPermission, updateNotificationPrefs } = useNotifications();
 
   const [activeTab, setActiveTab] = useState('notifications');
   const [settings, setSettings] = useState(null);
@@ -72,6 +75,23 @@ const Settings = () => {
     setSaveSuccess(false);
   };
 
+  const applySavedSettings = (data) => {
+    updateNotificationPrefs(data);
+    window.dispatchEvent(
+      new CustomEvent(NOTIFICATION_PREFS_CHANGED_EVENT, { detail: data })
+    );
+
+    if (data.theme === 'dark' && !isDarkMode) {
+      toggleTheme();
+    } else if (data.theme === 'light' && isDarkMode) {
+      toggleTheme();
+    }
+
+    if (data.language && data.language !== currentLanguage) {
+      changeLanguage(data.language);
+    }
+  };
+
   const saveSettings = async () => {
     if (!user?.id || !settings) return;
 
@@ -84,20 +104,8 @@ const Settings = () => {
         setSettings(result.data);
         setHasChanges(false);
         setSaveSuccess(true);
-        
-        // Apply theme if changed
-        if (result.data.theme !== 'system') {
-          const shouldBeDark = result.data.theme === 'dark';
-          if (shouldBeDark !== isDarkMode) {
-            toggleTheme();
-          }
-        }
 
-        // Apply language if changed
-        if (result.data.language !== currentLanguage) {
-          changeLanguage(result.data.language);
-        }
-
+        applySavedSettings(result.data);
         setTimeout(() => setSaveSuccess(false), 3000);
       }
     } catch (error) {
@@ -119,9 +127,11 @@ const Settings = () => {
     if (result.success) {
       setSettings(result.data);
       setHasChanges(false);
-      window.location.reload(); // Reload to apply all changes
+      applySavedSettings(result.data);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
     }
-    
+
     setSaving(false);
   };
 
@@ -149,8 +159,9 @@ const Settings = () => {
         if (result.success) {
           setSettings(result.data);
           setHasChanges(false);
-          alert(t('settings.importSuccess', 'Settings imported successfully!'));
-          window.location.reload();
+          applySavedSettings(result.data);
+          setSaveSuccess(true);
+          setTimeout(() => setSaveSuccess(false), 3000);
         }
       } catch (error) {
         alert(t('settings.importError', 'Failed to import settings'));
@@ -293,6 +304,13 @@ const Settings = () => {
                           handleSettingChange('desktop_notifications', false);
                         }
                       }}
+                    />
+
+                    <SettingToggle
+                      label={t('settings.notificationSound', 'Notification Sound')}
+                      description={t('settings.notificationSoundDesc', 'Play a sound when new notifications arrive')}
+                      checked={settings?.notification_sound}
+                      onChange={(checked) => handleSettingChange('notification_sound', checked)}
                     />
                   </div>
 
