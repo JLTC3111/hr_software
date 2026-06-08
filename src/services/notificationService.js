@@ -618,7 +618,7 @@ export const notifyPendingApprovals = async () => {
       message: `You have ${pendingResult.count} time ${pendingResult.count === 1 ? 'entry' : 'entries'} awaiting approval`,
       type: 'warning',
       category: 'time_tracking',
-      actionUrl: '/time-clock',
+      actionUrl: '/time-clock?review=pending',
       actionLabel: 'Review Now',
       metadata: { pendingCount: pendingResult.count }
     }));

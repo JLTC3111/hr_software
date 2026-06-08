@@ -8,6 +8,7 @@ import {
   getDemoNotificationTitle,
   getDemoNotificationMessage
 } from '../utils/demoHelper';
+import { resolveNotificationActionUrl } from '../utils/notificationNavigation';
 
 const PREVIEW_LIMIT = 5;
 
@@ -76,8 +77,9 @@ const NotificationDropdown = () => {
       await markAsRead(notification.id);
     }
     setOpen(false);
-    if (notification.action_url) {
-      navigate(notification.action_url);
+    const actionUrl = resolveNotificationActionUrl(notification);
+    if (actionUrl) {
+      navigate(actionUrl);
     } else {
       navigate('/notifications');
     }

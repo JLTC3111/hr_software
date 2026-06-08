@@ -10,6 +10,7 @@ import {
   getDemoNotificationMessage,
   getDemoNotificationActionLabel
 } from '../utils/demoHelper';
+import { resolveNotificationActionUrl } from '../utils/notificationNavigation';
 
 export const MiniFlubberAutoMorphDelete = ({
   size = 16,
@@ -405,8 +406,9 @@ const Notifications = () => {
       }
     }
 
-    if (notification.action_url) {
-      navigate(notification.action_url);
+    const actionUrl = resolveNotificationActionUrl(notification);
+    if (actionUrl) {
+      navigate(actionUrl);
     }
   };
 

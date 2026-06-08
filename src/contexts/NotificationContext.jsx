@@ -383,7 +383,7 @@ export const NotificationProvider = ({ children }) => {
       const notifyOptions = (count) => ({
         type: 'warning',
         category: 'time_tracking',
-        actionUrl: '/time-clock',
+        actionUrl: '/time-clock?review=pending',
         actionLabel: 'Review Now',
         metadata: { pendingCount: count }
       });
