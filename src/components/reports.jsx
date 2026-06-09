@@ -144,6 +144,7 @@ const Reports = () => {
     timeEntries: [],
     tasks: [],
     goals: [],
+    leave: [],
     employees: []
   });
 
@@ -403,6 +404,33 @@ const Reports = () => {
       } else {
         console.log('=== SKIPPING GOALS FETCH ===', { activeTab });
       }
+
+      // Fetch Leave Requests (for 'leave' tab)
+      if (activeTab === 'leave') {
+        const leaveResponse = await timeTrackingService.getAllLeaveRequests({});
+        let leaveData = leaveResponse.success ? leaveResponse.data : [];
+
+        // Filter by employee
+        if (employeeId) {
+          leaveData = leaveData.filter(req => String(req.employee_id) === String(employeeId));
+        }
+
+        // Filter by date range overlap
+        leaveData = leaveData.filter(req => {
+          const s = (req.start_date || '').slice(0, 10);
+          const e = (req.end_date || req.start_date || '').slice(0, 10);
+          return s <= endDate && e >= startDate;
+        });
+
+        // Attach readable employee info (mainly for demo mode where it isn't merged)
+        setReportData(prev => ({
+          ...prev,
+          leave: leaveData.map(req => ({
+            ...req,
+            employee: req.employee || prev.employees.find(emp => String(emp.id) === String(req.employee_id)) || null
+          }))
+        }));
+      }
       }, {
         maxRetries: 2,
         shouldRetry: isRetryableError,
@@ -534,6 +562,8 @@ const Reports = () => {
         return filterByEmployee(reportData.tasks);
       case 'goals':
         return filterByEmployee(reportData.goals);
+      case 'leave':
+        return filterByEmployee(reportData.leave);
       default:
         return [];
     }
@@ -548,8 +578,8 @@ const Reports = () => {
         let aValue, bValue;
         switch (sortKey) {
           case 'date':
-            aValue = new Date(a.date || a.due_date || a.target_date || a.created_at).getTime();
-            bValue = new Date(b.date || b.due_date || b.target_date || b.created_at).getTime();
+            aValue = new Date(a.date || a.due_date || a.target_date || a.start_date || a.created_at).getTime();
+            bValue = new Date(b.date || b.due_date || b.target_date || b.start_date || b.created_at).getTime();
             break;
           case 'employee':
             aValue = (a.employee?.name || '').toLowerCase();
@@ -660,6 +690,19 @@ const Reports = () => {
         achieved,
         inProgress,
         averageProgress
+      };
+    } else if (activeTab === 'leave') {
+      const approved = data.filter(req => req.status === 'approved').length;
+      const pending = data.filter(req => req.status === 'pending').length;
+      const totalLeaveDays = data
+        .filter(req => req.status === 'approved')
+        .reduce((sum, req) => sum + (Number(req.days_count) || 0), 0);
+
+      return {
+        totalRecords,
+        approved,
+        pending,
+        totalLeaveDays
       };
     }
 
@@ -2408,6 +2451,7 @@ const Reports = () => {
               {activeTab === 'time-entries' && t('reports.timeEntries', 'Time Entries')}
               {activeTab === 'tasks' && t('reports.tasks', 'Tasks')}
               {activeTab === 'goals' && t('reports.goals', 'Personal Goals')}
+              {activeTab === 'leave' && t('reports.leave', 'Leave Requests')}
               {selectedEmployee !== 'all' && (
                 <span className="px-3 py-1 text-xs bg-linear-to-r from-blue-600 to-gray-600 text-white rounded-full font-medium">
                   {t('reports.individualReport', 'Individual Report')}
@@ -2553,6 +2597,7 @@ const Reports = () => {
               <option value="time-entries">{t('reports.timeEntries', 'Time Entries')}</option>
               <option value="tasks">{t('reports.tasks', 'Tasks')}</option>
               <option value="goals">{t('reports.goals', 'Personal Goals')}</option>
+              <option value="leave">{t('reports.leave', 'Leave Requests')}</option>
             </select>
           </div>
         </div>
@@ -2943,6 +2988,38 @@ const Reports = () => {
             </div>
           </>
         )}
+
+        {activeTab === 'leave' && (
+          <>
+            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm ${text.secondary}`}>{t('reports.approved', 'Approved')}</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.approved}</p>
+                </div>
+                <CheckCircle className={`w-8 h-8 ${text.secondary}`} />
+              </div>
+            </div>
+            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm ${text.secondary}`}>{t('reports.pending', 'Pending')}</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.pending}</p>
+                </div>
+                <Hourglass className={`w-8 h-8 ${text.secondary}`} />
+              </div>
+            </div>
+            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-sm ${text.secondary}`}>{t('reports.totalLeaveDays', 'Total Leave Days')}</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.totalLeaveDays}</p>
+                </div>
+                <Calendar className={`w-8 h-8 ${text.secondary}`} />
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Preview Table */}
@@ -3165,6 +3242,53 @@ const Reports = () => {
                     </th>
                   </>
                 )}
+
+                {activeTab === 'leave' && (
+                  <>
+                    <th
+                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
+                      onClick={() => handleSort('employee')}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {t('reports.employees', 'Employee')}
+                        <ArrowDownAZ
+                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
+                          style={{ transition: 'transform 0.5s', transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
+                        />
+                      </span>
+                    </th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.leaveType', 'Type')}</th>
+                    <th
+                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
+                      onClick={() => handleSort('date')}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {t('reports.dateRange', 'Date Range')}
+                        {sortKey === 'date' ? (
+                          sortDirection === 'asc' ? (
+                            <CalendarArrowUp className={`inline w-4 h-4 ml-1 ${isDarkMode ? 'text-white' : 'text-black'}`} />
+                          ) : (
+                            <CalendarArrowDown className={`inline w-4 h-4 ml-1 ${isDarkMode ? 'text-white' : 'text-black'}`} />
+                          )
+                        ) : (
+                          <CalendarArrowUp className="inline w-4 h-4 ml-1 text-gray-400 hover:text-blue-400 hover:animate-pulse" />
+                        )}
+                      </span>
+                    </th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.days', 'Days')}</th>
+                    <th
+                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
+                      onClick={() => handleSort('status')}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {t('reports.status', 'Status')}
+                        <ShieldCheck
+                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
+                        />
+                      </span>
+                    </th>
+                  </>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -3374,6 +3498,35 @@ const Reports = () => {
                             </div>
                             <span className="text-sm font-medium">{item.status === 'completed' ? 100 : (item.progress || 0)}%</span>
                           </div>
+                        </td>
+                      </>
+                    )}
+
+                    {activeTab === 'leave' && (
+                      <>
+                        <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
+                          <div>
+                            <div className="text-sm font-medium">{isDemoMode() ? getDemoEmployeeName(item.employee, t) : (item.employee?.name || 'Unknown')}</div>
+                            <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
+                          </div>
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap`}>
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                            {t(`timeTracking.${item.leave_type === 'sick' ? 'sickLeave' : item.leave_type === 'personal' ? 'personal' : 'vacation'}`, item.leave_type)}
+                          </span>
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>
+                          {(item.start_date || '').slice(0, 10)} → {(item.end_date || item.start_date || '').slice(0, 10)}
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{item.days_count ?? '-'}</td>
+                        <td className={`px-6 py-4 whitespace-nowrap`}>
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            item.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                            item.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                            'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                          }`}>
+                            {translateStatus(item.status)}
+                          </span>
                         </td>
                       </>
                     )}

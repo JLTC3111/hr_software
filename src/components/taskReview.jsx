@@ -1763,7 +1763,19 @@ const TaskReview = ({ employees }) => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [expandedEmployee, setExpandedEmployee] = useState(null);
+  // Track which employee cards are collapsed. Empty set => all expanded by default.
+  const [collapsedEmployees, setCollapsedEmployees] = useState(() => new Set());
+  const toggleEmployeeExpanded = (employeeId) => {
+    setCollapsedEmployees(prev => {
+      const next = new Set(prev);
+      if (next.has(employeeId)) {
+        next.delete(employeeId);
+      } else {
+        next.add(employeeId);
+      }
+      return next;
+    });
+  };
   const [orgStats, setOrgStats] = useState(null);
   const [employeeStats, setEmployeeStats] = useState({});
   const [reviewingTask, setReviewingTask] = useState(null);
@@ -1969,20 +1981,28 @@ const TaskReview = ({ employees }) => {
 
     const breakdownRows = (() => {
       const allRows = Object.values(tasksByEmployee);
-      const hasTasks = ({ tasks }) => (tasks?.length || 0) > 0;
 
+      // Show every employee — including those with no active tasks.
       const rowsExcludingSelf = allRows
-        .filter(({ employee }) => filteredEmployees.some(e => String(e.id) === String(employee.id)))
-        .filter(hasTasks);
+        .filter(({ employee }) => filteredEmployees.some(e => String(e.id) === String(employee.id)));
 
-      // If excluding the current user would result in no content (common in demo setups),
-      // fall back to showing anyone who has tasks (including the current user).
+      // If excluding the current user would leave nothing (common in demo setups),
+      // fall back to showing everyone (including the current user).
       if (rowsExcludingSelf.length === 0) {
-        return allRows.filter(hasTasks);
+        return allRows;
       }
 
       return rowsExcludingSelf;
     })();
+
+    const allExpanded = breakdownRows.every(({ employee }) => !collapsedEmployees.has(employee.id));
+    const toggleAll = () => {
+      if (allExpanded) {
+        setCollapsedEmployees(new Set(breakdownRows.map(({ employee }) => employee.id)));
+      } else {
+        setCollapsedEmployees(new Set());
+      }
+    };
 
     return (
       <div className="space-y-6">
@@ -2033,9 +2053,21 @@ const TaskReview = ({ employees }) => {
         </div>
       )}
       <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
-        <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-          {t('taskReview.employeeBreakdown')}
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className={`text-lg font-semibold ${text.primary}`}>
+            {t('taskReview.employeeBreakdown')}
+          </h3>
+          {breakdownRows.length > 0 && (
+            <button
+              type="button"
+              onClick={toggleAll}
+              className={`flex items-center space-x-1 text-sm px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              {allExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              <span>{allExpanded ? t('taskReview.collapseAll', 'Collapse All') : t('taskReview.expandAll', 'Expand All')}</span>
+            </button>
+          )}
+        </div>
         <div className="space-y-3">
           {breakdownRows.length === 0 ? (
             <div className="text-center py-10">
@@ -2044,12 +2076,12 @@ const TaskReview = ({ employees }) => {
               </p>
             </div>
           ) : breakdownRows.map(({ employee, tasks: empTasks }) => {
-            const isExpanded = expandedEmployee === employee.id;
+            const isExpanded = !collapsedEmployees.has(employee.id);
             const progress = calculateProgress(empTasks);
             const avgQuality = calculateAvgQuality(empTasks);
             return (
               <div key={employee.id} className={`border ${border.primary} rounded-lg overflow-hidden`}>
-                <div className={`p-4 cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`} onClick={() => setExpandedEmployee(isExpanded ? null : employee.id)}>
+                <div className={`p-4 cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`} onClick={() => toggleEmployeeExpanded(employee.id)}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3 flex-1">
                       {employee.photo ? (
@@ -2088,6 +2120,12 @@ const TaskReview = ({ employees }) => {
                 </div>
                 {isExpanded && (
                   <div className={`border-t ${border.primary} p-4 ${isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
+                    {empTasks.length === 0 && (
+                      <div className="flex flex-col items-center justify-center py-6 text-center">
+                        <CalendarOff className={`w-8 h-8 mb-2 ${text.secondary}`} />
+                        <p className={`text-sm ${text.secondary}`}>{t('taskReview.noActiveTasks', 'No active tasks for this employee.')}</p>
+                      </div>
+                    )}
                     <div className="space-y-3">
                       {empTasks.map(task => (
                         <div key={task.id} className={`p-4 rounded ${bg.secondary} border ${border.primary} hover:shadow-md transition-all`}>
