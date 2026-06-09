@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence, useMotionValue, animate } from 'framer-motion'
 import * as flubber from 'flubber'
 import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, ArrowUp01, Sailboat, Stamp, CircleQuestionMark, Funnel, ListFilterPlus, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart, AlertCircle } from 'lucide-react'
@@ -7,8 +7,6 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import * as timeTrackingService from '../services/timeTrackingService'
-import { validateAndRefreshSession } from '../utils/sessionHelper';
-import { retryWithBackoff, isRetryableError } from '../utils/retryHelper';
 import { supabase } from '../config/supabaseClient'
 import { AnimatedClockIcon } from './timeClockEntry'
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js'
@@ -348,53 +346,16 @@ const TimeTracking = ({ employees }) => {
   // Auto-detect current logged-in user's employee_id
   const getCurrentEmployeeId = () => {
     if (user?.employeeId) {
-      const userEmployee = employees.find(emp => emp.id === user.employeeId);
+      const userEmployee = employees.find(emp => String(emp.id) === String(user.employeeId));
       if (userEmployee) return String(user.employeeId);
     }
-    return employees[0]?.id ? String(employees[0].id) : null;
+    return employees[0]?.id != null ? String(employees[0].id) : '';
   };
   
-  const [selectedEmployee, setSelectedEmployee] = useState(getCurrentEmployeeId());
+  const [selectedEmployee, setSelectedEmployee] = useState(() => getCurrentEmployeeId());
       // Sorting state for overview table
       const [sortKey, setSortKey] = useState('employee');
       const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
-
-      // Sorting function for overview table
-      const getSortedEmployees = () => {
-        const sorted = [...allEmployeesData];
-        sorted.sort((a, b) => {
-          let aValue, bValue;
-          switch (sortKey) {
-            case 'employee':
-              aValue = a.employee.name?.toLowerCase() || '';
-              bValue = b.employee.name?.toLowerCase() || '';
-              break;
-            case 'days_worked':
-              aValue = a.data?.days_worked || 0;
-              bValue = b.data?.days_worked || 0;
-              break;
-            case 'regular_hours':
-              aValue = a.data?.regular_hours || 0;
-              bValue = b.data?.regular_hours || 0;
-              break;
-            case 'overtime':
-              aValue = (a.data?.overtime_hours || 0) + (a.data?.holiday_overtime_hours || 0);
-              bValue = (b.data?.overtime_hours || 0) + (b.data?.holiday_overtime_hours || 0);
-              break;
-            case 'total_hours':
-              aValue = a.data?.total_hours || 0;
-              bValue = b.data?.total_hours || 0;
-              break;
-            default:
-              aValue = 0;
-              bValue = 0;
-          }
-          if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-          if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-          return 0;
-        });
-        return sorted;
-      };
 
       // Handle header click for sorting
       const handleSort = (key) => {
@@ -408,7 +369,7 @@ const TimeTracking = ({ employees }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // 1-indexed for Supabase
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   // Add 'leaveRequests' tab for admin/manager
-  const [activeTab, setActiveTab] = useState('overview'); // 'summary', 'overview', 'leaveRequests'
+  const [activeTab, setActiveTab] = useState('summary'); // 'summary', 'overview', 'leaveRequests'
   
   // Loading and data states
   const [loading, setLoading] = useState(true);
@@ -421,6 +382,8 @@ const TimeTracking = ({ employees }) => {
   const [processingRequests, setProcessingRequests] = useState({}); // { [requestId]: true }
   const [timeEntries, setTimeEntries] = useState([]);
   const [allEmployeesData, setAllEmployeesData] = useState([]);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const overviewCacheRef = useRef({ key: '', data: [] });
   
   // Modal states
   const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -553,12 +516,15 @@ const TimeTracking = ({ employees }) => {
     reason: ''
   });
 
-  // Auto-select current user on mount
+  // Auto-select current user when auth/employees load
   useEffect(() => {
-    if (user?.employeeId && !selectedEmployee) {
+    if (selectedEmployee) return;
+    if (user?.employeeId) {
       setSelectedEmployee(String(user.employeeId));
+    } else if (employees[0]?.id != null) {
+      setSelectedEmployee(String(employees[0].id));
     }
-  }, [user]);
+  }, [user, employees, selectedEmployee]);
 
   // Guard long-running network calls so UI can recover if Supabase hangs
   const withTimeout = useCallback(async (promiseOrFactory, ms = DEFAULT_REQUEST_TIMEOUT, label = 'request') => {
@@ -582,60 +548,45 @@ const TimeTracking = ({ employees }) => {
 
   // Define fetch function that can be reused for visibility refresh
   const fetchTimeTrackingData = useCallback(async ({ silent = false } = {}) => {
-    if (!selectedEmployee) return;
+    if (!selectedEmployee) {
+      if (!silent) setLoading(false);
+      return;
+    }
     if (!silent) {
       setLoading(true);
       setFetchError(null);
     }
     try {
-      // Skip session validation in demo mode - demo data doesn't require authentication
-      if (!isDemoMode()) {
-        // Validate session before fetching
-        const sessionValidation = await validateAndRefreshSession();
-        if (!sessionValidation.success) {
-          throw new Error(sessionValidation.error);
-        }
+      const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
+      const endDate = new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0];
+
+      const [summaryResult, leaveResult, entriesResult] = await Promise.all([
+        withTimeout(
+          () => timeTrackingService.getTimeTrackingSummary(selectedEmployee, selectedMonth, selectedYear),
+          DEFAULT_REQUEST_TIMEOUT,
+          'load time tracking summary'
+        ),
+        withTimeout(
+          () => timeTrackingService.getLeaveRequests(selectedEmployee, { year: selectedYear }),
+          DEFAULT_REQUEST_TIMEOUT,
+          'load leave requests (selected employee)'
+        ),
+        withTimeout(
+          () => timeTrackingService.getTimeEntries(selectedEmployee, { startDate, endDate }),
+          DEFAULT_REQUEST_TIMEOUT,
+          'load time entries (selected employee)'
+        ),
+      ]);
+
+      if (summaryResult.success) {
+        setSummaryData(summaryResult.data);
       }
-      
-      // Fetch summary, leave requests, and time entries in parallel
-      await retryWithBackoff(async () => {
-        const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
-        const endDate = new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0];
-
-        const [summaryResult, leaveResult, entriesResult] = await Promise.all([
-          withTimeout(
-            () => timeTrackingService.getTimeTrackingSummary(selectedEmployee, selectedMonth, selectedYear),
-            DEFAULT_REQUEST_TIMEOUT,
-            'load time tracking summary'
-          ),
-          withTimeout(
-            () => timeTrackingService.getLeaveRequests(selectedEmployee, { year: selectedYear }),
-            DEFAULT_REQUEST_TIMEOUT,
-            'load leave requests (selected employee)'
-          ),
-          withTimeout(
-            () => timeTrackingService.getTimeEntries(selectedEmployee, { startDate, endDate }),
-            DEFAULT_REQUEST_TIMEOUT,
-            'load time entries (selected employee)'
-          ),
-        ]);
-
-        if (summaryResult.success) {
-          setSummaryData(summaryResult.data);
-        }
-        if (leaveResult.success) {
-          setLeaveRequests(leaveResult.data);
-        }
-        if (entriesResult.success) {
-          setTimeEntries(entriesResult.data);
-        }
-      }, {
-        maxRetries: 2,
-        shouldRetry: isRetryableError,
-        onRetry: (error, attempt, delay) => {
-          console.log(`🔄 TimeTracking: Retrying fetch (${attempt}/2) after ${delay}ms...`);
-        }
-      });
+      if (leaveResult.success) {
+        setLeaveRequests(leaveResult.data);
+      }
+      if (entriesResult.success) {
+        setTimeEntries(entriesResult.data);
+      }
     } catch (error) {
       console.error('Error fetching time tracking data:', error);
 
@@ -660,21 +611,11 @@ const TimeTracking = ({ employees }) => {
   // Use visibility refresh hook to reload data when page becomes visible after idle
   useAuthenticatedPageRefresh(() => fetchTimeTrackingData({ silent: true }));
 
-  // Fetch all leave requests for all employees (admin/manager only)
-  const hasPrefetchedAll = useRef(false);
+  // Fetch all leave requests for all employees (admin/manager only, when tab is open)
   const fetchAllLeaveRequests = useCallback(async () => {
-    // Use the same permission guard that shows the Overview tab
-    // (some installs grant a 'canViewReports' capability rather than 'admin'/'manager')
-    console.log('[DEBUG] fetchAllLeaveRequests canViewOverview:', canViewOverview, 'activeTab:', activeTab);
-
-    if (!canViewOverview) {
-      console.log('[DEBUG] fetchAllLeaveRequests: user lacks canViewReports permission — skipping');
-      setAllLeaveRequests([]);
+    if (!canViewOverview || activeTab !== 'leaveRequests') {
       return;
     }
-
-    // Prefetch once for admins so the Leave Requests tab shows immediately when opened.
-    if (activeTab !== 'leaveRequests' && hasPrefetchedAll.current) return;
 
     try {
       const result = await withTimeout(
@@ -682,13 +623,11 @@ const TimeTracking = ({ employees }) => {
         DEFAULT_REQUEST_TIMEOUT,
         'fetch all leave requests'
       );
-      console.log('[DEBUG] getAllLeaveRequests result:', result);
       if (result.success && Array.isArray(result.data)) {
         setAllLeaveRequests(result.data);
       } else {
         setAllLeaveRequests([]);
       }
-      hasPrefetchedAll.current = true;
     } catch (error) {
       console.error('Error fetching all leave requests:', error);
       handleSessionAuthError(error, { silent: true });
@@ -713,18 +652,11 @@ const TimeTracking = ({ employees }) => {
     };
   }, [fetchTimeTrackingData, fetchAllLeaveRequests]);
 
-  // Defer admin leave-request prefetch so it does not compete with the primary load
   useEffect(() => {
-    if (!canViewOverview) return undefined;
-    const timerId = setTimeout(() => {
-      fetchAllLeaveRequests();
-    }, 800);
-    return () => clearTimeout(timerId);
-  }, [canViewOverview, fetchAllLeaveRequests]);
+    fetchAllLeaveRequests();
+  }, [fetchAllLeaveRequests]);
 
-  
-
-  // Approve / Reject handlers for admin actions on leave requests
+  // Subscribe to leave request changes so approvals sync automatically
 const handleApproveRequest = async (requestId) => {
   if (!user?.employeeId) {
     setSuccessMessage(t('timeTracking.actionError', 'Unable to determine approver'));
@@ -854,34 +786,87 @@ const handleRejectRequest = async (requestId) => {
   }
 };
   
-  // Fetch all employees data for Overview
+  // Fetch all employees data for Overview (single batched service call + cache)
   useEffect(() => {
-    const fetchAllEmployeesData = async () => {
+    if (activeTab !== 'overview' || employees.length === 0) return undefined;
+
+    const cacheKey = `${selectedYear}-${selectedMonth}-${employees.length}`;
+    if (overviewCacheRef.current.key === cacheKey) {
+      setAllEmployeesData(overviewCacheRef.current.data);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setOverviewLoading(true);
+
+    const fetchOverview = async () => {
       try {
-        const results = await Promise.all(
-          employees.map(async (emp) => {
-            const result = await timeTrackingService.getTimeTrackingSummary(
-              String(emp.id),
-              selectedMonth,
-              selectedYear
-            );
-            return {
-              employee: emp,
-              data: result.success ? result.data : null
-            };
-          })
+        const result = await timeTrackingService.getOverviewEmployeeSummaries(
+          selectedMonth,
+          selectedYear,
+          employees
         );
-        setAllEmployeesData(results);
+        if (cancelled || !result.success) return;
+
+        overviewCacheRef.current = { key: cacheKey, data: result.data };
+        setAllEmployeesData(result.data);
       } catch (error) {
-        console.error('Error fetching all employees data:', error);
+        console.error('Error fetching overview data:', error);
         handleSessionAuthError(error, { silent: true });
+      } finally {
+        if (!cancelled) setOverviewLoading(false);
       }
     };
-    
-    if (activeTab === 'overview') {
-      fetchAllEmployeesData();
-    }
-  }, [activeTab, selectedMonth, selectedYear, employees]);
+
+    fetchOverview();
+    return () => { cancelled = true; };
+  }, [activeTab, selectedMonth, selectedYear, employees, handleSessionAuthError]);
+
+  const sortedOverviewEmployees = useMemo(() => {
+    const sorted = allEmployeesData.filter((item) => item.data);
+    sorted.sort((a, b) => {
+      let aValue;
+      let bValue;
+      switch (sortKey) {
+        case 'employee':
+          aValue = a.employee?.name?.toLowerCase() || '';
+          bValue = b.employee?.name?.toLowerCase() || '';
+          break;
+        case 'days_worked':
+          aValue = a.data?.days_worked || 0;
+          bValue = b.data?.days_worked || 0;
+          break;
+        case 'regular_hours':
+          aValue = a.data?.regular_hours || 0;
+          bValue = b.data?.regular_hours || 0;
+          break;
+        case 'overtime':
+          aValue = (a.data?.overtime_hours || 0) + (a.data?.holiday_overtime_hours || 0);
+          bValue = (b.data?.overtime_hours || 0) + (b.data?.holiday_overtime_hours || 0);
+          break;
+        case 'total_hours':
+          aValue = a.data?.total_hours || 0;
+          bValue = b.data?.total_hours || 0;
+          break;
+        default:
+          aValue = 0;
+          bValue = 0;
+      }
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [allEmployeesData, sortKey, sortDirection]);
+
+  const overviewChartStats = useMemo(() => {
+    const withData = sortedOverviewEmployees.filter((item) => item.data);
+    const maxRegularHours = Math.max(0, ...withData.map((item) => item.data?.regular_hours || 0));
+    const maxOvertimeHours = Math.max(0, ...withData.map((item) =>
+      (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0)
+    ));
+    return { withData, maxRegularHours, maxOvertimeHours };
+  }, [sortedOverviewEmployees]);
   
   // Calculate leave days from leave_requests (including pending)
   const calculateLeaveDays = () => {
@@ -1045,7 +1030,9 @@ const handleRejectRequest = async (requestId) => {
     setModalOpen(true);
   };
   
-  const TimeCard = ({ title, value, unit, icon: Icon, color, bgColor, onClick, isDarkMode, iconProps = {} }) => (
+  const CUSTOM_ICONS = new Set([AnimatedCoffeeIcon, AnimatedClockIcon]);
+
+  const TimeCard = ({ title, value, unit, icon: Icon, color, onClick, useDarkIcon = false, iconProps = {} }) => (
     <div 
       className={`rounded-lg p-6 border ${border.primary} ${onClick ? 'cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1' : ''}`}
       onClick={onClick}
@@ -1059,7 +1046,11 @@ const handleRejectRequest = async (requestId) => {
           </p>
         </div>
         <div>
-          <Icon className={`h-8 w-8 ${color}`} isDarkMode={isDarkMode} {...iconProps} />
+          {useDarkIcon && CUSTOM_ICONS.has(Icon) ? (
+            <Icon className={`h-8 w-8 ${color}`} isDarkMode={isDarkMode} {...iconProps} />
+          ) : (
+            <Icon className={`h-8 w-8 ${color}`} aria-hidden="true" {...iconProps} />
+          )}
         </div>
       </div>
     </div>
@@ -1259,9 +1250,28 @@ const handleRejectRequest = async (requestId) => {
     setTimeout(() => setSuccessMessage(''), 3000);
   };
 
-  const hasOvertimeHours = allEmployeesData.some(
-    item => (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0) > 0
+  const hasOvertimeHours = useMemo(
+    () => allEmployeesData.some((item) =>
+      (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0) > 0
+    ),
+    [allEmployeesData]
   );
+
+  const topRegularHourEmployees = useMemo(() => (
+    [...overviewChartStats.withData]
+      .sort((a, b) => (b.data?.regular_hours || 0) - (a.data?.regular_hours || 0))
+      .slice(0, 10)
+  ), [overviewChartStats.withData]);
+
+  const topOvertimeEmployees = useMemo(() => (
+    [...overviewChartStats.withData]
+      .sort((a, b) => {
+        const aTotal = (a.data?.overtime_hours || 0) + (a.data?.holiday_overtime_hours || 0);
+        const bTotal = (b.data?.overtime_hours || 0) + (b.data?.holiday_overtime_hours || 0);
+        return bTotal - aTotal;
+      })
+      .slice(0, 10)
+  ), [overviewChartStats.withData]);
 
   return (
     <div className="space-y-4 md:space-y-6 px-2 sm:px-0">
@@ -1272,7 +1282,7 @@ const handleRejectRequest = async (requestId) => {
         <div className="flex space-x-4">
           {/* Employee Selector */}
           <select
-            value={selectedEmployee}
+            value={selectedEmployee || ''}
             onChange={(e) => setSelectedEmployee(String(e.target.value))}
             className={`${input.bg} ${input.text} px-4 py-2 border ${input.border} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${isDarkMode ? 'hover:bg-gray-500 hover:border-amber-50' : 'hover:bg-gray-100 hover:border-amber-800'}`}
           >
@@ -1358,9 +1368,8 @@ const handleRejectRequest = async (requestId) => {
           value={calculatedLeaveDays.toFixed(0)}
           unit={t('timeTracking.days')}
           icon={AnimatedCoffeeIcon}
-          isDarkMode={isDarkMode}
+          useDarkIcon
           color={isDarkMode ? "text-white" : "text-black"}
-          bgColor="bg-white"
           onClick={() => handleMetricClick('leaveDays')}
         />
         <TimeCard
@@ -1560,7 +1569,13 @@ const handleRejectRequest = async (requestId) => {
         <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
           {t('timeTracking.overviewTitle', 'Company Overview')} - {getMonthName(selectedMonth)} {selectedYear}
         </h3>
-      
+
+        {overviewLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader className="w-8 h-8 animate-spin text-blue-600" />
+          </div>
+        ) : (
+        <>
         {/* Regular Hours By Employee */}
         <div className={`grid grid-cols-1 ${hasOvertimeHours ? 'lg:grid-cols-2' : ''} gap-6 mb-6`}>
           <div className={`${bg.primary} rounded-lg p-4 border ${border.primary}`}>
@@ -1571,15 +1586,11 @@ const handleRejectRequest = async (requestId) => {
               </h4>
             </div>
             <div className="space-y-3">
-              {allEmployeesData
-                .filter(item => item.data)
-                .sort((a, b) => (b.data?.regular_hours || 0) - (a.data?.regular_hours || 0))
-                .slice(0, 10)
-                .map((item, index) => {
-                  const maxHours = Math.max(...getSortedEmployees().map(i => i.data?.regular_hours || 0));
+              {topRegularHourEmployees.map((item) => {
+                  const maxHours = overviewChartStats.maxRegularHours;
                   const percentage = maxHours > 0 ? ((item.data?.regular_hours || 0) / maxHours) * 100 : 0;
                   return (
-                    <div key={index} className="space-y-1">
+                    <div key={item.employee.id} className="space-y-1">
                       <div className="flex justify-between text-sm">
                         <span className={text.secondary}>{getDemoEmployeeName(item.employee, t)}</span>
                         <span className={text.primary}>{item.data?.regular_hours || 0} hrs</span>
@@ -1612,22 +1623,12 @@ const handleRejectRequest = async (requestId) => {
               </h4>
             </div>
             <div className="space-y-3">
-              {allEmployeesData
-                .filter(item => item.data)
-                .sort((a, b) => {
-                  const aTotal = (b.data?.overtime_hours || 0) + (b.data?.holiday_overtime_hours || 0);
-                  const bTotal = (a.data?.overtime_hours || 0) + (a.data?.holiday_overtime_hours || 0);
-                  return aTotal - bTotal;
-                })
-                .slice(0, 10)
-                .map((item, index) => {
+              {topOvertimeEmployees.map((item) => {
                   const overtimeTotal = (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0);
-                  const maxOT = Math.max(...getSortedEmployees().map(i => 
-                    (i.data?.overtime_hours || 0) + (i.data?.holiday_overtime_hours || 0)
-                  ));
+                  const maxOT = overviewChartStats.maxOvertimeHours;
                   const percentage = maxOT > 0 ? (overtimeTotal / maxOT) * 100 : 0;
                   return (
-                    <div key={index} className="space-y-1">
+                    <div key={item.employee.id} className="space-y-1">
                       <div className="flex justify-between text-sm">
                         <span className={text.secondary}>{getDemoEmployeeName(item.employee, t)}</span>
                         <span className={text.primary}>{overtimeTotal.toFixed(1)} hrs</span>
@@ -1729,8 +1730,8 @@ const handleRejectRequest = async (requestId) => {
               </tr>
             </thead>
             <tbody>
-              {getSortedEmployees().map((item, idx) => (
-                <tr key={item.employee.id || idx}>
+              {sortedOverviewEmployees.map((item) => (
+                <tr key={item.employee.id}>
                   <td className={`text-left py-3 px-4 ${text.secondary}`}>{getDemoEmployeeName(item.employee, t)}</td>
                   <td className={`text-right py-3 px-4 ${text.secondary}`}>{item.data?.days_worked || 0}</td>
                   <td className={`text-right py-3 px-4 ${text.secondary}`}>{item.data?.regular_hours?.toFixed(1) || '0.0'}</td>
@@ -1759,6 +1760,8 @@ const handleRejectRequest = async (requestId) => {
           </table>
 
         </div>
+        </>
+        )}
       </div>
       )}
 

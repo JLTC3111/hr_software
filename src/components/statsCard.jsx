@@ -4,13 +4,21 @@ import { useTheme } from '../contexts/ThemeContext'
 const StatsCard = memo(({ title, value, icon: Icon, staticIcon: StaticIcon, color, size, onClick, isDarkMode, iconProps = {}, staticIconProps = {}, iconHoverOnly = false }) => {
   const { bg, text, border } = useTheme();
   const [isHovering, setIsHovering] = useState(false);
-  
-  // Memoize hover handlers
+
   const handleMouseEnter = useCallback(() => setIsHovering(true), []);
   const handleMouseLeave = useCallback(() => setIsHovering(false), []);
-  
+
+  const renderIcon = (Component, { withDarkMode = false, extraProps = {} } = {}) => {
+    if (!Component) return null;
+    const shared = { className: 'h-6 w-6 m-2', color, size, ...extraProps };
+    if (withDarkMode) {
+      return <Component {...shared} isDarkMode={isDarkMode} />;
+    }
+    return <Component {...shared} aria-hidden="true" />;
+  };
+
   return (
-    <div 
+    <div
       onClick={onClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -23,11 +31,11 @@ const StatsCard = memo(({ title, value, icon: Icon, staticIcon: StaticIcon, colo
         </div>
         <div className="transition-transform duration-300 group-hover:scale-110">
           {(!iconHoverOnly || isHovering) && Icon ? (
-            <Icon className="h-6 w-6 m-2" color={color} size={size} isDarkMode={isDarkMode} {...iconProps} />
+            renderIcon(Icon, { withDarkMode: true, extraProps: iconProps })
           ) : StaticIcon ? (
-            <StaticIcon className="h-6 w-6 m-2" color={color} size={size} {...staticIconProps} />
+            renderIcon(StaticIcon, { extraProps: staticIconProps })
           ) : Icon ? (
-            <Icon className="h-6 w-6 m-2" color={color} size={size} isDarkMode={isDarkMode} {...iconProps} />
+            renderIcon(Icon, { withDarkMode: true, extraProps: iconProps })
           ) : null}
         </div>
       </div>
@@ -35,7 +43,6 @@ const StatsCard = memo(({ title, value, icon: Icon, staticIcon: StaticIcon, colo
   );
 });
 
-// Display name for debugging
 StatsCard.displayName = 'StatsCard';
 
 export default StatsCard;

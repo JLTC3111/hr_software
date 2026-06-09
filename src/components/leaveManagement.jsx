@@ -21,6 +21,8 @@ import {
   MousePointerClick,
   ArrowRight,
   Sparkles,
+  UserPlus,
+  ShieldCheck,
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -28,6 +30,8 @@ import { useAuth } from '../contexts/AuthContext';
 import * as timeTrackingService from '../services/timeTrackingService';
 import { isDemoMode, getDemoEmployeeName, updateDemoLeaveRequest } from '../utils/demoHelper';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
+
+/* @refresh reset */
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const WEEKDAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -44,10 +48,11 @@ const normalize = (value) => (value || '').toString().slice(0, 10);
 const LeaveManagement = ({ employees = [] }) => {
   const { bg, text, border, hover, isDarkMode } = useTheme();
   const { t } = useLanguage();
-  const { user, checkPermission } = useAuth();
+  const { user, checkPermission, isAuthenticated } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
 
   const canViewAll = checkPermission('canViewReports');
+  const canManageLeave = canViewAll || checkPermission('canManageTimeTracking');
   const myEmployeeId = String(user?.employeeId || user?.id || '');
 
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -56,13 +61,16 @@ const LeaveManagement = ({ employees = [] }) => {
   });
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [scope, setScope] = useState(canViewAll ? 'all' : 'mine'); // 'all' | 'mine'
+  const [scope, setScope] = useState(canManageLeave ? 'all' : 'mine'); // 'all' | 'mine'
   const [typeFilter, setTypeFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [employeeFilter, setEmployeeFilter] = useState('all');
 
   const [selStart, setSelStart] = useState(null);
   const [selEnd, setSelEnd] = useState(null);
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestModalMode, setRequestModalMode] = useState('calendar'); // 'calendar' | 'admin'
+  const [rejectTarget, setRejectTarget] = useState(null);
 
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -74,10 +82,12 @@ const LeaveManagement = ({ employees = [] }) => {
 
   const fetchData = useCallback(async (options = {}) => {
     const { silent = false } = options;
+    if (!isAuthenticated && !isDemoMode()) return;
+    if (!myEmployeeId && !canManageLeave && !isDemoMode()) return;
     if (!silent) setLoading(true);
     try {
       let result;
-      if (canViewAll && scope === 'all') {
+      if (canManageLeave && scope === 'all') {
         result = await timeTrackingService.getAllLeaveRequests({});
       } else {
         result = await timeTrackingService.getLeaveRequests(myEmployeeId, {});
@@ -91,7 +101,7 @@ const LeaveManagement = ({ employees = [] }) => {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [canViewAll, scope, myEmployeeId, handleSessionAuthError]);
+  }, [canManageLeave, scope, myEmployeeId, handleSessionAuthError, isAuthenticated]);
 
   useEffect(() => {
     fetchData();
@@ -119,10 +129,11 @@ const LeaveManagement = ({ employees = [] }) => {
   const visibleRequests = useMemo(() => {
     return leaveRequests.filter(req => {
       if (typeFilter !== 'all' && req.leave_type !== typeFilter) return false;
-      if (canViewAll && scope === 'all' && employeeFilter !== 'all' && String(req.employee_id) !== String(employeeFilter)) return false;
+      if (statusFilter !== 'all' && req.status !== statusFilter) return false;
+      if (canManageLeave && scope === 'all' && employeeFilter !== 'all' && String(req.employee_id) !== String(employeeFilter)) return false;
       return true;
     });
-  }, [leaveRequests, typeFilter, employeeFilter, canViewAll, scope]);
+  }, [leaveRequests, typeFilter, statusFilter, employeeFilter, canManageLeave, scope]);
 
   const requestsForDay = useCallback((key) => {
     return visibleRequests.filter(req => {
@@ -195,6 +206,12 @@ const LeaveManagement = ({ employees = [] }) => {
       flash(setErrorMessage, t('leave.selectDatesFirst', 'Click a start and end date on the calendar first.'));
       return;
     }
+    setRequestModalMode('calendar');
+    setShowRequestModal(true);
+  };
+
+  const openAdminRequest = () => {
+    setRequestModalMode('admin');
     setShowRequestModal(true);
   };
 
@@ -243,9 +260,7 @@ const LeaveManagement = ({ employees = [] }) => {
     }
   };
 
-  const handleReject = async (req) => {
-    const reason = window.prompt(t('leave.rejectReasonPrompt', 'Reason for rejecting this request (optional):'), '');
-    if (reason === null) return; // cancelled
+  const handleReject = async (req, reason = '') => {
     try {
       if (isDemoMode()) {
         updateDemoLeaveRequest(req.id, { status: 'rejected', approved_by: myEmployeeId, rejection_reason: reason || null });
@@ -263,6 +278,12 @@ const LeaveManagement = ({ employees = [] }) => {
     }
   };
 
+  const confirmReject = async (reason) => {
+    if (!rejectTarget) return;
+    await handleReject(rejectTarget, reason);
+    setRejectTarget(null);
+  };
+
   const statusBadge = (status) => {
     switch (status) {
       case 'approved': return isDarkMode ? 'bg-green-900/40 text-green-300' : 'bg-green-100 text-green-800';
@@ -271,7 +292,9 @@ const LeaveManagement = ({ employees = [] }) => {
     }
   };
 
-  const isAdmin = canViewAll;
+  const isAdmin = canManageLeave;
+  const defaultModalEmployee = employeeFilter !== 'all' ? String(employeeFilter) : (myEmployeeId || (employees[0]?.id != null ? String(employees[0].id) : ''));
+  const borderPrimary = border.primary;
 
   return (
     <div className="space-y-6">
@@ -312,6 +335,16 @@ const LeaveManagement = ({ employees = [] }) => {
               </button>
             </div>
           )}
+          {isAdmin && (
+            <button
+              onClick={openAdminRequest}
+              className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-all cursor-pointer border ${border.primary}
+                ${isDarkMode ? 'bg-emerald-900/30 text-emerald-200 hover:bg-emerald-900/50 border-emerald-700' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border-emerald-300'}`}
+            >
+              <UserPlus className="h-4 w-4" />
+              <span>{t('leave.addForEmployee', 'Add for Employee')}</span>
+            </button>
+          )}
           <button
             onClick={openRequestForSelection}
             className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-all cursor-pointer
@@ -335,57 +368,16 @@ const LeaveManagement = ({ employees = [] }) => {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatTile icon={CalendarDays} label={t('leave.totalRequests', 'Total Requests')} value={stats.total} color="blue" />
-        <StatTile icon={Hourglass} label={t('leave.pending', 'Pending')} value={stats.pending} color="amber" />
-        <StatTile icon={CalendarCheck} label={t('leave.approvedDaysYear', 'Approved Days (Year)')} value={stats.approvedDays} color="green" />
-        <StatTile icon={UserMinus} label={t('leave.onLeaveToday', 'On Leave Today')} value={requestsForDay(toKey(new Date())).filter(r => r.status === 'approved').length} color="purple" />
-      </div>
-
-      {/* Filters + Legend */}
-      <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary} flex flex-wrap items-center gap-4`}>
-        <div className="flex items-center gap-2">
-          <Filter className={`w-4 h-4 ${text.secondary}`} />
-          <span className={`text-sm ${text.secondary}`}>{t('leave.type', 'Type')}:</span>
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className={`px-3 py-1.5 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary} text-sm`}
-          >
-            <option value="all">{t('leave.allTypes', 'All Types')}</option>
-            <option value="vacation">{leaveTypeMeta.vacation.label}</option>
-            <option value="sick">{leaveTypeMeta.sick.label}</option>
-            <option value="personal">{leaveTypeMeta.personal.label}</option>
-          </select>
-        </div>
-        {isAdmin && scope === 'all' && (
-          <div className="flex items-center gap-2">
-            <span className={`text-sm ${text.secondary}`}>{t('leave.employee', 'Employee')}:</span>
-            <select
-              value={employeeFilter}
-              onChange={(e) => setEmployeeFilter(e.target.value)}
-              className={`px-3 py-1.5 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary} text-sm`}
-            >
-              <option value="all">{t('leave.allEmployees', 'All Employees')}</option>
-              {employees.map(emp => (
-                <option key={emp.id} value={emp.id}>{getDemoEmployeeName(emp, t)}</option>
-              ))}
-            </select>
-          </div>
-        )}
-        <div className="flex items-center gap-3 ml-auto">
-          {['vacation', 'sick', 'personal'].map(type => (
-            <div key={type} className="flex items-center gap-1.5">
-              <span className={`w-3 h-3 rounded-full ${metaFor(type).dot}`} />
-              <span className={`text-xs ${text.secondary}`}>{metaFor(type).label}</span>
-            </div>
-          ))}
-        </div>
+        <StatTile IconComponent={CalendarDays} label={t('leave.totalRequests', 'Total Requests')} value={stats.total} colorKey="blue" />
+        <StatTile IconComponent={Hourglass} label={t('leave.pending', 'Pending')} value={stats.pending} colorKey="amber" />
+        <StatTile IconComponent={CalendarCheck} label={t('leave.approvedDaysYear', 'Approved Days (Year)')} value={stats.approvedDays} colorKey="green" />
+        <StatTile IconComponent={UserMinus} label={t('leave.onLeaveToday', 'On Leave Today')} value={requestsForDay(toKey(new Date())).filter(r => r.status === 'approved').length} colorKey="purple" />
       </div>
 
       {/* Calendar */}
-      <div className={`${bg.secondary} rounded-xl border ${border.primary} overflow-hidden`}>
+      <div className={`${bg.secondary} rounded-xl border ${border.primary} overflow-hidden shadow-lg ${isDarkMode ? 'shadow-black/20 ring-1 ring-white/5' : 'shadow-blue-500/10 ring-1 ring-blue-500/10'}`}>
         {/* Calendar header */}
-        <div className={`flex items-center justify-between p-4 border-b ${border.primary}`}>
+        <div className={`flex items-center justify-between p-4 border-b ${border.primary} ${isDarkMode ? 'bg-gradient-to-r from-blue-950/60 to-indigo-950/40' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}`}>
           <div className="flex items-center gap-2">
             <button onClick={prevMonth} className={`p-2 rounded-lg ${hover.bg} cursor-pointer`} aria-label="Previous month">
               <ChevronLeft className={`w-5 h-5 ${text.primary}`} />
@@ -617,6 +609,103 @@ const LeaveManagement = ({ employees = [] }) => {
         )}
       </div>
 
+      {/* Filters + Legend — below calendar */}
+      <div className={`${bg.secondary} rounded-xl border ${border.primary} overflow-hidden shadow-sm`}>
+        <div className={`px-5 py-3.5 border-b ${border.primary} flex items-center gap-2 ${isDarkMode ? 'bg-gray-800/40' : 'bg-gray-50/80'}`}>
+          <Filter className={`w-4 h-4 ${text.secondary}`} />
+          <h3 className={`text-sm font-semibold ${text.primary}`}>{t('leave.filtersTitle', 'Filters & Legend')}</h3>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+            <div className="flex-1 space-y-3">
+              <div>
+                <p className={`text-xs font-medium uppercase tracking-wide ${text.tertiary} mb-2`}>{t('leave.statusFilter', 'Status')}</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'all', label: t('leave.allStatuses', 'All') },
+                    { value: 'pending', label: t('leave.pending', 'Pending') },
+                    { value: 'approved', label: t('status.approved', 'Approved') },
+                    { value: 'rejected', label: t('status.rejected', 'Rejected') },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setStatusFilter(opt.value)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer border
+                        ${statusFilter === opt.value
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                          : `${border.primary} ${bg.tertiary} ${text.secondary} hover:border-blue-400/60`}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className={`text-xs font-medium uppercase tracking-wide ${text.tertiary} mb-2`}>{t('leave.type', 'Type')}</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'all', label: t('leave.allTypes', 'All Types') },
+                    { value: 'vacation', label: leaveTypeMeta.vacation.label },
+                    { value: 'sick', label: leaveTypeMeta.sick.label },
+                    { value: 'personal', label: leaveTypeMeta.personal.label },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setTypeFilter(opt.value)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer border flex items-center gap-1.5
+                        ${typeFilter === opt.value
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                          : `${border.primary} ${bg.tertiary} ${text.secondary} hover:border-blue-400/60`}`}
+                    >
+                      {opt.value !== 'all' && <span className={`w-2 h-2 rounded-full ${metaFor(opt.value).dot}`} />}
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {isAdmin && scope === 'all' && (
+                <div>
+                  <p className={`text-xs font-medium uppercase tracking-wide ${text.tertiary} mb-2`}>{t('leave.employee', 'Employee')}</p>
+                  <select
+                    value={employeeFilter || 'all'}
+                    onChange={(e) => setEmployeeFilter(e.target.value)}
+                    className={`w-full sm:w-auto min-w-[200px] px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary} text-sm`}
+                  >
+                    <option value="all">{t('leave.allEmployees', 'All Employees')}</option>
+                    {employees.map(emp => (
+                      <option key={emp.id} value={String(emp.id)}>{getDemoEmployeeName(emp, t)}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+            <div className={`lg:w-56 shrink-0 rounded-lg border ${border.primary} p-3 ${isDarkMode ? 'bg-gray-900/30' : 'bg-white/60'}`}>
+              <p className={`text-xs font-medium uppercase tracking-wide ${text.tertiary} mb-2`}>{t('leave.legendTitle', 'Legend')}</p>
+              <div className="space-y-2">
+                {['vacation', 'sick', 'personal'].map(type => (
+                  <div key={type} className="flex items-center gap-2">
+                    <span className={`w-3 h-3 rounded-full shrink-0 ${metaFor(type).dot}`} />
+                    <span className={`text-xs ${text.secondary}`}>{metaFor(type).label}</span>
+                  </div>
+                ))}
+                <div className={`pt-2 mt-2 border-t ${border.primary} space-y-1.5`}>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-8 h-3 rounded border border-dashed ${isDarkMode ? 'border-amber-500/60' : 'border-amber-500'}`} />
+                    <span className={`text-xs ${text.secondary}`}>{t('leave.pending', 'Pending')}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-8 h-3 rounded ${isDarkMode ? 'bg-green-900/50 border border-green-700' : 'bg-green-100 border border-green-300'}`} />
+                    <span className={`text-xs ${text.secondary}`}>{t('status.approved', 'Approved')}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Requests list */}
       <div className={`${bg.secondary} rounded-xl border ${border.primary} overflow-hidden`}>
         <div className={`p-4 border-b ${border.primary} flex items-center gap-2`}>
@@ -632,7 +721,7 @@ const LeaveManagement = ({ employees = [] }) => {
               .map(req => {
                 const meta = metaFor(req.leave_type);
                 const Icon = meta.Icon;
-                const canModerate = isAdmin && req.status === 'pending';
+                const canModerate = isAdmin && scope === 'all' && req.status === 'pending';
                 return (
                   <div key={req.id} className={`p-4 flex flex-col sm:flex-row sm:items-center gap-3 ${hover.bg} transition-colors`}>
                     <div className={`p-2 rounded-lg ${meta.chip} border shrink-0`}>
@@ -666,7 +755,7 @@ const LeaveManagement = ({ employees = [] }) => {
                           <Check className="w-4 h-4" /> {t('leave.approve', 'Approve')}
                         </button>
                         <button
-                          onClick={() => handleReject(req)}
+                          onClick={() => setRejectTarget(req)}
                           className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm flex items-center gap-1 cursor-pointer"
                         >
                           <X className="w-4 h-4" /> {t('leave.reject', 'Reject')}
@@ -683,12 +772,16 @@ const LeaveManagement = ({ employees = [] }) => {
       {/* Request Modal */}
       {showRequestModal && (
         <LeaveRequestModal
+          t={t}
           employees={employees}
-          canViewAll={canViewAll}
+          canManageLeave={canManageLeave}
+          mode={requestModalMode}
+          defaultEmployeeId={defaultModalEmployee}
           myEmployeeId={myEmployeeId}
           initialStart={selStart}
           initialEnd={selEnd || selStart}
           leaveTypeMeta={leaveTypeMeta}
+          borderPrimary={borderPrimary}
           onClose={() => setShowRequestModal(false)}
           onSuccess={(message) => {
             setShowRequestModal(false);
@@ -700,13 +793,22 @@ const LeaveManagement = ({ employees = [] }) => {
           onError={(message) => flash(setErrorMessage, message)}
         />
       )}
+
+      {rejectTarget && (
+        <RejectLeaveModal
+          t={t}
+          employeeName={employeeName(rejectTarget)}
+          onClose={() => setRejectTarget(null)}
+          onConfirm={confirmReject}
+        />
+      )}
     </div>
   );
 };
 
 // ---- Stat tile ----
-const StatTile = ({ icon, label, value, color }) => {
-  const Icon = icon;
+const StatTile = ({ IconComponent, label, value, colorKey }) => {
+  const Icon = IconComponent;
   const { bg, text, border, isDarkMode } = useTheme();
   const colorMap = {
     blue: isDarkMode ? 'bg-blue-900/40 text-blue-300' : 'bg-blue-100 text-blue-700',
@@ -716,8 +818,8 @@ const StatTile = ({ icon, label, value, color }) => {
   };
   return (
     <div className={`${bg.secondary} rounded-xl p-4 border ${border.primary} flex items-center gap-3`}>
-      <div className={`p-2 rounded-lg ${colorMap[color] || colorMap.blue}`}>
-        <Icon className="w-5 h-5" />
+      <div className={`p-2 rounded-lg ${colorMap[colorKey] || colorMap.blue}`}>
+        <Icon className="w-5 h-5" aria-hidden="true" />
       </div>
       <div>
         <p className={`text-xs ${text.secondary}`}>{label}</p>
@@ -728,14 +830,30 @@ const StatTile = ({ icon, label, value, color }) => {
 };
 
 // ---- Request modal ----
-const LeaveRequestModal = ({ employees, canViewAll, myEmployeeId, initialStart, initialEnd, leaveTypeMeta, onClose, onSuccess, onError }) => {
+const LeaveRequestModal = ({
+  t,
+  employees,
+  canManageLeave,
+  mode,
+  defaultEmployeeId,
+  myEmployeeId,
+  initialStart,
+  initialEnd,
+  leaveTypeMeta,
+  borderPrimary,
+  onClose,
+  onSuccess,
+  onError,
+}) => {
   const { bg, text, border, isDarkMode } = useTheme();
-  const { t } = useLanguage();
   const { handleSessionAuthError } = useSessionGuard();
   const [loading, setLoading] = useState(false);
+  const isAdminMode = mode === 'admin';
+  const allowManualDates = isAdminMode;
+  const inactiveBorderClass = borderPrimary || border.primary;
 
   const [form, setForm] = useState({
-    employeeId: myEmployeeId || (employees[0]?.id ? String(employees[0].id) : ''),
+    employeeId: defaultEmployeeId || myEmployeeId || (employees[0]?.id ? String(employees[0].id) : ''),
     type: 'vacation',
     startDate: initialStart || '',
     endDate: initialEnd || initialStart || '',
@@ -743,6 +861,7 @@ const LeaveRequestModal = ({ employees, canViewAll, myEmployeeId, initialStart, 
     startTime: '09:00',
     endTime: '17:00',
     reason: '',
+    autoApprove: isAdminMode,
   });
 
   const dayCount = useMemo(() => {
@@ -789,10 +908,21 @@ const LeaveRequestModal = ({ employees, canViewAll, myEmployeeId, initialStart, 
         endDate: form.endDate,
         reason: buildReason(),
       });
-      if (result.success) {
-        onSuccess(t('leave.requestSubmitted', 'Leave request submitted successfully!'));
-      } else {
+      if (!result.success) {
         onError(result.error || t('errors.saveFailed', 'Failed to submit request'));
+        return;
+      }
+
+      if (form.autoApprove && canManageLeave && result.data?.id) {
+        if (isDemoMode()) {
+          updateDemoLeaveRequest(result.data.id, { status: 'approved', approved_by: myEmployeeId });
+        } else {
+          const approveResult = await timeTrackingService.updateLeaveRequestStatus(result.data.id, 'approved', myEmployeeId);
+          if (!approveResult.success) throw new Error(approveResult.error);
+        }
+        onSuccess(t('leave.submitAndApproved', 'Leave added and approved.'));
+      } else {
+        onSuccess(t('leave.requestSubmitted', 'Leave request submitted successfully!'));
       }
     } catch (error) {
       console.error('Error submitting leave request:', error);
@@ -803,13 +933,17 @@ const LeaveRequestModal = ({ employees, canViewAll, myEmployeeId, initialStart, 
     }
   };
 
+  const modalTitle = isAdminMode
+    ? t('leave.addLeaveForEmployee', 'Add Leave for Employee')
+    : t('leave.requestLeave', 'Request Leave');
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className={`${bg.secondary} rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto`} onClick={(e) => e.stopPropagation()}>
         <div className={`flex justify-between items-center p-6 border-b ${border.primary}`}>
           <h2 className={`text-xl font-semibold ${text.primary} flex items-center gap-2`}>
-            <CalendarDays className="w-5 h-5" />
-            {t('leave.requestLeave', 'Request Leave')}
+            {isAdminMode ? <UserPlus className="w-5 h-5" /> : <CalendarDays className="w-5 h-5" />}
+            {modalTitle}
           </h2>
           <button onClick={onClose} className={`${text.secondary} hover:${text.primary} cursor-pointer`}>
             <X className="w-5 h-5" />
@@ -817,18 +951,24 @@ const LeaveRequestModal = ({ employees, canViewAll, myEmployeeId, initialStart, 
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {canViewAll && (
+          {canManageLeave && (
             <div>
               <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('leave.employee', 'Employee')}</label>
               <select
-                value={form.employeeId}
+                value={form.employeeId || ''}
                 onChange={(e) => handleChange('employeeId', e.target.value)}
                 className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary}`}
               >
                 {employees.map(emp => (
-                  <option key={emp.id} value={emp.id}>{getDemoEmployeeName(emp, t)}</option>
+                  <option key={emp.id} value={String(emp.id)}>{getDemoEmployeeName(emp, t)}</option>
                 ))}
               </select>
+              {isAdminMode && (
+                <p className={`text-xs ${text.tertiary} mt-1 flex items-center gap-1`}>
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  {t('leave.onBehalfNote', 'You are submitting leave on behalf of this employee.')}
+                </p>
+              )}
             </div>
           )}
 
@@ -844,7 +984,13 @@ const LeaveRequestModal = ({ employees, canViewAll, myEmployeeId, initialStart, 
                     type="button"
                     key={type}
                     onClick={() => handleChange('type', type)}
-                    className={`flex flex-col items-center gap-1 py-3 rounded-lg border transition-colors cursor-pointer ${active ? 'border-blue-500 ' + (isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50') : border.primary}`}
+                    className={(() => {
+                      const base = 'flex flex-col items-center gap-1 py-3 rounded-lg border transition-colors cursor-pointer';
+                      if (active) {
+                        return `${base} border-blue-500 ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'}`;
+                      }
+                      return `${base} ${inactiveBorderClass}`;
+                    })()}
                   >
                     <Icon className={`w-5 h-5 ${active ? 'text-blue-500' : text.secondary}`} />
                     <span className={`text-xs ${active ? text.primary : text.secondary}`}>{meta.label}</span>
@@ -854,21 +1000,46 @@ const LeaveRequestModal = ({ employees, canViewAll, myEmployeeId, initialStart, 
             </div>
           </div>
 
-          {/* Selected dates (chosen from the custom calendar) */}
-          <div className={`rounded-lg border ${border.primary} ${bg.tertiary} p-3`}>
-            <div className="flex items-center justify-between">
+          {allowManualDates ? (
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className={`text-xs ${text.secondary}`}>{t('leave.selectedDates', 'Selected Dates')}</p>
-                <p className={`text-sm font-medium ${text.primary}`}>
-                  {form.startDate || '—'} {form.endDate && form.endDate !== form.startDate ? `→ ${form.endDate}` : ''}
-                </p>
+                <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('leave.rangeStart', 'Start')}</label>
+                <input
+                  type="date"
+                  value={form.startDate}
+                  onChange={(e) => handleChange('startDate', e.target.value)}
+                  className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary}`}
+                />
               </div>
-              <span className={`text-sm font-semibold ${text.primary}`}>{dayCount} {t('leave.days', 'days')}</span>
+              <div>
+                <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('leave.rangeEnd', 'End')}</label>
+                <input
+                  type="date"
+                  value={form.endDate}
+                  min={form.startDate || undefined}
+                  onChange={(e) => handleChange('endDate', e.target.value)}
+                  className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary}`}
+                />
+              </div>
+              <p className={`col-span-2 text-xs ${text.tertiary}`}>
+                {dayCount > 0 ? `${dayCount} ${t('leave.days', 'days')}` : t('leave.manualDates', 'Enter start and end dates.')}
+              </p>
             </div>
-            <p className={`text-[11px] ${text.tertiary} mt-1`}>{t('leave.adjustOnCalendar', 'Close this dialog to re-pick dates on the calendar.')}</p>
-          </div>
+          ) : (
+            <div className={`rounded-lg border ${border.primary} ${bg.tertiary} p-3`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-xs ${text.secondary}`}>{t('leave.selectedDates', 'Selected Dates')}</p>
+                  <p className={`text-sm font-medium ${text.primary}`}>
+                    {form.startDate || '—'} {form.endDate && form.endDate !== form.startDate ? `→ ${form.endDate}` : ''}
+                  </p>
+                </div>
+                <span className={`text-sm font-semibold ${text.primary}`}>{dayCount} {t('leave.days', 'days')}</span>
+              </div>
+              <p className={`text-[11px] ${text.tertiary} mt-1`}>{t('leave.adjustOnCalendar', 'Close this dialog to re-pick dates on the calendar.')}</p>
+            </div>
+          )}
 
-          {/* Detailed time */}
           <div className="flex items-center gap-2">
             <input
               id="halfDay"
@@ -918,6 +1089,27 @@ const LeaveRequestModal = ({ employees, canViewAll, myEmployeeId, initialStart, 
             />
           </div>
 
+          {canManageLeave && (
+            <div className={`flex items-start gap-2 p-3 rounded-lg border ${border.primary} ${isDarkMode ? 'bg-emerald-900/20 border-emerald-800' : 'bg-emerald-50 border-emerald-200'}`}>
+              <input
+                id="autoApprove"
+                type="checkbox"
+                checked={form.autoApprove}
+                onChange={(e) => handleChange('autoApprove', e.target.checked)}
+                className="w-4 h-4 rounded mt-0.5"
+              />
+              <label htmlFor="autoApprove" className={`text-sm ${text.primary} cursor-pointer`}>
+                <span className="font-medium flex items-center gap-1">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                  {t('leave.autoApprove', 'Approve immediately')}
+                </span>
+                <span className={`block text-xs ${text.secondary} mt-0.5`}>
+                  {t('leave.autoApproveHint', 'Skip the pending queue and mark this request as approved.')}
+                </span>
+              </label>
+            </div>
+          )}
+
           <div className={`flex justify-end gap-3 pt-2 border-t ${border.primary}`}>
             <button
               type="button"
@@ -929,9 +1121,75 @@ const LeaveRequestModal = ({ employees, canViewAll, myEmployeeId, initialStart, 
             <button
               type="submit"
               disabled={loading || dayCount === 0}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+              className={`px-4 py-2 rounded-lg disabled:opacity-50 cursor-pointer text-white
+                ${form.autoApprove && canManageLeave ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'}`}
             >
-              {loading ? t('common.saving', 'Saving...') : t('leave.submitRequest', 'Submit Request')}
+              {loading
+                ? t('common.saving', 'Saving...')
+                : form.autoApprove && canManageLeave
+                  ? t('leave.submitAndApprove', 'Submit & Approve')
+                  : t('leave.submitRequest', 'Submit Request')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ---- Reject modal ----
+const RejectLeaveModal = ({ t, employeeName, onClose, onConfirm }) => {
+  const { bg, text, border, isDarkMode } = useTheme();
+  const [reason, setReason] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await onConfirm(reason.trim());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className={`${bg.secondary} rounded-xl shadow-2xl w-full max-w-md`} onClick={(e) => e.stopPropagation()}>
+        <div className={`flex justify-between items-center p-5 border-b ${border.primary}`}>
+          <h2 className={`text-lg font-semibold ${text.primary}`}>{t('leave.rejectTitle', 'Reject Leave Request')}</h2>
+          <button onClick={onClose} className={`${text.secondary} cursor-pointer`} type="button">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <p className={`text-sm ${text.secondary}`}>
+            {(t('leave.rejectConfirm', 'Reject leave for {{name}}?')).replace('{{name}}', employeeName)}
+          </p>
+          <div>
+            <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('leave.rejectReasonLabel', 'Reason (optional)')}</label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              placeholder={t('leave.rejectReasonPlaceholder', 'Explain why this request is being rejected...')}
+              className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary} resize-none`}
+            />
+          </div>
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className={`px-4 py-2 rounded-lg cursor-pointer ${isDarkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-200 text-gray-800'}`}
+            >
+              {t('common.cancel', 'Cancel')}
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 cursor-pointer"
+            >
+              {loading ? t('common.saving', 'Saving...') : t('leave.confirmReject', 'Reject Request')}
             </button>
           </div>
         </form>

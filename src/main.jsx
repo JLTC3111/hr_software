@@ -5,6 +5,8 @@ import React from 'react'
 import App from './App.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { AuthProvider } from './contexts/AuthContext'
+import { LanguageProvider } from './contexts/LanguageContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 
 // Suppress browser extension errors
 window.addEventListener('error', (e) => {
@@ -25,10 +27,14 @@ window.addEventListener('unhandledrejection', (e) => {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <ErrorBoundary>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </ErrorBoundary>
+    <LanguageProvider>
+      <ThemeProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </ErrorBoundary>
+      </ThemeProvider>
+    </LanguageProvider>
   </StrictMode>,
 )

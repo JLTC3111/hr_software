@@ -1570,6 +1570,273 @@ export const updateSummary = async (employeeId, month, year) => {
   }
 };
 
+const getMonthDateRange = (month, year) => {
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+  const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+  return { startDate, endDate };
+};
+
+const emptySummary = (employeeId, month, year) => ({
+  employee_id: toEmployeeId(employeeId),
+  month,
+  year,
+  days_worked: 0,
+  leave_days: 0,
+  regular_hours: 0,
+  overtime_hours: 0,
+  holiday_overtime_hours: 0,
+  total_hours: 0,
+  attendance_rate: 0,
+});
+
+const summarizeDemoTimeEntries = (entries) => {
+  const regularHours = entries.filter((e) => e.hour_type === 'regular').reduce((sum, e) => sum + (e.hours || 0), 0);
+  const wfhHours = entries.filter((e) => e.hour_type === 'wfh').reduce((sum, e) => sum + (e.hours || 0), 0);
+  const overtimeRegular = entries.filter((e) => e.hour_type === 'overtime').reduce((sum, e) => sum + (e.hours || 0), 0);
+  const weekendHours = entries.filter((e) => e.hour_type === 'weekend').reduce((sum, e) => sum + (e.hours || 0), 0);
+  const holidayHours = entries.filter((e) => e.hour_type === 'holiday').reduce((sum, e) => sum + (e.hours || 0), 0);
+  const bonusHours = entries.filter((e) => e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
+
+  const workEntries = entries.filter((e) => e.hour_type !== 'on_leave' && e.hour_type !== 'vacation' && e.hour_type !== 'sick_leave');
+  const daysWorked = new Set(workEntries.map((e) => e.date)).size;
+
+  const leaveEntries = entries.filter((e) => e.hour_type === 'on_leave' || e.hour_type === 'vacation' || e.hour_type === 'sick_leave');
+  const leaveDays = new Set(leaveEntries.map((e) => e.date)).size;
+
+  const overtimeHours = weekendHours + bonusHours + overtimeRegular;
+  const holidayOvertimeHours = holidayHours;
+  const totalRegular = regularHours + wfhHours;
+  const totalHours = totalRegular + overtimeHours + holidayOvertimeHours;
+
+  return {
+    regular_hours: Math.round(totalRegular * 100) / 100,
+    overtime_hours: Math.round(overtimeHours * 100) / 100,
+    holiday_overtime_hours: Math.round(holidayOvertimeHours * 100) / 100,
+    total_hours: Math.round(totalHours * 100) / 100,
+    days_worked: daysWorked,
+    leave_days: leaveDays,
+  };
+};
+
+const buildDemoOverviewSummaries = (month, year, employees = []) => {
+  const monthInt = parseInt(month, 10);
+  const yearInt = parseInt(year, 10);
+  const allEntries = getDemoTimeEntries();
+  const entriesByEmployee = new Map();
+
+  allEntries.forEach((entry) => {
+    const d = new Date(entry.date);
+    if (d.getMonth() + 1 !== monthInt || d.getFullYear() !== yearInt) return;
+    const employeeId = String(entry.employee_id);
+    if (!entriesByEmployee.has(employeeId)) entriesByEmployee.set(employeeId, []);
+    entriesByEmployee.get(employeeId).push(entry);
+  });
+
+  return employees.map((employee) => ({
+    employee,
+    data: summarizeDemoTimeEntries(entriesByEmployee.get(String(employee.id)) || []),
+  }));
+};
+
+const aggregateEmployeeSummary = (employeeId, month, year, timeEntries = [], leaveRequests = [], overtimeLogs = []) => {
+  const { startDate, endDate } = getMonthDateRange(month, year);
+  const uniqueDays = new Set();
+  const leaveDates = new Set();
+  let regularHours = 0;
+  let holidayHours = 0;
+  let weekendHours = 0;
+  let bonusHours = 0;
+
+  timeEntries.forEach((entry) => {
+    if (entry.status !== 'pending' && entry.status !== 'approved') return;
+    const hours = Math.round(parseFloat(entry.hours || 0) * 100) / 100;
+
+    if (entry.hour_type === 'on_leave' || entry.hour_type === 'vacation' || entry.hour_type === 'sick_leave') {
+      leaveDates.add(entry.date);
+      return;
+    }
+
+    uniqueDays.add(entry.date);
+    switch (entry.hour_type) {
+      case 'regular':
+      case 'wfh':
+        regularHours += hours;
+        break;
+      case 'holiday':
+        holidayHours += hours;
+        break;
+      case 'weekend':
+        weekendHours += hours;
+        break;
+      case 'bonus':
+        bonusHours += hours;
+        break;
+      default:
+        regularHours += hours;
+    }
+  });
+
+  leaveRequests.forEach((req) => {
+    const start = new Date(req.start_date);
+    const end = new Date(req.end_date);
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      if (d >= new Date(startDate) && d <= new Date(endDate)) {
+        leaveDates.add(d.toISOString().split('T')[0]);
+      }
+    }
+  });
+
+  let overtimeRegular = 0;
+  let overtimeHoliday = 0;
+  overtimeLogs.forEach((log) => {
+    const hours = Math.round(parseFloat(log.hours || 0) * 100) / 100;
+    if (log.overtime_type === 'holiday') overtimeHoliday += hours;
+    else overtimeRegular += hours;
+  });
+
+  const daysWorked = uniqueDays.size;
+  const leaveDays = leaveDates.size;
+  const overtimeHours = Math.round((weekendHours + bonusHours + overtimeRegular) * 100) / 100;
+  const holidayOvertimeHours = Math.round((holidayHours + overtimeHoliday) * 100) / 100;
+  const totalHours = Math.round((regularHours + weekendHours + holidayHours + bonusHours + overtimeRegular + overtimeHoliday) * 100) / 100;
+  const totalDays = daysWorked + leaveDays;
+  const attendanceRate = totalDays > 0 ? (totalDays / 22) * 100 : 0;
+
+  return {
+    ...emptySummary(employeeId, month, year),
+    days_worked: daysWorked,
+    leave_days: leaveDays,
+    regular_hours: Math.round(regularHours * 100) / 100,
+    overtime_hours: overtimeHours,
+    holiday_overtime_hours: holidayOvertimeHours,
+    total_hours: totalHours,
+    attendance_rate: Math.round(Math.min(attendanceRate, 100) * 100) / 100,
+  };
+};
+
+const calculateAllSummariesFromRawData = async (month, year, employees = []) => {
+  const { startDate, endDate } = getMonthDateRange(month, year);
+
+  const [timeResult, leaveResult, overtimeResult] = await Promise.all([
+    supabase
+      .from('time_entries')
+      .select('employee_id, date, hours, hour_type, status')
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .in('status', ['pending', 'approved']),
+    supabase
+      .from('leave_requests')
+      .select('employee_id, start_date, end_date, status')
+      .gte('start_date', startDate)
+      .lte('end_date', endDate)
+      .eq('status', 'approved'),
+    supabase
+      .from('overtime_logs')
+      .select('employee_id, date, hours, overtime_type, status')
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .in('status', ['pending', 'approved']),
+  ]);
+
+  if (timeResult.error) throw timeResult.error;
+  if (leaveResult.error) throw leaveResult.error;
+  if (overtimeResult.error) throw overtimeResult.error;
+
+  const groupByEmployee = (rows) => {
+    const grouped = new Map();
+    (rows || []).forEach((row) => {
+      const id = String(row.employee_id);
+      if (!grouped.has(id)) grouped.set(id, []);
+      grouped.get(id).push(row);
+    });
+    return grouped;
+  };
+
+  const timeByEmployee = groupByEmployee(timeResult.data);
+  const leaveByEmployee = groupByEmployee(leaveResult.data);
+  const overtimeByEmployee = groupByEmployee(overtimeResult.data);
+  const employeeIds = new Set([
+    ...employees.map((emp) => String(emp.id)),
+    ...timeByEmployee.keys(),
+    ...leaveByEmployee.keys(),
+    ...overtimeByEmployee.keys(),
+  ]);
+
+  const employeeById = new Map(employees.map((emp) => [String(emp.id), emp]));
+  return Array.from(employeeIds).map((employeeId) => ({
+    employee: employeeById.get(employeeId) || { id: employeeId, name: 'Unknown' },
+    data: aggregateEmployeeSummary(
+      employeeId,
+      month,
+      year,
+      timeByEmployee.get(employeeId) || [],
+      leaveByEmployee.get(employeeId) || [],
+      overtimeByEmployee.get(employeeId) || [],
+    ),
+  }));
+};
+
+const mergeSummaryRowsWithEmployees = (rows = [], employees = [], month, year) => {
+  const rowByEmployeeId = new Map(
+    rows.map((row) => [String(row.employee_id || row.employee?.id), row])
+  );
+
+  return employees.map((employee) => {
+    const existing = rowByEmployeeId.get(String(employee.id));
+    if (existing) {
+      return {
+        employee,
+        data: {
+          ...emptySummary(employee.id, month, year),
+          ...existing,
+          employee_id: employee.id,
+        },
+      };
+    }
+    return {
+      employee,
+      data: emptySummary(employee.id, month, year),
+    };
+  });
+};
+
+const summaryRowsHaveUsableData = (rows = [], employeeCount = 0) => {
+  if (!rows.length) return false;
+  const coverage = employeeCount > 0 ? rows.length / employeeCount : 1;
+  const hasMetrics = rows.some((row) =>
+    (row.total_hours || 0) > 0
+    || (row.regular_hours || 0) > 0
+    || (row.days_worked || 0) > 0
+  );
+  return hasMetrics && coverage >= 0.5;
+};
+
+/* Overview tab: one fast path for all employees (demo + production) */
+export const getOverviewEmployeeSummaries = async (month, year, employees = []) => {
+  if (isDemoMode()) {
+    return {
+      success: true,
+      data: buildDemoOverviewSummaries(month, year, employees),
+    };
+  }
+
+  try {
+    const summaryResult = await getAllEmployeesSummary(month, year);
+    if (summaryResult.success && summaryRowsHaveUsableData(summaryResult.data, employees.length)) {
+      return {
+        success: true,
+        data: mergeSummaryRowsWithEmployees(summaryResult.data, employees, month, year),
+      };
+    }
+
+    const calculated = await calculateAllSummariesFromRawData(month, year, employees);
+    return { success: true, data: calculated };
+  } catch (error) {
+    console.error('Error fetching overview employee summaries:', error);
+    return { success: false, error: error.message, data: [] };
+  }
+};
+
 /* Get summaries for all employees in a period */
 export const getAllEmployeesSummary = async (month, year) => {
   if (isDemoMode()) {
@@ -2047,6 +2314,7 @@ export default {
   getTimeTrackingSummary,
   updateSummary,
   getAllEmployeesSummary,
+  getOverviewEmployeeSummaries,
   getMonthlyAttendanceSummary,
   calculateHourTotals,
   getPendingApprovalsCount,

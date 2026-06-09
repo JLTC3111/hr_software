@@ -185,9 +185,12 @@ export const AuthProvider = ({ children }) => {
   // Handle visibility change (when user returns from power saving mode / idle)
   useEffect(() => {
     const handleVisibilityChange = async () => {
-      // Skip session check if in demo mode
+      // Skip session check if in demo mode or user is not signed in
       if (isDemoMode()) {
         console.log('🧪 Demo mode active - skipping session check');
+        return;
+      }
+      if (!isAuthenticated) {
         return;
       }
 
@@ -269,7 +272,7 @@ export const AuthProvider = ({ children }) => {
           } else {
             // No session in memory — try one recovery refresh before signing out
             console.log('⚠️ No session found after visibility change — attempting recovery');
-            const refreshResult = await validateAndRefreshSession();
+            const refreshResult = await validateAndRefreshSession({ quiet: true });
             if (refreshResult.success) {
               const { data: { session: recovered } } = await supabase.auth.getSession();
               if (recovered) {
@@ -278,9 +281,7 @@ export const AuthProvider = ({ children }) => {
                 return;
               }
             }
-            if (isAuthenticated) {
-              await clearAuthState();
-            }
+            await clearAuthState();
           }
         } catch (error) {
           console.error('Error during visibility change session check:', error);
