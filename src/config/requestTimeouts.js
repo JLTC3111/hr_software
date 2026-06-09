@@ -1,5 +1,11 @@
 // Centralized request timeout values
-export const DEFAULT_REQUEST_TIMEOUT = 900000; // 900 seconds / 15 minutes
+// IMPORTANT: This bounds how long a single network/Supabase request (incl. auth)
+// can hang before being aborted. It must stay small: GoTrue serializes auth calls
+// behind a Web Lock, so a stuck background token refresh will block a user's login
+// attempt for this entire duration. A large value (e.g. 15 min) makes the login
+// screen appear "unresponsive" after a tab has been left open overnight on a
+// flaky/sleeping network. Keep this at ~30s.
+export const DEFAULT_REQUEST_TIMEOUT = 30000; // 30 seconds
 export const VISIBILITY_STALE_TIMEOUT = 900000; // 900 seconds / 15 minutes
 
 // Global idle timeout for forced logout (app-wide)

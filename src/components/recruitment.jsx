@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import { Plus, Calendar, Eye, X, Check, XCircle, Star, FileText, Users, ClipboardCheck, UserCheck, ChevronRight, ChevronDown, Briefcase, Clock, TrendingUp, ArrowRight } from 'lucide-react';
+import { Plus, Calendar, Eye, X, Check, XCircle, Star, FileText, Users, ClipboardCheck, UserCheck, ChevronRight, ChevronDown, Briefcase, Clock, TrendingUp, ArrowRight, Search, MapPin, Video, Save, MessageSquare } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import {
   getAllApplications,
   updateApplicationStatus,
+  updateApplicationRating,
   createInterviewSchedule,
   getRecruitmentStats,
   createJobPosting
 } from '../services/recruitmentService';
-import { isDemoMode, getDemoApplicationStatus, getDemoApplicationNotes, getDemoJobTitle } from '../utils/demoHelper';
+import { isDemoMode, getDemoApplicationStatus, getDemoJobTitle } from '../utils/demoHelper';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 
@@ -26,6 +27,8 @@ const Recruitment = () => {
   const [showPostJobModal, setShowPostJobModal] = useState(false);
   const [viewMode, setViewMode] = useState('pipeline'); // 'pipeline' or 'table'
   const [expandedStage, setExpandedStage] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [interviewApplication, setInterviewApplication] = useState(null);
   
   useEffect(() => {
     fetchData();
@@ -77,17 +80,34 @@ const Recruitment = () => {
     }
   };
 
-  const handleScheduleInterview = async (application) => {
-    // This would open a modal to schedule interview
-    // For now, just update status
-    await handleStatusUpdate(application.id, 'interview scheduled');
+  const handleScheduleInterview = (application) => {
+    setInterviewApplication(application);
   };
+
+  // Candidate name / position / department text used for searching
+  const getSearchableText = useCallback((app) => {
+    const name = app.applicant?.full_name
+      || `${app.applicant?.first_name || ''} ${app.applicant?.last_name || ''}`.trim()
+      || app.candidateName
+      || '';
+    const position = app.job_posting?.title || app.job_posting?.position || app.position || '';
+    const department = app.job_posting?.department || app.department || '';
+    const email = app.applicant?.email || app.email || '';
+    return `${name} ${position} ${department} ${email}`.toLowerCase();
+  }, []);
+
+  // Apply the search query first so it affects both the pipeline and table views
+  const searchedApplications = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return applications;
+    return applications.filter(app => getSearchableText(app).includes(q));
+  }, [applications, searchQuery, getSearchableText]);
 
   const filteredApplications = useMemo(() => {
     return filterStatus === 'all' 
-      ? applications 
-      : applications.filter(app => app.status === filterStatus);
-  }, [applications, filterStatus]);
+      ? searchedApplications 
+      : searchedApplications.filter(app => app.status === filterStatus);
+  }, [searchedApplications, filterStatus]);
 
   // Group applications by pipeline stage
   const pipelineData = useMemo(() => {
@@ -142,7 +162,7 @@ const Recruitment = () => {
       }
     };
 
-    applications.forEach(app => {
+    searchedApplications.forEach(app => {
       const status = app.status?.toLowerCase() || 'under review';
       if (stages[status]) {
         stages[status].applications.push(app);
@@ -150,7 +170,7 @@ const Recruitment = () => {
     });
 
     return stages;
-  }, [applications, t]);
+  }, [searchedApplications, t]);
 
   // Calculate pipeline metrics
   const pipelineMetrics = useMemo(() => {
@@ -203,7 +223,27 @@ const Recruitment = () => {
             {t('recruitment.subtitle', 'Manage your hiring pipeline and track candidates')}
           </p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Search */}
+          <div className="relative">
+            <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${text.secondary}`} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t('recruitment.searchPlaceholder', 'Search candidates...')}
+              className={`pl-9 pr-8 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary} text-sm w-48 sm:w-60 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 ${text.secondary} hover:${text.primary} cursor-pointer`}
+                title={t('common.clear', 'Clear')}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
           {/* View Toggle */}
           <div className={`flex rounded-lg border ${border.primary} overflow-hidden`}>
             <button
@@ -485,6 +525,24 @@ const Recruitment = () => {
             setSelectedApplication(null);
           }}
           onUpdate={fetchData}
+          onStatusUpdate={handleStatusUpdate}
+          onScheduleInterview={(app) => {
+            setShowDetailModal(false);
+            setSelectedApplication(null);
+            handleScheduleInterview(app);
+          }}
+        />
+      )}
+
+      {/* Interview Schedule Modal */}
+      {interviewApplication && (
+        <InterviewScheduleModal
+          application={interviewApplication}
+          onClose={() => setInterviewApplication(null)}
+          onSuccess={() => {
+            setInterviewApplication(null);
+            fetchData();
+          }}
         />
       )}
 
@@ -865,6 +923,7 @@ CandidateCard.displayName = 'CandidateCard';
 const PostJobModal = ({ onClose, onSuccess }) => {
   const { bg, text, border, isDarkMode } = useTheme();
   const { t } = useLanguage();
+  const { handleSessionAuthError } = useSessionGuard();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -1124,9 +1183,42 @@ const PostJobModal = ({ onClose, onSuccess }) => {
 };
 
 // Application Detail Modal
-const ApplicationDetailModal = ({ application, onClose, onUpdate }) => {
+const ApplicationDetailModal = ({ application, onClose, onUpdate, onStatusUpdate, onScheduleInterview }) => {
   const { bg, text, border, isDarkMode } = useTheme();
   const { t } = useLanguage();
+  const { handleSessionAuthError } = useSessionGuard();
+
+  const [rating, setRating] = useState(application.rating || 0);
+  const [notes, setNotes] = useState(application.notes || '');
+  const [status, setStatus] = useState(application.status || 'under review');
+  const [saving, setSaving] = useState(false);
+
+  const statusOptions = [
+    { value: 'under review', label: t('recruitment.underReview', 'Under Review') },
+    { value: 'shortlisted', label: t('recruitment.shortListed', 'Shortlisted') },
+    { value: 'interview scheduled', label: t('recruitment.interviews', 'Interview Scheduled') },
+    { value: 'offer extended', label: t('recruitment.offers', 'Offer Extended') },
+    { value: 'hired', label: t('recruitment.hired', 'Hired') },
+    { value: 'rejected', label: t('recruitment.rejected', 'Rejected') }
+  ];
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await updateApplicationRating(application.id, rating, notes);
+      if (status !== application.status && onStatusUpdate) {
+        await onStatusUpdate(application.id, status);
+      }
+      if (onUpdate) await onUpdate();
+      onClose();
+    } catch (error) {
+      console.error('Error saving application:', error);
+      if (handleSessionAuthError(error)) return;
+      alert(t('errors.saveFailed', 'Failed to save changes'));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div 
@@ -1138,9 +1230,11 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate }) => {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className={`flex justify-between items-center p-6 border-b ${border.primary}`}>
+        <div className={`flex justify-between items-center p-6 border-b ${border.primary} sticky top-0 ${bg.secondary} z-10`}>
           <h2 className={`text-2xl font-bold ${text.primary}`}>
-            {application.applicant?.full_name}
+            {application.applicant?.full_name
+              || `${application.applicant?.first_name || ''} ${application.applicant?.last_name || ''}`.trim()
+              || application.candidateName}
           </h2>
           <button
             onClick={onClose}
@@ -1207,24 +1301,280 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate }) => {
             </div>
           )}
 
-          {/* Notes */}
-          {application.notes && (
+          {/* Evaluation (editable) */}
+          <div className={`p-4 rounded-lg border ${border.primary} ${isDarkMode ? 'bg-gray-700/40' : 'bg-gray-50'} space-y-4`}>
+            <h3 className={`text-lg font-semibold ${text.primary} flex items-center space-x-2`}>
+              <ClipboardCheck className="w-5 h-5" />
+              <span>{t('recruitment.evaluation', 'Evaluation')}</span>
+            </h3>
+
+            {/* Rating */}
             <div>
-              <h3 className={`text-lg font-semibold ${text.primary} mb-3`}>{t('recruitment.notes', 'Notes')}</h3>
-              <p className={`text-sm ${text.secondary}`}>{isDemoMode() ? getDemoApplicationNotes(application, t) : application.notes}</p>
+              <label className={`block text-sm font-medium ${text.secondary} mb-2`}>{t('recruitment.rating', 'Rating')}</label>
+              <div className="flex items-center space-x-1">
+                {[1, 2, 3, 4, 5].map(value => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setRating(value === rating ? 0 : value)}
+                    className="cursor-pointer transition-transform hover:scale-110"
+                    title={`${value}/5`}
+                  >
+                    <Star className={`w-6 h-6 ${value <= rating ? 'text-yellow-400 fill-yellow-400' : text.secondary}`} />
+                  </button>
+                ))}
+                <span className={`ml-2 text-sm ${text.secondary}`}>{rating > 0 ? `${rating}/5` : t('recruitment.notRated', 'Not rated')}</span>
+              </div>
             </div>
-          )}
+
+            {/* Status */}
+            <div>
+              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('recruitment.statusLabel', 'Status')}</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+              >
+                {statusOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('recruitment.notes', 'Notes')}</label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                placeholder={t('recruitment.notesPlaceholder', 'Add interview notes or feedback...')}
+                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary} resize-none`}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
-        <div className={`flex justify-end p-6 border-t ${border.primary} space-x-3`}>
+        <div className={`flex flex-col sm:flex-row justify-between gap-3 p-6 border-t ${border.primary}`}>
           <button
-            onClick={onClose}
-            className={`px-4 py-2 ${isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'} rounded-lg cursor-pointer`}
+            onClick={() => onScheduleInterview && onScheduleInterview(application)}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer flex items-center justify-center space-x-2"
           >
-            {t('common.close', 'Close')}
+            <Calendar className="w-4 h-4" />
+            <span>{t('recruitment.scheduleInterview', 'Schedule Interview')}</span>
+          </button>
+          <div className="flex space-x-3 justify-end">
+            <button
+              onClick={onClose}
+              className={`px-4 py-2 ${isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'} rounded-lg cursor-pointer`}
+            >
+              {t('common.close', 'Close')}
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 cursor-pointer flex items-center space-x-2"
+            >
+              <Save className="w-4 h-4" />
+              <span>{saving ? t('common.saving', 'Saving...') : t('common.save', 'Save')}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Interview Schedule Modal
+const InterviewScheduleModal = ({ application, onClose, onSuccess }) => {
+  const { bg, text, border, isDarkMode } = useTheme();
+  const { t } = useLanguage();
+  const { handleSessionAuthError } = useSessionGuard();
+  const [loading, setLoading] = useState(false);
+
+  const candidateName = application.applicant?.full_name
+    || `${application.applicant?.first_name || ''} ${application.applicant?.last_name || ''}`.trim()
+    || application.candidateName
+    || t('common.notAvailable', 'N/A');
+
+  const [form, setForm] = useState({
+    date: '',
+    time: '10:00',
+    interview_type: 'video',
+    duration_minutes: 60,
+    location: '',
+    notes: ''
+  });
+
+  const interviewTypes = [
+    { value: 'phone', label: t('recruitment.interviewType.phone', 'Phone') },
+    { value: 'video', label: t('recruitment.interviewType.video', 'Video') },
+    { value: 'in-person', label: t('recruitment.interviewType.inPerson', 'In Person') },
+    { value: 'technical', label: t('recruitment.interviewType.technical', 'Technical') },
+    { value: 'hr', label: t('recruitment.interviewType.hr', 'HR') }
+  ];
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.date) {
+      alert(t('recruitment.selectDate', 'Please select an interview date'));
+      return;
+    }
+    setLoading(true);
+    try {
+      const scheduledDate = new Date(`${form.date}T${form.time || '00:00'}`).toISOString();
+
+      if (isDemoMode()) {
+        // Persisting interviews is not available in demo mode — simulate success.
+        alert(t('recruitment.interviewScheduled', 'Interview scheduled successfully!'));
+        onSuccess();
+        return;
+      }
+
+      const result = await createInterviewSchedule({
+        application_id: application.id,
+        interview_type: form.interview_type,
+        scheduled_date: scheduledDate,
+        duration_minutes: parseInt(form.duration_minutes) || 60,
+        location: form.location || null,
+        feedback: form.notes || null,
+        status: 'scheduled'
+      });
+
+      if (result.success) {
+        alert(t('recruitment.interviewScheduled', 'Interview scheduled successfully!'));
+        onSuccess();
+      } else {
+        alert(result.error || t('errors.saveFailed', 'Failed to schedule interview'));
+      }
+    } catch (error) {
+      console.error('Error scheduling interview:', error);
+      if (handleSessionAuthError(error)) return;
+      alert(t('errors.saveFailed', 'Failed to schedule interview'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className={`${bg.secondary} rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto`} onClick={(e) => e.stopPropagation()}>
+        <div className={`flex justify-between items-center p-6 border-b ${border.primary}`}>
+          <div>
+            <h2 className={`text-xl font-semibold ${text.primary} flex items-center space-x-2`}>
+              <Calendar className="w-5 h-5" />
+              <span>{t('recruitment.scheduleInterview', 'Schedule Interview')}</span>
+            </h2>
+            <p className={`text-sm ${text.secondary} mt-1`}>{candidateName}</p>
+          </div>
+          <button onClick={onClose} className={`${text.secondary} hover:${text.primary} cursor-pointer`}>
+            <X className="w-5 h-5" />
           </button>
         </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('recruitment.interviewDate', 'Date')} *</label>
+              <input
+                type="date"
+                name="date"
+                value={form.date}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+                required
+              />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('recruitment.interviewTime', 'Time')}</label>
+              <input
+                type="time"
+                name="time"
+                value={form.time}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+              />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('recruitment.interviewTypeLabel', 'Interview Type')}</label>
+              <select
+                name="interview_type"
+                value={form.interview_type}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+              >
+                {interviewTypes.map(type => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('recruitment.duration', 'Duration (min)')}</label>
+              <input
+                type="number"
+                name="duration_minutes"
+                min="15"
+                step="15"
+                value={form.duration_minutes}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium ${text.secondary} mb-1 flex items-center space-x-1`}>
+              {form.interview_type === 'video' ? <Video className="w-4 h-4" /> : <MapPin className="w-4 h-4" />}
+              <span>{form.interview_type === 'video' ? t('recruitment.meetingLink', 'Meeting Link') : t('recruitment.location', 'Location')}</span>
+            </label>
+            <input
+              type="text"
+              name="location"
+              value={form.location}
+              onChange={handleChange}
+              placeholder={form.interview_type === 'video' ? 'https://...' : t('recruitment.enterLocation', 'Enter location')}
+              className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+            />
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium ${text.secondary} mb-1 flex items-center space-x-1`}>
+              <MessageSquare className="w-4 h-4" />
+              <span>{t('recruitment.notes', 'Notes')}</span>
+            </label>
+            <textarea
+              name="notes"
+              value={form.notes}
+              onChange={handleChange}
+              rows={3}
+              placeholder={t('recruitment.interviewNotesPlaceholder', 'Agenda, interviewers, things to prepare...')}
+              className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary} resize-none`}
+            />
+          </div>
+
+          <div className={`flex justify-end space-x-3 pt-2 border-t ${border.primary}`}>
+            <button
+              type="button"
+              onClick={onClose}
+              className={`px-4 py-2 ${isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'} rounded-lg cursor-pointer`}
+            >
+              {t('common.cancel', 'Cancel')}
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+            >
+              {loading ? t('common.saving', 'Saving...') : t('recruitment.confirmSchedule', 'Confirm Schedule')}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

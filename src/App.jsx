@@ -20,6 +20,7 @@ const TaskReview = lazy(() => import('./components/taskReview.jsx'));
 const PersonalGoals = lazy(() => import('./components/personalGoals.jsx'));
 const Reports = lazy(() => import('./components/reports.jsx'));
 const Recruitment = lazy(() => import('./components/recruitment.jsx'));
+const LeaveManagement = lazy(() => import('./components/leaveManagement.jsx'));
 const Notifications = lazy(() => import('./components/notifications.jsx'));
 const Settings = lazy(() => import('./components/settings.jsx'));
 const AddNewEmployee = lazy(() => import('./components/addNewEmployee.jsx'));
@@ -40,42 +41,6 @@ import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
 import { logVisit } from './services/visitService';
 import { isDemoMode } from './utils/demoHelper';
-
-const Applications = [
-  {
-    id: 1,
-    candidateName: 'Alex Thompson',
-    position: 'Frontend Developer',
-    department: 'Engineering',
-    status: 'Interview Scheduled',
-    appliedDate: '2024-08-15',
-    email: 'alex.thompson@email.com',
-    experience: '3 years',
-    stage: 'technical'
-  },
-  {
-    id: 2,
-    candidateName: 'Maria Garcia',
-    position: 'Content Writer',
-    department: 'Marketing',
-    status: 'Under Review',
-    appliedDate: '2024-08-18',
-    email: 'maria.garcia@email.com',
-    experience: '2 years',
-    stage: 'screening'
-  },
-  {
-    id: 3,
-    candidateName: 'David Kim',
-    position: 'Sales Representative',
-    department: 'Sales',
-    status: 'Offer Extended',
-    appliedDate: '2024-08-10',
-    email: 'david.kim@email.com',
-    experience: '4 years',
-    stage: 'offer'
-  }
-];
 
 const HRManagementApp = () => {
   const { isAuthenticated, user } = useAuth();
@@ -158,10 +123,10 @@ const HRManagementApp = () => {
         }));
         setApplications(transformedData);
       } else {
-        // Tables don't exist yet or other error - use fallback data
-        console.warn('Recruitment tables not found. Please run migration 005_recruitment_tables.sql');
-        console.warn('Using fallback mock data for applications.');
-        setApplications(Applications);
+        // Tables don't exist yet or other error - show no applications rather than
+        // injecting hard-coded mock candidates into the real app.
+        console.warn('Recruitment applications unavailable. Please run migration 005_recruitment_tables.sql if recruitment tables are missing.');
+        setApplications([]);
       }
     };
 
@@ -321,7 +286,7 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={
-          isAuthenticated ? <Navigate to="/time-clock" replace /> : <Login />
+          isAuthenticated ? <Navigate to="/time-tracking" replace /> : <Login />
         } />
         
         {/* Allow reset-password even when authenticated (user needs to complete password change) */}
@@ -351,7 +316,7 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
                 <div className="flex-1 p-3 sm:p-4 lg:p-8 w-full mx-auto">
                   <Suspense fallback={<PageLoader />}>
                   <Routes>
-                    <Route path="/" element={<Navigate to="/time-clock" replace />} />
+                    <Route path="/" element={<Navigate to="/time-tracking" replace />} />
                     <Route 
                       path="/time-clock" 
                       element={<TimeClockEntry currentLanguage={currentLanguage} />} 
@@ -403,6 +368,10 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
                     <Route 
                       path="/recruitment" 
                       element={<Recruitment />} 
+                    />
+                    <Route 
+                      path="/leave-management" 
+                      element={<LeaveManagement employees={employees} />} 
                     />
                     <Route 
                       path="/notifications" 

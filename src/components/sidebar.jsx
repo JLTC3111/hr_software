@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
-import { TrendingUp, Users, Award, FileText, Clock, AlarmClock, ChevronLeft, ChevronRight, ChevronDown, Building2, Bell, Cog, CheckSquare, Sparkles, X, UserPlus } from 'lucide-react'
+import { TrendingUp, Users, Award, FileText, Clock, AlarmClock, ChevronLeft, ChevronRight, ChevronDown, Building2, Bell, Cog, CheckSquare, Sparkles, X, UserPlus, CalendarDays } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useNotifications } from '../contexts/NotificationContext'
@@ -71,6 +71,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
             { path: '/employees/add', name: t('employees.addNew', 'Add New') },
           ]
         },
+        { path: '/leave-management', name: t('nav.leaveManagement', 'Leave Management'), icon: CalendarDays },
         { 
           path: '/workload', 
           name: t('nav.workload', 'Work Management'), 
@@ -202,7 +203,8 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   const hasSubItems = item.subItems && item.subItems.length > 0;
-                  const isExpanded = expandedMenus[item.name];
+                  // Submenus are expanded by default; only collapsed when explicitly toggled off
+                  const isExpanded = expandedMenus[item.name] !== false;
                   
                   return (
                     <div key={item.name}>

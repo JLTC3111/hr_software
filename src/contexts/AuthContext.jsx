@@ -586,27 +586,53 @@ export const AuthProvider = ({ children }) => {
           console.log('✅ Using sessionStorage (session-only)');
         }
       }
-      
-      // Check if this email has a mapping to a different HR user
+
+      // Guard helper: never let a single auth-related request hang the login UI.
+      // Bounds the call and surfaces a clear, retryable error instead of freezing.
+      const withLoginTimeout = (promise, ms, label) =>
+        Promise.race([
+          promise,
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(`${label} timed out. Please check your connection and try again.`)), ms)
+          ),
+        ]);
+
+      // Check if this email has a mapping to a different HR user.
+      // This is a best-effort lookup — if it stalls or fails we proceed with the
+      // normal sign-in flow rather than blocking the user.
       console.log('🔍 Checking email mapping in user_emails...');
-      const { data: emailMapping, error: mappingError } = await supabase
-        .from('user_emails')
-        .select('email, hr_user_id, auth_user_id')
-        .eq('email', email)
-        .maybeSingle();
-      
+      let emailMapping = null;
+      try {
+        const { data: mappingData } = await withLoginTimeout(
+          supabase
+            .from('user_emails')
+            .select('email, hr_user_id, auth_user_id')
+            .eq('email', email)
+            .maybeSingle(),
+          8000,
+          'Account lookup'
+        );
+        emailMapping = mappingData || null;
+      } catch (mappingLookupError) {
+        console.warn('⚠️ Email mapping lookup skipped:', mappingLookupError?.message || mappingLookupError);
+      }
+
       // Always login with the provided email (authenticate the actual auth user)
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password
-      });
+      const { data, error } = await withLoginTimeout(
+        supabase.auth.signInWithPassword({
+          email: email,
+          password
+        }),
+        20000,
+        'Sign in'
+      );
 
       if (error) throw error;
 
       console.log('✅ Login successful');
       
       // If this email is mapped to a different HR user, we need to load that profile instead
-      if (emailMapping && !mappingError && emailMapping.hr_user_id) {
+      if (emailMapping && emailMapping.hr_user_id) {
         console.log(`🔗 Email mapping found: auth user ${data.user.id} → HR user ${emailMapping.hr_user_id}`);
         
         // Check if the logged-in auth user matches the expected auth_user_id
