@@ -597,41 +597,38 @@ const TimeTracking = ({ employees }) => {
         }
       }
       
-      // Wrap fetch with retry mechanism
+      // Fetch summary, leave requests, and time entries in parallel
       await retryWithBackoff(async () => {
-        // Fetch summary data
-        const summaryResult = await withTimeout(
-          () => timeTrackingService.getTimeTrackingSummary(selectedEmployee, selectedMonth, selectedYear),
-          DEFAULT_REQUEST_TIMEOUT,
-          'load time tracking summary'
-      );
-      if (summaryResult.success) {
-        setSummaryData(summaryResult.data);
-      }
-      // Fetch leave requests for selected employee
-      const leaveResult = await withTimeout(
-        () => timeTrackingService.getLeaveRequests(selectedEmployee, { year: selectedYear }),
-        DEFAULT_REQUEST_TIMEOUT,
-        'load leave requests (selected employee)'
-      );
-      if (leaveResult.success) {
-        setLeaveRequests(leaveResult.data);
-      }
-      // Fetch time entries (includes overtime)
-      const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
-      const endDate = new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0];
-      const entriesResult = await withTimeout(
-        () =>
-          timeTrackingService.getTimeEntries(selectedEmployee, {
-            startDate: startDate,
-            endDate: endDate
-          }),
-        DEFAULT_REQUEST_TIMEOUT,
-        'load time entries (selected employee)'
-      );
-      if (entriesResult.success) {
-        setTimeEntries(entriesResult.data);
-      }
+        const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
+        const endDate = new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0];
+
+        const [summaryResult, leaveResult, entriesResult] = await Promise.all([
+          withTimeout(
+            () => timeTrackingService.getTimeTrackingSummary(selectedEmployee, selectedMonth, selectedYear),
+            DEFAULT_REQUEST_TIMEOUT,
+            'load time tracking summary'
+          ),
+          withTimeout(
+            () => timeTrackingService.getLeaveRequests(selectedEmployee, { year: selectedYear }),
+            DEFAULT_REQUEST_TIMEOUT,
+            'load leave requests (selected employee)'
+          ),
+          withTimeout(
+            () => timeTrackingService.getTimeEntries(selectedEmployee, { startDate, endDate }),
+            DEFAULT_REQUEST_TIMEOUT,
+            'load time entries (selected employee)'
+          ),
+        ]);
+
+        if (summaryResult.success) {
+          setSummaryData(summaryResult.data);
+        }
+        if (leaveResult.success) {
+          setLeaveRequests(leaveResult.data);
+        }
+        if (entriesResult.success) {
+          setTimeEntries(entriesResult.data);
+        }
       }, {
         maxRetries: 2,
         shouldRetry: isRetryableError,
@@ -716,10 +713,14 @@ const TimeTracking = ({ employees }) => {
     };
   }, [fetchTimeTrackingData, fetchAllLeaveRequests]);
 
-  // Initial load of all leave requests (prefetch for admins/managers)
+  // Defer admin leave-request prefetch so it does not compete with the primary load
   useEffect(() => {
-    fetchAllLeaveRequests();
-  }, [fetchAllLeaveRequests]);
+    if (!canViewOverview) return undefined;
+    const timerId = setTimeout(() => {
+      fetchAllLeaveRequests();
+    }, 800);
+    return () => clearTimeout(timerId);
+  }, [canViewOverview, fetchAllLeaveRequests]);
 
   
 
@@ -1258,6 +1259,10 @@ const handleRejectRequest = async (requestId) => {
     setTimeout(() => setSuccessMessage(''), 3000);
   };
 
+  const hasOvertimeHours = allEmployeesData.some(
+    item => (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0) > 0
+  );
+
   return (
     <div className="space-y-4 md:space-y-6 px-2 sm:px-0">
       {/* Header */}
@@ -1557,7 +1562,7 @@ const handleRejectRequest = async (requestId) => {
         </h3>
       
         {/* Regular Hours By Employee */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className={`grid grid-cols-1 ${hasOvertimeHours ? 'lg:grid-cols-2' : ''} gap-6 mb-6`}>
           <div className={`${bg.primary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center space-x-2 mb-4">
               <BarChart3 className={`w-5 h-5 ${text.primary}`} />
@@ -1598,6 +1603,7 @@ const handleRejectRequest = async (requestId) => {
           </div>
 
           {/* Total Overtime Hours By Employee */}
+          {hasOvertimeHours && (
           <div className={`${bg.primary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center space-x-2 mb-4">
               <PieChart className={`w-5 h-5 ${text.primary}`} />
@@ -1643,6 +1649,7 @@ const handleRejectRequest = async (requestId) => {
               </div>
             </div>
           </div>
+          )}
         </div>
 
         {/* All Employees Table */}

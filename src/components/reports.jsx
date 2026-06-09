@@ -240,45 +240,16 @@ const Reports = () => {
       
       console.log('Fetching data for:', { selectedEmployee, employeeId, activeTab, startDate, endDate });
 
-      // Fetch Time Entries (for 'all' or 'time-entries' tab)
-      if (activeTab === 'all' || activeTab === 'time-entries') {
+      const fetchTimeEntries = async () => {
         let allTimeEntries = [];
         let error = null;
 
         if (isDemoMode()) {
-          // Use persisted demo time entries (includes user-created entries)
           const demoEntries = getDemoTimeEntries();
-          // Identify user-created entries (those starting with 'demo-entry-')
-          const userCreatedEntries = demoEntries.filter(e => e.id?.startsWith('demo-entry-'));
-          console.log('[DEBUG Reports] Demo entries before filter:', {
-            total: demoEntries.length,
-            userCreated: userCreatedEntries.length,
-            dateRange: { startDate, endDate },
-            sampleDates: demoEntries.slice(0, 5).map(e => ({ id: e.id, date: e.date })),
-            userCreatedDates: userCreatedEntries.map(e => ({ id: e.id, date: e.date, employee_id: e.employee_id }))
-          });
-          // Filter by date range and sort by date descending (like production)
           allTimeEntries = demoEntries
-            .filter(entry => {
-              if (!entry.date) {
-                console.log('[DEBUG Reports] Entry missing date:', entry.id);
-                return false;
-              }
-              const inRange = entry.date >= startDate && entry.date <= endDate;
-              if (!inRange && entry.id?.startsWith('demo-entry-')) {
-                console.log('[DEBUG Reports] User entry outside range:', { id: entry.id, date: entry.date, startDate, endDate });
-              }
-              return inRange;
-            })
+            .filter(entry => entry.date && entry.date >= startDate && entry.date <= endDate)
             .sort((a, b) => new Date(b.date) - new Date(a.date));
-          console.log('[DEBUG Reports] Demo entries after filter:', {
-            count: allTimeEntries.length,
-            uniqueEmployees: [...new Set(allTimeEntries.map(e => e.employee_id))].length,
-            hasUserCreated: allTimeEntries.some(e => e.id?.startsWith('demo-entry-'))
-          });
         } else {
-          // Use direct Supabase query with proper join - fetch all entries first
-          // Supabase defaults to 1000 rows, so we need to increase limit for reports
           const result = await withTimeout(
             supabase
               .from('time_entries')
@@ -289,7 +260,7 @@ const Reports = () => {
               .gte('date', startDate)
               .lte('date', endDate)
               .order('date', { ascending: false })
-              .limit(10000), 
+              .limit(10000),
             DEFAULT_REQUEST_TIMEOUT
           );
           allTimeEntries = result.data;
@@ -298,137 +269,70 @@ const Reports = () => {
 
         if (error) {
           console.error('Error fetching time entries:', error);
-          setReportData(prev => ({ ...prev, timeEntries: [] }));
-        } else {
-          // Filter client-side using string comparison like timeClockEntry does
-          let filteredEntries = allTimeEntries || [];
-          
-          if (employeeId) {
-            // Compare as strings to handle both int and string IDs
-            filteredEntries = filteredEntries.filter(entry => 
-              String(entry.employee_id) === String(employeeId)
-            );
-          }
-          
-          console.log('Filtered time entries:', {
-            employeeIdFilter: employeeId,
-            totalFetched: allTimeEntries?.length,
-            afterFilter: filteredEntries.length,
-            sampleEntry: filteredEntries[0] ? {
-              employee_id: filteredEntries[0].employee_id,
-              employee_id_type: typeof filteredEntries[0].employee_id,
-              employee: filteredEntries[0].employee,
-              date: filteredEntries[0].date
-            } : null
-          });
-          
-          setReportData(prev => ({ ...prev, timeEntries: filteredEntries }));
+          return [];
         }
-      }
 
-      // Fetch Tasks (for 'all' or 'tasks' tab)
-      if (activeTab === 'all' || activeTab === 'tasks') {
-        // For tasks, don't filter by date range as tasks are ongoing
-        // Only filter by employee if one is selected
-        const tasksResponse = await getAllTasks(
-          employeeId ? { employeeId: employeeId } : {}
-        );
+        let filteredEntries = allTimeEntries || [];
+        if (employeeId) {
+          filteredEntries = filteredEntries.filter(entry =>
+            String(entry.employee_id) === String(employeeId)
+          );
+        }
+        return filteredEntries;
+      };
+
+      const fetchTasks = async () => {
+        const tasksResponse = await getAllTasks(employeeId ? { employeeId } : {});
         const tasks = tasksResponse.success ? tasksResponse.data : [];
-        
-        // Filter client-side using string comparison like we do for time entries
-        let filteredTasks = tasks;
         if (employeeId) {
-          filteredTasks = tasks.filter(task => String(task.employee_id) === String(employeeId));
+          return tasks.filter(task => String(task.employee_id) === String(employeeId));
         }
-        
-        console.log('Tasks fetched:', {
-          employeeId,
-          employeeIdType: typeof employeeId,
-          success: tasksResponse.success,
-          totalFetched: tasks.length,
-          afterFilter: filteredTasks.length,
-          sampleTask: filteredTasks[0] ? {
-            employee_id: filteredTasks[0].employee_id,
-            employee_id_type: typeof filteredTasks[0].employee_id,
-            title: filteredTasks[0].title
-          } : null,
-          error: tasksResponse.error
-        });
-        setReportData(prev => ({ ...prev, tasks: filteredTasks }));
-      }
+        return tasks;
+      };
 
-      // Fetch Goals (for 'all' or 'goals' tab)
-      // NOTE: Goals are fetched from performance_goals table, NOT performance_reviews
-      // - performance_goals = Goal tracking with progress percentages and milestones
-      // - performance_reviews = Skill assessments and quarterly performance reviews
-      if (activeTab === 'all' || activeTab === 'goals') {
-        console.log('=== FETCHING GOALS FROM performance_goals TABLE ===', { activeTab, employeeId });
+      const fetchGoals = async () => {
         const goalsResponse = await performanceService.getAllPerformanceGoals(
-          employeeId ? { employeeId: employeeId } : {}
+          employeeId ? { employeeId } : {}
         );
-        console.log('Goals Response:', goalsResponse);
         const goals = goalsResponse.success ? goalsResponse.data : [];
-        
-        // Filter client-side using string comparison
-        let filteredGoals = goals;
         if (employeeId) {
-          filteredGoals = goals.filter(goal => String(goal.employee_id) === String(employeeId));
+          return goals.filter(goal => String(goal.employee_id) === String(employeeId));
         }
-        
-        console.log('Goals fetched:', {
-          employeeId,
-          employeeIdType: typeof employeeId,
-          success: goalsResponse.success,
-          totalFetched: goals.length,
-          afterFilter: filteredGoals.length,
-          sampleGoal: filteredGoals[0] ? {
-            employee_id: filteredGoals[0].employee_id,
-            employee_id_type: typeof filteredGoals[0].employee_id,
-            title: filteredGoals[0].title,
-            status: filteredGoals[0].status,
-            progress: filteredGoals[0].progress,
-            progress_type: typeof filteredGoals[0].progress,
-            progress_is_null: filteredGoals[0].progress === null,
-            progress_is_zero: filteredGoals[0].progress === 0
-          } : null,
-          allGoalsProgress: filteredGoals.map(g => ({
-            title: g.title,
-            status: g.status,
-            progress: g.progress,
-            progress_type: typeof g.progress
-          })),
-          rawGoals: goals,
-          error: goalsResponse.error
-        });
-        console.log('Setting goals in reportData:', filteredGoals);
-        setReportData(prev => {
-          console.log('Previous reportData:', prev);
-          const newData = { ...prev, goals: filteredGoals };
-          console.log('New reportData with goals:', newData);
-          return newData;
-        });
-      } else {
-        console.log('=== SKIPPING GOALS FETCH ===', { activeTab });
-      }
+        return goals;
+      };
 
-      // Fetch Leave Requests (for 'leave' tab)
-      if (activeTab === 'leave') {
+      const fetchLeave = async () => {
         const leaveResponse = await timeTrackingService.getAllLeaveRequests({});
         let leaveData = leaveResponse.success ? leaveResponse.data : [];
-
-        // Filter by employee
         if (employeeId) {
           leaveData = leaveData.filter(req => String(req.employee_id) === String(employeeId));
         }
-
-        // Filter by date range overlap
         leaveData = leaveData.filter(req => {
           const s = (req.start_date || '').slice(0, 10);
           const e = (req.end_date || req.start_date || '').slice(0, 10);
           return s <= endDate && e >= startDate;
         });
+        return leaveData;
+      };
 
-        // Attach readable employee info (mainly for demo mode where it isn't merged)
+      if (activeTab === 'all') {
+        const [timeEntries, tasks, goals] = await Promise.all([
+          fetchTimeEntries(),
+          fetchTasks(),
+          fetchGoals(),
+        ]);
+        setReportData(prev => ({ ...prev, timeEntries, tasks, goals }));
+      } else if (activeTab === 'time-entries') {
+        const timeEntries = await fetchTimeEntries();
+        setReportData(prev => ({ ...prev, timeEntries }));
+      } else if (activeTab === 'tasks') {
+        const tasks = await fetchTasks();
+        setReportData(prev => ({ ...prev, tasks }));
+      } else if (activeTab === 'goals') {
+        const goals = await fetchGoals();
+        setReportData(prev => ({ ...prev, goals }));
+      } else if (activeTab === 'leave') {
+        const leaveData = await fetchLeave();
         setReportData(prev => ({
           ...prev,
           leave: leaveData.map(req => ({
@@ -520,19 +424,15 @@ const Reports = () => {
     return exportData;
   }, [filters, selectedEmployee, reportData.employees]);
 
-  // Effect to fetch data when filters/tab/employee changes
+  // Effect to fetch data when filters/tab/employee changes (no need to wait for employees list)
   useEffect(() => {
-    if (reportData.employees.length > 0) {
-      fetchReportData();
-    }
-  }, [fetchReportData, reportData.employees]);
+    fetchReportData();
+  }, [fetchReportData]);
 
   // Memoize fetchReportData for use in visibility hook
   const memoizedFetchReportData = useCallback(() => {
-    if (reportData.employees.length > 0) {
-      fetchReportData({ silent: true });
-    }
-  }, [fetchReportData, reportData.employees]);
+    fetchReportData({ silent: true });
+  }, [fetchReportData]);
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
   useAuthenticatedPageRefresh(memoizedFetchReportData);

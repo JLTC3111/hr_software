@@ -63,6 +63,13 @@ export default {
     pending: '保留中',
     approvedDaysYear: '承認日数（年）',
     onLeaveToday: '本日休暇中',
+    stepPickStart: '最初の日をクリック',
+    stepPickEnd: '最後の日をクリック',
+    rangeReady: '日付が選択されました — 休暇申請の準備完了',
+    requestLeaveNow: '今すぐ休暇を申請',
+    rangeStart: '開始',
+    rangeEnd: '終了',
+    clickToSelect: 'クリックして選択',
   },
 
   // Header

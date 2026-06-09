@@ -63,6 +63,13 @@ export default {
     pending: '대기 중',
     approvedDaysYear: '승인된 일수(연간)',
     onLeaveToday: '오늘 휴가 중',
+    stepPickStart: '첫 번째 날짜를 클릭하세요',
+    stepPickEnd: '마지막 날짜를 클릭하세요',
+    rangeReady: '날짜가 선택됨 — 휴가 신청 준비 완료',
+    requestLeaveNow: '지금 휴가 신청',
+    rangeStart: '시작',
+    rangeEnd: '종료',
+    clickToSelect: '클릭하여 선택',
   },
 
   // Header

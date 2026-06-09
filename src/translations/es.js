@@ -64,6 +64,13 @@ export default {
     pending: 'Pendiente',
     approvedDaysYear: 'Días aprobados (año)',
     onLeaveToday: 'De ausencia hoy',
+    stepPickStart: 'Haz clic en el primer día',
+    stepPickEnd: 'Haz clic en el último día',
+    rangeReady: 'Fechas seleccionadas — listo para solicitar ausencia',
+    requestLeaveNow: 'Solicitar ausencia ahora',
+    rangeStart: 'Inicio',
+    rangeEnd: 'Fin',
+    clickToSelect: 'Clic para seleccionar',
   },
 
 // Header

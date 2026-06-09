@@ -10,13 +10,17 @@ import {
   CalendarCheck,
   CalendarClock,
   Hourglass,
-  Plane,
+  Palmtree,
+  UserMinus,
   Stethoscope,
   User,
   Loader,
   CheckCircle,
   AlertCircle,
   Filter,
+  MousePointerClick,
+  ArrowRight,
+  Sparkles,
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -26,6 +30,7 @@ import { isDemoMode, getDemoEmployeeName, updateDemoLeaveRequest } from '../util
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 // Local-safe date key (avoids UTC off-by-one)
@@ -96,7 +101,7 @@ const LeaveManagement = ({ employees = [] }) => {
 
   // ---- Leave type styling ----
   const leaveTypeMeta = useMemo(() => ({
-    vacation: { label: t('timeTracking.vacation', 'Vacation'), Icon: Plane, dot: 'bg-blue-500', chip: isDarkMode ? 'bg-blue-900/50 text-blue-200 border-blue-700' : 'bg-blue-100 text-blue-800 border-blue-300' },
+    vacation: { label: t('timeTracking.vacation', 'Vacation'), Icon: Palmtree, dot: 'bg-blue-500', chip: isDarkMode ? 'bg-blue-900/50 text-blue-200 border-blue-700' : 'bg-blue-100 text-blue-800 border-blue-300' },
     sick: { label: t('timeTracking.sickLeave', 'Sick Leave'), Icon: Stethoscope, dot: 'bg-rose-500', chip: isDarkMode ? 'bg-rose-900/50 text-rose-200 border-rose-700' : 'bg-rose-100 text-rose-800 border-rose-300' },
     personal: { label: t('timeTracking.personal', 'Personal Leave'), Icon: User, dot: 'bg-purple-500', chip: isDarkMode ? 'bg-purple-900/50 text-purple-200 border-purple-700' : 'bg-purple-100 text-purple-800 border-purple-300' },
     other: { label: t('leave.other', 'Other'), Icon: CalendarDays, dot: 'bg-gray-500', chip: isDarkMode ? 'bg-gray-700 text-gray-200 border-gray-600' : 'bg-gray-100 text-gray-800 border-gray-300' },
@@ -160,6 +165,17 @@ const LeaveManagement = ({ employees = [] }) => {
     if (!selStart) return false;
     if (!selEnd) return key === selStart;
     return key >= selStart && key <= selEnd;
+  }, [selStart, selEnd]);
+
+  const selectionComplete = Boolean(selStart && selEnd);
+  const selectionPhase = !selStart ? 'pickStart' : !selEnd ? 'pickEnd' : 'ready';
+
+  const selectionDayCount = useMemo(() => {
+    if (!selStart) return 0;
+    const end = selEnd || selStart;
+    const start = fromKey(selStart);
+    const finish = fromKey(end);
+    return Math.max(1, Math.round((finish - start) / (1000 * 60 * 60 * 24)) + 1);
   }, [selStart, selEnd]);
 
   const handleDayClick = (key) => {
@@ -298,10 +314,21 @@ const LeaveManagement = ({ employees = [] }) => {
           )}
           <button
             onClick={openRequestForSelection}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 transition-colors cursor-pointer"
+            className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-all cursor-pointer
+              ${selectionComplete
+                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg ring-2 ring-blue-400 ring-offset-2 ring-offset-transparent scale-[1.02] animate-pulse'
+                : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+            title={selectionComplete
+              ? t('leave.rangeReady', 'Dates selected — click to request leave')
+              : t('leave.selectDatesFirst', 'Click a start and end date on the calendar first.')}
           >
             <Plus className="h-4 w-4" />
             <span>{t('leave.requestLeave', 'Request Leave')}</span>
+            {selectionComplete && (
+              <span className="hidden sm:inline text-xs opacity-90 ml-1">
+                ({selectionDayCount} {t('leave.days', 'days')})
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -311,7 +338,7 @@ const LeaveManagement = ({ employees = [] }) => {
         <StatTile icon={CalendarDays} label={t('leave.totalRequests', 'Total Requests')} value={stats.total} color="blue" />
         <StatTile icon={Hourglass} label={t('leave.pending', 'Pending')} value={stats.pending} color="amber" />
         <StatTile icon={CalendarCheck} label={t('leave.approvedDaysYear', 'Approved Days (Year)')} value={stats.approvedDays} color="green" />
-        <StatTile icon={Plane} label={t('leave.onLeaveToday', 'On Leave Today')} value={requestsForDay(toKey(new Date())).filter(r => r.status === 'approved').length} color="purple" />
+        <StatTile icon={UserMinus} label={t('leave.onLeaveToday', 'On Leave Today')} value={requestsForDay(toKey(new Date())).filter(r => r.status === 'approved').length} color="purple" />
       </div>
 
       {/* Filters + Legend */}
@@ -385,22 +412,80 @@ const LeaveManagement = ({ employees = [] }) => {
           </div>
         </div>
 
-        {/* Selection hint */}
-        <div className={`px-4 py-2 text-xs ${text.secondary} ${bg.tertiary} border-b ${border.primary}`}>
-          {selStart && selEnd
-            ? t('leave.selectionRange', 'Selected') + `: ${selStart} → ${selEnd}`
-            : selStart
-              ? t('leave.selectEndHint', 'Now click the end date (or the same day for a single day).')
-              : t('leave.selectStartHint', 'Tip: click a day to start a leave request, then click the end day.')}
+        {/* Selection guide — step indicator */}
+        <div className={`px-4 py-3 border-b ${border.primary} ${isDarkMode ? 'bg-gray-800/50' : 'bg-blue-50/60'}`}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex items-center gap-2 flex-1">
+              {[1, 2].map((step) => {
+                const active = (step === 1 && selectionPhase === 'pickStart')
+                  || (step === 2 && selectionPhase === 'pickEnd');
+                const done = (step === 1 && selectionPhase !== 'pickStart')
+                  || (step === 2 && selectionPhase === 'ready');
+                return (
+                  <React.Fragment key={step}>
+                    {step === 2 && <ArrowRight className={`w-4 h-4 shrink-0 ${text.tertiary}`} />}
+                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-colors
+                      ${done ? (isDarkMode ? 'bg-green-900/40 text-green-300' : 'bg-green-100 text-green-800')
+                        : active ? (isDarkMode ? 'bg-blue-900/50 text-blue-200 ring-1 ring-blue-500' : 'bg-blue-100 text-blue-800 ring-1 ring-blue-400')
+                          : `${bg.tertiary} ${text.tertiary}`}`}>
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold
+                        ${done ? 'bg-green-600 text-white' : active ? 'bg-blue-600 text-white' : isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                        {done ? '✓' : step}
+                      </span>
+                      <span>
+                        {step === 1
+                          ? t('leave.stepPickStart', 'Click your first day')
+                          : t('leave.stepPickEnd', 'Click your last day')}
+                      </span>
+                    </div>
+                  </React.Fragment>
+                );
+              })}
+            </div>
+            <p className={`text-xs sm:text-sm ${selectionPhase === 'ready' ? (isDarkMode ? 'text-green-300' : 'text-green-700') : text.secondary}`}>
+              {selectionPhase === 'ready' && (
+                <span className="inline-flex items-center gap-1 font-medium">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  {t('leave.selectionRange', 'Selected')}: {selStart} → {selEnd}
+                  <span className={`ml-1 ${text.tertiary}`}>({selectionDayCount} {t('leave.days', 'days')})</span>
+                </span>
+              )}
+              {selectionPhase === 'pickEnd' && (
+                <span className="inline-flex items-center gap-1">
+                  <MousePointerClick className="w-3.5 h-3.5" />
+                  {t('leave.selectEndHint', 'Now click the end date (or the same day for a single day).')}
+                </span>
+              )}
+              {selectionPhase === 'pickStart' && (
+                <span className="inline-flex items-center gap-1">
+                  <MousePointerClick className="w-3.5 h-3.5" />
+                  {t('leave.selectStartHint', 'Tip: click a day to start a leave request, then click the end day.')}
+                </span>
+              )}
+            </p>
+          </div>
         </div>
 
-        {/* Weekday header */}
-        <div className="grid grid-cols-7">
-          {WEEKDAYS.map(d => (
-            <div key={d} className={`px-2 py-2 text-center text-xs font-semibold uppercase tracking-wide ${text.secondary} border-b ${border.primary}`}>
-              {t(`weekdaysShort.${d.toLowerCase()}`, d)}
-            </div>
-          ))}
+        {/* Weekday header — full-width band with weekend emphasis */}
+        <div className={`grid grid-cols-7 border-b ${border.primary} ${isDarkMode ? 'bg-gray-900/80' : 'bg-gray-100'}`}>
+          {WEEKDAYS.map((d, i) => {
+            const isWeekend = i === 0 || i === 6;
+            return (
+              <div
+                key={d}
+                className={`px-1 py-3 text-center border-r last:border-r-0 ${border.primary}
+                  ${isWeekend ? (isDarkMode ? 'bg-gray-800/90' : 'bg-gray-200/80') : ''}`}
+              >
+                <span className={`block text-[10px] sm:text-xs font-bold uppercase tracking-widest
+                  ${isWeekend ? (isDarkMode ? 'text-rose-300' : 'text-rose-600') : text.primary}`}>
+                  {t(`weekdaysShort.${d.toLowerCase()}`, d)}
+                </span>
+                <span className={`hidden md:block text-[10px] mt-0.5 ${isWeekend ? (isDarkMode ? 'text-rose-400/70' : 'text-rose-500/80') : text.tertiary}`}>
+                  {t(`weekdays.${d.toLowerCase()}`, WEEKDAY_FULL[i])}
+                </span>
+              </div>
+            );
+          })}
         </div>
 
         {/* Days grid */}
@@ -413,26 +498,80 @@ const LeaveManagement = ({ employees = [] }) => {
             {weeks.flat().map((cell, idx) => {
               const dayRequests = requestsForDay(cell.key);
               const selected = inSelection(cell.key);
+              const isRangeStart = selStart === cell.key;
+              const isRangeEnd = selEnd === cell.key;
+              const isInRange = selected && Boolean(selEnd);
+              const isRangeMiddle = isInRange && !isRangeStart && !isRangeEnd;
+              const awaitingEnd = selectionPhase === 'pickEnd' && isRangeStart;
+
+              const cellSurface = (() => {
+                if (isInRange || (selected && !selEnd)) {
+                  if (isDarkMode) {
+                    if (isRangeStart || isRangeEnd) return 'bg-blue-700/45 ring-2 ring-inset ring-blue-400';
+                    if (isRangeMiddle) return 'bg-blue-800/35';
+                    return 'bg-blue-900/40 ring-2 ring-inset ring-blue-500';
+                  }
+                  if (isRangeStart || isRangeEnd) return 'bg-blue-300 ring-2 ring-inset ring-blue-600';
+                  if (isRangeMiddle) return 'bg-blue-200/90';
+                  return 'bg-blue-200 ring-2 ring-inset ring-blue-500';
+                }
+                if (!cell.inMonth) return isDarkMode ? 'bg-gray-900/40' : 'bg-gray-50/70';
+                if (cell.isWeekend) return isDarkMode ? 'bg-gray-800/60' : 'bg-gray-50';
+                return '';
+              })();
+
               return (
                 <button
                   type="button"
                   key={cell.key + idx}
                   onClick={() => handleDayClick(cell.key)}
-                  className={`relative text-left min-h-[96px] md:min-h-[120px] p-2 border-b border-r ${border.primary} transition-colors cursor-pointer
-                    ${cell.inMonth ? '' : isDarkMode ? 'bg-gray-900/40' : 'bg-gray-50/70'}
-                    ${cell.isWeekend && cell.inMonth ? (isDarkMode ? 'bg-gray-800/60' : 'bg-gray-50') : ''}
-                    ${selected ? (isDarkMode ? 'ring-2 ring-blue-500 ring-inset bg-blue-900/20' : 'ring-2 ring-blue-500 ring-inset bg-blue-50') : hover.bg}
+                  title={cell.inMonth && selectionPhase !== 'ready'
+                    ? t('leave.clickToSelect', 'Click to select this day')
+                    : undefined}
+                  className={`relative text-left min-h-[96px] md:min-h-[120px] p-2 border-b border-r ${border.primary} transition-all cursor-pointer group
+                    ${cellSurface}
+                    ${!selected && cell.inMonth ? hover.bg : ''}
+                    ${awaitingEnd ? 'animate-pulse' : ''}
                   `}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm
-                      ${cell.isToday ? 'bg-blue-600 text-white font-bold' : cell.inMonth ? text.primary : text.tertiary}`}>
+                  {isInRange && (
+                    <span
+                      aria-hidden
+                      className={`pointer-events-none absolute inset-x-0 top-0 h-1
+                        ${isDarkMode ? 'bg-blue-400' : 'bg-blue-500'}
+                        ${isRangeStart ? 'left-1 rounded-l-full' : ''}
+                        ${isRangeEnd ? 'right-1 rounded-r-full' : ''}`}
+                    />
+                  )}
+                  <div className="flex items-center justify-between gap-1 relative z-[1]">
+                    <span className={`inline-flex items-center justify-center min-w-[1.75rem] h-7 px-1 rounded-full text-sm
+                      ${cell.isToday ? 'bg-blue-600 text-white font-bold shadow-sm'
+                        : isInRange ? (isDarkMode ? 'bg-blue-600 text-white font-semibold' : 'bg-blue-600 text-white font-semibold')
+                          : selected && !selEnd ? 'bg-blue-600 text-white font-semibold'
+                            : cell.inMonth ? text.primary : text.tertiary}`}>
                       {cell.day}
                     </span>
-                    {dayRequests.length > 2 && (
-                      <span className={`text-[10px] ${text.secondary}`}>+{dayRequests.length - 2}</span>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {isRangeStart && (
+                        <span className={`text-[9px] font-bold uppercase px-1 py-0.5 rounded ${isDarkMode ? 'bg-blue-700 text-blue-100' : 'bg-blue-600 text-white'}`}>
+                          {t('leave.rangeStart', 'Start')}
+                        </span>
+                      )}
+                      {isRangeEnd && selEnd && (
+                        <span className={`text-[9px] font-bold uppercase px-1 py-0.5 rounded ${isDarkMode ? 'bg-blue-700 text-blue-100' : 'bg-blue-600 text-white'}`}>
+                          {t('leave.rangeEnd', 'End')}
+                        </span>
+                      )}
+                      {dayRequests.length > 2 && (
+                        <span className={`text-[10px] ${text.secondary}`}>+{dayRequests.length - 2}</span>
+                      )}
+                    </div>
                   </div>
+                  {cell.inMonth && selectionPhase === 'pickStart' && dayRequests.length === 0 && (
+                    <span className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 text-[9px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap ${text.tertiary}`}>
+                      {t('leave.clickToSelect', 'Click to select')}
+                    </span>
+                  )}
                   <div className="mt-1 space-y-1">
                     {dayRequests.slice(0, 2).map(req => {
                       const meta = metaFor(req.leave_type);
@@ -450,6 +589,30 @@ const LeaveManagement = ({ employees = [] }) => {
                 </button>
               );
             })}
+          </div>
+        )}
+
+        {/* In-calendar CTA once a date range is selected */}
+        {selectionComplete && (
+          <div className={`p-4 border-t ${border.primary} ${isDarkMode ? 'bg-gradient-to-r from-blue-900/40 to-indigo-900/40' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}`}>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-semibold ${text.primary}`}>
+                  {t('leave.rangeReady', 'Dates selected — ready to request leave')}
+                </p>
+                <p className={`text-xs ${text.secondary} mt-0.5`}>
+                  {selStart} → {selEnd} · {selectionDayCount} {t('leave.days', 'days')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={openRequestForSelection}
+                className="shrink-0 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg ring-2 ring-blue-400/60 hover:ring-blue-300 transition-all cursor-pointer animate-pulse hover:animate-none"
+              >
+                <Plus className="w-5 h-5" />
+                {t('leave.requestLeaveNow', 'Request Leave Now')}
+              </button>
+            </div>
           </div>
         )}
       </div>

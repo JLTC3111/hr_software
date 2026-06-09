@@ -63,6 +63,13 @@ export default {
     pending: 'Ausstehend',
     approvedDaysYear: 'Genehmigte Tage (Jahr)',
     onLeaveToday: 'Heute abwesend',
+    stepPickStart: 'Ersten Tag anklicken',
+    stepPickEnd: 'Letzten Tag anklicken',
+    rangeReady: 'Daten ausgewählt — bereit für Urlaubsantrag',
+    requestLeaveNow: 'Jetzt Urlaub beantragen',
+    rangeStart: 'Start',
+    rangeEnd: 'Ende',
+    clickToSelect: 'Zum Auswählen klicken',
   },
 
   // Header

@@ -63,6 +63,13 @@ export default {
     pending: 'En attente',
     approvedDaysYear: 'Jours approuvés (année)',
     onLeaveToday: "En congé aujourd'hui",
+    stepPickStart: 'Cliquez sur le premier jour',
+    stepPickEnd: 'Cliquez sur le dernier jour',
+    rangeReady: 'Dates sélectionnées — prêt à demander un congé',
+    requestLeaveNow: 'Demander un congé maintenant',
+    rangeStart: 'Début',
+    rangeEnd: 'Fin',
+    clickToSelect: 'Cliquer pour sélectionner',
   },
   
   // Header

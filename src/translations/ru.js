@@ -63,6 +63,13 @@ export default {
     pending: 'В ожидании',
     approvedDaysYear: 'Одобрено дней (год)',
     onLeaveToday: 'В отпуске сегодня',
+    stepPickStart: 'Нажмите первый день',
+    stepPickEnd: 'Нажмите последний день',
+    rangeReady: 'Даты выбраны — можно подать заявку',
+    requestLeaveNow: 'Подать заявку сейчас',
+    rangeStart: 'Начало',
+    rangeEnd: 'Конец',
+    clickToSelect: 'Нажмите для выбора',
   },
 
   // Header

@@ -63,6 +63,13 @@ export default {
     pending: 'Đang Chờ',
     approvedDaysYear: 'Ngày Được Duyệt (Năm)',
     onLeaveToday: 'Nghỉ Hôm Nay',
+    stepPickStart: 'Nhấp vào ngày đầu tiên',
+    stepPickEnd: 'Nhấp vào ngày cuối cùng',
+    rangeReady: 'Đã chọn ngày — sẵn sàng yêu cầu nghỉ phép',
+    requestLeaveNow: 'Yêu Cầu Nghỉ Phép Ngay',
+    rangeStart: 'Bắt đầu',
+    rangeEnd: 'Kết thúc',
+    clickToSelect: 'Nhấp để chọn',
   },
 
   // Video Player translations used by VideoPlayer component

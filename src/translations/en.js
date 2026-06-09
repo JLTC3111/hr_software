@@ -63,6 +63,13 @@ export default {
     pending: 'Pending',
     approvedDaysYear: 'Approved Days (Year)',
     onLeaveToday: 'On Leave Today',
+    stepPickStart: 'Click your first day',
+    stepPickEnd: 'Click your last day',
+    rangeReady: 'Dates selected — ready to request leave',
+    requestLeaveNow: 'Request Leave Now',
+    rangeStart: 'Start',
+    rangeEnd: 'End',
+    clickToSelect: 'Click to select',
   },
   // Header
   header: {

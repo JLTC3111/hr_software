@@ -63,6 +63,13 @@ export default {
     pending: 'รอดำเนินการ',
     approvedDaysYear: 'วันที่อนุมัติ (ปี)',
     onLeaveToday: 'ลาวันนี้',
+    stepPickStart: 'คลิกวันแรก',
+    stepPickEnd: 'คลิกวันสุดท้าย',
+    rangeReady: 'เลือกวันที่แล้ว — พร้อมขอลา',
+    requestLeaveNow: 'ขอลาตอนนี้',
+    rangeStart: 'เริ่ม',
+    rangeEnd: 'สิ้นสุด',
+    clickToSelect: 'คลิกเพื่อเลือก',
   },
 
   // Header
