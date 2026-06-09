@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/download-pdf-fonts.mjs && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "seed:users": "node scripts/seedUsers.js"
+    "seed:users": "node scripts/seedUsers.js",
+    "fonts:download": "node scripts/download-pdf-fonts.mjs"
   },
   "dependencies": {
     "@fontsource/noto-sans": "^5.2.10",

@@ -64,7 +64,8 @@ import {
 import {
   choosePdfFont,
   getPdfTableFont,
-  loadPdfFonts
+  loadPdfFonts,
+  prefetchPdfFonts,
 } from '../utils/pdfFontLoader.js';
 
 const Reports = () => {
@@ -147,6 +148,11 @@ const Reports = () => {
     leave: [],
     employees: []
   });
+
+  // Warm PDF font cache for CJK/Thai exports so the first PDF download is reliable.
+  useEffect(() => {
+    prefetchPdfFonts(currentLanguage);
+  }, [currentLanguage]);
 
   // Get employees list
   useEffect(() => {
@@ -918,7 +924,7 @@ const Reports = () => {
 
       const csvContent = buildCombinedCsvContent({ metadataRows, sections });
       const filename = `${t('reports.filenamePrefix', 'HR_Report')}_${employeeName}_${filters.startDate}_${t('reports.to', 'to')}_${filters.endDate}_${currentLanguage.toUpperCase()}.csv`;
-      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -2074,6 +2080,10 @@ const Reports = () => {
       const doc = new jsPDF('p', 'mm', 'a4');
       const loadedFonts = await loadPdfFonts(doc, currentLanguage);
       const unicodeFontLoaded = loadedFonts.unicodeReady;
+
+      if (!unicodeFontLoaded && ['jp', 'kr', 'th', 'vn'].includes(currentLanguage)) {
+        console.warn('Unicode fonts unavailable — PDF labels may not render correctly.');
+      }
 
       const drawText = (text, x, y, opts) => {
         const cleaned = cleanTextForPDF(text, unicodeFontLoaded);

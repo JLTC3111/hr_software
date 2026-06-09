@@ -516,8 +516,8 @@ export const exportToCSV = (data, filename) => {
       }
     });
     
-    // Create download link
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    // Create download link with UTF-8 BOM so Excel recognises CJK/Vietnamese characters
+    const blob = new Blob(['\uFEFF' + csv], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     
