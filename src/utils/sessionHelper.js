@@ -54,13 +54,16 @@ let refreshInProgress = null;
  * Validates the current Supabase session and refreshes if needed
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-export const validateAndRefreshSession = async () => {
+export const validateAndRefreshSession = async (options = {}) => {
+  const { quiet = false } = options;
   try {
     // Get current session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
     if (sessionError) {
-      console.error('❌ Session error:', sessionError);
+      if (!quiet) {
+        console.warn('Session error:', sessionError);
+      }
       return {
         success: false,
         error: `Session error: ${sessionError.message}`
@@ -68,7 +71,9 @@ export const validateAndRefreshSession = async () => {
     }
     
     if (!session) {
-      console.error('❌ No active session');
+      if (!quiet) {
+        console.warn('No active session');
+      }
       return {
         success: false,
         error: 'No active session. Please sign in again.'

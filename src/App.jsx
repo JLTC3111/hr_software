@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } fro
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Loader } from 'lucide-react'
-import { ThemeProvider, useTheme } from './contexts/ThemeContext'
-import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
+import { useTheme } from './contexts/ThemeContext'
+import { useLanguage } from './contexts/LanguageContext'
 import { useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { UploadProvider } from './contexts/UploadContext'
@@ -89,6 +89,7 @@ const HRManagementApp = () => {
 
   // Fetch employees on mount and when auth changes
   useEffect(() => {
+    if (!isAuthenticated && !isDemoMode()) return;
     fetchEmployees();
   }, [isAuthenticated, user]);
   
@@ -225,31 +226,27 @@ const HRManagementApp = () => {
   );
 
   return (
-    <LanguageProvider>
-      <ThemeProvider>
-        <UploadProvider>
-          <NotificationProvider>
-            <AppContent 
-              employees={employees}
-              activeEmployees={activeEmployees}
-              applications={applications}
-              selectedEmployee={selectedEmployee}
-              isEditMode={isEditMode}
-              onViewEmployee={handleViewEmployee}
-              onEditEmployee={handleEditEmployee}
-              onDeleteEmployee={handleDeleteEmployee}
-              onCloseModal={handleCloseModal}
-              onPhotoUpdate={handlePhotoUpdate}
-              refetchEmployees={refetchEmployees}
-              loading={loading}
-              error={error}
-              isMobileMenuOpen={isMobileMenuOpen}
-              setIsMobileMenuOpen={setIsMobileMenuOpen}
-            />
-          </NotificationProvider>
-        </UploadProvider>
-      </ThemeProvider>
-    </LanguageProvider>
+    <UploadProvider>
+      <NotificationProvider>
+        <AppContent 
+          employees={employees}
+          activeEmployees={activeEmployees}
+          applications={applications}
+          selectedEmployee={selectedEmployee}
+          isEditMode={isEditMode}
+          onViewEmployee={handleViewEmployee}
+          onEditEmployee={handleEditEmployee}
+          onDeleteEmployee={handleDeleteEmployee}
+          onCloseModal={handleCloseModal}
+          onPhotoUpdate={handlePhotoUpdate}
+          refetchEmployees={refetchEmployees}
+          loading={loading}
+          error={error}
+          isMobileMenuOpen={isMobileMenuOpen}
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
+        />
+      </NotificationProvider>
+    </UploadProvider>
   );
 };
 
