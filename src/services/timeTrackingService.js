@@ -1026,6 +1026,40 @@ export const createLeaveRequest = async (leaveData) => {
   }
 };
 
+const LEAVE_LIST_COLUMNS = 'id,employee_id,start_date,end_date,leave_type,status,days_count,submitted_at,approved_by,approved_at,rejection_reason,reason';
+
+const filterLeaveRequestsByRange = (requests, filters = {}) => {
+  let filtered = requests;
+  if (filters.rangeStart && filters.rangeEnd) {
+    filtered = filtered.filter((r) => {
+      const start = (r.start_date || '').slice(0, 10);
+      const end = (r.end_date || r.start_date || '').slice(0, 10);
+      return start <= filters.rangeEnd && end >= filters.rangeStart;
+    });
+  } else if (filters.year) {
+    const yearStart = `${filters.year}-01-01`;
+    const yearEnd = `${filters.year}-12-31`;
+    filtered = filtered.filter((r) => {
+      const start = (r.start_date || '').slice(0, 10);
+      const end = (r.end_date || r.start_date || '').slice(0, 10);
+      return start <= yearEnd && end >= yearStart;
+    });
+  }
+  return filtered;
+};
+
+const applyLeaveRangeFilter = (query, filters = {}) => {
+  if (filters.rangeStart && filters.rangeEnd) {
+    return query.lte('start_date', filters.rangeEnd).gte('end_date', filters.rangeStart);
+  }
+  if (filters.year) {
+    return query
+      .lte('start_date', `${filters.year}-12-31`)
+      .gte('end_date', `${filters.year}-01-01`);
+  }
+  return query;
+};
+
 /**
  * Get leave requests for an employee
  */
@@ -1043,14 +1077,8 @@ export const getLeaveRequests = async (employeeId, filters = {}) => {
     if (filters.status) {
       requests = requests.filter(r => r.status === filters.status);
     }
-    
-    // Filter by year if specified
-    if (filters.year) {
-      requests = requests.filter(r => {
-        const startYear = new Date(r.start_date).getFullYear();
-        return startYear === filters.year;
-      });
-    }
+
+    requests = filterLeaveRequestsByRange(requests, filters);
     
     // Sort by start_date descending
     requests.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
@@ -1061,17 +1089,14 @@ export const getLeaveRequests = async (employeeId, filters = {}) => {
   try {
     let query = supabase
       .from('leave_requests')
-      .select('*')
+      .select(LEAVE_LIST_COLUMNS)
       .eq('employee_id', toEmployeeId(employeeId))
       .order('start_date', { ascending: false });
 
     if (filters.status) {
       query = query.eq('status', filters.status);
     }
-    if (filters.year) {
-      query = query.gte('start_date', `${filters.year}-01-01`)
-                   .lte('start_date', `${filters.year}-12-31`);
-    }
+    query = applyLeaveRangeFilter(query, filters);
 
     const { data, error } = await query;
 
@@ -1093,6 +1118,8 @@ export const getAllLeaveRequests = async (filters = {}) => {
     if (filters.status) {
       requests = requests.filter(r => r.status === filters.status);
     }
+
+    requests = filterLeaveRequestsByRange(requests, filters);
     
     // Sort by created_at descending
     requests.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -1104,18 +1131,23 @@ export const getAllLeaveRequests = async (filters = {}) => {
     // Fetch leave requests without relying on a foreign-key relationship in the schema cache
     let query = supabase
       .from('leave_requests')
-      .select('*')
+      .select(LEAVE_LIST_COLUMNS)
       .order('submitted_at', { ascending: false });
 
     if (filters.status) {
       query = query.eq('status', filters.status);
     }
+    query = applyLeaveRangeFilter(query, filters);
 
     const { data, error } = await query;
     if (error) throw error;
 
     // If no leave requests, return early
     if (!Array.isArray(data) || data.length === 0) return { success: true, data: [] };
+
+    if (filters.includeEmployeeDetails === false) {
+      return { success: true, data };
+    }
 
     // Batch-fetch employee info for requesters and approvers to attach readable names
     const requesterIds = [...new Set(data.map(r => r.employee_id).filter(Boolean))];
