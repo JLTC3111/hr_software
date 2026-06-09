@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -60,7 +60,10 @@ const LeaveManagement = ({ employees = [] }) => {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [leaveRequests, setLeaveRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const leaveCacheRef = useRef({ key: '', data: [] });
+  const fetchRequestRef = useRef(0);
+  const fetchYear = currentMonth.getFullYear();
   const [scope, setScope] = useState(canManageLeave ? 'all' : 'mine'); // 'all' | 'mine'
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -84,30 +87,49 @@ const LeaveManagement = ({ employees = [] }) => {
     const { silent = false } = options;
     if (!isAuthenticated && !isDemoMode()) return;
     if (!myEmployeeId && !canManageLeave && !isDemoMode()) return;
+
+    const cacheKey = `${scope}-${fetchYear}-${canManageLeave && scope === 'all' ? 'all' : myEmployeeId}`;
+    if (leaveCacheRef.current.key === cacheKey) {
+      setLeaveRequests(leaveCacheRef.current.data);
+      return;
+    }
+
+    const requestId = ++fetchRequestRef.current;
     if (!silent) setLoading(true);
     try {
+      const filters = { year: fetchYear };
       let result;
       if (canManageLeave && scope === 'all') {
-        result = await timeTrackingService.getAllLeaveRequests({});
+        result = await timeTrackingService.getAllLeaveRequests({
+          ...filters,
+          includeEmployeeDetails: false,
+        });
       } else {
-        result = await timeTrackingService.getLeaveRequests(myEmployeeId, {});
+        result = await timeTrackingService.getLeaveRequests(myEmployeeId, filters);
       }
+      if (requestId !== fetchRequestRef.current) return;
       if (result.success) {
-        setLeaveRequests(Array.isArray(result.data) ? result.data : []);
+        const data = Array.isArray(result.data) ? result.data : [];
+        leaveCacheRef.current = { key: cacheKey, data };
+        setLeaveRequests(data);
       }
     } catch (error) {
+      if (requestId !== fetchRequestRef.current) return;
       console.error('Error fetching leave requests:', error);
       handleSessionAuthError(error, { silent });
     } finally {
-      if (!silent) setLoading(false);
+      if (requestId === fetchRequestRef.current && !silent) setLoading(false);
     }
-  }, [canManageLeave, scope, myEmployeeId, handleSessionAuthError, isAuthenticated]);
+  }, [canManageLeave, scope, myEmployeeId, handleSessionAuthError, isAuthenticated, fetchYear]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  useAuthenticatedPageRefresh(() => fetchData({ silent: true }));
+  useAuthenticatedPageRefresh(() => {
+    leaveCacheRef.current = { key: '', data: [] };
+    fetchData({ silent: true });
+  });
 
   // ---- Leave type styling ----
   const leaveTypeMeta = useMemo(() => ({
@@ -141,6 +163,20 @@ const LeaveManagement = ({ employees = [] }) => {
       const e = normalize(req.end_date || req.start_date);
       return key >= s && key <= e;
     });
+  }, [visibleRequests]);
+
+  const leaveByDay = useMemo(() => {
+    const map = new Map();
+    visibleRequests.forEach((req) => {
+      const start = fromKey(normalize(req.start_date));
+      const end = fromKey(normalize(req.end_date || req.start_date));
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const key = toKey(d);
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(req);
+      }
+    });
+    return map;
   }, [visibleRequests]);
 
   // ---- Calendar grid (6 weeks) ----
@@ -240,7 +276,10 @@ const LeaveManagement = ({ employees = [] }) => {
   }, [visibleRequests, currentMonth]);
 
   // ---- Admin actions ----
-  const refreshAfterMutation = () => fetchData({ silent: true });
+  const refreshAfterMutation = () => {
+    leaveCacheRef.current = { key: '', data: [] };
+    fetchData({ silent: true });
+  };
 
   const handleApprove = async (req) => {
     try {
@@ -480,15 +519,16 @@ const LeaveManagement = ({ employees = [] }) => {
           })}
         </div>
 
-        {/* Days grid */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader className="w-8 h-8 animate-spin text-blue-600" />
-          </div>
-        ) : (
+        {/* Days grid — always render shell; overlay spinner only while fetching */}
+        <div className="relative">
+          {loading && (
+            <div className={`absolute inset-0 z-10 flex items-center justify-center ${isDarkMode ? 'bg-gray-900/50' : 'bg-white/60'} backdrop-blur-[1px]`}>
+              <Loader className="w-8 h-8 animate-spin text-blue-600" />
+            </div>
+          )}
           <div className="grid grid-cols-7">
             {weeks.flat().map((cell, idx) => {
-              const dayRequests = requestsForDay(cell.key);
+              const dayRequests = leaveByDay.get(cell.key) || [];
               const selected = inSelection(cell.key);
               const isRangeStart = selStart === cell.key;
               const isRangeEnd = selEnd === cell.key;
@@ -582,7 +622,7 @@ const LeaveManagement = ({ employees = [] }) => {
               );
             })}
           </div>
-        )}
+        </div>
 
         {/* In-calendar CTA once a date range is selected */}
         {selectionComplete && (
@@ -788,6 +828,7 @@ const LeaveManagement = ({ employees = [] }) => {
             setSelStart(null);
             setSelEnd(null);
             flash(setSuccessMessage, message);
+            leaveCacheRef.current = { key: '', data: [] };
             fetchData({ silent: true });
           }}
           onError={(message) => flash(setErrorMessage, message)}
