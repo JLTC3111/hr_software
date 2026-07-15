@@ -63,6 +63,10 @@ import { SlidingNumber, useNumberReplay } from './motion-primitives';
 import { NumberTicker } from './ui/number-ticker';
 import { PageLiveClock } from './ui/page-live-clock';
 import { cn } from '@/lib/utils';
+import {
+  filterActiveEmployees,
+  filterInactiveEmployees,
+} from '../utils/employeeStatus.js';
 
 function OrgStatCard({ label, value, suffix = '', icon, align = 'left', bg, border, text, percent = false }) {
   const { replayToken, bump } = useNumberReplay();
@@ -1801,7 +1805,7 @@ export const MiniFlubberAutoMorphOverdueTasks = ({
   );
 };
 
-const TaskReview = ({ employees }) => {
+const TaskReview = ({ employees, allEmployees }) => {
   const { user, checkPermission } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
   const { isDarkMode, bg, text, border } = useTheme();
@@ -1811,6 +1815,7 @@ const TaskReview = ({ employees }) => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState(() => checkPermission('canViewReports') ? 'organization' : 'individual');
+  const [orgStatusSegment, setOrgStatusSegment] = useState('active');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -1840,12 +1845,24 @@ const TaskReview = ({ employees }) => {
   
   // Modal ref
   const reviewModalRef = React.useRef(null);
+
+  const employeeDirectory = allEmployees?.length ? allEmployees : employees;
+  const operationalEmployees = filterActiveEmployees(employees);
   
   // Permissions
   const canViewAllEmployees = checkPermission('canViewReports');
   const availableEmployees = canViewAllEmployees 
-    ? employees 
-    : employees.filter(emp => String(emp.id) === String(user?.employeeId));
+    ? operationalEmployees 
+    : operationalEmployees.filter(emp => String(emp.id) === String(user?.employeeId));
+
+  const cohortEmployees = canViewAllEmployees
+    ? (orgStatusSegment === 'inactive'
+        ? filterInactiveEmployees(employeeDirectory)
+        : filterActiveEmployees(employeeDirectory))
+    : availableEmployees;
+
+  const activeEmployeeCount = filterActiveEmployees(employeeDirectory).length;
+  const inactiveEmployeeCount = filterInactiveEmployees(employeeDirectory).length;
 
   // Ensure non-privileged users can't remain on Organization view
   useEffect(() => {
@@ -1936,8 +1953,8 @@ const TaskReview = ({ employees }) => {
 
   // Load employee stats
   useEffect(() => {
-    if (viewMode === 'organization' && employees.length > 0) {
-      employees.forEach(emp => {
+    if (viewMode === 'organization' && cohortEmployees.length > 0) {
+      cohortEmployees.forEach(emp => {
         if (!employeeStats[emp.id]) {
           fetchEmployeeStats(emp.id);
         }
@@ -1945,7 +1962,7 @@ const TaskReview = ({ employees }) => {
     } else if (viewMode === 'individual' && selectedEmployee) {
       fetchEmployeeStats(selectedEmployee);
     }
-  }, [viewMode, selectedEmployee, employees]);
+  }, [viewMode, selectedEmployee, cohortEmployees]);
 
   // Real-time subscription
   useEffect(() => {
@@ -1977,10 +1994,15 @@ const TaskReview = ({ employees }) => {
     return filtered;
   }, [tasks, filterStatus, filterPriority]);
 
-  // Group tasks by employee
+  const cohortEmployeeIds = useMemo(
+    () => new Set(cohortEmployees.map((e) => String(e.id))),
+    [cohortEmployees]
+  );
+
+  // Group tasks by employee (Active/Inactive cohort only)
   const tasksByEmployee = useMemo(() => {
     const grouped = {};
-    employees.forEach(emp => {
+    cohortEmployees.forEach(emp => {
       const empTasks = filteredTasks.filter(
         task => String(task.employee_id) === String(emp.id) || 
                 (task.employee && String(task.employee.id) === String(emp.id))
@@ -1992,7 +2014,37 @@ const TaskReview = ({ employees }) => {
       };
     });
     return grouped;
-  }, [filteredTasks, employees, employeeStats]);
+  }, [filteredTasks, cohortEmployees, employeeStats]);
+
+  const cohortOrgStats = useMemo(() => {
+    const cohortTasks = filteredTasks.filter(
+      (task) => cohortEmployeeIds.has(String(task.employee_id))
+        || (task.employee && cohortEmployeeIds.has(String(task.employee.id)))
+    );
+    const totalTasks = cohortTasks.length;
+    const completed = cohortTasks.filter((t) => t.status === 'completed').length;
+    const inProgress = cohortTasks.filter((t) => t.status === 'in-progress').length;
+    const pending = cohortTasks.filter((t) => t.status === 'pending').length;
+    const cancelled = cohortTasks.filter((t) => t.status === 'cancelled').length;
+    const overdue = cohortTasks.filter(
+      (t) => t.status !== 'completed' && t.due_date && new Date(t.due_date) < new Date()
+    ).length;
+    const rated = cohortTasks.filter((t) => t.quality_rating > 0);
+    const avgQuality = rated.length
+      ? rated.reduce((sum, t) => sum + Number(t.quality_rating || 0), 0) / rated.length
+      : 0;
+    return {
+      totalTasks,
+      completed,
+      inProgress,
+      pending,
+      cancelled,
+      overdue,
+      totalEmployees: cohortEmployees.length,
+      avgQualityRating: Number(avgQuality.toFixed(1)),
+      completionRate: totalTasks > 0 ? Math.round((completed / totalTasks) * 100) : 0,
+    };
+  }, [filteredTasks, cohortEmployeeIds, cohortEmployees.length]);
 
   const getPriorityColor = (priority) => {
     switch(priority) {
@@ -2028,7 +2080,13 @@ const TaskReview = ({ employees }) => {
   // Organization View
   const OrganizationView = () => {
     const currentUserEmployeeId = String(user?.employeeId || user?.id || '');
-    const filteredEmployees = employees.filter(emp => String(emp.id) !== currentUserEmployeeId);
+    const filteredEmployees = cohortEmployees.filter(emp => String(emp.id) !== currentUserEmployeeId);
+
+    const countActiveTasks = (empTasks = []) =>
+      empTasks.filter((task) => {
+        const status = String(task.status || '').toLowerCase();
+        return status === 'in-progress' || status === 'pending';
+      }).length;
 
     const breakdownRows = (() => {
       const allRows = Object.values(tasksByEmployee);
@@ -2039,11 +2097,24 @@ const TaskReview = ({ employees }) => {
 
       // If excluding the current user would leave nothing (common in demo setups),
       // fall back to showing everyone (including the current user).
-      if (rowsExcludingSelf.length === 0) {
-        return allRows;
-      }
+      const rows = rowsExcludingSelf.length === 0 ? allRows : rowsExcludingSelf;
 
-      return rowsExcludingSelf;
+      // Priority: active tasks → total tasks → highest performance/quality
+      return [...rows].sort((a, b) => {
+        const aActive = countActiveTasks(a.tasks);
+        const bActive = countActiveTasks(b.tasks);
+        if (bActive !== aActive) return bActive - aActive;
+
+        const aTotal = a.tasks?.length || 0;
+        const bTotal = b.tasks?.length || 0;
+        if (bTotal !== aTotal) return bTotal - aTotal;
+
+        const aQuality = Number(calculateAvgQuality(a.tasks)) || Number(a.employee?.performance) || 0;
+        const bQuality = Number(calculateAvgQuality(b.tasks)) || Number(b.employee?.performance) || 0;
+        if (bQuality !== aQuality) return bQuality - aQuality;
+
+        return String(a.employee?.name || '').localeCompare(String(b.employee?.name || ''));
+      });
     })();
 
     const allExpanded = breakdownRows.every(({ employee }) => !collapsedEmployees.has(employee.id));
@@ -2055,13 +2126,17 @@ const TaskReview = ({ employees }) => {
       }
     };
 
+    const displayOrgStats = cohortOrgStats.totalTasks > 0 || cohortEmployees.length > 0
+      ? cohortOrgStats
+      : orgStats;
+
     return (
       <div className="space-y-6">
-        {orgStats && (
+        {displayOrgStats && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <OrgStatCard
               label={t('taskReview.totalTasks')}
-              value={orgStats.totalTasks}
+              value={displayOrgStats.totalTasks}
               icon={<MiniFlubberAutoMorphTotalTasks isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />}
               bg={bg}
               border={border}
@@ -2069,7 +2144,7 @@ const TaskReview = ({ employees }) => {
             />
             <OrgStatCard
               label={t('taskReview.employees')}
-              value={orgStats.totalEmployees}
+              value={displayOrgStats.totalEmployees}
               icon={<MiniFlubberAutoMorphEmployees size={24} isDarkMode={isDarkMode} />}
               bg={bg}
               border={border}
@@ -2077,7 +2152,7 @@ const TaskReview = ({ employees }) => {
             />
             <OrgStatCard
               label={t('taskReview.completed')}
-              value={orgStats.completed}
+              value={displayOrgStats.completed}
               align="right"
               icon={<MiniFlubberAutoMorphCompletedWork isDarkMode={isDarkMode} className={`w-6 h-6 ${text.secondary}`} />}
               bg={bg}
@@ -2086,7 +2161,7 @@ const TaskReview = ({ employees }) => {
             />
             <OrgStatCard
               label={t('taskReview.inProgress')}
-              value={orgStats.inProgress}
+              value={displayOrgStats.inProgress}
               icon={<MiniFlubberAutoMorphInProgress size={24} isDarkMode={isDarkMode} />}
               bg={bg}
               border={border}
@@ -2094,7 +2169,7 @@ const TaskReview = ({ employees }) => {
             />
             <OrgStatCard
               label={t('taskReview.completion')}
-              value={orgStats.completionRate}
+              value={displayOrgStats.completionRate}
               suffix="%"
               percent
               align="right"
@@ -2105,7 +2180,7 @@ const TaskReview = ({ employees }) => {
             />
             <OrgStatCard
               label={t('taskReview.quality')}
-              value={orgStats.avgQualityRating}
+              value={displayOrgStats.avgQualityRating}
               align="right"
               icon={<MiniFlubberAutoMorphQuality isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />}
               bg={bg}
@@ -2134,7 +2209,9 @@ const TaskReview = ({ employees }) => {
           {breakdownRows.length === 0 ? (
             <div className="text-center py-10">
               <p className={text.secondary}>
-                {t('taskReview.noEmployeesWithTasks', 'No tasks match the selected filters.')}
+                {orgStatusSegment === 'inactive'
+                  ? t('taskReview.noInactiveEmployees', 'No inactive employees in this organization.')
+                  : t('taskReview.noEmployeesWithTasks', 'No tasks match the selected filters.')}
               </p>
             </div>
           ) : breakdownRows.map(({ employee, tasks: empTasks }) => {
@@ -2154,13 +2231,31 @@ const TaskReview = ({ employees }) => {
                         </div>
                       )}
                       <div className="flex-1">
-                        <p className={`font-semibold ${text.primary}`}>{getDemoEmployeeName(employee, t)}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className={`font-semibold ${text.primary}`}>{getDemoEmployeeName(employee, t)}</p>
+                          {orgStatusSegment === 'inactive' && (
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide ${
+                              isDarkMode ? 'bg-red-900/30 text-red-300' : 'bg-red-100 text-red-700'
+                            }`}>
+                              {t('employees.inactive', 'Inactive')}
+                            </span>
+                          )}
+                        </div>
                         <p className={`text-xs ${text.secondary}`}>
                           {t(`employeePosition.${employee.position}`) || employee.position} • {t(`employeeDepartment.${employee.department}`) || employee.department}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-6 text-sm">
+                      <div className="text-center">
+                        <p className={`font-semibold ${text.primary}`}>
+                          {empTasks.filter((task) => {
+                            const status = String(task.status || '').toLowerCase();
+                            return status === 'in-progress' || status === 'pending';
+                          }).length}
+                        </p>
+                        <p className={`text-xs ${text.secondary}`}>{t('taskReview.activeTasks', 'Active')}</p>
+                      </div>
                       <div className="text-center">
                         <p className={`font-semibold ${text.primary}`}>{empTasks.length}</p>
                         <p className={`text-xs ${text.secondary}`}>{t('taskReview.tasks')}</p>
@@ -2219,7 +2314,7 @@ const TaskReview = ({ employees }) => {
                                   <User className="w-4 h-4" />
                                   <div>
                                     <p className="font-medium">{t('taskReview.assignedTo')}</p>
-                                    <p className={text.primary}>{employees.find(e => e.id === task.employee_id)?.name || t('taskReview.unknown')}</p>
+                                    <p className={text.primary}>{employeeDirectory.find(e => e.id === task.employee_id)?.name || t('taskReview.unknown')}</p>
                                   </div>
                                 </div>
                                 {task.created_by && (
@@ -2227,7 +2322,7 @@ const TaskReview = ({ employees }) => {
                                     <UserCheck className="w-4 h-4" />
                                     <div>
                                       <p className="font-medium">{t('taskReview.assignedBy')}</p>
-                                      <p className={text.primary}>{employees.find(e => e.id === task.created_by)?.name || t('taskReview.unknown')}</p>
+                                      <p className={text.primary}>{employeeDirectory.find(e => e.id === task.created_by)?.name || t('taskReview.unknown')}</p>
                                     </div>
                                   </div>
                                 )}
@@ -2408,7 +2503,7 @@ const TaskReview = ({ employees }) => {
                         <User className="w-4 h-4" />
                         <div>
                           <p className="font-medium">{t('taskReview.assignedTo')}</p>
-                          <p className={text.primary}>{employees.find(e => e.id === task.employee_id)?.name || t('taskReview.unknown')}</p>
+                          <p className={text.primary}>{employeeDirectory.find(e => e.id === task.employee_id)?.name || t('taskReview.unknown')}</p>
                         </div>
                       </div>
                       {task.created_by && (
@@ -2416,7 +2511,7 @@ const TaskReview = ({ employees }) => {
                           <UserCheck className="w-4 h-4" />
                           <div>
                             <p className="font-medium">{t('taskReview.assignedBy')}</p>
-                            <p className={text.primary}>{employees.find(e => e.id === task.created_by)?.name || t('taskReview.unknown')}</p>
+                            <p className={text.primary}>{employeeDirectory.find(e => e.id === task.created_by)?.name || t('taskReview.unknown')}</p>
                           </div>
                         </div>
                       )}
@@ -2490,30 +2585,55 @@ const TaskReview = ({ employees }) => {
   const handleReviewSubmit = async () => {
     if (!reviewingTask) return;
 
+    // Service expects camelCase (also accepts snake_case as fallback)
     const updateData = {
-      quality_rating: reviewForm.qualityRating,
+      qualityRating: reviewForm.qualityRating,
       comments: reviewForm.managerComments,
-      status: reviewForm.status
+      status: reviewForm.status,
     };
 
     try {
-      // Use service for both demo and non-demo mode (service handles persistence)
       const result = await workloadService.updateTask(reviewingTask.id, updateData);
 
       if (result.success) {
+        const savedTask = {
+          ...reviewingTask,
+          ...(result.data || {}),
+          quality_rating: result.data?.quality_rating ?? reviewForm.qualityRating,
+          comments: result.data?.comments ?? reviewForm.managerComments,
+          status: result.data?.status ?? reviewForm.status,
+        };
+
+        // Update local list immediately so the rating persists in the UI
+        setTasks((prev) =>
+          prev.map((task) =>
+            String(task.id) === String(reviewingTask.id) ? { ...task, ...savedTask } : task
+          )
+        );
+
+        // Force stats refresh for the reviewed employee
+        const employeeId = reviewingTask.employee_id || reviewingTask.employee?.id;
+        if (employeeId != null) {
+          setEmployeeStats((prev) => {
+            const next = { ...prev };
+            delete next[employeeId];
+            delete next[String(employeeId)];
+            return next;
+          });
+          fetchEmployeeStats(employeeId);
+        }
+
         setSuccessMessage(t('taskReview.reviewSubmitSuccess'));
         setReviewingTask(null);
         setReviewForm({ qualityRating: 0, managerComments: '', status: 'pending' });
-        
-        // Refetch tasks
+
         if (viewMode === 'organization') {
-          fetchTasks();
+          fetchTasks({ silent: true });
           fetchOrgStats();
         } else if (selectedEmployee) {
-          fetchEmployeeStats(selectedEmployee);
+          fetchTasks({ silent: true });
         }
 
-        // Clear success message after 3 seconds
         setTimeout(() => setSuccessMessage(''), 3000);
       } else {
         setErrorMessage(result.error || t('taskReview.reviewSubmitFailed'));
@@ -2590,7 +2710,7 @@ const TaskReview = ({ employees }) => {
           <p className={`text-sm ${text.secondary} mt-1`}>{t('taskReview.subtitle')}</p>
         </div>
         {canViewAllEmployees && (
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 flex-wrap">
             <button
               type="button"
               onClick={() => { setViewMode('organization'); setSelectedEmployee(null); }}
@@ -2610,6 +2730,34 @@ const TaskReview = ({ employees }) => {
             >
               <GraduationCap className="w-4 h-4 inline-block mr-2 -translate-y-0.5" />{t('taskReview.individual')}
             </button>
+            {viewMode === 'organization' && (
+              <div className={`inline-flex rounded-lg border overflow-hidden ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
+                <button
+                  type="button"
+                  onClick={() => setOrgStatusSegment('active')}
+                  className={`px-3 py-2 text-sm font-medium transition-colors cursor-pointer ${
+                    orgStatusSegment === 'active'
+                      ? isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-900 text-white'
+                      : isDarkMode ? 'bg-gray-800 text-gray-200 hover:bg-gray-700' : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                  aria-pressed={orgStatusSegment === 'active'}
+                >
+                  {t('employees.active', 'Active')} ({activeEmployeeCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrgStatusSegment('inactive')}
+                  className={`px-3 py-2 text-sm font-medium transition-colors cursor-pointer ${
+                    orgStatusSegment === 'inactive'
+                      ? isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-900 text-white'
+                      : isDarkMode ? 'bg-gray-800 text-gray-200 hover:bg-gray-700' : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                  aria-pressed={orgStatusSegment === 'inactive'}
+                >
+                  {t('employees.inactive', 'Inactive')} ({inactiveEmployeeCount})
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -2687,11 +2835,11 @@ const TaskReview = ({ employees }) => {
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <p className={`${text.secondary} font-medium`}>{t('taskReview.assignedTo')}:</p>
-                    <p className={text.primary}>{employees.find(e => e.id === reviewingTask.employee_id)?.name || t('taskReview.unknown')}</p>
+                    <p className={text.primary}>{employeeDirectory.find(e => e.id === reviewingTask.employee_id)?.name || t('taskReview.unknown')}</p>
                   </div>
                   <div>
                     <p className={`${text.secondary} font-medium`}>{t('taskReview.assignedBy')}:</p>
-                    <p className={text.primary}>{employees.find(e => e.id === reviewingTask.created_by)?.name || t('taskReview.unknown')}</p>
+                    <p className={text.primary}>{employeeDirectory.find(e => e.id === reviewingTask.created_by)?.name || t('taskReview.unknown')}</p>
                   </div>
                   {reviewingTask.due_date && (
                     <div>

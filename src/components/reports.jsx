@@ -72,6 +72,9 @@ import {
   loadPdfFonts,
   prefetchPdfFonts,
 } from '../utils/pdfFontLoader.js';
+import {
+  filterActiveEmployees,
+} from '../utils/employeeStatus.js';
 
 const Reports = () => {
   const { handleSessionAuthError, runGuarded } = useSessionGuard();
@@ -174,6 +177,16 @@ const Reports = () => {
     };
     fetchEmployees();
   }, []);
+
+  // Default operational cohort excludes inactive (picker + "all" aggregates)
+  const activeEmployees = useMemo(
+    () => filterActiveEmployees(reportData.employees),
+    [reportData.employees]
+  );
+  const activeEmployeeIds = useMemo(
+    () => new Set(activeEmployees.map((e) => String(e.id))),
+    [activeEmployees]
+  );
 
   // Update date filters when range changes
   useEffect(() => {
@@ -454,10 +467,16 @@ const Reports = () => {
 
   // Get current data based on active tab (filtered by selectedEmployee if not 'all')
   const currentData = useMemo(() => {
-    // Helper to filter data by selected employee
+    // Helper to filter data by selected employee; "all" = active cohort only
     const filterByEmployee = (data) => {
-      if (selectedEmployee === 'all') return data;
-      return data.filter(item => String(item.employee_id) === String(selectedEmployee));
+      if (selectedEmployee === 'all') {
+        return (data || []).filter((item) => {
+          const id = item?.employee_id ?? item?.employee?.id;
+          if (id == null) return true;
+          return activeEmployeeIds.has(String(id));
+        });
+      }
+      return (data || []).filter(item => String(item.employee_id) === String(selectedEmployee));
     };
 
     switch (activeTab) {
@@ -478,7 +497,7 @@ const Reports = () => {
       default:
         return [];
     }
-  }, [activeTab, reportData, selectedEmployee]);
+  }, [activeTab, reportData, selectedEmployee, activeEmployeeIds]);
 
   // Sorting function for table data
   const getSortedData = useMemo(() => {
@@ -730,7 +749,10 @@ const Reports = () => {
     setExporting(true);
     try {
       const exportData = await loadAllReportDataForExport();
-      const { timeEntries, tasks, goals, employees } = exportData;
+      const { timeEntries, tasks, goals, employees: allEmployees } = exportData;
+      const employees = selectedEmployee === 'all'
+        ? filterActiveEmployees(allEmployees)
+        : allEmployees;
       const exportStats = computeExportStats(timeEntries, tasks, goals);
 
       if (exportStats.totalRecords === 0) {
@@ -857,7 +879,10 @@ const Reports = () => {
       const timeEntries = exportSnapshot.timeEntries;
       const tasks = exportSnapshot.tasks;
       const goals = exportSnapshot.goals;
-      const employees = exportSnapshot.employees;
+      const allEmployees = exportSnapshot.employees;
+      const employees = selectedEmployee === 'all'
+        ? filterActiveEmployees(allEmployees)
+        : allEmployees;
 
       if (timeEntries.length === 0 && tasks.length === 0 && goals.length === 0) {
         alert(t('reports.noData', 'No data available for the selected period'));
@@ -1974,7 +1999,10 @@ const Reports = () => {
       const timeEntries = exportSnapshot.timeEntries;
       const tasks = exportSnapshot.tasks;
       const goals = exportSnapshot.goals;
-      const employees = exportSnapshot.employees;
+      const allEmployees = exportSnapshot.employees;
+      const employees = selectedEmployee === 'all'
+        ? filterActiveEmployees(allEmployees)
+        : allEmployees;
       const exportStats = computeExportStats(timeEntries, tasks, goals);
 
       if (exportStats.totalRecords === 0) {
@@ -2460,10 +2488,10 @@ const Reports = () => {
               className={`w-full px-3 py-2 rounded-lg border ${selectedEmployee !== 'all' ? 'border-blue-500 ring-2 ring-blue-500' : border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
             >
               <option value="all">
-                {t('reports.allEmployees', 'All Employees')} ({reportData.employees.length})
+                {t('reports.allEmployees', 'All Employees')} ({activeEmployees.length})
               </option>
               <optgroup label="──────────────────────">
-                {reportData.employees
+                {[...activeEmployees]
                   .sort((a, b) => getDemoEmployeeName(a, t).localeCompare(getDemoEmployeeName(b, t)))
                   .map(emp => (
                     <option key={emp.id} value={emp.id}>

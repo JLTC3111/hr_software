@@ -145,7 +145,8 @@ export function SlidingNumber({
   return (
     <span
       className={cn(
-        'inline-flex cursor-default items-center leading-none transition-transform duration-300 hover:scale-105',
+        'inline-flex items-center leading-none transition-transform duration-300 hover:scale-105',
+        replayOnHover ? 'cursor-pointer' : 'cursor-default',
         className
       )}
       onMouseEnter={() => {

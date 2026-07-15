@@ -121,7 +121,7 @@ const BentoCard = ({
               <a
                 href={href}
                 className={cn(
-                  'inline-flex items-center text-xs font-medium hover:underline',
+                  'inline-flex cursor-pointer items-center text-xs font-medium hover:underline',
                   isDarkMode ? 'text-sky-400' : 'text-sky-700'
                 )}
               >
@@ -133,7 +133,7 @@ const BentoCard = ({
                 type="button"
                 onClick={onCtaClick}
                 className={cn(
-                  'inline-flex items-center text-xs font-medium hover:underline',
+                  'inline-flex cursor-pointer items-center text-xs font-medium hover:underline',
                   isDarkMode ? 'text-sky-400' : 'text-sky-700'
                 )}
               >

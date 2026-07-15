@@ -827,20 +827,24 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
         <button
           type="submit"
           disabled={loading || selectedEmployees.length === 0}
-          className={`w-full flex items-center justify-center space-x-2 px-6 py-3 cursor-pointer text-white rounded-lg transition-all shadow-lg hover:shadow-xl border-0 ${
+          className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-colors border ${
             loading || selectedEmployees.length === 0
-              ? 'bg-linear-to-r from-gray-400 to-gray-500 cursor-not-allowed'
-              : 'bg-linear-to-r from-blue-500 via-indigo-600 to-violet-600 hover:from-blue-600 hover:via-indigo-700 hover:to-violet-700'
+              ? isDarkMode
+                ? 'bg-slate-700 text-slate-400 border-slate-600 cursor-not-allowed'
+                : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+              : isDarkMode
+                ? 'bg-blue-600 text-white border-blue-500 hover:bg-blue-500'
+                : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 shadow-sm'
           }`}
         >
           {loading ? (
             <>
-              <Clock className="w-5 h-5 animate-spin" />
+              <Clock className="w-4 h-4 animate-spin" />
               <span>{t('adminTimeEntry.submitting', 'Submitting...')}</span>
             </>
           ) : (
             <>
-              <Save className="w-5 h-5" />
+              <Save className="w-4 h-4" />
               <span>
                 {selectedEmployees.length > 1 
                   ? `${t('adminTimeEntry.submitBulkEntries', 'Submit Entries for {0} Employees').replace('{0}', selectedEmployees.length)}`
@@ -921,20 +925,24 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
           <button
             type="submit"
             disabled={bulkFillLoading || loading}
-            className={`w-full flex items-center justify-center space-x-2 px-6 py-3 cursor-pointer text-white rounded-lg transition-all shadow-lg hover:shadow-xl border-0 ${
+            className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-colors border ${
               bulkFillLoading || loading
-                ? 'bg-linear-to-r from-gray-400 to-gray-500 cursor-not-allowed'
-                : 'bg-linear-to-r from-emerald-500 via-green-600 to-teal-600 hover:from-emerald-600 hover:via-green-700 hover:to-teal-700'
+                ? isDarkMode
+                  ? 'bg-slate-700 text-slate-400 border-slate-600 cursor-not-allowed'
+                  : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                : isDarkMode
+                  ? 'bg-slate-800 text-slate-100 border-slate-600 hover:bg-slate-700'
+                  : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50 hover:border-slate-400 shadow-sm'
             }`}
           >
             {bulkFillLoading ? (
               <>
-                <Clock className="w-5 h-5 animate-spin" />
+                <Clock className="w-4 h-4 animate-spin" />
                 <span>{t('adminTimeEntry.bulkStandardHours.filling', 'Filling standard hours...')}</span>
               </>
             ) : (
               <>
-                <CalendarRange className="w-5 h-5" />
+                <CalendarRange className="w-4 h-4 opacity-80" />
                 <span>
                   {t('adminTimeEntry.bulkStandardHours.fillButton', 'Fill 9 AM – 5 PM for All Employees')}
                 </span>

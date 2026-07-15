@@ -54,7 +54,7 @@ function DirectoryStatTile({ label, value, isDarkMode }) {
     <div
       onMouseEnter={bump}
       className={cn(
-        'group relative flex flex-col justify-center overflow-hidden rounded-xl border px-3 py-2',
+        'group relative flex flex-col justify-center overflow-hidden rounded-xl border px-3 py-2 cursor-pointer',
         isDarkMode
           ? 'border-slate-500/60 bg-slate-800 text-white'
           : 'border-slate-200 bg-white text-slate-900 shadow-sm'
@@ -169,6 +169,7 @@ function Circle({ className, children, ...props }, ref) {
       ref={ref}
       className={cn(
         'z-10 flex size-12 items-center justify-center rounded-full border-2 bg-white p-2 shadow-[0_0_20px_-10px_rgba(0,0,0,0.4)]',
+        props.title && 'cursor-pointer',
         className
       )}
       {...props}
@@ -575,7 +576,7 @@ function EmployeeRow({ employee, onViewDetails, onEdit, onDelete, canEditOrDelet
           type="button"
           onClick={stop(onViewDetails)}
           className={cn(
-            'p-2 rounded-lg transition-colors',
+            'p-2 rounded-lg transition-colors cursor-pointer',
             isDarkMode
               ? 'hover:bg-gray-700 text-gray-300 hover:text-white'
               : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
@@ -592,7 +593,7 @@ function EmployeeRow({ employee, onViewDetails, onEdit, onDelete, canEditOrDelet
               type="button"
               onClick={stop(onEdit)}
               className={cn(
-                'p-2 rounded-lg transition-colors',
+                'p-2 rounded-lg transition-colors cursor-pointer',
                 isDarkMode
                   ? 'hover:bg-gray-700 text-gray-300 hover:text-emerald-300'
                   : 'hover:bg-gray-200 text-gray-600 hover:text-emerald-700'
@@ -606,7 +607,7 @@ function EmployeeRow({ employee, onViewDetails, onEdit, onDelete, canEditOrDelet
               type="button"
               onClick={stop(onDelete)}
               className={cn(
-                'p-2 rounded-lg transition-colors',
+                'p-2 rounded-lg transition-colors cursor-pointer',
                 isDarkMode
                   ? 'hover:bg-gray-700 text-gray-300 hover:text-rose-300'
                   : 'hover:bg-gray-200 text-gray-600 hover:text-rose-700'
@@ -623,7 +624,7 @@ function EmployeeRow({ employee, onViewDetails, onEdit, onDelete, canEditOrDelet
   );
 }
 
-const EmployeeDirectory = ({ employees, onViewDetails, onEdit, onDelete }) => {
+const EmployeeDirectory = ({ employees, statusSegment = 'active', onViewDetails, onEdit, onDelete }) => {
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
   const { user } = useAuth();
@@ -708,10 +709,18 @@ const EmployeeDirectory = ({ employees, onViewDetails, onEdit, onDelete }) => {
                 label: t('employees.avgRating', 'Avg rating'),
                 value: avgPerformance,
               },
-              {
-                label: t('employees.active', 'Active'),
-                value: employees.filter((e) => String(e?.status || '').toLowerCase() === 'active').length,
-              },
+              statusSegment === 'inactive'
+                ? {
+                    label: t('employees.inactive', 'Inactive'),
+                    value: employees.length,
+                  }
+                : {
+                    label: t('employees.onLeave', 'On Leave'),
+                    value: employees.filter((e) => {
+                      const s = String(e?.status || '').toLowerCase().replace(/[\s_-]+/g, '');
+                      return s === 'onleave';
+                    }).length,
+                  },
             ].map((stat) => (
               <DirectoryStatTile
                 key={stat.label}

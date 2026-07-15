@@ -764,7 +764,7 @@ const Notifications = () => {
                 }}
                 className={`rounded-lg shadow-sm border
                   ${getTypeColor(notification.type)}
-                  ${notification.action_url ? 'cursor-pointer hover:shadow-md' : ''}
+                  cursor-pointer hover:shadow-md
                   ${!notification.is_read ? 'border-l-4 border-l-blue-600' : border.primary}
                   ${updatingNotifications.has(notification.id) ? 'opacity-50 pointer-events-none' : ''}
                   p-4 transition-all duration-200

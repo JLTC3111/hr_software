@@ -13,6 +13,7 @@ import { SlidingNumber } from './motion-primitives';
 import { NumberTicker } from './ui/number-ticker';
 import { PageLiveClock } from './ui/page-live-clock';
 import { cn } from '@/lib/utils';
+import { filterActiveEmployees } from '../utils/employeeStatus.js';
 
 const PersonalGoals = ({ employees }) => {
   const { t } = useLanguage();
@@ -31,10 +32,12 @@ const PersonalGoals = ({ employees }) => {
   // Check if user can view other employees' performance
   const canViewAllEmployees = checkPermission('canViewReports');
 
+  const operationalEmployees = filterActiveEmployees(employees);
+
   // Filter employees based on role
   const availableEmployees = canViewAllEmployees
-    ? employees
-    : employees.filter(emp => String(emp.id) === String(user?.employeeId || user?.id));
+    ? operationalEmployees
+    : operationalEmployees.filter(emp => String(emp.id) === String(user?.employeeId || user?.id));
 
   // Default the selected employee to the logged-in user's employee id (or user id)
   const defaultEmployeeId = user?.employeeId

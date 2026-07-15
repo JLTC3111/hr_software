@@ -1,4 +1,4 @@
-import _React, { useState, useEffect } from 'react';
+import _React, { useState, useEffect, useMemo } from 'react';
 import { LayoutGrid, List, Plus } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
@@ -9,6 +9,10 @@ import EmployeeCard from './employeeCard.jsx';
 import EmployeeDirectory from './employeeDirectory.jsx';
 import EmployeeDetailModal from './employeeDetailModal.jsx';
 import { PageLiveClock } from './ui/page-live-clock';
+import {
+  filterActiveEmployees,
+  filterInactiveEmployees,
+} from '../utils/employeeStatus.js';
 
 const Employees = ({ employees, onEditEmployee, onDeleteEmployee, onPhotoUpdate, refetchEmployees }) => {
   const navigate = useNavigate();
@@ -16,6 +20,7 @@ const Employees = ({ employees, onEditEmployee, onDeleteEmployee, onPhotoUpdate,
   const [filterDepartment, setFilterDepartment] = useState('all');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [statusSegment, setStatusSegment] = useState('active');
   const [viewMode, setViewMode] = useState(() => {
     try {
       return globalThis.localStorage.getItem('employeesViewMode') || 'directory';
@@ -30,6 +35,13 @@ const Employees = ({ employees, onEditEmployee, onDeleteEmployee, onPhotoUpdate,
 
   // Check if user has permission to add employees (not employee role)
   const canAddEmployee = user?.role !== 'employee';
+
+  const statusCohort = useMemo(() => {
+    const list = employees || [];
+    return statusSegment === 'inactive'
+      ? filterInactiveEmployees(list)
+      : filterActiveEmployees(list);
+  }, [employees, statusSegment]);
 
   const handleCardClick = (employee) => {
     setSelectedEmployee(employee);
@@ -80,8 +92,8 @@ const Employees = ({ employees, onEditEmployee, onDeleteEmployee, onPhotoUpdate,
     { key: 'part_time_employee', label: t('departments.part_time_employee') }
   ];
 
-  // Filter active employees only
-  const filteredEmployees = (employees || []).filter(emp => {
+  // Filter by Active/Inactive segment, then search/department
+  const filteredEmployees = statusCohort.filter(emp => {
     const name = (emp?.name || '').toLowerCase();
     const position = (emp?.position || '').toLowerCase();
     const department = (emp?.department || '').toLowerCase();
@@ -92,6 +104,17 @@ const Employees = ({ employees, onEditEmployee, onDeleteEmployee, onPhotoUpdate,
     return matchesSearch && matchesDepartment;
   });
 
+  const segmentButtonClass = (active) =>
+    `px-3 py-2 text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+      active
+        ? isDarkMode
+          ? 'bg-gray-700 text-white'
+          : 'bg-gray-900 text-white'
+        : isDarkMode
+          ? 'bg-gray-800 text-gray-200 hover:bg-gray-700'
+          : 'bg-white text-gray-700 hover:bg-gray-50'
+    }`;
+
   return (
     <div className="space-y-4 md:space-y-6 w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 slide-in-left">
@@ -99,21 +122,33 @@ const Employees = ({ employees, onEditEmployee, onDeleteEmployee, onPhotoUpdate,
           <h2 className={`font-bold ${text.primary}`} style={{fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'}}>{t('employees.title')}</h2>
           <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Active | Inactive segment */}
+          <div className={`inline-flex rounded-lg border overflow-hidden ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
+            <button
+              type="button"
+              onClick={() => setStatusSegment('active')}
+              className={segmentButtonClass(statusSegment === 'active')}
+              aria-pressed={statusSegment === 'active'}
+            >
+              {t('employees.active', 'Active')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusSegment('inactive')}
+              className={segmentButtonClass(statusSegment === 'inactive')}
+              aria-pressed={statusSegment === 'inactive'}
+            >
+              {t('employees.inactive', 'Inactive')}
+            </button>
+          </div>
+
           {/* View mode toggle */}
           <div className={`inline-flex rounded-lg border overflow-hidden ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
             <button
               type="button"
               onClick={() => setViewMode('cards')}
-              className={`px-3 py-2 text-sm font-medium flex items-center gap-2 transition-colors ${
-                viewMode === 'cards'
-                  ? isDarkMode
-                    ? 'bg-gray-700 text-white'
-                    : 'bg-gray-900 text-white'
-                  : isDarkMode
-                    ? 'bg-gray-800 text-gray-200 hover:bg-gray-700'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
-              }`}
+              className={segmentButtonClass(viewMode === 'cards')}
               title={t('employees.viewCards', 'Card view')}
               aria-label={t('employees.viewCards', 'Card view')}
             >
@@ -123,15 +158,7 @@ const Employees = ({ employees, onEditEmployee, onDeleteEmployee, onPhotoUpdate,
             <button
               type="button"
               onClick={() => setViewMode('directory')}
-              className={`px-3 py-2 text-sm font-medium flex items-center gap-2 transition-colors ${
-                viewMode === 'directory'
-                  ? isDarkMode
-                    ? 'bg-gray-700 text-white'
-                    : 'bg-gray-900 text-white'
-                  : isDarkMode
-                    ? 'bg-gray-800 text-gray-200 hover:bg-gray-700'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
-              }`}
+              className={segmentButtonClass(viewMode === 'directory')}
               title={t('employees.viewDirectory', 'Directory view')}
               aria-label={t('employees.viewDirectory', 'Directory view')}
             >
@@ -194,6 +221,7 @@ const Employees = ({ employees, onEditEmployee, onDeleteEmployee, onPhotoUpdate,
       ) : (
         <EmployeeDirectory
           employees={filteredEmployees}
+          statusSegment={statusSegment}
           onViewDetails={handleCardClick}
           onEdit={onEditEmployee}
           onDelete={onDeleteEmployee}

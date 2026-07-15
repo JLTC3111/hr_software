@@ -85,7 +85,8 @@ export function NumberTicker({
     <span
       ref={ref}
       className={cn(
-        'inline-block cursor-default tracking-wider tabular-nums transition-transform duration-300 hover:scale-105',
+        'inline-block tracking-wider tabular-nums transition-transform duration-300 hover:scale-105',
+        replayOnHover ? 'cursor-pointer' : 'cursor-default',
         className
       )}
       onMouseEnter={(e) => {

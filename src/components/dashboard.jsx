@@ -4,7 +4,7 @@ import StatsCard from './statsCard.jsx'
 import MetricDetailModal from './metricDetailModal.jsx'
 import { useTheme } from '../contexts/ThemeContext.jsx'
 import { useLanguage } from '../contexts/LanguageContext.jsx'
-import { Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ComposedChart } from 'recharts'
+import { Bar, BarChart, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts'
 import * as timeTrackingService from '../services/timeTrackingService.js'
 import { withTimeout } from '../utils/supabaseTimeout.js';
 import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts.js';
@@ -18,10 +18,169 @@ import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessio
 import { getDemoEmployeeName, isDemoMode } from '../utils/demoHelper.js';
 import { AnimatedGroup, InView, TextEffect, Spotlight, SlidingNumber, useNumberReplay } from './motion-primitives'
 import { BorderBeam } from './ui/border-beam'
-import { AnimatedList } from './ui/animated-list'
 import { MagicBento } from './ui/magic-bento'
 import { PageLiveClock } from './ui/page-live-clock'
 import { cn } from '@/lib/utils'
+
+const CHART_SERIES = {
+  performance: { light: '#3B82F6', dark: '#60A5FA' },
+  regular: { light: '#3B82F6', dark: '#60A5FA' },
+  overtime: { light: '#D946EF', dark: '#E879F9' },
+  workDays: { light: '#3B82F6', dark: '#60A5FA' },
+  leaveDays: { light: '#CBD5E1', dark: '#64748B' },
+  accent: { light: '#06B6D4', dark: '#22D3EE' },
+};
+
+const DEPT_PALETTE = {
+  light: ['#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE', '#DBEAFE'],
+  dark: ['#DBEAFE', '#BFDBFE', '#93C5FD', '#60A5FA', '#3B82F6', '#2563EB', '#1E40AF'],
+};
+
+function getChartTheme(isDarkMode) {
+  return {
+    grid: isDarkMode ? 'rgba(148,163,184,0.12)' : 'rgba(15,23,42,0.06)',
+    tick: isDarkMode ? '#94A3B8' : '#6B7280',
+    tooltipBg: isDarkMode ? '#0B1220' : '#FFFFFF',
+    tooltipBorder: isDarkMode ? 'rgba(148,163,184,0.16)' : 'rgba(15,23,42,0.08)',
+    tooltipText: isDarkMode ? '#F1F5F9' : '#111827',
+    legend: isDarkMode ? '#94A3B8' : '#6B7280',
+    cursor: isDarkMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.06)',
+    series: (key) => (isDarkMode ? CHART_SERIES[key].dark : CHART_SERIES[key].light),
+    dept: isDarkMode ? DEPT_PALETTE.dark : DEPT_PALETTE.light,
+  };
+}
+
+function ChartTooltipBox({ active, payload, label, isDarkMode, title, chartTheme }) {
+  if (!active || !payload?.length) return null;
+
+  const seen = new Set();
+  const unique = payload.filter((p) => {
+    const key = String(p.dataKey || p.name || '').trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  return (
+    <div
+      style={{
+        background: chartTheme.tooltipBg,
+        border: `1px solid ${chartTheme.tooltipBorder}`,
+        borderRadius: 8,
+        padding: '8px 10px',
+        color: chartTheme.tooltipText,
+        boxShadow: isDarkMode
+          ? '0 10px 28px rgba(0,0,0,0.4)'
+          : '0 10px 28px rgba(15,23,42,0.08)',
+        minWidth: 148,
+      }}
+    >
+      <div
+        style={{
+          fontWeight: 500,
+          marginBottom: 6,
+          fontSize: 12,
+          color: isDarkMode ? '#94A3B8' : '#6B7280',
+        }}
+      >
+        {title || label}
+      </div>
+      {unique.map((p, idx) => (
+        <div
+          key={idx}
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            gap: 20,
+            marginBottom: idx === unique.length - 1 ? 0 : 4,
+            fontSize: 12,
+            lineHeight: 1.35,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+            <div
+              style={{
+                width: 10,
+                height: 2,
+                borderRadius: 999,
+                background: p.color || chartTheme.tooltipText,
+              }}
+            />
+            <span style={{ color: isDarkMode ? '#CBD5E1' : '#4B5563' }}>{p.name || p.dataKey}</span>
+          </div>
+          <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{p.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ChartSeriesLegend({ items, isDarkMode }) {
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1">
+      {items.map((item) => (
+        <div key={item.label} className="flex items-center gap-2">
+          <span
+            className="h-0.5 w-3 rounded-full"
+            style={{ background: item.color }}
+          />
+          <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+            {item.label}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ChartPanelHeader({ label, value, hint, legend, text }) {
+  return (
+    <div className="mb-5 flex items-start justify-between gap-4">
+      <div className="min-w-0">
+        <p className={`text-sm ${text.secondary}`}>{label}</p>
+        {value != null && value !== '' && (
+          <p className={`mt-1 text-2xl font-semibold tracking-tight tabular-nums ${text.primary}`}>
+            {value}
+          </p>
+        )}
+        {hint ? (
+          <p className={`mt-0.5 text-xs ${text.secondary}`}>{hint}</p>
+        ) : null}
+      </div>
+      {legend ? <div className="shrink-0 pt-1">{legend}</div> : null}
+    </div>
+  );
+}
+
+function ChartSummaryList({ items, isDarkMode, text, border }) {
+  return (
+    <ul className={`mt-5 divide-y ${border.primary}`}>
+      {items.map((item) => (
+        <li key={item.label} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
+          <div className="flex items-center gap-2.5">
+            <span
+              className="h-0.5 w-3 rounded-full"
+              style={{ background: item.color }}
+            />
+            <span className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
+              {item.label}
+            </span>
+          </div>
+          <span className={`text-sm font-semibold tabular-nums ${text.primary}`}>
+            {item.value}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const chartCardClass = (bg, border) =>
+  cn(
+    bg.secondary,
+    'group relative overflow-hidden rounded-xl border p-5 md:p-6 shadow-sm transition-shadow duration-300 hover:shadow-md',
+    border.primary
+  );
 
 function HoverMetricCard({
   onClick,
@@ -34,7 +193,11 @@ function HoverMetricCard({
     <div
       onClick={onClick}
       onMouseEnter={bump}
-      className={cn('group relative overflow-hidden', className)}
+      className={cn(
+        'group relative overflow-hidden',
+        onClick && 'cursor-pointer',
+        className
+      )}
     >
       {beam}
       {typeof children === 'function' ? children(replayToken) : children}
@@ -1497,9 +1660,34 @@ const Dashboard = ({ employees, applications }) => {
     };
   });
 
-  // Chart colors
-  const _COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
-  
+  const chartTheme = getChartTheme(isDarkMode);
+  const axisTick = { fontSize: 11, fill: chartTheme.tick };
+  const departmentChartData = [...departmentData].sort((a, b) => (b.value || 0) - (a.value || 0));
+  const departmentTotal = departmentChartData.reduce((sum, d) => sum + (d.value || 0), 0);
+  const hoursChartData = allEmployeesData
+    .filter((item) => item.data)
+    .map((item) => ({
+      name: getUniqueDisplayName(item.employee, employees),
+      fullName: item.employee.name,
+      regularHours: item.data?.regular_hours || 0,
+      overtimeHours: (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0),
+    }))
+    .sort((a, b) => (b.regularHours + b.overtimeHours) - (a.regularHours + a.overtimeHours))
+    .slice(0, 10);
+  const hoursChartRegularTotal = hoursChartData.reduce((sum, row) => sum + (row.regularHours || 0), 0);
+  const hoursChartOvertimeTotal = hoursChartData.reduce((sum, row) => sum + (row.overtimeHours || 0), 0);
+  const hoursChartMaxTotal = Math.max(
+    1,
+    ...hoursChartData.map((row) => (row.regularHours || 0) + (row.overtimeHours || 0))
+  );
+  const hoursEditorial = {
+    ink: isDarkMode ? '#60A5FA' : '#3B82F6',
+    mute: isDarkMode ? '#94A3B8' : '#94A3B8',
+    track: isDarkMode ? 'rgba(148,163,184,0.14)' : 'rgba(59,130,246,0.08)',
+  };
+  const leaveChartWorkTotal = leaveData.reduce((sum, row) => sum + (row.workDays || 0), 0);
+  const leaveChartLeaveTotal = leaveData.reduce((sum, row) => sum + (row.leaveDays || 0), 0);
+
   // Top performers
   const topPerformers = employees
     .map(emp => ({
@@ -1839,220 +2027,162 @@ const Dashboard = ({ employees, applications }) => {
       >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Employee Performance Chart */}
-        <div className={cn(bg.secondary, 'group relative overflow-hidden rounded-xl shadow-sm border p-3 md:p-4 slide-in-up transition-all duration-300 hover:shadow-lg', border.primary)}>
-          <BorderBeam showOnHover size={120} duration={9} borderWidth={2.5} colorFrom="#dc2626" colorTo="#10b981" />
+        <div className={chartCardClass(bg, border)}>
+          <BorderBeam showOnHover size={110} duration={10} borderWidth={1.5} colorFrom="#3b82f6" colorTo="#06b6d4" />
           <div className="relative z-10">
-          <h3 className={`font-semibold ${text.primary} mb-3`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.125rem)'}}>
-            {t('dashboard.employeePerformance')}
-          </h3>
-          <ResponsiveContainer width="100%" height={350}>
-            <ComposedChart data={performanceData} margin={{ top: 5, right: 5, left: 0, bottom: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
-              <XAxis 
-                dataKey="name" 
-                stroke={isDarkMode ? '#FFFFFF' : '#6B7280'}
-                angle={-45}
-                textAnchor="end"
-                height={80}
-                interval={0}
-                tick={{ fontSize: 13, fill: isDarkMode ? '#FFFFFF' : '#374151' }}
+          <ChartPanelHeader
+            label={t('dashboard.employeePerformance')}
+            value={avgPerformance}
+            hint={t('dashboard.avgPerformance')}
+            text={text}
+            legend={
+              <ChartSeriesLegend
+                isDarkMode={isDarkMode}
+                items={[{
+                  label: t('dashboard.performanceRating', 'Performance Rating'),
+                  color: chartTheme.series('performance'),
+                }]}
               />
-              <YAxis stroke={isDarkMode ? '#FFFFFF' : '#6B7280'} domain={[0, 5]} tick={{ fill: isDarkMode ? '#FFFFFF' : '#374151' }} />
-              <Tooltip
-                  contentStyle={{
-                    backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
-                    border: `1px solid ${isDarkMode ? '#374151' : '#E5E7EB'}`,
-                    borderRadius: '0.5rem',
-                    color: isDarkMode ? '#F9FAFB' : '#111827',
-                  }}
-                  labelStyle={{
-                    color: isDarkMode ? '#F9FAFB' : '#111827',
-                  }}
-                  itemStyle={{
-                    color: isDarkMode ? '#F9FAFB' : '#111827',
-                  }}
-                  formatter={(value, name, props) => {
-                    // Show full name in tooltip
-                    if (props.payload.fullName) {
-                      return [value, name];
-                    }
-                    return [value, name];
-                  }}
-                  labelFormatter={(label, payload) => {
-                    // Show full employee name as tooltip label
-                    if (payload && payload.length > 0 && payload[0].payload.fullName) {
-                      return `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}`;
-                    }
-                    return label;
-                  }}
-                  content={({ active, payload, label }) => {
-                    if (!active || !payload || payload.length === 0) return null;
-
-                    // Deduplicate series by canonical key (prefer dataKey, fallback to name)
-                    const seen = new Set();
-                    const unique = payload.filter(p => {
-                      const labelText = String(p.dataKey || p.name || '').trim().toLowerCase();
-                      if (!labelText) return false;
-                      if (seen.has(labelText)) return false;
-                      seen.add(labelText);
-                      return true;
-                    });
-
-                    return (
-                      <div style={{ background: isDarkMode ? '#1F2937' : '#FFFFFF', border: `1px solid ${isDarkMode ? '#374151' : '#E5E7EB'}`, borderRadius: '0.5rem', padding: 10, color: isDarkMode ? '#F9FAFB' : '#111827' }}>
-                        <div style={{ fontWeight: 600, marginBottom: 8 }}>
-                          {payload[0]?.payload?.fullName ? `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}` : label}
-                        </div>
-                        {unique.map((p, idx) => {
-                          const isPerformance = p.dataKey === 'performance' || String(p.name || '').toLowerCase().includes(String(t('dashboard.performanceRating', 'Performance Rating')).toLowerCase());
-                          const _isLine = p.payload && Object.prototype.hasOwnProperty.call(p.payload, 'performance') && p.type === 'line';
-
-                          const swatchStyle = isPerformance
-                            ? {
-                                width: 12,
-                                height: 12,
-                                borderRadius: 3,
-                                backgroundImage: 'linear-gradient(180deg, #DC2626 0%, #7C2D12 50%, #000000 100%)',
-                                border: isDarkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.08)'
-                              }
-                            : {
-                                width: 12,
-                                height: 12,
-                                borderRadius: 3,
-                                background: p.color || (isDarkMode ? '#F9FAFB' : '#111827'),
-                                border: isDarkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.08)'
-                              };
-
-                          return (
-                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <div style={swatchStyle} />
-                                <div>{p.name || p.dataKey}</div>
-                              </div>
-                              <div style={{ fontWeight: 700 }}>{p.value}</div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  }}
-                />
-              <Legend wrapperStyle={{ color: isDarkMode ? '#FFFFFF' : '#111827' }} />
+            }
+          />
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={performanceData} margin={{ top: 8, right: 8, left: -12, bottom: 28 }}>
               <defs>
-                <linearGradient id="performanceGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#DC2626" stopOpacity={0.95} />
-                  <stop offset="50%" stopColor="#7C2D12" stopOpacity={0.9} />
-                  <stop offset="100%" stopColor="#000000" stopOpacity={0.85} />
+                <linearGradient id="performanceAreaFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={chartTheme.series('performance')} stopOpacity={0.22} />
+                  <stop offset="100%" stopColor={chartTheme.series('performance')} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <Bar dataKey="performance" fill="url(#performanceGradient)" name={t('dashboard.performanceRating', 'Performance Rating')} radius={[8, 8, 0, 0]} />
-              <Line 
-                type="monotone" 
-                dataKey="performance" 
-                stroke="#10B981" 
-                strokeWidth={3}
-                dot={{ fill: '#10B981', r: 5 }}
-                legendType="none"
+              <CartesianGrid vertical={false} stroke={chartTheme.grid} strokeDasharray="0" />
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                angle={-28}
+                textAnchor="end"
+                height={48}
+                interval={0}
+                tick={axisTick}
               />
-            </ComposedChart>
+              <YAxis
+                hide
+                domain={[0, 5]}
+              />
+              <Tooltip
+                cursor={{ stroke: chartTheme.grid, strokeWidth: 1 }}
+                content={({ active, payload, label }) => (
+                  <ChartTooltipBox
+                    active={active}
+                    payload={payload}
+                    label={label}
+                    isDarkMode={isDarkMode}
+                    chartTheme={chartTheme}
+                    title={
+                      payload?.[0]?.payload?.fullName
+                        ? `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}`
+                        : label
+                    }
+                  />
+                )}
+              />
+              <Area
+                type="monotone"
+                dataKey="performance"
+                name={t('dashboard.performanceRating', 'Performance Rating')}
+                stroke={chartTheme.series('performance')}
+                strokeWidth={2}
+                fill="url(#performanceAreaFill)"
+                dot={false}
+                activeDot={{
+                  r: 4,
+                  fill: chartTheme.series('performance'),
+                  stroke: isDarkMode ? '#0B1220' : '#FFFFFF',
+                  strokeWidth: 2,
+                }}
+              />
+            </AreaChart>
           </ResponsiveContainer>
           </div>
         </div>
 
         {/* Department Distribution */}
-        <div className={cn(bg.secondary, 'group relative overflow-hidden rounded-xl shadow-sm border p-4 md:p-6 slide-in-up transition-all duration-300 hover:shadow-lg', border.primary)} style={{ animationDelay: '0.1s' }}>
-          <BorderBeam showOnHover size={120} duration={10} delay={1} borderWidth={2.5} colorFrom="#3b82f6" colorTo="#ec4899" />
+        <div className={chartCardClass(bg, border)} style={{ animationDelay: '0.1s' }}>
+          <BorderBeam showOnHover size={110} duration={11} delay={1} borderWidth={1.5} colorFrom="#3b82f6" colorTo="#d946ef" />
           <div className="relative z-10">
-          <h3 className={`font-semibold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.125rem)'}}>
-            {t('dashboard.departmentDist')}
-          </h3>
-          <ResponsiveContainer width="100%" height={350}>
-            <PieChart>
-              <defs>
-                <linearGradient id="pieGradient0" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#60A5FA" stopOpacity={1} />
-                  <stop offset="50%" stopColor="#3B82F6" stopOpacity={0.95} />
-                  <stop offset="100%" stopColor="#1E3A8A" stopOpacity={0.9} />
-                </linearGradient>
-                <linearGradient id="pieGradient1" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#34D399" stopOpacity={1} />
-                  <stop offset="50%" stopColor="#10B981" stopOpacity={0.95} />
-                  <stop offset="100%" stopColor="#047857" stopOpacity={0.9} />
-                </linearGradient>
-                <linearGradient id="pieGradient2" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#FBBF24" stopOpacity={1} />
-                  <stop offset="50%" stopColor="#F59E0B" stopOpacity={0.95} />
-                  <stop offset="100%" stopColor="#B45309" stopOpacity={0.9} />
-                </linearGradient>
-                <linearGradient id="pieGradient3" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#F87171" stopOpacity={1} />
-                  <stop offset="50%" stopColor="#EF4444" stopOpacity={0.95} />
-                  <stop offset="100%" stopColor="#991B1B" stopOpacity={0.9} />
-                </linearGradient>
-                <linearGradient id="pieGradient4" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#A78BFA" stopOpacity={1} />
-                  <stop offset="50%" stopColor="#8B5CF6" stopOpacity={0.95} />
-                  <stop offset="100%" stopColor="#5B21B6" stopOpacity={0.9} />
-                </linearGradient>
-                <linearGradient id="pieGradient5" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#F472B6" stopOpacity={1} />
-                  <stop offset="50%" stopColor="#EC4899" stopOpacity={0.95} />
-                  <stop offset="100%" stopColor="#9F1239" stopOpacity={0.9} />
-                </linearGradient>
-                <linearGradient id="pieGradient6" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#22D3EE" stopOpacity={1} />
-                  <stop offset="50%" stopColor="#06B6D4" stopOpacity={0.95} />
-                  <stop offset="100%" stopColor="#155E75" stopOpacity={0.9} />
-                </linearGradient>
-              </defs>
-              <Pie
-                data={departmentData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                labelStyle={{ fill: isDarkMode ? '#FFFFFF' : '#111827', fontSize: 14 }}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-                style={{ fontSize: '13px' }}
-              >
-                {departmentData.map((_entry, index) => (
-                  <Cell key={`cell-${index}`} fill={`url(#pieGradient${index % 7})`} />
-                ))}
-              </Pie>
-              <Tooltip
-                  contentStyle={{
-                    backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
-                    border: `1px solid ${isDarkMode ? '#374151' : '#E5E7EB'}`,
-                    borderRadius: '0.5rem',
-                    color: isDarkMode ? '#F9FAFB' : '#111827',
-                  }}
-                  itemStyle={{
-                    color: isDarkMode ? '#FFFFFF' : '#111827',
-                  }}
-                  labelStyle={{
-                    color: isDarkMode ? '#FFFFFF' : '#111827',
-                  }}
-                />
-              <Legend 
-                wrapperStyle={{ 
-                  color: isDarkMode ? '#FFFFFF' : '#111827',
-                  fontSize: '14px'
-                }} 
-                iconType="circle"
-                align="center"
-                verticalAlign="bottom"
-                height={36}
+          <ChartPanelHeader
+            label={t('dashboard.departmentDist')}
+            value={departmentTotal}
+            hint={t('dashboard.totalEmployees')}
+            text={text}
+          />
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart
+              layout="vertical"
+              data={departmentChartData}
+              margin={{ top: 0, right: 36, left: 4, bottom: 0 }}
+              barCategoryGap="32%"
+            >
+              <CartesianGrid horizontal={false} stroke={chartTheme.grid} strokeDasharray="0" />
+              <XAxis
+                type="number"
+                hide
+                allowDecimals={false}
               />
-            </PieChart>
+              <YAxis
+                type="category"
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                width={96}
+                tick={axisTick}
+              />
+              <Tooltip
+                cursor={{ fill: chartTheme.cursor }}
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null;
+                  const item = payload[0];
+                  const pct = departmentTotal > 0 ? Math.round((item.value / departmentTotal) * 100) : 0;
+                  return (
+                    <ChartTooltipBox
+                      active={active}
+                      payload={[{
+                        name: item.payload?.name || item.name,
+                        value: `${item.value} · ${pct}%`,
+                        color: item.color || chartTheme.series('regular'),
+                      }]}
+                      isDarkMode={isDarkMode}
+                      chartTheme={chartTheme}
+                      title={t('dashboard.departmentDist')}
+                    />
+                  );
+                }}
+              />
+              <Bar
+                dataKey="value"
+                radius={[0, 4, 4, 0]}
+                maxBarSize={16}
+                name={t('dashboard.departmentDist')}
+                label={{
+                  position: 'right',
+                  fill: chartTheme.tick,
+                  fontSize: 11,
+                }}
+              >
+                {departmentChartData.map((_entry, index) => (
+                  <Cell
+                    key={`dept-${index}`}
+                    fill={chartTheme.dept[index % chartTheme.dept.length]}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
           </div>
         </div>
       </div>
       </InView>
 
-      {/* Charts Row 2 - Regular + Overtime Hours (Merged) */}
+      {/* Charts Row 2 - Regular + Overtime Hours (editorial horizontal bars) */}
       <InView
         once
         variants={{
@@ -2062,128 +2192,107 @@ const Dashboard = ({ employees, applications }) => {
         transition={{ duration: 0.45, ease: 'easeOut' }}
         viewOptions={{ margin: '-40px' }}
       >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className={cn(bg.secondary, 'group relative overflow-hidden rounded-xl shadow-sm border p-6 lg:col-span-2', border.primary)}>
-          <BorderBeam showOnHover size={120} duration={12} borderWidth={2.5} colorFrom="#2563eb" colorTo="#f59e0b" />
+      <div className="grid grid-cols-1 gap-6">
+        <div className={chartCardClass(bg, border)}>
+          <BorderBeam showOnHover size={120} duration={12} borderWidth={1.5} colorFrom="#3b82f6" colorTo="#94a3b8" />
           <div className="relative z-10">
-          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-            {t('dashboard.regularAndOvertimeByEmployee', 'Regular & Overtime Hours by Employee')}
-          </h3>
-          <ResponsiveContainer width="100%" height={450}>
-            <ComposedChart
-              data={allEmployeesData
-                .filter(item => item.data)
-                .map(item => ({
-                  name: getUniqueDisplayName(item.employee, employees),
-                  fullName: item.employee.name,
-                  regularHours: item.data?.regular_hours || 0,
-                  overtimeHours: (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0)
-                }))
-                // Sort by total hours (regular + overtime) and show top 10
-                .sort((a, b) => (b.regularHours + b.overtimeHours) - (a.regularHours + a.overtimeHours))
-                .slice(0, 10)
-              }
-              margin={{ top: 5, right: 20, left: 0, bottom: 80 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
-              <XAxis
-                dataKey="name"
-                stroke={isDarkMode ? '#FFFFFF' : '#6B7280'}
-                angle={-45}
-                textAnchor="end"
-                height={80}
-                interval={0}
-                tick={{ fontSize: 13, fill: isDarkMode ? '#FFFFFF' : '#374151' }}
-              />
-              <YAxis stroke={isDarkMode ? '#FFFFFF' : '#6B7280'} tick={{ fill: isDarkMode ? '#FFFFFF' : '#374151' }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
-                  border: `1px solid ${isDarkMode ? '#374151' : '#E5E7EB'}`,
-                  borderRadius: '0.5rem',
-                  color: isDarkMode ? '#F9FAFB' : '#111827',
-                }}
-                labelFormatter={(label, payload) => {
-                  if (payload && payload.length > 0 && payload[0].payload.fullName) {
-                    return `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}`;
+                <ChartPanelHeader
+                  label={t('dashboard.regularAndOvertimeByEmployee', 'Regular & Overtime Hours by Employee')}
+                  value={`${Math.round(hoursChartRegularTotal + hoursChartOvertimeTotal)}h`}
+                  hint={t('dashboard.acrossEmployees', 'Across employees')}
+                  text={text}
+                  legend={
+                    <ChartSeriesLegend
+                      isDarkMode={isDarkMode}
+                      items={[
+                        {
+                          label: t('dashboard.regularHoursLegend', 'Regular Hours'),
+                          color: hoursEditorial.ink,
+                        },
+                        {
+                          label: t('dashboard.totalOvertimeLegend', 'Overtime Hours'),
+                          color: hoursEditorial.mute,
+                        },
+                      ]}
+                    />
                   }
-                  return label;
-                }}
-                content={({ active, payload, label }) => {
-                  if (!active || !payload || payload.length === 0) return null;
+                />
 
-                  const seen = new Set();
-                  const unique = payload.filter(p => {
-                    const labelText = String(p.dataKey || p.name || '').trim().toLowerCase();
-                    if (!labelText) return false;
-                    if (seen.has(labelText)) return false;
-                    seen.add(labelText);
-                    return true;
-                  });
+                {hoursChartData.length === 0 ? (
+                  <p className={`py-10 text-center text-sm ${text.secondary}`}>
+                    {t('dashboard.noData', 'No time tracking data yet')}
+                  </p>
+                ) : (
+                  <div className={`divide-y ${isDarkMode ? 'divide-slate-700/60' : 'divide-slate-100'}`}>
+                    {hoursChartData.map((row) => {
+                      const regular = Number(row.regularHours) || 0;
+                      const overtime = Number(row.overtimeHours) || 0;
+                      const total = regular + overtime;
+                      const totalWidth = `${(total / hoursChartMaxTotal) * 100}%`;
+                      const regularShare = total > 0 ? (regular / total) * 100 : 0;
+                      const overtimeShare = total > 0 ? (overtime / total) * 100 : 0;
 
-                  return (
-                    <div style={{ background: isDarkMode ? '#1F2937' : '#FFFFFF', border: `1px solid ${isDarkMode ? '#374151' : '#E5E7EB'}`, borderRadius: '0.5rem', padding: 10, color: isDarkMode ? '#F9FAFB' : '#111827' }}>
-                      <div style={{ fontWeight: 600, marginBottom: 8 }}>
-                        {payload[0]?.payload?.fullName ? `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}` : label}
-                      </div>
-                      {unique.map((p, idx) => {
-                        // Render a visible swatch. For regularHours use the exact gradient used by the bar.
-                        const isRegular = p.dataKey === 'regularHours' || String(p.name || '').toLowerCase().includes(String(t('dashboard.regularHoursLegend', 'Regular Hours')).toLowerCase());
-                        const isOvertime = p.dataKey === 'overtimeHours' || String(p.name || '').toLowerCase().includes(String(t('dashboard.totalOvertimeLegend', 'Overtime Hours')).toLowerCase());
-
-                        const swatchStyle = isRegular
-                          ? {
-                              width: 12,
-                              height: 12,
-                              borderRadius: 3,
-                              backgroundImage: 'linear-gradient(180deg, #2563EB 0%, #1E3A8A 50%, #000000 100%)',
-                              border: isDarkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.08)'
-                            }
-                          : isOvertime
-                          ? {
-                              width: 12,
-                              height: 12,
-                              borderRadius: 3,
-                              backgroundColor: '#F59E0B',
-                              border: isDarkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.08)'
-                            }
-                          : {
-                              width: 12,
-                              height: 12,
-                              borderRadius: 3,
-                              background: p.color || (isDarkMode ? '#F9FAFB' : '#111827'),
-                              border: isDarkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.08)'
-                            };
-
-                        return (
-                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <div style={swatchStyle} />
-                              <div>{p.name || p.dataKey}</div>
-                            </div>
-                            <div style={{ fontWeight: 700 }}>{p.value}</div>
+                      return (
+                        <div key={`${row.name}-${row.fullName}`} className="py-3.5 first:pt-0 last:pb-0">
+                          <div className="mb-2 flex items-baseline justify-between gap-3">
+                            <p className={`min-w-0 truncate text-sm font-medium ${text.primary}`}>
+                              {row.fullName || row.name}
+                            </p>
+                            <p className={`shrink-0 text-sm tabular-nums ${text.secondary}`}>
+                              <span className={`font-semibold ${text.primary}`}>
+                                {total.toFixed(total % 1 ? 1 : 0)}h
+                              </span>
+                              {overtime > 0 && (
+                                <span className="ml-2 text-xs opacity-80">
+                                  {regular.toFixed(regular % 1 ? 1 : 0)} + {overtime.toFixed(overtime % 1 ? 1 : 0)} OT
+                                </span>
+                              )}
+                            </p>
                           </div>
-                        );
-                      })}
-                    </div>
-                  );
-                }}
-              />
-              <Legend wrapperStyle={{ color: isDarkMode ? '#FFFFFF' : '#111827' }} />
+                          <div
+                            className="h-2.5 w-full overflow-hidden rounded-full"
+                            style={{ background: hoursEditorial.track }}
+                            title={`${row.fullName || row.name}: ${regular}h regular, ${overtime}h overtime`}
+                          >
+                            <div
+                              className="flex h-full overflow-hidden rounded-full transition-[width] duration-500 ease-out"
+                              style={{ width: totalWidth }}
+                            >
+                              <div
+                                className="h-full"
+                                style={{ width: `${regularShare}%`, background: hoursEditorial.ink }}
+                              />
+                              {overtimeShare > 0 && (
+                                <div
+                                  className="h-full"
+                                  style={{ width: `${overtimeShare}%`, background: hoursEditorial.mute }}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
-              <defs>
-                <linearGradient id="regularHoursGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2563EB" stopOpacity={0.95} />
-                  <stop offset="50%" stopColor="#1E3A8A" stopOpacity={0.9} />
-                  <stop offset="100%" stopColor="#000000" stopOpacity={0.85} />
-                </linearGradient>
-              </defs>
-
-              <Bar dataKey="regularHours" fill="url(#regularHoursGradient)" name={t('dashboard.regularHoursLegend', 'Regular Hours')} radius={[8, 8, 0, 0]} />
-              <Bar dataKey="overtimeHours" fill="#F59E0B" name={t('dashboard.totalOvertimeLegend', 'Overtime Hours')} radius={[8, 8, 0, 0]} />
-
-            </ComposedChart>
-          </ResponsiveContainer>
+                <ChartSummaryList
+                  isDarkMode={isDarkMode}
+                  text={text}
+                  border={border}
+                  items={[
+                    {
+                      label: t('dashboard.regularHoursLegend', 'Regular Hours'),
+                      value: `${Math.round(hoursChartRegularTotal)}h`,
+                      color: hoursEditorial.ink,
+                    },
+                    {
+                      label: t('dashboard.totalOvertimeLegend', 'Overtime Hours'),
+                      value: `${hoursChartOvertimeTotal.toFixed(1)}h`,
+                      color: hoursEditorial.mute,
+                    },
+                  ]}
+                />
           </div>
         </div>
       </div>
@@ -2201,145 +2310,160 @@ const Dashboard = ({ employees, applications }) => {
       >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Work & Leave Days Comparison */}
-        <div className={cn(bg.secondary, 'group relative overflow-hidden rounded-xl shadow-sm border p-6', border.primary)}>
-          <BorderBeam showOnHover size={120} duration={10} borderWidth={2.5} colorFrom="#10b981" colorTo="#ef4444" />
+        <div className={chartCardClass(bg, border)}>
+          <BorderBeam showOnHover size={110} duration={10} borderWidth={1.5} colorFrom="#3b82f6" colorTo="#94a3b8" />
           <div className="relative z-10">
-          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-            {t('dashboard.workLeaveComp')}
-          </h3>
-          <ResponsiveContainer width="100%" height={350}>
-            <ComposedChart data={leaveData} margin={{ top: 5, right: 5, left: 0, bottom: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#E5E7EB'} />
-              <XAxis 
-                dataKey="name" 
-                stroke={isDarkMode ? '#9CA3AF' : '#6B7280'}
-                angle={-45}
+          <ChartPanelHeader
+            label={t('dashboard.workLeaveComp')}
+            value={leaveChartWorkTotal + leaveChartLeaveTotal}
+            hint={t('dashboard.acrossEmployees', 'Across employees')}
+            text={text}
+            legend={
+              <ChartSeriesLegend
+                isDarkMode={isDarkMode}
+                items={[
+                  {
+                    label: t('dashboard.totalWorkDays', 'Total Work Days'),
+                    color: chartTheme.series('workDays'),
+                  },
+                  {
+                    label: t('dashboard.totalLeave', 'Total Leave'),
+                    color: chartTheme.series('leaveDays'),
+                  },
+                ]}
+              />
+            }
+          />
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={leaveData} margin={{ top: 4, right: 8, left: -8, bottom: 32 }} barCategoryGap="30%" barGap={3}>
+              <CartesianGrid vertical={false} stroke={chartTheme.grid} strokeDasharray="0" />
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                angle={-28}
                 textAnchor="end"
-                height={80}
+                height={48}
                 interval={0}
-                tick={{ fontSize: 11 }}
+                tick={axisTick}
               />
-              <YAxis stroke={isDarkMode ? '#9CA3AF' : '#6B7280'} />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={axisTick}
+                width={28}
+              />
               <Tooltip
-                  contentStyle={{
-                    backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
-                    border: `1px solid ${isDarkMode ? '#374151' : '#E5E7EB'}`,
-                    borderRadius: '0.5rem',
-                    color: isDarkMode ? '#F9FAFB' : '#111827',
-                  }}
-                  labelStyle={{
-                    color: isDarkMode ? '#F9FAFB' : '#111827',
-                  }}
-                  itemStyle={{
-                    color: isDarkMode ? '#F9FAFB' : '#111827',
-                  }}
-                  labelFormatter={(label, payload) => {
-                    // Show full employee name as tooltip label
-                    if (payload && payload.length > 0 && payload[0].payload.fullName) {
-                      return `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}`;
+                cursor={{ fill: chartTheme.cursor }}
+                content={({ active, payload, label }) => (
+                  <ChartTooltipBox
+                    active={active}
+                    payload={payload}
+                    label={label}
+                    isDarkMode={isDarkMode}
+                    chartTheme={chartTheme}
+                    title={
+                      payload?.[0]?.payload?.fullName
+                        ? `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}`
+                        : label
                     }
-                    return label;
-                  }}
-                  content={({ active, payload, label }) => {
-                    if (!active || !payload || payload.length === 0) return null;
-
-                    // Deduplicate by normalized displayed label (case-insensitive)
-                    const seen = new Set();
-                    const unique = payload.filter(p => {
-                      const labelText = String(p.dataKey || p.name || '').trim().toLowerCase();
-                      if (!labelText) return false;
-                      if (seen.has(labelText)) return false;
-                      seen.add(labelText);
-                      return true;
-                    });
-
-                    return (
-                      <div style={{ background: isDarkMode ? '#1F2937' : '#FFFFFF', border: `1px solid ${isDarkMode ? '#374151' : '#E5E7EB'}`, borderRadius: '0.5rem', padding: 10, color: isDarkMode ? '#F9FAFB' : '#111827' }}>
-                        <div style={{ fontWeight: 600, marginBottom: 8 }}>
-                          {payload[0]?.payload?.fullName ? `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}` : label}
-                        </div>
-                        {unique.map((p, idx) => (
-                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <div style={{ width: 10, height: 10, background: p.color || (isDarkMode ? '#F9FAFB' : '#111827'), borderRadius: 3 }} />
-                              <div>{p.name || p.dataKey}</div>
-                            </div>
-                            <div style={{ fontWeight: 700 }}>{p.value}</div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  }}
-                />
-              <Legend />
-              <Bar dataKey="workDays" fill="#10B981" name={t('dashboard.totalWorkDays', 'Total Work Days')} radius={[8, 8, 0, 0]} />
-              <Bar dataKey="leaveDays" fill="#EF4444" name={t('dashboard.totalLeave', 'Total Leave')} radius={[8, 8, 0, 0]} />
-              <Line 
-                type="monotone" 
-                dataKey="workDays" 
-                stroke="#059669" 
-                strokeWidth={3}
-                dot={{ fill: '#059669', r: 5 }}
-                legendType="none"
+                  />
+                )}
               />
-              <Line 
-                type="monotone" 
-                dataKey="leaveDays" 
-                stroke="#DC2626" 
-                strokeWidth={3}
-                dot={{ fill: '#DC2626', r: 5 }}
-                legendType="none"
+              <Bar
+                dataKey="workDays"
+                fill={chartTheme.series('workDays')}
+                name={t('dashboard.totalWorkDays', 'Total Work Days')}
+                radius={[3, 3, 0, 0]}
+                maxBarSize={18}
               />
-            </ComposedChart>
+              <Bar
+                dataKey="leaveDays"
+                fill={chartTheme.series('leaveDays')}
+                name={t('dashboard.totalLeave', 'Total Leave')}
+                radius={[3, 3, 0, 0]}
+                maxBarSize={18}
+              />
+            </BarChart>
           </ResponsiveContainer>
+          <ChartSummaryList
+            isDarkMode={isDarkMode}
+            text={text}
+            border={border}
+            items={[
+              {
+                label: t('dashboard.totalWorkDays', 'Total Work Days'),
+                value: leaveChartWorkTotal,
+                color: chartTheme.series('workDays'),
+              },
+              {
+                label: t('dashboard.totalLeave', 'Total Leave'),
+                value: leaveChartLeaveTotal,
+                color: chartTheme.series('leaveDays'),
+              },
+            ]}
+          />
           </div>
         </div>
 
         {/* Top Performers */}
-        <div className={cn(bg.secondary, 'group relative overflow-hidden rounded-xl shadow-sm border p-6', border.primary)}>
-          <BorderBeam showOnHover size={120} duration={9} delay={0.5} borderWidth={2.5} colorFrom="#f59e0b" colorTo="#8b5cf6" />
-          <Spotlight
-            className={isDarkMode ? 'bg-amber-400/15' : 'bg-amber-400/10'}
-            size={220}
-          />
+        <div className={chartCardClass(bg, border)}>
+          <BorderBeam showOnHover size={110} duration={10} delay={0.5} borderWidth={1.5} colorFrom="#3b82f6" colorTo="#06b6d4" />
           <div className="relative z-10">
-          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-            {t('dashboard.topPerformers')}
-          </h3>
-          <AnimatedList delay={280} reverse={false} className="gap-3">
-            {topPerformers.map((emp, index) => (
-              <div key={emp.id} className={`flex items-center justify-between p-3 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                <div className="flex items-center space-x-3">
-                  {emp.photo ? (
-                    <img 
-                      src={emp.photo} 
-                      alt={getDemoEmployeeName(emp, t)}
-                      className={`w-10 h-10 rounded-full object-cover border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}
-                    />
-                  ) : (
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
-                      index === 0 ? 'bg-yellow-500' :
-                      index === 1 ? 'bg-gray-400' :
-                      index === 2 ? 'bg-orange-600' :
-                      'bg-blue-500'
-                    }`}>
-                      {getDemoEmployeeName(emp, t).charAt(0)}
+          <ChartPanelHeader
+            label={t('dashboard.topPerformers')}
+            value={topPerformers[0]?.performance?.toFixed?.(1) ?? topPerformers[0]?.performance ?? '—'}
+            hint={topPerformers[0] ? getDemoEmployeeName(topPerformers[0], t) : undefined}
+            text={text}
+          />
+          <ul className={`divide-y ${border.primary}`}>
+            {topPerformers.map((emp, index) => {
+              const score = Number(emp.performance) || 0;
+              const widthPct = Math.max(8, Math.min(100, (score / 5) * 100));
+              return (
+                <li key={emp.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className={`w-5 shrink-0 text-xs tabular-nums ${text.secondary}`}>
+                      {index + 1}
+                    </span>
+                    {emp.photo ? (
+                      <img
+                        src={emp.photo}
+                        alt={getDemoEmployeeName(emp, t)}
+                        className={`h-8 w-8 rounded-full object-cover border ${border.primary}`}
+                      />
+                    ) : (
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                        isDarkMode ? 'bg-slate-700 text-slate-200' : 'bg-slate-100 text-slate-700'
+                      }`}>
+                        {getDemoEmployeeName(emp, t).charAt(0)}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className={`truncate text-sm font-medium ${text.primary}`}>
+                        {getDemoEmployeeName(emp, t)}
+                      </p>
+                      <p className={`truncate text-xs ${text.secondary}`}>
+                        {t(`employeePosition.${emp.position}`)}
+                      </p>
+                      <div className={`mt-1.5 h-1 w-28 overflow-hidden rounded-full ${isDarkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                        <div
+                          className="h-full rounded-full bg-blue-500"
+                          style={{ width: `${widthPct}%` }}
+                        />
+                      </div>
                     </div>
-                  )}
-                  <div>
-                    <p className={`font-medium ${text.primary}`}>{getDemoEmployeeName(emp, t)}</p>
-                    <p className={`text-sm ${text.secondary}`}>
-                      {t(`employeePosition.${emp.position}`)}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className={`text-sm font-semibold tabular-nums ${text.primary}`}>{emp.performance}</p>
+                    <p className={`text-xs tabular-nums ${text.secondary}`}>
+                      {emp.overtime}h {t('dashboard.overtime')}
                     </p>
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className={`font-bold text-lg ${text.primary}`}>{emp.performance}</p>
-                  <p className={`text-xs ${text.secondary}`}>{emp.overtime}h {t('dashboard.overtime')}</p>
-                </div>
-              </div>
-            ))}
-          </AnimatedList>
+                </li>
+              );
+            })}
+          </ul>
           </div>
         </div>
       </div>

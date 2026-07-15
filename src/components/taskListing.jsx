@@ -15,6 +15,10 @@ import { SlidingNumber } from './motion-primitives';
 import { NumberTicker } from './ui/number-ticker';
 import { PageLiveClock } from './ui/page-live-clock';
 import { cn } from '@/lib/utils';
+import {
+  filterActiveEmployees,
+  filterInactiveEmployees,
+} from '../utils/employeeStatus.js';
 
 export const MiniFlubberAutoMorphCompleteTask = ({
   size = 24,
@@ -255,7 +259,7 @@ export const MiniFlubberAutoMorphCompleteTask = ({
   );
 };
 
-const TaskListing = ({ employees }) => {
+const TaskListing = ({ employees, allEmployees }) => {
   const { user, checkPermission } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
   const { bg, text, border, isDarkMode } = useTheme();
@@ -266,6 +270,7 @@ const TaskListing = ({ employees }) => {
   const [showAddTask, setShowAddTask] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [viewMode, setViewMode] = useState('individual'); // 'individual' or 'organization'
+  const [orgStatusSegment, setOrgStatusSegment] = useState('active');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   
@@ -273,13 +278,24 @@ const TaskListing = ({ employees }) => {
   const modalRef = React.useRef(null);
   const dueDateInputRef = useRef(null);
 
+  const employeeDirectory = allEmployees?.length ? allEmployees : employees;
+
   // Check if user can view all employees (admin/manager)
   const canViewAllEmployees = checkPermission('canViewReports');
   
+  // Active-only for assign pickers / individual selector
+  const operationalEmployees = filterActiveEmployees(employees);
+
   // Filter employees based on role
   const availableEmployees = canViewAllEmployees 
-    ? employees 
-    : employees.filter(emp => String(emp.id) === String(user?.employeeId || user?.id));
+    ? operationalEmployees
+    : operationalEmployees.filter(emp => String(emp.id) === String(user?.employeeId || user?.id));
+
+  const orgCohortEmployees = canViewAllEmployees
+    ? (orgStatusSegment === 'inactive'
+        ? filterInactiveEmployees(employeeDirectory)
+        : filterActiveEmployees(employeeDirectory))
+    : availableEmployees;
 
   // Set selected employee - default to logged-in user's employeeId
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -755,11 +771,11 @@ const TaskListing = ({ employees }) => {
                     <div className={`mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs ${text.secondary}`}>
                       <div>
                         <p className="font-medium">{t('taskReview.assignedTo') || 'Assigned To'}</p>
-                        <p className={text.primary}>{employees.find(e => String(e.id) === String(task.employee_id))?.name || task.employee?.name || '-'}</p>
+                        <p className={text.primary}>{employeeDirectory.find(e => String(e.id) === String(task.employee_id))?.name || task.employee?.name || '-'}</p>
                       </div>
                       <div>
                         <p className="font-medium">{t('taskReview.assignedBy') || 'Assigned By'}</p>
-                        <p className={text.primary}>{employees.find(e => String(e.id) === String(task.created_by))?.name || '-'}</p>
+                        <p className={text.primary}>{employeeDirectory.find(e => String(e.id) === String(task.created_by))?.name || '-'}</p>
                       </div>
                       <div>
                         <p className="font-medium">{t('taskListing.assignDate', 'Assign Date')}</p>
@@ -809,7 +825,7 @@ const TaskListing = ({ employees }) => {
 
   // Organization View
   const OrganizationView = () => {
-    const orgStats = employees.map(emp => ({
+    const orgStats = orgCohortEmployees.map(emp => ({
       employee: emp,
       tasks: getEmployeeTasks(emp.id),
       progress: calculateProgress(getEmployeeTasks(emp.id)),
@@ -984,7 +1000,7 @@ const TaskListing = ({ employees }) => {
           </h2>
           <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} />
         </div>
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 flex-wrap">
           <button
             type ="button"
             onClick={() => setViewMode('individual')}
@@ -1018,6 +1034,35 @@ const TaskListing = ({ employees }) => {
             >
               {t('taskListing.organization', '')}
             </button>
+          )}
+
+          {canViewOrganization && viewMode === 'organization' && (
+            <div className={`inline-flex rounded-lg border overflow-hidden ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
+              <button
+                type="button"
+                onClick={() => setOrgStatusSegment('active')}
+                className={`px-3 py-2 text-sm font-medium transition-colors cursor-pointer ${
+                  orgStatusSegment === 'active'
+                    ? isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-900 text-white'
+                    : isDarkMode ? 'bg-gray-800 text-gray-200 hover:bg-gray-700' : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+                aria-pressed={orgStatusSegment === 'active'}
+              >
+                {t('employees.active', 'Active')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setOrgStatusSegment('inactive')}
+                className={`px-3 py-2 text-sm font-medium transition-colors cursor-pointer ${
+                  orgStatusSegment === 'inactive'
+                    ? isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-900 text-white'
+                    : isDarkMode ? 'bg-gray-800 text-gray-200 hover:bg-gray-700' : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+                aria-pressed={orgStatusSegment === 'inactive'}
+              >
+                {t('employees.inactive', 'Inactive')}
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -1056,7 +1101,7 @@ const TaskListing = ({ employees }) => {
                     className={`w-full px-4 py-2 rounded-lg ${text.secondary} ${border.primary}`}
                   >
                     <option value="">{t('taskListing.selectEmployee', 'Select Employee')}</option>
-                    {employees.map(emp => (
+                    {availableEmployees.map(emp => (
                       <option key={emp.id} value={emp.id}>
                         {getDemoEmployeeName(emp, t)} - {t(`employeeDepartment.${emp.department}`, emp.department)} ({t(`employeePosition.${emp.position}`, emp.position)})
                       </option>

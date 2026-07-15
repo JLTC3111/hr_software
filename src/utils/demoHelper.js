@@ -722,6 +722,25 @@ export const MOCK_EMPLOYEES = [
     dob: '1988-12-12',
     salary: 60000,
     employment_status: 'active'
+  },
+  {
+    id: 'demo-emp-6',
+    name: 'Demo Alumni',
+    nameKey: 'demoEmployees.demo-emp-6.name',
+    email: 'alumni@company.com',
+    department: 'engineering',
+    position: 'employee',
+    location: 'Headquarters',
+    locationKey: 'locations.headquarters',
+    status: 'Inactive',
+    photo: getDemoAvatarUrl('demo-emp-6'),
+    phone: '555-0106',
+    hire_date: '2022-04-01',
+    dob: '1987-01-18',
+    salary: 72000,
+    employment_status: 'terminated',
+    is_active: false,
+    performance: 4.2,
   }
 ];
 
@@ -1936,19 +1955,35 @@ export const addDemoTask = (task) => {
 export const updateDemoTask = (taskId, updates) => {
   const stored = localStorage.getItem(DEMO_TASKS_KEY);
   const storedTasks = stored ? JSON.parse(stored) : [];
+  const id = String(taskId);
+
+  // Normalize camelCase review fields so persistence matches live DB columns
+  const normalized = { ...updates };
+  if (normalized.qualityRating !== undefined && normalized.quality_rating === undefined) {
+    normalized.quality_rating = normalized.qualityRating;
+    delete normalized.qualityRating;
+  }
+  if (normalized.selfAssessment !== undefined && normalized.self_assessment === undefined) {
+    normalized.self_assessment = normalized.selfAssessment;
+    delete normalized.selfAssessment;
+  }
+  if (normalized.dueDate !== undefined && normalized.due_date === undefined) {
+    normalized.due_date = normalized.dueDate;
+    delete normalized.dueDate;
+  }
   
   // Check if it's already in storage
-  const storedIndex = storedTasks.findIndex(t => t.id === taskId);
+  const storedIndex = storedTasks.findIndex(t => String(t.id) === id);
   if (storedIndex !== -1) {
-    storedTasks[storedIndex] = { ...storedTasks[storedIndex], ...updates, updated_at: new Date().toISOString() };
+    storedTasks[storedIndex] = { ...storedTasks[storedIndex], ...normalized, updated_at: new Date().toISOString() };
     localStorage.setItem(DEMO_TASKS_KEY, JSON.stringify(storedTasks));
     return storedTasks[storedIndex];
   }
   
   // If not in storage, check if it's a mock task
-  const mockTask = MOCK_TASKS.find(t => t.id === taskId);
+  const mockTask = MOCK_TASKS.find(t => String(t.id) === id);
   if (mockTask) {
-    const updatedTask = { ...mockTask, ...updates, updated_at: new Date().toISOString() };
+    const updatedTask = { ...mockTask, ...normalized, updated_at: new Date().toISOString() };
     storedTasks.push(updatedTask);
     localStorage.setItem(DEMO_TASKS_KEY, JSON.stringify(storedTasks));
     return updatedTask;

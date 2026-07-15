@@ -194,16 +194,23 @@ export const updateTask = async (taskId, updates) => {
   try {
     const updateData = {};
     
-    // Map frontend field names to database column names
+    // Map frontend field names to database column names (accept camelCase or snake_case)
     if (updates.title !== undefined) updateData.title = updates.title;
     if (updates.description !== undefined) updateData.description = updates.description;
-    if (updates.dueDate !== undefined) updateData.due_date = updates.dueDate;
+    if (updates.dueDate !== undefined || updates.due_date !== undefined) {
+      updateData.due_date = updates.dueDate ?? updates.due_date;
+    }
     if (updates.priority !== undefined) updateData.priority = updates.priority;
     if (updates.status !== undefined) updateData.status = updates.status;
-    if (updates.selfAssessment !== undefined) updateData.self_assessment = updates.selfAssessment;
-    if (updates.qualityRating !== undefined) updateData.quality_rating = updates.qualityRating;
+    if (updates.selfAssessment !== undefined || updates.self_assessment !== undefined) {
+      updateData.self_assessment = updates.selfAssessment ?? updates.self_assessment;
+    }
+    const qualityRating = updates.qualityRating ?? updates.quality_rating;
+    if (qualityRating !== undefined) updateData.quality_rating = qualityRating;
     if (updates.comments !== undefined) updateData.comments = updates.comments;
-    if (updates.assignedTo !== undefined) updateData.employee_id = updates.assignedTo;
+    if (updates.assignedTo !== undefined || updates.employee_id !== undefined) {
+      updateData.employee_id = updates.assignedTo ?? updates.employee_id;
+    }
 
     const { data, error } = await supabase
       .from('workload_tasks')

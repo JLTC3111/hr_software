@@ -32,6 +32,7 @@ import { isDemoMode, getDemoEmployeeName, updateDemoLeaveRequest } from '../util
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { SlidingNumber } from './motion-primitives';
 import { PageLiveClock } from './ui/page-live-clock';
+import { filterActiveEmployees } from '../utils/employeeStatus.js';
 
 /* @refresh reset */
 
@@ -47,7 +48,7 @@ const fromKey = (key) => {
 };
 const normalize = (value) => (value || '').toString().slice(0, 10);
 
-const LeaveManagement = ({ employees = [] }) => {
+const LeaveManagement = ({ employees = [], allEmployees }) => {
   const { bg, text, border, hover, isDarkMode } = useTheme();
   const { t } = useLanguage();
   const { user, checkPermission, isAuthenticated } = useAuth();
@@ -56,6 +57,11 @@ const LeaveManagement = ({ employees = [] }) => {
   const canViewAll = checkPermission('canViewReports');
   const canManageLeave = canViewAll || checkPermission('canManageTimeTracking');
   const myEmployeeId = String(user?.employeeId || user?.id || '');
+
+  // Assign/create pickers and filters: active only
+  const pickerEmployees = filterActiveEmployees(employees);
+  // Name resolution for historical rows may still need inactive people
+  const employeeDirectory = allEmployees?.length ? allEmployees : employees;
 
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
@@ -145,9 +151,9 @@ const LeaveManagement = ({ employees = [] }) => {
 
   const employeeName = useCallback((req) => {
     if (req.employee?.name) return getDemoEmployeeName(req.employee, t);
-    const emp = employees.find(e => String(e.id) === String(req.employee_id));
+    const emp = employeeDirectory.find(e => String(e.id) === String(req.employee_id));
     return emp ? getDemoEmployeeName(emp, t) : t('taskReview.unknown', 'Unknown');
-  }, [employees, t]);
+  }, [employeeDirectory, t]);
 
   // ---- Filtered requests ----
   const visibleRequests = useMemo(() => {
@@ -334,7 +340,7 @@ const LeaveManagement = ({ employees = [] }) => {
   };
 
   const isAdmin = canManageLeave;
-  const defaultModalEmployee = employeeFilter !== 'all' ? String(employeeFilter) : (myEmployeeId || (employees[0]?.id != null ? String(employees[0].id) : ''));
+  const defaultModalEmployee = employeeFilter !== 'all' ? String(employeeFilter) : (myEmployeeId || (pickerEmployees[0]?.id != null ? String(pickerEmployees[0].id) : ''));
   const borderPrimary = border.primary;
 
   return (
@@ -719,7 +725,7 @@ const LeaveManagement = ({ employees = [] }) => {
                     className={`w-full sm:w-auto min-w-[200px] px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary} text-sm`}
                   >
                     <option value="all">{t('leave.allEmployees', 'All Employees')}</option>
-                    {employees.map(emp => (
+                    {pickerEmployees.map(emp => (
                       <option key={emp.id} value={String(emp.id)}>{getDemoEmployeeName(emp, t)}</option>
                     ))}
                   </select>
@@ -818,7 +824,7 @@ const LeaveManagement = ({ employees = [] }) => {
       {showRequestModal && (
         <LeaveRequestModal
           t={t}
-          employees={employees}
+          employees={pickerEmployees}
           canManageLeave={canManageLeave}
           mode={requestModalMode}
           defaultEmployeeId={defaultModalEmployee}

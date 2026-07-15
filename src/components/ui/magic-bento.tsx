@@ -298,7 +298,11 @@ function ParticleCard({
             }
           : undefined
       }
-      className={cn('group relative overflow-hidden', className)}
+      className={cn(
+        'group relative overflow-hidden',
+        onClick && 'cursor-pointer',
+        className
+      )}
       style={style}
     >
       {children}

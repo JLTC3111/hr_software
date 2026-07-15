@@ -116,7 +116,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
       {/* Mobile Menu Backdrop */}
       {isMobileMenuOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30 cursor-pointer"
           onClick={closeMobileMenu}
         />
       )}
@@ -179,7 +179,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           {!isCollapsed && (
             <button
               onClick={closeMobileMenu}
-              className={`lg:hidden p-1 rounded-lg ${hover.bg} transition-colors`}
+              className={`lg:hidden p-1 rounded-lg ${hover.bg} transition-colors cursor-pointer`}
               aria-label="Close menu"
             >
               <X className={`h-5 w-5 ${text.primary}`} />
@@ -216,7 +216,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                           onMouseLeave={() => setHoveredItem(null)}
                           className={`
                             w-full text-left px-3 py-2.5 rounded-lg flex items-center justify-between
-                            transition-all duration-200
+                            transition-all duration-200 cursor-pointer
                             ${isExpanded ? `${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}` : `${hover.bg}`}
                             ${text.secondary} hover:${text.primary}
                           `}
@@ -237,7 +237,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                           onMouseEnter={() => setHoveredItem(item.name)}
                           onMouseLeave={() => setHoveredItem(null)}
                           className={({ isActive }) =>
-                            `w-full text-left px-3 py-2.5 rounded-lg flex items-center relative
+                            `w-full text-left px-3 py-2.5 rounded-lg flex items-center relative cursor-pointer
                             ${isCollapsed ? 'justify-center' : 'space-x-3'}
                             transition-all duration-200 ${
                               isActive

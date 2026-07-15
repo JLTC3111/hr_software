@@ -14,6 +14,7 @@ import { getDemoEmployeeName, isDemoMode, addDemoLeaveRequest, updateDemoLeaveRe
 import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts'
 import { SlidingNumber, useNumberReplay } from './motion-primitives';
 import { PageLiveClock } from './ui/page-live-clock';
+import { filterActiveEmployees } from '../utils/employeeStatus.js';
 
 function TimeCard({ title, value, unit, icon: Icon, color, onClick, useDarkIcon = false, iconProps = {}, text, border, isDarkMode, customIcons }) {
   const { replayToken, bump } = useNumberReplay();
@@ -367,7 +368,8 @@ export const MiniFlubberMorphingLeaveStatus = ({
     );
   };
 
-const TimeTracking = ({ employees }) => {
+const TimeTracking = ({ employees: employeesProp }) => {
+  const employees = filterActiveEmployees(employeesProp);
   const { user, checkPermission } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
   const { isDarkMode, toggleTheme, button, bg, text, border, hover, input } = useTheme();

@@ -80,7 +80,8 @@ export function AnimatedNumber({
     <MotionComponent
       ref={ref}
       className={cn(
-        'cursor-default tabular-nums transition-transform duration-300 hover:scale-105',
+        'tabular-nums transition-transform duration-300 hover:scale-105',
+        replayOnHover ? 'cursor-pointer' : 'cursor-default',
         className
       )}
       onMouseEnter={

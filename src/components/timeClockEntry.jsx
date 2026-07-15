@@ -1732,21 +1732,26 @@ const TimeClockEntry = ({ currentLanguage }) => {
               <ShinyButton
                 type="submit"
                 disabled={isSubmitting}
+                shineOnHover
                 className={cn(
-                  'w-full py-3 px-6 text-white border-transparent',
+                  'w-full py-2.5 px-6 text-sm font-medium border shadow-sm',
                   isSubmitting
-                    ? 'bg-linear-to-r from-gray-400 to-gray-500 cursor-not-allowed'
-                    : 'bg-linear-to-r from-blue-500 via-indigo-600 to-violet-600 hover:from-blue-600 hover:via-indigo-700 hover:to-violet-700'
+                    ? isDarkMode
+                      ? 'bg-slate-700 text-slate-400 border-slate-600 cursor-not-allowed'
+                      : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                    : isDarkMode
+                      ? 'bg-blue-600 text-white border-blue-500 hover:bg-blue-500'
+                      : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
                 )}
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     <span>{t('timeClock.submitting')}</span>
                   </>
                 ) : (
                   <>
-                    <Clock5 className="w-5 h-5" />
+                    <Clock5 className="w-4 h-4" />
                     <span>{t('timeClock.submit')}</span>
                   </>
                 )}
@@ -1906,7 +1911,12 @@ const TimeClockEntry = ({ currentLanguage }) => {
                             </ShinyButton>
                             <ShinyButton
                               type="submit"
-                              className="flex-1 px-4 py-2 text-white border-transparent bg-linear-to-r from-emerald-500 via-green-600 to-teal-600 hover:from-emerald-600 hover:via-green-700 hover:to-teal-700"
+                              className={cn(
+                                'flex-1 px-4 py-2 text-sm font-medium shadow-sm',
+                                isDarkMode
+                                  ? 'bg-blue-600 text-white border-blue-500 hover:bg-blue-500'
+                                  : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
+                              )}
                             >
                               {t('common.leaveRequest', 'Submit Request')}
                             </ShinyButton>
@@ -1920,9 +1930,15 @@ const TimeClockEntry = ({ currentLanguage }) => {
               <ShinyButton
                 type="button"
                 onClick={() => setShowLeaveModal(true)}
-                className="group w-full py-3 px-6 text-white border-transparent bg-linear-to-r from-green-600 via-emerald-600 to-teal-700 hover:from-green-700 hover:via-emerald-700 hover:to-teal-800"
+                shineOnHover
+                className={cn(
+                  'group w-full py-2.5 px-6 text-sm font-medium shadow-sm',
+                  isDarkMode
+                    ? 'bg-slate-800 text-slate-100 border-slate-600 hover:bg-slate-700'
+                    : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50 hover:border-slate-400'
+                )}
               >
-                <Coffee className="w-5 h-5 group-hover:animate-bounce -translate-y-px transition-all" />
+                <Coffee className="w-4 h-4 opacity-80 -translate-y-px" />
                 <span>{t('timeClock.requestLeave', 'Request Leave')}</span>
               </ShinyButton>
             </div>

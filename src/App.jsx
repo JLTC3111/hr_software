@@ -9,6 +9,7 @@ import { NotificationProvider } from './contexts/NotificationContext'
 import { UploadProvider } from './contexts/UploadContext'
 // Eagerly loaded components (needed immediately)
 import { Header, Sidebar, Login, EmployeeModal } from './components/index.jsx';
+import { filterActiveEmployees } from './utils/employeeStatus.js';
 
 // Lazy loaded route components for code splitting
 const Dashboard = lazy(() => import('./components/dashboard.jsx'));
@@ -220,8 +221,8 @@ const HRManagementApp = () => {
   }, []);
 
   // Memoize active employees filter to prevent recalculation
-  const activeEmployees = useMemo(() => 
-    employees.filter(emp => emp.status !== 'Inactive' && emp.status !== 'inactive'),
+  const activeEmployees = useMemo(
+    () => filterActiveEmployees(employees),
     [employees]
   );
 
@@ -332,15 +333,15 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
                     />
                     <Route 
                       path="/time-tracking" 
-                      element={<TimeTracking employees={employees} />} 
+                      element={<TimeTracking employees={activeEmployees} />} 
                     />
                     <Route 
                       path="/task-review" 
-                      element={<TaskReview employees={employees} />} 
+                      element={<TaskReview employees={activeEmployees} allEmployees={employees} />} 
                     />
                     <Route 
                       path="/personal-goals" 
-                      element={<PersonalGoals employees={employees} />} 
+                      element={<PersonalGoals employees={activeEmployees} />} 
                     />
                     <Route 
                       path="/control-panel" 
@@ -356,7 +357,7 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
                     />
                     <Route 
                       path="/task-listing" 
-                      element={<TaskListing employees={employees} />} 
+                      element={<TaskListing employees={activeEmployees} allEmployees={employees} />} 
                     />
                     <Route 
                       path="/reports" 
@@ -368,7 +369,7 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
                     />
                     <Route 
                       path="/leave-management" 
-                      element={<LeaveManagement employees={employees} />} 
+                      element={<LeaveManagement employees={activeEmployees} allEmployees={employees} />} 
                     />
                     <Route 
                       path="/notifications" 

@@ -4,6 +4,10 @@ import {
   MOCK_EMPLOYEES, 
   MOCK_APPLICATIONS 
 } from '../utils/demoHelper';
+import {
+  filterActiveEmployees,
+  isEmployeeInactive,
+} from '../utils/employeeStatus.js';
 
 /**
  * Report Generation Service
@@ -578,9 +582,10 @@ const calculatePerformanceMetrics = (reviews) => {
   };
 };
 
-// Helper: Calculate salary statistics
+// Helper: Calculate salary statistics (active employees only)
 const calculateSalaryStats = (employees) => {
-  if (!employees || employees.length === 0) {
+  const cohort = filterActiveEmployees(employees);
+  if (!cohort || cohort.length === 0) {
     return {
       average: 0,
       median: 0,
@@ -590,14 +595,14 @@ const calculateSalaryStats = (employees) => {
     };
   }
   
-  const salaries = employees.map(e => e.salary || 0).sort((a, b) => a - b);
+  const salaries = cohort.map(e => e.salary || 0).sort((a, b) => a - b);
   const sum = salaries.reduce((a, b) => a + b, 0);
   const avg = sum / salaries.length;
   const median = salaries[Math.floor(salaries.length / 2)];
   
   // By department
   const byDept = {};
-  employees.forEach(emp => {
+  cohort.forEach(emp => {
     if (!byDept[emp.department]) {
       byDept[emp.department] = [];
     }
@@ -672,11 +677,12 @@ const calculateRecruitmentMetrics = (applications) => {
   };
 };
 
-// Helper: Aggregate data by department
+// Helper: Aggregate data by department (active employees only for salary/performance averages)
 const aggregateByDepartment = (employees, reviews, timeTracking) => {
   const departments = {};
+  const activeCohort = filterActiveEmployees(employees);
   
-  employees.forEach(emp => {
+  activeCohort.forEach(emp => {
     const dept = emp.department;
     if (!departments[dept]) {
       departments[dept] = {
@@ -696,7 +702,7 @@ const aggregateByDepartment = (employees, reviews, timeTracking) => {
   
   // Add performance data
   reviews.forEach(review => {
-    const emp = employees.find(e => e.id === review.employee_id);
+    const emp = activeCohort.find(e => e.id === review.employee_id);
     if (emp && departments[emp.department]) {
       departments[emp.department].avgPerformance += review.overall_rating || 0;
       departments[emp.department].performanceCount++;
@@ -705,7 +711,7 @@ const aggregateByDepartment = (employees, reviews, timeTracking) => {
   
   // Add attendance data
   timeTracking?.forEach(tt => {
-    const emp = employees.find(e => e.id === tt.employee_id);
+    const emp = activeCohort.find(e => e.id === tt.employee_id);
     if (emp && departments[emp.department]) {
       departments[emp.department].avgAttendance += tt.attendance_rate || 0;
       departments[emp.department].attendanceCount++;
@@ -733,8 +739,8 @@ const aggregateByDepartment = (employees, reviews, timeTracking) => {
 // Helper: Calculate turnover metrics
 const calculateTurnoverMetrics = (employees, dateFrom, dateTo) => {
   const startCount = employees.length;
-  const inactive = employees.filter(e => e.status === 'Inactive' || e.status === 'inactive').length;
-  const turnoverRate = (inactive / startCount) * 100;
+  const inactive = employees.filter(isEmployeeInactive).length;
+  const turnoverRate = startCount > 0 ? (inactive / startCount) * 100 : 0;
   
   // New hires in period
   let newHires = 0;
@@ -803,13 +809,15 @@ export const getOverviewStats = async (filters = {}) => {
       return startDate >= threeMonthsAgo;
     }).length;
     
-    // Calculate turnover rate
-    const inactiveCount = employees.filter(e => e.status === 'Inactive' || e.status === 'inactive').length;
+    // Turnover uses full roster (inactive intentional)
+    const inactiveCount = employees.filter(isEmployeeInactive).length;
     const turnoverRate = employees.length > 0 ? ((inactiveCount / employees.length) * 100).toFixed(1) : 0;
+
+    // Salary / dept / performance averages use active cohort only
+    const activeCohort = filterActiveEmployees(employees);
     
-    // Calculate average salary
-    const avgSalary = employees.length > 0
-      ? Math.round(employees.reduce((sum, emp) => sum + (emp.salary || 0), 0) / employees.length)
+    const avgSalary = activeCohort.length > 0
+      ? Math.round(activeCohort.reduce((sum, emp) => sum + (emp.salary || 0), 0) / activeCohort.length)
       : 0;
     
     // Calculate satisfaction (from performance reviews)
@@ -822,12 +830,12 @@ export const getOverviewStats = async (filters = {}) => {
       ? Math.round(timeTracking.reduce((sum, t) => sum + (t.attendance_rate || 0), 0) / timeTracking.length)
       : 0;
     
-    // Department statistics
+    // Department statistics (active only)
     const deptCounts = {};
     const deptPerformance = {};
     const deptSalaries = {};
     
-    employees.forEach(emp => {
+    activeCohort.forEach(emp => {
       const dept = emp.department;
       deptCounts[dept] = (deptCounts[dept] || 0) + 1;
       deptPerformance[dept] = (deptPerformance[dept] || []).concat(emp.performance || 0);
@@ -848,11 +856,17 @@ export const getOverviewStats = async (filters = {}) => {
       };
     });
     
-    // Attendance breakdown
-    const activeCount = employees.filter(emp => emp.status === 'Active' || emp.status === 'active').length;
-    const onLeaveCount = employees.filter(emp => emp.status === 'On Leave' || emp.status === 'onLeave').length;
+    // Attendance breakdown (status counts on full roster)
+    const activeCount = activeCohort.filter(emp => {
+      const s = String(emp.status || '').toLowerCase().replace(/[\s_-]+/g, '');
+      return s === 'active' || s === '';
+    }).length;
+    const onLeaveCount = activeCohort.filter(emp => {
+      const s = String(emp.status || '').toLowerCase().replace(/[\s_-]+/g, '');
+      return s === 'onleave';
+    }).length;
     
-    // Calculate percentages for attendance
+    // Calculate percentages for attendance against total headcount
     const totalEmployees = employees.length;
     const presentPercentage = totalEmployees > 0 ? Math.round((activeCount / totalEmployees) * 100) : 0;
     const leavePercentage = totalEmployees > 0 ? Math.round((onLeaveCount / totalEmployees) * 100) : 0;
@@ -870,7 +884,7 @@ export const getOverviewStats = async (filters = {}) => {
       success: true,
       data: {
         overview: {
-          totalEmployees: employees.length,
+          totalEmployees: activeCohort.length,
           newHires,
           turnoverRate: parseFloat(turnoverRate),
           avgSalary,
