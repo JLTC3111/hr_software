@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import * as userEmailService from '../services/userEmailService.js';
+import { PageLiveClock } from './ui/page-live-clock';
 
 const EmailManagement = () => {
   const { _user } = useAuth();
@@ -130,8 +131,21 @@ const EmailManagement = () => {
   if (loading) {
     return (
       <div className={`p-6 rounded-lg ${bg.primary} ${text.primary}`}>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <Mail className="h-6 w-6 text-blue-600 mr-3" />
+            <h2 className="text-2xl font-bold">{t('emailManagement.title') || 'User Email Management'}</h2>
+          </div>
+          <PageLiveClock
+            showSeparator={false}
+            textClassName={text.primary}
+            loading
+            isDarkMode={isDarkMode}
+            fetchLabel={t('common.fetching', 'Fetching')}
+          />
+        </div>
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
           <span className="ml-3">{t('common.loading') || 'Loading...'}</span>
         </div>
       </div>
@@ -152,20 +166,29 @@ const EmailManagement = () => {
   return (
     <div className={`p-6 rounded-lg ${bg.primary} ${text.primary}`}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <div className="flex items-center">
           <Mail className="h-6 w-6 text-blue-600 mr-3" />
           <h2 className="text-2xl font-bold">{t('emailManagement.title') || 'User Email Management'}</h2>
         </div>
-        <button
-        type ="button"
-          onClick={loadUsersWithEmails}
-          disabled={loading}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          <span>{t('common.refresh') || 'Refresh'}</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <PageLiveClock
+            showSeparator={false}
+            textClassName={text.primary}
+            loading={loading || addingEmail}
+            isDarkMode={isDarkMode}
+            fetchLabel={t('common.fetching', 'Fetching')}
+          />
+          <button
+          type ="button"
+            onClick={loadUsersWithEmails}
+            disabled={loading}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <span>{t('common.refresh') || 'Refresh'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Description */}

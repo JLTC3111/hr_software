@@ -499,7 +499,14 @@ export default {
     phonePlaceholder: '電話番号',
     dobPlaceholder: '生年月日',
     addressPlaceholder: '住所',
-    updateSuccess: '従業員の詳細が正常に更新されました。'
+    updateSuccess: '従業員の詳細が正常に更新されました。',
+    onLeave: '休職中',
+    orgNetwork: '組織ネットワーク',
+    orgNetworkDesc: 'HRハブにつながった部署。',
+    topPerformers: 'トップパフォーマー',
+    avgRating: '平均評価',
+    departments: '部署',
+    livePulse: 'ライブパルス',
   },
 
   // Recruitment
@@ -1092,6 +1099,9 @@ export default {
     searchPlaceholder: '検索...',
     update: '更新',
     loading: '読み込み中...',
+    fetching: '取得中',
+    ready: '完了',
+    ms: 'ms',
     mainMenu: 'メインメニュー',
     analytics: '分析',
     employees: '従業員',

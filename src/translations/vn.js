@@ -500,7 +500,14 @@ export default {
     phonePlaceholder: 'Số điện thoại',
     dobPlaceholder: 'Ngày sinh',
     addressPlaceholder: 'Địa chỉ',
-    updateSuccess: 'Đã cập nhật thông tin nhân viên thành công!'
+    updateSuccess: 'Đã cập nhật thông tin nhân viên thành công!',
+    onLeave: 'Đang nghỉ phép',
+    orgNetwork: 'Mạng lưới tổ chức',
+    orgNetworkDesc: 'Các phòng ban kết nối với trung tâm nhân sự của bạn.',
+    topPerformers: 'Nhân viên xuất sắc',
+    avgRating: 'Điểm TB',
+    departments: 'phòng ban',
+    livePulse: 'Nhịp sống',
   },
 
   // Add Employee Modal
@@ -1367,6 +1374,9 @@ export default {
     download: 'Tải Xuống',
     reset: 'Đặt Lại',
     optional: 'Tùy Chọn',
+    fetching: 'Đang tải',
+    ready: 'Xong',
+    ms: 'ms',
   },
 
   // Theme

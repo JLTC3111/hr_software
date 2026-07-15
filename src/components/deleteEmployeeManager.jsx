@@ -4,10 +4,11 @@ import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import * as employeeService from '../services/employeeService.js';
+import { PageLiveClock } from './ui/page-live-clock';
 
 const DeleteEmployeeManager = () => {
   const { isDarkMode, bg, text, border } = useTheme();
-  const { _t } = useLanguage();
+  const { t } = useLanguage();
   const { user, handleSessionAuthError } = useAuth();
   
   const [employees, setEmployees] = useState([]);
@@ -104,7 +105,8 @@ const DeleteEmployeeManager = () => {
         <div className={`${bg.secondary} rounded-lg shadow-lg p-6 border-2 border-red-500`}>
           <div className="flex items-start space-x-4">
             <AlertTriangle className="w-8 h-8 text-red-600 shrink-0 mt-1" />
-            <div>
+            <div className="flex flex-1 items-start justify-between gap-3 flex-wrap">
+              <div>
               <h1 className={`text-2xl font-bold ${text.primary} mb-2`}>
                 Employee Deletion Manager
               </h1>
@@ -116,6 +118,14 @@ const DeleteEmployeeManager = () => {
                 <li>• All associated records will be removed</li>
                 <li>• Use "Inactive" status for soft deletion instead</li>
               </ul>
+              </div>
+              <PageLiveClock
+                showSeparator={false}
+                textClassName={text.primary}
+                loading={loading || Boolean(deleting)}
+                isDarkMode={isDarkMode}
+                fetchLabel={t('common.fetching', 'Fetching')}
+              />
             </div>
           </div>
         </div>

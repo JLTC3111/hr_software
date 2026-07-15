@@ -1422,7 +1422,7 @@ const Dashboard = ({ employees, applications }) => {
   const { t } = useLanguage();
   const { handleSessionAuthError } = useSessionGuard();
   
-  const [_loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [timeTrackingData, setTimeTrackingData] = useState({});
   const [allEmployeesData, setAllEmployeesData] = useState([]);
   const [leaveRequestsData, setLeaveRequestsData] = useState({});
@@ -1443,6 +1443,7 @@ const Dashboard = ({ employees, applications }) => {
     console.log('📊 [Dashboard] fetchDashboardData called:', { employeeCount: employees.length, silent, isDemoMode: isDemoMode() });
     if (employees.length === 0) {
       console.warn('⚠️ [Dashboard] No employees to fetch data for');
+      if (!silent) setLoading(false);
       return;
     }
     
@@ -1818,6 +1819,9 @@ const Dashboard = ({ employees, applications }) => {
           <PageLiveClock
             showSeparator={false}
             textClassName={text.primary}
+            loading={loading}
+            isDarkMode={isDarkMode}
+            fetchLabel={t('common.fetching', 'Fetching')}
           />
         </div>
         

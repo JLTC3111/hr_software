@@ -570,10 +570,28 @@ const Notifications = () => {
 
   if (loading && notifications.length === 0) {
     return (
-      <div className={`p-8 ${bg.primary}`}>
+      <div className={`p-4 md:p-8 ${bg.primary} min-h-screen`}>
         <div className="max-w-none w-full mx-auto">
+          <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 mb-6`}>
+            <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+              <div className="flex items-center space-x-3">
+                <Bell className={`h-8 w-8 ${isDarkMode ? 'text-white' : 'text-gray-900'}`} />
+                <h1 className={`text-4xl font-bold ${text.primary}`}>
+                  {t('notifications.title', 'Notifications')}
+                </h1>
+              </div>
+              <PageLiveClock
+                textClassName={text.primary}
+                separatorClassName={text.secondary}
+                showSeparator={false}
+                loading
+                isDarkMode={isDarkMode}
+                fetchLabel={t('common.fetching', 'Fetching')}
+              />
+            </div>
+          </div>
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
           </div>
         </div>
       </div>
@@ -592,7 +610,14 @@ const Notifications = () => {
                 {t('notifications.title', 'Notifications')}
               </h1>
             </div>
-            <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} showSeparator={false} />
+            <PageLiveClock
+              textClassName={text.primary}
+              separatorClassName={text.secondary}
+              showSeparator={false}
+              loading={loading || isRefreshing || loadingMore}
+              isDarkMode={isDarkMode}
+              fetchLabel={t('common.fetching', 'Fetching')}
+            />
           </div>
           
           {/* Action Buttons - Separated from header */}

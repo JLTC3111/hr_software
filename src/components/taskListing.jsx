@@ -998,7 +998,13 @@ const TaskListing = ({ employees, allEmployees }) => {
           <h2 className={`text-2xl font-bold ${text.primary}`}>
             {t('taskListing.title', '')}
           </h2>
-          <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} />
+          <PageLiveClock
+            textClassName={text.primary}
+            separatorClassName={text.secondary}
+            loading={loading}
+            isDarkMode={isDarkMode}
+            fetchLabel={t('common.fetching', 'Fetching')}
+          />
         </div>
         <div className="flex space-x-2 flex-wrap">
           <button

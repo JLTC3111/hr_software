@@ -584,7 +584,14 @@ export default {
     phonePlaceholder: 'Телефон',
     dobPlaceholder: 'Дата рождения',
     addressPlaceholder: 'Адрес',
-    updateSuccess: 'Данные сотрудника успешно обновлены.'
+    updateSuccess: 'Данные сотрудника успешно обновлены.',
+    onLeave: 'В отпуске',
+    orgNetwork: 'Оргсеть',
+    orgNetworkDesc: 'Отделы, связанные с вашим HR-хабом.',
+    topPerformers: 'Лучшие сотрудники',
+    avgRating: 'Средняя оценка',
+    departments: 'отделы',
+    livePulse: 'Живой пульс',
   },
 
   // Recruitment
@@ -1238,7 +1245,10 @@ export default {
     viewDetails: 'Просмотреть детали',
     reset: 'Сбросить',
     apply: 'Применить',
-    optional: 'необязательно'
+    optional: 'необязательно',
+    fetching: 'Загрузка',
+    ready: 'Готово',
+    ms: 'мс',
   },
 
   // Theme

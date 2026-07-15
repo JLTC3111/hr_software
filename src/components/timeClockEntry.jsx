@@ -1571,7 +1571,14 @@ const TimeClockEntry = ({ currentLanguage }) => {
           <h1 className={`text-3xl font-bold ${text.primary}`}>
             {t('timeClock.title')}
           </h1>
-          <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} showSeparator={false} />
+          <PageLiveClock
+            textClassName={text.primary}
+            separatorClassName={text.secondary}
+            showSeparator={false}
+            loading={loading}
+            isDarkMode={isDarkMode}
+            fetchLabel={t('common.fetching', 'Fetching')}
+          />
         </div>
         <p className={`${text.secondary}`}>
           {t('timeClock.subtitle')}

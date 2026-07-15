@@ -224,7 +224,13 @@ const Recruitment = () => {
             <h2 className={`text-2xl font-bold ${text.primary}`}>
               {t('recruitment.title', 'Recruitment')}
             </h2>
-            <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} />
+            <PageLiveClock
+              textClassName={text.primary}
+              separatorClassName={text.secondary}
+              loading={loading}
+              isDarkMode={isDarkMode}
+              fetchLabel={t('common.fetching', 'Fetching')}
+            />
           </div>
           <p className={`text-sm ${text.secondary} mt-1`}>
             {t('recruitment.subtitle', 'Manage your hiring pipeline and track candidates')}

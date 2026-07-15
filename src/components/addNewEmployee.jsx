@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import * as employeeService from '../services/employeeService.js';
 import { ShimmerButton } from './ui/shimmer-button';
 import { ShinyButton } from './ui/shiny-button';
+import { PageLiveClock } from './ui/page-live-clock';
 import { cn } from '@/lib/utils';
 
 // InputField component outside to prevent recreation
@@ -292,6 +293,15 @@ const AddNewEmployee = ({ refetchEmployees }) => {
 
         {/* Progress */}
         <div className={`${bg.secondary} rounded-lg shadow border ${border.primary} p-6 mb-6`}>
+          <div className="flex justify-end mb-4">
+            <PageLiveClock
+              showSeparator={false}
+              textClassName={text.primary}
+              loading={saving}
+              isDarkMode={isDarkMode}
+              fetchLabel={t('common.saving', 'Saving')}
+            />
+          </div>
           <div className="flex items-center justify-between">
             {steps.map((s, i) => {
               const StepIcon = s.icon;

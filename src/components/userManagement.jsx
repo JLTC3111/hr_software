@@ -186,7 +186,14 @@ const UserManagement = () => {
             </p>
           </div>
         </div>
-        <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} showSeparator={false} />
+        <PageLiveClock
+          textClassName={text.primary}
+          separatorClassName={text.secondary}
+          showSeparator={false}
+          loading={loading}
+          isDarkMode={isDarkMode}
+          fetchLabel={t('common.fetching', 'Fetching')}
+        />
       </div>
 
       {/* Message Banner */}

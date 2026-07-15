@@ -325,7 +325,7 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
                     />
                     <Route 
                       path="/employees" 
-                      element={<Employee employees={employees} onViewEmployee={onViewEmployee} onEditEmployee={onEditEmployee} onDeleteEmployee={onDeleteEmployee} onPhotoUpdate={onPhotoUpdate} refetchEmployees={refetchEmployees} />} 
+                      element={<Employee employees={employees} onViewEmployee={onViewEmployee} onEditEmployee={onEditEmployee} onDeleteEmployee={onDeleteEmployee} onPhotoUpdate={onPhotoUpdate} refetchEmployees={refetchEmployees} loading={loading} />} 
                     />
                     <Route 
                       path="/employees/add" 

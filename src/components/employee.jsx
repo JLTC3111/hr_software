@@ -14,7 +14,7 @@ import {
   filterInactiveEmployees,
 } from '../utils/employeeStatus.js';
 
-const Employees = ({ employees, onEditEmployee, onDeleteEmployee, onPhotoUpdate, refetchEmployees }) => {
+const Employees = ({ employees, onEditEmployee, onDeleteEmployee, onPhotoUpdate, refetchEmployees, loading = false }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('all');
@@ -120,7 +120,13 @@ const Employees = ({ employees, onEditEmployee, onDeleteEmployee, onPhotoUpdate,
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 slide-in-left">
         <div className="flex items-center gap-3 flex-wrap">
           <h2 className={`font-bold ${text.primary}`} style={{fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'}}>{t('employees.title')}</h2>
-          <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} />
+          <PageLiveClock
+            textClassName={text.primary}
+            separatorClassName={text.secondary}
+            loading={loading}
+            isDarkMode={isDarkMode}
+            fetchLabel={t('common.fetching', 'Fetching')}
+          />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {/* Active | Inactive segment */}

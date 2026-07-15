@@ -956,6 +956,9 @@ const ControlPanel = () => {
         <PageLiveClock
           showSeparator={false}
           textClassName={isDarkMode ? 'text-white' : 'text-gray-900'}
+          loading={loadingUsers || loadingEmployees || loadingVisits}
+          isDarkMode={isDarkMode}
+          fetchLabel={t('common.fetching', 'Fetching')}
         />
       </div>
       {/* User Info Card */}

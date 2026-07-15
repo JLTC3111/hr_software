@@ -501,7 +501,14 @@ export default {
     phonePlaceholder: '전화번호',
     dobPlaceholder: '생년월일',
     addressPlaceholder: '주소',
-    updateSuccess: '직원 상세 정보가 성공적으로 업데이트되었습니다.'
+    updateSuccess: '직원 상세 정보가 성공적으로 업데이트되었습니다.',
+    onLeave: '휴가 중',
+    orgNetwork: '조직 네트워크',
+    orgNetworkDesc: 'HR 허브에 연결된 부서.',
+    topPerformers: '우수 직원',
+    avgRating: '평균 평점',
+    departments: '부서',
+    livePulse: '라이브 펄스',
   },
 
   // Recruitment
@@ -1118,6 +1125,9 @@ export default {
     download: '다운로드',
     viewDetails: '세부 정보 보기',
     actions: '작업',
+    fetching: '불러오는 중',
+    ready: '완료',
+    ms: 'ms',
   },
 
   // Theme

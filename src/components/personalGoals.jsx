@@ -1133,6 +1133,9 @@ const PersonalGoals = ({ employees }) => {
           <PageLiveClock
             textClassName={isDarkMode ? 'text-white' : 'text-gray-900'}
             separatorClassName={isDarkMode ? 'text-gray-400' : 'text-gray-500'}
+            loading={loading}
+            isDarkMode={isDarkMode}
+            fetchLabel={t('common.fetching', 'Fetching')}
           />
           {currentEmployee && (
             <div className="flex items-center space-x-3">

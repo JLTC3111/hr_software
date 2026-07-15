@@ -596,7 +596,14 @@ login: {
     phonePlaceholder: 'Número de teléfono',
     dobPlaceholder: 'Fecha de nacimiento',
     addressPlaceholder: 'Dirección',
-    updateSuccess: 'Los detalles del empleado se han actualizado correctamente.'
+    updateSuccess: 'Los detalles del empleado se han actualizado correctamente.',
+    onLeave: 'De baja',
+    orgNetwork: 'Red organizacional',
+    orgNetworkDesc: 'Departamentos conectados a tu centro de RR. HH.',
+    topPerformers: 'Mejores empleados',
+    avgRating: 'Valoración media',
+    departments: 'departamentos',
+    livePulse: 'Pulso en vivo',
   },
 
   // Recruitment
@@ -1266,6 +1273,9 @@ login: {
     add: 'Agregar',
     close: 'Cerrar',
     loading: 'Cargando...',
+    fetching: 'Cargando',
+    ready: 'Listo',
+    ms: 'ms',
     noData: 'No hay datos disponibles',
     error: 'Ocurrió un error',
     success: 'Operación exitosa',

@@ -322,7 +322,13 @@ export default {
     confirmRestore: 'Are you sure you want to restore this employee?',
     restoreSuccess: 'Employee restored successfully!',
     restoreError: 'Failed to restore employee',
-    updateSuccess: 'Employee details have been successfully updated!'
+    updateSuccess: 'Employee details have been successfully updated!',
+    orgNetwork: 'Org network',
+    orgNetworkDesc: 'Departments connected to your HR hub.',
+    topPerformers: 'Top performers',
+    avgRating: 'Avg rating',
+    departments: 'departments',
+    livePulse: 'Live pulse',
   },
 
   // Add Employee Modal
@@ -1556,7 +1562,10 @@ export default {
     fileTooLarge: 'File size exceeds the limit',
     invalidFileType: 'Invalid file type',
     download: 'Download',
-    viewFile: 'View File'
+    viewFile: 'View File',
+    fetching: 'Fetching',
+    ready: 'Ready',
+    ms: 'ms',
   },
 
   // Theme

@@ -1329,7 +1329,13 @@ const handleRejectRequest = async (requestId) => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3 flex-wrap">
           <h2 className={`font-bold ${text.primary}`} style={{fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'}}>{t('timeTracking.title')}</h2>
-          <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} />
+          <PageLiveClock
+            textClassName={text.primary}
+            separatorClassName={text.secondary}
+            loading={loading}
+            isDarkMode={isDarkMode}
+            fetchLabel={t('common.fetching', 'Fetching')}
+          />
         </div>
        
         <div className="flex space-x-4">

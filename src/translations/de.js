@@ -489,7 +489,13 @@ export default {
     phonePlaceholder: 'Telefonnummer',
     dobPlaceholder: 'Geburtsdatum',
     addressPlaceholder: 'Adresse',
-    updateSuccess: 'Mitarbeiterdetails wurden erfolgreich aktualisiert!'
+    updateSuccess: 'Mitarbeiterdetails wurden erfolgreich aktualisiert!',
+    orgNetwork: 'Org-Netzwerk',
+    orgNetworkDesc: 'Abteilungen verbunden mit Ihrem HR-Hub.',
+    topPerformers: 'Top-Performer',
+    avgRating: 'Ø Bewertung',
+    departments: 'Abteilungen',
+    livePulse: 'Live-Puls',
   },
 
   // Search
@@ -1139,7 +1145,10 @@ export default {
     seconds: 'Sekunden',
     select: 'Auswählen',
     upload: 'Hochladen',
-    download: 'Herunterladen'
+    download: 'Herunterladen',
+    fetching: 'Laden',
+    ready: 'Fertig',
+    ms: 'ms',
   },
 
   // Theme

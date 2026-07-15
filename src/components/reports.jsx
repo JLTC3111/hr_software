@@ -2484,12 +2484,18 @@ const Reports = () => {
             </p>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Database className={`w-4 h-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
             <span className={`text-sm ${text.secondary}`}>
               {t('reports.liveData', 'Live data from Supabase')}
             </span>
-            <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} />
+            <PageLiveClock
+              textClassName={text.primary}
+              separatorClassName={text.secondary}
+              loading={loading}
+              isDarkMode={isDarkMode}
+              fetchLabel={t('common.fetching', 'Fetching')}
+            />
           </div>
         </div>
       </div>

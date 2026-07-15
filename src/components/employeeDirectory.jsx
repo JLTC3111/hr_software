@@ -288,9 +288,9 @@ function TopPerformersPanel({ performers, isDarkMode, t, onViewDetails }) {
   const runnerUps = performers.slice(3, 5);
 
   return (
-    <div className="flex h-full flex-col gap-2 overflow-hidden">
+    <div className="flex h-full min-h-0 flex-col gap-2.5">
       {podium.length > 0 && (
-        <div className="flex items-end justify-center gap-2 pt-0.5">
+        <div className="flex items-end justify-center gap-2 px-0.5 pb-0.5 pt-1">
           {/* 2nd */}
           {podium[1] && (
             <TopPerformerPodium
@@ -299,7 +299,8 @@ function TopPerformersPanel({ performers, isDarkMode, t, onViewDetails }) {
               isDarkMode={isDarkMode}
               t={t}
               onViewDetails={onViewDetails}
-              className="h-[5.5rem] flex-1"
+              pedestalClassName="min-h-[4.25rem]"
+              className="flex-1"
             />
           )}
           {/* 1st */}
@@ -310,7 +311,8 @@ function TopPerformersPanel({ performers, isDarkMode, t, onViewDetails }) {
               isDarkMode={isDarkMode}
               t={t}
               onViewDetails={onViewDetails}
-              className="h-[6.5rem] flex-[1.15]"
+              pedestalClassName="min-h-[5.25rem]"
+              className="flex-[1.15]"
             />
           )}
           {/* 3rd */}
@@ -321,7 +323,8 @@ function TopPerformersPanel({ performers, isDarkMode, t, onViewDetails }) {
               isDarkMode={isDarkMode}
               t={t}
               onViewDetails={onViewDetails}
-              className="h-[5rem] flex-1"
+              pedestalClassName="min-h-[3.75rem]"
+              className="flex-1"
             />
           )}
         </div>
@@ -373,66 +376,117 @@ function TopPerformersPanel({ performers, isDarkMode, t, onViewDetails }) {
   );
 }
 
-function TopPerformerPodium({ employee, rank, isDarkMode, t, onViewDetails, className }) {
+function TopPerformerPodium({
+  employee,
+  rank,
+  isDarkMode,
+  t,
+  onViewDetails,
+  className,
+  pedestalClassName,
+}) {
   const style = RANK_STYLES[rank - 1] || RANK_STYLES[2];
   const score = clampPerformance(employee?.performance);
   const name = getDemoEmployeeName(employee, t);
+  const photoSize = rank === 1 ? 'size-12' : 'size-10';
 
   return (
     <button
       type="button"
       onClick={() => onViewDetails?.(employee)}
       className={cn(
-        'relative flex flex-col items-center justify-end gap-1.5 overflow-hidden rounded-xl border px-1.5 pb-2 pt-2 text-center transition-all duration-300 hover:shadow-md',
-        isDarkMode ? style.cardDark : style.cardLight,
+        'group/podium relative flex flex-col items-center text-center transition-transform duration-300 hover:-translate-y-0.5',
         className
       )}
     >
+      {/* Photo sits above the pedestal so it is never clipped by the card */}
       <span
         className={cn(
-          'relative z-10 flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold shadow-sm',
-          style.badge
+          'relative z-20 -mb-3 shrink-0 rounded-full p-[2.5px] shadow-md ring-2',
+          style.badge,
+          photoSize,
+          isDarkMode ? 'ring-slate-900/80' : 'ring-white'
         )}
+        aria-label={`Rank ${rank}`}
       >
-        {rank}
-      </span>
-
-      <div className="relative z-10 w-full min-w-0 px-0.5">
-        <div
+        <span
           className={cn(
-            'truncate text-[11px] font-semibold',
-            isDarkMode ? 'text-white' : 'text-slate-900'
+            'flex size-full items-center justify-center overflow-hidden rounded-full',
+            isDarkMode ? 'bg-slate-900' : 'bg-white'
           )}
         >
-          {name}
-        </div>
-        <div className="mt-0.5 flex items-center justify-center gap-0.5">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <Star
-              key={n}
-              className={cn(
-                'size-2.5',
-                n <= Math.round(score)
-                  ? rank === 2
-                    ? 'text-cyan-400'
-                    : rank === 3
-                      ? 'text-slate-400'
-                      : 'text-amber-400'
-                  : isDarkMode
-                    ? 'text-slate-600'
-                    : 'text-slate-300'
-              )}
-              fill={n <= Math.round(score) ? 'currentColor' : 'none'}
+          {employee?.photo ? (
+            <img
+              src={employee.photo}
+              alt={name}
+              className="size-full object-cover"
             />
-          ))}
-        </div>
-        <div
-          className={cn(
-            'mx-auto mt-1.5 h-1.5 w-full max-w-[4rem] rounded-full bg-linear-to-r',
-            style.bar
+          ) : (
+            <span
+              className={cn(
+                'flex size-full items-center justify-center text-sm font-bold',
+                isDarkMode ? 'text-slate-200' : 'text-slate-700'
+              )}
+            >
+              {name?.charAt(0) || <User className="size-4" />}
+            </span>
           )}
-          style={{ opacity: 0.55 + score / 14 }}
-        />
+        </span>
+        <span
+          className={cn(
+            'absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full text-[9px] font-bold shadow-sm ring-2',
+            style.badge,
+            isDarkMode ? 'ring-slate-900' : 'ring-white'
+          )}
+        >
+          {rank}
+        </span>
+      </span>
+
+      <div
+        className={cn(
+          'relative z-10 flex w-full flex-col items-center justify-end gap-1 overflow-hidden rounded-xl border px-1.5 pb-2 pt-5 transition-shadow duration-300 group-hover/podium:shadow-md',
+          isDarkMode ? style.cardDark : style.cardLight,
+          pedestalClassName
+        )}
+      >
+        <div className="w-full min-w-0 px-0.5">
+          <div
+            className={cn(
+              'truncate text-[11px] font-semibold',
+              isDarkMode ? 'text-white' : 'text-slate-900'
+            )}
+          >
+            {name}
+          </div>
+          <div className="mt-0.5 flex items-center justify-center gap-0.5">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <Star
+                key={n}
+                className={cn(
+                  'size-2.5',
+                  n <= Math.round(score)
+                    ? rank === 2
+                      ? 'text-cyan-400'
+                      : rank === 3
+                        ? 'text-slate-400'
+                        : 'text-amber-400'
+                    : isDarkMode
+                      ? 'text-slate-600'
+                      : 'text-slate-300'
+                )}
+                fill={n <= Math.round(score) ? 'currentColor' : 'none'}
+              />
+            ))}
+          </div>
+          <div
+            className={cn(
+              'mx-auto mt-1.5 h-1.5 w-full max-w-[4rem] rounded-full bg-linear-to-r',
+              style.bar
+            )}
+            style={{ opacity: 0.55 + score / 14 }}
+          />
+        </div>
       </div>
     </button>
   );
@@ -749,6 +803,7 @@ const EmployeeDirectory = ({ employees, statusSegment = 'active', onViewDetails,
           description={t('employees.avgRating', 'Avg rating') + `: ${avgPerformance}/5`}
           Icon={Award}
           className="md:col-span-1"
+          contentClassName="overflow-visible pt-4"
           background={
             <BorderBeam
               size={90}

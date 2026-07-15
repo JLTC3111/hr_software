@@ -2705,7 +2705,13 @@ const TaskReview = ({ employees, allEmployees }) => {
         <div>
           <div className="flex items-center gap-3 flex-wrap">
             <h2 className={`text-2xl font-bold ${text.primary}`}>{t('taskReview.title')}</h2>
-            <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} />
+            <PageLiveClock
+              textClassName={text.primary}
+              separatorClassName={text.secondary}
+              loading={loading}
+              isDarkMode={isDarkMode}
+              fetchLabel={t('common.fetching', 'Fetching')}
+            />
           </div>
           <p className={`text-sm ${text.secondary} mt-1`}>{t('taskReview.subtitle')}</p>
         </div>

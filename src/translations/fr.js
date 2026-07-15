@@ -553,7 +553,13 @@ export default {
     phonePlaceholder: 'Numéro de téléphone',
     dobPlaceholder: 'Date de naissance',
     addressPlaceholder: 'Adresse',
-    updateSuccess: "Les informations de l’employé ont été mises à jour avec succès !"
+    updateSuccess: "Les informations de l’employé ont été mises à jour avec succès !",
+    orgNetwork: 'Réseau organisationnel',
+    orgNetworkDesc: 'Départements reliés à votre hub RH.',
+    topPerformers: 'Meilleurs employés',
+    avgRating: 'Note moy.',
+    departments: 'départements',
+    livePulse: 'Pouls en direct',
   },
 
   // Search
@@ -1305,6 +1311,9 @@ export default {
     confirmDelete: 'Confirmer la suppression',
     itemDeleted: 'Élément supprimé avec succès',
     itemDeleteError: 'Échec de la suppression de l\'élément',
+    fetching: 'Chargement',
+    ready: 'Prêt',
+    ms: 'ms',
   },
 
   // Theme

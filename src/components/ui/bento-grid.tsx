@@ -16,6 +16,8 @@ interface BentoCardProps extends ComponentPropsWithoutRef<'div'> {
   background?: ReactNode
   /** Main body content rendered below the header (prevents overlap) */
   children?: ReactNode
+  /** Extra classes for the scrollable / content body */
+  contentClassName?: string
   Icon: React.ElementType
   description: string
   href?: string
@@ -42,6 +44,7 @@ const BentoCard = ({
   className,
   background,
   children,
+  contentClassName,
   Icon,
   description,
   href,
@@ -146,7 +149,14 @@ const BentoCard = ({
       </div>
 
       {children ? (
-        <div className="relative z-10 min-h-0 flex-1 overflow-hidden p-3">{children}</div>
+        <div
+          className={cn(
+            'relative z-10 min-h-0 flex-1 overflow-hidden p-3',
+            contentClassName
+          )}
+        >
+          {children}
+        </div>
       ) : null}
     </div>
   )

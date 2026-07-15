@@ -498,7 +498,14 @@ export default {
     phonePlaceholder: 'เบอร์โทรศัพท์',
     dobPlaceholder: 'วันเกิด',
     addressPlaceholder: 'ที่อยู่',
-    updateSuccess: 'อัปเดตรายละเอียดพนักงานเรียบร้อยแล้ว'
+    updateSuccess: 'อัปเดตรายละเอียดพนักงานเรียบร้อยแล้ว',
+    onLeave: 'ลาหยุด',
+    orgNetwork: 'เครือข่ายองค์กร',
+    orgNetworkDesc: 'แผนกที่เชื่อมกับศูนย์ HR ของคุณ',
+    topPerformers: 'พนักงานยอดเยี่ยม',
+    avgRating: 'คะแนนเฉลี่ย',
+    departments: 'แผนก',
+    livePulse: 'พัลส์สด',
   },
 
   // Recruitment
@@ -1171,6 +1178,9 @@ export default {
     download: 'ดาวน์โหลด',
     reset: 'รีเซ็ต',
     optional: 'ไม่บังคับ',
+    fetching: 'กำลังโหลด',
+    ready: 'พร้อม',
+    ms: 'ms',
   },
 
   // Theme
