@@ -15,6 +15,7 @@ import * as flubber from 'flubber';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { useSearchParams } from 'react-router-dom';
 import { ShinyButton } from './ui/shiny-button';
+import { SpecularButton } from './ui/specular-button';
 import { PageLiveClock } from './ui/page-live-clock';
 import { cn } from '@/lib/utils';
 
@@ -2397,8 +2398,20 @@ const TimeClockEntry = ({ currentLanguage }) => {
                   const editInputClass = `w-full min-w-[7.5rem] px-2 py-1.5 rounded border text-sm ${bg.primary} ${text.primary} ${border.primary}`;
 
                   return (
-                  <tr key={entry.id} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-amber-200' : 'hover:bg-blue-600'} group transition-all duration-100 group cursor-pointer`}>
-                    <td className={`p-3 ${text.primary} text-center font-medium ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>
+                  <tr
+                    key={entry.id}
+                    className={cn(
+                      `border-b ${border.primary} group cursor-pointer transition-colors duration-100`,
+                      isEditing
+                        ? (isDarkMode ? 'bg-amber-200 hover:bg-amber-200' : 'bg-blue-600 hover:bg-blue-600')
+                        : (isDarkMode ? 'hover:bg-amber-200' : 'hover:bg-blue-600')
+                    )}
+                  >
+                    <td className={cn(
+                      'p-3 text-center font-medium',
+                      `${text.primary} ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`,
+                      isEditing && (isDarkMode ? 'text-black' : 'text-white')
+                    )}>
                       {isEditing ? (
                         <input
                           type="date"
@@ -2412,7 +2425,11 @@ const TimeClockEntry = ({ currentLanguage }) => {
                       )}
                     </td>
                     {selectedEmployeeFilter !== 'self' && (
-                      <td className={`p-3 ${text.primary} text-center font-medium ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>
+                      <td className={cn(
+                        'p-3 text-center font-medium',
+                        `${text.primary} ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`,
+                        isEditing && (isDarkMode ? 'text-black' : 'text-white')
+                      )}>
                         {isDemoMode()
                           ? (
                               getDemoEmployeeName(
@@ -2423,7 +2440,11 @@ const TimeClockEntry = ({ currentLanguage }) => {
                           : (entry.employee_name || entry.employee?.name || 'N/A')}
                       </td>
                     )}
-                    <td className={`p-3 ${text.secondary} ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>
+                    <td className={cn(
+                      'p-3',
+                      `${text.secondary} ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`,
+                      isEditing && (isDarkMode ? 'text-black' : 'text-white')
+                    )}>
                       {isEditing ? (
                         editForm.hourType === 'on_leave' ? (
                           <span>-</span>
@@ -2435,7 +2456,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                               onChange={(e) => handleEditTimeChange('clockIn', e.target.value)}
                               className={editInputClass}
                             />
-                            <span className={text.secondary}>-</span>
+                            <span>-</span>
                             <input
                               type="time"
                               value={editForm.clockOut}
@@ -2450,7 +2471,11 @@ const TimeClockEntry = ({ currentLanguage }) => {
                           : `${formatTime(entry.clock_in || entry.clockIn)} - ${formatTime(entry.clock_out || entry.clockOut)}`
                       )}
                     </td>
-                    <td className={`p-3 ${text.primary} font-semibold ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>
+                    <td className={cn(
+                      'p-3 font-semibold',
+                      `${text.primary} ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`,
+                      isEditing && (isDarkMode ? 'text-black' : 'text-white')
+                    )}>
                       {isEditing ? (
                         <div className="inline-flex items-center gap-1 justify-center" onClick={(e) => e.stopPropagation()}>
                           <input
@@ -2594,33 +2619,46 @@ const TimeClockEntry = ({ currentLanguage }) => {
                       <div className="flex items-center justify-center gap-2 group">
                         {isEditing ? (
                           <>
-                            <button
+                            <SpecularButton
                               type="button"
+                              active
+                              shineOnHover
                               onClick={(e) => {
                                 e.stopPropagation();
                                 saveEditEntry();
                               }}
                               disabled={savingEntryId === entry.id}
-                              className={`${isDarkMode ? 'text-green-300' : 'text-green-600'} hover:scale-110 disabled:opacity-50 transition-all`}
+                              className={cn(
+                                'h-8 w-8 border-slate-300 bg-white px-0 py-0 text-black',
+                                'rounded-md hover:rounded-full group-hover:rounded-full'
+                              )}
                               title={t('common.save', 'Save')}
                             >
                               {savingEntryId === entry.id ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <Loader2 className="w-4 h-4 animate-spin" />
                               ) : (
-                                <Check className="w-5 h-5" />
+                                <Check className="w-4 h-4" />
                               )}
-                            </button>
-                            <button
+                            </SpecularButton>
+                            <SpecularButton
                               type="button"
+                              active
+                              shineOnHover
                               onClick={(e) => {
                                 e.stopPropagation();
                                 cancelEditEntry();
                               }}
-                              className={`${isDarkMode ? 'text-slate-300' : 'text-slate-600'} hover:scale-110 transition-all`}
+                              className={cn(
+                                'h-8 w-8 px-0 py-0',
+                                'rounded-md hover:rounded-full group-hover:rounded-full',
+                                isDarkMode
+                                  ? 'border-slate-400 bg-slate-900 text-slate-100'
+                                  : 'border-slate-300 bg-white text-slate-800'
+                              )}
                               title={t('common.cancel', 'Cancel')}
                             >
-                              <X className="w-5 h-5" />
-                            </button>
+                              <X className="w-4 h-4" />
+                            </SpecularButton>
                           </>
                         ) : (
                           <>
@@ -2631,10 +2669,15 @@ const TimeClockEntry = ({ currentLanguage }) => {
                               e.stopPropagation();
                               startEditEntry(entry);
                             }}
-                            className={`${isDarkMode ? 'text-blue-300' : 'text-blue-600'} hover:scale-110 transition-all`}
+                            className={cn(
+                              'inline-flex h-8 w-8 items-center justify-center rounded-md border text-sm font-medium shadow-sm transition-colors',
+                              isDarkMode
+                                ? 'border-slate-500 bg-slate-800 text-slate-100 hover:bg-slate-700'
+                                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-400'
+                            )}
                             title={t('common.edit', 'Edit')}
                           >
-                            <Pencil className={`w-4 h-4 ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`} />
+                            <Pencil className="w-3.5 h-3.5" />
                           </button>
                         )}
                         {/* Approve Button (only for pending entries and if user has permission) */}

@@ -7,6 +7,8 @@ import * as timeTrackingService from '../services/timeTrackingService.js';
 import { supabase } from '../config/supabaseClient.js';
 import { isDemoMode, MOCK_EMPLOYEES, getDemoEmployeeName } from '../utils/demoHelper.js';
 import { useSessionGuard } from '../hooks/useSessionGuard.js';
+import { SpecularButton } from './ui/specular-button';
+import { cn } from '@/lib/utils';
 
 const AdminTimeEntry = ({ onEntriesChanged }) => {
   const { isDarkMode, bg, text, border } = useTheme();
@@ -922,18 +924,20 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
             </div>
           </div>
 
-          <button
+          <SpecularButton
             type="submit"
             disabled={bulkFillLoading || loading}
-            className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-colors border ${
+            shineOnHover
+            className={cn(
+              'w-full gap-2 px-6 py-2.5',
               bulkFillLoading || loading
                 ? isDarkMode
-                  ? 'bg-slate-700 text-slate-400 border-slate-600 cursor-not-allowed'
-                  : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                  ? 'border-slate-600 bg-slate-700 text-slate-400'
+                  : 'border-slate-200 bg-slate-100 text-slate-400'
                 : isDarkMode
-                  ? 'bg-slate-800 text-slate-100 border-slate-600 hover:bg-slate-700'
-                  : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50 hover:border-slate-400 shadow-sm'
-            }`}
+                  ? 'border-slate-500 bg-slate-800 text-slate-100 hover:bg-slate-700'
+                  : 'border-slate-300 bg-white text-slate-900 hover:bg-slate-50'
+            )}
           >
             {bulkFillLoading ? (
               <>
@@ -948,7 +952,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                 </span>
               </>
             )}
-          </button>
+          </SpecularButton>
         </form>
       </div>
 

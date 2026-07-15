@@ -2193,7 +2193,7 @@ const Dashboard = ({ employees, applications }) => {
         viewOptions={{ margin: '-40px' }}
       >
       <div className="grid grid-cols-1 gap-6">
-        <div className={chartCardClass(bg, border)}>
+        <div className={cn(chartCardClass(bg, border), 'overflow-visible')}>
           <BorderBeam showOnHover size={120} duration={12} borderWidth={1.5} colorFrom="#3b82f6" colorTo="#94a3b8" />
           <div className="relative z-10">
                 <ChartPanelHeader
@@ -2231,28 +2231,34 @@ const Dashboard = ({ employees, applications }) => {
                       const totalWidth = `${(total / hoursChartMaxTotal) * 100}%`;
                       const regularShare = total > 0 ? (regular / total) * 100 : 0;
                       const overtimeShare = total > 0 ? (overtime / total) * 100 : 0;
+                      const employeeLabel = row.fullName || row.name;
+                      const regularLabel = t('dashboard.regularHoursLegend', 'Regular Hours');
+                      const overtimeLabel = t('dashboard.totalOvertimeLegend', 'Overtime Hours');
+                      const fmtH = (n) => n.toFixed(n % 1 ? 1 : 0);
 
                       return (
-                        <div key={`${row.name}-${row.fullName}`} className="py-3.5 first:pt-0 last:pb-0">
+                        <div
+                          key={`${row.name}-${row.fullName}`}
+                          className="group/hours relative z-0 cursor-default py-3.5 first:pt-0 last:pb-0 hover:z-30"
+                        >
                           <div className="mb-2 flex items-baseline justify-between gap-3">
                             <p className={`min-w-0 truncate text-sm font-medium ${text.primary}`}>
-                              {row.fullName || row.name}
+                              {employeeLabel}
                             </p>
                             <p className={`shrink-0 text-sm tabular-nums ${text.secondary}`}>
                               <span className={`font-semibold ${text.primary}`}>
-                                {total.toFixed(total % 1 ? 1 : 0)}h
+                                {fmtH(total)}h
                               </span>
                               {overtime > 0 && (
                                 <span className="ml-2 text-xs opacity-80">
-                                  {regular.toFixed(regular % 1 ? 1 : 0)} + {overtime.toFixed(overtime % 1 ? 1 : 0)} OT
+                                  {fmtH(regular)} + {fmtH(overtime)} OT
                                 </span>
                               )}
                             </p>
                           </div>
                           <div
-                            className="h-2.5 w-full overflow-hidden rounded-full"
+                            className="relative h-2.5 w-full overflow-hidden rounded-full"
                             style={{ background: hoursEditorial.track }}
-                            title={`${row.fullName || row.name}: ${regular}h regular, ${overtime}h overtime`}
                           >
                             <div
                               className="flex h-full overflow-hidden rounded-full transition-[width] duration-500 ease-out"
@@ -2268,6 +2274,40 @@ const Dashboard = ({ employees, applications }) => {
                                   style={{ width: `${overtimeShare}%`, background: hoursEditorial.mute }}
                                 />
                               )}
+                            </div>
+                          </div>
+
+                          <div
+                            className={cn(
+                              'pointer-events-none absolute left-1/2 top-1/2 z-30 w-max min-w-[11.5rem] -translate-x-1/2 -translate-y-1/2 rounded-lg border px-3 py-2 opacity-0 shadow-lg transition-opacity duration-150 group-hover/hours:opacity-100',
+                              isDarkMode
+                                ? 'border-slate-700 bg-slate-950 text-slate-100'
+                                : 'border-slate-200 bg-white text-slate-900'
+                            )}
+                            role="tooltip"
+                          >
+                            <p className={cn('mb-1.5 text-xs font-medium', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
+                              {`${t('dashboard.employeeLabel', 'Employee')}: ${employeeLabel}`}
+                            </p>
+                            <div className="space-y-1 text-xs">
+                              <div className="flex items-center justify-between gap-6">
+                                <span className="inline-flex items-center gap-2">
+                                  <span className="h-0.5 w-2.5 rounded-full" style={{ background: hoursEditorial.ink }} />
+                                  <span className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{regularLabel}</span>
+                                </span>
+                                <span className="font-semibold tabular-nums">{fmtH(regular)}h</span>
+                              </div>
+                              <div className="flex items-center justify-between gap-6">
+                                <span className="inline-flex items-center gap-2">
+                                  <span className="h-0.5 w-2.5 rounded-full" style={{ background: hoursEditorial.mute }} />
+                                  <span className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{overtimeLabel}</span>
+                                </span>
+                                <span className="font-semibold tabular-nums">{fmtH(overtime)}h</span>
+                              </div>
+                              <div className={cn('mt-1.5 flex items-center justify-between gap-6 border-t pt-1.5', isDarkMode ? 'border-slate-700' : 'border-slate-100')}>
+                                <span className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('dashboard.total', 'Total')}</span>
+                                <span className="font-semibold tabular-nums">{fmtH(total)}h</span>
+                              </div>
                             </div>
                           </div>
                         </div>
