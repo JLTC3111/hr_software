@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Clock, Upload, Coffee, AlertCircle, Check, X, Clock5, FileCheck, AlarmClockPlus, Loader, Loader2, Calendar, ChevronsUpDown, CalendarClock, ArrowDownAZ, CalendarArrowUp, CalendarArrowDown, Hourglass, Timer, Shield, ShieldCheck, ShieldQuestion, FileImage } from 'lucide-react';
+import { Clock, Upload, Coffee, AlertCircle, Check, X, Clock5, FileCheck, AlarmClockPlus, Loader, Loader2, Calendar, ChevronsUpDown, CalendarClock, ArrowDownAZ, CalendarArrowUp, CalendarArrowDown, Hourglass, Timer, Shield, ShieldCheck, ShieldQuestion, FileImage, Pencil } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
@@ -185,6 +185,15 @@ const TimeClockEntry = ({ currentLanguage }) => {
   // Sorting state for history table
   const [sortKey, setSortKey] = useState('date');
   const [sortDirection, setSortDirection] = useState('desc'); // 'asc' or 'desc'
+  const [editingEntryId, setEditingEntryId] = useState(null);
+  const [editForm, setEditForm] = useState({
+    date: '',
+    clockIn: '',
+    clockOut: '',
+    hours: '',
+    hourType: 'regular',
+  });
+  const [savingEntryId, setSavingEntryId] = useState(null);
   
   // Handle header click for sorting
   const handleSort = (key) => {
@@ -1339,6 +1348,160 @@ const TimeClockEntry = ({ currentLanguage }) => {
     return timeStr;
   };
 
+  const isLeaveHistoryRow = (entry) => String(entry?.id || '').startsWith('leave-');
+
+  const canEditEntry = (entry) => {
+    if (!entry || isLeaveHistoryRow(entry)) return false;
+    if (canManageTimeTracking) return true;
+    const ownerId = entry.employee_id || entry.employeeId || entry.employee?.id;
+    return String(ownerId) === String(userEmployeeId || userId);
+  };
+
+  const timeToMinutes = (timeStr) => {
+    const normalized = formatTime(timeStr);
+    if (!normalized || !normalized.includes(':')) return null;
+    const [h, m] = normalized.split(':').map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return h * 60 + m;
+  };
+
+  const minutesToTime = (totalMinutes) => {
+    const dayMins = 24 * 60;
+    let mins = ((totalMinutes % dayMins) + dayMins) % dayMins;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  };
+
+  const startEditEntry = (entry) => {
+    setEditingEntryId(entry.id);
+    setEditForm({
+      date: entry.date || '',
+      clockIn: formatTime(entry.clock_in || entry.clockIn),
+      clockOut: formatTime(entry.clock_out || entry.clockOut),
+      hours: String(entry.hours ?? 0),
+      hourType: entry.hour_type || entry.hourType || 'regular',
+    });
+  };
+
+  const cancelEditEntry = () => {
+    setEditingEntryId(null);
+    setEditForm({ date: '', clockIn: '', clockOut: '', hours: '', hourType: 'regular' });
+  };
+
+  const handleEditTimeChange = (field, value) => {
+    setEditForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (next.hourType === 'on_leave') {
+        next.hours = '0';
+        return next;
+      }
+      if (next.clockIn && next.clockOut) {
+        const hoursValue = Number(calculateHours(next.clockIn, next.clockOut, next.date || formData.date));
+        next.hours = Number.isFinite(hoursValue) ? hoursValue.toFixed(2) : prev.hours;
+      }
+      return next;
+    });
+  };
+
+  const handleEditHoursChange = (value) => {
+    setEditForm((prev) => {
+      if (prev.hourType === 'on_leave') {
+        return { ...prev, hours: '0' };
+      }
+      const hoursNum = Math.max(0, Number(value) || 0);
+      const start = timeToMinutes(prev.clockIn) ?? timeToMinutes('09:00');
+      return {
+        ...prev,
+        hours: value,
+        clockIn: prev.clockIn || '09:00',
+        clockOut: minutesToTime(start + Math.round(hoursNum * 60)),
+      };
+    });
+  };
+
+  const handleEditTypeChange = (value) => {
+    setEditForm((prev) => {
+      if (value === 'on_leave') {
+        return { ...prev, hourType: value, hours: '0', clockIn: '', clockOut: '' };
+      }
+      const next = { ...prev, hourType: value };
+      if (next.clockIn && next.clockOut) {
+        const hoursValue = Number(calculateHours(next.clockIn, next.clockOut, next.date || formData.date));
+        next.hours = Number.isFinite(hoursValue) ? hoursValue.toFixed(2) : prev.hours;
+      }
+      return next;
+    });
+  };
+
+  const applyEntryUpdateLocally = (entryId, updates) => {
+    const patch = (list) =>
+      (list || []).map((item) =>
+        String(item.id) === String(entryId)
+          ? {
+              ...item,
+              ...updates,
+              clock_in: updates.clock_in ?? item.clock_in,
+              clock_out: updates.clock_out ?? item.clock_out,
+              hour_type: updates.hour_type ?? item.hour_type,
+            }
+          : item
+      );
+    setTimeEntries((prev) => patch(prev));
+    setFilteredEntries((prev) => patch(prev));
+  };
+
+  const saveEditEntry = async () => {
+    if (!editingEntryId) return;
+    const hoursNum = Number(editForm.hours);
+
+    if (!editForm.date) {
+      setErrors({ general: t('timeClock.errors.dateRequired', 'Date is required') });
+      return;
+    }
+    if (editForm.hourType !== 'on_leave') {
+      if (!editForm.clockIn || !editForm.clockOut) {
+        setErrors({ general: t('timeClock.errors.timeRequired', 'Clock in and clock out are required') });
+        return;
+      }
+      if (!Number.isFinite(hoursNum) || hoursNum < 0) {
+        setErrors({ general: t('timeClock.errors.invalidHours', 'Hours must be a valid number') });
+        return;
+      }
+    }
+
+    setSavingEntryId(editingEntryId);
+    try {
+      const result = await timeTrackingService.updateTimeEntry(editingEntryId, {
+        date: editForm.date,
+        clockIn: editForm.hourType === 'on_leave' ? null : editForm.clockIn,
+        clockOut: editForm.hourType === 'on_leave' ? null : editForm.clockOut,
+        hours: editForm.hourType === 'on_leave' ? 0 : hoursNum,
+        hourType: editForm.hourType,
+      });
+      if (!result.success) {
+        setErrors({ general: result.error || t('timeClock.errors.updateFailed', 'Failed to update entry') });
+        return;
+      }
+
+      applyEntryUpdateLocally(editingEntryId, {
+        date: editForm.date,
+        clock_in: editForm.hourType === 'on_leave' ? null : editForm.clockIn,
+        clock_out: editForm.hourType === 'on_leave' ? null : editForm.clockOut,
+        hours: editForm.hourType === 'on_leave' ? 0 : hoursNum,
+        hour_type: editForm.hourType,
+      });
+      setSuccessMessage(t('timeClock.updateSuccess', 'Time entry updated successfully'));
+      setTimeout(() => setSuccessMessage(''), 3000);
+      cancelEditEntry();
+    } catch (error) {
+      if (handleSessionAuthError(error)) return;
+      setErrors({ general: error.message || t('timeClock.errors.updateFailed', 'Failed to update entry') });
+    } finally {
+      setSavingEntryId(null);
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'approved': return `text-green-800 bg-green-200 ${isDarkMode ? 'bg-green-900/30 text-green-400' : ''} font-semibold`;
@@ -1396,16 +1559,16 @@ const TimeClockEntry = ({ currentLanguage }) => {
       )}
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-        <div>
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <h1 className={`text-3xl font-bold ${text.primary}`}>
             {t('timeClock.title')}
           </h1>
-          <p className={`${text.secondary} mt-2`}>
-            {t('timeClock.subtitle')}
-          </p>
+          <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} showSeparator={false} />
         </div>
-        <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} showSeparator={false} />
+        <p className={`${text.secondary}`}>
+          {t('timeClock.subtitle')}
+        </p>
       </div>
 
       {/* Admin Time Entry Section (Only for admin/manager roles) */}
@@ -2228,10 +2391,25 @@ const TimeClockEntry = ({ currentLanguage }) => {
                 </tr>
               </thead>
               <tbody className="text-center">
-                {getSortedEntries.map((entry, index) => (
+                {getSortedEntries.map((entry) => {
+                  const isEditing = editingEntryId === entry.id;
+                  const editable = canEditEntry(entry);
+                  const editInputClass = `w-full min-w-[7.5rem] px-2 py-1.5 rounded border text-sm ${bg.primary} ${text.primary} ${border.primary}`;
+
+                  return (
                   <tr key={entry.id} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-amber-200' : 'hover:bg-blue-600'} group transition-all duration-100 group cursor-pointer`}>
                     <td className={`p-3 ${text.primary} text-center font-medium ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>
-                      {entry.date || new Date(entry.created_at).toLocaleDateString()}
+                      {isEditing ? (
+                        <input
+                          type="date"
+                          value={editForm.date}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, date: e.target.value }))}
+                          onClick={(e) => e.stopPropagation()}
+                          className={editInputClass}
+                        />
+                      ) : (
+                        entry.date || new Date(entry.created_at).toLocaleDateString()
+                      )}
                     </td>
                     {selectedEmployeeFilter !== 'self' && (
                       <td className={`p-3 ${text.primary} text-center font-medium ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>
@@ -2246,12 +2424,63 @@ const TimeClockEntry = ({ currentLanguage }) => {
                       </td>
                     )}
                     <td className={`p-3 ${text.secondary} ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>
-                      {formatTime(entry.clock_in || entry.clockIn)} - {formatTime(entry.clock_out || entry.clockOut)}
+                      {isEditing ? (
+                        editForm.hourType === 'on_leave' ? (
+                          <span>-</span>
+                        ) : (
+                          <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="time"
+                              value={editForm.clockIn}
+                              onChange={(e) => handleEditTimeChange('clockIn', e.target.value)}
+                              className={editInputClass}
+                            />
+                            <span className={text.secondary}>-</span>
+                            <input
+                              type="time"
+                              value={editForm.clockOut}
+                              onChange={(e) => handleEditTimeChange('clockOut', e.target.value)}
+                              className={editInputClass}
+                            />
+                          </div>
+                        )
+                      ) : (
+                        (entry.hour_type || entry.hourType) === 'on_leave'
+                          ? '-'
+                          : `${formatTime(entry.clock_in || entry.clockIn)} - ${formatTime(entry.clock_out || entry.clockOut)}`
+                      )}
                     </td>
                     <td className={`p-3 ${text.primary} font-semibold ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`}>
-                      {entry.hours} {t('timeClock.hrs')}
+                      {isEditing ? (
+                        <div className="inline-flex items-center gap-1 justify-center" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.25"
+                            value={editForm.hours}
+                            disabled={editForm.hourType === 'on_leave'}
+                            onChange={(e) => handleEditHoursChange(e.target.value)}
+                            className={`${editInputClass} max-w-[6rem] text-center`}
+                          />
+                          <span className="text-xs">{t('timeClock.hrs')}</span>
+                        </div>
+                      ) : (
+                        <>{entry.hours} {t('timeClock.hrs')}</>
+                      )}
                     </td>
                     <td className="p-3">
+                      {isEditing ? (
+                        <select
+                          value={editForm.hourType}
+                          onChange={(e) => handleEditTypeChange(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          className={editInputClass}
+                        >
+                          {hourTypes.map((type) => (
+                            <option key={type.value} value={type.value}>{type.label}</option>
+                          ))}
+                        </select>
+                      ) : (
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${
                         (entry.hour_type || entry.hourType) === 'regular' ? (isDarkMode ? 'bg-blue-900/30 text-blue-400 group-hover:text-black' : 'bg-blue-200 text-blue-900 group-hover:text-black') :
                         (entry.hour_type || entry.hourType) === 'holiday' ? (isDarkMode ? 'bg-purple-900/30 text-purple-400 group-hover:text-black' : 'bg-purple-200 text-purple-900 group-hover:text-black') :
@@ -2262,6 +2491,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
                       }`}>
                         {hourTypes.find(t => t.value === (entry.hour_type || entry.hourType))?.label || (entry.hour_type || entry.hourType)?.charAt(0).toUpperCase() + (entry.hour_type || entry.hourType)?.slice(1)}
                       </span>
+                      )}
                     </td>
                     <td className="p-3">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(entry.status)}`}>
@@ -2362,6 +2592,51 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     </td>
                     <td className="p-3 text-center">
                       <div className="flex items-center justify-center gap-2 group">
+                        {isEditing ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                saveEditEntry();
+                              }}
+                              disabled={savingEntryId === entry.id}
+                              className={`${isDarkMode ? 'text-green-300' : 'text-green-600'} hover:scale-110 disabled:opacity-50 transition-all`}
+                              title={t('common.save', 'Save')}
+                            >
+                              {savingEntryId === entry.id ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                              ) : (
+                                <Check className="w-5 h-5" />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                cancelEditEntry();
+                              }}
+                              className={`${isDarkMode ? 'text-slate-300' : 'text-slate-600'} hover:scale-110 transition-all`}
+                              title={t('common.cancel', 'Cancel')}
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                        {editable && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditEntry(entry);
+                            }}
+                            className={`${isDarkMode ? 'text-blue-300' : 'text-blue-600'} hover:scale-110 transition-all`}
+                            title={t('common.edit', 'Edit')}
+                          >
+                            <Pencil className={`w-4 h-4 ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`} />
+                          </button>
+                        )}
                         {/* Approve Button (only for pending entries and if user has permission) */}
                         {entry.status === 'pending' && canApprove(entry) && (
                           <button
@@ -2406,11 +2681,14 @@ const TimeClockEntry = ({ currentLanguage }) => {
                         >
                           <X className={`w-5 h-5 cursor-pointer ${isDarkMode ? 'group-hover:bg-white group-hover:text-black' : 'group-hover:bg-black group-hover:text-white'} rounded-2xl`} />
                         </button>
+                          </>
+                        )}
 
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

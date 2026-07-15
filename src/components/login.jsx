@@ -78,8 +78,8 @@ const Login = () => {
     });
   
     if (!loading && isAuthenticated && user) {
-      console.log('✅ All conditions met - Redirecting to /time-clock');
-      navigate('/time-clock', { replace: true });
+      console.log('✅ All conditions met - Redirecting to /dashboard');
+      navigate('/dashboard', { replace: true });
     } else if (!loading && !isAuthenticated) {
       console.log('✅ Loading complete - User can login');
     }

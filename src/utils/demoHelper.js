@@ -1052,18 +1052,21 @@ export const addDemoTimeEntry = (entry) => {
 export const updateDemoTimeEntry = (entryId, updates) => {
   const stored = localStorage.getItem(DEMO_TIME_ENTRIES_KEY);
   const storedEntries = stored ? JSON.parse(stored) : [];
+  const id = String(entryId);
   
   // Check if entry exists in stored entries
-  const existingIndex = storedEntries.findIndex(e => e.id === entryId);
+  const existingIndex = storedEntries.findIndex(e => String(e.id) === id);
   
   if (existingIndex >= 0) {
     // Update existing stored entry
     storedEntries[existingIndex] = { ...storedEntries[existingIndex], ...updates };
   } else {
     // Entry is from MOCK_TIME_ENTRIES, need to copy and modify
-    const mockEntry = MOCK_TIME_ENTRIES.find(e => e.id === entryId);
+    const mockEntry = MOCK_TIME_ENTRIES.find(e => String(e.id) === id);
     if (mockEntry) {
       storedEntries.push({ ...mockEntry, ...updates });
+    } else {
+      storedEntries.push({ id: entryId, ...updates });
     }
   }
   

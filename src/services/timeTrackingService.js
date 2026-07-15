@@ -578,6 +578,56 @@ export const getAllTimeEntriesDetailed = async (filters = {}) => {
 };
 
 /**
+ * Update a time entry's editable fields (date, clock times, hours, type)
+ */
+export const updateTimeEntry = async (entryId, updates = {}) => {
+  if (!entryId) {
+    return { success: false, error: 'Entry ID is required' };
+  }
+
+  const payload = {};
+  if (updates.date !== undefined) payload.date = updates.date;
+  if (updates.clockIn !== undefined || updates.clock_in !== undefined) {
+    payload.clock_in = updates.clockIn ?? updates.clock_in;
+  }
+  if (updates.clockOut !== undefined || updates.clock_out !== undefined) {
+    payload.clock_out = updates.clockOut ?? updates.clock_out;
+  }
+  if (updates.hours !== undefined) payload.hours = Number(updates.hours);
+  if (updates.hourType !== undefined || updates.hour_type !== undefined) {
+    payload.hour_type = updates.hourType ?? updates.hour_type;
+  }
+  if (updates.notes !== undefined) payload.notes = updates.notes;
+  if (updates.status !== undefined) payload.status = updates.status;
+
+  if (isDemoMode()) {
+    const { updateDemoTimeEntry } = await import('../utils/demoHelper');
+    const data = updateDemoTimeEntry(entryId, {
+      ...payload,
+      clockIn: payload.clock_in,
+      clockOut: payload.clock_out,
+      hourType: payload.hour_type,
+    });
+    return { success: true, data: { id: entryId, ...data } };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('time_entries')
+      .update(payload)
+      .eq('id', entryId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error updating time entry:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
  * Update time entry status (approve/reject)
  */
 export const updateTimeEntryStatus = async (entryId, status, approverId) => {
@@ -2330,6 +2380,7 @@ export default {
   createTimeEntry,
   getTimeEntries,
   getAllTimeEntriesDetailed,
+  updateTimeEntry,
   updateTimeEntryStatus,
   updateTimeEntryProof,
   deleteTimeEntry,

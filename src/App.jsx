@@ -284,7 +284,7 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={
-          isAuthenticated ? <Navigate to="/time-tracking" replace /> : <Login />
+          isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
         } />
         
         {/* Allow reset-password even when authenticated (user needs to complete password change) */}
@@ -314,7 +314,7 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
                 <div className="min-w-0 flex-1 w-full p-3 sm:p-4 lg:p-5 xl:p-6">
                   <Suspense fallback={<PageLoader />}>
                   <Routes>
-                    <Route path="/" element={<Navigate to="/time-tracking" replace />} />
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     <Route 
                       path="/time-clock" 
                       element={<TimeClockEntry currentLanguage={currentLanguage} />} 
