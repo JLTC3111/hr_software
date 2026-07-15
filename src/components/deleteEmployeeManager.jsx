@@ -81,7 +81,7 @@ const DeleteEmployeeManager = () => {
   if (!hasPermission) {
     return (
       <div className={`min-h-screen ${bg.primary} p-6`}>
-        <div className={`max-w-4xl mx-auto ${bg.secondary} rounded-lg shadow-lg p-8 border ${border.primary}`}>
+        <div className={`${bg.secondary} rounded-lg shadow-lg p-8 border ${border.primary} w-full`}>
           <div className="text-center">
             <Shield className={`w-16 h-16 mx-auto mb-4 ${text.secondary}`} />
             <h2 className={`text-2xl font-bold ${text.primary} mb-2`}>Access Denied</h2>
@@ -99,7 +99,7 @@ const DeleteEmployeeManager = () => {
 
   return (
     <div className={`min-h-screen ${bg.primary} p-6`}>
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-none w-full space-y-6">
         {/* Header with Warning */}
         <div className={`${bg.secondary} rounded-lg shadow-lg p-6 border-2 border-red-500`}>
           <div className="flex items-start space-x-4">

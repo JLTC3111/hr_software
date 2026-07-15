@@ -10,6 +10,11 @@ import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescripti
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 import { isRealtimeMutation } from '../utils/realtimeHelpers.js';
+import { ShinyButton } from './ui/shiny-button';
+import { SlidingNumber } from './motion-primitives';
+import { NumberTicker } from './ui/number-ticker';
+import { PageLiveClock } from './ui/page-live-clock';
+import { cn } from '@/lib/utils';
 
 export const MiniFlubberAutoMorphCompleteTask = ({
   size = 24,
@@ -596,21 +601,27 @@ const TaskListing = ({ employees }) => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <p className={`text-sm ${text.secondary}`}>{t('taskListing.totalTasks', '')}</p>
-            <p className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{employeeTasks.length}</p>
+            <p className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              <SlidingNumber value={employeeTasks.length} />
+            </p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <p className={`text-sm ${text.secondary}`}>{t('taskListing.completed', '')}</p>
             <p className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              {employeeTasks.filter(t => t.status === 'completed').length}
+              <SlidingNumber value={employeeTasks.filter(t => t.status === 'completed').length} />
             </p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <p className={`text-sm ${text.secondary}`}>{t('taskListing.progress', '')}</p>
-            <p className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{progress}%</p>
+            <p className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              <NumberTicker value={progress} className={isDarkMode ? 'text-white' : 'text-gray-900'} />%
+            </p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <p className={`text-sm ${text.secondary}`}>{t('taskListing.avgQuality', '')}</p>
-            <p className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{avgQuality}/5</p>
+            <p className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              <SlidingNumber value={Number(avgQuality) || 0} />/5
+            </p>
           </div>
         </div>
 
@@ -648,8 +659,8 @@ const TaskListing = ({ employees }) => {
             <h3 className={`text-lg font-semibold ${text.primary}`}>
               {canAssignTasks ? t('taskListing.manageTasks', '') : t('taskListing.myTasks', '')}
             </h3>
-            <button 
-              type ="button"
+            <ShinyButton
+              type="button"
               onClick={() => {
                 setTaskForm({
                   title: '',
@@ -665,11 +676,11 @@ const TaskListing = ({ employees }) => {
                 setModalMode('add');
                 setShowAddTask(true);
               }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 cursor-pointer"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white border-blue-500"
             >
-              <Plus className="w-4 h-4 cursor-pointer" />
+              <Plus className="w-4 h-4" />
               <span>{t('taskListing.addTask', '')}</span>
-            </button>
+            </ShinyButton>
           </div>
 
           <div className="space-y-3">
@@ -845,18 +856,33 @@ const TaskListing = ({ employees }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <p className={`text-sm ${text.secondary}`}>{t('taskListing.totalTasks', '')}</p>
-            <p className={`text-xl font-bold ${text.primary}`}>{tasks.length}</p>
+            <p className={`text-xl font-bold ${text.primary}`}>
+              <SlidingNumber value={tasks.length} />
+            </p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <p className={`text-sm text-center ${text.secondary}`}>{t('taskListing.avgProgress', '')}</p>
             <p className={`text-xl text-center font-bold ${text.secondary}`}>
-              {Math.round(orgStats.reduce((sum, s) => sum + s.progress, 0) / (orgStats.length || 1))}%
+              <NumberTicker
+                value={Math.round(orgStats.reduce((sum, s) => sum + s.progress, 0) / (orgStats.length || 1))}
+                className={text.secondary}
+              />%
             </p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <p className={`text-sm ${text.secondary}`}>{t('taskListing.avgQuality', '')}</p>
             <p className={`text-xl font-bold ${text.secondary}`}>
-              {(orgStats.reduce((sum, s) => sum + parseFloat(s.avgQuality || 0), 0) / (orgStats.length || 0)).toFixed(0)}/5
+              <SlidingNumber
+                value={
+                  Number(
+                    (
+                      orgStats.reduce((sum, s) => sum + parseFloat(s.avgQuality || 0), 0) /
+                      (orgStats.length || 1)
+                    ).toFixed(0)
+                  ) || 0
+                }
+              />
+              /5
             </p>
           </div>
         </div>
@@ -905,15 +931,21 @@ const TaskListing = ({ employees }) => {
                   <div className="flex items-center space-x-6 text-sm text-center justify-center">
                     <div>
                       <p className={`${text.secondary}`}>{t('taskListing.tasks', 'Tasks')}</p>
-                      <p className={`font-semiboldcha ${text.primary}`}>{tasks.length}</p>
+                      <p className={`font-semibold ${text.primary}`}>
+                        <SlidingNumber value={tasks.length} />
+                      </p>
                     </div>
                     <div>
                       <p className={`${text.secondary}`}>{t('taskListing.progress', 'Progress')}</p>
-                      <p className={`font-semibold ${text.primary}`}>{progress}%</p>
+                      <p className={`font-semibold ${text.primary}`}>
+                        <NumberTicker value={progress} className={text.primary} />%
+                      </p>
                     </div>
                     <div>
                       <p className={`${text.secondary}`}>{t('taskListing.quality', 'Quality')}</p>
-                      <p className={`font-semibold ${text.primary}`}>{avgQuality}/5</p>
+                      <p className={`font-semibold ${text.primary}`}>
+                        <SlidingNumber value={Number(avgQuality) || 0} />/5
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -945,10 +977,13 @@ const TaskListing = ({ employees }) => {
         </div>
       )}
 
-      <div className="flex justify-between items-center gap-15">
-        <h2 className={`text-2xl font-bold ${text.primary}`}>
-          {t('taskListing.title', '')}
-        </h2>
+      <div className="flex justify-between items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <h2 className={`text-2xl font-bold ${text.primary}`}>
+            {t('taskListing.title', '')}
+          </h2>
+          <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} />
+        </div>
         <div className="flex space-x-2">
           <button
             type ="button"
@@ -1138,15 +1173,19 @@ const TaskListing = ({ employees }) => {
                 />
               </div>
               <div className="flex space-x-3 pt-4">
-                <button
-                  type ="button"
+                <ShinyButton
+                  type="button"
                   onClick={closeModal}
-                  className={`flex-1 px-4 py-2 border rounded-lg cursor-pointer ${text.secondary} ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
+                  className={cn(
+                    'flex-1 px-4 py-2 border',
+                    text.secondary,
+                    isDarkMode ? 'hover:bg-gray-700 bg-transparent' : 'hover:bg-gray-50 bg-white'
+                  )}
                 >
                   {t('common.cancel', 'Cancel')}
-                </button>
-                <button
-                  type ="button"
+                </ShinyButton>
+                <ShinyButton
+                  type="button"
                   onClick={() => {
                     if (editingTask) {
                     
@@ -1173,10 +1212,10 @@ const TaskListing = ({ employees }) => {
                     }
                     setShowAddTask(false);
                   }}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white border-blue-500 hover:bg-blue-700"
                 >
                   {editingTask ? t('common.update', 'Update') : t('common.add', 'Add')}
-                </button>
+                </ShinyButton>
               </div>
             </div>
           </div>

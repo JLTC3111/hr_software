@@ -19,6 +19,9 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as userService from '../services/userService';
+import { SlidingNumber } from './motion-primitives';
+import { PageLiveClock } from './ui/page-live-clock';
+import { cn } from '@/lib/utils';
 
 const UserManagement = () => {
   const { isDarkMode, bg, text, border } = useTheme();
@@ -171,7 +174,7 @@ const UserManagement = () => {
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center space-x-3">
           <Users className={`w-8 h-8 ${text.primary}`} />
           <div>
@@ -183,6 +186,7 @@ const UserManagement = () => {
             </p>
           </div>
         </div>
+        <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} showSeparator={false} />
       </div>
 
       {/* Message Banner */}
@@ -409,7 +413,7 @@ const UserManagement = () => {
             <Users className="w-5 h-5 text-blue-600" />
           </div>
           <p className={`text-2xl font-bold ${text.primary} mt-2`}>
-            {users.length}
+            <SlidingNumber value={users.length} />
           </p>
         </div>
         <div className={`${bg.secondary} rounded-lg border ${border.primary} p-4`}>
@@ -420,7 +424,7 @@ const UserManagement = () => {
             <UserCheck className="w-5 h-5 text-green-600" />
           </div>
           <p className={`text-2xl font-bold ${text.primary} mt-2`}>
-            {users.filter(u => u.is_active).length}
+            <SlidingNumber value={users.filter(u => u.is_active).length} />
           </p>
         </div>
         <div className={`${bg.secondary} rounded-lg border ${border.primary} p-4`}>
@@ -431,7 +435,7 @@ const UserManagement = () => {
             <UserX className="w-5 h-5 text-red-600" />
           </div>
           <p className={`text-2xl font-bold ${text.primary} mt-2`}>
-            {users.filter(u => !u.is_active).length}
+            <SlidingNumber value={users.filter(u => !u.is_active).length} />
           </p>
         </div>
         <div className={`${bg.secondary} rounded-lg border ${border.primary} p-4`}>
@@ -442,7 +446,7 @@ const UserManagement = () => {
             <Shield className="w-5 h-5 text-purple-600" />
           </div>
           <p className={`text-2xl font-bold ${text.primary} mt-2`}>
-            {users.filter(u => u.role === 'admin').length}
+            <SlidingNumber value={users.filter(u => u.role === 'admin').length} />
           </p>
         </div>
       </div>

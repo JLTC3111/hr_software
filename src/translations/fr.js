@@ -93,6 +93,12 @@ export default {
   header: {
     title: 'Gestionnaire RH',
     welcome: 'Bon retour,',
+    welcomePhrase1: 'Bon retour, {name}',
+    welcomePhrase2: 'Ravi de vous voir, {name}',
+    welcomePhrase3: 'Bonjour, {name} !',
+    welcomePhrase4: 'Prêt à gérer les RH, {name} ?',
+    welcomePhrase5: 'Rendons cette journée productive, {name}',
+    welcomePhrase6: 'Heureux de vous accueillir, {name}',
     user: 'Équipe RH',
     logout: 'Se deconnecter',
   },

@@ -29,6 +29,9 @@ import {
 import { useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { ensureValidSession } from '../hooks/useSessionGuard.js';
 import * as settingsService from '../services/settingsService';
+import { ShinyButton } from './ui/shiny-button';
+import { PageLiveClock } from './ui/page-live-clock';
+import { cn } from '@/lib/utils';
 
 const Settings = () => {
   const { bg, text, border, hover, isDarkMode, toggleTheme } = useTheme();
@@ -181,7 +184,7 @@ const Settings = () => {
   if (loading) {
     return (
       <div className={`p-8 ${bg.primary} min-h-screen`}>
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-none w-full mx-auto">
           <div className="flex items-center justify-center py-12">
             <Loader className="w-12 h-12 animate-spin text-blue-600" />
           </div>
@@ -192,7 +195,7 @@ const Settings = () => {
 
   return (
     <div className={`p-4 md:p-8 ${bg.primary} min-h-screen`}>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-none w-full mx-auto">
         {/* Header */}
         <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 mb-6`}>
           <div className="flex items-center justify-between">
@@ -210,6 +213,7 @@ const Settings = () => {
 
             {/* Action Buttons */}
             <div className="flex items-center space-x-2">
+              <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} showSeparator={false} />
               {saveSuccess && (
                 <div className={`flex items-center space-x-2 px-4 py-2 ${isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700'} rounded-lg`}>
                   <Check className="h-4 w-4" />
@@ -217,14 +221,15 @@ const Settings = () => {
                 </div>
               )}
               
-              <button
+              <ShinyButton
+                type="button"
                 onClick={exportSettings}
-                className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer`}
+                className={cn('px-4 py-2', hover.bg, text.secondary)}
                 title={t('settings.export', 'Export settings')}
               >
                 <Download className="h-4 w-4" />
                 <span className="hidden sm:inline">{t('settings.export', 'Export')}</span>
-              </button>
+              </ShinyButton>
 
               <label className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer`}>
                 <Upload className="h-4 w-4" />
@@ -237,20 +242,22 @@ const Settings = () => {
                 />
               </label>
 
-              <button
+              <ShinyButton
+                type="button"
                 onClick={resetSettings}
-                className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer`}
+                className={cn('px-4 py-2', hover.bg, text.secondary)}
                 title={t('settings.reset', 'Reset to defaults')}
               >
                 <RotateCcw className="h-4 w-4" />
                 <span className="hidden sm:inline">{t('settings.reset', 'Reset')}</span>
-              </button>
+              </ShinyButton>
 
               {hasChanges && (
-                <button
+                <ShinyButton
+                  type="button"
                   onClick={saveSettings}
                   disabled={saving}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 transition-colors disabled:opacity-50 cursor-pointer"
+                  className="px-6 py-2 bg-blue-600 text-white border-blue-500 hover:bg-blue-700 disabled:opacity-50"
                 >
                   {saving ? (
                     <Loader className="h-4 w-4 animate-spin" />
@@ -258,7 +265,7 @@ const Settings = () => {
                     <Save className="h-4 w-4" />
                   )}
                   <span>{t('settings.saveChanges', 'Save Changes')}</span>
-                </button>
+                </ShinyButton>
               )}
             </div>
           </div>

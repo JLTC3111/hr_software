@@ -10,6 +10,8 @@ import { getEmployeePositionI18nKey } from '../utils/employeePositionKey.js';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
+import { ShinyButton } from './ui/shiny-button';
+import { cn } from '@/lib/utils';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
@@ -46,6 +48,10 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
   
   // Get upload status from context
   const uploadStatus = getUploadStatus(employee?.id);
+  const pdfViewWidth = useMemo(
+    () => Math.min(Math.max(modalWidth - 80, 520), 800),
+    [modalWidth]
+  );
 
   if (!employee) return null;
 
@@ -609,43 +615,46 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
         </div>
 
         {/* Basic Information */}
-        <div className={`flex border-b ${border.primary} px-6`}>
-          <button
-            type ="button"
+        <div className={`flex border-b ${border.primary} px-6 gap-1`}>
+          <ShinyButton
+            type="button"
             onClick={() => setActiveTab('info')}
-            className={`flex items-center cursor-pointer space-x-2 px-4 py-3 font-medium transition-colors relative ${
+            className={cn(
+              'rounded-none border-0 border-b-2 px-4 py-3 shadow-none hover:shadow-none bg-transparent',
               activeTab === 'info'
-                ? `${text.primary} border-b-2 border-blue-600`
-                : `${text.secondary} hover:${text.primary}`
-            }`}
+                ? cn(text.primary, 'border-blue-600')
+                : cn(text.secondary, 'border-transparent')
+            )}
           >
             <User className="w-4 h-4" />
             <span>{t('employeeDetailModal.basicInfo', '')}</span>
-          </button>
-          <button
-            type ="button"
+          </ShinyButton>
+          <ShinyButton
+            type="button"
             onClick={() => setActiveTab('contact')}
-            className={`flex items-center cursor-pointer space-x-2 px-4 py-3 font-medium transition-colors relative ${
+            className={cn(
+              'rounded-none border-0 border-b-2 px-4 py-3 shadow-none hover:shadow-none bg-transparent',
               activeTab === 'contact'
-                ? `${text.primary} border-b-2 border-blue-600`
-                : `${text.secondary} hover:${text.primary}`
-            }`}
+                ? cn(text.primary, 'border-blue-600')
+                : cn(text.secondary, 'border-transparent')
+            )}
           >
             <Phone className="w-4 h-4" />
             <span>{t('employeeDetailModal.contact', '')}</span>
-          </button>
-          <button
-            type ="button"
+          </ShinyButton>
+          <ShinyButton
+            type="button"
             onClick={() => setActiveTab('documents')}
-            className={`flex items-center cursor-pointer space-x-2 px-4 py-3 font-medium transition-colors relative ${
+            className={cn(
+              'rounded-none border-0 border-b-2 px-4 py-3 shadow-none hover:shadow-none bg-transparent',
               activeTab === 'documents'
-                ? `${text.primary} border-b-2 border-blue-600`
-                : `${text.secondary} hover:${text.primary}`
-            }`}
+                ? cn(text.primary, 'border-blue-600')
+                : cn(text.secondary, 'border-transparent')
+            )}
           >
-            <FileText className={`w-4 h-4 ${isDarkMode ? 'text-white' : 'text-gray-600'}`} />
+            <FileText className={cn('w-4 h-4', isDarkMode ? 'text-white' : 'text-gray-600')} />
             <span>{t('employeeDetailModal.documents', '')}</span>
-          </button>
+          </ShinyButton>
         </div>
         <div className="flex-1 overflow-y-auto p-6">
           {/* Basic Info Tab */}
@@ -679,10 +688,11 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className={`inline-flex rounded-lg border overflow-hidden ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
-                    <button
+                    <ShinyButton
                       type="button"
                       onClick={() => setDocumentsSubTab('pdf')}
-                      className={`px-3 py-2 text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                      className={cn(
+                        'rounded-none px-3 py-2 text-sm font-medium border-0 shadow-none hover:shadow-none',
                         documentsSubTab === 'pdf'
                           ? isDarkMode
                             ? 'bg-gray-700 text-white'
@@ -690,17 +700,18 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                           : isDarkMode
                             ? 'bg-gray-800 text-gray-200 hover:bg-gray-700'
                             : 'bg-white text-gray-700 hover:bg-gray-50'
-                      }`}
+                      )}
                       title={t('employeeDetailModal.pdfTab', 'PDF')}
                       aria-label={t('employeeDetailModal.pdfTab', 'PDF')}
                     >
                       <FileText className="h-4 w-4" />
                       <span className="hidden sm:inline">{t('employeeDetailModal.pdfTab', 'PDF')}</span>
-                    </button>
-                    <button
+                    </ShinyButton>
+                    <ShinyButton
                       type="button"
                       onClick={() => setDocumentsSubTab('requests')}
-                      className={`px-3 py-2 text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                      className={cn(
+                        'rounded-none px-3 py-2 text-sm font-medium border-0 shadow-none hover:shadow-none',
                         documentsSubTab === 'requests'
                           ? isDarkMode
                             ? 'bg-gray-700 text-white'
@@ -708,13 +719,13 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                           : isDarkMode
                             ? 'bg-gray-800 text-gray-200 hover:bg-gray-700'
                             : 'bg-white text-gray-700 hover:bg-gray-50'
-                      }`}
+                      )}
                       title={t('employeeDetailModal.requestDocsTab', 'Requests')}
                       aria-label={t('employeeDetailModal.requestDocsTab', 'Requests')}
                     >
                       <Files className="h-4 w-4" />
                       <span className="hidden sm:inline">{t('employeeDetailModal.requestDocsTab', 'Requests')}</span>
-                    </button>
+                    </ShinyButton>
                   </div>
                 </div>
 
@@ -723,23 +734,29 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                   <div className="flex space-x-2">
                     {pdfUrl && (
                       <>
-                        <button
-                          type ="button"
+                        <ShinyButton
+                          type="button"
                           onClick={handlePdfDownload}
-                          className={`px-4 py-2 text-white cursor-pointer rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
+                          className={cn(
+                            'px-4 py-2 text-white text-sm shadow-md hover:shadow-lg border-blue-500',
+                            isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'
+                          )}
                         >
                           <Download className="w-4 h-4" />
                           <span>{t('employeeDetailModal.download', 'Download')}</span>
-                        </button>
+                        </ShinyButton>
                         {canEdit && (
-                          <button
-                          type ="button"
+                          <ShinyButton
+                            type="button"
                             onClick={handlePdfDelete}
-                            className={`px-4 py-2 text-white cursor-pointer rounded-lg flex items-center space-x-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-red-700 hover:bg-red-600' : 'bg-red-600 hover:bg-red-700'}`}
+                            className={cn(
+                              'px-4 py-2 text-white text-sm shadow-md hover:shadow-lg border-red-500',
+                              isDarkMode ? 'bg-red-700 hover:bg-red-600' : 'bg-red-600 hover:bg-red-700'
+                            )}
                           >
                             <Trash2 className="w-4 h-4" />
                             <span>{t('employeeDetailModal.delete', 'Delete')}</span>
-                          </button>
+                          </ShinyButton>
                         )}
                       </>
                     )}
@@ -781,17 +798,21 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <button
+                    <ShinyButton
                       type="button"
                       onClick={loadRequestDocs}
-                      className={`px-4 py-2 text-white rounded-lg cursor-pointer flex items-center gap-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-sky-700 hover:bg-sky-600' : 'bg-sky-600 hover:bg-sky-700'} ${requestDocsLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      className={cn(
+                        'px-4 py-2 text-white text-sm shadow-md hover:shadow-lg border-sky-500',
+                        isDarkMode ? 'bg-sky-700 hover:bg-sky-600' : 'bg-sky-600 hover:bg-sky-700',
+                        requestDocsLoading && 'opacity-60 cursor-not-allowed'
+                      )}
                       disabled={requestDocsLoading}
                       title={t('employeeDetailModal.requestDocsRefresh', 'Refresh')}
                       aria-label={t('employeeDetailModal.requestDocsRefresh', 'Refresh')}
                     >
                       {requestDocsLoading ? <Loader className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                       <span>{t('employeeDetailModal.requestDocsRefresh', 'Refresh')}</span>
-                    </button>
+                    </ShinyButton>
 
                     {canUploadRequestDocs && (
                       <>
@@ -866,13 +887,17 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
               {documentsSubTab === 'pdf' ? (
                 <div className={`border-2 border-dashed ${border.primary} rounded-lg p-4 min-h-100 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                   {pdfUrl ? (
-                    <div className="flex flex-col items-center">
-                      {useIframe ? (
-                        <div className="w-full" style={{ height: '600px' }}>
+                    <div className="flex flex-col items-center w-full">
+                      <div
+                        className="pdf-viewer-frame w-full flex justify-center overflow-x-hidden"
+                        style={{ maxWidth: pdfViewWidth }}
+                      >
+                        {useIframe ? (
                           <iframe
-                            src={pdfUrl}
+                            src={`${pdfUrl}#view=FitH&toolbar=0&navpanes=0`}
                             type="application/pdf"
-                            className="w-full h-full border-0 rounded"
+                            className="border-0 rounded block mx-auto shrink-0"
+                            style={{ width: pdfViewWidth, height: 600 }}
                             title="PDF Viewer"
                             onLoad={() => console.log('✅ Iframe loaded successfully')}
                             onError={(e) => {
@@ -881,42 +906,51 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                               setPdfError('Failed to load PDF in iframe. Check console for details.');
                             }}
                           />
-                        </div>
-                      ) : (
-                        pdfError ? (
-                          <div className="flex flex-col items-center justify-center h-64 text-red-500">
-                            <FileText className={`w-16 h-16 mb-4 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
-                            <p className={`text-center ${text.secondary} font-semibold`}>{pdfError}</p>
-                            <button
-                              type ="button"
-                              onClick={() => setUseIframe(true)}
-                              className={`mt-4 px-4 py-2 text-white rounded-lg transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
-                            >
-                              {t('employeeDetailModal.switchToIframe', 'Switch to Iframe Viewer')}
-                            </button>
-                          </div>
                         ) : (
-                          <Document
-                            key={pdfUrl}
-                            file={pdfUrl}
-                            onLoadSuccess={onDocumentLoadSuccess}
-                            onLoadError={onDocumentLoadError}
-                            loading={
-                              <div className="flex flex-col items-center justify-center h-64">
-                                <Loader className="w-8 h-8 animate-spin text-blue-600" />
-                                <p className={`mt-4 ${text.secondary}`}>Loading PDF...</p>
-                              </div>
-                            }
-                          >
-                            <Page 
-                              pageNumber={pageNumber} 
-                              width={Math.min(modalWidth - 100, 800)}
-                              renderTextLayer={false}
-                              renderAnnotationLayer={false}
-                            />
-                          </Document>
-                        )
-                      )}
+                          pdfError ? (
+                            <div className="flex flex-col items-center justify-center h-64 text-red-500">
+                              <FileText className={`w-16 h-16 mb-4 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
+                              <p className={`text-center ${text.secondary} font-semibold`}>{pdfError}</p>
+                              <button
+                                type ="button"
+                                onClick={() => setUseIframe(true)}
+                                className={`mt-4 px-4 py-2 text-white rounded-lg transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
+                              >
+                                {t('employeeDetailModal.switchToIframe', 'Switch to Iframe Viewer')}
+                              </button>
+                            </div>
+                          ) : (
+                            <div
+                              className="pdf-viewer-canvas flex justify-center overflow-x-hidden overflow-y-auto"
+                              style={{ width: pdfViewWidth, minHeight: 600 }}
+                            >
+                              <Document
+                                key={pdfUrl}
+                                file={pdfUrl}
+                                onLoadSuccess={onDocumentLoadSuccess}
+                                onLoadError={onDocumentLoadError}
+                                loading={
+                                  <div
+                                    className="flex flex-col items-center justify-center"
+                                    style={{ width: pdfViewWidth, height: 600 }}
+                                  >
+                                    <Loader className="w-8 h-8 animate-spin text-blue-600" />
+                                    <p className={`mt-4 ${text.secondary}`}>Loading PDF...</p>
+                                  </div>
+                                }
+                              >
+                                <Page
+                                  pageNumber={pageNumber}
+                                  width={pdfViewWidth}
+                                  renderTextLayer={false}
+                                  renderAnnotationLayer={false}
+                                  className="mx-auto"
+                                />
+                              </Document>
+                            </div>
+                          )
+                        )}
+                      </div>
 
                       {!useIframe && !pdfError && numPages && numPages > 1 && (
                         <div className="flex items-center space-x-4 mt-4">

@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Globe } from 'lucide-react';
-import { useLanguage, SUPPORTED_LANGUAGES } from '../contexts/LanguageContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { animate } from 'framer-motion';
+import { TextScramble } from './motion-primitives';
 
 const LanguageSelector = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [scrambleTrigger, setScrambleTrigger] = useState(true);
   const { currentLanguage, changeLanguage, languages, isChanging } = useLanguage();
-  const { isDarkMode, bg, text, border, hover } = useTheme();
+  const { isDarkMode } = useTheme();
   const dropdownRef = useRef(null);
 
   // Close dropdown when clicking outside
@@ -22,63 +23,88 @@ const LanguageSelector = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Re-run scramble whenever the active language changes
+  useEffect(() => {
+    setScrambleTrigger(false);
+    const frame = requestAnimationFrame(() => setScrambleTrigger(true));
+    return () => cancelAnimationFrame(frame);
+  }, [currentLanguage]);
+
   const handleLanguageChange = (languageCode) => {
     changeLanguage(languageCode);
     setIsOpen(false);
   };
 
   const currentLangData = languages[currentLanguage];
+  const languageLabel = currentLangData?.name || currentLanguage || 'Language';
 
   return (
     <div className="relative" ref={dropdownRef}>
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
+        onMouseEnter={() => {
+          setScrambleTrigger(false);
+          requestAnimationFrame(() => setScrambleTrigger(true));
+        }}
         className="flex items-center space-x-2 px-3 py-2 rounded-lg border hover:opacity-80 transition-opacity cursor-pointer"
         style={{
-          backgroundColor: isDarkMode ? '#374151' : '#f3f4f6', // gray-700 : gray-100
-          color: isDarkMode ? '#ffffff' : '#111827', // white : gray-900
-          borderColor: isDarkMode ? '#4b5563' : '#d1d5db' // gray-600 : gray-300
+          backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+          color: isDarkMode ? '#ffffff' : '#111827',
+          borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
         }}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
         <Globe className={`w-4 h-4 transition-transform duration-600 ${isChanging ? 'animate-spin' : ''} hover:rotate-180`} />
-        <span className={`text-sm font-medium flex items-center space-x-2`}>
+        <span className="text-sm font-medium flex items-center space-x-2">
           <img src={currentLangData?.flag} alt={currentLangData?.name} className="w-5 h-5 rounded" />
-          <span>{currentLangData?.name}</span>
+          <TextScramble
+            as="span"
+            className="inline-block min-w-[4.5rem]"
+            duration={0.7}
+            speed={0.035}
+            trigger={scrambleTrigger}
+          >
+            {languageLabel}
+          </TextScramble>
         </span>
         <ChevronDown className={`w-4 h-4 transition-all ${isOpen ? 'rotate-180' : ''} duration-450 origin-center`} />
       </button>
 
       {isOpen && (
-        <div 
+        <div
           className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto border"
           style={{
-            backgroundColor: isDarkMode ? '#374151' : '#ffffff', // gray-700 : white
-            borderColor: isDarkMode ? '#4b5563' : '#d1d5db' // gray-600 : gray-300
+            backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+            borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
           }}
         >
           <div className="py-1">
             {Object.values(languages).map((language) => (
               <button
                 key={language.code}
+                type="button"
                 onClick={() => handleLanguageChange(language.code)}
                 className="w-full text-left px-4 py-2 text-sm transition-colors flex items-center space-x-3 cursor-pointer"
                 style={{
-                  color: isDarkMode ? '#ffffff' : '#111827', // white : gray-900
-                  backgroundColor: currentLanguage === language.code 
-                    ? (isDarkMode ? '#4b5563' : '#f3f4f6') // gray-600 : gray-100
-                    : 'transparent',
-                  fontWeight: currentLanguage === language.code ? '500' : '400'
+                  color: isDarkMode ? '#ffffff' : '#111827',
+                  backgroundColor:
+                    currentLanguage === language.code
+                      ? isDarkMode
+                        ? '#4b5563'
+                        : '#f3f4f6'
+                      : 'transparent',
+                  fontWeight: currentLanguage === language.code ? '500' : '400',
                 }}
                 onMouseEnter={(e) => {
                   if (currentLanguage !== language.code) {
-                    e.target.style.backgroundColor = isDarkMode ? '#4b5563' : '#f9fafb'; // gray-600 : gray-50
+                    e.currentTarget.style.backgroundColor = isDarkMode ? '#4b5563' : '#f9fafb';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (currentLanguage !== language.code) {
-                    e.target.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.backgroundColor = 'transparent';
                   }
                 }}
                 role="option"
@@ -87,7 +113,9 @@ const LanguageSelector = () => {
                 <img src={language.flag} alt={language.name} className="w-5 h-5 rounded" />
                 <span>{language.name}</span>
                 {currentLanguage === language.code && (
-                  <span className="ml-auto" style={{ color: '#60a5fa' }}>✓</span>
+                  <span className="ml-auto" style={{ color: '#60a5fa' }}>
+                    ✓
+                  </span>
                 )}
               </button>
             ))}

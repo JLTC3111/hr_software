@@ -1381,6 +1381,7 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
     let holidayHours = 0;
     let weekendHours = 0;
     let bonusHours = 0;
+    let overtimeFromEntries = 0;
     
     (timeEntries || []).forEach(entry => {
       // Only count pending or approved
@@ -1395,6 +1396,7 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
             
             switch (entry.hour_type) {
               case 'regular':
+              case 'wfh':
                 regularHours += hours;
                 break;
               case 'holiday':
@@ -1405,6 +1407,9 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
                 break;
               case 'bonus':
                 bonusHours += hours;
+                break;
+              case 'overtime':
+                overtimeFromEntries += hours;
                 break;
               default:
                 regularHours += hours;
@@ -1438,7 +1443,7 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
     const leaveDays = leaveDates.size;
     
     // Calculate overtime from overtime_logs
-    let overtimeRegular = 0;
+    let overtimeRegular = overtimeFromEntries;
     let overtimeHoliday = 0;
     (overtimeLogs || []).forEach(log => {
       const hours = Math.round(parseFloat(log.hours || 0) * 100) / 100;
@@ -1450,7 +1455,7 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
     });
     
     // AGGREGATE INTO SUMMARY COLUMNS (matching database logic)
-    // overtime_hours = weekend + bonus + overtime_logs.regular
+    // overtime_hours = weekend + bonus + overtime hour_type + overtime_logs.regular
     const overtimeHours = Math.round((weekendHours + bonusHours + overtimeRegular) * 100) / 100;
     
     // holiday_overtime_hours = holiday + overtime_logs.holiday
@@ -1533,30 +1538,26 @@ export const getTimeTrackingSummary = async (employeeId, month, year) => {
 
   try {
     console.log('🔧 [Service] getTimeTrackingSummary called for employee:', employeeId);
-    // Try to get from summary table first
-    const { data, error } = await supabase
-      .from('time_tracking_summary')
-      .select('*')
-      .eq('employee_id', toEmployeeId(employeeId))
-      .eq('month', month)
-      .eq('year', year)
-      .maybeSingle();
-
-    // If summary table has data, return it
-    if (!error && data && data.total_hours > 0) {
-      console.log('🔧 [Service] Found data in summary table:', data);
-      return { success: true, data };
-    }
-
-    // Otherwise, calculate from raw data
-    console.log('🔧 [Service] Summary table empty/no data, calculating from time_entries...');
+    // Always calculate from time_entries so hour_type=overtime is counted correctly.
+    // The summary table can lag behind or use older aggregation that dropped overtime.
+    console.log('🔧 [Service] Calculating summary from time_entries...');
     const calculatedData = await calculateSummaryFromRawData(employeeId, month, year);
     console.log('🔧 [Service] Calculated data:', calculatedData);
     return { success: true, data: calculatedData };
   } catch (error) {
     console.error('🔧 [Service] Error fetching time tracking summary:', error);
-    // Return calculated data as fallback
+    // Fallback to summary table, then zeros
     try {
+      const { data, error: summaryError } = await supabase
+        .from('time_tracking_summary')
+        .select('*')
+        .eq('employee_id', toEmployeeId(employeeId))
+        .eq('month', month)
+        .eq('year', year)
+        .maybeSingle();
+      if (!summaryError && data) {
+        return { success: true, data };
+      }
       const calculatedData = await calculateSummaryFromRawData(employeeId, month, year);
       return { success: true, data: calculatedData };
     } catch (calcError) {
@@ -1678,6 +1679,7 @@ const aggregateEmployeeSummary = (employeeId, month, year, timeEntries = [], lea
   let holidayHours = 0;
   let weekendHours = 0;
   let bonusHours = 0;
+  let overtimeFromEntries = 0;
 
   timeEntries.forEach((entry) => {
     if (entry.status !== 'pending' && entry.status !== 'approved') return;
@@ -1703,6 +1705,9 @@ const aggregateEmployeeSummary = (employeeId, month, year, timeEntries = [], lea
       case 'bonus':
         bonusHours += hours;
         break;
+      case 'overtime':
+        overtimeFromEntries += hours;
+        break;
       default:
         regularHours += hours;
     }
@@ -1718,7 +1723,7 @@ const aggregateEmployeeSummary = (employeeId, month, year, timeEntries = [], lea
     }
   });
 
-  let overtimeRegular = 0;
+  let overtimeRegular = overtimeFromEntries;
   let overtimeHoliday = 0;
   overtimeLogs.forEach((log) => {
     const hours = Math.round(parseFloat(log.hours || 0) * 100) / 100;
@@ -1728,6 +1733,7 @@ const aggregateEmployeeSummary = (employeeId, month, year, timeEntries = [], lea
 
   const daysWorked = uniqueDays.size;
   const leaveDays = leaveDates.size;
+  // overtime_hours = weekend + bonus + overtime hour_type + overtime_logs.regular
   const overtimeHours = Math.round((weekendHours + bonusHours + overtimeRegular) * 100) / 100;
   const holidayOvertimeHours = Math.round((holidayHours + overtimeHoliday) * 100) / 100;
   const totalHours = Math.round((regularHours + weekendHours + holidayHours + bonusHours + overtimeRegular + overtimeHoliday) * 100) / 100;

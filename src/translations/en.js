@@ -92,6 +92,12 @@ export default {
   header: {
     title: 'HR Management',
     welcome: 'Welcome Back,',
+    welcomePhrase1: 'Welcome back, {name}',
+    welcomePhrase2: 'Great to see you, {name}',
+    welcomePhrase3: 'Hello, {name}!',
+    welcomePhrase4: 'Ready to manage HR, {name}?',
+    welcomePhrase5: "Let's make today productive, {name}",
+    welcomePhrase6: 'Good to have you here, {name}',
     user: 'HR Team',
     logout: 'Logout',
     notifications: 'Notifications',

@@ -94,6 +94,12 @@ export default {
 header: {
   title: 'Gerente de RH',
   welcome: 'Bienvenido de nuevo,',
+  welcomePhrase1: 'Bienvenido de nuevo, {name}',
+  welcomePhrase2: 'Qué bueno verte, {name}',
+  welcomePhrase3: '¡Hola, {name}!',
+  welcomePhrase4: '¿Listo para gestionar RR. HH., {name}?',
+  welcomePhrase5: 'Hagamos hoy productivo, {name}',
+  welcomePhrase6: 'Qué bueno tenerte aquí, {name}',
   user: 'Equipo de RH',
   logout: 'Cerrar sesión',
 },

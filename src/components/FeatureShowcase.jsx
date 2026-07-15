@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Clock3, UploadCloud, BarChart3, CheckCircle2, FileBarChart } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useTheme } from '../contexts/ThemeContext.jsx';
+import { AnimatedGroup, InView, Spotlight, TextEffect, TextShimmer } from './motion-primitives';
+import { cn } from '@/lib/utils';
 
 const FeatureShowcase = () => {
   const { t } = useLanguage();
@@ -66,29 +68,55 @@ const FeatureShowcase = () => {
     : 'bg-white border-gray-100';
 
   return (
+    <InView
+      once
+      variants={{
+        hidden: { opacity: 0, y: 24 },
+        visible: { opacity: 1, y: 0 },
+      }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      viewOptions={{ margin: '-80px' }}
+    >
     <div
-      className={`relative overflow-hidden rounded-2xl border p-5 sm:p-6 shadow-2xl ${surfaceClasses}`}
+      className={cn('relative overflow-hidden rounded-2xl border p-5 sm:p-6 shadow-2xl', surfaceClasses)}
       aria-label={t('help.showcase.label', 'Animated product walkthrough')}
     >
+      <Spotlight
+        className={isDarkMode
+          ? 'from-indigo-400/30 via-indigo-300/15 to-transparent'
+          : 'from-indigo-200/60 via-blue-100/40 to-transparent'}
+        size={320}
+      />
       <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_20%_20%,rgba(99,102,241,0.18),transparent_30%),radial-gradient(circle_at_80%_10%,rgba(16,185,129,0.16),transparent_28%)]" />
 
       <div className="relative grid gap-6 lg:grid-cols-[1.1fr_1fr] items-center">
         <div className="space-y-4">
           <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800">
             <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" aria-hidden="true" />
-            {t('help.showcase.badge', 'Live app walkthrough')}
+            <TextShimmer
+              as="span"
+              className="[--base-color:theme(colors.indigo.700)] [--base-gradient-color:theme(colors.indigo.400)] dark:[--base-color:theme(colors.indigo.300)] dark:[--base-gradient-color:theme(colors.white)]"
+              duration={2.5}
+            >
+              {t('help.showcase.badge', 'Live app walkthrough')}
+            </TextShimmer>
           </div>
 
           <div className="space-y-2">
-            <h2 className={`text-2xl sm:text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            <TextEffect
+              as="h2"
+              per="word"
+              preset="fade-in-blur"
+              className={`text-2xl sm:text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+            >
               {t('help.showcase.title', 'See the 4 pillars in motion')}
-            </h2>
+            </TextEffect>
             <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               {t('help.showcase.subtitle', 'Follow the flow from time capture to reporting, with data moving across modules in real time.')}
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <AnimatedGroup className="grid gap-3 sm:grid-cols-2" preset="slide">
             {features.slice(0, 4).map((feature) => (
               <motion.div
                 key={feature.id}
@@ -102,7 +130,7 @@ const FeatureShowcase = () => {
                 </div>
               </motion.div>
             ))}
-          </div>
+          </AnimatedGroup>
         </div>
 
         <div className="relative h-[360px] sm:h-[380px]">
@@ -156,6 +184,7 @@ const FeatureShowcase = () => {
         </div>
       </div>
     </div>
+    </InView>
   );
 };
 

@@ -8,6 +8,10 @@ import ThemeToggle from './themeToggle';
 import LanguageSelector from './LanguageSelector';
 import { useNavigate } from 'react-router-dom';
 import { LOGOUT_REASON_KEY } from '../config/requestTimeouts.js';
+import { TextEffect, TextShimmer, Spotlight } from './motion-primitives';
+import { ShimmerButton } from './ui/shimmer-button';
+import { ShinyButton } from './ui/shiny-button';
+import { cn } from '@/lib/utils';
 
 const Login = () => {
   const { login, loginWithGithub, loginAsDemo, forgotPassword, isAuthenticated, user, loading } = useAuth();
@@ -28,7 +32,26 @@ const Login = () => {
   const [isGithubLoading, setIsGithubLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [idleLogoutNotice, setIdleLogoutNotice] = useState('');
+  const [titleReady, setTitleReady] = useState(false);
   const isFormBusy = isLoading || isDemoLoading;
+
+  // Wait until auth bootstrap finishes so the title animation isn't skipped on first paint
+  useEffect(() => {
+    if (loading) {
+      setTitleReady(false);
+      return undefined;
+    }
+
+    let raf2;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setTitleReady(true));
+    });
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
+  }, [loading]);
 
   useEffect(() => {
     const reason = sessionStorage.getItem(LOGOUT_REASON_KEY);
@@ -194,22 +217,47 @@ const Login = () => {
 
       {/* Login Card */}
       <div className="relative w-full max-w-md px-6">
-        <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-2xl p-8 transition-colors duration-200`}>
+        <div className={cn(
+          'relative overflow-hidden rounded-2xl shadow-2xl p-8 transition-colors duration-200',
+          isDarkMode ? 'bg-gray-800' : 'bg-white'
+        )}>
+          <Spotlight
+            className={isDarkMode
+              ? 'from-blue-400/40 via-blue-300/20 to-transparent'
+              : 'from-blue-200/50 via-indigo-100/40 to-transparent'}
+            size={280}
+          />
           {/* Logo and Title */}
-          <div className="text-center mb-8">
+          <div className="relative text-center mb-8">
             <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${isDarkMode ? 'bg-transparent' : 'bg-blue-500'}`}>
               <Building2 className="w-8 h-8 text-white" />
             </div>
-            <h1 className={`text-3xl font-bold ${text.primary} mb-2`}>
+            <TextEffect
+              key={`login-title-${t('login.title', 'HR Manager')}`}
+              as="h1"
+              per="char"
+              preset="fade-in-blur"
+              className={`text-3xl font-bold ${text.primary} mb-2`}
+              speedReveal={1.2}
+              trigger={titleReady}
+            >
               {t('login.title', 'HR Manager')}
-            </h1>
-            <p className={`${text.secondary} text-sm`}>
+            </TextEffect>
+            <TextShimmer
+              as="p"
+              className={
+                isDarkMode
+                  ? 'text-sm [--base-color:#9ca3af] [--base-gradient-color:#93c5fd]'
+                  : 'text-sm [--base-color:#6b7280] [--base-gradient-color:#3b82f6]'
+              }
+              duration={2.4}
+            >
               {t('login.subtitle', 'Sign in to access your dashboard')}
-            </p>
+            </TextShimmer>
           </div>
 
           {idleLogoutNotice && (
-            <div className={`mb-6 p-3 ${isDarkMode ? 'bg-amber-900/30 border-amber-700 text-amber-200' : 'bg-amber-50 border-amber-300 text-amber-900'} border rounded-lg flex items-center space-x-2`} role="status">
+            <div className={`relative mb-6 p-3 ${isDarkMode ? 'bg-amber-900/30 border-amber-700 text-amber-200' : 'bg-amber-50 border-amber-300 text-amber-900'} border rounded-lg flex items-center space-x-2`} role="status">
               <AlertCircle className="w-5 h-5 shrink-0" />
               <span className="text-sm">{idleLogoutNotice}</span>
             </div>
@@ -217,14 +265,14 @@ const Login = () => {
 
           {/* Login Error */}
           {loginError && (
-            <div className={`mb-6 p-3 ${isDarkMode ? 'bg-red-900/30 border-red-700 text-red-400' : 'bg-red-100 border-red-400 text-red-700'} border rounded-lg flex items-center space-x-2`}>
+            <div className={`relative mb-6 p-3 ${isDarkMode ? 'bg-red-900/30 border-red-700 text-red-400' : 'bg-red-100 border-red-400 text-red-700'} border rounded-lg flex items-center space-x-2`}>
               <AlertCircle className="w-5 h-5 shrink-0" />
               <span className="text-sm">{loginError}</span>
             </div>
           )}
 
           {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="relative space-y-5">
             {/* Email Field */}
             <div>
               <label className={`block text-sm font-medium ${text.primary} mb-2`}>
@@ -346,17 +394,19 @@ const Login = () => {
             </div>
 
             {/* Login Button */}
-            <button
+            <ShimmerButton
               type="submit"
               disabled={isLoading || isDemoLoading}
-              className={`w-full py-3 px-4 ${isDarkMode ? 'border-blue-100' : 'border-black'} rounded-lg font-medium bg-blue-300 text-white transition-all duration-200 cursor-pointer ${
-                isLoading 
-                  ? 'bg-blue-400 cursor-not-allowed' 
-                  : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.98]'
-              } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+              borderRadius="0.5rem"
+              shimmerColor="#ffffff"
+              background={isDarkMode ? 'rgb(37, 99, 235)' : 'rgb(37, 99, 235)'}
+              className={cn(
+                'w-full py-3 px-4 font-medium text-white disabled:opacity-60 disabled:cursor-not-allowed',
+                isLoading && 'cursor-not-allowed'
+              )}
             >
               {isLoading ? (
-                <div className="flex items-center justify-center">
+                <div className="relative z-10 flex items-center justify-center">
                   <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -364,9 +414,9 @@ const Login = () => {
                   {t('login.signingIn', 'Signing in...')}
                 </div>
               ) : (
-                t('login.signIn', 'Sign In')
+                <span className="relative z-10">{t('login.signIn', 'Sign In')}</span>
               )}
-            </button>
+            </ShimmerButton>
           </form>
 
           {/* Divider */}
@@ -411,7 +461,7 @@ const Login = () => {
           </button> */}
 
           {/* Demo Mode Button */}
-          <button
+          <ShinyButton
             type="button"
             onClick={async () => {
               setLoginError('');
@@ -425,31 +475,34 @@ const Login = () => {
                 setIsDemoLoading(false);
               }
             }}
-            className={`w-full mt-3 py-3 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2 cursor-pointer shadow-sm hover:shadow-md ${
-              isDarkMode 
-                ? 'bg-linear-to-r from-gray-600 to-gray-900 hover:from-gray-900 hover:to-blue-900 text-white border border-white' 
-                : 'bg-linear-to-r from-indigo-50 to-gray-50 hover:from-indigo-100 hover:to-yellow-100 text-gray-700 border border-indigo-200'
-            } ${isDemoLoading ? 'opacity-80' : ''}`}
+            className={cn(
+              'w-full mt-3 py-3 px-4 font-medium transition-all duration-200 shadow-sm hover:shadow-md',
+              isDarkMode
+                ? 'border-white bg-linear-to-r from-gray-600 to-gray-900 text-white'
+                : 'border-indigo-200 bg-linear-to-r from-indigo-50 to-gray-50 text-gray-700',
+              isDemoLoading && 'opacity-80',
+              isFormBusy && 'disabled:opacity-50'
+            )}
             disabled={isFormBusy}
           >
             {isDemoLoading ? (
-              <>
+              <span className="flex items-center justify-center gap-2 normal-case tracking-normal">
                 <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                <span>{t('login.tryDemoLoading', 'Loading demo...')}</span>
-              </>
+                {t('login.tryDemoLoading', 'Loading demo...')}
+              </span>
             ) : (
-              <>
+              <span className="flex items-center justify-center gap-2 normal-case tracking-normal">
                 <Car
                   className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gray-600'}`}
                   style={{ transform: 'scaleX(-1)' }}
                 />
-                <span>{t('login.tryDemo', 'Try Demo Mode')}</span>
-              </>
+                {t('login.tryDemo', 'Try Demo Mode')}
+              </span>
             )}
-          </button>
+          </ShinyButton>
         </div>
 
         {/* Footer */}
@@ -530,38 +583,42 @@ const Login = () => {
 
                 {/* Buttons */}
                 <div className="flex space-x-3">
-                  <button
+                  <ShinyButton
                     type="button"
                     onClick={closeForgotPasswordModal}
-                    className={`flex-1 py-3 px-4 rounded-lg font-medium border transition-colors ${
+                    className={cn(
+                      'flex-1 py-3 px-4 font-medium normal-case tracking-normal',
                       isDarkMode
-                        ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600'
-                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
+                        ? 'border-gray-600 bg-gray-700 text-white'
+                        : 'border-gray-300 bg-white text-gray-700'
+                    )}
                     disabled={isSendingReset}
                   >
                     {t('login.forgotPasswordModal.cancel', 'Cancel')}
-                  </button>
-                  <button
+                  </ShinyButton>
+                  <ShimmerButton
                     type="submit"
-                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
-                      isSendingReset
-                        ? 'bg-blue-400 cursor-not-allowed'
-                        : 'bg-blue-600 hover:bg-blue-700'
-                    } text-white`}
+                    borderRadius="0.5rem"
+                    background="rgb(37, 99, 235)"
+                    className={cn(
+                      'flex-1 py-3 px-4 font-medium text-white',
+                      isSendingReset && 'cursor-not-allowed opacity-70'
+                    )}
                     disabled={isSendingReset}
                   >
                     {isSendingReset ? (
-                      <div className="flex items-center justify-center">
+                      <div className="relative z-10 flex items-center justify-center">
                         <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                         </svg>
                       </div>
                     ) : (
-                      t('login.forgotPasswordModal.sendReset', 'Send Reset Link')
+                      <span className="relative z-10">
+                        {t('login.forgotPasswordModal.sendReset', 'Send Reset Link')}
+                      </span>
                     )}
-                  </button>
+                  </ShimmerButton>
                 </div>
               </form>
             )}

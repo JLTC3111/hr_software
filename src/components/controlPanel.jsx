@@ -8,6 +8,7 @@ import { supabase } from '../config/supabaseClient.js';
 import { isDemoMode, getDemoEmployeeName, resetAllDemoData, resetDemoTimeEntries, resetDemoGoals, resetDemoTasks, resetDemoReviews, resetDemoSkills, resetDemoLeaveRequests } from '../utils/demoHelper.js';
 import { fetchVisitSummary } from '../services/visitService.js';
 import * as flubber from 'flubber';
+import { PageLiveClock } from './ui/page-live-clock';
 
 const getDemoRolePresentation = (role, isDarkMode, adminLabel = 'Demo Admin', employeeLabel = 'Demo Employee') => {
   const isAdminRole = role === 'demo_admin';
@@ -951,6 +952,12 @@ const ControlPanel = () => {
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <PageLiveClock
+          showSeparator={false}
+          textClassName={isDarkMode ? 'text-white' : 'text-gray-900'}
+        />
+      </div>
       {/* User Info Card */}
       <div 
         className="rounded-lg shadow-sm p-4"

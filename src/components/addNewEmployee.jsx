@@ -6,6 +6,9 @@ import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useNotifications } from '../contexts/NotificationContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import * as employeeService from '../services/employeeService.js';
+import { ShimmerButton } from './ui/shimmer-button';
+import { ShinyButton } from './ui/shiny-button';
+import { cn } from '@/lib/utils';
 
 // InputField component outside to prevent recreation
 const InputField = React.memo(({ name, label, icon: Icon, type = 'text', required, value, onChange, error, touched, textSecondary, bgPrimary, textPrimary, borderPrimary, className, ...props }) => {
@@ -280,8 +283,8 @@ const AddNewEmployee = ({ refetchEmployees }) => {
   };
 
   return (
-    <div className={`min-h-screen ${bg.primary} p-4 md:p-8`}>
-      <div className="max-w-4xl mx-auto">
+    <div className={`w-full ${bg.primary} p-0 md:p-0`}>
+      <div className="max-w-none w-full">
         <button type ="button" onClick={() => navigate('/employees')} className={`flex items-center space-x-2 ${text.secondary} ${hover.bg} px-4 py-2 rounded-lg mb-6`}>
           <ArrowLeft className="h-4 w-4" />
           <span>{t('common.back', 'Back')}</span>
@@ -489,16 +492,48 @@ const AddNewEmployee = ({ refetchEmployees }) => {
           )}
 
           <div className="flex justify-between mt-8 pt-6 border-t">
-            <button type="button" onClick={step === 1 ? () => navigate('/employees') : handleBack} className={`px-6 py-2 rounded-lg border-2 ${border.primary} ${text.primary} ${hover.bg} font-medium transition-all hover:scale-105 hover:shadow-md`}>
-              <X className="h-4 w-4 inline mr-2" />
-              {step === 1 ? t('common.cancel') : t('common.back')}
-            </button>
+            <ShinyButton
+              type="button"
+              onClick={step === 1 ? () => navigate('/employees') : handleBack}
+              className={cn(
+                'px-6 py-2 font-medium normal-case tracking-normal border-2',
+                border.primary,
+                text.primary
+              )}
+            >
+              <span>
+                <X className="h-4 w-4 inline mr-2" />
+                {step === 1 ? t('common.cancel') : t('common.back')}
+              </span>
+            </ShinyButton>
             {step < 3 ? (
-              <button type="button" onClick={handleNext} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{t('common.next', 'Next')}</button>
+              <ShimmerButton
+                type="button"
+                onClick={handleNext}
+                borderRadius="0.5rem"
+                background="rgb(37, 99, 235)"
+                className="px-6 py-2 font-medium text-white"
+              >
+                <span className="relative z-10">{t('common.next', 'Next')}</span>
+              </ShimmerButton>
             ) : (
-              <button type="button"   onClick={handleSubmit} disabled={saving} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
-                {saving ? <span>{t('common.saving', 'Saving...')}</span> : <><Save className="h-4 w-4 inline mr-2" />{t('common.save', 'Save')}</>}
-              </button>
+              <ShimmerButton
+                type="button"
+                onClick={handleSubmit}
+                disabled={saving}
+                borderRadius="0.5rem"
+                background="rgb(22, 163, 74)"
+                className="px-6 py-2 font-medium text-white disabled:opacity-50"
+              >
+                <span className="relative z-10">
+                  {saving ? t('common.saving', 'Saving...') : (
+                    <>
+                      <Save className="h-4 w-4 inline mr-2" />
+                      {t('common.save', 'Save')}
+                    </>
+                  )}
+                </span>
+              </ShimmerButton>
             )}
           </div>
         </div>

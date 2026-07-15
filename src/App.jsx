@@ -302,7 +302,7 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
                   setIsMobileMenuOpen={setIsMobileMenuOpen}
                 />
               
-              <div className="flex">
+              <div className="flex w-full min-w-0">
                 <Sidebar 
                   key={currentLanguage} 
                   isMobileMenuOpen={isMobileMenuOpen}
@@ -310,7 +310,7 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
                 />
                 
                 {/* Main Content - Full width utilization */}
-                <div className="flex-1 p-3 sm:p-4 lg:p-8 w-full mx-auto">
+                <div className="min-w-0 flex-1 w-full p-3 sm:p-4 lg:p-5 xl:p-6">
                   <Suspense fallback={<PageLoader />}>
                   <Routes>
                     <Route path="/" element={<Navigate to="/time-tracking" replace />} />

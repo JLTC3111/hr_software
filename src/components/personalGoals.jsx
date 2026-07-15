@@ -8,6 +8,11 @@ import { isDemoMode, getDemoGoalTitle, getDemoGoalDescription, getDemoSkills, up
 import * as performanceService from '../services/performanceService';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
+import { ShinyButton } from './ui/shiny-button';
+import { SlidingNumber } from './motion-primitives';
+import { NumberTicker } from './ui/number-ticker';
+import { PageLiveClock } from './ui/page-live-clock';
+import { cn } from '@/lib/utils';
 
 const PersonalGoals = ({ employees }) => {
   const { t } = useLanguage();
@@ -664,7 +669,9 @@ const PersonalGoals = ({ employees }) => {
                   borderColor: 'transparent'
                 }}
               >
-                {currentData.goals.filter(g => g.status === 'in_progress' || g.status === 'in-progress').length}
+                <SlidingNumber
+                  value={currentData.goals.filter(g => g.status === 'in_progress' || g.status === 'in-progress').length}
+                />
               </p>
             </div>
           </div>
@@ -700,10 +707,18 @@ const PersonalGoals = ({ employees }) => {
                   borderColor: 'transparent'
                 }}
               >
-                {currentData.skills.length > 0 
-                  ? (currentData.skills.reduce((acc, skill) => acc + skill.rating, 0) / currentData.skills.length).toFixed(1)
-                  : '0.0'
-                }
+                <SlidingNumber
+                  value={
+                    currentData.skills.length > 0
+                      ? Number(
+                          (
+                            currentData.skills.reduce((acc, skill) => acc + skill.rating, 0) /
+                            currentData.skills.length
+                          ).toFixed(1)
+                        )
+                      : 0
+                  }
+                />
               </p>
             </div>
           </div>
@@ -739,7 +754,9 @@ const PersonalGoals = ({ employees }) => {
                   borderColor: 'transparent'
                 }}
               >
-                {currentData.goals.filter(g => g.status === 'completed').length}/{currentData.goals.length}
+                <SlidingNumber value={currentData.goals.filter(g => g.status === 'completed').length} />
+                /
+                <SlidingNumber value={currentData.goals.length} />
               </p>
             </div>
           </div>
@@ -905,7 +922,7 @@ const PersonalGoals = ({ employees }) => {
                       borderColor: 'transparent'
                     }}
                   >
-                    {goal.progress}% {t('personalGoals.complete')}
+                    <NumberTicker value={Number(goal.progress) || 0} />% {t('personalGoals.complete')}
                   </span>
                   <span 
                     style={{
@@ -952,13 +969,19 @@ const PersonalGoals = ({ employees }) => {
           {t('personalGoals.performanceGoals')}
         </h3>
         <div className="flex items-center space-x-2">
-          <button 
+          <ShinyButton 
+            type="button"
             onClick={handleAddGoal}
-            className="px-4 py-2 bg-transparent text-white rounded-lg flex items-center space-x-2 cursor-pointer transition-colors"
+            className={cn(
+              'px-4 py-2 border',
+              isDarkMode
+                ? 'bg-blue-600 border-blue-500 text-white hover:bg-blue-700'
+                : 'bg-blue-600 border-blue-500 text-white hover:bg-blue-700'
+            )}
           >
-            <Plus className={`h-4 w-4 ${text.secondary}`} />
+            <Plus className="h-4 w-4" />
             <span>{t('personalGoals.addNewGoal')}</span>
-          </button>
+          </ShinyButton>
         </div>
       </div>
 
@@ -1044,7 +1067,11 @@ const PersonalGoals = ({ employees }) => {
                     borderColor: 'transparent'
                   }}
                 >
-                  {progressChanges[goal.id] !== undefined ? progressChanges[goal.id] : goal.progress}%
+                  {progressChanges[goal.id] !== undefined ? (
+                    <NumberTicker value={Number(progressChanges[goal.id]) || 0} />
+                  ) : (
+                    <NumberTicker value={Number(goal.progress) || 0} />
+                  )}%
                 </span>
               </div>
             </div>
@@ -1100,6 +1127,10 @@ const PersonalGoals = ({ employees }) => {
           >
             {t('personalGoals.title')}
           </h2>
+          <PageLiveClock
+            textClassName={isDarkMode ? 'text-white' : 'text-gray-900'}
+            separatorClassName={isDarkMode ? 'text-gray-400' : 'text-gray-500'}
+          />
           {currentEmployee && (
             <div className="flex items-center space-x-3">
               {currentEmployee.photo ? (
@@ -1380,25 +1411,26 @@ const PersonalGoals = ({ employees }) => {
               <div className="flex justify-end space-x-3 pt-4 border-t"
                 style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}
               >
-                <button
+                <ShinyButton
                   type="button"
                   onClick={() => setShowAddGoalModal(false)}
-                  className={`px-4 py-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors cursor-pointer`}
-                  style={{
-                    backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
-                    color: isDarkMode ? '#ffffff' : '#111827'
-                  }}
+                  className={cn(
+                    'px-4 py-2',
+                    isDarkMode
+                      ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600'
+                      : 'bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200'
+                  )}
                 >
                   {t('common.cancel', 'Cancel')}
-                </button>
-                <button
+                </ShinyButton>
+                <ShinyButton
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-blue-600 text-white border-blue-500 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Save className={`h-4 w-4 ${isDarkMode ? 'text-white' : 'text-white'}`} />
+                  <Save className="h-4 w-4 text-white" />
                   <span>{loading ? t('common.saving', 'Saving...') : t('common.save', 'Save')}</span>
-                </button>
+                </ShinyButton>
               </div>
             </form>
           </div>
@@ -1619,28 +1651,29 @@ const PersonalGoals = ({ employees }) => {
               <div className="flex justify-end space-x-3 pt-4 border-t"
                 style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}
               >
-                <button
+                <ShinyButton
                   type="button"
                   onClick={() => {
                     setShowEditGoalModal(false);
                     setEditingGoal(null);
                   }}
-                  className={`px-4 py-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors cursor-pointer`}
-                  style={{
-                    backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
-                    color: isDarkMode ? '#ffffff' : '#111827'
-                  }}
+                  className={cn(
+                    'px-4 py-2',
+                    isDarkMode
+                      ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600'
+                      : 'bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200'
+                  )}
                 >
                   {t('common.cancel', 'Cancel')}
-                </button>
-                <button
+                </ShinyButton>
+                <ShinyButton
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-blue-600 text-white border-blue-500 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Save className={`h-4 w-4 ${isDarkMode ? 'text-white' : 'text-white'}`} />
+                  <Save className="h-4 w-4 text-white" />
                   <span>{loading ? t('common.updating', 'Updating...') : t('common.update', '')}</span>
-                </button>
+                </ShinyButton>
               </div>
             </form>
           </div>
@@ -1758,7 +1791,9 @@ const PersonalGoals = ({ employees }) => {
                         style={{ width: `${viewingGoal.progress || 0}%` }}
                       />
                     </div>
-                    <span className="font-bold text-sm">{viewingGoal.progress || 0}%</span>
+                    <span className="font-bold text-sm">
+                      <NumberTicker value={Number(viewingGoal.progress) || 0} />%
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1768,15 +1803,16 @@ const PersonalGoals = ({ employees }) => {
             <div className="flex justify-end p-6 border-t"
               style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}
             >
-              <button
+              <ShinyButton
+                type="button"
                 onClick={() => {
                   setShowViewGoalModal(false);
                   setViewingGoal(null);
                 }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
+                className="px-4 py-2 bg-blue-600 text-white border-blue-500 hover:bg-blue-700"
               >
                 {t('common.close', 'Close')}
-              </button>
+              </ShinyButton>
             </div>
           </div>
         </div>

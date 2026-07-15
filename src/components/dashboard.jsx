@@ -16,6 +16,31 @@ import { AnimatedCoffeeIcon, MiniFlubberMorphingLeaveStatus } from './timeTracki
 import { MiniFlubberAutoMorphInProgress, MiniFlubberAutoMorphEmployees } from './taskReview.jsx'
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { getDemoEmployeeName, isDemoMode } from '../utils/demoHelper.js';
+import { AnimatedGroup, InView, TextEffect, Spotlight, SlidingNumber, useNumberReplay } from './motion-primitives'
+import { BorderBeam } from './ui/border-beam'
+import { AnimatedList } from './ui/animated-list'
+import { MagicBento } from './ui/magic-bento'
+import { PageLiveClock } from './ui/page-live-clock'
+import { cn } from '@/lib/utils'
+
+function HoverMetricCard({
+  onClick,
+  className,
+  children,
+  beam,
+}) {
+  const { replayToken, bump } = useNumberReplay();
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={bump}
+      className={cn('group relative overflow-hidden', className)}
+    >
+      {beam}
+      {typeof children === 'function' ? children(replayToken) : children}
+    </div>
+  );
+};
 
 export const MiniFlubberAutoMorphEmployeesDashboard = ({
   size = 24,
@@ -1585,16 +1610,27 @@ const Dashboard = ({ employees, applications }) => {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6 px-2 sm:px-0">
+    <div className="space-y-4 md:space-y-6 w-full">
       <div className={`${bg.secondary} rounded-lg border ${border.primary} p-3 flex items-center justify-between slide-in-left flex-wrap gap-3`}>
         <div className="flex items-center space-x-2">
           <DatabaseZap className={`w-4 h-4 ${hasRealData ? 'text-green-600' : 'text-yellow-600'}`} />
-          <span className={`text-sm ${text.secondary}`}>
+          <TextEffect
+            as="span"
+            per="word"
+            preset="fade"
+            className={`text-sm ${text.secondary}`}
+            speedReveal={1.4}
+          >
             {hasRealData 
               ? t('dashboard.liveData', 'Live data from Supabase')
               : t('dashboard.noData', 'No time tracking data yet')
             }
-          </span>
+          </TextEffect>
+          <span className={`hidden sm:inline text-sm font-mono ${text.secondary} opacity-70`}>·</span>
+          <PageLiveClock
+            showSeparator={false}
+            textClassName={text.primary}
+          />
         </div>
         
         {/* Month/Year Selector */}
@@ -1674,78 +1710,138 @@ const Dashboard = ({ employees, applications }) => {
       )}
       
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        <div className="stagger-item">
-          <StatsCard 
-            title={t('dashboard.totalEmployees')} 
-            value={employees.length} 
-            icon={MiniFlubberAutoMorphEmployeesDashboard} 
-            staticIcon={Users}
-            iconHoverOnly
-            color={isDarkMode ? "#ffffff" : "#1f1f1f"}
-            size={24}
-            isDarkMode={isDarkMode}
-            onClick={() => handleMetricClick('employees')}
-          />
-        </div>
-        <div className="stagger-item">
-          <StatsCard 
-            title={t('dashboard.totalRegularHours', '')} 
-            value={`${totalRegularHours}h`} 
-            icon={MiniFlubberAutoMorphOfficeWork} 
-            staticIcon={AlarmClock}
-            iconHoverOnly
-            size={28}
-            color={isDarkMode ? "#ffffff" : "#1f1f1f"}
-            isDarkMode={isDarkMode}
-            onClick={() => handleMetricClick('regularHours')}
-          />
-        </div>
-        <div className="stagger-item">
-          <StatsCard 
-            title={t('dashboard.avgPerformance')} 
-            value={avgPerformance} 
-            icon={MiniFlubberAutoMorphPerformance} 
-            staticIcon={Gauge}
-            iconHoverOnly
-            size={28}
-            isDarkMode={isDarkMode}
-            color={isDarkMode ? "#ffffff" : "#1f1f1f"}
-            onClick={() => handleMetricClick('performance')}
-          />
-        </div>
-        <div className="stagger-item">
-          <StatsCard 
-            title={t('dashboard.totalOvertime')} 
-            value={`${totalOvertime}h`} 
-            icon={MiniFlubberAutoMorphOverTime} 
-            staticIcon={HeartPlus}
-            iconHoverOnly
-            size={28}
-            isDarkMode={isDarkMode}
-            color={isDarkMode ? "#ffffff" : "#1f1f1f"}
-            onClick={() => handleMetricClick('overtime')}
-          />
-        </div>
-        <div className="stagger-item">
-          <StatsCard 
-            title={t('dashboard.totalLeave')} 
-            value={totalLeaveDays} 
-            icon={MiniFlubberAutoMorphVacation} 
-            staticIcon={Coffee}
-            iconHoverOnly
-            size={28}
-            isDarkMode={isDarkMode}
-            color={isDarkMode ? "#ffffff" : "#1f1f1f"}
-            onClick={() => handleMetricClick('leave')}
-          />
-        </div>
-      </div>
+      <AnimatedGroup
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6"
+        preset="blur-slide"
+      >
+        <StatsCard 
+          title={t('dashboard.totalEmployees')} 
+          value={employees.length} 
+          icon={MiniFlubberAutoMorphEmployeesDashboard} 
+          staticIcon={Users}
+          iconHoverOnly
+          color={isDarkMode ? "#ffffff" : "#1f1f1f"}
+          size={24}
+          isDarkMode={isDarkMode}
+          onClick={() => handleMetricClick('employees')}
+        />
+        <StatsCard 
+          title={t('dashboard.totalRegularHours', '')} 
+          value={`${totalRegularHours}h`} 
+          icon={MiniFlubberAutoMorphOfficeWork} 
+          staticIcon={AlarmClock}
+          iconHoverOnly
+          size={28}
+          color={isDarkMode ? "#ffffff" : "#1f1f1f"}
+          isDarkMode={isDarkMode}
+          onClick={() => handleMetricClick('regularHours')}
+        />
+        <StatsCard 
+          title={t('dashboard.avgPerformance')} 
+          value={avgPerformance} 
+          icon={MiniFlubberAutoMorphPerformance} 
+          staticIcon={Gauge}
+          iconHoverOnly
+          size={28}
+          isDarkMode={isDarkMode}
+          color={isDarkMode ? "#ffffff" : "#1f1f1f"}
+          onClick={() => handleMetricClick('performance')}
+        />
+        <StatsCard 
+          title={t('dashboard.totalOvertime')} 
+          value={`${totalOvertime}h`} 
+          icon={MiniFlubberAutoMorphOverTime} 
+          staticIcon={HeartPlus}
+          iconHoverOnly
+          size={28}
+          isDarkMode={isDarkMode}
+          color={isDarkMode ? "#ffffff" : "#1f1f1f"}
+          onClick={() => handleMetricClick('overtime')}
+        />
+        <StatsCard 
+          title={t('dashboard.totalLeave')} 
+          value={totalLeaveDays} 
+          icon={MiniFlubberAutoMorphVacation} 
+          staticIcon={Coffee}
+          iconHoverOnly
+          size={28}
+          isDarkMode={isDarkMode}
+          color={isDarkMode ? "#ffffff" : "#1f1f1f"}
+          onClick={() => handleMetricClick('leave')}
+        />
+      </AnimatedGroup>
+
+      {/* Magic Bento overview */}
+      <MagicBento
+        isDarkMode={isDarkMode}
+        enableStars
+        enableSpotlight
+        enableBorderGlow
+        enableMagnetism
+        clickEffect
+        items={[
+          {
+            label: t('dashboard.workforce', 'Workforce'),
+            title: String(employees.length),
+            description: t('dashboard.totalEmployees'),
+            value: employees.length,
+            onClick: () => handleMetricClick('employees'),
+          },
+          {
+            label: t('dashboard.hours', 'Hours'),
+            title: `${totalRegularHours}h`,
+            description: t('dashboard.totalRegularHours', 'Total Regular Hours'),
+            value: Number(totalRegularHours) || 0,
+            suffix: 'h',
+            onClick: () => handleMetricClick('regularHours'),
+          },
+          {
+            label: t('dashboard.performance', 'Performance'),
+            title: String(avgPerformance),
+            description: t('dashboard.avgPerformance'),
+            value: Number(avgPerformance) || 0,
+            onClick: () => handleMetricClick('performance'),
+          },
+          {
+            label: t('dashboard.overtime', 'Overtime'),
+            title: `${totalOvertime}h`,
+            description: t('dashboard.totalOvertime'),
+            value: Number(totalOvertime) || 0,
+            suffix: 'h',
+            onClick: () => handleMetricClick('overtime'),
+          },
+          {
+            label: t('dashboard.leave', 'Leave'),
+            title: String(totalLeaveDays),
+            description: t('dashboard.totalLeave'),
+            value: Number(totalLeaveDays) || 0,
+            onClick: () => handleMetricClick('leave'),
+          },
+          {
+            label: t('dashboard.approvals', 'Approvals'),
+            title: String(pendingApprovalsCount),
+            description: t('dashboard.pendingRequests', 'Pending Requests'),
+            value: Number(pendingApprovalsCount) || 0,
+            onClick: () => handleMetricClick('pendingRequests'),
+          },
+        ]}
+      />
 
       {/* Charts Row 1 */}
+      <InView
+        once
+        variants={{
+          hidden: { opacity: 0, y: 28 },
+          visible: { opacity: 1, y: 0 },
+        }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+        viewOptions={{ margin: '-40px' }}
+      >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Employee Performance Chart */}
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-3 md:p-4 slide-in-up transition-all duration-300 hover:shadow-lg`}>
+        <div className={cn(bg.secondary, 'group relative overflow-hidden rounded-xl shadow-sm border p-3 md:p-4 slide-in-up transition-all duration-300 hover:shadow-lg', border.primary)}>
+          <BorderBeam showOnHover size={120} duration={9} borderWidth={2.5} colorFrom="#dc2626" colorTo="#10b981" />
+          <div className="relative z-10">
           <h3 className={`font-semibold ${text.primary} mb-3`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.125rem)'}}>
             {t('dashboard.employeePerformance')}
           </h3>
@@ -1860,10 +1956,13 @@ const Dashboard = ({ employees, applications }) => {
               />
             </ComposedChart>
           </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Department Distribution */}
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-4 md:p-6 slide-in-up transition-all duration-300 hover:shadow-lg`} style={{ animationDelay: '0.1s' }}>
+        <div className={cn(bg.secondary, 'group relative overflow-hidden rounded-xl shadow-sm border p-4 md:p-6 slide-in-up transition-all duration-300 hover:shadow-lg', border.primary)} style={{ animationDelay: '0.1s' }}>
+          <BorderBeam showOnHover size={120} duration={10} delay={1} borderWidth={2.5} colorFrom="#3b82f6" colorTo="#ec4899" />
+          <div className="relative z-10">
           <h3 className={`font-semibold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.125rem)'}}>
             {t('dashboard.departmentDist')}
           </h3>
@@ -1948,12 +2047,25 @@ const Dashboard = ({ employees, applications }) => {
               />
             </PieChart>
           </ResponsiveContainer>
+          </div>
         </div>
       </div>
+      </InView>
 
       {/* Charts Row 2 - Regular + Overtime Hours (Merged) */}
+      <InView
+        once
+        variants={{
+          hidden: { opacity: 0, y: 28 },
+          visible: { opacity: 1, y: 0 },
+        }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+        viewOptions={{ margin: '-40px' }}
+      >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 lg:col-span-2`}>
+        <div className={cn(bg.secondary, 'group relative overflow-hidden rounded-xl shadow-sm border p-6 lg:col-span-2', border.primary)}>
+          <BorderBeam showOnHover size={120} duration={12} borderWidth={2.5} colorFrom="#2563eb" colorTo="#f59e0b" />
+          <div className="relative z-10">
           <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
             {t('dashboard.regularAndOvertimeByEmployee', 'Regular & Overtime Hours by Employee')}
           </h3>
@@ -2072,13 +2184,26 @@ const Dashboard = ({ employees, applications }) => {
 
             </ComposedChart>
           </ResponsiveContainer>
+          </div>
         </div>
       </div>
+      </InView>
 
       {/* Charts Row 3 */}
+      <InView
+        once
+        variants={{
+          hidden: { opacity: 0, y: 28 },
+          visible: { opacity: 1, y: 0 },
+        }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+        viewOptions={{ margin: '-40px' }}
+      >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Work & Leave Days Comparison */}
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
+        <div className={cn(bg.secondary, 'group relative overflow-hidden rounded-xl shadow-sm border p-6', border.primary)}>
+          <BorderBeam showOnHover size={120} duration={10} borderWidth={2.5} colorFrom="#10b981" colorTo="#ef4444" />
+          <div className="relative z-10">
           <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
             {t('dashboard.workLeaveComp')}
           </h3>
@@ -2167,14 +2292,21 @@ const Dashboard = ({ employees, applications }) => {
               />
             </ComposedChart>
           </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Top Performers */}
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
+        <div className={cn(bg.secondary, 'group relative overflow-hidden rounded-xl shadow-sm border p-6', border.primary)}>
+          <BorderBeam showOnHover size={120} duration={9} delay={0.5} borderWidth={2.5} colorFrom="#f59e0b" colorTo="#8b5cf6" />
+          <Spotlight
+            className={isDarkMode ? 'bg-amber-400/15' : 'bg-amber-400/10'}
+            size={220}
+          />
+          <div className="relative z-10">
           <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
             {t('dashboard.topPerformers')}
           </h3>
-          <div className="space-y-3">
+          <AnimatedList delay={280} reverse={false} className="gap-3">
             {topPerformers.map((emp, index) => (
               <div key={emp.id} className={`flex items-center justify-between p-3 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                 <div className="flex items-center space-x-3">
@@ -2207,60 +2339,132 @@ const Dashboard = ({ employees, applications }) => {
                 </div>
               </div>
             ))}
+          </AnimatedList>
           </div>
         </div>
       </div>
+      </InView>
 
       {/* Additional Stats */}
+      <InView
+        once
+        variants={{
+          hidden: { opacity: 0, y: 24 },
+          visible: { opacity: 1, y: 0 },
+        }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+        viewOptions={{ margin: '-30px' }}
+      >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div 
+        <HoverMetricCard
           onClick={() => handleMetricClick('workDays')}
-          className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
+          className={cn(
+            bg.secondary,
+            'rounded-xl shadow-sm border p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1',
+            border.primary
+          )}
+          beam={
+            <BorderBeam showOnHover size={80} duration={8} borderWidth={2} colorFrom="#10b981" colorTo="#06b6d4" />
+          }
         >
-          <div className="flex items-center space-x-3 mb-2">
-            <AnimatedClockIcon isDarkMode={isDarkMode} className={`w-5 h-5 ${text.primary}`} />
-            <h4 className={`font-semibold ${text.primary}`}>
-              {t('dashboard.totalWorkDays')}
-            </h4>
-          </div>
-          <p className={`text-3xl font-bold ${text.primary}`}>{totalWorkDays}</p>
-          <p className={`text-sm ${text.secondary} mt-1`}>
-            {t('dashboard.acrossEmployees')}
-          </p>
-        </div>
+          {(replayToken) => (
+            <>
+              <Spotlight className={isDarkMode ? 'bg-emerald-400/15' : 'bg-emerald-400/10'} size={160} />
+              <div className="relative z-10">
+                <div className="flex items-center space-x-3 mb-2">
+                  <AnimatedClockIcon isDarkMode={isDarkMode} className={`w-5 h-5 ${text.primary}`} />
+                  <h4 className={`font-semibold ${text.primary}`}>
+                    {t('dashboard.totalWorkDays')}
+                  </h4>
+                </div>
+                <p className={`text-3xl font-bold ${text.primary}`}>
+                  <SlidingNumber
+                    value={Number(totalWorkDays) || 0}
+                    replayToken={replayToken}
+                    className={text.primary}
+                  />
+                </p>
+                <p className={`text-sm ${text.secondary} mt-1`}>
+                  {t('dashboard.acrossEmployees')}
+                </p>
+              </div>
+            </>
+          )}
+        </HoverMetricCard>
 
-        <div 
+        <HoverMetricCard
           onClick={() => handleMetricClick('applications')}
-          className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
+          className={cn(
+            bg.secondary,
+            'rounded-xl shadow-sm border p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1',
+            border.primary
+          )}
+          beam={
+            <BorderBeam showOnHover size={80} duration={9} delay={0.8} borderWidth={2} colorFrom="#3b82f6" colorTo="#8b5cf6" />
+          }
         >
-          <div className="flex items-center space-x-3 mb-2">
-            <FileUser className={`w-5 h-5 ${text.primary}`} />
-            <h4 className={`font-semibold ${text.primary}`}>
-              {t('dashboard.activeApplications')}
-            </h4>
-          </div>
-          <p className={`text-3xl font-bold ${text.primary}`}>{applications.length}</p>
-          <p className={`text-sm ${text.secondary} mt-1`}>
-            {t('dashboard.pendingReview')}
-          </p>
-        </div>
+          {(replayToken) => (
+            <>
+              <Spotlight className={isDarkMode ? 'bg-blue-400/15' : 'bg-blue-400/10'} size={160} />
+              <div className="relative z-10">
+                <div className="flex items-center space-x-3 mb-2">
+                  <FileUser className={`w-5 h-5 ${text.primary}`} />
+                  <h4 className={`font-semibold ${text.primary}`}>
+                    {t('dashboard.activeApplications')}
+                  </h4>
+                </div>
+                <p className={`text-3xl font-bold ${text.primary}`}>
+                  <SlidingNumber
+                    value={applications.length}
+                    replayToken={replayToken}
+                    className={text.primary}
+                  />
+                </p>
+                <p className={`text-sm ${text.secondary} mt-1`}>
+                  {t('dashboard.pendingReview')}
+                </p>
+              </div>
+            </>
+          )}
+        </HoverMetricCard>
 
-        <div 
+        <HoverMetricCard
           onClick={() => handleMetricClick('pendingRequests')}
-          className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}
+          className={cn(
+            bg.secondary,
+            'rounded-xl shadow-sm border p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1',
+            border.primary
+          )}
+          beam={
+            <BorderBeam showOnHover size={80} duration={8.5} delay={1.2} borderWidth={2} colorFrom="#f59e0b" colorTo="#ef4444" />
+          }
         >
-          <div className="flex items-center space-x-3 mb-2">
-            <MiniFlubberAutoMorphInProgress isDarkMode={isDarkMode} className={`w-5 h-5 ${text.primary}`} />
-            <h4 className={`font-semibold ${text.primary}`}>
-              {t('dashboard.pendingRequests')}
-            </h4>
-          </div>
-          <p className={`text-3xl font-bold ${text.primary}`}>{pendingApprovalsCount}</p>
-          <p className={`text-sm ${text.secondary} mt-1`}>
-            {t('dashboard.pendingApprovals', '')}
-          </p>
-        </div>
+          {(replayToken) => (
+            <>
+              <Spotlight className={isDarkMode ? 'bg-amber-400/15' : 'bg-amber-400/10'} size={160} />
+              <div className="relative z-10">
+                <div className="flex items-center space-x-3 mb-2">
+                  <MiniFlubberAutoMorphInProgress isDarkMode={isDarkMode} className={`w-5 h-5 ${text.primary}`} />
+                  <h4 className={`font-semibold ${text.primary}`}>
+                    {t('dashboard.pendingRequests')}
+                  </h4>
+                </div>
+                <p className={`text-3xl font-bold ${text.primary}`}>
+                  <SlidingNumber
+                    value={Number(pendingApprovalsCount) || 0}
+                    replayToken={replayToken}
+                    className={text.primary}
+                  />
+                </p>
+                <p className={`text-sm ${text.secondary} mt-1`}>
+                  {t('dashboard.pendingApprovals', '')}
+                </p>
+              </div>
+            </>
+          )}
+        </HoverMetricCard>
       </div>
+      </InView>
 
       {/* Metric Detail Modal */}
       <MetricDetailModal

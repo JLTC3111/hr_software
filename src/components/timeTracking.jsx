@@ -11,7 +11,41 @@ import { supabase } from '../config/supabaseClient'
 import { AnimatedClockIcon } from './timeClockEntry'
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js'
 import { getDemoEmployeeName, isDemoMode, addDemoLeaveRequest, updateDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper'
-import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts';
+import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts'
+import { SlidingNumber, useNumberReplay } from './motion-primitives';
+import { PageLiveClock } from './ui/page-live-clock';
+
+function TimeCard({ title, value, unit, icon: Icon, color, onClick, useDarkIcon = false, iconProps = {}, text, border, isDarkMode, customIcons }) {
+  const { replayToken, bump } = useNumberReplay();
+  return (
+    <div
+      className={`group relative overflow-hidden rounded-lg p-6 border ${border.primary} ${onClick ? 'cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1' : ''}`}
+      onClick={onClick}
+      onMouseEnter={bump}
+    >
+      <div className="relative z-10 flex items-center justify-between">
+        <div>
+          <p className={`text-sm font-medium ${text.secondary}`}>{title}</p>
+          <p className={`text-2xl font-bold ${color} mt-1`}>
+            {typeof value === 'number' || (typeof value === 'string' && /^-?[\d.]+$/.test(String(value).trim())) ? (
+              <SlidingNumber value={Number(value) || 0} replayToken={replayToken} />
+            ) : (
+              value
+            )}
+            <span className={`text-sm font-normal ${text.secondary} ml-1`}>{unit}</span>
+          </p>
+        </div>
+        <div>
+          {useDarkIcon && customIcons?.has(Icon) ? (
+            <Icon className={`h-8 w-8 ${color}`} isDarkMode={isDarkMode} {...iconProps} />
+          ) : (
+            <Icon className={`h-8 w-8 ${color}`} aria-hidden="true" {...iconProps} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = false }) => {
     const mainColor = isDarkMode ? '#ffffff' : '#000000';
@@ -891,18 +925,56 @@ const handleRejectRequest = async (requestId) => {
   
   const calculatedLeaveDays = calculateLeaveDays();
   
-  const currentData = summaryData || {
+  // Prefer live tally from loaded time entries so UI metrics match the table
+  const entryDerivedHours = useMemo(() => {
+    const entries = timeEntries || [];
+    let regular = 0;
+    let overtime = 0;
+    let holidayOvertime = 0;
+    const workDays = new Set();
+
+    entries.forEach((entry) => {
+      const type = entry.hour_type || entry.hourType;
+      const hours = Number(entry.hours) || 0;
+      if (type === 'on_leave' || type === 'vacation' || type === 'sick_leave') return;
+      if (entry.date) workDays.add(entry.date);
+
+      if (type === 'regular' || type === 'wfh') regular += hours;
+      else if (type === 'overtime' || type === 'weekend' || type === 'bonus') overtime += hours;
+      else if (type === 'holiday') holidayOvertime += hours;
+      else regular += hours;
+    });
+
+    return {
+      regular_hours: Math.round(regular * 100) / 100,
+      overtime_hours: Math.round(overtime * 100) / 100,
+      holiday_overtime_hours: Math.round(holidayOvertime * 100) / 100,
+      total_hours: Math.round((regular + overtime + holidayOvertime) * 100) / 100,
+      days_worked: workDays.size,
+    };
+  }, [timeEntries]);
+
+  const currentData = {
     days_worked: 0,
     leave_days: 0,
     overtime_hours: 0,
     holiday_overtime_hours: 0,
     regular_hours: 0,
     total_hours: 0,
-    attendance_rate: 0
+    attendance_rate: 0,
+    ...(summaryData || {}),
+    // Live entries win when present (fixes stale / mis-aggregated overtime)
+    ...(timeEntries?.length
+      ? {
+          regular_hours: entryDerivedHours.regular_hours,
+          overtime_hours: entryDerivedHours.overtime_hours,
+          holiday_overtime_hours: entryDerivedHours.holiday_overtime_hours,
+          total_hours: entryDerivedHours.total_hours,
+          days_worked: entryDerivedHours.days_worked || summaryData?.days_worked || 0,
+        }
+      : {}),
+    leave_days: calculatedLeaveDays,
   };
-  
-  // Override leave_days with calculated value (includes pending)
-  currentData.leave_days = calculatedLeaveDays;
 
   // Attendance records alias (fix ReferenceError and expose timeEntries for the Summary table)
   const attendanceRecords = timeEntries || [];
@@ -1002,7 +1074,7 @@ const handleRejectRequest = async (requestId) => {
         break;
       case 'overtime':
         const overtimeEntries = timeEntries.filter(entry => 
-          ['weekend', 'holiday', 'bonus'].includes(entry.hour_type)
+          ['overtime', 'weekend', 'holiday', 'bonus'].includes(entry.hour_type || entry.hourType)
         );
         data = overtimeEntries.map(entry => ({
           employeeName: selectedEmp.name,
@@ -1031,30 +1103,6 @@ const handleRejectRequest = async (requestId) => {
   };
   
   const CUSTOM_ICONS = new Set([AnimatedCoffeeIcon, AnimatedClockIcon]);
-
-  const TimeCard = ({ title, value, unit, icon: Icon, color, onClick, useDarkIcon = false, iconProps = {} }) => (
-    <div 
-      className={`rounded-lg p-6 border ${border.primary} ${onClick ? 'cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1' : ''}`}
-      onClick={onClick}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className={`text-sm font-medium ${text.secondary}`}>{title}</p>
-          <p className={`text-2xl font-bold ${color} mt-1`}>
-            {value}
-            <span className={`text-sm font-normal ${text.secondary} ml-1`}>{unit}</span>
-          </p>
-        </div>
-        <div>
-          {useDarkIcon && CUSTOM_ICONS.has(Icon) ? (
-            <Icon className={`h-8 w-8 ${color}`} isDarkMode={isDarkMode} {...iconProps} />
-          ) : (
-            <Icon className={`h-8 w-8 ${color}`} aria-hidden="true" {...iconProps} />
-          )}
-        </div>
-      </div>
-    </div>
-  );
 
   // Handler functions
   const handleLeaveSubmit = async (e) => {
@@ -1277,7 +1325,10 @@ const handleRejectRequest = async (requestId) => {
     <div className="space-y-4 md:space-y-6 px-2 sm:px-0">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className={`font-bold ${text.primary}`} style={{fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'}}>{t('timeTracking.title')}</h2>
+        <div className="flex items-center gap-3 flex-wrap">
+          <h2 className={`font-bold ${text.primary}`} style={{fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'}}>{t('timeTracking.title')}</h2>
+          <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} />
+        </div>
        
         <div className="flex space-x-4">
           {/* Employee Selector */}
@@ -1360,7 +1411,10 @@ const handleRejectRequest = async (requestId) => {
           unit={t('timeTracking.days')}
           icon={Calendar}
           color={isDarkMode ? "text-white" : "text-black"}
-          bgColor="bg-white"
+          text={text}
+          border={border}
+          isDarkMode={isDarkMode}
+          customIcons={CUSTOM_ICONS}
           onClick={() => setShowWorkDaysModal(true)}
         />
         <TimeCard
@@ -1370,6 +1424,10 @@ const handleRejectRequest = async (requestId) => {
           icon={AnimatedCoffeeIcon}
           useDarkIcon
           color={isDarkMode ? "text-white" : "text-black"}
+          text={text}
+          border={border}
+          isDarkMode={isDarkMode}
+          customIcons={CUSTOM_ICONS}
           onClick={() => handleMetricClick('leaveDays')}
         />
         <TimeCard
@@ -1378,7 +1436,10 @@ const handleRejectRequest = async (requestId) => {
           unit={t('timeTracking.hours')}
           icon={AnimatedClockIcon}
           color={isDarkMode ? "text-white" : "text-black"}
-          bgColor="bg-white"
+          text={text}
+          border={border}
+          isDarkMode={isDarkMode}
+          customIcons={CUSTOM_ICONS}
           onClick={() => handleMetricClick('overtime')}
         />
       </div>
