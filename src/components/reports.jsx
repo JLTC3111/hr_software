@@ -61,6 +61,11 @@ import {
   drawPdfChartsSection,
   PDF_CHART_COLORS
 } from '../utils/reportExportHelpers.js';
+import { ShinyButton } from './ui/shiny-button';
+import { SlidingNumber } from './motion-primitives';
+import { NumberTicker } from './ui/number-ticker';
+import { PageLiveClock } from './ui/page-live-clock';
+import { cn } from '@/lib/utils';
 import {
   choosePdfFont,
   getPdfTableFont,
@@ -2318,6 +2323,7 @@ const Reports = () => {
             <span className={`text-sm ${text.secondary}`}>
               {t('reports.liveData', 'Live data from Supabase')}
             </span>
+            <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} />
           </div>
         </div>
       </div>
@@ -2382,10 +2388,11 @@ const Reports = () => {
           </div>
           
           <div className="flex flex-wrap gap-3">
-            <button
+            <ShinyButton
+              type="button"
               onClick={exportAllToCSV}
               disabled={exporting}
-              className={`px-6 py-3 cursor-pointer bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg flex items-center gap-2 transition-colors font-medium`}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white border-blue-500 disabled:border-gray-400 font-medium"
               title={t('reports.exportingIncludes', 'Exporting will include all filtered data, not just previewed records')}
             >
               {exporting ? (
@@ -2394,12 +2401,13 @@ const Reports = () => {
                 <Download className="w-5 h-5" />
               )}
               {t('reports.exportToCSV', 'Export to CSV')}
-            </button>
+            </ShinyButton>
             
-            <button
+            <ShinyButton
+              type="button"
               onClick={exportToExcel}
               disabled={exporting}
-              className={`px-6 py-3 cursor-pointer bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg flex items-center gap-2 transition-colors font-medium`}
+              className="px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white border-green-500 disabled:border-gray-400 font-medium"
               title={t('reports.excelExportHint', 'Export all data types with summary, charts, and detailed sheets')}
             >
               {exporting ? (
@@ -2408,12 +2416,13 @@ const Reports = () => {
                 <FileText className="w-5 h-5" />
               )}
               {t('reports.exportToExcel', 'Export to Excel')}
-            </button>
+            </ShinyButton>
 
-            <button
+            <ShinyButton
+              type="button"
               onClick={exportToPDF}
               disabled={exporting}
-              className={`px-6 py-3 cursor-pointer bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg flex items-center gap-2 transition-colors font-medium`}
+              className="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white border-red-500 disabled:border-gray-400 font-medium"
               title={t('reports.pdfExportHint', 'Export PDF with visual charts, summary, and detailed tables for all data types')}
             >
               {exporting ? (
@@ -2422,7 +2431,7 @@ const Reports = () => {
                 <FileText className="w-5 h-5" />
               )}
               {t('reports.exportToPDF', 'Export to PDF')}
-            </button>
+            </ShinyButton>
           </div>
         </div>
       </div>
@@ -2597,37 +2606,37 @@ const Reports = () => {
                   <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                     <Clock className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                     <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.totalHours', 'Total Hours')}</p>
-                    <p className={`text-2xl font-bold ${text.primary}`}>{totalHours.toFixed(1)}</p>
+                    <p className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={Number(totalHours.toFixed(1))} /></p>
                   </div>
 
                   <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                     <Hourglass className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                     <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.regularHours', 'Regular Hours')}</p>
-                    <p className={`text-2xl font-bold ${text.primary}`}>{regularHours.toFixed(1)}</p>
+                    <p className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={Number(regularHours.toFixed(1))} /></p>
                   </div>
 
                   <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                     <HeartPlus className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                     <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.overtime', 'Overtime')}</p>
-                    <p className={`text-2xl font-bold ${text.primary}`}>{overtimeHours.toFixed(1)}</p>
+                    <p className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={Number(overtimeHours.toFixed(1))} /></p>
                   </div>
                   
                   <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                     <Laptop className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                     <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.wfh', 'Working From Home')}</p>
-                    <p className={`text-2xl font-bold ${text.primary}`}>{wfhHours.toFixed(1)}</p>
+                    <p className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={Number(wfhHours.toFixed(1))} /></p>
                   </div>
                   
                   <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                     <Apple className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                     <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.leaveDays', 'Leave Days')}</p>
-                    <p className={`text-2xl font-bold ${text.primary}`}>{leaveDays}</p>
+                    <p className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={Number(leaveDays) || 0} /></p>
                   </div>
                   
                   <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                     <Calendar className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                     <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.daysWorked', 'Days Worked')}</p>
-                    <p className={`text-2xl font-bold ${text.primary}`}>{daysWorked}</p>
+                    <p className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={Number(daysWorked) || 0} /></p>
                   </div>
                 </>
               )}
@@ -2637,7 +2646,7 @@ const Reports = () => {
                 <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                   <ShieldCheck className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                   <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.tasksDone', 'Tasks Done')}</p>
-                  <p className={`text-2xl font-bold ${text.primary}`}>{completedTasks}/{employeeTasks.length}</p>
+                  <p className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={completedTasks} />/<SlidingNumber value={employeeTasks.length} /></p>
                 </div>
               )}
 
@@ -2648,14 +2657,14 @@ const Reports = () => {
                     <Goal className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                     <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.completion', 'Completion')}</p>
                     <p className={`text-2xl font-bold ${text.primary}`}>
-                      {activeTab === 'goals' ? goalCompletionRate : taskCompletionRate}%
+                      <NumberTicker value={Number(activeTab === 'goals' ? goalCompletionRate : taskCompletionRate) || 0} decimalPlaces={1} className={text.primary} />%
                     </p>
                   </div>
 
                   <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                     <Pickaxe className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
                     <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.goalProgress', 'Goal Progress')}</p>
-                    <p className={`text-2xl font-bold ${text.primary}`}>{avgProgress}%</p>
+                    <p className={`text-2xl font-bold ${text.primary}`}><NumberTicker value={Number(avgProgress) || 0} decimalPlaces={1} className={text.primary} />%</p>
                   </div>
                 </>
               )}
@@ -2673,27 +2682,27 @@ const Reports = () => {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className={text.secondary}>{t('reports.approved', 'Approved')}:</span>
-                      <span className={`font-medium ${text.primary}`}>{approvedEntries}</span>
+                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={approvedEntries} /></span>
                     </div>
                     <div className="flex justify-between">
                       <span className={text.secondary}>{t('reports.pending', 'Pending')}:</span>
-                      <span className={`font-medium ${text.primary}`}>{pendingEntries}</span>
+                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={pendingEntries} /></span>
                     </div>
                     <div className="flex justify-between">
                       <span className={text.secondary}>{t('reports.regularHours', 'Regular Hours')}:</span>
-                      <span className={`font-medium ${text.primary}`}>{regularHours.toFixed(1)}h</span>
+                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={Number(regularHours.toFixed(1))} />h</span>
                     </div>
                     <div className="flex justify-between">
                       <span className={text.secondary}>{t('reports.overtime', 'Overtime')}:</span>
-                      <span className={`font-medium ${text.primary}`}>{overtimeHours.toFixed(1)}h</span>
+                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={Number(overtimeHours.toFixed(1))} />h</span>
                     </div>
                     <div className="flex justify-between">
                       <span className={text.secondary}>{t('reports.wfh', 'WFH')}:</span>
-                      <span className={`font-medium ${text.primary}`}>{wfhHours.toFixed(1)}h</span>
+                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={Number(wfhHours.toFixed(1))} />h</span>
                     </div>
                     <div className="flex justify-between">
                       <span className={text.secondary}>{t('reports.leaveDays', 'Leave Days')}:</span>
-                      <span className={`font-medium ${text.primary}`}>{leaveDays}</span>
+                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={Number(leaveDays) || 0} /></span>
                     </div>
                   </div>
                 </div>
@@ -2709,19 +2718,19 @@ const Reports = () => {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className={text.secondary}>{t('reports.completed', 'Completed')}:</span>
-                      <span className={`font-medium ${text.primary}`}>{completedTasks}</span>
+                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={completedTasks} /></span>
                     </div>
                     <div className="flex justify-between">
                       <span className={text.secondary}>{t('reports.inProgress', 'In Progress')}:</span>
-                      <span className={`font-medium ${text.primary}`}>{inProgressTasks}</span>
+                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={inProgressTasks} /></span>
                     </div>
                     <div className="flex justify-between">
                       <span className={text.secondary}>{t('reports.pending', 'Pending')}:</span>
-                      <span className={`font-medium ${text.primary}`}>{pendingTasks}</span>
+                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={pendingTasks} /></span>
                     </div>
                     <div className="flex justify-between">
                       <span className={text.secondary}>{t('reports.completionRate', 'Completion Rate')}:</span>
-                      <span className={`font-medium ${text.primary}`}>{taskCompletionRate}%</span>
+                      <span className={`font-medium ${text.primary}`}><NumberTicker value={Number(taskCompletionRate) || 0} decimalPlaces={1} className={text.primary} />%</span>
                     </div>
                   </div>
                 </div>
@@ -2737,19 +2746,19 @@ const Reports = () => {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className={text.secondary}>{t('reports.completed', 'Completed')}:</span>
-                      <span className={`font-medium ${text.primary}`}>{completedGoals}</span>
+                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={completedGoals} /></span>
                     </div>
                     <div className="flex justify-between">
                       <span className={text.secondary}>{t('reports.inProgress', 'In Progress')}:</span>
-                      <span className={`font-medium ${text.primary}`}>{inProgressGoals}</span>
+                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={inProgressGoals} /></span>
                     </div>
                     <div className="flex justify-between">
                       <span className={text.secondary}>{t('reports.avgProgress', 'Avg Progress')}:</span>
-                      <span className={`font-medium ${text.primary}`}>{avgProgress}%</span>
+                      <span className={`font-medium ${text.primary}`}><NumberTicker value={Number(avgProgress) || 0} decimalPlaces={1} className={text.primary} />%</span>
                     </div>
                     <div className="flex justify-between">
                       <span className={text.secondary}>{t('reports.totalGoals', 'Total Goals')}:</span>
-                      <span className={`font-medium ${text.primary}`}>{employeeGoals.length}</span>
+                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={employeeGoals.length} /></span>
                     </div>
                   </div>
                 </div>
@@ -2765,7 +2774,7 @@ const Reports = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className={`text-sm ${text.secondary}`}>{t('reports.totalRecords', 'Total Records')}:    </p>
-              <p className={`text-3xl font-bold ${text.primary}`}>{stats.totalRecords}</p>
+              <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.totalRecords) || 0} /></p>
             </div>
             <BarChart3 className={`w-8 h-8 ${text.secondary}`} />
           </div>
@@ -2777,7 +2786,7 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-sm ${text.secondary}`}>{t('reports.totalEntries', 'Total Entries')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.timeEntriesCount}</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.timeEntriesCount) || 0} /></p>
                 </div>
                 <Clock className={`w-8 h-8 ${text.secondary}`} />
               </div>
@@ -2786,7 +2795,7 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-sm ${text.secondary}`}>{t('reports.tasks', 'Tasks')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.tasksCount}</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.tasksCount) || 0} /></p>
                 </div>
                 <LayoutList className={`w-8 h-8 ${text.secondary}`} />
               </div>
@@ -2795,7 +2804,7 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-sm ${text.secondary}`}>{t('reports.goals', 'Goals')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.goalsCount}</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.goalsCount) || 0} /></p>
                 </div>
                 <Goal className={`w-8 h-8 ${text.secondary}`} />
               </div>
@@ -2809,7 +2818,7 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-sm ${text.secondary}`}>{t('reports.totalHours', 'Total Hours')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.totalHours}h</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.totalHours) || 0} />h</p>
                 </div>
                 <Clock className={`w-8 h-8 ${text.secondary}`} />
               </div>
@@ -2818,7 +2827,7 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-sm ${text.secondary}`}>{t('reports.approved', 'Approved')}</p>
-                  <p className={`text-3xl font-bold ${text.secondary}`}>{stats.approved}</p>
+                  <p className={`text-3xl font-bold ${text.secondary}`}><SlidingNumber value={Number(stats.approved) || 0} /></p>
                 </div>
                 <CheckCircle className={`w-8 h-8 ${text.primary}`} />
               </div>
@@ -2827,7 +2836,7 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-sm ${text.secondary}`}>{t('reports.pending', 'Pending')}</p>
-                  <p className={`text-3xl font-bold ${text.secondary}`}>{stats.pending}</p>
+                  <p className={`text-3xl font-bold ${text.secondary}`}><SlidingNumber value={Number(stats.pending) || 0} /></p>
                 </div>
                 <PenOff className={`w-8 h-8 ${text.primary}`} />
               </div>
@@ -2841,7 +2850,7 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-sm ${text.secondary}`}>{t('reports.completed', 'Completed')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.completed}</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.completed) || 0} /></p>
                 </div>
                 <ListCheck className={`w-8 h-8 ${text.secondary}`} />
               </div>
@@ -2850,7 +2859,7 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-sm ${text.secondary}`}>{t('reports.inProgress', 'In Progress')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.inProgress}</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.inProgress) || 0} /></p>
                 </div>
                 <PlayCircle className={`w-8 h-8 ${text.secondary}`} />
               </div>
@@ -2859,7 +2868,7 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-sm ${text.secondary}`}>{t('reports.completionRate', 'Completion Rate')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.completionRate}%</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}><NumberTicker value={Number(stats.completionRate) || 0} className={text.primary} />%</p>
                 </div>
                 <Gauge className={`w-8 h-8 ${text.secondary}`} />
               </div>
@@ -2873,7 +2882,7 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-sm ${text.secondary}`}>{t('reports.achieved', 'Achieved')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.achieved}</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.achieved) || 0} /></p>
                 </div>
                 <SmilePlus className={`w-8 h-8 ${text.secondary}`} />
               </div>
@@ -2882,7 +2891,7 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-sm ${text.secondary}`}>{t('reports.inProgress', 'In Progress')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.inProgress}</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.inProgress) || 0} /></p>
                 </div>
                 <Combine className={`w-8 h-8 ${text.secondary}`} />
               </div>
@@ -2891,7 +2900,7 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-sm ${text.secondary}`}>{t('reports.avgProgress', 'Avg Progress')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.averageProgress}%</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}><NumberTicker value={Number(stats.averageProgress) || 0} className={text.primary} />%</p>
                 </div>
                 <Activity className={`w-8 h-8 ${text.secondary}`} />
               </div>
@@ -2905,7 +2914,7 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-sm ${text.secondary}`}>{t('reports.approved', 'Approved')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.approved}</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.approved) || 0} /></p>
                 </div>
                 <CheckCircle className={`w-8 h-8 ${text.secondary}`} />
               </div>
@@ -2914,7 +2923,7 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-sm ${text.secondary}`}>{t('reports.pending', 'Pending')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.pending}</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.pending) || 0} /></p>
                 </div>
                 <Hourglass className={`w-8 h-8 ${text.secondary}`} />
               </div>
@@ -2923,7 +2932,7 @@ const Reports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-sm ${text.secondary}`}>{t('reports.totalLeaveDays', 'Total Leave Days')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}>{stats.totalLeaveDays}</p>
+                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.totalLeaveDays) || 0} /></p>
                 </div>
                 <Calendar className={`w-8 h-8 ${text.secondary}`} />
               </div>
@@ -3406,7 +3415,7 @@ const Reports = () => {
                                 style={{width: `${Math.min(item.status === 'completed' ? 100 : (item.progress || 0), 100)}%`}}
                               ></div>
                             </div>
-                            <span className="text-sm font-medium">{item.status === 'completed' ? 100 : (item.progress || 0)}%</span>
+                            <span className="text-sm font-medium"><NumberTicker value={item.status === 'completed' ? 100 : (item.progress || 0)} className="text-sm font-medium" />%</span>
                           </div>
                         </td>
                       </>

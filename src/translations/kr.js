@@ -93,6 +93,12 @@ export default {
   header: {
     title: 'HR 매니저',
     welcome: '다시 오신 것을 환영합니다,',
+    welcomePhrase1: '다시 오신 것을 환영합니다, {name}',
+    welcomePhrase2: '만나서 반갑습니다, {name}',
+    welcomePhrase3: '안녕하세요, {name}!',
+    welcomePhrase4: 'HR 관리 준비되셨나요, {name}?',
+    welcomePhrase5: '오늘도 생산적으로, {name}',
+    welcomePhrase6: '함께해 주셔서 감사합니다, {name}',
     user: 'HR팀',
     logout: '로그아웃',
   },

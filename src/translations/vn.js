@@ -111,6 +111,12 @@ export default {
   header: {
     title: 'Quản lý HR',
     welcome: 'Xin Chào,',
+    welcomePhrase1: 'Chào mừng trở lại, {name}',
+    welcomePhrase2: 'Rất vui được gặp bạn, {name}',
+    welcomePhrase3: 'Xin chào, {name}!',
+    welcomePhrase4: 'Sẵn sàng quản lý nhân sự, {name}?',
+    welcomePhrase5: 'Hãy làm việc hiệu quả hôm nay, {name}',
+    welcomePhrase6: 'Rất vui có bạn ở đây, {name}',
     user: 'Đội ngũ HR',
     logout: 'Đăng xuất'
   },

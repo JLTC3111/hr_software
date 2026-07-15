@@ -827,11 +827,11 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
         <button
           type="submit"
           disabled={loading || selectedEmployees.length === 0}
-          className={`w-full flex items-center justify-center space-x-2 px-6 py-3 cursor-pointer text-white rounded-lg transition-colors shadow-lg hover:shadow-xl ${
-            isDarkMode 
-              ? 'bg-blue-700 hover:bg-blue-600 disabled:bg-gray-600' 
-              : 'bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400'
-          } disabled:cursor-not-allowed`}
+          className={`w-full flex items-center justify-center space-x-2 px-6 py-3 cursor-pointer text-white rounded-lg transition-all shadow-lg hover:shadow-xl border-0 ${
+            loading || selectedEmployees.length === 0
+              ? 'bg-linear-to-r from-gray-400 to-gray-500 cursor-not-allowed'
+              : 'bg-linear-to-r from-blue-500 via-indigo-600 to-violet-600 hover:from-blue-600 hover:via-indigo-700 hover:to-violet-700'
+          }`}
         >
           {loading ? (
             <>
@@ -921,11 +921,11 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
           <button
             type="submit"
             disabled={bulkFillLoading || loading}
-            className={`w-full flex items-center justify-center space-x-2 px-6 py-3 cursor-pointer text-white rounded-lg transition-colors shadow-lg hover:shadow-xl ${
-              isDarkMode
-                ? 'bg-emerald-700 hover:bg-emerald-600 disabled:bg-gray-600'
-                : 'bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400'
-            } disabled:cursor-not-allowed`}
+            className={`w-full flex items-center justify-center space-x-2 px-6 py-3 cursor-pointer text-white rounded-lg transition-all shadow-lg hover:shadow-xl border-0 ${
+              bulkFillLoading || loading
+                ? 'bg-linear-to-r from-gray-400 to-gray-500 cursor-not-allowed'
+                : 'bg-linear-to-r from-emerald-500 via-green-600 to-teal-600 hover:from-emerald-600 hover:via-green-700 hover:to-teal-700'
+            }`}
           >
             {bulkFillLoading ? (
               <>
@@ -977,8 +977,10 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
               <button
                 type="button"
                 onClick={() => setShowBulkConfirmModal(false)}
-                className={`px-4 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary} transition-colors ${
-                  isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                className={`px-4 py-2 rounded-lg border-0 transition-all ${
+                  isDarkMode
+                    ? 'bg-linear-to-r from-gray-700 to-gray-800 text-white hover:from-gray-600 hover:to-gray-700'
+                    : 'bg-linear-to-r from-gray-100 to-gray-200 text-gray-900 hover:from-gray-200 hover:to-gray-300'
                 }`}
               >
                 {t('adminTimeEntry.bulkStandardHours.cancelButton', 'Cancel')}
@@ -986,11 +988,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
               <button
                 type="button"
                 onClick={executeBulkStandardHoursFill}
-                className={`px-4 py-2 rounded-lg text-white transition-colors ${
-                  isDarkMode
-                    ? 'bg-emerald-700 hover:bg-emerald-600'
-                    : 'bg-emerald-600 hover:bg-emerald-700'
-                }`}
+                className="px-4 py-2 rounded-lg text-white transition-all bg-linear-to-r from-emerald-500 via-green-600 to-teal-600 hover:from-emerald-600 hover:via-green-700 hover:to-teal-700"
               >
                 {t('adminTimeEntry.bulkStandardHours.confirmButton', 'Yes, Fill Hours')}
               </button>

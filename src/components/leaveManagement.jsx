@@ -30,6 +30,8 @@ import { useAuth } from '../contexts/AuthContext';
 import * as timeTrackingService from '../services/timeTrackingService';
 import { isDemoMode, getDemoEmployeeName, updateDemoLeaveRequest } from '../utils/demoHelper';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
+import { SlidingNumber } from './motion-primitives';
+import { PageLiveClock } from './ui/page-live-clock';
 
 /* @refresh reset */
 
@@ -354,7 +356,10 @@ const LeaveManagement = ({ employees = [] }) => {
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
-          <h2 className={`text-2xl font-bold ${text.primary}`}>{t('nav.leaveManagement', 'Leave Management')}</h2>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className={`text-2xl font-bold ${text.primary}`}>{t('nav.leaveManagement', 'Leave Management')}</h2>
+            <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} />
+          </div>
           <p className={`text-sm ${text.secondary} mt-1`}>{t('leave.subtitle', 'Plan, request and approve time off on a shared calendar.')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -864,7 +869,9 @@ const StatTile = ({ IconComponent, label, value, colorKey }) => {
       </div>
       <div>
         <p className={`text-xs ${text.secondary}`}>{label}</p>
-        <p className={`text-xl font-bold ${text.primary}`}>{value}</p>
+        <p className={`text-xl font-bold ${text.primary}`}>
+          <SlidingNumber value={Number(value) || 0} />
+        </p>
       </div>
     </div>
   );

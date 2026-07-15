@@ -8,6 +8,7 @@ import SearchAndFilter from './search.jsx';
 import EmployeeCard from './employeeCard.jsx';
 import EmployeeDirectory from './employeeDirectory.jsx';
 import EmployeeDetailModal from './employeeDetailModal.jsx';
+import { PageLiveClock } from './ui/page-live-clock';
 
 const Employees = ({ employees, onEditEmployee, onDeleteEmployee, onPhotoUpdate, refetchEmployees }) => {
   const navigate = useNavigate();
@@ -17,9 +18,9 @@ const Employees = ({ employees, onEditEmployee, onDeleteEmployee, onPhotoUpdate,
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [viewMode, setViewMode] = useState(() => {
     try {
-      return globalThis.localStorage.getItem('employeesViewMode') || 'cards';
+      return globalThis.localStorage.getItem('employeesViewMode') || 'directory';
     } catch {
-      return 'cards';
+      return 'directory';
     }
   });
   const location = useLocation();
@@ -92,9 +93,12 @@ const Employees = ({ employees, onEditEmployee, onDeleteEmployee, onPhotoUpdate,
   });
 
   return (
-    <div className="space-y-4 md:space-y-6 px-2 sm:px-0">
+    <div className="space-y-4 md:space-y-6 w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 slide-in-left">
-        <h2 className={`font-bold ${text.primary}`} style={{fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'}}>{t('employees.title')}</h2>
+        <div className="flex items-center gap-3 flex-wrap">
+          <h2 className={`font-bold ${text.primary}`} style={{fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'}}>{t('employees.title')}</h2>
+          <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} />
+        </div>
         <div className="flex items-center gap-2">
           {/* View mode toggle */}
           <div className={`inline-flex rounded-lg border overflow-hidden ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>

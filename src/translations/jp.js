@@ -93,6 +93,12 @@ export default {
   header: {
     title: 'HRマネージャー',
     welcome: 'おかえりなさい、,',
+    welcomePhrase1: 'おかえりなさい、{name}',
+    welcomePhrase2: 'お会いできて嬉しいです、{name}',
+    welcomePhrase3: 'こんにちは、{name}！',
+    welcomePhrase4: 'HR管理の準備はできましたか、{name}？',
+    welcomePhrase5: '今日も生産的に進めましょう、{name}',
+    welcomePhrase6: 'いらっしゃいませ、{name}',
     user: 'HRチーム',
     logout: 'ログアウト',
   },

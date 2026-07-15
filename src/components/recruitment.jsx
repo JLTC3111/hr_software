@@ -13,6 +13,10 @@ import {
 import { isDemoMode, getDemoApplicationStatus, getDemoJobTitle } from '../utils/demoHelper';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
+import { SlidingNumber } from './motion-primitives';
+import { NumberTicker } from './ui/number-ticker';
+import { PageLiveClock } from './ui/page-live-clock';
+import { cn } from '@/lib/utils';
 
 const Recruitment = () => {
   const { t } = useLanguage();
@@ -216,9 +220,12 @@ const Recruitment = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
         <div>
-          <h2 className={`text-2xl font-bold ${text.primary}`}>
-            {t('recruitment.title', 'Recruitment')}
-          </h2>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className={`text-2xl font-bold ${text.primary}`}>
+              {t('recruitment.title', 'Recruitment')}
+            </h2>
+            <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} />
+          </div>
           <p className={`text-sm ${text.secondary} mt-1`}>
             {t('recruitment.subtitle', 'Manage your hiring pipeline and track candidates')}
           </p>
@@ -580,7 +587,19 @@ const StatCard = ({ label, value, color, onClick, active }) => {
       }`}
     >
       <div className={`text-sm font-medium ${text.secondary} mb-1`}>{label}</div>
-      <div className={`text-2xl font-bold ${text.primary}`}>{value}</div>
+      <div className={`text-2xl font-bold ${text.primary}`}>
+        {typeof value === 'number' || (typeof value === 'string' && /^-?[\d.]+%?$/.test(String(value).trim())) ? (
+          String(value).includes('%') ? (
+            <>
+              <NumberTicker value={parseFloat(String(value)) || 0} className={text.primary} />%
+            </>
+          ) : (
+            <SlidingNumber value={Number(value) || 0} />
+          )
+        ) : (
+          value
+        )}
+      </div>
     </div>
   );
 };
@@ -606,7 +625,19 @@ const MetricCard = memo(({ icon: Icon, label, value, color }) => {
         </div>
         <div>
           <p className={`text-xs font-medium ${text.secondary}`}>{label}</p>
-          <p className={`text-xl font-bold ${text.primary}`}>{value}</p>
+          <p className={`text-xl font-bold ${text.primary}`}>
+            {typeof value === 'number' || (typeof value === 'string' && /^-?[\d.]+%?$/.test(String(value).trim())) ? (
+              String(value).includes('%') ? (
+                <>
+                  <NumberTicker value={parseFloat(String(value)) || 0} className={text.primary} />%
+                </>
+              ) : (
+                <SlidingNumber value={Number(value) || 0} />
+              )
+            ) : (
+              value
+            )}
+          </p>
         </div>
       </div>
     </div>

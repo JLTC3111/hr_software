@@ -93,6 +93,12 @@ export default {
   header: {
     title: 'ผู้จัดการ HR',
     welcome: 'ยินดีต้อนรับกลับ ทีม,',
+    welcomePhrase1: 'ยินดีต้อนรับกลับ, {name}',
+    welcomePhrase2: 'ดีใจที่ได้พบคุณ, {name}',
+    welcomePhrase3: 'สวัสดี, {name}!',
+    welcomePhrase4: 'พร้อมจัดการ HR แล้วหรือยัง, {name}?',
+    welcomePhrase5: 'มาทำให้วันนี้มีประสิทธิภาพกัน, {name}',
+    welcomePhrase6: 'ยินดีที่คุณอยู่ที่นี่, {name}',
     user: 'ทีม,',
     logout: 'ออกจากระบบ',
   },

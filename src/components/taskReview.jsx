@@ -58,6 +58,57 @@ import * as workloadService from '../services/workloadService.js';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription } from '../utils/demoHelper.js';
+import { ShinyButton } from './ui/shiny-button';
+import { SlidingNumber, useNumberReplay } from './motion-primitives';
+import { NumberTicker } from './ui/number-ticker';
+import { PageLiveClock } from './ui/page-live-clock';
+import { cn } from '@/lib/utils';
+
+function OrgStatCard({ label, value, suffix = '', icon, align = 'left', bg, border, text, percent = false }) {
+  const { replayToken, bump } = useNumberReplay();
+  const numeric =
+    typeof value === 'number' || (typeof value === 'string' && /^-?[\d.]+$/.test(String(value).trim()));
+
+  return (
+    <div
+      onMouseEnter={bump}
+      className={`${bg.secondary} group relative overflow-hidden rounded-lg p-4 border ${border.primary}`}
+    >
+      <div className="relative z-10 flex items-center justify-between mb-2">
+        {icon}
+        <span className={`text-2xl font-bold ${text.primary}`}>
+          {numeric ? (
+            percent ? (
+              <>
+                <NumberTicker value={Number(value) || 0} className={text.primary} />
+                {suffix}
+              </>
+            ) : (
+              <>
+                <SlidingNumber value={Number(value) || 0} replayToken={replayToken} />
+                {suffix}
+              </>
+            )
+          ) : (
+            <>
+              {value}
+              {suffix}
+            </>
+          )}
+        </span>
+      </div>
+      <p
+        className={cn(
+          'relative z-10 text-sm',
+          align === 'right' ? 'text-right' : 'text-left',
+          text.secondary
+        )}
+      >
+        {label}
+      </p>
+    </div>
+  );
+}
 
 export const MiniFlubberAutoMorphTotalTasks = ({
   size = 24,
@@ -2008,50 +2059,61 @@ const TaskReview = ({ employees }) => {
       <div className="space-y-6">
         {orgStats && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-              <div className="flex items-center justify-between mb-2">
-              <MiniFlubberAutoMorphTotalTasks isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />
-              <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.totalTasks}</span>
-            </div>
-            <p className={`text-sm text-left ${text.secondary}`}>{t('taskReview.totalTasks')}</p>
+            <OrgStatCard
+              label={t('taskReview.totalTasks')}
+              value={orgStats.totalTasks}
+              icon={<MiniFlubberAutoMorphTotalTasks isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />}
+              bg={bg}
+              border={border}
+              text={text}
+            />
+            <OrgStatCard
+              label={t('taskReview.employees')}
+              value={orgStats.totalEmployees}
+              icon={<MiniFlubberAutoMorphEmployees size={24} isDarkMode={isDarkMode} />}
+              bg={bg}
+              border={border}
+              text={text}
+            />
+            <OrgStatCard
+              label={t('taskReview.completed')}
+              value={orgStats.completed}
+              align="right"
+              icon={<MiniFlubberAutoMorphCompletedWork isDarkMode={isDarkMode} className={`w-6 h-6 ${text.secondary}`} />}
+              bg={bg}
+              border={border}
+              text={text}
+            />
+            <OrgStatCard
+              label={t('taskReview.inProgress')}
+              value={orgStats.inProgress}
+              icon={<MiniFlubberAutoMorphInProgress size={24} isDarkMode={isDarkMode} />}
+              bg={bg}
+              border={border}
+              text={text}
+            />
+            <OrgStatCard
+              label={t('taskReview.completion')}
+              value={orgStats.completionRate}
+              suffix="%"
+              percent
+              align="right"
+              icon={<MiniFlubberAutoMorphCompletionRate isDarkMode={isDarkMode} className={`w-5 h-5 mr-8 ${text.secondary}`} />}
+              bg={bg}
+              border={border}
+              text={text}
+            />
+            <OrgStatCard
+              label={t('taskReview.quality')}
+              value={orgStats.avgQualityRating}
+              align="right"
+              icon={<MiniFlubberAutoMorphQuality isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />}
+              bg={bg}
+              border={border}
+              text={text}
+            />
           </div>
-          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <div className="flex items-center justify-between mb-2">
-              <MiniFlubberAutoMorphEmployees size={24} isDarkMode={isDarkMode} />
-              <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.totalEmployees}</span>
-            </div>
-            <p className={`text-sm text-left ${text.secondary}`}>{t('taskReview.employees')}</p>
-          </div>
-          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <div className="flex items-center justify-between mb-2">
-              <MiniFlubberAutoMorphCompletedWork isDarkMode={isDarkMode} className={`w-6 h-6 ${text.secondary}`} />
-              <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.completed}</span>
-            </div>
-            <p className={`text-sm text-right ${text.secondary}`}>{t('taskReview.completed')}</p>
-          </div>
-          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <div className="flex items-center justify-between mb-2">
-              <MiniFlubberAutoMorphInProgress size={24} isDarkMode={isDarkMode} />
-              <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.inProgress}</span>
-            </div>
-            <p className={`text-sm text-left ${text.secondary}`}>{t('taskReview.inProgress')}</p>
-          </div>
-          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <div className="flex items-center justify-between mb-2">
-              <MiniFlubberAutoMorphCompletionRate isDarkMode={isDarkMode} className={`w-5 h-5 mr-8 ${text.secondary}`} />
-              <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.completionRate}%</span>
-            </div>
-            <p className={`text-sm text-right ${text.secondary}`}>{t('taskReview.completion')}</p>
-          </div>
-          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <div className="flex items-center justify-between mb-2">
-              <MiniFlubberAutoMorphQuality isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />
-              <span className={`text-2xl font-bold ${text.primary}`}>{orgStats.avgQualityRating}</span>
-            </div>
-            <p className={`text-sm text-right ${text.secondary}`}>{t('taskReview.quality')}</p>
-          </div>
-        </div>
-      )}
+        )}
       <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
         <div className="flex items-center justify-between mb-4">
           <h3 className={`text-lg font-semibold ${text.primary}`}>
@@ -2202,8 +2264,8 @@ const TaskReview = ({ employees }) => {
                             
                             {/* Review Button */}
                             {checkPermission('canViewReports') && (
-                              <button
-                                type = "button"
+                              <ShinyButton
+                                type="button"
                                 onClick={() => {
                                   setReviewingTask(task);
                                   setReviewForm({
@@ -2212,11 +2274,14 @@ const TaskReview = ({ employees }) => {
                                     status: task.status || 'pending'
                                   });
                                 }}
-                                className={`ml-4 px-4 py-2 rounded-lg flex items-center space-x-2 ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white transition-colors cursor-pointer`}
+                                className={cn(
+                                  'ml-4 px-4 py-2 text-white border-blue-500',
+                                  isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
+                                )}
                               >
                                 <Edit2 className="w-4 h-4" />
                                 <span>{t('taskReview.review')}</span>
-                              </button>
+                              </ShinyButton>
                             )}
                           </div>
                         </div>
@@ -2266,42 +2331,46 @@ const TaskReview = ({ employees }) => {
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <MiniFlubberAutoMorphTotalTasks isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />
-              <span className={`text-2xl font-bold ${text.primary}`}>{stats.total || 0}</span>
+              <span className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={stats.total || 0} /></span>
             </div>
             <p className={`text-sm ${text.secondary}`}>{t('taskReview.total')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <MiniFlubberAutoMorphCompletedWork isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />
-              <span className={`text-2xl font-bold ${text.primary}`}>{stats.completed || 0}</span>
+              <span className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={stats.completed || 0} /></span>
             </div>
             <p className={`text-sm ${text.secondary}`}>{t('taskReview.completed')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <MiniFlubberAutoMorphInProgress isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />
-              <span className={`text-2xl font-bold ${text.primary}`}>{stats.inProgress || 0}</span>
+              <span className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={stats.inProgress || 0} /></span>
             </div>
             <p className={`text-sm ${text.secondary}`}>{t('taskReview.inProgress')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <MiniFlubberAutoMorphOverdueTasks isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />
-              <span className={`text-2xl font-bold ${text.primary}`}>{stats.overdue || 0}</span>
+              <span className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={stats.overdue || 0} /></span>
             </div>
             <p className={`text-sm ${text.secondary}`}>{t('taskReview.overdue')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <MiniFlubberAutoMorphCompletionRate isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />
-              <span className={`text-2xl font-bold ${text.primary}`}>{stats.completionRate || 0}%</span>
+              <span className={`text-2xl font-bold ${text.primary}`}>
+                <NumberTicker value={Number(stats.completionRate) || 0} className={text.primary} />%
+              </span>
             </div>
             <p className={`text-sm ${text.secondary}`}>{t('taskReview.completion')}</p>
           </div>
           <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
             <div className="flex items-center justify-between mb-2">
               <MiniFlubberAutoMorphQuality isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />
-              <span className={`text-2xl font-bold ${text.primary}`}>{stats.avgQualityRating || '0.0'}</span>
+              <span className={`text-2xl font-bold ${text.primary}`}>
+                <SlidingNumber value={Number(stats.avgQualityRating) || 0} />
+              </span>
             </div>
             <p className={`text-sm ${text.secondary}`}>{t('taskReview.quality')}</p>
           </div>
@@ -2384,8 +2453,8 @@ const TaskReview = ({ employees }) => {
                   
                   {/* Review Button */}
                   {checkPermission('canViewReports') && (
-                    <button
-                      type = "button"
+                    <ShinyButton
+                      type="button"
                       onClick={() => {
                         setReviewingTask(task);
                         setReviewForm({
@@ -2394,11 +2463,14 @@ const TaskReview = ({ employees }) => {
                           status: task.status || 'pending'
                         });
                       }}
-                      className={`ml-4 px-4 py-2 rounded-lg flex items-center space-x-2 ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white transition-colors cursor-pointer`}
+                      className={cn(
+                        'ml-4 px-4 py-2 text-white border-blue-500',
+                        isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
+                      )}
                     >
                       <Edit2 className="w-4 h-4" />
                       <span>{t('taskReview.review')}</span>
-                    </button>
+                    </ShinyButton>
                   )}
                 </div>
               </div>
@@ -2511,7 +2583,10 @@ const TaskReview = ({ employees }) => {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className={`text-2xl font-bold ${text.primary}`}>{t('taskReview.title')}</h2>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className={`text-2xl font-bold ${text.primary}`}>{t('taskReview.title')}</h2>
+            <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} />
+          </div>
           <p className={`text-sm ${text.secondary} mt-1`}>{t('taskReview.subtitle')}</p>
         </div>
         {canViewAllEmployees && (
@@ -2699,25 +2774,33 @@ const TaskReview = ({ employees }) => {
 
               {/* Action Buttons */}
               <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <button
+                <ShinyButton
                   type="button"
                   onClick={() => {
                     setReviewingTask(null);
                     setReviewForm({ qualityRating: 0, managerComments: '', status: 'pending' });
                   }}
-                  className={`px-6 py-2 rounded-lg border ${border.primary} ${text.primary} hover:${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} transition-colors cursor-pointer flex items-center space-x-2`}
+                  className={cn(
+                    'px-6 py-2 border',
+                    border.primary,
+                    text.primary,
+                    isDarkMode ? 'hover:bg-gray-700 bg-transparent' : 'hover:bg-gray-100 bg-white'
+                  )}
                 >
                   <X className="w-4 h-4" />
                   <span>{t('taskReview.cancel')}</span>
-                </button>
-                <button
+                </ShinyButton>
+                <ShinyButton
                   type="button"
                   onClick={handleReviewSubmit}
-                  className={`px-6 py-2 rounded-lg ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white transition-colors cursor-pointer flex items-center space-x-2`}
+                  className={cn(
+                    'px-6 py-2 text-white border-blue-500',
+                    isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
+                  )}
                 >
                   <Save className="w-4 h-4" />
                   <span>{t('taskReview.submitReview')}</span>
-                </button>
+                </ShinyButton>
               </div>
             </div>
           </div>

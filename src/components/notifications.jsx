@@ -11,6 +11,28 @@ import {
   getDemoNotificationActionLabel
 } from '../utils/demoHelper';
 import { resolveNotificationActionUrl } from '../utils/notificationNavigation';
+import { ShinyButton } from './ui/shiny-button';
+import { SlidingNumber, useNumberReplay } from './motion-primitives';
+import { PageLiveClock } from './ui/page-live-clock';
+import { cn } from '@/lib/utils';
+
+function NotificationStatCard({ label, value, isDarkMode, border, text }) {
+  const { replayToken, bump } = useNumberReplay();
+  return (
+    <div
+      onMouseEnter={bump}
+      className={cn(
+        'group relative overflow-hidden p-3 rounded-lg bg-transparent border',
+        border.primary
+      )}
+    >
+      <p className={`relative z-10 text-xs ${text.secondary}`}>{label}</p>
+      <p className={`relative z-10 text-2xl font-bold ${text.primary}`}>
+        <SlidingNumber value={Number(value) || 0} replayToken={replayToken} />
+      </p>
+    </div>
+  );
+}
 
 export const MiniFlubberAutoMorphDelete = ({
   size = 16,
@@ -529,7 +551,7 @@ const Notifications = () => {
   if (loading && notifications.length === 0) {
     return (
       <div className={`p-8 ${bg.primary}`}>
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-none w-full mx-auto">
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
@@ -540,14 +562,17 @@ const Notifications = () => {
 
   return (
     <div className={`p-4 md:p-8 ${bg.primary} min-h-screen`}>
-      <div className="max-w-7xl mx-auto gap-7">
+      <div className="max-w-none w-full mx-auto gap-7">
         {/* Header */}
         <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 mb-6`}>
-          <div className="flex items-center space-x-3 mb-4">
-            <Bell className={`h-8 w-8 ${isDarkMode ? 'text-white' : 'text-gray-900'}`} />
-            <h1 className={`text-4xl font-bold ${text.primary}`}>
-              {t('notifications.title', 'Notifications')}
-            </h1>
+          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+            <div className="flex items-center space-x-3">
+              <Bell className={`h-8 w-8 ${isDarkMode ? 'text-white' : 'text-gray-900'}`} />
+              <h1 className={`text-4xl font-bold ${text.primary}`}>
+                {t('notifications.title', 'Notifications')}
+              </h1>
+            </div>
+            <PageLiveClock textClassName={text.primary} separatorClassName={text.secondary} showSeparator={false} />
           </div>
           
           {/* Action Buttons - Separated from header */}
@@ -572,24 +597,26 @@ const Notifications = () => {
             </button>
             
             {unreadCount > 0 && (
-              <button
+              <ShinyButton
+                type="button"
                 onClick={handleMarkAllAsRead}
                 disabled={isBulkActionRunning}
-                className={`px-4 py-2 group rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
+                className={cn('group px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed', hover.bg, text.secondary)}
                 title={t('notifications.markAllRead', 'Mark all as read')}
               >
                 <CheckCheck className="h-4 w-4 group-hover:animate-ping origin-center transform transition-all" />
                 <span className="hidden sm:inline">{t('notifications.markAllRead', 'Mark all as read')}</span>
-              </button>
+              </ShinyButton>
             )}
             
             {notifications.length > 0 && (
-              <button
+              <ShinyButton
+                type="button"
                 onMouseEnter={() => setIsHoveringDeleteAll(true)}
                 onMouseLeave={() => setIsHoveringDeleteAll(false)}
                 onClick={handleDeleteAll}
                 disabled={isBulkActionRunning}
-                className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
+                className={cn('px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed', hover.bg, text.secondary)}
                 title={t('notifications.deleteAll', 'Delete all')}
               >
                 {isHoveringDeleteAll ? (
@@ -598,28 +625,36 @@ const Notifications = () => {
                   <Trash2 className="h-4 w-4 group-hover:scale-110 transition-all" />
                 )}
                 <span className="hidden sm:inline">{t('notifications.deleteAll', 'Delete all')}</span>
-              </button>
+              </ShinyButton>
             )}
           </div>
 
           {/* Statistics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-            <div className={`p-3 rounded-lg bg-transparent border ${border.primary}`}>
-              <p className={`text-xs ${text.secondary}`}>{t('notifications.total', 'Total')}</p>
-              <p className={`text-2xl font-bold ${text.primary}`}>{stats.total_notifications}</p>
-            </div>
-            <div className={`p-3 rounded-lg bg-transparent border ${border.primary}`}>
-              <p className={`text-xs ${text.secondary}`}>{t('notifications.unread', 'Unread')}</p>
-              <p className={`text-2xl font-bold ${text.primary}`}>{stats.unread_count}</p>
-            </div>
-            <div className={`p-3 rounded-lg bg-transparent border ${border.primary}`}>
-              <p className={`text-xs ${text.secondary}`}>{t('notifications.errors', 'Errors')}</p>
-              <p className={`text-2xl font-bold ${text.primary}`}>{stats.error_count}</p>
-            </div>
-            <div className={`p-3 rounded-lg bg-transparent border ${border.primary}`}>
-              <p className={`text-xs ${text.secondary}`}>{t('notifications.warnings', 'Warnings')}</p>
-              <p className={`text-2xl font-bold ${text.primary}`}>{stats.warning_count}</p>
-            </div>
+            <NotificationStatCard
+              label={t('notifications.total', 'Total')}
+              value={stats.total_notifications}
+              border={border}
+              text={text}
+            />
+            <NotificationStatCard
+              label={t('notifications.unread', 'Unread')}
+              value={stats.unread_count}
+              border={border}
+              text={text}
+            />
+            <NotificationStatCard
+              label={t('notifications.errors', 'Errors')}
+              value={stats.error_count}
+              border={border}
+              text={text}
+            />
+            <NotificationStatCard
+              label={t('notifications.warnings', 'Warnings')}
+              value={stats.warning_count}
+              border={border}
+              text={text}
+            />
           </div>
         </div>
 
@@ -807,16 +842,16 @@ const Notifications = () => {
 
             {hasMoreNotifications && (
               <div className="flex justify-center pt-2">
-                <button
+                <ShinyButton
                   type="button"
                   onClick={loadMoreNotifications}
                   disabled={loadingMore}
-                  className={`px-6 py-2 rounded-lg border ${border.primary} ${hover.bg} ${text.secondary} text-sm font-medium transition-colors cursor-pointer disabled:opacity-50`}
+                  className={cn('px-6 py-2 border text-sm font-medium disabled:opacity-50', border.primary, hover.bg, text.secondary)}
                 >
                   {loadingMore
                     ? t('notifications.loadingMore', 'Loading...')
                     : t('notifications.loadMore', 'Load more')}
-                </button>
+                </ShinyButton>
               </div>
             )}
           </div>
