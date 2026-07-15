@@ -1,5 +1,7 @@
 // Demo Mode Helper Utilities
 
+import { isEmployeeActive } from './employeeStatus.js';
+
 const DEMO_STORAGE_KEY = 'hr_app_demo_mode';
 
 export const isDemoMode = () => {
@@ -902,7 +904,7 @@ const generateMockTimeEntries = () => {
           date: dateStr,
           hours: 2,
           hour_type: 'overtime',
-          status: 'pending',
+          status: 'approved',
           clock_in: '17:00:00',
           clock_out: '19:00:00',
           employee: {
@@ -1019,24 +1021,46 @@ const notifyDemoTimeEntriesChanged = () => {
 };
 
 export const getDemoTimeEntries = () => {
-  const stored = localStorage.getItem(DEMO_TIME_ENTRIES_KEY);
-  const storedEntries = stored ? JSON.parse(stored) : [];
-  // Get IDs of stored entries (including deleted ones)
-  const storedIds = new Set(storedEntries.map(e => e.id));
-  // Filter out mock entries that have been overridden in storage
-  const visibleMock = MOCK_TIME_ENTRIES.filter(e => !storedIds.has(e.id));
-  // Filter out deleted entries from stored entries
-  const activeStoredEntries = storedEntries.filter(e => !e._deleted);
-  
-  console.log('[DEBUG getDemoTimeEntries]', {
-    storedCount: storedEntries.length,
-    activeStoredCount: activeStoredEntries.length,
-    mockCount: MOCK_TIME_ENTRIES.length,
-    visibleMockCount: visibleMock.length,
-    totalReturned: visibleMock.length + activeStoredEntries.length,
-    sampleStored: activeStoredEntries.slice(0, 2).map(e => ({ id: e.id, date: e.date, employee_id: e.employee_id }))
+  let storedEntries = [];
+  try {
+    const stored = localStorage.getItem(DEMO_TIME_ENTRIES_KEY);
+    storedEntries = stored ? JSON.parse(stored) : [];
+  } catch {
+    storedEntries = [];
+  }
+
+  // Heal stale seed overlays: if the builtin mock is approved but localStorage still
+  // has that same seed id as pending, flip it. This was regenerating the
+  // "Pending Approvals / 4 entries" notice after every hard refresh.
+  const mockById = new Map(MOCK_TIME_ENTRIES.map((e) => [String(e.id), e]));
+  let healed = false;
+  storedEntries = storedEntries.map((entry) => {
+    if (entry?._deleted) return entry;
+    const id = String(entry?.id || '');
+    const mock = mockById.get(id);
+    const isSeedOvertime = id.startsWith('te-ot-');
+    if (
+      entry.status === 'pending' &&
+      (isSeedOvertime || (mock && mock.status === 'approved'))
+    ) {
+      healed = true;
+      return { ...entry, status: 'approved' };
+    }
+    return entry;
   });
-  
+  if (healed) {
+    try {
+      localStorage.setItem(DEMO_TIME_ENTRIES_KEY, JSON.stringify(storedEntries));
+      notifyDemoTimeEntriesChanged();
+    } catch {
+      // ignore quota errors
+    }
+  }
+
+  const storedIds = new Set(storedEntries.map((e) => e.id));
+  const visibleMock = MOCK_TIME_ENTRIES.filter((e) => !storedIds.has(e.id));
+  const activeStoredEntries = storedEntries.filter((e) => !e._deleted);
+
   return [...visibleMock, ...activeStoredEntries];
 };
 
@@ -1648,6 +1672,26 @@ export const getDemoNotifications = () => {
     stored = [];
   }
 
+  const isPendingApprovalNotice = (n) =>
+    n &&
+    !n._deleted &&
+    (n.title === 'Pending Approvals' ||
+      n.metadata?.kind === 'pending_approvals' ||
+      /time (?:entry|entries) awaiting approval/i.test(n.message || ''));
+
+  // Always strip persisted pending-approval notices from demo storage.
+  // Live sync recreates one only when getDemoPendingApprovalsCount() > 0.
+  // This kills stale samples that hard-refresh alone can't clear.
+  const stalePending = stored.filter(isPendingApprovalNotice);
+  if (stalePending.length > 0) {
+    stored = stored.filter((n) => !isPendingApprovalNotice(n));
+    try {
+      localStorage.setItem(DEMO_NOTIFICATIONS_KEY, JSON.stringify(stored));
+    } catch {
+      // ignore quota errors
+    }
+  }
+
   const deletedIds = new Set(stored.filter((n) => n._deleted).map((n) => n.id));
   const overrides = new Map();
   stored
@@ -1724,8 +1768,17 @@ export const clearDemoNotifications = () => {
   return { success: true };
 };
 
-export const getDemoPendingApprovalsCount = () =>
-  getDemoTimeEntries().filter((entry) => entry.status === 'pending').length;
+export const getDemoPendingApprovalsCount = () => {
+  const employeesById = new Map(MOCK_EMPLOYEES.map((emp) => [String(emp.id), emp]));
+  return getDemoTimeEntries().filter((entry) => {
+    if (entry.status !== 'pending') return false;
+    const employee =
+      entry.employee ||
+      employeesById.get(String(entry.employee_id)) ||
+      employeesById.get(String(entry.employeeId));
+    return isEmployeeActive(employee);
+  }).length;
+};
 
 export const MOCK_NOTIFICATIONS = [
   {

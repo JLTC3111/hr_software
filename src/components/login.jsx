@@ -79,6 +79,7 @@ const Login = () => {
   
     if (!loading && isAuthenticated && user) {
       console.log('✅ All conditions met - Redirecting to /dashboard');
+      setIsLoading(false);
       navigate('/dashboard', { replace: true });
     } else if (!loading && !isAuthenticated) {
       console.log('✅ Loading complete - User can login');
@@ -128,13 +129,26 @@ const Login = () => {
     // Clear demo mode before attempting real login
     disableDemoMode();
     
-    const result = await login(formData.email, formData.password, rememberMe);
-    
-    if (!result.success) {
-      setLoginError(result.error || t('login.invalidCredentials', 'Invalid email or password'));
+    try {
+      const result = await login(formData.email, formData.password, rememberMe);
+      
+      if (!result.success) {
+        setLoginError(result.error || t('login.invalidCredentials', 'Invalid email or password'));
+        setIsLoading(false);
+      }
+      // On success, spinner stays until redirect (or safety timeout below)
+    } catch (err) {
+      setLoginError(err?.message || t('login.invalidCredentials', 'Invalid email or password'));
       setIsLoading(false);
     }
   };
+
+  // If sign-in succeeds but profile/redirect stalls, unlock the form
+  useEffect(() => {
+    if (!isLoading) return undefined;
+    const timer = setTimeout(() => setIsLoading(false), 12000);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   const handleGithubLogin = async () => {
     setLoginError('');

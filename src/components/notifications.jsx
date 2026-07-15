@@ -27,9 +27,9 @@ function NotificationStatCard({ label, value, isDarkMode, border, text }) {
       )}
     >
       <p className={`relative z-10 text-xs ${text.secondary}`}>{label}</p>
-      <p className={`relative z-10 text-2xl font-bold ${text.primary}`}>
+      <div className={`relative z-10 text-2xl font-bold ${text.primary}`}>
         <SlidingNumber value={Number(value) || 0} replayToken={replayToken} />
-      </p>
+      </div>
     </div>
   );
 }
@@ -290,7 +290,8 @@ const Notifications = () => {
     loadMoreNotifications,
     hasMoreNotifications,
     loadingMore,
-    markManyAsRead
+    markManyAsRead,
+    checkPendingApprovals
   } = useNotifications();
 
   const [filter, setFilter] = useState('all'); // all, unread, read
@@ -314,6 +315,22 @@ const Notifications = () => {
     };
   }, []);
 
+  // Reconcile pending-approval notice whenever the page is opened
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (typeof checkPendingApprovals === 'function') {
+        await checkPendingApprovals();
+      }
+      if (!cancelled && typeof refreshNotificationData === 'function') {
+        await refreshNotificationData();
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [checkPendingApprovals, refreshNotificationData]);
+
   const clearFilters = () => {
     setFilter('all');
     setCategoryFilter('all');
@@ -323,6 +340,9 @@ const Notifications = () => {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
+      if (typeof checkPendingApprovals === 'function') {
+        await checkPendingApprovals();
+      }
       await refreshNotificationData();
     } finally {
       if (refreshTimeoutRef.current) {

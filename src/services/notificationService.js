@@ -8,6 +8,7 @@ import {
   clearDemoNotifications,
   getDemoPendingApprovalsCount
 } from '../utils/demoHelper';
+import { isEmployeeActive } from '../utils/employeeStatus.js';
 
 export const PENDING_APPROVAL_TITLE = 'Pending Approvals';
 export const PENDING_APPROVAL_CATEGORY = 'time_tracking';
@@ -589,6 +590,13 @@ const pendingApprovalOptions = (pendingCount) => ({
   metadata: { pendingCount, kind: 'pending_approvals' }
 });
 
+const isPendingApprovalNotification = (notification) => {
+  if (!notification) return false;
+  if (notification.metadata?.kind === 'pending_approvals') return true;
+  if (notification.title === PENDING_APPROVAL_TITLE) return true;
+  return /time (?:entry|entries) awaiting approval/i.test(notification.message || '');
+};
+
 /**
  * Ensure at most one pending-approval notification exists; update or remove as needed.
  * Safe to call concurrently — callers should still serialize via a mutex when possible.
@@ -601,12 +609,10 @@ export const syncPendingApprovalNotification = async (userId, pendingCount) => {
     { unreadOnly: false }
   );
 
-  const existingResult = await getUserNotifications(userId, {
-    title: PENDING_APPROVAL_TITLE,
-    category: PENDING_APPROVAL_CATEGORY,
-    type: 'warning'
-  });
-  const existing = existingResult.success ? existingResult.data : [];
+  // Collect matches by title / metadata / message pattern (not only exact filters),
+  // so stale demo samples and legacy rows are still cleared when the queue is empty.
+  const allResult = await getUserNotifications(userId, {});
+  const existing = (allResult.success ? allResult.data : []).filter(isPendingApprovalNotification);
   const message = buildPendingApprovalMessage(pendingCount);
 
   if (pendingCount <= 0) {
@@ -618,18 +624,27 @@ export const syncPendingApprovalNotification = async (userId, pendingCount) => {
 
   if (existing.length > 0) {
     const target = existing[0];
+    // Drop extras beyond the first
+    for (const duplicate of existing.slice(1)) {
+      await deleteNotification(duplicate.id);
+    }
+
     const currentCount = target.metadata?.pendingCount ?? 0;
     const isUpToDate =
       currentCount === pendingCount &&
       target.is_read === false &&
-      target.message === message;
+      target.message === message &&
+      target.category === PENDING_APPROVAL_CATEGORY;
 
     if (isUpToDate) {
       return { success: true, action: 'unchanged', data: target };
     }
 
     return updateNotification(target.id, {
+      title: PENDING_APPROVAL_TITLE,
       message,
+      type: 'warning',
+      category: PENDING_APPROVAL_CATEGORY,
       metadata: { pendingCount, kind: 'pending_approvals' },
       isRead: false,
       readAt: null
@@ -640,7 +655,7 @@ export const syncPendingApprovalNotification = async (userId, pendingCount) => {
 };
 
 /**
- * Get count of pending time entry approvals
+ * Get count of pending time entry approvals for active employees only.
  * @returns {Promise<object>} Result with count
  */
 export const getPendingApprovalsCount = async () => {
@@ -650,17 +665,34 @@ export const getPendingApprovalsCount = async () => {
   }
 
   try {
-    const { count, error } = await supabase
+    // employees table uses `status` (Active/Inactive). Do not select hr_users-only columns.
+    const { data, error } = await supabase
       .from('time_entries')
-      .select('*', { count: 'exact', head: true })
+      .select(`
+        id,
+        employee:employees!time_entries_employee_id_fkey(id, status)
+      `)
       .eq('status', 'pending');
 
     if (error) throw error;
 
-    return { success: true, count: count || 0 };
+    const count = (data || []).filter((entry) => isEmployeeActive(entry.employee)).length;
+
+    return { success: true, count };
   } catch (error) {
     console.error('Error fetching pending approvals count:', error);
-    return { success: false, error: error.message, count: 0 };
+    // Fallback: raw head count if the employee join is unavailable
+    try {
+      const { count, error: fallbackError } = await supabase
+        .from('time_entries')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      if (fallbackError) throw fallbackError;
+      return { success: true, count: count || 0 };
+    } catch (fallbackErr) {
+      console.error('Fallback pending approvals count failed:', fallbackErr);
+      return { success: false, error: error.message, count: 0 };
+    }
   }
 };
 

@@ -24,7 +24,6 @@ import {
   CalendarArrowDown,
   ArrowDownAZ,
   Timer,
-  Shield,
   AlertCircle
 } from 'lucide-react';
 import * as _XLSX from 'xlsx';

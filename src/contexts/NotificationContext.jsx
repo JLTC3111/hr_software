@@ -351,9 +351,14 @@ export const NotificationProvider = ({ children }) => {
     [showBrowserNotification]
   );
 
+  const canManagePendingApprovals =
+    user?.role === 'admin' ||
+    user?.role === 'manager' ||
+    user?.role === 'demo_admin';
+
   const checkPendingApprovals = useCallback(async () => {
     if (!user?.id) return;
-    if (user.role !== 'admin' && user.role !== 'manager') return;
+    if (!canManagePendingApprovals) return;
 
     if (pendingApprovalsCheckRef.current) {
       return pendingApprovalsCheckRef.current;
@@ -376,7 +381,7 @@ export const NotificationProvider = ({ children }) => {
 
     pendingApprovalsCheckRef.current = runCheck;
     return runCheck;
-  }, [user?.id, user?.role, refreshNotificationData, handleSessionAuthError]);
+  }, [user?.id, canManagePendingApprovals, refreshNotificationData, handleSessionAuthError]);
 
   // Initial fetch when user logs in
   useEffect(() => {
@@ -398,10 +403,21 @@ export const NotificationProvider = ({ children }) => {
 
     const initialize = async () => {
       await loadNotificationPrefs();
-      await Promise.all([fetchNotifications(), fetchUnreadCount(), fetchStats()]);
-      if (!cancelled && (user.role === 'admin' || user.role === 'manager')) {
-        await checkPendingApprovals();
+      // Heal + clear stale pending-approval notice BEFORE the first list fetch,
+      // otherwise React state keeps the sample until a second refresh.
+      if (canManagePendingApprovals) {
+        try {
+          const result = await notificationService.getPendingApprovalsCount();
+          if (result.success) {
+            await notificationService.syncPendingApprovalNotification(user.id, result.count);
+          }
+        } catch (error) {
+          console.error('Error syncing pending approvals on init:', error);
+          handleSessionAuthError(error, { silent: true });
+        }
       }
+      if (cancelled) return;
+      await Promise.all([fetchNotifications(), fetchUnreadCount(), fetchStats()]);
     };
 
     initialize();
@@ -412,12 +428,12 @@ export const NotificationProvider = ({ children }) => {
   }, [
     isAuthenticated,
     user?.id,
-    user?.role,
+    canManagePendingApprovals,
     fetchNotifications,
     fetchUnreadCount,
     fetchStats,
     loadNotificationPrefs,
-    checkPendingApprovals
+    handleSessionAuthError
   ]);
 
   // Re-sync when tab becomes visible
@@ -429,7 +445,7 @@ export const NotificationProvider = ({ children }) => {
 
       await loadNotificationPrefs();
       await refreshNotificationData();
-      if (user.role === 'admin' || user.role === 'manager') {
+      if (canManagePendingApprovals) {
         await checkPendingApprovals();
       }
     };
@@ -439,7 +455,7 @@ export const NotificationProvider = ({ children }) => {
   }, [
     isAuthenticated,
     user?.id,
-    user?.role,
+    canManagePendingApprovals,
     loadNotificationPrefs,
     refreshNotificationData,
     checkPendingApprovals
@@ -547,7 +563,7 @@ export const NotificationProvider = ({ children }) => {
   // Subscribe to time entry changes (production) or demo storage updates
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
-    if (user.role !== 'admin' && user.role !== 'manager') return;
+    if (!canManagePendingApprovals) return;
 
     const schedulePendingCheck = () => {
       if (pendingApprovalsDebounceRef.current) {
@@ -568,8 +584,7 @@ export const NotificationProvider = ({ children }) => {
           {
             event: '*',
             schema: 'public',
-            table: 'time_entries',
-            filter: 'status=eq.pending'
+            table: 'time_entries'
           },
           schedulePendingCheck
         )
@@ -598,7 +613,7 @@ export const NotificationProvider = ({ children }) => {
       window.removeEventListener('storage', handleDemoStorage);
       window.removeEventListener('demo-time-entries-changed', handleDemoTimeEntriesChanged);
     };
-  }, [isAuthenticated, user?.id, user?.role, checkPendingApprovals]);
+  }, [isAuthenticated, user?.id, canManagePendingApprovals, checkPendingApprovals]);
 
   const markManyAsRead = useCallback(
     async (notificationIds) => {
@@ -850,7 +865,8 @@ export const NotificationProvider = ({ children }) => {
       showBrowserNotification,
       requestNotificationPermission,
       loadNotificationPrefs,
-      updateNotificationPrefs
+      updateNotificationPrefs,
+      checkPendingApprovals
     }),
     [
       notifications,
@@ -873,7 +889,8 @@ export const NotificationProvider = ({ children }) => {
       showBrowserNotification,
       requestNotificationPermission,
       loadNotificationPrefs,
-      updateNotificationPrefs
+      updateNotificationPrefs,
+      checkPendingApprovals
     ]
   );
 

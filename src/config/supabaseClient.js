@@ -68,7 +68,38 @@ class CustomStorage {
 }
 
 export const customStorage = new CustomStorage();
-  
+
+export const AUTH_STORAGE_KEY = 'sb-auth-token';
+
+/**
+ * Wipe persisted Supabase auth tokens from both storages.
+ * Needed after idle logout when a network signOut may have timed out and left
+ * GoTrue half-signed-out — same approach as the contract management app.
+ */
+export const clearAuthStorage = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    customStorage.removeItem(AUTH_STORAGE_KEY);
+    customStorage.removeItem('supabase.auth.token');
+  } catch {
+    // ignore
+  }
+  for (const storage of [globalThis.localStorage, globalThis.sessionStorage]) {
+    try {
+      storage.removeItem(AUTH_STORAGE_KEY);
+      storage.removeItem('supabase.auth.token');
+      for (let i = storage.length - 1; i >= 0; i--) {
+        const k = storage.key(i);
+        if (k && k.startsWith('sb-') && k.includes('auth')) {
+          storage.removeItem(k);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+};
+
 // Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -76,7 +107,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
     storage: customStorage,
-    storageKey: 'sb-auth-token',
+    storageKey: AUTH_STORAGE_KEY,
     // PKCE is the default and recommended flow
     // Password reset links are handled automatically by detectSessionInUrl
   },
@@ -86,14 +117,19 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       'Content-Type': 'application/json'
     },
     fetch: async (url, options = {}) => {
-      // Add timeout to all fetch requests to prevent hanging
+      // Add timeout to all fetch requests to prevent hanging.
+      // Preserve any caller AbortSignal (GoTrue) so we don't orphan its lock.
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), DEFAULT_REQUEST_TIMEOUT);
+      const signal =
+        options.signal && typeof AbortSignal.any === 'function'
+          ? AbortSignal.any([options.signal, controller.signal])
+          : controller.signal;
 
       try {
         const resp = await fetch(url, {
           ...options,
-          signal: controller.signal
+          signal
         });
 
         // Lightweight diagnostic logging for visits REST calls that return errors

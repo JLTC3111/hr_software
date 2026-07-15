@@ -75,7 +75,7 @@ const StatsCard = memo(({ title, value, icon: Icon, staticIcon: StaticIcon, colo
       <div className="relative z-10 flex items-center justify-between">
         <div>
           <p className={`text-sm font-medium ${text.secondary} transition-colors duration-200`}>{title}</p>
-          <p className={`text-2xl font-bold ${text.primary} transition-all duration-200 group-hover:scale-105`}>
+          <div className={`text-2xl font-bold ${text.primary} transition-all duration-200 group-hover:scale-105`}>
             {animatedValue ? (
               <>
                 <SlidingNumber
@@ -88,7 +88,7 @@ const StatsCard = memo(({ title, value, icon: Icon, staticIcon: StaticIcon, colo
             ) : (
               value
             )}
-          </p>
+          </div>
         </div>
         <div className="transition-transform duration-300 group-hover:scale-110">
           {(!iconHoverOnly || isHovering) && Icon ? (

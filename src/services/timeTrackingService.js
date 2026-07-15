@@ -2030,22 +2030,31 @@ export const calculateHourTotals = async (employeeId, period = 'week') => {
 /* Get pending approvals count (for managers/HR) */
 export const getPendingApprovalsCount = async () => {
   if (isDemoMode()) {
-    return { 
-      success: true, 
-      data: { timeEntries: 2, leaveRequests: 1, overtimeLogs: 0, total: 3 } 
+    const { getDemoPendingApprovalsCount } = await import('../utils/demoHelper');
+    const timeEntries = getDemoPendingApprovalsCount();
+    return {
+      success: true,
+      data: { timeEntries, leaveRequests: 0, overtimeLogs: 0, total: timeEntries }
     };
   }
 
   try {
-    const [timeEntries, leaveRequests, overtimeLogs] = await Promise.all([
-      supabase.from('time_entries').select('id', { count: 'exact' }).eq('status', 'pending'),
+    const { isEmployeeActive } = await import('../utils/employeeStatus.js');
+
+    const [timeEntriesResult, leaveRequests, overtimeLogs] = await Promise.all([
+      supabase
+        .from('time_entries')
+        .select(`
+          id,
+          employee:employees!time_entries_employee_id_fkey(id, status)
+        `)
+        .eq('status', 'pending'),
       supabase.from('leave_requests').select('id', { count: 'exact' }).eq('status', 'pending'),
       supabase.from('overtime_logs').select('id', { count: 'exact' }).eq('status', 'pending')
     ]);
 
-    // Check for errors in any of the queries
-    if (timeEntries.error) {
-      console.error('Error fetching time_entries:', timeEntries.error);
+    if (timeEntriesResult.error) {
+      console.error('Error fetching time_entries:', timeEntriesResult.error);
     }
     if (leaveRequests.error) {
       console.error('Error fetching leave_requests:', leaveRequests.error);
@@ -2054,13 +2063,17 @@ export const getPendingApprovalsCount = async () => {
       console.error('Error fetching overtime_logs:', overtimeLogs.error);
     }
 
+    const timeEntriesCount = (timeEntriesResult.data || []).filter((entry) =>
+      isEmployeeActive(entry.employee)
+    ).length;
+
     return {
       success: true,
       data: {
-        timeEntries: timeEntries.count || 0,
+        timeEntries: timeEntriesCount,
         leaveRequests: leaveRequests.count || 0,
         overtimeLogs: overtimeLogs.count || 0,
-        total: (timeEntries.count || 0) + (leaveRequests.count || 0) + (overtimeLogs.count || 0)
+        total: timeEntriesCount + (leaveRequests.count || 0) + (overtimeLogs.count || 0)
       }
     };
   } catch (error) {
@@ -2072,7 +2085,18 @@ export const getPendingApprovalsCount = async () => {
 /* Get detailed pending approvals (for managers/HR) */
 export const getPendingApprovals = async () => {
   if (isDemoMode()) {
-    return { success: true, data: MOCK_TIME_ENTRIES.filter(e => e.status === 'pending') };
+    const { getDemoTimeEntries, MOCK_EMPLOYEES } = await import('../utils/demoHelper');
+    const { isEmployeeActive } = await import('../utils/employeeStatus.js');
+    const employeesById = new Map(MOCK_EMPLOYEES.map((emp) => [String(emp.id), emp]));
+    const data = getDemoTimeEntries().filter((entry) => {
+      if (entry.status !== 'pending') return false;
+      const employee =
+        entry.employee ||
+        employeesById.get(String(entry.employee_id)) ||
+        employeesById.get(String(entry.employeeId));
+      return isEmployeeActive(employee);
+    });
+    return { success: true, data };
   }
 
   try {
@@ -2082,7 +2106,7 @@ export const getPendingApprovals = async () => {
       .from('time_entries')
       .select(`
         *,
-        employee:employees!time_entries_employee_id_fkey(id, name, department, position)
+        employee:employees!time_entries_employee_id_fkey(id, name, department, position, status)
       `)
       .eq('status', 'pending')
       .order('date', { ascending: false });
@@ -2091,9 +2115,12 @@ export const getPendingApprovals = async () => {
       console.error('🔧 [Service] Error in getPendingApprovals query:', error);
       throw error;
     }
+
+    const { isEmployeeActive } = await import('../utils/employeeStatus.js');
+    const filtered = (data || []).filter((entry) => isEmployeeActive(entry.employee));
     
-    console.log('🔧 [Service] Pending approvals fetched:', data?.length || 0);
-    return { success: true, data: data || [] };
+    console.log('🔧 [Service] Pending approvals fetched:', filtered.length);
+    return { success: true, data: filtered };
   } catch (error) {
     console.error('🔧 [Service] Error fetching pending approvals:', error);
     return { success: false, error: error.message, data: [] };

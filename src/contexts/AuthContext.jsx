@@ -1,5 +1,5 @@
 import _React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { supabase, hasPermission, Permissions, customStorage } from '../config/supabaseClient.js';
+import { supabase, hasPermission, Permissions, customStorage, clearAuthStorage } from '../config/supabaseClient.js';
 import { validateAndRefreshSession, handleSessionAuthError as handleSessionAuthErrorUtil } from '../utils/sessionHelper.js';
 import { isDemoMode, enableDemoMode, disableDemoMode, MOCK_USER, getDemoEmployees, attachSeededRandomUserPhotos, DEMO_CONFIG } from '../utils/demoHelper.js';
 import { useSessionKeepAlive } from '../hooks/useSessionKeepAlive.js';
@@ -576,6 +576,20 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password, rememberMe = true) => {
     try {
       console.log(`🔐 Logging in with email: ${email}, rememberMe: ${rememberMe}`);
+
+      // After idle logout, a timed-out network signOut can leave GoTrue's lock held
+      // and storage half-cleared. Clear local session first so sign-in isn't blocked
+      // (hard refresh works today because it remounts the client + wipes storage).
+      try {
+        supabase.auth.stopAutoRefresh?.();
+        clearAuthStorage();
+        await Promise.race([
+          supabase.auth.signOut({ scope: 'local' }),
+          new Promise((resolve) => setTimeout(resolve, 2500)),
+        ]);
+      } catch (prepError) {
+        console.warn('Pre-login session clear:', prepError?.message || prepError);
+      }
       
       // Set storage type based on rememberMe checkbox
       if (typeof window !== 'undefined') {
@@ -631,6 +645,11 @@ export const AuthProvider = ({ children }) => {
       if (error) throw error;
 
       console.log('✅ Login successful');
+      try {
+        supabase.auth.startAutoRefresh?.();
+      } catch {
+        // ignore
+      }
       
       // If this email is mapped to a different HR user, we need to load that profile instead
       if (emailMapping && emailMapping.hr_user_id) {
@@ -779,32 +798,45 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
+      // Stop background refresh so it cannot keep holding the GoTrue lock
+      try {
+        supabase.auth.stopAutoRefresh?.();
+      } catch {
+        // ignore
+      }
+
       // Clear state immediately so UI can move on even if signOut hangs
       setUser(null);
       setIsAuthenticated(false);
       setSession(null);
       setLoading(false);
 
-      // Sign out from Supabase (this will trigger SIGNED_OUT event)
-      // Guard against stalled network after long idle by using a timeout
-      const signOutPromise = supabase.auth.signOut();
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Sign out timeout')), 5000);
-      });
+      // Mirror contract app: wipe persisted tokens before signOut
+      clearAuthStorage();
 
+      // Local scope clears in-memory session without a network round-trip.
+      // A timed-out *global* signOut was leaving GoTrue locked so re-login
+      // failed until a hard refresh remounted the client.
       try {
-        const { error } = await Promise.race([signOutPromise, timeoutPromise]);
-        if (error) {
+        const { error } = await Promise.race([
+          supabase.auth.signOut({ scope: 'local' }),
+          new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Sign out timeout')), 3000);
+          }),
+        ]);
+        if (error && error.message !== 'Auth session missing!') {
           console.error('Logout error:', error);
         }
       } catch (error) {
         console.error('Logout error:', error);
+        clearAuthStorage();
       }
 
       console.log('✅ Logged out successfully');
     } catch (error) {
       console.error('Logout error:', error);
       // Force clear state even on error
+      clearAuthStorage();
       setUser(null);
       setIsAuthenticated(false);
       setSession(null);

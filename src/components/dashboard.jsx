@@ -2541,13 +2541,13 @@ const Dashboard = ({ employees, applications }) => {
                     {t('dashboard.totalWorkDays')}
                   </h4>
                 </div>
-                <p className={`text-3xl font-bold ${text.primary}`}>
+                <div className={`text-3xl font-bold ${text.primary}`}>
                   <SlidingNumber
                     value={Number(totalWorkDays) || 0}
                     replayToken={replayToken}
                     className={text.primary}
                   />
-                </p>
+                </div>
                 <p className={`text-sm ${text.secondary} mt-1`}>
                   {t('dashboard.acrossEmployees')}
                 </p>
@@ -2577,13 +2577,13 @@ const Dashboard = ({ employees, applications }) => {
                     {t('dashboard.activeApplications')}
                   </h4>
                 </div>
-                <p className={`text-3xl font-bold ${text.primary}`}>
+                <div className={`text-3xl font-bold ${text.primary}`}>
                   <SlidingNumber
                     value={applications.length}
                     replayToken={replayToken}
                     className={text.primary}
                   />
-                </p>
+                </div>
                 <p className={`text-sm ${text.secondary} mt-1`}>
                   {t('dashboard.pendingReview')}
                 </p>
@@ -2613,13 +2613,13 @@ const Dashboard = ({ employees, applications }) => {
                     {t('dashboard.pendingRequests')}
                   </h4>
                 </div>
-                <p className={`text-3xl font-bold ${text.primary}`}>
+                <div className={`text-3xl font-bold ${text.primary}`}>
                   <SlidingNumber
                     value={Number(pendingApprovalsCount) || 0}
                     replayToken={replayToken}
                     className={text.primary}
                   />
-                </p>
+                </div>
                 <p className={`text-sm ${text.secondary} mt-1`}>
                   {t('dashboard.pendingApprovals', '')}
                 </p>
