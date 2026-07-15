@@ -37,6 +37,8 @@ export type MagicBentoProps = {
   particleCount?: number;
   glowColor?: string;
   className?: string;
+  /** Override the default responsive grid classes. */
+  gridClassName?: string;
 };
 
 const DEFAULT_PARTICLE_COUNT = 10;
@@ -576,6 +578,7 @@ export function MagicBento({
   particleCount = DEFAULT_PARTICLE_COUNT,
   glowColor,
   className,
+  gridClassName,
 }: MagicBentoProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -635,7 +638,10 @@ export function MagicBento({
 
       <div
         ref={gridRef}
-        className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+        className={cn(
+          'grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
+          gridClassName
+        )}
       >
         {items.map((item, index) => (
           <MagicBentoCardItem

@@ -8,26 +8,14 @@ import {
   Calendar, 
   Download, 
   Users, 
-  Activity,
-  Laptop,
-  User,
-  LayoutList,
-  PlayCircle,
   Filter, 
   BarChart3, 
   Gauge,
   Goal,
   Clock, 
-  SmilePlus,
   CheckCircle, 
-  ListCheck,
-  Combine, 
-  Pickaxe,
-  HeartPlus,
   ShieldCheck,
   ShieldQuestion,
-  PenOff,
-  Apple, 
   Hourglass,
   FileText,
   Database,
@@ -61,7 +49,8 @@ import {
   drawPdfChartsSection,
   PDF_CHART_COLORS
 } from '../utils/reportExportHelpers.js';
-import { ShinyButton } from './ui/shiny-button';
+import { SpecularButton } from './ui/specular-button';
+import { MagicBento } from './ui/magic-bento';
 import { SlidingNumber } from './motion-primitives';
 import { NumberTicker } from './ui/number-ticker';
 import { PageLiveClock } from './ui/page-live-clock';
@@ -638,6 +627,156 @@ const Reports = () => {
 
     return { totalRecords };
   }, [activeTab, currentData]);
+
+  const overviewBentoItems = useMemo(() => {
+    const recordsLabel = t('reports.totalRecords', 'Total Records');
+    const base = [
+      {
+        label: t('reports.overview', 'Overview'),
+        title: String(stats.totalRecords || 0),
+        description: recordsLabel,
+        value: Number(stats.totalRecords) || 0,
+      },
+    ];
+
+    if (activeTab === 'all') {
+      return [
+        ...base,
+        {
+          label: t('reports.timeEntries', 'Time Entries'),
+          title: String(stats.timeEntriesCount || 0),
+          description: t('reports.totalEntries', 'Total Entries'),
+          value: Number(stats.timeEntriesCount) || 0,
+        },
+        {
+          label: t('reports.tasks', 'Tasks'),
+          title: String(stats.tasksCount || 0),
+          description: t('reports.tasks', 'Tasks'),
+          value: Number(stats.tasksCount) || 0,
+        },
+        {
+          label: t('reports.goals', 'Goals'),
+          title: String(stats.goalsCount || 0),
+          description: t('reports.goals', 'Goals'),
+          value: Number(stats.goalsCount) || 0,
+        },
+      ];
+    }
+
+    if (activeTab === 'time-entries') {
+      return [
+        ...base,
+        {
+          label: t('reports.hours', 'Hours'),
+          title: `${stats.totalHours || 0}h`,
+          description: t('reports.totalHours', 'Total Hours'),
+          value: Number(stats.totalHours) || 0,
+          suffix: 'h',
+        },
+        {
+          label: t('reports.approved', 'Approved'),
+          title: String(stats.approved || 0),
+          description: t('reports.approved', 'Approved'),
+          value: Number(stats.approved) || 0,
+        },
+        {
+          label: t('reports.pending', 'Pending'),
+          title: String(stats.pending || 0),
+          description: t('reports.pending', 'Pending'),
+          value: Number(stats.pending) || 0,
+        },
+      ];
+    }
+
+    if (activeTab === 'tasks') {
+      return [
+        ...base,
+        {
+          label: t('reports.completed', 'Completed'),
+          title: String(stats.completed || 0),
+          description: t('reports.completed', 'Completed'),
+          value: Number(stats.completed) || 0,
+        },
+        {
+          label: t('reports.inProgress', 'In Progress'),
+          title: String(stats.inProgress || 0),
+          description: t('reports.inProgress', 'In Progress'),
+          value: Number(stats.inProgress) || 0,
+        },
+        {
+          label: t('reports.rate', 'Rate'),
+          title: `${stats.completionRate || 0}%`,
+          description: t('reports.completionRate', 'Completion Rate'),
+          value: Number(stats.completionRate) || 0,
+          suffix: '%',
+        },
+      ];
+    }
+
+    if (activeTab === 'goals') {
+      return [
+        ...base,
+        {
+          label: t('reports.achieved', 'Achieved'),
+          title: String(stats.achieved || 0),
+          description: t('reports.achieved', 'Achieved'),
+          value: Number(stats.achieved) || 0,
+        },
+        {
+          label: t('reports.inProgress', 'In Progress'),
+          title: String(stats.inProgress || 0),
+          description: t('reports.inProgress', 'In Progress'),
+          value: Number(stats.inProgress) || 0,
+        },
+        {
+          label: t('reports.progress', 'Progress'),
+          title: `${stats.averageProgress || 0}%`,
+          description: t('reports.avgProgress', 'Avg Progress'),
+          value: Number(stats.averageProgress) || 0,
+          suffix: '%',
+        },
+      ];
+    }
+
+    if (activeTab === 'leave') {
+      return [
+        ...base,
+        {
+          label: t('reports.approved', 'Approved'),
+          title: String(stats.approved || 0),
+          description: t('reports.approved', 'Approved'),
+          value: Number(stats.approved) || 0,
+        },
+        {
+          label: t('reports.pending', 'Pending'),
+          title: String(stats.pending || 0),
+          description: t('reports.pending', 'Pending'),
+          value: Number(stats.pending) || 0,
+        },
+        {
+          label: t('reports.leaveDays', 'Leave Days'),
+          title: String(stats.totalLeaveDays || 0),
+          description: t('reports.totalLeaveDays', 'Total Leave Days'),
+          value: Number(stats.totalLeaveDays) || 0,
+        },
+      ];
+    }
+
+    return base;
+  }, [activeTab, stats, t]);
+
+  const specularPrimaryClass = cn(
+    'px-5 py-2.5 text-sm',
+    isDarkMode
+      ? 'border-slate-200 bg-slate-100 text-slate-900 hover:bg-white'
+      : 'border-slate-900 bg-slate-900 text-white hover:bg-slate-800'
+  );
+  const specularSecondaryClass = cn(
+    'px-5 py-2.5 text-sm',
+    isDarkMode
+      ? 'border-slate-500 bg-slate-800 text-slate-100 hover:bg-slate-700'
+      : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
+  );
 
   const buildTimeEntryCsvRows = (timeEntries) => {
     const headers = [
@@ -2335,19 +2474,19 @@ const Reports = () => {
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
-      <div className={`${bg.secondary} rounded-lg border ${border.primary} p-6`}>
+      <div className={`${bg.secondary} rounded-xl border ${border.primary} p-6`}>
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className={`text-2xl font-bold ${text.primary} mb-2`}>
+            <h1 className={`text-2xl font-semibold tracking-tight ${text.primary} mb-1`}>
               {t('nav.reports', 'Reports & Analytics')}
             </h1>
-            <p className={`${text.secondary}`}>
+            <p className={`text-sm ${text.secondary}`}>
               {t('reports.subtitle', 'Export comprehensive data for time entries, tasks, and personal goals')}
             </p>
           </div>
           
           <div className="flex items-center gap-2">
-            <Database className={`w-5 h-5 text-green-600`} />
+            <Database className={`w-4 h-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
             <span className={`text-sm ${text.secondary}`}>
               {t('reports.liveData', 'Live data from Supabase')}
             </span>
@@ -2367,15 +2506,22 @@ const Reports = () => {
             <p className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-700'} mt-1`}>
               {fetchError}
             </p>
-            <button
+            <SpecularButton
+              type="button"
               onClick={() => {
                 setFetchError(null);
                 fetchReportData();
               }}
-              className={`mt-2 text-xs font-medium ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} underline`}
+              shineOnHover
+              className={cn(
+                'mt-2 px-3 py-1.5 text-xs',
+                isDarkMode
+                  ? 'border-red-800/60 bg-red-950/40 text-red-200 hover:bg-red-900/50'
+                  : 'border-red-200 bg-white text-red-700 hover:bg-red-50'
+              )}
             >
               {t('common.retry', 'Try Again')}
-            </button>
+            </SpecularButton>
           </div>
           <button
             onClick={() => setFetchError(null)}
@@ -2388,16 +2534,23 @@ const Reports = () => {
       )}
 
       {/* Export Button - shows current tab data count */}
-      <div className={`${bg.secondary} rounded-lg border ${border.primary} p-4`}>
+      <div className={`${bg.secondary} rounded-xl border ${border.primary} p-5`}>
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
           <div className="flex-1">
-            <h2 className={`text-lg font-semibold ${text.primary} mb-1 flex items-center gap-2`}>
+            <h2 className={`text-base font-semibold tracking-tight ${text.primary} mb-1 flex items-center gap-2`}>
               {activeTab === 'time-entries' && t('reports.timeEntries', 'Time Entries')}
               {activeTab === 'tasks' && t('reports.tasks', 'Tasks')}
               {activeTab === 'goals' && t('reports.goals', 'Personal Goals')}
               {activeTab === 'leave' && t('reports.leave', 'Leave Requests')}
               {selectedEmployee !== 'all' && (
-                <span className="px-3 py-1 text-xs bg-linear-to-r from-blue-600 to-gray-600 text-white rounded-full font-medium">
+                <span
+                  className={cn(
+                    'px-2.5 py-0.5 text-xs font-medium rounded-md border',
+                    isDarkMode
+                      ? 'border-slate-600 bg-slate-800 text-slate-200'
+                      : 'border-slate-200 bg-slate-100 text-slate-700'
+                  )}
+                >
                   {t('reports.individualReport', 'Individual Report')}
                 </span>
               )}
@@ -2416,57 +2569,60 @@ const Reports = () => {
           </div>
           
           <div className="flex flex-wrap gap-3">
-            <ShinyButton
+            <SpecularButton
               type="button"
               onClick={exportAllToCSV}
               disabled={exporting}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white border-blue-500 disabled:border-gray-400 font-medium"
+              shineOnHover
+              className={cn(specularPrimaryClass, exporting && 'opacity-50')}
               title={t('reports.exportingIncludes', 'Exporting will include all filtered data, not just previewed records')}
             >
               {exporting ? (
-                <Loader className="w-5 h-5 animate-spin" />
+                <Loader className="w-4 h-4 animate-spin" />
               ) : (
-                <Download className="w-5 h-5" />
+                <Download className="w-4 h-4 opacity-80" />
               )}
               {t('reports.exportToCSV', 'Export to CSV')}
-            </ShinyButton>
-            
-            <ShinyButton
+            </SpecularButton>
+
+            <SpecularButton
               type="button"
               onClick={exportToExcel}
               disabled={exporting}
-              className="px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white border-green-500 disabled:border-gray-400 font-medium"
+              shineOnHover
+              className={cn(specularSecondaryClass, exporting && 'opacity-50')}
               title={t('reports.excelExportHint', 'Export all data types with summary, charts, and detailed sheets')}
             >
               {exporting ? (
-                <Loader className="w-5 h-5 animate-spin" />
+                <Loader className="w-4 h-4 animate-spin" />
               ) : (
-                <FileText className="w-5 h-5" />
+                <FileText className="w-4 h-4 opacity-80" />
               )}
               {t('reports.exportToExcel', 'Export to Excel')}
-            </ShinyButton>
+            </SpecularButton>
 
-            <ShinyButton
+            <SpecularButton
               type="button"
               onClick={exportToPDF}
               disabled={exporting}
-              className="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white border-red-500 disabled:border-gray-400 font-medium"
+              shineOnHover
+              className={cn(specularSecondaryClass, exporting && 'opacity-50')}
               title={t('reports.pdfExportHint', 'Export PDF with visual charts, summary, and detailed tables for all data types')}
             >
               {exporting ? (
-                <Loader className="w-5 h-5 animate-spin" />
+                <Loader className="w-4 h-4 animate-spin" />
               ) : (
-                <FileText className="w-5 h-5" />
+                <FileText className="w-4 h-4 opacity-80" />
               )}
               {t('reports.exportToPDF', 'Export to PDF')}
-            </ShinyButton>
+            </SpecularButton>
           </div>
         </div>
       </div>
 
       {/* Quick Filters */}
-      <div className={`${bg.secondary} rounded-lg border ${border.primary} p-6`}>
-        <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
+      <div className={`${bg.secondary} rounded-xl border ${border.primary} p-6`}>
+        <h3 className={`text-base font-semibold tracking-tight ${text.primary} mb-4`}>
           {t('reports.quickFilters', 'Quick Filters')}
         </h3>
         
@@ -2610,15 +2766,87 @@ const Reports = () => {
         const goalCompletionRate = employeeGoals.length > 0 ? ((completedGoals / employeeGoals.length) * 100).toFixed(1) : 0;
         const avgProgress = employeeGoals.length > 0 ? (employeeGoals.reduce((sum, g) => sum + (g.status === 'completed' ? 100 : (g.progress || 0)), 0) / employeeGoals.length).toFixed(1) : 0;
 
+        const employeeBentoItems = [];
+        if (activeTab === 'time-entries' || activeTab === 'all') {
+          employeeBentoItems.push(
+            {
+              label: t('reports.hours', 'Hours'),
+              title: `${totalHours.toFixed(1)}h`,
+              description: t('reports.totalHours', 'Total Hours'),
+              value: Number(totalHours.toFixed(1)),
+              suffix: 'h',
+            },
+            {
+              label: t('reports.regular', 'Regular'),
+              title: `${regularHours.toFixed(1)}h`,
+              description: t('reports.regularHours', 'Regular Hours'),
+              value: Number(regularHours.toFixed(1)),
+              suffix: 'h',
+            },
+            {
+              label: t('reports.overtime', 'Overtime'),
+              title: `${overtimeHours.toFixed(1)}h`,
+              description: t('reports.overtime', 'Overtime'),
+              value: Number(overtimeHours.toFixed(1)),
+              suffix: 'h',
+            },
+            {
+              label: t('reports.wfh', 'WFH'),
+              title: `${wfhHours.toFixed(1)}h`,
+              description: t('reports.wfh', 'Working From Home'),
+              value: Number(wfhHours.toFixed(1)),
+              suffix: 'h',
+            },
+            {
+              label: t('reports.leave', 'Leave'),
+              title: String(leaveDays),
+              description: t('reports.leaveDays', 'Leave Days'),
+              value: Number(leaveDays) || 0,
+            },
+            {
+              label: t('reports.days', 'Days'),
+              title: String(daysWorked),
+              description: t('reports.daysWorked', 'Days Worked'),
+              value: Number(daysWorked) || 0,
+            }
+          );
+        }
+        if (activeTab === 'tasks' || activeTab === 'all') {
+          employeeBentoItems.push({
+            label: t('reports.tasks', 'Tasks'),
+            title: `${completedTasks}/${employeeTasks.length}`,
+            description: t('reports.tasksDone', 'Tasks Done'),
+            value: completedTasks,
+          });
+        }
+        if (activeTab === 'goals' || activeTab === 'all') {
+          employeeBentoItems.push(
+            {
+              label: t('reports.completion', 'Completion'),
+              title: `${activeTab === 'goals' ? goalCompletionRate : taskCompletionRate}%`,
+              description: t('reports.completion', 'Completion'),
+              value: Number(activeTab === 'goals' ? goalCompletionRate : taskCompletionRate) || 0,
+              suffix: '%',
+            },
+            {
+              label: t('reports.progress', 'Progress'),
+              title: `${avgProgress}%`,
+              description: t('reports.goalProgress', 'Goal Progress'),
+              value: Number(avgProgress) || 0,
+              suffix: '%',
+            }
+          );
+        }
+
         return (
-          <div className={`${bg.secondary} rounded-lg border border-transparent transition-colors ${isDarkMode ? 'hover:border-amber-50' : 'hover:border-blue-400'} p-6`}>
+          <div className={`${bg.secondary} rounded-xl border ${border.primary} p-6`}>
             <div className="flex items-start justify-between mb-6">
               <div>
-                <h3 className={`text-xl font-bold ${text.primary} mb-1`}>
-                  {getDemoEmployeeName(employee, t)} - {t('reports.performanceSummary', "")}
+                <h3 className={`text-xl font-semibold tracking-tight ${text.primary} mb-1`}>
+                  {getDemoEmployeeName(employee, t)} — {t('reports.performanceSummary', 'Performance')}
                 </h3>
                 <p className={`${text.secondary} text-sm`}>
-                  {translateDepartment(employee.department)} • {translatePosition(employee.position)}
+                  {translateDepartment(employee.department)} · {translatePosition(employee.position)}
                 </p>
                 <p className={`${text.secondary} text-xs mt-1`}>
                   {t('reports.reportPeriod', 'Report Period')}: {filters.startDate} {t('reports.to', 'to')} {filters.endDate}
@@ -2626,83 +2854,25 @@ const Reports = () => {
               </div>
             </div>
 
-            {/* Quick Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {/* Time Tracking Stats - Show only for time-entries or all */}
-              {(activeTab === 'time-entries' || activeTab === 'all') && (
-                <>
-                  <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                    <Clock className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                    <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.totalHours', 'Total Hours')}</p>
-                    <p className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={Number(totalHours.toFixed(1))} /></p>
-                  </div>
-
-                  <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                    <Hourglass className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                    <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.regularHours', 'Regular Hours')}</p>
-                    <p className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={Number(regularHours.toFixed(1))} /></p>
-                  </div>
-
-                  <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                    <HeartPlus className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                    <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.overtime', 'Overtime')}</p>
-                    <p className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={Number(overtimeHours.toFixed(1))} /></p>
-                  </div>
-                  
-                  <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                    <Laptop className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                    <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.wfh', 'Working From Home')}</p>
-                    <p className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={Number(wfhHours.toFixed(1))} /></p>
-                  </div>
-                  
-                  <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                    <Apple className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                    <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.leaveDays', 'Leave Days')}</p>
-                    <p className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={Number(leaveDays) || 0} /></p>
-                  </div>
-                  
-                  <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                    <Calendar className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                    <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.daysWorked', 'Days Worked')}</p>
-                    <p className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={Number(daysWorked) || 0} /></p>
-                  </div>
-                </>
-              )}
-
-              {/* Task Stats - Show only for tasks or all */}
-              {(activeTab === 'tasks' || activeTab === 'all') && (
-                <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                  <ShieldCheck className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                  <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.tasksDone', 'Tasks Done')}</p>
-                  <p className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={completedTasks} />/<SlidingNumber value={employeeTasks.length} /></p>
-                </div>
-              )}
-
-              {/* Goal Stats - Show only for goals or all */}
-              {(activeTab === 'goals' || activeTab === 'all') && (
-                <>
-                  <div className={`p-4 rounded-lg justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                    <Goal className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                    <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.completion', 'Completion')}</p>
-                    <p className={`text-2xl font-bold ${text.primary}`}>
-                      <NumberTicker value={Number(activeTab === 'goals' ? goalCompletionRate : taskCompletionRate) || 0} decimalPlaces={1} className={text.primary} />%
-                    </p>
-                  </div>
-
-                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                    <Pickaxe className={`w-6.5 h-6.5 ${text.primary} mb-2`} />
-                    <p className={`text-xs ${text.secondary} mb-1`}>{t('reports.goalProgress', 'Goal Progress')}</p>
-                    <p className={`text-2xl font-bold ${text.primary}`}><NumberTicker value={Number(avgProgress) || 0} decimalPlaces={1} className={text.primary} />%</p>
-                  </div>
-                </>
-              )}
-            </div>
+            {employeeBentoItems.length > 0 && (
+              <MagicBento
+                isDarkMode={isDarkMode}
+                enableStars
+                enableSpotlight
+                enableBorderGlow
+                enableMagnetism
+                clickEffect
+                glowColor={isDarkMode ? '148, 163, 184' : '71, 85, 105'}
+                gridClassName="xl:grid-cols-3"
+                items={employeeBentoItems}
+              />
+            )}
 
             {/* Detailed Breakdown */}
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Time Entries Breakdown - Show only for time-entries or all */}
               {(activeTab === 'time-entries' || activeTab === 'all') && (
-                <div className={`p-4 rounded-lg border ${border.primary}`}>
+                <div className={`p-4 rounded-xl border ${border.primary}`}>
                   <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
                     <Clock className="w-4 h-4" />
                     {t('reports.timeEntries', 'Time Entries')} ({employeeTimeEntries.length})
@@ -2738,7 +2908,7 @@ const Reports = () => {
 
               {/* Tasks Breakdown - Show only for tasks or all */}
               {(activeTab === 'tasks' || activeTab === 'all') && (
-                <div className={`p-4 rounded-lg border ${border.primary}`}>
+                <div className={`p-4 rounded-xl border ${border.primary}`}>
                   <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
                     <CheckCircle className="w-4 h-4" />
                     {t('reports.tasks', 'Tasks')} ({employeeTasks.length})
@@ -2766,7 +2936,7 @@ const Reports = () => {
 
               {/* Goals Breakdown - Show only for goals or all */}
               {(activeTab === 'goals' || activeTab === 'all') && (
-                <div className={`p-4 rounded-lg border ${border.primary}`}>
+                <div className={`p-4 rounded-xl border ${border.primary}`}>
                   <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
                     <Goal className="w-4 h-4" />
                     {t('reports.goals', 'Goals')} ({employeeGoals.length})
@@ -2797,177 +2967,17 @@ const Reports = () => {
       })()}
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={`text-sm ${text.secondary}`}>{t('reports.totalRecords', 'Total Records')}:    </p>
-              <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.totalRecords) || 0} /></p>
-            </div>
-            <BarChart3 className={`w-8 h-8 ${text.secondary}`} />
-          </div>
-        </div>
-
-        {activeTab === 'all' && (
-          <>
-            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm ${text.secondary}`}>{t('reports.totalEntries', 'Total Entries')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.timeEntriesCount) || 0} /></p>
-                </div>
-                <Clock className={`w-8 h-8 ${text.secondary}`} />
-              </div>
-            </div>
-            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm ${text.secondary}`}>{t('reports.tasks', 'Tasks')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.tasksCount) || 0} /></p>
-                </div>
-                <LayoutList className={`w-8 h-8 ${text.secondary}`} />
-              </div>
-            </div>
-            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm ${text.secondary}`}>{t('reports.goals', 'Goals')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.goalsCount) || 0} /></p>
-                </div>
-                <Goal className={`w-8 h-8 ${text.secondary}`} />
-              </div>
-            </div>
-          </>
-        )}
-
-        {activeTab === 'time-entries' && (
-          <>
-            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm ${text.secondary}`}>{t('reports.totalHours', 'Total Hours')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.totalHours) || 0} />h</p>
-                </div>
-                <Clock className={`w-8 h-8 ${text.secondary}`} />
-              </div>
-            </div>
-            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm ${text.secondary}`}>{t('reports.approved', 'Approved')}</p>
-                  <p className={`text-3xl font-bold ${text.secondary}`}><SlidingNumber value={Number(stats.approved) || 0} /></p>
-                </div>
-                <CheckCircle className={`w-8 h-8 ${text.primary}`} />
-              </div>
-            </div>
-            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm ${text.secondary}`}>{t('reports.pending', 'Pending')}</p>
-                  <p className={`text-3xl font-bold ${text.secondary}`}><SlidingNumber value={Number(stats.pending) || 0} /></p>
-                </div>
-                <PenOff className={`w-8 h-8 ${text.primary}`} />
-              </div>
-            </div>
-          </>
-        )}
-
-        {activeTab === 'tasks' && (
-          <>
-            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm ${text.secondary}`}>{t('reports.completed', 'Completed')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.completed) || 0} /></p>
-                </div>
-                <ListCheck className={`w-8 h-8 ${text.secondary}`} />
-              </div>
-            </div>
-            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm ${text.secondary}`}>{t('reports.inProgress', 'In Progress')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.inProgress) || 0} /></p>
-                </div>
-                <PlayCircle className={`w-8 h-8 ${text.secondary}`} />
-              </div>
-            </div>
-            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm ${text.secondary}`}>{t('reports.completionRate', 'Completion Rate')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}><NumberTicker value={Number(stats.completionRate) || 0} className={text.primary} />%</p>
-                </div>
-                <Gauge className={`w-8 h-8 ${text.secondary}`} />
-              </div>
-            </div>
-          </>
-        )}
-
-        {activeTab === 'goals' && (
-          <>
-            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm ${text.secondary}`}>{t('reports.achieved', 'Achieved')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.achieved) || 0} /></p>
-                </div>
-                <SmilePlus className={`w-8 h-8 ${text.secondary}`} />
-              </div>
-            </div>
-            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm ${text.secondary}`}>{t('reports.inProgress', 'In Progress')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.inProgress) || 0} /></p>
-                </div>
-                <Combine className={`w-8 h-8 ${text.secondary}`} />
-              </div>
-            </div>
-            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm ${text.secondary}`}>{t('reports.avgProgress', 'Avg Progress')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}><NumberTicker value={Number(stats.averageProgress) || 0} className={text.primary} />%</p>
-                </div>
-                <Activity className={`w-8 h-8 ${text.secondary}`} />
-              </div>
-            </div>
-          </>
-        )}
-
-        {activeTab === 'leave' && (
-          <>
-            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm ${text.secondary}`}>{t('reports.approved', 'Approved')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.approved) || 0} /></p>
-                </div>
-                <CheckCircle className={`w-8 h-8 ${text.secondary}`} />
-              </div>
-            </div>
-            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm ${text.secondary}`}>{t('reports.pending', 'Pending')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.pending) || 0} /></p>
-                </div>
-                <Hourglass className={`w-8 h-8 ${text.secondary}`} />
-              </div>
-            </div>
-            <div className={`${bg.secondary} border ${border.primary} rounded-lg p-6`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm ${text.secondary}`}>{t('reports.totalLeaveDays', 'Total Leave Days')}</p>
-                  <p className={`text-3xl font-bold ${text.primary}`}><SlidingNumber value={Number(stats.totalLeaveDays) || 0} /></p>
-                </div>
-                <Calendar className={`w-8 h-8 ${text.secondary}`} />
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+      <MagicBento
+        isDarkMode={isDarkMode}
+        enableStars
+        enableSpotlight
+        enableBorderGlow
+        enableMagnetism
+        clickEffect
+        glowColor={isDarkMode ? '148, 163, 184' : '71, 85, 105'}
+        gridClassName="xl:grid-cols-4"
+        items={overviewBentoItems}
+      />
 
       {/* Preview Table */}
       <div className={`${bg.secondary} rounded-lg border ${border.primary}`}>
