@@ -9,6 +9,11 @@ import { isDemoMode, MOCK_EMPLOYEES, getDemoEmployeeName } from '../utils/demoHe
 import { useSessionGuard } from '../hooks/useSessionGuard.js';
 import { SpecularButton } from './ui/specular-button';
 import { cn } from '@/lib/utils';
+import {
+  getHoursWorked,
+  toExtendedInterval,
+  extendedIntervalsOverlap,
+} from '../utils/timeEntryHelpers.js';
 
 const AdminTimeEntry = ({ onEntriesChanged }) => {
   const { isDarkMode, bg, text, border } = useTheme();
@@ -189,14 +194,16 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
       const clockInTime = isOnLeave ? LEAVE_CLOCK_IN : `${formData.clockIn}:00`;
       const clockOutTime = isOnLeave ? LEAVE_CLOCK_OUT : `${formData.clockOut}:00`;
 
-      // Calculate hours using Date objects for validation
-      const clockInDate = isOnLeave ? null : new Date(`${formData.date}T${formData.clockIn}`);
-      const clockOutDate = isOnLeave ? null : new Date(`${formData.date}T${formData.clockOut}`);
-      const diffMs = isOnLeave ? 0 : (clockOutDate - clockInDate);
-      const hours = isOnLeave ? 0 : diffMs / (1000 * 60 * 60);
+      const hours = isOnLeave ? 0 : getHoursWorked(formData.date, formData.clockIn, formData.clockOut);
 
       if (!isOnLeave && hours <= 0) {
-        setErrorMessage('Clock out time must be after clock in time');
+        setErrorMessage(t('timeClock.errors.clockOutAfterClockIn', 'Clock out must be after clock in'));
+        setLoading(false);
+        return;
+      }
+
+      if (!isOnLeave && hours > 24) {
+        setErrorMessage(t('timeClock.errors.tooManyHours', 'Shift cannot exceed 24 hours'));
         setLoading(false);
         return;
       }
@@ -306,10 +313,10 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
             if (existingClockInSeconds == null || existingClockOutSeconds == null) continue;
 
             // Overlap check using half-open intervals: [start, end)
-            // This allows back-to-back entries (e.g., 10:00-12:00 after 08:00-10:00).
-            const isOverlapping =
-              newClockInSeconds < existingClockOutSeconds &&
-              newClockOutSeconds > existingClockInSeconds;
+            // Supports overnight shifts when clock-out is earlier than clock-in.
+            const newInterval = toExtendedInterval(newClockInSeconds, newClockOutSeconds);
+            const existingInterval = toExtendedInterval(existingClockInSeconds, existingClockOutSeconds);
+            const isOverlapping = extendedIntervalsOverlap(newInterval, existingInterval);
             
             if (isOverlapping) {
               hasOverlap = true;

@@ -2,6 +2,7 @@ import { supabase } from '../config/supabaseClient';
 import { withTimeout } from '../utils/supabaseTimeout';
 import { isDemoMode, MOCK_EMPLOYEES, MOCK_TIME_ENTRIES, getDemoLeaveRequests, addDemoLeaveRequest, calculateDaysBetween, getDemoTimeEntries, addDemoTimeEntry, getDemoEmployeeById } from '../utils/demoHelper';
 import { saveDemoBlob } from '../utils/demoStorage';
+import { toExtendedInterval, extendedIntervalsOverlap } from '../utils/timeEntryHelpers.js';
 
 const toEmployeeId = (id) => {
   return id ? String(id) : null;
@@ -296,16 +297,15 @@ const buildDateRange = (startDate, endDate) => {
 };
 
 const hasOverlappingEntry = (existingEntries, clockInSeconds, clockOutSeconds) => {
+  const newInterval = toExtendedInterval(clockInSeconds, clockOutSeconds);
+
   for (const entry of existingEntries) {
     const existingClockInSeconds = timeStringToSeconds(entry.clock_in);
     const existingClockOutSeconds = timeStringToSeconds(entry.clock_out);
     if (existingClockInSeconds == null || existingClockOutSeconds == null) continue;
 
-    const isOverlapping =
-      clockInSeconds < existingClockOutSeconds &&
-      clockOutSeconds > existingClockInSeconds;
-
-    if (isOverlapping) return true;
+    const existingInterval = toExtendedInterval(existingClockInSeconds, existingClockOutSeconds);
+    if (extendedIntervalsOverlap(newInterval, existingInterval)) return true;
   }
   return false;
 };
