@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import ThemeToggle from './themeToggle'
 import LanguageSelector from './LanguageSelector'
 import NotificationDropdown from './NotificationDropdown'
+import MobileHeaderMenu from './MobileHeaderMenu'
 import { TextType } from './motion-primitives'
 import { ShinyButton } from './ui/shiny-button'
 import { cn } from '@/lib/utils'
@@ -54,12 +55,12 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   return (
     <nav className={`${bg.secondary} shadow-sm border-b ${border.primary}`}>
       <div className="px-3 sm:px-4 lg:px-5 xl:px-6">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-3">
+        <div className="flex justify-between items-center h-14 lg:h-16">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             {/* Mobile Menu Button */}
             <button
               onClick={handleMobileMenuToggle}
-              className={`lg:hidden p-2 rounded-lg transition-all duration-200 cursor-pointer ${
+              className={`lg:hidden p-1.5 rounded-lg transition-all duration-200 cursor-pointer shrink-0 ${
                 isDarkMode 
                   ? 'hover:bg-gray-700' 
                   : 'hover:bg-gray-200'
@@ -67,9 +68,9 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
               aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
             >
               {isMobileMenuOpen ? (
-                <X className={`h-6 w-6 ${text.primary}`} />
+                <X className={`h-5 w-5 ${text.primary}`} />
               ) : (
-                <Menu className={`h-6 w-6 ${text.primary}`} />
+                <Menu className={`h-5 w-5 ${text.primary}`} />
               )}
             </button>
 
@@ -78,14 +79,16 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                 src="/logoIcons/logo.png" 
                 alt="Logo" 
                 onClick={() => window.open('https://icue.vn', '_blank')} 
-                className="h-8 w-auto object-cover cursor-pointer"
+                className="h-7 lg:h-8 w-auto object-cover cursor-pointer"
                 loading="eager"
                 key="header-logo"
               />
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="hidden lg:block text-sm">
+
+          {/* Desktop actions */}
+          <div className="hidden lg:flex items-center gap-4">
+            <div className="text-sm">
               <TextType
                 as="span"
                 text={welcomePhrases}
@@ -103,13 +106,9 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                 )}
               />
             </div>
-            <div className="flex items-center">
-              <LanguageSelector />
-            </div>
+            <LanguageSelector />
             <ThemeToggle />
-            
             <NotificationDropdown />
-
             <ShinyButton
               type="button"
               onClick={handleLogout}
@@ -125,6 +124,12 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
               <LogOut className="h-4 w-4 shrink-0 group-hover:animate-ping" />
               <span className="text-sm font-medium">{t('header.logout', 'Logout')}</span>
             </ShinyButton>
+          </div>
+
+          {/* Mobile actions — notifications + overflow menu */}
+          <div className="flex lg:hidden items-center gap-0.5 shrink-0">
+            <NotificationDropdown />
+            <MobileHeaderMenu onLogout={handleLogout} />
           </div>
         </div>
       </div>
