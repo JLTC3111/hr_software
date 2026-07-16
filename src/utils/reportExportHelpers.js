@@ -1,3 +1,40 @@
+export const formatHours = (value, decimals = 1) => {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return (0).toFixed(decimals);
+  const factor = 10 ** decimals;
+  return (Math.round(num * factor) / factor).toFixed(decimals);
+};
+
+export const filterExportSnapshotByTab = (activeTab, snapshot = {}) => {
+  const empty = {
+    timeEntries: [],
+    tasks: [],
+    goals: [],
+    leave: [],
+    employees: snapshot.employees || [],
+  };
+
+  switch (activeTab) {
+    case 'time-entries':
+      return { ...empty, timeEntries: snapshot.timeEntries || [] };
+    case 'tasks':
+      return { ...empty, tasks: snapshot.tasks || [] };
+    case 'goals':
+      return { ...empty, goals: snapshot.goals || [] };
+    case 'leave':
+      return { ...empty, leave: snapshot.leave || [] };
+    case 'all':
+    default:
+      return {
+        timeEntries: snapshot.timeEntries || [],
+        tasks: snapshot.tasks || [],
+        goals: snapshot.goals || [],
+        leave: snapshot.leave || [],
+        employees: snapshot.employees || [],
+      };
+  }
+};
+
 export const PDF_CHART_COLORS = [
   [68, 114, 196],
   [112, 173, 71],
@@ -23,17 +60,21 @@ export const aggregateHoursByType = (timeEntries) => {
     const type = entry.hour_type || entry.hourType || 'unknown';
     totals[type] = (totals[type] || 0) + (Number(entry.hours) || 0);
   });
+  Object.keys(totals).forEach((type) => {
+    totals[type] = Number(formatHours(totals[type]));
+  });
   return totals;
 };
 
-export const computeExportStats = (timeEntries = [], tasks = [], goals = []) => {
+export const computeExportStats = (timeEntries = [], tasks = [], goals = [], leave = []) => {
   const totalHours = timeEntries.reduce((sum, entry) => sum + (Number(entry.hours) || 0), 0);
   return {
-    totalRecords: timeEntries.length + tasks.length + goals.length,
+    totalRecords: timeEntries.length + tasks.length + goals.length + leave.length,
     timeEntriesCount: timeEntries.length,
     tasksCount: tasks.length,
     goalsCount: goals.length,
-    totalHours: totalHours.toFixed(1),
+    leaveCount: leave.length,
+    totalHours: formatHours(totalHours),
     approvedTime: timeEntries.filter((entry) => entry.status === 'approved').length,
     pendingTime: timeEntries.filter((entry) => entry.status === 'pending').length,
     completedTasks: tasks.filter((task) => task.status === 'completed').length,
@@ -144,7 +185,10 @@ export const drawPdfBarChart = ({
     drawText(String(item.label).substring(0, 24), x, yPosition + 3);
     doc.setFillColor(...color);
     doc.rect(x + labelWidth, yPosition - 2, Math.max(barWidth, value > 0 ? 2 : 0), 5, 'F');
-    drawText(String(value), x + labelWidth + barMaxWidth + 4, yPosition + 3);
+    const displayValue = Number.isFinite(value) && !Number.isInteger(value)
+      ? formatHours(value)
+      : String(value);
+    drawText(displayValue, x + labelWidth + barMaxWidth + 4, yPosition + 3);
 
     yPosition += 8;
   });

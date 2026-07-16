@@ -46,6 +46,8 @@ import {
   computeEmployeePerformance,
   computeExportStats,
   drawPdfChartsSection,
+  filterExportSnapshotByTab,
+  formatHours,
   PDF_CHART_COLORS
 } from '../utils/reportExportHelpers.js';
 import { SpecularButton } from './ui/specular-button';
@@ -419,16 +421,38 @@ const Reports = () => {
       goals = goals.filter((goal) => String(goal.employee_id) === String(employeeId));
     }
 
+    const leaveResponse = await timeTrackingService.getAllLeaveRequests({});
+    let leave = leaveResponse.success ? leaveResponse.data || [] : [];
+    if (employeeId) {
+      leave = leave.filter((req) => String(req.employee_id) === String(employeeId));
+    }
+    leave = leave
+      .filter((req) => {
+        const s = (req.start_date || '').slice(0, 10);
+        const e = (req.end_date || req.start_date || '').slice(0, 10);
+        return s <= endDate && e >= startDate;
+      })
+      .map((req) => ({
+        ...req,
+        employee: req.employee || reportData.employees.find((emp) => String(emp.id) === String(req.employee_id)) || null,
+      }));
+
     const exportData = {
       timeEntries: allTimeEntries,
       tasks,
       goals,
+      leave,
       employees: reportData.employees
     };
 
-    setReportData((prev) => ({ ...prev, timeEntries: allTimeEntries, tasks, goals }));
+    setReportData((prev) => ({ ...prev, timeEntries: allTimeEntries, tasks, goals, leave }));
     return exportData;
   }, [filters, selectedEmployee, reportData.employees]);
+
+  const getFilteredExportData = useCallback(async () => {
+    const snapshot = await loadAllReportDataForExport();
+    return filterExportSnapshotByTab(activeTab, snapshot);
+  }, [loadAllReportDataForExport, activeTab]);
 
   // Effect to fetch data when filters/tab/employee changes (no need to wait for employees list)
   useEffect(() => {
@@ -801,7 +825,7 @@ const Reports = () => {
       entry.date,
       entry.clock_in || '',
       entry.clock_out || '',
-      entry.hours || 0,
+      entry.hours ? formatHours(entry.hours) : '0.0',
       translateHourType(entry.hour_type) || '',
       translateStatus(entry.status) || '',
       translateNotes(entry.notes) || '',
@@ -883,15 +907,43 @@ const Reports = () => {
     return { headers, rows };
   };
 
+  const buildLeaveCsvRows = (leaveRequests) => {
+    const headers = [
+      t('reports.excel.headers.dataType', 'Data Type'),
+      t('employees.name', 'Employee Name'),
+      t('employees.department', 'Department'),
+      t('reports.leaveType', 'Leave Type'),
+      t('reports.dateRange', 'Date Range'),
+      t('reports.days', 'Days'),
+      t('reports.status', 'Status'),
+      t('timeTracking.notes', 'Notes'),
+      t('timeTracking.createdAt', 'Created At')
+    ];
+
+    const rows = leaveRequests.map((req) => [
+      t('reports.leave', 'Leave Requests'),
+      isDemoMode() ? getDemoEmployeeName(req.employee, t) : (req.employee?.name || 'Unknown'),
+      translateDepartment(req.employee?.department) || '',
+      translateLeaveType(req.leave_type),
+      `${(req.start_date || '').slice(0, 10)} → ${(req.end_date || req.start_date || '').slice(0, 10)}`,
+      req.days_count ?? '',
+      translateStatus(req.status) || '',
+      req.reason || '',
+      new Date(req.created_at).toLocaleString()
+    ]);
+
+    return { headers, rows };
+  };
+
   const exportAllToCSV = async () => {
     setExporting(true);
     try {
-      const exportData = await loadAllReportDataForExport();
-      const { timeEntries, tasks, goals, employees: allEmployees } = exportData;
+      const exportData = await getFilteredExportData();
+      const { timeEntries, tasks, goals, leave, employees: allEmployees } = exportData;
       const employees = selectedEmployee === 'all'
         ? filterActiveEmployees(allEmployees)
         : allEmployees;
-      const exportStats = computeExportStats(timeEntries, tasks, goals);
+      const exportStats = computeExportStats(timeEntries, tasks, goals, leave);
 
       if (exportStats.totalRecords === 0) {
         alert(t('reports.noData', 'No data available for the selected period'));
@@ -919,6 +971,9 @@ const Reports = () => {
           [t('reports.timeEntries', 'Time Entries'), exportStats.timeEntriesCount],
           [t('reports.tasks', 'Tasks'), exportStats.tasksCount],
           [t('reports.goals', 'Goals'), exportStats.goalsCount],
+          ...(leave.length > 0 || activeTab === 'leave' || activeTab === 'all'
+            ? [[t('reports.leave', 'Leave Requests'), exportStats.leaveCount]]
+            : []),
           [t('reports.totalHours', 'Total Hours'), `${exportStats.totalHours}h`],
           [t('reports.approved', 'Approved'), exportStats.approvedTime],
           [t('reports.completedTasks', 'Completed Tasks'), exportStats.completedTasks],
@@ -937,6 +992,10 @@ const Reports = () => {
       if (goals.length > 0) {
         const goalSection = buildGoalCsvRows(goals);
         sections.push({ title: t('reports.personalGoals', 'PERSONAL GOALS').toUpperCase(), ...goalSection });
+      }
+      if (leave.length > 0) {
+        const leaveSection = buildLeaveCsvRows(leave);
+        sections.push({ title: t('reports.leave', 'LEAVE REQUESTS').toUpperCase(), ...leaveSection });
       }
 
       if (selectedEmployee !== 'all') {
@@ -1013,16 +1072,17 @@ const Reports = () => {
   const exportToExcel = async () => {
     setExporting(true);
     try {
-      const exportSnapshot = await loadAllReportDataForExport();
+      const exportSnapshot = await getFilteredExportData();
       const timeEntries = exportSnapshot.timeEntries;
       const tasks = exportSnapshot.tasks;
       const goals = exportSnapshot.goals;
+      const leave = exportSnapshot.leave;
       const allEmployees = exportSnapshot.employees;
       const employees = selectedEmployee === 'all'
         ? filterActiveEmployees(allEmployees)
         : allEmployees;
 
-      if (timeEntries.length === 0 && tasks.length === 0 && goals.length === 0) {
+      if (timeEntries.length === 0 && tasks.length === 0 && goals.length === 0 && leave.length === 0) {
         alert(t('reports.noData', 'No data available for the selected period'));
         return;
       }
@@ -1146,10 +1206,10 @@ const Reports = () => {
         };
 
         addMetric(tr('reports.excel.metrics.totalTimeEntries', 'Total Time Entries'), timeEntries.length, true, true);
-        addMetric(tr('reports.excel.metrics.totalHours', 'Total Hours Logged'), totalHours, true, true);
-        addMetric(tr('reports.excel.metrics.regularHours', 'Regular Hours'), regularHours, true, true);
-        addMetric(tr('reports.excel.metrics.overtimeHours', 'Overtime Hours'), overtimeHours, true, true);
-        addMetric(tr('reports.excel.metrics.wfhHours', 'WFH Hours'), wfhHours, true, true);
+        addMetric(tr('reports.excel.metrics.totalHours', 'Total Hours Logged'), formatHours(totalHours), true, true);
+        addMetric(tr('reports.excel.metrics.regularHours', 'Regular Hours'), formatHours(regularHours), true, true);
+        addMetric(tr('reports.excel.metrics.overtimeHours', 'Overtime Hours'), formatHours(overtimeHours), true, true);
+        addMetric(tr('reports.excel.metrics.wfhHours', 'WFH Hours'), formatHours(wfhHours), true, true);
         addMetric(tr('reports.excel.metrics.pendingApprovals', 'Pending Approvals'), pendingEntries, true, true);
         addMetric(tr('reports.excel.metrics.approvedEntries', 'Approved Entries'), approvedEntries, true, true);
         if (timeBarRows.length) {
@@ -1739,7 +1799,7 @@ const Reports = () => {
             entry.date,
             entry.clock_in || '',
             entry.clock_out || '',
-            entry.hours || 0,
+            entry.hours ? Number(formatHours(entry.hours)) : 0,
             translateHourType(entry.hour_type) || '',
             translateStatus(entry.status) || '',
             translateNotes(entry.notes) || '',
@@ -2071,6 +2131,21 @@ const Reports = () => {
     }
   };
 
+  const translateLeaveType = (leaveType) => {
+    if (!leaveType) return '';
+    const type = leaveType.toLowerCase();
+    switch (type) {
+      case 'sick':
+        return t('timeTracking.sickLeave', 'Sick Leave');
+      case 'personal':
+        return t('timeTracking.personal', 'Personal');
+      case 'vacation':
+        return t('timeTracking.vacation', 'Vacation');
+      default:
+        return leaveType;
+    }
+  };
+
   // Helper function to translate status
   const translateStatus = (status) => {
     if (!status) return '';
@@ -2133,15 +2208,16 @@ const Reports = () => {
   const exportToPDF = async function() {
     setExporting(true);
     try {
-      const exportSnapshot = await loadAllReportDataForExport();
+      const exportSnapshot = await getFilteredExportData();
       const timeEntries = exportSnapshot.timeEntries;
       const tasks = exportSnapshot.tasks;
       const goals = exportSnapshot.goals;
+      const leave = exportSnapshot.leave;
       const allEmployees = exportSnapshot.employees;
       const employees = selectedEmployee === 'all'
         ? filterActiveEmployees(allEmployees)
         : allEmployees;
-      const exportStats = computeExportStats(timeEntries, tasks, goals);
+      const exportStats = computeExportStats(timeEntries, tasks, goals, leave);
 
       if (exportStats.totalRecords === 0) {
         alert(t('reports.noData', 'No data available for the selected period'));
@@ -2204,42 +2280,59 @@ const Reports = () => {
       
       yPosition += 15;
 
+      const leftSummaryLines = [
+        `${t('reports.totalRecords', 'Total Records')}: ${exportStats.totalRecords}`,
+        ...(timeEntries.length > 0 ? [`${t('reports.timeEntries', 'Time Entries')}: ${exportStats.timeEntriesCount}`] : []),
+        ...(tasks.length > 0 ? [`${t('reports.tasks', 'Tasks')}: ${exportStats.tasksCount}`] : []),
+        ...(goals.length > 0 ? [`${t('reports.goals', 'Goals')}: ${exportStats.goalsCount}`] : []),
+        ...(leave.length > 0 ? [`${t('reports.leave', 'Leave Requests')}: ${exportStats.leaveCount}`] : []),
+      ];
+      const rightSummaryLines = [
+        ...(timeEntries.length > 0 ? [
+          `${t('reports.totalHours', 'Total Hours')}: ${exportStats.totalHours}h`,
+          `${t('reports.approved', 'Approved')}: ${exportStats.approvedTime}`,
+        ] : []),
+        ...(tasks.length > 0 ? [`${t('reports.completedTasks', 'Completed Tasks')}: ${exportStats.completedTasks}`] : []),
+        ...(goals.length > 0 ? [`${t('reports.achievedGoals', 'Achieved Goals')}: ${exportStats.achievedGoals}`] : []),
+      ];
+      const summaryLineCount = Math.max(leftSummaryLines.length, rightSummaryLines.length);
+      const showPerformanceScore = selectedEmployee !== 'all' && (timeEntries.length > 0 || tasks.length > 0 || goals.length > 0);
+      const summaryBoxHeight = 24 + summaryLineCount * 6 + (showPerformanceScore ? 8 : 0);
+
       // Summary Box
       doc.setFillColor(240, 242, 245);
-      doc.rect(15, yPosition, pageWidth - 30, selectedEmployee !== 'all' ? 48 : 40, 'F');
+      doc.rect(15, yPosition, pageWidth - 30, summaryBoxHeight, 'F');
       
       doc.setFontSize(14);
       doc.setTextColor(40, 44, 52);
       drawText(t('reports.summaryOverview', 'SUMMARY OVERVIEW').toUpperCase(), pageWidth / 2, yPosition + 8, { align: 'center' });
       
       yPosition += 15;
+
       doc.setFontSize(10);
       doc.setTextColor(60, 60, 60);
 
-      drawText(`${t('reports.totalRecords', 'Total Records')}: ${exportStats.totalRecords}`, 25, yPosition);
-      drawText(`${t('reports.timeEntries', 'Time Entries')}: ${exportStats.timeEntriesCount}`, 25, yPosition + 6);
-      drawText(`${t('reports.tasks', 'Tasks')}: ${exportStats.tasksCount}`, 25, yPosition + 12);
-      drawText(`${t('reports.goals', 'Goals')}: ${exportStats.goalsCount}`, 25, yPosition + 18);
+      leftSummaryLines.forEach((line, index) => {
+        drawText(line, 25, yPosition + index * 6);
+      });
+      rightSummaryLines.forEach((line, index) => {
+        drawText(line, pageWidth - 85, yPosition + index * 6);
+      });
 
-      drawText(`${t('reports.totalHours', 'Total Hours')}: ${exportStats.totalHours}h`, pageWidth - 85, yPosition);
-      drawText(`${t('reports.approved', 'Approved')}: ${exportStats.approvedTime}`, pageWidth - 85, yPosition + 6);
-      drawText(`${t('reports.completedTasks', 'Completed Tasks')}: ${exportStats.completedTasks}`, pageWidth - 85, yPosition + 12);
-      drawText(`${t('reports.achievedGoals', 'Achieved Goals')}: ${exportStats.achievedGoals}`, pageWidth - 85, yPosition + 18);
-
-      if (selectedEmployee !== 'all') {
+      if (showPerformanceScore) {
         const employee = employees.find((emp) => String(emp.id) === String(selectedEmployee));
         if (employee) {
           const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals);
           drawText(
             `${t('reports.excel.performance.overallScore', 'Overall Performance Score:')} ${performance.overallScore}%`,
             pageWidth / 2,
-            yPosition + 26,
+            yPosition + summaryLineCount * 6 + 2,
             { align: 'center' }
           );
         }
       }
 
-      yPosition += selectedEmployee !== 'all' ? 43 : 35;
+      yPosition += summaryBoxHeight - 10;
 
       const toChartItems = (countsMap, translateFn) =>
         Object.entries(countsMap).map(([key, value], index) => ({
@@ -2355,7 +2448,7 @@ const Reports = () => {
             entry.date,
             entry.clock_in || '-',
             entry.clock_out || '-',
-            `${entry.hours || 0}h`,
+            `${formatHours(entry.hours || 0)}h`,
             cleanTextForPDF(translateHourType(entry.hour_type), unicodeFontLoaded),
             cleanTextForPDF(translateStatus(entry.status), unicodeFontLoaded)
           ]),
@@ -2383,8 +2476,8 @@ const Reports = () => {
             cleanTextForPDF(translatePriority(task.priority), unicodeFontLoaded),
             cleanTextForPDF(translateStatus(task.status), unicodeFontLoaded),
             task.due_date || '-',
-            `${task.estimated_hours || 0}h`,
-            `${task.actual_hours || 0}h`
+            `${formatHours(task.estimated_hours || 0)}h`,
+            `${formatHours(task.actual_hours || 0)}h`
           ]),
           [255, 192, 0]
         );
@@ -2415,7 +2508,30 @@ const Reports = () => {
         );
       }
 
-      if (selectedEmployee === 'all' && employees.length > 0) {
+      if (leave.length > 0) {
+        addPdfTable(
+          t('reports.leave', 'LEAVE REQUESTS').toUpperCase(),
+          [
+            pdfHead('reports.pdf.headers.employee', 'Employee'),
+            pdfHead('reports.pdf.headers.department', 'Department'),
+            pdfHead('reports.leaveType', 'Leave Type'),
+            pdfHead('reports.dateRange', 'Date Range'),
+            pdfHead('reports.days', 'Days'),
+            pdfHead('reports.pdf.headers.status', 'Status')
+          ],
+          leave.map((req) => [
+            cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(req.employee, t) : (req.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
+            cleanTextForPDF(translateDepartment(req.employee?.department) || '', unicodeFontLoaded),
+            cleanTextForPDF(translateLeaveType(req.leave_type), unicodeFontLoaded),
+            `${(req.start_date || '').slice(0, 10)} → ${(req.end_date || req.start_date || '').slice(0, 10)}`,
+            String(req.days_count ?? '-'),
+            cleanTextForPDF(translateStatus(req.status), unicodeFontLoaded)
+          ]),
+          [59, 130, 246]
+        );
+      }
+
+      if (selectedEmployee === 'all' && employees.length > 0 && activeTab !== 'leave') {
         addPdfTable(
           t('reports.excel.sheets.allEmployeesOverview', 'ALL EMPLOYEES OVERVIEW').toUpperCase(),
           [
@@ -2432,7 +2548,7 @@ const Reports = () => {
             return [
               cleanTextForPDF(getDemoEmployeeName(employee, t), unicodeFontLoaded),
               cleanTextForPDF(translateDepartment(employee.department), unicodeFontLoaded),
-              performance.totalHours.toFixed(1),
+              formatHours(performance.totalHours),
               String(performance.tasksCount),
               String(performance.completedTasks),
               String(performance.goalsCount),

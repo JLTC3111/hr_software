@@ -1153,6 +1153,7 @@ export default {
     regularHours: 'Giờ Làm Thường',
     wfh: 'Làm Việc Tại Nhà',
     overtime: 'Giờ Làm Thêm',
+    leave: 'Yêu Cầu Nghỉ Phép',
     tasksDone: 'Công Việc Đã Hoàn Thành',
     completion: 'Mục Tiêu Cá Nhân Đã Hoàn Thành',
     goalProgress: 'Tiến độ mục tiêu',
