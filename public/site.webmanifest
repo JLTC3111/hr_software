@@ -1,0 +1,19 @@
+{
+  "name": "ICUE HR Manager",
+  "short_name": "ICUE HR",
+  "icons": [
+    {
+      "src": "/logoIcons/favicon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logoIcons/favicon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#D72822",
+  "background_color": "#ffffff",
+  "display": "standalone"
+}
