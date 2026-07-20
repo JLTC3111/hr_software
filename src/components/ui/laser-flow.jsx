@@ -311,7 +311,7 @@ export const LaserFlow = ({
 
   useEffect(() => {
     const mount = mountRef.current;
-    if (!mount) return undefined;
+    if (!mount || beamIntensity <= 0) return undefined;
 
     // Reset size cache so Strict Mode remounts always get a fresh layout pass.
     lastSizeRef.current = { width: 0, height: 0, dpr: 0 };
@@ -591,7 +591,7 @@ export const LaserFlow = ({
       if (mount.contains(canvas)) mount.removeChild(canvas);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dpr]);
+  }, [dpr, beamIntensity]);
 
   useEffect(() => {
     const uniforms = uniformsRef.current;
@@ -644,12 +644,16 @@ export const LaserFlow = ({
   }, [clearColor]);
 
   return (
-    <div ref={mountRef} className={`relative size-full ${className ?? ''}`} style={style}>
+    <div
+      ref={mountRef}
+      className={`relative size-full ${className ?? ''}`}
+      style={{ backgroundColor: clearColor, ...style }}
+    >
       {showSurfacePanel && (
         <div
           ref={surfacePanelRef}
           aria-hidden
-          className="pointer-events-auto absolute top-[70%] left-1/2 z-[6] h-[60%] w-[86%] -translate-x-1/2 cursor-pointer overflow-hidden rounded-[20px]"
+          className="pointer-events-auto absolute top-[70%] left-0 z-[6] h-[60%] w-full cursor-pointer overflow-hidden"
           style={{
             backgroundColor: surfaceBackground,
           }}

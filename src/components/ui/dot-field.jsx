@@ -10,12 +10,13 @@ const DotField = memo(({
   cursorForce = 0.1,
   bulgeOnly = true,
   bulgeStrength = 78,
-  glowRadius = 150,
+  glowRadius = 120,
   sparkle = false,
   waveAmplitude = 1.5,
   gradientFrom = 'rgba(168, 85, 247, 0.35)',
   gradientTo = 'rgba(180, 151, 207, 0.25)',
   glowColor = '#120F17',
+  glowCenterOpacity = 1,
 }) => {
   const canvasRef = useRef(null);
   const glowRef = useRef(null);
@@ -244,8 +245,8 @@ const DotField = memo(({
       >
         <defs>
           <radialGradient id={glowIdRef.current}>
-            <stop offset="0%" stopColor={glowColor} />
-            <stop offset="100%" stopColor="transparent" />
+            <stop offset="0%" stopColor={glowColor} stopOpacity={glowCenterOpacity} />
+            <stop offset="100%" stopColor={glowColor} stopOpacity="0" />
           </radialGradient>
         </defs>
         <circle

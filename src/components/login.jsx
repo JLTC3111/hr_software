@@ -253,7 +253,7 @@ const Login = () => {
       showLaserFlow
         ? cn(
           'flex items-start justify-center pt-[10vh]',
-          isDarkMode ? 'bg-black' : 'bg-slate-100'
+          isDarkMode ? 'bg-black' : 'bg-[#F1F5F9]'
         )
         : 'flex items-center justify-center'
     )}>
@@ -283,7 +283,7 @@ const Login = () => {
           showLaserFlow
             ? isDarkMode
               ? 'border border-blue-500/40 bg-[#120F17]/45 backdrop-blur-md shadow-2xl shadow-blue-500/10'
-              : 'border-none bg-white/75 backdrop-blur-md shadow-2xl'
+              : 'border-none bg-white/75 backdrop-blur-md shadow-none'
             : isDarkMode
               ? 'bg-gray-800'
               : 'bg-white'

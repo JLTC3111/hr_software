@@ -22,7 +22,7 @@ const DOT_FIELD_INTENSITY = {
   dotSpacing: 13,
   cursorRadius: 480,
   bulgeStrength: 78,
-  glowRadius: 150,
+  glowRadius: 120,
   sparkle: false,
   waveAmplitude: 1.5,
 };
@@ -38,12 +38,13 @@ export const LOGIN_LASER_THEME = {
     revealOpacity: 0.48,
     revealBlendMode: 'lighten',
     showSurfacePanel: true,
-    surfaceBackground: '#120F17',
+    surfaceBackground: '#000000',
     dotField: {
       ...DOT_FIELD_INTENSITY,
-      gradientFrom: 'rgba(168, 85, 247, 0.3)',
-      gradientTo: 'rgba(180, 151, 207, 0.2)',
-      glowColor: '#120F17',
+      gradientFrom: 'rgba(168, 85, 247, 0.42)',
+      gradientTo: 'rgba(207, 158, 255, 0.32)',
+      glowColor: '#000000',
+      glowCenterOpacity: 0.35,
     },
   },
   light: {
@@ -53,15 +54,16 @@ export const LOGIN_LASER_THEME = {
     clearColor: '#F1F5F9',
     fogIntensity: 0,
     beamIntensity: 0,
-    revealOpacity: 0.5,
+    revealOpacity: 0,
     revealBlendMode: 'multiply',
     showSurfacePanel: true,
-    surfaceBackground: '#FFFFFF',
+    surfaceBackground: '#F1F5F9',
     dotField: {
       ...DOT_FIELD_INTENSITY,
-      gradientFrom: 'rgba(37, 99, 235, 0.28)',
-      gradientTo: 'rgba(15, 23, 42, 0.18)',
-      glowColor: '#2563EB',
+      gradientFrom: 'rgba(37, 99, 235, 0.4)',
+      gradientTo: 'rgba(71, 85, 105, 0.28)',
+      glowColor: 'rgb(241, 245, 249)',
+      glowCenterOpacity: 0.45,
     },
   },
 };
@@ -141,6 +143,7 @@ const LoginLaserBackground = ({
         />
       </Suspense>
 
+      {revealOpacity > 0 && (
       <div
         ref={revealLayerRef}
         className="pointer-events-none absolute z-[2] w-full"
@@ -166,6 +169,7 @@ const LoginLaserBackground = ({
           className="block w-full"
         />
       </div>
+      )}
     </div>
   );
 };
