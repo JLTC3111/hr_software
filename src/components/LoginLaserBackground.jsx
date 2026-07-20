@@ -24,14 +24,22 @@ const DOT_FIELD_INTENSITY = {
   bulgeStrength: 78,
   glowRadius: 120,
   sparkle: false,
-  waveAmplitude: 1.5,
+  waveAmplitude: 2,
+  waveSpeed: 0.025,
+  waveFrequency: 0.03,
+};
+
+const DOT_FIELD_AUTO = {
+  waveAmplitude: 2.8,
+  waveSpeed: 0.055,
+  waveFrequency: 0.048,
 };
 
 export const LOGIN_LASER_THEME = {
   dark: {
     horizontalBeamOffset: 0.1,
     verticalBeamOffset: -0.2,
-    color: '#CF9EFF',
+    color: '#FFFFFF',
     clearColor: '#000000',
     fogIntensity: 0.45,
     beamIntensity: 1,
@@ -41,8 +49,8 @@ export const LOGIN_LASER_THEME = {
     surfaceBackground: '#000000',
     dotField: {
       ...DOT_FIELD_INTENSITY,
-      gradientFrom: 'rgba(168, 85, 247, 0.42)',
-      gradientTo: 'rgba(207, 158, 255, 0.32)',
+      gradientFrom: 'rgba(255, 255, 255, 0.58)',
+      gradientTo: 'rgba(207, 158, 255, 0.45)',
       glowColor: '#000000',
       glowCenterOpacity: 0.35,
     },
@@ -60,8 +68,8 @@ export const LOGIN_LASER_THEME = {
     surfaceBackground: '#F1F5F9',
     dotField: {
       ...DOT_FIELD_INTENSITY,
-      gradientFrom: 'rgba(37, 99, 235, 0.4)',
-      gradientTo: 'rgba(71, 85, 105, 0.28)',
+      gradientFrom: 'rgba(37, 99, 235, 0.55)',
+      gradientTo: 'rgba(51, 65, 85, 0.38)',
       glowColor: 'rgb(241, 245, 249)',
       glowCenterOpacity: 0.45,
     },
@@ -86,6 +94,7 @@ const LoginLaserBackground = ({
   showSurfacePanel,
   surfaceBackground,
   dotField,
+  interactionMode = 'hover',
 }) => {
   const containerRef = useRef(null);
   const revealLayerRef = useRef(null);
@@ -97,40 +106,66 @@ const LoginLaserBackground = ({
   }, [dashboardSrc]);
 
   useEffect(() => {
-    const onMove = (event) => {
-      const el = revealLayerRef.current;
-      const container = containerRef.current;
-      if (!el || !container) return;
+    if (revealOpacity <= 0) return undefined;
 
-      const rect = container.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
+    const el = revealLayerRef.current;
+    const container = containerRef.current;
+    if (!el || !container) return undefined;
 
-      el.style.setProperty('--mx', `${x}px`);
-      el.style.setProperty('--my', `${y + rect.height * 0.5}px`);
-    };
+    if (interactionMode === 'hover') {
+      const onMove = (event) => {
+        const rect = container.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
 
-    const onLeave = () => {
-      const el = revealLayerRef.current;
-      if (!el) return;
-      el.style.setProperty('--mx', '-9999px');
-      el.style.setProperty('--my', '-9999px');
-    };
+        el.style.setProperty('--mx', `${x}px`);
+        el.style.setProperty('--my', `${y + rect.height * 0.5}px`);
+      };
 
-    window.addEventListener('mousemove', onMove, { passive: true });
-    document.documentElement.addEventListener('mouseleave', onLeave);
+      const onLeave = () => {
+        el.style.setProperty('--mx', '-9999px');
+        el.style.setProperty('--my', '-9999px');
+      };
 
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      document.documentElement.removeEventListener('mouseleave', onLeave);
-    };
-  }, []);
+      window.addEventListener('mousemove', onMove, { passive: true });
+      document.documentElement.addEventListener('mouseleave', onLeave);
+
+      return () => {
+        window.removeEventListener('mousemove', onMove);
+        document.documentElement.removeEventListener('mouseleave', onLeave);
+      };
+    }
+
+    if (interactionMode === 'auto') {
+      let raf = 0;
+      const start = performance.now();
+
+      const animate = (now) => {
+        const rect = container.getBoundingClientRect();
+        const t = (now - start) * 0.00035;
+        const x = rect.width * (0.5 + Math.cos(t) * 0.2);
+        const y = rect.height * (0.38 + Math.sin(t * 0.75) * 0.1);
+
+        el.style.setProperty('--mx', `${x}px`);
+        el.style.setProperty('--my', `${y + rect.height * 0.5}px`);
+        raf = requestAnimationFrame(animate);
+      };
+
+      raf = requestAnimationFrame(animate);
+
+      return () => cancelAnimationFrame(raf);
+    }
+
+    return undefined;
+  }, [revealOpacity, interactionMode]);
+
+  const laserPointerEvents = interactionMode === 'hover' ? 'pointer-events-auto' : 'pointer-events-none';
 
   return (
     <div ref={containerRef} className="fixed inset-0 z-0">
       <Suspense fallback={null}>
         <LaserFlow
-          className="size-full pointer-events-auto"
+          className={`size-full ${laserPointerEvents}`}
           horizontalBeamOffset={horizontalBeamOffset}
           verticalBeamOffset={verticalBeamOffset}
           color={color}
@@ -139,7 +174,13 @@ const LoginLaserBackground = ({
           beamIntensity={beamIntensity}
           showSurfacePanel={showSurfacePanel}
           surfaceBackground={surfaceBackground}
-          dotField={dotField}
+          dotField={{
+            ...dotField,
+            interactionMode,
+            ...(interactionMode === 'auto' ? DOT_FIELD_AUTO : {}),
+          }}
+          interactionMode={interactionMode}
+          maxDpr={interactionMode === 'hover' ? undefined : 1}
         />
       </Suspense>
 

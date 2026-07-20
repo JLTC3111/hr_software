@@ -260,12 +260,14 @@ export const LaserFlow = ({
   decay = 1.1,
   falloffStart = 1.2,
   fogFallSpeed = 0.6,
-  color = '#CF9EFF',
+  color = '#FFFFFF',
   clearColor = '#000000',
   beamIntensity = 1,
   showSurfacePanel = true,
   surfaceBackground = '#120F17',
   dotField,
+  interactionMode = 'hover',
+  maxDpr,
 }) => {
   const mountRef = useRef(null);
   const rendererRef = useRef(null);
@@ -329,7 +331,8 @@ export const LaserFlow = ({
     });
     rendererRef.current = renderer;
 
-    baseDprRef.current = Math.min(dpr ?? (window.devicePixelRatio || 1), 2);
+    const dprCap = maxDpr ?? 2;
+    baseDprRef.current = Math.min(dpr ?? (window.devicePixelRatio || 1), dprCap);
     currentDprRef.current = baseDprRef.current;
 
     renderer.setPixelRatio(currentDprRef.current);
@@ -479,8 +482,14 @@ export const LaserFlow = ({
       mouseTarget.set(0, 0);
       mouseSmooth.set(0, 0);
     };
-    window.addEventListener('pointermove', onPointerMove, { passive: true });
-    document.documentElement.addEventListener('mouseleave', onPointerLeave);
+
+    if (interactionMode === 'hover') {
+      window.addEventListener('pointermove', onPointerMove, { passive: true });
+      document.documentElement.addEventListener('mouseleave', onPointerLeave);
+    } else {
+      mouseTarget.set(0, 0);
+      mouseSmooth.set(0, 0);
+    }
 
     const onCtxLost = e => {
       e.preventDefault();
@@ -579,8 +588,10 @@ export const LaserFlow = ({
       ro.disconnect();
       io.disconnect();
       document.removeEventListener('visibilitychange', onVis);
-      window.removeEventListener('pointermove', onPointerMove);
-      document.documentElement.removeEventListener('mouseleave', onPointerLeave);
+      if (interactionMode === 'hover') {
+        window.removeEventListener('pointermove', onPointerMove);
+        document.documentElement.removeEventListener('mouseleave', onPointerLeave);
+      }
       canvas.removeEventListener('webglcontextlost', onCtxLost);
       canvas.removeEventListener('webglcontextrestored', onCtxRestored);
       geometry.dispose();
@@ -591,7 +602,7 @@ export const LaserFlow = ({
       if (mount.contains(canvas)) mount.removeChild(canvas);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dpr, beamIntensity]);
+  }, [dpr, beamIntensity, interactionMode, maxDpr]);
 
   useEffect(() => {
     const uniforms = uniformsRef.current;
@@ -653,7 +664,7 @@ export const LaserFlow = ({
         <div
           ref={surfacePanelRef}
           aria-hidden
-          className="pointer-events-auto absolute top-[70%] left-0 z-[6] h-[60%] w-full cursor-pointer overflow-hidden"
+          className={`pointer-events-auto absolute bottom-0 left-0 z-[6] h-[20vh] w-full overflow-hidden xl:bottom-auto xl:top-[70%] xl:h-[min(38vh,480px)] ${interactionMode === 'hover' ? 'cursor-pointer' : 'cursor-default'}`}
           style={{
             backgroundColor: surfaceBackground,
           }}

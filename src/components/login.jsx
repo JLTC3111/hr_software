@@ -16,8 +16,8 @@ import { LOGIN_LASER_THEME } from './LoginLaserBackground';
 
 const LoginLaserBackground = lazy(() => import('./LoginLaserBackground'));
 
-const DESKTOP_MEDIA_QUERY = '(min-width: 1024px)';
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
 
 const Login = () => {
   const { login, loginWithGithub, loginAsDemo, forgotPassword, isAuthenticated, user, loading } = useAuth();
@@ -39,14 +39,15 @@ const Login = () => {
   const [loginError, setLoginError] = useState('');
   const [idleLogoutNotice, setIdleLogoutNotice] = useState('');
   const [titleReady, setTitleReady] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia(DESKTOP_MEDIA_QUERY).matches
-  );
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(
     () => typeof window !== 'undefined' && window.matchMedia(REDUCED_MOTION_QUERY).matches
   );
+  const [hasFinePointer, setHasFinePointer] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(FINE_POINTER_QUERY).matches
+  );
   const isFormBusy = isLoading || isDemoLoading;
-  const showLaserFlow = isDesktop && !prefersReducedMotion;
+  const showLaserFlow = !prefersReducedMotion;
+  const interactionMode = hasFinePointer ? 'hover' : 'auto';
   const laserTheme = LOGIN_LASER_THEME[isDarkMode ? 'dark' : 'light'];
 
   // Wait until auth bootstrap finishes so the title animation isn't skipped on first paint
@@ -78,18 +79,18 @@ const Login = () => {
   }, [t]);
 
   useEffect(() => {
-    const desktopMq = window.matchMedia(DESKTOP_MEDIA_QUERY);
     const motionMq = window.matchMedia(REDUCED_MOTION_QUERY);
+    const pointerMq = window.matchMedia(FINE_POINTER_QUERY);
 
-    const onDesktopChange = (event) => setIsDesktop(event.matches);
     const onMotionChange = (event) => setPrefersReducedMotion(event.matches);
+    const onPointerChange = (event) => setHasFinePointer(event.matches);
 
-    desktopMq.addEventListener('change', onDesktopChange);
     motionMq.addEventListener('change', onMotionChange);
+    pointerMq.addEventListener('change', onPointerChange);
 
     return () => {
-      desktopMq.removeEventListener('change', onDesktopChange);
       motionMq.removeEventListener('change', onMotionChange);
+      pointerMq.removeEventListener('change', onPointerChange);
     };
   }, []);
   
@@ -252,7 +253,7 @@ const Login = () => {
       'relative min-h-screen overflow-hidden transition-colors duration-200',
       showLaserFlow
         ? cn(
-          'flex items-start justify-center pt-[10vh]',
+          'flex items-center justify-center',
           isDarkMode ? 'bg-black' : 'bg-[#F1F5F9]'
         )
         : 'flex items-center justify-center'
@@ -262,6 +263,7 @@ const Login = () => {
           <LoginLaserBackground
             {...laserTheme}
             language={currentLanguage}
+            interactionMode={interactionMode}
           />
         </Suspense>
       ) : (

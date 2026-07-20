@@ -12,11 +12,14 @@ const DotField = memo(({
   bulgeStrength = 78,
   glowRadius = 120,
   sparkle = false,
-  waveAmplitude = 1.5,
+  waveAmplitude = 2,
+  waveSpeed = 0.025,
+  waveFrequency = 0.03,
   gradientFrom = 'rgba(168, 85, 247, 0.35)',
   gradientTo = 'rgba(180, 151, 207, 0.25)',
   glowColor = '#120F17',
   glowCenterOpacity = 1,
+  interactionMode = 'hover',
 }) => {
   const canvasRef = useRef(null);
   const glowRef = useRef(null);
@@ -35,11 +38,15 @@ const DotField = memo(({
     bulgeOnly,
     bulgeStrength,
     waveAmplitude,
+    waveSpeed,
+    waveFrequency,
     gradientFrom,
     gradientTo,
   };
   const rebuildRef = useRef(null);
   const glowIdRef = useRef(`dot-field-glow-${Math.random().toString(36).slice(2, 9)}`);
+  const interactionModeRef = useRef(interactionMode);
+  interactionModeRef.current = interactionMode;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -47,7 +54,8 @@ const DotField = memo(({
     if (!canvas) return undefined;
 
     const ctx = canvas.getContext('2d', { alpha: true });
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const maxCanvasDpr = interactionMode === 'hover' ? 2 : 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, maxCanvasDpr);
     let resizeTimer;
 
     function resize() {
@@ -113,7 +121,9 @@ const DotField = memo(({
       m.prevY = m.y;
     }
 
-    const speedInterval = setInterval(updateMouseSpeed, 20);
+    const speedInterval = interactionMode === 'hover'
+      ? setInterval(updateMouseSpeed, 20)
+      : null;
 
     let frameCount = 0;
 
@@ -123,19 +133,31 @@ const DotField = memo(({
       const m = mouseRef.current;
       const { w, h } = sizeRef.current;
       const p = propsRef.current;
+      const mode = interactionModeRef.current;
       const len = dots.length;
-      const t = frameCount * 0.02;
+      const t = frameCount * (p.waveSpeed ?? 0.025);
 
-      const mouseInPanel = m.x >= 0 && m.y >= 0 && m.x <= w && m.y <= h;
+      if (mode === 'auto' && w > 0 && h > 0) {
+        m.x = w * 0.5 + Math.cos(t * 0.6) * w * 0.22;
+        m.y = h * 0.5 + Math.sin(t * 0.45) * h * 0.18;
+        m.speed = 1.8;
+      } else if (mode === 'none') {
+        m.x = -9999;
+        m.y = -9999;
+        m.speed = 0;
+      }
+
+      const interactive = mode !== 'none';
+      const mouseInPanel = interactive && m.x >= 0 && m.y >= 0 && m.x <= w && m.y <= h;
       const speedEngagement = Math.min(m.speed / 5, 1);
       const targetEngagement = mouseInPanel
-        ? Math.max(speedEngagement, 0.38)
+        ? Math.max(speedEngagement, mode === 'auto' ? 0.28 : 0.38)
         : speedEngagement;
       engagement.current += (targetEngagement - engagement.current) * 0.09;
       if (engagement.current < 0.001) engagement.current = 0;
-      const eng = engagement.current;
+      const eng = interactive ? engagement.current : 0;
 
-      glowOpacity.current += (eng - glowOpacity.current) * 0.08;
+      glowOpacity.current += ((interactive ? eng : 0) - glowOpacity.current) * 0.08;
 
       if (glowEl) {
         glowEl.setAttribute('cx', m.x);
@@ -163,7 +185,7 @@ const DotField = memo(({
         const dy = m.y - d.ay;
         const distSq = dx * dx + dy * dy;
 
-        if (distSq < crSq) {
+        if (distSq < crSq && interactive) {
           const dist = Math.sqrt(distSq);
           const proximity = 1 - dist / cr;
           const strength = Math.max(eng, proximity * 0.55);
@@ -196,8 +218,9 @@ const DotField = memo(({
         let drawX = d.sx;
         let drawY = d.sy;
         if (p.waveAmplitude > 0) {
-          drawY += Math.sin(d.ax * 0.03 + t) * p.waveAmplitude;
-          drawX += Math.cos(d.ay * 0.03 + t * 0.7) * p.waveAmplitude * 0.5;
+          const freq = p.waveFrequency ?? 0.03;
+          drawY += Math.sin(d.ax * freq + t) * p.waveAmplitude;
+          drawX += Math.cos(d.ay * freq + t * 0.7) * p.waveAmplitude * 0.5;
         }
 
         ctx.moveTo(drawX + rad, drawY);
@@ -211,7 +234,9 @@ const DotField = memo(({
 
     doResize();
     window.addEventListener('resize', resize);
-    window.addEventListener('mousemove', onMouseMove, { passive: true });
+    if (interactionMode === 'hover') {
+      window.addEventListener('mousemove', onMouseMove, { passive: true });
+    }
     rafRef.current = requestAnimationFrame(tick);
 
     rebuildRef.current = () => {
@@ -221,20 +246,22 @@ const DotField = memo(({
 
     return () => {
       cancelAnimationFrame(rafRef.current);
-      clearInterval(speedInterval);
+      if (speedInterval) clearInterval(speedInterval);
       clearTimeout(resizeTimer);
       window.removeEventListener('resize', resize);
-      window.removeEventListener('mousemove', onMouseMove);
+      if (interactionMode === 'hover') {
+        window.removeEventListener('mousemove', onMouseMove);
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interactionMode]);
 
   useEffect(() => {
     rebuildRef.current?.();
   }, [dotRadius, dotSpacing]);
 
   return (
-    <div className={`relative size-full cursor-pointer ${className ?? ''}`}>
+    <div className={`relative size-full ${interactionMode === 'hover' ? 'cursor-pointer' : 'cursor-default'} ${className ?? ''}`}>
       <canvas
         ref={canvasRef}
         className="absolute inset-0 size-full"
