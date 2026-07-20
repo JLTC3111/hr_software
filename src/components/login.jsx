@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Eye, Car, EyeOff, Lock, Mail, Building2, AlertCircle, X, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -12,11 +12,17 @@ import { TextEffect, TextShimmer, Spotlight } from './motion-primitives';
 import { ShimmerButton } from './ui/shimmer-button';
 import { ShinyButton } from './ui/shiny-button';
 import { cn } from '@/lib/utils';
+import { LOGIN_LASER_THEME } from './LoginLaserBackground';
+
+const LoginLaserBackground = lazy(() => import('./LoginLaserBackground'));
+
+const DESKTOP_MEDIA_QUERY = '(min-width: 1024px)';
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 const Login = () => {
   const { login, loginWithGithub, loginAsDemo, forgotPassword, isAuthenticated, user, loading } = useAuth();
   const { isDarkMode, bg, text, input } = useTheme();
-  const { t } = useLanguage();
+  const { t, currentLanguage } = useLanguage();
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
@@ -33,7 +39,15 @@ const Login = () => {
   const [loginError, setLoginError] = useState('');
   const [idleLogoutNotice, setIdleLogoutNotice] = useState('');
   const [titleReady, setTitleReady] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(DESKTOP_MEDIA_QUERY).matches
+  );
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(REDUCED_MOTION_QUERY).matches
+  );
   const isFormBusy = isLoading || isDemoLoading;
+  const showLaserFlow = isDesktop && !prefersReducedMotion;
+  const laserTheme = LOGIN_LASER_THEME[isDarkMode ? 'dark' : 'light'];
 
   // Wait until auth bootstrap finishes so the title animation isn't skipped on first paint
   useEffect(() => {
@@ -62,6 +76,22 @@ const Login = () => {
       sessionStorage.removeItem(LOGOUT_REASON_KEY);
     }
   }, [t]);
+
+  useEffect(() => {
+    const desktopMq = window.matchMedia(DESKTOP_MEDIA_QUERY);
+    const motionMq = window.matchMedia(REDUCED_MOTION_QUERY);
+
+    const onDesktopChange = (event) => setIsDesktop(event.matches);
+    const onMotionChange = (event) => setPrefersReducedMotion(event.matches);
+
+    desktopMq.addEventListener('change', onDesktopChange);
+    motionMq.addEventListener('change', onMotionChange);
+
+    return () => {
+      desktopMq.removeEventListener('change', onDesktopChange);
+      motionMq.removeEventListener('change', onMotionChange);
+    };
+  }, []);
   
   // Forgot password states
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
@@ -218,29 +248,54 @@ const Login = () => {
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-transparent' : 'bg-transparent'} transition-colors duration-200`}>
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full opacity-10 ${isDarkMode ? 'bg-white' : 'bg-blue-300'} blur-3xl`}></div>
-        <div className={`absolute -bottom-40 -left-40 w-80 h-80 rounded-full opacity-10 ${isDarkMode ? 'bg-white' : 'bg-purple-300'} blur-3xl`}></div>
-      </div>
+    <div className={cn(
+      'relative min-h-screen overflow-hidden transition-colors duration-200',
+      showLaserFlow
+        ? cn(
+          'flex items-start justify-center pt-[10vh]',
+          isDarkMode ? 'bg-black' : 'bg-slate-100'
+        )
+        : 'flex items-center justify-center'
+    )}>
+      {showLaserFlow ? (
+        <Suspense fallback={null}>
+          <LoginLaserBackground
+            {...laserTheme}
+            language={currentLanguage}
+          />
+        </Suspense>
+      ) : (
+        <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+          <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full opacity-10 ${isDarkMode ? 'bg-white' : 'bg-blue-300'} blur-3xl`}></div>
+          <div className={`absolute -bottom-40 -left-40 w-80 h-80 rounded-full opacity-10 ${isDarkMode ? 'bg-white' : 'bg-purple-300'} blur-3xl`}></div>
+        </div>
+      )}
 
-      <div className="absolute top-6 right-6 flex items-center space-x-4 z-10">
+      <div className="absolute top-6 right-6 z-20 flex items-center space-x-4">
         <LanguageSelector />
         <ThemeToggle />
       </div>
 
       {/* Login Card */}
-      <div className="relative w-full max-w-md px-6">
+      <div className="relative z-10 w-full max-w-md px-6">
         <div className={cn(
           'relative overflow-hidden rounded-2xl shadow-2xl p-8 transition-colors duration-200',
-          isDarkMode ? 'bg-gray-800' : 'bg-white'
+          showLaserFlow
+            ? isDarkMode
+              ? 'border border-blue-500/40 bg-[#120F17]/45 backdrop-blur-md shadow-2xl shadow-blue-500/10'
+              : 'border-none bg-white/75 backdrop-blur-md shadow-2xl'
+            : isDarkMode
+              ? 'bg-gray-800'
+              : 'bg-white'
         )}>
+          {!showLaserFlow && (
           <Spotlight
             className={isDarkMode
               ? 'from-blue-400/40 via-blue-300/20 to-transparent'
               : 'from-blue-200/50 via-indigo-100/40 to-transparent'}
             size={280}
           />
+          )}
           {/* Logo and Title */}
           <div className="relative text-center mb-8">
             <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${isDarkMode ? 'bg-transparent' : 'bg-blue-500'}`}>
@@ -439,7 +494,16 @@ const Login = () => {
               <div className={`w-full border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`}></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className={`px-2 ${isDarkMode ? 'bg-gray-800 text-gray-400' : 'bg-white text-gray-500'}`}>
+              <span className={cn(
+                'px-2',
+                showLaserFlow
+                  ? isDarkMode
+                    ? 'bg-[#120F17]/45 text-gray-400'
+                    : 'bg-white/75 text-gray-500'
+                  : isDarkMode
+                    ? 'bg-gray-800 text-gray-400'
+                    : 'bg-white text-gray-500'
+              )}>
                 {t('login.orContinueWith', 'Or continue with')}
               </span>
             </div>
