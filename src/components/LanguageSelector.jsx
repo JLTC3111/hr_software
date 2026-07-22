@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Globe } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { TextScramble } from './motion-primitives';
+import { cn } from '@/lib/utils';
 
-const LanguageSelector = () => {
+const LanguageSelector = ({ variant = 'default' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrambleTrigger, setScrambleTrigger] = useState(true);
   const { currentLanguage, changeLanguage, languages, isChanging } = useLanguage();
@@ -38,8 +39,10 @@ const LanguageSelector = () => {
   const currentLangData = languages[currentLanguage];
   const languageLabel = currentLangData?.name || currentLanguage || 'Language';
 
+  const isIntegrated = variant === 'integrated';
+
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className={cn('relative', isIntegrated && 'flex-1 min-w-0')} ref={dropdownRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -47,18 +50,26 @@ const LanguageSelector = () => {
           setScrambleTrigger(false);
           requestAnimationFrame(() => setScrambleTrigger(true));
         }}
-        className="flex items-center space-x-2 px-3 py-2 rounded-lg border hover:opacity-80 transition-opacity cursor-pointer"
+        className={cn(
+          'flex items-center space-x-2 px-3 py-2 hover:opacity-80 transition-opacity cursor-pointer w-full',
+          isIntegrated
+            ? 'rounded-none border-0'
+            : 'rounded-lg border'
+        )}
         style={{
-          backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+          backgroundColor: isIntegrated ? 'transparent' : isDarkMode ? '#374151' : '#f3f4f6',
           color: isDarkMode ? '#ffffff' : '#111827',
-          borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+          borderColor: isIntegrated ? 'transparent' : isDarkMode ? '#4b5563' : '#d1d5db',
         }}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
-        <Globe className={`w-4 h-4 transition-transform duration-600 ${isChanging ? 'animate-spin' : ''} hover:rotate-180`} />
-        <span className="text-sm font-medium flex items-center space-x-2">
-          <img src={currentLangData?.flag} alt={currentLangData?.name} className="w-5 h-5 rounded" />
+        <span className="text-sm font-medium flex items-center space-x-2 min-w-0">
+          <img
+            src={currentLangData?.flag}
+            alt={currentLangData?.name}
+            className={cn('w-5 h-5 rounded shrink-0', isChanging && 'animate-pulse')}
+          />
           <TextScramble
             as="span"
             className="inline-block min-w-[4.5rem]"
@@ -69,7 +80,11 @@ const LanguageSelector = () => {
             {languageLabel}
           </TextScramble>
         </span>
-        <ChevronDown className={`w-4 h-4 transition-all ${isOpen ? 'rotate-180' : ''} duration-450 origin-center`} />
+        <ChevronDown className={cn(
+          'w-4 h-4 shrink-0 transition-all duration-450 origin-center',
+          isOpen && 'rotate-180',
+          isChanging && 'animate-spin'
+        )} />
       </button>
 
       {isOpen && (

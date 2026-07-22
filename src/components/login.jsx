@@ -273,9 +273,29 @@ const Login = () => {
         </div>
       )}
 
-      <div className="absolute top-6 right-6 z-20 flex items-center space-x-4">
-        <LanguageSelector />
-        <ThemeToggle />
+      <div className="absolute top-6 right-6 z-20">
+        {/* Desktop: theme toggle left of language bar */}
+        <div className="hidden xl:flex items-center gap-2">
+          <ThemeToggle />
+          <LanguageSelector />
+        </div>
+
+        {/* Mobile / tablet: theme toggle inside language bar */}
+        <div
+          className="flex xl:hidden items-stretch rounded-lg border overflow-hidden"
+          style={{
+            backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+            borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+          }}
+        >
+          <ThemeToggle variant="integrated" />
+          <div
+            className="w-px self-stretch shrink-0"
+            style={{ backgroundColor: isDarkMode ? '#4b5563' : '#d1d5db' }}
+            aria-hidden
+          />
+          <LanguageSelector variant="integrated" />
+        </div>
       </div>
 
       {/* Login Card */}

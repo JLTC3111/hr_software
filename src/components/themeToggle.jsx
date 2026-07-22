@@ -4,22 +4,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 
-const ThemeToggle = () => {
+const ThemeToggle = ({ variant = 'default' }) => {
   const { isDarkMode, toggleTheme } = useTheme();
+  const isIntegrated = variant === 'integrated';
 
   return (
     <button
       type="button"
       onClick={toggleTheme}
       className={cn(
-        'cursor-pointer rounded-lg border transition-all duration-200',
-        'p-1.5 sm:p-2',
-        'focus:outline-none focus:ring-2 focus:ring-blue-500 hover:opacity-80'
+        'cursor-pointer transition-all duration-200',
+        'focus:outline-none focus:ring-2 focus:ring-blue-500 hover:opacity-80',
+        isIntegrated
+          ? 'rounded-none border-0 p-2 shrink-0'
+          : 'rounded-lg border p-1.5 sm:p-2'
       )}
       style={{
-        backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+        backgroundColor: isIntegrated ? 'transparent' : isDarkMode ? '#374151' : '#f3f4f6',
         color: isDarkMode ? '#ffffff' : '#111827',
-        borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+        borderColor: isIntegrated ? 'transparent' : isDarkMode ? '#4b5563' : '#d1d5db',
       }}
       title={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
       aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}

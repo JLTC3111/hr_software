@@ -39,7 +39,7 @@ export const LOGIN_LASER_THEME = {
   dark: {
     horizontalBeamOffset: 0.1,
     verticalBeamOffset: -0.2,
-    color: '#FFFFFF',
+    color: '#CF9EFF',
     clearColor: '#000000',
     fogIntensity: 0.45,
     beamIntensity: 1,
