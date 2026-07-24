@@ -8,9 +8,16 @@ const CDN = 'https://cdn.jsdelivr.net/gh';
 /** Large CJK font can take a while on slow links — keep separate from API timeouts. */
 const FONT_FETCH_TIMEOUT_MS = 180_000;
 
+/**
+ * Local copies under public/fonts/*.ttf are gitignored (large). They exist on
+ * developer machines, so Vite serves them in DEV — but production deploys have
+ * an empty fonts folder, which caused console 404s before the CDN fallback.
+ */
+const localFont = (path) => (import.meta.env.DEV ? [path] : []);
+
 const LATIN_FONT = {
   urls: () => [
-    '/fonts/NotoSans-Regular.ttf',
+    ...localFont('/fonts/NotoSans-Regular.ttf'),
     `${CDN}/googlefonts/noto-fonts@main/hinted/ttf/NotoSans/NotoSans-Regular.ttf`,
   ],
   vfsName: 'NotoSans-Regular.ttf',
@@ -20,7 +27,7 @@ const LATIN_FONT = {
 
 const CJK_SC_FONT = {
   urls: () => [
-    '/fonts/NotoSansCJKsc-Regular.ttf',
+    ...localFont('/fonts/NotoSansCJKsc-Regular.ttf'),
     `${CDN}/indigofeather/fonts@master/NotoSansCJKsc-Regular.ttf`,
   ],
   vfsName: 'NotoSansCJKsc-Regular.ttf',
@@ -30,8 +37,8 @@ const CJK_SC_FONT = {
 
 const CJK_JP_FONT = {
   urls: () => [
-    '/fonts/NotoSansCJKjp-Regular.ttf',
-    '/fonts/NotoSansCJKsc-Regular.ttf',
+    ...localFont('/fonts/NotoSansCJKjp-Regular.ttf'),
+    ...localFont('/fonts/NotoSansCJKsc-Regular.ttf'),
     `${CDN}/indigofeather/fonts@master/NotoSansCJKsc-Regular.ttf`,
   ],
   vfsName: 'NotoSansCJKjp-Regular.ttf',
@@ -41,8 +48,8 @@ const CJK_JP_FONT = {
 
 const CJK_KR_FONT = {
   urls: () => [
-    '/fonts/NotoSansCJKkr-Regular.ttf',
-    '/fonts/NotoSansCJKsc-Regular.ttf',
+    ...localFont('/fonts/NotoSansCJKkr-Regular.ttf'),
+    ...localFont('/fonts/NotoSansCJKsc-Regular.ttf'),
     `${CDN}/indigofeather/fonts@master/NotoSansCJKsc-Regular.ttf`,
   ],
   vfsName: 'NotoSansCJKkr-Regular.ttf',
@@ -52,7 +59,7 @@ const CJK_KR_FONT = {
 
 const THAI_FONT = {
   urls: () => [
-    '/fonts/NotoSansThai-Regular.ttf',
+    ...localFont('/fonts/NotoSansThai-Regular.ttf'),
     `${CDN}/googlefonts/noto-fonts@main/hinted/ttf/NotoSansThai/NotoSansThai-Regular.ttf`,
   ],
   vfsName: 'NotoSansThai-Regular.ttf',
