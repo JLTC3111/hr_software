@@ -9,45 +9,34 @@ import * as employeeService from '../services/employeeService.js';
 import { ShimmerButton } from './ui/shimmer-button';
 import { ShinyButton } from './ui/shiny-button';
 import { PageLiveClock } from './ui/page-live-clock';
+import { DatePicker } from './ui/date-picker.jsx';
 import { cn } from '@/lib/utils';
 
 // InputField component outside to prevent recreation
-const InputField = React.memo(({ name, label, icon: Icon, type = 'text', required, value, onChange, error, touched, textSecondary, bgPrimary, textPrimary, borderPrimary, className, ...props }) => {
-  const [inputType, setInputType] = useState(type === 'date' && !value ? 'text' : type);
-  const inputRef = React.useRef(null);
-
-  const handleFocus = (e) => {
-    if (type === 'date') setInputType('date');
-    if (props.onFocus) props.onFocus(e);
-  };
-
-  const handleBlur = (e) => {
-    if (type === 'date' && !value) setInputType('text');
-    if (props.onBlur) props.onBlur(e);
-  };
-
-  React.useEffect(() => {
-    if (type === 'date' && value) setInputType('date');
-  }, [type, value]);
-
-  const handleIconClick = () => {
-    if (inputRef.current) {
-      inputRef.current.focus();
-      if (type === 'date') {
-        setInputType('date');
-        // Use setTimeout to allow state update and render to complete
-        setTimeout(() => {
-          try {
-            if (inputRef.current && typeof inputRef.current.showPicker === 'function') {
-              inputRef.current.showPicker();
-            }
-          } catch (err) {
-            console.log('Date picker not supported or failed to open', err);
-          }
-        }, 0);
-      }
-    }
-  };
+const InputField = React.memo(({ name, label, icon: Icon, type = 'text', required, value, onChange, error, touched, textSecondary, bgPrimary, textPrimary, borderPrimary, className, placeholder, ...props }) => {
+  if (type === 'date') {
+    return (
+      <div>
+        <label className={`block text-sm font-medium ${textSecondary} mb-2`}>
+          {label} {required && <span className="text-red-500">*</span>}
+        </label>
+        <DatePicker
+          name={name}
+          value={value || ''}
+          onChange={onChange}
+          required={required}
+          placeholder={placeholder}
+          icon={Icon || Calendar}
+          showIcon
+          inputClassName={`w-full px-4 py-2 ${bgPrimary} ${textPrimary} border ${error && touched ? 'border-red-500' : borderPrimary} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${className || ''}`}
+          {...props}
+        />
+        {error && touched && (
+          <p className="text-red-500 text-sm mt-1">{error}</p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -57,18 +46,15 @@ const InputField = React.memo(({ name, label, icon: Icon, type = 'text', require
       <div className="relative">
         {Icon && (
           <Icon 
-            className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${textSecondary} cursor-pointer z-10`} 
-            onClick={handleIconClick}
+            className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${textSecondary} z-10`} 
           />
         )}
         <input
-          ref={inputRef}
-          type={inputType}
+          type={type}
           name={name}
           value={value || ''}
           onChange={onChange}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
+          placeholder={placeholder}
           className={`w-full ${Icon ? 'pl-10' : 'pl-4'} pr-4 py-2 ${bgPrimary} ${textPrimary} border ${error && touched ? 'border-red-500' : borderPrimary} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${className || ''}`}
           {...props}
         />
@@ -387,7 +373,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
                 name="dob" 
                 label={t('addEmployee.dob')} 
                 placeholder={t('addEmployee.dobPlaceholder', 'Enter employee dob')}
-                type="date" 
+                type={'date'} 
                 icon={Calendar} 
                 required 
                 value={formData.dob}
@@ -446,7 +432,7 @@ const AddNewEmployee = ({ refetchEmployees }) => {
                 name="startDate" 
                 label={t('employees.startDate')} 
                 placeholder={t('employees.startDatePlaceholder', 'Enter employee start date')}
-                type="date" 
+                type={'date'} 
                 icon={Calendar} 
                 required 
                 value={formData.startDate}

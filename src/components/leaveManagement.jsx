@@ -32,6 +32,8 @@ import { isDemoMode, getDemoEmployeeName, updateDemoLeaveRequest } from '../util
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { SlidingNumber } from './motion-primitives';
 import { PageLiveClock } from './ui/page-live-clock';
+import { DatePicker } from './ui/date-picker.jsx';
+import { TimePicker } from './ui/time-picker.jsx';
 import { filterActiveEmployees } from '../utils/employeeStatus.js';
 
 /* @refresh reset */
@@ -1064,21 +1066,19 @@ const LeaveRequestModal = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('leave.rangeStart', 'Start')}</label>
-                <input
-                  type="date"
+                <DatePicker
                   value={form.startDate}
                   onChange={(e) => handleChange('startDate', e.target.value)}
-                  className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary}`}
+                  inputClassName={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary}`}
                 />
               </div>
               <div>
                 <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('leave.rangeEnd', 'End')}</label>
-                <input
-                  type="date"
+                <DatePicker
                   value={form.endDate}
                   min={form.startDate || undefined}
                   onChange={(e) => handleChange('endDate', e.target.value)}
-                  className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary}`}
+                  inputClassName={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary}`}
                 />
               </div>
               <p className={`col-span-2 text-xs ${text.tertiary}`}>
@@ -1117,22 +1117,20 @@ const LeaveRequestModal = ({
                 <label className={`block text-sm font-medium ${text.secondary} mb-1 flex items-center gap-1`}>
                   <Clock className="w-3.5 h-3.5" />{t('leave.startTime', 'Start Time')}
                 </label>
-                <input
-                  type="time"
+                <TimePicker
                   value={form.startTime}
                   onChange={(e) => handleChange('startTime', e.target.value)}
-                  className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary}`}
+                  inputClassName={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary}`}
                 />
               </div>
               <div>
                 <label className={`block text-sm font-medium ${text.secondary} mb-1 flex items-center gap-1`}>
                   <Clock className="w-3.5 h-3.5" />{t('leave.endTime', 'End Time')}
                 </label>
-                <input
-                  type="time"
+                <TimePicker
                   value={form.endTime}
                   onChange={(e) => handleChange('endTime', e.target.value)}
-                  className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary}`}
+                  inputClassName={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary}`}
                 />
               </div>
             </div>

@@ -8,12 +8,18 @@ import { supabase } from '../config/supabaseClient.js';
 import { isDemoMode, MOCK_EMPLOYEES, getDemoEmployeeName } from '../utils/demoHelper.js';
 import { useSessionGuard } from '../hooks/useSessionGuard.js';
 import { SpecularButton } from './ui/specular-button';
+import { DatePicker } from './ui/date-picker.jsx';
+import { TimePicker } from './ui/time-picker.jsx';
 import { cn } from '@/lib/utils';
 import {
   getHoursWorked,
   toExtendedInterval,
   extendedIntervalsOverlap,
 } from '../utils/timeEntryHelpers.js';
+
+const ClockInIcon = ({ className, ...props }) => (
+  <LogIn {...props} className={cn(className, 'rotate-180')} />
+);
 
 const AdminTimeEntry = ({ onEntriesChanged }) => {
   const { isDarkMode, bg, text, border } = useTheme();
@@ -44,11 +50,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
   const [bulkFillLoading, setBulkFillLoading] = useState(false);
   const [showBulkConfirmModal, setShowBulkConfirmModal] = useState(false);
 
-  const dateInputClassName = `w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`;
-
-  const openDatePicker = (inputId) => {
-    document.getElementById(inputId)?.showPicker?.();
-  };
+  const dateInputClassName = `w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer`;
 
   const getBulkFillErrorMessage = (error) => {
     if (!error) {
@@ -656,21 +658,15 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
           <label className={`block text-sm font-medium ${text.primary} mb-2`}>
             {t('adminTimeEntry.date', 'Date')} *
           </label>
-          <div 
-            className="relative cursor-pointer group"
-            onClick={() => document.getElementById('admin-date-input')?.showPicker?.()}
-          >
-            <input
-              id="admin-date-input"
-              type="date"
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              max={new Date().toISOString().split('T')[0]}
-              className={dateInputClassName}
-              required
-            />
-            <Calendar className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors`} />
-          </div>
+          <DatePicker
+            id="admin-date-input"
+            value={formData.date}
+            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            max={new Date().toISOString().split('T')[0]}
+            inputClassName={dateInputClassName}
+            required
+            icon={Calendar}
+          />
         </div>
 
         {/* Clock In & Clock Out */}
@@ -679,64 +675,31 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
             <label className={`block text-sm font-medium ${text.primary} mb-2`}>
               {t('adminTimeEntry.clockIn', 'Clock In')} {isOnLeave ? '' : '*'}
             </label>
-            <div 
-              className="relative cursor-pointer group"
-              onClick={() => {
-                if (isOnLeave) return;
-                const input = document.getElementById('admin-clockin-input');
-                if (input) {
-                  // If no value yet, set a default before opening the picker so picker shows it
-                  if (!formData.clockIn) {
-                    const defaultIn = '09:00';
-                    setFormData(fd => ({ ...fd, clockIn: defaultIn }));
-                    try { input.value = defaultIn; } catch (_e) {}
-                  }
-                  input.showPicker?.();
-                }
-              }}
-            >
-              <input
-                id="admin-clockin-input"
-                type="time"
-                value={isOnLeave ? '' : formData.clockIn}
-                onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
-                className={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
-                required={!isOnLeave}
-                disabled={isOnLeave}
-              />
-              <LogIn className={`absolute right-3 top-1/2 transform -translate-y-1/2 rotate-180 w-5 h-5 ${text.secondary} pointer-events-none ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors`} />
-            </div>
+            <TimePicker
+              id="admin-clockin-input"
+              value={isOnLeave ? '' : formData.clockIn}
+              onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
+              inputClassName={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer`}
+              required={!isOnLeave}
+              disabled={isOnLeave}
+              defaultOpenTime="09:00"
+              icon={ClockInIcon}
+            />
           </div>
           <div>
             <label className={`block text-sm font-medium ${text.primary} mb-2`}>
               {t('adminTimeEntry.clockOut', 'Clock Out')} {isOnLeave ? '' : '*'}
             </label>
-            <div 
-              className="relative cursor-pointer group"
-              onClick={() => {
-                if (isOnLeave) return;
-                const input = document.getElementById('admin-clockout-input');
-                if (input) {
-                  if (!formData.clockOut) {
-                    const defaultOut = '17:00';
-                    setFormData(fd => ({ ...fd, clockOut: defaultOut }));
-                    try { input.value = defaultOut; } catch (_e) {}
-                  }
-                  input.showPicker?.();
-                }
-              }}
-            >
-              <input
-                id="admin-clockout-input"
-                type="time"
-                value={isOnLeave ? '' : formData.clockOut}
-                onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
-                className={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
-                required={!isOnLeave}
-                disabled={isOnLeave}
-              />
-              <LogOut className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors`} />
-            </div>
+            <TimePicker
+              id="admin-clockout-input"
+              value={isOnLeave ? '' : formData.clockOut}
+              onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
+              inputClassName={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer`}
+              required={!isOnLeave}
+              disabled={isOnLeave}
+              defaultOpenTime="17:00"
+              icon={LogOut}
+            />
           </div>
         </div>
 
@@ -886,48 +849,36 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
               <label htmlFor="admin-bulk-start-date" className={`block text-sm font-medium ${text.primary} mb-2`}>
                 {t('adminTimeEntry.bulkStandardHours.startDate', 'Start Date')} *
               </label>
-              <div
-                className="relative cursor-pointer group"
-                onClick={() => openDatePicker('admin-bulk-start-date')}
-              >
-                <input
-                  id="admin-bulk-start-date"
-                  type="date"
-                  value={bulkFillData.startDate}
-                  onChange={(e) => {
-                    const startDate = e.target.value;
-                    setBulkFillData((prev) => ({
-                      startDate,
-                      endDate: prev.endDate < startDate ? startDate : prev.endDate
-                    }));
-                  }}
-                  max={new Date().toISOString().split('T')[0]}
-                  className={dateInputClassName}
-                  required
-                />
-                <Calendar className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors`} />
-              </div>
+              <DatePicker
+                id="admin-bulk-start-date"
+                value={bulkFillData.startDate}
+                onChange={(e) => {
+                  const startDate = e.target.value;
+                  setBulkFillData((prev) => ({
+                    startDate,
+                    endDate: prev.endDate < startDate ? startDate : prev.endDate
+                  }));
+                }}
+                max={new Date().toISOString().split('T')[0]}
+                inputClassName={dateInputClassName}
+                required
+                icon={Calendar}
+              />
             </div>
             <div>
               <label htmlFor="admin-bulk-end-date" className={`block text-sm font-medium ${text.primary} mb-2`}>
                 {t('adminTimeEntry.bulkStandardHours.endDate', 'End Date')} *
               </label>
-              <div
-                className="relative cursor-pointer group"
-                onClick={() => openDatePicker('admin-bulk-end-date')}
-              >
-                <input
-                  id="admin-bulk-end-date"
-                  type="date"
-                  value={bulkFillData.endDate}
-                  onChange={(e) => setBulkFillData((prev) => ({ ...prev, endDate: e.target.value }))}
-                  min={bulkFillData.startDate}
-                  max={new Date().toISOString().split('T')[0]}
-                  className={dateInputClassName}
-                  required
-                />
-                <Calendar className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${text.secondary} pointer-events-none ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors`} />
-              </div>
+              <DatePicker
+                id="admin-bulk-end-date"
+                value={bulkFillData.endDate}
+                onChange={(e) => setBulkFillData((prev) => ({ ...prev, endDate: e.target.value }))}
+                min={bulkFillData.startDate}
+                max={new Date().toISOString().split('T')[0]}
+                inputClassName={dateInputClassName}
+                required
+                icon={Calendar}
+              />
             </div>
           </div>
 

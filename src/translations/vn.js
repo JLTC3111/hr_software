@@ -19,9 +19,8 @@ export default {
     taskReview: 'Đánh Giá Hiệu Suất',
     svgMorphing: 'SVG Biến Hình',
     fullDemo: 'Demo Đầy Đủ',
-    showcase: 'Trưng Bày Nhanh',
+    showcase: 'Trưng Bày Nhanh'
   },
-
   // Leave Management
   leave: {
     subtitle: 'Lập kế hoạch, yêu cầu và phê duyệt nghỉ phép trên lịch dùng chung.',
@@ -86,9 +85,8 @@ export default {
     rejectConfirm: 'Từ chối nghỉ phép của {{name}}?',
     rejectReasonLabel: 'Lý do (tùy chọn)',
     rejectReasonPlaceholder: 'Giải thích lý do từ chối yêu cầu này...',
-    confirmReject: 'Từ chối yêu cầu',
+    confirmReject: 'Từ chối yêu cầu'
   },
-
   // Video Player translations used by VideoPlayer component
   videoPlayer: {
     container: 'Trình Phát Video',
@@ -106,7 +104,6 @@ export default {
     },
     name: 'Tên video'
   },
-
   // Header
   header: {
     title: 'Quản lý HR',
@@ -120,7 +117,6 @@ export default {
     user: 'Đội ngũ HR',
     logout: 'Đăng xuất'
   },
-
   // Login
   login: {
     idleLogoutMessage: 'Bạn đã bị đăng xuất sau khi không hoạt động trong một thời gian. Vui lòng đăng nhập lại.',
@@ -163,9 +159,8 @@ export default {
     noAccount: 'Chưa có tài khoản?',
     signUp: 'Đăng ký',
     footer: '© 2024 Quản lý HR. Tất cả quyền được bảo lưu.',
-    tryDemoLoading: 'Đang tải bản demo...',
+    tryDemoLoading: 'Đang tải bản demo...'
   },
-
   // Reset Password Page
   resetPassword: {
     title: 'Đặt Lại Mật Khẩu',
@@ -184,15 +179,13 @@ export default {
     verifying: 'Đang xác minh liên kết đặt lại...',
     resetButton: 'Đặt Lại Mật Khẩu',
     backToLogin: 'Quay Lại Đăng Nhập',
-    invalidLink: 'Liên kết đặt lại không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu đặt lại mật khẩu mới.',
+    invalidLink: 'Liên kết đặt lại không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu đặt lại mật khẩu mới.'
   },
-
   sidebar: {
     main: 'Chính',
     analytics: 'Phân Tích',
-    settings: 'Cài Đặt',
+    settings: 'Cài Đặt'
   },
-
   // Dashboard
   dashboard: {
     regularAndOvertimeByEmployee: 'Giờ Làm Thường & Giờ Làm Thêm',
@@ -240,12 +233,10 @@ export default {
       oneDay: "1 Ngày Trước"
     }
   },
-
   // Search
   search: {
     placeholder: 'Tìm Kiếm Nhân Viên...'
   },
-
   employeeDepartment: {
     all: 'Tất Cả',
     legal_compliance: 'Pháp Lý',
@@ -277,7 +268,6 @@ export default {
     product: 'Sản Phẩm',
     customer_support: 'Hỗ Trợ Khách Hàng'
   },
-
   // Months
   months: {
     january: 'Tháng Một',
@@ -293,7 +283,6 @@ export default {
     november: 'Tháng Mười Một',
     december: 'Tháng Mười Hai'
   },
-
   // Time Tracking
   timeTracking: {
     on_leave: 'Đang Nghỉ Phép',
@@ -307,13 +296,11 @@ export default {
     hours: 'Giờ',
     time: 'Thời Gian',
     hourType: 'Loại Giờ',
-    status: 'Trạng Thái',
     notes: 'Ghi Chú',
     createdAt: 'Ngày Tạo',
     summary: 'Tóm Tắt',
     quickActions: 'Chức Năng',
     workDays: 'Ngày Làm Việc',
-    leaveDays: 'Ngày Nghỉ Phép',
     overtime: 'Giờ Làm Thêm',
     wfh: 'Làm Việc Tại Nhà',
     holidayOvertime: 'Làm thêm ngày lễ',
@@ -326,14 +313,13 @@ export default {
     attendanceRate: 'Tỷ lệ chuyên cần',
     requestLeave: 'Xin nghỉ phép',
     logOvertime: 'Ghi nhận làm thêm',
-    leaveType: 'Loại nghỉ phép',
     vacation: 'Nghỉ Phép Có Lương',
     sickLeave: 'Nghỉ Ốm',
     personal: 'Nghỉ Cá Nhân',
     unpaid: 'Nghỉ Không Lương',
-    leaveDays: 'Số Ngày Nghỉ',
-    leaveType: 'Loại Nghỉ Phép',
-    status: 'Trạng Thái',
+    leaveDays: "Số Ngày Nghỉ",
+    leaveType: "Loại Nghỉ Phép",
+    status: "Trạng Thái",
     requestedBy: 'Người Yêu Cầu',
     approvedBy: 'Người Phê Duyệt',
     leaveRequestManagement: 'Quản Lý Đơn Xin Nghỉ Phép',
@@ -347,7 +333,7 @@ export default {
       pending: 'Đang chờ xử lý',
       approved: 'Đã phê duyệt',
       rejected: 'Bị từ chối',
-      cancelled: 'Đã hủy',
+      cancelled: 'Đã hủy'
     },
     // Hour types for overtime
     weekend: 'Làm thêm cuối tuần',
@@ -379,7 +365,6 @@ export default {
     daysWorked: 'Ngày Làm Việc',
     totalHoursLabel: 'Tổng Số Giờ'
   },
-
   // Work Days Modal
   workDaysModal: {
     title: 'Chi Tiết Ngày Làm Việc',
@@ -394,7 +379,6 @@ export default {
     notes: 'Ghi Chú',
     noData: 'Không có dữ liệu ngày làm việc cho khoảng thời gian này'
   },
-
   // Admin Time Entry
   adminTimeEntry: {
     title: 'Nhập Giờ Làm Việc (Quản Trị)',
@@ -462,7 +446,6 @@ export default {
       errorWithDetail: 'Không thể điền giờ chuẩn: {message}'
     }
   },
-
   // Employees
   employees: {
     title: 'Quản Lý Nhân Viên',
@@ -507,9 +490,8 @@ export default {
     topPerformers: 'Nhân viên xuất sắc',
     avgRating: 'Điểm TB',
     departments: 'phòng ban',
-    livePulse: 'Nhịp sống',
+    livePulse: 'Nhịp sống'
   },
-
   // Add Employee Modal
   addEmployee: {
     title: 'Thêm nhân viên mới',
@@ -548,10 +530,9 @@ export default {
     submitError: 'Thêm nhân viên thất bại',
     dobPlaceholder: 'Chọn ngày sinh'
   },
-
   // Employee Detail Modal
   employeeDetailModal: {
-    download: 'Tải Xuống', 
+    download: 'Tải Xuống',
     uploadPdf: 'Tải Lên PDF',
     uploading: 'Đang tải lên...',
     delete: 'Xóa',
@@ -606,7 +587,6 @@ export default {
     uploadInstructions: 'Nhấp hoặc kéo tệp PDF vào đây để tải lên',
     maxFileSize: 'Kích thước tệp tối đa: 10MB'
   },
-
   stats: {
     total: 'Tổng cộng',
     underReview: 'Đang Xem Xét',
@@ -614,9 +594,8 @@ export default {
     interviewScheduled: 'Đã lên lịch phỏng vấn',
     offerExtended: 'Đã gửi thư mời làm việc',
     hired: 'Đã tuyển dụng',
-    rejected: 'Từ chối',
+    rejected: 'Từ chối'
   },
-
   // Recruitment
   recruitment: {
     position: 'Vị Trí',
@@ -717,14 +696,12 @@ export default {
       avgTimeToHire: 'Thời Gian TB Tuyển Dụng'
     }
   },
-
   // Reports
   reports: {
     bonusHours: 'Giờ Cộng Thêm',
     daysWorked: 'Số Ngày Làm Việc',
     leaveDays: 'Số Ngày Nghỉ Phép',
     title: 'Báo cáo và phân tích',
-    allEmployees: 'Tất_Cả_Nhân_Viên',
     filenamePrefix: 'Báo_Cáo_HR',
     excel: {
       charts: {
@@ -850,14 +827,10 @@ export default {
       }
     },
     description: 'Tạo và xuất báo cáo chi tiết về nhân sự, hiệu suất và tuyển dụng',
-    generateReport: 'Tạo báo cáo',
     exportReport: 'Xuất báo cáo',
     selectReportType: 'Chọn loại báo cáo',
     selectEmployee: 'Chọn nhân viên',
     selectDepartment: 'Chọn phòng ban',
-    dateRange: 'Khoảng thời gian',
-    startDate: 'Ngày bắt đầu',
-    endDate: 'Ngày kết thúc',
     applyFilters: 'Áp dụng bộ lọc',
     resetFilters: 'Đặt lại bộ lọc',
     exportFormat: 'Định dạng xuất',
@@ -866,26 +839,18 @@ export default {
     formatCsv: 'CSV',
     generating: 'Đang tạo báo cáo...',
     exporting: 'Đang xuất báo cáo...',
-    noData: 'Không có dữ liệu để hiển thị cho các tiêu chí đã chọn',
     reportGenerated: 'Báo cáo đã được tạo thành công!',
     reportExported: 'Báo cáo đã được xuất thành công!',
-    totalEmployees: 'Tổng số nhân viên',
-    totalHours: 'Tổng số giờ',
     totalOvertime: 'Tổng giờ làm thêm',
     avgPerformance: 'Hiệu suất trung bình',
-    newHires: 'Nhân viên mới',
     applicationsReceived: 'Đơn ứng tuyển nhận được',
     interviewsScheduled: 'Phỏng vấn đã lên lịch',
     offersExtended: 'Đề nghị đã đưa ra',
     reportsGenerated: 'Báo cáo đã tạo',
     reportsExported: 'Báo cáo đã xuất',
     dateGenerated: 'Ngày tạo',
-    reportType: 'Loại báo cáo',
-    employee: 'Nhân viên',
-    department: 'Phòng ban',
     organization: 'Tổ chức',
     total: 'Tổng cộng',
-    regularHours: 'Giờ Làm Thường',
     overtimeHours: 'Giờ Làm Thêm',
     performanceRating: 'Đánh giá hiệu suất',
     newHiresCount: 'Số nhân viên mới',
@@ -893,9 +858,6 @@ export default {
     interviewsCount: 'Số phỏng vấn',
     offersCount: 'Số đề nghị',
     dateRangeLabel: 'Khoảng thời gian',
-    from: 'Từ',
-    to: 'Đến',
-    generatedBy: 'Tạo bởi',
     reportSummary: 'Tóm tắt báo cáo',
     keyMetrics: 'Chỉ số chính',
     totalHoursWorked: 'Tổng số giờ làm việc',
@@ -908,10 +870,6 @@ export default {
     offersMade: 'Số đề nghị đã đưa ra',
     detailedMetrics: 'Chỉ số chi tiết',
     employeeName: 'Tên nhân viên',
-    task: 'Nhiệm vụ',
-    category: 'Hạng mục',
-    priority: 'Ưu tiên',
-    dueDate: 'Ngày đến hạn',
     hoursWorked: 'Giờ làm việc',
     overtimeWorked: 'Giờ làm thêm',
     performanceScore: 'Điểm hiệu suất',
@@ -919,20 +877,8 @@ export default {
     applicationDate: 'Ngày ứng tuyển',
     interviewDate: 'Ngày phỏng vấn',
     offerDate: 'Ngày đề nghị',
-    status: 'Trạng thái',
-    completed: 'Hoàn thành',
-    pending: 'Đang chờ',
-    rejected: 'Từ chối',
-    achieved: 'Đã đạt được',
-    approved: 'Đã phê duyệt',
-    inProgress: 'Đang tiến hành',
-    completionRate: 'Tỷ lệ hoàn thành',
     language: 'Ngôn Ngữ',
-    avgProgress: 'Tiến độ trung bình',
     personalGoals: 'Mục Tiêu Cá Nhân',
-    type: 'Loại báo cáo',
-    goal: 'Mục tiêu',
-    progress: 'Tiến độ',
     actions: 'Hành động',
     view: 'Xem',
     edit: 'Chỉnh sửa',
@@ -940,89 +886,51 @@ export default {
     reportTypes: 'Loại báo cáo',
     individualMetrics: 'Chỉ số cá nhân',
     organizationMetrics: 'Chỉ số tổ chức',
-    goals: 'Mục Tiêu Cá Nhân',
-    performance: 'Hiệu suất',
-    recruitment: 'Tuyển dụng',
-    salary: 'Lương',
-    attendance: 'Chấm công',
     timeEntries: 'Giờ làm việc',
     custom: 'Tùy chỉnh',
-    generate: 'Tạo báo cáo',
     export: 'Xuất báo cáo',
-    selectReport: 'Chọn loại báo cáo',
     customReports: 'Báo cáo tùy chỉnh',
     createNewReport: 'Tạo báo cáo mới',
     selectCriteria: 'Chọn tiêu chí báo cáo',
     reportName: 'Tên báo cáo',
     reportNamePlaceholder: 'Nhập tên báo cáo',
-    dataType: 'Loại dữ liệu',
-    allDepartments: 'Tất cả phòng ban',
     last7Days: '7 ngày qua',
     last30Days: '30 ngày qua',
-    lastQuarter: 'Quý trước',
-    lastYear: 'Năm trước',
-    customRange: 'Khoảng tùy chỉnh',
     timeEntrys: 'Báo cáo giờ làm việc',
     attendanceRecords: 'Hồ sơ chấm công',
-    quickFilters: 'Bộ lọc nhanh',
     performanceSummary: 'Tóm tắt hiệu suất',
     recruitmentOverview: 'Tổng quan tuyển dụng',
-    salaryAnalysis: 'Phân tích lương',
-    attendanceReport: 'Báo cáo chấm công',
     performanceReport: 'Báo Cáo Hiệu Suất',
     recruitmentReport: 'Báo cáo tuyển dụng',
-    salaryReport: 'Báo cáo lương',
     customReport: 'Báo cáo tùy chỉnh',
-    exportToCSV: 'Xuất sang CSV',
     exportToPDF: 'Xuất sang PDF',
-    exportToExcel: 'Xuất Sang Excel',
     reportParameters: 'Tham số báo cáo',
     individualReport: 'Báo cáo cá nhân',
     selectDateRange: 'Chọn khoảng thời gian',
     loadingReport: 'Đang tạo báo cáo...',
-    recordsFound: 'bản ghi được tìm thấy',
     exportingIncludes: 'Xuất bao gồm dữ liệu đang lọc và sắp xếp',
-    generateCustomReport: 'Tạo báo cáo tùy chỉnh',
     prebuiltReports: 'Báo cáo có sẵn',
-    employeePerformance: 'Hiệu suất nhân viên',
-    recruitmentMetrics: 'Chỉ số tuyển dụng',
-    departmentComparison: 'So sánh phòng ban',
-    monthlyPerformanceReview: 'Đánh giá hiệu suất hàng tháng',
-    comprehensivePerformanceAnalysis: 'Phân tích hiệu suất toàn diện',
-    salaryBenchmarking: 'Đánh giá mức lương',
-    compareSalariesAcrossDepartments: 'So sánh lương giữa các phòng ban',
-    attendanceAnalytics: 'Phân tích chấm công',
-    trackAttendancePatterns: 'Theo dõi mô hình và xu hướng chấm công',
-    recruitmentPipeline: 'Quy trình tuyển dụng',
-    monitorHiringProcess: 'Giám sát hiệu quả quy trình tuyển dụng',
-    employeeTurnover: 'Nghỉ việc nhân viên',
-    analyzeRetentionRates: 'Phân tích tỷ lệ giữ chân và nghỉ việc',
-    trainingEffectiveness: 'Hiệu quả đào tạo',
-    measureTrainingSuccess: 'Đo lường thành công chương trình đào tạo',
     reportDashboard: 'Bảng điều khiển báo cáo',
-    selectReport: 'Chọn báo cáo để xem chi tiết',
+    selectReport: "Chọn báo cáo để xem chi tiết",
     employeeGrowth: 'Tăng trưởng nhân viên',
     departmentDistribution: 'Phân bố theo phòng ban',
     performanceMetrics: 'Chỉ số hiệu suất',
-    recruitmentMetrics: 'Chỉ số tuyển dụng',
-    attendanceReport: 'Báo cáo chấm công',
-    salaryReport: 'Báo cáo lương',
-    generateReport: 'Tạo báo cáo',
+    salaryReport: "Báo cáo lương",
+    generateReport: "Tạo báo cáo",
     exportPDF: 'Xuất PDF',
     exportExcel: 'Xuất Excel',
     filterBy: 'Lọc theo',
-    dateRange: 'Khoảng thời gian',
-    allDepartments: 'Tất cả phòng ban',
+    allDepartments: "Tất cả phòng ban",
     human_resources: 'Nhân Sự',
     finance: 'Tài Chính',
     engineering: 'Kỹ Thuật',
     sales: 'Bán Hàng',
     marketing: 'Tiếp Thị',
-    performance: 'Hiệu suất',
-    salary: 'Lương',
-    attendance: 'Chấm Công',
-    recruitment: 'Tuyển Dụng',
-    department: 'Phòng Ban',
+    performance: "Hiệu suất",
+    salary: "Lương",
+    attendance: "Chấm Công",
+    recruitment: "Tuyển Dụng",
+    department: "Phòng Ban",
     all: 'Tất Cả',
     overview: 'Tổng Quan',
     detailedReports: 'Báo Cáo Chi Tiết',
@@ -1032,9 +940,8 @@ export default {
     attendanceOverview: 'Tổng Quan Chấm Công',
     recruitmentFunnel: 'Phễu Tuyển Dụng',
     performanceTrend: 'Xu Hướng Hiệu Suất',
-    totalEmployees: 'Tổng Số Nhân Viên',
-    newHires: 'Nhân Viên Mới',
-    thisQuarter: 'Quý Này',
+    totalEmployees: "Tổng Số Nhân Viên",
+    newHires: "Nhân Viên Mới",
     turnoverRate: 'Tỷ Lệ Nghỉ Việc',
     annualRate: 'Tỷ Lệ Hàng Năm',
     avgSalary: 'Lương Trung Bình',
@@ -1046,15 +953,15 @@ export default {
     totalApplications: 'Tổng Đơn Ứng Tuyển',
     interviewed: 'Đã Phỏng Vấn',
     hired: 'Được Tuyển',
-    rejected: 'Bị Từ Chối',
+    rejected: "Bị Từ Chối",
     employees: 'Nhân Viên',
-    generateCustomReport: 'Tạo Báo Cáo Tùy Chỉnh',
-    reportType: 'Loại Báo Cáo',
-    employeePerformance: 'Hiệu Suất Nhân Viên',
-    salaryAnalysis: 'Phân Tích Lương',
-    attendanceReport: 'Báo Cáo Chấm Công',
-    recruitmentMetrics: 'Chỉ Số Tuyển Dụng',
-    departmentComparison: 'So Sánh Phòng Ban',
+    generateCustomReport: "Tạo Báo Cáo Tùy Chỉnh",
+    reportType: "Loại Báo Cáo",
+    employeePerformance: "Hiệu Suất Nhân Viên",
+    salaryAnalysis: "Phân Tích Lương",
+    attendanceReport: "Báo Cáo Chấm Công",
+    recruitmentMetrics: "Chỉ Số Tuyển Dụng",
+    departmentComparison: "So Sánh Phòng Ban",
     pdf: {
       visualAnalytics: 'Phân Tích Trực Quan',
       charts: {
@@ -1091,47 +998,45 @@ export default {
         updatedAt: 'Cập nhật cuối'
       }
     },
-    exportToExcel: 'Xuất Excel',
-    monthlyPerformanceReview: 'Đánh Giá Hiệu Suất Hàng Tháng',
-    comprehensivePerformanceAnalysis: 'Phân Tích Hiệu Suất Toàn Diện',
-    salaryBenchmarking: 'Đánh Giá Mức Lương',
-    compareSalariesAcrossDepartments: 'So Sánh Lương Giữa Các Phòng Ban',
-    attendanceAnalytics: 'Phân Tích Chấm Công',
-    trackAttendancePatterns: 'Theo Dõi Mô Hình Và Xu Hướng Chấm Công',
-    recruitmentPipeline: 'Quy Trình Tuyển Dụng',
-    monitorHiringProcess: 'Giám Sát Hiệu Quả Quy Trình Tuyển Dụng',
-    employeeTurnover: 'Nghỉ Việc Nhân Viên',
-    analyzeRetentionRates: 'Phân Tích Tỷ Lệ Giữ Chân Và Nghỉ Việc',
-    trainingEffectiveness: 'Hiệu Quả Đào Tạo',
-    measureTrainingSuccess: 'Đo Lường Thành Công Chương Trình Đào Tạo',
-    generate: 'Tạo →',
+    exportToExcel: "Xuất Sang Excel",
+    monthlyPerformanceReview: "Đánh Giá Hiệu Suất Hàng Tháng",
+    comprehensivePerformanceAnalysis: "Phân Tích Hiệu Suất Toàn Diện",
+    salaryBenchmarking: "Đánh Giá Mức Lương",
+    compareSalariesAcrossDepartments: "So Sánh Lương Giữa Các Phòng Ban",
+    attendanceAnalytics: "Phân Tích Chấm Công",
+    trackAttendancePatterns: "Theo Dõi Mô Hình Và Xu Hướng Chấm Công",
+    recruitmentPipeline: "Quy Trình Tuyển Dụng",
+    monitorHiringProcess: "Giám Sát Hiệu Quả Quy Trình Tuyển Dụng",
+    employeeTurnover: "Nghỉ Việc Nhân Viên",
+    analyzeRetentionRates: "Phân Tích Tỷ Lệ Giữ Chân Và Nghỉ Việc",
+    trainingEffectiveness: "Hiệu Quả Đào Tạo",
+    measureTrainingSuccess: "Đo Lường Thành Công Chương Trình Đào Tạo",
+    generate: "Tạo báo cáo",
     fromLastPeriod: 'Từ Kỳ Trước',
     lastWeek: 'Tuần Trước',
     lastMonth: 'Tháng Trước',
-    lastQuarter: 'Quý Trước',
-    lastYear: 'Năm Ngoái',
-    customRange: 'Phạm Vi Tùy Chỉnh',
+    lastQuarter: "Quý Trước",
+    lastYear: "Năm Ngoái",
+    customRange: "Phạm Vi Tùy Chỉnh",
     // Date Range Options
     today: 'Hôm Nay',
     thisWeek: 'Tuần Này',
     thisMonth: 'Tháng Này',
-    thisQuarter: 'Quý Này',
+    thisQuarter: "Quý Này",
     thisYear: 'Năm Nay',
     // Data Types
     totalEntries: 'Chấm Công',
     tasks: 'Nhiệm Vụ',
-    goals: 'Mục Tiêu Cá Nhân',
-    // Filter Labels
-    employee: 'Nhân Viên',
-    dateRange: 'Phạm Vi Thời Gian',
-    dataType: 'Loại Dữ Liệu',
-    quickFilters: 'Bộ Lọc Nhanh',
-    allEmployees: 'Tất Cả Nhân Viên',
-    startDate: 'Ngày Bắt Đầu',
-    endDate: 'Ngày Kết Thúc',
-    // Status and Results
-    recordsFound: 'bản ghi được tìm thấy',
-    noData: 'Không tìm thấy dữ liệu',
+    goals: "Mục Tiêu Cá Nhân",
+    employee: "Nhân Viên",
+    dateRange: "Phạm Vi Thời Gian",
+    dataType: "Loại Dữ Liệu",
+    quickFilters: "Bộ Lọc Nhanh",
+    allEmployees: "Tất Cả Nhân Viên",
+    startDate: "Ngày Bắt Đầu",
+    endDate: "Ngày Kết Thúc",
+    recordsFound: "bản ghi được tìm thấy",
+    noData: "Không có dữ liệu để hiển thị cho các tiêu chí đã chọn",
     adjustFilters: 'Thử điều chỉnh bộ lọc hoặc phạm vi ngày',
     dataPreview: 'Xem Trước Dữ Liệu',
     showingFirst50: 'Hiển thị 50 bản ghi đầu tiên',
@@ -1141,35 +1046,35 @@ export default {
     liveData: 'Dữ liệu trực tiếp từ Supabase',
     subtitle: 'Xuất dữ liệu toàn diện cho chấm công, nhiệm vụ và mục tiêu cá nhân',
     errorExporting: 'Lỗi xuất dữ liệu',
-    exportToCSV: 'Xuất CSV',
+    exportToCSV: "Xuất sang CSV",
     exportSuccess: 'Xuất dữ liệu thành công',
     csvExportSuccess: 'Xuất báo cáo CSV thành công với tất cả loại dữ liệu trong một tệp!',
     excelExportHint: 'Xuất tất cả loại dữ liệu kèm tóm tắt, biểu đồ và bảng chi tiết',
     pdfExportHint: 'Xuất PDF với biểu đồ trực quan, tóm tắt và bảng chi tiết cho tất cả loại dữ liệu',
     pdfExportSuccess: 'Xuất báo cáo PDF thành công!',
     reportPeriod: 'Kỳ báo cáo',
-    to: 'đến',
-    totalHours: 'Tổng giờ',
-    regularHours: 'Giờ Làm Thường',
+    to: "đến",
+    totalHours: "Tổng số giờ",
+    regularHours: "Giờ Làm Thường",
     wfh: 'Làm Việc Tại Nhà',
     overtime: 'Giờ Làm Thêm',
     leave: 'Yêu Cầu Nghỉ Phép',
     tasksDone: 'Công Việc Đã Hoàn Thành',
     completion: 'Mục Tiêu Cá Nhân Đã Hoàn Thành',
     goalProgress: 'Tiến độ mục tiêu',
-    approved: 'Đã duyệt',
-    pending: 'Chờ duyệt',
-    completed: 'Hoàn thành',
-    inProgress: 'Đang thực hiện',
-    completionRate: 'Tỷ lệ hoàn thành',
-    avgProgress: 'Tiến độ trung bình',
+    approved: "Đã phê duyệt",
+    pending: "Chờ duyệt",
+    completed: "Hoàn thành",
+    inProgress: "Đang thực hiện",
+    completionRate: "Tỷ lệ hoàn thành",
+    avgProgress: "Tiến độ trung bình",
     totalGoals: 'Tổng mục tiêu',
-    type: 'Loại',
+    type: "Loại báo cáo",
     details: 'Chi tiết',
-    status: 'Trạng thái',
+    status: "Trạng thái",
     date: 'Ngày',
     for: 'cho',
-    from: 'từ',
+    from: "từ",
     // PDF Export specific translations
     generated: 'Tạo Lúc',
     period: 'Kỳ',
@@ -1178,12 +1083,12 @@ export default {
     achievedGoals: 'Mục tiêu đạt được',
     completedTasks: 'Nhiệm vụ hoàn thành',
     unknown: 'Không xác định',
-    task: 'Nhiệm vụ',
-    priority: 'Ưu tiên',
-    dueDate: 'Hạn chót',
-    goal: 'Mục tiêu',
-    category: 'Danh mục',
-    progress: 'Tiến độ',
+    task: "Nhiệm vụ",
+    priority: "Ưu tiên",
+    dueDate: "Ngày đến hạn",
+    goal: "Mục tiêu",
+    category: "Danh mục",
+    progress: "Tiến độ",
     clockIn: 'Giờ vào',
     clockOut: 'Giờ ra',
     hours: 'Giờ',
@@ -1192,8 +1097,8 @@ export default {
     targetDate: 'Ngày mục tiêu',
     page: 'Trang',
     of: 'trên',
-    generatedBy: 'Được tạo bởi Hệ thống Quản lý HR',
-    achieved: 'Đã đạt được',
+    generatedBy: "Được tạo bởi Hệ thống Quản lý HR",
+    achieved: "Đã đạt được",
     priorityLow: 'Thấp',
     priorityMedium: 'Trung bình',
     priorityHigh: 'Cao',
@@ -1202,9 +1107,8 @@ export default {
     statusPending: 'Chờ xử lý',
     statusCompleted: 'Hoàn thành',
     statusInProgress: 'Đang thực hiện',
-    statusNotStarted: 'Chưa bắt đầu',
+    statusNotStarted: 'Chưa bắt đầu'
   },
-
   // Status translations
   status: {
     approved: 'Đã duyệt',
@@ -1216,16 +1120,14 @@ export default {
     'in-progress': 'Đang thực hiện',
     'not-started': 'Chưa bắt đầu',
     achieved: 'Đã đạt được',
-    'on-hold': 'Tạm dừng',
+    'on-hold': 'Tạm dừng'
   },
-
   // Data Type Labels
   dataType: {
     timeEntry: 'Bảng chấm công',
     task: 'Nhiệm vụ',
-    goal: 'Mục tiêu',
+    goal: 'Mục tiêu'
   },
-
   // Time Clock Entry
   timeClock: {
     title: 'Chấm công',
@@ -1281,7 +1183,7 @@ export default {
       overtime: 'Giờ Làm Thêm',
       bonus: 'Giờ Làm Thêm',
       wfh: 'Làm Việc Tại Nhà (Trực Tuyến)',
-      onLeave: 'Nghỉ Phép',
+      onLeave: 'Nghỉ Phép'
     },
     errors: {
       dateRequired: 'Vui lòng chọn ngày',
@@ -1309,8 +1211,23 @@ export default {
     allEmployees: 'Tất Cả Nhân Viên',
     specificEmployee: 'Nhân Viên Cụ Thể'
   },
-
   // Common
+  datePicker: {
+    placeholder: 'Chọn ngày',
+    calendar: 'Lịch',
+    prevMonth: 'Tháng trước',
+    nextMonth: 'Tháng sau',
+    today: 'Hôm nay',
+    clear: 'Xóa'
+  },
+  timePicker: {
+    hours: 'giờ',
+    minutes: 'phút',
+    done: 'Xong',
+    clear: 'Xóa',
+    placeholder: '--:--',
+    picker: 'Chọn giờ'
+  },
   common: {
     viewDetails: 'Xem Chi Tiết',
     email: 'Email',
@@ -1377,22 +1294,19 @@ export default {
     optional: 'Tùy Chọn',
     fetching: 'Đang tải',
     ready: 'Xong',
-    ms: 'ms',
+    ms: 'ms'
   },
-
   // Theme
   theme: {
     light: 'Chế độ sáng',
     dark: 'Chế độ tối',
     toggle: 'Chuyển đổi chủ đề'
   },
-
   // Language
   language: {
     select: 'Chọn ngôn ngữ',
     current: 'Ngôn ngữ hiện tại'
   },
-
   // Time Tracking Actions
   timeTrackingActions: {
     recordTime: 'Ghi lại thời gian',
@@ -1400,14 +1314,12 @@ export default {
     logOvertime: 'Ghi lại giờ làm thêm',
     exportReport: 'Xuất báo cáo'
   },
-
   // Recruitment Actions
   recruitmentActions: {
     view: 'Xem',
     schedule: 'Lên lịch',
     reject: 'Từ chối'
   },
-
   // Employee Status
   employeeStatus: {
     active: 'Hoạt động',
@@ -1416,7 +1328,6 @@ export default {
     pending: 'Chờ xử lý',
     outSourceContractor: 'Nhà thầu gia công'
   },
-
   //Employee Position 
   employeePosition: {
     general_manager: 'Quản Lý',
@@ -1427,9 +1338,8 @@ export default {
     managing_director: 'Viện Trưởng',
     support_staff: 'Hỗ Trợ',
     expertGroup: 'Khối Chuyên Gia',
-    employee: 'Nhân Viên',
-  },  
-
+    employee: 'Nhân Viên'
+  },
   // Notifications
   notifications: {
     title: 'Thông báo',
@@ -1483,53 +1393,8 @@ export default {
     // Notification messages
     timeEntriesAwaiting: 'Bạn có {0} mục thời gian đang chờ phê duyệt',
     reviewNow: 'Xem Ngay',
-    viewDetails: 'Xem Chi Tiết',
+    viewDetails: 'Xem Chi Tiết'
   },
-
-  // Performance Appraisal Translation
-  performanceAppraisalPage: {
-    title: 'Đánh Giá Hiệu Suất',
-    overallPerformance: 'Hiệu Suất Tổng Thể',
-    goalsAchieved: 'Mục Tiêu Đạt Được',
-    reviewsThisPeriod: 'Đánh Giá Trong Kỳ Này',
-    avgSkillRating: 'Đánh Giá Kỹ Năng TB',
-    currentGoals: 'Mục Tiêu Hiện Tại',
-    addGoal: 'Thêm Mục Tiêu',
-    // Tabs
-    overview: 'Tổng Quan',
-    goals: 'Mục Tiêu',
-    reviews: 'Đánh Giá',
-  },
-
-  // Employee Details Tabs
-  employeeDetailTabs: {
-    basicInformation: 'Thông Tin Cơ Bản',
-    contact: 'Liên Hệ',
-    documents: 'Tài Liệu',
-  },
-
-  // Employee Edit Form
-  employeeEditForm: {
-    editEmployee: 'Chỉnh Sửa Nhân Viên',
-    contactInformation: 'Thông Tin Liên Hệ',
-    employmentDetails: 'Chi Tiết Việc Làm',
-    email: 'E-Mail',
-    phone: 'Điện Thoại',
-    telephone: 'Số Điện Thoại',
-    address: 'Địa Chỉ',
-    department: 'Phòng Ban',
-    abteilung: 'Phòng Ban',
-    startDate: 'Ngày Bắt Đầu',
-    startdatum: 'Ngày Bắt Đầu',
-    dateOfBirth: 'Ngày Sinh',
-    performance: 'Hiệu Suất',
-    leistung: 'Hiệu Suất',
-    cancel: 'Hủy Bỏ',
-    abbrechen: 'Hủy Bỏ',
-    save: 'Lưu',
-    speichern: 'Lưu',
-  },
-
   // Recruitment Status
   recruitmentStatus: {
     active: 'Hoạt động',
@@ -1546,26 +1411,6 @@ export default {
     technical: 'Kỹ thuật',
     shortlisted: 'Vào danh sách rút gọn'
   },
-
-  // Demo Notifications
-  demoNotifications: {
-    'notif-1': {
-      title: 'Chào mừng đến với hệ thống HR',
-      message: 'Chào mừng bạn đến chế độ demo của hệ thống HR. Hãy thoải mái khám phá!',
-      actionLabel: 'Đi đến bảng điều khiển'
-    },
-    'notif-2': {
-      title: 'Ứng viên mới',
-      message: 'Đã nhận được hồ sơ mới cho vị trí Senior Frontend Developer.',
-      actionLabel: 'Xem hồ sơ'
-    },
-    'notif-3': {
-      title: 'Đến hạn đánh giá hiệu suất',
-      message: 'Các đánh giá hiệu suất hàng quý sẽ đến hạn vào tuần tới.',
-      actionLabel: 'Xem đánh giá'
-    }
-  },
-
   // Performance Goals
   goals: {
     completeReactProject: 'Hoàn thành dự án React',
@@ -1576,14 +1421,12 @@ export default {
     backendDevelopment: 'Phát triển backend',
     teamCollaboration: 'Hợp tác nhóm'
   },
-
   // Review Types
   reviewTypes: {
     quarterlyReview: 'Đánh giá theo quý',
     midYearReview: 'Đánh giá giữa năm',
     annualReview: 'Đánh giá hàng năm'
   },
-
   // Skill Categories
   skillCategories: {
     technical: 'Kỹ thuật',
@@ -1591,7 +1434,6 @@ export default {
     leadership: 'Lãnh đạo',
     communication: 'Giao tiếp'
   },
-
   // Settings
   settings: {
     title: 'Cài Đặt',
@@ -1604,14 +1446,12 @@ export default {
     confirmReset: 'Bạn có chắc chắn muốn đặt lại tất cả cài đặt về mặc định không?',
     importSuccess: 'Đã nhập cài đặt thành công!',
     importError: 'Không thể nhập cài đặt',
-    
     // Tabs
     notifications: 'Thông Báo',
     appearance: 'Giao Diện',
     language: 'Ngôn Ngữ',
     privacy: 'Riêng Tư',
     work: 'Tùy Chọn Công Việc',
-    
     // Notification Settings
     notificationPreferences: 'Tùy Chọn Thông Báo',
     emailNotifications: 'Thông Báo Email',
@@ -1630,19 +1470,16 @@ export default {
     employeeNotifications: 'Cập nhật nhân viên',
     recruitmentNotifications: 'Tuyển dụng',
     systemNotifications: 'Cập nhật hệ thống',
-    
     // Appearance Settings
     appearanceSettings: 'Cài Đặt Giao Diện',
     theme: 'Chủ đề',
     dateFormat: 'Định dạng ngày',
     timeFormat: 'Định dạng giờ',
     itemsPerPage: 'Số mục trên mỗi trang',
-    
     // Language & Region
     languageRegion: 'Ngôn ngữ & Khu vực',
     timezone: 'Múi giờ',
     timezoneNote: 'Hiện đang hiển thị 50 múi giờ đầu tiên',
-    
     // Privacy Settings
     privacySettings: 'Cài Đặt Riêng Tư',
     profileVisibility: 'Hiển thị hồ sơ',
@@ -1653,7 +1490,6 @@ export default {
     contactVisibility: 'Hiển thị thông tin liên hệ',
     showEmail: 'Hiển thị địa chỉ email',
     showPhone: 'Hiển thị số điện thoại',
-    
     // Work Preferences
     workPreferences: 'Tùy Chọn Công Việc',
     defaultDashboard: 'Chế độ xem bảng điều khiển mặc định',
@@ -1666,7 +1502,6 @@ export default {
     weeklyReport: 'Báo cáo hàng tuần',
     weeklyReportDesc: 'Nhận tóm tắt hàng tuần về các hoạt động công việc của bạn'
   },
-
   // Task Listing
   taskListing: {
     title: 'Danh Sách Nhiệm Vụ',
@@ -1689,14 +1524,13 @@ export default {
     statusCompleted: 'Đã hoàn thành',
     pending: 'Đang chờ',
     'in-progress': 'Đang tiến hành',
-    completed: 'Đã hoàn thành',
     teamWorkload: 'Khối lượng công việc của nhóm',
     filterByEmployee: 'Lọc theo nhân viên',
     filterByStatus: 'Lọc theo trạng thái',
     searchTasks: 'Tìm kiếm nhiệm vụ...',
     organization: 'Tổ chức',
     totalTasks: 'Tổng số nhiệm vụ',
-    completed: 'Đã hoàn thành',
+    completed: "Đã hoàn thành",
     progress: 'Tiến Độ',
     avgQuality: 'Chất Lượng',
     avgProgress: 'Tiến Độ',
@@ -1717,9 +1551,8 @@ export default {
     quality: 'Chất Lượng',
     completionDate: 'Ngày Hoàn Thành',
     createdAt: 'Ngày Tạo',
-    updatedAt: 'Ngày Cập Nhật',
+    updatedAt: 'Ngày Cập Nhật'
   },
-
   // Task Review
   taskReview: {
     title: 'Đánh giá Công việc',
@@ -1737,13 +1570,11 @@ export default {
     feedbackPlaceholder: 'Cung cấp phản hồi về tiến độ và chất lượng công việc...',
     selfAssessmentComments: 'Bình luận tự đánh giá',
     reviewType: 'Loại đánh giá',
-    selectEmployee: 'Chọn nhân viên',
     selectMonth: 'Chọn tháng',
     month: 'Tháng',
     year: 'Năm',
     viewReport: 'Xem báo cáo',
     totalTasks: 'Tổng số công việc',
-    completed: 'Hoàn thành',
     inProgress: 'Đang tiến hành',
     overdue: 'Quá hạn',
     completionRate: 'Tỷ lệ hoàn thành',
@@ -1765,9 +1596,6 @@ export default {
     managerComments: 'Bình luận của Quản lý',
     commentPlaceholder: 'Cung cấp phản hồi về chất lượng công việc và mục tiêu cá nhân...',
     taskDetails: 'Chi tiết Công việc',
-    status: 'Trạng thái',
-    priority: 'Ưu tiên',
-    dueDate: 'Ngày đến hạn',
     currentRating: 'Xếp hạng hiện tại',
     submitEvaluation: 'Gửi Đánh giá',
     cancel: 'Hủy',
@@ -1801,12 +1629,12 @@ export default {
     tasks: 'Nhiệm vụ',
     assignedBy: 'Phân công bởi',
     assignedTo: 'Phân công cho',
-    dueDate: 'Ngày đến hạn', 
-    status: 'Trạng thái',
-    priority: 'Ưu tiên',
+    dueDate: "Ngày đến hạn",
+    status: "Trạng thái",
+    priority: "Ưu tiên",
     action: 'Hành động',
     noTasksFound: 'Không tìm thấy nhiệm vụ nào',
-    selectEmployee: 'Chọn nhân viên',
+    selectEmployee: "Chọn nhân viên",
     taskList: 'Danh sách nhiệm vụ',
     employeeSelfAssessment: 'Tự đánh giá của nhân viên',
     employeeBreakdown: 'Phân tích nhân viên',
@@ -1820,53 +1648,45 @@ export default {
     notes: 'Ghi Chú',
     createdAt: 'Ngày Tạo',
     updatedAt: 'Ngày Cập Nhật',
-    completed: 'Nhiệm Vụ Đã Hoàn Thành',
+    completed: "Nhiệm Vụ Đã Hoàn Thành"
   },
-
-  // Performance Appraisal Translation
   performanceAppraisalPage: {
-    title: 'Đánh Giá Hiệu Suất',
-    overallPerformance: 'Hiệu Suất Tổng Thể',
-    goalsAchieved: 'Mục Tiêu Đạt Được',
-    reviewsThisPeriod: 'Đánh Giá Trong Kỳ Này',
-    avgSkillRating: 'Đánh Giá Kỹ Năng TB',
-    currentGoals: 'Mục Tiêu Hiện Tại',
-    addGoal: 'Thêm Mục Tiêu',
-    // Tabs
-    overview: 'Tổng Quan',
-    goals: 'Mục Tiêu',
-    reviews: 'Đánh Giá',
+    title: "Đánh Giá Hiệu Suất",
+    overallPerformance: "Hiệu Suất Tổng Thể",
+    goalsAchieved: "Mục Tiêu Đạt Được",
+    reviewsThisPeriod: "Đánh Giá Trong Kỳ Này",
+    avgSkillRating: "Đánh Giá Kỹ Năng TB",
+    currentGoals: "Mục Tiêu Hiện Tại",
+    addGoal: "Thêm Mục Tiêu",
+    overview: "Tổng Quan",
+    goals: "Mục Tiêu",
+    reviews: "Đánh Giá"
   },
-
-  // Employee Details Tabs
   employeeDetailTabs: {
-    basicInformation: 'Thông Tin Cơ Bản',
-    contact: 'Liên Hệ',
-    documents: 'Tài Liệu',
+    basicInformation: "Thông Tin Cơ Bản",
+    contact: "Liên Hệ",
+    documents: "Tài Liệu"
   },
-
-  // Employee Edit Form
   employeeEditForm: {
-    editEmployee: 'Chỉnh Sửa Nhân Viên',
-    contactInformation: 'Thông Tin Liên Hệ',
-    employmentDetails: 'Chi Tiết Việc Làm',
-    email: 'E-Mail',
-    phone: 'Điện Thoại',
-    telephone: 'Số Điện Thoại',
-    address: 'Địa Chỉ',
-    department: 'Phòng Ban',
-    abteilung: 'Phòng Ban',
-    startDate: 'Ngày Bắt Đầu',
-    startdatum: 'Ngày Bắt Đầu',
-    dateOfBirth: 'Ngày Sinh',
-    performance: 'Hiệu Suất',
-    leistung: 'Hiệu Suất',
-    cancel: 'Hủy Bỏ',
-    abbrechen: 'Hủy Bỏ',
-    save: 'Lưu',
-    speichern: 'Lưu',
+    editEmployee: "Chỉnh Sửa Nhân Viên",
+    contactInformation: "Thông Tin Liên Hệ",
+    employmentDetails: "Chi Tiết Việc Làm",
+    email: "E-Mail",
+    phone: "Điện Thoại",
+    telephone: "Số Điện Thoại",
+    address: "Địa Chỉ",
+    department: "Phòng Ban",
+    abteilung: "Phòng Ban",
+    startDate: "Ngày Bắt Đầu",
+    startdatum: "Ngày Bắt Đầu",
+    dateOfBirth: "Ngày Sinh",
+    performance: "Hiệu Suất",
+    leistung: "Hiệu Suất",
+    cancel: "Hủy Bỏ",
+    abbrechen: "Hủy Bỏ",
+    save: "Lưu",
+    speichern: "Lưu"
   },
-
   // Department Pie Chart Names
   departments: {
     all: 'Tất Cả',
@@ -1881,9 +1701,8 @@ export default {
     sales: 'Bán Hàng',
     marketing: 'Tiếp Thị',
     design: 'Thiết Kế',
-    part_time_employee: 'Khối Chuyên Gia',
+    part_time_employee: 'Khối Chuyên Gia'
   },
-
   // Control Panel
   controlPanel: {
     refresh: 'Làm Mới',
@@ -1946,7 +1765,7 @@ export default {
       visitsByBrowser: 'Lượt truy cập theo trình duyệt',
       visitsByBrowserDesc: 'Biểu đồ này hiển thị số lượt truy cập theo từng trình duyệt trong khoảng thời gian đã chọn.',
       visitsByIp: 'Lượt truy cập theo IP',
-      visitsByIpDesc: 'Biểu đồ này hiển thị số lượt truy cập theo từng địa chỉ IP trong khoảng thời gian đã chọn.',
+      visitsByIpDesc: 'Biểu đồ này hiển thị số lượt truy cập theo từng địa chỉ IP trong khoảng thời gian đã chọn.'
     },
     roles: {
       admin: 'Quản Trị Viên',
@@ -1955,7 +1774,7 @@ export default {
       employee: 'Nhân Viên',
       viewer: 'Người Xem',
       demoAdmin: 'Quản Trị Viên-Demo',
-      hrAdmin: 'Quản Trị Viên Nhân Sự',
+      hrAdmin: 'Quản Trị Viên Nhân Sự'
     },
     roleDesc: {
       admin: 'Quyền truy cập toàn bộ hệ thống với tất cả các đặc quyền quản trị bao gồm quản lý người dùng, cài đặt hệ thống và kiểm soát dữ liệu hoàn toàn',
@@ -1964,7 +1783,7 @@ export default {
       manager: 'Giám sát thành viên nhóm, phê duyệt chấm công và quản lý đánh giá hiệu suất',
       employee: 'Truy cập thông tin cá nhân, gửi bản ghi giờ làm và xem dữ liệu hiệu suất của bản thân',
       viewer: 'Quyền truy cập chỉ xem đối với báo cáo, bảng điều khiển và thông tin hệ thống hạn chế',
-      demoAdmin: 'Chế độ demo sử dụng localstorage để mô phỏng quyền quản trị; phiên bản chính thức sử dụng cơ sở dữ liệu backend để đồng bộ dữ liệu',
+      demoAdmin: 'Chế độ demo sử dụng localstorage để mô phỏng quyền quản trị; phiên bản chính thức sử dụng cơ sở dữ liệu backend để đồng bộ dữ liệu'
     },
     uploadAvatar: 'Tải lên ảnh đại diện',
     avatarUpdated: 'Cập nhật ảnh đại diện thành công!',
@@ -2005,9 +1824,8 @@ export default {
     restoreAllDemoData: "Khôi phục tất cả dữ liệu demo",
     switchToDemoEmployee: 'Chuyển Sang Nhân Viên',
     switchToDemoAdmin: 'Chuyển Sang Quản Trị Viên',
-    demoRoleOnly: 'Tính năng này chỉ khả dụng ở chế độ demo',
+    demoRoleOnly: 'Tính năng này chỉ khả dụng ở chế độ demo'
   },
-
   // Production Help Center (vi)
   prodHelp: {
     title: 'Hướng Dẫn Sử Dụng',
@@ -2019,27 +1837,27 @@ export default {
     item: {
       observability: 'Bảng điều khiển và cảnh báo đang hoạt động',
       rollbacks: 'Kế hoạch rollback đã được kiểm thử',
-      backups: 'Sao lưu đã được xác minh',
+      backups: 'Sao lưu đã được xác minh'
     },
     observability: {
       title: 'Khả năng quan sát: log, metric, trace',
-      description: 'Đảm bảo ngân sách lỗi, log có cấu trúc, bảng điều khiển độ trễ 95/99 và lấy mẫu trace phù hợp cho production.',
+      description: 'Đảm bảo ngân sách lỗi, log có cấu trúc, bảng điều khiển độ trễ 95/99 và lấy mẫu trace phù hợp cho production.'
     },
     rollouts: {
       title: 'Triển khai an toàn và feature flag',
-      description: 'Sử dụng triển khai dần dần với health check, playbook rollback và flag để nhanh chóng vô hiệu hóa các đường dẫn mã rủi ro.',
+      description: 'Sử dụng triển khai dần dần với health check, playbook rollback và flag để nhanh chóng vô hiệu hóa các đường dẫn mã rủi ro.'
     },
     security: {
       title: 'Bảo mật và quản lý bí mật',
-      description: 'Xoay vòng khóa, áp dụng đặc quyền tối thiểu, bật audit log và yêu cầu MFA cho vai trò quản trị.',
+      description: 'Xoay vòng khóa, áp dụng đặc quyền tối thiểu, bật audit log và yêu cầu MFA cho vai trò quản trị.'
     },
     performance: {
       title: 'Ngân sách hiệu năng',
-      description: 'Theo dõi thời gian cold start và hot path. Đặt ngân sách cho độ trễ API, truy vấn SQL và TTI frontend.',
+      description: 'Theo dõi thời gian cold start và hot path. Đặt ngân sách cho độ trễ API, truy vấn SQL và TTI frontend.'
     },
     resilience: {
       title: 'Sao lưu và khả năng phục hồi',
-      description: 'Xác minh sao lưu tự động, chiến lược DR, giới hạn tốc độ và circuit breaker cho các phụ thuộc phía dưới.',
+      description: 'Xác minh sao lưu tự động, chiến lược DR, giới hạn tốc độ và circuit breaker cho các phụ thuộc phía dưới.'
     },
     tags: {
       reliability: 'độ tin cậy',
@@ -2048,10 +1866,9 @@ export default {
       safety: 'an toàn',
       security: 'bảo mật',
       performance: 'hiệu năng',
-      resilience: 'khả năng phục hồi',
-    },
+      resilience: 'khả năng phục hồi'
+    }
   },
-
   // Demo Help Center
   help: {
     containerLabel: 'Trung Tâm Trợ Giúp',
@@ -2067,14 +1884,12 @@ export default {
       title: 'QUAN TRỌNG: Hạn Chế Bản Demo!',
       body: 'DỮ LIỆU ĐƯỢC LƯU TRỮ CỤC BỘ - Không Đồng Bộ Qua Các Thiết Bị. Dữ liệu có thể được khôi phục trong Bảng Điều Khiển.'
     },
-
     features: {
       section: 'Tính năng Nâng Cao & Theo Ngữ Cảnh',
       defaultTitle: 'Tính Năng Ẩn & Mẹo Chuyên Nghiệp',
       contextTitle: 'Mẹo theo ngữ cảnh cho {context}',
       restricted: 'BỊ HẠN CHẾ',
       empty: 'Không tìm thấy mẹo nâng cao cho ngữ cảnh: "{context}". Hiển thị tất cả các tính năng bên dưới.',
-
       // Per-feature entries (match HELP_FEATURES ids used by components)
       feature_1: {
         title: 'Tính năng ẩn: Chỉnh Sửa Hàng Loạt',
@@ -2093,7 +1908,6 @@ export default {
         description: 'Truy cập cài đặt bố cục bảng điều khiển bằng cách nhấp avatar hồ sơ ở góc trên bên phải. Bạn có thể chuyển sang Chế độ Tối và điều chỉnh mật độ bảng ở đây.'
       }
     },
-
     // Individual feature translations (map to HELP_FEATURES ids)
     features_map: {
       feature_1: {
@@ -2113,7 +1927,6 @@ export default {
         description: 'Truy cập cài đặt bố cục bảng điều khiển bằng cách nhấp avatar hồ sơ ở góc trên bên phải. Bạn có thể chuyển sang Chế độ Tối và điều chỉnh mật độ bảng ở đây.'
       }
     },
-
     // Tag translations (keys are normalized by removing spaces and lowercasing)
     tags: {
       advanced: 'Nâng Cao',
@@ -2126,7 +1939,6 @@ export default {
       'hard-to-find': 'Khó Tìm',
       personalization: 'Cá Nhân Hóa'
     },
-
     showcase: {
       section: 'Hướng dẫn sản phẩm dạng hoạt hình',
       label: 'Hướng dẫn sản phẩm dạng hoạt hình',
@@ -2137,34 +1949,28 @@ export default {
       sync: 'Mọi thứ luôn được đồng bộ',
       syncDesc: 'Các mục nhập, tệp và mục tiêu cập nhật bảng điều khiển và báo cáo ngay lập tức.',
       live: 'Trực tiếp',
-
       time: {
         title: 'Quản lý thời gian',
         desc: 'Theo dõi chấm công, phê duyệt, làm thêm giờ và nhật ký công việc tại một nơi.'
       },
-
       upload: {
         title: 'Tải lên tệp',
         desc: 'Lưu trữ an toàn hợp đồng, giấy tờ tùy thân và bằng chứng với lịch sử sẵn sàng cho kiểm toán.'
       },
-
       dashboard: {
         title: 'Bảng điều khiển & biểu đồ',
         desc: 'Trực quan hóa mức độ sử dụng, chuyên cần và chỉ số sức khỏe theo thời gian thực.'
       },
-
       tasks: {
         title: 'Công việc & mục tiêu',
         desc: 'Gán người phụ trách, thời hạn và danh sách kiểm tra được đồng bộ với dữ liệu nhân sự.'
       },
-
       reporting: {
         title: 'Báo cáo',
         desc: 'Xuất PDF/CSV và lên lịch bản tổng hợp định kỳ cho quản lý.'
       }
     }
   },
-
   // Email Management
   emailManagement: {
     title: 'Quản lý Email người dùng',
@@ -2189,16 +1995,9 @@ export default {
     errorLoadingUsers: 'Lỗi tải người dùng',
     fillAllFields: 'Vui lòng điền tất cả các trường'
   },
-
   // Personal Goals
   personalGoals: {
-    goalTitle: 'Tiêu đề mục tiêu',
-    goalTitlePlaceholder: 'Nhập tiêu đề mục tiêu',
-    goalDescription: 'Mô tả mục tiêu',
-    goalDescriptionPlaceholder: 'Nhập mô tả mục tiêu',
-    targetDate: 'Ngày mục tiêu',
     setTargetDate: 'Đặt ngày mục tiêu',
-    createGoal: 'Tạo mục tiêu',
     goalCreated: 'Mục tiêu, đã được tạo thành công',
     errorCreatingGoal: 'Lỗi khi tạo mục tiêu',
     personalGoals: 'Mục tiêu cá nhân',
@@ -2210,25 +2009,12 @@ export default {
     confirmDeleteGoal: 'Bạn có chắc chắn muốn xóa mục tiêu này?',
     goalDeleted: 'Mục tiêu đã được xóa thành công',
     errorDeletingGoal: 'Lỗi khi xóa mục tiêu',
-    title: 'Đánh Giá Hiệu Suất Công Việc',
     subtitle: 'Tiến độ công việc hàng tháng và đánh giá chất lượng',
     individual: 'Cá Nhân',
     team: 'Nhóm',
-    totalTasks: 'Tổng Công Việc',
-    completed: 'Hoàn Thành',
-    high: 'Cao',
-    medium: 'Trung Bình',
-    low: 'Thấp',
     taskStatus: 'Trạng Thái Công Việc',
     completedTasks: 'Công Việc Hoàn Thành',
-    midYear: 'Giữa Năm',
-    quarterly: 'Hàng Quý',
-    annual: 'Hàng Năm',
-    reviewsThisPeriod: 'Đánh Giá Trong Kỳ Này',
-    avgSkillRating: 'Đánh Giá Kỹ Năng TB',
-    totalTasks: 'Tổng Công Việc',
-    completed: 'Hoàn Thành',
-    inProgress: 'Đang Thực Hiện',
+    totalTasks: "Tổng Công Việc",
     overdue: 'Quá Hạn',
     completionRate: 'Tỷ Lệ Hoàn Thành',
     avgQuality: 'Chất Lượng TB',
@@ -2249,8 +2035,6 @@ export default {
     managerComments: 'Nhận Xét Của Quản Lý',
     commentPlaceholder: 'Cung cấp phản hồi về chất lượng và hiệu suất công việc...',
     taskDetails: 'Chi Tiết Công Việc',
-    status: 'Trạng Thái',
-    priority: 'Ưu Tiên',
     dueDate: 'Ngày Đến Hạn',
     currentRating: 'Xếp Hạng Hiện Tại',
     submitEvaluation: 'Gửi Đánh Giá',
@@ -2258,31 +2042,20 @@ export default {
     evaluate: 'Đánh Giá',
     managerEvaluation: 'Đánh Giá Của Quản Lý',
     created: 'Tạo',
-    due: 'Hạn',
-    createGoal: 'Tạo Mục Tiêu',
+    createGoal: "Tạo Mục Tiêu",
     createGoalSubtitle: 'Đặt mục tiêu mới cho nhân viên',
     createPersonalGoal: 'Đặt mục tiêu cá nhân mới',
     assignTo: 'Giao Cho',
-    goalTitle: 'Tiêu Đề Mục Tiêu',
-    goalTitlePlaceholder: 'Nhập tiêu đề mục tiêu...',
-    goalDescription: 'Mô Tả',
-    goalDescriptionPlaceholder: 'Mô tả chi tiết mục tiêu...',
     goalPermissionAdmin: 'Với tư cách quản trị viên/quản lý, bạn có thể tạo mục tiêu cho bất kỳ nhân viên nào',
     goalPermissionEmployee: 'Bạn chỉ có thể tạo mục tiêu cho chính mình',
     all: 'Tất Cả',
-    pending: 'Chờ Xử Lý',
-    title: 'Đánh giá hiệu suất',
+    title: "Đánh Giá Hiệu Suất Công Việc",
     overallRating: 'Đánh giá tổng thể',
     reviewPeriod: 'Kỳ đánh giá',
     goals: 'Mục tiêu và đối tượng',
     achievements: 'Thành tích chính',
     areasForImprovement: 'Lĩnh vực cần cải thiện',
     skillsAssessment: 'Đánh giá kỹ năng',
-    technical: 'Kỹ năng kỹ thuật',
-    communication: 'Giao tiếp',
-    leadership: 'Lãnh đạo',
-    teamwork: 'Làm việc nhóm',
-    problemSolving: 'Giải quyết vấn đề',
     rating: 'Đánh giá',
     excellent: 'Xuất sắc',
     good: 'Tốt',
@@ -2302,17 +2075,17 @@ export default {
     q4_2026: 'Q4 / 2026',
     overallPerformance: 'Hiệu suất tổng thể',
     goalsCompleted: 'Mục tiêu hoàn thành',
-    reviewsThisPeriod: 'Đánh giá kỳ này',
-    avgSkillRating: 'Đánh giá kỹ năng trung bình',
-    completed: 'Hoàn thành',
-    inProgress: 'Đang thực hiện',
-    pending: 'Chờ xử lý',
+    reviewsThisPeriod: "Đánh Giá Trong Kỳ Này",
+    avgSkillRating: "Đánh giá kỹ năng trung bình",
+    completed: "Hoàn thành",
+    inProgress: "Đang thực hiện",
+    pending: "Chờ xử lý",
     // Review Types
     weekly: 'Hàng tuần',
     monthly: 'Hàng tháng',
-    quarterly: 'Hàng quý',
-    midYear: 'Giữa năm',
-    annual: 'Hàng năm',
+    quarterly: "Hàng quý",
+    midYear: "Giữa năm",
+    annual: "Hàng năm",
     probation: 'Thử việc',
     adHoc: 'Đột xuất',
     // Period Types
@@ -2328,7 +2101,6 @@ export default {
     q3: 'Q3 (Tháng 7-9)',
     q4: 'Q4 (Tháng 10-12)',
     reviewPeriodPlaceholder: 'Ví dụ: Q4 2024',
-    newReview: 'Đánh giá hiệu suất mới',
     reviewType: 'Loại đánh giá',
     ratingUpdated: 'Đã cập nhật đánh giá hiệu suất thành công!',
     ratingUpdateError: 'Không thể cập nhật đánh giá hiệu suất',
@@ -2352,38 +2124,31 @@ export default {
     in_progress: 'đang thực hiện',
     clickToRate: 'Nhấp vào sao để cập nhật đánh giá nhân viên',
     deadline: 'Hạn chót',
-    due: 'Đến hạn',
+    due: "Đến hạn",
     complete: 'hoàn thành',
     viewDetails: 'Xem chi tiết',
     // Reviews section
     performanceReviews: 'Đánh giá hiệu suất',
-    newReview: 'Đánh giá mới',
+    newReview: "Đánh giá hiệu suất mới",
     by: 'bởi',
     viewFullReview: 'Xem đánh giá đầy đủ',
-    // General
-    status: 'Trạng thái',
+    status: "Trạng thái",
     actions: 'Hành động',
     edit: 'Chỉnh sửa',
     view: 'Xem',
     progressSaved: 'Tiến độ đã được lưu thành công!',
     progressSaveError: 'Không thể lưu tiến độ',
-    // Goal form fields
-    goalTitle: 'Tiêu đề mục tiêu',
-    goalTitlePlaceholder: 'Nhập tiêu đề mục tiêu',
-    goalDescription: 'Mô tả',
-    goalDescriptionPlaceholder: 'Mô tả các mục tiêu',
+    goalTitle: "Tiêu đề mục tiêu",
+    goalTitlePlaceholder: "Nhập tiêu đề mục tiêu",
+    goalDescription: "Mô tả mục tiêu",
+    goalDescriptionPlaceholder: "Mô tả chi tiết mục tiêu...",
     category: 'Danh mục',
-    general: 'Chung',
-    technical: 'Kỹ thuật',
-    leadership: 'Lãnh đạo',
-    project: 'Dự án',
-    professionalDevelopment: 'Phát triển nghề nghiệp',
-    priority: 'Ưu tiên',
-    low: 'Thấp',
-    medium: 'Trung bình',
-    high: 'Cao',
+    priority: "Ưu tiên",
+    low: "Thấp",
+    medium: "Trung bình",
+    high: "Cao",
     critical: 'Quan trọng',
-    targetDate: 'Ngày mục tiêu',
+    targetDate: "Ngày mục tiêu",
     cancelled: 'Đã hủy',
     onHold: 'Tạm dừng',
     reviewDetails: 'Chi tiết đánh giá hiệu suất',
@@ -2393,24 +2158,23 @@ export default {
     reviewComments: 'Bình luận đánh giá',
     noComments: 'Chưa có bình luận',
     errorFetchingComments: 'Lỗi khi tải bình luận',
-    general: 'Chung',
-    technical: 'Kỹ thuật',
-    leadership: 'Lãnh đạo',
-    project: 'Dự án',
-    communication: 'Giao tiếp',
+    general: "Chung",
+    technical: "Kỹ năng kỹ thuật",
+    leadership: "Lãnh đạo",
+    project: "Dự án",
+    communication: "Giao tiếp",
     timeManagement: 'Quản lý thời gian',
-    problemSolving: 'Giải quyết vấn đề',
+    problemSolving: "Giải quyết vấn đề",
     creativity: 'Sáng tạo',
-    teamwork: 'Làm việc nhóm',
+    teamwork: "Làm việc nhóm",
     adaptability: 'Thích nghi',
     emotionalIntelligence: 'Trí tuệ cảm xúc',
     criticalThinking: 'Tư duy phản biện',
-    professionalDevelopment: 'Phát triển chuyên nghiệp',
+    professionalDevelopment: "Phát triển chuyên nghiệp",
     goalDeletedSuccess: 'Xóa mục tiêu thành công!',
     goalDeletedError: 'Không thể xóa mục tiêu',
-    goalsInProgress: 'Mục Tiêu Đang Thực Hiện',
+    goalsInProgress: 'Mục Tiêu Đang Thực Hiện'
   },
-
   // Morphing Showcase
   morphingShowcase: {
     title: 'Tích Hợp Morphing Flubber',
@@ -2438,9 +2202,8 @@ export default {
     manualControl: 'Điều khiển thủ công',
     responsiveDesign: 'Thiết kế đáp ứng',
     customizableTiming: 'Thời gian có thể tùy chỉnh',
-    multipleEasingFunctions: 'Nhiều hàm làm mềm',
+    multipleEasingFunctions: 'Nhiều hàm làm mềm'
   },
-
   // Flubber Demo
   flubberDemo: {
     title: 'Demo Morphing SVG Flubber',
@@ -2465,36 +2228,86 @@ export default {
     manualShapeSelection: 'Lựa chọn hình dạng thủ công',
     responsiveAccessible: 'Đáp ứng và dễ tiếp cận',
     customizableDuration: 'Thời lượng hoạt ảnh có thể tùy chỉnh',
-    easingFunctions: 'Các hàm làm mềm cho chuyển động tự nhiên',
+    easingFunctions: 'Các hàm làm mềm cho chuyển động tự nhiên'
   },
   demoEmployees: {
-  'demo-emp-1': { name: 'Quản Trị Viên', location: 'Trụ Sở Chính' },
-  'demo-emp-2': { name: 'Kỹ Sư Công Nghệ', location: 'Trụ Sở Chính' },
-  'demo-emp-3': { name: 'Nhà Thiết Kế UI/UX', location: 'Từ Xa' },
-  'demo-emp-4': { name: 'Chuyên Viên Tiếp Thị', location: 'Trụ Sở Chính' },
-  'demo-emp-5': { name: 'Nhân Viên Kinh Doanh', location: 'Từ Xa' }
+    'demo-emp-1': {
+      name: 'Quản Trị Viên',
+      location: 'Trụ Sở Chính'
+    },
+    'demo-emp-2': {
+      name: 'Kỹ Sư Công Nghệ',
+      location: 'Trụ Sở Chính'
+    },
+    'demo-emp-3': {
+      name: 'Nhà Thiết Kế UI/UX',
+      location: 'Từ Xa'
+    },
+    'demo-emp-4': {
+      name: 'Chuyên Viên Tiếp Thị',
+      location: 'Trụ Sở Chính'
+    },
+    'demo-emp-5': {
+      name: 'Nhân Viên Kinh Doanh',
+      location: 'Từ Xa'
+    }
   },
   locations: {
     headquarters: 'Trụ Sở Chính',
     remote: 'Từ Xa'
   },
   demoTasks: {
-    'task-1': { title: 'Phân Tích Báo Cáo Q4', description: 'Phân tích toàn diện về các chỉ số hiệu suất hàng quý và xu hướng - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm' },
-    'task-2': { title: 'Cập Nhật Sổ Tay Nhân Viên', description: 'Sửa đổi và cập nhật sổ tay nhân viên với các chính sách làm việc từ xa - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm' },
-    'task-3': { title: 'Sửa Lỗi Đăng Nhập', description: 'Gỡ lỗi và giải quyết vấn đề đăng nhập của người dùng trên thiết bị di động - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm' },
-    'task-4': { title: 'Thiết Kế Dashboard Mới', description: 'Tạo wireframes và mockups cho dashboard phân tích - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm' },
-    'task-5': { title: 'Đánh Giá Hiệu Quả Chiến Dịch', description: 'Phân tích kết quả và ROI chiến dịch marketing Q3 - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm' },
-    'task-6': { title: 'Hướng Dẫn Khách Hàng Mới', description: 'Hoàn thành quy trình onboarding cho khách hàng doanh nghiệp mới - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm' },
-    'task-7': { title: 'Tài Liệu API', description: 'Viết tài liệu API toàn diện cho phiên bản 2.0 - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm' }
+    'task-1': {
+      title: 'Phân Tích Báo Cáo Q4',
+      description: 'Phân tích toàn diện về các chỉ số hiệu suất hàng quý và xu hướng - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm'
+    },
+    'task-2': {
+      title: 'Cập Nhật Sổ Tay Nhân Viên',
+      description: 'Sửa đổi và cập nhật sổ tay nhân viên với các chính sách làm việc từ xa - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm'
+    },
+    'task-3': {
+      title: 'Sửa Lỗi Đăng Nhập',
+      description: 'Gỡ lỗi và giải quyết vấn đề đăng nhập của người dùng trên thiết bị di động - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm'
+    },
+    'task-4': {
+      title: 'Thiết Kế Dashboard Mới',
+      description: 'Tạo wireframes và mockups cho dashboard phân tích - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm'
+    },
+    'task-5': {
+      title: 'Đánh Giá Hiệu Quả Chiến Dịch',
+      description: 'Phân tích kết quả và ROI chiến dịch marketing Q3 - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm'
+    },
+    'task-6': {
+      title: 'Hướng Dẫn Khách Hàng Mới',
+      description: 'Hoàn thành quy trình onboarding cho khách hàng doanh nghiệp mới - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm'
+    },
+    'task-7': {
+      title: 'Tài Liệu API',
+      description: 'Viết tài liệu API toàn diện cho phiên bản 2.0 - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm'
+    }
   },
   demoGoals: {
-    'goal-1': { title: 'Cải Thiện Hiệu Quả Nhóm', description: 'Tăng năng suất của nhóm lên 20% trong quý tới - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm' },
-    'goal-2': { title: 'Học React Native', description: 'Thành thạo React Native để phát triển ứng dụng di động - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm' },
-    'goal-3': { title: 'Chứng Chỉ UX', description: 'Đạt chứng chỉ Google UX Thiết Kế Chuyên Nghiệp - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm' },
-    'goal-4': { title: 'Tăng Khách Hàng Tiềm Năng', description: 'Đạt tăng 30% khách hàng tiềm năng qua các chiến dịch marketing - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm' },
-    'goal-5': { title: 'Ký Hợp Đồng Doanh Nghiệp', description: 'Ký 5 hợp đồng doanh nghiệp trị giá trên $500K mỗi hợp đồng - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm' }
+    'goal-1': {
+      title: 'Cải Thiện Hiệu Quả Nhóm',
+      description: 'Tăng năng suất của nhóm lên 20% trong quý tới - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm'
+    },
+    'goal-2': {
+      title: 'Học React Native',
+      description: 'Thành thạo React Native để phát triển ứng dụng di động - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm'
+    },
+    'goal-3': {
+      title: 'Chứng Chỉ UX',
+      description: 'Đạt chứng chỉ Google UX Thiết Kế Chuyên Nghiệp - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm'
+    },
+    'goal-4': {
+      title: 'Tăng Khách Hàng Tiềm Năng',
+      description: 'Đạt tăng 30% khách hàng tiềm năng qua các chiến dịch marketing - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm'
+    },
+    'goal-5': {
+      title: 'Ký Hợp Đồng Doanh Nghiệp',
+      description: 'Ký 5 hợp đồng doanh nghiệp trị giá trên $500K mỗi hợp đồng - LƯU Ý: Dữ Liệu Demo Này Không Chỉnh Sửa Được. Vui Lòng Tự Thêm Dữ Liệu Để Thử Nghiệm'
+    }
   },
-    
   demoReviews: {
     'review-1': {
       reviewPeriod: 'Q4 2024',
@@ -2511,13 +2324,23 @@ export default {
       comments: 'Đóng góp tuyệt vời cho đội'
     }
   },
-
   demoSkills: {
-    'skill-1': { name: 'React', category: 'Kỹ thuật', proficiencyLevel: 'Chuyên gia' },
-    'skill-2': { name: 'TypeScript', category: 'Kỹ thuật', proficiencyLevel: 'Nâng cao' },
-    'skill-3': { name: 'UI/UX Design', category: 'Thiết kế', proficiencyLevel: 'Chuyên gia' }
+    'skill-1': {
+      name: 'React',
+      category: 'Kỹ thuật',
+      proficiencyLevel: 'Chuyên gia'
+    },
+    'skill-2': {
+      name: 'TypeScript',
+      category: 'Kỹ thuật',
+      proficiencyLevel: 'Nâng cao'
+    },
+    'skill-3': {
+      name: 'UI/UX Design',
+      category: 'Thiết kế',
+      proficiencyLevel: 'Chuyên gia'
+    }
   },
-
   demoFeedback: {
     'feedback-1': {
       type: 'Đánh giá đồng nghiệp',
@@ -2528,29 +2351,44 @@ export default {
       text: 'Làm việc xuất sắc với hệ thống thiết kế mới. Tiếp tục phát huy nhé!'
     }
   },
-
   demoJobs: {
     'job-1': {
       title: 'Lập trình viên Frontend Senior',
       description: 'Chúng tôi đang tìm một lập trình viên Frontend có kinh nghiệm để tham gia đội và phát triển các ứng dụng web tuyệt vời.',
       location: 'Làm việc từ xa',
       salaryRange: '$90k - $120k',
-      requirements: { 0: 'React', 1: 'TypeScript', 2: 'Tailwind CSS' }
+      requirements: {
+        0: 'React',
+        1: 'TypeScript',
+        2: 'Tailwind CSS'
+      }
     },
     'job-2': {
       title: 'Nhà thiết kế sản phẩm',
       description: 'Tham gia đội thiết kế của chúng tôi để tạo ra trải nghiệm người dùng tuyệt vời và định hình tương lai sản phẩm.',
       location: 'New York',
       salaryRange: '$80k - $100k',
-      requirements: { 0: 'Figma', 1: 'UI/UX', 2: 'Lập mô hình (Prototyping)' }
+      requirements: {
+        0: 'Figma',
+        1: 'UI/UX',
+        2: 'Lập mô hình (Prototyping)'
+      }
     }
   },
-
   demoApplicants: {
-    'app-1': { firstName: 'John', lastName: 'Doe', education: 'Cử nhân Khoa học Máy tính', currentPosition: 'Nhà phát triển Cao cấp' },
-    'app-2': { firstName: 'Jane', lastName: 'Smith', education: 'Thạc sĩ Thiết kế', currentPosition: 'Trưởng nhóm UX' }
+    'app-1': {
+      firstName: 'John',
+      lastName: 'Doe',
+      education: 'Cử nhân Khoa học Máy tính',
+      currentPosition: 'Nhà phát triển Cao cấp'
+    },
+    'app-2': {
+      firstName: 'Jane',
+      lastName: 'Smith',
+      education: 'Thạc sĩ Thiết kế',
+      currentPosition: 'Trưởng nhóm UX'
+    }
   },
-
   demoApplications: {
     'appl-1': {
       status: 'Đang xem xét',
@@ -2561,7 +2399,6 @@ export default {
       notes: 'Portfolio xuất sắc và kỹ năng thiết kế tốt'
     }
   },
-
   demoInterviews: {
     'int-1': {
       status: 'Đã lên lịch',
@@ -2569,22 +2406,21 @@ export default {
       notes: 'Xem xét portfolio và đánh giá kỹ thuật'
     }
   },
-
   demoNotifications: {
     'notif-1': {
-      title: 'Chào mừng đến với hệ thống HR',
-      message: 'Chào mừng bạn đến chế độ demo của hệ thống HR. Hãy thoải mái khám phá mọi tính năng!',
-      actionLabel: 'Đi đến bảng điều khiển'
+      title: "Chào mừng đến với hệ thống HR",
+      message: "Chào mừng bạn đến chế độ demo của hệ thống HR. Hãy thoải mái khám phá mọi tính năng!",
+      actionLabel: "Đi đến bảng điều khiển"
     },
     'notif-2': {
-      title: 'Nhiệm vụ mới được giao',
-      message: 'Bạn được giao một nhiệm vụ mới: Xem xét hiệu suất Q3',
-      actionLabel: 'Xem nhiệm vụ'
+      title: "Nhiệm vụ mới được giao",
+      message: "Bạn được giao một nhiệm vụ mới: Xem xét hiệu suất Q3",
+      actionLabel: "Xem nhiệm vụ"
     },
     'notif-3': {
-      title: 'Nhắc lịch họp',
-      message: 'Họp đội trong 30 phút nữa',
-      actionLabel: 'Xem lịch'
+      title: "Đến hạn đánh giá hiệu suất",
+      message: "Các đánh giá hiệu suất hàng quý sẽ đến hạn vào tuần tới.",
+      actionLabel: "Xem đánh giá"
     }
   }
 };

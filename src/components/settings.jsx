@@ -31,6 +31,7 @@ import { ensureValidSession } from '../hooks/useSessionGuard.js';
 import * as settingsService from '../services/settingsService';
 import { ShinyButton } from './ui/shiny-button';
 import { PageLiveClock } from './ui/page-live-clock';
+import { TimePicker } from './ui/time-picker.jsx';
 import { cn } from '@/lib/utils';
 
 const Settings = () => {
@@ -599,11 +600,11 @@ const Settings = () => {
                       <label className={`block text-sm font-medium ${text.secondary} mb-2`}>
                         {t('settings.autoClockOutTime', 'Auto Clock Out Time')}
                       </label>
-                      <input
-                        type="time"
-                        value={settings?.auto_clock_out_time || '18:00:00'}
+                      <TimePicker
+                        value={(settings?.auto_clock_out_time || '18:00').toString().slice(0, 5)}
                         onChange={(e) => handleSettingChange('auto_clock_out_time', e.target.value)}
-                        className={`px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        inputClassName={`px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        defaultOpenTime="18:00"
                       />
                     </div>
                   )}

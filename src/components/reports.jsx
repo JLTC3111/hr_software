@@ -4,6 +4,8 @@ import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from '../contexts/AuthContext';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription, getDemoGoalTitle, getDemoGoalDescription, getDemoTimeEntries } from '../utils/demoHelper';
+import { translateTexts } from '../services/translateService.js';
+import { TranslatedText } from './ui/translated-text.jsx';
 import { 
   Calendar, 
   Download, 
@@ -55,6 +57,7 @@ import { MagicBento } from './ui/magic-bento';
 import { SlidingNumber } from './motion-primitives';
 import { NumberTicker } from './ui/number-ticker';
 import { PageLiveClock } from './ui/page-live-clock';
+import { DatePicker } from './ui/date-picker.jsx';
 import { cn } from '@/lib/utils';
 import {
   choosePdfFont,
@@ -801,7 +804,7 @@ const Reports = () => {
       : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
   );
 
-  const buildTimeEntryCsvRows = (timeEntries) => {
+  const buildTimeEntryCsvRows = (timeEntries, ugcMap = null) => {
     const headers = [
       t('reports.excel.headers.dataType', 'Data Type'),
       t('employees.name', 'Employee Name'),
@@ -828,14 +831,14 @@ const Reports = () => {
       entry.hours ? formatHours(entry.hours) : '0.0',
       translateHourType(entry.hour_type) || '',
       translateStatus(entry.status) || '',
-      translateNotes(entry.notes) || '',
+      translateNotes(entry.notes, ugcMap) || '',
       new Date(entry.created_at).toLocaleString()
     ]);
 
     return { headers, rows };
   };
 
-  const buildTaskCsvRows = (tasks) => {
+  const buildTaskCsvRows = (tasks, ugcMap = null) => {
     const headers = [
       t('reports.excel.headers.dataType', 'Data Type'),
       t('employees.name', 'Employee Name'),
@@ -857,8 +860,8 @@ const Reports = () => {
       t('reports.tasks', 'Tasks'),
       isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || 'Unknown'),
       translateDepartment(task.employee?.department) || '',
-      isDemoMode() ? getDemoTaskTitle(task, t) : (task.title || ''),
-      isDemoMode() ? getDemoTaskDescription(task, t) : (task.description || ''),
+      isDemoMode() ? getDemoTaskTitle(task, t) : mapUgc(ugcMap, task.title || ''),
+      isDemoMode() ? getDemoTaskDescription(task, t) : mapUgc(ugcMap, task.description || ''),
       translatePriority(task.priority) || '',
       translateStatus(task.status) || '',
       task.due_date || '',
@@ -873,7 +876,7 @@ const Reports = () => {
     return { headers, rows };
   };
 
-  const buildGoalCsvRows = (goals) => {
+  const buildGoalCsvRows = (goals, ugcMap = null) => {
     const headers = [
       t('reports.excel.headers.dataType', 'Data Type'),
       t('employees.name', 'Employee Name'),
@@ -893,13 +896,13 @@ const Reports = () => {
       t('reports.personalGoals', 'Personal Goals'),
       isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || 'Unknown'),
       translateDepartment(goal.employee?.department) || '',
-      isDemoMode() ? getDemoGoalTitle(goal, t) : (goal.title || ''),
-      isDemoMode() ? getDemoGoalDescription(goal, t) : (goal.description || ''),
+      isDemoMode() ? getDemoGoalTitle(goal, t) : mapUgc(ugcMap, goal.title || ''),
+      isDemoMode() ? getDemoGoalDescription(goal, t) : mapUgc(ugcMap, goal.description || ''),
       translateCategory(goal.category) || '',
       translateStatus(goal.status) || '',
       goal.progress || 0,
       goal.target_date || '',
-      goal.notes || '',
+      mapUgc(ugcMap, goal.notes || ''),
       new Date(goal.created_at).toLocaleString(),
       new Date(goal.updated_at).toLocaleString()
     ]);
@@ -907,7 +910,7 @@ const Reports = () => {
     return { headers, rows };
   };
 
-  const buildLeaveCsvRows = (leaveRequests) => {
+  const buildLeaveCsvRows = (leaveRequests, ugcMap = null) => {
     const headers = [
       t('reports.excel.headers.dataType', 'Data Type'),
       t('employees.name', 'Employee Name'),
@@ -928,7 +931,7 @@ const Reports = () => {
       `${(req.start_date || '').slice(0, 10)} → ${(req.end_date || req.start_date || '').slice(0, 10)}`,
       req.days_count ?? '',
       translateStatus(req.status) || '',
-      req.reason || '',
+      mapUgc(ugcMap, req.reason || ''),
       new Date(req.created_at).toLocaleString()
     ]);
 
@@ -949,6 +952,10 @@ const Reports = () => {
         alert(t('reports.noData', 'No data available for the selected period'));
         return;
       }
+
+      const ugcMap = await buildUgcTranslateMap(
+        collectExportUgcStrings(timeEntries, tasks, goals, leave)
+      );
 
       const languageName = SUPPORTED_LANGUAGES[currentLanguage]?.name || 'English';
       const employeeName = selectedEmployee !== 'all'
@@ -982,19 +989,19 @@ const Reports = () => {
       }];
 
       if (timeEntries.length > 0) {
-        const timeSection = buildTimeEntryCsvRows(timeEntries);
+        const timeSection = buildTimeEntryCsvRows(timeEntries, ugcMap);
         sections.push({ title: t('reports.timeEntries', 'TIME ENTRIES').toUpperCase(), ...timeSection });
       }
       if (tasks.length > 0) {
-        const taskSection = buildTaskCsvRows(tasks);
+        const taskSection = buildTaskCsvRows(tasks, ugcMap);
         sections.push({ title: t('reports.tasks', 'TASKS').toUpperCase(), ...taskSection });
       }
       if (goals.length > 0) {
-        const goalSection = buildGoalCsvRows(goals);
+        const goalSection = buildGoalCsvRows(goals, ugcMap);
         sections.push({ title: t('reports.personalGoals', 'PERSONAL GOALS').toUpperCase(), ...goalSection });
       }
       if (leave.length > 0) {
-        const leaveSection = buildLeaveCsvRows(leave);
+        const leaveSection = buildLeaveCsvRows(leave, ugcMap);
         sections.push({ title: t('reports.leave', 'LEAVE REQUESTS').toUpperCase(), ...leaveSection });
       }
 
@@ -1086,6 +1093,10 @@ const Reports = () => {
         alert(t('reports.noData', 'No data available for the selected period'));
         return;
       }
+
+      const ugcMap = await buildUgcTranslateMap(
+        collectExportUgcStrings(timeEntries, tasks, goals, leave)
+      );
 
       // Helpers for safe values and typing
       const sanitize = (v) => {
@@ -1802,7 +1813,7 @@ const Reports = () => {
             entry.hours ? Number(formatHours(entry.hours)) : 0,
             translateHourType(entry.hour_type) || '',
             translateStatus(entry.status) || '',
-            translateNotes(entry.notes) || '',
+            translateNotes(entry.notes, ugcMap) || '',
             new Date(entry.created_at).toLocaleString()
           ];
           
@@ -1865,8 +1876,8 @@ const Reports = () => {
           const rowData = [
             isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || 'Unknown'),
             translateDepartment(task.employee?.department) || '',
-            isDemoMode() ? getDemoTaskTitle(task, t) : (task.title || ''),
-            isDemoMode() ? getDemoTaskDescription(task, t) : (task.description || ''),
+            isDemoMode() ? getDemoTaskTitle(task, t) : mapUgc(ugcMap, task.title || ''),
+            isDemoMode() ? getDemoTaskDescription(task, t) : mapUgc(ugcMap, task.description || ''),
             translatePriority(task.priority) || '',
             translateStatus(task.status) || '',
             task.due_date || '',
@@ -1943,13 +1954,13 @@ const Reports = () => {
           const rowData = [
             isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || 'Unknown'),
             translateDepartment(goal.employee?.department) || '',
-            isDemoMode() ? getDemoGoalTitle(goal, t) : (goal.title || ''),
-            isDemoMode() ? getDemoGoalDescription(goal, t) : (goal.description || ''),
+            isDemoMode() ? getDemoGoalTitle(goal, t) : mapUgc(ugcMap, goal.title || ''),
+            isDemoMode() ? getDemoGoalDescription(goal, t) : mapUgc(ugcMap, goal.description || ''),
             translateCategory(goal.category) || '',
             translateStatus(goal.status) || '',
             goal.progress || 0,
             goal.target_date || '',
-            goal.notes || '',
+            mapUgc(ugcMap, goal.notes || ''),
             new Date(goal.created_at).toLocaleString(),
             new Date(goal.updated_at).toLocaleString()
           ];
@@ -2189,7 +2200,8 @@ const Reports = () => {
   };
 
   // Helper function to translate notes with "Entered by admin:" prefix
-  const translateNotes = (notes) => {
+  // When ugcMap is provided (export path), free-text body is looked up from pre-translated strings.
+  const translateNotes = (notes, ugcMap = null) => {
     if (!notes) return '';
     // Check if notes starts with "Entered by admin:" (case insensitive, optional colon)
     const adminPrefixRegex = /^Entered by admin:?\s*/i;
@@ -2197,10 +2209,49 @@ const Reports = () => {
 
     if (match) {
       const translatedPrefix = t('timeTracking.enteredByAdmin', 'Entered by admin:');
+      const body = notes.slice(match[0].length);
+      const translatedBody = ugcMap ? (ugcMap.get(body) ?? body) : body;
       // Replace the matched prefix with the translated one and ensure a space follows
-      return notes.replace(match[0], translatedPrefix + ' '); 
+      return translatedPrefix + ' ' + translatedBody;
     }
-    return notes;
+    return ugcMap ? (ugcMap.get(notes) ?? notes) : notes;
+  };
+
+  const mapUgc = (ugcMap, text) => {
+    if (!text) return '';
+    return ugcMap?.get(text) ?? text;
+  };
+
+  const collectExportUgcStrings = (timeEntries = [], tasks = [], goals = [], leave = []) => {
+    const strings = [];
+    const pushNotesBody = (notes) => {
+      if (!notes) return;
+      const match = String(notes).match(/^Entered by admin:?\s*/i);
+      strings.push(match ? notes.slice(match[0].length) : notes);
+    };
+    timeEntries.forEach((entry) => pushNotesBody(entry.notes));
+    if (!isDemoMode()) {
+      tasks.forEach((task) => {
+        if (task.title) strings.push(task.title);
+        if (task.description) strings.push(task.description);
+      });
+      goals.forEach((goal) => {
+        if (goal.title) strings.push(goal.title);
+        if (goal.description) strings.push(goal.description);
+        if (goal.notes) strings.push(goal.notes);
+      });
+    }
+    leave.forEach((req) => {
+      if (req.reason) strings.push(req.reason);
+    });
+    return strings;
+  };
+
+  const buildUgcTranslateMap = async (strings) => {
+    const unique = [...new Set(strings.filter((s) => typeof s === 'string' && s.trim()))];
+    if (unique.length === 0) return new Map();
+    const translated = await translateTexts(unique, currentLanguage);
+    return new Map(unique.map((s, i) => [s, translated[i] ?? s]));
   };
 
 
@@ -2223,6 +2274,10 @@ const Reports = () => {
         alert(t('reports.noData', 'No data available for the selected period'));
         return;
       }
+
+      const ugcMap = await buildUgcTranslateMap(
+        collectExportUgcStrings(timeEntries, tasks, goals, leave)
+      );
 
       const doc = new jsPDF('p', 'mm', 'a4');
       const loadedFonts = await loadPdfFonts(doc, currentLanguage);
@@ -2472,7 +2527,7 @@ const Reports = () => {
           tasks.map((task) => [
             cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
             cleanTextForPDF(translateDepartment(task.employee?.department) || '', unicodeFontLoaded),
-            cleanTextForPDF((isDemoMode() ? getDemoTaskTitle(task, t) : task.title).substring(0, 40), unicodeFontLoaded),
+            cleanTextForPDF((isDemoMode() ? getDemoTaskTitle(task, t) : mapUgc(ugcMap, task.title || '')).substring(0, 40), unicodeFontLoaded),
             cleanTextForPDF(translatePriority(task.priority), unicodeFontLoaded),
             cleanTextForPDF(translateStatus(task.status), unicodeFontLoaded),
             task.due_date || '-',
@@ -2498,7 +2553,7 @@ const Reports = () => {
           goals.map((goal) => [
             cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
             cleanTextForPDF(translateDepartment(goal.employee?.department) || '', unicodeFontLoaded),
-            cleanTextForPDF((isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title).substring(0, 40), unicodeFontLoaded),
+            cleanTextForPDF((isDemoMode() ? getDemoGoalTitle(goal, t) : mapUgc(ugcMap, goal.title || '')).substring(0, 40), unicodeFontLoaded),
             cleanTextForPDF(translateCategory(goal.category), unicodeFontLoaded),
             cleanTextForPDF(translateStatus(goal.status), unicodeFontLoaded),
             goal.target_date || '-',
@@ -2833,11 +2888,10 @@ const Reports = () => {
               <label className={`block text-sm font-medium ${text.primary} mb-2`}>
                 {t('reports.startDate', 'Start Date')}
               </label>
-              <input
-                type="date"
+              <DatePicker
                 value={filters.startDate}
                 onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                inputClassName={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
               />
             </div>
 
@@ -2845,11 +2899,10 @@ const Reports = () => {
               <label className={`block text-sm font-medium ${text.primary} mb-2`}>
                 {t('reports.endDate', 'End Date')}
               </label>
-              <input
-                type="date"
+              <DatePicker
                 value={filters.endDate}
                 onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                inputClassName={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
               />
             </div>
           </div>
@@ -3427,8 +3480,8 @@ const Reports = () => {
                         </div>
                       </td>
                       <td className={`px-6 py-4 ${text.primary}`}>
-                        <div className="text-sm font-medium max-w-xs truncate">{isDemoMode() ? getDemoTaskTitle(item, t) : item.title}</div>
-                        <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{isDemoMode() ? getDemoTaskDescription(item, t) : item.description}</div>
+                        <div className="text-sm font-medium max-w-xs truncate">{isDemoMode() ? getDemoTaskTitle(item, t) : <TranslatedText text={item.title} />}</div>
+                        <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{isDemoMode() ? getDemoTaskDescription(item, t) : <TranslatedText text={item.description} />}</div>
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap`}>
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -3458,7 +3511,7 @@ const Reports = () => {
                         </div>
                       </td>
                       <td className={`px-6 py-4 ${text.primary}`}>
-                        <div className="text-sm font-medium max-w-xs truncate">{isDemoMode() ? getDemoGoalTitle(item, t) : item.title}</div>
+                        <div className="text-sm font-medium max-w-xs truncate">{isDemoMode() ? getDemoGoalTitle(item, t) : <TranslatedText text={item.title} />}</div>
                         <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{translateCategory(item.category)} - {item.status === 'completed' ? 100 : (item.progress || 0)}%</div>
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap`}>
@@ -3519,8 +3572,8 @@ const Reports = () => {
                           </div>
                         </td>
                         <td className={`px-6 py-4 ${text.primary}`}>
-                          <div className="text-sm font-medium max-w-xs truncate">{isDemoMode() ? getDemoTaskTitle(item, t) : item.title}</div>
-                          <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{isDemoMode() ? getDemoTaskDescription(item, t) : item.description}</div>
+                          <div className="text-sm font-medium max-w-xs truncate">{isDemoMode() ? getDemoTaskTitle(item, t) : <TranslatedText text={item.title} />}</div>
+                          <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{isDemoMode() ? getDemoTaskDescription(item, t) : <TranslatedText text={item.description} />}</div>
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap`}>
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -3553,8 +3606,8 @@ const Reports = () => {
                           </div>
                         </td>
                         <td className={`px-6 py-4 ${text.primary}`}>
-                          <div className="text-sm font-medium max-w-xs truncate">{isDemoMode() ? getDemoGoalTitle(item, t) : item.title}</div>
-                          <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{isDemoMode() ? getDemoGoalDescription(item, t) : item.description}</div>
+                          <div className="text-sm font-medium max-w-xs truncate">{isDemoMode() ? getDemoGoalTitle(item, t) : <TranslatedText text={item.title} />}</div>
+                          <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{isDemoMode() ? getDemoGoalDescription(item, t) : <TranslatedText text={item.description} />}</div>
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{translateCategory(item.category)}</td>
                         <td className={`px-6 py-4 whitespace-nowrap`}>

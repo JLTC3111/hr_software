@@ -4,6 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext.jsx'
 import { useTheme } from '../contexts/ThemeContext.jsx'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import * as employeeService from '../services/employeeService.js'
+import { DatePicker } from './ui/date-picker.jsx'
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -449,16 +450,13 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                       <span className={`text-xs ${textSecondary}`}>{t('employees.startDate', 'Start Date')}</span>
                     </div>
                     {isEditing ? (
-                      <div className="relative">
-                        <input
-                          type="date"
-                          name="startDate"
-                          value={formData.startDate}
-                          onChange={handleChange}
-                          className={`w-full px-3 py-2 pr-10 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary} [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
-                        />
-                        <Calendar className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${textSecondary} pointer-events-none`} />
-                      </div>
+                      <DatePicker
+                        name="startDate"
+                        value={formData.startDate}
+                        onChange={handleChange}
+                        icon={Calendar}
+                        inputClassName={`w-full px-3 py-2 pr-10 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
+                      />
                     ) : (
                       <span className={textPrimary}>{currentEmployee.startDate || currentEmployee.start_date || 'N/A'}</span>
                     )}
@@ -471,16 +469,13 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                       <span className={`text-xs ${textSecondary}`}>{t('addEmployee.dob', 'Date of Birth')}</span>
                     </div>
                     {isEditing ? (
-                      <div className="relative">
-                        <input
-                          type="date"
-                          name="dob"
-                          value={formData.dob}
-                          onChange={handleChange}
-                          className={`w-full px-3 py-2 pr-10 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary} [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:w-5 [&::-webkit-calendar-picker-indicator]:h-5 [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
-                        />
-                        <Calendar className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${textSecondary} pointer-events-none`} />
-                      </div>
+                      <DatePicker
+                        name="dob"
+                        value={formData.dob}
+                        onChange={handleChange}
+                        icon={Calendar}
+                        inputClassName={`w-full px-3 py-2 pr-10 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
+                      />
                     ) : (
                       <span className={textPrimary}>{currentEmployee?.dob || 'N/A'}</span>
                     )}

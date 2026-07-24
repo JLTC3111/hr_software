@@ -19,9 +19,8 @@ export default {
     taskReview: 'Обзор эффективности',
     svgMorphing: 'Морфинг SVG',
     fullDemo: 'Полная демонстрация',
-    showcase: 'Краткая демонстрация',
+    showcase: 'Краткая демонстрация'
   },
-
   // Leave Management
   leave: {
     subtitle: 'Планируйте, запрашивайте и утверждайте отпуска в общем календаре.',
@@ -86,9 +85,8 @@ export default {
     rejectConfirm: 'Отклонить отпуск для {{name}}?',
     rejectReasonLabel: 'Причина (необязательно)',
     rejectReasonPlaceholder: 'Объясните, почему заявка отклоняется...',
-    confirmReject: 'Отклонить заявку',
+    confirmReject: 'Отклонить заявку'
   },
-
   // Header
   header: {
     title: 'HR Менеджер',
@@ -100,9 +98,8 @@ export default {
     welcomePhrase5: 'Сделаем сегодня продуктивным, {name}',
     welcomePhrase6: 'Рады, что вы здесь, {name}',
     user: 'HR команда',
-    logout: 'Выход',
+    logout: 'Выход'
   },
-
   // Login
   login: {
     idleLogoutMessage: 'Вы были выведены из системы после периода бездействия. Пожалуйста, войдите снова.',
@@ -129,7 +126,6 @@ export default {
     tryDemoLoading: 'Загрузка демо...',
     forgotPasswordModal: {
       title: 'Сброс Пароля',
-      success: 'Письмо для сброса пароля отправлено. Пожалуйста, проверьте свой почтовый ящик.',
       description: 'Введите свой адрес электронной почты, и мы отправим вам ссылку для сброса пароля.',
       emailLabel: 'Адрес Электронной Почты',
       emailPlaceholder: 'you@example.com',
@@ -137,14 +133,13 @@ export default {
       emailInvalid: 'Пожалуйста, введите действительный адрес электронной почты',
       sendReset: 'Отправить Ссылку для Сброса',
       cancel: 'Отмена',
-      success: 'Письмо для сброса пароля отправлено. Пожалуйста, проверьте свою почту.',
+      success: "Письмо для сброса пароля отправлено. Пожалуйста, проверьте свой почтовый ящик.",
       error: 'Не удалось отправить письмо для сброса. Пожалуйста, попробуйте еще раз.',
       noAccount: 'Аккаунт с этим адресом электронной почты не найден',
       rateLimitError: 'Слишком много запросов. Пожалуйста, попробуйте позже',
       networkError: 'Ошибка сети. Пожалуйста, проверьте ваше соединение'
-    },
+    }
   },
-
   // Reset Password Page
   resetPassword: {
     title: 'Сброс Пароля',
@@ -158,7 +153,6 @@ export default {
     passwordsDontMatch: 'Пароли не совпадают',
     error: 'Не удалось сбросить пароль. Пожалуйста, попробуйте еще раз.',
     success: 'Пароль успешно сброшен!',
-    redirecting: 'Перенаправление на страницу входа...',
     resetting: 'Сброс...',
     verifying: 'Проверка ссылки для сброса...',
     resetButton: 'Сбросить Пароль',
@@ -168,20 +162,18 @@ export default {
     signingIn: 'Вход...',
     orContinueWith: 'Или продолжить с',
     continueWithGithub: 'Продолжить с GitHub',
-    redirecting: 'Перенаправление на страницу входа...',
+    redirecting: "Перенаправление на страницу входа...",
     githubError: 'Не удалось войти через GitHub',
     noAccount: 'Нет аккаунта?',
     signUp: 'Зарегистрироваться',
     footer: '© 2024 HR Менеджер. Все права защищены.',
-    tryDemoLoading: 'Загрузка демо...',
+    tryDemoLoading: 'Загрузка демо...'
   },
-
   sidebar: {
     main: 'Главная',
     analytics: 'Аналитика',
-    settings: 'Настройки',
+    settings: 'Настройки'
   },
-
   // Dashboard
   dashboard: {
     regularAndOvertimeByEmployee: 'Обычные и сверхурочные часы по сотрудникам',
@@ -221,7 +213,7 @@ export default {
     activities: {
       newEmployee: 'Новый сотрудник принят: ABC',
       interviewScheduled: 'Назначено интервью с: XYZ',
-      performanceReview: 'Оценка эффективности завершена для: Đỗ Bảo Long'
+      performanceReview: 'Оценка эффективности завершена для: '
     },
     timeAgo: {
       twoHours: '2 часа назад',
@@ -229,12 +221,10 @@ export default {
       oneDay: '1 день назад'
     }
   },
-
   // Search
   search: {
     placeholder: 'Поиск сотрудников...'
   },
-
   // Departments
   departmentDist: {
     all: 'Все',
@@ -248,9 +238,8 @@ export default {
     engineering: 'Инженерия',
     sales: 'Продажи',
     marketing: 'Маркетинг',
-    design: 'Дизайн',
+    design: 'Дизайн'
   },
-
   employeeDepartment: {
     all: 'Все',
     legal_compliance: 'Юридическое Соответствие',
@@ -280,9 +269,8 @@ export default {
     Legal: 'Юридический',
     it: 'Информатика',
     product: 'Продукт',
-    customer_support: 'Поддержка клиентов',
+    customer_support: 'Поддержка клиентов'
   },
-
   // Months
   months: {
     january: 'Январь',
@@ -298,7 +286,6 @@ export default {
     november: 'Ноябрь',
     december: 'Декабрь'
   },
-
   stats: {
     total: 'Всего',
     underReview: 'На рассмотрении',
@@ -306,9 +293,8 @@ export default {
     interviewScheduled: 'Собеседование назначено',
     offerExtended: 'Оффер отправлен',
     hired: 'Нанят',
-    rejected: 'Отклонён',
+    rejected: 'Отклонён'
   },
-
   timeClock: {
     title: 'Учёт рабочего времени',
     subtitle: 'Записывайте рабочие часы и отправляйте подтверждения',
@@ -317,14 +303,12 @@ export default {
     fileTypes: 'Поддерживается: изображения, PDF, документы (максимум 50MB)',
     history: 'История',
     selectDate: 'Выберите дату',
-    date: 'Дата',
     clockIn: 'Время начала',
     clockOut: 'Время окончания',
     hourType: 'Тип часов',
     proof: 'Подтверждение присутствия',
     notes: 'Заметки',
     optional: 'Необязательно',
-    employee: 'Сотрудник',
     submit: 'Отправить запись времени',
     submitting: 'Отправка...',
     success: 'Запись времени успешно отправлена!',
@@ -332,12 +316,6 @@ export default {
     continueWithGithub: 'Продолжить с GitHub',
     redirecting: 'Перенаправление на GitHub...',
     githubError: 'Не удалось войти через GitHub',
-    noEntries: 'Нет записей. Добавьте первую!',
-    time: 'Время',
-    hours: 'Часы',
-    type: 'Тип',
-    status: 'Статус',
-    actions: 'Действия',
     delete: 'Удалить',
     weeklySummary: 'На этой неделе',
     monthlySummary: 'В этом месяце',
@@ -371,7 +349,7 @@ export default {
       invalidFileType: 'Разрешены только файлы JPG, PNG и PDF',
       submitFailed: 'Не удалось отправить запись времени. Пожалуйста, попробуйте ещё раз.',
       deleteFailed: 'Не удалось удалить запись времени. Пожалуйста, попробуйте ещё раз.',
-      duplicateEntry: 'У вас уже есть запись времени {hourType} на эту дату. Пожалуйста, отредактируйте существующую запись или выберите другой тип часов.',
+      duplicateEntry: 'У вас уже есть запись времени {hourType} на эту дату. Пожалуйста, отредактируйте существующую запись или выберите другой тип часов.'
     },
     deleteOptions: 'Выберите опцию удаления',
     deleteEntry: 'Удалить всю запись времени',
@@ -392,16 +370,15 @@ export default {
     myEntries: 'Мои Записи',
     allEmployees: 'Все Сотрудники',
     specificEmployee: 'Конкретный Сотрудник',
-    employee: 'Сотрудник',
-    date: 'Дата',
-    time: 'Время',
-    hours: 'Часы',
-    type: 'Тип',
-    status: 'Статус',
-    actions: 'Действия',
-    noEntries: 'Записи не найдены'
-  },  
-
+    employee: "Сотрудник",
+    date: "Дата",
+    time: "Время",
+    hours: "Часы",
+    type: "Тип",
+    status: "Статус",
+    actions: "Действия",
+    noEntries: "Нет записей. Добавьте первую!"
+  },
   // Time Tracking
   timeTracking: {
     on_leave: 'В отпуске',
@@ -414,14 +391,12 @@ export default {
     clockOut: 'Отметка Выхода',
     amountHours: 'Часы',
     hourType: 'Тип часов',
-    status: 'Статус',
     time: 'Время',
     notes: 'Заметки',
     createdAt: 'Создано',
     summary: 'Сводка',
     quickActions: 'Быстрые действия',
     workDays: 'Рабочие Дни',
-    leaveDays: 'Дни Отпуска/Отгула',
     overtime: 'Сверхурочные Часы',
     wfh: 'Часы Удаленной Работы',
     holidayOvertime: 'Сверхурочные в Праздники',
@@ -435,14 +410,12 @@ export default {
     attendanceRate: 'Уровень Посещаемости',
     requestLeave: 'Запросить Отпуск/Отгул',
     logOvertime: 'Записать Сверхурочные',
-    leaveType: 'Тип Отпуска/Отгула',
     vacation: 'Отпуск',
     sickLeave: 'Больничный',
     personal: 'Личный Отгул',
     unpaid: 'Неоплачиваемый Отпуск',
-    leaveDays: 'Дни отпуска',
-    leaveType: 'Тип Отпуска/Отгула',
-    status: 'Статус',
+    leaveDays: "Дни Отпуска/Отгула",
+    leaveType: "Тип Отпуска/Отгула",
     requestedBy: 'Запрошено',
     approvedBy: 'Одобрено',
     leaveRequestManagement: 'Управление Запросами на Отпуск/Отгул',
@@ -454,7 +427,7 @@ export default {
       pending: 'В ожидании',
       approved: 'Одобрено',
       rejected: 'Отклонено',
-      cancelled: 'Отменено',
+      cancelled: 'Отменено'
     },
     // Hour types for overtime
     weekend: 'Сверхурочные в Выходные',
@@ -483,7 +456,6 @@ export default {
     daysWorked: 'Отработанные Дни',
     totalHoursLabel: 'Всего Часов'
   },
-
   // Admin Time Entry
   adminTimeEntry: {
     title: 'Ввод Времени Администратором',
@@ -551,7 +523,6 @@ export default {
       errorWithDetail: 'Не удалось заполнить стандартные часы: {message}'
     }
   },
-
   // Employees
   employees: {
     title: 'Управление сотрудниками',
@@ -591,9 +562,8 @@ export default {
     topPerformers: 'Лучшие сотрудники',
     avgRating: 'Средняя оценка',
     departments: 'отделы',
-    livePulse: 'Живой пульс',
+    livePulse: 'Живой пульс'
   },
-
   // Recruitment
   recruitment: {
     position: 'Позиция',
@@ -650,18 +620,16 @@ export default {
     postNewJob: 'Опубликовать новую вакансию',
     viewResume: 'Просмотреть резюме',
     linkedinProfile: 'Профиль LinkedIn',
-    notes: 'Заметки',
+    notes: 'Заметки'
   },
-
   // Reports
   reports: {
     bonusHours: 'Бонусные часы',
+    leave: 'Заявки на отпуск',
     daysWorked: 'Отработанные дни',
-    leaveDays: 'Дни отпуска',
     title: 'Отчёты и аналитика',
     filenamePrefix: 'HRMS_Отчет',
     to: 'до',
-    allEmployees: 'Все сотрудники',
     excel: {
       charts: {
         hoursByType: 'Часы по типам',
@@ -790,60 +758,37 @@ export default {
     generated: 'Создано',
     performanceReport: 'Отчет об эффективности',
     summaryOverview: 'Обзор Сводки',
-    completedTasks: 'Завершённые задачи',
     achievedGoals: 'Достигнутые цели',
     avgProgress: 'Средний прогресс',
     personalGoals: 'Личные цели',
     totalGoals: 'Всего целей',
-    completedTasks: 'Завершённые задачи',
+    completedTasks: "Завершённые задачи",
     type: 'Тип отчёта',
     category: 'Категория',
     progress: 'Прогресс',
     goal: 'Цель',
-    timeTracking: 'Отслеживание времени',
-    performanceAppraisals: 'Оценки производительности',
-    recruitment: 'Набор персонала',
-    salaryReports: 'Отчёты по зарплатам',
     task: 'Задача',
-    status: 'Статус',
     priority: 'Приоритет',
     dueDate: 'Дата выполнения',
     hours: 'Часы',
     completed: 'Завершено',
     inProgress: 'В процессе',
     completionRate: 'Процент завершения',
-    approved: 'Одобрено',
-    pending: 'В ожидании',
-    performance: 'Производительность',
-    recruitment: 'Набор персонала',
-    salary: 'Зарплата',
-    selectReportType: 'Выберите тип отчёта',
-    dateRange: 'Диапазон дат',
-    generate: 'Создать отчёт',
     export: 'Экспортировать',
-    employees: 'Сотрудник',
     details: 'Детали',
-    status: 'Статус',
-    date: 'Дата',
     showingFirst50: 'Отображение первых 50 записей. Для экспорта полного набора данных используйте опцию экспорта.',
     dataPreview: 'Предварительный просмотр данных',
     exportOptions: 'Опции экспорта',
     filterByDate: 'Фильтр по дате',
     filterByEmployee: 'Фильтр по сотруднику',
-    allEmployees: 'Все сотрудники',
     totalRecords: 'Всего записей',
     totalEntries: 'Всего записей',
     liveData: 'Данные в реальном времени',
-    totalHours: 'Общее количество часов',
-    regularHours: 'Обычные часы',
     overtime: 'Сверхурочные',
     completion: 'Завершение',
     tasksDone: 'Выполненные задачи',
     goalProgress: 'Прогресс целей',
-    overtimeHours: 'Сверхурочные часы',
-    leaveDays: 'Дни отпуска',
     approvedLeaves: 'Одобренные отпуска',
-    totalEmployees: 'Всего сотрудников',
     avgPerformance: 'Средняя производительность',
     pendingApprovals: 'Ожидающие утверждения',
     subtitle: 'Создавайте и экспортируйте подробные отчёты',
@@ -851,11 +796,7 @@ export default {
     timeEntries: 'Записи времени',
     exportToCSV: 'Экспорт в CSV',
     performanceSummary: 'Сводка производительности',
-    recruitmentStats: 'Статистика набора персонала',
-    attendanceRecords: 'Записи о посещаемости',
-    salaryReports: 'Отчёты по зарплатам',
-    generateReport: 'Создать отчёт',
-    selectReportType: 'Выберите тип отчёта',
+    selectReportType: "Выберите тип отчёта",
     reportTypes: {
       timeTracking: 'Отслеживание времени',
       performanceAppraisals: 'Оценки производительности',
@@ -865,97 +806,65 @@ export default {
     tasks: 'Задачи',
     today: 'Сегодня',
     yesterday: 'Вчера',
-    last7Days: 'Последние 7 дней',
-    last30Days: 'Последние 30 дней',
     thisWeek: 'На этой неделе',
-    lastWeek: 'На прошлой неделе',
     thisMonth: 'В этом месяце',
-    lastMonth: 'В прошлом месяце',
-    thisQuarter: 'В этом квартале',
-    lastQuarter: 'В прошлом квартале',
     thisYear: 'В этом году',
-    lastYear: 'В прошлом году',
-    customRange: 'Пользовательский диапазон',
     selectEmployee: 'Выберите сотрудника',
-    allEmployees: 'Все сотрудники',
+    allEmployees: "Все сотрудники",
     employee: 'Сотрудник',
     goals: 'Цели',
-    achievements: 'Достижения', 
-    date: 'Дата',
+    achievements: 'Достижения',
+    date: "Дата",
     clockIn: 'Вход',
     clockOut: 'Выход',
     hoursWorked: 'Отработанные часы',
     hourType: 'Тип часов',
-    status: 'Статус',
+    status: "Статус",
     actions: 'Действия',
     dataType: 'Тип данных',
     selectDataType: 'Выберите тип данных',
-    timeTracking: 'Отслеживание времени',
-    performanceAppraisals: 'Оценки производительности',
-    recruitment: 'Набор персонала',
-    salaryReports: 'Отчёты по зарплатам',
-    dateRange: 'Диапазон дат',
-    selectDateRange: 'Выберите диапазон дат',
+    timeTracking: "Отслеживание времени",
+    performanceAppraisals: "Оценки производительности",
     applyFilters: 'Применить фильтры',
     resetFilters: 'Сбросить фильтры',
     viewDetails: 'Просмотреть детали',
-    totalHours: 'Общее количество часов',
-    regularHours: 'Обычные часы',
-    overtimeHours: 'Сверхурочные часы',
-    leaveDays: 'Дни отпуска',
-    approved: 'Одобрено',
-    pending: 'В ожидании',
-    rejected: 'Отклонено',
-    generateReport: 'Создать отчёт',
-    selectDateRange: 'Выберите диапазон дат',
+    totalHours: "Общее количество часов",
+    regularHours: "Обычные часы",
+    overtimeHours: "Сверхурочные часы",
+    leaveDays: "Дни отпуска",
+    approved: "Одобрено",
+    pending: "В ожидании",
+    selectDateRange: "Выберите диапазон дат",
     quickFilters: 'Быстрые фильтры',
-    last7Days: 'Последние 7 дней',
-    last30Days: 'Последние 30 дней',
-    lastQuarter: 'Последний квартал',
-    lastYear: 'Последний год',
-    customRange: 'Пользовательский диапазон',
-    generateReport: 'Создать отчёт',
-    reportType: 'Тип отчёта',
-    employeePerformance: 'Производительность сотрудников',
-    salaryAnalysis: 'Анализ зарплат',
-    attendanceReport: 'Отчёт о посещаемости',
-    recruitmentMetrics: 'Метрики набора персонала',
-    departmentComparison: 'Сравнение отделов',
-    exportToExcel: 'Экспорт в Excel',
+    last7Days: "Последние 7 дней",
+    last30Days: "Последние 30 дней",
     performanceReviews: 'Оценки производительности',
-    recruitmentStats: 'Статистика набора персонала',
-    attendanceRecords: 'Записи о посещаемости',
-    salaryReports: 'Отчёты по зарплатам',
+    recruitmentStats: "Статистика набора персонала",
+    attendanceRecords: "Записи о посещаемости",
+    salaryReports: "Отчёты по зарплатам",
     recordsFound: 'Найдено записей',
     individualMetrics: 'Индивидуальные метрики',
     individualReport: 'Индивидуальные отчёты',
     exportingData: 'Экспорт данных',
     exportingIncludes: 'Экспорт включает все данные, даже те, которые не отображаются на экране',
     selectReport: 'Выберите тип отчёта',
-    employeePerformance: 'Производительность сотрудников',
-    salaryAnalysis: 'Анализ зарплат',
-    attendanceReport: 'Отчёт о посещаемости',
-    recruitmentMetrics: 'Метрики набора персонала',
-    departmentComparison: 'Сравнение отделов',
     customReport: 'Пользовательский отчёт',
     prebuiltReport: 'Готовый отчёт',
     employeeGrowth: 'Рост количества сотрудников',
     departmentDistribution: 'Распределение по отделам',
     performanceMetrics: 'Метрики производительности',
-    recruitmentMetrics: 'Метрики набора персонала',
-    attendanceReport: 'Отчёт о посещаемости',
     salaryReport: 'Отчёт о зарплатах',
-    generateReport: 'Создать отчёт',
+    generateReport: "Создать отчёт",
     exportPDF: 'Экспорт в PDF',
     exportExcel: 'Экспорт в Excel',
     filterBy: 'Фильтр по',
-    dateRange: 'Диапазон дат',
+    dateRange: "Диапазон дат",
     allDepartments: 'Все отделы',
     department: 'Отдел',
-    performance: 'Производительность',
-    salary: 'Зарплата',
+    performance: "Производительность",
+    salary: "Зарплата",
     attendance: 'Посещаемость',
-    recruitment: 'Набор персонала',
+    recruitment: "Набор персонала",
     all: 'Все',
     overview: 'Обзор',
     detailedReports: 'Подробные отчёты',
@@ -965,9 +874,9 @@ export default {
     attendanceOverview: 'Обзор посещаемости',
     recruitmentFunnel: 'Воронка набора',
     performanceTrend: 'Тренд производительности',
-    totalEmployees: 'Всего сотрудников',
+    totalEmployees: "Всего сотрудников",
     newHires: 'Новые сотрудники',
-    thisQuarter: 'Этот квартал',
+    thisQuarter: "В этом квартале",
     turnoverRate: 'Текучесть кадров',
     annualRate: 'Годовая ставка',
     avgSalary: 'Средняя зарплата',
@@ -979,15 +888,15 @@ export default {
     totalApplications: 'Всего заявок',
     interviewed: 'Проинтервьюированы',
     hired: 'Наняты',
-    rejected: 'Отклонены',
-    employees: 'сотрудники',
+    rejected: "Отклонены",
+    employees: "сотрудники",
     generateCustomReport: 'Создать пользовательский отчёт',
-    reportType: 'Тип отчёта',
-    employeePerformance: 'Производительность сотрудников',
-    salaryAnalysis: 'Анализ зарплат',
-    attendanceReport: 'Отчёт о посещаемости',
-    recruitmentMetrics: 'Метрики набора персонала',
-    departmentComparison: 'Сравнение отделов',
+    reportType: "Тип отчёта",
+    employeePerformance: "Производительность сотрудников",
+    salaryAnalysis: "Анализ зарплат",
+    attendanceReport: "Отчёт о посещаемости",
+    recruitmentMetrics: "Метрики набора персонала",
+    departmentComparison: "Сравнение отделов",
     exportToPDF: 'Экспорт в PDF',
     pdf: {
       visualAnalytics: 'Аналитика визуальных данных',
@@ -1025,7 +934,7 @@ export default {
         updatedAt: 'Обновлено'
       }
     },
-    exportToExcel: 'Экспорт в Excel',
+    exportToExcel: "Экспорт в Excel",
     prebuiltReports: 'Готовые отчёты',
     monthlyPerformanceReview: 'Ежемесячная оценка производительности',
     comprehensivePerformanceAnalysis: 'Комплексный анализ производительности',
@@ -1039,13 +948,13 @@ export default {
     analyzeRetentionRates: 'Анализ удержания и текучести кадров',
     trainingEffectiveness: 'Эффективность обучения',
     measureTrainingSuccess: 'Измерение успеха программы обучения',
-    generate: 'Создать →',
+    generate: "Создать отчёт",
     fromLastPeriod: 'с прошлого периода',
-    lastWeek:	'Прошлая неделя (Proshlaya nedelya)',	
-    lastMonth:	'Прошлый месяц (Proshlyy mesyats)',
-    lastQuarter:	'Прошлый квартал (Proshlyy kvartal)',
-    lastYear:	'Прошлый год (Proshlyy god)',
-    customRange:	'Пользовательский диапазон',	
+    lastWeek: "Прошлая неделя (Proshlaya nedelya)",
+    lastMonth: "Прошлый месяц (Proshlyy mesyats)",
+    lastQuarter: "Прошлый квартал (Proshlyy kvartal)",
+    lastYear: "Прошлый год (Proshlyy god)",
+    customRange: "Пользовательский диапазон",
     for: 'для',
     from: 'с',
     priorityLow: 'Низкий приоритет',
@@ -1062,9 +971,8 @@ export default {
     csvExportSuccess: 'CSV-отчёт успешно экспортирован со всеми типами данных в одном файле!',
     excelExportHint: 'Экспорт всех типов данных со сводкой, графиками и детальными листами',
     pdfExportHint: 'Экспорт PDF с визуальными графиками, сводкой и подробными таблицами для всех типов данных',
-    pdfExportSuccess: 'PDF-отчёт успешно экспортирован!',
+    pdfExportSuccess: 'PDF-отчёт успешно экспортирован!'
   },
-
   // Add Employee
   addEmployee: {
     title: 'Добавить Нового Сотрудника',
@@ -1103,7 +1011,6 @@ export default {
     submitError: 'Не удалось добавить сотрудника',
     dobPlaceholder: 'Выберите дату рождения'
   },
-
   // Employee Detail Modal
   employeeDetailModal: {
     download: 'Скачать',
@@ -1163,7 +1070,6 @@ export default {
     uploadInstructions: 'Нажмите или перетащите PDF файл сюда для загрузки',
     maxFileSize: 'Максимальный размер файла: 10MB'
   },
-
   // Status translations
   status: {
     approved: 'Одобрено',
@@ -1175,19 +1081,32 @@ export default {
     'in-progress': 'В процессе',
     'not-started': 'Не начато',
     achieved: 'Достигнуто',
-    'on-hold': 'На паузе',
+    'on-hold': 'На паузе'
   },
-
   // Data Type Labels
   dataType: {
     timeEntry: 'Учет времени',
     task: 'Задача',
-    goal: 'Цель',
+    goal: 'Цель'
   },
-
   // Common
+  datePicker: {
+    placeholder: 'Выберите дату',
+    calendar: 'Календарь',
+    prevMonth: 'Предыдущий месяц',
+    nextMonth: 'Следующий месяц',
+    today: 'Сегодня',
+    clear: 'Очистить'
+  },
+  timePicker: {
+    hours: 'ч',
+    minutes: 'мин',
+    done: 'Готово',
+    clear: 'Очистить',
+    placeholder: '--:--',
+    picker: 'Выбор времени'
+  },
   common: {
-    viewDetails: 'Просмотреть детали',
     email: 'Email',
     phone: 'Телефон',
     results: 'Найдено результатов',
@@ -1242,28 +1161,25 @@ export default {
     select: 'Выбрать',
     upload: 'Загрузить',
     download: 'Скачать',
-    viewDetails: 'Просмотреть детали',
+    viewDetails: "Просмотреть детали",
     reset: 'Сбросить',
     apply: 'Применить',
     optional: 'необязательно',
     fetching: 'Загрузка',
     ready: 'Готово',
-    ms: 'мс',
+    ms: 'мс'
   },
-
   // Theme
   theme: {
     light: 'Светлая тема',
     dark: 'Тёмная тема',
     toggle: 'Переключить тему'
   },
-
   // Language
   language: {
     select: 'Выбрать язык',
     current: 'Текущий язык'
   },
-
   // Time Tracking Actions
   timeTrackingActions: {
     recordTime: 'Записать время',
@@ -1271,14 +1187,12 @@ export default {
     logOvertime: 'Записать сверхурочные',
     exportReport: 'Экспортировать отчёт'
   },
-
   // Recruitment Actions
   recruitmentActions: {
     view: 'Просмотр',
     schedule: 'Запланировать',
     reject: 'Отклонить'
   },
-
   // Employee Status
   employeeStatus: {
     active: 'Активный',
@@ -1287,7 +1201,6 @@ export default {
     pending: 'В ожидании',
     outSourceContractor: 'Внешний подрядчик'
   },
-
   // Recruitment Status
   recruitmentStatus: {
     active: 'Активный',
@@ -1304,26 +1217,6 @@ export default {
     technical: 'Техническое',
     shortlisted: 'В шорт-листе'
   },
-
-  // Demo Notifications
-  demoNotifications: {
-    'notif-1': {
-      title: 'Добро пожаловать в HR-систему',
-      message: 'Добро пожаловать в демонстрационный режим HR-системы. Исследуйте её возможности!',
-      actionLabel: 'Перейти на панель'
-    },
-    'notif-2': {
-      title: 'Новая заявка',
-      message: 'Поступила новая заявка на позицию Senior Frontend Developer.',
-      actionLabel: 'Просмотреть заявку'
-    },
-    'notif-3': {
-      title: 'Плановая оценка эффективности',
-      message: 'Квартальные оценки эффективности должны быть выполнены на следующей неделе.',
-      actionLabel: 'Просмотреть оценки'
-    }
-  },
-
   // Performance Goals
   goals: {
     completeReactProject: 'Завершить React проект',
@@ -1334,14 +1227,12 @@ export default {
     backendDevelopment: 'Backend разработка',
     teamCollaboration: 'Командная работа'
   },
-
   // Review Types
   reviewTypes: {
     quarterlyReview: 'Квартальная оценка',
     midYearReview: 'Полугодовая оценка',
     annualReview: 'Годовая оценка'
   },
-
   // Skill Categories
   skillCategories: {
     technical: 'Технические',
@@ -1349,7 +1240,6 @@ export default {
     leadership: 'Лидерство',
     communication: 'Коммуникация'
   },
-
   employeePosition: {
     general_manager: 'Генеральный директор',
     senior_developer: 'Старший разработчик',
@@ -1359,9 +1249,8 @@ export default {
     managing_director: 'Исполнительный директор',
     support_staff: 'Вспомогательный персонал',
     expertGroup: 'Группа экспертов',
-    employee: 'Сотрудник',
-  }, 
-
+    employee: 'Сотрудник'
+  },
   // Notifications
   notifications: {
     title: 'Уведомления',
@@ -1415,9 +1304,8 @@ export default {
     // Notification messages
     timeEntriesAwaiting: 'У вас {0} записей времени ожидают утверждения',
     reviewNow: 'Просмотреть сейчас',
-    viewDetails: 'Просмотр деталей',
+    viewDetails: 'Просмотр деталей'
   },
-
   // Settings
   settings: {
     title: 'Настройки',
@@ -1430,13 +1318,11 @@ export default {
     confirmReset: 'Вы уверены, что хотите сбросить все настройки на значения по умолчанию?',
     importSuccess: 'Настройки успешно импортированы!',
     importError: 'Не удалось импортировать настройки',
-    
     notifications: 'Уведомления',
     appearance: 'Внешний вид',
     language: 'Язык',
     privacy: 'Конфиденциальность',
     work: 'Рабочие предпочтения',
-    
     notificationPreferences: 'Настройки уведомлений',
     emailNotifications: 'Email уведомления',
     emailNotificationsDesc: 'Получать уведомления по электронной почте',
@@ -1454,17 +1340,14 @@ export default {
     employeeNotifications: 'Обновления сотрудников',
     recruitmentNotifications: 'Найм персонала',
     systemNotifications: 'Системные обновления',
-    
     appearanceSettings: 'Настройки внешнего вида',
     theme: 'Тема',
     dateFormat: 'Формат даты',
     timeFormat: 'Формат времени',
     itemsPerPage: 'Элементов на странице',
-    
     languageRegion: 'Язык и регион',
     timezone: 'Часовой пояс',
     timezoneNote: 'Отображаются первые 50 часовых поясов',
-    
     privacySettings: 'Настройки конфиденциальности',
     profileVisibility: 'Видимость профиля',
     visibilityAll: 'Все',
@@ -1474,7 +1357,6 @@ export default {
     contactVisibility: 'Видимость контактной информации',
     showEmail: 'Показать адрес электронной почты',
     showPhone: 'Показать номер телефона',
-    
     workPreferences: 'Рабочие предпочтения',
     defaultDashboard: 'Панель управления по умолчанию',
     overviewView: 'Обзор',
@@ -1486,7 +1368,6 @@ export default {
     weeklyReport: 'Еженедельный отчет',
     weeklyReportDesc: 'Получать еженедельную сводку рабочих активностей'
   },
-
   // Task Listing
   taskListing: {
     title: 'Управление задачами',
@@ -1509,14 +1390,13 @@ export default {
     statusCompleted: 'Завершено',
     pending: 'В ожидании',
     'in-progress': 'В процессе',
-    completed: 'Завершено',
     teamWorkload: 'Рабочая нагрузка команды',
     filterByEmployee: 'Фильтровать по сотруднику',
     filterByStatus: 'Фильтровать по статусу',
     searchTasks: 'Поиск задач...',
     organization: 'Организация',
     totalTasks: 'Всего задач',
-    completed: 'Завершено',
+    completed: "Завершено",
     progress: 'Прогресс',
     avgQuality: 'Сред. качество',
     avgProgress: 'Сред. прогресс',
@@ -1537,9 +1417,8 @@ export default {
     quality: 'Качество',
     completionDate: 'Дата завершения',
     createdAt: 'Дата создания',
-    updatedAt: 'Обновлено',
+    updatedAt: 'Обновлено'
   },
-
   // Task Review
   taskReview: {
     title: 'Обзор Задач',
@@ -1578,9 +1457,6 @@ export default {
     managerComments: 'Комментарии Менеджера',
     commentPlaceholder: 'Предоставьте обратную связь по качеству задачи и личным целям...',
     taskDetails: 'Детали Задачи',
-    status: 'Статус',
-    priority: 'Приоритет',
-    dueDate: 'Срок Выполнения',
     currentRating: 'Текущая Оценка',
     submitEvaluation: 'Отправить Оценку',
     cancel: 'Отмена',
@@ -1614,9 +1490,9 @@ export default {
     tasks: 'Задачи',
     assignedBy: 'Назначено',
     assignedTo: 'Назначено кому',
-    dueDate: 'Срок выполнения',
-    status: 'Статус',
-    priority: 'Приоритет',
+    dueDate: "Срок выполнения",
+    status: "Статус",
+    priority: "Приоритет",
     action: 'Действие',
     noTasksFound: 'Задачи не найдены',
     selectEmployee: 'Выберите сотрудника',
@@ -1633,7 +1509,6 @@ export default {
     createdAt: 'Создано',
     updatedAt: 'Обновлено'
   },
-
   // Performance Appraisal Translation
   performanceAppraisalPage: {
     title: 'Оценка Эффективности',
@@ -1646,16 +1521,14 @@ export default {
     // Tabs
     overview: 'Обзор',
     goals: 'Цели',
-    reviews: 'Отзывы',
+    reviews: 'Отзывы'
   },
-
   // Employee Details Tabs
   employeeDetailTabs: {
     basicInformation: 'Основная Информация',
     contact: 'Контакт',
-    documents: 'Документы',
+    documents: 'Документы'
   },
-
   // Employee Edit Form
   employeeEditForm: {
     editEmployee: 'Редактировать Сотрудника',
@@ -1675,9 +1548,8 @@ export default {
     cancel: 'Отмена',
     abbrechen: 'Отмена',
     save: 'Сохранить',
-    speichern: 'Сохранить',
+    speichern: 'Сохранить'
   },
-
   // Department Pie Chart Names
   departments: {
     all: 'Все',
@@ -1692,9 +1564,8 @@ export default {
     sales: 'Продажи',
     marketing: 'Маркетинг',
     design: 'Дизайн',
-    part_time_employee: 'Группа экспертов',
+    part_time_employee: 'Группа экспертов'
   },
-
   // Control Panel
   controlPanel: {
     refresh: 'Обновить данные',
@@ -1752,7 +1623,7 @@ export default {
       firstVisit: 'Первое посещение',
       visits: 'Посещения',
       visitDetails: 'Детали посещения',
-      visitHistory: 'История посещений',
+      visitHistory: 'История посещений'
     },
     roles: {
       admin: 'Администратор',
@@ -1761,7 +1632,7 @@ export default {
       employee: 'Сотрудник',
       viewer: 'Наблюдатель',
       demoAdmin: 'Демо-администратор',
-      hrAdmin: 'HR Администратор',
+      hrAdmin: 'HR Администратор'
     },
     roleDesc: {
       admin: 'Полный системный доступ со всеми административными привилегиями, включая управление пользователями, настройки системы и полный контроль данных',
@@ -1770,7 +1641,7 @@ export default {
       manager: 'Контроль членов команды, утверждение учета времени и управление оценкой производительности',
       employee: 'Доступ к личной информации, отправка записей времени и просмотр собственных данных производительности',
       viewer: 'Доступ только для чтения к отчетам, панелям управления и ограниченной системной информации',
-      demoAdmin: 'Демо-режим использует локальное хранилище для имитации доступа администратора; официальная версия использует серверную базу данных для синхронизации данных',
+      demoAdmin: 'Демо-режим использует локальное хранилище для имитации доступа администратора; официальная версия использует серверную базу данных для синхронизации данных'
     },
     uploadAvatar: 'Загрузить аватар',
     avatarUpdated: 'Аватар успешно обновлен!',
@@ -1811,9 +1682,8 @@ export default {
     restoreAllDemoData: "Восстановить все демо-данные",
     switchToDemoEmployee: 'Переключиться на демо-сотрудника',
     switchToDemoAdmin: 'Переключиться на демо-администратора',
-    demoRoleOnly: 'Эта функция доступна только в демо-режиме',
+    demoRoleOnly: 'Эта функция доступна только в демо-режиме'
   },
-
   // Production Help Center (ru)
   prodHelp: {
     title: 'Центр поддержки продакшена',
@@ -1825,27 +1695,27 @@ export default {
     item: {
       observability: 'Дашборды и алерты активны',
       rollbacks: 'План отката протестирован',
-      backups: 'Резервные копии проверены',
+      backups: 'Резервные копии проверены'
     },
     observability: {
       title: 'Наблюдаемость: логи, метрики, трейсы',
-      description: 'Обеспечьте бюджеты ошибок, структурированные логи, дашборды задержек 95/99 перцентиля и семплирование трейсов для продакшена.',
+      description: 'Обеспечьте бюджеты ошибок, структурированные логи, дашборды задержек 95/99 перцентиля и семплирование трейсов для продакшена.'
     },
     rollouts: {
       title: 'Безопасные релизы и feature-флаги',
-      description: 'Используйте постепенные релизы с проверками состояния, плейбуками отката и флагами для быстрого отключения рискованных путей кода.',
+      description: 'Используйте постепенные релизы с проверками состояния, плейбуками отката и флагами для быстрого отключения рискованных путей кода.'
     },
     security: {
       title: 'Безопасность и управление секретами',
-      description: 'Ротация ключей, принцип наименьших привилегий, аудит логов и обязательный MFA для администраторов.',
+      description: 'Ротация ключей, принцип наименьших привилегий, аудит логов и обязательный MFA для администраторов.'
     },
     performance: {
       title: 'Бюджеты производительности',
-      description: 'Отслеживайте cold-start и hot-path. Устанавливайте бюджеты для задержек API, SQL-запросов и TTI фронтенда.',
+      description: 'Отслеживайте cold-start и hot-path. Устанавливайте бюджеты для задержек API, SQL-запросов и TTI фронтенда.'
     },
     resilience: {
       title: 'Резервное копирование и устойчивость',
-      description: 'Проверьте автоматические бэкапы, стратегию DR, лимитирование запросов и circuit breakers для зависимостей.',
+      description: 'Проверьте автоматические бэкапы, стратегию DR, лимитирование запросов и circuit breakers для зависимостей.'
     },
     tags: {
       reliability: 'надежность',
@@ -1854,10 +1724,9 @@ export default {
       safety: 'безопасность',
       security: 'безопасность',
       performance: 'производительность',
-      resilience: 'устойчивость',
-    },
+      resilience: 'устойчивость'
+    }
   },
-
   // Demo Help Center 
   help: {
     containerLabel: 'Центр справки',
@@ -1873,14 +1742,12 @@ export default {
       title: 'ВАЖНО: Ограничения демо!',
       body: 'ДАННЫЕ СОХРАНЯЮТСЯ ЛОКАЛЬНО - Не синхронизируются между устройствами. Данные можно восстановить в панели управления.'
     },
-
     features: {
       section: 'Расширенные и контекстные функции',
       defaultTitle: 'Скрытые функции и профессиональные советы',
       contextTitle: 'Контекстные советы для {context}',
       restricted: 'ОГРАНИЧЕНО',
       empty: 'Для контекста "{context}" не найдено специальных советов. Показаны все функции ниже.',
-
       feature_1: {
         title: 'Скрытая функция: массовое редактирование',
         description: 'Вы можете редактировать до 50 записей одновременно. Выберите флажки рядом с элементами и нажмите значок ✏️ вверху таблицы. Эта функция отключена в текущей демонстрации.'
@@ -1898,7 +1765,6 @@ export default {
         description: 'Получите доступ к настройкам макета панели, нажав на аватар профиля в правом верхнем углу. Вы можете переключиться на тёмную тему и настроить плотность таблицы.'
       }
     },
-
     tags: {
       advanced: 'Расширенные',
       hidden: 'Скрыто',
@@ -1910,7 +1776,6 @@ export default {
       'hard-to-find': 'Трудно найти',
       personalization: 'Персонализация'
     },
-
     showcase: {
       section: 'Анимированный обзор продукта',
       label: 'Анимированный обзор продукта',
@@ -1921,34 +1786,28 @@ export default {
       sync: 'Все остается синхронизированным',
       syncDesc: 'Записи, файлы и цели мгновенно обновляют панели и отчеты.',
       live: 'В прямом эфире',
-
       time: {
         title: 'Управление временем',
         desc: 'Учитывайте время, согласования, сверхурочные и рабочие журналы в одном месте.'
       },
-
       upload: {
         title: 'Загрузка файлов',
         desc: 'Безопасно храните контракты, удостоверения и доказательства с историей, готовой к аудиту.'
       },
-
       dashboard: {
         title: 'Панель и графики',
         desc: 'Визуализируйте загрузку, посещаемость и показатели состояния в реальном времени.'
       },
-
       tasks: {
         title: 'Задачи и цели',
         desc: 'Назначайте ответственных, сроки и чек-листы с синхронизацией с кадровыми данными.'
       },
-
       reporting: {
         title: 'Отчетность',
         desc: 'Экспортируйте PDF/CSV и планируйте регулярные сводки для менеджеров.'
       }
     }
   },
-
   // Video Player 
   videoPlayer: {
     container: 'Видеоплеер',
@@ -1966,7 +1825,6 @@ export default {
     },
     name: 'Название видео'
   },
-
   // Email Management
   emailManagement: {
     title: 'Управление Email пользователей',
@@ -1991,18 +1849,12 @@ export default {
     errorLoadingUsers: 'Ошибка загрузки пользователей',
     fillAllFields: 'Пожалуйста, заполните все поля'
   },
-
   // Personal Goals
   personalGoals: {
-    goalTitle: 'Название цели',
-    goalTitlePlaceholder: 'Введите название цели',
-    title: 'Обзор Эффективности Задач',
     subtitle: 'Ежемесячный прогресс задач и оценка качества',
     individual: 'Индивидуальный',
     team: 'Команда',
     totalTasks: 'Всего Задач',
-    completed: 'Завершено',
-    inProgress: 'В Процессе',
     overdue: 'Просрочено',
     midYear: 'Среднегодовая',
     quarterly: 'Квартальная',
@@ -2029,8 +1881,6 @@ export default {
     managerComments: 'Комментарии Менеджера',
     commentPlaceholder: 'Предоставьте отзыв о качестве и эффективности задачи...',
     taskDetails: 'Детали Задачи',
-    status: 'Статус',
-    priority: 'Приоритет',
     dueDate: 'Срок Выполнения',
     currentRating: 'Текущая Оценка',
     submitEvaluation: 'Отправить Оценку',
@@ -2038,21 +1888,14 @@ export default {
     evaluate: 'Оценить',
     managerEvaluation: 'Оценка Менеджера',
     created: 'Создано',
-    due: 'Срок',
     all: 'Все',
-    pending: 'Ожидание',
-    title: 'Оценка производительности',
+    title: "Обзор Эффективности Задач",
     overallRating: 'Общая оценка',
     reviewPeriod: 'Период оценки',
     goals: 'Цели и задачи',
     achievements: 'Ключевые достижения',
     areasForImprovement: 'Области для улучшения',
     skillsAssessment: 'Оценка навыков',
-    technical: 'Технические навыки',
-    communication: 'Коммуникация',
-    leadership: 'Лидерство',
-    teamwork: 'Командная работа',
-    problemSolving: 'Решение проблем',
     rating: 'Оценка',
     excellent: 'Отлично',
     good: 'Хорошо',
@@ -2074,9 +1917,9 @@ export default {
     goalsCompleted: 'Выполненные цели',
     reviewsThisPeriod: 'Оценки за период',
     avgSkillRating: 'Средняя оценка навыков',
-    completed: 'Завершено',
-    inProgress: 'В процессе',
-    pending: 'Ожидание',
+    completed: "Завершено",
+    inProgress: "В процессе",
+    pending: "Ожидание",
     // Tabs
     overview: 'Обзор',
     goalsTab: 'Цели',
@@ -2090,7 +1933,7 @@ export default {
     in_progress: 'в процессе',
     clickToRate: 'Нажмите на звёзды, чтобы обновить рейтинг сотрудника',
     deadline: 'Крайний срок',
-    due: 'Срок',
+    due: "Срок",
     complete: 'завершено',
     viewDetails: 'Посмотреть детали',
     // Reviews section
@@ -2098,24 +1941,18 @@ export default {
     newReview: 'Новая оценка',
     by: 'от',
     viewFullReview: 'Посмотреть полную оценку',
-    // General
-    status: 'Статус',
+    status: "Статус",
     actions: 'Действия',
     edit: 'Редактировать',
     view: 'Просмотр',
     progressSaved: 'Прогресс успешно сохранён!',
     progressSaveError: 'Не удалось сохранить прогресс',
-    goalTitle: 'Название цели',
-    goalTitlePlaceholder: 'Введите название цели',
+    goalTitle: "Название цели",
+    goalTitlePlaceholder: "Введите название цели",
     goalDescription: 'Описание',
     goalDescriptionPlaceholder: 'Опишите цели',
     category: 'Категория',
-    general: 'Общее',
-    technical: 'Техническое',
-    leadership: 'Руководство',
-    project: 'Проект',
-    professionalDevelopment: 'Профессиональное развитие',
-    priority: 'Приоритет',
+    priority: "Приоритет",
     low: 'Низкий',
     medium: 'Средний',
     high: 'Высокий',
@@ -2130,24 +1967,23 @@ export default {
     reviewComments: 'Комментарии к оценке',
     noComments: 'Пока нет комментариев',
     errorFetchingComments: 'Ошибка загрузки комментариев',
-    general: 'Общий',
-    technical: 'Технический',
-    leadership: 'Лидерство',
-    project: 'Проект',
-    communication: 'Коммуникация',
+    general: "Общий",
+    technical: "Технические навыки",
+    leadership: "Лидерство",
+    project: "Проект",
+    communication: "Коммуникация",
     timeManagement: 'Управление временем',
-    problemSolving: 'Решение проблем',
+    problemSolving: "Решение проблем",
     creativity: 'Креативность',
-    teamwork: 'Командная работа',
+    teamwork: "Командная работа",
     adaptability: 'Адаптивность',
     emotionalIntelligence: 'Эмоциональный интеллект',
     criticalThinking: 'Критическое мышление',
-    professionalDevelopment: 'Профессиональное развитие',
+    professionalDevelopment: "Профессиональное развитие",
     goalDeletedSuccess: 'Цель успешно удалена!',
     goalDeletedError: 'Не удалось удалить цель',
-    goalsInProgress: 'Цели в процессе',
+    goalsInProgress: 'Цели в процессе'
   },
-
   // Morphing Showcase
   morphingShowcase: {
     title: 'Интеграция Flubber Morphing',
@@ -2175,9 +2011,8 @@ export default {
     manualControl: 'Ручное управление',
     responsiveDesign: 'Адаптивный дизайн',
     customizableTiming: 'Настраиваемое время',
-    multipleEasingFunctions: 'Множественные функции плавности',
+    multipleEasingFunctions: 'Множественные функции плавности'
   },
-
   // Flubber Demo
   flubberDemo: {
     title: 'Демонстрация Flubber SVG Morphing',
@@ -2202,36 +2037,86 @@ export default {
     manualShapeSelection: 'Ручной выбор формы',
     responsiveAccessible: 'Адаптивный и доступный',
     customizableDuration: 'Настраиваемая продолжительность анимации',
-    easingFunctions: 'Функции плавности для естественного движения',
+    easingFunctions: 'Функции плавности для естественного движения'
   },
   demoEmployees: {
-  'demo-emp-1': { name: 'Администратор', location: 'Главный офис' },
-  'demo-emp-2': { name: 'Инженер по кадрам', location: 'Главный офис' },
-  'demo-emp-3': { name: 'UI/UX Дизайнер', location: 'Удалённо' },
-  'demo-emp-4': { name: 'Специалист по маркетингу', location: 'Главный офис' },
-  'demo-emp-5': { name: 'Менеджер по продажам', location: 'Удалённо' }
+    'demo-emp-1': {
+      name: 'Администратор',
+      location: 'Главный офис'
+    },
+    'demo-emp-2': {
+      name: 'Инженер по кадрам',
+      location: 'Главный офис'
+    },
+    'demo-emp-3': {
+      name: 'UI/UX Дизайнер',
+      location: 'Удалённо'
+    },
+    'demo-emp-4': {
+      name: 'Специалист по маркетингу',
+      location: 'Главный офис'
+    },
+    'demo-emp-5': {
+      name: 'Менеджер по продажам',
+      location: 'Удалённо'
+    }
   },
   locations: {
     headquarters: 'Главный офис',
     remote: 'Удалённо'
   },
   demoTasks: {
-    'task-1': { title: 'Анализ Отчётов Q4', description: 'Комплексный анализ квартальных показателей эффективности и тенденций - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.' },
-    'task-2': { title: 'Обновление Справочника Сотрудника', description: 'Пересмотр и обновление справочника сотрудника с политиками удалённой работы - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.' },
-    'task-3': { title: 'Исправление Ошибки Входа', description: 'Отладка и решение проблем входа пользователей на мобильных устройствах - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.' },
-    'task-4': { title: 'Дизайн Новой Панели', description: 'Создание макетов и прототипов для аналитической панели управления - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.' },
-    'task-5': { title: 'Анализ Эффективности Кампании', description: 'Анализ результатов и ROI маркетинговых кампаний Q3 - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.' },
-    'task-6': { title: 'Подключение Клиента', description: 'Завершить процесс подключения нового корпоративного клиента - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.' },
-    'task-7': { title: 'Документация API', description: 'Написать комплексную документацию API для версии 2.0 - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.' }
+    'task-1': {
+      title: 'Анализ Отчётов Q4',
+      description: 'Комплексный анализ квартальных показателей эффективности и тенденций - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.'
+    },
+    'task-2': {
+      title: 'Обновление Справочника Сотрудника',
+      description: 'Пересмотр и обновление справочника сотрудника с политиками удалённой работы - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.'
+    },
+    'task-3': {
+      title: 'Исправление Ошибки Входа',
+      description: 'Отладка и решение проблем входа пользователей на мобильных устройствах - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.'
+    },
+    'task-4': {
+      title: 'Дизайн Новой Панели',
+      description: 'Создание макетов и прототипов для аналитической панели управления - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.'
+    },
+    'task-5': {
+      title: 'Анализ Эффективности Кампании',
+      description: 'Анализ результатов и ROI маркетинговых кампаний Q3 - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.'
+    },
+    'task-6': {
+      title: 'Подключение Клиента',
+      description: 'Завершить процесс подключения нового корпоративного клиента - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.'
+    },
+    'task-7': {
+      title: 'Документация API',
+      description: 'Написать комплексную документацию API для версии 2.0 - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.'
+    }
   },
   demoGoals: {
-    'goal-1': { title: 'Повысить Эффективность Команды', description: 'Увеличить производительность команды на 20% в следующем квартале - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.' },
-    'goal-2': { title: 'Изучить React Native', description: 'Освоить React Native для разработки мобильных приложений - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.' },
-    'goal-3': { title: 'UX Сертификация', description: 'Получить профессиональный сертификат Google UX Design - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.' },
-    'goal-4': { title: 'Увеличить Генерацию Лидов', description: 'Достичь 30% увеличения квалифицированных лидов через маркетинговые кампании - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.' },
-    'goal-5': { title: 'Заключить Корпоративные Контракты', description: 'Заключить 5 корпоративных контрактов стоимостью более $500K каждый - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.' }
+    'goal-1': {
+      title: 'Повысить Эффективность Команды',
+      description: 'Увеличить производительность команды на 20% в следующем квартале - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.'
+    },
+    'goal-2': {
+      title: 'Изучить React Native',
+      description: 'Освоить React Native для разработки мобильных приложений - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.'
+    },
+    'goal-3': {
+      title: 'UX Сертификация',
+      description: 'Получить профессиональный сертификат Google UX Design - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.'
+    },
+    'goal-4': {
+      title: 'Увеличить Генерацию Лидов',
+      description: 'Достичь 30% увеличения квалифицированных лидов через маркетинговые кампании - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.'
+    },
+    'goal-5': {
+      title: 'Заключить Корпоративные Контракты',
+      description: 'Заключить 5 корпоративных контрактов стоимостью более $500K каждый - Примечание: Эти демонстрационные данные нельзя редактировать. Пожалуйста, добавьте собственные данные для тестирования.'
+    }
   },
-    
   demoReviews: {
     'review-1': {
       reviewPeriod: '4 квартал 2024',
@@ -2248,13 +2133,23 @@ export default {
       comments: 'Отличный вклад в работу команды'
     }
   },
-
   demoSkills: {
-    'skill-1': { name: 'React', category: 'Техническое', proficiencyLevel: 'Эксперт' },
-    'skill-2': { name: 'TypeScript', category: 'Техническое', proficiencyLevel: 'Продвинутый' },
-    'skill-3': { name: 'UI/UX Дизайн', category: 'Дизайн', proficiencyLevel: 'Эксперт' }
+    'skill-1': {
+      name: 'React',
+      category: 'Техническое',
+      proficiencyLevel: 'Эксперт'
+    },
+    'skill-2': {
+      name: 'TypeScript',
+      category: 'Техническое',
+      proficiencyLevel: 'Продвинутый'
+    },
+    'skill-3': {
+      name: 'UI/UX Дизайн',
+      category: 'Дизайн',
+      proficiencyLevel: 'Эксперт'
+    }
   },
-
   demoFeedback: {
     'feedback-1': {
       type: 'Отзыв коллег',
@@ -2265,29 +2160,44 @@ export default {
       text: 'Отличная работа над новой системой дизайна. Так держать!'
     }
   },
-
   demoJobs: {
     'job-1': {
       title: 'Старший фронтенд-разработчик',
       description: 'Мы ищем опытного фронтенд-разработчика, который присоединится к нашей команде и поможет создавать отличные веб-приложения.',
       location: 'Удалённо',
       salaryRange: '$90k - $120k',
-      requirements: { 0: 'React', 1: 'TypeScript', 2: 'Tailwind CSS' }
+      requirements: {
+        0: 'React',
+        1: 'TypeScript',
+        2: 'Tailwind CSS'
+      }
     },
     'job-2': {
       title: 'Продуктовый дизайнер',
       description: 'Присоединяйтесь к нашей команде дизайнеров, чтобы создавать отличный пользовательский опыт и формировать будущее наших продуктов.',
       location: 'Нью-Йорк',
       salaryRange: '$80k - $100k',
-      requirements: { 0: 'Figma', 1: 'UI/UX', 2: 'Прототипирование' }
+      requirements: {
+        0: 'Figma',
+        1: 'UI/UX',
+        2: 'Прототипирование'
+      }
     }
   },
-
   demoApplicants: {
-    'app-1': { firstName: 'Джон', lastName: 'До', education: 'Бакалавр информатики', currentPosition: 'Старший разработчик' },
-    'app-2': { firstName: 'Джейн', lastName: 'Смит', education: 'Магистр дизайна', currentPosition: 'Руководитель UX' }
+    'app-1': {
+      firstName: 'Джон',
+      lastName: 'До',
+      education: 'Бакалавр информатики',
+      currentPosition: 'Старший разработчик'
+    },
+    'app-2': {
+      firstName: 'Джейн',
+      lastName: 'Смит',
+      education: 'Магистр дизайна',
+      currentPosition: 'Руководитель UX'
+    }
   },
-
   demoApplications: {
     'appl-1': {
       status: 'На рассмотрении',
@@ -2298,7 +2208,6 @@ export default {
       notes: 'Отличное портфолио и навыки дизайна'
     }
   },
-
   demoInterviews: {
     'int-1': {
       status: 'Назначено',
@@ -2306,22 +2215,21 @@ export default {
       notes: 'Просмотр портфолио и техническая оценка'
     }
   },
-
   demoNotifications: {
     'notif-1': {
-      title: 'Добро пожаловать в HR-систему',
-      message: 'Добро пожаловать в демо-режим HR-системы. Исследуйте все возможности!',
-      actionLabel: 'Перейти к панели'
+      title: "Добро пожаловать в HR-систему",
+      message: "Добро пожаловать в демонстрационный режим HR-системы. Исследуйте её возможности!",
+      actionLabel: "Перейти к панели"
     },
     'notif-2': {
-      title: 'Назначена новая задача',
-      message: 'Вам назначена новая задача: анализ результатов за 3 квартал',
-      actionLabel: 'Просмотреть задачу'
+      title: "Назначена новая задача",
+      message: "Вам назначена новая задача: анализ результатов за 3 квартал",
+      actionLabel: "Просмотреть задачу"
     },
     'notif-3': {
-      title: 'Напоминание о встрече',
-      message: 'Командная встреча через 30 минут',
-      actionLabel: 'Открыть календарь'
+      title: "Напоминание о встрече",
+      message: "Квартальные оценки эффективности должны быть выполнены на следующей неделе.",
+      actionLabel: "Открыть календарь"
     }
   }
 };

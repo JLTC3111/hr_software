@@ -14,6 +14,8 @@ import { ShinyButton } from './ui/shiny-button';
 import { SlidingNumber } from './motion-primitives';
 import { NumberTicker } from './ui/number-ticker';
 import { PageLiveClock } from './ui/page-live-clock';
+import { DatePicker } from './ui/date-picker.jsx';
+import { TranslatedText } from './ui/translated-text.jsx';
 import { cn } from '@/lib/utils';
 import {
   filterActiveEmployees,
@@ -276,7 +278,6 @@ const TaskListing = ({ employees, allEmployees }) => {
   
   // Modal ref for outside click detection
   const modalRef = React.useRef(null);
-  const dueDateInputRef = useRef(null);
 
   const employeeDirectory = allEmployees?.length ? allEmployees : employees;
 
@@ -714,7 +715,7 @@ const TaskListing = ({ employees, allEmployees }) => {
                         }
                       </button>
                       <h4 className={`font-semibold ${text.primary} ${task.status === 'completed' ? 'line-through' : ''}`}>
-                        {isDemoMode() ? getDemoTaskTitle(task, t) : task.title}
+                        {isDemoMode() ? getDemoTaskTitle(task, t) : <TranslatedText text={task.title} />}
                       </h4>
                       <span className={`px-2 py-1 rounded text-xs ${getPriorityColor(task.priority)} ${task.status === 'completed' ? 'line-through' : ''}`}>
                         {t(`taskListing.${task.priority}`, task.priority)}
@@ -731,7 +732,7 @@ const TaskListing = ({ employees, allEmployees }) => {
                         </span>
                       )}
                     </div>
-                    <p className={`text-sm ${text.secondary} mb-2`}>{isDemoMode() ? getDemoTaskDescription(task, t) : task.description}</p>
+                    <p className={`text-sm ${text.secondary} mb-2`}>{isDemoMode() ? getDemoTaskDescription(task, t) : <TranslatedText text={task.description} />}</p>
                     {task.due_date && (
                       <p className={`text-xs ${text.secondary} flex items-center space-x-1 mb-2`}>
                         <button
@@ -747,16 +748,6 @@ const TaskListing = ({ employees, allEmployees }) => {
                             });
                             setModalMode('edit');
                             setShowAddTask(true);
-                            setTimeout(() => {
-                              const el = dueDateInputRef.current;
-                              if (!el) return;
-                              if (typeof el.showPicker === 'function') {
-                                el.showPicker();
-                              } else {
-                                el.focus();
-                                if (typeof el.click === 'function') el.click();
-                              }
-                            }, 250);
                           }}
                           className="inline-flex items-center justify-center w-4 h-4"
                           aria-label={t('taskListing.openDueDatePicker', 'Open due date picker')}
@@ -1141,33 +1132,13 @@ const TaskListing = ({ employees, allEmployees }) => {
                 <label className={`block text-sm font-medium ${text.primary} mb-2`}>
                   {t('taskListing.dueDate', 'Due Date')}
                 </label>
-                  <div className="relative">
-                  <input
-                    ref={dueDateInputRef}
-                    type="date"
+                  <DatePicker
                     value={taskForm.dueDate}
                     onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
-                    className={`cursor-pointer border-gray-300 w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary} [&::-webkit-calendar-picker-indicator]:opacity-0`}
+                    icon={Calendar}
+                    inputClassName={`cursor-pointer border-gray-300 w-full px-4 py-2 rounded-lg border ${text.secondary} ${border.primary}`}
                   />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const el = dueDateInputRef.current;
-                      if (!el) return;
-                      if (typeof el.showPicker === 'function') {
-                        el.showPicker();
-                      } else {
-                        el.focus();
-                        if (typeof el.click === 'function') el.click();
-                      }
-                    }}
-                    className={`cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center ${text.secondary}`}
-                    aria-label={t('taskListing.openDatePicker', 'Open date picker')}
-                  >
-                    <Calendar className="w-5 h-5" />
-                  </button>
                 </div>
-              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={`block text-sm font-medium ${text.primary} mb-2`}>

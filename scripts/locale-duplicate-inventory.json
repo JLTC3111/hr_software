@@ -1,0 +1,91 @@
+{
+  "generatedAt": "2026-07-24T09:03:47.476Z",
+  "totals": {
+    "duplicates": 0,
+    "files": [
+      {
+        "file": "de.js",
+        "total": 0
+      },
+      {
+        "file": "en.js",
+        "total": 0
+      },
+      {
+        "file": "es.js",
+        "total": 0
+      },
+      {
+        "file": "fr.js",
+        "total": 0
+      },
+      {
+        "file": "jp.js",
+        "total": 0
+      },
+      {
+        "file": "kr.js",
+        "total": 0
+      },
+      {
+        "file": "ru.js",
+        "total": 0
+      },
+      {
+        "file": "th.js",
+        "total": 0
+      },
+      {
+        "file": "vn.js",
+        "total": 0
+      }
+    ]
+  },
+  "byFile": [
+    {
+      "file": "de.js",
+      "count": 0,
+      "issues": []
+    },
+    {
+      "file": "en.js",
+      "count": 0,
+      "issues": []
+    },
+    {
+      "file": "es.js",
+      "count": 0,
+      "issues": []
+    },
+    {
+      "file": "fr.js",
+      "count": 0,
+      "issues": []
+    },
+    {
+      "file": "jp.js",
+      "count": 0,
+      "issues": []
+    },
+    {
+      "file": "kr.js",
+      "count": 0,
+      "issues": []
+    },
+    {
+      "file": "ru.js",
+      "count": 0,
+      "issues": []
+    },
+    {
+      "file": "th.js",
+      "count": 0,
+      "issues": []
+    },
+    {
+      "file": "vn.js",
+      "count": 0,
+      "issues": []
+    }
+  ]
+}

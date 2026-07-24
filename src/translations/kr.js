@@ -19,9 +19,8 @@ export default {
     taskReview: '성과 검토',
     svgMorphing: 'SVG 모핑',
     fullDemo: '전체 데모',
-    showcase: '빠른 쇼케이스',
+    showcase: '빠른 쇼케이스'
   },
-
   // Leave Management
   leave: {
     subtitle: '공유 캘린더에서 휴가를 계획, 신청, 승인하세요.',
@@ -86,9 +85,8 @@ export default {
     rejectConfirm: '{{name}}의 휴가를 거부하시겠습니까?',
     rejectReasonLabel: '사유 (선택)',
     rejectReasonPlaceholder: '거부 사유를 입력하세요...',
-    confirmReject: '신청 거부',
+    confirmReject: '신청 거부'
   },
-
   // Header
   header: {
     title: 'HR 매니저',
@@ -100,9 +98,8 @@ export default {
     welcomePhrase5: '오늘도 생산적으로, {name}',
     welcomePhrase6: '함께해 주셔서 감사합니다, {name}',
     user: 'HR팀',
-    logout: '로그아웃',
+    logout: '로그아웃'
   },
-
   // Login
   login: {
     idleLogoutMessage: '일정 시간 동안 비활성 상태가 되어 로그아웃되었습니다. 다시 로그인해주세요.',
@@ -129,7 +126,6 @@ export default {
     tryDemoLoading: '데모 로딩 중...',
     forgotPasswordModal: {
       title: '비밀번호 재설정',
-      success: '비밀번호 재설정 이메일이 전송되었습니다. 받은 편지함을 확인해 주세요.',
       description: '이메일 주소를 입력하시면 비밀번호를 재설정할 수 있는 링크를 보내드립니다.',
       emailLabel: '이메일 주소',
       emailPlaceholder: 'you@example.com',
@@ -137,14 +133,13 @@ export default {
       emailInvalid: '유효한 이메일을 입력해주세요',
       sendReset: '재설정 링크 보내기',
       cancel: '취소',
-      success: '비밀번호 재설정 이메일을 보냈습니다. 받은편지함을 확인해주세요.',
+      success: "비밀번호 재설정 이메일이 전송되었습니다. 받은 편지함을 확인해 주세요.",
       error: '재설정 이메일 전송에 실패했습니다. 다시 시도해주세요.',
       noAccount: '이 이메일 주소로 등록된 계정을 찾을 수 없습니다',
       rateLimitError: '요청이 너무 많습니다. 나중에 다시 시도해주세요',
       networkError: '네트워크 오류입니다. 연결을 확인해주세요'
-    },
+    }
   },
-
   // Reset Password Page
   resetPassword: {
     title: '비밀번호 재설정',
@@ -158,7 +153,6 @@ export default {
     passwordsDontMatch: '비밀번호가 일치하지 않습니다',
     error: '비밀번호 재설정에 실패했습니다. 다시 시도해주세요.',
     success: '비밀번호가 성공적으로 재설정되었습니다!',
-    redirecting: '로그인 페이지로 이동 중...',
     resetting: '재설정 중...',
     verifying: '재설정 링크를 확인 중입니다...',
     resetButton: '비밀번호 재설정',
@@ -168,20 +162,18 @@ export default {
     signingIn: '로그인 중...',
     orContinueWith: '또는 다음으로 계속',
     continueWithGithub: 'GitHub로 계속',
-    redirecting: '로그인 페이지로 이동 중...',
+    redirecting: "로그인 페이지로 이동 중...",
     githubError: 'GitHub 로그인에 실패했습니다',
     noAccount: '계정이 없으신가요?',
     signUp: '회원가입',
     footer: '© 2024 HR 매니저. All rights reserved.',
-    tryDemoLoading: '데모 로딩 중...',
+    tryDemoLoading: '데모 로딩 중...'
   },
-
   sidebar: {
     main: '메인',
     analytics: '분석',
-    settings: '설정',
+    settings: '설정'
   },
-
   // Dashboard
   dashboard: {
     regularAndOvertimeByEmployee: '직원별 정규 및 초과 근무 시간',
@@ -232,12 +224,10 @@ export default {
       oneDay: '1일 전'
     }
   },
-
   // Search
   search: {
     placeholder: '직원 검색...'
   },
-
   employeeDepartment: {
     all: '모두',
     legal_compliance: '법적 준수',
@@ -268,9 +258,8 @@ export default {
     IT: '정보기술',
     it: '아이씨티',
     product: '제품',
-    customer_support: '고객 지원',
+    customer_support: '고객 지원'
   },
-
   // Months
   months: {
     january: '1월',
@@ -286,7 +275,6 @@ export default {
     november: '11월',
     december: '12월'
   },
-
   stats: {
     total: '총계',
     underReview: '검토 중',
@@ -294,9 +282,8 @@ export default {
     interviewScheduled: '면접 예정',
     offerExtended: '오퍼 발송됨',
     hired: '채용됨',
-    rejected: '불합격',
+    rejected: '불합격'
   },
-
   timeClock: {
     title: '근태 기록',
     subtitle: '근무 시간을 기록하고 증빙 자료를 제출하세요',
@@ -305,7 +292,6 @@ export default {
     fileTypes: '지원: 이미지, PDF, 문서 (최대 50MB)',
     history: '근무 기록 내역',
     selectDate: '날짜 선택',
-    date: '날짜',
     clockIn: '출근 시간',
     clockOut: '퇴근 시간',
     hourType: '근무 유형',
@@ -317,13 +303,6 @@ export default {
     success: '근무 기록이 성공적으로 제출되었습니다!',
     confirmDelete: '이 기록을 삭제하시겠습니까?',
     delete: '삭제',
-    noEntries: '아직 기록이 없습니다. 첫 번째 기록을 추가하세요!',
-    time: '시간',
-    hours: '근무 시간',
-    type: '유형',
-    status: '상태',
-    actions: '작업',
-    employee: '직원',
     weeklySummary: '이번 주',
     monthlySummary: '이번 달',
     leaveDays: '휴가 일수',
@@ -356,7 +335,7 @@ export default {
       invalidFileType: 'JPG, PNG, PDF 파일만 허용됩니다',
       submitFailed: '시간 기록 제출에 실패했습니다. 다시 시도해 주세요.',
       deleteFailed: '시간 기록 삭제에 실패했습니다. 다시 시도해 주세요.',
-      duplicateEntry: '이 날짜에 이미 {hourType} 시간 기록이 있습니다. 기존 기록을 편집하거나 다른 시간 유형을 선택하세요.',
+      duplicateEntry: '이 날짜에 이미 {hourType} 시간 기록이 있습니다. 기존 기록을 편집하거나 다른 시간 유형을 선택하세요.'
     },
     deleteOptions: '삭제 옵션 선택',
     deleteEntry: '전체 시간 기록 삭제',
@@ -377,16 +356,15 @@ export default {
     myEntries: '내 항목',
     allEmployees: '모든 직원',
     specificEmployee: '특정 직원',
-    employee: '직원',
-    date: '날짜',
-    time: '시간',
-    hours: '시간',
-    type: '유형',
-    status: '상태',
-    actions: '동작',
-    noEntries: '항목을 찾을 수 없습니다'
+    employee: "직원",
+    date: "날짜",
+    time: "시간",
+    hours: "근무 시간",
+    type: "유형",
+    status: "상태",
+    actions: "동작",
+    noEntries: "아직 기록이 없습니다. 첫 번째 기록을 추가하세요!"
   },
-  
   // Time Tracking
   timeTracking: {
     on_leave: '휴가 중',
@@ -400,13 +378,11 @@ export default {
     clockOut: '퇴근 기록',
     amountHours: '시간',
     hourType: '근무 시간 유형',
-    status: '상태',
     notes: '메모',
     createdAt: '작성일',
     summary: '요약',
     quickActions: '빠른 작업',
     workDays: '근무 일수',
-    leaveDays: '휴가 일수',
     overtime: '초과 근무 시간',
     wfh: '재택 근무 시간',
     holidayOvertime: '휴일 초과 근무',
@@ -420,14 +396,12 @@ export default {
     attendanceRate: '출석률',
     requestLeave: '휴가 신청',
     logOvertime: '초과 근무 기록',
-    leaveType: '휴가 유형',
     vacation: '연차 휴가',
     sickLeave: '병가',
     personal: '개인 휴가',
     unpaid: '무급 휴가',
-    leaveDays: '휴가 일수',
-    leaveType: '휴가 유형',
-    status: '상태',
+    leaveDays: "휴가 일수",
+    leaveType: "휴가 유형",
     requestedBy: '요청자',
     approvedBy: '승인자',
     leaveRequestManagement: '휴가 신청 관리',
@@ -439,7 +413,7 @@ export default {
       pending: '대기 중',
       approved: '승인됨',
       rejected: '거절됨',
-      cancelled: '취소됨',
+      cancelled: '취소됨'
     },
     // Hour types for overtime
     weekend: '주말 초과 근무',
@@ -468,7 +442,6 @@ export default {
     daysWorked: '근무 일수',
     totalHoursLabel: '총 시간'
   },
-
   // Employees
   employees: {
     title: '직원 관리',
@@ -508,9 +481,8 @@ export default {
     topPerformers: '우수 직원',
     avgRating: '평균 평점',
     departments: '부서',
-    livePulse: '라이브 펄스',
+    livePulse: '라이브 펄스'
   },
-
   // Recruitment
   recruitment: {
     position: '직책',
@@ -567,17 +539,16 @@ export default {
     department: '부서',
     viewResume: '이력서 보기',
     linkedinProfile: 'LinkedIn 프로필',
-    notes: '메모',
+    notes: '메모'
   },
-
   // Reports
   reports: {
     bonusHours: '보너스 시간',
+    leave: '휴가 신청',
     daysWorked: '근무 일수',
     leaveDays: '휴가 일수',
     title: '보고서 및 분석',
     filenamePrefix: 'HR_보고서_',
-    allEmployees: '모든_직원',
     excel: {
       charts: {
         hoursByType: '유형별 시간',
@@ -701,151 +672,103 @@ export default {
         updatedAt: '수정일'
       }
     },
-    achieved: '달성됨', 
+    achieved: '달성됨',
     language: '언어',
     generated: '생성일',
     summaryOverview: '요약 개요',
     completedTasks: '완료된 작업',
     achievedGoals: '달성된 목표',
     avgProgress: '평균 진행률',
-    personalGoals: '개인 목표',
     type: '보고서 유형',
     category: '카테고리',
     progress: '진행률',
     goal: '목표',
-    performance: '성과',
-    attendance: '출석',
-    recruitment: '채용',
-    salary: '급여',
     timeTracking: '근무 시간 추적',
     task: '작업',
-    status: '상태',
-    employee: '직원',
-    department: '부서',
-    dateRange: '날짜 범위',
-    filters: '필터',
-    export: '내보내기', 
+    export: '내보내기',
     priority: '우선순위',
     dueDate: '마감일',
-    approved: '승인됨',
     completed: '완료',
     inProgress: '진행 중',
     completionRate: '완료율',
-    rejected: '거절됨',
-    pending: '대기 중',
     hours: '근무 시간',
-    attendance: '출석',
-    performance: '성과',
-    recruitment: '채용',
-    salary: '급여',
-    employees: '직원',
     details: '상세',
-    status: '상태',
+    status: "상태",
     date: '날짜',
     dataPreview: '데이터 미리보기',
     showingFirst50: '처음 50 개 항목 표시',
     liveData: '실시간 데이터',
-    allEmployees: '모든 직원',
+    allEmployees: "모든 직원",
     totalRecords: '총 기록',
     totalEntries: '총 기록',
     subtitle: '상세한 보고서를 생성하고 내보냅니다.',
     timeEntry: '시간 기록',
     quickFilters: '빠른 필터',
-    employee: '직원',
+    employee: "직원",
     tasks: '업무 성과',
-    attendance: '출석',
-    overtime: '초과 근무',
     leaveRequests: '휴가 신청',
     performanceSummary: '성과 요약',
-    individualMetrics: '개별 지표',
-    individualReport: '개별 보고서',
-    departmentMetrics: '부서별 지표',
-    organizationMetrics: '조직 전체 지표',
-    dateRange: '날짜 범위',
-    allDepartments: '모든 부서',
-    generateReport: '보고서 생성',
     customReport: '맞춤형 보고서',
     reportParameters: '보고서 매개변수',
-    timeEntries: '시간 기록 보고서',
-    attendanceReport: '출석 보고서',
     performanceReport: '성과 보고서',
     recruitmentReport: '채용 보고서',
-    salaryReport: '급여 보고서',
     goals: '개인 목표',
     totalHours: '총 시간',
     regularHours: '정규 시간',
-    overtime: '초과 근무',
+    overtime: "초과 근무",
     completion: '완료율',
     tasksDone: '완료된 업무',
     goalProgress: '목표 진행률',
-    personalGoals: '개인 목표',   
+    personalGoals: "개인 목표",
     tasksPending: '대기 중인 업무',
     attendanceRate: '출석률',
     approvalStatus: '승인 상태',
-    approved: '승인됨',
-    pending: '대기 중',
-    rejected: '거절됨',
+    approved: "승인됨",
+    pending: "대기 중",
     today: '오늘',
     yesterday: '어제',
-    thisWeek: '이번 주',
     last7Days: '지난 7일',
     last14Days: '지난 14일',
     last30Days: '지난 30일',
-    thisYear: '올해',
-    thisWeek: '이번 주',
-    lastWeek: '지난 주',
-    thisQuarter: '이번 분기',
-    lastQuarter: '지난 분기',
-    thisYear: '올해',
-    lastYear: '작년',
-    dateRange: '날짜 범위',
-    allDepartments: '모든 부서',
-    generateReport: '보고서 생성',
+    thisWeek: "이번 주",
     thisMonth: '이번 달',
-    lastMonth: '지난 달',
-    thisQuarter: '이번 분기',
-    lastQuarter: '지난 분기',
-    thisYear: '올해',
-    lastYear: '작년',
+    thisYear: "올해",
     customDateRange: '사용자 지정 날짜 범위',
     dataType: '데이터 유형',
-    timeEntries: '시간 기록 보고서',
+    timeEntries: "시간 기록 보고서",
     exportToCSV: 'CSV로 내보내기',
-    individualMetrics: '개별 지표',
-    individualReport: '개별 보고서',
-    departmentMetrics: '부서별 지표',
-    organizationMetrics: '조직 전체 지표',
+    individualMetrics: "개별 지표",
+    individualReport: "개별 보고서",
+    departmentMetrics: "부서별 지표",
+    organizationMetrics: "조직 전체 지표",
     recordsFound: '개의 기록이 발견되었습니다',
     exportingIncludes: '내보내기에는 테이블에 표시된 데이터뿐만 아니라 전체 데이터가 포함됩니다.',
     employeeGrowth: '직원 성장',
     departmentDistribution: '부서별 분포',
     performanceMetrics: '성과 지표',
-    recruitmentMetrics: '채용 지표',
-    attendanceReport: '출석 보고서',
-    salaryReport: '급여 보고서',
-    generateReport: '보고서 생성',
+    salaryReport: "급여 보고서",
+    generateReport: "보고서 생성",
     exportPDF: 'PDF 내보내기',
     exportExcel: 'Excel 내보내기',
     filterBy: '필터링',
-    dateRange: '날짜 범위',
-    allDepartments: '모든 부서',
-    performance: '성과',
-    salary: '급여',
-    attendance: '출석',
-    recruitment: '채용',
+    dateRange: "날짜 범위",
+    allDepartments: "모든 부서",
+    performance: "성과",
+    salary: "급여",
+    attendance: "출석",
+    recruitment: "채용",
     error: '오류가 발생했습니다. 다시 시도해주세요.',
     selected: '선택됨',
     selectedEmployees: '선택된 직원',
     selectAtLeastOne: '최소한 한 명의 직원을 선택하세요',
     entryAddedSuccess: '시간 기록이 성공적으로 추가되었습니다:',
     entriesAddedSuccess: '시간 기록이 성공적으로 추가되었습니다:',
-    employees: '명의 직원',
-    department: '부서',
+    department: "부서",
     all: '모두',
     // Navigation
     overview: '개요',
     detailedReports: '상세 보고서',
-    filters: '필터',
+    filters: "필터",
     exportAll: '모두 내보내기',
     // Charts
     departmentOverview: '부서 개요',
@@ -855,7 +778,7 @@ export default {
     // Stats
     totalEmployees: '총 직원 수',
     newHires: '신규 채용',
-    thisQuarter: '이번 분기',
+    thisQuarter: "이번 분기",
     turnoverRate: '이직률',
     annualRate: '연간 비율',
     avgSalary: '평균 급여',
@@ -869,15 +792,15 @@ export default {
     totalApplications: '총 지원서',
     interviewed: '면접 완료',
     hired: '채용',
-    rejected: '거절',
-    employees: '직원',
+    rejected: "거절",
+    employees: "명의 직원",
     // Report generation
     generateCustomReport: '사용자 정의 보고서 생성',
     reportType: '보고서 유형',
     employeePerformance: '직원 성과',
     salaryAnalysis: '급여 분석',
-    attendanceReport: '출석 보고서',
-    recruitmentMetrics: '채용 지표',
+    attendanceReport: "출석 보고서",
+    recruitmentMetrics: "채용 지표",
     departmentComparison: '부서 비교',
     exportToPDF: 'PDF로 내보내기',
     pdf: {
@@ -932,11 +855,11 @@ export default {
     measureTrainingSuccess: '교육 프로그램 성공 측정',
     generate: '생성 →',
     fromLastPeriod: '이전 기간 대비',
-    lastWeek:	'지난주 (Jinanju)',
-    lastMonth:	'지난달 (Jinandal)',
-    lastQuarter:	'지난 분기 (Jinan bungi)',
-    lastYear:	'작년 (Jaknyeon)',
-    customRange:	'사용자 지정 범위 (Sayongja jijeong beomwi)',
+    lastWeek: "지난주 (Jinanju)",
+    lastMonth: "지난달 (Jinandal)",
+    lastQuarter: "지난 분기 (Jinan bungi)",
+    lastYear: "작년 (Jaknyeon)",
+    customRange: '사용자 지정 범위 (Sayongja jijeong beomwi)',
     for: '에 대한',
     from: '에서',
     to: '까지',
@@ -954,9 +877,8 @@ export default {
     csvExportSuccess: '모든 데이터 유형이 하나의 파일에 포함된 CSV 보고서를 성공적으로 내보냈습니다!',
     excelExportHint: '요약, 차트 및 상세 시트와 함께 모든 데이터 유형 내보내기',
     pdfExportHint: '시각적 차트, 요약 및 모든 데이터 유형의 상세 테이블이 포함된 PDF 내보내기',
-    pdfExportSuccess: 'PDF 보고서가 성공적으로 내보내졌습니다!',
+    pdfExportSuccess: 'PDF 보고서가 성공적으로 내보내졌습니다!'
   },
-
   // Add Employee
   addEmployee: {
     title: '신규 직원 추가',
@@ -995,7 +917,6 @@ export default {
     submitError: '직원 추가에 실패했습니다',
     dobPlaceholder: '생년월일 선택'
   },
-
   // Employee Detail Modal
   employeeDetailModal: {
     download: '다운로드',
@@ -1055,7 +976,6 @@ export default {
     uploadInstructions: '여기를 클릭하거나 PDF 파일을 드래그하여 업로드',
     maxFileSize: '최대 파일 크기: 10MB'
   },
-
   // Status translations
   status: {
     approved: '승인됨',
@@ -1067,19 +987,32 @@ export default {
     'in-progress': '진행 중',
     'not-started': '시작 안 함',
     achieved: '달성',
-    'on-hold': '보류',
+    'on-hold': '보류'
   },
-
   // Data Type Labels
   dataType: {
     timeEntry: '근무 시간 입력',
     task: '작업',
-    goal: '목표',
+    goal: '목표'
   },
-
   // Common
+  datePicker: {
+    placeholder: '날짜 선택',
+    calendar: '달력',
+    prevMonth: '이전 달',
+    nextMonth: '다음 달',
+    today: '오늘',
+    clear: '지우기'
+  },
+  timePicker: {
+    hours: '시',
+    minutes: '분',
+    done: '완료',
+    clear: '지우기',
+    placeholder: '--:--',
+    picker: '시간 선택'
+  },
   common: {
-    viewDetails: '세부 정보 보기',
     email: '이메일',
     phone: '전화번호',
     results: '결과',
@@ -1123,26 +1056,23 @@ export default {
     selectFile: '파일 선택',
     upload: '업로드',
     download: '다운로드',
-    viewDetails: '세부 정보 보기',
+    viewDetails: "세부 정보 보기",
     actions: '작업',
     fetching: '불러오는 중',
     ready: '완료',
-    ms: 'ms',
+    ms: 'ms'
   },
-
   // Theme
   theme: {
     light: '라이트 모드',
     dark: '다크 모드',
     toggle: '테마 전환'
   },
-
   // Language
   language: {
     select: '언어 선택',
     current: '현재 언어'
   },
-
   // Time Tracking Actions
   timeTrackingActions: {
     recordTime: '시간 기록',
@@ -1166,7 +1096,6 @@ export default {
     daysWorked: '근무 일수',
     totalHoursLabel: '총 근무 시간'
   },
-
   // Admin Time Entry
   adminTimeEntry: {
     title: '관리자 근무 입력',
@@ -1234,14 +1163,12 @@ export default {
       errorWithDetail: '표준 근무 시간 입력에 실패했습니다: {message}'
     }
   },
-
   // Recruitment Actions
   recruitmentActions: {
     view: '보기',
     schedule: '일정 잡기',
     reject: '거절'
   },
-
   // Employee Status
   employeeStatus: {
     active: '활성',
@@ -1250,7 +1177,6 @@ export default {
     pending: '대기중',
     outSourceContractor: '외주 계약자'
   },
-
   // Recruitment Status
   recruitmentStatus: {
     active: '활성',
@@ -1267,26 +1193,6 @@ export default {
     technical: '기술면접',
     shortlisted: '최종 후보'
   },
-
-  // Demo Notifications
-  demoNotifications: {
-    'notif-1': {
-      title: 'HR 시스템에 오신 것을 환영합니다',
-      message: 'HR 시스템 데모 모드에 오신 것을 환영합니다. 자유롭게 탐색해보세요!',
-      actionLabel: '대시보드로 이동'
-    },
-    'notif-2': {
-      title: '새로운 지원서',
-      message: 'Senior Frontend Developer 포지션에 새로운 지원서가 접수되었습니다.',
-      actionLabel: '지원서 보기'
-    },
-    'notif-3': {
-      title: '성과 평가 예정',
-      message: '분기별 성과 평가가 다음 주에 예정되어 있습니다.',
-      actionLabel: '평가 보기'
-    }
-  },
-
   // Performance Goals
   goals: {
     completeReactProject: 'React 프로젝트 완료',
@@ -1297,14 +1203,12 @@ export default {
     backendDevelopment: '백엔드 개발',
     teamCollaboration: '팀 협업'
   },
-
   // Review Types
   reviewTypes: {
     quarterlyReview: '분기별 평가',
     midYearReview: '상반기 평가',
     annualReview: '연간 평가'
   },
-
   // Skill Categories
   skillCategories: {
     technical: '기술적',
@@ -1312,7 +1216,6 @@ export default {
     leadership: '리더십',
     communication: '커뮤니케이션'
   },
-
   employeePosition: {
     general_manager: '총지배인',
     senior_developer: '선임 개발자',
@@ -1322,9 +1225,8 @@ export default {
     managing_director: '원장',
     support_staff: '지원팀',
     expertGroup: '전문가 그룹',
-    employee: '직원',
-  }, 
-
+    employee: '직원'
+  },
   // Notifications
   notifications: {
     title: '알림',
@@ -1378,9 +1280,8 @@ export default {
     // Notification messages
     timeEntriesAwaiting: '{0}개의 시간 입력이 승인 대기 중입니다',
     reviewNow: '지금 확인',
-    viewDetails: '세부정보 보기',
+    viewDetails: '세부정보 보기'
   },
-
   // Settings
   settings: {
     title: '설정',
@@ -1393,13 +1294,11 @@ export default {
     confirmReset: '모든 설정을 기본값으로 초기화하시겠습니까?',
     importSuccess: '설정을 성공적으로 가져왔습니다!',
     importError: '설정 가져오기 실패',
-    
     notifications: '알림',
     appearance: '외관',
     language: '언어',
     privacy: '개인정보',
     work: '작업 환경설정',
-    
     notificationPreferences: '알림 환경설정',
     emailNotifications: '이메일 알림',
     emailNotificationsDesc: '이메일로 알림 받기',
@@ -1417,17 +1316,14 @@ export default {
     employeeNotifications: '직원 업데이트',
     recruitmentNotifications: '채용',
     systemNotifications: '시스템 업데이트',
-    
     appearanceSettings: '외관 설정',
     theme: '테마',
     dateFormat: '날짜 형식',
     timeFormat: '시간 형식',
     itemsPerPage: '페이지당 항목 수',
-    
     languageRegion: '언어 및 지역',
     timezone: '시간대',
     timezoneNote: '현재 처음 50개의 시간대를 표시하고 있습니다',
-    
     privacySettings: '개인정보 설정',
     profileVisibility: '프로필 공개 범위',
     visibilityAll: '모든 사람',
@@ -1437,7 +1333,6 @@ export default {
     contactVisibility: '연락처 정보 공개 범위',
     showEmail: '이메일 주소 표시',
     showPhone: '전화번호 표시',
-    
     workPreferences: '작업 환경설정',
     defaultDashboard: '기본 대시보드 보기',
     overviewView: '개요',
@@ -1449,20 +1344,14 @@ export default {
     weeklyReport: '주간 보고서',
     weeklyReportDesc: '작업 활동에 대한 주간 요약 받기'
   },
-
   // Task Listing
   taskListing: {
     title: '작업 목록',
     individual: '개인',
     assignDate: '할당 날짜',
-    taskTitle: '작업 제목',
-    status: '상태',
-    priority: '우선순위',
     actions: '작업',
     viewTask: '작업 보기',
-    editTask: '작업 편집',
     deleteTask: '작업 삭제',
-    confirmDelete: '이 작업을 삭제하시겠습니까?',
     taskDeleted: '작업이 성공적으로 삭제되었습니다',
     taskDeleteError: '작업 삭제에 실패했습니다',
     createTask: '작업 생성',
@@ -1471,13 +1360,11 @@ export default {
     updateTask: '작업 업데이트',
     taskUpdated: '작업이 성공적으로 업데이트되었습니다',
     taskUpdateError: '작업 업데이트에 실패했습니다',
-    description: '설명',
     selectEmployee: '직원 선택',
     dueDate: '마감일',
     manageTasks: '작업 관리',
     organization: '조직',
     assignTo: '할당 대상',
-    assignTask: '작업 할당',
     taskList: '작업 목록',
     priorityLow: '낮음',
     priorityMedium: '보통',
@@ -1490,37 +1377,35 @@ export default {
     statusCompleted: '완료',
     pending: '보류 중',
     'in-progress': '진행 중',
-    completed: '완료',
-    assignTask: '작업 할당',
+    assignTask: "작업 할당",
     teamWorkload: '팀 작업량',
     filterByEmployee: '직원으로 필터링',
     filterByStatus: '상태로 필터링',
     searchTasks: '작업 검색...',
     totalTasks: '총 작업',
-    completed: '완료됨',
+    completed: "완료됨",
     progress: '진행률',
     avgQuality: '평균 품질',
     avgProgress: '평균 진행률',
     myTasks: '내 작업',
     addTask: '작업 추가',
-    editTask: '작업 편집',
-    taskTitle: '작업 제목',
-    description: '설명',
-    priority: '우선순위',
-    status: '상태',
+    editTask: "작업 편집",
+    taskTitle: "작업 제목",
+    description: "설명",
+    priority: "우선순위",
+    status: "상태",
     selfAssessment: '자체 평가',
     selfAssessmentPlaceholder: '이 작업을 어떻게 수행하셨나요?',
     qualityRating: '품질 평가',
     noTasks: '작업이 없습니다. 첫 번째 작업을 추가하세요!',
     employeeProgress: '직원 진행률',
-    confirmDelete: '이 작업을 삭제하시겠습니까?',
+    confirmDelete: "이 작업을 삭제하시겠습니까?",
     tasks: '작업',
     quality: '품질',
     completionDate: '완료일',
     createdAt: '생성일',
-    updatedAt: '업데이트됨',
+    updatedAt: '업데이트됨'
   },
-
   // Task Review 
   taskReview: {
     title: '작업 검토',
@@ -1531,7 +1416,6 @@ export default {
     review: '검토',
     reviewTask: '작업 검토',
     description: '작업 검토 및 평가',
-    selectEmployee: '직원 선택',
     selectMonth: '월 선택',
     month: '월',
     year: '년',
@@ -1565,9 +1449,6 @@ export default {
     managerComments: '관리자 의견',
     commentPlaceholder: '작업 품질 및 개인 목표에 대한 피드백을 제공하십시오...',
     taskDetails: '작업 세부 정보',
-    status: '상태',
-    priority: '우선순위',
-    dueDate: '마감일',
     currentRating: '현재 등급',
     submitEvaluation: '평가 제출',
     cancel: '취소',
@@ -1592,27 +1473,25 @@ export default {
     low: '낮음',
     employees: '직원',
     completion: '완료',
-    quality: '품질',
     task: '작업',
-    progress: '진행',
     organization: '조직',
     chooseEmployee: '직원 선택',
     selectEmployeeToView: '볼 직원을 선택하세요',
     tasks: '작업',
     assignedBy: '할당한 사람',
     assignedTo: '할당 대상',
-    dueDate: '마감일',
-    status: '상태',
-    priority: '우선순위',
+    dueDate: "마감일",
+    status: "상태",
+    priority: "우선순위",
     action: '작업',
     noTasksFound: '작업을 찾을 수 없습니다',
-    selectEmployee: '직원 선택',
-    taskList: '작업 목록', 
+    selectEmployee: "직원 선택",
+    taskList: '작업 목록',
     employeeSelfAssessment: '직원 자체 평가',
     employeeBreakdown: '직원 분석',
     total: '총',
-    progress: '진행',
-    quality: '품질',
+    progress: "진행",
+    quality: "품질",
     averageProgress: '평균 진행률',
     averageQuality: '평균 품질',
     completedTasks: '완료된 작업',
@@ -1623,9 +1502,8 @@ export default {
     targetDate: '목표 날짜',
     notes: '노트',
     createdAt: '생성일',
-    updatedAt: '업데이트됨',
+    updatedAt: '업데이트됨'
   },
-
   // Performance Appraisal Translation
   performanceAppraisalPage: {
     title: '성과 평가',
@@ -1638,16 +1516,14 @@ export default {
     // Tabs
     overview: '개요',
     goals: '목표',
-    reviews: '리뷰',
+    reviews: '리뷰'
   },
-
   // Employee Details Tabs
   employeeDetailTabs: {
     basicInformation: '기본 정보',
     contact: '연락처',
-    documents: '문서',
+    documents: '문서'
   },
-
   // Employee Edit Form
   employeeEditForm: {
     editEmployee: '직원 수정',
@@ -1667,9 +1543,8 @@ export default {
     cancel: '취소',
     abbrechen: '취소',
     save: '저장',
-    speichern: '저장',
+    speichern: '저장'
   },
-
   // Department Pie Chart Names
   departments: {
     all: '모두',
@@ -1684,9 +1559,8 @@ export default {
     sales: '영업',
     marketing: '마케팅',
     design: '디자인',
-    part_time_employee: '전문가 그룹',
+    part_time_employee: '전문가 그룹'
   },
-
   // Control Panel
   controlPanel: {
     refreshing: '새로 고침 중...',
@@ -1698,8 +1572,6 @@ export default {
     switchToPrefix: '전환',
     demoAdminLabel: '데모 관리자',
     demoEmployeeLabel: '데모 직원',
-    switchToDemoAdmin: '데모 관리자 모드로 전환',
-    switchToDemoEmployee: '데모 직원 모드로 전환',
     currentRole: '현재 역할',
     userUuid: '사용자 UUID',
     employeeId: '직원 ID',
@@ -1721,11 +1593,9 @@ export default {
     helpText: '시스템 사용에 대한 자세한 지침은 매뉴얼을 확인하세요.',
     standardAccess: '표준 사용자 액세스',
     visitAnalytics: '방문 분석',
-    visitAnalyticsDesc: '시스템 방문 기록 및 분석',
-    visitAnalyticsSubtitle: '방문 기록, 고유 IP, 리퍼러 및 사용자 에이전트 분석',
     visitAnalyticsTitle: '방문 기록',
-    visitAnalyticsSubtitle: '시스템 방문 기록 및 분석',
-    visitAnalyticsDesc: '방문 기록, 고유 IP, 리퍼러 및 사용자 에이전트 분석',
+    visitAnalyticsSubtitle: "방문 기록, 고유 IP, 리퍼러 및 사용자 에이전트 분석",
+    visitAnalyticsDesc: "방문 기록, 고유 IP, 리퍼러 및 사용자 에이전트 분석",
     visit: {
       demoCount: '데모 방문 횟수',
       totalCount: '총 방문 횟수',
@@ -1746,7 +1616,7 @@ export default {
       noVisitsFound: '방문 기록을 찾을 수 없습니다.',
       visitDetails: '방문 세부 정보',
       visitCount: '방문 횟수',
-      lastVisit: '마지막 방문',
+      lastVisit: '마지막 방문'
     },
     roles: {
       admin: '관리자',
@@ -1755,7 +1625,7 @@ export default {
       employee: '직원',
       viewer: '열람자',
       demoAdmin: '데모 관리자',
-      hrAdmin: 'HR 관리자',
+      hrAdmin: 'HR 관리자'
     },
     roleDesc: {
       admin: '사용자 관리, 시스템 설정 및 완전한 데이터 제어를 포함한 모든 관리 권한을 가진 전체 시스템 액세스',
@@ -1764,7 +1634,7 @@ export default {
       manager: '팀원 감독, 근무 시간 승인 및 성과 평가 관리',
       employee: '개인 정보 액세스, 근무 기록 제출 및 자신의 성과 데이터 보기',
       viewer: '보고서, 대시보드 및 제한된 시스템 정보에 대한 읽기 전용 액세스',
-      demoAdmin: '데모 모드는 관리자 액세스를 시뮬레이션하기 위해 로컬 스토리지를 사용하며, 공식 버전은 데이터 동기화를 위해 백엔드 데이터베이스를 사용합니다',
+      demoAdmin: '데모 모드는 관리자 액세스를 시뮬레이션하기 위해 로컬 스토리지를 사용하며, 공식 버전은 데이터 동기화를 위해 백엔드 데이터베이스를 사용합니다'
     },
     uploadAvatar: '아바타 업로드',
     avatarUpdated: '아바타가 성공적으로 업데이트되었습니다!',
@@ -1803,11 +1673,10 @@ export default {
     demoDataRestored: "{type} 기본값으로 복원됨",
     allDemoDataRestored: "모든 데모 데이터가 기본값으로 복원됨",
     restoreAllDemoData: "모든 데모 데이터 복원",
-    switchToDemoEmployee: '데모 직원으로 전환',
-    switchToDemoAdmin: '데모 관리자로 전환',
-    demoRoleOnly: '이 기능은 데모 모드에서만 사용할 수 있습니다',
+    switchToDemoEmployee: "데모 직원 모드로 전환",
+    switchToDemoAdmin: "데모 관리자 모드로 전환",
+    demoRoleOnly: '이 기능은 데모 모드에서만 사용할 수 있습니다'
   },
-
   // Production Help Center (ko)
   prodHelp: {
     title: '프로덕션 도움말 센터',
@@ -1819,27 +1688,27 @@ export default {
     item: {
       observability: '대시보드 및 알림 활성화',
       rollbacks: '롤백 계획 검증 완료',
-      backups: '백업 확인 완료',
+      backups: '백업 확인 완료'
     },
     observability: {
       title: '관측 가능성: 로그, 메트릭, 트레이스',
-      description: '에러 버짓, 구조화된 로그, 95/99 지연 시간 대시보드 및 프로덕션용 트레이스 샘플링을 보장합니다.',
+      description: '에러 버짓, 구조화된 로그, 95/99 지연 시간 대시보드 및 프로덕션용 트레이스 샘플링을 보장합니다.'
     },
     rollouts: {
       title: '안전한 롤아웃 및 기능 플래그',
-      description: '헬스 체크, 롤백 플레이북, 위험한 코드 경로를 빠르게 비활성화할 수 있는 플래그를 사용한 점진적 배포를 활용하세요.',
+      description: '헬스 체크, 롤백 플레이북, 위험한 코드 경로를 빠르게 비활성화할 수 있는 플래그를 사용한 점진적 배포를 활용하세요.'
     },
     security: {
       title: '보안 및 시크릿 위생',
-      description: '키를 주기적으로 교체하고, 최소 권한을 적용하며, 감사 로그를 활성화하고 관리자 역할에 MFA를 요구하세요.',
+      description: '키를 주기적으로 교체하고, 최소 권한을 적용하며, 감사 로그를 활성화하고 관리자 역할에 MFA를 요구하세요.'
     },
     performance: {
       title: '성능 예산',
-      description: '콜드 스타트 및 핫 패스 시간을 추적하고 API 지연, SQL 쿼리, 프론트엔드 TTI에 대한 예산을 설정하세요.',
+      description: '콜드 스타트 및 핫 패스 시간을 추적하고 API 지연, SQL 쿼리, 프론트엔드 TTI에 대한 예산을 설정하세요.'
     },
     resilience: {
       title: '백업 및 복원력',
-      description: '자동 백업, DR 전략, 속도 제한 및 다운스트림 의존성을 위한 서킷 브레이커를 검증하세요.',
+      description: '자동 백업, DR 전략, 속도 제한 및 다운스트림 의존성을 위한 서킷 브레이커를 검증하세요.'
     },
     tags: {
       reliability: '신뢰성',
@@ -1848,10 +1717,9 @@ export default {
       safety: '안전',
       security: '보안',
       performance: '성능',
-      resilience: '복원력',
-    },
+      resilience: '복원력'
+    }
   },
-
   // Demo Help Center 
   help: {
     containerLabel: '도움말 센터',
@@ -1867,14 +1735,12 @@ export default {
       title: '중요: 데모 제한!',
       body: '데이터는 로컬에 저장되며 장치 간에 동기화되지 않습니다. 데이터는 제어판에서 복원할 수 있습니다.'
     },
-
     features: {
       section: '고급 및 컨텍스트별 기능',
       defaultTitle: '숨겨진 기능 및 전문가 팁',
       contextTitle: '{context}에 대한 컨텍스트 팁',
       restricted: '제한됨',
       empty: '{context}에 대한 특정 고급 팁을 찾을 수 없습니다. 아래에 모든 기능을 표시합니다.',
-
       feature_1: {
         title: '숨겨진 기능: 일괄 편집',
         description: '한 번에 최대 50개의 레코드를 편집할 수 있습니다. 항목 옆의 체크박스를 선택하고 테이블 상단의 ✏️ 아이콘을 클릭하세요. 현재 데모에서는 비활성화되어 있습니다.'
@@ -1892,7 +1758,6 @@ export default {
         description: '오른쪽 상단의 프로필 아바타를 클릭하여 대시보드 레이아웃 환경설정에 접근하세요. 다크 모드로 전환하고 테이블 밀도를 조정할 수 있습니다.'
       }
     },
-
     tags: {
       advanced: '고급',
       hidden: '숨김',
@@ -1904,7 +1769,6 @@ export default {
       'hard-to-find': '찾기 어려움',
       personalization: '개인화'
     },
-
     showcase: {
       section: '애니메이션 제품 워크스루',
       label: '애니메이션 제품 워크스루',
@@ -1915,34 +1779,28 @@ export default {
       sync: '모든 것이 동기화됩니다',
       syncDesc: '입력, 파일, 목표가 대시보드와 보고서를 즉시 업데이트합니다.',
       live: '라이브',
-
       time: {
         title: '시간 관리',
         desc: '근무 시간 입력, 승인, 초과 근무 및 작업 로그를 한곳에서 관리하세요.'
       },
-
       upload: {
         title: '파일 업로드',
         desc: '계약서, 신분증, 증빙 자료를 감사 대비 이력과 함께 안전하게 저장합니다.'
       },
-
       dashboard: {
         title: '대시보드 및 차트',
         desc: '활용도, 출석, 상태 지표를 실시간으로 시각화합니다.'
       },
-
       tasks: {
         title: '작업 및 목표',
         desc: '담당자, 마감일, 체크리스트를 지정하고 인사 데이터와 동기화합니다.'
       },
-
       reporting: {
         title: '보고서',
         desc: 'PDF/CSV로 내보내고 관리자를 위한 정기 요약을 예약하세요.'
       }
     }
   },
-
   // Video Player
   videoPlayer: {
     container: '비디오 플레이어',
@@ -1960,7 +1818,6 @@ export default {
     },
     name: '비디오 이름'
   },
-
   // Email Management
   emailManagement: {
     title: '사용자 이메일 관리',
@@ -1985,12 +1842,8 @@ export default {
     errorLoadingUsers: '사용자 로드 오류',
     fillAllFields: '모든 필드를 입력해주세요'
   },
-
   // Personal Goals
   personalGoals: {
-    goalTitle: '목표 제목',
-    goalTitlePlaceholder: '목표 제목을 입력하세요',
-    title: '작업 성과 검토',
     subtitle: '월간 작업 진행 상황 및 품질 평가',
     individual: '개인',
     team: '팀',
@@ -1998,8 +1851,6 @@ export default {
     quarterly: '분기별 평가',
     annual: '연간 평가',
     totalTasks: '총 작업',
-    completed: '완료',
-    inProgress: '진행 중',
     overdue: '기한 초과',
     beginner: '초급',
     intermediate: '중급',
@@ -2023,8 +1874,6 @@ export default {
     managerComments: '관리자 의견',
     commentPlaceholder: '작업 품질 및 성과에 대한 피드백 제공...',
     taskDetails: '작업 세부 정보',
-    status: '상태',
-    priority: '우선순위',
     dueDate: '마감일',
     currentRating: '현재 평가',
     submitEvaluation: '평가 제출',
@@ -2032,21 +1881,14 @@ export default {
     evaluate: '평가',
     managerEvaluation: '관리자 평가',
     created: '생성',
-    due: '마감',
     all: '전체',
-    pending: '대기 중',
-    title: '성과 평가',
+    title: "작업 성과 검토",
     overallRating: '전체 평가',
     reviewPeriod: '평가 기간',
     goals: '목표 및 목적',
     achievements: '주요 성과',
     areasForImprovement: '개선 영역',
     skillsAssessment: '기술 평가',
-    technical: '기술 능력',
-    communication: '의사소통',
-    leadership: '리더십',
-    teamwork: '팀워크',
-    problemSolving: '문제 해결',
     rating: '평가',
     excellent: '우수',
     good: '양호',
@@ -2068,9 +1910,9 @@ export default {
     goalsCompleted: '완료된 목표',
     reviewsThisPeriod: '이번 기간 리뷰',
     avgSkillRating: '평균 기술 평가',
-    completed: '완료',
-    inProgress: '진행 중',
-    pending: '대기 중',
+    completed: "완료",
+    inProgress: "진행 중",
+    pending: "대기 중",
     // Tabs
     overview: '개요',
     goalsTab: '목표',
@@ -2084,7 +1926,7 @@ export default {
     in_progress: '진행 중',
     clickToRate: '직원 평가를 업데이트하려면 별을 클릭하세요',
     deadline: '마감일',
-    due: '기한',
+    due: "기한",
     complete: '완료',
     viewDetails: '세부 정보 보기',
     // Reviews section
@@ -2092,24 +1934,18 @@ export default {
     newReview: '새 리뷰',
     by: '작성자',
     viewFullReview: '전체 리뷰 보기',
-    // General
-    status: '상태',
+    status: "상태",
     actions: '작업',
     edit: '편집',
     view: '보기',
     progressSaved: '진행률이 성공적으로 저장되었습니다!',
     progressSaveError: '진행률 저장 실패',
-    goalTitle: '목표 제목',
-    goalTitlePlaceholder: '목표 제목 입력',
+    goalTitle: "목표 제목",
+    goalTitlePlaceholder: "목표 제목 입력",
     goalDescription: '설명',
     goalDescriptionPlaceholder: '목표 세부사항 설명',
     category: '카테고리',
-    general: '일반',
-    technical: '기술',
-    leadership: '리더십',
-    project: '프로젝트',
-    professionalDevelopment: '전문 개발',
-    priority: '우선순위',
+    priority: "우선순위",
     low: '낮음',
     medium: '중간',
     high: '높음',
@@ -2124,24 +1960,23 @@ export default {
     reviewComments: '평가 코멘트',
     noComments: '아직 댓글이 없습니다',
     errorFetchingComments: '댓글 로드 오류',
-    general: '일반',
-    technical: '기술',
-    leadership: '리더십',
-    project: '프로젝트',
-    communication: '커뮤니케이션',
+    general: "일반",
+    technical: "기술 능력",
+    leadership: "리더십",
+    project: "프로젝트",
+    communication: "커뮤니케이션",
     timeManagement: '시간 관리',
-    problemSolving: '문제 해결',
+    problemSolving: "문제 해결",
     creativity: '창의성',
-    teamwork: '팀워크',
+    teamwork: "팀워크",
     adaptability: '적응력',
     emotionalIntelligence: '감성 지능',
     criticalThinking: '비판적 사고',
-    professionalDevelopment: '전문성 개발',
+    professionalDevelopment: "전문성 개발",
     goalDeletedSuccess: '목표가 성공적으로 삭제되었습니다!',
     goalDeletedError: '목표 삭제 실패',
-    goalsInProgress: '진행 중인 목표',
+    goalsInProgress: '진행 중인 목표'
   },
-
   // Morphing Showcase
   morphingShowcase: {
     title: 'Flubber 모핑 통합',
@@ -2169,9 +2004,8 @@ export default {
     manualControl: '수동 제어',
     responsiveDesign: '반응형 디자인',
     customizableTiming: '사용자 지정 가능한 타이밍',
-    multipleEasingFunctions: '다중 이징 함수',
+    multipleEasingFunctions: '다중 이징 함수'
   },
-
   // Flubber Demo
   flubberDemo: {
     title: 'Flubber SVG 모핑 데모',
@@ -2196,36 +2030,86 @@ export default {
     manualShapeSelection: '수동 도형 선택',
     responsiveAccessible: '반응형 및 접근 가능',
     customizableDuration: '사용자 지정 가능한 애니메이션 지속 시간',
-    easingFunctions: '자연스러운 움직임을 위한 이징 함수',
+    easingFunctions: '자연스러운 움직임을 위한 이징 함수'
   },
   demoEmployees: {
-  'demo-emp-1': { name: '관리자', location: '본사' },
-  'demo-emp-2': { name: '인사 엔지니어', location: '본사' },
-  'demo-emp-3': { name: 'UI/UX 디자이너', location: '원격' },
-  'demo-emp-4': { name: '마케팅 전문가', location: '본사' },
-  'demo-emp-5': { name: '영업 담당자', location: '원격' }
+    'demo-emp-1': {
+      name: '관리자',
+      location: '본사'
+    },
+    'demo-emp-2': {
+      name: '인사 엔지니어',
+      location: '본사'
+    },
+    'demo-emp-3': {
+      name: 'UI/UX 디자이너',
+      location: '원격'
+    },
+    'demo-emp-4': {
+      name: '마케팅 전문가',
+      location: '본사'
+    },
+    'demo-emp-5': {
+      name: '영업 담당자',
+      location: '원격'
+    }
   },
   locations: {
     headquarters: '본사',
     remote: '원격'
   },
   demoTasks: {
-    'task-1': { title: 'Q4 보고서 분석', description: '분기별 성과 지표 및 트렌드에 대한 종합 분석 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.' },
-    'task-2': { title: '직원 핸드북 업데이트', description: '원격 근무 정책으로 직원 핸드북 개정 및 업데이트 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.' },
-    'task-3': { title: '로그인 오류 수정', description: '모바일 기기에서 사용자 로그인 문제 디버그 및 해결 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.' },
-    'task-4': { title: '새 대시보드 설계', description: '분석 대시보드를 위한 와이어프레임 및 목업 생성 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.' },
-    'task-5': { title: '캠페인 성과 검토', description: 'Q3 마케팅 캠페인 결과 및 ROI 분석 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.' },
-    'task-6': { title: '고객 온보딩', description: '새 기업 고객의 온보딩 완료 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.' },
-    'task-7': { title: 'API 문서화', description: '버전 2.0에 대한 포괄적인 API 문서 작성 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.' }
+    'task-1': {
+      title: 'Q4 보고서 분석',
+      description: '분기별 성과 지표 및 트렌드에 대한 종합 분석 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.'
+    },
+    'task-2': {
+      title: '직원 핸드북 업데이트',
+      description: '원격 근무 정책으로 직원 핸드북 개정 및 업데이트 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.'
+    },
+    'task-3': {
+      title: '로그인 오류 수정',
+      description: '모바일 기기에서 사용자 로그인 문제 디버그 및 해결 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.'
+    },
+    'task-4': {
+      title: '새 대시보드 설계',
+      description: '분석 대시보드를 위한 와이어프레임 및 목업 생성 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.'
+    },
+    'task-5': {
+      title: '캠페인 성과 검토',
+      description: 'Q3 마케팅 캠페인 결과 및 ROI 분석 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.'
+    },
+    'task-6': {
+      title: '고객 온보딩',
+      description: '새 기업 고객의 온보딩 완료 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.'
+    },
+    'task-7': {
+      title: 'API 문서화',
+      description: '버전 2.0에 대한 포괄적인 API 문서 작성 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.'
+    }
   },
   demoGoals: {
-    'goal-1': { title: '팀 효율성 향상', description: '다음 분기에 팀 생산성을 20% 향상 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.' },
-    'goal-2': { title: 'React Native 학습', description: '모바일 앱 개발을 위한 React Native 숙달 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.' },
-    'goal-3': { title: 'UX 자격증 취득', description: 'Google UX 디자인 전문 자격증 취득 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.' },
-    'goal-4': { title: '리드 생성 증가', description: '마케팅 캠페인을 통해 적격 리드 30% 증가 달성 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.' },
-    'goal-5': { title: '기업 계약 체결', description: '각 $500K 이상의 가치가 있는 5건의 기업 계약 체결 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.' }
+    'goal-1': {
+      title: '팀 효율성 향상',
+      description: '다음 분기에 팀 생산성을 20% 향상 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.'
+    },
+    'goal-2': {
+      title: 'React Native 학습',
+      description: '모바일 앱 개발을 위한 React Native 숙달 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.'
+    },
+    'goal-3': {
+      title: 'UX 자격증 취득',
+      description: 'Google UX 디자인 전문 자격증 취득 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.'
+    },
+    'goal-4': {
+      title: '리드 생성 증가',
+      description: '마케팅 캠페인을 통해 적격 리드 30% 증가 달성 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.'
+    },
+    'goal-5': {
+      title: '기업 계약 체결',
+      description: '각 $500K 이상의 가치가 있는 5건의 기업 계약 체결 - 주의: 이 데모 데이터는 수정할 수 없습니다. 테스트를 위해 데이터를 직접 추가해 주세요.'
+    }
   },
-  
   demoReviews: {
     'review-1': {
       reviewPeriod: '2024년 4분기',
@@ -2242,13 +2126,23 @@ export default {
       comments: '팀에 큰 기여를 함'
     }
   },
-
   demoSkills: {
-    'skill-1': { name: 'React', category: '기술', proficiencyLevel: '전문가' },
-    'skill-2': { name: 'TypeScript', category: '기술', proficiencyLevel: '고급' },
-    'skill-3': { name: 'UI/UX 디자인', category: '디자인', proficiencyLevel: '전문가' }
+    'skill-1': {
+      name: 'React',
+      category: '기술',
+      proficiencyLevel: '전문가'
+    },
+    'skill-2': {
+      name: 'TypeScript',
+      category: '기술',
+      proficiencyLevel: '고급'
+    },
+    'skill-3': {
+      name: 'UI/UX 디자인',
+      category: '디자인',
+      proficiencyLevel: '전문가'
+    }
   },
-
   demoFeedback: {
     'feedback-1': {
       type: '동료 평가',
@@ -2259,29 +2153,44 @@ export default {
       text: '새로운 디자인 시스템에서 훌륭한 작업을 수행함. 계속하세요!'
     }
   },
-
   demoJobs: {
     'job-1': {
       title: '시니어 프론트엔드 개발자',
       description: '경험 많은 프론트엔드 개발자를 찾고 있습니다. 훌륭한 웹 애플리케이션을 구축하는 데 함께해주세요.',
       location: '원격',
       salaryRange: '$90k - $120k',
-      requirements: { 0: 'React', 1: 'TypeScript', 2: 'Tailwind CSS' }
+      requirements: {
+        0: 'React',
+        1: 'TypeScript',
+        2: 'Tailwind CSS'
+      }
     },
     'job-2': {
       title: '프로덕트 디자이너',
       description: '사용자 경험을 창출하고 제품의 미래를 설계하는 디자인 팀에 합류하세요.',
       location: '뉴욕',
       salaryRange: '$80k - $100k',
-      requirements: { 0: 'Figma', 1: 'UI/UX', 2: '프로토타이핑' }
+      requirements: {
+        0: 'Figma',
+        1: 'UI/UX',
+        2: '프로토타이핑'
+      }
     }
   },
-
   demoApplicants: {
-    'app-1': { firstName: '존', lastName: '도', education: '컴퓨터 공학 학사', currentPosition: '시니어 개발자' },
-    'app-2': { firstName: '제인', lastName: '스미스', education: '디자인 석사', currentPosition: 'UX 리드' }
+    'app-1': {
+      firstName: '존',
+      lastName: '도',
+      education: '컴퓨터 공학 학사',
+      currentPosition: '시니어 개발자'
+    },
+    'app-2': {
+      firstName: '제인',
+      lastName: '스미스',
+      education: '디자인 석사',
+      currentPosition: 'UX 리드'
+    }
   },
-
   demoApplications: {
     'appl-1': {
       status: '검토 중',
@@ -2292,7 +2201,6 @@ export default {
       notes: '훌륭한 포트폴리오와 디자인 능력 보유'
     }
   },
-
   demoInterviews: {
     'int-1': {
       status: '예정됨',
@@ -2300,22 +2208,21 @@ export default {
       notes: '포트폴리오 리뷰 및 기술 평가'
     }
   },
-
   demoNotifications: {
     'notif-1': {
-      title: 'HR 시스템에 오신 것을 환영합니다',
-      message: 'HR 시스템 데모 모드에 오신 것을 환영합니다. 모든 기능을 마음껏 탐색해보세요!',
-      actionLabel: '대시보드로 이동'
+      title: "HR 시스템에 오신 것을 환영합니다",
+      message: "HR 시스템 데모 모드에 오신 것을 환영합니다. 모든 기능을 마음껏 탐색해보세요!",
+      actionLabel: "대시보드로 이동"
     },
     'notif-2': {
-      title: '새로운 작업이 할당되었습니다',
-      message: '새로운 작업이 할당되었습니다: Q3 성과 리뷰',
-      actionLabel: '작업 보기'
+      title: "새로운 작업이 할당되었습니다",
+      message: "Senior Frontend Developer 포지션에 새로운 지원서가 접수되었습니다.",
+      actionLabel: "작업 보기"
     },
     'notif-3': {
-      title: '미팅 알림',
-      message: '30분 후 팀 미팅이 있습니다',
-      actionLabel: '캘린더 보기'
+      title: "성과 평가 예정",
+      message: "분기별 성과 평가가 다음 주에 예정되어 있습니다.",
+      actionLabel: "캘린더 보기"
     }
   }
 };

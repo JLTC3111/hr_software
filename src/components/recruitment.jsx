@@ -10,12 +10,15 @@ import {
   getRecruitmentStats,
   createJobPosting
 } from '../services/recruitmentService';
-import { isDemoMode, getDemoApplicationStatus, getDemoJobTitle } from '../utils/demoHelper';
+import { isDemoMode, getDemoApplicationStatus, getDemoJobTitle, getDemoJobDescription, getDemoApplicationNotes } from '../utils/demoHelper';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 import { SlidingNumber } from './motion-primitives';
 import { NumberTicker } from './ui/number-ticker';
 import { PageLiveClock } from './ui/page-live-clock';
+import { DatePicker } from './ui/date-picker.jsx';
+import { TimePicker } from './ui/time-picker.jsx';
+import { TranslatedText } from './ui/translated-text.jsx';
 import { cn } from '@/lib/utils';
 
 const Recruitment = () => {
@@ -908,7 +911,13 @@ const CandidateCard = memo(({ application, onView, onStatusUpdate, formatDate, c
             )}
           </div>
           <p className={`text-sm ${text.secondary} truncate`}>
-            {isDemoMode() ? getDemoJobTitle(application.job_posting, t) : application.job_posting?.title || application.job_posting?.position}
+            {isDemoMode()
+              ? getDemoJobTitle(application.job_posting, t)
+              : (application.job_posting?.title
+                ? <TranslatedText text={application.job_posting.title} />
+                : (application.job_posting?.position
+                  ? t(`employeePosition.${application.job_posting.position}`, application.job_posting.position)
+                  : null))}
           </p>
           <div className="flex items-center space-x-3 mt-2">
             <span className={`text-xs ${text.secondary}`}>
@@ -1286,13 +1295,36 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate, onStatusUpdate
           <div>
             <h3 className={`text-lg font-semibold ${text.primary} mb-3`}>{t('recruitment.jobDetails', 'Job Details')}</h3>
             <div className="space-y-2">
-              <DetailRow label={t('recruitment.position', 'Position')} value={isDemoMode() ? getDemoJobTitle(application.job_posting, t) : application.job_posting?.title} />
+              <DetailRow
+                label={t('recruitment.position', 'Position')}
+                value={isDemoMode()
+                  ? getDemoJobTitle(application.job_posting, t)
+                  : (application.job_posting?.title
+                    ? <TranslatedText text={application.job_posting.title} />
+                    : null)}
+              />
+              {application.job_posting?.description ? (
+                <DetailRow
+                  label={t('recruitment.description', 'Job Description')}
+                  value={isDemoMode()
+                    ? getDemoJobDescription(application.job_posting, t)
+                    : <TranslatedText text={application.job_posting.description} />}
+                />
+              ) : null}
               <DetailRow label={t('recruitment.department', 'Department')} value={application.job_posting?.department ? t(`employeeDepartment.${application.job_posting.department}`, application.job_posting.department) : null} />
               <DetailRow label={t('recruitment.appliedDate', 'Applied Date')} value={application.application_date ? new Date(application.application_date).toLocaleDateString() : null} />
               <DetailRow
                 label={t('recruitment.statusLabel', 'Status')}
                 value={application.status ? (isDemoMode() ? getDemoApplicationStatus(application, t) : t(`recruitment.status.${application.status?.toLowerCase().replace(/\\s+/g, '')}`, application.status)) : null}
               />
+              {application.notes ? (
+                <DetailRow
+                  label={t('recruitment.notes', 'Notes')}
+                  value={isDemoMode()
+                    ? getDemoApplicationNotes(application, t)
+                    : <TranslatedText text={application.notes} />}
+                />
+              ) : null}
             </div>
           </div>
 
@@ -1519,23 +1551,21 @@ const InterviewScheduleModal = ({ application, onClose, onSuccess }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('recruitment.interviewDate', 'Date')} *</label>
-              <input
-                type="date"
+              <DatePicker
                 name="date"
                 value={form.date}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+                inputClassName={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
                 required
               />
             </div>
             <div>
               <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('recruitment.interviewTime', 'Time')}</label>
-              <input
-                type="time"
+              <TimePicker
                 name="time"
                 value={form.time}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+                inputClassName={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
               />
             </div>
             <div>

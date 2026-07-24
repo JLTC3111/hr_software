@@ -19,9 +19,8 @@ export default {
     taskReview: '業績評価',
     svgMorphing: 'SVGモーフィング',
     fullDemo: 'フルデモ',
-    showcase: 'クイック紹介',
+    showcase: 'クイック紹介'
   },
-
   // Leave Management
   leave: {
     subtitle: '共有カレンダーで休暇の計画・申請・承認を行います。',
@@ -86,9 +85,8 @@ export default {
     rejectConfirm: '{{name}} の休暇を却下しますか？',
     rejectReasonLabel: '理由（任意）',
     rejectReasonPlaceholder: '却下する理由を入力してください...',
-    confirmReject: '申請を却下',
+    confirmReject: '申請を却下'
   },
-
   // Header
   header: {
     title: 'HRマネージャー',
@@ -100,9 +98,8 @@ export default {
     welcomePhrase5: '今日も生産的に進めましょう、{name}',
     welcomePhrase6: 'いらっしゃいませ、{name}',
     user: 'HRチーム',
-    logout: 'ログアウト',
+    logout: 'ログアウト'
   },
-
   // Login
   login: {
     idleLogoutMessage: '一定期間の非アクティブ状態が続いたため、サインアウトしました。再度サインインしてください。',
@@ -129,7 +126,6 @@ export default {
     tryDemoLoading: 'デモを読み込み中...',
     forgotPasswordModal: {
       title: 'パスワードのリセット',
-      success: 'パスワード再設定メールを送信しました。受信トレイを確認してください。',
       description: 'メールアドレスを入力してください。パスワードをリセットするためのリンクをお送りします。',
       emailLabel: 'メールアドレス',
       emailPlaceholder: 'you@example.com',
@@ -137,14 +133,13 @@ export default {
       emailInvalid: '有効なメールアドレスを入力してください',
       sendReset: 'リセットリンクを送信',
       cancel: 'キャンセル',
-      success: 'パスワードリセットメールを送信しました。受信トレイをご確認ください。',
+      success: "パスワードリセットメールを送信しました。受信トレイをご確認ください。",
       error: 'リセットメールの送信に失敗しました。もう一度お試しください。',
       noAccount: 'このメールアドレスのアカウントが見つかりません',
       rateLimitError: 'リクエストが多すぎます。しばらくしてからお試しください',
       networkError: 'ネットワークエラーです。接続を確認してください'
-    },
+    }
   },
-
   // Reset Password Page
   resetPassword: {
     title: 'パスワードのリセット',
@@ -158,7 +153,6 @@ export default {
     passwordsDontMatch: 'パスワードが一致しません',
     error: 'パスワードのリセットに失敗しました。もう一度お試しください。',
     success: 'パスワードが正常にリセットされました！',
-    redirecting: 'ログインページにリダイレクト中...',
     resetting: 'リセット中...',
     verifying: 'リセットリンクを検証しています...',
     resetButton: 'パスワードをリセット',
@@ -168,20 +162,18 @@ export default {
     signingIn: 'サインイン中...',
     orContinueWith: 'または続ける',
     continueWithGithub: 'GitHubで続ける',
-    redirecting: 'ログイン画面に移動しています...',
+    redirecting: "ログイン画面に移動しています...",
     githubError: 'GitHubでのログインに失敗しました',
     noAccount: 'アカウントをお持ちでないですか？',
     signUp: '新規登録',
     footer: '© 2024 HRマネージャー. All rights reserved.',
-    tryDemoLoading: 'デモを読み込み中...',
+    tryDemoLoading: 'デモを読み込み中...'
   },
-
   sidebar: {
     main: 'メイン',
     analytics: '分析',
-    settings: '設定',
+    settings: '設定'
   },
-
   // Dashboard
   dashboard: {
     regularAndOvertimeByEmployee: '従業員別の通常勤務時間と残業時間',
@@ -229,12 +221,10 @@ export default {
       oneDay: '1日前'
     }
   },
-
   // Search
   search: {
     placeholder: '従業員を検索...'
   },
-
   employeeDepartment: {
     all: 'すべて',
     legal_compliance: '法令遵守',
@@ -265,9 +255,8 @@ export default {
     IT: '情報技術',
     it: 'アイシーティー',
     product: '製品',
-    customer_support: 'カスタマーサポート',
+    customer_support: 'カスタマーサポート'
   },
-
   // Months
   months: {
     january: '1月',
@@ -283,7 +272,6 @@ export default {
     november: '11月',
     december: '12月'
   },
-
   stats: {
     total: '合計',
     underReview: '審査中',
@@ -291,9 +279,8 @@ export default {
     interviewScheduled: '面接予定',
     offerExtended: 'オファー送付済み',
     hired: '採用',
-    rejected: '不採用',
+    rejected: '不採用'
   },
-
   timeClock: {
     title: '勤怠記録',
     subtitle: '勤務時間を記録し、証明書を提出します',
@@ -302,7 +289,6 @@ export default {
     fileTypes: 'サポート: 画像、PDF、文書（最大50MB）',
     history: '勤怠履歴',
     selectDate: '日付を選択',
-    date: '日付',
     clockIn: '出勤時間',
     clockOut: '退勤時間',
     hourType: '勤務時間の種類',
@@ -314,13 +300,6 @@ export default {
     success: '勤怠記録が正常に送信されました！',
     confirmDelete: 'この記録を削除してもよろしいですか？',
     delete: '削除',
-    employee: '従業員',
-    noEntries: '記録がありません。最初の記録を送信してください！',
-    time: '時間',
-    hours: '時間数',
-    type: '種類',
-    status: 'ステータス',
-    actions: '操作',
     weeklySummary: '今週',
     monthlySummary: '今月',
     leaveDays: '休暇日数',
@@ -353,8 +332,7 @@ export default {
       invalidFileType: 'JPG、PNG、PDFファイルのみアップロード可能です',
       submitFailed: '時間記録の送信に失敗しました。もう一度お試しください。',
       deleteFailed: '時間記録の削除に失敗しました。もう一度お試しください。',
-      duplicateEntry: 'この日付の{hourType}時間記録は既に存在します。既存の記録を編集するか、別の時間タイプを選択してください。',
-
+      duplicateEntry: 'この日付の{hourType}時間記録は既に存在します。既存の記録を編集するか、別の時間タイプを選択してください。'
     },
     deleteOptions: '削除オプションを選択',
     deleteEntry: '時間記録全体を削除',
@@ -375,16 +353,15 @@ export default {
     myEntries: '自分のエントリ',
     allEmployees: '全員',
     specificEmployee: '特定の従業員',
-    employee: '従業員',
-    date: '日付',
-    time: '時間',
-    hours: '時間',
-    type: 'タイプ',
-    status: 'ステータス',
-    actions: 'アクション',
-    noEntries: 'エントリが見つかりません'
+    employee: "従業員",
+    date: "日付",
+    time: "時間",
+    hours: "時間",
+    type: "タイプ",
+    status: "ステータス",
+    actions: "アクション",
+    noEntries: "エントリが見つかりません"
   },
-  
   // Time Tracking
   timeTracking: {
     on_leave: '休暇中',
@@ -398,13 +375,11 @@ export default {
     amountHours: '時間',
     time: '時間',
     hourType: '勤務時間の種類',
-    status: 'ステータス',
     notes: 'メモ',
     createdAt: '作成日',
     summary: 'サマリー',
     quickActions: 'クイックアクション',
     workDays: '勤務日数',
-    leaveDays: '休暇日数',
     overtime: '残業時間',
     wfh: '在宅勤務時間',
     holidayOvertime: '休日残業',
@@ -418,26 +393,24 @@ export default {
     attendanceRate: '出勤率',
     requestLeave: '休暇申請',
     logOvertime: '残業記録',
-    leaveType: '休暇タイプ',
     vacation: '有給休暇',
     sickLeave: '病気休暇',
     personal: '私用休暇',
     unpaid: '無給休暇',
-    leaveDays: '休暇日数',
-    leaveType: '休暇タイプ',
-    status: 'ステータス',
+    leaveDays: "休暇日数",
+    leaveType: "休暇タイプ",
     requestedBy: '申請者',
     approvedBy: '承認者',
     leaveRequestManagement: '休暇申請管理',
     pending: '保留中',
     approved: '承認済み',
     rejected: '却下',
-    cancelled: '取消済み', 
+    cancelled: '取消済み',
     status: {
       pending: '保留中',
       approved: '承認済み',
       rejected: '却下',
-      cancelled: 'キャンセル済み',
+      cancelled: 'キャンセル済み'
     },
     // Hour types for overtime
     weekend: '週末残業',
@@ -466,7 +439,6 @@ export default {
     daysWorked: '勤務日数',
     totalHoursLabel: '合計時間'
   },
-
   // Employees
   employees: {
     title: '従業員管理',
@@ -506,9 +478,8 @@ export default {
     topPerformers: 'トップパフォーマー',
     avgRating: '平均評価',
     departments: '部署',
-    livePulse: 'ライブパルス',
+    livePulse: 'ライブパルス'
   },
-
   // Recruitment
   recruitment: {
     position: '職種',
@@ -565,15 +536,13 @@ export default {
     department: '部署',
     viewResume: '履歴書を見る',
     linkedinProfile: 'LinkedIn プロフィール',
-    notes: 'メモ',
+    notes: 'メモ'
   },
-
   // Reports
   reports: {
-    bonusHours: 'ボーナス時間',
     daysWorked: '勤務日数',
     title: 'レポート・分析',
-    allEmployees: '全従業員',
+    leave: '休暇申請',
     filenamePrefix: '人事報告書_',
     excel: {
       charts: {
@@ -712,65 +681,30 @@ export default {
     category: 'カテゴリー',
     goal: '目標',
     progress: '進捗',
-    employee: '従業員',
-    department: '部署',
-    status: 'ステータス',
     priority: '優先度',
     dueDate: '期限',
     hours: '時間レポート',
     approved: '承認済みレポート',
     pending: '保留中レポート',
-    rejected: '却下されたレポート',
-    performance: 'パフォーマンスレポート',
-    recruitment: '採用レポート',
-    salary: '給与レポート',
-    attendance: '出勤レポート',
-    employees: '従業員',
     details: '詳細',
-    status: 'ステータス',
+    status: "ステータス",
     date: '日付',
     completed: '完了',
     inProgress: '進行中',
     completionRate: '完了率',
     dataPreview: 'データプレビュー',
     showingFirst50: '* 最初の50件の記録を表示',
-    allEmployees: '全従業員',
+    allEmployees: "全従業員",
     subtitle: '詳細なレポートを生成・エクスポート',
     totalRecords: '総記録数',
     exportReport: 'レポートをエクスポート',
-    exportPDF: 'PDFにエクスポート',
-    exportExcel: 'Excelにエクスポート',
-    filterBy: 'フィルター条件',
-    dateRange: '日付範囲',
-    department: '部署',
-    allDepartments: 'すべての部署',
-    performance: 'パフォーマンス',
-    salary: '給与',
-    attendance: '出勤',
-    recruitment: '採用',
-    all: 'すべて',
-    reportType: 'レポートタイプ',
-    selectReportType: 'レポートタイプを選択',
-    customReport: 'カスタムレポート',
-    prebuiltReports: '事前構築レポート',
-    employeeGrowth: '従業員成長',
-    departmentDistribution: '部署別分布',
-    performanceMetrics: 'パフォーマンス指標',
-    recruitmentMetrics: '採用指標',
-    attendanceReport: '出勤レポート',
-    salaryReport: '給与レポート',
-    generateReport: 'レポートを生成',
     reportGenerated: 'レポートが正常に生成されました！',
     exporting: 'エクスポート中...',
-    exportSuccess: 'レポートが正常にエクスポートされました！',
     exportError: 'レポートのエクスポートに失敗しました。もう一度お試しください。',
     reportName: 'レポート名',
     reportDate: 'レポート日付',
-    generatedBy: '生成者',
-    generatedFor: '対象者',
     totalEntries: '総エントリ数',
     goals: '個人目標',
-    timeEntry: '時間エントリ',
     totalHours: '総時間',
     regularHours: '通常時間',
     liveData: 'ライブデータ',
@@ -779,17 +713,12 @@ export default {
     tasksDone: '完了したタスク',
     goalProgress: '目標進捗',
     averageRating: '平均評価',
-    generateReport: 'レポートを生成',
     overtimeHours: '残業時間',
     weekendHours: '週末時間',
     holidayHours: '祝日時間',
     leaveDays: '休暇日数',
-    bonusHours: 'ボーナス時間',
+    bonusHours: "ボーナス時間",
     tasks: 'タスク',
-    attendance: '出勤',
-    performance: 'パフォーマンス',
-    recruitment: '採用',
-    salary: '給与',
     reportParameters: 'レポートパラメータ',
     departmentMetrics: '部署別指標',
     quickFilters: 'クイックフィルター',
@@ -799,61 +728,45 @@ export default {
     last7Days: '過去7日間',
     last30Days: '過去30日間',
     thisWeek: '今週',
-    lastWeek: '先週',
     thisMonth: '今月',
-    lastMonth: '先月',
-    thisQuarter: '今四半期',
-    lastQuarter: '前四半期',
-    thisYear: '今年',
-    lastYear: '昨年',
-    customDateRange: 'カスタム日付範囲',
-    startDate: '開始日',
-    endDate: '終了日',
-    applyFilters: 'フィルターを適用',
-    resetFilters: 'フィルターをリセット',
-    thisYear: '今年',
-    lastYear: '昨年',
-    customDateRange: 'カスタム日付範囲',
-    startDate: '開始日',
-    endDate: '終了日',
-    applyFilters: 'フィルターを適用',
-    resetFilters: 'フィルターをリセット',
+    thisYear: "今年",
+    customDateRange: "カスタム日付範囲",
+    startDate: "開始日",
+    endDate: "終了日",
+    applyFilters: "フィルターを適用",
+    resetFilters: "フィルターをリセット",
     dataType: 'データタイプ',
     allData: 'すべてのデータ',
     filteredData: 'フィルタリングされたデータ',
     dateGenerated: '生成日',
-    generatedBy: '生成者',
-    generatedFor: '対象者',
-    // New translations
-    employee: '従業員',
-    timeEntry: '時間エントリ',
+    generatedBy: "生成者",
+    generatedFor: "対象者",
+    employee: "従業員",
+    timeEntry: "時間エントリ",
     exportToCSV: 'CSVにエクスポート',
     timeEntries: '時間エントリレポート',
     individualMetrics: '個別指標',
     individualReport: '個別レポート',
     exportingIncludes: '* エクスポートにはフィルタリングされたデータが含まれます',
     recordsFound: '件の記録が見つかりました',
-    selectReportType: 'レポートタイプを選択',
-    customReport: 'カスタムレポート',
-    prebuiltReports: '事前構築レポート',
-    employeeGrowth: '従業員成長',
-    departmentDistribution: '部署別分布',
-    performanceMetrics: 'パフォーマンス指標',
-    recruitmentMetrics: '採用指標',
-    attendanceReport: '出勤レポート',
-    salaryReport: '給与レポート',
-    generateReport: 'レポート生成',
-    exportPDF: 'PDF出力',
-    exportExcel: 'Excel出力',
-    filterBy: 'フィルター',
-    dateRange: '期間',
-    department: '部署',
-    allDepartments: 'すべての部署',
-    performance: 'パフォーマンス',
-    salary: '給与',
-    attendance: '出勤',
-    recruitment: '採用',
-    all: 'すべて',
+    selectReportType: "レポートタイプを選択",
+    customReport: "カスタムレポート",
+    employeeGrowth: "従業員成長",
+    departmentDistribution: "部署別分布",
+    performanceMetrics: "パフォーマンス指標",
+    salaryReport: "給与レポート",
+    generateReport: "レポート生成",
+    exportPDF: "PDF出力",
+    exportExcel: "Excel出力",
+    filterBy: "フィルター",
+    dateRange: "期間",
+    department: "部署",
+    allDepartments: "すべての部署",
+    performance: "パフォーマンス",
+    salary: "給与",
+    attendance: "出勤",
+    recruitment: "採用",
+    all: "すべて",
     // Navigation
     overview: '概要',
     detailedReports: '詳細レポート',
@@ -867,7 +780,7 @@ export default {
     // Stats
     totalEmployees: '総従業員数',
     newHires: '新規採用',
-    thisQuarter: '今四半期',
+    thisQuarter: "今四半期",
     turnoverRate: '離職率',
     annualRate: '年率',
     avgSalary: '平均給与',
@@ -881,15 +794,15 @@ export default {
     totalApplications: '総応募数',
     interviewed: '面接済み',
     hired: '採用',
-    rejected: '不採用',
-    employees: '従業員',
+    rejected: "不採用",
+    employees: "従業員",
     // Report generation
     generateCustomReport: 'カスタムレポート生成',
-    reportType: 'レポートタイプ',
+    reportType: "レポートタイプ",
     employeePerformance: '従業員パフォーマンス',
     salaryAnalysis: '給与分析',
-    attendanceReport: '出勤レポート',
-    recruitmentMetrics: '採用指標',
+    attendanceReport: "出勤レポート",
+    recruitmentMetrics: "採用指標",
     departmentComparison: '部署比較',
     exportToPDF: 'PDFに出力',
     pdf: {
@@ -929,7 +842,7 @@ export default {
       }
     },
     exportToExcel: 'Excelに出力',
-    prebuiltReports: '事前構築レポート',
+    prebuiltReports: "事前構築レポート",
     monthlyPerformanceReview: '月次パフォーマンスレビュー',
     comprehensivePerformanceAnalysis: '包括的パフォーマンス分析',
     salaryBenchmarking: '給与ベンチマーキング',
@@ -944,11 +857,11 @@ export default {
     measureTrainingSuccess: '研修プログラムの成功測定',
     generate: '生成 →',
     fromLastPeriod: '前期から',
-    lastWeek:	'先週 (Senshū)',
-    lastMonth:	'先月 (Sengetsu)',
-    lastQuarter:	'前四半期 (Zen shihanki)',
-    lastYear:	'昨年 (Sakunen)',
-    customRange:	'カスタム範囲',
+    lastWeek: "先週 (Senshū)",
+    lastMonth: "先月 (Sengetsu)",
+    lastQuarter: "前四半期 (Zen shihanki)",
+    lastYear: "昨年 (Sakunen)",
+    customRange: 'カスタム範囲',
     for: 'の',
     from: 'から',
     to: 'まで',
@@ -962,13 +875,12 @@ export default {
     statusInProgress: '進行中',
     statusNotStarted: '未開始',
     errorExporting: 'データのエクスポート中にエラーが発生しました',
-    exportSuccess: 'データが正常にエクスポートされました',
+    exportSuccess: "データが正常にエクスポートされました",
     csvExportSuccess: 'すべてのデータタイプを1つのファイルに含むCSVレポートを正常にエクスポートしました！',
     excelExportHint: '概要、チャート、詳細シートですべてのデータタイプをエクスポート',
     pdfExportHint: '視覚的なチャート、概要、すべてのデータタイプの詳細テーブルを含むPDFをエクスポート',
-    pdfExportSuccess: 'PDFレポートが正常にエクスポートされました！',
+    pdfExportSuccess: 'PDFレポートが正常にエクスポートされました！'
   },
-
   // Add Employee
   addEmployee: {
     title: '新規従業員追加',
@@ -1007,7 +919,6 @@ export default {
     submitError: '従業員の追加に失敗しました',
     dobPlaceholder: '生年月日を選択'
   },
-
   // Employee Detail Modal
   employeeDetailModal: {
     download: 'ダウンロード',
@@ -1066,7 +977,6 @@ export default {
     uploadInstructions: 'ここをクリックまたはPDFファイルをドラッグしてアップロード',
     maxFileSize: '最大ファイルサイズ：10MB'
   },
-
   // Status translations
   status: {
     approved: '承認済み',
@@ -1078,33 +988,45 @@ export default {
     'in-progress': '進行中',
     'not-started': '未開始',
     achieved: '達成',
-    'on-hold': '保留',
+    'on-hold': '保留'
   },
-
   // Data Type Labels
   dataType: {
     timeEntry: '勤怠入力',
     task: 'タスク',
-    goal: '目標',
+    goal: '目標'
   },
-
   // Common
+  datePicker: {
+    placeholder: '日付を選択',
+    calendar: 'カレンダー',
+    prevMonth: '前月',
+    nextMonth: '翌月',
+    today: '今日',
+    clear: 'クリア'
+  },
+  timePicker: {
+    hours: '時',
+    minutes: '分',
+    done: '完了',
+    clear: 'クリア',
+    placeholder: '--:--',
+    picker: '時刻ピッカー'
+  },
   common: {
     viewDetails: '詳細を見る',
     results: '結果',
-    employees: '従業員',
     email: 'メール',
     phone: '電話',
     address: '住所',
     searchPlaceholder: '検索...',
     update: '更新',
-    loading: '読み込み中...',
     fetching: '取得中',
     ready: '完了',
     ms: 'ms',
     mainMenu: 'メインメニュー',
     analytics: '分析',
-    employees: '従業員',
+    employees: "従業員",
     recruitment: '採用',
     recruitmentPipeline: '採用パイプライン',
     jobPostings: '求人情報',
@@ -1112,28 +1034,25 @@ export default {
     interviews: '面接',
     offers: 'オファー',
     onboarding: 'オンボーディング',
-    timeClock: '勤怠記録',
     timeTracking: '勤怠管理',
     reports: 'レポート',
     dashboard: 'ダッシュボード',
     settings: '設定',
     profile: 'プロフィール',
     logout: 'ログアウト',
-    timeClock: '勤怠記録',
+    timeClock: "勤怠記録",
     leaveRequest: '休暇申請',
     overtimeLog: '残業記録',
     exportReport: 'レポート出力',
     search: '検索',
     filter: 'フィルター',
     next: '次へ',
-    back: '戻る',
     date: '日付',
     time: '時間',
-    hours: '時間数',
     type: 'タイプ',
     status: 'ステータス',
     actions: 'アクション',
-    back: '戻る',
+    back: "戻る",
     submit: '送信',
     sort: 'ソート',
     save: '保存',
@@ -1144,7 +1063,7 @@ export default {
     view: '表示',
     add: '追加',
     close: '閉じる',
-    loading: '読み込み中...',
+    loading: "読み込み中...",
     continueWithGithub: 'GitHubで続ける',
     redirecting: 'GitHubにリダイレクト中...',
     githubError: 'GitHubログインに失敗しました',
@@ -1158,7 +1077,7 @@ export default {
     day: '日',
     days: '日間',
     hour: '時間',
-    hours: '時間',
+    hours: "時間",
     minute: '分',
     minutes: '分',
     second: '秒',
@@ -1168,22 +1087,19 @@ export default {
     upload: 'アップロード',
     uploadFile: 'ファイルをアップロード',
     uploadSuccess: 'ファイルが正常にアップロードされました',
-    uploadError: 'ファイルのアップロードに失敗しました',
+    uploadError: 'ファイルのアップロードに失敗しました'
   },
-
   // Theme
   theme: {
     light: 'ライトモード',
     dark: 'ダークモード',
     toggle: 'テーマ切り替え'
   },
-
   // Language
   language: {
     select: '言語選択',
     current: '現在の言語'
   },
-
   // Time Tracking Actions
   timeTrackingActions: {
     recordTime: '時間記録',
@@ -1207,7 +1123,6 @@ export default {
     daysWorked: '出勤日数',
     totalHoursLabel: '総勤務時間'
   },
-
   // Admin Time Entry
   adminTimeEntry: {
     title: '管理者勤怠入力',
@@ -1275,14 +1190,12 @@ export default {
       errorWithDetail: '標準勤務時間の入力に失敗しました：{message}'
     }
   },
-
   // Recruitment Actions
   recruitmentActions: {
     view: '表示',
     schedule: 'スケジュール',
     reject: '拒否'
   },
-
   // Employee Status
   employeeStatus: {
     active: 'アクティブ',
@@ -1291,7 +1204,6 @@ export default {
     pending: '保留中',
     outSourceContractor: '外部委託業者'
   },
-
   // Recruitment Status
   recruitmentStatus: {
     active: 'アクティブ',
@@ -1308,26 +1220,6 @@ export default {
     technical: '技術面接',
     shortlisted: '最終候補'
   },
-
-  // Demo Notifications
-  demoNotifications: {
-    'notif-1': {
-      title: 'HRシステムへようこそ',
-      message: 'HRシステムのデモモードへようこそ。自由に操作してみてください！',
-      actionLabel: 'ダッシュボードへ'
-    },
-    'notif-2': {
-      title: '新しい応募',
-      message: 'Senior Frontend Developerのポジションに新しい応募がありました。',
-      actionLabel: '応募を見る'
-    },
-    'notif-3': {
-      title: 'パフォーマンスレビュー期限',
-      message: '四半期ごとのパフォーマンスレビューは来週が締め切りです。',
-      actionLabel: 'レビューを見る'
-    }
-  },
-
   // Performance Goals
   goals: {
     completeReactProject: 'Reactプロジェクト完了',
@@ -1338,14 +1230,12 @@ export default {
     backendDevelopment: 'バックエンド開発',
     teamCollaboration: 'チーム協力'
   },
-
   // Review Types
   reviewTypes: {
     quarterlyReview: '四半期評価',
     midYearReview: '中間評価',
     annualReview: '年次評価'
   },
-
   // Skill Categories
   skillCategories: {
     technical: '技術的',
@@ -1353,7 +1243,6 @@ export default {
     leadership: 'リーダーシップ',
     communication: 'コミュニケーション'
   },
-
   employeePosition: {
     general_manager: 'ゼネラルマネージャー',
     senior_developer: 'シニア開発者',
@@ -1363,9 +1252,8 @@ export default {
     managing_director: '所長 / 院長',
     support_staff: 'サポートスタッフ',
     expertGroup: 'エキスパートグループ',
-    employee: '従業員',
-  }, 
-
+    employee: '従業員'
+  },
   // Notifications
   notifications: {
     title: '通知',
@@ -1419,9 +1307,8 @@ export default {
     // Notification messages
     timeEntriesAwaiting: '{0}件の時間入力が承認待ちです',
     reviewNow: '今すぐ確認',
-    viewDetails: '詳細を表示',
+    viewDetails: '詳細を表示'
   },
-
   // Settings
   settings: {
     title: '設定',
@@ -1434,13 +1321,11 @@ export default {
     confirmReset: 'すべての設定をデフォルトにリセットしてもよろしいですか？',
     importSuccess: '設定を正常にインポートしました！',
     importError: '設定のインポートに失敗しました',
-    
     notifications: '通知',
     appearance: '外観',
     language: '言語',
     privacy: 'プライバシー',
     work: '作業設定',
-    
     notificationPreferences: '通知設定',
     emailNotifications: 'メール通知',
     emailNotificationsDesc: 'メールで通知を受け取る',
@@ -1458,17 +1343,14 @@ export default {
     employeeNotifications: '従業員の更新',
     recruitmentNotifications: '採用',
     systemNotifications: 'システム更新',
-    
     appearanceSettings: '外観設定',
     theme: 'テーマ',
     dateFormat: '日付形式',
     timeFormat: '時刻形式',
     itemsPerPage: 'ページあたりのアイテム数',
-    
     languageRegion: '言語と地域',
     timezone: 'タイムゾーン',
     timezoneNote: '現在、最初の50のタイムゾーンを表示しています',
-    
     privacySettings: 'プライバシー設定',
     profileVisibility: 'プロフィールの公開範囲',
     visibilityAll: 'すべてのユーザー',
@@ -1478,7 +1360,6 @@ export default {
     contactVisibility: '連絡先情報の公開範囲',
     showEmail: 'メールアドレスを表示',
     showPhone: '電話番号を表示',
-    
     workPreferences: '作業設定',
     defaultDashboard: 'デフォルトのダッシュボード表示',
     overviewView: '概要',
@@ -1490,7 +1371,6 @@ export default {
     weeklyReport: '週次レポート',
     weeklyReportDesc: '作業活動の週次まとめを受け取る'
   },
-
   // Task Listing
   taskListing: {
     title: 'タスクリスト',
@@ -1512,14 +1392,13 @@ export default {
     statusCompleted: '完了',
     pending: '保留中',
     'in-progress': '進行中',
-    completed: '完了',
     teamWorkload: 'チームの作業負荷',
     filterByEmployee: '従業員でフィルタリング',
     filterByStatus: 'ステータスでフィルタリング',
     searchTasks: 'タスクを検索...',
     organization: '組織',
     totalTasks: '総タスク数',
-    completed: '完了',
+    completed: "完了",
     progress: '進捗',
     avgQuality: '平均品質',
     avgProgress: '平均進捗',
@@ -1540,9 +1419,8 @@ export default {
     quality: '品質',
     completionDate: '完了日',
     createdAt: '作成日',
-    updatedAt: '更新日',   
+    updatedAt: '更新日'
   },
-
   // Task Review
   taskReview: {
     title: 'タスクレビュー',
@@ -1558,9 +1436,6 @@ export default {
     progressPlaceholder: 'このタスクの進捗をパーセンテージで入力してください...',
     taskComments: 'タスクコメント',
     commentsPlaceholder: 'このタスクに関するコメントを追加してください...',
-    noTasks: '今月はレビューするタスクがありません',
-    selectEmployee: '従業員を選択',
-    selectEmployeeToView: '表示する従業員を選択',
     teamEvaluation: 'チーム評価',
     employeeEvaluation: '従業員評価',
     overallProgress: '全体の進捗',
@@ -1586,7 +1461,7 @@ export default {
     lowPriority: '低優先度',
     qualityAssessment: '品質評価',
     ratedTasks: '評価済みタスク',
-    noTasks: '今月はタスクが見つかりませんでした',
+    noTasks: "今月はタスクが見つかりませんでした",
     noTeamTasks: '今月はチームタスクが見つかりませんでした',
     evaluateTask: 'タスクを評価',
     selfAssessment: '自己評価',
@@ -1594,9 +1469,6 @@ export default {
     managerComments: '管理者コメント',
     commentPlaceholder: 'タスクの品質と個人目標についてフィードバックを提供してください...',
     taskDetails: 'タスクの詳細',
-    status: 'ステータス',
-    priority: '優先度',
-    dueDate: '期限日',
     currentRating: '現在の評価',
     submitEvaluation: '評価を提出',
     cancel: 'キャンセル',
@@ -1626,18 +1498,18 @@ export default {
     progress: '進捗',
     organization: '組織',
     chooseEmployee: '従業員を選択',
-    selectEmployeeToView: '表示する従業員を選択',
+    selectEmployeeToView: "表示する従業員を選択",
     tasks: 'タスク',
     goal: '目標',
     goals: '目標',
-    assignedBy: '割り当てた人', 
+    assignedBy: '割り当てた人',
     assignedTo: '割り当て先',
-    dueDate: '期限日',
-    status: 'ステータス',
-    priority: '優先度',
+    dueDate: "期限日",
+    status: "ステータス",
+    priority: "優先度",
     action: 'アクション',
     noTasksFound: 'タスクが見つかりません',
-    selectEmployee: '従業員を選択',
+    selectEmployee: "従業員を選択",
     taskList: 'タスクリスト',
     employeeSelfAssessment: '従業員自己評価',
     employeeBreakdown: '従業員内訳',
@@ -1649,9 +1521,8 @@ export default {
     targetDate: '目標日',
     notes: 'ノート',
     createdAt: '作成日',
-    updatedAt: '更新日',
+    updatedAt: '更新日'
   },
-
   // Performance Appraisal Translation
   performanceAppraisalPage: {
     title: '業績評価',
@@ -1664,16 +1535,14 @@ export default {
     // Tabs
     overview: '概要',
     goals: '目標',
-    reviews: 'レビュー',
+    reviews: 'レビュー'
   },
-
   // Employee Details Tabs
   employeeDetailTabs: {
     basicInformation: '基本情報',
     contact: '連絡先',
-    documents: '書類',
+    documents: '書類'
   },
-
   // Employee Edit Form
   employeeEditForm: {
     editEmployee: '従業員編集',
@@ -1693,9 +1562,8 @@ export default {
     cancel: 'キャンセル',
     abbrechen: 'キャンセル',
     save: '保存',
-    speichern: '保存',
+    speichern: '保存'
   },
-
   // Department Pie Chart Names
   departments: {
     all: 'すべて',
@@ -1710,9 +1578,8 @@ export default {
     sales: '営業',
     marketing: 'マーケティング',
     design: 'デザイン',
-    part_time_employee: 'エキスパートグループ',
+    part_time_employee: 'エキスパートグループ'
   },
-
   // Control Panel
   controlPanel: {
     refreshing: '更新中...',
@@ -1747,7 +1614,7 @@ export default {
     visit: {
       demoCount: 'デモ訪問数',
       totalCount: '総訪問数',
-      authorized: '認証済み訪問数',  
+      authorized: '認証済み訪問数',
       total: '合計',
       last24h: '過去24時間',
       distinctIps: '異なるIP',
@@ -1760,7 +1627,7 @@ export default {
       visits: '訪問',
       visitDetails: '訪問詳細',
       visitHistory: '訪問履歴',
-      noVisitsFound: '訪問が見つかりません',
+      noVisitsFound: '訪問が見つかりません'
     },
     roles: {
       admin: '管理者',
@@ -1769,7 +1636,7 @@ export default {
       employee: '従業員',
       viewer: '閲覧者',
       demoAdmin: 'デモ管理者',
-      hrAdmin: 'HR 管理者',
+      hrAdmin: 'HR 管理者'
     },
     roleDesc: {
       admin: 'ユーザー管理、システム設定、完全なデータ制御を含むすべての管理権限を持つ完全なシステムアクセス',
@@ -1778,7 +1645,7 @@ export default {
       manager: 'チームメンバーを監督し、時間追跡を承認し、業績評価を管理',
       employee: '個人情報にアクセスし、時間記録を提出し、自分の業績データを表示',
       viewer: 'レポート、ダッシュボード、限られたシステム情報への読み取り専用アクセス',
-      demoAdmin: 'デモモードは管理者アクセスをシミュレーションするためにローカルストレージを使用しますが、正式版はデータ同期にバックエンドデータベースを使用します',
+      demoAdmin: 'デモモードは管理者アクセスをシミュレーションするためにローカルストレージを使用しますが、正式版はデータ同期にバックエンドデータベースを使用します'
     },
     uploadAvatar: 'アバターをアップロード',
     avatarUpdated: 'アバターが正常に更新されました！',
@@ -1819,9 +1686,8 @@ export default {
     restoreAllDemoData: "すべてのデモデータを復元",
     switchToDemoEmployee: 'デモ従業員に切り替え',
     switchToDemoAdmin: 'デモ管理者に切り替え',
-    demoRoleOnly: 'この機能はデモモードでのみ利用できます',
+    demoRoleOnly: 'この機能はデモモードでのみ利用できます'
   },
-
   // Production Help Center
   prodHelp: {
     title: '本番ヘルプセンター',
@@ -1833,27 +1699,27 @@ export default {
     item: {
       observability: 'ダッシュボードとアラートが有効',
       rollbacks: 'ロールバック計画を検証済み',
-      backups: 'バックアップを確認済み',
+      backups: 'バックアップを確認済み'
     },
     observability: {
       title: '可観測性：ログ、メトリクス、トレース',
-      description: 'エラーバジェット、構造化ログ、95/99パーセンタイルのレイテンシダッシュボード、トレースサンプリングを本番向けに最適化します。',
+      description: 'エラーバジェット、構造化ログ、95/99パーセンタイルのレイテンシダッシュボード、トレースサンプリングを本番向けに最適化します。'
     },
     rollouts: {
       title: '安全なロールアウトとフィーチャーフラグ',
-      description: 'ヘルスチェック、ロールバック用プレイブック、リスクの高いコードパスを素早く無効化できるフラグを使って段階的に展開します。',
+      description: 'ヘルスチェック、ロールバック用プレイブック、リスクの高いコードパスを素早く無効化できるフラグを使って段階的に展開します。'
     },
     security: {
       title: 'セキュリティとシークレット管理',
-      description: 'キーのローテーション、最小権限の適用、監査ログの有効化、管理者ロールへのMFA必須化を行います。',
+      description: 'キーのローテーション、最小権限の適用、監査ログの有効化、管理者ロールへのMFA必須化を行います。'
     },
     performance: {
       title: 'パフォーマンスバジェット',
-      description: 'コールドスタートとホットパスの時間を追跡し、APIレイテンシ、SQLクエリ、フロントエンドTTIの予算を設定します。',
+      description: 'コールドスタートとホットパスの時間を追跡し、APIレイテンシ、SQLクエリ、フロントエンドTTIの予算を設定します。'
     },
     resilience: {
       title: 'バックアップと耐障害性',
-      description: '自動バックアップ、DR戦略、レート制限、下流依存関係向けのサーキットブレーカーを確認します。',
+      description: '自動バックアップ、DR戦略、レート制限、下流依存関係向けのサーキットブレーカーを確認します。'
     },
     tags: {
       reliability: '信頼性',
@@ -1862,10 +1728,9 @@ export default {
       safety: '安全性',
       security: 'セキュリティ',
       performance: 'パフォーマンス',
-      resilience: '耐障害性',
-    },
+      resilience: '耐障害性'
+    }
   },
-
   // Demo Help Center 
   help: {
     containerLabel: 'ヘルプセンター',
@@ -1881,14 +1746,12 @@ export default {
       title: '重要: デモの制限!',
       body: 'データはローカルに保存されますが、デバイス間で同期されません。データはコントロールパネルで復元できます。'
     },
-
     features: {
       section: '高度 & コンテキスト別の機能',
       defaultTitle: '隠れた機能とプロのヒント',
       contextTitle: '{context} に対するコンテキスト別のヒント',
       restricted: '制限あり',
       empty: '{context} に対する特定のヒントは見つかりませんでした。以下にすべての機能を表示しています。',
-
       feature_1: {
         title: '隠れた機能：一括編集',
         description: '最大50件のレコードを一度に編集できます。項目の横のチェックボックスを選択し、テーブル上部の✏️アイコンをクリックしてください。現在のデモでは無効になっています。'
@@ -1906,7 +1769,6 @@ export default {
         description: '右上のプロフィールアバターをクリックしてダッシュボードのレイアウト設定にアクセスします。ダークモードに切り替えたり、テーブルの密度を調整したりできます。'
       }
     },
-
     tags: {
       advanced: '高度',
       hidden: '非表示',
@@ -1918,7 +1780,6 @@ export default {
       'hard-to-find': '見つけにくい',
       personalization: 'パーソナライズ'
     },
-
     showcase: {
       section: 'アニメーション製品ウォークスルー',
       label: 'アニメーション製品ウォークスルー',
@@ -1929,34 +1790,28 @@ export default {
       sync: 'すべてが同期',
       syncDesc: '入力、ファイル、目標はダッシュボードとレポートを即座に更新します。',
       live: 'ライブ',
-
       time: {
         title: '時間管理',
         desc: '時間入力、承認、残業、作業ログを一元管理します。'
       },
-
       upload: {
         title: 'ファイルのアップロード',
         desc: '契約書、ID、証跡を監査対応の履歴付きで安全に保存します。'
       },
-
       dashboard: {
         title: 'ダッシュボードとチャート',
         desc: '稼働率、出勤状況、健全性スコアをリアルタイムで可視化します。'
       },
-
       tasks: {
         title: 'タスクと目標',
         desc: '担当者、期限、チェックリストを割り当て、人事データと同期します。'
       },
-
       reporting: {
         title: 'レポート',
         desc: 'PDF/CSVをエクスポートし、管理者向けの定期レポートをスケジュールできます。'
       }
-    },
+    }
   },
-
   // Video Player 
   videoPlayer: {
     container: 'ビデオプレーヤー',
@@ -1974,7 +1829,6 @@ export default {
     },
     name: 'ビデオ名'
   },
-
   // Email Management
   emailManagement: {
     title: 'ユーザーメール管理',
@@ -1999,18 +1853,12 @@ export default {
     errorLoadingUsers: 'ユーザーの読み込みエラー',
     fillAllFields: 'すべてのフィールドを入力してください'
   },
-
   // Personal Goals
   personalGoals: {
-    goalTitle: '目標タイトル',
-    goalTitlePlaceholder: '目標タイトルを入力',
-    title: 'タスクパフォーマンスレビュー',
     subtitle: '月次タスク進捗と品質評価',
     individual: '個人',
     team: 'チーム',
     totalTasks: '総タスク数',
-    completed: '完了',
-    inProgress: '進行中',
     beginner: '初心者',
     intermediate: '中級',
     advanced: '上級',
@@ -2037,8 +1885,6 @@ export default {
     managerComments: 'マネージャーコメント',
     commentPlaceholder: 'タスクの品質とパフォーマンスについてフィードバックを提供...',
     taskDetails: 'タスク詳細',
-    status: 'ステータス',
-    priority: '優先度',
     dueDate: '期限',
     currentRating: '現在の評価',
     submitEvaluation: '評価を送信',
@@ -2046,21 +1892,14 @@ export default {
     evaluate: '評価',
     managerEvaluation: 'マネージャー評価',
     created: '作成日',
-    due: '期限',
     all: 'すべて',
-    pending: '保留中',
-    title: 'パフォーマンス評価',
+    title: "パフォーマンス評価",
     overallRating: '総合評価',
     reviewPeriod: '評価期間',
     goals: '目標・目的',
     achievements: '主な成果',
     areasForImprovement: '改善領域',
     skillsAssessment: 'スキル評価',
-    technical: '技術スキル',
-    communication: 'コミュニケーション',
-    leadership: 'リーダーシップ',
-    teamwork: 'チームワーク',
-    problemSolving: '問題解決',
     rating: '評価',
     excellent: '優秀',
     good: '良好',
@@ -2082,9 +1921,9 @@ export default {
     goalsCompleted: '達成目標',
     reviewsThisPeriod: '今期のレビュー',
     avgSkillRating: '平均スキル評価',
-    completed: '完了',
-    inProgress: '進行中',
-    pending: '保留中',
+    completed: "完了",
+    inProgress: "進行中",
+    pending: "保留中",
     // Tabs
     overview: '概要',
     goalsTab: '目標',
@@ -2098,7 +1937,7 @@ export default {
     in_progress: '進行中',
     clickToRate: '星をクリックして従業員の評価を更新',
     deadline: '期限',
-    due: '期日',
+    due: "期日",
     complete: '完了',
     viewDetails: '詳細を見る',
     // Reviews section
@@ -2106,24 +1945,18 @@ export default {
     newReview: '新しいレビュー',
     by: 'による',
     viewFullReview: '完全なレビューを見る',
-    // General
-    status: 'ステータス',
+    status: "ステータス",
     actions: 'アクション',
     edit: '編集',
     view: '表示',
     progressSaved: '進捗が正常に保存されました！',
     progressSaveError: '進捗の保存に失敗しました',
-    goalTitle: '目標タイトル',
-    goalTitlePlaceholder: '目標タイトルを入力',
+    goalTitle: "目標タイトル",
+    goalTitlePlaceholder: "目標タイトルを入力",
     goalDescription: '説明',
     goalDescriptionPlaceholder: '目標の詳細を説明',
     category: 'カテゴリー',
-    general: '一般',
-    technical: '技術',
-    leadership: 'リーダーシップ',
-    project: 'プロジェクト',
-    professionalDevelopment: '専門能力開発',
-    priority: '優先度',
+    priority: "優先度",
     low: '低',
     medium: '中',
     high: '高',
@@ -2138,24 +1971,23 @@ export default {
     reviewComments: '評価コメント',
     noComments: 'まだコメントがありません',
     errorFetchingComments: 'コメントの読み込みエラー',
-    general: '一般',
-    technical: '技術',
-    leadership: 'リーダーシップ',
-    project: 'プロジェクト',
-    communication: 'コミュニケーション',
+    general: "一般",
+    technical: "技術",
+    leadership: "リーダーシップ",
+    project: "プロジェクト",
+    communication: "コミュニケーション",
     timeManagement: '時間管理',
-    problemSolving: '問題解決',
+    problemSolving: "問題解決",
     creativity: '創造性',
-    teamwork: 'チームワーク',
+    teamwork: "チームワーク",
     adaptability: '適応力',
     emotionalIntelligence: '感情知能',
     criticalThinking: '批判的思考',
-    professionalDevelopment: '専門的成長',
+    professionalDevelopment: "専門的成長",
     goalDeletedSuccess: '目標を正常に削除しました！',
     goalDeletedError: '目標の削除に失敗しました',
-    goalsInProgress: '進行中の目標',
+    goalsInProgress: '進行中の目標'
   },
-
   // Morphing Showcase
   morphingShowcase: {
     title: 'Flubberモーフィング統合',
@@ -2183,9 +2015,8 @@ export default {
     manualControl: '手動コントロール',
     responsiveDesign: 'レスポンシブデザイン',
     customizableTiming: 'カスタマイズ可能なタイミング',
-    multipleEasingFunctions: '複数のイージング関数',
+    multipleEasingFunctions: '複数のイージング関数'
   },
-
   // Flubber Demo
   flubberDemo: {
     title: 'Flubber SVGモーフィングデモ',
@@ -2210,36 +2041,86 @@ export default {
     manualShapeSelection: '手動図形選択',
     responsiveAccessible: 'レスポンシブでアクセシブル',
     customizableDuration: 'カスタマイズ可能なアニメーション期間',
-    easingFunctions: '自然な動きのためのイージング関数',
+    easingFunctions: '自然な動きのためのイージング関数'
   },
   demoEmployees: {
-  'demo-emp-1': { name: '管理者', location: '本社' },
-  'demo-emp-2': { name: '人事エンジニア', location: '本社' },
-  'demo-emp-3': { name: 'UI/UX デザイナー', location: 'リモート' },
-  'demo-emp-4': { name: 'マーケティングスペシャリスト', location: '本社' },
-  'demo-emp-5': { name: '営業担当', location: 'リモート' }
+    'demo-emp-1': {
+      name: '管理者',
+      location: '本社'
+    },
+    'demo-emp-2': {
+      name: '人事エンジニア',
+      location: '本社'
+    },
+    'demo-emp-3': {
+      name: 'UI/UX デザイナー',
+      location: 'リモート'
+    },
+    'demo-emp-4': {
+      name: 'マーケティングスペシャリスト',
+      location: '本社'
+    },
+    'demo-emp-5': {
+      name: '営業担当',
+      location: 'リモート'
+    }
   },
   locations: {
     headquarters: '本社',
     remote: 'リモート'
   },
   demoTasks: {
-    'task-1': { title: 'Q4レポート分析', description: '四半期パフォーマンス指標とトレンドの包括的な分析 - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。' },
-    'task-2': { title: '従業員ハンドブック更新', description: 'リモートワークポリシーで従業員ハンドブックを改訂・更新 - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。' },
-    'task-3': { title: 'ログインエラー修正', description: 'モバイル端末のユーザーログイン問題のデバッグと解決 - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。' },
-    'task-4': { title: '新ダッシュボード設計', description: '分析ダッシュボードのワイヤーフレームとモックアップを作成 - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。' },
-    'task-5': { title: 'キャンペーン効果分析', description: 'Q3マーケティングキャンペーンの結果とROIを分析 - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。' },
-    'task-6': { title: 'クライアント導入', description: '新規エンタープライズクライアントのオンボーディングを完了 - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。' },
-    'task-7': { title: 'APIドキュメント', description: 'バージョン2.0の包括的なAPIドキュメントを作成 - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。' }
+    'task-1': {
+      title: 'Q4レポート分析',
+      description: '四半期パフォーマンス指標とトレンドの包括的な分析 - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。'
+    },
+    'task-2': {
+      title: '従業員ハンドブック更新',
+      description: 'リモートワークポリシーで従業員ハンドブックを改訂・更新 - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。'
+    },
+    'task-3': {
+      title: 'ログインエラー修正',
+      description: 'モバイル端末のユーザーログイン問題のデバッグと解決 - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。'
+    },
+    'task-4': {
+      title: '新ダッシュボード設計',
+      description: '分析ダッシュボードのワイヤーフレームとモックアップを作成 - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。'
+    },
+    'task-5': {
+      title: 'キャンペーン効果分析',
+      description: 'Q3マーケティングキャンペーンの結果とROIを分析 - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。'
+    },
+    'task-6': {
+      title: 'クライアント導入',
+      description: '新規エンタープライズクライアントのオンボーディングを完了 - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。'
+    },
+    'task-7': {
+      title: 'APIドキュメント',
+      description: 'バージョン2.0の包括的なAPIドキュメントを作成 - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。'
+    }
   },
   demoGoals: {
-    'goal-1': { title: 'チーム効率改善', description: '次の四半期でチームの生産性を20%向上させる - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。' },
-    'goal-2': { title: 'React Nativeを学ぶ', description: 'モバイルアプリ開発のためにReact Nativeを習得する - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。' },
-    'goal-3': { title: 'UX認定取得', description: 'Google UXデザイン専門認定を取得する - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。' },
-    'goal-4': { title: 'リード獲得増加', description: 'マーケティングキャンペーンを通じて見込み客を30%増加させる - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。' },
-    'goal-5': { title: 'エンタープライズ契約成立', description: '各50万ドル以上の価値がある5件のエンタープライズ契約を成立させる - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。' }
+    'goal-1': {
+      title: 'チーム効率改善',
+      description: '次の四半期でチームの生産性を20%向上させる - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。'
+    },
+    'goal-2': {
+      title: 'React Nativeを学ぶ',
+      description: 'モバイルアプリ開発のためにReact Nativeを習得する - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。'
+    },
+    'goal-3': {
+      title: 'UX認定取得',
+      description: 'Google UXデザイン専門認定を取得する - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。'
+    },
+    'goal-4': {
+      title: 'リード獲得増加',
+      description: 'マーケティングキャンペーンを通じて見込み客を30%増加させる - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。'
+    },
+    'goal-5': {
+      title: 'エンタープライズ契約成立',
+      description: '各50万ドル以上の価値がある5件のエンタープライズ契約を成立させる - 注意：このデモデータは編集できません。テスト用にご自身のデータを追加してください。'
+    }
   },
-  
   demoReviews: {
     'review-1': {
       reviewPeriod: '2024年第4四半期',
@@ -2256,13 +2137,23 @@ export default {
       comments: 'チームへの大きな貢献'
     }
   },
-
   demoSkills: {
-    'skill-1': { name: 'React', category: '技術', proficiencyLevel: 'エキスパート' },
-    'skill-2': { name: 'TypeScript', category: '技術', proficiencyLevel: '上級' },
-    'skill-3': { name: 'UI/UX デザイン', category: 'デザイン', proficiencyLevel: 'エキスパート' }
+    'skill-1': {
+      name: 'React',
+      category: '技術',
+      proficiencyLevel: 'エキスパート'
+    },
+    'skill-2': {
+      name: 'TypeScript',
+      category: '技術',
+      proficiencyLevel: '上級'
+    },
+    'skill-3': {
+      name: 'UI/UX デザイン',
+      category: 'デザイン',
+      proficiencyLevel: 'エキスパート'
+    }
   },
-
   demoFeedback: {
     'feedback-1': {
       type: '同僚レビュー',
@@ -2273,29 +2164,44 @@ export default {
       text: '新しいデザインシステムでの優れた仕事。引き続き頑張ってください！'
     }
   },
-
   demoJobs: {
     'job-1': {
       title: 'シニアフロントエンド開発者',
       description: '経験豊富なフロントエンド開発者を募集しています。素晴らしいWebアプリケーションの構築を支援してください。',
       location: 'リモート',
       salaryRange: '$90k - $120k',
-      requirements: { 0: 'React', 1: 'TypeScript', 2: 'Tailwind CSS' }
+      requirements: {
+        0: 'React',
+        1: 'TypeScript',
+        2: 'Tailwind CSS'
+      }
     },
     'job-2': {
       title: 'プロダクトデザイナー',
       description: 'ユーザー体験を創造し、製品の未来を形作るデザインチームに参加しませんか？',
       location: 'ニューヨーク',
       salaryRange: '$80k - $100k',
-      requirements: { 0: 'Figma', 1: 'UI/UX', 2: 'プロトタイピング' }
+      requirements: {
+        0: 'Figma',
+        1: 'UI/UX',
+        2: 'プロトタイピング'
+      }
     }
   },
-
   demoApplicants: {
-    'app-1': { firstName: 'ジョン', lastName: 'ドウ', education: 'コンピュータサイエンス学士', currentPosition: 'シニア開発者' },
-    'app-2': { firstName: 'ジェーン', lastName: 'スミス', education: 'デザイン修士', currentPosition: 'UXリード' }
+    'app-1': {
+      firstName: 'ジョン',
+      lastName: 'ドウ',
+      education: 'コンピュータサイエンス学士',
+      currentPosition: 'シニア開発者'
+    },
+    'app-2': {
+      firstName: 'ジェーン',
+      lastName: 'スミス',
+      education: 'デザイン修士',
+      currentPosition: 'UXリード'
+    }
   },
-
   demoApplications: {
     'appl-1': {
       status: '審査中',
@@ -2306,7 +2212,6 @@ export default {
       notes: '優れたポートフォリオとデザインスキル'
     }
   },
-
   demoInterviews: {
     'int-1': {
       status: '予定済み',
@@ -2314,22 +2219,21 @@ export default {
       notes: 'ポートフォリオレビューと技術評価'
     }
   },
-
   demoNotifications: {
     'notif-1': {
-      title: 'HRシステムへようこそ',
-      message: 'HRシステムのデモモードへようこそ。ぜひ全ての機能を試してください！',
-      actionLabel: 'ダッシュボードへ'
+      title: "HRシステムへようこそ",
+      message: "HRシステムのデモモードへようこそ。ぜひ全ての機能を試してください！",
+      actionLabel: "ダッシュボードへ"
     },
     'notif-2': {
-      title: '新しいタスクが割り当てられました',
-      message: '新しいタスクが割り当てられました：Q3パフォーマンスのレビュー',
-      actionLabel: 'タスクを見る'
+      title: "新しいタスクが割り当てられました",
+      message: "Senior Frontend Developerのポジションに新しい応募がありました。",
+      actionLabel: "タスクを見る"
     },
     'notif-3': {
-      title: 'ミーティングリマインダー',
-      message: '30分後にチームミーティングがあります',
-      actionLabel: 'カレンダーを見る'
+      title: "ミーティングリマインダー",
+      message: "30分後にチームミーティングがあります",
+      actionLabel: "カレンダーを見る"
     }
   }
 };

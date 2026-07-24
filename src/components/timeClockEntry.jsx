@@ -17,6 +17,8 @@ import { useSearchParams } from 'react-router-dom';
 import { ShinyButton } from './ui/shiny-button';
 import { SpecularButton } from './ui/specular-button';
 import { PageLiveClock } from './ui/page-live-clock';
+import { DatePicker } from './ui/date-picker.jsx';
+import { TimePicker } from './ui/time-picker.jsx';
 import { cn } from '@/lib/utils';
 import { useNotifications } from '../contexts/NotificationContext';
 import {
@@ -138,13 +140,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
     notes: '',
     proofFile: null
   });
-
-  // Refs for clickable input wrappers
-  const dateInputRef = useRef(null);
-  const clockInRef = useRef(null);
-  const clockOutRef = useRef(null);
-  const leaveStartRef = useRef(null);
-  const leaveEndRef = useRef(null);
 
   // Animation variants for upload icon
   const uploadVariants = {
@@ -1533,26 +1528,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
 
   return (
     <div key={currentLanguage} className="space-y-6 w-full max-w-none">
-      {isDemoMode() && (
-        <style>{`
-          input.no-native-time[type="time"]::-webkit-calendar-picker-indicator {
-            display: none !important;
-            -webkit-appearance: none !important;
-            opacity: 0 !important;
-            width: 0 !important;
-            height: 0 !important;
-          }
-          input.no-native-time[type="time"]::-webkit-clear-button {
-            display: none !important;
-          }
-          input.no-native-time[type="time"] {
-            -webkit-appearance: none !important;
-            appearance: none !important;
-            -moz-appearance: textfield !important;
-          }
-        `}</style>
-      )}
-
       {/* Toast Notification for Upload */}
       {uploadToast.show && (
         <div className="fixed top-4 right-4 z-50 animate-fade-in">
@@ -1667,42 +1642,14 @@ const TimeClockEntry = ({ currentLanguage }) => {
                 {t('timeClock.selectDate', 'Select Date')}
                 </label>
                 
-                <div
-                  className="relative cursor-pointer group"
-                  onClick={(e) => {
-                    // Ignore clicks on other interactive controls (but not the input itself)
-                    if (e.target.closest && e.target.closest('button, a, input[type="file"], label')) return;
-
-                    // Always try to open picker when clicking anywhere in the wrapper
-                    if (dateInputRef.current) {
-                      if (typeof dateInputRef.current.showPicker === 'function') {
-                        try { dateInputRef.current.showPicker(); } catch (err) { dateInputRef.current.focus(); }
-                      } else {
-                        dateInputRef.current.focus();
-                      }
-                    }
-                  }}
-                >
-                  <style>{`
-                    input[type="date"]::-webkit-calendar-picker-indicator,
-                    input[type="date"]::-webkit-inner-spin-button {
-                      display: none;
-                      -webkit-appearance: none;
-                    }
-                    input[type="time"]::-webkit-calendar-picker-indicator,
-                    input[type="time"]::-webkit-inner-spin-button {
-                      display: none;
-                      -webkit-appearance: none;
-                    }
-                  `}</style>
-                  <input
+                <div className="relative group">
+                  <DatePicker
                     id="date-input"
-                    ref={dateInputRef}
-                    type="date"
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                     max={new Date().toISOString().split('T')[0]}
-                    className={`
+                    icon={CalendarClock}
+                    inputClassName={`
                     w-full px-4 py-2 
                     rounded-lg border 
                     ${bg.primary}
@@ -1712,9 +1659,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
                     ${errors.date ? 'border-red-500' : ''}
                     pr-10 appearance-none cursor-pointer
                     `}
-                  />
-                  <CalendarClock 
-                    className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none w-6 h-6 ${text.secondary} ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors`}
                   />
                 </div>
                 
@@ -1728,41 +1672,18 @@ const TimeClockEntry = ({ currentLanguage }) => {
                 {t('timeClock.clockIn')}
               </label>
               
-              <div 
-                className="relative cursor-pointer group"
-                onClick={(e) => {
-                  // Ignore clicks on other interactive controls (but not the input itself)
-                  if (e.target.closest && e.target.closest('button, a, input[type="file"], label')) return;
-                  
-                  // Always try to open picker when clicking anywhere in the wrapper
-                  if (clockInRef.current) {
-                    if (typeof clockInRef.current.showPicker === 'function') {
-                      try { clockInRef.current.showPicker(); } catch (err) { clockInRef.current.focus(); }
-                    } else {
-                      clockInRef.current.focus();
-                    }
-                  }
-                }}
-              >
-                <input
-                  id="clock-in-input"
-                  ref={clockInRef}
-                  type="time"
-                  className={`w-full px-4 py-2 rounded-lg border 
-                    ${bg.primary}
-                    ${input.className} 
-                    ${isDarkMode ? 'text-white bg-gray-700 border-gray-600' : 'text-gray-900 bg-white border-gray-300'} 
-                    ${errors.clockIn ? 'border-red-500' : ''}
-                    pr-10 appearance-none cursor-pointer`}
-                  value={formData.clockIn}
-                  onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
-                />
-                <div 
-                  className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors ${text.secondary}`}
-                >
-                  <AnimatedClockIcon className="w-6 h-6" isDarkMode={isDarkMode} />
-                </div>
-              </div>
+              <TimePicker
+                id="clock-in-input"
+                value={formData.clockIn}
+                onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
+                icon={AnimatedClockIcon}
+                inputClassName={`w-full px-4 py-2 rounded-lg border 
+                  ${bg.primary}
+                  ${input.className} 
+                  ${isDarkMode ? 'text-white bg-gray-700 border-gray-600' : 'text-gray-900 bg-white border-gray-300'} 
+                  ${errors.clockIn ? 'border-red-500' : ''}
+                  pr-10 appearance-none cursor-pointer`}
+              />
               {errors.clockIn && <p className="text-red-500 text-sm mt-1">{errors.clockIn}</p>}
             </div>
 
@@ -1772,41 +1693,18 @@ const TimeClockEntry = ({ currentLanguage }) => {
                 {t('timeClock.clockOut')}
               </label>
               
-              <div 
-                className="relative cursor-pointer group"
-                onClick={(e) => {
-                  // Ignore clicks on other interactive controls (but not the input itself)
-                  if (e.target.closest && e.target.closest('button, a, input[type="file"], label')) return;
-                  
-                  // Always try to open picker when clicking anywhere in the wrapper
-                  if (clockOutRef.current) {
-                    if (typeof clockOutRef.current.showPicker === 'function') {
-                      try { clockOutRef.current.showPicker(); } catch (err) { clockOutRef.current.focus(); }
-                    } else {
-                      clockOutRef.current.focus();
-                    }
-                  }
-                }}
-              >
-                <input
-                  id="clock-out-input"
-                  ref={clockOutRef}
-                  type="time"
-                  className={`w-full px-4 py-2 rounded-lg border 
-                    ${bg.primary}
-                    ${input.className} 
-                    ${isDarkMode ? 'text-white bg-gray-700 border-gray-600' : 'text-gray-900 bg-white border-gray-300'} 
-                    ${errors.clockOut ? 'border-red-500' : ''}
-                    pr-10 appearance-none cursor-pointer`}
-                  value={formData.clockOut}
-                  onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
-                />
-                <div 
-                  className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors ${text.secondary}`}
-                >
-                  <AnimatedAlarmClockIcon className="w-6 h-6" isDarkMode={isDarkMode} />
-                </div>
-              </div>
+              <TimePicker
+                id="clock-out-input"
+                value={formData.clockOut}
+                onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
+                icon={AnimatedAlarmClockIcon}
+                inputClassName={`w-full px-4 py-2 rounded-lg border 
+                  ${bg.primary}
+                  ${input.className} 
+                  ${isDarkMode ? 'text-white bg-gray-700 border-gray-600' : 'text-gray-900 bg-white border-gray-300'} 
+                  ${errors.clockOut ? 'border-red-500' : ''}
+                  pr-10 appearance-none cursor-pointer`}
+              />
               {errors.clockOut && <p className="text-red-500 text-sm mt-1">{errors.clockOut}</p>}
             </div>
 
@@ -1985,91 +1883,25 @@ const TimeClockEntry = ({ currentLanguage }) => {
                               <label className={`block text-sm font-medium ${text.primary} mb-2`}>
                                 {t('timeTracking.startDate', 'Start Date')}
                               </label>
-                              <div
-                                className={`relative`}
-                                onClick={(e) => {
-                                  if (e.target === leaveStartRef.current) return;
-                                  if (e.target.closest && e.target.closest('button, a, input[type="file"], label')) return;
-                                  if (leaveStartRef.current) {
-                                    if (typeof leaveStartRef.current.showPicker === 'function') {
-                                      try { leaveStartRef.current.showPicker(); } catch (err) { leaveStartRef.current.focus(); }
-                                    } else {
-                                      leaveStartRef.current.focus();
-                                    }
-                                  }
-                                }}
-                              >
-                                <input
-                                  ref={leaveStartRef}
-                                  type="date"
-                                  value={leaveForm.startDate}
-                                  onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
-                                  required
-                                  className={`w-full px-4 py-2 cursor-pointer rounded-lg border ${isDarkMode ? 'border-white' : 'border-gray-900'} ${isDarkMode ? 'text-white' : 'text-gray-900'} no-calendar pr-10 appearance-none`}
-                                />
-                                <button
-                                  type="button"
-                                  aria-label={t('timeClock.openDatePicker', 'Open date picker')}
-                                  onClick={(ev) => {
-                                    ev.stopPropagation();
-                                    if (leaveStartRef.current) {
-                                      if (typeof leaveStartRef.current.showPicker === 'function') {
-                                        try { leaveStartRef.current.showPicker(); } catch (err) { leaveStartRef.current.focus(); }
-                                      } else {
-                                        leaveStartRef.current.focus();
-                                      }
-                                    }
-                                  }}
-                                  className={`absolute top-1/2 right-3 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center ${text.secondary}`}
-                                >
-                                  <Calendar className="w-5 h-5 cursor-pointer" aria-hidden="true" />
-                                </button>
-                              </div>
+                              <DatePicker
+                                value={leaveForm.startDate}
+                                onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
+                                required
+                                icon={Calendar}
+                                inputClassName={`w-full px-4 py-2 cursor-pointer rounded-lg border ${isDarkMode ? 'border-white' : 'border-gray-900'} ${isDarkMode ? 'text-white' : 'text-gray-900'} pr-10 appearance-none`}
+                              />
                             </div>
                             <div>
                               <label className={`block text-sm font-medium ${text.primary} mb-2`}>
                                 {t('timeTracking.endDate', 'End Date')}
                               </label>
-                              <div
-                                className="relative"
-                                onClick={(e) => {
-                                  if (e.target === leaveEndRef.current) return;
-                                  if (e.target.closest && e.target.closest('button, a, input[type="file"], label')) return;
-                                  if (leaveEndRef.current) {
-                                    if (typeof leaveEndRef.current.showPicker === 'function') {
-                                      try { leaveEndRef.current.showPicker(); } catch (err) { leaveEndRef.current.focus(); }
-                                    } else {
-                                      leaveEndRef.current.focus();
-                                    }
-                                  }
-                                }}
-                              >
-                                <input
-                                  ref={leaveEndRef}
-                                  type="date"
-                                  value={leaveForm.endDate}
-                                  onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
-                                  required
-                                  className={`w-full px-4 py-2 cursor-pointer rounded-lg border ${isDarkMode ? 'border-white' : 'border-gray-900'} ${isDarkMode ? 'text-white' : 'text-gray-900'} no-calendar pr-10 appearance-none`}
-                                />
-                                <button
-                                  type="button"
-                                  aria-label={t('timeClock.openDatePicker', 'Open date picker')}
-                                  onClick={(ev) => {
-                                    ev.stopPropagation();
-                                    if (leaveEndRef.current) {
-                                      if (typeof leaveEndRef.current.showPicker === 'function') {
-                                        try { leaveEndRef.current.showPicker(); } catch (err) { leaveEndRef.current.focus(); }
-                                      } else {
-                                        leaveEndRef.current.focus();
-                                      }
-                                    }
-                                  }}
-                                  className={`absolute top-1/2 right-3 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center ${text.secondary}`}
-                                >
-                                  <Calendar className="w-5 h-5 cursor-pointer" aria-hidden="true" />
-                                </button>
-                              </div>
+                              <DatePicker
+                                value={leaveForm.endDate}
+                                onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
+                                required
+                                icon={Calendar}
+                                inputClassName={`w-full px-4 py-2 cursor-pointer rounded-lg border ${isDarkMode ? 'border-white' : 'border-gray-900'} ${isDarkMode ? 'text-white' : 'text-gray-900'} pr-10 appearance-none`}
+                              />
                             </div>
                           </div>
             
@@ -2440,13 +2272,14 @@ const TimeClockEntry = ({ currentLanguage }) => {
                       isEditing && (isDarkMode ? 'text-black' : 'text-white')
                     )}>
                       {isEditing ? (
-                        <input
-                          type="date"
-                          value={editForm.date}
-                          onChange={(e) => setEditForm((prev) => ({ ...prev, date: e.target.value }))}
-                          onClick={(e) => e.stopPropagation()}
-                          className={editInputClass}
-                        />
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <DatePicker
+                            value={editForm.date}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, date: e.target.value }))}
+                            inputClassName={editInputClass}
+                            className="min-w-[7.5rem]"
+                          />
+                        </div>
                       ) : (
                         entry.date || new Date(entry.created_at).toLocaleDateString()
                       )}
@@ -2477,18 +2310,18 @@ const TimeClockEntry = ({ currentLanguage }) => {
                           <span>-</span>
                         ) : (
                           <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
-                            <input
-                              type="time"
+                            <TimePicker
                               value={editForm.clockIn}
                               onChange={(e) => handleEditTimeChange('clockIn', e.target.value)}
-                              className={editInputClass}
+                              inputClassName={editInputClass}
+                              className="min-w-[7.5rem]"
                             />
                             <span>-</span>
-                            <input
-                              type="time"
+                            <TimePicker
                               value={editForm.clockOut}
                               onChange={(e) => handleEditTimeChange('clockOut', e.target.value)}
-                              className={editInputClass}
+                              inputClassName={editInputClass}
+                              className="min-w-[7.5rem]"
                             />
                           </div>
                         )

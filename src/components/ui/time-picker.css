@@ -1,0 +1,125 @@
+.hr-time-picker-panel {
+  --tp-bg: 249, 249, 249;
+  --tp-text: 49, 49, 49;
+  --tp-fade: 249, 249, 249;
+  color: rgb(var(--tp-text));
+}
+
+.hr-time-picker-panel.hr-time-picker-panel--dark {
+  --tp-bg: 17, 24, 39;
+  --tp-text: 230, 230, 230;
+  --tp-fade: 17, 24, 39;
+}
+
+.hr-time-picker-embla {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 14rem;
+  max-width: 20rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.hr-time-picker-embla::before,
+.hr-time-picker-embla::after {
+  position: absolute;
+  left: 0;
+  right: 0;
+  content: '';
+  display: block;
+  height: calc(50% - 16px);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.hr-time-picker-embla::before {
+  top: -0.5px;
+  border-bottom: 0.5px solid rgba(var(--tp-text), 0.25);
+  background: linear-gradient(
+    to top,
+    rgba(var(--tp-fade), 0.65) 0%,
+    rgba(var(--tp-fade), 1) 100%
+  );
+}
+
+.hr-time-picker-embla::after {
+  bottom: -0.5px;
+  border-top: 0.5px solid rgba(var(--tp-text), 0.25);
+  background: linear-gradient(
+    to bottom,
+    rgba(var(--tp-fade), 0.65) 0%,
+    rgba(var(--tp-fade), 1) 100%
+  );
+}
+
+.hr-time-picker-ios {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  min-width: 50%;
+  justify-content: center;
+  line-height: 1;
+  font-size: 1.125rem;
+  position: relative;
+}
+
+/* Embla root = full wheel height so drag/wheel work anywhere on the column */
+.hr-time-picker-ios__scene {
+  min-width: 100%;
+  height: 100%;
+  overflow: hidden;
+  perspective: 1000px;
+  touch-action: pan-x;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: grab;
+}
+
+.hr-time-picker-ios__scene:active {
+  cursor: grabbing;
+}
+
+.hr-time-picker-ios__scene--left {
+  perspective-origin: calc(50% + 100px) 50%;
+}
+
+.hr-time-picker-ios__scene--right {
+  perspective-origin: calc(50% - 100px) 50%;
+}
+
+.hr-time-picker-ios__container {
+  width: 100%;
+  height: 32px;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.hr-time-picker-ios__slide {
+  width: 100%;
+  height: 32px;
+  flex: 0 0 32px;
+  font-size: 1.125rem;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backface-visibility: hidden;
+  opacity: 0;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.hr-time-picker-ios__label {
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.7rem;
+  font-weight: 600;
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 2;
+}

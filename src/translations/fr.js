@@ -19,9 +19,8 @@ export default {
     taskReview: 'Évaluation des performances',
     svgMorphing: 'Morphing SVG',
     fullDemo: 'Démo complète',
-    showcase: 'Aperçu rapide',
+    showcase: 'Aperçu rapide'
   },
-
   // Leave Management
   leave: {
     subtitle: 'Planifiez, demandez et approuvez les congés sur un calendrier partagé.',
@@ -86,9 +85,8 @@ export default {
     rejectConfirm: 'Rejeter le congé de {{name}} ?',
     rejectReasonLabel: 'Motif (optionnel)',
     rejectReasonPlaceholder: 'Expliquez pourquoi cette demande est rejetée...',
-    confirmReject: 'Rejeter la demande',
+    confirmReject: 'Rejeter la demande'
   },
-  
   // Header
   header: {
     title: 'Gestionnaire RH',
@@ -100,9 +98,8 @@ export default {
     welcomePhrase5: 'Rendons cette journée productive, {name}',
     welcomePhrase6: 'Heureux de vous accueillir, {name}',
     user: 'Équipe RH',
-    logout: 'Se deconnecter',
+    logout: 'Se deconnecter'
   },
-
   // Login
   login: {
     idleLogoutMessage: 'Vous avez été déconnecté après une période d\'inactivité. Veuillez vous reconnecter.',
@@ -129,7 +126,6 @@ export default {
     tryDemoLoading: 'Chargement de la démo...',
     forgotPasswordModal: {
       title: 'Réinitialiser le Mot de Passe',
-      success: 'E-mail de réinitialisation du mot de passe envoyé. Veuillez consulter votre boîte de réception.',
       description: 'Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.',
       emailLabel: 'Adresse E-mail',
       emailPlaceholder: 'vous@exemple.com',
@@ -137,14 +133,13 @@ export default {
       emailInvalid: 'Veuillez entrer un e-mail valide',
       sendReset: 'Envoyer le Lien de Réinitialisation',
       cancel: 'Annuler',
-      success: 'E-mail de réinitialisation du mot de passe envoyé. Veuillez vérifier votre boîte de réception.',
+      success: "E-mail de réinitialisation du mot de passe envoyé. Veuillez vérifier votre boîte de réception.",
       error: 'Échec de l\'envoi de l\'e-mail de réinitialisation. Veuillez réessayer.',
       noAccount: 'Aucun compte trouvé avec cette adresse e-mail',
       rateLimitError: 'Trop de demandes. Veuillez réessayer plus tard',
       networkError: 'Erreur réseau. Veuillez vérifier votre connexion'
-    },
+    }
   },
-
   // Reset Password Page
   resetPassword: {
     title: 'Réinitialiser le Mot de Passe',
@@ -158,7 +153,6 @@ export default {
     passwordsDontMatch: 'Les mots de passe ne correspondent pas',
     error: 'Échec de la réinitialisation du mot de passe. Veuillez réessayer.',
     success: 'Mot de passe réinitialisé avec succès!',
-    redirecting: 'Redirection vers la connexion...',
     resetting: 'Réinitialisation...',
     verifying: 'Vérification du lien de réinitialisation...',
     resetButton: 'Réinitialiser le Mot de Passe',
@@ -168,21 +162,19 @@ export default {
     signingIn: 'Connexion en cours...',
     orContinueWith: 'Ou continuer avec',
     continueWithGithub: 'Continuer avec GitHub',
-    redirecting: 'Redirection vers la page de connexion...',
+    redirecting: "Redirection vers la page de connexion...",
     githubError: 'Échec de la connexion avec GitHub',
     noAccount: 'Vous n\'avez pas de compte?',
     signUp: 'S\'inscrire',
     footer: '© 2024 Gestionnaire RH. Tous droits réservés.',
-    tryDemoLoading: 'Chargement de la démo...',
+    tryDemoLoading: 'Chargement de la démo...'
   },
-
   // Sidebar
   sidebar: {
     main: 'PRINCIPAL',
     analytics: 'ANALYSES',
-    settings: 'PARAMÈTRES',
+    settings: 'PARAMÈTRES'
   },
-
   // Dashboard
   dashboard: {
     regularAndOvertimeByEmployee: 'Heures Régulières et Supplémentaires par Employé',
@@ -222,20 +214,14 @@ export default {
     activities: {
       newEmployee: 'Nouvel employé embauché : ABC',
       interviewScheduled: 'Entretien prévu avec : XYZ',
-      performanceReview: 'Évaluation terminée pour : Đỗ Bảo Long'
+      performanceReview: 'Évaluation terminée pour : '
     },
     timeAgo: {
       twoHours: 'Il y a 2 heures',
       fourHours: 'Il y a 4 heures',
       oneDay: 'Il y a 1 jour'
     }
-  },  
-
-  // Search
-  search: {
-    placeholder: 'Rechercher des employés...'
   },
-
   employeeDepartment: {
     all: 'Tous',
     legal_compliance: 'Conformité Juridique',
@@ -266,9 +252,8 @@ export default {
     IT: 'Technologies de l’information',
     it: 'Informatique',
     product: 'Produit',
-    customer_support: 'Support Client',
+    customer_support: 'Support Client'
   },
-
   stats: {
     total: 'Total',
     underReview: 'En cours d’examen',
@@ -276,20 +261,16 @@ export default {
     interviewScheduled: 'Entretien programmé',
     offerExtended: 'Offre envoyée',
     hired: 'Embauché',
-    rejected: 'Rejeté',
+    rejected: 'Rejeté'
   },
-
   timeClock: {
     title: 'Pointage',
     subtitle: 'Enregistrez vos heures de travail et soumettez une preuve',
     newEntry: 'Nouvelle saisie de temps',
     uploadFile: 'Cliquez pour télécharger la preuve',
     fileTypes: 'Supporte: Images, PDF, Documents (Max 50MB)',
-    history: 'Historique',
     selectDate: 'Sélectionner une date',
-    date: 'Date',
     clockIn: 'Heure d’entrée',
-    employee: 'Employé',
     clockOut: 'Heure de sortie',
     hourType: 'Type d’heure',
     proof: 'Preuve de présence',
@@ -300,13 +281,7 @@ export default {
     success: 'Heures enregistrées avec succès !',
     confirmDelete: 'Voulez-vous vraiment supprimer cet enregistrement ?',
     delete: 'Supprimer',
-    history: 'Historique de pointage',
-    noEntries: 'Aucun enregistrement pour le moment. Soumettez-en un premier !',
-    time: 'Heure',
-    hours: 'Heures',
-    type: 'Type',
-    status: 'Statut',
-    actions: 'Actions',
+    history: "Historique de pointage",
     weeklySummary: 'Cette semaine',
     monthlySummary: 'Ce mois-ci',
     leaveDays: 'Jours de congé',
@@ -360,16 +335,15 @@ export default {
     myEntries: 'Mes Entrées',
     allEmployees: 'Tous les Employés',
     specificEmployee: 'Employé Spécifique',
-    employee: 'Employé',
-    date: 'Date',
-    time: 'Heure',
-    hours: 'Heures',
-    type: 'Type',
-    status: 'Statut',
-    actions: 'Actions',
-    noEntries: 'Aucune entrée trouvée',
+    employee: "Employé",
+    date: "Date",
+    time: "Heure",
+    hours: "Heures",
+    type: "Type",
+    status: "Statut",
+    actions: "Actions",
+    noEntries: "Aucun enregistrement pour le moment. Soumettez-en un premier !"
   },
-
   // Time Tracking
   timeTracking: {
     on_leave: 'En congé',
@@ -382,14 +356,12 @@ export default {
     clockOut: 'Pointage Sortie',
     amountHours: 'Heures',
     hourType: 'Type d\'heure',
-    status: 'Statut',
     time: 'Temps',
     notes: 'Remarques',
     createdAt: 'Créé le',
     summary: 'Résumé',
     quickActions: 'Actions rapides',
     workDays: 'Jours travaillés',
-    leaveDays: 'Jours de congé',
     overtime: 'Heures supplémentaires',
     wfh: 'Heures de télétravail',
     holidayOvertime: 'Heures sup. jour férié',
@@ -403,14 +375,12 @@ export default {
     attendanceRate: 'Taux de présence',
     requestLeave: 'Demander un congé',
     logOvertime: 'Enregistrer heures sup.',
-    leaveType: 'Type de congé',
     vacation: 'Vacances',
     sickLeave: 'Arrêt maladie',
     personal: 'Congé personnel',
     unpaid: 'Congé sans solde',
-    leaveDays: 'Jours de congé',
-    leaveType: 'Type de congé', 
-    status: 'Statut',
+    leaveDays: "Jours de congé",
+    leaveType: "Type de congé",
     requestedBy: 'Demandé par',
     approvedBy: 'Approuvé par',
     leaveRequestManagement: 'Gestion des demandes de congé',
@@ -422,7 +392,7 @@ export default {
       pending: 'En attente',
       approved: 'Approuvé',
       rejected: 'Rejeté',
-      cancelled: 'Annulé',
+      cancelled: 'Annulé'
     },
     // Hour types for overtime
     weekend: 'Heures sup. week-end',
@@ -451,7 +421,6 @@ export default {
     daysWorked: 'Jours travaillés',
     totalHoursLabel: 'Total des heures'
   },
-
   // Admin Time Entry
   adminTimeEntry: {
     title: 'Saisie du Temps Admin',
@@ -519,7 +488,6 @@ export default {
       errorWithDetail: 'Échec du remplissage des heures standard : {message}'
     }
   },
-
   // Employees
   employees: {
     title: 'Gestion des employés',
@@ -559,14 +527,11 @@ export default {
     topPerformers: 'Meilleurs employés',
     avgRating: 'Note moy.',
     departments: 'départements',
-    livePulse: 'Pouls en direct',
+    livePulse: 'Pouls en direct'
   },
-
-  // Search
   search: {
-    placeholder: 'Rechercher des employés...'
+    placeholder: "Rechercher des employés..."
   },
-
   // Months
   months: {
     january: 'Janvier',
@@ -582,13 +547,11 @@ export default {
     november: 'Novembre',
     december: 'Décembre'
   },
-
   // Recruitment
   recruitment: {
     position: 'Poste',
     rating: 'Évaluation',
     statusLabel: 'Statut',
-    actions: 'Actions',
     total: 'Ensemble',
     shortListed: 'Présélectionné',
     interviews: 'Entretiens',
@@ -599,11 +562,10 @@ export default {
     postNewJob: 'Publier un nouveau poste',
     applications: 'Candidatures',
     candidate: 'Candidat',
-    department: 'Département',
     appliedDate: 'Date de candidature',
     experience: 'Expérience',
     status: 'Statut',
-    actions: 'Actions',
+    actions: "Actions",
     stage: 'Étape',
     interviewScheduled: 'Entretien programmé',
     underReview: 'En cours d\'examen',
@@ -638,18 +600,18 @@ export default {
     currentCompany: 'Entreprise actuelle',
     currentPosition: 'Poste actuel',
     education: 'Éducation',
-    department: 'Département',
+    department: "Département",
     links: 'Liens',
     viewResume: 'Voir le CV',
     linkedinProfile: 'Profil LinkedIn',
-    notes: 'Notes',
+    notes: 'Notes'
   },
-
   // Reports
   reports: {
     daysWorked: 'Jours travaillés',
     title: 'Rapports et analyses',
-    allEmployees: 'Tous_les_employés',
+    to: 'au',
+    leave: 'Demandes de Congé',
     filenamePrefix: 'Rapport_RH',
     excel: {
       charts: {
@@ -778,68 +740,36 @@ export default {
     generated: 'Généré le',
     achieved: 'Atteint',
     summaryOverview: 'Aperçu du résumé',
-    completedTasks: 'Tâches terminées',
     achievedGoals: 'Objectifs atteints',
-    pending: 'En attente',
-    personalGoals: 'Objectifs personnels',
     totalGoals: 'Objectifs totaux',
-    completedTasks: 'Tâches terminées',
     avgProgress: 'Progrès moyen',
     type: 'Type de rapport',
     task: 'Tâche',
     progress: 'Progrès',
     category: 'Catégorie',
-    status: 'Statut',
     goal: 'Objectif',
-    timeEntry: 'Saisie de temps',
-    employee: 'Employé',
-    department: 'Département',
-    dateRange: 'Plage de dates',
     priority: 'Priorité',
     dueDate: 'Date d\'échéance',
-    employees: 'Employé',
     hours: 'Heures',
-    tasks: 'Tâches',
-    goals: 'Objectifs',
-    dateRange: 'Plage de dates',
     details: 'Détails',
-    status: 'État',
+    status: "État",
     date: 'Date',
     completed: 'Terminé',
     inProgress: 'En cours',
     completionRate: 'Taux d\'achèvement',
     approved: 'Approuvé',
-    pending: 'En attente',
+    pending: "En attente",
     actions: 'Actions',
     viewReport: 'Voir le rapport',
     showingFirst50: 'Affichage des 50 premiers résultats. Utilisez les filtres pour affiner votre recherche.',
     dataPreview: 'Aperçu des données',
-    allEmployees: 'Tous les employés',
-    specificEmployee: 'Employé spécifique',
     totalRecords: 'Total des enregistrements',
     totalEntries: 'Total des entrées',
-    totalHours: 'Heures totales',
     averageHours: 'Heures moyennes par jour',
-    totalTasks: 'Total des tâches',
-    completedTasks: 'Tâches terminées',
+    completedTasks: "Tâches terminées",
     pendingTasks: 'Tâches en attente',
-    goalsAchieved: 'Objectifs atteints',
-    goalsPending: 'Objectifs en attente',
-    exportData: 'Exporter les données',
-    exportDataSubtitle: 'Générez et exportez des rapports détaillés',
-    subtitle: 'Générez et exportez des rapports détaillés',
-    liveData: 'Données en direct Supabase',
-    generateReport: 'Générer un rapport',
-    comprehensiveReports: 'Rapports complets',
-    generateDetailedReports: 'Générez des rapports détaillés sur la performance des employés, la présence et les métriques de recrutement',
-    individualMetrics: 'Métriques individuelles',
-    individualReport: 'Rapport individuel',
-    departmentMetrics: 'Métriques départementales',
-    organizationMetrics: 'Métriques organisationnelles',
-    attendanceReport: 'Rapport de présence',
     performanceReport: 'Rapport de performance',
     recruitmentReport: 'Rapport de recrutement',
-    exportReport: 'Exporter le rapport',
     exportFormat: 'Format d\'exportation',
     formatPdf: 'PDF',
     formatExcel: 'Excel',
@@ -849,12 +779,8 @@ export default {
     generatedError: 'Échec de la génération du rapport. Veuillez réessayer.',
     selectEmployee: 'Sélectionner un employé',
     selectDepartment: 'Sélectionner un département',
-    selectDateRange: 'Sélectionner la plage de dates',
     startDate: 'Date de début',
     endDate: 'Date de fin',
-    filterBy: 'Filtrer par',
-    resetFilters: 'Réinitialiser les filtres',
-    applyFilters: 'Appliquer les filtres',
     // Report Types
     reportTypes: {
       attendance: 'Présence',
@@ -870,148 +796,94 @@ export default {
     // Performance Report
     performanceSubtitle: 'Rapport complet sur les évaluations de performance, les objectifs atteints et les compétences',
     averagePerformanceRating: 'Note moyenne de performance',
-    goalsAchieved: 'Objectifs atteints',
     skillsAssessment: 'Évaluation des compétences',
     // Recruitment Report
     recruitmentSubtitle: 'Vue d\'ensemble du pipeline de recrutement, des candidatures et des taux d\'embauche',
-    totalApplications: 'Total des candidatures',
     interviewsConducted: 'Entretiens menés',
     offersExtended: 'Offres proposées',
     hiresMade: 'Embauches réalisées',
     conversionRate: 'Taux de conversion',
-    // Common
-    exportData: 'Exporter les données',
-    exportDataSubtitle: 'Générez et exportez des rapports détaillés',
-    subtitle: 'Générez et exportez des rapports détaillés',
-    liveData: 'Données en direct Supabase',
-    generateReport: 'Générer un rapport',
-    timeEntry: 'Saisies de temps',
-    timeEntries: 'Saisies de temps',
+    subtitle: "Générez et exportez des rapports détaillés",
+    liveData: "Données en direct Supabase",
+    timeEntry: "Saisies de temps",
     quickFilters: 'Filtres rapides',
-    totalHours: 'Heures totales',
+    totalHours: "Heures totales",
     regularHours: 'Heures régulières',
     overtime: 'Heures supplémentaires',
     completion: 'Finalisation',
     tasksDone: 'Tâches terminées',
     goalProgress: 'Progrès des objectifs',
-    exportData: 'Exporter des données détaillées',
-    exportDataSubtitle: 'Exporter des données détaillées pour les saisies de temps, les tâches et les objectifs personnels',
-    timeEntries: 'Saisies de temps',
-    tasks: 'Tâches',
-    personalGoals: 'Objectifs personnels',
     totalTimeEntries: 'Total des saisies de temps',
-    totalTasks: 'Total des tâches',
+    totalTasks: "Total des tâches",
     totalPersonalGoals: 'Total des objectifs personnels',
     hoursLogged: 'Heures enregistrées',
     tasksCompleted: 'Tâches terminées',
     tasksPending: 'Tâches en attente',
-    personalGoals: 'Objectifs personnels',
-    goalsAchieved: 'Objectifs atteints',
-    goalsPending: 'Objectifs en attente',
-    reportType: 'Type de rapport',
-    selectReportType: 'Sélectionner le type de rapport',
+    goalsAchieved: "Objectifs atteints",
+    goalsPending: "Objectifs en attente",
     weekendHours: 'Heures du week-end',
-    holidayHours: 'Heures de vacances',
     leaveDays: 'Jours de congé',
-    holidayHours: 'Heures de vacances',
+    holidayHours: "Heures de vacances",
     bonusHours: 'Heures bonus',
-    employee: 'Employé',
-    allEmployees: 'Tous les employés',
-    specificEmployee: 'Employé spécifique',
-    dateRange: 'Plage de dates',
-    today: 'Aujourd\'hui',
+    employee: "Employé",
+    allEmployees: "Tous les employés",
+    specificEmployee: "Employé spécifique",
     dataType: 'Type de données',
     timeEntriesData: 'Données des saisies de temps',
-    filterBy: 'Filtrer par',
     predefinedRanges: 'Plages prédéfinies',
     last24Hours: 'Dernières 24 heures',
     last3Days: 'Derniers 3 jours',
     last5Days: 'Derniers 5 jours',
-    lastWeek: 'La semaine dernière',
     last2Weeks: 'Dernières 2 semaines',
-    lastMonth: 'Le mois dernier',
     last3Months: 'Derniers 3 mois',
     last6Months: 'Derniers 6 mois',
-    lastYear: 'L\'année dernière',
-    thisWeek: 'Cette semaine',
-    thisMonth: 'Ce mois-ci',
-    thisQuarter: 'Ce trimestre',
-    thisYear: 'Cette année',
-    customRange: 'Plage personnalisée',
-    applyFilters: 'Appliquer les filtres',
-    resetFilters: 'Réinitialiser les filtres',
-    exportDataSubtitle: 'Exporter des données détaillées pour les saisies de temps, les tâches et les objectifs personnels',
-    selectDateRange: 'Sélectionner la plage de dates',
-    selectFilters: 'Sélectionner les filtres',
-    previewData: 'Aperçu des données',
-    timeEntries: 'Saisies de temps',
-    tasks: 'Tâches',
-    personalGoals: 'Objectifs personnels',
-    exportData: 'Exporter les données',
-    // Common date ranges
-    today: 'Aujourd\'hui',
-    thisWeek: 'Cette semaine',
-    thisMonth: 'Ce mois-ci',
-    thisQuarter: 'Ce trimestre',
-    thisYear: 'Cette année',
+    timeEntries: "Saisies de temps",
+    today: "Aujourd'hui",
     yesterday: 'Hier',
-    thisWeek: 'Cette semaine',
-    thisMonth: 'Ce mois-ci',
-    thisQuarter: 'Ce trimestre',
-    thisYear: 'Cette année',
+    thisWeek: "Cette semaine",
+    thisMonth: "Ce mois-ci",
+    thisYear: "Cette année",
     lastPeriod: 'Période précédente',
-    lastWeek: 'La semaine dernière',
-    lastMonth: 'Le mois dernier',
     last7Days: 'Derniers 7 jours',
     last30Days: 'Derniers 30 jours',
-    lastQuarter: 'Dernier trimestre',
-    lastYear: 'Dernière année',
-    customRange: 'Plage personnalisée',
-    applyFilters: 'Appliquer les filtres',
-    resetFilters: 'Réinitialiser les filtres',
-    exportDataSubtitle: 'Exporter des données détaillées pour les saisies de temps, les tâches et les objectifs personnels',
-    selectDateRange: 'Sélectionner la plage de dates',
-    selectFilters: 'Sélectionner les filtres',
-    previewData: 'Aperçu des données',
+    applyFilters: "Appliquer les filtres",
+    resetFilters: "Réinitialiser les filtres",
     exportToCSV: 'Exporter en CSV',
-    tasks: 'Tâches',
-    personalGoals: 'Objectifs personnels',
-    exportData: 'Exporter les données',
-    exportDataSubtitle: 'Exporter des données détaillées pour les saisies de temps, les tâches et les objectifs personnels',
-    selectReportType: 'Sélectionner le type de rapport',
-    selectDateRange: 'Sélectionner la plage de dates',
-    selectFilters: 'Sélectionner les filtres',
-    previewData: 'Aperçu des données',
+    tasks: "Tâches",
+    personalGoals: "Objectifs personnels",
+    exportData: "Exporter des données détaillées",
+    exportDataSubtitle: "Exporter des données détaillées pour les saisies de temps, les tâches et les objectifs personnels",
+    selectReportType: "Sélectionner le type de rapport",
+    selectDateRange: "Sélectionner la plage de dates",
+    selectFilters: "Sélectionner les filtres",
+    previewData: "Aperçu des données",
     exportCSV: 'Exporter en CSV',
-    comprehensiveReports: 'Rapports complets',
-    generateDetailedReports: 'Générez des rapports détaillés sur la performance des employés, la présence et les métriques de recrutement',
-    individualMetrics: 'Métriques individuelles',
-    individualReport: 'Rapport individuel',
-    departmentMetrics: 'Métriques départementales',
-    organizationMetrics: 'Métriques organisationnelles',  
+    comprehensiveReports: "Rapports complets",
+    generateDetailedReports: "Générez des rapports détaillés sur la performance des employés, la présence et les métriques de recrutement",
+    individualMetrics: "Métriques individuelles",
+    individualReport: "Rapport individuel",
+    departmentMetrics: "Métriques départementales",
+    organizationMetrics: "Métriques organisationnelles",
     exportingIncludes: '* L\'exportation inclut les données filtrées',
-    exportReport: 'Exporter le rapport',
+    exportReport: "Exporter le rapport",
     recordsFound: 'enregistrements trouvés',
     // Report types
     employeeAttendance: 'Présence des employés',
-    salaryAnalysis: 'Analyse des salaires',
     employeeGrowth: 'Croissance des employés',
     departmentDistribution: 'Répartition par département',
     performanceMetrics: 'Métriques de performance',
-    recruitmentMetrics: 'Métriques de recrutement',
-    attendanceReport: 'Rapport de présence',
     salaryReport: 'Rapport de salaires',
-    generateReport: 'Générer un rapport',
+    generateReport: "Générer un rapport",
     exportPDF: 'Exporter en PDF',
     exportExcel: 'Exporter en Excel',
-    filterBy: 'Filtrer par',
-    dateRange: 'Plage de dates',
+    filterBy: "Filtrer par",
+    dateRange: "Plage de dates",
     allDepartments: 'Tous les départements',
     performance: 'Performance',
     salary: 'Salaire',
     attendance: 'Présence',
     recruitment: 'Recrutement',
-    department: 'Département',
+    department: "Département",
     all: 'Tous',
     // Navigation
     overview: 'Aperçu',
@@ -1026,7 +898,7 @@ export default {
     // Stats
     totalEmployees: 'Total des employés',
     newHires: 'Nouvelles embauches',
-    thisQuarter: 'Ce trimestre',
+    thisQuarter: "Ce trimestre",
     turnoverRate: 'Taux de rotation',
     performanceSummary: 'Résumé de la performance',
     annualRate: 'Taux annuel',
@@ -1037,20 +909,19 @@ export default {
     present: 'Présent',
     onLeave: 'En congé',
     absent: 'Absent',
-    // Recruitment labels
-    totalApplications: 'Total des candidatures',
+    totalApplications: "Total des candidatures",
     interviewed: 'Entretiens',
     hired: 'Embauchés',
     rejected: 'Rejetés',
-    goals: 'Objectifs Personnels', 
-    employees: 'employés',
+    goals: "Objectifs Personnels",
+    employees: "employés",
     // Report generation
     generateCustomReport: 'Générer un rapport personnalisé',
-    reportType: 'Type de rapport',
+    reportType: "Type de rapport",
     employeePerformance: 'Performance des employés',
-    salaryAnalysis: 'Analyse des salaires',
-    attendanceReport: 'Rapport de présence',
-    recruitmentMetrics: 'Métriques de recrutement',
+    salaryAnalysis: "Analyse des salaires",
+    attendanceReport: "Rapport de présence",
+    recruitmentMetrics: "Métriques de recrutement",
     departmentComparison: 'Comparaison des départements',
     exportToPDF: 'Exporter en PDF',
     exportToExcel: 'Exporter en Excel',
@@ -1105,11 +976,11 @@ export default {
     measureTrainingSuccess: 'Mesurer le succès du programme de formation',
     generate: 'Générer →',
     fromLastPeriod: 'de la période précédente',
-    lastWeek:	'La semaine dernière',
-    lastMonth:	'Le mois dernier',
-    lastQuarter:	'Le trimestre dernier',
-    lastYear:	'Lannée dernière',
-    customRange:	'Plage personnalisée',
+    lastWeek: "La semaine dernière",
+    lastMonth: "Le mois dernier",
+    lastQuarter: "Le trimestre dernier",
+    lastYear: "Lannée dernière",
+    customRange: "Plage personnalisée",
     for: 'pour',
     from: 'de',
     priorityLow: 'Faible',
@@ -1126,9 +997,8 @@ export default {
     csvExportSuccess: 'Rapport CSV exporté avec succès, tous les types de données dans un seul fichier !',
     excelExportHint: 'Exporter tous les types de données avec résumé, graphiques et feuilles détaillées',
     pdfExportHint: 'Exporter un PDF avec graphiques visuels, résumé et tableaux détaillés pour tous les types de données',
-    pdfExportSuccess: 'Rapport PDF exporté avec succès !',
+    pdfExportSuccess: 'Rapport PDF exporté avec succès !'
   },
-
   // Add Employee
   addEmployee: {
     title: 'Ajouter un Nouvel Employé',
@@ -1167,7 +1037,6 @@ export default {
     submitError: 'Échec de l\'ajout de l\'employé',
     dobPlaceholder: 'Sélectionner la date de naissance'
   },
-
   // Employee Detail Modal
   employeeDetailModal: {
     download: 'Télécharger',
@@ -1227,7 +1096,6 @@ export default {
     uploadInstructions: 'Cliquez ou glissez un fichier PDF ici pour télécharger',
     maxFileSize: 'Taille maximale du fichier: 10MB'
   },
-
   // Status translations
   status: {
     approved: 'Approuvé',
@@ -1239,22 +1107,35 @@ export default {
     'in-progress': 'En cours',
     'not-started': 'Non commencé',
     achieved: 'Atteint',
-    'on-hold': 'En pause',
+    'on-hold': 'En pause'
   },
-
   // Data Type Labels
   dataType: {
     timeEntry: 'Saisie de temps',
     task: 'Tâche',
-    goal: 'Objectif',
+    goal: 'Objectif'
   },
-
   // Common
+  datePicker: {
+    placeholder: 'Sélectionner une date',
+    calendar: 'Calendrier',
+    prevMonth: 'Mois précédent',
+    nextMonth: 'Mois suivant',
+    today: 'Aujourd\'hui',
+    clear: 'Effacer'
+  },
+  timePicker: {
+    hours: 'h',
+    minutes: 'min',
+    done: 'OK',
+    clear: 'Effacer',
+    placeholder: '--:--',
+    picker: 'Sélecteur d\'heure'
+  },
   common: {
-    viewDetails: 'Voir les détails',
     results: 'résultats',
     update: 'Mettre à jour',
-    updating: 'Mise à jour...', 
+    updating: 'Mise à jour...',
     employee: 'Employé',
     employees: 'Employés',
     email: 'Email',
@@ -1293,7 +1174,7 @@ export default {
     no: 'Non',
     accessDenied: 'Accès Refusé',
     noPermission: 'Vous n\'avez pas la permission d\'accéder à cette page.',
-    goBack: 'Retour', 
+    goBack: 'Retour',
     day: 'jour',
     days: 'jours',
     hour: 'heure',
@@ -1305,7 +1186,7 @@ export default {
     select: 'Sélectionner',
     upload: 'Téléverser',
     download: 'Télécharger',
-    viewDetails: 'Voir les détails',
+    viewDetails: "Voir les détails",
     editDetails: 'Modifier les détails',
     deleteItem: 'Supprimer l\'élément',
     confirmDelete: 'Confirmer la suppression',
@@ -1313,22 +1194,19 @@ export default {
     itemDeleteError: 'Échec de la suppression de l\'élément',
     fetching: 'Chargement',
     ready: 'Prêt',
-    ms: 'ms',
+    ms: 'ms'
   },
-
   // Theme
   theme: {
     light: 'Mode clair',
     dark: 'Mode sombre',
     toggle: 'Basculer le thème'
   },
-
   // Language
   language: {
     select: 'Sélectionner la langue',
     current: 'Langue actuelle'
   },
-
   // Time Tracking Actions
   timeTrackingActions: {
     recordTime: 'Enregistrer le temps',
@@ -1336,14 +1214,12 @@ export default {
     logOvertime: 'Enregistrer les heures supplémentaires',
     exportReport: 'Exporter le rapport'
   },
-
   // Recruitment Actions
   recruitmentActions: {
     view: 'Voir',
     schedule: 'Planifier',
     reject: 'Rejeter'
   },
-
   // Employee Status
   employeeStatus: {
     active: 'Actif',
@@ -1352,47 +1228,6 @@ export default {
     pending: 'En attente',
     outSourceContractor: 'Sous-traitant externe'
   },
-
-  performanceAppraisalPage: {
-    title: 'Évaluation des Performances',
-    overallPerformance: 'Performance Globale',
-    goalsAchieved: 'Objectifs Atteints',
-    reviewsThisPeriod: 'Évaluations de Cette Période',
-    avgSkillRating: 'Évaluation Moy. des Compétences',
-    currentGoals: 'Objectifs Actuels',
-    addGoal: 'Ajouter un Objectif',
-    overview: 'Vue d\'ensemble',
-    goals: 'Objectifs',
-    reviews: 'Évaluations',
-  },
-
-  employeeDetailTabs: {
-    basicInformation: 'Informations de Base',
-    contact: 'Contact',
-    documents: 'Documents',
-  },
-
-  employeeEditForm: {
-    editEmployee: 'Modifier l\'Employé',
-    contactInformation: 'Informations de Contact',
-    employmentDetails: 'Détails de l\'Emploi',
-    email: 'E-Mail',
-    phone: 'Téléphone',
-    telephone: 'Téléphone',
-    address: 'Adresse',
-    department: 'Département',
-    abteilung: 'Département',
-    startDate: 'Date de Début',
-    startdatum: 'Date de Début',
-    dateOfBirth: 'Date de Naissance',
-    performance: 'Performance',
-    leistung: 'Performance',
-    cancel: 'Annuler',
-    abbrechen: 'Annuler',
-    save: 'Enregistrer',
-    speichern: 'Enregistrer',
-  },
-
   // Recruitment Status
   recruitmentStatus: {
     active: 'Actif',
@@ -1409,26 +1244,6 @@ export default {
     technical: 'Technique',
     shortlisted: 'Sélectionné'
   },
-
-  // Demo Notifications
-  demoNotifications: {
-    'notif-1': {
-      title: 'Bienvenue dans le système RH',
-      message: 'Bienvenue en mode démo du système RH. N\'hésitez pas à explorer !',
-      actionLabel: 'Aller au tableau de bord'
-    },
-    'notif-2': {
-      title: 'Nouvelle candidature',
-      message: 'Nouvelle candidature reçue pour le poste de Senior Frontend Developer.',
-      actionLabel: 'Voir la candidature'
-    },
-    'notif-3': {
-      title: 'Évaluation de performance à venir',
-      message: 'Les évaluations de performance trimestrielles sont prévues pour la semaine prochaine.',
-      actionLabel: 'Voir les évaluations'
-    }
-  },
-
   // Performance Goals
   goals: {
     completeReactProject: 'Terminer le projet React',
@@ -1439,14 +1254,12 @@ export default {
     backendDevelopment: 'Développement backend',
     teamCollaboration: 'Collaboration d\'équipe'
   },
-
   // Review Types
   reviewTypes: {
     quarterlyReview: 'Évaluation trimestrielle',
     midYearReview: 'Évaluation de mi-année',
     annualReview: 'Évaluation annuelle'
   },
-
   // Skill Categories
   skillCategories: {
     technical: 'Technique',
@@ -1454,7 +1267,6 @@ export default {
     leadership: 'Leadership',
     communication: 'Communication'
   },
-
   employeePosition: {
     general_manager: 'Directeur général',
     senior_developer: 'Développeur senior',
@@ -1464,9 +1276,8 @@ export default {
     managing_director: 'Directeur (d\'Institut)',
     support_staff: 'Personnel de soutien',
     expertGroup: 'Groupe d\'experts',
-    employee: 'Employé',
-  }, 
-
+    employee: 'Employé'
+  },
   // Notifications
   notifications: {
     title: 'Notifications',
@@ -1520,9 +1331,8 @@ export default {
     // Notification messages
     timeEntriesAwaiting: 'Vous avez {0} entrées de temps en attente d\'approbation',
     reviewNow: 'Examiner maintenant',
-    viewDetails: 'Voir les détails',
+    viewDetails: 'Voir les détails'
   },
-
   // Settings
   settings: {
     title: 'Paramètres',
@@ -1535,13 +1345,11 @@ export default {
     confirmReset: 'Êtes-vous sûr de vouloir réinitialiser tous les paramètres par défaut?',
     importSuccess: 'Paramètres importés avec succès!',
     importError: 'Échec de l\'importation des paramètres',
-    
     notifications: 'Notifications',
     appearance: 'Apparence',
     language: 'Langue',
     privacy: 'Confidentialité',
     work: 'Préférences de travail',
-    
     notificationPreferences: 'Préférences de notification',
     emailNotifications: 'Notifications par email',
     emailNotificationsDesc: 'Recevoir des notifications par email',
@@ -1559,17 +1367,14 @@ export default {
     employeeNotifications: 'Mises à jour des employés',
     recruitmentNotifications: 'Recrutement',
     systemNotifications: 'Mises à jour du système',
-    
     appearanceSettings: 'Paramètres d\'apparence',
     theme: 'Thème',
     dateFormat: 'Format de date',
     timeFormat: 'Format d\'heure',
     itemsPerPage: 'Éléments par page',
-    
     languageRegion: 'Langue et région',
     timezone: 'Fuseau horaire',
     timezoneNote: 'Affichage actuellement des 50 premiers fuseaux horaires',
-    
     privacySettings: 'Paramètres de confidentialité',
     profileVisibility: 'Visibilité du profil',
     visibilityAll: 'Tout le monde',
@@ -1579,7 +1384,6 @@ export default {
     contactVisibility: 'Visibilité des informations de contact',
     showEmail: 'Afficher l\'adresse email',
     showPhone: 'Afficher le numéro de téléphone',
-    
     workPreferences: 'Préférences de travail',
     defaultDashboard: 'Vue du tableau de bord par défaut',
     overviewView: 'Vue d\'ensemble',
@@ -1591,7 +1395,6 @@ export default {
     weeklyReport: 'Rapport hebdomadaire',
     weeklyReportDesc: 'Recevoir un résumé hebdomadaire de vos activités professionnelles'
   },
-
   // Task Listing
   taskListing: {
     title: 'Gestion des Tâches',
@@ -1615,13 +1418,12 @@ export default {
     statusCompleted: 'Terminé',
     pending: 'En Attente',
     'in-progress': 'En Cours',
-    completed: 'Terminé',
     teamWorkload: 'Charge de Travail d\'Équipe',
     filterByEmployee: 'Filtrer par Employé',
     filterByStatus: 'Filtrer par État',
     searchTasks: 'Rechercher des tâches...',
     totalTasks: 'Tâches totales',
-    completed: 'Terminé',
+    completed: "Terminé",
     progress: 'Progrès',
     avgQuality: 'Qualité moy.',
     avgProgress: 'Progrès moy.',
@@ -1642,9 +1444,8 @@ export default {
     quality: 'Qualité',
     completionDate: 'Date d\'achèvement',
     createdAt: 'Créé le',
-    updatedAt: 'Mis à jour le',
+    updatedAt: 'Mis à jour le'
   },
-
   // Task Review
   taskReview: {
     title: 'Évaluation des tâches',
@@ -1683,9 +1484,6 @@ export default {
     managerComments: 'Commentaires du manager',
     commentPlaceholder: 'Fournir des commentaires sur la qualité de la tâche et les objectifs personnels...',
     taskDetails: 'Détails de la tâche',
-    status: 'Statut',
-    priority: 'Priorité',
-    dueDate: 'Date d\'échéance',
     currentRating: 'Note actuelle',
     submitEvaluation: 'Soumettre l\'évaluation',
     cancel: 'Annuler',
@@ -1719,9 +1517,9 @@ export default {
     tasks: 'tâches',
     assignedBy: 'assigné par',
     assignedTo: 'assigné à',
-    dueDate: 'date d\'échéance',
-    status: 'statut',
-    priority: 'priorité',
+    dueDate: "date d'échéance",
+    status: "statut",
+    priority: "priorité",
     action: 'action',
     noTasksFound: 'Aucune tâche trouvée',
     selectEmployee: 'Sélectionner un employé',
@@ -1739,51 +1537,43 @@ export default {
     createdAt: 'Créé le',
     updatedAt: 'Mis à jour le'
   },
-
-  // Performance Appraisal Translation
   performanceAppraisalPage: {
-    title: 'Évaluation de Performance',
-    overallPerformance: 'Performance Globale',
-    goalsAchieved: 'Objectifs Atteints',
-    reviewsThisPeriod: 'Évaluations Cette Période',
-    avgSkillRating: 'Note Moyenne des Compétences',
-    currentGoals: 'Objectifs Actuels',
-    addGoal: 'Ajouter un Objectif',
-    // Tabs
-    overview: 'Aperçu',
-    goals: 'Objectifs',
-    reviews: 'Évaluations',
+    title: "Évaluation de Performance",
+    overallPerformance: "Performance Globale",
+    goalsAchieved: "Objectifs Atteints",
+    reviewsThisPeriod: "Évaluations de Cette Période",
+    avgSkillRating: "Note Moyenne des Compétences",
+    currentGoals: "Objectifs Actuels",
+    addGoal: "Ajouter un Objectif",
+    overview: "Vue d'ensemble",
+    goals: "Objectifs",
+    reviews: "Évaluations"
   },
-
-  // Employee Details Tabs
   employeeDetailTabs: {
-    basicInformation: 'Informations de Base',
-    contact: 'Contact',
-    documents: 'Documents',
+    basicInformation: "Informations de Base",
+    contact: "Contact",
+    documents: "Documents"
   },
-
-  // Employee Edit Form
   employeeEditForm: {
-    editEmployee: 'Modifier Employé',
-    contactInformation: 'Informations de Contact',
-    employmentDetails: 'Détails d\'Emploi',
-    email: 'E-mail',
-    phone: 'Téléphone',
-    telephone: 'Numéro de Téléphone',
-    address: 'Adresse',
-    department: 'Département',
-    abteilung: 'Département',
-    startDate: 'Date de Début',
-    startdatum: 'Date de Début',
-    dateOfBirth: 'Date de Naissance',
-    performance: 'Performance',
-    leistung: 'Performance',
-    cancel: 'Annuler',
-    abbrechen: 'Annuler',
-    save: 'Enregistrer',
-    speichern: 'Enregistrer',
+    editEmployee: "Modifier Employé",
+    contactInformation: "Informations de Contact",
+    employmentDetails: "Détails de l'Emploi",
+    email: "E-mail",
+    phone: "Téléphone",
+    telephone: "Numéro de Téléphone",
+    address: "Adresse",
+    department: "Département",
+    abteilung: "Département",
+    startDate: "Date de Début",
+    startdatum: "Date de Début",
+    dateOfBirth: "Date de Naissance",
+    performance: "Performance",
+    leistung: "Performance",
+    cancel: "Annuler",
+    abbrechen: "Annuler",
+    save: "Enregistrer",
+    speichern: "Enregistrer"
   },
-
   // Department Pie Chart Names
   departments: {
     all: 'Tous',
@@ -1798,13 +1588,10 @@ export default {
     sales: 'Ventes',
     marketing: 'Marketing',
     design: 'Design',
-    part_time_employee: 'Groupe d\'experts',
+    part_time_employee: 'Groupe d\'experts'
   },
-
   // Control Panel
   controlPanel: {
-    refreshing: 'Actualisation...',
-    refresh: 'Rafraîchir',
     refreshData: 'Rafraîchir les données du système',
     dataRefreshed: 'Données du système rafraîchies avec succès!',
     dataRefreshError: 'Erreur lors du rafraîchissement des données du système',
@@ -1833,8 +1620,8 @@ export default {
     standardAccess: 'Accès utilisateur standard',
     visitAnalytics: 'Analyse des Visites',
     refreshVisitAnalytics: 'Rafraîchir les statistiques de visites',
-    refresh: 'Rafraîchir',
-    refreshing: 'Actualisation...',
+    refresh: "Rafraîchir",
+    refreshing: "Actualisation...",
     visitAnalyticsDesc: 'Voir les statistiques de visite des utilisateurs',
     userManagement: 'Gestion des Utilisateurs',
     visit: {
@@ -1844,7 +1631,6 @@ export default {
       averageVisitsPerUser: 'Visites Moyennes par Utilisateur',
       mostActiveUsers: 'Utilisateurs les Plus Actifs',
       authorized: 'Autorisé',
-      visits: 'Visites',
       total: 'Total',
       last24h: 'Dernières 24h',
       distinctIps: 'IPs distinctes',
@@ -1855,10 +1641,10 @@ export default {
       userAgent: 'Agent utilisateur',
       lastVisit: 'Dernière visite',
       firstVisit: 'Première visite',
-      visits: 'Visites',
+      visits: "Visites",
       visitDetails: 'Détails de la visite',
       visitHistory: 'Historique des visites',
-      noVisitsFound: 'Aucune visite trouvée pour cet utilisateur.',
+      noVisitsFound: 'Aucune visite trouvée pour cet utilisateur.'
     },
     roles: {
       admin: 'Admin',
@@ -1867,7 +1653,7 @@ export default {
       employee: 'Employé',
       viewer: 'Observateur',
       demoAdmin: 'Administrateur de démonstration',
-      hrAdmin: 'Admin RH',
+      hrAdmin: 'Admin RH'
     },
     roleDesc: {
       admin: 'Accès complet au système avec tous les privilèges administratifs incluant la gestion des utilisateurs, les paramètres système et le contrôle complet des données',
@@ -1876,7 +1662,7 @@ export default {
       manager: 'Superviser les membres de l\'équipe, approuver le suivi du temps et gérer les évaluations de performance',
       employee: 'Accéder aux informations personnelles, soumettre des entrées de temps et voir ses propres données de performance',
       viewer: 'Accès en lecture seule aux rapports, tableaux de bord et informations système limitées',
-      demoAdmin: 'Le mode démo utilise le stockage local pour simuler l’accès administrateur ; la version officielle utilise une base de données backend pour synchroniser les données',
+      demoAdmin: 'Le mode démo utilise le stockage local pour simuler l’accès administrateur ; la version officielle utilise une base de données backend pour synchroniser les données'
     },
     uploadAvatar: 'Télécharger l\'avatar',
     avatarUpdated: 'Avatar mis à jour avec succès!',
@@ -1920,9 +1706,8 @@ export default {
     demoEmployeeLabel: 'Employé de démonstration',
     switchToDemoEmployee: 'Passer à l’employé démo',
     switchToDemoAdmin: 'Passer à l’administrateur démo',
-    demoRoleOnly: 'Cette fonctionnalité est uniquement disponible en mode démo',
+    demoRoleOnly: 'Cette fonctionnalité est uniquement disponible en mode démo'
   },
-  
   // Production Help Center (fr)
   prodHelp: {
     title: 'Centre d’aide à la production',
@@ -1934,27 +1719,27 @@ export default {
     item: {
       observability: 'Tableaux de bord et alertes actifs',
       rollbacks: 'Plan de rollback testé',
-      backups: 'Sauvegardes vérifiées',
+      backups: 'Sauvegardes vérifiées'
     },
     observability: {
       title: 'Observabilité : logs, métriques, traces',
-      description: 'Garantir les budgets d’erreur, des logs structurés, des tableaux de latence 95e/99e percentile et un échantillonnage de traces adapté à la production.',
+      description: 'Garantir les budgets d’erreur, des logs structurés, des tableaux de latence 95e/99e percentile et un échantillonnage de traces adapté à la production.'
     },
     rollouts: {
       title: 'Déploiements sûrs et feature flags',
-      description: 'Utilisez des déploiements progressifs avec des contrôles de santé, des playbooks de rollback et des flags pour désactiver rapidement les chemins risqués.',
+      description: 'Utilisez des déploiements progressifs avec des contrôles de santé, des playbooks de rollback et des flags pour désactiver rapidement les chemins risqués.'
     },
     security: {
       title: 'Sécurité et hygiène des secrets',
-      description: 'Faites tourner les clés, appliquez le moindre privilège, activez l’audit et exigez le MFA pour les rôles administrateurs.',
+      description: 'Faites tourner les clés, appliquez le moindre privilège, activez l’audit et exigez le MFA pour les rôles administrateurs.'
     },
     performance: {
       title: 'Budgets de performance',
-      description: 'Suivez les temps de cold start et de hot path. Définissez des budgets pour la latence API, les requêtes SQL et le TTI frontend.',
+      description: 'Suivez les temps de cold start et de hot path. Définissez des budgets pour la latence API, les requêtes SQL et le TTI frontend.'
     },
     resilience: {
       title: 'Sauvegardes et résilience',
-      description: 'Vérifiez les sauvegardes automatisées, la stratégie de reprise après sinistre, le rate limiting et les circuit breakers.',
+      description: 'Vérifiez les sauvegardes automatisées, la stratégie de reprise après sinistre, le rate limiting et les circuit breakers.'
     },
     tags: {
       reliability: 'fiabilité',
@@ -1963,10 +1748,9 @@ export default {
       safety: 'sécurité',
       security: 'sécurité',
       performance: 'performance',
-      resilience: 'résilience',
-    },
+      resilience: 'résilience'
+    }
   },
-
   // Demo Help Center 
   help: {
     containerLabel: 'Centre d\'aide',
@@ -1982,14 +1766,12 @@ export default {
       title: 'IMPORTANT : Restrictions du Mode Démo !',
       body: 'LES DONNÉES SONT ENREGISTRÉES LOCALLEMENT - Ne se synchronisent pas entre les appareils. Les données peuvent être restaurées dans le panneau de contrôle.'
     },
-
     features: {
       section: 'Fonctionnalités Avancées & Contextuelles',
       defaultTitle: 'Fonctionnalités Cachées & Astuces',
       contextTitle: 'Astuces contextuelles pour {context}',
       restricted: 'RESTREINT',
       empty: 'Aucune astuce avancée trouvée pour le contexte : "{context}". Affichage de toutes les fonctionnalités ci-dessous.',
-
       feature_1: {
         title: 'Fonctionnalité cachée : Édition par lot',
         description: 'Saviez-vous que vous pouvez modifier jusqu\'à 50 enregistrements à la fois ? Sélectionnez les cases à cocher à côté des éléments et cliquez sur l\'icône ✏️ en haut du tableau. Ceci est désactivé dans la démo actuelle.'
@@ -2007,7 +1789,6 @@ export default {
         description: 'Accédez aux préférences de mise en page du tableau de bord en cliquant sur votre avatar de profil en haut à droite. Vous pouvez activer le mode sombre et ajuster les densités de table ici.'
       }
     },
-
     tags: {
       advanced: 'Avancé',
       hidden: 'Caché',
@@ -2019,7 +1800,6 @@ export default {
       'hard-to-find': 'Difficile à Trouver',
       personalization: 'Personnalisation'
     },
-
     showcase: {
       section: 'Parcours produit animé',
       label: 'Parcours produit animé',
@@ -2030,34 +1810,28 @@ export default {
       sync: 'Tout reste synchronisé',
       syncDesc: 'Les entrées, fichiers et objectifs mettent à jour instantanément les tableaux de bord et rapports.',
       live: 'En direct',
-
       time: {
         title: 'Gestion du temps',
         desc: 'Suivez les saisies de temps, validations, heures supplémentaires et journaux de travail en un seul endroit.'
       },
-
       upload: {
         title: 'Téléverser des fichiers',
         desc: 'Stockez en toute sécurité contrats, identités et preuves avec un historique prêt pour audit.'
       },
-
       dashboard: {
         title: 'Tableau de bord et graphiques',
         desc: 'Visualisez l’utilisation, la présence et les indicateurs de santé en temps réel.'
       },
-
       tasks: {
         title: 'Tâches et objectifs',
         desc: 'Assignez des responsables, des échéances et des check-lists synchronisées avec les données du personnel.'
       },
-
       reporting: {
         title: 'Rapports',
         desc: 'Exportez des PDF/CSV et planifiez des synthèses récurrentes pour les managers.'
       }
-    },
+    }
   },
-  
   // Video Player  
   videoPlayer: {
     container: 'Lecteur Vidéo',
@@ -2075,7 +1849,6 @@ export default {
     },
     name: 'Nom de la vidéo'
   },
-
   // Email Management
   emailManagement: {
     title: 'Gestion des e-mails des utilisateurs',
@@ -2100,18 +1873,12 @@ export default {
     errorLoadingUsers: 'Erreur lors du chargement des utilisateurs',
     fillAllFields: 'Veuillez remplir tous les champs'
   },
-
   // Personal Goals
   personalGoals: {
-    goalTitle: 'Titre de l\'objectif',
-    goalTitlePlaceholder: 'Entrez le titre de l\'objectif',
-    title: 'Revue de Performance des Tâches',
     subtitle: 'Progression mensuelle des tâches et évaluation de la qualité',
     individual: 'Individuel',
     team: 'Équipe',
     totalTasks: 'Tâches Totales',
-    completed: 'Terminées',
-    inProgress: 'En Cours',
     overdue: 'En Retard',
     midYear: 'Mi-Année',
     quarterly: 'Trimestriel',
@@ -2138,8 +1905,6 @@ export default {
     managerComments: 'Commentaires du Manager',
     commentPlaceholder: 'Fournir des commentaires sur la qualité et la performance de la tâche...',
     taskDetails: 'Détails de la Tâche',
-    status: 'Statut',
-    priority: 'Priorité',
     dueDate: 'Date d\'Échéance',
     currentRating: 'Évaluation Actuelle',
     submitEvaluation: 'Soumettre l\'Évaluation',
@@ -2147,21 +1912,14 @@ export default {
     evaluate: 'Évaluer',
     managerEvaluation: 'Évaluation du Manager',
     created: 'Créée',
-    due: 'Échéance',
     all: 'Toutes',
-    pending: 'En Attente',
-    title: 'Évaluation des performances',
+    title: "Revue de Performance des Tâches",
     overallRating: 'Note globale',
     reviewPeriod: 'Période d\'examen',
     goals: 'Objectifs et buts',
     achievements: 'Réalisations clés',
     areasForImprovement: 'Domaines d\'amélioration',
     skillsAssessment: 'Évaluation des compétences',
-    technical: 'Compétences techniques',
-    communication: 'Communication',
-    leadership: 'Leadership',
-    teamwork: 'Travail d\'équipe',
-    problemSolving: 'Résolution de problèmes',
     rating: 'Note',
     excellent: 'Excellent',
     good: 'Bon',
@@ -2183,9 +1941,9 @@ export default {
     goalsCompleted: 'Objectifs atteints',
     reviewsThisPeriod: 'Évaluations cette période',
     avgSkillRating: 'Note moyenne des compétences',
-    completed: 'Terminé',
-    inProgress: 'En cours',
-    pending: 'En attente',
+    completed: "Terminé",
+    inProgress: "En cours",
+    pending: "En attente",
     // Tabs
     overview: 'Aperçu',
     goalsTab: 'Objectifs',
@@ -2199,7 +1957,7 @@ export default {
     in_progress: 'en cours',
     clickToRate: 'Cliquez sur les étoiles pour mettre à jour la note de l\'employé',
     deadline: 'Date limite',
-    due: 'Échéance',
+    due: "Échéance",
     complete: 'terminé',
     viewDetails: 'Voir les détails',
     // Reviews section
@@ -2207,25 +1965,18 @@ export default {
     newReview: 'Nouvelle évaluation',
     by: 'par',
     viewFullReview: 'Voir l\'évaluation complète',
-    // General
-    status: 'Statut',
+    status: "Statut",
     actions: 'Actions',
     edit: 'Modifier',
     view: 'Voir',
     progressSaved: 'Progrès enregistré avec succès!',
     progressSaveError: 'Échec de l\'enregistrement du progrès',
-    // Goal form fields
-    goalTitle: 'Titre de l\'objectif',
-    goalTitlePlaceholder: 'Entrez le titre de l\'objectif',
+    goalTitle: "Titre de l'objectif",
+    goalTitlePlaceholder: "Entrez le titre de l'objectif",
     goalDescription: 'Description',
     goalDescriptionPlaceholder: 'Décrivez les objectifs',
     category: 'Catégorie',
-    general: 'Général',
-    technical: 'Technique',
-    leadership: 'Leadership',
-    project: 'Projet',
-    professionalDevelopment: 'Développement professionnel',
-    priority: 'Priorité',
+    priority: "Priorité",
     low: 'Faible',
     medium: 'Moyen',
     high: 'Élevé',
@@ -2240,24 +1991,23 @@ export default {
     reviewComments: 'Commentaires d\'évaluation',
     noComments: 'Aucun commentaire pour le moment',
     errorFetchingComments: 'Erreur lors du chargement des commentaires',
-    general: 'Général',
-    technical: 'Technique',
-    leadership: 'le commandement',
-    project: 'Projet',
-    communication: 'Communication',
+    general: "Général",
+    technical: "Compétences techniques",
+    leadership: "le commandement",
+    project: "Projet",
+    communication: "Communication",
     timeManagement: 'Gestion du Temps',
-    problemSolving: 'Résolution de Problèmes',
+    problemSolving: "Résolution de Problèmes",
     creativity: 'Créativité',
-    teamwork: 'Travail d\'Équipe',
+    teamwork: "Travail d'Équipe",
     adaptability: 'Adaptabilité',
     emotionalIntelligence: 'Intelligence Émotionnelle',
     criticalThinking: 'Pensée Critique',
-    professionalDevelopment: 'Développement Professionnel',
+    professionalDevelopment: "Développement Professionnel",
     goalDeletedSuccess: 'Objectif supprimé avec succès!',
     goalDeletedError: 'Échec de la suppression de l\'objectif',
-    goalsInProgress: 'Objectifs en Cours',
+    goalsInProgress: 'Objectifs en Cours'
   },
-
   // Morphing Showcase
   morphingShowcase: {
     title: 'Intégration Morphing Flubber',
@@ -2285,9 +2035,8 @@ export default {
     manualControl: 'Contrôle manuel',
     responsiveDesign: 'Design réactif',
     customizableTiming: 'Timing personnalisable',
-    multipleEasingFunctions: 'Multiples fonctions d\'accélération',
+    multipleEasingFunctions: 'Multiples fonctions d\'accélération'
   },
-
   // Flubber Demo
   flubberDemo: {
     title: 'Démo Morphing SVG Flubber',
@@ -2312,36 +2061,86 @@ export default {
     manualShapeSelection: 'Sélection de forme manuelle',
     responsiveAccessible: 'Réactif et accessible',
     customizableDuration: 'Durée d\'animation personnalisable',
-    easingFunctions: 'Fonctions d\'accélération pour mouvement naturel',
+    easingFunctions: 'Fonctions d\'accélération pour mouvement naturel'
   },
   demoEmployees: {
-  'demo-emp-1': { name: 'Administrateur', location: 'Siège' },
-  'demo-emp-2': { name: 'Ingénieur RH', location: 'Siège' },
-  'demo-emp-3': { name: 'Designer UI/UX', location: 'Télétravail' },
-  'demo-emp-4': { name: 'Spécialiste Marketing', location: 'Siège' },
-  'demo-emp-5': { name: 'Représentant Commercial', location: 'Télétravail' }
+    'demo-emp-1': {
+      name: 'Administrateur',
+      location: 'Siège'
+    },
+    'demo-emp-2': {
+      name: 'Ingénieur RH',
+      location: 'Siège'
+    },
+    'demo-emp-3': {
+      name: 'Designer UI/UX',
+      location: 'Télétravail'
+    },
+    'demo-emp-4': {
+      name: 'Spécialiste Marketing',
+      location: 'Siège'
+    },
+    'demo-emp-5': {
+      name: 'Représentant Commercial',
+      location: 'Télétravail'
+    }
   },
   locations: {
     headquarters: 'Siège',
     remote: 'Télétravail'
   },
   demoTasks: {
-    'task-1': { title: 'Analyse des Rapports Q4', description: 'Analyse complète des métriques de performance trimestrielles et des tendances - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.' },
-    'task-2': { title: 'Mise à Jour du Manuel des Employés', description: 'Réviser et mettre à jour le manuel des employés avec les politiques de télétravail - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.' },
-    'task-3': { title: 'Correction du Bug de Connexion', description: 'Déboguer et résoudre les problèmes de connexion utilisateur sur les appareils mobiles - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.' },
-    'task-4': { title: 'Concevoir Nouveau Tableau de Bord', description: 'Créer des wireframes et maquettes pour le tableau de bord analytique - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.' },
-    'task-5': { title: 'Revue de Performance des Campagnes', description: 'Analyser les résultats et le ROI des campagnes marketing Q3 - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.' },
-    'task-6': { title: 'Intégration Client', description: 'Compléter l\'intégration du nouveau client entreprise - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.' },
-    'task-7': { title: 'Documentation API', description: 'Rédiger une documentation API complète pour la version 2.0 - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.' }
+    'task-1': {
+      title: 'Analyse des Rapports Q4',
+      description: 'Analyse complète des métriques de performance trimestrielles et des tendances - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.'
+    },
+    'task-2': {
+      title: 'Mise à Jour du Manuel des Employés',
+      description: 'Réviser et mettre à jour le manuel des employés avec les politiques de télétravail - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.'
+    },
+    'task-3': {
+      title: 'Correction du Bug de Connexion',
+      description: 'Déboguer et résoudre les problèmes de connexion utilisateur sur les appareils mobiles - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.'
+    },
+    'task-4': {
+      title: 'Concevoir Nouveau Tableau de Bord',
+      description: 'Créer des wireframes et maquettes pour le tableau de bord analytique - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.'
+    },
+    'task-5': {
+      title: 'Revue de Performance des Campagnes',
+      description: 'Analyser les résultats et le ROI des campagnes marketing Q3 - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.'
+    },
+    'task-6': {
+      title: 'Intégration Client',
+      description: 'Compléter l\'intégration du nouveau client entreprise - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.'
+    },
+    'task-7': {
+      title: 'Documentation API',
+      description: 'Rédiger une documentation API complète pour la version 2.0 - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.'
+    }
   },
   demoGoals: {
-    'goal-1': { title: 'Améliorer l\'Efficacité de l\'Équipe', description: 'Augmenter la productivité de l\'équipe de 20% au cours du prochain trimestre - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.' },
-    'goal-2': { title: 'Apprendre React Native', description: 'Maîtriser React Native pour le développement d\'applications mobiles - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.' },
-    'goal-3': { title: 'Certification UX', description: 'Obtenir le Certificat Professionnel Google UX Design - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.' },
-    'goal-4': { title: 'Augmenter la Génération de Leads', description: 'Atteindre une augmentation de 30% des leads qualifiés via les campagnes marketing - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.' },
-    'goal-5': { title: 'Conclure des Contrats Entreprise', description: 'Conclure 5 contrats entreprise d\'une valeur supérieure à 500K$ chacun - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.' }
+    'goal-1': {
+      title: 'Améliorer l\'Efficacité de l\'Équipe',
+      description: 'Augmenter la productivité de l\'équipe de 20% au cours du prochain trimestre - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.'
+    },
+    'goal-2': {
+      title: 'Apprendre React Native',
+      description: 'Maîtriser React Native pour le développement d\'applications mobiles - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.'
+    },
+    'goal-3': {
+      title: 'Certification UX',
+      description: 'Obtenir le Certificat Professionnel Google UX Design - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.'
+    },
+    'goal-4': {
+      title: 'Augmenter la Génération de Leads',
+      description: 'Atteindre une augmentation de 30% des leads qualifiés via les campagnes marketing - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.'
+    },
+    'goal-5': {
+      title: 'Conclure des Contrats Entreprise',
+      description: 'Conclure 5 contrats entreprise d\'une valeur supérieure à 500K$ chacun - Remarque : Ces données de démonstration ne peuvent pas être modifiées. Veuillez ajouter vos propres données pour les tests.'
+    }
   },
-   
   demoReviews: {
     'review-1': {
       reviewPeriod: 'T4 2024',
@@ -2358,13 +2157,23 @@ export default {
       comments: 'Excellente contribution à l’équipe'
     }
   },
-
   demoSkills: {
-    'skill-1': { name: 'React', category: 'Technique', proficiencyLevel: 'Expert' },
-    'skill-2': { name: 'TypeScript', category: 'Technique', proficiencyLevel: 'Avancé' },
-    'skill-3': { name: 'UI/UX Design', category: 'Design', proficiencyLevel: 'Expert' }
+    'skill-1': {
+      name: 'React',
+      category: 'Technique',
+      proficiencyLevel: 'Expert'
+    },
+    'skill-2': {
+      name: 'TypeScript',
+      category: 'Technique',
+      proficiencyLevel: 'Avancé'
+    },
+    'skill-3': {
+      name: 'UI/UX Design',
+      category: 'Design',
+      proficiencyLevel: 'Expert'
+    }
   },
-
   demoFeedback: {
     'feedback-1': {
       type: 'Évaluation par les pairs',
@@ -2375,29 +2184,44 @@ export default {
       text: 'Excellent travail sur le nouveau système de design. Continuez comme ça !'
     }
   },
-
   demoJobs: {
     'job-1': {
       title: 'Développeur Frontend Senior',
       description: 'Nous recherchons un développeur frontend expérimenté pour rejoindre notre équipe et construire des applications web exceptionnelles.',
       location: 'Télétravail',
       salaryRange: '$90k - $120k',
-      requirements: { 0: 'React', 1: 'TypeScript', 2: 'Tailwind CSS' }
+      requirements: {
+        0: 'React',
+        1: 'TypeScript',
+        2: 'Tailwind CSS'
+      }
     },
     'job-2': {
       title: 'Designer Produit',
       description: 'Rejoignez notre équipe design pour créer des expériences utilisateur exceptionnelles et façonner l’avenir de nos produits.',
       location: 'New York',
       salaryRange: '$80k - $100k',
-      requirements: { 0: 'Figma', 1: 'UI/UX', 2: 'Prototypage' }
+      requirements: {
+        0: 'Figma',
+        1: 'UI/UX',
+        2: 'Prototypage'
+      }
     }
   },
-
   demoApplicants: {
-    'app-1': { firstName: 'John', lastName: 'Doe', education: 'Licence en Informatique', currentPosition: 'Développeur Senior' },
-    'app-2': { firstName: 'Jane', lastName: 'Smith', education: 'Master en Design', currentPosition: 'Responsable UX' }
+    'app-1': {
+      firstName: 'John',
+      lastName: 'Doe',
+      education: 'Licence en Informatique',
+      currentPosition: 'Développeur Senior'
+    },
+    'app-2': {
+      firstName: 'Jane',
+      lastName: 'Smith',
+      education: 'Master en Design',
+      currentPosition: 'Responsable UX'
+    }
   },
-
   demoApplications: {
     'appl-1': {
       status: 'En cours d’examen',
@@ -2408,7 +2232,6 @@ export default {
       notes: 'Excellent portfolio et compétences en design'
     }
   },
-
   demoInterviews: {
     'int-1': {
       status: 'Programmé',
@@ -2416,22 +2239,21 @@ export default {
       notes: 'Examen du portfolio et évaluation technique'
     }
   },
-
   demoNotifications: {
     'notif-1': {
-      title: 'Bienvenue dans le système RH',
-      message: 'Bienvenue dans le mode démo du système RH. Explorez toutes les fonctionnalités !',
-      actionLabel: 'Aller au tableau de bord'
+      title: "Bienvenue dans le système RH",
+      message: "Bienvenue dans le mode démo du système RH. Explorez toutes les fonctionnalités !",
+      actionLabel: "Aller au tableau de bord"
     },
     'notif-2': {
-      title: 'Nouvelle tâche assignée',
-      message: 'Une nouvelle tâche vous a été assignée : Revoir la performance du T3',
-      actionLabel: 'Voir la tâche'
+      title: "Nouvelle tâche assignée",
+      message: "Une nouvelle tâche vous a été assignée : Revoir la performance du T3",
+      actionLabel: "Voir la tâche"
     },
     'notif-3': {
-      title: 'Rappel de réunion',
-      message: 'Réunion d’équipe dans 30 minutes',
-      actionLabel: 'Voir le calendrier'
+      title: "Évaluation de performance à venir",
+      message: "Les évaluations de performance trimestrielles sont prévues pour la semaine prochaine.",
+      actionLabel: "Voir le calendrier"
     }
   }
 };

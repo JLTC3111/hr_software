@@ -62,6 +62,7 @@ import { ShinyButton } from './ui/shiny-button';
 import { SlidingNumber, useNumberReplay } from './motion-primitives';
 import { NumberTicker } from './ui/number-ticker';
 import { PageLiveClock } from './ui/page-live-clock';
+import { TranslatedText } from './ui/translated-text.jsx';
 import { cn } from '@/lib/utils';
 import {
   filterActiveEmployees,
@@ -2289,7 +2290,7 @@ const TaskReview = ({ employees, allEmployees }) => {
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
                               <div className="flex items-center space-x-2 mb-2">
-                                <h4 className={`font-semibold ${text.primary}`}>{isDemoMode() ? getDemoTaskTitle(task, t) : task.title}</h4>
+                                <h4 className={`font-semibold ${text.primary}`}>{isDemoMode() ? getDemoTaskTitle(task, t) : <TranslatedText text={task.title} />}</h4>
                                 <span className={`px-2 py-0.5 rounded text-xs ${getStatusColor(task.status)}`}>
                                   {t(`status.${task.status}`) || task.status}
                                 </span>
@@ -2297,7 +2298,7 @@ const TaskReview = ({ employees, allEmployees }) => {
                                   {t(`taskListing.${task.priority}`) || task.priority}
                                 </span>
                               </div>
-                              {task.description && <p className={`text-sm ${text.secondary} mb-3`}>{isDemoMode() ? getDemoTaskDescription(task, t) : task.description}</p>}
+                              {task.description && <p className={`text-sm ${text.secondary} mb-3`}>{isDemoMode() ? getDemoTaskDescription(task, t) : <TranslatedText text={task.description} />}</p>}
                               
                               {/* Task Details Grid */}
                               <div className="grid grid-cols-2 gap-3 mb-3">
@@ -2343,7 +2344,7 @@ const TaskReview = ({ employees, allEmployees }) => {
                                     <MessageSquare className="w-3 h-3" />
                                     <span>{t('taskReview.employeeSelfAssessment')}:</span>
                                   </p>
-                                  <p className={`text-sm ${text.secondary}`}>{task.self_assessment}</p>
+                                  <p className={`text-sm ${text.secondary}`}>{isDemoMode() ? task.self_assessment : <TranslatedText text={task.self_assessment} />}</p>
                                 </div>
                               )}
                               {task.comments && (
@@ -2352,7 +2353,7 @@ const TaskReview = ({ employees, allEmployees }) => {
                                     <Award className="w-3 h-3" />
                                     <span>{t('taskReview.managerEvaluation')}:</span>
                                   </p>
-                                  <p className={`text-sm ${text.secondary}`}>{task.comments}</p>
+                                  <p className={`text-sm ${text.secondary}`}>{isDemoMode() ? task.comments : <TranslatedText text={task.comments} />}</p>
                                 </div>
                               )}
                             </div>
@@ -2478,7 +2479,7 @@ const TaskReview = ({ employees, allEmployees }) => {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h4 className={`font-semibold ${text.primary}`}>{isDemoMode() ? getDemoTaskTitle(task, t) : task.title}</h4>
+                      <h4 className={`font-semibold ${text.primary}`}>{isDemoMode() ? getDemoTaskTitle(task, t) : <TranslatedText text={task.title} />}</h4>
                       <span className={`px-2 py-0.5 rounded text-xs ${getStatusColor(task.status)}`}>
                         {t(`status.${task.status}`) || task.status}
                       </span>
@@ -2486,7 +2487,7 @@ const TaskReview = ({ employees, allEmployees }) => {
                         {t(`taskListing.${task.priority}`) || task.priority}
                       </span>
                     </div>
-                    {task.description && <p className={`text-sm ${text.secondary} mb-3`}>{isDemoMode() ? getDemoTaskDescription(task, t) : task.description}</p>}
+                    {task.description && <p className={`text-sm ${text.secondary} mb-3`}>{isDemoMode() ? getDemoTaskDescription(task, t) : <TranslatedText text={task.description} />}</p>}
                     
                     {/* Task Details Grid */}
                     <div className="grid grid-cols-2 gap-3 mb-3">
@@ -2532,7 +2533,7 @@ const TaskReview = ({ employees, allEmployees }) => {
                           <MessageSquare className="w-3 h-3" />
                           <span>{t('taskReview.employeeSelfAssessment')}:</span>
                         </p>
-                        <p className={`text-sm ${text.secondary}`}>{task.self_assessment}</p>
+                        <p className={`text-sm ${text.secondary}`}>{isDemoMode() ? task.self_assessment : <TranslatedText text={task.self_assessment} />}</p>
                       </div>
                     )}
                     {task.comments && (
@@ -2541,7 +2542,7 @@ const TaskReview = ({ employees, allEmployees }) => {
                           <Award className="w-3 h-3" />
                           <span>{t('taskReview.managerEvaluation')}:</span>
                         </p>
-                        <p className={`text-sm ${text.secondary}`}>{task.comments}</p>
+                        <p className={`text-sm ${text.secondary}`}>{isDemoMode() ? task.comments : <TranslatedText text={task.comments} />}</p>
                       </div>
                     )}
                   </div>
@@ -2817,7 +2818,7 @@ const TaskReview = ({ employees, allEmployees }) => {
             <div className={`sticky top-0 ${bg.secondary} border-b ${border.primary} px-6 py-4 flex items-center justify-between`}>
               <div>
                 <h3 className={`text-xl font-bold ${text.primary}`}>{t('taskReview.reviewTask')}</h3>
-                <p className={`text-sm ${text.secondary} mt-1`}>{isDemoMode() ? getDemoTaskTitle(reviewingTask, t) : reviewingTask.title}</p>
+                <p className={`text-sm ${text.secondary} mt-1`}>{isDemoMode() ? getDemoTaskTitle(reviewingTask, t) : <TranslatedText text={reviewingTask.title} />}</p>
               </div>
               <button
                 type="button"
@@ -2861,13 +2862,13 @@ const TaskReview = ({ employees, allEmployees }) => {
                 {reviewingTask.description && (
                   <div className="mt-3">
                     <p className={`${text.secondary} font-medium`}>{t('taskReview.description')}:</p>
-                    <p className={`${text.primary} text-sm mt-1`}>{isDemoMode() ? getDemoTaskDescription(reviewingTask, t) : reviewingTask.description}</p>
+                    <p className={`${text.primary} text-sm mt-1`}>{isDemoMode() ? getDemoTaskDescription(reviewingTask, t) : <TranslatedText text={reviewingTask.description} />}</p>
                   </div>
                 )}
                 {reviewingTask.self_assessment && (
                   <div className={`mt-3 p-3 rounded ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'} border-l-4 border-blue-500`}>
                     <p className={`${text.primary} font-semibold text-sm mb-1`}>{t('taskReview.employeeSelfAssessment')}:</p>
-                    <p className={`${text.secondary} text-sm`}>{reviewingTask.self_assessment}</p>
+                    <p className={`${text.secondary} text-sm`}>{isDemoMode() ? reviewingTask.self_assessment : <TranslatedText text={reviewingTask.self_assessment} />}</p>
                   </div>
                 )}
               </div>

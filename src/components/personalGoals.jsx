@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Star, Sparkle, TrendingUp, Calendar, User, Award, Goal, ShieldEllipsis, MessageSquare, Plus, Edit, Eye, X, Save, ChevronRight, ChevronLeft, Trash2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -12,6 +12,8 @@ import { ShinyButton } from './ui/shiny-button';
 import { SlidingNumber } from './motion-primitives';
 import { NumberTicker } from './ui/number-ticker';
 import { PageLiveClock } from './ui/page-live-clock';
+import { DatePicker } from './ui/date-picker.jsx';
+import { TranslatedText } from './ui/translated-text.jsx';
 import { cn } from '@/lib/utils';
 import { filterActiveEmployees } from '../utils/employeeStatus.js';
 
@@ -82,8 +84,6 @@ const PersonalGoals = ({ employees }) => {
     status: 'pending',
     progressPercentage: 0
   });
-
-  const dateInputRef = useRef(null);
 
   // Helper functions to translate department and position values
   const translateDepartment = (department) => {
@@ -877,7 +877,7 @@ const PersonalGoals = ({ employees }) => {
                     borderColor: 'transparent'
                   }}
                 >
-                  {isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title}
+                  {isDemoMode() ? getDemoGoalTitle(goal, t) : <TranslatedText text={goal.title} />}
                 </h4>
                 <div className="flex items-center space-x-2">
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(goal.status)}`}>
@@ -1010,7 +1010,7 @@ const PersonalGoals = ({ employees }) => {
                     borderColor: 'transparent'
                   }}
                 >
-                  {isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title}
+                  {isDemoMode() ? getDemoGoalTitle(goal, t) : <TranslatedText text={goal.title} />}
                 </h4>
               </div>
               <div className="flex items-center space-x-2">
@@ -1351,42 +1351,12 @@ const PersonalGoals = ({ employees }) => {
                   <label className="block text-sm font-medium mb-2">
                     {t('personalGoals.targetDate', 'Target Date')}
                   </label>
-                  <div className="relative">
-                    <input
-                      ref={dateInputRef}
-                      type="date"
-                      value={goalForm.targetDate}
-                      onChange={(e) => setGoalForm({...goalForm, targetDate: e.target.value})}
-                      className="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0"
-                      style={{
-                        backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-                        borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                        color: isDarkMode ? '#ffffff' : '#111827'
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const el = dateInputRef.current;
-                        if (!el) return;
-                        if (typeof el.showPicker === 'function') {
-                          el.showPicker();
-                        } else {
-                          el.focus();
-                          if (typeof el.click === 'function') el.click();
-                        }
-                      }}
-                      className="absolute right-3 cursor-pointer top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center"
-                      aria-label={t('personalGoals.openDatePicker', 'Open date picker')}
-                    >
-                      <Calendar
-                        className="w-5 h-5"
-                        style={{
-                          color: isDarkMode ? '#9ca3af' : '#6b7280'
-                        }}
-                      />
-                    </button>
-                  </div>
+                  <DatePicker
+                    value={goalForm.targetDate}
+                    onChange={(e) => setGoalForm({...goalForm, targetDate: e.target.value})}
+                    icon={Calendar}
+                    inputClassName="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer"
+                  />
                 </div>
 
                 {/* Status */}
@@ -1591,42 +1561,12 @@ const PersonalGoals = ({ employees }) => {
                   <label className="block text-sm font-medium mb-2">
                     {t('personalGoals.targetDate', 'Target Date')}
                   </label>
-                  <div className="relative">
-                    <input
-                      ref={dateInputRef}
-                      type="date"
-                      value={goalForm.targetDate}
-                      onChange={(e) => setGoalForm({...goalForm, targetDate: e.target.value})}
-                      className="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0"
-                      style={{
-                        backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-                        borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                        color: isDarkMode ? '#ffffff' : '#111827'
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const el = dateInputRef.current;
-                        if (!el) return;
-                        if (typeof el.showPicker === 'function') {
-                          el.showPicker();
-                        } else {
-                          el.focus();
-                          if (typeof el.click === 'function') el.click();
-                        }
-                      }}
-                      className="absolute cursor-pointer right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center"
-                      aria-label={t('personalGoals.openDatePicker', 'Open date picker')}
-                    >
-                      <Calendar
-                        className="w-5 h-5"
-                        style={{
-                          color: isDarkMode ? '#9ca3af' : '#6b7280'
-                        }}
-                      />
-                    </button>
-                  </div>
+                  <DatePicker
+                    value={goalForm.targetDate}
+                    onChange={(e) => setGoalForm({...goalForm, targetDate: e.target.value})}
+                    icon={Calendar}
+                    inputClassName="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer"
+                  />
                 </div>
 
                 {/* Status */}
@@ -1728,7 +1668,7 @@ const PersonalGoals = ({ employees }) => {
               {/* Title */}
               <div>
                 <h3 className="text-lg font-semibold mb-2">
-                  {isDemoMode() ? getDemoGoalTitle(viewingGoal, t) : viewingGoal.title}
+                  {isDemoMode() ? getDemoGoalTitle(viewingGoal, t) : <TranslatedText text={viewingGoal.title} />}
                 </h3>
                 <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
                   viewingGoal.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
@@ -1753,7 +1693,11 @@ const PersonalGoals = ({ employees }) => {
                     color: isDarkMode ? '#e5e7eb' : '#374151'
                   }}
                 >
-                  {isDemoMode() ? getDemoGoalDescription(viewingGoal, t) : (viewingGoal.description || t('common.noDescription', 'No description available'))}
+                  {isDemoMode()
+                    ? getDemoGoalDescription(viewingGoal, t)
+                    : (viewingGoal.description
+                      ? <TranslatedText text={viewingGoal.description} />
+                      : t('common.noDescription', 'No description available'))}
                 </p>
               </div>
 

@@ -19,9 +19,8 @@ export default {
     taskReview: 'การทบทวนผลการปฏิบัติงาน',
     svgMorphing: 'SVG มอร์ฟิ่ง',
     fullDemo: 'การสาธิตแบบเต็ม',
-    showcase: 'แสดงตัวอย่างอย่างรวดเร็ว',
+    showcase: 'แสดงตัวอย่างอย่างรวดเร็ว'
   },
-
   // Leave Management
   leave: {
     subtitle: 'วางแผน ขอ และอนุมัติการลาบนปฏิทินที่ใช้ร่วมกัน',
@@ -86,9 +85,8 @@ export default {
     rejectConfirm: 'ปฏิเสธการลาของ {{name}}?',
     rejectReasonLabel: 'เหตุผล (ไม่บังคับ)',
     rejectReasonPlaceholder: 'อธิบายเหตุผลที่ปฏิเสธคำขอนี้...',
-    confirmReject: 'ปฏิเสธคำขอ',
+    confirmReject: 'ปฏิเสธคำขอ'
   },
-
   // Header
   header: {
     title: 'ผู้จัดการ HR',
@@ -100,9 +98,8 @@ export default {
     welcomePhrase5: 'มาทำให้วันนี้มีประสิทธิภาพกัน, {name}',
     welcomePhrase6: 'ยินดีที่คุณอยู่ที่นี่, {name}',
     user: 'ทีม,',
-    logout: 'ออกจากระบบ',
+    logout: 'ออกจากระบบ'
   },
-
   // Login
   login: {
     idleLogoutMessage: 'คุณถูกออกจากระบบหลังจากช่วงเวลาที่ไม่ได้ใช้งาน กรุณาเข้าสู่ระบบใหม่',
@@ -129,7 +126,6 @@ export default {
     tryDemoLoading: 'กำลังโหลดโหมดสาธิต...',
     forgotPasswordModal: {
       title: 'รีเซ็ตรหัสผ่าน',
-      success: 'ส่งอีเมลรีเซ็ตรหัสผ่านแล้ว โปรดตรวจสอบกล่องจดหมายของคุณ',
       description: 'กรอกที่อยู่อีเมลของคุณและเราจะส่งลิงก์สำหรับรีเซ็ตรหัสผ่านให้คุณ',
       emailLabel: 'ที่อยู่อีเมล',
       emailPlaceholder: 'you@example.com',
@@ -137,14 +133,13 @@ export default {
       emailInvalid: 'กรุณากรอกอีเมลที่ถูกต้อง',
       sendReset: 'ส่งลิงก์รีเซ็ต',
       cancel: 'ยกเลิก',
-      success: 'ส่งอีเมลรีเซ็ตรหัสผ่านแล้ว กรุณาตรวจสอบกล่องจดหมายของคุณ',
+      success: "ส่งอีเมลรีเซ็ตรหัสผ่านแล้ว กรุณาตรวจสอบกล่องจดหมายของคุณ",
       error: 'ไม่สามารถส่งอีเมลรีเซ็ตได้ กรุณาลองอีกครั้ง',
       noAccount: 'ไม่พบบัญชีที่ใช้ที่อยู่อีเมลนี้',
       rateLimitError: 'มีคำขอมากเกินไป กรุณาลองใหม่ภายหลัง',
       networkError: 'ข้อผิดพลาดเครือข่าย กรุณาตรวจสอบการเชื่อมต่อของคุณ'
-    },
+    }
   },
-
   // Reset Password Page
   resetPassword: {
     title: 'รีเซ็ตรหัสผ่าน',
@@ -158,7 +153,6 @@ export default {
     passwordsDontMatch: 'รหัสผ่านไม่ตรงกัน',
     error: 'ไม่สามารถรีเซ็ตรหัสผ่านได้ กรุณาลองอีกครั้ง',
     success: 'รีเซ็ตรหัสผ่านสำเร็จ!',
-    redirecting: 'กำลังนำไปยังหน้าเข้าสู่ระบบ...',
     resetting: 'กำลังรีเซ็ต...',
     verifying: 'กำลังตรวจสอบลิงก์รีเซ็ต...',
     resetButton: 'รีเซ็ตรหัสผ่าน',
@@ -168,20 +162,18 @@ export default {
     signingIn: 'กำลังเข้าสู่ระบบ...',
     orContinueWith: 'หรือดำเนินการต่อด้วย',
     continueWithGithub: 'ดำเนินการต่อด้วย GitHub',
-    redirecting: 'กำลังเปลี่ยนเส้นทางไปยังหน้าเข้าสู่ระบบ...',
+    redirecting: "กำลังเปลี่ยนเส้นทางไปยังหน้าเข้าสู่ระบบ...",
     githubError: 'เข้าสู่ระบบด้วย GitHub ล้มเหลว',
     noAccount: 'ยังไม่มีบัญชี?',
     signUp: 'สมัครสมาชิก',
     footer: '© 2024 ผู้จัดการ HR สงวนลิขสิทธิ์',
-    tryDemoLoading: 'กำลังโหลดโหมดสาธิต...',
+    tryDemoLoading: 'กำลังโหลดโหมดสาธิต...'
   },
-
   sidebar: {
     main: 'หลัก',
     analytics: 'การวิเคราะห์',
-    settings: 'การตั้งค่า',
+    settings: 'การตั้งค่า'
   },
-
   // Dashboard
   dashboard: {
     regularAndOvertimeByEmployee: 'ชั่วโมงปกติ & ล่วงเวลาตามพนักงาน',
@@ -221,7 +213,7 @@ export default {
     activities: {
       newEmployee: 'พนักงานใหม่เข้าร่วม: ABC',
       interviewScheduled: 'กำหนดสัมภาษณ์กับ: XYZ',
-      performanceReview: 'เสร็จสิ้นการประเมินผลของ: Đỗ Bảo Long'
+      performanceReview: 'เสร็จสิ้นการประเมินผลของ: '
     },
     timeAgo: {
       twoHours: '2 ชั่วโมงที่แล้ว',
@@ -229,12 +221,10 @@ export default {
       oneDay: '1 วันที่แล้ว'
     }
   },
-
   // Search
   search: {
     placeholder: 'ค้นหาพนักงาน...'
   },
-
   employeeDepartment: {
     all: 'ทั้งหมด',
     legal_compliance: 'การปฏิบัติตามกฎหมาย',
@@ -265,9 +255,8 @@ export default {
     IT: 'เทคโนโลยีสารสนเทศ',
     it: 'เทคโนโลยีดิจิทัล',
     product: 'ผลิตภัณฑ์',
-    customer_support: 'ฝ่ายสนับสนุนลูกค้า',
+    customer_support: 'ฝ่ายสนับสนุนลูกค้า'
   },
-
   // Months
   months: {
     january: 'มกราคม',
@@ -283,7 +272,6 @@ export default {
     november: 'พฤศจิกายน',
     december: 'ธันวาคม'
   },
-
   stats: {
     total: 'ทั้งหมด',
     underReview: 'กำลังตรวจสอบ',
@@ -291,9 +279,8 @@ export default {
     interviewScheduled: 'นัดสัมภาษณ์แล้ว',
     offerExtended: 'ส่งข้อเสนองานแล้ว',
     hired: 'จ้างงานแล้ว',
-    rejected: 'ปฏิเสธ',
+    rejected: 'ปฏิเสธ'
   },
-
   timeClock: {
     title: 'บันทึกเวลา',
     subtitle: 'บันทึกชั่วโมงการทำงานและส่งหลักฐานการเข้างาน',
@@ -302,7 +289,6 @@ export default {
     fileTypes: 'รองรับ: ภาพ, PDF, เอกสาร (ขนาดไม่เกิน 50MB)',
     history: 'ประวัติ',
     selectDate: 'เลือกวันที่',
-    date: 'วันที่',
     clockIn: 'เวลาเข้า',
     clockOut: 'เวลาออก',
     hourType: 'ประเภทชั่วโมงทำงาน',
@@ -314,12 +300,6 @@ export default {
     success: 'ส่งบันทึกเวลาสำเร็จแล้ว!',
     confirmDelete: 'คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?',
     delete: 'ลบ',
-    noEntries: 'ยังไม่มีรายการ กรุณาส่งรายการแรก!',
-    time: 'เวลา',
-    hours: 'ชั่วโมง',
-    type: 'ประเภท',
-    status: 'สถานะ',
-    actions: 'การดำเนินการ',
     weeklySummary: 'สัปดาห์นี้',
     monthlySummary: 'เดือนนี้',
     leaveDays: 'วันลา',
@@ -329,7 +309,6 @@ export default {
     total: 'รวม',
     hrs: 'ชม.',
     days: 'วัน',
-    employee: 'พนักงาน',
     includesPending: '* รวมที่รอดำเนินการและอนุมัติแล้ว',
     notesPlaceholder: 'เพิ่มบันทึกหรือรายละเอียดเพิ่มเติม...',
     fileHelp: 'อัปโหลดภาพหน้าจอ รูปภาพ หรือ PDF (ขนาดไม่เกิน 5MB)',
@@ -353,7 +332,7 @@ export default {
       invalidFileType: 'อนุญาตเฉพาะไฟล์ JPG, PNG และ PDF เท่านั้น',
       submitFailed: 'ไม่สามารถส่งบันทึกเวลาได้ กรุณาลองอีกครั้ง',
       deleteFailed: 'ไม่สามารถลบบันทึกเวลาได้ กรุณาลองอีกครั้ง',
-      duplicateEntry: 'คุณมีบันทึกเวลา {hourType} สำหรับวันที่นี้แล้ว กรุณาแก้ไขบันทึกที่มีอยู่หรือเลือกประเภทชั่วโมงอื่น',
+      duplicateEntry: 'คุณมีบันทึกเวลา {hourType} สำหรับวันที่นี้แล้ว กรุณาแก้ไขบันทึกที่มีอยู่หรือเลือกประเภทชั่วโมงอื่น'
     },
     deleteOptions: 'เลือกตัวเลือกการลบ',
     deleteEntry: 'ลบบันทึกเวลาทั้งหมด',
@@ -374,16 +353,15 @@ export default {
     myEntries: 'รายการของฉัน',
     allEmployees: 'พนักงานทั้งหมด',
     specificEmployee: 'พนักงานเฉพาะ',
-    employee: 'พนักงาน',
-    date: 'วันที่',
-    time: 'เวลา',
-    hours: 'ชั่วโมง',
-    type: 'ประเภท',
-    status: 'สถานะ',
-    actions: 'การดำเนินการ',
-    noEntries: 'ไม่พบรายการ'
-  },  
-
+    employee: "พนักงาน",
+    date: "วันที่",
+    time: "เวลา",
+    hours: "ชั่วโมง",
+    type: "ประเภท",
+    status: "สถานะ",
+    actions: "การดำเนินการ",
+    noEntries: "ยังไม่มีรายการ กรุณาส่งรายการแรก!"
+  },
   // Time Tracking
   timeTracking: {
     on_leave: 'ลา',
@@ -397,13 +375,11 @@ export default {
     amountHours: 'ชั่วโมง',
     hourType: 'ประเภทชั่วโมง',
     time: 'เวลา',
-    status: 'สถานะ',
     notes: 'บันทึก',
     createdAt: 'สร้างเมื่อ',
     summary: 'สรุป',
     quickActions: 'การดำเนินการด่วน',
     workDays: 'วันทำงาน',
-    leaveDays: 'วันลา',
     overtime: 'ชั่วโมงล่วงเวลา',
     wfh: 'ชั่วโมงทำงานจากระยะไกล',
     holidayOvertime: 'ล่วงเวลาวันหยุด',
@@ -417,14 +393,12 @@ export default {
     attendanceRate: 'อัตราการเข้างาน',
     requestLeave: 'ขอลางาน',
     logOvertime: 'บันทึกโอที',
-    leaveType: 'ประเภทการลา',
     vacation: 'วันหยุดพักผ่อน',
     sickLeave: 'ลาป่วย',
     personal: 'ลากิจ',
     unpaid: 'ลาไม่ได้รับค่าจ้าง',
-    leaveDays: 'วันลา',
-    leaveType: 'ประเภทการลา',
-    status: 'สถานะ',
+    leaveDays: "วันลา",
+    leaveType: "ประเภทการลา",
     requestedBy: 'ผู้ขอ',
     approvedBy: 'ผู้อนุมัติ',
     leaveRequestManagement: 'การจัดการคำขอลา',
@@ -436,7 +410,7 @@ export default {
       pending: 'รอดำเนินการ',
       approved: 'อนุมัติแล้ว',
       rejected: 'ปฏิเสธ',
-      cancelled: 'ยกเลิก',
+      cancelled: 'ยกเลิก'
     },
     // Hour types for overtime
     weekend: 'ล่วงเวลาสุดสัปดาห์',
@@ -465,7 +439,6 @@ export default {
     daysWorked: 'วันทำงาน',
     totalHoursLabel: 'รวมชั่วโมง'
   },
-
   // Employees
   employees: {
     title: 'การจัดการพนักงาน',
@@ -505,9 +478,8 @@ export default {
     topPerformers: 'พนักงานยอดเยี่ยม',
     avgRating: 'คะแนนเฉลี่ย',
     departments: 'แผนก',
-    livePulse: 'พัลส์สด',
+    livePulse: 'พัลส์สด'
   },
-
   // Recruitment
   recruitment: {
     position: 'ตำแหน่ง',
@@ -564,17 +536,16 @@ export default {
     postNewJob: 'ประกาศงานใหม่',
     viewResume: 'ดูเรซูเม่',
     linkedinProfile: 'โปรไฟล์ LinkedIn',
-    notes: 'บันทึก',
+    notes: 'บันทึก'
   },
-
   // Reports
   reports: {
     bonusHours: 'ชั่วโมงโบนัส',
+    to: 'ถึง',
+    leave: 'คำขอลา',
     daysWorked: 'วันทำงาน',
-    leaveDays: 'วันลา',
     title: 'รายงานและการวิเคราะห์',
     filenamePrefix: 'รายงาน_',
-    allEmployees: 'พนักงานทั้งหมด',
     excel: {
       charts: {
         hoursByType: 'ชั่วโมงตามประเภท',
@@ -712,18 +683,12 @@ export default {
     achievedGoals: 'เป้าหมายที่บรรลุ',
     goal: 'เป้าหมาย',
     timeTracking: 'การติดตามเวลา',
-    attendance: 'การเข้าร่วม',
-    recruitment: 'การรับสมัคร',
-    salary: 'เงินเดือน',
-    custom: 'กำหนดเอง',
     task: 'งาน',
-    status: 'สถานะ',
     priority: 'ความสำคัญ',
     dueDate: 'วันครบกำหนด',
     approved: 'อนุมัติ',
     completed: 'เสร็จสิ้น',
     inProgress: 'กำลังดำเนินการ',
-    completionRate: 'อัตราการเสร็จสิ้น',
     pending: 'รอดำเนินการ',
     statusPending: 'รอดำเนินการ',
     statusApproved: 'อนุมัติ',
@@ -732,43 +697,28 @@ export default {
     statusInProgress: 'กำลังดำเนินการ',
     statusNotStarted: 'ยังไม่เริ่ม',
     hours: 'ชั่วโมงทำงาน',
-    attendance: 'การเข้าร่วม',
-    performance: 'ประสิทธิภาพ',
-    recruitment: 'การรับสมัคร',
-    salary: 'เงินเดือน',
-    custom: 'กำหนดเอง',
-    dateRange: 'ช่วงวันที่',
-    generate: 'สร้างรายงาน',
+    custom: "กำหนดเอง",
     export: 'ส่งออกรายงาน',
     selectType: 'เลือกประเภทของรายงาน',
-    selectDateRange: 'เลือกช่วงวันที่',
     noReports: 'ยังไม่มีรายงานที่สร้างขึ้น',
     viewReport: 'ดูรายงาน',
-    deleteReport: 'ลบรายงาน', 
-    employees: 'พนักงาน',
-    department: 'แผนก',
+    deleteReport: 'ลบรายงาน',
     organization: 'องค์กร',
     details: 'รายละเอียด',
-    status: 'สถานะ',
+    status: "สถานะ",
     date: 'วันที่',
     showingFirst50: 'แสดงผล 50 รายการแรกจากทั้งหมด รายการ',
     dataPreview: 'ตัวอย่างข้อมูลรายงาน',
-    generateReport: 'สร้างรายงาน',
     exportReport: 'ส่งออกรายงาน',
-    reportType: 'ประเภทของรายงาน',
-    dateRange: 'ช่วงวันที่',
-    filters: 'ตัวกรอง',
-    department: 'แผนก',
     employeeStatus: 'สถานะพนักงาน',
     active: 'ใช้งาน',
     inactive: 'ไม่ใช้งาน',
     probation: 'ทดลองงาน',
     contract: 'สัญญาจ้าง',
     metrics: 'ตัวชี้วัดหลัก',
-    allEmployees: 'พนักงานทั้งหมด',
+    allEmployees: "พนักงานทั้งหมด",
     liveData: 'ข้อมูลสด',
     totalHours: 'ชั่วโมงรวม',
-    regularHours: 'ชั่วโมงปกติ',
     overtime: 'ชั่วโมงล่วงเวลา',
     totalRecords: 'บันทึกรวม',
     totalEntries: 'รายการรวม',
@@ -777,28 +727,19 @@ export default {
     rejectedEntries: 'รายการที่ถูกปฏิเสธ',
     averageHoursPerEmployee: 'ชั่วโมงเฉลี่ยต่อพนักงาน',
     averageOvertimePerEmployee: 'ชั่วโมงล่วงเวลาเฉลี่ยต่อพนักงาน',
-    attendanceRate: 'อัตราการเข้าร่วม',
     averagePerformanceScore: 'คะแนนประสิทธิภาพเฉลี่ย',
-    newHires: 'พนักงานใหม่',
-    turnoverRate: 'อัตราการลาออก',
-    recruitmentFunnel: 'ช่องทางการสรรหา',  
     completion: 'การเสร็จสิ้น',
     tasksDone: 'งานที่เสร็จสิ้น',
     goalProgress: 'ความคืบหน้าเป้าหมาย',
     performanceScore: 'คะแนนประสิทธิภาพ',
-    attendanceRate: 'อัตราการเข้าร่วม',
-    recruitmentFunnel: 'ช่องทางการสรรหา',
-    completionRate: 'อัตราการเสร็จสิ้น',
-    leaveDays: 'วันลา',
-    approvedLeaves: 'วันลาที่อนุมัติแล้ว', 
-    overtimeHours: 'ชั่วโมงล่วงเวลา',
-    totalEmployees: 'พนักงานทั้งหมด',
+    attendanceRate: "อัตราการเข้าร่วม",
+    completionRate: "อัตราการเสร็จสิ้น",
     avgPerformance: 'ประสิทธิภาพเฉลี่ย',
     pendingApprovals: 'การอนุมัติที่รอดำเนินการ',
-    regularHours: 'ชั่วโมงปกติ',
-    overtimeHours: 'ชั่วโมงทำงานล่วงเวลา',
-    leaveDays: 'วันหยุด',
-    approvedLeaves: 'วันหยุดที่ได้รับการอนุมัติ',
+    regularHours: "ชั่วโมงปกติ",
+    overtimeHours: "ชั่วโมงทำงานล่วงเวลา",
+    leaveDays: "วันหยุด",
+    approvedLeaves: "วันหยุดที่ได้รับการอนุมัติ",
     subtitle: 'สร้างและส่งออกรายงานรายละเอียด',
     performanceSummary: 'สรุปประสิทธิภาพ',
     timeTrackingReports: 'รายงานการติดตามเวลา',
@@ -806,47 +747,30 @@ export default {
     recruitmentReports: 'รายงานการรับสมัคร',
     salaryReports: 'รายงานเงินเดือน',
     customReports: 'รายงานแบบกำหนดเอง',
-    selectDateRange: 'เลือกช่วงวันที่',
+    selectDateRange: "เลือกช่วงวันที่",
     timeEntry: 'รายการเวลา',
     quickFilters: 'ตัวกรองด่วน',
     tasks: 'งาน',
-    dateRange: 'ช่วงวันที่',
     today: 'วันนี้',
     yesterday: 'เมื่อวานนี้',
     last7Days: '7 วันที่ผ่านมา',
     last30Days: '30 วันที่ผ่านมา',
     thisMonth: 'เดือนนี้',
     thisWeek: 'สัปดาห์นี้',
-    lastWeek: 'สัปดาห์ที่แล้ว',
-    lastMonth: 'เดือนที่แล้ว',
-    thisQuarter: 'ไตรมาสนี้',
-    lastQuarter: 'ไตรมาสที่แล้ว',
     thisYear: 'ปีนี้',
-    lastYear: 'ปีที่แล้ว',
-    customRange: 'ช่วงกำหนดเอง',  
     applyFilters: 'ใช้ตัวกรอง',
     resetFilters: 'รีเซ็ตตัวกรอง',
-    reportCategories: 'หมวดหมู่รายงาน',   
+    reportCategories: 'หมวดหมู่รายงาน',
     goals: 'เป้าหมาย',
-    attendance: 'การเข้าร่วม',
-    recruitment: 'การรับสมัคร',
-    salary: 'เงินเดือน',
-    performance: 'ประสิทธิภาพ',
     dataType: 'ประเภทข้อมูล',
     employee: 'พนักงาน',
     timeEntries: 'รายการเวลา',
-    attendance: 'การเข้าร่วม',
-    performance: 'ประสิทธิภาพ',
-    recruitment: 'การรับสมัคร',
-    salary: 'เงินเดือน',
     exportToCSV: 'ส่งออกเป็น CSV',
-    exportToPDF: 'ส่งออกเป็น PDF',  
     individualMetrics: 'ตัวชี้วัดบุคคล',
     individualReport: 'รายงานบุคคล',
     departmentMetrics: 'ตัวชี้วัดแผนก',
     organizationMetrics: 'ตัวชี้วัดองค์กร',
     generateCustom: 'สร้างรายงานแบบกำหนดเอง',
-    prebuiltReports: 'รายงานที่สร้างไว้แล้ว',  
     recordsFound: 'พบ {count} รายการ',
     exportingIncludes: '* การส่งออกรวมถึงข้อมูลที่กรองแล้วและการจัดเรียง',
     // Report Types
@@ -854,36 +778,33 @@ export default {
     employeeGrowth: 'การเติบโตของพนักงาน',
     departmentDistribution: 'การกระจายตามแผนก',
     performanceMetrics: 'ตัวชี้วัดประสิทธิภาพ',
-    recruitmentMetrics: 'ตัวชี้วัดการรับสมัคร',
-    attendanceReport: 'รายงานการเข้างาน',
     salaryReport: 'รายงานเงินเดือน',
-    generateReport: 'สร้างรายงาน',
+    generateReport: "สร้างรายงาน",
     exportPDF: 'ส่งออก PDF',
     exportExcel: 'ส่งออก Excel',
     filterBy: 'กรองตาม',
-    dateRange: 'ช่วงวันที่',
+    dateRange: "ช่วงวันที่",
     allDepartments: 'ทุกแผนก',
-    performance: 'ประสิทธิภาพ',
-    salary: 'เงินเดือน',
-    attendance: 'การเข้าร่วม',
-    recruitment: 'การรับสมัคร',
-    department: 'แผนก',
+    performance: "ประสิทธิภาพ",
+    salary: "เงินเดือน",
+    attendance: "การเข้าร่วม",
+    recruitment: "การรับสมัคร",
+    department: "แผนก",
     all: 'ทั้งหมด',
     // Navigation
     overview: 'ภาพรวม',
     detailedReports: 'รายงานรายละเอียด',
-    filters: 'ตัวกรอง',
+    filters: "ตัวกรอง",
     exportAll: 'ส่งออกทั้งหมด',
     // Charts
     departmentOverview: 'ภาพรวมแผนก',
     attendanceOverview: 'ภาพรวมการเข้างาน',
-    recruitmentFunnel: 'ช่องทางการรับสมัคร',
+    recruitmentFunnel: "ช่องทางการรับสมัคร",
     performanceTrend: 'แนวโน้มประสิทธิภาพ',
-    // Stats
-    totalEmployees: 'พนักงานทั้งหมด',
-    newHires: 'พนักงานใหม่',
-    thisQuarter: 'ไตรมาสนี้',
-    turnoverRate: 'อัตราการลาออก',
+    totalEmployees: "พนักงานทั้งหมด",
+    newHires: "พนักงานใหม่",
+    thisQuarter: "ไตรมาสนี้",
+    turnoverRate: "อัตราการลาออก",
     annualRate: 'อัตรารายปี',
     avgSalary: 'เงินเดือนเฉลี่ย',
     satisfaction: 'ความพึงพอใจ',
@@ -897,16 +818,16 @@ export default {
     interviewed: 'สัมภาษณ์แล้ว',
     hired: 'รับเข้าทำงาน',
     rejected: 'ปฏิเสธ',
-    employees: 'พนักงาน',
+    employees: "พนักงาน",
     // Report generation
     generateCustomReport: 'สร้างรายงานแบบกำหนดเอง',
-    reportType: 'ประเภทรายงาน',
+    reportType: "ประเภทรายงาน",
     employeePerformance: 'ประสิทธิภาพพนักงาน',
     salaryAnalysis: 'การวิเคราะห์เงินเดือน',
-    attendanceReport: 'รายงานการเข้างาน',
-    recruitmentMetrics: 'ตัวชี้วัดการรับสมัคร',
+    attendanceReport: "รายงานการเข้างาน",
+    recruitmentMetrics: "ตัวชี้วัดการรับสมัคร",
     departmentComparison: 'การเปรียบเทียบแผนก',
-    exportToPDF: 'ส่งออกเป็น PDF',
+    exportToPDF: "ส่งออกเป็น PDF",
     pdf: {
       visualAnalytics: 'การวิเคราะห์ด้วยภาพ',
       charts: {
@@ -944,7 +865,7 @@ export default {
       }
     },
     exportToExcel: 'ส่งออกเป็น Excel',
-    prebuiltReports: 'รายงานที่สร้างไว้แล้ว',
+    prebuiltReports: "รายงานที่สร้างไว้แล้ว",
     monthlyPerformanceReview: 'การทบทวนประสิทธิภาพรายเดือน',
     comprehensivePerformanceAnalysis: 'การวิเคราะห์ประสิทธิภาพอย่างครอบคลุม',
     salaryBenchmarking: 'การเปรียบเทียบเงินเดือน',
@@ -957,13 +878,13 @@ export default {
     analyzeRetentionRates: 'วิเคราะห์อัตราการคงอยู่และการลาออก',
     trainingEffectiveness: 'ประสิทธิภาพการฝึกอบรม',
     measureTrainingSuccess: 'วัดความสำเร็จของโปรแกรมการฝึกอบรม',
-    generate: 'สร้าง →',
+    generate: "สร้าง →",
     fromLastPeriod: 'จากงวดก่อน',
-    lastWeek:	'สัปดาห์ที่แล้ว (Sapdāh thī̂ læ̂w)',
-    lastMonth:	'เดือนที่แล้ว (Dư̄an thī̂ læ̂w)',
-    lastQuarter:	'ไตรมาสที่แล้ว (Traimāt thī̂ læ̂w)',
-    lastYear:	'ปีที่แล้ว (Pī thī̂ læ̂w)',
-    customRange:	'ช่วงเวลาที่กำหนดเอง (Chûang welā thī̂ kamnot ē ng)',
+    lastWeek: "สัปดาห์ที่แล้ว",
+    lastMonth: "เดือนที่แล้ว",
+    lastQuarter: "ไตรมาสที่แล้ว",
+    lastYear: "ปีที่แล้ว",
+    customRange: "ช่วงเวลาที่กำหนดเอง",
     for: 'สำหรับ',
     from: 'จาก',
     errorExporting: 'เกิดข้อผิดพลาดในการส่งออกข้อมูล',
@@ -971,9 +892,8 @@ export default {
     csvExportSuccess: 'ส่งออกรายงาน CSV สำเร็จพร้อมทุกประเภทข้อมูลในไฟล์เดียว!',
     excelExportHint: 'ส่งออกทุกประเภทข้อมูลพร้อมสรุป กราฟ และแผ่นงานรายละเอียด',
     pdfExportHint: 'ส่งออก PDF พร้อมกราฟภาพ สรุป และตารางรายละเอียดสำหรับทุกประเภทข้อมูล',
-    pdfExportSuccess: 'ส่งออกรายงาน PDF สำเร็จ!',
+    pdfExportSuccess: 'ส่งออกรายงาน PDF สำเร็จ!'
   },
-
   // Add Employee
   addEmployee: {
     title: 'เพิ่มพนักงานใหม่',
@@ -1020,21 +940,20 @@ export default {
     statusCompleted: 'เสร็จสมบูรณ์',
     statusInProgress: 'กำลังดำเนินการ',
     statusNotStarted: 'ยังไม่เริ่ม',
-    general: 'Général',
-    technical: '',
-    leadership: '',
-    project: '',
-    communication: '',
-    timeManagement: 'Gestion du Temps',
-    problemSolving: 'Résolution de Problèmes',
-    creativity: 'Créativité',
-    teamwork: 'Travail d\'Équipe',
-    adaptability: 'Adaptabilité',
-    emotionalIntelligence: 'Intelligence Émotionnelle',
-    criticalThinking: 'Pensée Critique',
-    professionalDevelopment: '',
+    general: 'ทั่วไป',
+    technical: 'เทคนิค',
+    leadership: 'ภาวะผู้นำ',
+    project: 'โปรเจกต์',
+    communication: 'การสื่อสาร',
+    timeManagement: 'การจัดการเวลา',
+    problemSolving: 'การแก้ปัญหา',
+    creativity: 'ความคิดสร้างสรรค์',
+    teamwork: 'การทำงานเป็นทีม',
+    adaptability: 'ความสามารถในการปรับตัว',
+    emotionalIntelligence: 'ความฉลาดทางอารมณ์',
+    criticalThinking: 'การคิดเชิงวิพากษ์',
+    professionalDevelopment: 'การพัฒนาวิชาชีพ'
   },
-
   // Employee Detail Modal
   employeeDetailModal: {
     download: 'ดาวน์โหลด',
@@ -1093,7 +1012,6 @@ export default {
     uploadInstructions: 'คลิกหรือลากไฟล์ PDF มาที่นี่เพื่ออัปโหลด',
     maxFileSize: 'ขนาดไฟล์สูงสุด: 10MB'
   },
-
   // Status translations
   status: {
     approved: 'อนุมัติแล้ว',
@@ -1105,17 +1023,31 @@ export default {
     'in-progress': 'กำลังดำเนินการ',
     'not-started': 'ยังไม่เริ่ม',
     achieved: 'ทำสำเร็จ',
-    'on-hold': 'พักไว้',
+    'on-hold': 'พักไว้'
   },
-
   // Data Type Labels
   dataType: {
     timeEntry: 'บันทึกเวลา',
     task: 'งาน',
-    goal: 'เป้าหมาย',
+    goal: 'เป้าหมาย'
   },
-
   // Common
+  datePicker: {
+    placeholder: 'เลือกวันที่',
+    calendar: 'ปฏิทิน',
+    prevMonth: 'เดือนก่อน',
+    nextMonth: 'เดือนถัดไป',
+    today: 'วันนี้',
+    clear: 'ล้าง'
+  },
+  timePicker: {
+    hours: 'ชม.',
+    minutes: 'นาที',
+    done: 'เสร็จ',
+    clear: 'ล้าง',
+    placeholder: '--:--',
+    picker: 'ตัวเลือกเวลา'
+  },
   common: {
     viewDetails: 'ดูรายละเอียด',
     email: 'อีเมล',
@@ -1180,22 +1112,19 @@ export default {
     optional: 'ไม่บังคับ',
     fetching: 'กำลังโหลด',
     ready: 'พร้อม',
-    ms: 'ms',
+    ms: 'ms'
   },
-
   // Theme
   theme: {
     light: 'โหมดสว่าง',
     dark: 'โหมดมืด',
     toggle: 'สลับธีม'
   },
-
   // Language
   language: {
     select: 'เลือกภาษา',
     current: 'ภาษาปัจจุบัน'
   },
-
   // Time Tracking Actions
   timeTrackingActions: {
     recordTime: 'บันทึกเวลา',
@@ -1219,7 +1148,6 @@ export default {
     daysWorked: 'วันทำงาน',
     totalHoursLabel: 'รวมชั่วโมง'
   },
-
   // Admin Time Entry
   adminTimeEntry: {
     title: 'บันทึกเวลาโดยผู้ดูแลระบบ',
@@ -1234,7 +1162,6 @@ export default {
     hourType: 'ประเภทชั่วโมง',
     regularHours: 'ชั่วโมงปกติ',
     weekendOvertime: 'สุดสัปดาห์/ล่วงเวลา',
-    error: 'เกิดข้อผิดพลาด',
     selected: 'ที่เลือก',
     selectedEmployees: 'พนักงานที่เลือก',
     selectAtLeastOne: 'โปรดเลือกอย่างน้อยหนึ่งคน',
@@ -1258,7 +1185,7 @@ export default {
     accessDenied: 'การเข้าถึงถูกปฏิเสธ: คุณไม่มีสิทธิ์จัดการการบันทึกเวลาของพนักงานคนอื่น',
     errorLoadEmployees: 'ไม่สามารถโหลดพนักงานได้',
     success: 'เพิ่มการบันทึกเวลาสำเร็จแล้ว',
-    error: 'ไม่สามารถสร้างการบันทึกเวลาได้',
+    error: "ไม่สามารถสร้างการบันทึกเวลาได้",
     skippedEmployees: 'ข้าม {count} พนักงานที่มีรายการอยู่แล้ว: {names}',
     hourTypes: {
       regular: 'เวลาปกติ',
@@ -1295,14 +1222,12 @@ export default {
       errorWithDetail: 'ไม่สามารถเติมชั่วโมงมาตรฐานได้: {message}'
     }
   },
-
   // Recruitment Actions
   recruitmentActions: {
     view: 'ดู',
     schedule: 'กำหนดตาราง',
     reject: 'ปฏิเสธ'
   },
-
   // Employee Status
   employeeStatus: {
     active: 'ใช้งานอยู่',
@@ -1311,7 +1236,6 @@ export default {
     pending: 'รอดำเนินการ',
     outSourceContractor: 'ผู้รับเหมาภายนอก'
   },
-
   // Recruitment Status
   recruitmentStatus: {
     active: 'ใช้งานอยู่',
@@ -1328,26 +1252,6 @@ export default {
     technical: 'เทคนิค',
     shortlisted: 'ผ่านเข้ารอบสุดท้าย'
   },
-
-  // Demo Notifications
-  demoNotifications: {
-    'notif-1': {
-      title: 'ยินดีต้อนรับสู่ระบบ HR',
-      message: 'ยินดีต้อนรับสู่โหมดสาธิตของระบบ HR สามารถสำรวจระบบได้ตามต้องการ!',
-      actionLabel: 'ไปยังแดชบอร์ด'
-    },
-    'notif-2': {
-      title: 'ใบสมัครใหม่',
-      message: 'มีใบสมัครใหม่สำหรับตำแหน่ง Senior Frontend Developer',
-      actionLabel: 'ดูใบสมัคร'
-    },
-    'notif-3': {
-      title: 'ถึงเวลาประเมินผลการทำงาน',
-      message: 'การประเมินผลการทำงานรายไตรมาสจะถึงกำหนดในสัปดาห์หน้า',
-      actionLabel: 'ดูการประเมิน'
-    }
-  },
-
   // Performance Goals
   goals: {
     completeReactProject: 'ทำโปรเจกต์ React ให้เสร็จ',
@@ -1358,14 +1262,12 @@ export default {
     backendDevelopment: 'การพัฒนาแบ็กเอนด์',
     teamCollaboration: 'การร่วมมือทีม'
   },
-
   // Review Types
   reviewTypes: {
     quarterlyReview: 'การประเมินรายไตรมาส',
     midYearReview: 'การประเมินกลางปี',
     annualReview: 'การประเมินประจำปี'
   },
-
   // Skill Categories
   skillCategories: {
     technical: 'ด้านเทคนิค',
@@ -1373,7 +1275,6 @@ export default {
     leadership: 'ภาวผู้นำ',
     communication: 'การสื่อสาร'
   },
-
   employeePosition: {
     general_manager: 'ผู้จัดการทั่วไป',
     senior_developer: 'นักพัฒนาระดับสูง',
@@ -1383,9 +1284,8 @@ export default {
     managing_director: 'ผู้อำนวยการ',
     support_staff: 'เจ้าหน้าที่สนับสนุน',
     expertGroup: 'กลุ่มผู้เชี่ยวชาญ',
-    employee: 'พนักงาน',
-  }, 
-
+    employee: 'พนักงาน'
+  },
   // Notifications
   notifications: {
     title: 'การแจ้งเตือน',
@@ -1440,9 +1340,8 @@ export default {
     // Notification messages
     timeEntriesAwaiting: 'คุณมี {0} รายการเวลารอการอนุมัติ',
     reviewNow: 'ตรวจสอบตอนนี้',
-    viewDetails: 'ดูรายละเอียด',
+    viewDetails: 'ดูรายละเอียด'
   },
-
   // Settings
   settings: {
     title: 'การตั้งค่า',
@@ -1455,13 +1354,11 @@ export default {
     confirmReset: 'คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตการตั้งค่าทั้งหมดเป็นค่าเริ่มต้น?',
     importSuccess: 'นำเข้าการตั้งค่าสำเร็จ!',
     importError: 'ไม่สามารถนำเข้าการตั้งค่าได้',
-    
     notifications: 'การแจ้งเตือน',
     appearance: 'รูปลักษณ์',
     language: 'ภาษา',
     privacy: 'ความเป็นส่วนตัว',
     work: 'การตั้งค่าการทำงาน',
-    
     notificationPreferences: 'การตั้งค่าการแจ้งเตือน',
     emailNotifications: 'การแจ้งเตือนทางอีเมล',
     emailNotificationsDesc: 'รับการแจ้งเตือนทางอีเมล',
@@ -1479,17 +1376,14 @@ export default {
     employeeNotifications: 'การอัปเดตพนักงาน',
     recruitmentNotifications: 'การสรรหา',
     systemNotifications: 'การอัปเดตระบบ',
-    
     appearanceSettings: 'การตั้งค่ารูปลักษณ์',
     theme: 'ธีม',
     dateFormat: 'รูปแบบวันที่',
     timeFormat: 'รูปแบบเวลา',
     itemsPerPage: 'รายการต่อหน้า',
-    
     languageRegion: 'ภาษาและภูมิภาค',
     timezone: 'เขตเวลา',
     timezoneNote: 'กำลังแสดง 50 เขตเวลาแรก',
-    
     privacySettings: 'การตั้งค่าความเป็นส่วนตัว',
     profileVisibility: 'การมองเห็นโปรไฟล์',
     visibilityAll: 'ทุกคน',
@@ -1499,7 +1393,6 @@ export default {
     contactVisibility: 'การมองเห็นข้อมูลติดต่อ',
     showEmail: 'แสดงที่อยู่อีเมล',
     showPhone: 'แสดงหมายเลขโทรศัพท์',
-    
     workPreferences: 'การตั้งค่าการทำงาน',
     defaultDashboard: 'มุมมองแดชบอร์ดเริ่มต้น',
     overviewView: 'ภาพรวม',
@@ -1511,7 +1404,6 @@ export default {
     weeklyReport: 'รายงานรายสัปดาห์',
     weeklyReportDesc: 'รับสรุปกิจกรรมการทำงานรายสัปดาห์'
   },
-
   // Task Listing
   taskListing: {
     title: 'การจัดการงาน',
@@ -1536,14 +1428,13 @@ export default {
     statusCompleted: 'เสร็จสิ้น',
     pending: 'รอดำเนินการ',
     'in-progress': 'กำลังดำเนินการ',
-    completed: 'เสร็จสิ้น',
     teamWorkload: 'ภาระงานของทีม',
     filterByEmployee: 'กรองตามพนักงาน',
     filterByStatus: 'กรองตามสถานะ',
     searchTasks: 'ค้นหางาน...',
     organization: 'องค์กร',
     totalTasks: 'งานทั้งหมด',
-    completed: 'เสร็จสมบูรณ์',
+    completed: "เสร็จสมบูรณ์",
     progress: 'ความคืบหน้า',
     avgQuality: 'คุณภาพเฉลี่ย',
     avgProgress: 'ความคืบหน้าเฉลี่ย',
@@ -1564,32 +1455,27 @@ export default {
     quality: 'คุณภาพ',
     completionDate: 'วันที่เสร็จสิ้น',
     createdAt: 'วันที่สร้าง',
-    updatedAt: 'วันที่อัปเดต',
+    updatedAt: 'วันที่อัปเดต'
   },
-
   // Task Review
   taskReview: {
-    title: 'ทบทวนงาน',
     notRated: 'ยังไม่ได้จัดอันดับ',
     rated: 'ได้รับการจัดอันดับ',
     submitSuccess: 'ส่งการทบทวนงานสำเร็จ!',
     submitError: 'ส่งการทบทวนงานล้มเหลว',
-    title: 'การทบทวนงานและการประเมินคุณภาพ',
+    title: "การทบทวนงานและการประเมินคุณภาพ",
     subtitle: 'ความคืบหน้าของงานและการประเมินคุณภาพรายเดือน',
     individual: 'รายบุคคล',
     team: 'ทีม',
     review: 'การตรวจสอบ',
     reviewTask: 'ทบทวนงาน',
-    task  : 'งาน',
     employee: 'พนักงาน',
     month: 'เดือน',
     year: 'ปี',
-    selectEmployee: 'เลือกพนักงาน',
     selectMonth: 'เลือกเดือน',
     selectYear: 'เลือกปี',
     searchTasks: 'ค้นหางาน...',
     taskTitle: 'ชื่องาน',
-    task: 'งาน',
     description: 'คำอธิบาย',
     qualityRatingStars: 'การประเมินคุณภาพ (1~5 ดาว)',
     managerEvaluationComments: 'ความคิดเห็นของผู้จัดการ',
@@ -1619,9 +1505,6 @@ export default {
     managerComments: 'ความคิดเห็นของผู้จัดการ',
     commentPlaceholder: 'ให้ข้อเสนอแนะเกี่ยวกับคุณภาพงานและเป้าหมายส่วนบุคคล...',
     taskDetails: 'รายละเอียดงาน',
-    status: 'สถานะ',
-    priority: 'ลำดับความสำคัญ',
-    dueDate: 'วันที่ครบกำหนด',
     currentRating: 'ระดับปัจจุบัน',
     submitEvaluation: 'ส่งการประเมิน',
     cancel: 'ยกเลิก',
@@ -1647,7 +1530,7 @@ export default {
     employees: 'พนักงาน',
     completion: 'ความสำเร็จ',
     quality: 'คุณภาพ',
-    task: 'งาน',
+    task: "งาน",
     progress: 'ความคืบหน้า',
     organization: 'องค์กร',
     chooseEmployee: 'เลือกพนักงาน',
@@ -1655,12 +1538,12 @@ export default {
     tasks: 'งาน',
     assignedBy: 'มอบหมายโดย',
     assignedTo: 'มอบหมายให้',
-    dueDate: 'วันที่ครบกำหนด',
-    status: 'สถานะ',
-    priority: 'ลำดับความสำคัญ',
+    dueDate: "วันที่ครบกำหนด",
+    status: "สถานะ",
+    priority: "ลำดับความสำคัญ",
     action: 'การดำเนินการ',
     noTasksFound: 'ไม่พบงานที่ตรงกับเกณฑ์ของคุณ',
-    selectEmployee: 'เลือกพนักงาน',
+    selectEmployee: "เลือกพนักงาน",
     taskList: 'รายการงาน',
     employeeSelfAssessment: 'การประเมินตนเองของพนักงาน',
     employeeBreakdown: 'การแจกแจงพนักงาน',
@@ -1675,7 +1558,6 @@ export default {
     createdAt: 'สร้างเมื่อ',
     updatedAt: 'อัปเดตเมื่อ'
   },
-
   // Performance Appraisal Translation
   performanceAppraisalPage: {
     title: 'การประเมินผลการปฏิบัติงาน',
@@ -1688,16 +1570,14 @@ export default {
     // Tabs
     overview: 'ภาพรวม',
     goals: 'เป้าหมาย',
-    reviews: 'การทบทวน',
+    reviews: 'การทบทวน'
   },
-
   // Employee Details Tabs
   employeeDetailTabs: {
     basicInformation: 'ข้อมูลพื้นฐาน',
     contact: 'ติดต่อ',
-    documents: 'เอกสาร',
+    documents: 'เอกสาร'
   },
-
   // Employee Edit Form
   employeeEditForm: {
     editEmployee: 'แก้ไขพนักงาน',
@@ -1717,9 +1597,8 @@ export default {
     cancel: 'ยกเลิก',
     abbrechen: 'ยกเลิก',
     save: 'บันทึก',
-    speichern: 'บันทึก',
+    speichern: 'บันทึก'
   },
-
   // Department Pie Chart Names
   departments: {
     all: 'ทั้งหมด',
@@ -1734,9 +1613,8 @@ export default {
     sales: 'การขาย',
     marketing: 'การตลาด',
     design: 'ดีไซน์',
-    part_time_employee: 'กลุ่มผู้เชี่ยวชาญ',
+    part_time_employee: 'กลุ่มผู้เชี่ยวชาญ'
   },
-
   // Control Panel
   controlPanel: {
     refresh: 'รีเฟรชข้อมูลระบบ',
@@ -1795,7 +1673,7 @@ export default {
       visitsByUser: 'การเข้าชมตามผู้ใช้',
       visitsByIp: 'การเข้าชมตามไอพี',
       visitsByBrowser: 'การเข้าชมตามเบราว์เซอร์',
-      visitsByOs: 'การเข้าชมตามระบบปฏิบัติการ',
+      visitsByOs: 'การเข้าชมตามระบบปฏิบัติการ'
     },
     roles: {
       admin: 'ผู้ดูแลระบบ',
@@ -1804,7 +1682,7 @@ export default {
       employee: 'พนักงาน',
       viewer: 'ผู้ดู',
       demoAdmin: 'ผู้ดูแลระบบเดโม',
-      hrAdmin: 'ผู้ดูแลระบบ HR',
+      hrAdmin: 'ผู้ดูแลระบบ HR'
     },
     roleDesc: {
       admin: 'การเข้าถึงระบบเต็มรูปแบบพร้อมสิทธิ์การดูแลระบบทั้งหมด รวมถึงการจัดการผู้ใช้ การตั้งค่าระบบ และการควบคุมข้อมูลอย่างสมบูรณ์',
@@ -1813,7 +1691,7 @@ export default {
       manager: 'ดูแลสมาชิกในทีม อนุมัติการติดตามเวลา และจัดการการประเมินผลการปฏิบัติงาน',
       employee: 'เข้าถึงข้อมูลส่วนบุคคล ส่งบันทึกเวลา และดูข้อมูลผลการปฏิบัติงานของตนเอง',
       viewer: 'การเข้าถึงแบบอ่านอย่างเดียวสำหรับรายงาน แดชบอร์ด และข้อมูลระบบที่จำกัด',
-      demoAdmin: 'โหมดสาธิตใช้ LocalStorage เพื่อจำลองการเข้าถึงของผู้ดูแลระบบ เวอร์ชันทางการใช้ฐานข้อมูลแบ็กเอนด์ในการซิงค์ข้อมูล',
+      demoAdmin: 'โหมดสาธิตใช้ LocalStorage เพื่อจำลองการเข้าถึงของผู้ดูแลระบบ เวอร์ชันทางการใช้ฐานข้อมูลแบ็กเอนด์ในการซิงค์ข้อมูล'
     },
     uploadAvatar: 'อัปโหลดรูปโปรไฟล์',
     avatarUpdated: 'อัปเดตรูปโปรไฟล์สำเร็จ!',
@@ -1854,9 +1732,8 @@ export default {
     restoreAllDemoData: "กู้คืนข้อมูลสาธิตทั้งหมด",
     switchToDemoEmployee: 'สลับไปยังพนักงานสาธิต',
     switchToDemoAdmin: 'สลับไปยังผู้ดูแลระบบสาธิต',
-    demoRoleOnly: 'ฟีเจอร์นี้สามารถใช้ได้เฉพาะในโหมดสาธิตเท่านั้น',
+    demoRoleOnly: 'ฟีเจอร์นี้สามารถใช้ได้เฉพาะในโหมดสาธิตเท่านั้น'
   },
-
   // Production Help Center (th)
   prodHelp: {
     title: 'ศูนย์ช่วยเหลือระบบโปรดักชัน',
@@ -1868,27 +1745,27 @@ export default {
     item: {
       observability: 'แดชบอร์ดและการแจ้งเตือนพร้อมใช้งาน',
       rollbacks: 'ทดสอบแผนการย้อนกลับแล้ว',
-      backups: 'ตรวจสอบข้อมูลสำรองแล้ว',
+      backups: 'ตรวจสอบข้อมูลสำรองแล้ว'
     },
     observability: {
       title: 'การสังเกตการณ์: ล็อก เมตริก และเทรซ',
-      description: 'ตรวจสอบงบประมาณข้อผิดพลาด ล็อกแบบมีโครงสร้าง แดชบอร์ดเวลาแฝง 95/99 และการสุ่มเทรซที่เหมาะสมกับโปรดักชัน',
+      description: 'ตรวจสอบงบประมาณข้อผิดพลาด ล็อกแบบมีโครงสร้าง แดชบอร์ดเวลาแฝง 95/99 และการสุ่มเทรซที่เหมาะสมกับโปรดักชัน'
     },
     rollouts: {
       title: 'การปล่อยระบบอย่างปลอดภัยและฟีเจอร์แฟลก',
-      description: 'ใช้การปล่อยแบบค่อยเป็นค่อยไปพร้อม health check เพลย์บุ๊กการย้อนกลับ และแฟลกเพื่อปิดเส้นทางโค้ดที่มีความเสี่ยงได้อย่างรวดเร็ว',
+      description: 'ใช้การปล่อยแบบค่อยเป็นค่อยไปพร้อม health check เพลย์บุ๊กการย้อนกลับ และแฟลกเพื่อปิดเส้นทางโค้ดที่มีความเสี่ยงได้อย่างรวดเร็ว'
     },
     security: {
       title: 'ความปลอดภัยและการจัดการซีเคร็ต',
-      description: 'หมุนเวียนคีย์ บังคับใช้สิทธิ์ขั้นต่ำ เปิดใช้งานบันทึกการตรวจสอบ และกำหนดให้ผู้ดูแลต้องใช้ MFA',
+      description: 'หมุนเวียนคีย์ บังคับใช้สิทธิ์ขั้นต่ำ เปิดใช้งานบันทึกการตรวจสอบ และกำหนดให้ผู้ดูแลต้องใช้ MFA'
     },
     performance: {
       title: 'งบประมาณประสิทธิภาพ',
-      description: 'ติดตามเวลา cold start และ hot path พร้อมกำหนดงบประมาณสำหรับความหน่วงของ API คำสั่ง SQL และ TTI ของฝั่งหน้าเว็บ',
+      description: 'ติดตามเวลา cold start และ hot path พร้อมกำหนดงบประมาณสำหรับความหน่วงของ API คำสั่ง SQL และ TTI ของฝั่งหน้าเว็บ'
     },
     resilience: {
       title: 'ข้อมูลสำรองและความทนทาน',
-      description: 'ตรวจสอบข้อมูลสำรองอัตโนมัติ กลยุทธ์ DR การจำกัดอัตรา และ circuit breaker สำหรับการพึ่งพาภายนอก',
+      description: 'ตรวจสอบข้อมูลสำรองอัตโนมัติ กลยุทธ์ DR การจำกัดอัตรา และ circuit breaker สำหรับการพึ่งพาภายนอก'
     },
     tags: {
       reliability: 'ความเชื่อถือได้',
@@ -1897,10 +1774,9 @@ export default {
       safety: 'ความปลอดภัย',
       security: 'ความปลอดภัย',
       performance: 'ประสิทธิภาพ',
-      resilience: 'ความทนทาน',
-    },
+      resilience: 'ความทนทาน'
+    }
   },
-
   // Demo Help Center 
   help: {
     containerLabel: 'ศูนย์ช่วยเหลือ',
@@ -1916,14 +1792,12 @@ export default {
       title: 'สำคัญ: ข้อจำกัดของเดโม!',
       body: 'ข้อมูลจะถูกเก็บไว้ในเครื่องเท่านั้น - จะไม่ซิงค์ระหว่างอุปกรณ์ ข้อมูลสามารถกู้คืนได้ในแผงควบคุม'
     },
-
     features: {
       section: 'ฟีเจอร์ขั้นสูง & ตามบริบท',
       defaultTitle: 'ฟีเจอร์ที่ซ่อนอยู่ & เคล็ดลับ',
       contextTitle: 'เคล็ดลับตามบริบทสำหรับ {context}',
       restricted: 'จำกัด',
       empty: 'ไม่พบเคล็ดลับขั้นสูงสำหรับบริบท: "{context}" กำลังแสดงฟีเจอร์ทั้งหมดด้านล่าง',
-
       feature_1: {
         title: 'ฟีเจอร์ที่ซ่อนอยู่: แก้ไขแบบชุด',
         description: 'คุณสามารถแก้ไขได้ถึง 50 ระเบียนพร้อมกัน เลือกช่องทำเครื่องหมายถัดจากรายการแล้วคลิกไอคอน ✏️ ที่ส่วนบนของตาราง ฟีเจอร์นี้ถูกปิดใช้งานในเดโมปัจจุบัน'
@@ -1941,7 +1815,6 @@ export default {
         description: 'เข้าถึงการตั้งค่าการจัดวางแดชบอร์ดโดยคลิกอวาตาร์โปรไฟล์ของคุณที่มุมขวาบน คุณสามารถสลับเป็นโหมดมืดและปรับความหนาแน่นของตารางได้'
       }
     },
-
     tags: {
       advanced: 'ขั้นสูง',
       hidden: 'ซ่อน',
@@ -1953,7 +1826,6 @@ export default {
       'hard-to-find': 'หายาก',
       personalization: 'การปรับแต่ง'
     },
-
     showcase: {
       section: 'การนำเสนอผลิตภัณฑ์แบบแอนิเมชัน',
       label: 'การนำเสนอผลิตภัณฑ์แบบแอนิเมชัน',
@@ -1964,34 +1836,28 @@ export default {
       sync: 'ทุกอย่างซิงค์อยู่เสมอ',
       syncDesc: 'รายการ ไฟล์ และเป้าหมายจะอัปเดตแดชบอร์ดและรายงานทันที',
       live: 'ถ่ายทอดสด',
-
       time: {
         title: 'การจัดการเวลา',
         desc: 'ติดตามการบันทึกเวลา การอนุมัติ ชั่วโมงล่วงเวลา และบันทึกการทำงานได้ในที่เดียว'
       },
-
       upload: {
         title: 'อัปโหลดไฟล์',
         desc: 'จัดเก็บสัญญา เอกสารยืนยันตัวตน และหลักฐานอย่างปลอดภัย พร้อมประวัติที่พร้อมตรวจสอบ'
       },
-
       dashboard: {
         title: 'แดชบอร์ดและกราฟ',
         desc: 'แสดงการใช้งาน การเข้างาน และตัวชี้วัดสุขภาพแบบเรียลไทม์'
       },
-
       tasks: {
         title: 'งานและเป้าหมาย',
         desc: 'กำหนดผู้รับผิดชอบ กำหนดส่ง และเช็กลิสต์ที่ซิงค์กับข้อมูลบุคลากร'
       },
-
       reporting: {
         title: 'รายงาน',
         desc: 'ส่งออกเป็น PDF/CSV และตั้งเวลารายงานสรุปประจำสำหรับผู้จัดการ'
       }
     }
   },
-
   // Video Player 
   videoPlayer: {
     container: 'ตัวเล่นวิดีโอ',
@@ -2009,7 +1875,6 @@ export default {
     },
     name: 'ชื่อวิดีโอ'
   },
-
   // Email Management
   emailManagement: {
     title: 'การจัดการอีเมลผู้ใช้',
@@ -2034,45 +1899,27 @@ export default {
     errorLoadingUsers: 'เกิดข้อผิดพลาดในการโหลดผู้ใช้',
     fillAllFields: 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
   },
-
   // Personal Goals
   personalGoals: {
-    goalTitle: 'ชื่อเป้าหมาย',
-    goalTitlePlaceholder: 'กรอกชื่อเป้าหมาย',
-    title: 'การตรวจสอบผลการปฏิบัติงาน',
     subtitle: 'ความคืบหน้างานรายเดือนและการประเมินคุณภาพ',
     individual: 'รายบุคคล',
     team: 'ทีม',
-    totalTasks: 'งานทั้งหมด',
-    completed: 'เสร็จสิ้น',
-    inProgress: 'กำลังดำเนินการ',
-    overdue: 'เกินกำหนด',
-    completionRate: 'อัตราการเสร็จสิ้น',
-    avgQuality: 'คุณภาพเฉลี่ย',
     midYear: 'กลางปี',
     endYear: 'สิ้นปี',
     monthly: 'รายเดือน',
     quarterly: 'รายไตรมาส',
     annual: 'ประจำปี',
-    beginner: 'ผู้เริ่มต้น', 
+    beginner: 'ผู้เริ่มต้น',
     intermediate: 'ระดับกลาง',
     advanced: 'ขั้นสูง',
-    reviewsThisPeriod: 'การทบทวนในช่วงนี้',
-    avgSkillRating: 'คะแนนทักษะเฉลี่ย',
     taskOverview: 'ภาพรวมงาน',
     totalGoals: 'เป้าหมายทั้งหมด',
-    goalsCompleted: 'เป้าหมายที่เสร็จสมบูรณ์',
-    goalsInProgress: 'เป้าหมายที่กำลังดำเนินการ',
     goalsOverdue: 'เป้าหมายที่เกินกำหนด',
-    completionRate: 'อัตราการเสร็จสิ้น',
-    avgQuality: 'คุณภาพเฉลี่ย',
     taskReview: 'การทบทวนงาน',
-    totalTasks: 'งานทั้งหมด',
-    completed: 'เสร็จสิ้น',
-    inProgress: 'กำลังดำเนินการ',
-    overdue: 'เกินกำหนด',
-    completionRate: 'อัตราการเสร็จสิ้น',
-    avgQuality: 'คุณภาพเฉลี่ย',
+    totalTasks: "งานทั้งหมด",
+    overdue: "เกินกำหนด",
+    completionRate: "อัตราการเสร็จสิ้น",
+    avgQuality: "คุณภาพเฉลี่ย",
     onTimePerformance: 'ผลการปฏิบัติงานตรงเวลา',
     onTimeCompletions: 'งานที่เสร็จตรงเวลา',
     onTimeRate: 'อัตราตรงเวลา',
@@ -2090,8 +1937,6 @@ export default {
     managerComments: 'ความคิดเห็นของผู้จัดการ',
     commentPlaceholder: 'ให้ความเห็นเกี่ยวกับคุณภาพและผลการปฏิบัติงาน...',
     taskDetails: 'รายละเอียดงาน',
-    status: 'สถานะ',
-    priority: 'ความสำคัญ',
     dueDate: 'วันครบกำหนด',
     currentRating: 'คะแนนปัจจุบัน',
     submitEvaluation: 'ส่งการประเมิน',
@@ -2099,21 +1944,15 @@ export default {
     evaluate: 'ประเมิน',
     managerEvaluation: 'การประเมินของผู้จัดการ',
     created: 'สร้าง',
-    due: 'ครบกำหนด',
     all: 'ทั้งหมด',
     pending: 'รอดำเนินการ',
-    title: 'การประเมินประสิทธิภาพ',
+    title: "การประเมินประสิทธิภาพ",
     overallRating: 'คะแนนรวม',
     reviewPeriod: 'ระยะเวลาทบทวน',
     goals: 'เป้าหมายและวัตถุประสงค์',
     achievements: 'ผลงานสำคัญ',
     areasForImprovement: 'พื้นที่ที่ต้องปรับปรุง',
     skillsAssessment: 'การประเมินทักษะ',
-    technical: 'ทักษะเทคนิค',
-    communication: 'การสื่อสาร',
-    leadership: 'ความเป็นผู้นำ',
-    teamwork: 'การทำงานเป็นทีม',
-    problemSolving: 'การแก้ปัญหา',
     rating: 'คะแนน',
     excellent: 'ยอดเยี่ยม',
     good: 'ดี',
@@ -2132,11 +1971,11 @@ export default {
     q3_2026: 'ไตรมาส 3 2026',
     q4_2026: 'ไตรมาส 4 2026',
     overallPerformance: 'ประสิทธิภาพโดยรวม',
-    goalsCompleted: 'เป้าหมายที่สำเร็จ',
-    reviewsThisPeriod: 'การทบทวนในช่วงนี้',
-    avgSkillRating: 'คะแนนทักษะเฉลี่ย',
-    completed: 'เสร็จสิ้น',
-    inProgress: 'กำลังดำเนินการ',
+    goalsCompleted: "เป้าหมายที่สำเร็จ",
+    reviewsThisPeriod: "การทบทวนในช่วงนี้",
+    avgSkillRating: "คะแนนทักษะเฉลี่ย",
+    completed: "เสร็จสิ้น",
+    inProgress: "กำลังดำเนินการ",
     continueWithGithub: 'ดำเนินการต่อด้วย GitHub',
     redirecting: 'กำลังเปลี่ยนเส้นทางไปยัง GitHub...',
     githubError: 'เข้าสู่ระบบด้วย GitHub ล้มเหลว',
@@ -2151,7 +1990,7 @@ export default {
     in_progress: 'กำลังดำเนินการ',
     clickToRate: 'คลิกที่ดาวเพื่ออัปเดตคะแนนพนักงาน',
     deadline: 'กำหนดเส้นตาย',
-    due: 'ครบกำหนด',
+    due: "ครบกำหนด",
     complete: 'สมบูรณ์',
     viewDetails: 'ดูรายละเอียด',
     // Reviews section
@@ -2159,24 +1998,18 @@ export default {
     newReview: 'การทบทวนใหม่',
     by: 'โดย',
     viewFullReview: 'ดูการทบทวนฉบับเต็ม',
-    // General
-    status: 'สถานะ',
+    status: "สถานะ",
     actions: 'การดำเนินการ',
     edit: 'แก้ไข',
     view: 'ดู',
     progressSaved: 'บันทึกความคืบหน้าสำเร็จ!',
     progressSaveError: 'ไม่สามารถบันทึกความคืบหน้าได้',
-    goalTitle: 'ชื่อเป้าหมาย',
-    goalTitlePlaceholder: 'ป้อนชื่อเป้าหมาย',
+    goalTitle: "ชื่อเป้าหมาย",
+    goalTitlePlaceholder: "ป้อนชื่อเป้าหมาย",
     goalDescription: 'คำอธิบาย',
     goalDescriptionPlaceholder: 'อธิบายวัตถุประสงค์ของเป้าหมาย',
     category: 'หมวดหมู่',
-    general: 'ทั่วไป',
-    technical: 'ทางเทคนิค',
-    leadership: 'ความเป็นผู้นำ',
-    project: 'โครงการ',
-    professionalDevelopment: 'การพัฒนาอาชีพ',
-    priority: 'ลำดับความสำคัญ',
+    priority: "ลำดับความสำคัญ",
     low: 'ต่ำ',
     medium: 'ปานกลาง',
     high: 'สูง',
@@ -2191,24 +2024,23 @@ export default {
     reviewComments: 'ความคิดเห็นการประเมิน',
     noComments: 'ยังไม่มีความคิดเห็น',
     errorFetchingComments: 'ข้อผิดพลาดในการโหลดความคิดเห็น',
-    general: 'ทั่วไป',
-    technical: 'เทคนิค',
-    leadership: 'ภาวะผู้นำ',
-    project: 'โครงการ',
-    communication: 'การสื่อสาร',
+    general: "ทั่วไป",
+    technical: "เทคนิค",
+    leadership: "ภาวะผู้นำ",
+    project: "โครงการ",
+    communication: "การสื่อสาร",
     timeManagement: 'การจัดการเวลา',
-    problemSolving: 'การแก้ปัญหา',
+    problemSolving: "การแก้ปัญหา",
     creativity: 'ความคิดสร้างสรรค์',
-    teamwork: 'การทำงานเป็นทีม',
+    teamwork: "การทำงานเป็นทีม",
     adaptability: 'ความสามารถในการปรับตัว',
     emotionalIntelligence: 'ความฉลาดทางอารมณ์',
     criticalThinking: 'การคิดเชิงวิพากษ์',
-    professionalDevelopment: 'การพัฒนาวิชาชีพ',
+    professionalDevelopment: "การพัฒนาวิชาชีพ",
     goalDeletedSuccess: 'ลบเป้าหมายเรียบร้อยแล้ว!',
     goalDeletedError: 'ไม่สามารถลบเป้าหมายได้',
-    goalsInProgress: 'เป้าหมายที่กำลังดำเนินการ',
+    goalsInProgress: "เป้าหมายที่กำลังดำเนินการ"
   },
-
   // Morphing Showcase
   morphingShowcase: {
     title: 'การรวม Flubber Morphing',
@@ -2236,9 +2068,8 @@ export default {
     manualControl: 'การควบคุมด้วยตนเอง',
     responsiveDesign: 'การออกแบบที่ตอบสนอง',
     customizableTiming: 'จังหวะเวลาที่ปรับแต่งได้',
-    multipleEasingFunctions: 'ฟังก์ชัน easing หลายตัว',
+    multipleEasingFunctions: 'ฟังก์ชัน easing หลายตัว'
   },
-
   // Flubber Demo
   flubberDemo: {
     title: 'เดโม Flubber SVG Morphing',
@@ -2263,36 +2094,86 @@ export default {
     manualShapeSelection: 'การเลือกรูปทรงด้วยตนเอง',
     responsiveAccessible: 'ตอบสนองและเข้าถึงได้',
     customizableDuration: 'ระยะเวลาแอนิเมชันที่ปรับแต่งได้',
-    easingFunctions: 'ฟังก์ชัน easing สำหรับการเคลื่อนไหวที่เป็นธรรมชาติ',
+    easingFunctions: 'ฟังก์ชัน easing สำหรับการเคลื่อนไหวที่เป็นธรรมชาติ'
   },
   demoEmployees: {
-  'demo-emp-1': { name: 'ผู้ดูแลระบบ', location: 'สำนักงานใหญ่' },
-  'demo-emp-2': { name: 'วิศวกรทรัพยากรบุคคล', location: 'สำนักงานใหญ่' },
-  'demo-emp-3': { name: 'นักออกแบบ UI/UX', location: 'รีโมท' },
-  'demo-emp-4': { name: 'ผู้เชี่ยวชาญการตลาด', location: 'สำนักงานใหญ่' },
-  'demo-emp-5': { name: 'ตัวแทนฝ่ายขาย', location: 'รีโมท' }
+    'demo-emp-1': {
+      name: 'ผู้ดูแลระบบ',
+      location: 'สำนักงานใหญ่'
+    },
+    'demo-emp-2': {
+      name: 'วิศวกรทรัพยากรบุคคล',
+      location: 'สำนักงานใหญ่'
+    },
+    'demo-emp-3': {
+      name: 'นักออกแบบ UI/UX',
+      location: 'รีโมท'
+    },
+    'demo-emp-4': {
+      name: 'ผู้เชี่ยวชาญการตลาด',
+      location: 'สำนักงานใหญ่'
+    },
+    'demo-emp-5': {
+      name: 'ตัวแทนฝ่ายขาย',
+      location: 'รีโมท'
+    }
   },
   locations: {
     headquarters: 'สำนักงานใหญ่',
     remote: 'รีโมท'
   },
   demoTasks: {
-    'task-1': { title: 'การวิเคราะห์รายงาน Q4', description: 'การวิเคราะห์ที่ครอบคลุมเกี่ยวกับตัวชี้วัดประสิทธิภาพรายไตรมาสและแนวโน้ม - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ' },
-    'task-2': { title: 'อัปเดตคู่มือพนักงาน', description: 'แก้ไขและอัปเดตคู่มือพนักงานด้วยนโยบายการทำงานทางไกล - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ' },
-    'task-3': { title: 'แก้ไขข้อผิดพลาดการเข้าสู่ระบบ', description: 'ดีบักและแก้ไขปัญหาการเข้าสู่ระบบของผู้ใช้บนอุปกรณ์มือถือ - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ' },
-    'task-4': { title: 'ออกแบบแดชบอร์ดใหม่', description: 'สร้าง wireframes และ mockups สำหรับแดชบอร์ดวิเคราะห์ - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ' },
-    'task-5': { title: 'ตรวจสอบประสิทธิภาพแคมเปญ', description: 'วิเคราะห์ผลลัพธ์และ ROI ของแคมเปญการตลาด Q3 - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ' },
-    'task-6': { title: 'การรับลูกค้าใหม่', description: 'ดำเนินการ onboarding สำหรับลูกค้าองค์กรรายใหม่ให้เสร็จสิ้น - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ' },
-    'task-7': { title: 'เอกสาร API', description: 'เขียนเอกสาร API ที่ครอบคลุมสำหรับเวอร์ชัน 2.0 - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ' }
+    'task-1': {
+      title: 'การวิเคราะห์รายงาน Q4',
+      description: 'การวิเคราะห์ที่ครอบคลุมเกี่ยวกับตัวชี้วัดประสิทธิภาพรายไตรมาสและแนวโน้ม - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ'
+    },
+    'task-2': {
+      title: 'อัปเดตคู่มือพนักงาน',
+      description: 'แก้ไขและอัปเดตคู่มือพนักงานด้วยนโยบายการทำงานทางไกล - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ'
+    },
+    'task-3': {
+      title: 'แก้ไขข้อผิดพลาดการเข้าสู่ระบบ',
+      description: 'ดีบักและแก้ไขปัญหาการเข้าสู่ระบบของผู้ใช้บนอุปกรณ์มือถือ - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ'
+    },
+    'task-4': {
+      title: 'ออกแบบแดชบอร์ดใหม่',
+      description: 'สร้าง wireframes และ mockups สำหรับแดชบอร์ดวิเคราะห์ - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ'
+    },
+    'task-5': {
+      title: 'ตรวจสอบประสิทธิภาพแคมเปญ',
+      description: 'วิเคราะห์ผลลัพธ์และ ROI ของแคมเปญการตลาด Q3 - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ'
+    },
+    'task-6': {
+      title: 'การรับลูกค้าใหม่',
+      description: 'ดำเนินการ onboarding สำหรับลูกค้าองค์กรรายใหม่ให้เสร็จสิ้น - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ'
+    },
+    'task-7': {
+      title: 'เอกสาร API',
+      description: 'เขียนเอกสาร API ที่ครอบคลุมสำหรับเวอร์ชัน 2.0 - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ'
+    }
   },
   demoGoals: {
-    'goal-1': { title: 'ปรับปรุงประสิทธิภาพของทีม', description: 'เพิ่มผลผลิตของทีม 20% ในไตรมาสหน้า - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ' },
-    'goal-2': { title: 'เรียนรู้ React Native', description: 'เชี่ยวชาญ React Native สำหรับการพัฒนาแอปมือถือ - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ' },
-    'goal-3': { title: 'ใบรับรอง UX', description: 'ได้รับใบรับรองวิชาชีพ Google UX Design - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ' },
-    'goal-4': { title: 'เพิ่มการสร้างลีด', description: 'บรรลุเป้าหมายเพิ่มลีดที่มีคุณสมบัติ 30% ผ่านแคมเปญการตลาด - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ' },
-    'goal-5': { title: 'ปิดดีลองค์กร', description: 'ปิดดีลองค์กร 5 รายการที่มีมูลค่ามากกว่า $500K ต่อราย - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ' }
+    'goal-1': {
+      title: 'ปรับปรุงประสิทธิภาพของทีม',
+      description: 'เพิ่มผลผลิตของทีม 20% ในไตรมาสหน้า - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ'
+    },
+    'goal-2': {
+      title: 'เรียนรู้ React Native',
+      description: 'เชี่ยวชาญ React Native สำหรับการพัฒนาแอปมือถือ - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ'
+    },
+    'goal-3': {
+      title: 'ใบรับรอง UX',
+      description: 'ได้รับใบรับรองวิชาชีพ Google UX Design - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ'
+    },
+    'goal-4': {
+      title: 'เพิ่มการสร้างลีด',
+      description: 'บรรลุเป้าหมายเพิ่มลีดที่มีคุณสมบัติ 30% ผ่านแคมเปญการตลาด - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ'
+    },
+    'goal-5': {
+      title: 'ปิดดีลองค์กร',
+      description: 'ปิดดีลองค์กร 5 รายการที่มีมูลค่ามากกว่า $500K ต่อราย - หมายเหตุ: ข้อมูลสาธิตนี้ไม่สามารถแก้ไขได้ กรุณาเพิ่มข้อมูลของคุณเองเพื่อทดสอบ'
+    }
   },
-   
   demoReviews: {
     'review-1': {
       reviewPeriod: 'ไตรมาส 4 ปี 2024',
@@ -2309,13 +2190,23 @@ export default {
       comments: 'มีส่วนร่วมที่ยอดเยี่ยมกับทีม'
     }
   },
-
   demoSkills: {
-    'skill-1': { name: 'React', category: 'เทคนิค', proficiencyLevel: 'ผู้เชี่ยวชาญ' },
-    'skill-2': { name: 'TypeScript', category: 'เทคนิค', proficiencyLevel: 'ขั้นสูง' },
-    'skill-3': { name: 'UI/UX Design', category: 'ออกแบบ', proficiencyLevel: 'ผู้เชี่ยวชาญ' }
+    'skill-1': {
+      name: 'React',
+      category: 'เทคนิค',
+      proficiencyLevel: 'ผู้เชี่ยวชาญ'
+    },
+    'skill-2': {
+      name: 'TypeScript',
+      category: 'เทคนิค',
+      proficiencyLevel: 'ขั้นสูง'
+    },
+    'skill-3': {
+      name: 'UI/UX Design',
+      category: 'ออกแบบ',
+      proficiencyLevel: 'ผู้เชี่ยวชาญ'
+    }
   },
-
   demoFeedback: {
     'feedback-1': {
       type: 'การประเมินจากเพื่อนร่วมงาน',
@@ -2326,29 +2217,44 @@ export default {
       text: 'ทำงานได้ยอดเยี่ยมกับระบบดีไซน์ใหม่ เก็บผลงานดีแบบนี้ต่อไป!'
     }
   },
-
   demoJobs: {
     'job-1': {
       title: 'นักพัฒนา Frontend อาวุโส',
       description: 'เรากำลังมองหานักพัฒนา Frontend ที่มีประสบการณ์เพื่อเข้าร่วมทีมและสร้างเว็บแอปที่ยอดเยี่ยม',
       location: 'รีโมท',
       salaryRange: '$90k - $120k',
-      requirements: { 0: 'React', 1: 'TypeScript', 2: 'Tailwind CSS' }
+      requirements: {
+        0: 'React',
+        1: 'TypeScript',
+        2: 'Tailwind CSS'
+      }
     },
     'job-2': {
       title: 'นักออกแบบผลิตภัณฑ์',
       description: 'เข้าร่วมทีมออกแบบของเราเพื่อสร้างประสบการณ์ผู้ใช้ที่ยอดเยี่ยมและร่วมกำหนดอนาคตของผลิตภัณฑ์เรา',
       location: 'นิวยอร์ก',
       salaryRange: '$80k - $100k',
-      requirements: { 0: 'Figma', 1: 'UI/UX', 2: 'การสร้างต้นแบบ' }
+      requirements: {
+        0: 'Figma',
+        1: 'UI/UX',
+        2: 'การสร้างต้นแบบ'
+      }
     }
   },
-
   demoApplicants: {
-    'app-1': { firstName: 'จอห์น', lastName: 'โด', education: 'ปริญญาตรี วิทยาการคอมพิวเตอร์', currentPosition: 'นักพัฒนาอาวุโส' },
-    'app-2': { firstName: 'เจน', lastName: 'สมิธ', education: 'ปริญญาโท การออกแบบ', currentPosition: 'หัวหน้า UX' }
+    'app-1': {
+      firstName: 'จอห์น',
+      lastName: 'โด',
+      education: 'ปริญญาตรี วิทยาการคอมพิวเตอร์',
+      currentPosition: 'นักพัฒนาอาวุโส'
+    },
+    'app-2': {
+      firstName: 'เจน',
+      lastName: 'สมิธ',
+      education: 'ปริญญาโท การออกแบบ',
+      currentPosition: 'หัวหน้า UX'
+    }
   },
-
   demoApplications: {
     'appl-1': {
       status: 'กำลังตรวจสอบ',
@@ -2359,7 +2265,6 @@ export default {
       notes: 'ผลงานดีมากและมีทักษะด้านดีไซน์'
     }
   },
-
   demoInterviews: {
     'int-1': {
       status: 'นัดหมายแล้ว',
@@ -2367,22 +2272,21 @@ export default {
       notes: 'ตรวจสอบผลงานและทดสอบทักษะด้านเทคนิค'
     }
   },
-
   demoNotifications: {
     'notif-1': {
-      title: 'ยินดีต้อนรับสู่ระบบ HR',
-      message: 'ยินดีต้อนรับสู่โหมดสาธิตของระบบ HR กรุณาสำรวจฟีเจอร์ต่างๆ ได้ตามสบาย!',
-      actionLabel: 'ไปที่แดชบอร์ด'
+      title: "ยินดีต้อนรับสู่ระบบ HR",
+      message: "ยินดีต้อนรับสู่โหมดสาธิตของระบบ HR กรุณาสำรวจฟีเจอร์ต่างๆ ได้ตามสบาย!",
+      actionLabel: "ไปที่แดชบอร์ด"
     },
     'notif-2': {
-      title: 'มีงานใหม่สำหรับคุณ',
-      message: 'คุณได้รับงานใหม่: ตรวจสอบผลการทำงานไตรมาส 3',
-      actionLabel: 'ดูงาน'
+      title: "มีงานใหม่สำหรับคุณ",
+      message: "มีใบสมัครใหม่สำหรับตำแหน่ง Senior Frontend Developer",
+      actionLabel: "ดูงาน"
     },
     'notif-3': {
-      title: 'เตือนความจำการประชุม',
-      message: 'มีประชุมทีมภายใน 30 นาที',
-      actionLabel: 'ดูปฏิทิน'
+      title: "เตือนความจำการประชุม",
+      message: "มีประชุมทีมภายใน 30 นาที",
+      actionLabel: "ดูปฏิทิน"
     }
   }
 };

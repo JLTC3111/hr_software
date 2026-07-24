@@ -19,9 +19,8 @@ export default {
     taskReview: 'Leistungsbeurteilung',
     svgMorphing: 'SVG Morphing',
     fullDemo: 'Volle Demo',
-    showcase: 'Kurz-Showcase',
+    showcase: 'Kurz-Showcase'
   },
-
   // Leave Management
   leave: {
     subtitle: 'Planen, beantragen und genehmigen Sie Abwesenheiten in einem gemeinsamen Kalender.',
@@ -86,9 +85,8 @@ export default {
     rejectConfirm: 'Urlaub für {{name}} ablehnen?',
     rejectReasonLabel: 'Grund (optional)',
     rejectReasonPlaceholder: 'Erklären Sie, warum dieser Antrag abgelehnt wird...',
-    confirmReject: 'Antrag ablehnen',
+    confirmReject: 'Antrag ablehnen'
   },
-
   // Header
   header: {
     title: 'HR-Manager',
@@ -102,7 +100,6 @@ export default {
     user: 'HR-Team',
     logout: 'Abmelden'
   },
-
   // Login
   login: {
     idleLogoutMessage: 'Sie wurden nach einem Zeitraum der Inaktivität abgemeldet. Bitte melden Sie sich erneut an.',
@@ -130,7 +127,6 @@ export default {
     tryDemoLoading: 'Lade Demo...',
     forgotPasswordModal: {
       title: 'Passwort Zurücksetzen',
-      success: 'E-Mail zum Zurücksetzen des Passworts gesendet. Bitte überprüfen Sie Ihren Posteingang.',
       description: 'Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen Link zum Zurücksetzen Ihres Passworts.',
       emailLabel: 'E-Mail-Adresse',
       emailPlaceholder: 'sie@beispiel.com',
@@ -138,14 +134,13 @@ export default {
       emailInvalid: 'Bitte geben Sie eine gültige E-Mail ein',
       sendReset: 'Zurücksetzungslink Senden',
       cancel: 'Abbrechen',
-      success: 'Passwort-Zurücksetzungs-E-Mail gesendet. Bitte überprüfen Sie Ihren Posteingang.',
+      success: "E-Mail zum Zurücksetzen des Passworts gesendet. Bitte überprüfen Sie Ihren Posteingang.",
       error: 'Fehler beim Senden der Zurücksetzungs-E-Mail. Bitte versuchen Sie es erneut.',
       noAccount: 'Kein Konto mit dieser E-Mail-Adresse gefunden',
       rateLimitError: 'Zu viele Anfragen. Bitte versuchen Sie es später erneut',
       networkError: 'Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung'
-    },
+    }
   },
-
   // Reset Password Page
   resetPassword: {
     title: 'Passwort Zurücksetzen',
@@ -159,7 +154,6 @@ export default {
     passwordsDontMatch: 'Passwörter stimmen nicht überein',
     error: 'Fehler beim Zurücksetzen des Passworts. Bitte versuchen Sie es erneut.',
     success: 'Passwort erfolgreich zurückgesetzt!',
-    redirecting: 'Weiterleitung zur Anmeldung...',
     resetting: 'Zurücksetzen...',
     verifying: 'Überprüfe Zurücksetzungslink...',
     resetButton: 'Passwort Zurücksetzen',
@@ -169,20 +163,18 @@ export default {
     signingIn: 'Anmeldung läuft...',
     orContinueWith: 'Oder fortfahren mit',
     continueWithGithub: 'Mit GitHub fortfahren',
-    redirecting: 'Weiterleitung ...',
+    redirecting: "Weiterleitung zur Anmeldung...",
     githubError: 'Anmeldung mit GitHub fehlgeschlagen',
     noAccount: 'Sie haben noch kein Konto?',
     signUp: 'Registrieren',
     footer: ' 2024 HR-Manager. Alle Rechte vorbehalten.',
-    tryDemoLoading: 'Lade Demo...',
+    tryDemoLoading: 'Lade Demo...'
   },
-
   sidebar: {
     main: 'HAUPT',
     analytics: 'ANALYSEN',
     settings: 'EINSTELLUNGEN'
   },
-
   // Dashboard
   dashboard: {
     regularAndOvertimeByEmployee: 'Reguläre & Überstunden nach Mitarbeiter',
@@ -230,12 +222,6 @@ export default {
       oneDay: "vor 1 Tag"
     }
   },
-
-  // Search
-  search: {
-    placeholder: 'Mitarbeiter suchen...'
-  },
-
   employeeDepartment: {
     all: 'Alle',
     legal_compliance: 'Rechtliche Einhaltung',
@@ -299,7 +285,6 @@ export default {
     linkedinProfile: "LinkedIn-Profil",
     notes: "Notizen"
   },
-
   stats: {
     total: 'Gesamt',
     underReview: 'In Prüfung',
@@ -307,14 +292,12 @@ export default {
     interviewScheduled: 'Interview geplant',
     offerExtended: 'Angebot gemacht',
     hired: 'Eingestellt',
-    rejected: 'Abgelehnt',
+    rejected: 'Abgelehnt'
   },
-
   // Recruitment
   recruitment: {
     rating: 'Bewertung',
     statusLabel: 'Status',
-    actions: 'Aktionen',
     total: 'Gesamt',
     shortListed: 'Vorgemerkt',
     interviews: 'Interviews',
@@ -326,11 +309,10 @@ export default {
     applications: 'Bewerbungen',
     candidate: 'Kandidat',
     position: 'Posten',
-    department: 'Abteilung',
     appliedDate: 'Bewerbungsdatum',
     experience: 'Erfahrung',
     status: 'Status',
-    actions: 'Aktionen',
+    actions: "Aktionen",
     stage: 'Phase',
     interviewScheduled: 'Vorstellungsgespräch geplant',
     underReview: 'In Prüfung',
@@ -342,7 +324,7 @@ export default {
     yearsExperience: 'Jahre Erfahrung',
     // Post Job Modal
     jobTitle: 'Stellentitel',
-    department: 'Abteilung',
+    department: "Abteilung",
     enterJobTitle: 'Stellentitel eingeben',
     location: 'Standort',
     enterLocation: 'Standort eingeben',
@@ -371,9 +353,8 @@ export default {
     links: 'Links',
     viewResume: 'Lebenslauf ansehen',
     linkedinProfile: 'LinkedIn-Profil',
-    notes: 'Notizen',
+    notes: 'Notizen'
   },
-  
   // Time Tracking
   timeTracking: {
     on_leave: 'Im Urlaub',
@@ -388,13 +369,11 @@ export default {
     hourType: 'Stundentyp',
     time: 'Zeit',
     hours: 'Stunden',
-    status: 'Status',
     notes: 'Notizen',
     createdAt: 'Erstellt am',
     summary: 'Zusammenfassung',
     quickActions: 'Schnellaktionen',
     workDays: 'Arbeitstage',
-    leaveDays: 'Urlaubstage',
     overtime: 'Überstunden',
     wfh: 'Arbeiten von zu Hause',
     holidayOvertime: 'Feiertagsüberstunden',
@@ -407,26 +386,24 @@ export default {
     attendanceRate: 'Anwesenheitsquote',
     requestLeave: 'Urlaub beantragen',
     logOvertime: 'Überstunden erfassen',
-    leaveType: 'Urlaubsart',
     vacation: 'Urlaub',
     sickLeave: 'Krankheit',
     personal: 'Persönlicher Urlaub',
     unpaid: 'Unbezahlter Urlaub',
-    leaveDays: 'Urlaubstage',
-    leaveType: 'Urlaubsart',
-    status: 'Status',
+    leaveDays: "Urlaubstage",
+    leaveType: "Urlaubsart",
     requestedBy: 'Angefragt von',
     approvedBy: 'Genehmigt von',
     leaveRequestManagement: 'Urlaubsantragsverwaltung',
     pending: 'Ausstehend',
-    approved: 'Genehmigt', 
+    approved: 'Genehmigt',
     rejected: 'Abgelehnt',
     cancelled: 'Abgebrochen',
     status: {
       pending: 'Ausstehend',
       approved: 'Genehmigt',
       rejected: 'Abgelehnt',
-      cancelled: 'Storniert',
+      cancelled: 'Storniert'
     },
     // Hour types for overtime
     weekend: 'Wochenendüberstunden',
@@ -455,7 +432,6 @@ export default {
     daysWorked: 'Gearbeitete Tage',
     totalHoursLabel: 'Gesamtstunden'
   },
-
   // Employees
   employees: {
     title: 'Mitarbeiterverwaltung',
@@ -495,14 +471,11 @@ export default {
     topPerformers: 'Top-Performer',
     avgRating: 'Ø Bewertung',
     departments: 'Abteilungen',
-    livePulse: 'Live-Puls',
+    livePulse: 'Live-Puls'
   },
-
-  // Search
   search: {
-    placeholder: 'Mitarbeiter suchen...'
+    placeholder: "Mitarbeiter suchen..."
   },
-
   // Months
   months: {
     january: 'Januar',
@@ -518,14 +491,8 @@ export default {
     november: 'November',
     december: 'Dezember'
   },
-
   // Personal Goals
   personalGoals: {
-    goalTitle: 'Zieltitel',
-    goalTitlePlaceholder: 'Zieltitel eingeben',
-    goalDescription: 'Beschreibung',
-    goalDescriptionPlaceholder: 'Beschreiben Sie die Ziele',
-    targetDate: 'Zieldatum',  
     setTargetDate: 'Zieldatum festlegen',
     title: 'Leistungsbeurteilung',
     overallRating: 'Gesamtbewertung',
@@ -534,11 +501,6 @@ export default {
     achievements: 'Wichtige Errungenschaften',
     areasForImprovement: 'Verbesserungsbereiche',
     skillsAssessment: 'Fähigkeitsbewertung',
-    technical: 'Technische Fähigkeiten',
-    communication: 'Kommunikation',
-    leadership: 'Führung',
-    teamwork: 'Teamarbeit',
-    problemSolving: 'Problemlösung',
     rating: 'Bewertung',
     excellent: 'Ausgezeichnet',
     midYear: 'Mitte des Jahres',
@@ -597,22 +559,17 @@ export default {
     view: 'Anzeigen',
     progressSaved: 'Fortschritt erfolgreich gespeichert!',
     progressSaveError: 'Fehler beim Speichern des Fortschritts',
-    goalTitle: 'Zieltitel',
-    goalTitlePlaceholder: 'Zieltitel eingeben',
-    goalDescription: 'Beschreibung',
-    goalDescriptionPlaceholder: 'Beschreiben Sie die Ziele',
+    goalTitle: "Zieltitel",
+    goalTitlePlaceholder: "Zieltitel eingeben",
+    goalDescription: "Beschreibung",
+    goalDescriptionPlaceholder: "Beschreiben Sie die Ziele",
     category: 'Kategorie',
-    general: 'Allgemein',
-    technical: 'Technisch',
-    leadership: 'Führung',
-    project: 'Projekt',
-    professionalDevelopment: 'Berufliche Entwicklung',
     priority: 'Priorität',
     low: 'Niedrig',
     medium: 'Mittel',
     high: 'Hoch',
     critical: 'Kritisch',
-    targetDate: 'Zieldatum',
+    targetDate: "Zieldatum",
     cancelled: 'Abgebrochen',
     onHold: 'Pausiert',
     reviewDetails: 'Details zur Leistungsbeurteilung',
@@ -622,31 +579,31 @@ export default {
     reviewComments: 'Bewertungskommentare',
     noComments: 'Noch keine Kommentare',
     errorFetchingComments: 'Fehler beim Laden der Kommentare',
-    general: 'Allgemein',
-    technical: 'Technisch',
-    leadership: 'Führung', 
-    project: 'Projekt',
-    communication: 'Kommunikation',
-    teamwork: 'Teamarbeit',
-    problemSolving: 'Problemlösung',
+    general: "Allgemein",
+    technical: "Technische Fähigkeiten",
+    leadership: "Führung",
+    project: "Projekt",
+    communication: "Kommunikation",
+    teamwork: "Teamarbeit",
+    problemSolving: "Problemlösung",
     timeManagement: 'Zeitmanagement',
     adaptability: 'Anpassungsfähigkeit',
     creativity: 'Kreativität',
     workEthic: 'Arbeitsmoral',
     attentionToDetail: 'Detailgenauigkeit',
-    professionalDevelopment: 'Berufliche Entwicklung',
+    professionalDevelopment: "Berufliche Entwicklung",
     goalDeletedSuccess: 'Ziel erfolgreich gelöscht!',
     goalDeletedError: 'Fehler beim Löschen des Ziels',
-    goalsInProgress: 'Ziele in Bearbeitung',
+    goalsInProgress: 'Ziele in Bearbeitung'
   },
-
   // Reports
   reports: {
     bonusHours: "Bonusstunden",
+    to: 'bis',
+    leave: 'Urlaubsanträge',
     daysWorked: "Gearbeitete Tage",
     leaveDays: "Urlaubstage",
     title: 'Berichte & Analysen',
-    allEmployees: 'Alle_Mitarbeiter',
     filenamePrefix: 'HR_Bericht',
     excel: {
       charts: {
@@ -768,7 +725,7 @@ export default {
         category: 'Kategorie',
         progress: 'Fortschritt (%)',
         targetDate: 'Zieldatum',
-        updatedAt: 'Aktualisiert am',
+        updatedAt: 'Aktualisiert am'
       }
     },
     achieved: 'Erreicht',
@@ -778,19 +735,15 @@ export default {
     generated: 'Erstellt',
     completedTasks: 'Abgeschlossene Aufgaben',
     achievedGoals: 'Erreichte Ziele',
-    personalGoals: 'Persönliche Ziele',
-    avgProgress: 'Durchschnittlicher Fortschritt',
     type: 'Typ',
     task: 'Aufgabe',
     priority: 'Priorität',
-    status: 'Status',
     goal: 'Ziel',
     category: 'Kategorie',
     progress: 'Fortschritt',
     dueDate: 'Fälligkeitsdatum',
-    employees: 'Mitarbeiter',
     details: 'Details',
-    status: 'Status',
+    status: "Status",
     date: 'Datum',
     hours: 'Stunden',
     approved: 'Genehmigt',
@@ -799,7 +752,6 @@ export default {
     completed: 'Abgeschlossen',
     inProgress: 'In Bearbeitung',
     completionRate: 'Abschlussquote',
-    quickFilters: 'Schnellfilter',
     performanceSummary: 'Leistungsübersicht',
     totalHours: 'Gesamtstunden',
     regularHours: 'Reguläre Stunden',
@@ -808,9 +760,7 @@ export default {
     tasksDone: 'Aufgaben erledigt',
     goalProgress: 'Ziel-Fortschritt',
     taskCompletionRate: 'Aufgabenabschlussrate',
-    avgProgress: 'Durchschn. Fortschritt',
-    employee: 'Mitarbeiter',
-    exportToCSV: 'Als CSV exportieren',
+    avgProgress: "Durchschn. Fortschritt",
     totalRecords: 'Gesamtanzahl der Datensätze:',
     totalEntries: 'Gesamteinträge',
     employeeGrowth: 'Mitarbeiterwachstum',
@@ -821,16 +771,13 @@ export default {
     individualReport: 'Individueller Bericht',
     exportingIncludes: '*Der Export umfasst alle Datensätze, nicht nur die angezeigten',
     performanceMetrics: 'Leistungsmetriken',
-    recruitmentMetrics: 'Rekrutierungsmetriken',
-    attendanceReport: 'Anwesenheitsbericht',
     salaryReport: 'Gehaltsbericht',
     generateReport: 'Bericht erstellen',
     exportPDF: 'PDF exportieren',
     exportExcel: 'Excel exportieren',
     filterBy: 'Filtern nach',
-    dateRange: 'Datumsbereich',
     allDepartments: 'Alle Abteilungen',
-    personalGoals: 'Leistung',
+    personalGoals: "Persönliche Ziele",
     salary: 'Gehalt',
     attendance: 'Anwesenheit',
     recruitment: 'Rekrutierung',
@@ -849,7 +796,6 @@ export default {
     // Stats
     totalEmployees: 'Gesamte Mitarbeiter',
     newHires: 'Neueinstellungen',
-    thisQuarter: 'Dieses Quartal',
     turnoverRate: 'Fluktuationsrate',
     annualRate: 'Jahresrate',
     avgSalary: 'Durchschnittsgehalt',
@@ -864,14 +810,14 @@ export default {
     interviewed: 'Interviewt',
     hired: 'Eingestellt',
     rejected: 'Abgelehnt',
-    employees: 'Mitarbeiter',
+    employees: "Mitarbeiter",
     // Report generation
     generateCustomReport: 'Benutzerdefinierten Bericht erstellen',
     reportType: 'Berichtstyp',
     employeePerformance: 'Mitarbeiterleistung',
     salaryAnalysis: 'Gehaltsanalyse',
-    attendanceReport: 'Anwesenheitsbericht',
-    recruitmentMetrics: 'Rekrutierungsmetriken',
+    attendanceReport: "Anwesenheitsbericht",
+    recruitmentMetrics: "Rekrutierungsmetriken",
     departmentComparison: 'Abteilungsvergleich',
     exportToPDF: 'Als PDF exportieren',
     exportToExcel: 'Als Excel exportieren',
@@ -927,25 +873,24 @@ export default {
     measureTrainingSuccess: 'Erfolg des Trainingsprogramms messen',
     generate: 'Erstellen →',
     fromLastPeriod: 'vom letzten Zeitraum',
-    lastWeek:	'Letzte Woche',
-    lastMonth:	'Letzten Monat',
-    lastQuarter:	'Letztes Quartal',
-    lastYear:	'Letztes Jahr',
-    customRange:	'Benutzerdefinierter Bereich',
+    lastWeek: 'Letzte Woche',
+    lastMonth: 'Letzten Monat',
+    lastQuarter: 'Letztes Quartal',
+    lastYear: 'Letztes Jahr',
+    customRange: 'Benutzerdefinierter Bereich',
     // Date Range Options
     today: 'Heute',
     thisWeek: 'Diese Woche',
     thisMonth: 'Dieser Monat',
-    thisQuarter: 'Dieses Quartal',
+    thisQuarter: "Dieses Quartal",
     thisYear: 'Dieses Jahr',
     tasks: 'Aufgaben',
     goals: 'Persönliche Ziele',
-    // Filter Labels
-    employee: 'Mitarbeiter',
-    dateRange: 'Zeitraum',
+    employee: "Mitarbeiter",
+    dateRange: "Zeitraum",
     dataType: 'Datentyp',
-    quickFilters: 'Schnellfilter',
-    allEmployees: 'Alle Mitarbeiter',
+    quickFilters: "Schnellfilter",
+    allEmployees: "Alle Mitarbeiter",
     startDate: 'Startdatum',
     endDate: 'Enddatum',
     // Status and Results
@@ -960,7 +905,7 @@ export default {
     liveData: 'Live-Daten von Supabase',
     subtitle: 'Umfassende Daten für Zeiterfassung, Aufgaben und persönliche Ziele exportieren',
     errorExporting: 'Fehler beim Exportieren der Daten',
-    exportToCSV: 'Als CSV exportieren',
+    exportToCSV: "Als CSV exportieren",
     exportSuccess: 'Daten erfolgreich exportiert',
     csvExportSuccess: 'CSV-Bericht mit allen Datentypen in einer Datei erfolgreich exportiert!',
     excelExportHint: 'Alle Datentypen mit Zusammenfassung, Diagrammen und Detailblättern exportieren',
@@ -976,9 +921,8 @@ export default {
     statusPending: 'Ausstehend',
     statusCompleted: 'Abgeschlossen',
     statusInProgress: 'In Bearbeitung',
-    statusNotStarted: 'Nicht begonnen',
+    statusNotStarted: 'Nicht begonnen'
   },
-
   // Add Employee
   addEmployee: {
     title: 'Neuen Mitarbeiter hinzufügen',
@@ -1017,7 +961,6 @@ export default {
     submitError: 'Mitarbeiter hinzufügen fehlgeschlagen',
     dobPlaceholder: 'Geburtsdatum auswählen'
   },
-
   // Employee Detail Modal
   employeeDetailModal: {
     download: 'Herunterladen',
@@ -1077,7 +1020,6 @@ export default {
     uploadInstructions: 'Klicken oder ziehen Sie eine PDF-Datei hierher zum Hochladen',
     maxFileSize: 'Maximale Dateigröße: 10MB'
   },
-
   // Status translations
   status: {
     approved: 'Genehmigt',
@@ -1089,17 +1031,31 @@ export default {
     'in-progress': 'In Bearbeitung',
     'not-started': 'Nicht begonnen',
     achieved: 'Erreicht',
-    'on-hold': 'Pausiert',
+    'on-hold': 'Pausiert'
   },
-
   // Data Type Labels
   dataType: {
     timeEntry: 'Zeiteintrag',
     task: 'Aufgabe',
-    goal: 'Ziel',
+    goal: 'Ziel'
   },
-
   // Common
+  datePicker: {
+    placeholder: 'Datum wählen',
+    calendar: 'Kalender',
+    prevMonth: 'Vorheriger Monat',
+    nextMonth: 'Nächster Monat',
+    today: 'Heute',
+    clear: 'Löschen'
+  },
+  timePicker: {
+    hours: 'Std.',
+    minutes: 'Min.',
+    done: 'Fertig',
+    clear: 'Löschen',
+    placeholder: '--:--',
+    picker: 'Zeitauswahl'
+  },
   common: {
     viewDetails: 'Details anzeigen',
     results: 'Ergebnisse',
@@ -1148,22 +1104,19 @@ export default {
     download: 'Herunterladen',
     fetching: 'Laden',
     ready: 'Fertig',
-    ms: 'ms',
+    ms: 'ms'
   },
-
   // Theme
   theme: {
     light: 'Heller Modus',
     dark: 'Dunkler Modus',
     toggle: 'Design wechseln'
   },
-
   // Language
   language: {
     select: 'Sprache wählen',
     current: 'Aktuelle Sprache'
   },
-
   // Time Clock Entry
   timeClock: {
     title: 'Stempeluhr',
@@ -1173,8 +1126,6 @@ export default {
     fileTypes: 'Unterstützt: Bilder, PDF, Dokumente (Max 50MB)',
     history: 'Zeiterfassungs-Verlauf',
     selectDate: 'Datum auswählen',
-    date: 'Datum',
-    employee: 'Mitarbeiter',
     clockIn: 'Einstempeln',
     clockOut: 'Ausstempeln',
     hourType: 'Stundentyp',
@@ -1186,12 +1137,6 @@ export default {
     success: 'Zeiteintrag erfolgreich gesendet!',
     confirmDelete: 'Möchten Sie diesen Eintrag wirklich löschen?',
     delete: 'Löschen',
-    noEntries: 'Noch keine Einträge. Senden Sie Ihren ersten Eintrag oben!',
-    time: 'Zeit',
-    hours: 'Stunden',
-    type: 'Typ',
-    status: 'Status',
-    actions: 'Aktionen',
     weeklySummary: 'Diese Woche',
     monthlySummary: 'Dieser Monat',
     leaveDays: 'Urlaubstage',
@@ -1245,16 +1190,15 @@ export default {
     myEntries: 'Meine Einträge',
     allEmployees: 'Alle Mitarbeiter',
     specificEmployee: 'Bestimmter Mitarbeiter',
-    employee: 'Mitarbeiter',
-    date: 'Datum',
-    time: 'Zeit',
-    hours: 'Stunden',
-    type: 'Typ',
-    status: 'Status',
-    actions: 'Aktionen',
-    noEntries: 'Keine Einträge gefunden'
+    employee: "Mitarbeiter",
+    date: "Datum",
+    time: "Zeit",
+    hours: "Stunden",
+    type: "Typ",
+    status: "Status",
+    actions: "Aktionen",
+    noEntries: "Noch keine Einträge. Senden Sie Ihren ersten Eintrag oben!"
   },
-
   // Time Tracking Actions
   timeTrackingActions: {
     recordTime: 'Zeit erfassen',
@@ -1267,7 +1211,6 @@ export default {
     logOvertime: 'Überstunden erfassen',
     exportReport: 'Bericht exportieren'
   },
-
   // Admin Time Entry
   adminTimeEntry: {
     title: 'Admin-Zeiteintrag',
@@ -1335,14 +1278,12 @@ export default {
       errorWithDetail: 'Standardstunden konnten nicht ausgefüllt werden: {message}'
     }
   },
-
   // Recruitment Actions
   recruitmentActions: {
     view: 'Anzeigen',
     schedule: 'Planen',
     reject: 'Ablehnen'
   },
-
   // Employee Status
   employeeStatus: {
     active: 'Aktiv',
@@ -1351,48 +1292,6 @@ export default {
     pending: 'Ausstehend',
     outSourceContractor: 'Externes Auftragnehmer'
   },
-
-  // Performance Appraisal Translation
-  performanceAppraisalPage: {
-    title: 'Leistungsbeurteilung',
-    overallPerformance: 'Gesamtleistung',
-    goalsAchieved: 'Ziele erreicht',
-    reviewsThisPeriod: 'Bewertungen in diesem Zeitraum',
-    avgSkillRating: 'Durchschn. Fähigkeitsbewertung',
-    currentGoals: 'Aktuelle Ziele',
-    addGoal: 'Ziel hinzufügen',
-    overview: 'Übersicht',
-    goals: 'Ziele',
-    reviews: 'Bewertungen',
-  },
-
-  employeeDetailTabs: {
-    basicInformation: 'Grundinformationen',
-    contact: 'Kontakt',
-    documents: 'Dokumente',
-  },
-
-  employeeEditForm: {
-    editEmployee: 'Mitarbeiter bearbeiten',
-    contactInformation: 'Kontaktinformationen',
-    employmentDetails: 'Beschäftigungsdetails',
-    email: 'E-Mail',
-    phone: 'Telefon',
-    telephone: 'Telefonnummer',
-    address: 'Adresse',
-    department: 'Abteilung',
-    abteilung: 'Abteilung',
-    startDate: 'Startdatum',
-    startdatum: 'Startdatum',
-    dateOfBirth: 'Geburtsdatum',
-    personalGoals: 'Leistung',
-    leistung: 'Leistung',
-    cancel: 'Abbrechen',
-    abbrechen: 'Abbrechen',
-    save: 'Speichern',
-    speichern: 'Speichern',
-  },
-
   // Recruitment Status
   recruitmentStatus: {
     active: 'Aktiv',
@@ -1409,26 +1308,6 @@ export default {
     technical: 'Technisch',
     shortlisted: 'Ausgewählt'
   },
-
-  // Demo Notifications
-  demoNotifications: {
-    'notif-1': {
-      title: 'Willkommen im HR-System',
-      message: 'Willkommen im Demo-Modus des HR-Systems. Viel Spaß beim Erkunden!',
-      actionLabel: 'Zum Dashboard'
-    },
-    'notif-2': {
-      title: 'Neue Bewerbung',
-      message: 'Neue Bewerbung für die Position Senior Frontend Developer eingegangen.',
-      actionLabel: 'Bewerbung ansehen'
-    },
-    'notif-3': {
-      title: 'Leistungsbewertung fällig',
-      message: 'Die vierteljährlichen Leistungsbewertungen stehen nächste Woche an.',
-      actionLabel: 'Bewertungen ansehen'
-    }
-  },
-
   // Performance Goals
   goals: {
     completeReactProject: 'React-Projekt abschließen',
@@ -1439,14 +1318,12 @@ export default {
     backendDevelopment: 'Backend-Entwicklung',
     teamCollaboration: 'Teamzusammenarbeit'
   },
-
   // Review Types
   reviewTypes: {
     quarterlyReview: 'Quartalsbewertung',
     midYearReview: 'Halbjahresbewertung',
     annualReview: 'Jahresbewertung'
   },
-
   // Skill Categories
   skillCategories: {
     technical: 'Technisch',
@@ -1454,7 +1331,6 @@ export default {
     leadership: 'Führung',
     communication: 'Kommunikation'
   },
-
   employeePosition: {
     general_manager: 'Geschäftsführer',
     senior_developer: 'Senior-Entwickler',
@@ -1464,9 +1340,8 @@ export default {
     managing_director: 'Geschäftsführender Direktor',
     support_staff: 'Unterstützung',
     expertGroup: 'Expertengruppe',
-    employee: 'Mitarbeiter',
-  }, 
-
+    employee: 'Mitarbeiter'
+  },
   // Notifications
   notifications: {
     title: 'Benachrichtigungen',
@@ -1520,9 +1395,8 @@ export default {
     // Notification messages
     timeEntriesAwaiting: 'Sie haben {0} Zeiteinträge, die auf Genehmigung warten',
     reviewNow: 'Jetzt Überprüfen',
-    viewDetails: 'Details Anzeigen',
+    viewDetails: 'Details Anzeigen'
   },
-
   // Settings
   settings: {
     title: 'Einstellungen',
@@ -1535,14 +1409,12 @@ export default {
     confirmReset: 'Möchten Sie wirklich alle Einstellungen auf die Standardwerte zurücksetzen?',
     importSuccess: 'Einstellungen erfolgreich importiert!',
     importError: 'Fehler beim Importieren der Einstellungen',
-    
     // Tabs
     notifications: 'Benachrichtigungen',
     appearance: 'Erscheinungsbild',
     language: 'Sprache',
     privacy: 'Datenschutz',
     work: 'Arbeitspräferenzen',
-    
     // Notification Settings
     notificationPreferences: 'Benachrichtigungseinstellungen',
     emailNotifications: 'E-Mail-Benachrichtigungen',
@@ -1561,19 +1433,16 @@ export default {
     employeeNotifications: 'Mitarbeiter-Updates',
     recruitmentNotifications: 'Personalbeschaffung',
     systemNotifications: 'System-Updates',
-    
     // Appearance Settings
     appearanceSettings: 'Erscheinungseinstellungen',
     theme: 'Design',
     dateFormat: 'Datumsformat',
     timeFormat: 'Zeitformat',
     itemsPerPage: 'Elemente pro Seite',
-    
     // Language & Region
     languageRegion: 'Sprache & Region',
     timezone: 'Zeitzone',
     timezoneNote: 'Zeigt derzeit die ersten 50 Zeitzonen an',
-    
     // Privacy Settings
     privacySettings: 'Datenschutzeinstellungen',
     profileVisibility: 'Profilsichtbarkeit',
@@ -1584,7 +1453,6 @@ export default {
     contactVisibility: 'Sichtbarkeit der Kontaktinformationen',
     showEmail: 'E-Mail-Adresse anzeigen',
     showPhone: 'Telefonnummer anzeigen',
-    
     // Work Preferences
     workPreferences: 'Arbeitspräferenzen',
     defaultDashboard: 'Standard-Dashboard-Ansicht',
@@ -1597,36 +1465,28 @@ export default {
     weeklyReport: 'Wochenbericht',
     weeklyReportDesc: 'Wöchentliche Zusammenfassung Ihrer Arbeitsaktivitäten erhalten'
   },
-
   // Task Listing
   taskListing: {
     title: 'Aufgabenverwaltung',
     assignTo: 'Zuweisen an',
-    team: 'Team',
     assignDate: 'Zuweisungsdatum',
     filterBy: 'Filtern nach',
     sortBy: 'Sortieren nach',
     searchPlaceholder: 'Aufgaben suchen...',
-    status: 'Status',
-    priority: 'Priorität',
     allStatuses: 'Alle Status',
     allPriorities: 'Alle Prioritäten',
     dueSoon: 'Bald fällig',
     overdue: 'Überfällig',
-    completed: 'Abgeschlossen',
     inProgress: 'In Bearbeitung',
-    pending: 'Ausstehend',
     lowPriority: 'Niedrige Priorität',
     mediumPriority: 'Mittlere Priorität',
     highPriority: 'Hohe Priorität',
     createTask: 'Aufgabe erstellen',
-    editTask: 'Aufgabe bearbeiten',
     deleteTask: 'Aufgabe löschen',
     viewTask: 'Aufgabe anzeigen',
     taskDetails: 'Aufgabendetails',
     assignedTo: 'Zugewiesen an',
     createdBy: 'Erstellt von',
-    createdAt: 'Erstellt am',
     manageTasks: 'Aufgaben verwalten',
     dueDate: 'Fälligkeitsdatum',
     selectEmployee: 'Mitarbeiter auswählen',
@@ -1640,10 +1500,9 @@ export default {
     statusPending: 'Ausstehend',
     statusInProgress: 'In Bearbeitung',
     statusCompleted: 'Abgeschlossen',
-    pending: 'Ausstehend',
+    pending: "Ausstehend",
     'in-progress': 'In Bearbeitung',
-    completed: 'Abgeschlossen',
-    team: 'Team',
+    team: "Team",
     individual: 'Individuell',
     assignTask: 'Aufgabe zuweisen',
     teamWorkload: 'Teamarbeitsbelastung',
@@ -1652,17 +1511,17 @@ export default {
     searchTasks: 'Aufgaben suchen...',
     organization: 'Organisation',
     totalTasks: 'Gesamtaufgaben',
-    completed: 'Abgeschlossen',
+    completed: "Abgeschlossen",
     progress: 'Fortschritt',
     avgQuality: 'Durchschn. Qualität',
     avgProgress: 'Durchschn. Fortschritt',
     myTasks: 'Meine Aufgaben',
     addTask: 'Aufgabe hinzufügen',
-    editTask: 'Aufgabe bearbeiten',
+    editTask: "Aufgabe bearbeiten",
     taskTitle: 'Aufgabentitel',
     description: 'Beschreibung',
-    priority: 'Priorität',
-    status: 'Status',
+    priority: "Priorität",
+    status: "Status",
     selfAssessment: 'Selbstbewertung',
     selfAssessmentPlaceholder: 'Wie haben Sie diese Aufgabe ausgeführt?',
     qualityRating: 'Qualitätsbewertung',
@@ -1672,54 +1531,47 @@ export default {
     tasks: 'Aufgaben',
     quality: 'Qualität',
     completionDate: 'Fälligkeitsdatum',
-    createdAt: 'Erstellt am',
-    updatedAt: 'Aktualisiert am',
+    createdAt: "Erstellt am",
+    updatedAt: 'Aktualisiert am'
   },
-
-  // Performance Appraisal Translation
   performanceAppraisalPage: {
-    title: 'Leistungsbeurteilung',
-    overallPerformance: 'Gesamtleistung',
-    goalsAchieved: 'Erreichte Ziele',
-    reviewsThisPeriod: 'Bewertungen in diesem Zeitraum',
-    avgSkillRating: 'Durchschn. Kompetenzbewertung',
-    currentGoals: 'Aktuelle Ziele',
-    addGoal: 'Ziel hinzufügen',
-    // Tabs
-    overview: 'Übersicht',
-    goals: 'Ziele',
-    reviews: 'Bewertungen',
+    title: "Leistungsbeurteilung",
+    overallPerformance: "Gesamtleistung",
+    goalsAchieved: "Erreichte Ziele",
+    reviewsThisPeriod: "Bewertungen in diesem Zeitraum",
+    avgSkillRating: "Durchschn. Kompetenzbewertung",
+    currentGoals: "Aktuelle Ziele",
+    addGoal: "Ziel hinzufügen",
+    overview: "Übersicht",
+    goals: "Ziele",
+    reviews: "Bewertungen"
   },
-
-  // Employee Details Tabs
   employeeDetailTabs: {
-    basicInformation: 'Grundinformationen',
-    contact: 'Kontakt',
-    documents: 'Dokumente',
+    basicInformation: "Grundinformationen",
+    contact: "Kontakt",
+    documents: "Dokumente"
   },
-
-  // Employee Edit Form
   employeeEditForm: {
-    editEmployee: 'Mitarbeiter bearbeiten',
-    contactInformation: 'Kontaktinformationen',
-    employmentDetails: 'Beschäftigungsdetails',
-    email: 'E-Mail',
-    phone: 'Telefon',
-    telephone: 'Telefonnummer',
-    address: 'Adresse',
-    department: 'Abteilung',
-    abteilung: 'Abteilung',
-    startDate: 'Startdatum',
-    startdatum: 'Startdatum',
-    dateOfBirth: 'Geburtsdatum',
+    editEmployee: "Mitarbeiter bearbeiten",
+    contactInformation: "Kontaktinformationen",
+    employmentDetails: "Beschäftigungsdetails",
+    email: "E-Mail",
+    phone: "Telefon",
+    telephone: "Telefonnummer",
+    address: "Adresse",
+    department: "Abteilung",
+    abteilung: "Abteilung",
+    startDate: "Startdatum",
+    startdatum: "Startdatum",
+    dateOfBirth: "Geburtsdatum",
     performance: 'Leistung',
-    leistung: 'Leistung',
-    cancel: 'Abbrechen',
-    abbrechen: 'Abbrechen',
-    save: 'Speichern',
-    speichern: 'Speichern',
+    leistung: "Leistung",
+    cancel: "Abbrechen",
+    abbrechen: "Abbrechen",
+    save: "Speichern",
+    speichern: "Speichern",
+    personalGoals: 'Leistung'
   },
-
   // Department Pie Chart Names
   departments: {
     all: 'Alle',
@@ -1734,9 +1586,8 @@ export default {
     sales: 'Vertrieb',
     marketing: 'Marketing',
     design: 'Design',
-    part_time_employee: 'Expertengruppe',
+    part_time_employee: 'Expertengruppe'
   },
-
   // Control Panel
   controlPanel: {
     refreshing: 'Aktualisieren...',
@@ -1791,7 +1642,7 @@ export default {
       visits: 'Besuche',
       visitDetails: 'Besuchsdetails',
       visitHistory: 'Besuchshistorie',
-      noVisitsFound: 'Keine Besuche gefunden für diesen Benutzer',
+      noVisitsFound: 'Keine Besuche gefunden für diesen Benutzer'
     },
     roles: {
       admin: 'Admin',
@@ -1800,7 +1651,7 @@ export default {
       employee: 'Mitarbeiter',
       viewer: 'Betrachter',
       demoAdmin: 'Demo-Administrator',
-      hrAdmin: 'HR-Administrator',
+      hrAdmin: 'HR-Administrator'
     },
     roleDesc: {
       admin: 'Vollständiger Systemzugriff mit allen administrativen Berechtigungen einschließlich Benutzerverwaltung, Systemeinstellungen und vollständiger Datenkontrolle',
@@ -1809,7 +1660,7 @@ export default {
       manager: 'Teammitglieder überwachen, Zeiterfassung genehmigen und Leistungsbeurteilungen verwalten',
       employee: 'Zugriff auf persönliche Informationen, Zeiteinträge einreichen und eigene Leistungsdaten anzeigen',
       viewer: 'Nur-Lesen-Zugriff auf Berichte, Dashboards und begrenzte Systeminformationen',
-      demoAdmin: 'Der Demomodus verwendet den LocalStorage, um Administratorzugriff zu simulieren; die offizielle Version verwendet eine Backend-Datenbank zur Datensynchronisierung',
+      demoAdmin: 'Der Demomodus verwendet den LocalStorage, um Administratorzugriff zu simulieren; die offizielle Version verwendet eine Backend-Datenbank zur Datensynchronisierung'
     },
     uploadAvatar: 'Avatar hochladen',
     avatarUpdated: 'Avatar erfolgreich aktualisiert!',
@@ -1850,9 +1701,8 @@ export default {
     restoreAllDemoData: 'Alle Demodaten wiederherstellen',
     switchToDemoEmployee: 'Zu Demo-Mitarbeiter wechseln',
     switchToDemoAdmin: 'Zu Demo-Administrator wechseln',
-    demoRoleOnly: 'Diese Funktion ist nur im Demo-Modus verfügbar',
+    demoRoleOnly: 'Diese Funktion ist nur im Demo-Modus verfügbar'
   },
-
   // Production Help Center (de)
   prodHelp: {
     title: 'Produktions Hilfezentrum',
@@ -1864,27 +1714,27 @@ export default {
     item: {
       observability: 'Dashboards & Warnmeldungen aktiv',
       rollbacks: 'Rollback-Plan getestet',
-      backups: 'Backups überprüft',
+      backups: 'Backups überprüft'
     },
     observability: {
       title: 'Observability: Logs, Metriken, Traces',
-      description: 'Stelle Fehlerbudgets, strukturierte Logs, 95./99.-Perzentil-Latenz-Dashboards und Trace-Sampling für die Produktion sicher.',
+      description: 'Stelle Fehlerbudgets, strukturierte Logs, 95./99.-Perzentil-Latenz-Dashboards und Trace-Sampling für die Produktion sicher.'
     },
     rollouts: {
       title: 'Sichere Rollouts & Feature-Flags',
-      description: 'Nutze schrittweise Rollouts mit Health-Checks, Rollback-Playbooks und Flags, um riskante Codepfade schnell zu deaktivieren.',
+      description: 'Nutze schrittweise Rollouts mit Health-Checks, Rollback-Playbooks und Flags, um riskante Codepfade schnell zu deaktivieren.'
     },
     security: {
       title: 'Sicherheit & Geheimnis-Hygiene',
-      description: 'Rotiere Schlüssel, setze Least Privilege durch, aktiviere Audit-Logs und verlange MFA für Admin-Rollen.',
+      description: 'Rotiere Schlüssel, setze Least Privilege durch, aktiviere Audit-Logs und verlange MFA für Admin-Rollen.'
     },
     performance: {
       title: 'Performance-Budgets',
-      description: 'Überwache Cold-Start- und Hot-Path-Zeiten. Setze Budgets für API-Latenz, SQL-Abfragen und Frontend-TTI.',
+      description: 'Überwache Cold-Start- und Hot-Path-Zeiten. Setze Budgets für API-Latenz, SQL-Abfragen und Frontend-TTI.'
     },
     resilience: {
       title: 'Backups & Resilienz',
-      description: 'Überprüfe automatische Backups, DR-Strategie, Rate-Limiting und Circuit Breaker für nachgelagerte Abhängigkeiten.',
+      description: 'Überprüfe automatische Backups, DR-Strategie, Rate-Limiting und Circuit Breaker für nachgelagerte Abhängigkeiten.'
     },
     tags: {
       reliability: 'Zuverlässigkeit',
@@ -1893,10 +1743,9 @@ export default {
       safety: 'Sicherheit',
       security: 'Security',
       performance: 'Performance',
-      resilience: 'Resilienz',
-    },
+      resilience: 'Resilienz'
+    }
   },
-
   // Demo Help Center
   help: {
     containerLabel: 'Hilfezentrum',
@@ -1912,14 +1761,12 @@ export default {
       title: 'WICHTIG: Demo-Einschränkungen!',
       body: 'DATEN WERDEN LOKAL GESPEICHERT - Synchronisieren nicht über Geräte hinweg. Daten können im Kontrollzentrum wiederhergestellt werden.'
     },
-
     features: {
       section: 'Erweiterte & Kontextabhängige Funktionen',
       defaultTitle: 'Versteckte Funktionen & Profi-Tipps',
       contextTitle: 'Kontextbezogene Tipps für {context}',
       restricted: 'EINGESCHRÄNKT',
       empty: 'Keine spezifischen Tipps für den Kontext: "{context}" gefunden. Es werden alle Funktionen unten angezeigt.',
-
       feature_1: {
         title: 'Versteckte Funktion: Massenbearbeitung',
         description: 'Wussten Sie, dass Sie bis zu 50 Datensätze gleichzeitig bearbeiten können? Wählen Sie die Kontrollkästchen neben den Einträgen und klicken Sie auf das ✏️-Symbol oben in der Tabelle. Dies ist in der aktuellen Demo deaktiviert.'
@@ -1937,68 +1784,66 @@ export default {
         description: 'Greifen Sie auf Ihre Dashboard-Layout-Einstellungen zu, indem Sie auf Ihr Profil-Avatar oben rechts klicken. Sie können den Dunkelmodus aktivieren und Tabellendichten anpassen.'
       }
     },
-      tags: {
-        advanced: 'Fortgeschritten',
-        hidden: 'Versteckt',
-        demorestricted: 'Demo Eingeschränkt',
-        contextual: 'Kontextabhängig',
-        quickaccess: 'Schnellzugriff',
-        restriction: 'Einschränkung',
-        demo: 'Demo',
-        'hard-to-find': 'Schwer zu finden',
-        personalization: 'Personalisierung'
+    tags: {
+      advanced: 'Fortgeschritten',
+      hidden: 'Versteckt',
+      demorestricted: 'Demo Eingeschränkt',
+      contextual: 'Kontextabhängig',
+      quickaccess: 'Schnellzugriff',
+      restriction: 'Einschränkung',
+      demo: 'Demo',
+      'hard-to-find': 'Schwer zu finden',
+      personalization: 'Personalisierung'
     },
-      showcase: {
-        section: 'Animierte Produktführung',
-        label: 'Animierte Produktführung',
-        badge: 'Live-App-Demo',
-        title: 'Erleben Sie die 4 Säulen in Bewegung',
-        subtitle: 'Verfolgen Sie den Ablauf von der Zeiterfassung bis zum Reporting – mit Daten, die sich in Echtzeit über Module hinweg bewegen.',
-        control: 'Bedienfeld',
-        sync: 'Alles bleibt synchron',
-        syncDesc: 'Einträge, Dateien und Ziele aktualisieren Dashboards und Berichte sofort.',
-        live: 'Live',
-        time: {
-          title: 'Zeitmanagement',
-          desc: 'Erfassen Sie Zeiteinträge, Genehmigungen, Überstunden und Arbeitsprotokolle an einem Ort.'
-        },
-        upload: {
-          title: 'Dateien hochladen',
-          desc: 'Verträge, Ausweise und Nachweise sicher speichern – mit revisionssicherer Historie.'
-        },
-        dashboard: {
-          title: 'Dashboard & Diagramme',
-          desc: 'Visualisieren Sie Auslastung, Anwesenheit und Gesundheitskennzahlen in Echtzeit.'
-        },
-        tasks: {
-          title: 'Aufgaben & Ziele',
-          desc: 'Weisen Sie Verantwortliche, Fälligkeiten und Checklisten zu, die mit Personaldaten synchronisiert sind.'
-        },
-        reporting: {
-          title: 'Berichte',
-          desc: 'Exportieren Sie PDFs/CSV und planen Sie wiederkehrende Übersichten für Manager.'
-        }
+    showcase: {
+      section: 'Animierte Produktführung',
+      label: 'Animierte Produktführung',
+      badge: 'Live-App-Demo',
+      title: 'Erleben Sie die 4 Säulen in Bewegung',
+      subtitle: 'Verfolgen Sie den Ablauf von der Zeiterfassung bis zum Reporting – mit Daten, die sich in Echtzeit über Module hinweg bewegen.',
+      control: 'Bedienfeld',
+      sync: 'Alles bleibt synchron',
+      syncDesc: 'Einträge, Dateien und Ziele aktualisieren Dashboards und Berichte sofort.',
+      live: 'Live',
+      time: {
+        title: 'Zeitmanagement',
+        desc: 'Erfassen Sie Zeiteinträge, Genehmigungen, Überstunden und Arbeitsprotokolle an einem Ort.'
       },
+      upload: {
+        title: 'Dateien hochladen',
+        desc: 'Verträge, Ausweise und Nachweise sicher speichern – mit revisionssicherer Historie.'
+      },
+      dashboard: {
+        title: 'Dashboard & Diagramme',
+        desc: 'Visualisieren Sie Auslastung, Anwesenheit und Gesundheitskennzahlen in Echtzeit.'
+      },
+      tasks: {
+        title: 'Aufgaben & Ziele',
+        desc: 'Weisen Sie Verantwortliche, Fälligkeiten und Checklisten zu, die mit Personaldaten synchronisiert sind.'
+      },
+      reporting: {
+        title: 'Berichte',
+        desc: 'Exportieren Sie PDFs/CSV und planen Sie wiederkehrende Übersichten für Manager.'
+      }
+    }
   },
-    
-    // Video Player  
-    videoPlayer: {
-      container: 'Videoplayer',
-      currentTitle: 'Aktueller Titel',
-      counter: '{current}/{total}',
-      unsupported: 'Ihr Browser unterstützt das Video-Tag nicht.',
-      prev: 'Vorheriges Video',
-      play: 'Wiedergabe',
-      pause: 'Pause',
-      playToggle: 'Wiedergabe / Pause',
-      next: 'Nächstes Video',
-      status: {
-        playing: 'Wird wiedergegeben',
-        paused: 'Pausiert'
-      },
-      name: 'Videoname'
+  // Video Player  
+  videoPlayer: {
+    container: 'Videoplayer',
+    currentTitle: 'Aktueller Titel',
+    counter: '{current}/{total}',
+    unsupported: 'Ihr Browser unterstützt das Video-Tag nicht.',
+    prev: 'Vorheriges Video',
+    play: 'Wiedergabe',
+    pause: 'Pause',
+    playToggle: 'Wiedergabe / Pause',
+    next: 'Nächstes Video',
+    status: {
+      playing: 'Wird wiedergegeben',
+      paused: 'Pausiert'
     },
-
+    name: 'Videoname'
+  },
   // Email Management
   emailManagement: {
     title: 'Benutzer-E-Mail-Verwaltung',
@@ -2023,7 +1868,6 @@ export default {
     errorLoadingUsers: 'Fehler beim Laden der Benutzer',
     fillAllFields: 'Bitte füllen Sie alle Felder aus'
   },
-
   // Task Review
   taskReview: {
     title: 'Aufgabenbewertung & Analyse',
@@ -2034,14 +1878,6 @@ export default {
     chooseEmployee: 'Wählen Sie einen Mitarbeiter...',
     status: 'Status',
     all: 'Alle',
-    review: 'Bewerten',
-    reviewTask: 'Aufgabe Bewerten',
-    description: 'Beschreibung',
-    qualityRatingStars: 'Qualitätsbewertung (1-5 Sterne)',
-    managerEvaluationComments: 'Manager-Bewertung & Kommentare',
-    submitReview: 'Bewertung Absenden',
-    updateStatus: 'Status Aktualisieren',
-    feedbackPlaceholder: 'Geben Sie Feedback zur Aufgabenleistung und -qualität ab...',
     completed: 'Abgeschlossen',
     inProgress: 'In Bearbeitung',
     pending: 'Ausstehend',
@@ -2063,32 +1899,31 @@ export default {
     qualityRating: 'Qualitätsbewertung',
     employeeSelfAssessment: 'Mitarbeiter-Selbsteinschätzung',
     managerEvaluation: 'Manager-Bewertung',
-    review: 'Bewerten',
+    review: "Bewerten",
     total: 'Gesamt',
     overdue: 'Überfällig',
     selectEmployeeToView: 'Bitte wählen Sie einen Mitarbeiter aus, um Aufgaben anzuzeigen',
     taskList: 'Aufgabenliste',
     noTasksForEmployee: 'Keine Aufgaben für diesen Mitarbeiter gefunden',
-    reviewTask: 'Aufgabe Bewerten',
+    reviewTask: "Aufgabe Bewerten",
     taskDetails: 'Aufgabendetails',
-    description: 'Beschreibung',
-    qualityRatingStars: 'Qualitätsbewertung (1-5 Sterne)',
+    description: "Beschreibung",
+    qualityRatingStars: "Qualitätsbewertung (1-5 Sterne)",
     notRated: 'Nicht bewertet',
-    updateStatus: 'Status Aktualisieren',
-    managerEvaluationComments: 'Manager-Bewertung & Kommentare',
-    feedbackPlaceholder: 'Geben Sie detailliertes Feedback zu Aufgabenleistung, Qualität und Verbesserungsbereichen...',
+    updateStatus: "Status Aktualisieren",
+    managerEvaluationComments: "Manager-Bewertung & Kommentare",
+    feedbackPlaceholder: "Geben Sie detailliertes Feedback zu Aufgabenleistung, Qualität und Verbesserungsbereichen...",
     cancel: 'Abbrechen',
-    submitReview: 'Bewertung Absenden',
+    submitReview: "Bewertung Absenden",
     reviewSubmitSuccess: 'Aufgabenbewertung erfolgreich eingereicht!',
     reviewSubmitFailed: 'Bewertung konnte nicht eingereicht werden',
     reviewSubmitError: 'Ein Fehler ist beim Einreichen der Bewertung aufgetreten',
     category: 'Kategorie',
     targetDate: 'Zieldatum',
-    notes: 'Notizen:', 
+    notes: 'Notizen:',
     createdAt: 'Erstellt am',
-    updatedAt: 'Aktualisiert am',
+    updatedAt: 'Aktualisiert am'
   },
-
   // Morphing Showcase
   morphingShowcase: {
     title: 'Flubber Morphing Integration',
@@ -2116,9 +1951,8 @@ export default {
     manualControl: 'Manuelle Steuerung',
     responsiveDesign: 'Responsives Design',
     customizableTiming: 'Anpassbare Zeitsteuerung',
-    multipleEasingFunctions: 'Mehrere Easing-Funktionen',
+    multipleEasingFunctions: 'Mehrere Easing-Funktionen'
   },
-
   // Flubber Demo
   flubberDemo: {
     title: 'Flubber SVG Morphing Demo',
@@ -2143,21 +1977,34 @@ export default {
     manualShapeSelection: 'Manuelle Formauswahl',
     responsiveAccessible: 'Responsiv und zugänglich',
     customizableDuration: 'Anpassbare Animationsdauer',
-    easingFunctions: 'Easing-Funktionen für natürliche Bewegung',
+    easingFunctions: 'Easing-Funktionen für natürliche Bewegung'
   },
-
   demoEmployees: {
-    'demo-emp-1': { name: 'Administrator', location: 'Hauptsitz' },
-    'demo-emp-2': { name: 'Personalingenieur', location: 'Hauptsitz' },
-    'demo-emp-3': { name: 'UI/UX Designer', location: 'Remote' },
-    'demo-emp-4': { name: 'Marketing Spezialist', location: 'Hauptsitz' },
-    'demo-emp-5': { name: 'Vertriebsmitarbeiter', location: 'Remote' }
+    'demo-emp-1': {
+      name: 'Administrator',
+      location: 'Hauptsitz'
+    },
+    'demo-emp-2': {
+      name: 'Personalingenieur',
+      location: 'Hauptsitz'
+    },
+    'demo-emp-3': {
+      name: 'UI/UX Designer',
+      location: 'Remote'
+    },
+    'demo-emp-4': {
+      name: 'Marketing Spezialist',
+      location: 'Hauptsitz'
+    },
+    'demo-emp-5': {
+      name: 'Vertriebsmitarbeiter',
+      location: 'Remote'
+    }
   },
   locations: {
     headquarters: 'Hauptsitz',
     remote: 'Remote'
   },
-
   demoTasks: {
     'task-1': {
       title: 'Q4 Berichtsanalyse',
@@ -2188,7 +2035,6 @@ export default {
       description: 'Umfassende API-Dokumentation für Version 2.0 schreiben - Hinweis: Diese Demo-Daten können nicht bearbeitet werden. Bitte fügen Sie eigene Daten zum Testen hinzu.'
     }
   },
-
   demoGoals: {
     'goal-1': {
       title: 'Teameffizienz verbessern',
@@ -2211,7 +2057,6 @@ export default {
       description: '5 Unternehmensverträge im Wert von je über $500K abschließen - Hinweis: Diese Demo-Daten können nicht bearbeitet werden. Bitte fügen Sie eigene Daten zum Testen hinzu.'
     }
   },
-  
   demoReviews: {
     'review-1': {
       reviewPeriod: 'Q4 2024',
@@ -2228,13 +2073,23 @@ export default {
       comments: 'Großer Beitrag für das Team'
     }
   },
-
   demoSkills: {
-    'skill-1': { name: 'React', category: 'Technisch', proficiencyLevel: 'Experte' },
-    'skill-2': { name: 'TypeScript', category: 'Technisch', proficiencyLevel: 'Fortgeschritten' },
-    'skill-3': { name: 'UI/UX Design', category: 'Design', proficiencyLevel: 'Experte' }
+    'skill-1': {
+      name: 'React',
+      category: 'Technisch',
+      proficiencyLevel: 'Experte'
+    },
+    'skill-2': {
+      name: 'TypeScript',
+      category: 'Technisch',
+      proficiencyLevel: 'Fortgeschritten'
+    },
+    'skill-3': {
+      name: 'UI/UX Design',
+      category: 'Design',
+      proficiencyLevel: 'Experte'
+    }
   },
-
   demoFeedback: {
     'feedback-1': {
       type: 'Peer Review',
@@ -2245,29 +2100,44 @@ export default {
       text: 'Ausgezeichnete Arbeit am neuen Designsystem. Weiter so!'
     }
   },
-
   demoJobs: {
     'job-1': {
       title: 'Senior Frontend Entwickler',
       description: 'Wir suchen einen erfahrenen Frontend-Entwickler, der unser Team unterstützt und großartige Webanwendungen baut.',
       location: 'Remote',
       salaryRange: '$90k - $120k',
-      requirements: { 0: 'React', 1: 'TypeScript', 2: 'Tailwind CSS' }
+      requirements: {
+        0: 'React',
+        1: 'TypeScript',
+        2: 'Tailwind CSS'
+      }
     },
     'job-2': {
       title: 'Produktdesigner',
       description: 'Treten Sie unserem Designteam bei, um großartige Benutzererlebnisse zu schaffen und die Zukunft unserer Produkte zu gestalten.',
       location: 'New York',
       salaryRange: '$80k - $100k',
-      requirements: { 0: 'Figma', 1: 'UI/UX', 2: 'Prototyping' }
+      requirements: {
+        0: 'Figma',
+        1: 'UI/UX',
+        2: 'Prototyping'
+      }
     }
   },
-
   demoApplicants: {
-    'app-1': { firstName: 'John', lastName: 'Doe', education: 'Bachelor in Informatik', currentPosition: 'Senior Entwickler' },
-    'app-2': { firstName: 'Jane', lastName: 'Smith', education: 'Master in Design', currentPosition: 'UX-Leiter' }
+    'app-1': {
+      firstName: 'John',
+      lastName: 'Doe',
+      education: 'Bachelor in Informatik',
+      currentPosition: 'Senior Entwickler'
+    },
+    'app-2': {
+      firstName: 'Jane',
+      lastName: 'Smith',
+      education: 'Master in Design',
+      currentPosition: 'UX-Leiter'
+    }
   },
-
   demoApplications: {
     'appl-1': {
       status: 'In Überprüfung',
@@ -2278,7 +2148,6 @@ export default {
       notes: 'Ausgezeichnetes Portfolio und Designfähigkeiten'
     }
   },
-
   demoInterviews: {
     'int-1': {
       status: 'Geplant',
@@ -2286,22 +2155,21 @@ export default {
       notes: 'Portfolio-Review und technische Bewertung'
     }
   },
-
   demoNotifications: {
     'notif-1': {
-      title: 'Willkommen im HR-System',
-      message: 'Willkommen im Demo-Modus des HR-Systems. Erkunden Sie gerne alle Funktionen!',
-      actionLabel: 'Zum Dashboard'
+      title: "Willkommen im HR-System",
+      message: "Willkommen im Demo-Modus des HR-Systems. Erkunden Sie gerne alle Funktionen!",
+      actionLabel: "Zum Dashboard"
     },
     'notif-2': {
-      title: 'Neue Aufgabe zugewiesen',
-      message: 'Ihnen wurde eine neue Aufgabe zugewiesen: Überprüfung der Q3-Leistung',
-      actionLabel: 'Aufgabe ansehen'
+      title: "Neue Aufgabe zugewiesen",
+      message: "Ihnen wurde eine neue Aufgabe zugewiesen: Überprüfung der Q3-Leistung",
+      actionLabel: "Aufgabe ansehen"
     },
     'notif-3': {
-      title: 'Besprechungserinnerung',
-      message: 'Teammeeting in 30 Minuten',
-      actionLabel: 'Kalender ansehen'
+      title: "Leistungsbewertung fällig",
+      message: "Die vierteljährlichen Leistungsbewertungen stehen nächste Woche an.",
+      actionLabel: "Kalender ansehen"
     }
   }
 };

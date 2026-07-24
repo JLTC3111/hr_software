@@ -14,6 +14,7 @@ import { getDemoEmployeeName, isDemoMode, addDemoLeaveRequest, updateDemoLeaveRe
 import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts'
 import { SlidingNumber, useNumberReplay } from './motion-primitives';
 import { PageLiveClock } from './ui/page-live-clock';
+import { DatePicker } from './ui/date-picker.jsx';
 import { filterActiveEmployees } from '../utils/employeeStatus.js';
 
 function TimeCard({ title, value, unit, icon: Icon, color, onClick, useDarkIcon = false, iconProps = {}, text, border, isDarkMode, customIcons }) {
@@ -958,7 +959,6 @@ const handleRejectRequest = async (requestId) => {
 
   const currentData = {
     days_worked: 0,
-    leave_days: 0,
     overtime_hours: 0,
     holiday_overtime_hours: 0,
     regular_hours: 0,
@@ -975,6 +975,7 @@ const handleRejectRequest = async (requestId) => {
           days_worked: entryDerivedHours.days_worked || summaryData?.days_worked || 0,
         }
       : {}),
+    // Always use calculated leave (overrides summaryData defaults)
     leave_days: calculatedLeaveDays,
   };
 
@@ -1978,24 +1979,22 @@ const handleRejectRequest = async (requestId) => {
                   <label className={`block text-sm font-medium ${text.primary} mb-2`}>
                     {t('timeTracking.startDate', 'Start Date')}
                   </label>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={leaveForm.startDate}
                     onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
                     required
-                    className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                    inputClassName={`w-full px-4 py-2 rounded-lg border ${input.className}`}
                   />
                 </div>
                 <div>
                   <label className={`block text-sm font-medium ${text.primary} mb-2`}>
                     {t('timeTracking.endDate', 'End Date')}
                   </label>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={leaveForm.endDate}
                     onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
                     required
-                    className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                    inputClassName={`w-full px-4 py-2 rounded-lg border ${input.className}`}
                   />
                 </div>
               </div>

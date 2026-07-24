@@ -19,9 +19,8 @@ export default {
     taskReview: 'Performance Review',
     svgMorphing: 'SVG Morphing',
     fullDemo: 'Full Demo',
-    showcase: 'Quick Showcase',
+    showcase: 'Quick Showcase'
   },
-
   // Leave Management
   leave: {
     subtitle: 'Plan, request and approve time off on a shared calendar.',
@@ -86,7 +85,7 @@ export default {
     rejectConfirm: 'Reject leave for {{name}}?',
     rejectReasonLabel: 'Reason (optional)',
     rejectReasonPlaceholder: 'Explain why this request is being rejected...',
-    confirmReject: 'Reject Request',
+    confirmReject: 'Reject Request'
   },
   // Header
   header: {
@@ -100,13 +99,11 @@ export default {
     welcomePhrase6: 'Good to have you here, {name}',
     user: 'HR Team',
     logout: 'Logout',
-    notifications: 'Notifications',
+    notifications: 'Notifications'
   },
-
   // Login
   login: {
     idleLogoutMessage: 'You were signed out after a period of inactivity. Please sign in again.',
-    tryDemo: 'Try Demo Mode',
     title: 'HR Manager',
     subtitle: 'Sign in to access your dashboard',
     email: 'Email Address',
@@ -127,7 +124,7 @@ export default {
     redirecting: 'Redirecting to GitHub...',
     githubError: 'Failed to login with GitHub',
     tryDemoLoading: 'Loading demo...',
-    tryDemo: 'Try Demo Mode',
+    tryDemo: "Try Demo Mode",
     forgotPasswordModal: {
       title: 'Reset Password',
       description: 'Enter your email address and we\'ll send you a link to reset your password.',
@@ -142,9 +139,8 @@ export default {
       noAccount: 'No account found with this email address',
       rateLimitError: 'Too many requests. Please try again later',
       networkError: 'Network error. Please check your connection'
-    },
+    }
   },
-
   // Reset Password Page
   resetPassword: {
     title: 'Reset Password',
@@ -158,7 +154,6 @@ export default {
     passwordsDontMatch: 'Passwords do not match',
     error: 'Failed to reset password. Please try again.',
     success: 'Password reset successfully!',
-    redirecting: 'Redirecting to login...',
     resetting: 'Resetting...',
     verifying: 'Verifying reset link...',
     resetButton: 'Reset Password',
@@ -168,72 +163,25 @@ export default {
     signingIn: 'Signing in...',
     orContinueWith: 'Or continue with',
     continueWithGithub: 'Continue with GitHub',
-    redirecting: 'Weiterleitung zum Login...',
+    redirecting: "Redirecting to login...",
     githubError: 'Failed to login with GitHub',
     noAccount: "Don't have an account?",
     signUp: 'Sign up',
     footer: '© 2024 HR Manager. All rights reserved.',
-    tryDemoLoading: 'Loading demo...',
+    tryDemoLoading: 'Loading demo...'
   },
-
   // Global Errors
   errors: {
     invalidFileType: 'Please select an image file',
     fileTooLarge: 'File size must be less than 5MB',
     fileReadError: 'Error reading file. Please try again.'
   },
-
   // Sidebar
   sidebar: {
     main: 'MAIN',
     analytics: 'ANALYTICS',
-    settings: 'SETTINGS',
+    settings: 'SETTINGS'
   },
-
-  // Production Help Center
-  prodHelp: {
-    title: 'Production Help Center',
-    highlight: 'Production',
-    subtitle: 'Production tips & playbooks',
-    lede: 'A concise set of production-only tips: shipping safely, keeping the lights on, and reacting fast when things go sideways.',
-    checklist: 'Operator checklist',
-    cards: 'Production guidance',
-    item: {
-      observability: 'Dashboards & alerts active',
-      rollbacks: 'Rollback plan tested',
-      backups: 'Backups verified',
-    },
-    observability: {
-      title: 'Observability: logs, metrics, traces',
-      description: 'Ensure error budgets, structured logs, 95th/99th latency dashboards, and trace sampling tuned for prod.',
-    },
-    rollouts: {
-      title: 'Safe rollouts & feature flags',
-      description: 'Use gradual rollouts with health checks, rollback playbooks, and flags to disable risky code paths quickly.',
-    },
-    security: {
-      title: 'Security & secrets hygiene',
-      description: 'Rotate keys, enforce least privilege, enable audit logging, and require MFA for admin roles.',
-    },
-    performance: {
-      title: 'Performance budgets',
-      description: 'Track cold-start and hot-path timings. Set budgets for API latency, SQL queries, and frontend TTI.',
-    },
-    resilience: {
-      title: 'Backups & resilience',
-      description: 'Verify automated backups, DR strategy, rate limiting, and circuit breakers for downstream dependencies.',
-    },
-    tags: {
-      reliability: 'reliability',
-      metrics: 'metrics',
-      release: 'release',
-      safety: 'safety',
-      security: 'security',
-      performance: 'performance',
-      resilience: 'resilience',
-    },
-  },
-
   // Dashboard
   dashboard: {
     regularAndOvertimeByEmployee: 'Regular & Overtime by Employee',
@@ -280,7 +228,6 @@ export default {
       oneDay: '1 day ago'
     }
   },
-
   // Employees
   employees: {
     title: 'Employee Management',
@@ -328,9 +275,8 @@ export default {
     topPerformers: 'Top performers',
     avgRating: 'Avg rating',
     departments: 'departments',
-    livePulse: 'Live pulse',
+    livePulse: 'Live pulse'
   },
-
   // Add Employee Modal
   addEmployee: {
     title: 'Add New Employee',
@@ -369,7 +315,6 @@ export default {
     submitError: 'Failed to add employee',
     dobPlaceholder: 'Select date of birth'
   },
-
   // Employee Detail Modal
   employeeDetailModal: {
     download: 'Download',
@@ -427,12 +372,10 @@ export default {
     uploadInstructions: 'Click or drag a PDF file here to upload',
     maxFileSize: 'Maximum file size: 10MB'
   },
-
   // Search
   search: {
     placeholder: 'Search employees...'
   },
-
   // Employee Department (for display in cards)
   employeeDepartment: {
     all: 'All',
@@ -466,7 +409,6 @@ export default {
     product: 'Product',
     customer_support: 'Customer Support'
   },
-
   // Months
   months: {
     january: 'January',
@@ -482,12 +424,9 @@ export default {
     november: 'November',
     december: 'December'
   },
-
   // Recruitment
   recruitment: {
     rating: 'Rating',
-    statusLabel: 'Status',
-    actions: 'Actions',
     total: 'Total',
     shortListed: 'Shortlisted',
     interviews: 'Interviews',
@@ -499,7 +438,6 @@ export default {
     notRated: 'Not rated',
     notesPlaceholder: 'Add interview notes or feedback...',
     scheduleInterview: 'Schedule Interview',
-    interviewScheduled: 'Interview scheduled successfully!',
     selectDate: 'Please select an interview date',
     interviewDate: 'Date',
     interviewTime: 'Time',
@@ -513,7 +451,7 @@ export default {
       video: 'Video',
       inPerson: 'In Person',
       technical: 'Technical',
-      hr: 'HR',
+      hr: 'HR'
     },
     title: 'Recruitment Pipeline',
     postNewJob: 'Post New Job',
@@ -523,11 +461,10 @@ export default {
     department: 'Department',
     appliedDate: 'Applied Date',
     experience: 'Experience',
-    status: 'Status',
-    statusLabel: 'Status',
-    actions: 'Actions',
+    statusLabel: "Status",
+    actions: "Actions",
     stage: 'Stage',
-    interviewScheduled: 'Interview Scheduled',
+    interviewScheduled: "Interview scheduled successfully!",
     underReview: 'Under Review',
     offerExtended: 'Offer Extended',
     screening: 'Screening',
@@ -566,7 +503,6 @@ export default {
     viewResume: 'View Resume',
     linkedinProfile: 'LinkedIn Profile',
     notes: 'Notes',
-    // Nested status translations
     status: {
       interviewscheduled: 'Interview Scheduled',
       underreview: 'Under Review',
@@ -609,7 +545,6 @@ export default {
       avgTimeToHire: 'Avg. Time to Hire'
     }
   },
-
   // Time Tracking
   timeTracking: {
     detailedBreakdown: 'Detailed Time Tracking Breakdown',
@@ -621,14 +556,12 @@ export default {
     clockOut: 'Clock Out',
     amountHours: 'Hours',
     hourType: 'Hour Type',
-    status: 'Status',
     time: 'Time',
     notes: 'Notes',
     createdAt: 'Created At',
     summary: 'Summary',
     quickActions: 'Quick Actions',
     workDays: 'Work Days',
-    leaveDays: 'Leave Days',
     overtime: 'Overtime Hours',
     wfh: 'Working From Home',
     holidayOvertime: 'Holiday Overtime',
@@ -642,14 +575,13 @@ export default {
     attendanceRate: 'Attendance Rate',
     requestLeave: 'Request Leave',
     logOvertime: 'Log Overtime',
-    leaveType: 'Leave Type',
     vacation: 'Vacation',
     sickLeave: 'Sick Leave',
     personal: 'Personal Leave',
     unpaid: 'Unpaid Leave',
-    leaveDays: 'Leave Days',
-    leaveType: 'Leave Type',
-    status: 'Status',
+    leaveDays: "Leave Days",
+    leaveType: "Leave Type",
+    status: "Status",
     requestedBy: 'Requested By',
     approvedBy: 'Approved By',
     leaveRequestManagement: 'Leave Request Management',
@@ -699,7 +631,6 @@ export default {
     daysWorked: 'Days Worked',
     totalHoursLabel: 'Total Hours'
   },
-
   // Work Days Modal
   workDaysModal: {
     title: 'Work Days Details',
@@ -714,7 +645,6 @@ export default {
     notes: 'Notes',
     noData: 'No work days recorded for this period'
   },
-
   // Admin Time Entry
   adminTimeEntry: {
     title: 'Admin Time Entry',
@@ -783,20 +713,17 @@ export default {
       errorWithDetail: 'Failed to fill standard hours: {message}'
     }
   },
-
   // Time Clock Entry
   timeClock: {
     title: 'New Time Entry',
     uploadFile: 'Click to upload File',
     fileTypes: 'Supports: Images, PDF, Documents (Max 50MB)',
-    selectDate: 'Select Date',
     newEntry: 'New Entry',
     history: 'History',
     subtitle: 'Enter hours and upload attendance proof',
-    selectDate: 'Select Date',
+    selectDate: "Select Date",
     clockIn: 'Clock In',
     clockOut: 'Clock Out',
-    employee: 'Employee',
     hourType: 'Hour Type',
     proof: 'Proof of Work',
     optional: 'Optional',
@@ -862,7 +789,7 @@ export default {
     myEntries: 'My Entries',
     allEmployees: 'All Employees',
     specificEmployee: 'Specific Employee',
-    employee: 'Employee',
+    employee: "Employee",
     date: 'Date',
     time: 'Time',
     hours: 'Hours',
@@ -871,31 +798,19 @@ export default {
     actions: 'Actions',
     noEntries: 'No time entries found'
   },
-
   // Personal Goals
   personalGoals: {
     title: 'Personal Goals',
-    goalTitle: 'Goal Title',
-    goalTitlePlaceholder: 'Enter goal title',
     overallRating: 'Overall Rating',
     reviewPeriod: 'Review Period',
     goals: 'Goals & Objectives',
     achievements: 'Key Achievements',
     areasForImprovement: 'Areas for Improvement',
     skillsAssessment: 'Skills Assessment',
-    technical: 'Technical Skills',
-    communication: 'Communication',
-    leadership: 'Leadership',
     teamwork: 'Teamwork',
-    beginner: 'Beginner',
-    intermediate: 'Intermediate',
-    advanced: 'Advanced',
     problemSolving: 'Problem Solving',
     rating: 'Rating',
     excellent: 'Excellent',
-    midYear: 'Mid-Year',
-    quarterly: 'Quarterly',
-    annual: 'Annual',
     good: 'Good',
     average: 'Average',
     needsImprovement: 'Needs Improvement',
@@ -921,9 +836,9 @@ export default {
     // Review Types
     weekly: 'Weekly',
     monthly: 'Monthly',
-    quarterly: 'Quarterly',
-    midYear: 'Mid-Year',
-    annual: 'Annual',
+    quarterly: "Quarterly",
+    midYear: "Mid-Year",
+    annual: "Annual",
     probation: 'Probation',
     adHoc: 'Ad-Hoc',
     // Period Types
@@ -939,16 +854,13 @@ export default {
     q3: 'Q3 (Jul-Sep)',
     q4: 'Q4 (Oct-Dec)',
     reviewPeriodPlaceholder: 'e.g., Q4 2024',
-    newReview: 'New Performance Review',
     reviewType: 'Review Type',
     ratingUpdated: 'Performance rating updated successfully!',
     ratingUpdateError: 'Failed to update performance rating',
-    reviewCreatedSuccess: 'Review created successfully!',
-    reviewCreatedError: 'Failed to create review',
     skillUpdateError: 'Failed to update skill rating',
-    beginner: 'Beginner',
-    intermediate: 'Intermediate',
-    advanced: 'Advanced',
+    beginner: "Beginner",
+    intermediate: "Intermediate",
+    advanced: "Advanced",
     technicalSkills: 'Technical Skills',
     // Tabs
     overview: 'Overview',
@@ -968,7 +880,7 @@ export default {
     viewDetails: 'View Details',
     // Reviews section
     performanceReviews: 'Performance Reviews',
-    newReview: 'New Review',
+    newReview: "New Performance Review",
     by: 'by',
     viewFullReview: 'View Full Review',
     // General
@@ -984,19 +896,13 @@ export default {
     progressPercentage: 'Progress',
     goalCreatedSuccess: 'Goal created successfully!',
     goalCreatedError: 'Failed to create goal',
-    reviewCreatedSuccess: 'Review created successfully!',
-    reviewCreatedError: 'Failed to create review',
-    // Goal Form Fields
-    goalTitle: 'Goal Title',
-    goalTitlePlaceholder: 'Enter goal title',
+    reviewCreatedSuccess: "Review created successfully!",
+    reviewCreatedError: "Failed to create review",
+    goalTitle: "Goal Title",
+    goalTitlePlaceholder: "Enter goal title",
     goalDescription: 'Description',
     goalDescriptionPlaceholder: 'Describe the goal objectives',
     category: 'Category',
-    general: 'General',
-    technical: 'Technical',
-    leadership: 'Leadership',
-    project: 'Project',
-    professionalDevelopment: 'Professional Development',
     priority: 'Priority',
     low: 'Low',
     medium: 'Medium',
@@ -1012,23 +918,21 @@ export default {
     reviewComments: 'Review Comments',
     noComments: 'No comments yet',
     errorFetchingComments: 'Error fetching comments',
-    general: 'General',
-    technical: 'Technical',
-    leadership: 'Leadership',
-    project: 'Project',
-    communication: 'Communication',
-    professionalDevelopment: 'Professional Development',
+    general: "General",
+    technical: "Technical Skills",
+    leadership: "Leadership",
+    project: "Project",
+    communication: "Communication",
+    professionalDevelopment: "Professional Development",
     // Missing toast/alert translation keys
     goalDeletedSuccess: 'Goal deleted successfully!',
     goalDeletedError: 'Failed to delete goal',
-    goalsInProgress: 'Goals In Progress',
+    goalsInProgress: 'Goals In Progress'
   },
-
   // Reports
   reports: {
     bonusHours: 'Bonus Hours',
     title: 'Reports & Analytics',
-    allEmployees: 'All_Employees',
     filenamePrefix: 'HR_Report_',
     leave: 'Leave Requests',
     totalLeaveDays: 'Total Leave Days',
@@ -1155,69 +1059,24 @@ export default {
         updatedAt: 'Updated At'
       }
     },
-    generateReport: 'Generate Report',
-    selectReportType: 'Select Report Type',
-    selectDateRange: 'Select Date Range',
-    selectFilters: 'Select Filters',
-    previewData: 'Preview Data',
-    exportCSV: 'Export to CSV',
-    exportingIncludes: '*Exporting includes all filtered data, not just previewed records',
     // Report Types
     reportTypes: 'Report Types',
-    employeePerformance: 'Employee Performance',
-    salaryAnalysis: 'Salary Analysis',
-    attendanceReport: 'Attendance Report',
-    recruitmentMetrics: 'Recruitment Metrics',
-    departmentComparison: 'Department Comparison',
-    // Report Categories
-    categories: 'Report Categories',
     performanceReport: 'Performance Reports',
-    attendanceReports: 'Attendance Reports',
-    recruitmentReports: 'Recruitment Reports',
-    salaryReports: 'Salary Reports',
-    // Report Names 
-    employeeGrowth: 'Employee Growth',
-    departmentDistribution: 'Department Distribution',
-    personalGoals: 'Personal Goals',
-    attendance: 'Attendance',
     language: 'Language',
-    performance: 'Performance',
-    recruitment: 'Recruitment',
-    salary: 'Salary',
-    performanceMetrics: 'Performance Metrics',
-    attendanceReport: 'Attendance Report',
     timeEntry: 'Time Entries',
-    timeEntries: 'Time Entries Report',
     performanceSummary: 'Performance Summary',
-    recruitmentMetrics: 'Recruitment Metrics',
-    salaryAnalysis: 'Salary Analysis',
-    departmentComparison: 'Department Comparison',
-    filters: 'Filters',
-    quickFilters: 'Quick Filters',
-    employee: 'Employee',
-    department: 'Department',
-    dateRange: 'Date Range',
     applyFilters: 'Apply Filters',
     totalEntries: 'Total Entries',
-    totalHours: 'Total Hours',
     averageHoursPerEntry: 'Average Hours per Entry',
     highestHoursEntry: 'Highest Hours Entry',
     lowestHoursEntry: 'Lowest Hours Entry',
     exportReport: 'Export Report',
     resetFilters: 'Reset Filters',
-    generateReport: 'Generate Report',
     reportGenerated: 'Report generated successfully!',
     reportError: 'Failed to generate report',
-    performance: 'Performance',
-    personalGoals: 'Personal Goals',
+    personalGoals: "Personal Goals",
     personalGoalsReport: 'Personal Goals Report',
-    attendance: 'Attendance',
-    attendanceReport: 'Attendance Report',
-    recruitment: 'Recruitment',
     recruitmentReport: 'Recruitment Report',
-    salary: 'Salary',
-    salaryReport: 'Salary Report',
-    exportToPDF: 'Export to PDF',
     pdf: {
       visualAnalytics: 'Visual Analytics',
       charts: {
@@ -1254,59 +1113,42 @@ export default {
         updatedAt: 'Updated At'
       }
     },
-    exportToCSV: 'Export to CSV',
     performanceReportSubtitle: "Generate detailed reports on employee performance, attendance, and recruitment metrics",
-    subtitle: "Generate detailed reports on employee performance, attendance, and recruitment metrics",
-    generateCustomReport: 'Generate Custom Report',
-    prebuiltReports: 'Pre-built Reports',
     individualReport: 'Individual Reports',
     individualMetrics: 'Individual Metrics',
     comprehensiveReports: 'Comprehensive Reports',
     exportData: 'Export Data',
     exportDataSubtitle: 'Export detailed data for time entries, tasks, and personal goals',
-    selectReportType: 'Select Report Type',
-    selectDateRange: 'Select Date Range',
-    selectFilters: 'Select Filters',
-    previewData: 'Preview Data',
-    exportCSV: 'Export to CSV',
-    exportingIncludes: '*Exporting includes all filtered data, not just previewed records',
-    // Custom Report Labels
-    reportType: 'Report Type',
-    recordsFound: 'records found',
-    employeePerformance: 'Employee Performance',
-    salaryAnalysis: 'Salary Analysis',
-    attendanceReport: 'Attendance Report',
-    recruitmentMetrics: 'Recruitment Metrics',
-    departmentComparison: 'Department Comparison',
-    // Report Categories
-    categories: 'Report Categories',
+    selectReportType: "Select Report Type",
+    selectDateRange: "Select Date Range",
+    selectFilters: "Select Filters",
+    previewData: "Preview Data",
+    exportCSV: "Export to CSV",
+    exportingIncludes: "*Exporting includes all filtered data, not just previewed records",
+    categories: "Report Categories",
     performanceReports: 'Performance Reports',
-    attendanceReports: 'Attendance Reports',
-    recruitmentReports: 'Recruitment Reports',
-    salaryReports: 'Salary Reports',
-    // Report Names 
-    employeeGrowth: 'Employee Growth',
-    departmentDistribution: 'Department Distribution',
-    performanceMetrics: 'Performance Metrics',
-    recruitmentMetrics: 'Recruitment Metrics',
-    attendanceReport: 'Attendance Report',
-    salaryReport: 'Salary Report',
-    generateReport: 'Generate Report',
+    attendanceReports: "Attendance Reports",
+    recruitmentReports: "Recruitment Reports",
+    salaryReports: "Salary Reports",
+    employeeGrowth: "Employee Growth",
+    departmentDistribution: "Department Distribution",
+    performanceMetrics: "Performance Metrics",
+    salaryReport: "Salary Report",
+    generateReport: "Generate Report",
     exportPDF: 'Export PDF',
     exportExcel: 'Export Excel',
     filterBy: 'Filter By',
-    dateRange: 'Date Range',
     allDepartments: 'All Departments',
-    performance: 'Performance',
-    salary: 'Salary',
-    attendance: 'Attendance',
-    recruitment: 'Recruitment',
-    department: 'Department',
+    performance: "Performance",
+    salary: "Salary",
+    attendance: "Attendance",
+    recruitment: "Recruitment",
+    department: "Department",
     all: 'All',
     // Navigation
     overview: 'Overview',
     detailedReports: 'Detailed Reports',
-    filters: 'Filters',
+    filters: "Filters",
     exportAll: 'Export All',
     // Charts
     departmentOverview: 'Department Overview',
@@ -1316,7 +1158,6 @@ export default {
     // Stats
     totalEmployees: 'Total Employees',
     newHires: 'New Hires',
-    thisQuarter: 'This quarter',
     turnoverRate: 'Turnover Rate',
     annualRate: 'Annual rate',
     avgSalary: 'Avg Salary',
@@ -1332,17 +1173,16 @@ export default {
     hired: 'Hired',
     rejected: 'Rejected',
     employees: 'employees',
-    // Report generation
-    generateCustomReport: 'Generate Custom Report',
-    reportType: 'Report Type',
-    employeePerformance: 'Employee Performance',
-    salaryAnalysis: 'Salary Analysis',
-    attendanceReport: 'Attendance Report',
-    recruitmentMetrics: 'Recruitment Metrics',
-    departmentComparison: 'Department Comparison',
-    exportToPDF: 'Export to PDF',
+    generateCustomReport: "Generate Custom Report",
+    reportType: "Report Type",
+    employeePerformance: "Employee Performance",
+    salaryAnalysis: "Salary Analysis",
+    attendanceReport: "Attendance Report",
+    recruitmentMetrics: "Recruitment Metrics",
+    departmentComparison: "Department Comparison",
+    exportToPDF: "Export to PDF",
     exportToExcel: 'Export to Excel',
-    prebuiltReports: 'Pre-built Reports',
+    prebuiltReports: "Pre-built Reports",
     // Pre-built report names
     monthlyPerformanceReview: 'Monthly Performance Review',
     comprehensivePerformanceAnalysis: 'Comprehensive performance analysis',
@@ -1358,45 +1198,39 @@ export default {
     measureTrainingSuccess: 'Measure training program success',
     generate: 'Generate →',
     fromLastPeriod: 'from last period',
-    lastWeek:	'Last Week',
-    lastMonth:	'Last Month',
-    lastQuarter:	'Last Quarter',
-    lastYear:	'Last Year',
-    customRange: 'Custom Range',
+    lastWeek: 'Last Week',
+    lastQuarter: 'Last Quarter',
+    lastYear: 'Last Year',
     // Report Display
     reportResults: 'Report Results',
     totalReviews: 'Total Reviews',
     averageRating: 'Average Rating',
-    employee: 'Employee',
     rating: 'Rating',
     reviewDate: 'Review Date',
     reviewer: 'Reviewer',
     position: 'Position',
     averageSalary: 'Average Salary',
-    exportToCSV: 'Export to CSV',
+    exportToCSV: "Export to CSV",
     exportAllData: 'Export All Data',
     // Date Range Options
     today: 'Today',
     thisWeek: 'This Week',
     thisMonth: 'This Month',
-    lastMonth: 'Last Month',
-    thisQuarter: 'This Quarter',
+    lastMonth: "Last Month",
+    thisQuarter: "This Quarter",
     thisYear: 'This Year',
-    customRange: 'Custom Range',
-    // Data Types
-    timeEntries: 'Time Entries',
+    customRange: "Custom Range",
+    timeEntries: "Time Entries Report",
     tasks: 'Tasks',
     goals: 'Personal Goals',
-    // Filter Labels
-    employee: 'Employee',
-    dateRange: 'Date Range',
+    employee: "Employee",
+    dateRange: "Date Range",
     dataType: 'Data Type',
-    quickFilters: 'Quick Filters',
-    allEmployees: 'All Employees',
+    quickFilters: "Quick Filters",
+    allEmployees: "All Employees",
     startDate: 'Start Date',
     endDate: 'End Date',
-    // Status and Results
-    recordsFound: 'records found',
+    recordsFound: "records found",
     noData: 'No data found',
     adjustFilters: 'Try adjusting your filters or date range',
     dataPreview: 'Data Preview',
@@ -1405,7 +1239,7 @@ export default {
     records: 'records',
     exportForAll: 'Export to CSV to get all records.',
     liveData: 'Live data from Supabase',
-    subtitle: 'Export comprehensive data for time entries, tasks, and personal goals',
+    subtitle: "Export comprehensive data for time entries, tasks, and personal goals",
     errorExporting: 'Error exporting data',
     exportSuccess: 'Data exported successfully',
     csvExportSuccess: 'CSV report exported successfully with all data types in one file!',
@@ -1414,7 +1248,7 @@ export default {
     pdfExportSuccess: 'PDF report exported successfully!',
     reportPeriod: 'Report Period',
     to: 'to',
-    totalHours: 'Total Hours',
+    totalHours: "Total Hours",
     regularHours: 'Regular Hours',
     overtime: 'Overtime',
     leaveDays: 'Leave Days',
@@ -1467,9 +1301,8 @@ export default {
     statusPending: 'Pending',
     statusCompleted: 'Completed',
     statusInProgress: 'In Progress',
-    statusNotStarted: 'Not Started',
+    statusNotStarted: 'Not Started'
   },
-
   // Status translations
   status: {
     approved: 'Approved',
@@ -1481,19 +1314,32 @@ export default {
     'in-progress': 'In Progress',
     'not-started': 'Not Started',
     achieved: 'Achieved',
-    'on-hold': 'On Hold',
+    'on-hold': 'On Hold'
   },
-
   // Data Type Labels
   dataType: {
     timeEntry: 'Time Entry',
     task: 'Task',
-    goal: 'Goal',
+    goal: 'Goal'
   },
-
   // Common
+  datePicker: {
+    placeholder: 'Select date',
+    calendar: 'Calendar',
+    prevMonth: 'Previous month',
+    nextMonth: 'Next month',
+    today: 'Today',
+    clear: 'Clear'
+  },
+  timePicker: {
+    hours: 'hours',
+    minutes: 'min',
+    done: 'Done',
+    clear: 'Clear',
+    placeholder: '--:--',
+    picker: 'Time picker'
+  },
   common: {
-    viewDetails: 'View Details',
     results: 'Results',
     total: 'Total',
     update: 'Update',
@@ -1506,12 +1352,10 @@ export default {
     startDate: 'Start Date',
     salary: 'Salary',
     performance: 'Performance',
-    department: 'Department',
-    position: 'Position',
     searchPlaceholder: 'Search...',
     employee: 'Employee',
-    department: 'Department',
-    position: 'Position',
+    department: "Department",
+    position: "Position",
     date: 'Date',
     actions: 'Actions',
     clockIn: 'Clock In',
@@ -1521,17 +1365,17 @@ export default {
     notes: 'Notes',
     status: 'Status',
     type: 'Type',
-    viewDetails: 'View Details',
+    viewDetails: "View Details",
     leaveRequest: 'Leave Request',
     search: 'Search',
     filter: 'Filter',
-    next: 'Next', 
+    next: 'Next',
     back: 'Back',
     sort: 'Sort',
     save: 'Save',
     saving: 'Saving...',
     submit: 'Submit',
-    submitting: 'Submitting...',  
+    submitting: 'Submitting...',
     cancel: 'Cancel',
     delete: 'Delete',
     edit: 'Edit',
@@ -1565,22 +1409,19 @@ export default {
     viewFile: 'View File',
     fetching: 'Fetching',
     ready: 'Ready',
-    ms: 'ms',
+    ms: 'ms'
   },
-
   // Theme
   theme: {
     light: 'Light Mode',
     dark: 'Dark Mode',
     toggle: 'Toggle Theme'
   },
-
   // Language
   language: {
     select: 'Select Language',
     current: 'Current Language'
   },
-
   // Time Tracking Actions
   timeTrackingActions: {
     recordTime: 'Record Time',
@@ -1588,14 +1429,12 @@ export default {
     logOvertime: 'Log Overtime',
     exportReport: 'Export Report'
   },
-
   // Recruitment Actions
   recruitmentActions: {
     view: 'View',
     schedule: 'Schedule',
     reject: 'Reject'
   },
-
   // Employee Status
   employeeStatus: {
     active: 'Active',
@@ -1604,52 +1443,6 @@ export default {
     pending: 'Pending',
     outSourceContractor: 'Outsource Contractor'
   },
-
-  //Employee Position 
-  // Performance Appraisal Translation
-  performanceAppraisalPage: {
-    title: 'Performance Appraisal',
-    overallPerformance: 'Overall Performance',
-    goalsAchieved: 'Goals Achieved',
-    reviewsThisPeriod: 'Reviews This Period',
-    avgSkillRating: 'Avg. Skill Rating',
-    currentGoals: 'Current Goals',
-    addGoal: 'Add Goal',
-    // Tabs
-    overview: 'Overview',
-    goals: 'Goals',
-    reviews: 'Reviews',
-  },
-
-  // Employee Details Tabs
-  employeeDetailTabs: {
-    basicInformation: 'Basic Information',
-    contact: 'Contact',
-    documents: 'Documents',
-  },
-
-  // Employee Edit Form
-  employeeEditForm: {
-    editEmployee: 'Edit Employee',
-    contactInformation: 'Contact Information',
-    employmentDetails: 'Employment Details',
-    email: 'E-Mail',
-    phone: 'Phone',
-    telephone: 'Telephone',
-    address: 'Address',
-    department: 'Department',
-    abteilung: 'Department',
-    startDate: 'Start Date',
-    startdatum: 'Start Date',
-    dateOfBirth: 'Date of Birth',
-    performance: 'Performance',
-    leistung: 'Performance',
-    cancel: 'Cancel',
-    abbrechen: 'Cancel',
-    save: 'Save',
-    speichern: 'Save',
-  },
-
   employeePosition: {
     general_manager: 'General Manager',
     senior_developer: 'Senior Developer',
@@ -1659,9 +1452,8 @@ export default {
     managing_director: 'Managing Director',
     support_staff: 'Support Staff',
     expertGroup: 'Experts Group',
-    employee: 'Employee',
+    employee: 'Employee'
   },
-
   // Recruitment Status
   recruitmentStatus: {
     active: 'Active',
@@ -1678,26 +1470,6 @@ export default {
     technical: 'Technical',
     shortlisted: 'Shortlisted'
   },
-
-  // Demo Notifications
-  demoNotifications: {
-    'notif-1': {
-      title: 'Welcome to HR System',
-      message: 'Welcome to the demo mode of the HR System. Feel free to explore!',
-      actionLabel: 'Go to Dashboard'
-    },
-    'notif-2': {
-      title: 'New Application',
-      message: 'New application received for Senior Frontend Developer position.',
-      actionLabel: 'View Application'
-    },
-    'notif-3': {
-      title: 'Performance Review Due',
-      message: 'Quarterly performance reviews are due next week.',
-      actionLabel: 'View Reviews'
-    }
-  },
-
   // Performance Goals
   goals: {
     completeReactProject: 'Complete React Project',
@@ -1708,14 +1480,12 @@ export default {
     backendDevelopment: 'Backend Development',
     teamCollaboration: 'Team Collaboration'
   },
-
   // Review Types
   reviewTypes: {
     quarterlyReview: 'Quarterly Review',
     midYearReview: 'Mid-year Review',
     annualReview: 'Annual Review'
   },
-
   // Skill Categories
   skillCategories: {
     technical: 'Technical',
@@ -1723,7 +1493,6 @@ export default {
     leadership: 'Leadership',
     communication: 'Communication'
   },
-
   // Notifications
   notifications: {
     title: 'Notifications',
@@ -1787,9 +1556,8 @@ export default {
     // Notification messages
     timeEntriesAwaiting: 'You have {0} time entries awaiting approval',
     reviewNow: 'Review Now',
-    viewDetails: 'View Details',
+    viewDetails: 'View Details'
   },
-
   // Settings
   settings: {
     title: 'Settings',
@@ -1802,14 +1570,12 @@ export default {
     confirmReset: 'Are you sure you want to reset all settings to default?',
     importSuccess: 'Settings imported successfully!',
     importError: 'Failed to import settings',
-    
     // Tabs
     notifications: 'Notifications',
     appearance: 'Appearance',
     language: 'Language',
     privacy: 'Privacy',
     work: 'Work Preferences',
-    
     // Notification Settings
     notificationPreferences: 'Notification Preferences',
     emailNotifications: 'Email Notifications',
@@ -1830,19 +1596,16 @@ export default {
     employeeNotifications: 'Employee Updates',
     recruitmentNotifications: 'Recruitment',
     systemNotifications: 'System Updates',
-    
     // Appearance Settings
     appearanceSettings: 'Appearance Settings',
     theme: 'Theme',
     dateFormat: 'Date Format',
     timeFormat: 'Time Format',
     itemsPerPage: 'Items Per Page',
-    
     // Language & Region
     languageRegion: 'Language & Region',
     timezone: 'Timezone',
     timezoneNote: 'Currently showing first 50 timezones',
-    
     // Privacy Settings
     privacySettings: 'Privacy Settings',
     profileVisibility: 'Profile Visibility',
@@ -1853,7 +1616,6 @@ export default {
     contactVisibility: 'Contact Information Visibility',
     showEmail: 'Show Email Address',
     showPhone: 'Show Phone Number',
-    
     // Work Preferences
     workPreferences: 'Work Preferences',
     defaultDashboard: 'Default Dashboard View',
@@ -1866,11 +1628,8 @@ export default {
     weeklyReport: 'Weekly Report',
     weeklyReportDesc: 'Receive a weekly summary of your work activities'
   },
-
   // Control Panel
   controlPanel: {
-    refreshing: 'Refreshing...',
-    refresh: 'Refresh',
     demoModeDisabled: 'Function is locked',
     title: 'Control Panel',
     subtitle: 'Manage your account and system settings',
@@ -1878,8 +1637,6 @@ export default {
     userUuid: 'User UUID',
     employeeId: 'Employee ID',
     changePassword: 'Change Password',
-    changeOwnPassword: 'Change Own Password',
-    resetOtherUserPassword: 'Reset Other Employee Password',
     readManual: 'Read Manual',
     logout: 'Log Out',
     confirmLogout: 'Are you sure you want to log out?',
@@ -1901,7 +1658,7 @@ export default {
       employee: 'Employee',
       viewer: 'Viewer',
       demoAdmin: 'Demo Admin',
-      hrAdmin: 'HR Admin',
+      hrAdmin: 'HR Admin'
     },
     roleDesc: {
       admin: 'Full system access with all administrative privileges including user management, system settings, and complete data control',
@@ -1910,7 +1667,7 @@ export default {
       manager: 'Supervise team members, approve time tracking, and manage performance reviews',
       employee: 'Access personal information, submit time entries, and view own performance data',
       viewer: 'View-only access to reports, dashboards, and limited system information',
-      demoAdmin: 'Demo mode uses localstorage to simulate admin access, official version uses backend databse to sync data',
+      demoAdmin: 'Demo mode uses localstorage to simulate admin access, official version uses backend databse to sync data'
     },
     uploadAvatar: 'Upload avatar',
     avatarUpdated: 'Avatar updated successfully!',
@@ -1940,8 +1697,8 @@ export default {
     manageEmails: 'Manage User Emails',
     visitAnalytics: 'Visit analytics',
     refreshVisitAnalytics: 'Refresh visit analytics',
-    refresh: 'Refresh',
-    refreshing: 'Refreshing...',
+    refresh: "Refresh",
+    refreshing: "Refreshing...",
     visit: {
       total: 'Total',
       last24h: 'Last 24h',
@@ -1950,10 +1707,10 @@ export default {
       unknownIp: 'unknown IP',
       ref: 'Ref',
       demoCount: 'Demo Counts',
-      authorized: 'Authorised Sessions',
+      authorized: 'Authorised Sessions'
     },
-    changeOwnPassword: 'Change Own Password',
-    resetOtherUserPassword: 'Reset Other Employee Password',
+    changeOwnPassword: "Change Own Password",
+    resetOtherUserPassword: "Reset Other Employee Password",
     resetEmployeeTablePassword: 'Reset Employee Table Password',
     restoreDemoData: 'Restore Demo Data',
     restoreDemoDataDescription: 'Restore default demo data for specific data types. This will reset any changes you made.',
@@ -1971,53 +1728,50 @@ export default {
     demoEmployeeLabel: 'Demo Employee',
     switchToDemoEmployee: 'Switch to Demo Employee',
     switchToDemoAdmin: 'Switch to Demo Admin',
-    demoRoleOnly: 'This feature is only available in demo mode',
+    demoRoleOnly: 'This feature is only available in demo mode'
   },
-
-  // Production Help Center (de)
   prodHelp: {
-    title: 'Production Help Center',
-    highlight: 'Production',
-    subtitle: 'Production Tips & Playbooks',
-    lede: 'A compact collection of pure production tips: safe delivery, ensuring stability, and quick response when something goes wrong.',
-    checklist: 'Operator Checklist',
-    cards: 'Production Guides',
+    title: "Production Help Center",
+    highlight: "Production",
+    subtitle: "Production Tips & Playbooks",
+    lede: "A concise set of production-only tips: shipping safely, keeping the lights on, and reacting fast when things go sideways.",
+    checklist: "Operator Checklist",
+    cards: "Production Guides",
     item: {
-      observability: 'Dashboards & Alerts Active',
-      rollbacks: 'Rollback Plan Tested',
-      backups: 'Backups Verified',
+      observability: "Dashboards & Alerts Active",
+      rollbacks: "Rollback Plan Tested",
+      backups: "Backups Verified"
     },
     observability: {
-      title: 'Observability: Logs, Metrics, Traces',
-      description: 'Ensure error budgets, structured logs, 95th/99th percentile latency dashboards, and trace sampling for production.',
+      title: "Observability: Logs, Metrics, Traces",
+      description: "Ensure error budgets, structured logs, 95th/99th percentile latency dashboards, and trace sampling for production."
     },
     rollouts: {
-      title: 'Safe Rollouts & Feature Flags',
-      description: 'Use gradual rollouts with health checks, rollback playbooks, and flags to quickly disable risky code paths.',
+      title: "Safe Rollouts & Feature Flags",
+      description: "Use gradual rollouts with health checks, rollback playbooks, and flags to quickly disable risky code paths."
     },
     security: {
-      title: 'Security & Secret Hygiene',
-      description: 'Rotate keys, enforce least privilege, enable audit logs, and require MFA for admin roles.',
+      title: "Security & Secret Hygiene",
+      description: "Rotate keys, enforce least privilege, enable audit logs, and require MFA for admin roles."
     },
     performance: {
-      title: 'Performance Budgets',
-      description: 'Monitor cold start and hot path times. Set budgets for API latency, SQL queries, and frontend TTI.',
+      title: "Performance Budgets",
+      description: "Monitor cold start and hot path times. Set budgets for API latency, SQL queries, and frontend TTI."
     },
     resilience: {
-      title: 'Backups & Resilience',
-      description: 'Verify automated backups, DR strategy, rate limiting, and circuit breakers for downstream dependencies.',
+      title: "Backups & Resilience",
+      description: "Verify automated backups, DR strategy, rate limiting, and circuit breakers for downstream dependencies."
     },
     tags: {
-      reliability: 'Reliability',
-      metrics: 'Metrics',
-      release: 'Release',
-      safety: 'Safety',
-      security: 'Security',
-      performance: 'Performance',
-      resilience: 'Resilience',
-    },
+      reliability: "Reliability",
+      metrics: "Metrics",
+      release: "Release",
+      safety: "Safety",
+      security: "Security",
+      performance: "Performance",
+      resilience: "Resilience"
+    }
   },
-
   // Help Center / Advanced Guide
   help: {
     containerLabel: 'Help Center',
@@ -2033,14 +1787,12 @@ export default {
       title: 'IMPORTANT: Help Center!',
       body: 'DATA IS SAVED LOCALLY - Does Not Sync Across Devices. Data Can Be Restored In Control Panel.'
     },
-
     features: {
       section: 'Advanced & Contextual Features',
       defaultTitle: 'Hidden Features & Pro Tips',
       contextTitle: 'Contextual Tips for {context}',
       restricted: 'RESTRICTED',
       empty: 'No specific tips found for context: "{context}". All features are shown below.',
-
       feature_1: {
         title: 'Hidden Feature: Batch Editing',
         description: 'Did you know you can edit up to 50 records at once? Select the checkboxes next to the entries and click the ✏️ icon at the top of the table. This is disabled in the current demo.'
@@ -2058,7 +1810,6 @@ export default {
         description: 'Access your dashboard layout settings by clicking your profile avatar in the top right. You can enable dark mode and adjust table densities.'
       }
     },
-
     tags: {
       advanced: 'Advanced',
       hidden: 'Hidden',
@@ -2070,7 +1821,6 @@ export default {
       'hard-to-find': 'Hard to Find',
       personalization: 'Personalization'
     },
-
     showcase: {
       section: 'Animated product walkthrough',
       label: 'Animated product walkthrough',
@@ -2081,34 +1831,28 @@ export default {
       sync: 'Everything stays in sync',
       syncDesc: 'Entries, files, and goals update dashboards and reports instantly.',
       live: 'Live',
-
       time: {
         title: 'Time management',
         desc: 'Track time entries, approvals, overtime, and worklogs in one place.'
       },
-
       upload: {
         title: 'Upload files',
         desc: 'Securely store contracts, IDs, and evidence with audit-ready history.'
       },
-
       dashboard: {
         title: 'Dashboard & charts',
         desc: 'Visualize utilization, attendance, and health scores in real time.'
       },
-
       tasks: {
         title: 'Tasks & goals',
         desc: 'Assign owners, due dates, and checklists that sync with people data.'
       },
-
       reporting: {
         title: 'Reporting',
         desc: 'Export PDFs/CSV and schedule recurring digests for managers.'
       }
     }
   },
-
   // Email Management
   emailManagement: {
     title: 'User Email Management',
@@ -2133,108 +1877,81 @@ export default {
     errorLoadingUsers: 'Error loading users',
     fillAllFields: 'Please fill all fields'
   },
-
   // Task Listing
   taskListing: {
     title: 'Task Listing',
-    assignTo: 'Assign To',
     assignedBy: 'Assigned By',
     assignDate: 'Assign Date',
-    status: 'Status',
-    priority: 'Priority',
     filterBy: 'Filter By',
     allStatuses: 'All Statuses',
     allPriorities: 'All Priorities',
-    searchTasks: 'Search Tasks...',
-    addTask: 'Add Task',
-    editTask: 'Edit Task',
     viewTask: 'View Task',
     taskDetails: 'Task Details',
-    taskTitle: 'Task Title',
-    description: 'Description',
     team: 'Team',
-    selectEmployee: 'Select Employee',
-    dueDate: 'Due Date',
-    manageTasks: 'Manage Task',
     individual: 'Individual',
-    assignTask: 'Assign Task',
     teamWorkload: 'Team Workload',
-    priorityLow: 'Low',
-    priorityMedium: 'Medium',
-    priorityHigh: 'High',
-    statusPending: 'Pending',
-    statusInProgress: 'In Progress',
-    statusCompleted: 'Completed',
-    totalTasks: 'Total Tasks',
     completedTasks: 'Completed Tasks',
     pendingTasks: 'Pending Tasks',
     overdueTasks: 'Overdue Tasks',
-    avgProgress: 'Avg Progress',
-    avgQuality: 'Avg Quality',
     searchEmployee: 'Search employee...',
     noEmployees: 'No employees found',
     employee: 'Employee',
     tasksAssigned: 'Tasks Assigned',
     tasksCompleted: 'Tasks Completed',
-    progress: 'Progress',
     filterByEmployee: 'Filter by Employee',
     filterByStatus: 'Filter by Status',
-    searchTasks: 'Search Tasks...',
+    searchTasks: "Search Tasks...",
     organization: 'Organization',
-    totalTasks: 'Total Tasks',
-    completed: 'Completed',
-    progress: 'Progress',
-    avgQuality: 'Avg Quality',
-    avgProgress: 'Avg Progress',
+    totalTasks: "Total Tasks",
+    progress: "Progress",
+    avgQuality: "Avg Quality",
+    avgProgress: "Avg Progress",
     myTasks: 'My Tasks',
-    manageTasks: 'Manage Tasks',
-    addTask: 'Add Task',
-    assignTask: 'Assign Task',
-    editTask: 'Edit Task',
-    taskTitle: 'Task Title',
-    description: 'Description',
-    dueDate: 'Due Date',
-    priority: 'Priority',
-    priorityLow: 'Low',
-    priorityMedium: 'Medium',
-    priorityHigh: 'High',
+    manageTasks: "Manage Tasks",
+    addTask: "Add Task",
+    assignTask: "Assign Task",
+    editTask: "Edit Task",
+    taskTitle: "Task Title",
+    description: "Description",
+    dueDate: "Due Date",
+    priority: "Priority",
+    priorityLow: "Low",
+    priorityMedium: "Medium",
+    priorityHigh: "High",
     low: 'Low',
     medium: 'Medium',
     high: 'High',
-    status: 'Status',
-    statusPending: 'Pending',
-    statusInProgress: 'In Progress',
-    statusCompleted: 'Completed',
+    status: "Status",
+    statusPending: "Pending",
+    statusInProgress: "In Progress",
+    statusCompleted: "Completed",
     pending: 'Pending',
     'in-progress': 'In Progress',
-    completed: 'Completed',
+    completed: "Completed",
     selfAssessment: 'Self Assessment',
     selfAssessmentPlaceholder: 'How did you perform on this task?',
     qualityRating: 'Quality Rating',
     noTasks: 'No tasks yet. Add your first task!',
     employeeProgress: 'Employee Progress',
     confirmDelete: 'Are you sure you want to delete this task?',
-    assignTo: 'Assign To',
-    selectEmployee: 'Select Employee',
+    assignTo: "Assign To",
+    selectEmployee: "Select Employee",
     tasks: 'Tasks',
     quality: 'Quality',
     completionDate: 'Completion Date',
     createdAt: 'Created At',
-    updatedAt: 'Updated At',
+    updatedAt: 'Updated At'
   },
-
   // Task Review
   taskReview: {
     title: 'Task Review',
-    notRated: 'Not Rated', 
+    notRated: 'Not Rated',
     subtitle: 'Monthly task progress and quality evaluation',
     individual: 'Individual',
     team: 'Team',
     review: 'Review',
-    selectEmployee: 'Select Employee',
-    selectMonth: 'Select Month',
     employeeTasks: 'Employee Tasks',
-    teamTasks: 'Team Tasks', 
+    teamTasks: 'Team Tasks',
     reviewTask: 'Review Task',
     description: 'Description',
     qualityRatingStars: 'Quality Rating (1-5 stars)',
@@ -2244,9 +1961,8 @@ export default {
     feedbackPlaceholder: 'Provide feedback on task progress and quality...',
     total: 'Total',
     month: 'Month',
-    selectMonth: 'Select Month',
+    selectMonth: "Select Month",
     employee: 'Employee',
-    selectEmployee: 'Select Employee',
     totalTasks: 'Total Tasks',
     completed: 'Completed',
     inProgress: 'In Progress',
@@ -2270,9 +1986,6 @@ export default {
     managerComments: 'Manager Comments',
     commentPlaceholder: 'Provide feedback on task quality and personalGoals...',
     taskDetails: 'Task Details',
-    status: 'Status',
-    priority: 'Priority',
-    dueDate: 'Due Date',
     currentRating: 'Current Rating',
     submitEvaluation: 'Submit Evaluation',
     cancel: 'Cancel',
@@ -2303,15 +2016,15 @@ export default {
     organization: 'Organization',
     chooseEmployee: 'Choose Employee',
     selectEmployeeToView: 'Select an employee to view',
-    tasks: 'Tasks', 
+    tasks: 'Tasks',
     assignedTo: 'Assigned To',
     assignedBy: 'Assigned By',
-    dueDate: 'Due Date',
-    status: 'Status',
-    priority: 'Priority',
+    dueDate: "Due Date",
+    status: "Status",
+    priority: "Priority",
     actions: 'Actions',
     noTasksFound: 'No tasks found',
-    selectEmployee: 'Select Employee',
+    selectEmployee: "Select Employee",
     taskList: 'Task List',
     employeeSelfAssessment: 'Employee Self Assessment',
     employeeBreakdown: 'Employee Breakdown',
@@ -2322,53 +2035,45 @@ export default {
     targetDate: 'Target Date',
     notes: 'Notes',
     createdAt: 'Created At',
-    updatedAt: 'Updated At',
+    updatedAt: 'Updated At'
   },
-
-  // Performance Appraisal Translation
   performanceAppraisalPage: {
-    title: 'Performance Appraisal',
-    overallPerformance: 'Overall Performance',
-    goalsAchieved: 'Goals Achieved',
-    reviewsThisPeriod: 'Reviews This Period',
-    avgSkillRating: 'Avg Skill Rating',
-    currentGoals: 'Current Goals',
-    addGoal: 'Add Goal',
-    // Tabs
-    overview: 'Overview',
-    goals: 'Goals',
-    reviews: 'Reviews',
+    title: "Performance Appraisal",
+    overallPerformance: "Overall Performance",
+    goalsAchieved: "Goals Achieved",
+    reviewsThisPeriod: "Reviews This Period",
+    avgSkillRating: "Avg Skill Rating",
+    currentGoals: "Current Goals",
+    addGoal: "Add Goal",
+    overview: "Overview",
+    goals: "Goals",
+    reviews: "Reviews"
   },
-
-  // Employee Details Tabs
   employeeDetailTabs: {
-    basicInformation: 'Basic Information',
-    contact: 'Contact',
-    documents: 'Documents',
+    basicInformation: "Basic Information",
+    contact: "Contact",
+    documents: "Documents"
   },
-
-  // Employee Edit Form
   employeeEditForm: {
-    editEmployee: 'Edit Employee',
-    contactInformation: 'Contact Information',
-    employmentDetails: 'Employment Details',
-    email: 'Email',
-    phone: 'Phone',
-    telephone: 'Telephone',
-    address: 'Address',
-    department: 'Department',
-    abteilung: 'Department',
-    startDate: 'Start Date',
-    startdatum: 'Start Date',
-    dateOfBirth: 'Date of Birth',
-    performance: 'Performance',
-    leistung: 'Performance',
-    cancel: 'Cancel',
-    abbrechen: 'Cancel',
-    save: 'Save',
-    speichern: 'Save',
+    editEmployee: "Edit Employee",
+    contactInformation: "Contact Information",
+    employmentDetails: "Employment Details",
+    email: "Email",
+    phone: "Phone",
+    telephone: "Telephone",
+    address: "Address",
+    department: "Department",
+    abteilung: "Department",
+    startDate: "Start Date",
+    startdatum: "Start Date",
+    dateOfBirth: "Date of Birth",
+    performance: "Performance",
+    leistung: "Performance",
+    cancel: "Cancel",
+    abbrechen: "Cancel",
+    save: "Save",
+    speichern: "Save"
   },
-
   // Department Pie Chart Names
   departments: {
     all: 'All',
@@ -2383,9 +2088,8 @@ export default {
     sales: 'Sales',
     marketing: 'Marketing',
     design: 'Design',
-    part_time_employee: 'Experts Group',
+    part_time_employee: 'Experts Group'
   },
-
   // Morphing Showcase
   morphingShowcase: {
     title: 'Flubber Morphing Integration',
@@ -2413,9 +2117,8 @@ export default {
     manualControl: 'Manual control',
     responsiveDesign: 'Responsive design',
     customizableTiming: 'Customizable timing',
-    multipleEasingFunctions: 'Multiple easing functions',
+    multipleEasingFunctions: 'Multiple easing functions'
   },
-
   // Flubber Demo
   flubberDemo: {
     title: 'Flubber SVG Morphing Demo',
@@ -2440,9 +2143,8 @@ export default {
     manualShapeSelection: 'Manual shape selection',
     responsiveAccessible: 'Responsive and accessible',
     customizableDuration: 'Customizable animation duration',
-    easingFunctions: 'Easing functions for natural motion',
+    easingFunctions: 'Easing functions for natural motion'
   },
-
   // Demo employee display values (used for demo mode translations)
   demoEmployees: {
     'demo-emp-1': {
@@ -2466,18 +2168,16 @@ export default {
       location: 'Remote'
     }
   },
-
   // Location names
   locations: {
     headquarters: 'Headquarters',
     remote: 'Remote'
   },
-
   // Demo tasks (for demo mode translations)
   demoTasks: {
     'task-1': {
       title: 'Q4 Report Analysis',
-      description: 'Analyze Q4 performance metrics and prepare presentation - NOTE: This demo task cannot be edited or deleted.',
+      description: 'Analyze Q4 performance metrics and prepare presentation - NOTE: This demo task cannot be edited or deleted.'
     },
     'task-2': {
       title: 'Update Employee Handbook',
@@ -2504,7 +2204,6 @@ export default {
       description: 'Write comprehensive API documentation for v2.0 release - NOTE: This demo task cannot be edited or deleted.'
     }
   },
-
   // Demo goals (for demo mode translations)
   demoGoals: {
     'goal-1': {
@@ -2528,7 +2227,6 @@ export default {
       description: 'Close 5 enterprise-level deals worth $500K+ each - NOTE: This demo goal cannot be edited or deleted.'
     }
   },
-
   demoReviews: {
     'review-1': {
       reviewPeriod: 'Q4 2024',
@@ -2545,7 +2243,6 @@ export default {
       comments: 'Great contribution to the team'
     }
   },
-
   demoSkills: {
     'skill-1': {
       name: 'React',
@@ -2563,7 +2260,6 @@ export default {
       proficiencyLevel: 'Expert'
     }
   },
-
   demoFeedback: {
     'feedback-1': {
       type: 'Peer Review',
@@ -2574,7 +2270,6 @@ export default {
       text: 'Excellent work on the new design system. Keep it up!'
     }
   },
-
   demoJobs: {
     'job-1': {
       title: 'Senior Frontend Developer',
@@ -2599,7 +2294,6 @@ export default {
       }
     }
   },
-
   demoApplicants: {
     'app-1': {
       firstName: 'John',
@@ -2614,7 +2308,6 @@ export default {
       currentPosition: 'UX Lead'
     }
   },
-
   demoApplications: {
     'appl-1': {
       status: 'Under Review',
@@ -2625,7 +2318,6 @@ export default {
       notes: 'Excellent portfolio and design skills'
     }
   },
-
   demoInterviews: {
     'int-1': {
       status: 'Scheduled',
@@ -2633,22 +2325,21 @@ export default {
       notes: 'Portfolio review and technical assessment'
     }
   },
-
   demoNotifications: {
     'notif-1': {
-      title: 'Welcome to HR System',
-      message: 'Welcome to the demo mode of the HR System. Feel free to explore all features!',
-      actionLabel: 'Go to Dashboard'
+      title: "Welcome to HR System",
+      message: "Welcome to the demo mode of the HR System. Feel free to explore all features!",
+      actionLabel: "Go to Dashboard"
     },
     'notif-2': {
-      title: 'New Task Assigned',
-      message: 'You have been assigned a new task: Review Q3 Performance',
-      actionLabel: 'View Task'
+      title: "New Task Assigned",
+      message: "You have been assigned a new task: Review Q3 Performance",
+      actionLabel: "View Task"
     },
     'notif-3': {
-      title: 'Meeting Reminder',
-      message: 'Team meeting in 30 minutes',
-      actionLabel: 'View Calendar'
+      title: "Performance Review Due",
+      message: "Quarterly performance reviews are due next week.",
+      actionLabel: "View Calendar"
     }
-  },
+  }
 };

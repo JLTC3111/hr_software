@@ -4,3 +4,7 @@ verify_jwt = false
 
 [functions.visit-summary]
 verify_jwt = true
+
+# Google Cloud Translation for UGC (requires GOOGLE_TRANSLATE_API_KEY secret)
+[functions.translate]
+verify_jwt = true
