@@ -149,17 +149,17 @@ CREATE OR REPLACE FUNCTION calculate_working_days(start_date DATE, end_date DATE
 RETURNS DECIMAL AS $$
 DECLARE
     total_days DECIMAL;
-    current_date DATE;
+    cursor_date DATE;
 BEGIN
     total_days := 0;
-    current_date := start_date;
+    cursor_date := start_date;
     
-    WHILE current_date <= end_date LOOP
+    WHILE cursor_date <= end_date LOOP
         -- Count only weekdays (Monday=1 to Friday=5)
-        IF EXTRACT(DOW FROM current_date) BETWEEN 1 AND 5 THEN
+        IF EXTRACT(DOW FROM cursor_date) BETWEEN 1 AND 5 THEN
             total_days := total_days + 1;
         END IF;
-        current_date := current_date + 1;
+        cursor_date := cursor_date + 1;
     END LOOP;
     
     RETURN total_days;

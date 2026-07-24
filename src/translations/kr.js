@@ -1005,6 +1005,7 @@ export default {
     clear: '지우기'
   },
   timePicker: {
+    period: '오전/오후',
     hours: '시',
     minutes: '분',
     done: '완료',

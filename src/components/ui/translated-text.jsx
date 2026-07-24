@@ -1,43 +1,77 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext.jsx';
 import { isDemoMode } from '../../utils/demoHelper.js';
-import { translateText } from '../../services/translateService.js';
+import {
+  peekCachedTranslation,
+  translateText,
+} from '../../services/translateService.js';
 
 /**
  * Auto-translate a single UGC string into the active UI language (1A).
- * Shows original immediately; swaps when translation arrives.
- * Demo mode / empty text: returns original via t/demo callers — this component
- * only handles live UGC text fields (never names/emails/phones).
+ * Covers the original while a network translate is in flight; cache hits
+ * resolve immediately with no flash.
+ * Demo mode / empty text: returns original (callers use getDemo* for demo).
+ *
+ * @returns {{ text: string, isTranslating: boolean, original: string }}
  */
 export function useTranslatedText(text, { enabled = true } = {}) {
   const { currentLanguage } = useLanguage();
   const original = text == null ? '' : String(text);
-  const [translated, setTranslated] = useState(original);
+
+  const skip =
+    !enabled || !original.trim() || isDemoMode();
+
+  const cached = skip
+    ? null
+    : peekCachedTranslation(original, currentLanguage);
+
+  const [translated, setTranslated] = useState(() =>
+    skip ? original : cached ?? ''
+  );
+  const [isTranslating, setIsTranslating] = useState(
+    () => !skip && cached == null
+  );
 
   useEffect(() => {
     let cancelled = false;
-    setTranslated(original);
 
-    if (!enabled || !original.trim() || isDemoMode()) {
+    if (skip) {
+      setTranslated(original);
+      setIsTranslating(false);
       return undefined;
     }
 
-    // Skip network when UI is English and text is mostly ASCII Latin —
-    // edge still may translate; we always request except empty.
+    const hit = peekCachedTranslation(original, currentLanguage);
+    if (hit != null) {
+      setTranslated(hit);
+      setIsTranslating(false);
+      return undefined;
+    }
+
+    setTranslated('');
+    setIsTranslating(true);
+
     translateText(original, currentLanguage).then((out) => {
-      if (!cancelled && typeof out === 'string') setTranslated(out);
+      if (cancelled) return;
+      setTranslated(typeof out === 'string' ? out : original);
+      setIsTranslating(false);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [original, currentLanguage, enabled]);
+  }, [original, currentLanguage, enabled, skip]);
 
-  return translated;
+  return {
+    text: isTranslating ? '' : translated || original,
+    isTranslating,
+    original,
+  };
 }
 
 /**
  * Renders UGC text auto-translated to the current UI language.
+ * While translating, shows a pulse skeleton sized to the original (original hidden).
  */
 export function TranslatedText({
   text,
@@ -47,7 +81,29 @@ export function TranslatedText({
   children,
   ...rest
 }) {
-  const value = useTranslatedText(text ?? children, { enabled });
+  const { text: value, isTranslating, original } = useTranslatedText(
+    text ?? children,
+    { enabled }
+  );
+
+  if (isTranslating) {
+    return (
+      <Component
+        className={className}
+        aria-busy="true"
+        aria-live="polite"
+        {...rest}
+      >
+        <span
+          className="inline rounded-sm bg-current/15 animate-pulse text-transparent select-none pointer-events-none whitespace-pre-wrap break-words"
+          aria-hidden="true"
+        >
+          {original}
+        </span>
+      </Component>
+    );
+  }
+
   return (
     <Component className={className} {...rest}>
       {value}

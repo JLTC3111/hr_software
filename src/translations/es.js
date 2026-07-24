@@ -1137,6 +1137,7 @@ export default {
     clear: 'Borrar'
   },
   timePicker: {
+    period: 'AM/PM',
     hours: 'horas',
     minutes: 'min',
     done: 'Listo',

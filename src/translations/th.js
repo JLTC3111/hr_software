@@ -1041,6 +1041,7 @@ export default {
     clear: 'ล้าง'
   },
   timePicker: {
+    period: 'AM/PM',
     hours: 'ชม.',
     minutes: 'นาที',
     done: 'เสร็จ',

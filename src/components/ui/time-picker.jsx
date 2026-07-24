@@ -1,74 +1,10 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import useEmblaCarousel from 'embla-carousel-react';
 import { Clock } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext.jsx';
 import { useTheme } from '../../contexts/ThemeContext.jsx';
 import { cn } from '@/lib/utils';
 import { DATE_LOCALES } from './date-picker.jsx';
-import './time-picker.css';
-
-const CIRCLE_DEGREES = 360;
-const WHEEL_ITEM_SIZE = 32;
-const WHEEL_ITEM_COUNT = 18;
-const WHEEL_ITEMS_IN_VIEW = 4;
-
-export const WHEEL_ITEM_RADIUS = CIRCLE_DEGREES / WHEEL_ITEM_COUNT;
-export const IN_VIEW_DEGREES = WHEEL_ITEM_RADIUS * WHEEL_ITEMS_IN_VIEW;
-export const WHEEL_RADIUS = Math.round(
-  WHEEL_ITEM_SIZE / 2 / Math.tan(Math.PI / WHEEL_ITEM_COUNT)
-);
-
-const isInView = (wheelLocation, slidePosition) =>
-  Math.abs(wheelLocation - slidePosition) < IN_VIEW_DEGREES;
-
-const readVector = (vector) => {
-  if (!vector) return 0;
-  if (typeof vector.get === 'function') return vector.get();
-  if (typeof vector.value === 'number') return vector.value;
-  return 0;
-};
-
-const setSlideStyles = (emblaApi, index, loop, slideCount, totalRadius) => {
-  const slideNode = emblaApi.slideNodes()[index];
-  if (!slideNode) return;
-  const snaps = emblaApi.scrollSnapList();
-  if (snaps[index] == null) return;
-
-  const wheelLocation = emblaApi.scrollProgress() * totalRadius;
-  const positionDefault = snaps[index] * totalRadius;
-  const positionLoopStart = positionDefault + totalRadius;
-  const positionLoopEnd = positionDefault - totalRadius;
-
-  let inView = false;
-  let angle = index * -WHEEL_ITEM_RADIUS;
-
-  if (isInView(wheelLocation, positionDefault)) {
-    inView = true;
-  }
-
-  if (loop && isInView(wheelLocation, positionLoopEnd)) {
-    inView = true;
-    angle = -CIRCLE_DEGREES + (slideCount - index) * WHEEL_ITEM_RADIUS;
-  }
-
-  if (loop && isInView(wheelLocation, positionLoopStart)) {
-    inView = true;
-    angle = -(totalRadius % CIRCLE_DEGREES) - index * WHEEL_ITEM_RADIUS;
-  }
-
-  if (inView) {
-    slideNode.style.opacity = '1';
-    slideNode.style.transform = `translateY(-${index * 100}%) rotateX(${angle}deg) translateZ(${WHEEL_RADIUS}px)`;
-  } else {
-    slideNode.style.opacity = '0';
-    slideNode.style.transform = 'none';
-  }
-};
-
-export const setContainerStyles = (emblaApi, wheelRotation) => {
-  emblaApi.containerNode().style.transform = `translateZ(${WHEEL_RADIUS}px) rotateX(${wheelRotation}deg)`;
-};
 
 function pad2(n) {
   return String(n).padStart(2, '0');
@@ -108,173 +44,103 @@ function clampToBounds(hours, minutes, min, max) {
   };
 }
 
-/**
- * Embla iOS-style wheel for a single axis (hours or minutes).
- */
-export function IosPickerItem({
-  slideCount,
-  perspective,
+function usesHour12(locale) {
+  try {
+    return Boolean(
+      new Intl.DateTimeFormat(locale, { hour: 'numeric' }).resolvedOptions().hour12
+    );
+  } catch {
+    return false;
+  }
+}
+
+function to12Hour(hours24) {
+  const period = hours24 >= 12 ? 'pm' : 'am';
+  let hour12 = hours24 % 12;
+  if (hour12 === 0) hour12 = 12;
+  return { hour12, period };
+}
+
+function from12Hour(hour12, period) {
+  let h = hour12 % 12;
+  if (period === 'pm') h += 12;
+  return h;
+}
+
+function WheelColumn({
+  items,
+  value,
+  onChange,
   label,
-  loop = true,
-  selectedIndex = 0,
-  onSelect,
-  formatLabel = (i) => pad2(i),
+  isDarkMode,
+  formatItem = (v) => String(v),
 }) {
-  const initialIndex = Math.min(Math.max(0, selectedIndex), Math.max(0, slideCount - 1));
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    loop,
-    axis: 'y',
-    dragFree: true,
-    containScroll: false,
-    watchSlides: false,
-    align: 'center',
-    startIndex: initialIndex,
-  });
-  const totalRadius = slideCount * WHEEL_ITEM_RADIUS;
-  const rotationOffset = loop ? 0 : WHEEL_ITEM_RADIUS;
-  const slides = useMemo(() => Array.from({ length: slideCount }, (_, i) => i), [slideCount]);
-  const skipSync = useRef(false);
-  const dragging = useRef(false);
-  const onSelectRef = useRef(onSelect);
-  onSelectRef.current = onSelect;
-
-  const inactivateEmblaTransform = useCallback((api) => {
-    if (!api) return;
-    const { translate, slideLooper } = api.internalEngine();
-    translate.clear();
-    translate.toggleActive(false);
-    slideLooper.loopPoints.forEach(({ translate: slideTranslate }) => {
-      slideTranslate.clear();
-      slideTranslate.toggleActive(false);
-    });
-  }, []);
-
-  const rotateWheel = useCallback(
-    (api) => {
-      if (!api) return;
-      const rotation = slideCount * WHEEL_ITEM_RADIUS - rotationOffset;
-      const wheelRotation = rotation * api.scrollProgress();
-      setContainerStyles(api, wheelRotation);
-      api.slideNodes().forEach((_, index) => {
-        setSlideStyles(api, index, loop, slideCount, totalRadius);
-      });
-    },
-    [slideCount, rotationOffset, totalRadius, loop]
-  );
+  const listRef = useRef(null);
 
   useEffect(() => {
-    if (!emblaApi) return;
-
-    const onPointerDown = () => {
-      dragging.current = true;
-    };
-
-    const onPointerUp = (api) => {
-      const { scrollTo, target, location } = api.internalEngine();
-      const diff = readVector(target) - readVector(location);
-      const factor = Math.abs(diff) < WHEEL_ITEM_SIZE / 2.5 ? 10 : 0.1;
-      scrollTo.distance(diff * factor, true);
-      dragging.current = false;
-    };
-
-    const onSelectHandler = (api) => {
-      if (skipSync.current) return;
-      onSelectRef.current?.(api.selectedScrollSnap());
-    };
-
-    const onReInit = (api) => {
-      inactivateEmblaTransform(api);
-      rotateWheel(api);
-    };
-
-    const root = emblaApi.rootNode();
-    const onWheel = (event) => {
-      event.preventDefault();
-      if (Math.abs(event.deltaY) < 1) return;
-      if (event.deltaY > 0) emblaApi.scrollNext();
-      else emblaApi.scrollPrev();
-    };
-
-    emblaApi.on('pointerDown', onPointerDown);
-    emblaApi.on('pointerUp', onPointerUp);
-    emblaApi.on('scroll', rotateWheel);
-    emblaApi.on('select', onSelectHandler);
-    emblaApi.on('reInit', onReInit);
-
-    inactivateEmblaTransform(emblaApi);
-    rotateWheel(emblaApi);
-
-    // Ensure drag is bound after layout (portaled fixed panels can init early).
-    const raf = requestAnimationFrame(() => {
-      emblaApi.reInit();
-      inactivateEmblaTransform(emblaApi);
-      rotateWheel(emblaApi);
-    });
-
-    root?.addEventListener('wheel', onWheel, { passive: false });
-
-    return () => {
-      cancelAnimationFrame(raf);
-      root?.removeEventListener('wheel', onWheel);
-      emblaApi.off('pointerDown', onPointerDown);
-      emblaApi.off('pointerUp', onPointerUp);
-      emblaApi.off('scroll', rotateWheel);
-      emblaApi.off('select', onSelectHandler);
-      emblaApi.off('reInit', onReInit);
-    };
-  }, [emblaApi, inactivateEmblaTransform, rotateWheel]);
-
-  // Sync external selected index → wheel (skip while user is dragging)
-  useEffect(() => {
-    if (!emblaApi || dragging.current) return;
-    const current = emblaApi.selectedScrollSnap();
-    if (current === selectedIndex) return;
-    skipSync.current = true;
-    emblaApi.scrollTo(selectedIndex, true);
-    rotateWheel(emblaApi);
-    requestAnimationFrame(() => {
-      skipSync.current = false;
-    });
-  }, [emblaApi, selectedIndex, rotateWheel]);
-
-  const handleSlideClick = (index) => {
-    if (!emblaApi) return;
-    emblaApi.scrollTo(index);
-    onSelectRef.current?.(index);
-  };
+    const el = listRef.current;
+    if (!el) return;
+    const idx = items.findIndex((item) => item === value);
+    if (idx < 0) return;
+    const child = el.children[idx];
+    if (!child) return;
+    // Scroll only inside the wheel list — never scrollIntoView (that jumps the page)
+    const top =
+      child.offsetTop - el.clientHeight / 2 + child.clientHeight / 2;
+    el.scrollTop = Math.max(0, top);
+  }, [value, items]);
 
   return (
-    <div className="hr-time-picker-ios">
-      <div
-        className={cn(
-          'hr-time-picker-ios__scene',
-          perspective === 'left' && 'hr-time-picker-ios__scene--left',
-          perspective === 'right' && 'hr-time-picker-ios__scene--right'
-        )}
-        ref={emblaRef}
-      >
-        <div className="hr-time-picker-ios__container">
-          {slides.map((index) => (
-            <div
-              className="hr-time-picker-ios__slide"
-              key={index}
-              onClick={() => handleSlideClick(index)}
-              role="option"
-              aria-selected={selectedIndex === index}
-            >
-              {formatLabel(index)}
-            </div>
-          ))}
+    <div className="flex flex-col items-center min-w-[4.5rem] flex-1">
+      {label ? (
+        <div
+          className={cn(
+            'text-[11px] font-semibold uppercase tracking-wide mb-1',
+            isDarkMode ? 'text-gray-400' : 'text-gray-500'
+          )}
+        >
+          {label}
         </div>
+      ) : null}
+      <div
+        ref={listRef}
+        className={cn(
+          'h-40 w-full overflow-y-auto rounded-lg border snap-y snap-mandatory',
+          isDarkMode ? 'border-gray-700 bg-gray-950/40' : 'border-gray-200 bg-gray-50'
+        )}
+        role="listbox"
+        aria-label={label}
+      >
+        {items.map((item) => {
+          const selected = item === value;
+          return (
+            <button
+              key={String(item)}
+              type="button"
+              role="option"
+              aria-selected={selected}
+              onClick={() => onChange(item)}
+              className={cn(
+                'w-full py-2 text-sm snap-center tabular-nums transition-colors',
+                selected
+                  ? 'bg-blue-600 text-white font-semibold'
+                  : isDarkMode
+                    ? 'text-gray-300 hover:bg-gray-800'
+                    : 'text-gray-800 hover:bg-gray-100'
+              )}
+            >
+              {formatItem(item)}
+            </button>
+          );
+        })}
       </div>
-      {label ? <div className="hr-time-picker-ios__label">{label}</div> : null}
     </div>
   );
 }
 
 /**
- * Drop-in replacement for native <input type="time">.
- * value / onChange use HH:mm (24h), same as native time inputs.
+ * Locale-aware React time picker (HH:mm storage).
+ * Uses 12h + AM/PM when the active locale prefers hour12; otherwise 24h.
  */
 export function TimePicker({
   value = '',
@@ -303,6 +169,9 @@ export function TimePicker({
   const [open, setOpen] = useState(false);
   const [panelStyle, setPanelStyle] = useState({});
 
+  const locale = DATE_LOCALES[currentLanguage] || 'en-US';
+  const hour12 = useMemo(() => usesHour12(locale), [locale]);
+
   const parsed = useMemo(() => parseHHMM(value), [value]);
   const seed = useMemo(
     () => parsed || parseHHMM(defaultOpenTime) || { hours: 9, minutes: 0 },
@@ -321,7 +190,6 @@ export function TimePicker({
     setDraftMinutes(next.minutes);
   }, [open, seed.hours, seed.minutes, min, max]);
 
-  const locale = DATE_LOCALES[currentLanguage] || 'en-US';
   const displayValue = useMemo(() => {
     if (!parsed) return '';
     const d = new Date();
@@ -329,9 +197,22 @@ export function TimePicker({
     return new Intl.DateTimeFormat(locale, {
       hour: 'numeric',
       minute: '2-digit',
-      hour12: undefined,
     }).format(d);
   }, [parsed, locale]);
+
+  const periodLabels = useMemo(() => {
+    const amDate = new Date(2000, 0, 1, 0, 0);
+    const pmDate = new Date(2000, 0, 1, 12, 0);
+    const fmt = new Intl.DateTimeFormat(locale, { hour: 'numeric', hour12: true });
+    const pickPeriod = (date) => {
+      const parts = fmt.formatToParts(date);
+      return parts.find((p) => p.type === 'dayPeriod')?.value || null;
+    };
+    return {
+      am: pickPeriod(amDate) || 'AM',
+      pm: pickPeriod(pmDate) || 'PM',
+    };
+  }, [locale]);
 
   const emitChange = useCallback(
     (hhmm) => {
@@ -355,10 +236,10 @@ export function TimePicker({
     const el = rootRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const panelHeight = 320;
+    const panelHeight = 280;
     const spaceBelow = window.innerHeight - rect.bottom;
     const openUp = spaceBelow < panelHeight && rect.top > spaceBelow;
-    const width = Math.max(rect.width, 280);
+    const width = Math.max(rect.width, hour12 ? 300 : 240);
     setPanelStyle({
       position: 'fixed',
       left: Math.min(rect.left, window.innerWidth - width - 8),
@@ -366,7 +247,7 @@ export function TimePicker({
       width,
       zIndex: 9999,
     });
-  }, []);
+  }, [hour12]);
 
   useEffect(() => {
     if (!open) return;
@@ -376,7 +257,6 @@ export function TimePicker({
     const onPointer = (e) => {
       if (rootRef.current?.contains(e.target)) return;
       if (panelRef.current?.contains(e.target)) return;
-      // Apply current wheel selection when dismissing by outside click
       commitDraft();
     };
     const onKey = (e) => {
@@ -398,6 +278,15 @@ export function TimePicker({
   const resolvedPlaceholder =
     placeholder || t('timePicker.placeholder', '--:--');
 
+  const hours24 = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
+  const hours12List = useMemo(() => Array.from({ length: 12 }, (_, i) => i + 1), []);
+  const minutesList = useMemo(() => Array.from({ length: 60 }, (_, i) => i), []);
+  const draft12 = to12Hour(draftHours);
+
+  const setFrom12 = (hour12Val, period) => {
+    setDraftHours(from12Hour(hour12Val, period));
+  };
+
   return (
     <div ref={rootRef} className={cn('relative', className)}>
       <button
@@ -407,10 +296,12 @@ export function TimePicker({
         aria-label={ariaLabel || resolvedPlaceholder}
         aria-haspopup="dialog"
         aria-expanded={open}
-        onClick={() => {
+        aria-required={required || undefined}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
           if (disabled) return;
-          if (open) commitDraft();
-          else setOpen(true);
+          setOpen((v) => !v);
         }}
         className={cn(
           'w-full px-3 py-2 pr-10 rounded-lg border text-left focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none appearance-none cursor-pointer',
@@ -431,10 +322,12 @@ export function TimePicker({
             'absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 pointer-events-none',
             text?.secondary || (isDarkMode ? 'text-gray-400' : 'text-gray-500')
           )}
+          isDarkMode={isDarkMode}
           aria-hidden="true"
         />
       )}
-      <input type="hidden" name={name} value={value || ''} required={required} readOnly />
+      {/* Keep value for forms without native required validation (avoids browser scroll-to-invalid) */}
+      <input type="hidden" name={name} value={value || ''} readOnly tabIndex={-1} />
 
       {open &&
         createPortal(
@@ -445,29 +338,58 @@ export function TimePicker({
             aria-modal="false"
             aria-label={t('timePicker.picker', 'Time picker')}
             className={cn(
-              'hr-time-picker-panel rounded-xl border shadow-xl p-3',
-              isDarkMode
-                ? 'hr-time-picker-panel--dark bg-gray-900 border-gray-700'
-                : 'bg-white border-gray-200'
+              'rounded-xl border shadow-xl p-3',
+              isDarkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'
             )}
           >
-            <div className="hr-time-picker-embla">
-              <IosPickerItem
-                slideCount={24}
-                perspective="left"
-                loop
-                label={t('timePicker.hours', 'hours')}
-                selectedIndex={draftHours}
-                onSelect={setDraftHours}
-              />
-              <IosPickerItem
-                slideCount={60}
-                perspective="right"
-                loop
-                label={t('timePicker.minutes', 'min')}
-                selectedIndex={draftMinutes}
-                onSelect={setDraftMinutes}
-              />
+            <div className="flex gap-2 items-stretch">
+              {hour12 ? (
+                <>
+                  <WheelColumn
+                    items={hours12List}
+                    value={draft12.hour12}
+                    onChange={(h) => setFrom12(h, draft12.period)}
+                    label={t('timePicker.hours', 'hours')}
+                    isDarkMode={isDarkMode}
+                    formatItem={(n) => pad2(n)}
+                  />
+                  <WheelColumn
+                    items={minutesList}
+                    value={draftMinutes}
+                    onChange={setDraftMinutes}
+                    label={t('timePicker.minutes', 'min')}
+                    isDarkMode={isDarkMode}
+                    formatItem={(n) => pad2(n)}
+                  />
+                  <WheelColumn
+                    items={['am', 'pm']}
+                    value={draft12.period}
+                    onChange={(period) => setFrom12(draft12.hour12, period)}
+                    label={t('timePicker.period', 'AM/PM')}
+                    isDarkMode={isDarkMode}
+                    formatItem={(p) => (p === 'am' ? periodLabels.am : periodLabels.pm)}
+                  />
+                </>
+              ) : (
+                <>
+                  <WheelColumn
+                    items={hours24}
+                    value={draftHours}
+                    onChange={setDraftHours}
+                    label={t('timePicker.hours', 'hours')}
+                    isDarkMode={isDarkMode}
+                    formatItem={(n) => pad2(n)}
+                  />
+                  <WheelColumn
+                    items={minutesList}
+                    value={draftMinutes}
+                    onChange={setDraftMinutes}
+                    label={t('timePicker.minutes', 'min')}
+                    isDarkMode={isDarkMode}
+                    formatItem={(n) => pad2(n)}
+                  />
+                </>
+              )}
             </div>
 
             <div
@@ -495,12 +417,7 @@ export function TimePicker({
               )}
               <button
                 type="button"
-                className={cn(
-                  'text-xs px-3 py-1.5 rounded-md font-medium',
-                  isDarkMode
-                    ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                )}
+                className="text-xs px-3 py-1.5 rounded-md font-medium bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={commitDraft}
               >
                 {t('timePicker.done', 'Done')}

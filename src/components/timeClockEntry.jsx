@@ -668,17 +668,19 @@ const TimeClockEntry = ({ currentLanguage }) => {
   }, [selectedEmployeeFilter, timeEntries, userId, userEmployeeId, applyStatusFilter]);
 
   useEffect(() => {
+    // Deep-link review mode: scroll history into view once when data is ready.
+    // Do not depend on filteredEntries — that re-fired on unrelated UI updates.
     if (!reviewMode || reviewScrollDoneRef.current || !initialLoadComplete || loading) {
       return;
     }
 
+    reviewScrollDoneRef.current = true;
     const timer = setTimeout(() => {
       historySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      reviewScrollDoneRef.current = true;
     }, 350);
 
     return () => clearTimeout(timer);
-  }, [reviewMode, initialLoadComplete, loading, filteredEntries]);
+  }, [reviewMode, initialLoadComplete, loading]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -1635,10 +1637,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Date */}
-              <label 
-                htmlFor="date-input" 
-                className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'} mb-2`}
-                >
+              <label className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'} mb-2`}>
                 {t('timeClock.selectDate', 'Select Date')}
                 </label>
                 
@@ -1668,7 +1667,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
 
               {/* Clock In/Out Times */}
               <div>
-              <label htmlFor="clock-in-input" className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'} mb-2`}>
+              <label className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'} mb-2`}>
                 {t('timeClock.clockIn')}
               </label>
               
@@ -1689,7 +1688,7 @@ const TimeClockEntry = ({ currentLanguage }) => {
 
             {/* Clock Out */}
             <div>
-              <label htmlFor="clock-out-input" className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'} mb-2`}>
+              <label className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'} mb-2`}>
                 {t('timeClock.clockOut')}
               </label>
               

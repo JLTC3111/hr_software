@@ -1221,6 +1221,7 @@ export default {
     clear: 'Xóa'
   },
   timePicker: {
+    period: 'SA/CH',
     hours: 'giờ',
     minutes: 'phút',
     done: 'Xong',

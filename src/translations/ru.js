@@ -1099,6 +1099,7 @@ export default {
     clear: 'Очистить'
   },
   timePicker: {
+    period: 'AM/PM',
     hours: 'ч',
     minutes: 'мин',
     done: 'Готово',

@@ -1125,6 +1125,7 @@ export default {
     clear: 'Effacer'
   },
   timePicker: {
+    period: 'AM/PM',
     hours: 'h',
     minutes: 'min',
     done: 'OK',

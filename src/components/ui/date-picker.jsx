@@ -227,7 +227,10 @@ export function DatePicker({
         aria-label={ariaLabel || resolvedPlaceholder}
         aria-haspopup="dialog"
         aria-expanded={open}
-        onClick={() => {
+        aria-required={required || undefined}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
           if (disabled) return;
           setOpen((v) => !v);
         }}
@@ -247,14 +250,14 @@ export function DatePicker({
       {showIcon && (
         <Icon
           className={cn(
-            'absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none',
+            'absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 pointer-events-none',
             text?.secondary || (isDarkMode ? 'text-gray-400' : 'text-gray-500')
           )}
           aria-hidden="true"
         />
       )}
-      {/* Hidden input for native form / required semantics */}
-      <input type="hidden" name={name} value={value || ''} required={required} readOnly />
+      {/* Keep value for forms without native required validation (avoids browser scroll-to-invalid) */}
+      <input type="hidden" name={name} value={value || ''} readOnly tabIndex={-1} />
 
       {open &&
         createPortal(

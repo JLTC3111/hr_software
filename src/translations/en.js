@@ -1332,6 +1332,7 @@ export default {
     clear: 'Clear'
   },
   timePicker: {
+    period: 'AM/PM',
     hours: 'hours',
     minutes: 'min',
     done: 'Done',

@@ -26,6 +26,14 @@ const LANG_MAP: Record<string, string> = {
 const MAX_BATCH = 50;
 const MAX_CHARS = 8000;
 
+async function sha256Hex(text: string): Promise<string> {
+  const data = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return [...new Uint8Array(digest)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -139,21 +147,20 @@ serve(async (req) => {
       );
     }
 
-    // Preserve empties; only send non-empty to Google
-    const indexMap: number[] = [];
-    const toTranslate: string[] = [];
+    const translations = [...normalized];
+    const hashes = await Promise.all(
+      normalized.map((s) => (s.trim() ? sha256Hex(s) : Promise.resolve(""))),
+    );
+
+    // Indexes that need translation (non-empty)
+    const workIndexes: number[] = [];
     normalized.forEach((s, i) => {
-      if (s.trim()) {
-        indexMap.push(i);
-        toTranslate.push(s);
-      }
+      if (s.trim()) workIndexes.push(i);
     });
 
-    const translations = [...normalized];
-
-    if (toTranslate.length === 0) {
+    if (workIndexes.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, translations }),
+        JSON.stringify({ success: true, translations, cacheHits: 0 }),
         {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -161,53 +168,129 @@ serve(async (req) => {
       );
     }
 
-    const url =
-      `https://translation.googleapis.com/language/translate/v2?key=${
-        encodeURIComponent(googleKey)
-      }`;
+    // ---- Cache lookup ----
+    const hashesToLookup = [
+      ...new Set(workIndexes.map((i) => hashes[i]).filter(Boolean)),
+    ];
+    const cacheByHash = new Map<string, string>();
 
-    const payload: Record<string, unknown> = {
-      q: toTranslate,
-      target: targetLang,
-      format: "text",
-    };
-    if (sourceLang) payload.source = sourceLang;
+    if (hashesToLookup.length > 0) {
+      const { data: cachedRows, error: cacheErr } = await supabaseAdmin
+        .from("translation_cache")
+        .select("source_hash, translated_text")
+        .eq("target_lang", targetLang)
+        .in("source_hash", hashesToLookup);
 
-    const googleRes = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!googleRes.ok) {
-      const errText = await googleRes.text();
-      console.error("Google Translate error:", googleRes.status, errText);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Translation provider error",
-          status: googleRes.status,
-        }),
-        {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      if (cacheErr) {
+        console.warn("translation_cache lookup error:", cacheErr.message);
+      } else {
+        (cachedRows || []).forEach(
+          (row: { source_hash: string; translated_text: string }) => {
+            cacheByHash.set(row.source_hash, row.translated_text);
+          },
+        );
+      }
     }
 
-    const googleJson = await googleRes.json();
-    const translatedList =
-      googleJson?.data?.translations?.map((row: { translatedText?: string }) =>
-        row.translatedText ?? ""
-      ) ?? [];
-
-    translatedList.forEach((translated: string, j: number) => {
-      const originalIndex = indexMap[j];
-      if (originalIndex != null) translations[originalIndex] = translated;
+    let cacheHits = 0;
+    const missIndexes: number[] = [];
+    workIndexes.forEach((i) => {
+      const hit = cacheByHash.get(hashes[i]);
+      if (hit != null) {
+        translations[i] = hit;
+        cacheHits += 1;
+      } else {
+        missIndexes.push(i);
+      }
     });
 
+    // ---- Google for cache misses ----
+    if (missIndexes.length > 0) {
+      const toTranslate = missIndexes.map((i) => normalized[i]);
+      const url =
+        `https://translation.googleapis.com/language/translate/v2?key=${
+          encodeURIComponent(googleKey)
+        }`;
+
+      const payload: Record<string, unknown> = {
+        q: toTranslate,
+        target: targetLang,
+        format: "text",
+      };
+      if (sourceLang) payload.source = sourceLang;
+
+      const googleRes = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!googleRes.ok) {
+        const errText = await googleRes.text();
+        console.error("Google Translate error:", googleRes.status, errText);
+        // Return partial results (cache hits) rather than failing entirely
+        if (cacheHits === 0) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: "Translation provider error",
+              status: googleRes.status,
+            }),
+            {
+              status: 502,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
+        }
+      } else {
+        const googleJson = await googleRes.json();
+        const translatedList: string[] =
+          googleJson?.data?.translations?.map(
+            (row: { translatedText?: string }) => row.translatedText ?? "",
+          ) ?? [];
+
+        const upsertRows: Array<{
+          source_hash: string;
+          target_lang: string;
+          source_text: string;
+          translated_text: string;
+          updated_at: string;
+        }> = [];
+
+        translatedList.forEach((translated, j) => {
+          const originalIndex = missIndexes[j];
+          if (originalIndex == null) return;
+          const text = normalized[originalIndex];
+          const out = translated || text;
+          translations[originalIndex] = out;
+          upsertRows.push({
+            source_hash: hashes[originalIndex],
+            target_lang: targetLang,
+            source_text: text.slice(0, 5000),
+            translated_text: out,
+            updated_at: new Date().toISOString(),
+          });
+        });
+
+        if (upsertRows.length > 0) {
+          const { error: upsertErr } = await supabaseAdmin
+            .from("translation_cache")
+            .upsert(upsertRows, { onConflict: "source_hash,target_lang" });
+          if (upsertErr) {
+            console.warn("translation_cache upsert error:", upsertErr.message);
+          }
+        }
+      }
+    }
+
     return new Response(
-      JSON.stringify({ success: true, translations, targetLang }),
+      JSON.stringify({
+        success: true,
+        translations,
+        targetLang,
+        cacheHits,
+        cacheMisses: missIndexes.length,
+      }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

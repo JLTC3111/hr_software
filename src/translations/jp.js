@@ -1006,6 +1006,7 @@ export default {
     clear: 'クリア'
   },
   timePicker: {
+    period: '午前/午後',
     hours: '時',
     minutes: '分',
     done: '完了',

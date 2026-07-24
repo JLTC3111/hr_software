@@ -198,6 +198,16 @@ export async function translateText(text, targetLang) {
   return out;
 }
 
+/** Sync cache lookup — null if not cached (or empty / no lang). */
+export function peekCachedTranslation(text, targetLang) {
+  ensureCache();
+  const value = text == null ? '' : String(text);
+  if (!value.trim() || !targetLang) return null;
+  const mappedTarget = TRANSLATE_LANG_MAP[targetLang] || targetLang;
+  const key = cacheKey(value, mappedTarget);
+  return memoryCache.has(key) ? memoryCache.get(key) : null;
+}
+
 export function clearTranslateCache() {
   memoryCache.clear();
   if (typeof localStorage !== 'undefined') {
