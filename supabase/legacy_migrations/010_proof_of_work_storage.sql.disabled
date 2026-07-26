@@ -1,3 +1,5 @@
+-- Archived: this draft reused migration version 010 and targets the obsolete
+-- hr-documents bucket/storage.policies API.
 -- ============================================
 -- PROOF OF WORK STORAGE SETUP
 -- Storage bucket and policies for time entry proof files

@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS time_entries (
   proof_file_url TEXT,
   proof_file_name TEXT,
   proof_file_type VARCHAR(50),
+  proof_file_path TEXT,
   status VARCHAR(50) DEFAULT 'pending', -- pending, approved, rejected
   submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   approved_by INTEGER REFERENCES employees(id),

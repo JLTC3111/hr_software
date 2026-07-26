@@ -21,10 +21,9 @@ import { useAuth } from '../contexts/AuthContext';
 import * as userService from '../services/userService';
 import { SlidingNumber } from './motion-primitives';
 import { PageLiveClock } from './ui/page-live-clock';
-import { cn } from '@/lib/utils';
 
 const UserManagement = () => {
-  const { isDarkMode, bg, text, border } = useTheme();
+  const { isDarkMode, bg, text, border, hover } = useTheme();
   const { t } = useLanguage();
   const { user: currentUser } = useAuth();
   

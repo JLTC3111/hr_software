@@ -1,3 +1,6 @@
+-- Archived: this file reused migration version 004 and was never part of the
+-- recorded migration chain. Its intended constraints already exist in the
+-- canonical migrations and production schema.
 -- ============================================
 -- IMPROVED FOREIGN KEY CONSTRAINTS
 -- This migration ensures proper handling of employee deletions

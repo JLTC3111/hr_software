@@ -19,124 +19,13 @@ export const deleteUser = async (userId) => {
   }
 
   try {
-    console.log(`🗑️ Starting deletion process for user ${userId}`);
+    const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+      body: { userId }
+    });
 
-    // Step 1: Get user info before deletion
-    const { data: userData, error: userError } = await supabase
-      .from('hr_users')
-      .select('email, employee_id')
-      .eq('id', userId)
-      .single();
-
-    if (userError) {
-      console.error('Error fetching user:', userError);
-      throw new Error(`Failed to fetch user: ${userError.message}`);
-    }
-
-    console.log(`User to delete: ${userData.email}, Employee ID: ${userData.employee_id}`);
-
-    // Step 2: Remove or nullify all foreign key references
-    
-    // 2a. Nullify employee_id in employees table (if this user is linked as an employee)
-    if (userData.employee_id) {
-      console.log(`Unlinking employee record ${userData.employee_id}...`);
-      const { error: unlinkError } = await supabase
-        .from('employees')
-        .update({ employee_id: null })
-        .eq('id', userData.employee_id);
-
-      if (unlinkError) {
-        console.warn('Error unlinking employee:', unlinkError);
-        // Continue anyway, as this might not be critical
-      }
-    }
-
-    // 2b. Delete or nullify records in other tables that reference this user
-    
-    // Note: time_entries table uses employee_id, not user_id
-    // First try to delete by employee_id if we have it
-    if (userData.employee_id) {
-      const { error: timeEntriesError } = await supabase
-        .from('time_entries')
-        .delete()
-        .eq('employee_id', userData.employee_id);
-      
-      if (timeEntriesError) {
-        console.warn('Error deleting time entries:', timeEntriesError);
-      }
-    }
-
-    // Delete leave requests
-    const { error: leaveError } = await supabase
-      .from('leave_requests')
-      .delete()
-      .eq('employee_id', userId);
-    
-    if (leaveError) {
-      console.warn('Error deleting leave requests:', leaveError);
-    }
-
-    // Delete overtime logs
-    const { error: overtimeError } = await supabase
-      .from('overtime_logs')
-      .delete()
-      .eq('employee_id', userId);
-    
-    if (overtimeError) {
-      console.warn('Error deleting overtime logs:', overtimeError);
-    }
-
-    // Delete performance reviews where user is reviewer or reviewee
-    const { error: performanceError } = await supabase
-      .from('employees_performance_summary')
-      .delete()
-      .eq('employee_id', userId);
-    
-    if (performanceError) {
-      console.warn('Error deleting performance data:', performanceError);
-    }
-
-    // Nullify manager_id references (users who report to this user)
-    const { error: managerError } = await supabase
-      .from('hr_users')
-      .update({ manager_id: null })
-      .eq('manager_id', userId);
-    
-    if (managerError) {
-      console.warn('Error removing manager references:', managerError);
-    }
-
-    // Step 3: Delete from hr_users table
-    console.log('Deleting from hr_users table...');
-    const { error: hrDeleteError } = await supabase
-      .from('hr_users')
-      .delete()
-      .eq('id', userId);
-
-    if (hrDeleteError) {
-      console.error('Error deleting from hr_users:', hrDeleteError);
-      throw new Error(`Failed to delete from hr_users: ${hrDeleteError.message}`);
-    }
-
-    // Step 4: Delete from auth.users (if admin/service role key is available)
-    console.log('Deleting from auth.users...');
-    try {
-      const { error: authDeleteError } = await supabase.auth.admin.deleteUser(userId);
-      
-      if (authDeleteError) {
-        console.warn('Could not delete from auth.users (might require admin privileges):', authDeleteError);
-        // This might fail if using anon key, but hr_users deletion is more critical
-      } else {
-        console.log('✅ Successfully deleted from auth.users');
-      }
-    } catch (authError) {
-      console.warn('Auth deletion not available (requires service role key):', authError);
-      // Continue anyway - hr_users deletion is the critical part
-    }
-
-    console.log(`✅ Successfully deleted user ${userId}`);
-    return { success: true };
-
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Failed to delete user');
+    return { success: true, data };
   } catch (error) {
     console.error('Error deleting user:', error);
     return { 

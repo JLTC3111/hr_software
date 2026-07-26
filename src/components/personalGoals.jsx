@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Star, Sparkle, TrendingUp, Calendar, User, Award, Goal, ShieldEllipsis, MessageSquare, Plus, Edit, Eye, X, Save, ChevronRight, ChevronLeft, Trash2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../config/supabaseClient';
 import { isDemoMode, getDemoGoalTitle, getDemoGoalDescription, getDemoSkills, upsertDemoSkill } from '../utils/demoHelper';
 import * as performanceService from '../services/performanceService';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
@@ -16,19 +15,24 @@ import { DatePicker } from './ui/date-picker.jsx';
 import { TranslatedText } from './ui/translated-text.jsx';
 import { cn } from '@/lib/utils';
 import { filterActiveEmployees } from '../utils/employeeStatus.js';
+import {
+  PERFORMANCE_SKILLS,
+  buildPerformanceAssessment,
+  mergeReviewRatingsIntoSkills
+} from '../utils/performanceAssessment.js';
 
 const PersonalGoals = ({ employees }) => {
   const { t } = useLanguage();
-  const { isDarkMode, text, bg, border } = useTheme();
+  const { isDarkMode, text } = useTheme();
   const { user, checkPermission } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
 
-  // Helper to compute the current year-quarter string, e.g. '2025-q4'
+  // Match the review_period format already used by performance reviews, e.g. Q4-2025.
   const getCurrentQuarter = (date = new Date()) => {
     const year = date.getFullYear();
     const month = date.getMonth(); // 0-11
     const quarter = Math.floor(month / 3) + 1; // 1-4
-    return `${year}-q${quarter}`;
+    return `Q${quarter}-${year}`;
   };
 
   // Check if user can view other employees' performance
@@ -60,7 +64,7 @@ const PersonalGoals = ({ employees }) => {
         : (availableEmployees[0]?.id ? String(availableEmployees[0].id) : null);
       if (fallback) setSelectedEmployee(fallback);
     }
-  }, [user, availableEmployees]);
+  }, [user, availableEmployees, selectedEmployee]);
   const [selectedPeriod, setSelectedPeriod] = useState(() => getCurrentQuarter());
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
@@ -72,7 +76,9 @@ const PersonalGoals = ({ employees }) => {
   const [goals, setGoals] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [skills, setSkills] = useState([]);
-  const [progressChanges, setProgressChanges] = useState({}); // Track progress changes by goal ID
+  const [assessmentDirty, setAssessmentDirty] = useState(false);
+  const [savingAssessment, setSavingAssessment] = useState(false);
+  const fetchRequestIdRef = useRef(0);
 
   // Form state for new goal
   const [goalForm, setGoalForm] = useState({
@@ -96,12 +102,15 @@ const PersonalGoals = ({ employees }) => {
     return t(`employeePosition.${position}`, position);
   };
 
-  // Fetch goals and reviews when employee changes
+  // Fetch the period-specific review when the employee or quarter changes.
   useEffect(() => {
     if (selectedEmployee) {
+      setAssessmentDirty(false);
       fetchGoalsAndReviews();
     }
-  }, [selectedEmployee]);
+    // The fetch intentionally keys only on the selected employee/period.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEmployee, selectedPeriod]);
 
   // ESC key handler to close modals
   useEffect(() => {
@@ -129,6 +138,7 @@ const PersonalGoals = ({ employees }) => {
 
   const fetchGoalsAndReviews = async (options = {}) => {
     const { silent = false } = options;
+    const requestId = ++fetchRequestIdRef.current;
     if (!silent) setLoading(true);
     try {
       if (!isDemoMode()) {
@@ -148,11 +158,10 @@ const PersonalGoals = ({ employees }) => {
 
       // Fetch reviews
       const reviewsResult = await performanceService.getAllPerformanceReviews({
-        employeeId: selectedEmployee
+        employeeId: selectedEmployee,
+        reviewPeriod: selectedPeriod
       });
-      if (reviewsResult.success) {
-        setReviews(reviewsResult.data || []);
-      }
+      const periodReviews = reviewsResult.success ? reviewsResult.data || [] : [];
 
       // Fetch skills assessments
       let skillsData = [];
@@ -174,19 +183,18 @@ const PersonalGoals = ({ employees }) => {
           ];
         }
       } else {
-        const { data, error } = await supabase
-          .from('skills_assessments')
-          .select('*')
-          .eq('employee_id', selectedEmployee)
-          .order('skill_category', { ascending: true });
-        skillsData = data;
-        skillsError = error;
+        const skillsResult = await performanceService.getSkillsByEmployee(selectedEmployee);
+        skillsData = skillsResult.data;
+        skillsError = skillsResult.success ? null : skillsResult.error;
       }
 
+      if (requestId !== fetchRequestIdRef.current) return;
+
+      setReviews(periodReviews);
       if (!skillsError && skillsData) {
-        setSkills(skillsData);
+        setSkills(mergeReviewRatingsIntoSkills(skillsData, periodReviews[0], selectedEmployee));
       } else {
-        setSkills([]);
+        setSkills(mergeReviewRatingsIntoSkills([], periodReviews[0], selectedEmployee));
       }
     } catch (error) {
       console.error('Error fetching performance data:', error);
@@ -200,122 +208,72 @@ const PersonalGoals = ({ employees }) => {
 
   useAuthenticatedPageRefresh(() => fetchGoalsAndReviews({ silent: true }));
 
-  // Handler to update employee performance rating
-  const handleUpdatePerformanceRating = async (newRating) => {
+  // Keep slider movement local; save the complete assessment as one review record.
+  const handleUpdateSkillRating = (skillName, category, newRating) => {
     if (!selectedEmployee) return;
-    
-    try {
-      // Round to 2 decimal places (to match DECIMAL(3,2) in database)
-      const roundedRating = Math.round(newRating * 100) / 100;
+    const roundedRating = Math.round(newRating * 10) / 10;
+    const proficiencyLevel = roundedRating >= 4 ? 'advanced' : roundedRating >= 3 ? 'intermediate' : 'beginner';
 
-      // Only update legacy employees.performance column
-      const { updateEmployee } = await import('../services/employeeService');
-      const result = await updateEmployee(selectedEmployee, {
-        performance: roundedRating
-      });
-
-      if (result.success) {
-        console.log('Performance rating updated in employees table');
-        
-        // Show success notification
-        alert(t('personalGoals.ratingUpdated', 'Performance rating updated successfully!'));
-        // Refresh the employee data
-        fetchGoalsAndReviews();
-      } else {
-        alert(t('personalGoals.ratingUpdateError', 'Failed to update performance rating'));
-      }
-    } catch (error) {
-      console.error('Error updating performance rating:', error);
-      if (handleSessionAuthError(error)) return;
-      alert(t('personalGoals.ratingUpdateError', 'Failed to update performance rating'));
-    }
+    setSkills(prevSkills =>
+      prevSkills.map(skill =>
+        skill.skill_name === skillName
+          ? {
+              ...skill,
+              skill_category: category,
+              rating: roundedRating,
+              proficiency_level: proficiencyLevel
+            }
+          : skill
+      )
+    );
+    setAssessmentDirty(true);
   };
 
-  // Handler to update skill rating
-  const handleUpdateSkillRating = async (skillName, category, newRating) => {
-    if (!selectedEmployee) return;
-    
+  const handleSaveSkillAssessment = async () => {
+    if (!selectedEmployee || !selectedPeriod || !assessmentDirty) return;
+
+    const { ratings, overallRating } = buildPerformanceAssessment(skills);
+
+    setSavingAssessment(true);
     try {
-      const roundedRating = Math.round(newRating * 10) / 10;
-      const proficiencyLevel = roundedRating >= 4 ? 'advanced' : roundedRating >= 3 ? 'intermediate' : 'beginner';
-      
-      // Update local state immediately for instant UI feedback
-      setSkills(prevSkills => {
-        const existingSkillIndex = prevSkills.findIndex(s => s.skill_name === skillName);
-        
-        if (existingSkillIndex >= 0) {
-          // Update existing skill
-          const updated = [...prevSkills];
-          updated[existingSkillIndex] = {
-            ...updated[existingSkillIndex],
-            rating: roundedRating,
-            proficiency_level: proficiencyLevel
-          };
-          return updated;
-        } else {
-          // Add new skill
-          return [...prevSkills, {
-            id: `demo-skill-${Date.now()}`,
-            employee_id: selectedEmployee,
-            skill_name: skillName,
-            skill_category: category,
-            rating: roundedRating,
-            proficiency_level: proficiencyLevel,
-            assessment_date: new Date().toISOString().split('T')[0]
-          }];
-        }
+      const result = await performanceService.upsertPerformanceReviewByPeriod({
+        employeeId: selectedEmployee,
+        reviewerId: user?.employeeId || selectedEmployee,
+        reviewPeriod: selectedPeriod,
+        reviewType: 'quarterly',
+        overallRating,
+        ...ratings,
+        status: reviews[0]?.status || 'draft'
       });
 
-      if (isDemoMode()) {
-        // Persist demo skill rating to localStorage
-        upsertDemoSkill({
-          employee_id: selectedEmployee,
-          skill_name: skillName,
-          skill_category: category,
-          rating: roundedRating,
-          proficiency_level: proficiencyLevel,
-          assessment_date: new Date().toISOString().split('T')[0]
-        });
-        return;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save performance assessment');
       }
 
-      // Check if skill exists in database
-      const { data: existing, error: fetchError } = await supabase
-        .from('skills_assessments')
-        .select('id')
-        .eq('employee_id', selectedEmployee)
-        .eq('skill_name', skillName)
-        .single();
-
-      if (existing && !fetchError) {
-        // Update existing
-        await supabase
-          .from('skills_assessments')
-          .update({
-            rating: roundedRating,
-            proficiency_level: roundedRating >= 4 ? 'advanced' : roundedRating >= 3 ? 'intermediate' : 'beginner',
-            assessment_date: new Date().toISOString().split('T')[0],
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existing.id);
-      } else {
-        // Create new
-        await supabase
-          .from('skills_assessments')
-          .insert({
+      if (isDemoMode()) {
+        for (const definition of PERFORMANCE_SKILLS) {
+          const rating = ratings[definition.serviceField];
+          if (rating <= 0) continue;
+          upsertDemoSkill({
             employee_id: selectedEmployee,
-            skill_name: skillName,
-            skill_category: category,
-            rating: roundedRating,
-            proficiency_level: roundedRating >= 4 ? 'advanced' : roundedRating >= 3 ? 'intermediate' : 'beginner',
+            skill_name: definition.skillName,
+            skill_category: definition.category,
+            rating,
+            proficiency_level: rating >= 4 ? 'advanced' : rating >= 3 ? 'intermediate' : 'beginner',
             assessment_date: new Date().toISOString().split('T')[0]
           });
+        }
       }
+
+      setAssessmentDirty(false);
+      await fetchGoalsAndReviews({ silent: true });
+      alert(t('personalGoals.ratingUpdated', 'Performance assessment saved successfully!'));
     } catch (error) {
-      console.error('Error updating skill rating:', error);
-      if (handleSessionAuthError(error, { silent: true })) return;
-      // Revert local state on error
-      fetchGoalsAndReviews();
+      console.error('Error saving performance assessment:', error);
+      if (handleSessionAuthError(error)) return;
+      alert(`${t('personalGoals.ratingUpdateError', 'Failed to save performance assessment')}: ${error.message}`);
+    } finally {
+      setSavingAssessment(false);
     }
   };
 
@@ -441,57 +399,6 @@ const PersonalGoals = ({ employees }) => {
     setLoading(false);
   };
 
-  // Handle progress change
-  const handleProgressChange = (goalId, newProgress) => {
-    setProgressChanges(prev => ({
-      ...prev,
-      [goalId]: newProgress
-    }));
-  };
-
-  // Save progress for a specific goal
-  const handleSaveProgress = async (goalId) => {
-    const newProgress = progressChanges[goalId];
-    if (newProgress === undefined) return;
-
-    setLoading(true);
-    
-    try {
-      // Determine the new status based on progress
-      let newStatus = 'pending';
-      if (newProgress === 100) {
-        newStatus = 'completed';
-      } else if (newProgress > 0) {
-        newStatus = 'in_progress';
-      }
-      
-      // Use service for both demo and non-demo mode (service handles persistence)
-      const result = await performanceService.updatePerformanceGoal(goalId, {
-        progressPercentage: newProgress,
-        status: newStatus
-      });
-
-      if (result.success) {
-        // Clear the progress change for this goal
-        setProgressChanges(prev => {
-          const updated = { ...prev };
-          delete updated[goalId];
-          return updated;
-        });
-        fetchGoalsAndReviews(); // Refresh data
-        alert(t('personalGoals.progressSaved', 'Progress saved successfully!'));
-      } else {
-        alert(t('personalGoals.progressSaveError', 'Failed to save progress: ') + result.error);
-      }
-    } catch (error) {
-      console.error('Error saving progress:', error);
-      if (handleSessionAuthError(error)) return;
-      alert(t('personalGoals.progressSaveError', 'Failed to save progress: ') + error.message);
-    }
-    
-    setLoading(false);
-  };
-
   // Calculate overall rating from reviews
   const calculateOverallRating = () => {
     // Calculate average from skills assessments
@@ -534,13 +441,12 @@ const PersonalGoals = ({ employees }) => {
   // Labels use translation keys if available, otherwise fall back to "<year> Q<quarter>".
   const currentYear = new Date().getFullYear();
   const periods = [1, 2, 3, 4].map(q => ({
-    value: `${currentYear}-q${q}`,
+    value: `Q${q}-${currentYear}`,
     label: t(`personalGoals.q${q}_${currentYear}`, `${currentYear} Q${q}`)
   }));
 
   const StarRating = ({ rating, size = 'w-5 h-5', editable = false, onRatingChange }) => {
     const [hoverRating, setHoverRating] = useState(0);
-    const [isEditing, setIsEditing] = useState(false);
     const [newRating, setNewRating] = useState(rating);
 
     const handleStarClick = (starValue) => {
@@ -592,19 +498,6 @@ const PersonalGoals = ({ employees }) => {
       case 'pending': return t('personalGoals.pending');
       case 'not-started': return t('personalGoals.notStarted');
       default: return status;
-    }
-  };
-
-  const getReviewTypeText = (reviewType) => {
-    switch (reviewType) {
-      case 'quarterly': return t('personalGoals.quarterly');
-      case 'weekly': return t('personalGoals.weekly');
-      case 'monthly': return t('personalGoals.monthly');
-      case 'annual': return t('personalGoals.annual');
-      case 'mid-year': return t('personalGoals.midYear');
-      case 'probation': return t('personalGoals.probation');
-      case 'ad-hoc': return t('personalGoals.adHoc');
-      default: return reviewType;
     }
   };
 
@@ -825,6 +718,26 @@ const PersonalGoals = ({ employees }) => {
               </div>
             );
           })}
+        </div>
+        <div className="mt-6 flex justify-end">
+          <button
+            type="button"
+            onClick={handleSaveSkillAssessment}
+            disabled={!assessmentDirty || savingAssessment}
+            className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            style={{
+              backgroundColor: isDarkMode ? '#2563eb' : '#2563eb',
+              borderColor: isDarkMode ? '#60a5fa' : '#1d4ed8',
+              color: '#ffffff'
+            }}
+          >
+            <Save className="h-4 w-4" />
+            <span>
+              {savingAssessment
+                ? t('common.saving', 'Saving...')
+                : t('personalGoals.saveAssessment', 'Save Assessment')}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -1070,11 +983,7 @@ const PersonalGoals = ({ employees }) => {
                     borderColor: 'transparent'
                   }}
                 >
-                  {progressChanges[goal.id] !== undefined ? (
-                    <NumberTicker value={Number(progressChanges[goal.id]) || 0} />
-                  ) : (
-                    <NumberTicker value={Number(goal.progress) || 0} />
-                  )}%
+                  <NumberTicker value={Number(goal.progress) || 0} />%
                 </span>
               </div>
             </div>

@@ -98,6 +98,42 @@ CREATE TABLE IF NOT EXISTS public.performance_comments (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create goal milestones before their indexes, triggers, and policies.
+DROP TABLE IF EXISTS public.goal_milestones CASCADE;
+CREATE TABLE IF NOT EXISTS public.goal_milestones (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    goal_id UUID NOT NULL REFERENCES public.performance_goals(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    description TEXT,
+    due_date DATE,
+    status TEXT DEFAULT 'pending',
+    completed_date DATE,
+    notes TEXT,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+    CONSTRAINT valid_milestone_status CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled'))
+);
+
+-- Create employee feedback before its indexes, triggers, and policies.
+DROP TABLE IF EXISTS public.employee_feedback CASCADE;
+CREATE TABLE IF NOT EXISTS public.employee_feedback (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    employee_id TEXT NOT NULL REFERENCES public.employees(id) ON DELETE CASCADE,
+    feedback_from TEXT REFERENCES public.employees(id) ON DELETE SET NULL,
+    feedback_type TEXT DEFAULT 'peer',
+    rating DECIMAL(2, 1) CHECK (rating >= 0 AND rating <= 5),
+    feedback_text TEXT NOT NULL,
+    is_anonymous BOOLEAN DEFAULT false,
+    related_review_id UUID,
+    feedback_date DATE DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+    CONSTRAINT valid_feedback_type CHECK (feedback_type IN ('peer', 'manager', 'self', '360'))
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_performance_goals_employee ON public.performance_goals(employee_id);
 CREATE INDEX IF NOT EXISTS idx_performance_goals_status ON public.performance_goals(status);
@@ -238,42 +274,6 @@ CREATE POLICY "Allow authenticated users to insert employee feedback"
     ON public.employee_feedback FOR INSERT
     TO authenticated
     WITH CHECK (true);
-
--- Create goal milestones table
-DROP TABLE IF EXISTS public.goal_milestones CASCADE;
-CREATE TABLE IF NOT EXISTS public.goal_milestones (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    goal_id UUID NOT NULL REFERENCES public.performance_goals(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
-    description TEXT,
-    due_date DATE,
-    status TEXT DEFAULT 'pending',
-    completed_date DATE,
-    notes TEXT,
-    sort_order INTEGER DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
-    CONSTRAINT valid_milestone_status CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled'))
-);
-
--- Create employee feedback table
-DROP TABLE IF EXISTS public.employee_feedback CASCADE;
-CREATE TABLE IF NOT EXISTS public.employee_feedback (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    employee_id TEXT NOT NULL REFERENCES public.employees(id) ON DELETE CASCADE,
-    feedback_from TEXT REFERENCES public.employees(id) ON DELETE SET NULL,
-    feedback_type TEXT DEFAULT 'peer',
-    rating DECIMAL(2, 1) CHECK (rating >= 0 AND rating <= 5),
-    feedback_text TEXT NOT NULL,
-    is_anonymous BOOLEAN DEFAULT false,
-    related_review_id UUID,
-    feedback_date DATE DEFAULT CURRENT_DATE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
-    CONSTRAINT valid_feedback_type CHECK (feedback_type IN ('peer', 'manager', 'self', '360'))
-);
 
 -- Create view for employee performance summary
 DROP VIEW IF EXISTS public.employee_performance_summary CASCADE;

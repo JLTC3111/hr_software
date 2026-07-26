@@ -1,8 +1,18 @@
 import { supabase } from '../config/supabaseClient';
-import { isDemoMode, getDemoGoals, addDemoGoal, updateDemoGoal, deleteDemoGoal, MOCK_GOALS, MOCK_PERFORMANCE_REVIEWS, MOCK_SKILLS, MOCK_FEEDBACK, getDemoReviews, addDemoReview, updateDemoReview, deleteDemoReview, getDemoSkills, addDemoSkill, updateDemoSkill, upsertDemoSkill, deleteDemoSkill } from '../utils/demoHelper';
+import { isDemoMode, getDemoGoals, addDemoGoal, updateDemoGoal, deleteDemoGoal, MOCK_GOALS, MOCK_PERFORMANCE_REVIEWS, MOCK_SKILLS, MOCK_FEEDBACK, getDemoReviews, addDemoReview, updateDemoReview, deleteDemoReview, getDemoSkills, upsertDemoSkill, deleteDemoSkill } from '../utils/demoHelper';
 
 const toEmployeeId = (id) => {
   return id ? String(id) : null;
+};
+
+const toNullableRating = (value) => value ?? null;
+
+const mapGoalProgress = (goal) => {
+  if (!goal) return goal;
+  return {
+    ...goal,
+    progress: goal.progress_percentage ?? goal.progress ?? 0
+  };
 };
 
 // ============================================
@@ -17,12 +27,12 @@ export const createPerformanceReview = async (reviewData) => {
       reviewer_id: reviewData.reviewerId,
       review_period: reviewData.reviewPeriod,
       review_type: reviewData.reviewType || 'quarterly',
-      overall_rating: reviewData.overallRating || null,
-      technical_skills_rating: reviewData.technicalSkillsRating || null,
-      communication_rating: reviewData.communicationRating || null,
-      leadership_rating: reviewData.leadershipRating || null,
-      teamwork_rating: reviewData.teamworkRating || null,
-      problem_solving_rating: reviewData.problemSolvingRating || null,
+      overall_rating: toNullableRating(reviewData.overallRating),
+      technical_skills_rating: toNullableRating(reviewData.technicalSkillsRating),
+      communication_rating: toNullableRating(reviewData.communicationRating),
+      leadership_rating: toNullableRating(reviewData.leadershipRating),
+      teamwork_rating: toNullableRating(reviewData.teamworkRating),
+      problem_solving_rating: toNullableRating(reviewData.problemSolvingRating),
       strengths: reviewData.strengths || null,
       areas_for_improvement: reviewData.areasForImprovement || null,
       achievements: reviewData.achievements || null,
@@ -44,12 +54,12 @@ export const createPerformanceReview = async (reviewData) => {
         reviewer_id: toEmployeeId(reviewData.reviewerId),
         review_period: reviewData.reviewPeriod,
         review_type: reviewData.reviewType || 'quarterly',
-        overall_rating: reviewData.overallRating || null,
-        technical_skills_rating: reviewData.technicalSkillsRating || null,
-        communication_rating: reviewData.communicationRating || null,
-        leadership_rating: reviewData.leadershipRating || null,
-        teamwork_rating: reviewData.teamworkRating || null,
-        problem_solving_rating: reviewData.problemSolvingRating || null,
+        overall_rating: toNullableRating(reviewData.overallRating),
+        technical_skills_rating: toNullableRating(reviewData.technicalSkillsRating),
+        communication_rating: toNullableRating(reviewData.communicationRating),
+        leadership_rating: toNullableRating(reviewData.leadershipRating),
+        teamwork_rating: toNullableRating(reviewData.teamworkRating),
+        problem_solving_rating: toNullableRating(reviewData.problemSolvingRating),
         strengths: reviewData.strengths || null,
         areas_for_improvement: reviewData.areasForImprovement || null,
         achievements: reviewData.achievements || null,
@@ -68,6 +78,71 @@ export const createPerformanceReview = async (reviewData) => {
     return { success: true, data };
   } catch (error) {
     console.error('Error creating performance review:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Atomically create or update the single assessment for an employee/period.
+ * Requires the performance_reviews(employee_id, review_period) unique constraint.
+ */
+export const upsertPerformanceReviewByPeriod = async (reviewData) => {
+  if (!reviewData.employeeId || !reviewData.reviewPeriod) {
+    return { success: false, error: 'Employee and review period are required' };
+  }
+
+  const reviewRow = {
+    employee_id: toEmployeeId(reviewData.employeeId),
+    reviewer_id: toEmployeeId(reviewData.reviewerId),
+    review_period: reviewData.reviewPeriod,
+    review_type: reviewData.reviewType || 'quarterly',
+    overall_rating: toNullableRating(reviewData.overallRating),
+    technical_skills_rating: toNullableRating(reviewData.technicalSkillsRating),
+    communication_rating: toNullableRating(reviewData.communicationRating),
+    leadership_rating: toNullableRating(reviewData.leadershipRating),
+    teamwork_rating: toNullableRating(reviewData.teamworkRating),
+    problem_solving_rating: toNullableRating(reviewData.problemSolvingRating),
+    status: reviewData.status || 'draft',
+    review_date: reviewData.reviewDate || new Date().toISOString().split('T')[0],
+    updated_at: new Date().toISOString()
+  };
+
+  if (isDemoMode()) {
+    const existing = getDemoReviews().find(
+      review =>
+        String(review.employee_id) === String(reviewData.employeeId) &&
+        review.review_period === reviewData.reviewPeriod
+    );
+
+    if (existing) {
+      const updatedReview = updateDemoReview(existing.id, reviewRow);
+      return updatedReview
+        ? { success: true, data: updatedReview }
+        : { success: false, error: 'Review not found' };
+    }
+
+    const newReview = {
+      id: `review-demo-${Date.now()}`,
+      ...reviewRow,
+      created_at: new Date().toISOString()
+    };
+    addDemoReview(newReview);
+    return { success: true, data: newReview };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('performance_reviews')
+      .upsert(reviewRow, {
+        onConflict: 'employee_id,review_period'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error upserting performance review:', error);
     return { success: false, error: error.message };
   }
 };
@@ -279,7 +354,7 @@ export const createPerformanceGoal = async (goalData) => {
       .single();
 
     if (error) throw error;
-    return { success: true, data };
+    return { success: true, data: mapGoalProgress(data) };
   } catch (error) {
     console.error('Error creating performance goal:', error);
     return { success: false, error: error.message };
@@ -326,7 +401,7 @@ export const getAllPerformanceGoals = async (filters = {}) => {
     const { data, error } = await query;
 
     if (error) throw error;
-    return { success: true, data };
+    return { success: true, data: (data || []).map(mapGoalProgress) };
   } catch (error) {
     console.error('Error fetching performance goals:', error);
     return { success: false, error: error.message };
@@ -355,7 +430,7 @@ export const getPerformanceGoalById = async (goalId) => {
       .single();
 
     if (error) throw error;
-    return { success: true, data };
+    return { success: true, data: mapGoalProgress(data) };
   } catch (error) {
     console.error('Error fetching performance goal:', error);
     return { success: false, error: error.message };
@@ -395,8 +470,7 @@ export const updatePerformanceGoal = async (goalId, updates) => {
     if (updates.category !== undefined) updateData.category = updates.category;
     if (updates.targetDate !== undefined) updateData.target_date = updates.targetDate;
     if (updates.status !== undefined) updateData.status = updates.status;
-    // Map progressPercentage to the correct database column 'progress'
-    if (updates.progressPercentage !== undefined) updateData.progress = updates.progressPercentage;
+    if (updates.progressPercentage !== undefined) updateData.progress_percentage = updates.progressPercentage;
     if (updates.priority !== undefined) updateData.priority = updates.priority;
     if (updates.notes !== undefined) updateData.notes = updates.notes;
     if (updates.successCriteria !== undefined) updateData.success_criteria = updates.successCriteria;
@@ -417,7 +491,7 @@ export const updatePerformanceGoal = async (goalId, updates) => {
       .single();
 
     if (error) throw error;
-    return { success: true, data };
+    return { success: true, data: mapGoalProgress(data) };
   } catch (error) {
     console.error('Error updating performance goal:', error);
     return { success: false, error: error.message };
@@ -579,6 +653,10 @@ export const deleteGoalMilestone = async (milestoneId) => {
  * Create or update skill assessment
  */
 export const upsertSkillAssessment = async (skillData) => {
+  if (Number(skillData.rating) < 1 || Number(skillData.rating) > 5) {
+    return { success: false, error: 'Skill rating must be between 1 and 5' };
+  }
+
   if (isDemoMode()) {
     const newSkill = upsertDemoSkill({
       employee_id: skillData.employeeId,
@@ -926,6 +1004,7 @@ export const getPerformanceStats = async () => {
 export default {
   // Performance Reviews
   createPerformanceReview,
+  upsertPerformanceReviewByPeriod,
   getAllPerformanceReviews,
   getPerformanceReviewById,
   updatePerformanceReview,

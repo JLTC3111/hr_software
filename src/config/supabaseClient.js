@@ -34,15 +34,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing required environment variables: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
 }
 
-if (typeof window !== 'undefined') {
-    for (const storage of [localStorage, sessionStorage]) {
-      for (let i = storage.length - 1; i >= 0; i--) {
-        const k = storage.key(i);
-        if (k && k.startsWith('sb-') && k.includes('auth')) storage.removeItem(k);
-      }
-    }
-  }
-
 // Custom storage adapter that uses localStorage by default
 // This can be switched to sessionStorage when rememberMe is false
 class CustomStorage {
@@ -145,7 +136,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
               body: text
             });
           }
-        } catch (logErr) {
+        } catch {
           // swallow logging errors
         }
 

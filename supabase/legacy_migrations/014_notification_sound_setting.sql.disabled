@@ -1,3 +1,5 @@
+-- Archived: this file reused migration version 014. The setting is reconciled
+-- by a uniquely versioned migration.
 -- Add optional notification sound preference
 ALTER TABLE hr_user_settings
   ADD COLUMN IF NOT EXISTS notification_sound BOOLEAN DEFAULT FALSE;

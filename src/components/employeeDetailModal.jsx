@@ -53,8 +53,6 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
     [modalWidth]
   );
 
-  if (!employee) return null;
-
   // Generate URL from file path on mount with fallback
   useEffect(() => {
     const generatePdfUrl = async () => {
@@ -439,6 +437,8 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
     }
     return `${totalMonths}${unitSep}${monthUnit(totalMonths)}`;
   };
+
+  if (!employee) return null;
 
   return (
     <div 
@@ -1169,12 +1169,14 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
 };
 
 // Info Item Component
-const InfoItem = ({ icon: Icon, label, value }) => {
+const InfoItem = ({ icon, label, value }) => {
   const { text, border, isDarkMode } = useTheme();
   
   return (
     <div className={`flex items-start space-x-3 p-3 rounded-lg border ${border.primary} hover:bg-transparent transition-colors`}>
-      <Icon className={`w-5 h-5 mt-0.5 ${isDarkMode ? text.primary : 'text-gray-600'}`} />
+      {_React.createElement(icon, {
+        className: `w-5 h-5 mt-0.5 ${isDarkMode ? text.primary : 'text-gray-600'}`,
+      })}
       <div className="flex-1">
         <p className={`text-sm ${text.secondary} mb-1`}>{label}</p>
         <p className={`font-medium ${text.primary}`}>{value}</p>

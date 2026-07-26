@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react'
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react'
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Loader } from 'lucide-react'
@@ -8,7 +8,10 @@ import { useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { UploadProvider } from './contexts/UploadContext'
 // Eagerly loaded components (needed immediately)
-import { Header, Sidebar, Login, EmployeeModal } from './components/index.jsx';
+import Header from './components/header.jsx';
+import Sidebar from './components/sidebar.jsx';
+import Login from './components/login.jsx';
+import EmployeeModal from './components/employeeModal.jsx';
 import { filterActiveEmployees } from './utils/employeeStatus.js';
 
 // Lazy loaded route components for code splitting
@@ -54,55 +57,36 @@ const HRManagementApp = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Fetch employees from Supabase
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
     setLoading(true);
+    setError(null);
     console.log('🔄 [App] Fetching employees, isDemoMode:', isDemoMode());
     const result = await employeeService.getAllEmployees();
     console.log('📊 [App] Employees fetched:', { success: result.success, count: result.data?.length, isDemoMode: isDemoMode() });
     if (result.success) {
       setEmployees(result.data);
-      
-      // If no employees exist, seed with initial data
-      if (result.data.length === 0) {
-        console.log('No employees found, seeding initial data...');
-        // Create employees one by one to avoid bulk upsert issues
-        const createdEmployees = [];
-        for (const emp of employees) {
-          const seedResult = await employeeService.createEmployee(emp);
-          if (seedResult.success) {
-            createdEmployees.push(seedResult.data);
-          } else {
-            console.error('Error seeding employee:', emp.name, seedResult.error);
-          }
-        }
-        if (createdEmployees.length > 0) {
-          setEmployees(createdEmployees);
-        }
-      }
     } else {
       setError(result.error);
       console.error('Error fetching employees:', result.error);
-      // Fallback to hardcoded data if Supabase fails
-      setEmployees(employees);
     }
     setLoading(false);
-  };
+  }, []);
 
   // Fetch employees on mount and when auth changes
   useEffect(() => {
     if (!isAuthenticated && !isDemoMode()) return;
     fetchEmployees();
-  }, [isAuthenticated, user]);
+  }, [fetchEmployees, isAuthenticated, user]);
   
   // Refetch employees (expose this to child components)
-  const refetchEmployees = async () => {
+  const refetchEmployees = useCallback(async () => {
     const result = await employeeService.getAllEmployees();
     if (result.success) {
       setEmployees(result.data);
       return { success: true };
     }
     return { success: false, error: result.error };
-  };
+  }, []);
 
   // Fetch applications from Supabase on mount
   useEffect(() => {
@@ -199,7 +183,7 @@ const HRManagementApp = () => {
 
         if (result.success) {
           // Remove from local state immediately
-          setEmployees(employees.filter(emp => emp.id !== employee.id));
+          setEmployees(prevEmployees => prevEmployees.filter(emp => emp.id !== employee.id));
           alert(`${employee.name} has been permanently deleted.`);
           
           // Refresh the employee list from server
@@ -288,10 +272,28 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
         } />
         
         {/* Allow reset-password even when authenticated (user needs to complete password change) */}
-        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route
+          path="/reset-password"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ResetPassword />
+            </Suspense>
+          }
+        />
           
-          {/* Private Route - Login first) */}
-          <Route path="/flubber-test" element={<FlubberIconTest />} />
+        {/* Private development route */}
+        <Route
+          path="/flubber-test"
+          element={
+            isAuthenticated ? (
+              <Suspense fallback={<PageLoader />}>
+                <FlubberIconTest />
+              </Suspense>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
           
           {/* Protected Routes */}
           <Route path="/*" element={
@@ -383,6 +385,7 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
                       path="/delete-manager" 
                       element={<DeleteEmployeeManager />} 
                     />
+                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
                   </Routes>
                   </Suspense>
                 </div>
@@ -392,7 +395,7 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
                 employee={selectedEmployee}
                 initialEditMode={isEditMode}
                 onClose={onCloseModal}
-                onUpdate={async (updatedEmployee) => {
+                onUpdate={async () => {
                   // Refetch employees to get latest data
                   await refetchEmployees();
                 }}

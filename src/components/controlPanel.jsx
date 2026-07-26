@@ -711,7 +711,8 @@ const ControlPanel = () => {
         console.log('✅ Password reset successfully in demo mode');
         
         setAdminResetSuccess(t('controlPanel.passwordResetSuccess', 'Password reset successfully'));
-        setAdminResetForm({ newPassword: '', confirmPassword: '' });
+        setAdminResetPassword('');
+        setAdminResetConfirm('');
         setSelectedUserId('');
         
         setTimeout(() => {

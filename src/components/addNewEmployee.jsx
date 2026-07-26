@@ -82,30 +82,6 @@ const AddNewEmployee = ({ refetchEmployees }) => {
   // Check permission
   const canManageEmployees = checkPermission('canManageEmployees');
   
-  // If user doesn't have permission, show access denied
-  if (!canManageEmployees) {
-    return (
-      <div className={`min-h-screen ${bg.primary} flex items-center justify-center p-4`}>
-        <div className={`${bg.secondary} rounded-lg shadow-lg border ${border.primary} p-8 max-w-md w-full text-center`}>
-          <AlertCircle className={`w-16 h-16 ${isDarkMode ? 'text-red-400' : 'text-red-600'} mx-auto mb-4`} />
-          <h2 className={`text-2xl font-bold ${text.primary} mb-2`}>
-            {t('common.accessDenied', 'Access Denied')}
-          </h2>
-          <p className={`${text.secondary} mb-6`}>
-            {t('common.noPermission', 'You do not have permission to access this page.')}
-          </p>
-          <button
-            type = "button"
-            onClick={() => navigate(-1)}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            {t('common.goBack', 'Go Back')}
-          </button>
-        </div>
-      </div>
-    );
-  }
-  
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', dob: '', address: '', photo: null,
     position: '', department: '', startDate: '', employmentStatus: 'active',
@@ -268,6 +244,30 @@ const AddNewEmployee = ({ refetchEmployees }) => {
       setSaving(false);
     }
   };
+
+  // Keep this authorization return after all hooks so their call order remains stable.
+  if (!canManageEmployees) {
+    return (
+      <div className={`min-h-screen ${bg.primary} flex items-center justify-center p-4`}>
+        <div className={`${bg.secondary} rounded-lg shadow-lg border ${border.primary} p-8 max-w-md w-full text-center`}>
+          <AlertCircle className={`w-16 h-16 ${isDarkMode ? 'text-red-400' : 'text-red-600'} mx-auto mb-4`} />
+          <h2 className={`text-2xl font-bold ${text.primary} mb-2`}>
+            {t('common.accessDenied', 'Access Denied')}
+          </h2>
+          <p className={`${text.secondary} mb-6`}>
+            {t('common.noPermission', 'You do not have permission to access this page.')}
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            {t('common.goBack', 'Go Back')}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`w-full ${bg.primary} p-0 md:p-0`}>
