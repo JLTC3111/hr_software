@@ -133,6 +133,28 @@ const unavailablePairs = new Set();
 // De-dupes concurrent creates without caching failures.
 const pendingTranslators = new Map();
 
+/**
+ * Language packs finish downloading long after the first render, so anything
+ * that fell back to the original needs a nudge to try again. Listeners fire
+ * once per newly usable language pair.
+ */
+const readyListeners = new Set();
+
+export function onTranslatorReady(listener) {
+  readyListeners.add(listener);
+  return () => readyListeners.delete(listener);
+}
+
+const notifyTranslatorReady = () => {
+  readyListeners.forEach((listener) => {
+    try {
+      listener();
+    } catch {
+      /* a bad listener must not break the pool */
+    }
+  });
+};
+
 const createTranslator = async (sourceLanguage, targetLanguage) => {
   const availability = await globalThis.Translator.availability({
     sourceLanguage,
@@ -159,7 +181,11 @@ const getTranslator = (sourceLanguage, targetLanguage) => {
 
   const pending = createTranslator(sourceLanguage, targetLanguage)
     .then((translator) => {
-      if (translator) translatorPool.set(key, translator);
+      if (translator) {
+        translatorPool.set(key, translator);
+        // Wake up anything that already rendered untranslated text.
+        notifyTranslatorReady();
+      }
       return translator;
     })
     .catch((error) => {
@@ -268,43 +294,61 @@ export function peekCachedTranslation(text, appLang) {
   return memoryCache.get(cacheKey(text, target)) ?? null;
 }
 
-/** Translates one string, or resolves to the original if that isn't possible. */
-export async function translateText(text, appLang) {
+/**
+ * Translates one string and reports why, so callers can distinguish a settled
+ * result from one worth retrying once a language pack lands.
+ *
+ * status: 'done'      — translated, or genuinely nothing to translate
+ *         'pending'   — no usable model yet; retry later
+ */
+export async function translateWithStatus(text, appLang) {
   const original = text == null ? '' : String(text);
   const target = targetFor(appLang);
 
-  if (!original.trim() || !target || isDemoMode() || !hasTranslator()) {
-    return original;
+  if (!original.trim() || !target || isDemoMode()) {
+    return { text: original, status: 'done' };
+  }
+  if (!hasTranslator()) {
+    // No on-device translation in this browser: settled, never retry.
+    return { text: original, status: 'done' };
   }
 
   ensureCache();
   const key = cacheKey(original, target);
   const cached = memoryCache.get(key);
-  if (cached != null) return cached;
+  if (cached != null) return { text: cached, status: 'done' };
 
   const source = await detectLanguage(original);
 
   // Undetectable source: keep the original, but do NOT cache that decision —
   // caching a failure would freeze this string as untranslatable forever.
-  if (!source) return original;
+  if (!source) return { text: original, status: 'done' };
 
   if (source === target) {
     // Genuinely nothing to do; safe to remember.
     setCache(key, original);
-    return original;
+    return { text: original, status: 'done' };
   }
 
   try {
     const output = await runTranslation(original, source, target);
     // No model for this pair yet (pack may still be downloading) — leave it
-    // uncached so the next render retries.
-    if (typeof output !== 'string' || !output.trim()) return original;
+    // uncached and tell the caller to try again.
+    if (typeof output !== 'string' || !output.trim()) {
+      return { text: original, status: 'pending' };
+    }
     setCache(key, output);
-    return output;
+    return { text: output, status: 'done' };
   } catch (error) {
     console.warn('On-device translation failed:', error?.message || error);
-    return original;
+    return { text: original, status: 'pending' };
   }
+}
+
+/** Translates one string, or resolves to the original if that isn't possible. */
+export async function translateText(text, appLang) {
+  const { text: out } = await translateWithStatus(text, appLang);
+  return out;
 }
 
 /**

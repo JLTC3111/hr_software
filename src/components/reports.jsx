@@ -48,6 +48,7 @@ import {
   withBarPercents
 } from '../utils/reportExportHelpers.js';
 import { TranslatedText } from './ui/translated-text.jsx';
+import { translateTexts } from '../services/translateService.js';
 import { SpecularButton } from './ui/specular-button';
 import { MagicBento } from './ui/magic-bento';
 import { SlidingNumber } from './motion-primitives';
@@ -812,7 +813,7 @@ const Reports = () => {
       : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
   );
 
-  const buildTimeEntryCsvRows = (timeEntries) => {
+  const buildTimeEntryCsvRows = (timeEntries, ugcMap = null) => {
     const headers = [
       t('reports.excel.headers.dataType', 'Data Type'),
       t('employees.name', 'Employee Name'),
@@ -839,14 +840,14 @@ const Reports = () => {
       entry.hours ? formatHours(entry.hours) : '0.0',
       translateHourType(entry.hour_type) || '',
       translateStatus(entry.status) || '',
-      translateNotes(entry.notes) || '',
+      translateNotes(entry.notes, ugcMap) || '',
       new Date(entry.created_at).toLocaleString()
     ]);
 
     return { headers, rows };
   };
 
-  const buildTaskCsvRows = (tasks) => {
+  const buildTaskCsvRows = (tasks, ugcMap = null) => {
     const headers = [
       t('reports.excel.headers.dataType', 'Data Type'),
       t('employees.name', 'Employee Name'),
@@ -868,8 +869,8 @@ const Reports = () => {
       t('reports.tasks', 'Tasks'),
       isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || 'Unknown'),
       translateDepartment(task.employee?.department) || '',
-      isDemoMode() ? getDemoTaskTitle(task, t) : task.title || '',
-      isDemoMode() ? getDemoTaskDescription(task, t) : task.description || '',
+      isDemoMode() ? getDemoTaskTitle(task, t) : mapUgc(ugcMap, task.title || ''),
+      isDemoMode() ? getDemoTaskDescription(task, t) : mapUgc(ugcMap, task.description || ''),
       translatePriority(task.priority) || '',
       translateStatus(task.status) || '',
       task.due_date || '',
@@ -884,7 +885,7 @@ const Reports = () => {
     return { headers, rows };
   };
 
-  const buildGoalCsvRows = (goals) => {
+  const buildGoalCsvRows = (goals, ugcMap = null) => {
     const headers = [
       t('reports.excel.headers.dataType', 'Data Type'),
       t('employees.name', 'Employee Name'),
@@ -904,13 +905,13 @@ const Reports = () => {
       t('reports.personalGoals', 'Personal Goals'),
       isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || 'Unknown'),
       translateDepartment(goal.employee?.department) || '',
-      isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title || '',
-      isDemoMode() ? getDemoGoalDescription(goal, t) : goal.description || '',
+      isDemoMode() ? getDemoGoalTitle(goal, t) : mapUgc(ugcMap, goal.title || ''),
+      isDemoMode() ? getDemoGoalDescription(goal, t) : mapUgc(ugcMap, goal.description || ''),
       translateCategory(goal.category) || '',
       translateStatus(goal.status) || '',
       goal.progress || 0,
       goal.target_date || '',
-      goal.notes || '',
+      mapUgc(ugcMap, goal.notes || ''),
       new Date(goal.created_at).toLocaleString(),
       new Date(goal.updated_at).toLocaleString()
     ]);
@@ -918,7 +919,7 @@ const Reports = () => {
     return { headers, rows };
   };
 
-  const buildLeaveCsvRows = (leaveRequests) => {
+  const buildLeaveCsvRows = (leaveRequests, ugcMap = null) => {
     const headers = [
       t('reports.excel.headers.dataType', 'Data Type'),
       t('employees.name', 'Employee Name'),
@@ -939,7 +940,7 @@ const Reports = () => {
       `${(req.start_date || '').slice(0, 10)} → ${(req.end_date || req.start_date || '').slice(0, 10)}`,
       req.days_count ?? '',
       translateStatus(req.status) || '',
-      req.reason || '',
+      mapUgc(ugcMap, req.reason || ''),
       new Date(req.created_at).toLocaleString()
     ]);
 
@@ -960,6 +961,10 @@ const Reports = () => {
         alert(t('reports.noData', 'No data available for the selected period'));
         return;
       }
+
+      const ugcMap = await buildUgcTranslateMap(
+        collectExportUgcStrings(timeEntries, tasks, goals, leave)
+      );
 
       const languageName = SUPPORTED_LANGUAGES[currentLanguage]?.name || 'English';
       const employeeName = selectedEmployee !== 'all'
@@ -993,19 +998,19 @@ const Reports = () => {
       }];
 
       if (timeEntries.length > 0) {
-        const timeSection = buildTimeEntryCsvRows(timeEntries);
+        const timeSection = buildTimeEntryCsvRows(timeEntries, ugcMap);
         sections.push({ title: t('reports.timeEntries', 'TIME ENTRIES').toUpperCase(), ...timeSection });
       }
       if (tasks.length > 0) {
-        const taskSection = buildTaskCsvRows(tasks);
+        const taskSection = buildTaskCsvRows(tasks, ugcMap);
         sections.push({ title: t('reports.tasks', 'TASKS').toUpperCase(), ...taskSection });
       }
       if (goals.length > 0) {
-        const goalSection = buildGoalCsvRows(goals);
+        const goalSection = buildGoalCsvRows(goals, ugcMap);
         sections.push({ title: t('reports.personalGoals', 'PERSONAL GOALS').toUpperCase(), ...goalSection });
       }
       if (leave.length > 0) {
-        const leaveSection = buildLeaveCsvRows(leave);
+        const leaveSection = buildLeaveCsvRows(leave, ugcMap);
         sections.push({ title: t('reports.leave', 'LEAVE REQUESTS').toUpperCase(), ...leaveSection });
       }
 
@@ -1097,6 +1102,10 @@ const Reports = () => {
         alert(t('reports.noData', 'No data available for the selected period'));
         return;
       }
+
+      const ugcMap = await buildUgcTranslateMap(
+        collectExportUgcStrings(timeEntries, tasks, goals, leave)
+      );
 
       // Helpers for safe values and typing
       const sanitize = (v) => {
@@ -1814,7 +1823,7 @@ const Reports = () => {
             entry.hours ? Number(formatHours(entry.hours)) : 0,
             translateHourType(entry.hour_type) || '',
             translateStatus(entry.status) || '',
-            translateNotes(entry.notes) || '',
+            translateNotes(entry.notes, ugcMap) || '',
             new Date(entry.created_at).toLocaleString()
           ];
           
@@ -1877,8 +1886,8 @@ const Reports = () => {
           const rowData = [
             isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || 'Unknown'),
             translateDepartment(task.employee?.department) || '',
-            isDemoMode() ? getDemoTaskTitle(task, t) : task.title || '',
-            isDemoMode() ? getDemoTaskDescription(task, t) : task.description || '',
+            isDemoMode() ? getDemoTaskTitle(task, t) : mapUgc(ugcMap, task.title || ''),
+            isDemoMode() ? getDemoTaskDescription(task, t) : mapUgc(ugcMap, task.description || ''),
             translatePriority(task.priority) || '',
             translateStatus(task.status) || '',
             task.due_date || '',
@@ -1955,13 +1964,13 @@ const Reports = () => {
           const rowData = [
             isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || 'Unknown'),
             translateDepartment(goal.employee?.department) || '',
-            isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title || '',
-            isDemoMode() ? getDemoGoalDescription(goal, t) : goal.description || '',
+            isDemoMode() ? getDemoGoalTitle(goal, t) : mapUgc(ugcMap, goal.title || ''),
+            isDemoMode() ? getDemoGoalDescription(goal, t) : mapUgc(ugcMap, goal.description || ''),
             translateCategory(goal.category) || '',
             translateStatus(goal.status) || '',
             goal.progress || 0,
             goal.target_date || '',
-            goal.notes || '',
+            mapUgc(ugcMap, goal.notes || ''),
             new Date(goal.created_at).toLocaleString(),
             new Date(goal.updated_at).toLocaleString()
           ];
@@ -2200,9 +2209,9 @@ const Reports = () => {
     }
   };
 
-  // Localizes only the "Entered by admin:" prefix; the note body is user text and
-  // is exported as written.
-  const translateNotes = (notes) => {
+  // Localizes the "Entered by admin:" prefix; the free-text body is looked up
+  // from the pre-translated UGC map when one is supplied (export paths).
+  const translateNotes = (notes, ugcMap = null) => {
     if (!notes) return '';
     // Check if notes starts with "Entered by admin:" (case insensitive, optional colon)
     const adminPrefixRegex = /^Entered by admin:?\s*/i;
@@ -2210,10 +2219,53 @@ const Reports = () => {
 
     if (match) {
       const translatedPrefix = t('timeTracking.enteredByAdmin', 'Entered by admin:');
+      const body = notes.slice(match[0].length);
       // Replace the matched prefix with the translated one and ensure a space follows
-      return translatedPrefix + ' ' + notes.slice(match[0].length);
+      return translatedPrefix + ' ' + (ugcMap ? (ugcMap.get(body) ?? body) : body);
     }
-    return notes;
+    return ugcMap ? (ugcMap.get(notes) ?? notes) : notes;
+  };
+
+  const mapUgc = (ugcMap, text) => {
+    if (!text) return '';
+    return ugcMap?.get(text) ?? text;
+  };
+
+  const collectExportUgcStrings = (timeEntries = [], tasks = [], goals = [], leave = []) => {
+    const strings = [];
+    const pushNotesBody = (notes) => {
+      if (!notes) return;
+      const match = String(notes).match(/^Entered by admin:?\s*/i);
+      strings.push(match ? notes.slice(match[0].length) : notes);
+    };
+    timeEntries.forEach((entry) => pushNotesBody(entry.notes));
+    if (!isDemoMode()) {
+      tasks.forEach((task) => {
+        if (task.title) strings.push(task.title);
+        if (task.description) strings.push(task.description);
+      });
+      goals.forEach((goal) => {
+        if (goal.title) strings.push(goal.title);
+        if (goal.description) strings.push(goal.description);
+        if (goal.notes) strings.push(goal.notes);
+      });
+    }
+    leave.forEach((req) => {
+      if (req.reason) strings.push(req.reason);
+    });
+    return strings;
+  };
+
+  /**
+   * Pre-translates every unique UGC string in an export with the on-device
+   * translator. Cache-first, so anything already seen on screen costs nothing;
+   * the rest are translated one by one before the file is written.
+   */
+  const buildUgcTranslateMap = async (strings) => {
+    const unique = [...new Set(strings.filter((s) => typeof s === 'string' && s.trim()))];
+    if (unique.length === 0) return new Map();
+    const translated = await translateTexts(unique, currentLanguage);
+    return new Map(unique.map((s, i) => [s, translated[i] ?? s]));
   };
 
   // PDF Export with Charts and Tables
@@ -2235,6 +2287,10 @@ const Reports = () => {
         alert(t('reports.noData', 'No data available for the selected period'));
         return;
       }
+
+      const ugcMap = await buildUgcTranslateMap(
+        collectExportUgcStrings(timeEntries, tasks, goals, leave)
+      );
 
       const { jsPDF, autoTable } = await loadPdfLibs();
       const doc = new jsPDF('p', 'mm', 'a4');
@@ -2600,7 +2656,7 @@ const Reports = () => {
           tasks.map((task) => [
             cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
             cleanTextForPDF(translateDepartment(task.employee?.department) || '', unicodeFontLoaded),
-            cleanTextForPDF((isDemoMode() ? getDemoTaskTitle(task, t) : task.title || '').substring(0, 40), unicodeFontLoaded),
+            cleanTextForPDF((isDemoMode() ? getDemoTaskTitle(task, t) : mapUgc(ugcMap, task.title || '')).substring(0, 40), unicodeFontLoaded),
             cleanTextForPDF(translatePriority(task.priority), unicodeFontLoaded),
             cleanTextForPDF(translateStatus(task.status), unicodeFontLoaded),
             task.due_date || '-',
@@ -2625,7 +2681,7 @@ const Reports = () => {
           goals.map((goal) => [
             cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
             cleanTextForPDF(translateDepartment(goal.employee?.department) || '', unicodeFontLoaded),
-            cleanTextForPDF((isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title || '').substring(0, 40), unicodeFontLoaded),
+            cleanTextForPDF((isDemoMode() ? getDemoGoalTitle(goal, t) : mapUgc(ugcMap, goal.title || '')).substring(0, 40), unicodeFontLoaded),
             cleanTextForPDF(translateCategory(goal.category), unicodeFontLoaded),
             cleanTextForPDF(translateStatus(goal.status), unicodeFontLoaded),
             goal.target_date || '-',
