@@ -1,13 +1,31 @@
 import React from 'react';
-import * as LucideIcons from 'lucide-react';
+import {
+  Activity,
+  DatabaseBackup,
+  Flag,
+  Gauge,
+  Hash,
+  ShieldCheck,
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import FallingText from './FallingText';
 import './FallingText.css';
 
+// Icons referenced by name from PRODUCTION_TIPS. Named imports keep tree-shaking
+// working — `import * as LucideIcons` pulled the whole icon set into the bundle.
+// Add an entry here when a new tip `icon:` value is introduced.
+const TIP_ICONS = {
+  Activity,
+  DatabaseBackup,
+  Flag,
+  Gauge,
+  ShieldCheck,
+};
+
 const Icon = ({ name, ...props }) => {
-  const LucideIcon = LucideIcons[name];
+  const LucideIcon = TIP_ICONS[name];
   return LucideIcon ? <LucideIcon {...props} /> : null;
 };
 
@@ -166,7 +184,7 @@ const ProductionHelpCenter = ({ isDarkMode: isDarkModeProp = null }) => {
                       }}
                       aria-label={t(`prodHelp.tags.${tag}`, tag)}
                     >
-                      <LucideIcons.Hash className="h-3 w-3" aria-hidden="true" />
+                      <Hash className="h-3 w-3" aria-hidden="true" />
                       {t(`prodHelp.tags.${tag}`, tag)}
                     </span>
                   ))}

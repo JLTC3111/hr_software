@@ -1888,6 +1888,7 @@ export default {
     reviewPeriod: '평가 기간',
     goals: '목표 및 목적',
     achievements: '주요 성과',
+    strengths: '강점',
     areasForImprovement: '개선 영역',
     skillsAssessment: '기술 평가',
     rating: '평가',

@@ -2055,6 +2055,7 @@ export default {
     reviewPeriod: 'Kỳ đánh giá',
     goals: 'Mục tiêu và đối tượng',
     achievements: 'Thành tích chính',
+    strengths: 'Điểm mạnh',
     areasForImprovement: 'Lĩnh vực cần cải thiện',
     skillsAssessment: 'Đánh giá kỹ năng',
     rating: 'Đánh giá',

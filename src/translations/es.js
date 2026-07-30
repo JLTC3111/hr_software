@@ -1959,6 +1959,7 @@ export default {
     reviewPeriod: 'Período de Revisión',
     goals: 'Objetivos y Metas',
     achievements: 'Logros Clave',
+    strengths: 'Fortalezas',
     areasForImprovement: 'Áreas de Mejora',
     skillsAssessment: 'Evaluación de Habilidades',
     rating: 'Calificación',

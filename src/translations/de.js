@@ -499,6 +499,7 @@ export default {
     reviewPeriod: 'Bewertungszeitraum',
     goals: 'Ziele & Objektive',
     achievements: 'Wichtige Errungenschaften',
+    strengths: 'Stärken',
     areasForImprovement: 'Verbesserungsbereiche',
     skillsAssessment: 'Fähigkeitsbewertung',
     rating: 'Bewertung',

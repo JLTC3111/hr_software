@@ -805,6 +805,7 @@ export default {
     reviewPeriod: 'Review Period',
     goals: 'Goals & Objectives',
     achievements: 'Key Achievements',
+    strengths: 'Strengths',
     areasForImprovement: 'Areas for Improvement',
     skillsAssessment: 'Skills Assessment',
     teamwork: 'Teamwork',

@@ -1919,6 +1919,7 @@ export default {
     reviewPeriod: 'Période d\'examen',
     goals: 'Objectifs et buts',
     achievements: 'Réalisations clés',
+    strengths: 'Points forts',
     areasForImprovement: 'Domaines d\'amélioration',
     skillsAssessment: 'Évaluation des compétences',
     rating: 'Note',

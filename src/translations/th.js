@@ -1952,6 +1952,7 @@ export default {
     reviewPeriod: 'ระยะเวลาทบทวน',
     goals: 'เป้าหมายและวัตถุประสงค์',
     achievements: 'ผลงานสำคัญ',
+    strengths: 'จุดแข็ง',
     areasForImprovement: 'พื้นที่ที่ต้องปรับปรุง',
     skillsAssessment: 'การประเมินทักษะ',
     rating: 'คะแนน',

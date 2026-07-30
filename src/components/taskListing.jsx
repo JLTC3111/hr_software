@@ -17,6 +17,7 @@ import { PageLiveClock } from './ui/page-live-clock';
 import { DatePicker } from './ui/date-picker.jsx';
 import { TranslatedText } from './ui/translated-text.jsx';
 import { cn } from '@/lib/utils';
+import { formatDate } from '../utils/localeFormat.js';
 import {
   filterActiveEmployees,
   filterInactiveEmployees,
@@ -265,7 +266,7 @@ const TaskListing = ({ employees, allEmployees }) => {
   const { user, checkPermission } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
   const { bg, text, border, isDarkMode } = useTheme();
-  const { t } = useLanguage();
+  const { t, currentLanguage } = useLanguage();
   
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -754,7 +755,7 @@ const TaskListing = ({ employees, allEmployees }) => {
                         >
                           <Calendar className="w-3 h-3" />
                         </button>
-                        <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
+                        <span>{t('taskListing.dueDate', 'Due Date')}: {formatDate(task.due_date, currentLanguage)}</span>
                       </p>
                     )}
                     
@@ -770,7 +771,7 @@ const TaskListing = ({ employees, allEmployees }) => {
                       </div>
                       <div>
                         <p className="font-medium">{t('taskListing.assignDate', 'Assign Date')}</p>
-                        <p className={text.primary}>{task.created_at ? new Date(task.created_at).toLocaleDateString() : '-'}</p>
+                        <p className={text.primary}>{formatDate(task.created_at, currentLanguage) || '-'}</p>
                       </div>
                     </div>
                   </div>

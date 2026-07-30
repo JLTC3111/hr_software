@@ -16,6 +16,20 @@ const CDN = 'https://cdn.jsdelivr.net/gh';
 
 const FONTS = [
   {
+    filename: 'Archivo-Regular.ttf',
+    minBytes: 100_000,
+    urls: [
+      `${CDN}/Omnibus-Type/Archivo@master/fonts/ttf/Archivo-Regular.ttf`,
+    ],
+  },
+  {
+    filename: 'Archivo-Bold.ttf',
+    minBytes: 100_000,
+    urls: [
+      `${CDN}/Omnibus-Type/Archivo@master/fonts/ttf/Archivo-Bold.ttf`,
+    ],
+  },
+  {
     filename: 'NotoSans-Regular.ttf',
     minBytes: 500_000,
     urls: [

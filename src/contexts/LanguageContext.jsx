@@ -1,4 +1,5 @@
 import _React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { prepareTranslation } from '../services/translateService.js';
 
 const LanguageContext = createContext();
 
@@ -60,9 +61,17 @@ export const LanguageProvider = ({ children }) => {
       setIsChanging(true);
       setCurrentLanguage(languageCode);
       localStorage.setItem('hr-app-language', languageCode);
+      // Warm the on-device translation packs here: this runs inside the
+      // switcher's click, and Chrome only permits pack downloads during
+      // transient user activation — a render-time effect would be refused.
+      // The outgoing language is passed too: UGC is usually authored in it, and
+      // reaching the new target needs that language's pivot pack as well.
+      prepareTranslation(languageCode, ['en', currentLanguage]).catch(() => {
+        /* translation is a progressive enhancement; ignore */
+      });
       setTimeout(() => setIsChanging(false), 600);
     }
-  }, []);
+  }, [currentLanguage]);
 
   // Memoize the translation function to prevent recreation
   const t = useCallback((key, fallback = key) => {

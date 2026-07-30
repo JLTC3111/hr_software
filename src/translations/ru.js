@@ -1895,6 +1895,7 @@ export default {
     reviewPeriod: 'Период оценки',
     goals: 'Цели и задачи',
     achievements: 'Ключевые достижения',
+    strengths: 'Сильные стороны',
     areasForImprovement: 'Области для улучшения',
     skillsAssessment: 'Оценка навыков',
     rating: 'Оценка',

@@ -1899,6 +1899,7 @@ export default {
     reviewPeriod: '評価期間',
     goals: '目標・目的',
     achievements: '主な成果',
+    strengths: '強み',
     areasForImprovement: '改善領域',
     skillsAssessment: 'スキル評価',
     rating: '評価',

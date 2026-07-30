@@ -3,7 +3,8 @@ import { Star, Sparkle, TrendingUp, Calendar, User, Award, Goal, ShieldEllipsis,
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { isDemoMode, getDemoGoalTitle, getDemoGoalDescription, getDemoSkills, upsertDemoSkill } from '../utils/demoHelper';
+import { isDemoMode, getDemoGoalTitle, getDemoGoalDescription, getDemoSkills, upsertDemoSkill, getDemoReviewStrengths, getDemoReviewAreasForImprovement } from '../utils/demoHelper';
+import { formatDate } from '../utils/localeFormat.js';
 import * as performanceService from '../services/performanceService';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
@@ -22,7 +23,7 @@ import {
 } from '../utils/performanceAssessment.js';
 
 const PersonalGoals = ({ employees }) => {
-  const { t } = useLanguage();
+  const { t, currentLanguage } = useLanguage();
   const { isDarkMode, text } = useTheme();
   const { user, checkPermission } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
@@ -847,7 +848,7 @@ const PersonalGoals = ({ employees }) => {
                       borderColor: 'transparent'
                     }}
                   >
-                    | {t('personalGoals.due')}: {new Date(goal.deadline).toLocaleDateString()}
+                    | {t('personalGoals.due')}: {formatDate(goal.deadline, currentLanguage)}
                   </span>
                 </div>
                 <button 
@@ -868,6 +869,57 @@ const PersonalGoals = ({ employees }) => {
           ))}
         </div>
       </div>
+
+      {/* Performance Reviews — reviewer free text, auto-translated like other UGC */}
+      {currentData.reviews.length > 0 && (
+        <div
+          className="rounded-lg shadow-sm border p-6"
+          style={{
+            backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+            color: isDarkMode ? '#ffffff' : '#111827',
+            borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
+          }}
+        >
+          <h3 className="font-semibold mb-4">
+            {t('personalGoals.performanceReviews', 'Performance Reviews')}
+          </h3>
+          <div className="space-y-4">
+            {currentData.reviews.map(review => (
+              <div
+                key={review.id}
+                className="border-t pt-4 first:border-t-0 first:pt-0"
+                style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                  <span className="text-sm font-medium">
+                    {t('personalGoals.reviewer')}: {review.reviewer}
+                  </span>
+                  <span className={`text-xs ${text.secondary}`}>
+                    {formatDate(review.date, currentLanguage)}
+                    {review.rating ? ` · ${t('personalGoals.rating')}: ${review.rating}` : ''}
+                  </span>
+                </div>
+                {review.strengths && (
+                  <p className={`text-sm ${text.secondary} mb-1`}>
+                    <span className="font-medium">{t('personalGoals.strengths', 'Strengths')}: </span>
+                    {isDemoMode()
+                      ? getDemoReviewStrengths(review, t)
+                      : <TranslatedText text={review.strengths} />}
+                  </p>
+                )}
+                {review.areasForImprovement && (
+                  <p className={`text-sm ${text.secondary}`}>
+                    <span className="font-medium">{t('personalGoals.areasForImprovement')}: </span>
+                    {isDemoMode()
+                      ? getDemoReviewAreasForImprovement(review, t)
+                      : <TranslatedText text={review.areasForImprovement} />}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -998,7 +1050,7 @@ const PersonalGoals = ({ employees }) => {
                     borderColor: 'transparent'
                   }}
                 >
-                  {t('personalGoals.deadline')}: {new Date(goal.deadline).toLocaleDateString()}
+                  {t('personalGoals.deadline')}: {formatDate(goal.deadline, currentLanguage)}
                 </span>
               </div>
               <button 
@@ -1636,7 +1688,7 @@ const PersonalGoals = ({ employees }) => {
                   </label>
                   <p className="font-medium flex items-center">
                     <Calendar className="h-4 w-4 mr-2" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }} />
-                    {viewingGoal.deadline ? new Date(viewingGoal.deadline).toLocaleDateString() : '-'}
+                    {formatDate(viewingGoal.deadline, currentLanguage) || '-'}
                   </p>
                 </div>
                 <div>

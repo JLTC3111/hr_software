@@ -4,8 +4,6 @@ import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from '../contexts/AuthContext';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription, getDemoGoalTitle, getDemoGoalDescription, getDemoTimeEntries } from '../utils/demoHelper';
-import { translateTexts } from '../services/translateService.js';
-import { TranslatedText } from './ui/translated-text.jsx';
 import { 
   Calendar, 
   Download, 
@@ -28,11 +26,6 @@ import {
   Timer,
   AlertCircle
 } from 'lucide-react';
-import * as _XLSX from 'xlsx';
-import ExcelJS from 'exceljs';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import _html2canvas from 'html2canvas';
 import timeTrackingService from '../services/timeTrackingService';
 import { withTimeout } from '../utils/supabaseTimeout';
 import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts';
@@ -47,11 +40,14 @@ import {
   buildCombinedCsvContent,
   computeEmployeePerformance,
   computeExportStats,
-  drawPdfChartsSection,
+  createPdfReportLayout,
   filterExportSnapshotByTab,
   formatHours,
-  PDF_CHART_COLORS
+  meterFilledBlocks,
+  PDF_TOKENS,
+  withBarPercents
 } from '../utils/reportExportHelpers.js';
+import { TranslatedText } from './ui/translated-text.jsx';
 import { SpecularButton } from './ui/specular-button';
 import { MagicBento } from './ui/magic-bento';
 import { SlidingNumber } from './motion-primitives';
@@ -63,11 +59,23 @@ import {
   choosePdfFont,
   getPdfTableFont,
   loadPdfFonts,
+  pdfFontSupportsBold,
   prefetchPdfFonts,
 } from '../utils/pdfFontLoader.js';
 import {
   filterActiveEmployees,
 } from '../utils/employeeStatus.js';
+
+// exceljs/jspdf are ~1.2 MB and are only needed once the user actually exports —
+// loaded on demand so opening the Reports page stays cheap.
+const loadExcelJs = () => import('exceljs').then((m) => m.default ?? m);
+const loadPdfLibs = async () => {
+  const [jsPdfModule, autoTableModule] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable')
+  ]);
+  return { jsPDF: jsPdfModule.jsPDF, autoTable: autoTableModule.default ?? autoTableModule };
+};
 
 const Reports = () => {
   const { handleSessionAuthError, runGuarded } = useSessionGuard();
@@ -804,7 +812,7 @@ const Reports = () => {
       : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
   );
 
-  const buildTimeEntryCsvRows = (timeEntries, ugcMap = null) => {
+  const buildTimeEntryCsvRows = (timeEntries) => {
     const headers = [
       t('reports.excel.headers.dataType', 'Data Type'),
       t('employees.name', 'Employee Name'),
@@ -831,14 +839,14 @@ const Reports = () => {
       entry.hours ? formatHours(entry.hours) : '0.0',
       translateHourType(entry.hour_type) || '',
       translateStatus(entry.status) || '',
-      translateNotes(entry.notes, ugcMap) || '',
+      translateNotes(entry.notes) || '',
       new Date(entry.created_at).toLocaleString()
     ]);
 
     return { headers, rows };
   };
 
-  const buildTaskCsvRows = (tasks, ugcMap = null) => {
+  const buildTaskCsvRows = (tasks) => {
     const headers = [
       t('reports.excel.headers.dataType', 'Data Type'),
       t('employees.name', 'Employee Name'),
@@ -860,8 +868,8 @@ const Reports = () => {
       t('reports.tasks', 'Tasks'),
       isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || 'Unknown'),
       translateDepartment(task.employee?.department) || '',
-      isDemoMode() ? getDemoTaskTitle(task, t) : mapUgc(ugcMap, task.title || ''),
-      isDemoMode() ? getDemoTaskDescription(task, t) : mapUgc(ugcMap, task.description || ''),
+      isDemoMode() ? getDemoTaskTitle(task, t) : task.title || '',
+      isDemoMode() ? getDemoTaskDescription(task, t) : task.description || '',
       translatePriority(task.priority) || '',
       translateStatus(task.status) || '',
       task.due_date || '',
@@ -876,7 +884,7 @@ const Reports = () => {
     return { headers, rows };
   };
 
-  const buildGoalCsvRows = (goals, ugcMap = null) => {
+  const buildGoalCsvRows = (goals) => {
     const headers = [
       t('reports.excel.headers.dataType', 'Data Type'),
       t('employees.name', 'Employee Name'),
@@ -896,13 +904,13 @@ const Reports = () => {
       t('reports.personalGoals', 'Personal Goals'),
       isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || 'Unknown'),
       translateDepartment(goal.employee?.department) || '',
-      isDemoMode() ? getDemoGoalTitle(goal, t) : mapUgc(ugcMap, goal.title || ''),
-      isDemoMode() ? getDemoGoalDescription(goal, t) : mapUgc(ugcMap, goal.description || ''),
+      isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title || '',
+      isDemoMode() ? getDemoGoalDescription(goal, t) : goal.description || '',
       translateCategory(goal.category) || '',
       translateStatus(goal.status) || '',
       goal.progress || 0,
       goal.target_date || '',
-      mapUgc(ugcMap, goal.notes || ''),
+      goal.notes || '',
       new Date(goal.created_at).toLocaleString(),
       new Date(goal.updated_at).toLocaleString()
     ]);
@@ -910,7 +918,7 @@ const Reports = () => {
     return { headers, rows };
   };
 
-  const buildLeaveCsvRows = (leaveRequests, ugcMap = null) => {
+  const buildLeaveCsvRows = (leaveRequests) => {
     const headers = [
       t('reports.excel.headers.dataType', 'Data Type'),
       t('employees.name', 'Employee Name'),
@@ -931,7 +939,7 @@ const Reports = () => {
       `${(req.start_date || '').slice(0, 10)} → ${(req.end_date || req.start_date || '').slice(0, 10)}`,
       req.days_count ?? '',
       translateStatus(req.status) || '',
-      mapUgc(ugcMap, req.reason || ''),
+      req.reason || '',
       new Date(req.created_at).toLocaleString()
     ]);
 
@@ -952,10 +960,6 @@ const Reports = () => {
         alert(t('reports.noData', 'No data available for the selected period'));
         return;
       }
-
-      const ugcMap = await buildUgcTranslateMap(
-        collectExportUgcStrings(timeEntries, tasks, goals, leave)
-      );
 
       const languageName = SUPPORTED_LANGUAGES[currentLanguage]?.name || 'English';
       const employeeName = selectedEmployee !== 'all'
@@ -989,19 +993,19 @@ const Reports = () => {
       }];
 
       if (timeEntries.length > 0) {
-        const timeSection = buildTimeEntryCsvRows(timeEntries, ugcMap);
+        const timeSection = buildTimeEntryCsvRows(timeEntries);
         sections.push({ title: t('reports.timeEntries', 'TIME ENTRIES').toUpperCase(), ...timeSection });
       }
       if (tasks.length > 0) {
-        const taskSection = buildTaskCsvRows(tasks, ugcMap);
+        const taskSection = buildTaskCsvRows(tasks);
         sections.push({ title: t('reports.tasks', 'TASKS').toUpperCase(), ...taskSection });
       }
       if (goals.length > 0) {
-        const goalSection = buildGoalCsvRows(goals, ugcMap);
+        const goalSection = buildGoalCsvRows(goals);
         sections.push({ title: t('reports.personalGoals', 'PERSONAL GOALS').toUpperCase(), ...goalSection });
       }
       if (leave.length > 0) {
-        const leaveSection = buildLeaveCsvRows(leave, ugcMap);
+        const leaveSection = buildLeaveCsvRows(leave);
         sections.push({ title: t('reports.leave', 'LEAVE REQUESTS').toUpperCase(), ...leaveSection });
       }
 
@@ -1094,10 +1098,6 @@ const Reports = () => {
         return;
       }
 
-      const ugcMap = await buildUgcTranslateMap(
-        collectExportUgcStrings(timeEntries, tasks, goals, leave)
-      );
-
       // Helpers for safe values and typing
       const sanitize = (v) => {
         if (v == null) return '';
@@ -1126,6 +1126,7 @@ const Reports = () => {
       // Localized label helper
       const tr = (key, fallback) => t(key, fallback);
 
+      const ExcelJS = await loadExcelJs();
       const workbook = new ExcelJS.Workbook();
       workbook.creator = 'HR Management System';
       workbook.created = new Date();
@@ -1813,7 +1814,7 @@ const Reports = () => {
             entry.hours ? Number(formatHours(entry.hours)) : 0,
             translateHourType(entry.hour_type) || '',
             translateStatus(entry.status) || '',
-            translateNotes(entry.notes, ugcMap) || '',
+            translateNotes(entry.notes) || '',
             new Date(entry.created_at).toLocaleString()
           ];
           
@@ -1876,8 +1877,8 @@ const Reports = () => {
           const rowData = [
             isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || 'Unknown'),
             translateDepartment(task.employee?.department) || '',
-            isDemoMode() ? getDemoTaskTitle(task, t) : mapUgc(ugcMap, task.title || ''),
-            isDemoMode() ? getDemoTaskDescription(task, t) : mapUgc(ugcMap, task.description || ''),
+            isDemoMode() ? getDemoTaskTitle(task, t) : task.title || '',
+            isDemoMode() ? getDemoTaskDescription(task, t) : task.description || '',
             translatePriority(task.priority) || '',
             translateStatus(task.status) || '',
             task.due_date || '',
@@ -1954,13 +1955,13 @@ const Reports = () => {
           const rowData = [
             isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || 'Unknown'),
             translateDepartment(goal.employee?.department) || '',
-            isDemoMode() ? getDemoGoalTitle(goal, t) : mapUgc(ugcMap, goal.title || ''),
-            isDemoMode() ? getDemoGoalDescription(goal, t) : mapUgc(ugcMap, goal.description || ''),
+            isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title || '',
+            isDemoMode() ? getDemoGoalDescription(goal, t) : goal.description || '',
             translateCategory(goal.category) || '',
             translateStatus(goal.status) || '',
             goal.progress || 0,
             goal.target_date || '',
-            mapUgc(ugcMap, goal.notes || ''),
+            goal.notes || '',
             new Date(goal.created_at).toLocaleString(),
             new Date(goal.updated_at).toLocaleString()
           ];
@@ -2199,9 +2200,9 @@ const Reports = () => {
     }
   };
 
-  // Helper function to translate notes with "Entered by admin:" prefix
-  // When ugcMap is provided (export path), free-text body is looked up from pre-translated strings.
-  const translateNotes = (notes, ugcMap = null) => {
+  // Localizes only the "Entered by admin:" prefix; the note body is user text and
+  // is exported as written.
+  const translateNotes = (notes) => {
     if (!notes) return '';
     // Check if notes starts with "Entered by admin:" (case insensitive, optional colon)
     const adminPrefixRegex = /^Entered by admin:?\s*/i;
@@ -2209,51 +2210,11 @@ const Reports = () => {
 
     if (match) {
       const translatedPrefix = t('timeTracking.enteredByAdmin', 'Entered by admin:');
-      const body = notes.slice(match[0].length);
-      const translatedBody = ugcMap ? (ugcMap.get(body) ?? body) : body;
       // Replace the matched prefix with the translated one and ensure a space follows
-      return translatedPrefix + ' ' + translatedBody;
+      return translatedPrefix + ' ' + notes.slice(match[0].length);
     }
-    return ugcMap ? (ugcMap.get(notes) ?? notes) : notes;
+    return notes;
   };
-
-  const mapUgc = (ugcMap, text) => {
-    if (!text) return '';
-    return ugcMap?.get(text) ?? text;
-  };
-
-  const collectExportUgcStrings = (timeEntries = [], tasks = [], goals = [], leave = []) => {
-    const strings = [];
-    const pushNotesBody = (notes) => {
-      if (!notes) return;
-      const match = String(notes).match(/^Entered by admin:?\s*/i);
-      strings.push(match ? notes.slice(match[0].length) : notes);
-    };
-    timeEntries.forEach((entry) => pushNotesBody(entry.notes));
-    if (!isDemoMode()) {
-      tasks.forEach((task) => {
-        if (task.title) strings.push(task.title);
-        if (task.description) strings.push(task.description);
-      });
-      goals.forEach((goal) => {
-        if (goal.title) strings.push(goal.title);
-        if (goal.description) strings.push(goal.description);
-        if (goal.notes) strings.push(goal.notes);
-      });
-    }
-    leave.forEach((req) => {
-      if (req.reason) strings.push(req.reason);
-    });
-    return strings;
-  };
-
-  const buildUgcTranslateMap = async (strings) => {
-    const unique = [...new Set(strings.filter((s) => typeof s === 'string' && s.trim()))];
-    if (unique.length === 0) return new Map();
-    const translated = await translateTexts(unique, currentLanguage);
-    return new Map(unique.map((s, i) => [s, translated[i] ?? s]));
-  };
-
 
   // PDF Export with Charts and Tables
   const exportToPDF = async function() {
@@ -2275,10 +2236,7 @@ const Reports = () => {
         return;
       }
 
-      const ugcMap = await buildUgcTranslateMap(
-        collectExportUgcStrings(timeEntries, tasks, goals, leave)
-      );
-
+      const { jsPDF, autoTable } = await loadPdfLibs();
       const doc = new jsPDF('p', 'mm', 'a4');
       const loadedFonts = await loadPdfFonts(doc, currentLanguage);
       const unicodeFontLoaded = loadedFonts.unicodeReady;
@@ -2287,11 +2245,41 @@ const Reports = () => {
         console.warn('Unicode fonts unavailable — PDF labels may not render correctly.');
       }
 
+      // opts.bold uses the family's real bold face (Archivo, Helvetica). Scripts
+      // whose face has no bold sibling — CJK, Thai, Cyrillic Noto — are stroked
+      // instead, so bolding never swaps in a font with different glyph coverage.
       const drawText = (text, x, y, opts) => {
+        const { bold = false, ...textOpts } = opts || {};
         const cleaned = cleanTextForPDF(text, unicodeFontLoaded);
         const chosen = choosePdfFont(cleaned, loadedFonts);
-        try { doc.setFont(chosen, 'normal'); } catch (e) {}
-        if (opts) doc.text(cleaned, x, y, opts); else doc.text(cleaned, x, y);
+        const hasBoldFace = bold && (
+          chosen === 'helvetica' || pdfFontSupportsBold(chosen, loadedFonts)
+        );
+        try {
+          doc.setFont(chosen, hasBoldFace ? 'bold' : 'normal');
+        } catch {
+          /* keep the active font rather than failing the export */
+        }
+
+        const strokeBold = bold && !hasBoldFace;
+        const previousLineWidth = doc.getLineWidth();
+        if (strokeBold) {
+          textOpts.renderingMode = 'fillThenStroke';
+          doc.setLineWidth(doc.getFontSize() * 0.3528 * 0.038);
+          try {
+            doc.setDrawColor(doc.getTextColor());
+          } catch {
+            /* stroke keeps the previous draw colour */
+          }
+        }
+
+        if (Object.keys(textOpts).length > 0) {
+          doc.text(cleaned, x, y, textOpts);
+        } else {
+          doc.text(cleaned, x, y);
+        }
+
+        if (strokeBold) doc.setLineWidth(previousLineWidth);
       };
 
       if (!unicodeFontLoaded) {
@@ -2300,100 +2288,178 @@ const Reports = () => {
       }
 
       const getTableFont = () => getPdfTableFont(loadedFonts, currentLanguage);
-      
+
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      let yPosition = 20;
+
+      // Glyph-accurate measurement: the same font drawText would pick, so CJK/Thai
+      // widths are real widths and never Helvetica estimates.
+      const measureText = (text, size) => {
+        const cleaned = cleanTextForPDF(text, unicodeFontLoaded);
+        if (!cleaned) return 0;
+        const previousSize = doc.getFontSize();
+        try {
+          doc.setFont(choosePdfFont(cleaned, loadedFonts), 'normal');
+        } catch {
+          /* fall through: measure with whatever font is active */
+        }
+        doc.setFontSize(size);
+        const width = doc.getTextWidth(cleaned);
+        doc.setFontSize(previousSize);
+        return width;
+      };
+
+      // Truncate by code point (never mid-surrogate) — CJK has no spaces to wrap on,
+      // so splitTextToSize would run text off the page instead of breaking it.
+      const ellipsis = unicodeFontLoaded ? '…' : '...';
+      const fitText = (text, maxWidth, size) => {
+        const cleaned = cleanTextForPDF(text, unicodeFontLoaded);
+        if (!cleaned || maxWidth <= 0) return cleaned;
+        if (measureText(cleaned, size) <= maxWidth) return cleaned;
+
+        const chars = Array.from(cleaned);
+        let low = 0;
+        let high = chars.length;
+        while (low < high) {
+          const mid = Math.ceil((low + high) / 2);
+          if (measureText(chars.slice(0, mid).join('') + ellipsis, size) <= maxWidth) {
+            low = mid;
+          } else {
+            high = mid - 1;
+          }
+        }
+        return low > 0 ? chars.slice(0, low).join('') + ellipsis : ellipsis;
+      };
+
+      // Separators degrade to ASCII when the Unicode font is unavailable.
+      const dotSeparator = unicodeFontLoaded ? '·' : '|';
+      const arrowSeparator = unicodeFontLoaded ? '→' : '->';
+
+      const reportTitle = t('reports.performanceReport', 'HR PERFORMANCE REPORT');
 
       // Employee name for filename - sanitize for safe filename
-      const rawEmployeeName = selectedEmployee !== 'all' ? 
-        employees.find(emp => String(emp.id) === String(selectedEmployee))?.name : 
+      const rawEmployeeName = selectedEmployee !== 'all' ?
+        employees.find(emp => String(emp.id) === String(selectedEmployee))?.name :
         t('reports.allEmployees', 'All Employees');
       // Only sanitize filename if Unicode font failed to load, otherwise keep original
-      const employeeName = unicodeFontLoaded ? 
+      const employeeName = unicodeFontLoaded ?
         (rawEmployeeName || `${t('reports.allEmployees', '')}`).replace(/\s+/g, '_').replace(/[<>:"/\\|?*]/g, '_') :
         cleanTextForPDF(rawEmployeeName || `${t('reports.allEmployees', '')}`, false).replace(/\s+/g, '_');
 
-      // Header
-      doc.setFontSize(20);
-      doc.setTextColor(40, 44, 52);
-      drawText(t('reports.performanceReport', 'HR PERFORMANCE REPORT').toUpperCase(), pageWidth / 2, yPosition, { align: 'center' });
-      
-      yPosition += 10;
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      drawText(`${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}`, pageWidth / 2, yPosition, { align: 'center' });
-      
-      yPosition += 5;
-      drawText(`${t('reports.period', 'Period')}: ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}`, pageWidth / 2, yPosition, { align: 'center' });
-      
-      yPosition += 5;
-      const displayEmployeeName = selectedEmployee === 'all' ? 
-        t('reports.allEmployees', 'All Employees') : 
+      const displayEmployeeName = selectedEmployee === 'all' ?
+        t('reports.allEmployees', 'All Employees') :
         (unicodeFontLoaded ? rawEmployeeName : cleanTextForPDF(rawEmployeeName, false));
-      drawText(`${t('reports.employee', 'Employee')}: ${displayEmployeeName}`, pageWidth / 2, yPosition, { align: 'center' });
-      
-      yPosition += 15;
 
-      const leftSummaryLines = [
-        `${t('reports.totalRecords', 'Total Records')}: ${exportStats.totalRecords}`,
-        ...(timeEntries.length > 0 ? [`${t('reports.timeEntries', 'Time Entries')}: ${exportStats.timeEntriesCount}`] : []),
-        ...(tasks.length > 0 ? [`${t('reports.tasks', 'Tasks')}: ${exportStats.tasksCount}`] : []),
-        ...(goals.length > 0 ? [`${t('reports.goals', 'Goals')}: ${exportStats.goalsCount}`] : []),
-        ...(leave.length > 0 ? [`${t('reports.leave', 'Leave Requests')}: ${exportStats.leaveCount}`] : []),
-      ];
-      const rightSummaryLines = [
+      // Running header on continuation pages: "Report — Employee · Page N", then a 2px rule.
+      const emDash = unicodeFontLoaded ? '—' : '-';
+      const headedPages = new Set([1]);
+      const drawRunningHeader = () => {
+        const pageNumber = doc.internal.getCurrentPageInfo().pageNumber;
+        if (headedPages.has(pageNumber)) return PDF_TOKENS.contentTop;
+        headedPages.add(pageNumber);
+
+        const label = `${reportTitle} ${emDash} ${displayEmployeeName} ${dotSeparator} ${t('reports.page', 'Page')} ${pageNumber}`;
+        doc.setFontSize(8);
+        doc.setTextColor(...PDF_TOKENS.ink);
+        drawText(
+          fitText(label, pageWidth - PDF_TOKENS.margin * 2, 8),
+          PDF_TOKENS.margin,
+          PDF_TOKENS.headerBaseline,
+          { bold: true }
+        );
+        doc.setDrawColor(...PDF_TOKENS.ink);
+        doc.setLineWidth(PDF_TOKENS.ruleHeavy);
+        doc.line(
+          PDF_TOKENS.margin,
+          PDF_TOKENS.headerRule,
+          pageWidth - PDF_TOKENS.margin,
+          PDF_TOKENS.headerRule
+        );
+        return PDF_TOKENS.contentTop;
+      };
+
+      const layout = createPdfReportLayout({
+        doc,
+        pageWidth,
+        pageHeight,
+        drawText,
+        measureText,
+        fitText,
+        onNewPage: drawRunningHeader
+      });
+
+      // ── Masthead: bold title left-aligned over meta lines ─────────────────
+      layout.titleBlock({
+        title: reportTitle.toUpperCase(),
+        metaLines: [
+          `${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}`,
+          `${t('reports.period', 'Period')}: ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}`,
+          `${t('reports.employee', 'Employee')}: ${displayEmployeeName}`
+        ]
+      });
+
+      // ── Summary overview: 2-column label/value grid + performance meter ────
+      layout.sectionRule();
+      layout.sectionHeading(t('reports.summaryOverview', 'SUMMARY OVERVIEW').toUpperCase());
+
+      const summaryCell = (label, value) => ({ label, value: String(value) });
+      layout.summaryGrid([
+        summaryCell(t('reports.totalRecords', 'Total Records'), exportStats.totalRecords),
+        timeEntries.length > 0
+          ? summaryCell(t('reports.totalHours', 'Total Hours'), `${exportStats.totalHours}h`)
+          : null,
         ...(timeEntries.length > 0 ? [
-          `${t('reports.totalHours', 'Total Hours')}: ${exportStats.totalHours}h`,
-          `${t('reports.approved', 'Approved')}: ${exportStats.approvedTime}`,
+          summaryCell(t('reports.timeEntries', 'Time Entries'), exportStats.timeEntriesCount),
+          summaryCell(t('reports.approved', 'Approved'), exportStats.approvedTime)
         ] : []),
-        ...(tasks.length > 0 ? [`${t('reports.completedTasks', 'Completed Tasks')}: ${exportStats.completedTasks}`] : []),
-        ...(goals.length > 0 ? [`${t('reports.achievedGoals', 'Achieved Goals')}: ${exportStats.achievedGoals}`] : []),
-      ];
-      const summaryLineCount = Math.max(leftSummaryLines.length, rightSummaryLines.length);
-      const showPerformanceScore = selectedEmployee !== 'all' && (timeEntries.length > 0 || tasks.length > 0 || goals.length > 0);
-      const summaryBoxHeight = 24 + summaryLineCount * 6 + (showPerformanceScore ? 8 : 0);
+        ...(tasks.length > 0 ? [
+          summaryCell(t('reports.tasks', 'Tasks'), exportStats.tasksCount),
+          summaryCell(t('reports.completedTasks', 'Completed Tasks'), exportStats.completedTasks)
+        ] : []),
+        ...(goals.length > 0 ? [
+          summaryCell(t('reports.goals', 'Goals'), exportStats.goalsCount),
+          summaryCell(t('reports.achievedGoals', 'Achieved Goals'), exportStats.achievedGoals)
+        ] : []),
+        ...(leave.length > 0 ? [
+          summaryCell(t('reports.leave', 'Leave Requests'), exportStats.leaveCount),
+          null
+        ] : [])
+      ]);
 
-      // Summary Box
-      doc.setFillColor(240, 242, 245);
-      doc.rect(15, yPosition, pageWidth - 30, summaryBoxHeight, 'F');
-      
-      doc.setFontSize(14);
-      doc.setTextColor(40, 44, 52);
-      drawText(t('reports.summaryOverview', 'SUMMARY OVERVIEW').toUpperCase(), pageWidth / 2, yPosition + 8, { align: 'center' });
-      
-      yPosition += 15;
+      // One employee → that employee's score; "all" → mean over the employees that
+      // actually have records in this period (employees with none would skew it to 0).
+      const scoredEmployees = selectedEmployee === 'all'
+        ? employees
+        : employees.filter((emp) => String(emp.id) === String(selectedEmployee));
+      const employeeScores = scoredEmployees
+        .map((employee) => computeEmployeePerformance(employee, timeEntries, tasks, goals))
+        .filter((performance) => (
+          selectedEmployee !== 'all'
+          || performance.timeEntriesCount > 0
+          || performance.tasksCount > 0
+          || performance.goalsCount > 0
+        ))
+        .map((performance) => Number(performance.overallScore))
+        .filter((score) => Number.isFinite(score));
 
-      doc.setFontSize(10);
-      doc.setTextColor(60, 60, 60);
-
-      leftSummaryLines.forEach((line, index) => {
-        drawText(line, 25, yPosition + index * 6);
-      });
-      rightSummaryLines.forEach((line, index) => {
-        drawText(line, pageWidth - 85, yPosition + index * 6);
-      });
-
-      if (showPerformanceScore) {
-        const employee = employees.find((emp) => String(emp.id) === String(selectedEmployee));
-        if (employee) {
-          const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals);
-          drawText(
-            `${t('reports.excel.performance.overallScore', 'Overall Performance Score:')} ${performance.overallScore}%`,
-            pageWidth / 2,
-            yPosition + summaryLineCount * 6 + 2,
-            { align: 'center' }
-          );
-        }
+      if (employeeScores.length > 0 && (timeEntries.length > 0 || tasks.length > 0 || goals.length > 0)) {
+        const overallScore = employeeScores.reduce((sum, score) => sum + score, 0) / employeeScores.length;
+        layout.meterRow({
+          label: t('reports.excel.performance.overallScore', 'Overall Performance Score:'),
+          valueText: `${overallScore.toFixed(1)}%`,
+          filled: meterFilledBlocks(overallScore)
+        });
       }
 
-      yPosition += summaryBoxHeight - 10;
-
       const toChartItems = (countsMap, translateFn) =>
-        Object.entries(countsMap).map(([key, value], index) => ({
-          label: translateFn ? (translateFn(key) || key) : key,
-          value,
-          color: PDF_CHART_COLORS[index % PDF_CHART_COLORS.length]
+        withBarPercents(
+          Object.entries(countsMap).map(([key, value]) => ({
+            label: translateFn ? (translateFn(key) || key) : key,
+            value
+          }))
+        ).map((item) => ({
+          ...item,
+          valueText: Number.isInteger(item.value) ? String(item.value) : formatHours(item.value)
         }));
 
       const pdfCharts = [];
@@ -2428,58 +2494,66 @@ const Reports = () => {
         });
       }
 
+      // ── Visual analytics: bar groups (neutral track + accent fill) ─────────
       if (pdfCharts.length > 0) {
-        if (yPosition > pageHeight - 40) {
-          doc.addPage();
-          yPosition = 20;
-        }
-        yPosition = drawPdfChartsSection({
-          doc,
-          pageWidth,
-          pageHeight,
-          startY: yPosition,
-          charts: pdfCharts,
-          drawText,
-          sectionTitle: t('reports.pdf.visualAnalytics', 'VISUAL ANALYTICS').toUpperCase()
-        });
+        layout.ensure(34); // keep the heading with at least the first rows
+        layout.sectionRule();
+        layout.sectionHeading(t('reports.pdf.visualAnalytics', 'VISUAL ANALYTICS').toUpperCase());
+        pdfCharts.forEach((chart) => layout.barGroup(chart));
       }
 
-      const addPdfTable = (title, head, body, headColor, fontSize = 7) => {
+      // ── Data tables: header row + data rows, thead repeats across pages ────
+      const addPdfTable = (title, head, body, fontSize = 7) => {
         if (body.length === 0) return;
-        if (yPosition > pageHeight - 40) {
-          doc.addPage();
-          yPosition = 20;
-        }
-        doc.setFontSize(12);
-        doc.setTextColor(40, 44, 52);
-        drawText(title, 15, yPosition);
-        yPosition += 5;
+        // Don't leave a heading (or a two-row stub) stranded at the foot of a page.
+        const estimatedHeight = 24 + body.length * 5.8;
+        layout.ensure(Math.min(estimatedHeight, 54));
+        layout.sectionRule();
+        layout.sectionHeading(title);
 
         autoTable(doc, {
-          startY: yPosition,
+          startY: layout.y,
           head: [head],
           body,
-          theme: 'striped',
+          theme: 'plain',
+          showHead: 'everyPage',
           headStyles: {
-            fillColor: headColor,
-            textColor: headColor[0] === 255 && headColor[1] === 192 ? 0 : 255,
+            textColor: PDF_TOKENS.ink,
+            fillColor: false,
+            lineColor: PDF_TOKENS.ink,
+            lineWidth: { bottom: PDF_TOKENS.ruleHeavy },
             fontStyle: 'normal',
             font: getTableFont()
           },
+          bodyStyles: {
+            textColor: PDF_TOKENS.inkSoft,
+            lineColor: PDF_TOKENS.track,
+            lineWidth: { bottom: PDF_TOKENS.ruleThin }
+          },
           styles: {
             fontSize,
-            cellPadding: 1.5,
+            cellPadding: { top: 1.6, right: 1.6, bottom: 1.6, left: 1.6 },
             font: getTableFont(),
-            fontStyle: 'normal'
+            fontStyle: 'normal',
+            overflow: 'linebreak'
           },
           didParseCell: function(data) {
             const cellText = Array.isArray(data.cell.text) ? data.cell.text.join(' ') : String(data.cell.text || '');
             data.cell.styles.font = choosePdfFont(cellText, loadedFonts);
           },
-          margin: { left: 15, right: 15 }
+          // Continuation pages created by autoTable still get the running header.
+          didDrawPage: function() {
+            drawRunningHeader();
+          },
+          margin: {
+            top: PDF_TOKENS.contentTop,
+            left: PDF_TOKENS.margin,
+            right: PDF_TOKENS.margin,
+            bottom: PDF_TOKENS.footerReserve
+          }
         });
 
-        yPosition = doc.lastAutoTable.finalY + 10;
+        layout.y = doc.lastAutoTable.finalY + 4;
       };
 
       const pdfHead = (key, fallback) => cleanTextForPDF(t(key, fallback), unicodeFontLoaded);
@@ -2506,8 +2580,7 @@ const Reports = () => {
             `${formatHours(entry.hours || 0)}h`,
             cleanTextForPDF(translateHourType(entry.hour_type), unicodeFontLoaded),
             cleanTextForPDF(translateStatus(entry.status), unicodeFontLoaded)
-          ]),
-          [70, 173, 71]
+          ])
         );
       }
 
@@ -2527,14 +2600,13 @@ const Reports = () => {
           tasks.map((task) => [
             cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
             cleanTextForPDF(translateDepartment(task.employee?.department) || '', unicodeFontLoaded),
-            cleanTextForPDF((isDemoMode() ? getDemoTaskTitle(task, t) : mapUgc(ugcMap, task.title || '')).substring(0, 40), unicodeFontLoaded),
+            cleanTextForPDF((isDemoMode() ? getDemoTaskTitle(task, t) : task.title || '').substring(0, 40), unicodeFontLoaded),
             cleanTextForPDF(translatePriority(task.priority), unicodeFontLoaded),
             cleanTextForPDF(translateStatus(task.status), unicodeFontLoaded),
             task.due_date || '-',
             `${formatHours(task.estimated_hours || 0)}h`,
             `${formatHours(task.actual_hours || 0)}h`
-          ]),
-          [255, 192, 0]
+          ])
         );
       }
 
@@ -2553,13 +2625,12 @@ const Reports = () => {
           goals.map((goal) => [
             cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(goal.employee, t) : (goal.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
             cleanTextForPDF(translateDepartment(goal.employee?.department) || '', unicodeFontLoaded),
-            cleanTextForPDF((isDemoMode() ? getDemoGoalTitle(goal, t) : mapUgc(ugcMap, goal.title || '')).substring(0, 40), unicodeFontLoaded),
+            cleanTextForPDF((isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title || '').substring(0, 40), unicodeFontLoaded),
             cleanTextForPDF(translateCategory(goal.category), unicodeFontLoaded),
             cleanTextForPDF(translateStatus(goal.status), unicodeFontLoaded),
             goal.target_date || '-',
             `${goal.progress || 0}%`
-          ]),
-          [91, 155, 213]
+          ])
         );
       }
 
@@ -2578,11 +2649,10 @@ const Reports = () => {
             cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(req.employee, t) : (req.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
             cleanTextForPDF(translateDepartment(req.employee?.department) || '', unicodeFontLoaded),
             cleanTextForPDF(translateLeaveType(req.leave_type), unicodeFontLoaded),
-            `${(req.start_date || '').slice(0, 10)} → ${(req.end_date || req.start_date || '').slice(0, 10)}`,
+            `${(req.start_date || '').slice(0, 10)} ${arrowSeparator} ${(req.end_date || req.start_date || '').slice(0, 10)}`,
             String(req.days_count ?? '-'),
             cleanTextForPDF(translateStatus(req.status), unicodeFontLoaded)
-          ]),
-          [59, 130, 246]
+          ])
         );
       }
 
@@ -2610,21 +2680,33 @@ const Reports = () => {
               `${performance.overallScore}%`
             ];
           }),
-          [112, 48, 160],
           6
         );
       }
 
-      // Footer on all pages
+      // ── Footer rule + "Page N/M · Generated by …" and the locale code ──────
       const pageCount = doc.internal.getNumberOfPages();
-      const languageName = SUPPORTED_LANGUAGES[currentLanguage]?.name || 'English';
+      const localeCode = (SUPPORTED_LANGUAGES[currentLanguage]?.code || currentLanguage || 'en').toUpperCase();
+      const footerRuleY = pageHeight - PDF_TOKENS.footerRule;
+      const footerBaselineY = pageHeight - PDF_TOKENS.footerBaseline;
+      const footerRight = pageWidth - PDF_TOKENS.margin;
+
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(150, 150, 150);
-        drawText(`${t('reports.page', 'Page')} ${i} ${t('reports.of', 'of')} ${pageCount} | ${t('reports.generatedBy', 'Generated by HR Management System')}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
-        // Add language indicator on the right
-        drawText(`${t('reports.language', 'Language')}: ${languageName}`, pageWidth - 15, pageHeight - 10, { align: 'right' });
+        doc.setDrawColor(...PDF_TOKENS.ink);
+        doc.setLineWidth(PDF_TOKENS.ruleHeavy);
+        doc.line(PDF_TOKENS.margin, footerRuleY, footerRight, footerRuleY);
+
+        doc.setFontSize(7.5);
+        doc.setTextColor(...PDF_TOKENS.muted);
+        const localeWidth = measureText(localeCode, 7.5);
+        const footerLabel = `${t('reports.page', 'Page')} ${i}/${pageCount} ${dotSeparator} ${t('reports.generatedBy', 'Generated by HR Management System')}`;
+        drawText(
+          fitText(footerLabel, pageWidth - PDF_TOKENS.margin * 2 - localeWidth - 6, 7.5),
+          PDF_TOKENS.margin,
+          footerBaselineY
+        );
+        drawText(localeCode, footerRight, footerBaselineY, { align: 'right' });
       }
 
       // Save the PDF

@@ -7,10 +7,12 @@ import {
 } from '../../services/translateService.js';
 
 /**
- * Auto-translate a single UGC string into the active UI language (1A).
- * Covers the original while a network translate is in flight; cache hits
- * resolve immediately with no flash.
- * Demo mode / empty text: returns original (callers use getDemo* for demo).
+ * Auto-translate a single UGC string into the active UI language using the
+ * browser's on-device translator.
+ *
+ * The original text renders immediately and is replaced in place if and when a
+ * translation arrives — UGC is never hidden behind a placeholder, so browsers
+ * without on-device translation simply show the text as written.
  *
  * @returns {{ text: string, isTranslating: boolean, original: string }}
  */
@@ -18,19 +20,12 @@ export function useTranslatedText(text, { enabled = true } = {}) {
   const { currentLanguage } = useLanguage();
   const original = text == null ? '' : String(text);
 
-  const skip =
-    !enabled || !original.trim() || isDemoMode();
+  const skip = !enabled || !original.trim() || isDemoMode();
 
-  const cached = skip
-    ? null
-    : peekCachedTranslation(original, currentLanguage);
-
-  const [translated, setTranslated] = useState(() =>
-    skip ? original : cached ?? ''
+  const [translated, setTranslated] = useState(
+    () => (skip ? original : peekCachedTranslation(original, currentLanguage) ?? original)
   );
-  const [isTranslating, setIsTranslating] = useState(
-    () => !skip && cached == null
-  );
+  const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,12 +43,13 @@ export function useTranslatedText(text, { enabled = true } = {}) {
       return undefined;
     }
 
-    setTranslated('');
+    // Show the original while the on-device model works.
+    setTranslated(original);
     setIsTranslating(true);
 
     translateText(original, currentLanguage).then((out) => {
       if (cancelled) return;
-      setTranslated(typeof out === 'string' ? out : original);
+      setTranslated(typeof out === 'string' && out ? out : original);
       setIsTranslating(false);
     });
 
@@ -62,17 +58,10 @@ export function useTranslatedText(text, { enabled = true } = {}) {
     };
   }, [original, currentLanguage, enabled, skip]);
 
-  return {
-    text: isTranslating ? '' : translated || original,
-    isTranslating,
-    original,
-  };
+  return { text: translated || original, isTranslating, original };
 }
 
-/**
- * Renders UGC text auto-translated to the current UI language.
- * While translating, shows a pulse skeleton sized to the original (original hidden).
- */
+/** Renders UGC text, auto-translated to the current UI language when possible. */
 export function TranslatedText({
   text,
   as: Component = 'span',
@@ -86,26 +75,13 @@ export function TranslatedText({
     { enabled }
   );
 
-  if (isTranslating) {
-    return (
-      <Component
-        className={className}
-        aria-busy="true"
-        aria-live="polite"
-        {...rest}
-      >
-        <span
-          className="inline rounded-sm bg-current/15 animate-pulse text-transparent select-none pointer-events-none whitespace-pre-wrap break-words"
-          aria-hidden="true"
-        >
-          {original}
-        </span>
-      </Component>
-    );
-  }
-
   return (
-    <Component className={className} {...rest}>
+    <Component
+      className={className}
+      title={value !== original ? original : undefined}
+      data-translating={isTranslating ? 'true' : undefined}
+      {...rest}
+    >
       {value}
     </Component>
   );

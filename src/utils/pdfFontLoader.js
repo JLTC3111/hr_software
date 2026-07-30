@@ -15,6 +15,26 @@ const FONT_FETCH_TIMEOUT_MS = 180_000;
  */
 const localFont = (path) => (import.meta.env.DEV ? [path] : []);
 
+/**
+ * Report display face. Archivo covers Latin, Latin-Ext and Vietnamese, and ships
+ * a real Bold — but it has no Cyrillic/CJK/Thai, so choosePdfFont routes those
+ * scripts to the Noto faces below.
+ */
+const DISPLAY_FONT = {
+  urls: () => [
+    ...localFont('/fonts/Archivo-Regular.ttf'),
+    `${CDN}/Omnibus-Type/Archivo@master/fonts/ttf/Archivo-Regular.ttf`,
+  ],
+  boldUrls: () => [
+    ...localFont('/fonts/Archivo-Bold.ttf'),
+    `${CDN}/Omnibus-Type/Archivo@master/fonts/ttf/Archivo-Bold.ttf`,
+  ],
+  vfsName: 'Archivo-Regular.ttf',
+  boldVfsName: 'Archivo-Bold.ttf',
+  fontName: 'Archivo',
+  verifyChar: 'Ắ',
+};
+
 const LATIN_FONT = {
   urls: () => [
     ...localFont('/fonts/NotoSans-Regular.ttf'),
@@ -180,6 +200,27 @@ const addFontToDoc = async (doc, config) => {
   throw lastError || new Error(`Unable to load font ${config.fontName}`);
 };
 
+/**
+ * Registers the bold face of a family, if it has one. Never throws: without it
+ * the report falls back to stroked (synthetic) bold, which every face supports.
+ */
+const addBoldFontToDoc = async (doc, config) => {
+  if (typeof config.boldUrls !== 'function') return false;
+
+  for (const url of config.boldUrls()) {
+    try {
+      const base64 = await fetchFontBase64(url);
+      doc.addFileToVFS(config.boldVfsName, base64);
+      doc.addFont(config.boldVfsName, config.fontName, 'bold');
+      return true;
+    } catch (error) {
+      console.warn(`Bold font load attempt failed (${url}):`, error?.message || error);
+    }
+  }
+
+  return false;
+};
+
 const verifyFont = (doc, fontName, sampleChar) => {
   try {
     doc.setFont(fontName, 'normal');
@@ -196,6 +237,7 @@ const verifyFont = (doc, fontName, sampleChar) => {
 
 export const containsCjk = (text) => /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/.test(String(text || ''));
 export const containsThai = (text) => /[\u0E00-\u0E7F]/.test(String(text || ''));
+export const containsCyrillic = (text) => /[\u0400-\u04ff]/.test(String(text || ''));
 
 export const choosePdfFont = (text, loadedFonts) => {
   if (!loadedFonts?.unicodeReady) {
@@ -212,6 +254,15 @@ export const choosePdfFont = (text, loadedFonts) => {
     return loadedFonts.cjkFontName || CJK_SC_FONT.fontName;
   }
 
+  // Archivo has no Cyrillic \u2014 Noto Sans does.
+  if (containsCyrillic(value) && loadedFonts.latin) {
+    return LATIN_FONT.fontName;
+  }
+
+  if (loadedFonts.display) {
+    return DISPLAY_FONT.fontName;
+  }
+
   if (loadedFonts.latin) {
     return LATIN_FONT.fontName;
   }
@@ -223,10 +274,17 @@ export const choosePdfFont = (text, loadedFonts) => {
   return 'helvetica';
 };
 
-const loadConfig = async (doc, config) => {
+/** True when the family has a real bold face; otherwise callers stroke instead. */
+export const pdfFontSupportsBold = (fontName, loadedFonts) =>
+  Boolean(fontName && loadedFonts?.boldFamilies?.includes(fontName));
+
+const loadConfig = async (doc, config, loaded) => {
   const fontName = await addFontToDoc(doc, config);
   if (!verifyFont(doc, fontName, config.verifyChar)) {
     throw new Error(`Font verification failed for ${fontName}`);
+  }
+  if (loaded && await addBoldFontToDoc(doc, config) && !loaded.boldFamilies.includes(fontName)) {
+    loaded.boldFamilies.push(fontName);
   }
   return fontName;
 };
@@ -234,41 +292,55 @@ const loadConfig = async (doc, config) => {
 export const loadPdfFonts = async (doc, language) => {
   const loaded = {
     unicodeReady: false,
+    display: false,
     latin: false,
     cjk: false,
     thai: false,
     primaryFontName: null,
     cjkFontName: null,
+    boldFamilies: [],
+  };
+
+  /** Archivo (with its bold face) is the display font for every locale. */
+  const loadDisplay = async () => {
+    try {
+      await loadConfig(doc, DISPLAY_FONT, loaded);
+      loaded.display = true;
+    } catch (displayError) {
+      console.warn('Could not load Archivo display font, using Noto Sans', displayError);
+    }
+  };
+
+  const loadLatin = async () => {
+    try {
+      await loadConfig(doc, LATIN_FONT, loaded);
+      loaded.latin = true;
+    } catch (latinError) {
+      console.warn('Could not load Latin Noto font', latinError);
+    }
   };
 
   try {
     if (language === 'jp' || language === 'kr') {
       const cjkConfig = cjkFontForLanguage(language);
-      loaded.primaryFontName = await loadConfig(doc, cjkConfig);
+      loaded.primaryFontName = await loadConfig(doc, cjkConfig, loaded);
       loaded.cjkFontName = cjkConfig.fontName;
       loaded.cjk = true;
-      try {
-        await loadConfig(doc, LATIN_FONT);
-        loaded.latin = true;
-      } catch (latinError) {
-        console.warn('Could not load Latin Noto alongside CJK font', latinError);
-      }
+      await loadLatin();
+      await loadDisplay();
     } else if (language === 'th') {
-      loaded.primaryFontName = await loadConfig(doc, THAI_FONT);
+      loaded.primaryFontName = await loadConfig(doc, THAI_FONT, loaded);
       loaded.thai = true;
-      try {
-        await loadConfig(doc, LATIN_FONT);
-        loaded.latin = true;
-      } catch (latinError) {
-        console.warn('Could not load Latin Noto alongside Thai font', latinError);
-      }
+      await loadLatin();
+      await loadDisplay();
     } else {
-      loaded.primaryFontName = await loadConfig(doc, LATIN_FONT);
+      loaded.primaryFontName = await loadConfig(doc, LATIN_FONT, loaded);
       loaded.latin = true;
+      await loadDisplay();
 
       if (language === 'vn') {
         try {
-          await loadConfig(doc, CJK_SC_FONT);
+          await loadConfig(doc, CJK_SC_FONT, loaded);
           loaded.cjk = true;
           loaded.cjkFontName = CJK_SC_FONT.fontName;
         } catch (cjkError) {
@@ -298,14 +370,26 @@ export const prefetchPdfFonts = (language) => {
   if (language === 'th') {
     configs.push(THAI_FONT);
   }
-  configs.push(LATIN_FONT);
+  configs.push(LATIN_FONT, DISPLAY_FONT);
+
+  // Stop at the first URL that works: fetching every fallback too would pull the
+  // 15 MB CJK font from both the local copy and the CDN, and cache both.
+  const prefetchFirstAvailable = async (urls) => {
+    for (const url of urls) {
+      try {
+        await fetchFontBase64(url);
+        return;
+      } catch (error) {
+        console.warn(`PDF font prefetch skipped (${url}):`, error?.message || error);
+      }
+    }
+  };
 
   configs.forEach((config) => {
-    config.urls().forEach((url) => {
-      fetchFontBase64(url).catch((error) => {
-        console.warn(`PDF font prefetch skipped (${url}):`, error?.message || error);
-      });
-    });
+    prefetchFirstAvailable(config.urls());
+    if (typeof config.boldUrls === 'function') {
+      prefetchFirstAvailable(config.boldUrls());
+    }
   });
 };
 
@@ -320,6 +404,15 @@ export const getPdfTableFont = (loadedFonts, language) => {
 
   if (language === 'th') {
     return loadedFonts.thai ? THAI_FONT.fontName : 'helvetica';
+  }
+
+  // Russian cells need Cyrillic, which Archivo lacks.
+  if (language === 'ru') {
+    return loadedFonts.latin ? LATIN_FONT.fontName : 'helvetica';
+  }
+
+  if (loadedFonts.display) {
+    return DISPLAY_FONT.fontName;
   }
 
   return loadedFonts.latin ? LATIN_FONT.fontName : 'helvetica';

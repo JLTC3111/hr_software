@@ -1,14 +1,33 @@
 import _React, { useMemo } from 'react';
-import * as LucideIcons from 'lucide-react';
+import {
+  AlertTriangle,
+  BookOpenText,
+  Filter,
+  Hash,
+  Lightbulb,
+  Lock,
+  Sparkles,
+  SquarePen,
+  UserCog,
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import FeatureShowcase from './FeatureShowcase.jsx';
 import { HELP_FEATURES } from '../services/helpData.js';
 
-// Helper function to dynamically select Lucide Icons
+// Icons referenced by name from HELP_FEATURES. Named imports keep tree-shaking
+// working — `import * as LucideIcons` pulled the whole icon set into the bundle.
+// Add an entry here when a new `icon:` value is used in helpData.js.
+const HELP_ICONS = {
+  Filter,
+  Lock,
+  SquarePen,
+  UserCog,
+};
+
 const Icon = ({ name, ...props }) => {
-  const LucideIcon = LucideIcons[name];
+  const LucideIcon = HELP_ICONS[name];
   return LucideIcon ? <LucideIcon {...props} /> : null;
 };
 
@@ -31,7 +50,7 @@ const AdvancedHelpCenter = ({ contextHint = null }) => {
       <div className={`absolute inset-0 pointer-events-none opacity-30 ${isDarkMode ? 'opacity-20' : ''} bg-[radial-gradient(circle_at_20%_20%,rgba(99,102,241,0.22),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(34,197,94,0.2),transparent_30%)]`} />
       <div className="relative z-10 space-y-6">
         <div className={`flex items-center gap-3 border-b pb-3 ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <LucideIcons.BookOpenText className={`h-8 w-8 ${isDarkMode ? 'text-indigo-300' : 'text-indigo-600'}`} aria-hidden="true" />
+          <BookOpenText className={`h-8 w-8 ${isDarkMode ? 'text-indigo-300' : 'text-indigo-600'}`} aria-hidden="true" />
           <div>
             <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`} data-i18n="help.title">
               {t('help.title', 'Advanced Feature Guide')}
@@ -45,7 +64,7 @@ const AdvancedHelpCenter = ({ contextHint = null }) => {
       {/* 2. Animated Feature Showcase */}
         <section aria-label={t('help.showcase.section', 'Animated product walkthrough')} className="space-y-3">
           <div className="flex items-center gap-2">
-            <LucideIcons.Sparkles className={`h-6 w-6 ${isDarkMode ? 'text-green-300' : 'text-green-600'}`} aria-hidden="true" />
+            <Sparkles className={`h-6 w-6 ${isDarkMode ? 'text-green-300' : 'text-green-600'}`} aria-hidden="true" />
             <h2 className={`text-2xl font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`} data-i18n="help.showcase.title">
               {t('help.showcase.title', 'See the platform in motion')}
             </h2>
@@ -68,7 +87,7 @@ const AdvancedHelpCenter = ({ contextHint = null }) => {
           aria-label={t('help.demoRestrictions', 'Demo Restrictions')}
         >
           <div className="flex items-start">
-            <LucideIcons.AlertTriangle className={`h-6 w-6 ${isDarkMode ? 'text-red-300' : 'text-red-600'} mr-3 mt-1 shrink-0`} aria-hidden="true" />
+            <AlertTriangle className={`h-6 w-6 ${isDarkMode ? 'text-red-300' : 'text-red-600'} mr-3 mt-1 shrink-0`} aria-hidden="true" />
             <div>
               <h3 className={`text-xl font-bold ${isDarkMode ? 'text-red-300' : 'text-red-800'}`} data-i18n="help.demo.title">
                 {t('help.demo.title', 'IMPORTANT: Demo Restrictions!')}
@@ -85,7 +104,7 @@ const AdvancedHelpCenter = ({ contextHint = null }) => {
       {/* 4. Advanced & Contextual Features List */}
         <section aria-label={t('help.features.section', 'Advanced & Contextual Features')} className="space-y-4">
           <div className="flex items-center gap-2">
-            <LucideIcons.Lightbulb className={`h-6 w-6 ${isDarkMode ? 'text-yellow-300' : 'text-yellow-500'} fill-yellow-500`} aria-hidden="true" />
+            <Lightbulb className={`h-6 w-6 ${isDarkMode ? 'text-yellow-300' : 'text-yellow-500'} fill-yellow-500`} aria-hidden="true" />
             <h2 className={`text-2xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`} data-i18n="help.features.title">
               {contextHint
                 ? t('help.features.contextTitle', 'Contextual Tips for {context}', { context: contextHint })
@@ -124,7 +143,7 @@ const AdvancedHelpCenter = ({ contextHint = null }) => {
                       className={`inline-flex items-center gap-1 ${isDarkMode ? 'bg-indigo-900 text-indigo-300' : 'bg-indigo-100 text-indigo-800'} text-xs font-semibold px-2.5 py-0.5 rounded-full shadow-sm`}
                       data-i18n="help.features.tag"
                     >
-                      <LucideIcons.Hash className="h-3 w-3" aria-hidden="true" />
+                      <Hash className="h-3 w-3" aria-hidden="true" />
                       {t(`help.tags.${tag.replace(/\s+/g, '').toLowerCase()}`, tag)}
                     </span>
                   ))}
