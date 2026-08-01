@@ -9,7 +9,6 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
-  const [filterStatus, setFilterStatus] = useState('all');
 
   const modalContentRef = useRef(null);
 
@@ -105,37 +104,14 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
       });
     }
 
-    // Status filter
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter(item => item.status === filterStatus);
-    }
-
     return filtered;
-  }, [sortedData, searchTerm, filterStatus]);
+  }, [sortedData, searchTerm]);
 
   const handleSort = (key) => {
     setSortConfig(prev => ({
       key,
       direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
-  };
-
-  const handleExport = () => {
-    if (filteredData.length === 0) return;
-    
-    const headers = Object.keys(filteredData[0]);
-    const csvContent = [
-      headers.join(','),
-      ...filteredData.map(row => headers.map(header => row[header]).join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
   };
 
   // Render different table structures based on metric type
@@ -167,7 +143,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                 </div>
               </th>
               <th className={`text-left p-3 ${text.primary} font-semibold`}>
-                <span>{t('employees.status', 'Status')}</span>
+                <span>{t('common.status', 'Status')}</span>
               </th>
             </tr>
           </thead>
@@ -548,15 +524,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                 />
               </div>
 
-              {/* Export Button
-              <button
-                onClick={handleExport}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium cursor-pointer"
-              >
-                <Download className="w-4 h-4" />
-                <span>{t('reports.exportExcel', 'Export')}</span>
-              </button> */}
-            </div>
+                          </div>
           </div>
 
           {/* Content */}

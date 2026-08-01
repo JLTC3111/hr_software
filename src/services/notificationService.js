@@ -590,6 +590,42 @@ const pendingApprovalOptions = (pendingCount) => ({
   metadata: { pendingCount, kind: 'pending_approvals' }
 });
 
+// The pending-approval notice is derived from live data rather than stored as a
+// one-off event, so every sync would happily recreate a notice the user just
+// deleted. Remember what they dismissed and honour it until the queue changes.
+const DISMISSED_PENDING_KEY = 'hr_app_dismissed_pending_approvals';
+
+const readDismissedPendingCount = (userId) => {
+  try {
+    const raw = globalThis.localStorage?.getItem(DISMISSED_PENDING_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return String(parsed?.userId) === String(userId) ? Number(parsed.count) : null;
+  } catch {
+    return null;
+  }
+};
+
+/** Record that the user dismissed the pending-approval notice at this count. */
+export const rememberDismissedPendingApprovals = (userId, count) => {
+  try {
+    globalThis.localStorage?.setItem(
+      DISMISSED_PENDING_KEY,
+      JSON.stringify({ userId: String(userId), count: Number(count) || 0 })
+    );
+  } catch {
+    // dismissal memory is best-effort
+  }
+};
+
+export const clearDismissedPendingApprovals = () => {
+  try {
+    globalThis.localStorage?.removeItem(DISMISSED_PENDING_KEY);
+  } catch {
+    // ignore
+  }
+};
+
 const isPendingApprovalNotification = (notification) => {
   if (!notification) return false;
   if (notification.metadata?.kind === 'pending_approvals') return true;
@@ -619,6 +655,8 @@ export const syncPendingApprovalNotification = async (userId, pendingCount) => {
     for (const notification of existing) {
       await deleteNotification(notification.id);
     }
+    // Queue is empty, so any dismissal is spent: a future backlog notifies again.
+    clearDismissedPendingApprovals();
     return { success: true, action: 'cleared', deletedCount: existing.length };
   }
 
@@ -630,13 +668,14 @@ export const syncPendingApprovalNotification = async (userId, pendingCount) => {
     }
 
     const currentCount = target.metadata?.pendingCount ?? 0;
-    const isUpToDate =
-      currentCount === pendingCount &&
-      target.is_read === false &&
-      target.message === message &&
-      target.category === PENDING_APPROVAL_CATEGORY;
+    const countChanged = currentCount !== pendingCount;
+    const contentMatches =
+      target.message === message && target.category === PENDING_APPROVAL_CATEGORY;
 
-    if (isUpToDate) {
+    // Nothing new to say. Deliberately ignores is_read here: forcing it back to
+    // false on every sync is what made this notice keep reappearing as unread
+    // after the user had already read it.
+    if (!countChanged && contentMatches) {
       return { success: true, action: 'unchanged', data: target };
     }
 
@@ -646,9 +685,14 @@ export const syncPendingApprovalNotification = async (userId, pendingCount) => {
       type: 'warning',
       category: PENDING_APPROVAL_CATEGORY,
       metadata: { pendingCount, kind: 'pending_approvals' },
-      isRead: false,
-      readAt: null
+      // Only resurface as unread when the queue itself actually changed.
+      ...(countChanged ? { isRead: false, readAt: null } : {})
     });
+  }
+
+  // No notice exists. If the user deleted one at this exact count, leave it gone.
+  if (readDismissedPendingCount(userId) === pendingCount) {
+    return { success: true, action: 'suppressed' };
   }
 
   return notifyUser(userId, PENDING_APPROVAL_TITLE, message, pendingApprovalOptions(pendingCount));

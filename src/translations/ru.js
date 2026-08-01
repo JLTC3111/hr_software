@@ -177,6 +177,12 @@ export default {
   },
   // Dashboard
   dashboard: {
+    workforce: 'Персонал',
+    hours: 'Часы',
+    leave: 'Отпуск',
+    performance: 'Эффективность',
+    approvals: 'Согласования',
+    total: 'Всего',
     regularAndOvertimeByEmployee: 'Обычные и сверхурочные часы по сотрудникам',
     employeeLabel: 'Сотрудник',
     currentMonth: 'Текущий месяц',
@@ -382,6 +388,13 @@ export default {
   },
   // Time Tracking
   timeTracking: {
+    noRecords: 'Записи о посещаемости за этот период не найдены',
+    approve: 'Утвердить',
+    reject: 'Отклонить',
+    approveSuccess: 'Заявка на отпуск утверждена',
+    rejectSuccess: 'Заявка на отпуск отклонена',
+    actionError: 'Ошибка при обновлении заявки на отпуск',
+    rejectReasonPrompt: 'Укажите причину отклонения (необязательно):',
     on_leave: 'В отпуске',
     detailedBreakdown: 'Подробный анализ учета времени',
     title: 'Панель управления учетом времени',
@@ -1109,6 +1122,9 @@ export default {
     picker: 'Выбор времени'
   },
   common: {
+    notAvailable: 'Н/Д',
+    refresh: 'Обновить',
+    retry: 'Повторить',
     email: 'Email',
     phone: 'Телефон',
     results: 'Найдено результатов',

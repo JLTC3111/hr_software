@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { motion, AnimatePresence, useMotionValue, animate } from 'framer-motion'
-import * as flubber from 'flubber'
 import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, ArrowUp01, Sailboat, Stamp, CircleQuestionMark, Funnel, ListFilterPlus, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart, AlertCircle } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import * as timeTrackingService from '../services/timeTrackingService'
 import { supabase } from '../config/supabaseClient'
@@ -16,6 +13,10 @@ import { SlidingNumber, useNumberReplay } from './motion-primitives';
 import { PageLiveClock } from './ui/page-live-clock';
 import { DatePicker } from './ui/date-picker.jsx';
 import { filterActiveEmployees } from '../utils/employeeStatus.js';
+import { COL } from '../utils/tableColumns.js';
+import { TableScroll, StackedDetail } from './ui/responsive-table.jsx';
+import { cn } from '@/lib/utils';
+import { FlubberMorphIcon } from './ui/flubber-morph-icon.jsx';
 
 function TimeCard({ title, value, unit, icon: Icon, color, onClick, useDarkIcon = false, iconProps = {}, text, border, isDarkMode, customIcons }) {
   const { replayToken, bump } = useNumberReplay();
@@ -49,12 +50,10 @@ function TimeCard({ title, value, unit, icon: Icon, color, onClick, useDarkIcon 
   );
 }
 
-export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = false }) => {
-    const mainColor = isDarkMode ? '#ffffff' : '#000000';
-    const steamColor = isDarkMode ? '#e5e7eb' : '#000000'; 
-
-    // CSS Keyframes 
-    const styleSheet = `
+// Static, so it is defined once at module scope instead of being rebuilt and
+// re-injected as a <style> element on every render. Steam inherits the parent's
+// currentColor rather than baking the theme into the stylesheet text.
+const COFFEE_STEAM_STYLES = `
         @keyframes steam-rise {
             /* Start: Mostly transparent, at base level */
             0%, 100% {
@@ -63,7 +62,7 @@ export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = fal
             }
             /* Peak Opacity: Steam becomes visible */
             10% {
-                opacity: 0.8; 
+                opacity: 0.8;
             }
             /* Halfway: Moves up and starts fading */
             50% {
@@ -72,13 +71,13 @@ export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = fal
             }
             /* End of movement cycle: Fades out completely, max rise of ~2px */
             80% {
-                opacity: 0.05; 
+                opacity: 0.05;
                 transform: translateY(-2.5px);
             }
         }
 
         .steam-line {
-            stroke: ${steamColor};
+            stroke: currentColor;
             stroke-linecap: round;
             stroke-width: 2;
             fill: none;
@@ -87,10 +86,17 @@ export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = fal
         }
     `;
 
+export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = false }) => {
+    const mainColor = isDarkMode ? '#ffffff' : '#000000';
+    const steamColor = isDarkMode ? '#e5e7eb' : '#000000';
+
     return (
-        <div className={`relative ${className}`} style={{ width: size, height: size }}>
-            <style>{styleSheet}</style>
-            
+        <div
+            className={`relative ${className}`}
+            style={{ width: size, height: size, color: steamColor }}
+        >
+            <style>{COFFEE_STEAM_STYLES}</style>
+
             <Coffee size={size} strokeWidth={1.5} stroke={mainColor}/>
             <svg
                 width={size}
@@ -146,236 +152,44 @@ export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = fal
     );
 };
 
-export const MiniFlubberMorphingLeaveStatus = ({
-  status = 'pending',
-  size = 24,
-  className = '',
-  isDarkMode = false,
-}) => {
-  const [currentIconIndex, setCurrentIconIndex] = useState(0);
-  const [morphPaths, setMorphPaths] = useState([]);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [duration] = useState(3000);
-  const [maxSegmentLength] = useState(2);
-  const iconRefs = useRef({});
-  const animationFrameRef = useRef(null);
+const LEAVE_STATUS_ORDER = ['pending', 'approved', 'rejected'];
+const LEAVE_STATUS_ICONS = [CircleQuestionMark, Check, X];
 
-    /** ---------------------------
-     * Dynamic color selection
-     ----------------------------*/
-    const getColor = (icon) => {
-      if (icon.status === 'approved') {
-        return isDarkMode ? 'text-green-400' : 'text-green-700';
-      }
-      if (icon.status === 'rejected') {
-        return isDarkMode ? 'text-red-400' : 'text-red-700';
-      }
-      return isDarkMode ? 'text-gray-300' : 'text-gray-400';
-    };
-
-    /** Icon definitions */
-    const icons = [
-      { name: 'CircleQuestionMark', Icon: CircleQuestionMark, status: 'pending' },
-      { name: 'Check', Icon: Check, status: 'approved' },
-      { name: 'X', Icon: X, status: 'rejected' },
-    ];
-
-    const getIconIndexFromStatus = (statusValue) => {
-      const index = icons.findIndex((icon) => icon.status === statusValue);
-      return index !== -1 ? index : 0;
-    };
-
-    useEffect(() => {
-      const initialIndex = getIconIndexFromStatus(status);
-      setCurrentIconIndex(initialIndex);
-    }, []);
-
-    /** Extract SVG paths for morphing */
-    const extractPathsFromIcon = (iconElement) => {
-      if (!iconElement) return [];
-      const svg = iconElement.querySelector('svg');
-      if (!svg) return [];
-
-      const elements = svg.querySelectorAll(
-        'path, circle, line, rect, polyline, polygon'
-      );
-
-      const paths = Array.from(elements)
-        .map((element) => {
-          if (element.tagName.toLowerCase() === 'path') {
-            return element.getAttribute('d');
-          }
-          return convertShapeToPath(element);
-        })
-        .filter(Boolean);
-
-      return paths;
-    };
-
-    /** Convert non-path shapes to path data */
-    const convertShapeToPath = (element) => {
-      const tag = element.tagName.toLowerCase();
-
-      if (tag === 'circle') {
-        const cx = parseFloat(element.getAttribute('cx'));
-        const cy = parseFloat(element.getAttribute('cy'));
-        const r = parseFloat(element.getAttribute('r'));
-        return `M ${cx - r},${cy} a ${r},${r} 0 1,0 ${r * 2},0 a ${r},${r} 0 1,0 ${-r * 2},0`;
-      }
-
-      if (tag === 'line') {
-        return `M ${element.getAttribute('x1')},${element.getAttribute(
-          'y1'
-        )} L ${element.getAttribute('x2')},${element.getAttribute('y2')}`;
-      }
-
-      if (tag === 'rect') {
-        const x = parseFloat(element.getAttribute('x') || 0);
-        const y = parseFloat(element.getAttribute('y') || 0);
-        const w = parseFloat(element.getAttribute('width'));
-        const h = parseFloat(element.getAttribute('height'));
-        return `M ${x},${y} L ${x + w},${y} L ${x + w},${y + h} L ${x},${y + h} Z`;
-      }
-
-      if (tag === 'polyline' || tag === 'polygon') {
-        const points = element.getAttribute('points').trim().split(/\s+/);
-        const cmds = points.map((p, i) => {
-          const [x, y] = p.split(',');
-          return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
-        });
-        if (tag === 'polygon') cmds.push('Z');
-        return cmds.join(' ');
-      }
-
-      return null;
-    };
-
-    /** Morph animation logic */
-    const morphToIndex = (targetIndex) => {
-      if (isAnimating || currentIconIndex === targetIndex) return;
-
-      setIsAnimating(true);
-
-      const currentPaths = extractPathsFromIcon(iconRefs.current[currentIconIndex]);
-      const nextPaths = extractPathsFromIcon(iconRefs.current[targetIndex]);
-
-      if (!currentPaths.length || !nextPaths.length) {
-        setCurrentIconIndex(targetIndex);
-        setIsAnimating(false);
-        return;
-      }
-
-      let interpolators;
-
-      try {
-        const maxPaths = Math.max(currentPaths.length, nextPaths.length);
-        const paddedCurrent = [...currentPaths];
-        const paddedNext = [...nextPaths];
-
-        while (paddedCurrent.length < maxPaths) {
-          paddedCurrent.push(paddedCurrent[paddedCurrent.length - 1]);
-        }
-        while (paddedNext.length < maxPaths) {
-          paddedNext.push(paddedNext[paddedNext.length - 1]);
-        }
-
-        interpolators = paddedCurrent.map((c, i) =>
-          flubber.interpolate(c, paddedNext[i], { maxSegmentLength })
-        );
-      } catch {
-        interpolators = [
-          flubber.interpolate(currentPaths.join(' '), nextPaths.join(' '), {
-            maxSegmentLength,
-          }),
-        ];
-      }
-
-      const start = Date.now();
-
-      const animate = () => {
-        const elapsed = Date.now() - start;
-        let t = Math.min(elapsed / duration, 1);
-
-        // easeInOutQuad
-        t = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-
-        const morphed = interpolators.map((fn) => fn(t));
-        setMorphPaths(morphed);
-
-        if (elapsed < duration) {
-          animationFrameRef.current = requestAnimationFrame(animate);
-        } else {
-          setCurrentIconIndex(targetIndex);
-          setIsAnimating(false);
-          setMorphPaths([]);
-        }
-      };
-
-      animate();
-    };
-
-    useEffect(() => {
-      morphToIndex(getIconIndexFromStatus(status));
-    }, [status]);
-
-    const CurrentIcon = icons[currentIconIndex].Icon;
-    const currentColor = getColor(icons[currentIconIndex]);
-
-    return (
-      <div className={`inline-block ${className}`}>
-        <div className="relative">
-          {isAnimating && morphPaths.length > 0 ? (
-            <svg
-              width={size}
-              height={size}
-              viewBox="0 0 24 24"
-              className={currentColor}
-              stroke="currentColor" 
-              color="currentColor"
-            >
-              {morphPaths.map((d, i) => (
-                <path
-                  key={i}
-                  d={d}
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              ))}
-            </svg>
-          ) : (
-            <CurrentIcon size={size} className={currentColor} stroke="currentColor" strokeWidth={1.5} />
-          )}
-        </div>
-
-        {/* Hidden icons for path extraction */}
-        <div
-          style={{
-            position: 'absolute',
-            visibility: 'hidden',
-            pointerEvents: 'none',
-            left: '-9999px',
-          }}
-        >
-          {icons.map((icon, i) => (
-            <div key={i} ref={(el) => (iconRefs.current[i] = el)}>
-              <icon.Icon size={24} />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+export const MiniFlubberMorphingLeaveStatus = ({ status = 'pending', isDarkMode = false, ...props }) => {
+  const statusColor = (i) => {
+    if (LEAVE_STATUS_ORDER[i] === 'approved') return isDarkMode ? 'text-green-400' : 'text-green-700';
+    if (LEAVE_STATUS_ORDER[i] === 'rejected') return isDarkMode ? 'text-red-400' : 'text-red-700';
+    return isDarkMode ? 'text-gray-300' : 'text-gray-400';
   };
 
+  const index = Math.max(0, LEAVE_STATUS_ORDER.indexOf(status));
+
+  return (
+    <FlubberMorphIcon
+      icons={LEAVE_STATUS_ICONS}
+      cacheKey="leave-status"
+      mode="index"
+      index={index}
+      morphDuration={3000}
+      getColor={statusColor}
+      isDarkMode={isDarkMode}
+      {...props}
+    />
+  );
+};
+
+// Icons that take an `isDarkMode` prop rather than styling off `currentColor`.
+const CUSTOM_ICONS = new Set([AnimatedCoffeeIcon, AnimatedClockIcon]);
+
 const TimeTracking = ({ employees: employeesProp }) => {
-  const employees = filterActiveEmployees(employeesProp);
+  // Memoized because this array feeds the effect/callback dependency arrays
+  // below: a fresh identity on every render restarts each fetch mid-flight,
+  // which is what left the page stuck on its loading state.
+  const employees = useMemo(() => filterActiveEmployees(employeesProp), [employeesProp]);
   const { user, checkPermission } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
-  const { isDarkMode, toggleTheme, button, bg, text, border, hover, input } = useTheme();
+  const { isDarkMode, bg, text, border, input } = useTheme();
   const { t } = useLanguage();
-  const navigate = useNavigate();
   
   // Check if user can view overview tab (admin/manager only)
   const canViewOverview = checkPermission('canViewReports');
@@ -424,132 +238,13 @@ const TimeTracking = ({ employees: employeesProp }) => {
   
   // Modal states
   const [showLeaveModal, setShowLeaveModal] = useState(false);
-  const [showOvertimeModal, setShowOvertimeModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalConfig, setModalConfig] = useState({ type: '', data: [], title: '' });
-  const [showWorkDaysModal, setShowWorkDaysModal] = useState(false);
-  
+
   // Leave request form
   const [leaveForm, setLeaveForm] = useState({
     type: 'vacation',
     startDate: '',
     endDate: '',
-    reason: ''
-  });
-
-  // Morphing shield icon with inner symbol transitions
-  const TruePathMorph = ({ status }) => {
-  // Lucide icon paths
-    const paths = {
-      shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10",
-      question: "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3",
-      questionDot: "M12 17h.01",
-      check: "m9 12 2 2 4-4",
-      cross1: "m15 9-6 6",
-      cross2: "m9 9 6 6"
-    };
-
-    // Slower, smoother animation variants
-    const iconVariants = {
-      initial: { scale: 0.5, opacity: 0, rotate: -45, pathLength: 0 },
-      animate: { 
-        scale: 1, 
-        opacity: 1, 
-        rotate: 0, 
-        pathLength: 1,
-        transition: { 
-          type: "spring",
-          stiffness: 70, // Reduced for for slower movement
-          damping: 15,    
-          mass: 1.2,       // Added mass for a slightly "heavier", more deliberate feel
-          duration: 2.5, 
-          delay: 0.05,
-        }
-      },
-      exit: { 
-        scale: 0.5, 
-        opacity: 0, 
-        rotate: 45,
-        duration: 2.5,
-        transition: { duration: 1.5 },
-      }
-    };
-
-    // Color mapping based on status (applied to inner icon only)
-    const getIconColor = () => {
-      switch (status) {
-        case 'approved': return 'text-green-600';
-        case 'rejected': return 'text-red-600';
-        default: return 'text-amber-500';
-      }
-    };
-
-    return (
-      <div className="ml-2 w-5 h-5 relative flex items-center justify-center">
-        <svg 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2" 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-          className="w-5 h-5"
-        >
-          {/* Static Shield in a neutral color to prevent "redrawing" perception */}
-          <path d={paths.shield} className="text-gray-400" />
-
-          {/* The inner symbol morphs/swaps with specific status colors */}
-          <AnimatePresence mode="wait">
-            {status === 'pending' && (
-              <motion.g
-                key="pending"
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                variants={iconVariants}
-                className={getIconColor()}
-              >
-                <path d={paths.question} />
-                <path d={paths.questionDot} strokeWidth="3" />
-              </motion.g>
-            )}
-
-            {status === 'approved' && (
-              <motion.path
-                key="approved"
-                d={paths.check}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                variants={iconVariants}
-                className={getIconColor()}
-              />
-            )}
-
-            {status === 'rejected' && (
-              <motion.g
-                key="rejected"
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                variants={iconVariants}
-                className={getIconColor()}
-              >
-                <path d={paths.cross1} />
-                <path d={paths.cross2} />
-              </motion.g>
-            )}
-          </AnimatePresence>
-        </svg>
-      </div>
-    );
-  };
-
-  // Overtime log form
-  const [overtimeForm, setOvertimeForm] = useState({
-    date: new Date().toISOString().split('T')[0],
-    hours: '',
     reason: ''
   });
 
@@ -645,8 +340,13 @@ const TimeTracking = ({ employees: employeesProp }) => {
     fetchTimeTrackingData();
   }, [fetchTimeTrackingData]);
 
-  // Use visibility refresh hook to reload data when page becomes visible after idle
-  useAuthenticatedPageRefresh(() => fetchTimeTrackingData({ silent: true }));
+  // Use visibility refresh hook to reload data when page becomes visible after idle.
+  // Kept stable so the hook's listeners and staleness interval survive re-renders.
+  const silentRefresh = useCallback(
+    () => fetchTimeTrackingData({ silent: true }),
+    [fetchTimeTrackingData]
+  );
+  useAuthenticatedPageRefresh(silentRefresh);
 
   // Fetch all leave requests for all employees (admin/manager only, when tab is open)
   const fetchAllLeaveRequests = useCallback(async () => {
@@ -655,8 +355,13 @@ const TimeTracking = ({ employees: employeesProp }) => {
     }
 
     try {
+      // Scoped to the selected year like the Summary tab, but pending requests
+      // are always included so approvals dated outside the year stay actionable.
       const result = await withTimeout(
-        () => timeTrackingService.getAllLeaveRequests({}),
+        () => timeTrackingService.getAllLeaveRequests({
+          year: selectedYear,
+          alwaysIncludeStatus: 'pending',
+        }),
         DEFAULT_REQUEST_TIMEOUT,
         'fetch all leave requests'
       );
@@ -670,7 +375,7 @@ const TimeTracking = ({ employees: employeesProp }) => {
       handleSessionAuthError(error, { silent: true });
       setAllLeaveRequests([]);
     }
-  }, [canViewOverview, activeTab, withTimeout, handleSessionAuthError]);
+  }, [canViewOverview, activeTab, selectedYear, withTimeout, handleSessionAuthError]);
 
   // Subscribe to leave request changes so approvals sync automatically
   useEffect(() => {
@@ -906,28 +611,25 @@ const handleRejectRequest = async (requestId) => {
   }, [sortedOverviewEmployees]);
   
   // Calculate leave days from leave_requests (including pending)
-  const calculateLeaveDays = () => {
+  const calculatedLeaveDays = useMemo(() => {
     if (!leaveRequests || leaveRequests.length === 0) return 0;
-    
+
     return leaveRequests.reduce((total, req) => {
       // Include pending and approved, exclude rejected
       if (req.status === 'rejected') return total;
       
       const startDate = new Date(req.start_date);
-      const endDate = new Date(req.end_date);
       const reqMonth = startDate.getMonth() + 1;
       const reqYear = startDate.getFullYear();
-      
+
       // Only count if within selected month/year
       if (reqYear === selectedYear && reqMonth === selectedMonth) {
         return total + (req.days_count || 0);
       }
       return total;
     }, 0);
-  };
-  
-  const calculatedLeaveDays = calculateLeaveDays();
-  
+  }, [leaveRequests, selectedMonth, selectedYear]);
+
   // Prefer live tally from loaded time entries so UI metrics match the table
   const entryDerivedHours = useMemo(() => {
     const entries = timeEntries || [];
@@ -992,7 +694,7 @@ const handleRejectRequest = async (requestId) => {
     }
   };
 
-  const getSortedLeaveRequests = () => {
+  const sortedLeaveRequests = useMemo(() => {
     const sorted = [...allLeaveRequests];
     sorted.sort((a, b) => {
       let aVal;
@@ -1035,7 +737,7 @@ const handleRejectRequest = async (requestId) => {
       return 0;
     });
     return sorted;
-  };
+  }, [allLeaveRequests, leaveSortKey, leaveSortDirection]);
 
   const months = [
     t('months.january'), t('months.february'), t('months.march'), t('months.april'), 
@@ -1048,64 +750,6 @@ const handleRejectRequest = async (requestId) => {
   };
 
   const years = [2023, 2024, 2025];
-
-  const handleMetricClick = (metricType) => {
-    let data = [];
-    let title = '';
-    
-    const selectedEmp = employees.find(emp => String(emp.id) === selectedEmployee);
-    if (!selectedEmp) return;
-    
-    switch(metricType) {
-      case 'workDays':
-        data = [{
-          employeeName: selectedEmp.name,
-          department: selectedEmp.department,
-          workDays: currentData.days_worked,
-          overtime: currentData.overtime_hours
-        }];
-        title = t('timeTracking.workDays');
-        break;
-      case 'leaveDays':
-        data = leaveRequests.map(req => ({
-          employeeName: selectedEmp.name,
-          requestType: req.leave_type,
-          date: req.start_date,
-          status: req.status
-        }));
-        title = t('timeTracking.leaveDays');
-        break;
-      case 'overtime':
-        const overtimeEntries = timeEntries.filter(entry => 
-          ['overtime', 'weekend', 'holiday', 'bonus'].includes(entry.hour_type || entry.hourType)
-        );
-        data = overtimeEntries.map(entry => ({
-          employeeName: selectedEmp.name,
-          requestType: entry.hour_type,
-          date: entry.date,
-          status: entry.status,
-          hours: entry.hours
-        }));
-        title = t('timeTracking.overtime');
-        break;
-      case 'regularHours':
-        data = [{
-          employeeName: selectedEmp.name,
-          department: selectedEmp.department,
-          regularHours: currentData.regular_hours,
-          totalHours: currentData.total_hours
-        }];
-        title = t('timeTracking.regularHours');
-        break;
-      default:
-        return;
-    }
-    
-    setModalConfig({ type: metricType === 'leaveDays' || metricType === 'overtime' ? 'pendingRequests' : metricType, data, title });
-    setModalOpen(true);
-  };
-  
-  const CUSTOM_ICONS = new Set([AnimatedCoffeeIcon, AnimatedClockIcon]);
 
   // Handler functions
   const handleLeaveSubmit = async (e) => {
@@ -1207,99 +851,6 @@ const handleRejectRequest = async (requestId) => {
     }
   };
 
-  const handleOvertimeSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    try {
-      // Log overtime as a time_entry (same table as timeClock.jsx)
-      // Calculate clock in/out times for the overtime hours
-      const overtimeHours = parseFloat(overtimeForm.hours);
-      const clockIn = '17:00'; // Default start time for overtime
-      const clockOutTime = new Date(`${overtimeForm.date}T${clockIn}`);
-      clockOutTime.setHours(clockOutTime.getHours() + Math.floor(overtimeHours));
-      clockOutTime.setMinutes(clockOutTime.getMinutes() + Math.round((overtimeHours % 1) * 60));
-      const clockOut = clockOutTime.toTimeString().slice(0, 5);
-      
-      const result = await timeTrackingService.createTimeEntry({
-        employeeId: selectedEmployee,
-        date: overtimeForm.date,
-        clockIn: clockIn,
-        clockOut: clockOut,
-        hours: overtimeHours,
-        hourType: 'weekend', 
-        notes: overtimeForm.reason || 'Overtime work'
-      });
-      
-      if (result.success) {
-        setSuccessMessage(t('timeTracking.overtimeSuccess', 'Overtime logged successfully!'));
-        setShowOvertimeModal(false);
-        
-        // Refresh summary data to reflect new overtime
-        const summaryResult = await timeTrackingService.getTimeTrackingSummary(
-          selectedEmployee,
-          selectedMonth,
-          selectedYear
-        );
-        if (summaryResult.success) {
-          setSummaryData(summaryResult.data);
-        }
-        
-        // Reset form
-        setOvertimeForm({
-          date: new Date().toISOString().split('T')[0],
-          hours: '',
-          reason: ''
-        });
-      } else {
-        setSuccessMessage(t('timeTracking.overtimeError', 'Error logging overtime'));
-      }
-    } catch (error) {
-      console.error('Error submitting overtime:', error);
-      if (handleSessionAuthError(error, { silent: true })) return;
-      setSuccessMessage(t('timeTracking.overtimeError', 'Error logging overtime'));
-    } finally {
-      setLoading(false);
-      setTimeout(() => setSuccessMessage(''), 3000);
-    }
-  };
-
-  const handleExportReport = () => {
-    // Generate CSV data
-    const employee = employees.find(emp => String(emp.id) === selectedEmployee);
-    const csvData = [
-      ['Time Tracking Report'],
-      ['Employee', employee?.name || 'Unknown'],
-      ['Period', `${getMonthName(selectedMonth)} ${selectedYear}`],
-      [''],
-      ['Metric', 'Value'],
-      ['Days Worked', currentData.days_worked || 0],
-      ['Leave Days', currentData.leave_days || 0],
-      ['Overtime Hours', currentData.overtime_hours || 0],
-      ['Holiday Overtime', currentData.holiday_overtime_hours || 0],
-      ['Regular Hours', currentData.regular_hours || 0],
-      ['Total Hours', (currentData.total_hours || 0).toFixed(1)],
-      ['Attendance Rate', `${(currentData.attendance_rate || 0).toFixed(1)}%`]
-    ];
-
-    // Convert to CSV string
-    const csvContent = csvData.map(row => row.join(',')).join('\n');
-    
-    // Create download
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', `timetracking_${employee?.name}_${getMonthName(selectedMonth)}_${selectedYear}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    setSuccessMessage(t('timeTracking.exportSuccess', 'Report exported successfully!'));
-    setTimeout(() => setSuccessMessage(''), 3000);
-  };
 
   const hasOvertimeHours = useMemo(
     () => allEmployeesData.some((item) =>
@@ -1424,7 +975,6 @@ const handleRejectRequest = async (requestId) => {
           border={border}
           isDarkMode={isDarkMode}
           customIcons={CUSTOM_ICONS}
-          onClick={() => setShowWorkDaysModal(true)}
         />
         <TimeCard
           title={t('timeTracking.leaveDays')}
@@ -1437,7 +987,6 @@ const handleRejectRequest = async (requestId) => {
           border={border}
           isDarkMode={isDarkMode}
           customIcons={CUSTOM_ICONS}
-          onClick={() => handleMetricClick('leaveDays')}
         />
         <TimeCard
           title={t('timeTracking.overtime')}
@@ -1449,7 +998,6 @@ const handleRejectRequest = async (requestId) => {
           border={border}
           isDarkMode={isDarkMode}
           customIcons={CUSTOM_ICONS}
-          onClick={() => handleMetricClick('overtime')}
         />
       </div>
 
@@ -1549,17 +1097,17 @@ const handleRejectRequest = async (requestId) => {
               {t('timeTracking.detailedBreakdown', 'Detailed Breakdown')}
             </h4>
             
-            <div className="overflow-x-auto">
+            <TableScroll>
               <table className={`w-full border ${border.primary}`}>
                 <thead className={`${bg.tertiary}`}>
                   <tr>
                     <th className={`${text.primary} py-3 px-4 text-center font-semibold border-b ${border.primary}`}>
                       {t('timeTracking.date', 'Date')}
                     </th>
-                    <th className={`${text.primary} py-3 px-4 text-center font-semibold border-b ${border.primary}`}>
+                    <th className={cn(COL.lg, `${text.primary} py-3 px-4 text-center font-semibold border-b ${border.primary}`)}>
                       {t('timeTracking.employee', 'Employee')}
                     </th>
-                    <th className={`${text.primary} py-3 px-4 text-center font-semibold border-b ${border.primary}`}>
+                    <th className={cn(COL.md, `${text.primary} py-3 px-4 text-center font-semibold border-b ${border.primary}`)}>
                       {t('timeTracking.time', 'Hours Worked')}
                     </th>
                     <th className={`${text.primary} py-3 px-4 text-center font-semibold border-b ${border.primary}`}>
@@ -1572,18 +1120,28 @@ const handleRejectRequest = async (requestId) => {
                 </thead>
                 <tbody>
                   {attendanceRecords && attendanceRecords.length > 0 ? (
-                    attendanceRecords.map((record, index) => (
+                    attendanceRecords.map((record, index) => {
+                      const recordEmployeeName = record.employee_name
+                        || employees.find(emp => String(emp.id) === String(record.employee_id))?.name
+                        || employees.find(emp => String(emp.id) === selectedEmployee)?.name
+                        || '-';
+                      const recordClockRange = (record.hour_type === 'on_leave' || record.hourType === 'on_leave')
+                        ? '-'
+                        : `${record.clock_in || record.clockIn} - ${record.clock_out || record.clockOut}`;
+
+                      return (
                       <tr key={record.id || index} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-blue-700' : 'hover:bg-amber-100'} group cursor-pointer transition-colors`}>
-                        <td className={`p-3 ${text.primary} text-centerfont-medium`}>
+                        <td className={`p-3 ${text.primary} text-center font-medium`}>
                             {record.date || (record.created_at ? new Date(record.created_at).toLocaleDateString() : '-')}
+                            {/* Stand-ins for the columns this viewport has dropped */}
+                            <StackedDetail showUntil="md" label={t('timeTracking.time', 'Hours Worked')} value={recordClockRange} />
+                            <StackedDetail showUntil="lg" label={t('timeTracking.employee', 'Employee')} value={recordEmployeeName} />
                           </td>
-                        <td className={`p-3 ${text.primary} text-centerfont-medium`}>
-                            {record.employee_name || employees.find(emp => String(emp.id) === String(record.employee_id))?.name || employees.find(emp => String(emp.id) === selectedEmployee)?.name || '-'}
+                        <td className={cn(COL.lg, `p-3 ${text.primary} text-center font-medium`)}>
+                            {recordEmployeeName}
                         </td>
-                        <td className={`p-3 text-center ${text.secondary}`}>
-                            {(record.hour_type === 'on_leave' || record.hourType === 'on_leave') 
-                              ? '-' 
-                              : `${record.clock_in || record.clockIn} - ${record.clock_out || record.clockOut}`}
+                        <td className={cn(COL.md, `p-3 text-center ${text.secondary}`)}>
+                            {recordClockRange}
                         </td>
                         <td className={`${text.primary} py-3 px-4 text-center`}>
                           <span className={`inline-flex items-center px-2 py-1 text-xs font-medium ${
@@ -1600,7 +1158,8 @@ const handleRejectRequest = async (requestId) => {
                           {record.hours} {t('timeClock.hrs')}
                         </td>
                       </tr>
-                    ))
+                      );
+                    })
                   ) : (
                     <tr>
                       <td colSpan="5" className={`${text.secondary} py-8 px-4 text-center`}>
@@ -1628,7 +1187,7 @@ const handleRejectRequest = async (requestId) => {
                   </tr>
                 </tfoot>
               </table>
-            </div>
+            </TableScroll>
           </div>
         </div>
       )}
@@ -1724,7 +1283,7 @@ const handleRejectRequest = async (requestId) => {
         </div>
 
         {/* All Employees Table */}
-        <div className="overflow-x-auto">
+        <TableScroll>
           <table className="w-full">
             <thead>
               <tr className={`border-b ${border.primary}`}>
@@ -1741,7 +1300,7 @@ const handleRejectRequest = async (requestId) => {
                   </span>
                 </th>
                 <th
-                  className={`text-right py-3 px-4 ${text.primary} font-semibold cursor-pointer select-none`}
+                  className={cn(COL.md, `text-right py-3 px-4 ${text.primary} font-semibold cursor-pointer select-none`)}
                   onClick={() => handleSort('days_worked')}
                 >
                   <span className="inline-flex items-center gap-1">
@@ -1762,7 +1321,7 @@ const handleRejectRequest = async (requestId) => {
                   </span>
                 </th>
                 <th
-                  className={`text-right py-3 px-4 ${text.primary} font-semibold cursor-pointer select-none`}
+                  className={cn(COL.lg, `text-right py-3 px-4 ${text.primary} font-semibold cursor-pointer select-none`)}
                   onClick={() => handleSort('regular_hours')}
                 >
                   <span className="inline-flex items-center gap-1">
@@ -1774,7 +1333,7 @@ const handleRejectRequest = async (requestId) => {
                   </span>
                 </th>
                 <th
-                  className={`text-right py-3 px-4 ${text.primary} font-semibold cursor-pointer select-none`}
+                  className={cn(COL.lg, `text-right py-3 px-4 ${text.primary} font-semibold cursor-pointer select-none`)}
                   onClick={() => handleSort('overtime')}
                 >
                   <span className="inline-flex items-center gap-1">
@@ -1800,25 +1359,36 @@ const handleRejectRequest = async (requestId) => {
               </tr>
             </thead>
             <tbody>
-              {sortedOverviewEmployees.map((item) => (
+              {sortedOverviewEmployees.map((item) => {
+                const overtimeTotal = (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0);
+                const regularHours = item.data?.regular_hours?.toFixed(1) || '0.0';
+
+                return (
                 <tr key={item.employee.id}>
-                  <td className={`text-left py-3 px-4 ${text.secondary}`}>{getDemoEmployeeName(item.employee, t)}</td>
-                  <td className={`text-right py-3 px-4 ${text.secondary}`}>{item.data?.days_worked || 0}</td>
-                  <td className={`text-right py-3 px-4 ${text.secondary}`}>{item.data?.regular_hours?.toFixed(1) || '0.0'}</td>
-                  <td className={`text-right py-3 px-4 ${text.secondary}`}>{((item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0)).toFixed(1)}</td>
+                  <td className={`text-left py-3 px-4 ${text.secondary}`}>
+                    {getDemoEmployeeName(item.employee, t)}
+                    {/* Stand-ins for the columns this viewport has dropped */}
+                    <StackedDetail showUntil="md" label={t('timeTracking.daysWorked', 'Days Worked')} value={item.data?.days_worked || 0} />
+                    <StackedDetail showUntil="lg" label={t('timeTracking.regularHours', 'Regular Hours')} value={regularHours} />
+                    <StackedDetail showUntil="lg" label={t('timeTracking.overtime', 'Overtime')} value={overtimeTotal.toFixed(1)} />
+                  </td>
+                  <td className={cn(COL.md, `text-right py-3 px-4 ${text.secondary}`)}>{item.data?.days_worked || 0}</td>
+                  <td className={cn(COL.lg, `text-right py-3 px-4 ${text.secondary}`)}>{regularHours}</td>
+                  <td className={cn(COL.lg, `text-right py-3 px-4 ${text.secondary}`)}>{overtimeTotal.toFixed(1)}</td>
                   <td className={`text-right py-3 px-4 font-semibold ${text.primary}`}>{parseFloat(item.data?.total_hours || 0).toFixed(1)}</td>
                 </tr>
-              ))}
+                );
+              })}
               <tr className={`border-t-2 ${border.primary} font-bold`}>
-                <td className={`py-3 px-4 ${text.primary}`}>Total</td>
-                <td className={`text-right py-3 px-4 ${text.primary}`}>
+                <td className={`py-3 px-4 ${text.primary}`}>{t('dashboard.total', 'Total')}</td>
+                <td className={cn(COL.md, `text-right py-3 px-4 ${text.primary}`)}>
                   {allEmployeesData.reduce((sum, item) => sum + (item.data?.days_worked || 0), 0)}
                 </td>
-                <td className={`text-right py-3 px-4 ${text.primary}`}>
+                <td className={cn(COL.lg, `text-right py-3 px-4 ${text.primary}`)}>
                   {allEmployeesData.reduce((sum, item) => sum + (item.data?.regular_hours || 0), 0).toFixed(1)}
                 </td>
-                <td className={`text-right py-3 px-4 ${text.primary}`}>
-                  {allEmployeesData.reduce((sum, item) => 
+                <td className={cn(COL.lg, `text-right py-3 px-4 ${text.primary}`)}>
+                  {allEmployeesData.reduce((sum, item) =>
                     sum + (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0), 0
                   ).toFixed(1)}
                 </td>
@@ -1829,7 +1399,7 @@ const handleRejectRequest = async (requestId) => {
             </tbody>
           </table>
 
-        </div>
+        </TableScroll>
         </>
         )}
       </div>
@@ -1840,8 +1410,7 @@ const handleRejectRequest = async (requestId) => {
         <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 mt-6`}>
           <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>{t('timeTracking.leaveRequestManagement', 'Leave Request Management')}</h3>
           <div className="mt-2">
-            {(() => { console.log('DEBUG allLeaveRequests (render):', allLeaveRequests?.length); return null; })()}
-            <div className="overflow-x-auto">
+            <TableScroll>
               <table className="w-full">
                 <thead>
                   <tr className={`border-b ${border.primary}`}>
@@ -1851,7 +1420,7 @@ const handleRejectRequest = async (requestId) => {
                         <ArrowUp01 className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'days_count' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'days_count' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
                       </span>
                     </th>
-                    <th className={`${text.primary} py-2 px-4 text-left cursor-pointer`} onClick={() => handleLeaveSort('leave_type')}>
+                    <th className={cn(COL.md, `${text.primary} py-2 px-4 text-left cursor-pointer`)} onClick={() => handleLeaveSort('leave_type')}>
                       <span className="inline-flex items-center gap-1">
                         {t('timeTracking.leaveType', 'Leave Type')}
                         <Sailboat className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'leave_type' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'leave_type' && leaveSortDirection === 'asc' ? 'rotateY(180deg)' : 'none' }} />
@@ -1859,7 +1428,7 @@ const handleRejectRequest = async (requestId) => {
                     </th>
                     <th className={`${text.primary} py-2 px-4 text-left cursor-pointer`} onClick={() => handleLeaveSort('status')}>
                       <span className="inline-flex items-center gap-1">
-                        {t('timeTracking.status', 'Status')}
+                        {t('common.status', 'Status')}
                         <ListFilterPlus className={`inline w-4.5 h-4.5 ml-1 transition-all duration-500 ${leaveSortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'status' && leaveSortDirection === 'asc' ? 'rotateY(180deg)' : 'none' }} />
                       </span>
                     </th>
@@ -1880,28 +1449,37 @@ const handleRejectRequest = async (requestId) => {
                 <tbody>
                   {allLeaveRequests.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-4 text-center text-gray-500">No leave requests found.</td>
+                      <td colSpan={5} className="py-4 text-center text-gray-500">
+                        {t('leave.noRequests', 'No leave requests yet.')}
+                      </td>
                     </tr>
                   ) : (
-                    getSortedLeaveRequests().map((req, idx) => (
+                    sortedLeaveRequests.map((req, idx) => {
+                      const leaveTypeLabel = (() => {
+                        switch (req.leave_type) {
+                          case 'sick': return t('timeTracking.sickLeave', 'Sick Leave');
+                          case 'vacation': return t('timeTracking.vacation', 'Vacation');
+                          case 'personal': return t('timeTracking.personal', 'Personal Leave');
+                          case 'unpaid': return t('timeTracking.unpaid', 'Unpaid Leave');
+                          default: return req.leave_type || '-';
+                        }
+                      })();
+
+                      return (
                       <tr key={req.id || idx}>
                         <td className={`${text.primary} py-2 px-4 text-center`}>{req.days_count}</td>
-                        <td className={`${text.primary} py-2 px-4`}>{(function(){
-                          switch(req.leave_type){
-                            case 'sick': return t('timeTracking.sickLeave', 'Sick Leave');
-                            case 'vacation': return t('timeTracking.vacation', 'Vacation');
-                            case 'personal': return t('timeTracking.personal', 'Personal Leave');
-                            case 'unpaid': return t('timeTracking.unpaid', 'Unpaid Leave');
-                            default: return req.leave_type || '-';
-                          }
-                        })()}</td>
+                        <td className={cn(COL.md, `${text.primary} py-2 px-4`)}>{leaveTypeLabel}</td>
                         <td className={`${text.primary} py-2 px-4`}>
                           <div className="flex items-center justify-between">
                             <span>{t(`timeTracking.${req.status}`, req.status)}</span>
                             <MiniFlubberMorphingLeaveStatus isDarkMode={isDarkMode} status={req.status} size={20} className={`${text.primary} ml-4`} />
                           </div>
                         </td>
-                        <td className={`${text.primary} py-2 px-4`}>{req.employee?.name || '-'}</td>
+                        <td className={`${text.primary} py-2 px-4`}>
+                          {req.employee?.name || '-'}
+                          {/* Stand-in for the column this viewport has dropped */}
+                          <StackedDetail showUntil="md" label={t('timeTracking.leaveType', 'Leave Type')} value={leaveTypeLabel} />
+                        </td>
                         <td className={`${text.primary} py-2 px-4 flex justify-center items-center gap-2`}>
                           {req.status === 'pending' ? (
                             <>
@@ -1927,11 +1505,12 @@ const handleRejectRequest = async (requestId) => {
                           )}
                         </td>
                       </tr>
-                    ))
+                      );
+                    })
                   )}
                 </tbody>
               </table>
-            </div>
+            </TableScroll>
           </div>
         </div>
       )}

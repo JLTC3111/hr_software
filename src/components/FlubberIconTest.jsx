@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
 import * as flubber from 'flubber';
 import { 
   // Basic Shapes
@@ -92,7 +91,6 @@ const FlubberIconTest = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [duration, setDuration] = useState(1500);
   const [maxSegmentLength, setMaxSegmentLength] = useState(2);
-  const canvasRef = useRef(null);
   const iconRefs = useRef({});
 
   // Debug: Check refs after render

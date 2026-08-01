@@ -178,6 +178,12 @@ export default {
   },
   // Dashboard
   dashboard: {
+    workforce: 'Belegschaft',
+    hours: 'Stunden',
+    leave: 'Urlaub',
+    performance: 'Leistung',
+    approvals: 'Genehmigungen',
+    total: 'Gesamt',
     regularAndOvertimeByEmployee: 'Reguläre & Überstunden nach Mitarbeiter',
     employeeLabel: 'Mitarbeiter',
     currentMonth: 'Aktueller Monat',
@@ -358,6 +364,13 @@ export default {
   },
   // Time Tracking
   timeTracking: {
+    noRecords: 'Keine Anwesenheitsdaten für diesen Zeitraum gefunden',
+    approve: 'Genehmigen',
+    reject: 'Ablehnen',
+    approveSuccess: 'Urlaubsantrag genehmigt',
+    rejectSuccess: 'Urlaubsantrag abgelehnt',
+    actionError: 'Fehler beim Aktualisieren des Urlaubsantrags',
+    rejectReasonPrompt: 'Bitte geben Sie einen Ablehnungsgrund an (optional):',
     on_leave: 'Im Urlaub',
     detailedBreakdown: 'Detaillierte Aufschlüsselung der Zeiterfassung',
     title: 'Zeiterfassungs-Dashboard',
@@ -435,6 +448,7 @@ export default {
   },
   // Employees
   employees: {
+    performance: 'Leistung',
     title: 'Mitarbeiterverwaltung',
     directory: 'Verzeichnis',
     cards: 'Karten',
@@ -1060,6 +1074,10 @@ export default {
     picker: 'Zeitauswahl'
   },
   common: {
+    notAvailable: 'K.A.',
+    status: 'Status',
+    refresh: 'Aktualisieren',
+    retry: 'Erneut versuchen',
     viewDetails: 'Details anzeigen',
     results: 'Ergebnisse',
     total: 'Gesamt',

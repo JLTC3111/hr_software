@@ -19,7 +19,6 @@ import { PageLiveClock } from './ui/page-live-clock';
 import { DatePicker } from './ui/date-picker.jsx';
 import { TimePicker } from './ui/time-picker.jsx';
 import { TranslatedText } from './ui/translated-text.jsx';
-import { cn } from '@/lib/utils';
 
 const Recruitment = () => {
   const { t } = useLanguage();
@@ -333,7 +332,6 @@ const Recruitment = () => {
           }}
           onStatusUpdate={handleStatusUpdate}
           formatDate={formatDate}
-          getStatusColor={getStatusColor}
         />
       )}
 
@@ -663,7 +661,6 @@ const RecruitmentPipeline = memo(({
   onViewApplication, 
   onStatusUpdate,
   formatDate,
-  getStatusColor
 }) => {
   const { t } = useLanguage();
   const { isDarkMode, bg, text, border } = useTheme();
@@ -873,7 +870,7 @@ RecruitmentPipeline.displayName = 'RecruitmentPipeline';
 // Candidate Card Component
 const CandidateCard = memo(({ application, onView, onStatusUpdate, formatDate, currentStage, stages, isRejected }) => {
   const { t } = useLanguage();
-  const { isDarkMode, bg, text, border } = useTheme();
+  const { isDarkMode, text, border } = useTheme();
 
   // Get next stage in pipeline
   const getNextStage = () => {

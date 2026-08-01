@@ -1,4 +1,4 @@
-import _React, { useState, useRef, useEffect, useCallback } from 'react'
+import _React, { useState, useEffect, useCallback } from 'react'
 import { Heart, AlertCircle, TreePalm, Car, Salad, Clapperboard, Laptop, Form, PhoneCall, CupSoda, Flame, DatabaseZap, HouseWifi, Funnel, HeartPlus, Coffee, AlarmClock, Gauge, BriefcaseBusiness, WifiPen, TrendingUp, LineChart, BatteryCharging, PersonStanding, Volleyball, FileUser, RefreshCw, Users, User, Speech } from 'lucide-react'
 import StatsCard from './statsCard.jsx'
 import MetricDetailModal from './metricDetailModal.jsx'
@@ -10,7 +10,6 @@ import { withTimeout } from '../utils/supabaseTimeout.js';
 import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 import { retryWithBackoff, isRetryableError } from '../utils/retryHelper.js';
-import * as flubber from 'flubber';
 import { AnimatedClockIcon, AnimatedAlarmClockIcon } from './timeClockEntry.jsx'
 import { AnimatedCoffeeIcon, MiniFlubberMorphingLeaveStatus } from './timeTracking.jsx';
 import { MiniFlubberAutoMorphInProgress, MiniFlubberAutoMorphEmployees } from './taskReview.jsx'
@@ -21,6 +20,7 @@ import { BorderBeam } from './ui/border-beam'
 import { MagicBento } from './ui/magic-bento'
 import { PageLiveClock } from './ui/page-live-clock'
 import { cn } from '@/lib/utils'
+import { FlubberMorphIcon } from './ui/flubber-morph-icon.jsx';
 
 const CHART_SERIES = {
   performance: { light: '#3B82F6', dark: '#60A5FA' },
@@ -205,1217 +205,55 @@ function HoverMetricCard({
   );
 };
 
-export const MiniFlubberAutoMorphEmployeesDashboard = ({
-  size = 24,
-  className = '',
-  isDarkMode = false,
-  autoMorphInterval = 1000, 
-  morphDuration = 500, 
-}) => {
-  const [currentIconIndex, setCurrentIconIndex] = useState(0);
-  const [morphPaths, setMorphPaths] = useState([]);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [maxSegmentLength] = useState(2);
-  const iconRefs = useRef({});
-  const animationFrameRef = useRef(null);
-  const autoMorphTimerRef = useRef(null);
-
-  /** ---------------------------
-   * Dynamic Color Selection
-   ----------------------------*/
-  const getColor = (icon) => {
-    if (icon.status === 'approved') {
-      return isDarkMode ? 'text-green-400' : 'text-green-700';
-    }
-    if (icon.status === 'rejected') {
-      return isDarkMode ? 'text-red-400' : 'text-red-700';
-    }
-    if (icon.status === 'standard') {
-      return isDarkMode ? 'text-white' : 'text-black';
-    }
-    return isDarkMode ? 'text-white' : 'text-black';
-  };
-
-  /** Icon definitions */
-  const icons = [
-    { name: 'Users', Icon: Users, status: 'stanard' },
-    { name: 'User', Icon: User, status: 'standard' },
-    { name: 'Gossip', Icon: Speech, status: 'standard' },
-    { name: 'Human', Icon: PersonStanding, status: 'standard' },
-  ];
-
-  /** Extract SVG paths for morphing */
-  const extractPathsFromIcon = (iconElement) => {
-    if (!iconElement) return [];
-    const svg = iconElement.querySelector('svg');
-    if (!svg) return [];
-
-    const elements = svg.querySelectorAll(
-      'path, circle, line, rect, polyline, polygon'
-    );
-
-    const paths = Array.from(elements)
-      .map((element) => {
-        if (element.tagName.toLowerCase() === 'path') {
-          return element.getAttribute('d');
-        }
-        return convertShapeToPath(element);
-      })
-      .filter(Boolean);
-
-    return paths;
-  };
-
-  /** Convert non-path shapes to path data */
-  const convertShapeToPath = (element) => {
-    const tag = element.tagName.toLowerCase();
-
-    if (tag === 'circle') {
-      const cx = parseFloat(element.getAttribute('cx'));
-      const cy = parseFloat(element.getAttribute('cy'));
-      const r = parseFloat(element.getAttribute('r'));
-      return `M ${cx - r},${cy} a ${r},${r} 0 1,0 ${r * 2},0 a ${r},${r} 0 1,0 ${-r * 2},0`;
-    }
-
-    if (tag === 'line') {
-      return `M ${element.getAttribute('x1')},${element.getAttribute(
-        'y1'
-      )} L ${element.getAttribute('x2')},${element.getAttribute('y2')}`;
-    }
-
-    if (tag === 'rect') {
-      const x = parseFloat(element.getAttribute('x') || 0);
-      const y = parseFloat(element.getAttribute('y') || 0);
-      const w = parseFloat(element.getAttribute('width'));
-      const h = parseFloat(element.getAttribute('height'));
-      return `M ${x},${y} L ${x + w},${y} L ${x + w},${y + h} L ${x},${y + h} Z`;
-    }
-
-    if (tag === 'polyline' || tag === 'polygon') {
-      const points = element.getAttribute('points').trim().split(/\s+/);
-      const cmds = points.map((p, i) => {
-        const [x, y] = p.split(',');
-        return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
-      });
-      if (tag === 'polygon') cmds.push('Z');
-      return cmds.join(' ');
-    }
-
-    return null;
-  };
-
-  /** Morph animation logic */
-  const morphToIndex = (targetIndex) => {
-    if (isAnimating || currentIconIndex === targetIndex) return;
-
-    setIsAnimating(true);
-
-    const currentPaths = extractPathsFromIcon(iconRefs.current[currentIconIndex]);
-    const nextPaths = extractPathsFromIcon(iconRefs.current[targetIndex]);
-
-    if (!currentPaths.length || !nextPaths.length) {
-      setCurrentIconIndex(targetIndex);
-      setIsAnimating(false);
-      return;
-    }
-
-    let interpolators;
-
-    try {
-      const maxPaths = Math.max(currentPaths.length, nextPaths.length);
-      const paddedCurrent = [...currentPaths];
-      const paddedNext = [...nextPaths];
-
-      while (paddedCurrent.length < maxPaths) {
-        paddedCurrent.push(paddedCurrent[paddedCurrent.length - 1]);
-      }
-      while (paddedNext.length < maxPaths) {
-        paddedNext.push(paddedNext[paddedNext.length - 1]);
-      }
-
-      interpolators = paddedCurrent.map((c, i) =>
-        flubber.interpolate(c, paddedNext[i], { maxSegmentLength })
-      );
-    } catch {
-      interpolators = [
-        flubber.interpolate(currentPaths.join(' '), nextPaths.join(' '), {
-          maxSegmentLength,
-        }),
-      ];
-    }
-
-    const start = Date.now();
-
-    const animate = () => {
-      const elapsed = Date.now() - start;
-      let t = Math.min(elapsed / morphDuration, 1);
-
-      // easeInOutQuad
-      t = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-
-      const morphed = interpolators.map((fn) => fn(t));
-      setMorphPaths(morphed);
-
-      if (elapsed < morphDuration) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-      } else {
-        setCurrentIconIndex(targetIndex);
-        setIsAnimating(false);
-        setMorphPaths([]);
-      }
-    };
-
-    animate();
-  };
-
-  /** Auto-morph to next icon */
-  const morphToNext = () => {
-    const nextIndex = (currentIconIndex + 1) % icons.length;
-    morphToIndex(nextIndex);
-  };
-
-  /** Set up auto-morphing interval */
-  useEffect(() => {
-    autoMorphTimerRef.current = setInterval(() => {
-      morphToNext();
-    }, autoMorphInterval);
-
-    return () => {
-      if (autoMorphTimerRef.current) {
-        clearInterval(autoMorphTimerRef.current);
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [currentIconIndex, autoMorphInterval]);
-
-  const CurrentIcon = icons[currentIconIndex].Icon;
-  const currentColor = getColor(icons[currentIconIndex]);
-
-  return (
-    <div className={`inline-block ${className}`}>
-      <div className="relative">
-        {isAnimating && morphPaths.length > 0 ? (
-          <svg
-            width={size}
-            height={size}
-            viewBox="0 0 24 24"
-            className={currentColor}
-            stroke="currentColor"
-            color="currentColor"
-          >
-            {morphPaths.map((d, i) => (
-              <path
-                key={i}
-                d={d}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ))}
-          </svg>
-        ) : (
-          <CurrentIcon
-            size={size}
-            className={currentColor}
-            stroke="currentColor"
-            strokeWidth={1.5}
-          />
-        )}
-      </div>
-
-      {/* Hidden icons for path extraction */}
-      <div
-        style={{
-          position: 'absolute',
-          visibility: 'hidden',
-          pointerEvents: 'none',
-          left: '-9999px',
-        }}
-      >
-        {icons.map((icon, i) => (
-          <div key={i} ref={(el) => (iconRefs.current[i] = el)}>
-            <icon.Icon size={24} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-export const MiniFlubberAutoMorphVacation = ({
-  size = 24,
-  className = '',
-  isDarkMode = false,
-  autoMorphInterval = 1000, 
-  morphDuration = 500, 
-}) => {
-  const [currentIconIndex, setCurrentIconIndex] = useState(0);
-  const [morphPaths, setMorphPaths] = useState([]);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [maxSegmentLength] = useState(2);
-  const iconRefs = useRef({});
-  const animationFrameRef = useRef(null);
-  const autoMorphTimerRef = useRef(null);
-
-  /** ---------------------------
-   * Dynamic Color Selection
-   ----------------------------*/
-  const getColor = (icon) => {
-    if (icon.status === 'approved') {
-      return isDarkMode ? 'text-green-400' : 'text-green-700';
-    }
-    if (icon.status === 'rejected') {
-      return isDarkMode ? 'text-red-400' : 'text-red-700';
-    }
-    if (icon.status === 'standard') {
-      return isDarkMode ? 'text-white' : 'text-black';
-    }
-    return isDarkMode ? 'text-white' : 'text-black';
-  };
-
-  /** Icon definitions */
-  const icons = [
-    { name: 'Coffee', Icon: Coffee, status: 'standard' },
-    { name: 'Good Food', Icon: Salad, status: 'standard' },
-    { name: 'Travel', Icon: Car, status: 'standard' },
-    { name: 'Beach Ball', Icon: Volleyball, status: 'standard' },
-    { name: 'Coconut Tree', Icon: TreePalm, status: 'standard' },
-    { name: 'Movie', Icon: Clapperboard, status: 'standard' },
-  ];
-
-  /** Extract SVG paths for morphing */
-  const extractPathsFromIcon = (iconElement) => {
-    if (!iconElement) return [];
-    const svg = iconElement.querySelector('svg');
-    if (!svg) return [];
-
-    const elements = svg.querySelectorAll(
-      'path, circle, line, rect, polyline, polygon'
-    );
-
-    const paths = Array.from(elements)
-      .map((element) => {
-        if (element.tagName.toLowerCase() === 'path') {
-          return element.getAttribute('d');
-        }
-        return convertShapeToPath(element);
-      })
-      .filter(Boolean);
-
-    return paths;
-  };
-
-  /** Convert non-path shapes to path data */
-  const convertShapeToPath = (element) => {
-    const tag = element.tagName.toLowerCase();
-
-    if (tag === 'circle') {
-      const cx = parseFloat(element.getAttribute('cx'));
-      const cy = parseFloat(element.getAttribute('cy'));
-      const r = parseFloat(element.getAttribute('r'));
-      return `M ${cx - r},${cy} a ${r},${r} 0 1,0 ${r * 2},0 a ${r},${r} 0 1,0 ${-r * 2},0`;
-    }
-
-    if (tag === 'line') {
-      return `M ${element.getAttribute('x1')},${element.getAttribute(
-        'y1'
-      )} L ${element.getAttribute('x2')},${element.getAttribute('y2')}`;
-    }
-
-    if (tag === 'rect') {
-      const x = parseFloat(element.getAttribute('x') || 0);
-      const y = parseFloat(element.getAttribute('y') || 0);
-      const w = parseFloat(element.getAttribute('width'));
-      const h = parseFloat(element.getAttribute('height'));
-      return `M ${x},${y} L ${x + w},${y} L ${x + w},${y + h} L ${x},${y + h} Z`;
-    }
-
-    if (tag === 'polyline' || tag === 'polygon') {
-      const points = element.getAttribute('points').trim().split(/\s+/);
-      const cmds = points.map((p, i) => {
-        const [x, y] = p.split(',');
-        return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
-      });
-      if (tag === 'polygon') cmds.push('Z');
-      return cmds.join(' ');
-    }
-
-    return null;
-  };
-
-  /** Morph animation logic */
-  const morphToIndex = (targetIndex) => {
-    if (isAnimating || currentIconIndex === targetIndex) return;
-
-    setIsAnimating(true);
-
-    const currentPaths = extractPathsFromIcon(iconRefs.current[currentIconIndex]);
-    const nextPaths = extractPathsFromIcon(iconRefs.current[targetIndex]);
-
-    if (!currentPaths.length || !nextPaths.length) {
-      setCurrentIconIndex(targetIndex);
-      setIsAnimating(false);
-      return;
-    }
-
-    let interpolators;
-
-    try {
-      const maxPaths = Math.max(currentPaths.length, nextPaths.length);
-      const paddedCurrent = [...currentPaths];
-      const paddedNext = [...nextPaths];
-
-      while (paddedCurrent.length < maxPaths) {
-        paddedCurrent.push(paddedCurrent[paddedCurrent.length - 1]);
-      }
-      while (paddedNext.length < maxPaths) {
-        paddedNext.push(paddedNext[paddedNext.length - 1]);
-      }
-
-      interpolators = paddedCurrent.map((c, i) =>
-        flubber.interpolate(c, paddedNext[i], { maxSegmentLength })
-      );
-    } catch {
-      interpolators = [
-        flubber.interpolate(currentPaths.join(' '), nextPaths.join(' '), {
-          maxSegmentLength,
-        }),
-      ];
-    }
-
-    const start = Date.now();
-
-    const animate = () => {
-      const elapsed = Date.now() - start;
-      let t = Math.min(elapsed / morphDuration, 1);
-
-      // easeInOutQuad
-      t = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-
-      const morphed = interpolators.map((fn) => fn(t));
-      setMorphPaths(morphed);
-
-      if (elapsed < morphDuration) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-      } else {
-        setCurrentIconIndex(targetIndex);
-        setIsAnimating(false);
-        setMorphPaths([]);
-      }
-    };
-
-    animate();
-  };
-
-  /** Auto-morph to next icon */
-  const morphToNext = () => {
-    const nextIndex = (currentIconIndex + 1) % icons.length;
-    morphToIndex(nextIndex);
-  };
-
-  /** Set up auto-morphing interval */
-  useEffect(() => {
-    autoMorphTimerRef.current = setInterval(() => {
-      morphToNext();
-    }, autoMorphInterval);
-
-    return () => {
-      if (autoMorphTimerRef.current) {
-        clearInterval(autoMorphTimerRef.current);
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [currentIconIndex, autoMorphInterval]);
-
-  const CurrentIcon = icons[currentIconIndex].Icon;
-  const currentColor = getColor(icons[currentIconIndex]);
-
-  return (
-    <div className={`inline-block ${className}`}>
-      <div className="relative">
-        {isAnimating && morphPaths.length > 0 ? (
-          <svg
-            width={size}
-            height={size}
-            viewBox="0 0 24 24"
-            className={currentColor}
-            stroke="currentColor"
-            color="currentColor"
-          >
-            {morphPaths.map((d, i) => (
-              <path
-                key={i}
-                d={d}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ))}
-          </svg>
-        ) : (
-          <CurrentIcon
-            size={size}
-            className={currentColor}
-            stroke="currentColor"
-            strokeWidth={1.5}
-          />
-        )}
-      </div>
-
-      {/* Hidden icons for path extraction */}
-      <div
-        style={{
-          position: 'absolute',
-          visibility: 'hidden',
-          pointerEvents: 'none',
-          left: '-9999px',
-        }}
-      >
-        {icons.map((icon, i) => (
-          <div key={i} ref={(el) => (iconRefs.current[i] = el)}>
-            <icon.Icon size={24} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-export const MiniFlubberAutoMorphOfficeWork = ({
-  size = 24,
-  className = '',
-  isDarkMode = false,
-  autoMorphInterval = 1000, 
-  morphDuration = 500, 
-}) => {
-  const [currentIconIndex, setCurrentIconIndex] = useState(0);
-  const [morphPaths, setMorphPaths] = useState([]);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [maxSegmentLength] = useState(2);
-  const iconRefs = useRef({});
-  const animationFrameRef = useRef(null);
-  const autoMorphTimerRef = useRef(null);
-
-  /** ---------------------------
-   * Dynamic Color Selection
-   ----------------------------*/
-  const getColor = (icon) => {
-    if (icon.status === 'approved') {
-      return isDarkMode ? 'text-green-400' : 'text-green-700';
-    }
-    if (icon.status === 'rejected') {
-      return isDarkMode ? 'text-red-400' : 'text-red-700';
-    }
-    if (icon.status === 'standard') {
-      return isDarkMode ? 'text-white' : 'text-black';
-    }
-    return isDarkMode ? 'text-white' : 'text-black';
-  };
-
-  /** Icon definitions */
-  const icons = [
-    { name: 'Alarm Clock', Icon: AlarmClock, status: 'standard' },
-    { name: 'Computer', Icon: Laptop, status: 'standard' },
-    { name: 'Drink', Icon: CupSoda, status: 'standard' },
-    { name: 'Document', Icon: Form, status: 'standard' },
-    { name: 'Phone Calls', Icon: PhoneCall, status: 'standard' },
-  ];
-
-  /** Extract SVG paths for morphing */
-  const extractPathsFromIcon = (iconElement) => {
-    if (!iconElement) return [];
-    const svg = iconElement.querySelector('svg');
-    if (!svg) return [];
-
-    const elements = svg.querySelectorAll(
-      'path, circle, line, rect, polyline, polygon'
-    );
-
-    const paths = Array.from(elements)
-      .map((element) => {
-        if (element.tagName.toLowerCase() === 'path') {
-          return element.getAttribute('d');
-        }
-        return convertShapeToPath(element);
-      })
-      .filter(Boolean);
-
-    return paths;
-  };
-
-  /** Convert non-path shapes to path data */
-  const convertShapeToPath = (element) => {
-    const tag = element.tagName.toLowerCase();
-
-    if (tag === 'circle') {
-      const cx = parseFloat(element.getAttribute('cx'));
-      const cy = parseFloat(element.getAttribute('cy'));
-      const r = parseFloat(element.getAttribute('r'));
-      return `M ${cx - r},${cy} a ${r},${r} 0 1,0 ${r * 2},0 a ${r},${r} 0 1,0 ${-r * 2},0`;
-    }
-
-    if (tag === 'line') {
-      return `M ${element.getAttribute('x1')},${element.getAttribute(
-        'y1'
-      )} L ${element.getAttribute('x2')},${element.getAttribute('y2')}`;
-    }
-
-    if (tag === 'rect') {
-      const x = parseFloat(element.getAttribute('x') || 0);
-      const y = parseFloat(element.getAttribute('y') || 0);
-      const w = parseFloat(element.getAttribute('width'));
-      const h = parseFloat(element.getAttribute('height'));
-      return `M ${x},${y} L ${x + w},${y} L ${x + w},${y + h} L ${x},${y + h} Z`;
-    }
-
-    if (tag === 'polyline' || tag === 'polygon') {
-      const points = element.getAttribute('points').trim().split(/\s+/);
-      const cmds = points.map((p, i) => {
-        const [x, y] = p.split(',');
-        return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
-      });
-      if (tag === 'polygon') cmds.push('Z');
-      return cmds.join(' ');
-    }
-
-    return null;
-  };
-
-  /** Morph animation logic */
-  const morphToIndex = (targetIndex) => {
-    if (isAnimating || currentIconIndex === targetIndex) return;
-
-    setIsAnimating(true);
-
-    const currentPaths = extractPathsFromIcon(iconRefs.current[currentIconIndex]);
-    const nextPaths = extractPathsFromIcon(iconRefs.current[targetIndex]);
-
-    if (!currentPaths.length || !nextPaths.length) {
-      setCurrentIconIndex(targetIndex);
-      setIsAnimating(false);
-      return;
-    }
-
-    let interpolators;
-
-    try {
-      const maxPaths = Math.max(currentPaths.length, nextPaths.length);
-      const paddedCurrent = [...currentPaths];
-      const paddedNext = [...nextPaths];
-
-      while (paddedCurrent.length < maxPaths) {
-        paddedCurrent.push(paddedCurrent[paddedCurrent.length - 1]);
-      }
-      while (paddedNext.length < maxPaths) {
-        paddedNext.push(paddedNext[paddedNext.length - 1]);
-      }
-
-      interpolators = paddedCurrent.map((c, i) =>
-        flubber.interpolate(c, paddedNext[i], { maxSegmentLength })
-      );
-    } catch {
-      interpolators = [
-        flubber.interpolate(currentPaths.join(' '), nextPaths.join(' '), {
-          maxSegmentLength,
-        }),
-      ];
-    }
-
-    const start = Date.now();
-
-    const animate = () => {
-      const elapsed = Date.now() - start;
-      let t = Math.min(elapsed / morphDuration, 1);
-
-      // easeInOutQuad
-      t = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-
-      const morphed = interpolators.map((fn) => fn(t));
-      setMorphPaths(morphed);
-
-      if (elapsed < morphDuration) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-      } else {
-        setCurrentIconIndex(targetIndex);
-        setIsAnimating(false);
-        setMorphPaths([]);
-      }
-    };
-
-    animate();
-  };
-
-  /** Auto-morph to next icon */
-  const morphToNext = () => {
-    const nextIndex = (currentIconIndex + 1) % icons.length;
-    morphToIndex(nextIndex);
-  };
-
-  /** Set up auto-morphing interval */
-  useEffect(() => {
-    autoMorphTimerRef.current = setInterval(() => {
-      morphToNext();
-    }, autoMorphInterval);
-
-    return () => {
-      if (autoMorphTimerRef.current) {
-        clearInterval(autoMorphTimerRef.current);
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [currentIconIndex, autoMorphInterval]);
-
-  const CurrentIcon = icons[currentIconIndex].Icon;
-  const currentColor = getColor(icons[currentIconIndex]);
-
-  return (
-    <div className={`inline-block ${className}`}>
-      <div className="relative">
-        {isAnimating && morphPaths.length > 0 ? (
-          <svg
-            width={size}
-            height={size}
-            viewBox="0 0 24 24"
-            className={currentColor}
-            stroke="currentColor"
-            color="currentColor"
-          >
-            {morphPaths.map((d, i) => (
-              <path
-                key={i}
-                d={d}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ))}
-          </svg>
-        ) : (
-          <CurrentIcon
-            size={size}
-            className={currentColor}
-            stroke="currentColor"
-            strokeWidth={1.5}
-          />
-        )}
-      </div>
-
-      {/* Hidden icons for path extraction */}
-      <div
-        style={{
-          position: 'absolute',
-          visibility: 'hidden',
-          pointerEvents: 'none',
-          left: '-9999px',
-        }}
-      >
-        {icons.map((icon, i) => (
-          <div key={i} ref={(el) => (iconRefs.current[i] = el)}>
-            <icon.Icon size={24} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-export const MiniFlubberAutoMorphOverTime = ({
-  size = 24,
-  className = '',
-  isDarkMode = false,
-  autoMorphInterval = 1000, 
-  morphDuration = 500, 
-}) => {
-  const [currentIconIndex, setCurrentIconIndex] = useState(0);
-  const [morphPaths, setMorphPaths] = useState([]);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [maxSegmentLength] = useState(2);
-  const iconRefs = useRef({});
-  const animationFrameRef = useRef(null);
-  const autoMorphTimerRef = useRef(null);
-
-  /** ---------------------------
-   * Dynamic Color Selection
-   ----------------------------*/
-  const getColor = (icon) => {
-    if (icon.status === 'approved') {
-      return isDarkMode ? 'text-green-400' : 'text-green-700';
-    }
-    if (icon.status === 'rejected') {
-      return isDarkMode ? 'text-red-400' : 'text-red-700';
-    }
-    if (icon.status === 'standard') {
-      return isDarkMode ? 'text-white' : 'text-black';
-    }
-    return isDarkMode ? 'text-white' : 'text-black';
-  };
-
-  /** Icon definitions */
-  const icons = [
-    { name: 'heart', Icon: Heart, status: 'standard' },
-    { name: 'heartPlus', Icon: HeartPlus, status: 'standard' },
-    { name: 'person', Icon: PersonStanding, status: 'standard' },
-    { name: 'house', Icon: HouseWifi, status: 'standard' },
-    { name: 'fire', Icon: Flame, status: 'standard' },
-  ];
-
-  /** Extract SVG paths for morphing */
-  const extractPathsFromIcon = (iconElement) => {
-    if (!iconElement) return [];
-    const svg = iconElement.querySelector('svg');
-    if (!svg) return [];
-
-    const elements = svg.querySelectorAll(
-      'path, circle, line, rect, polyline, polygon'
-    );
-
-    const paths = Array.from(elements)
-      .map((element) => {
-        if (element.tagName.toLowerCase() === 'path') {
-          return element.getAttribute('d');
-        }
-        return convertShapeToPath(element);
-      })
-      .filter(Boolean);
-
-    return paths;
-  };
-
-  /** Convert non-path shapes to path data */
-  const convertShapeToPath = (element) => {
-    const tag = element.tagName.toLowerCase();
-
-    if (tag === 'circle') {
-      const cx = parseFloat(element.getAttribute('cx'));
-      const cy = parseFloat(element.getAttribute('cy'));
-      const r = parseFloat(element.getAttribute('r'));
-      return `M ${cx - r},${cy} a ${r},${r} 0 1,0 ${r * 2},0 a ${r},${r} 0 1,0 ${-r * 2},0`;
-    }
-
-    if (tag === 'line') {
-      return `M ${element.getAttribute('x1')},${element.getAttribute(
-        'y1'
-      )} L ${element.getAttribute('x2')},${element.getAttribute('y2')}`;
-    }
-
-    if (tag === 'rect') {
-      const x = parseFloat(element.getAttribute('x') || 0);
-      const y = parseFloat(element.getAttribute('y') || 0);
-      const w = parseFloat(element.getAttribute('width'));
-      const h = parseFloat(element.getAttribute('height'));
-      return `M ${x},${y} L ${x + w},${y} L ${x + w},${y + h} L ${x},${y + h} Z`;
-    }
-
-    if (tag === 'polyline' || tag === 'polygon') {
-      const points = element.getAttribute('points').trim().split(/\s+/);
-      const cmds = points.map((p, i) => {
-        const [x, y] = p.split(',');
-        return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
-      });
-      if (tag === 'polygon') cmds.push('Z');
-      return cmds.join(' ');
-    }
-
-    return null;
-  };
-
-  /** Morph animation logic */
-  const morphToIndex = (targetIndex) => {
-    if (isAnimating || currentIconIndex === targetIndex) return;
-
-    setIsAnimating(true);
-
-    const currentPaths = extractPathsFromIcon(iconRefs.current[currentIconIndex]);
-    const nextPaths = extractPathsFromIcon(iconRefs.current[targetIndex]);
-
-    if (!currentPaths.length || !nextPaths.length) {
-      setCurrentIconIndex(targetIndex);
-      setIsAnimating(false);
-      return;
-    }
-
-    let interpolators;
-
-    try {
-      const maxPaths = Math.max(currentPaths.length, nextPaths.length);
-      const paddedCurrent = [...currentPaths];
-      const paddedNext = [...nextPaths];
-
-      while (paddedCurrent.length < maxPaths) {
-        paddedCurrent.push(paddedCurrent[paddedCurrent.length - 1]);
-      }
-      while (paddedNext.length < maxPaths) {
-        paddedNext.push(paddedNext[paddedNext.length - 1]);
-      }
-
-      interpolators = paddedCurrent.map((c, i) =>
-        flubber.interpolate(c, paddedNext[i], { maxSegmentLength })
-      );
-    } catch {
-      interpolators = [
-        flubber.interpolate(currentPaths.join(' '), nextPaths.join(' '), {
-          maxSegmentLength,
-        }),
-      ];
-    }
-
-    const start = Date.now();
-
-    const animate = () => {
-      const elapsed = Date.now() - start;
-      let t = Math.min(elapsed / morphDuration, 1);
-
-      // easeInOutQuad
-      t = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-
-      const morphed = interpolators.map((fn) => fn(t));
-      setMorphPaths(morphed);
-
-      if (elapsed < morphDuration) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-      } else {
-        setCurrentIconIndex(targetIndex);
-        setIsAnimating(false);
-        setMorphPaths([]);
-      }
-    };
-
-    animate();
-  };
-
-  /** Auto-morph to next icon */
-  const morphToNext = () => {
-    const nextIndex = (currentIconIndex + 1) % icons.length;
-    morphToIndex(nextIndex);
-  };
-
-  /** Set up auto-morphing interval */
-  useEffect(() => {
-    autoMorphTimerRef.current = setInterval(() => {
-      morphToNext();
-    }, autoMorphInterval);
-
-    return () => {
-      if (autoMorphTimerRef.current) {
-        clearInterval(autoMorphTimerRef.current);
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [currentIconIndex, autoMorphInterval]);
-
-  const CurrentIcon = icons[currentIconIndex].Icon;
-  const currentColor = getColor(icons[currentIconIndex]);
-
-  return (
-    <div className={`inline-block ${className}`}>
-      <div className="relative">
-        {isAnimating && morphPaths.length > 0 ? (
-          <svg
-            width={size}
-            height={size}
-            viewBox="0 0 24 24"
-            className={currentColor}
-            stroke="currentColor"
-            color="currentColor"
-          >
-            {morphPaths.map((d, i) => (
-              <path
-                key={i}
-                d={d}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ))}
-          </svg>
-        ) : (
-          <CurrentIcon
-            size={size}
-            className={currentColor}
-            stroke="currentColor"
-            strokeWidth={1.5}
-          />
-        )}
-      </div>
-
-      {/* Hidden icons for path extraction */}
-      <div
-        style={{
-          position: 'absolute',
-          visibility: 'hidden',
-          pointerEvents: 'none',
-          left: '-9999px',
-        }}
-      >
-        {icons.map((icon, i) => (
-          <div key={i} ref={(el) => (iconRefs.current[i] = el)}>
-            <icon.Icon size={24} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-export const MiniFlubberAutoMorphPerformance = ({
-  size = 24,
-  className = '',
-  isDarkMode = false,
-  autoMorphInterval = 1000,
-  morphDuration = 500, 
-}) => {
-  const [currentIconIndex, setCurrentIconIndex] = useState(0);
-  const [morphPaths, setMorphPaths] = useState([]);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [maxSegmentLength] = useState(2);
-  const iconRefs = useRef({});
-  const animationFrameRef = useRef(null);
-  const autoMorphTimerRef = useRef(null);
-
-  /** ---------------------------
-   * Dynamic Color Selection
-   ----------------------------*/
-  const getColor = (icon) => {
-    if (icon.status === 'approved') {
-      return isDarkMode ? 'text-green-400' : 'text-green-700';
-    }
-    if (icon.status === 'rejected') {
-      return isDarkMode ? 'text-red-400' : 'text-red-700';
-    }
-    if (icon.status === 'standard') {
-      return isDarkMode ? 'text-white' : 'text-black';
-    }
-    return isDarkMode ? 'text-white' : 'text-black';
-  };
-
-  /** Icon definitions */
-  const icons = [
-    { name: 'LineChart', Icon: LineChart, status: 'standard' },
-    { name: 'Briefcase', Icon: BriefcaseBusiness, status: 'standard' },
-    { name: 'Speedometer', Icon: Gauge, status: 'standard' },
-    { name: 'Database', Icon: DatabaseZap, status: 'standard' },
-    { name: 'Battery', Icon: BatteryCharging, status: 'standard' },
-    { name: 'WifiPen', Icon: WifiPen, status: 'standard' },
-    { name: 'TrendingUp', Icon: TrendingUp, status: 'standard' },
-  ];
-
-  /** Extract SVG paths for morphing */
-  const extractPathsFromIcon = (iconElement) => {
-    if (!iconElement) return [];
-    const svg = iconElement.querySelector('svg');
-    if (!svg) return [];
-
-    const elements = svg.querySelectorAll(
-      'path, circle, line, rect, polyline, polygon'
-    );
-
-    const paths = Array.from(elements)
-      .map((element) => {
-        if (element.tagName.toLowerCase() === 'path') {
-          return element.getAttribute('d');
-        }
-        return convertShapeToPath(element);
-      })
-      .filter(Boolean);
-
-    return paths;
-  };
-
-  /** Convert non-path shapes to path data */
-  const convertShapeToPath = (element) => {
-    const tag = element.tagName.toLowerCase();
-
-    if (tag === 'circle') {
-      const cx = parseFloat(element.getAttribute('cx'));
-      const cy = parseFloat(element.getAttribute('cy'));
-      const r = parseFloat(element.getAttribute('r'));
-      return `M ${cx - r},${cy} a ${r},${r} 0 1,0 ${r * 2},0 a ${r},${r} 0 1,0 ${-r * 2},0`;
-    }
-
-    if (tag === 'line') {
-      return `M ${element.getAttribute('x1')},${element.getAttribute(
-        'y1'
-      )} L ${element.getAttribute('x2')},${element.getAttribute('y2')}`;
-    }
-
-    if (tag === 'rect') {
-      const x = parseFloat(element.getAttribute('x') || 0);
-      const y = parseFloat(element.getAttribute('y') || 0);
-      const w = parseFloat(element.getAttribute('width'));
-      const h = parseFloat(element.getAttribute('height'));
-      return `M ${x},${y} L ${x + w},${y} L ${x + w},${y + h} L ${x},${y + h} Z`;
-    }
-
-    if (tag === 'polyline' || tag === 'polygon') {
-      const points = element.getAttribute('points').trim().split(/\s+/);
-      const cmds = points.map((p, i) => {
-        const [x, y] = p.split(',');
-        return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
-      });
-      if (tag === 'polygon') cmds.push('Z');
-      return cmds.join(' ');
-    }
-
-    return null;
-  };
-
-  /** Morph animation logic */
-  const morphToIndex = (targetIndex) => {
-    if (isAnimating || currentIconIndex === targetIndex) return;
-
-    setIsAnimating(true);
-
-    const currentPaths = extractPathsFromIcon(iconRefs.current[currentIconIndex]);
-    const nextPaths = extractPathsFromIcon(iconRefs.current[targetIndex]);
-
-    if (!currentPaths.length || !nextPaths.length) {
-      setCurrentIconIndex(targetIndex);
-      setIsAnimating(false);
-      return;
-    }
-
-    let interpolators;
-
-    try {
-      const maxPaths = Math.max(currentPaths.length, nextPaths.length);
-      const paddedCurrent = [...currentPaths];
-      const paddedNext = [...nextPaths];
-
-      while (paddedCurrent.length < maxPaths) {
-        paddedCurrent.push(paddedCurrent[paddedCurrent.length - 1]);
-      }
-      while (paddedNext.length < maxPaths) {
-        paddedNext.push(paddedNext[paddedNext.length - 1]);
-      }
-
-      interpolators = paddedCurrent.map((c, i) =>
-        flubber.interpolate(c, paddedNext[i], { maxSegmentLength })
-      );
-    } catch {
-      interpolators = [
-        flubber.interpolate(currentPaths.join(' '), nextPaths.join(' '), {
-          maxSegmentLength,
-        }),
-      ];
-    }
-
-    const start = Date.now();
-
-    const animate = () => {
-      const elapsed = Date.now() - start;
-      let t = Math.min(elapsed / morphDuration, 1);
-
-      // easeInOutQuad
-      t = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-
-      const morphed = interpolators.map((fn) => fn(t));
-      setMorphPaths(morphed);
-
-      if (elapsed < morphDuration) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-      } else {
-        setCurrentIconIndex(targetIndex);
-        setIsAnimating(false);
-        setMorphPaths([]);
-      }
-    };
-
-    animate();
-  };
-
-  /** Auto-morph to next icon */
-  const morphToNext = () => {
-    const nextIndex = (currentIconIndex + 1) % icons.length;
-    morphToIndex(nextIndex);
-  };
-
-  /** Set up auto-morphing interval */
-  useEffect(() => {
-    autoMorphTimerRef.current = setInterval(() => {
-      morphToNext();
-    }, autoMorphInterval);
-
-    return () => {
-      if (autoMorphTimerRef.current) {
-        clearInterval(autoMorphTimerRef.current);
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [currentIconIndex, autoMorphInterval]);
-
-  const CurrentIcon = icons[currentIconIndex].Icon;
-  const currentColor = getColor(icons[currentIconIndex]);
-
-  return (
-    <div className={`inline-block ${className}`}>
-      <div className="relative">
-        {isAnimating && morphPaths.length > 0 ? (
-          <svg
-            width={size}
-            height={size}
-            viewBox="0 0 24 24"
-            className={currentColor}
-            stroke="currentColor"
-            color="currentColor"
-          >
-            {morphPaths.map((d, i) => (
-              <path
-                key={i}
-                d={d}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ))}
-          </svg>
-        ) : (
-          <CurrentIcon
-            size={size}
-            className={currentColor}
-            stroke="currentColor"
-            strokeWidth={1.5}
-          />
-        )}
-      </div>
-
-      {/* Hidden icons for path extraction */}
-      <div
-        style={{
-          position: 'absolute',
-          visibility: 'hidden',
-          pointerEvents: 'none',
-          left: '-9999px',
-        }}
-      >
-        {icons.map((icon, i) => (
-          <div key={i} ref={(el) => (iconRefs.current[i] = el)}>
-            <icon.Icon size={24} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+export const MiniFlubberAutoMorphEmployeesDashboard = (props) => (
+  <FlubberMorphIcon
+    icons={[Users, User, Speech, PersonStanding]}
+    cacheKey="dash-employees"
+    morphInterval={1000}
+    morphDuration={500}
+    {...props}
+  />
+);
+
+export const MiniFlubberAutoMorphVacation = (props) => (
+  <FlubberMorphIcon
+    icons={[Coffee, Salad, Car, Volleyball, TreePalm, Clapperboard]}
+    cacheKey="dash-vacation"
+    morphInterval={1000}
+    morphDuration={500}
+    {...props}
+  />
+);
+
+export const MiniFlubberAutoMorphOfficeWork = (props) => (
+  <FlubberMorphIcon
+    icons={[AlarmClock, Laptop, CupSoda, Form, PhoneCall]}
+    cacheKey="dash-office"
+    morphInterval={1000}
+    morphDuration={500}
+    {...props}
+  />
+);
+
+export const MiniFlubberAutoMorphOverTime = (props) => (
+  <FlubberMorphIcon
+    icons={[Heart, HeartPlus, PersonStanding, HouseWifi, Flame]}
+    cacheKey="dash-overtime"
+    morphInterval={1000}
+    morphDuration={500}
+    {...props}
+  />
+);
+
+export const MiniFlubberAutoMorphPerformance = (props) => (
+  <FlubberMorphIcon
+    icons={[LineChart, BriefcaseBusiness, Gauge, DatabaseZap, BatteryCharging, WifiPen, TrendingUp]}
+    cacheKey="dash-performance"
+    morphInterval={1000}
+    morphDuration={500}
+    {...props}
+  />
+);
 
 const Dashboard = ({ employees, applications }) => {
   const { isDarkMode, bg, text, border } = useTheme();
@@ -1440,7 +278,7 @@ const Dashboard = ({ employees, applications }) => {
   // Define fetch function that can be reused
   const fetchDashboardData = useCallback(async (options = {}) => {
     const { silent = false } = options;
-    console.log('📊 [Dashboard] fetchDashboardData called:', { employeeCount: employees.length, silent, isDemoMode: isDemoMode() });
+    if (import.meta.env.DEV) console.log('📊 [Dashboard] fetchDashboardData called:', { employeeCount: employees.length, silent, isDemoMode: isDemoMode() });
     if (employees.length === 0) {
       console.warn('⚠️ [Dashboard] No employees to fetch data for');
       if (!silent) setLoading(false);
@@ -1464,75 +302,70 @@ const Dashboard = ({ employees, applications }) => {
       
       // Wrap the fetch logic with retry mechanism
       await retryWithBackoff(async () => {
-        // Fetch time tracking summaries for all employees for SELECTED month
-        const summariesPromises = employees.map(emp => 
-          timeTrackingService.getTimeTrackingSummary(String(emp.id), selectedMonth, selectedYear)
+        // Two batched calls cover the whole roster. This previously issued one
+        // summary request plus one leave request *per employee* — 2N round trips,
+        // so a 50-person company paid 100 requests on every dashboard load.
+        const [overviewResult, leaveResult] = await withTimeout(
+          Promise.all([
+            timeTrackingService.getOverviewEmployeeSummaries(selectedMonth, selectedYear, employees),
+            timeTrackingService.getAllLeaveRequests({
+              year: selectedYear,
+              includeEmployeeDetails: false,
+            }),
+          ]),
+          DEFAULT_REQUEST_TIMEOUT
         );
 
-        const summariesResults = await withTimeout(Promise.all(summariesPromises), DEFAULT_REQUEST_TIMEOUT);
-
-        // Fetch leave requests for all employees
-        const leavePromises = employees.map(emp => 
-          timeTrackingService.getLeaveRequests(String(emp.id), {
-            year: selectedYear
-          })
-        );
-        const leaveResults = await withTimeout(Promise.all(leavePromises), DEFAULT_REQUEST_TIMEOUT);
-        
-        // Calculate leave days from leave_requests (pending + approved)
+        // Calculate leave days from leave_requests (pending + approved),
+        // counted against the month the request starts in.
         const leaveData = {};
-        leaveResults.forEach((result, index) => {
-          const emp = employees[index];
-          const empId = String(emp.id);
-          
-          if (result.success && result.data) {
-            // Calculate leave days for current month (pending + approved)
-            const leaveDays = result.data.reduce((total, req) => {
-              if (req.status === 'rejected') return total;
-              
-              const startDate = new Date(req.start_date);
-              const reqMonth = startDate.getMonth() + 1;
-              const reqYear = startDate.getFullYear();
-              
-              // Only count if within SELECTED month/year
-              if (reqYear === selectedYear && reqMonth === selectedMonth) {
-                return total + (req.days_count || 0);
-              }
-              return total;
-            }, 0);
-            
-            leaveData[empId] = leaveDays;
-          } else {
-            leaveData[empId] = 0;
-          }
-        });
-        
+        employees.forEach(emp => { leaveData[String(emp.id)] = 0; });
+
+        if (leaveResult.success && Array.isArray(leaveResult.data)) {
+          leaveResult.data.forEach(req => {
+            if (req.status === 'rejected') return;
+
+            const empId = String(req.employee_id);
+            if (!(empId in leaveData)) return; // outside the active roster
+
+            const startDate = new Date(req.start_date);
+            const reqMonth = startDate.getMonth() + 1;
+            const reqYear = startDate.getFullYear();
+
+            // Only count if within SELECTED month/year
+            if (reqYear === selectedYear && reqMonth === selectedMonth) {
+              leaveData[empId] += req.days_count || 0;
+            }
+          });
+        }
+
         setLeaveRequestsData(leaveData);
-        
+
         // Build timeTrackingData object - use string IDs for consistency with TEXT type
+        const summaryByEmployeeId = new Map(
+          (overviewResult.success ? overviewResult.data : []).map(
+            item => [String(item.employee?.id), item.data]
+          )
+        );
+
         const trackingData = {};
         const employeesDataArray = [];
-        summariesResults.forEach((result, index) => {
-          const emp = employees[index];
+        employees.forEach(emp => {
           const empId = String(emp.id); // Ensure ID is string for TEXT type
-          
-          if (result.success && result.data) {
-            trackingData[empId] = {
-              workDays: result.data.days_worked || 0,
-              leaveDays: Math.max(result.data.leave_days || 0, leaveData[empId] || 0), // Use max of service calculated (includes Time Entries) or requests
-              overtime: result.data.overtime_hours || 0,
-              holidayOvertime: result.data.holiday_overtime_hours || 0,
-              regularHours: result.data.regular_hours || 0,
-              totalHours: result.data.total_hours || 0,
+          const data = summaryByEmployeeId.get(empId) || null;
+
+          trackingData[empId] = data
+            ? {
+              workDays: data.days_worked || 0,
+              leaveDays: Math.max(data.leave_days || 0, leaveData[empId] || 0), // Use max of service calculated (includes Time Entries) or requests
+              overtime: data.overtime_hours || 0,
+              holidayOvertime: data.holiday_overtime_hours || 0,
+              regularHours: data.regular_hours || 0,
+              totalHours: data.total_hours || 0,
               performance: emp.performance || 4.0
-            };
-            employeesDataArray.push({
-              employee: emp,
-              data: result.data
-            });
-          } else {
-            // Fallback to defaults if no data
-            trackingData[empId] = {
+            }
+            : {
+              // Fallback to defaults if no data
               workDays: 0,
               leaveDays: leaveData[empId] || 0, // Use calculated leave days
               overtime: 0,
@@ -1541,27 +374,26 @@ const Dashboard = ({ employees, applications }) => {
               totalHours: 0,
               performance: emp.performance || 4.0
             };
-            employeesDataArray.push({
-              employee: emp,
-              data: null
-            });
-          }
+
+          employeesDataArray.push({ employee: emp, data });
         });
-        
+
         setAllEmployeesData(employeesDataArray);
         setTimeTrackingData(trackingData);
-        
-        // Fetch pending approvals count and details
-        const approvalsResult = await timeTrackingService.getPendingApprovalsCount();
+
+        // Fetch pending approvals count and details together
+        const [approvalsResult, approvalsDetailResult] = await Promise.all([
+          timeTrackingService.getPendingApprovalsCount(),
+          timeTrackingService.getPendingApprovals(),
+        ]);
+
         if (approvalsResult.success) {
           setPendingApprovalsCount(approvalsResult.data.total || 0);
         } else {
           console.warn('Failed to fetch pending approvals count:', approvalsResult.error);
           setPendingApprovalsCount(0);
         }
-        
-        // Fetch pending approvals details
-        const approvalsDetailResult = await timeTrackingService.getPendingApprovals();
+
         if (approvalsDetailResult.success) {
           setPendingApprovals(approvalsDetailResult.data || []);
         } else {
@@ -1619,7 +451,7 @@ const Dashboard = ({ employees, applications }) => {
   const hasRealData = trackingDataValues.some(emp => emp?.workDays > 0 || emp?.overtime > 0);
 
   // Helper function to generate display names for charts - always use last name
-  const getUniqueDisplayName = (employee, _allEmployees) => {
+  const getUniqueDisplayName = (employee) => {
     const translatedName = getDemoEmployeeName(employee, t);
     const nameParts = translatedName.trim().split(/\s+/).filter(part => part.length > 0);
     if (nameParts.length === 0) return `Employee #${employee.id}`;
@@ -1631,7 +463,7 @@ const Dashboard = ({ employees, applications }) => {
 
   // Performance data for bar chart
   const performanceData = employees.map(emp => ({
-    name: getUniqueDisplayName(emp, employees),
+    name: getUniqueDisplayName(emp),
     fullName: getDemoEmployeeName(emp, t), // Keep full name for tooltip
     id: emp.id,
     performance: timeTrackingData[String(emp.id)]?.performance || 4.0,
@@ -1653,7 +485,7 @@ const Dashboard = ({ employees, applications }) => {
   const leaveData = employees.map(emp => {
     const empId = String(emp.id);
     return {
-      name: getUniqueDisplayName(emp, employees),
+      name: getUniqueDisplayName(emp),
       fullName: getDemoEmployeeName(emp, t), // Keep full name for tooltip
       id: emp.id,
       leaveDays: leaveRequestsData[empId] || timeTrackingData[empId]?.leaveDays || 0,
@@ -1668,7 +500,7 @@ const Dashboard = ({ employees, applications }) => {
   const hoursChartData = allEmployeesData
     .filter((item) => item.data)
     .map((item) => ({
-      name: getUniqueDisplayName(item.employee, employees),
+      name: getUniqueDisplayName(item.employee),
       fullName: item.employee.name,
       regularHours: item.data?.regular_hours || 0,
       overtimeHours: (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0),

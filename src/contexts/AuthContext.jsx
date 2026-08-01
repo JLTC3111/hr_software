@@ -1,10 +1,15 @@
 import _React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase, hasPermission, Permissions, customStorage, clearAuthStorage } from '../config/supabaseClient.js';
-import { validateAndRefreshSession, handleSessionAuthError as handleSessionAuthErrorUtil } from '../utils/sessionHelper.js';
+import {
+  validateAndRefreshSession,
+  handleSessionAuthError as handleSessionAuthErrorUtil,
+  cancelScheduledLogout,
+} from '../utils/sessionHelper.js';
 import { isDemoMode, enableDemoMode, disableDemoMode, MOCK_USER, getDemoEmployees, attachSeededRandomUserPhotos, DEMO_CONFIG } from '../utils/demoHelper.js';
 import { useSessionKeepAlive } from '../hooks/useSessionKeepAlive.js';
 import { useIdleLogout } from '../hooks/useIdleLogout.js';
 import {
+  DEFAULT_REQUEST_TIMEOUT,
   IDLE_LOGOUT_TIMEOUT,
   IDLE_LOGOUT_WARN_BEFORE_MS,
   LOGOUT_REASON_KEY,
@@ -577,6 +582,11 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log(`🔐 Logging in with email: ${email}, rememberMe: ${rememberMe}`);
 
+      // A forced logout queued by a page whose fetch failed during the idle
+      // period must not fire in the middle of this sign-in — it would wipe
+      // storage and take the auth lock underneath us.
+      cancelScheduledLogout();
+
       // After idle logout, a timed-out network signOut can leave GoTrue's lock held
       // and storage half-cleared. Clear local session first so sign-in isn't blocked
       // (hard refresh works today because it remounts the client + wipes storage).
@@ -612,9 +622,37 @@ export const AuthProvider = ({ children }) => {
           ),
         ]);
 
+      // Always login with the provided email (authenticate the actual auth user).
+      //
+      // The budget must stay comfortably above DEFAULT_REQUEST_TIMEOUT. GoTrue
+      // serializes auth calls behind a Web Lock, so a background token refresh
+      // that stalled while the tab was idle holds the lock until that timeout
+      // aborts it. With a shorter budget here, sign-in reported failure before
+      // the blocker was even released — which is why logging back in after an
+      // idle period appeared to need a hard refresh.
+      const { data, error } = await withLoginTimeout(
+        supabase.auth.signInWithPassword({
+          email: email,
+          password
+        }),
+        DEFAULT_REQUEST_TIMEOUT + 15000,
+        'Sign in'
+      );
+
+      if (error) throw error;
+
+      console.log('✅ Login successful');
+      try {
+        supabase.auth.startAutoRefresh?.();
+      } catch {
+        // ignore
+      }
+
       // Check if this email has a mapping to a different HR user.
-      // This is a best-effort lookup — if it stalls or fails we proceed with the
-      // normal sign-in flow rather than blocking the user.
+      // Runs after sign-in: it never affected which credentials were used, and
+      // in front of sign-in it added a PostgREST round trip that itself waits on
+      // the auth lock. Best-effort — a failure just falls through to the normal
+      // profile load.
       console.log('🔍 Checking email mapping in user_emails...');
       let emailMapping = null;
       try {
@@ -632,25 +670,6 @@ export const AuthProvider = ({ children }) => {
         console.warn('⚠️ Email mapping lookup skipped:', mappingLookupError?.message || mappingLookupError);
       }
 
-      // Always login with the provided email (authenticate the actual auth user)
-      const { data, error } = await withLoginTimeout(
-        supabase.auth.signInWithPassword({
-          email: email,
-          password
-        }),
-        20000,
-        'Sign in'
-      );
-
-      if (error) throw error;
-
-      console.log('✅ Login successful');
-      try {
-        supabase.auth.startAutoRefresh?.();
-      } catch {
-        // ignore
-      }
-      
       // If this email is mapped to a different HR user, we need to load that profile instead
       if (emailMapping && emailMapping.hr_user_id) {
         console.log(`🔗 Email mapping found: auth user ${data.user.id} → HR user ${emailMapping.hr_user_id}`);
@@ -877,8 +896,21 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const logoutRef = useRef(null);
-  logoutRef.current = logout;
+  // The auth actions above are plain functions, so each render gives them a new
+  // identity. Exposed directly, that defeated the context-value memo below —
+  // every `useAuth()` consumer re-rendered on every provider render, and the
+  // changing `logout` identity rippled into `handleSessionAuthError` and from
+  // there into each page's data-fetch callbacks, restarting in-flight requests.
+  // Wrapping them in stable delegates keeps identities fixed while each call
+  // still runs against the latest closure.
+  const authActionsRef = useRef(null);
+  authActionsRef.current = { login, loginWithGithub, forgotPassword, resetPassword, logout };
+
+  const stableLogin = useCallback((...args) => authActionsRef.current.login(...args), []);
+  const stableLoginWithGithub = useCallback((...args) => authActionsRef.current.loginWithGithub(...args), []);
+  const stableForgotPassword = useCallback((...args) => authActionsRef.current.forgotPassword(...args), []);
+  const stableResetPassword = useCallback((...args) => authActionsRef.current.resetPassword(...args), []);
+  const stableLogout = useCallback((...args) => authActionsRef.current.logout(...args), []);
 
   const sessionHooksEnabled = isAuthenticated && !isDemoMode();
   useSessionKeepAlive({ enabled: sessionHooksEnabled });
@@ -889,7 +921,7 @@ export const AuthProvider = ({ children }) => {
     idleLogoutInProgressRef.current = true;
     try {
       sessionStorage.setItem(LOGOUT_REASON_KEY, 'idle');
-      await logoutRef.current?.();
+      await authActionsRef.current?.logout?.();
     } finally {
       idleLogoutInProgressRef.current = false;
     }
@@ -910,8 +942,8 @@ export const AuthProvider = ({ children }) => {
 
   const handleSessionAuthError = useCallback(
     (error, options = {}) =>
-      handleSessionAuthErrorUtil(error, { logout, ...options }),
-    [logout]
+      handleSessionAuthErrorUtil(error, { logout: stableLogout, ...options }),
+    [stableLogout]
   );
 
   // Memoize the context value to prevent unnecessary re-renders
@@ -920,17 +952,17 @@ export const AuthProvider = ({ children }) => {
     user,
     session,
     loading,
-    login,
-    loginWithGithub,
+    login: stableLogin,
+    loginWithGithub: stableLoginWithGithub,
     loginAsDemo,
     switchDemoRole,
-    logout,
-    signOut: logout, // Alias for backward compatibility
+    logout: stableLogout,
+    signOut: stableLogout, // Alias for backward compatibility
     handleSessionAuthError,
-    forgotPassword,
-    resetPassword,
+    forgotPassword: stableForgotPassword,
+    resetPassword: stableResetPassword,
     checkPermission
-  }), [isAuthenticated, user, session, loading, login, loginWithGithub, loginAsDemo, switchDemoRole, logout, handleSessionAuthError, forgotPassword, resetPassword, checkPermission]);
+  }), [isAuthenticated, user, session, loading, stableLogin, stableLoginWithGithub, loginAsDemo, switchDemoRole, stableLogout, handleSessionAuthError, stableForgotPassword, stableResetPassword, checkPermission]);
 
   return (
     <AuthContext.Provider value={value}>

@@ -185,6 +185,12 @@ export default {
   },
   // Dashboard
   dashboard: {
+    workforce: 'Workforce',
+    hours: 'Hours',
+    leave: 'Leave',
+    performance: 'Performance',
+    approvals: 'Approvals',
+    total: 'Total',
     regularAndOvertimeByEmployee: 'Regular & Overtime by Employee',
     employeeLabel: 'Employee',
     currentMonth: 'Current Month',
@@ -548,6 +554,7 @@ export default {
   },
   // Time Tracking
   timeTracking: {
+    noRecords: 'No attendance records found for this period',
     detailedBreakdown: 'Detailed Time Tracking Breakdown',
     title: 'Time Tracking Dashboard',
     overview: 'Overview',
@@ -795,7 +802,12 @@ export default {
     time: 'Time',
     hours: 'Hours',
     type: 'Type',
-    status: 'Status',
+    status: {
+      pending: 'Pending',
+      approved: 'Approved',
+      rejected: 'Rejected',
+      cancelled: 'Cancelled',
+    },
     actions: 'Actions',
     noEntries: 'No time entries found'
   },
@@ -1343,6 +1355,8 @@ export default {
     picker: 'Time picker'
   },
   common: {
+    refresh: 'Refresh',
+    retry: 'Try Again',
     results: 'Results',
     total: 'Total',
     update: 'Update',

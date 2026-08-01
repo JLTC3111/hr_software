@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Eye, Car, EyeOff, Lock, Mail, Building2, AlertCircle, X, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -7,7 +7,7 @@ import { disableDemoMode } from '../utils/demoHelper';
 import ThemeToggle from './themeToggle';
 import LanguageSelector from './LanguageSelector';
 import { useNavigate } from 'react-router-dom';
-import { LOGOUT_REASON_KEY } from '../config/requestTimeouts.js';
+import { LOGOUT_REASON_KEY, DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts.js';
 import { TextEffect, TextShimmer, Spotlight } from './motion-primitives';
 import { ShimmerButton } from './ui/shimmer-button';
 import { ShinyButton } from './ui/shiny-button';
@@ -20,8 +20,8 @@ const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
 
 const Login = () => {
-  const { login, loginWithGithub, loginAsDemo, forgotPassword, isAuthenticated, user, loading } = useAuth();
-  const { isDarkMode, bg, text, input } = useTheme();
+  const { login, loginAsDemo, forgotPassword, isAuthenticated, user, loading } = useAuth();
+  const { isDarkMode, text } = useTheme();
   const { t, currentLanguage } = useLanguage();
   const navigate = useNavigate();
   
@@ -35,7 +35,6 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(true); // Default to true for better UX
   const [isLoading, setIsLoading] = useState(false);
   const [isDemoLoading, setIsDemoLoading] = useState(false);
-  const [isGithubLoading, setIsGithubLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [showIdleLogoutNotice, setShowIdleLogoutNotice] = useState(false);
   const [titleReady, setTitleReady] = useState(false);
@@ -78,6 +77,17 @@ const Login = () => {
     }
   }, []);
 
+  // The notice reports something that happened before this page loaded, so it
+  // is stale the moment the visitor starts interacting. Switching language is
+  // exactly that signal — dismiss it rather than restate old news in the new
+  // locale. Ref-guarded so the initial render never clears a fresh notice.
+  const noticeLanguageRef = useRef(currentLanguage);
+  useEffect(() => {
+    if (noticeLanguageRef.current === currentLanguage) return;
+    noticeLanguageRef.current = currentLanguage;
+    setShowIdleLogoutNotice(false);
+  }, [currentLanguage]);
+
   useEffect(() => {
     const motionMq = window.matchMedia(REDUCED_MOTION_QUERY);
     const pointerMq = window.matchMedia(FINE_POINTER_QUERY);
@@ -102,12 +112,15 @@ const Login = () => {
   const [isSendingReset, setIsSendingReset] = useState(false);
 
   useEffect(() => {
-    console.log('🔍 Redirect condition check:', {
-      loading,
-      isAuthenticated,
-      userExists: !!user,
-    });
-  
+    if (import.meta.env.DEV) {
+      console.log('🔍 Redirect condition check:', {
+        loading,
+        isAuthenticated,
+        userExists: !!user,
+      });
+    }
+
+
     if (!loading && isAuthenticated && user) {
       console.log('✅ All conditions met - Redirecting to /dashboard');
       setIsLoading(false);
@@ -174,29 +187,15 @@ const Login = () => {
     }
   };
 
-  // If sign-in succeeds but profile/redirect stalls, unlock the form
+  // If sign-in succeeds but profile/redirect stalls, unlock the form.
+  // Must outlast the sign-in budget in AuthContext: unlocking earlier lets the
+  // user submit again while the first attempt is still waiting on GoTrue's auth
+  // lock, and the second attempt then queues behind the first.
   useEffect(() => {
     if (!isLoading) return undefined;
-    const timer = setTimeout(() => setIsLoading(false), 12000);
+    const timer = setTimeout(() => setIsLoading(false), DEFAULT_REQUEST_TIMEOUT + 20000);
     return () => clearTimeout(timer);
   }, [isLoading]);
-
-  const handleGithubLogin = async () => {
-    setLoginError('');
-    setIsGithubLoading(true);
-    
-    // Clear demo mode before attempting real login
-    disableDemoMode();
-    
-    const result = await loginWithGithub();
-    
-    if (!result.success) {
-      setLoginError(result.error || t('login.githubError', 'Failed to login with GitHub'));
-      setIsGithubLoading(false);
-    }
-    // Note: If successful, the browser will redirect to GitHub OAuth page
-    // The loading state will remain true until redirect happens
-  };
 
   const handleForgotPasswordClick = () => {
     setShowForgotPasswordModal(true);
@@ -535,35 +534,6 @@ const Login = () => {
               </span>
             </div>
           </div>
-
-          {/* GitHub OAuth Button - Hidden for now */}
-          {/* <button
-            type="button"
-            onClick={handleGithubLogin}
-            className={`w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 cursor-pointer ${
-              isDarkMode 
-                ? 'bg-gray-900 hover:bg-gray-600 text-white border border-gray-600' 
-                : 'bg-white hover:bg-gray-100 text-gray-900 border border-gray-900'
-            } ${(isLoading || isGithubLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
-            disabled={isLoading || isGithubLoading}
-          >
-            {isGithubLoading ? (
-              <>
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                <span>{t('login.redirecting', 'Redirecting to GitHub...')}</span>
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path fillRule="evenodd" clipRule="evenodd" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-                </svg>
-                <span>{t('login.continueWithGithub', 'Continue with GitHub')}</span>
-              </>
-            )}
-          </button> */}
 
           {/* Demo Mode Button */}
           <ShinyButton

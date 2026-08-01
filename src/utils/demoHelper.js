@@ -21,7 +21,7 @@ export const setEnableDemoRandomFaces = (value) => {
   DEMO_CONFIG.enableRandomFaces = v;
   try {
     localStorage.setItem(DEMO_RANDOM_FACES_KEY, v ? 'true' : 'false');
-  } catch (_e) {
+  } catch {
     // ignore
   }
 };
@@ -145,7 +145,7 @@ const readPhotoCache = () => {
   try {
     const raw = localStorage.getItem(DEMO_PHOTO_CACHE_KEY);
     return raw ? JSON.parse(raw) : {};
-  } catch (_e) {
+  } catch {
     return {};
   }
 };
@@ -153,7 +153,7 @@ const readPhotoCache = () => {
 const writePhotoCache = (cache) => {
   try {
     localStorage.setItem(DEMO_PHOTO_CACHE_KEY, JSON.stringify(cache));
-  } catch (_e) {
+  } catch {
     // ignore
   }
 };
@@ -164,7 +164,7 @@ const writePhotoCache = (cache) => {
  * options: { nat: 'us'|'gb'|..., gender: 'male'|'female' (optional) }
  * Returns: Promise<string> photoUrl or fallback identicon URL on error
  */
-export const fetchSeededRandomUserPhoto = async (seed, { nat, _gender } = {}) => {
+export const fetchSeededRandomUserPhoto = async (seed, { nat } = {}) => {
   if (!seed) return getDemoAvatarUrl(seed);
 
   const cache = readPhotoCache();
@@ -188,7 +188,7 @@ export const fetchSeededRandomUserPhoto = async (seed, { nat, _gender } = {}) =>
       writePhotoCache(cache);
       return photoUrl;
     }
-  } catch (_err) {
+  } catch {
     // fallback to identicon
     return getDemoAvatarUrl(seed);
   }
@@ -208,7 +208,7 @@ export const attachSeededRandomUserPhotos = (employees, opts = {}) => {
     try {
       const url = await fetchSeededRandomUserPhoto(emp.id || emp.employee_id || emp.employeeId, opts);
       emp.photo = url;
-    } catch (_e) {
+    } catch {
       emp.photo = getDemoAvatarUrl(emp.id || emp.employee_id || emp.employeeId);
     }
     return emp;
@@ -780,7 +780,7 @@ export const getDemoEmployees = () => {
       ...emp,
       photo: photoCache[emp.id] || emp.photo
     }));
-  } catch (_e) {
+  } catch {
     return merged;
   }
 };

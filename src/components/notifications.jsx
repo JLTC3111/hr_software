@@ -16,7 +16,7 @@ import { SlidingNumber, useNumberReplay } from './motion-primitives';
 import { PageLiveClock } from './ui/page-live-clock';
 import { cn } from '@/lib/utils';
 
-function NotificationStatCard({ label, value, isDarkMode, border, text }) {
+function NotificationStatCard({ label, value, border, text }) {
   const { replayToken, bump } = useNumberReplay();
   return (
     <div

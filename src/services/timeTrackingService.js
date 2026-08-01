@@ -1,5 +1,4 @@
 import { supabase } from '../config/supabaseClient';
-import { withTimeout } from '../utils/supabaseTimeout';
 import { isDemoMode, MOCK_EMPLOYEES, MOCK_TIME_ENTRIES, getDemoLeaveRequests, addDemoLeaveRequest, calculateDaysBetween, getDemoTimeEntries, addDemoTimeEntry, getDemoEmployeeById } from '../utils/demoHelper';
 import { saveDemoBlob } from '../utils/demoStorage';
 import { toExtendedInterval, extendedIntervalsOverlap } from '../utils/timeEntryHelpers.js';
@@ -528,7 +527,7 @@ export const getAllTimeEntriesDetailed = async (filters = {}) => {
   }
 
   try {
-    console.log('🔧 [Service] getAllTimeEntriesDetailed called with filters:', filters);
+    if (import.meta.env.DEV) console.log('🔧 [Service] getAllTimeEntriesDetailed called with filters:', filters);
     
     let query = supabase
       .from('time_entries_detailed')
@@ -545,7 +544,7 @@ export const getAllTimeEntriesDetailed = async (filters = {}) => {
       query = query.lte('date', filters.endDate);
     }
 
-    console.log('🔧 [Service] Executing query on time_entries_detailed view...');
+    if (import.meta.env.DEV) console.log('🔧 [Service] Executing query on time_entries_detailed view...');
     const { data, error } = await query;
 
     if (error) {
@@ -558,9 +557,9 @@ export const getAllTimeEntriesDetailed = async (filters = {}) => {
       throw error;
     }
     
-    console.log('🔧 [Service] Query successful. Rows returned:', data?.length || 0);
+    if (import.meta.env.DEV) console.log('🔧 [Service] Query successful. Rows returned:', data?.length || 0);
     if (data && data.length > 0) {
-      console.log('🔧 [Service] Sample row:', data[0]);
+      if (import.meta.env.DEV) console.log('🔧 [Service] Sample row:', data[0]);
     }
     
     return { success: true, data };
@@ -1078,36 +1077,46 @@ export const createLeaveRequest = async (leaveData) => {
 
 const LEAVE_LIST_COLUMNS = 'id,employee_id,start_date,end_date,leave_type,status,days_count,submitted_at,approved_by,approved_at,rejection_reason,reason';
 
-const filterLeaveRequestsByRange = (requests, filters = {}) => {
-  let filtered = requests;
+/**
+ * Resolve the date window a leave-request query is scoped to.
+ * Returns null when the caller asked for no scoping at all.
+ */
+const resolveLeaveRange = (filters = {}) => {
   if (filters.rangeStart && filters.rangeEnd) {
-    filtered = filtered.filter((r) => {
-      const start = (r.start_date || '').slice(0, 10);
-      const end = (r.end_date || r.start_date || '').slice(0, 10);
-      return start <= filters.rangeEnd && end >= filters.rangeStart;
-    });
-  } else if (filters.year) {
-    const yearStart = `${filters.year}-01-01`;
-    const yearEnd = `${filters.year}-12-31`;
-    filtered = filtered.filter((r) => {
-      const start = (r.start_date || '').slice(0, 10);
-      const end = (r.end_date || r.start_date || '').slice(0, 10);
-      return start <= yearEnd && end >= yearStart;
-    });
+    return { start: filters.rangeStart, end: filters.rangeEnd };
   }
-  return filtered;
+  if (filters.year) {
+    return { start: `${filters.year}-01-01`, end: `${filters.year}-12-31` };
+  }
+  return null;
+};
+
+const filterLeaveRequestsByRange = (requests, filters = {}) => {
+  const range = resolveLeaveRange(filters);
+  if (!range) return requests;
+
+  return requests.filter((r) => {
+    if (filters.alwaysIncludeStatus && r.status === filters.alwaysIncludeStatus) return true;
+    const start = (r.start_date || '').slice(0, 10);
+    const end = (r.end_date || r.start_date || '').slice(0, 10);
+    return start <= range.end && end >= range.start;
+  });
 };
 
 const applyLeaveRangeFilter = (query, filters = {}) => {
-  if (filters.rangeStart && filters.rangeEnd) {
-    return query.lte('start_date', filters.rangeEnd).gte('end_date', filters.rangeStart);
+  const range = resolveLeaveRange(filters);
+  if (!range) return query;
+
+  // `alwaysIncludeStatus` widens the window to also admit requests in that
+  // status whatever their dates — used so pending approvals dated outside the
+  // selected period never drop out of an approver's queue.
+  if (filters.alwaysIncludeStatus) {
+    return query.or(
+      `and(start_date.lte.${range.end},end_date.gte.${range.start}),status.eq.${filters.alwaysIncludeStatus}`
+    );
   }
-  if (filters.year) {
-    return query
-      .lte('start_date', `${filters.year}-12-31`)
-      .gte('end_date', `${filters.year}-01-01`);
-  }
-  return query;
+
+  return query.lte('start_date', range.end).gte('end_date', range.start);
 };
 
 /**
@@ -1385,10 +1394,10 @@ export const updateOvertimeStatus = async (logId, status, approverId) => {
    
 const calculateSummaryFromRawData = async (employeeId, month, year) => {
   try {
-    console.log('🔧 [Service] Calculating summary for employee:', employeeId, 'month:', month, 'year:', year);
+    if (import.meta.env.DEV) console.log('🔧 [Service] Calculating summary for employee:', employeeId, 'month:', month, 'year:', year);
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
     const endDate = new Date(year, month, 0).toISOString().split('T')[0];
-    console.log('🔧 [Service] Date range:', startDate, 'to', endDate);
+    if (import.meta.env.DEV) console.log('🔧 [Service] Date range:', startDate, 'to', endDate);
     
     // Get time entries (INCLUDE PENDING AND APPROVED)
     const { data: timeEntries, error: timeError } = await supabase
@@ -1399,7 +1408,7 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
       .lte('date', endDate)
       .in('status', ['pending', 'approved']);  // CHANGED: include pending
     
-    console.log('🔧 [Service] Time entries found:', timeEntries?.length || 0);
+    if (import.meta.env.DEV) console.log('🔧 [Service] Time entries found:', timeEntries?.length || 0);
     if (timeError) throw timeError;
     
     // Get leave requests (only approved)
@@ -1587,12 +1596,12 @@ export const getTimeTrackingSummary = async (employeeId, month, year) => {
   }
 
   try {
-    console.log('🔧 [Service] getTimeTrackingSummary called for employee:', employeeId);
+    if (import.meta.env.DEV) console.log('🔧 [Service] getTimeTrackingSummary called for employee:', employeeId);
     // Always calculate from time_entries so hour_type=overtime is counted correctly.
     // The summary table can lag behind or use older aggregation that dropped overtime.
-    console.log('🔧 [Service] Calculating summary from time_entries...');
+    if (import.meta.env.DEV) console.log('🔧 [Service] Calculating summary from time_entries...');
     const calculatedData = await calculateSummaryFromRawData(employeeId, month, year);
-    console.log('🔧 [Service] Calculated data:', calculatedData);
+    if (import.meta.env.DEV) console.log('🔧 [Service] Calculated data:', calculatedData);
     return { success: true, data: calculatedData };
   } catch (error) {
     console.error('🔧 [Service] Error fetching time tracking summary:', error);
@@ -1610,7 +1619,7 @@ export const getTimeTrackingSummary = async (employeeId, month, year) => {
       }
       const calculatedData = await calculateSummaryFromRawData(employeeId, month, year);
       return { success: true, data: calculatedData };
-    } catch (calcError) {
+    } catch {
       // Ultimate fallback - return zeros
       return { 
         success: true,
@@ -1638,7 +1647,7 @@ export const updateSummary = async (employeeId, month, year) => {
   }
 
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .rpc('update_time_tracking_summary', {
         p_employee_id: toEmployeeId(employeeId),
         p_month: month,
@@ -1843,14 +1852,18 @@ const calculateAllSummariesFromRawData = async (month, year, employees = []) => 
   const timeByEmployee = groupByEmployee(timeResult.data);
   const leaveByEmployee = groupByEmployee(leaveResult.data);
   const overtimeByEmployee = groupByEmployee(overtimeResult.data);
-  const employeeIds = new Set([
-    ...employees.map((emp) => String(emp.id)),
-    ...timeByEmployee.keys(),
-    ...leaveByEmployee.keys(),
-    ...overtimeByEmployee.keys(),
-  ]);
 
   const employeeById = new Map(employees.map((emp) => [String(emp.id), emp]));
+  // A supplied roster defines the cohort — Overview passes the active employees
+  // and expects exactly those rows, including anyone with no entries this month.
+  // Without a roster, fall back to whoever the raw data mentions.
+  const employeeIds = employeeById.size
+    ? new Set(employeeById.keys())
+    : new Set([
+      ...timeByEmployee.keys(),
+      ...leaveByEmployee.keys(),
+      ...overtimeByEmployee.keys(),
+    ]);
   return Array.from(employeeIds).map((employeeId) => ({
     employee: employeeById.get(employeeId) || { id: employeeId, name: 'Unknown' },
     data: aggregateEmployeeSummary(
@@ -1909,18 +1922,30 @@ export const getOverviewEmployeeSummaries = async (month, year, employees = []) 
   }
 
   try {
-    const summaryResult = await getAllEmployeesSummary(month, year);
-    if (summaryResult.success && summaryRowsHaveUsableData(summaryResult.data, employees.length)) {
-      return {
-        success: true,
-        data: mergeSummaryRowsWithEmployees(summaryResult.data, employees, month, year),
-      };
-    }
-
+    // Computed from time_entries rather than read from time_tracking_summary.
+    // That table's overtime columns are filled from overtime_logs alone, but the
+    // app records overtime as time_entries rows (hour_type weekend/overtime/
+    // bonus/holiday), so its overtime_hours reads 0 for practically every row.
+    // getTimeTrackingSummary already made this same call for the single-employee
+    // Summary tab; doing it here keeps the two tabs agreeing on one employee.
     const calculated = await calculateAllSummariesFromRawData(month, year, employees);
     return { success: true, data: calculated };
   } catch (error) {
-    console.error('Error fetching overview employee summaries:', error);
+    console.error('Error calculating overview summaries from time entries:', error);
+
+    // Degraded fallback: stored summary rows still give days/regular hours.
+    try {
+      const summaryResult = await getAllEmployeesSummary(month, year);
+      if (summaryResult.success && summaryRowsHaveUsableData(summaryResult.data, employees.length)) {
+        return {
+          success: true,
+          data: mergeSummaryRowsWithEmployees(summaryResult.data, employees, month, year),
+        };
+      }
+    } catch (fallbackError) {
+      console.error('Error reading stored summary rows:', fallbackError);
+    }
+
     return { success: false, error: error.message, data: [] };
   }
 };
@@ -2100,7 +2125,7 @@ export const getPendingApprovals = async () => {
   }
 
   try {
-    console.log('🔧 [Service] getPendingApprovals called');
+    if (import.meta.env.DEV) console.log('🔧 [Service] getPendingApprovals called');
     
     const { data, error } = await supabase
       .from('time_entries')
@@ -2119,7 +2144,7 @@ export const getPendingApprovals = async () => {
     const { isEmployeeActive } = await import('../utils/employeeStatus.js');
     const filtered = (data || []).filter((entry) => isEmployeeActive(entry.employee));
     
-    console.log('🔧 [Service] Pending approvals fetched:', filtered.length);
+    if (import.meta.env.DEV) console.log('🔧 [Service] Pending approvals fetched:', filtered.length);
     return { success: true, data: filtered };
   } catch (error) {
     console.error('🔧 [Service] Error fetching pending approvals:', error);

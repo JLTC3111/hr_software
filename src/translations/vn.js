@@ -189,6 +189,12 @@ export default {
   },
   // Dashboard
   dashboard: {
+    workforce: 'Nhân sự',
+    hours: 'Giờ',
+    leave: 'Nghỉ phép',
+    performance: 'Hiệu suất',
+    approvals: 'Phê duyệt',
+    total: 'Tổng',
     regularAndOvertimeByEmployee: 'Giờ Làm Thường & Giờ Làm Thêm',
     currentMonth: 'Tháng Hiện Tại',
     employeeLabel: 'Nhân Viên',
@@ -286,6 +292,13 @@ export default {
   },
   // Time Tracking
   timeTracking: {
+    noRecords: 'Không tìm thấy bản ghi chấm công nào cho kỳ này',
+    approve: 'Phê duyệt',
+    reject: 'Từ chối',
+    approveSuccess: 'Đã phê duyệt yêu cầu nghỉ phép',
+    rejectSuccess: 'Đã từ chối yêu cầu nghỉ phép',
+    actionError: 'Lỗi khi cập nhật yêu cầu nghỉ phép',
+    rejectReasonPrompt: 'Vui lòng nhập lý do từ chối (không bắt buộc):',
     on_leave: 'Đang Nghỉ Phép',
     detailedBreakdown: 'Phân Tích Chi Tiết Theo Dõi Thời Gian',
     title: 'Bảng Điều Khiển',
@@ -465,7 +478,12 @@ export default {
     phone: 'Điện thoại',
     startDate: 'Ngày bắt đầu',
     salary: 'Lương',
-    status: 'Trạng thái',
+    status: {
+      pending: 'Đang chờ',
+      approved: 'Đã phê duyệt',
+      rejected: 'Từ chối',
+      cancelled: 'Đã hủy',
+    },
     location: 'Địa điểm',
     performance: 'Hiệu suất',
     actions: 'Hành động',
@@ -1231,6 +1249,10 @@ export default {
     picker: 'Chọn giờ'
   },
   common: {
+    notAvailable: 'Không có',
+    status: 'Trạng thái',
+    refresh: 'Làm mới',
+    retry: 'Thử lại',
     viewDetails: 'Xem Chi Tiết',
     email: 'Email',
     phone: 'Điện Thoại',

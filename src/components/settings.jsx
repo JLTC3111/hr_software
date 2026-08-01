@@ -167,7 +167,7 @@ const Settings = () => {
           setSaveSuccess(true);
           setTimeout(() => setSaveSuccess(false), 3000);
         }
-      } catch (error) {
+      } catch {
         alert(t('settings.importError', 'Failed to import settings'));
       }
     };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Star, Sparkle, TrendingUp, Calendar, User, Award, Goal, ShieldEllipsis, MessageSquare, Plus, Edit, Eye, X, Save, ChevronRight, ChevronLeft, Trash2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -39,12 +39,14 @@ const PersonalGoals = ({ employees }) => {
   // Check if user can view other employees' performance
   const canViewAllEmployees = checkPermission('canViewReports');
 
-  const operationalEmployees = filterActiveEmployees(employees);
-
-  // Filter employees based on role
-  const availableEmployees = canViewAllEmployees
-    ? operationalEmployees
-    : operationalEmployees.filter(emp => String(emp.id) === String(user?.employeeId || user?.id));
+  // Memoized: availableEmployees feeds an effect dependency array below, and a
+  // fresh identity every render makes that effect re-run on every render.
+  const availableEmployees = useMemo(() => {
+    const operational = filterActiveEmployees(employees);
+    return canViewAllEmployees
+      ? operational
+      : operational.filter(emp => String(emp.id) === String(user?.employeeId || user?.id));
+  }, [employees, canViewAllEmployees, user?.employeeId, user?.id]);
 
   // Default the selected employee to the logged-in user's employee id (or user id)
   const defaultEmployeeId = user?.employeeId

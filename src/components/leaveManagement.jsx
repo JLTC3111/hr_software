@@ -60,8 +60,10 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
   const canManageLeave = canViewAll || checkPermission('canManageTimeTracking');
   const myEmployeeId = String(user?.employeeId || user?.id || '');
 
-  // Assign/create pickers and filters: active only
-  const pickerEmployees = filterActiveEmployees(employees);
+  // Assign/create pickers and filters: active only.
+  // Memoized so the array identity is stable for the child components it is
+  // handed to, instead of being rebuilt on every render.
+  const pickerEmployees = useMemo(() => filterActiveEmployees(employees), [employees]);
   // Name resolution for historical rows may still need inactive people
   const employeeDirectory = allEmployees?.length ? allEmployees : employees;
 

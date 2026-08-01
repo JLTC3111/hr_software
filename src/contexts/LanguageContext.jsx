@@ -42,7 +42,7 @@ export const LanguageProvider = ({ children }) => {
       try {
         const translationModule = await import(`../translations/${currentLanguage}.js`);
         setTranslations(translationModule.default);
-      } catch (_error) {
+      } catch {
         console.warn(`Failed to load translations for ${currentLanguage}, falling back to English`);
         if (currentLanguage !== 'en') {
           const englishModule = await import('../translations/en.js');

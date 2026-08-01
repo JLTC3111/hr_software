@@ -177,6 +177,12 @@ export default {
   },
   // Dashboard
   dashboard: {
+    workforce: '인력',
+    hours: '시간',
+    leave: '휴가',
+    performance: '성과',
+    approvals: '승인',
+    total: '합계',
     regularAndOvertimeByEmployee: '직원별 정규 및 초과 근무 시간',
     employeeLabel: '직원',
     currentMonth: '이번 달',
@@ -368,6 +374,13 @@ export default {
   },
   // Time Tracking
   timeTracking: {
+    noRecords: '이 기간에 대한 근태 기록이 없습니다',
+    approve: '승인',
+    reject: '거부',
+    approveSuccess: '휴가 신청이 승인되었습니다',
+    rejectSuccess: '휴가 신청이 거부되었습니다',
+    actionError: '휴가 신청 업데이트 중 오류가 발생했습니다',
+    rejectReasonPrompt: '거부 사유를 입력하세요 (선택 사항):',
     on_leave: '휴가 중',
     detailedBreakdown: '상세 근무 시간 추적 내역',
     title: '시간 추적 대시보드',
@@ -1015,6 +1028,10 @@ export default {
     picker: '시간 선택'
   },
   common: {
+    notAvailable: '해당 없음',
+    status: '상태',
+    refresh: '새로 고침',
+    retry: '다시 시도',
     email: '이메일',
     phone: '전화번호',
     results: '결과',

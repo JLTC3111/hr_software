@@ -748,6 +748,15 @@ export const NotificationProvider = ({ children }) => {
         }));
       }
 
+      // The pending-approval notice is regenerated from live data, so a plain
+      // delete would come straight back on the next sync. Record the dismissal.
+      if (removed?.metadata?.kind === 'pending_approvals') {
+        notificationService.rememberDismissedPendingApprovals(
+          user?.id,
+          removed.metadata.pendingCount ?? 0
+        );
+      }
+
       const result = await notificationService.deleteNotification(notificationId);
 
       if (!result.success) {
@@ -763,13 +772,25 @@ export const NotificationProvider = ({ children }) => {
 
       return result;
     },
-    [notifications, stats, showActionError, t]
+    [notifications, stats, showActionError, t, user?.id]
   );
 
   const deleteAllNotifications = useCallback(async () => {
     if (!user?.id) return { success: false, error: 'Not authenticated' };
 
     const snapshot = { notifications, stats };
+
+    // "Delete all" includes the derived pending-approval notice; remember that
+    // dismissal too, or it reappears alone moments later.
+    const pendingNotice = notifications.find(
+      (n) => n?.metadata?.kind === 'pending_approvals'
+    );
+    if (pendingNotice) {
+      notificationService.rememberDismissedPendingApprovals(
+        user.id,
+        pendingNotice.metadata.pendingCount ?? 0
+      );
+    }
 
     setNotifications([]);
     setStats(EMPTY_STATS);

@@ -119,7 +119,7 @@ export const UploadProvider = ({ children }) => {
    */
   const getActiveUploads = useCallback(() => {
     return Object.entries(uploads)
-      .filter(([_, upload]) => upload.status === 'uploading')
+      .filter(([, upload]) => upload.status === 'uploading')
       .map(([employeeId, upload]) => ({ employeeId, ...upload }));
   }, [uploads]);
 

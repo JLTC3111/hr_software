@@ -1,10 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CheckCircle, Circle, Edit2, Trash2, Plus, Calendar, User, Loader, Users } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import * as workloadService from '../services/workloadService.js';
-import * as flubber from 'flubber';
 import { getEmployeePositionI18nKey } from '../utils/employeePositionKey.js';
 import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription } from '../utils/demoHelper.js';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
@@ -22,245 +21,18 @@ import {
   filterActiveEmployees,
   filterInactiveEmployees,
 } from '../utils/employeeStatus.js';
+import { FlubberMorphIcon } from './ui/flubber-morph-icon.jsx';
 
-export const MiniFlubberAutoMorphCompleteTask = ({
-  size = 24,
-  className = '',
-  isDarkMode = false,
-  autoMorphInterval = 1000, 
-  morphDuration = 500, 
-}) => {
-  const [currentIconIndex, setCurrentIconIndex] = useState(0);
-  const [morphPaths, setMorphPaths] = useState([]);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [maxSegmentLength] = useState(2);
-  const iconRefs = useRef({});
-  const animationFrameRef = useRef(null);
-  const autoMorphTimerRef = useRef(null);
-
-  /** ---------------------------
-   * Dynamic Color Selection
-   ----------------------------*/
-  const getColor = (icon) => {
-    if (icon.status === 'approved') {
-      return isDarkMode ? 'text-green-400' : 'text-green-700';
-    }
-    if (icon.status === 'rejected') {
-      return isDarkMode ? 'text-red-400' : 'text-red-700';
-    }
-    if (icon.status === 'standard') {
-      return isDarkMode ? 'text-white' : 'text-black';
-    }
-    return isDarkMode ? 'text-white' : 'text-black';
-  };
-
-  /** Icon definitions */
-  const icons = [
-    { name: 'Circle', Icon: Circle, status: 'stanard' },
-    { name: 'CheckCircle', Icon: CheckCircle, status: 'standard' },
-  ];
-
-  /** Extract SVG paths for morphing */
-  const extractPathsFromIcon = (iconElement) => {
-    if (!iconElement) return [];
-    const svg = iconElement.querySelector('svg');
-    if (!svg) return [];
-
-    const elements = svg.querySelectorAll(
-      'path, circle, line, rect, polyline, polygon'
-    );
-
-    const paths = Array.from(elements)
-      .map((element) => {
-        if (element.tagName.toLowerCase() === 'path') {
-          return element.getAttribute('d');
-        }
-        return convertShapeToPath(element);
-      })
-      .filter(Boolean);
-
-    return paths;
-  };
-
-  /** Convert non-path shapes to path data */
-  const convertShapeToPath = (element) => {
-    const tag = element.tagName.toLowerCase();
-
-    if (tag === 'circle') {
-      const cx = parseFloat(element.getAttribute('cx'));
-      const cy = parseFloat(element.getAttribute('cy'));
-      const r = parseFloat(element.getAttribute('r'));
-      return `M ${cx - r},${cy} a ${r},${r} 0 1,0 ${r * 2},0 a ${r},${r} 0 1,0 ${-r * 2},0`;
-    }
-
-    if (tag === 'line') {
-      return `M ${element.getAttribute('x1')},${element.getAttribute(
-        'y1'
-      )} L ${element.getAttribute('x2')},${element.getAttribute('y2')}`;
-    }
-
-    if (tag === 'rect') {
-      const x = parseFloat(element.getAttribute('x') || 0);
-      const y = parseFloat(element.getAttribute('y') || 0);
-      const w = parseFloat(element.getAttribute('width'));
-      const h = parseFloat(element.getAttribute('height'));
-      return `M ${x},${y} L ${x + w},${y} L ${x + w},${y + h} L ${x},${y + h} Z`;
-    }
-
-    if (tag === 'polyline' || tag === 'polygon') {
-      const points = element.getAttribute('points').trim().split(/\s+/);
-      const cmds = points.map((p, i) => {
-        const [x, y] = p.split(',');
-        return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
-      });
-      if (tag === 'polygon') cmds.push('Z');
-      return cmds.join(' ');
-    }
-
-    return null;
-  };
-
-  /** Morph animation logic */
-  const morphToIndex = (targetIndex) => {
-    if (isAnimating || currentIconIndex === targetIndex) return;
-
-    setIsAnimating(true);
-
-    const currentPaths = extractPathsFromIcon(iconRefs.current[currentIconIndex]);
-    const nextPaths = extractPathsFromIcon(iconRefs.current[targetIndex]);
-
-    if (!currentPaths.length || !nextPaths.length) {
-      setCurrentIconIndex(targetIndex);
-      setIsAnimating(false);
-      return;
-    }
-
-    let interpolators;
-
-    try {
-      const maxPaths = Math.max(currentPaths.length, nextPaths.length);
-      const paddedCurrent = [...currentPaths];
-      const paddedNext = [...nextPaths];
-
-      while (paddedCurrent.length < maxPaths) {
-        paddedCurrent.push(paddedCurrent[paddedCurrent.length - 1]);
-      }
-      while (paddedNext.length < maxPaths) {
-        paddedNext.push(paddedNext[paddedNext.length - 1]);
-      }
-
-      interpolators = paddedCurrent.map((c, i) =>
-        flubber.interpolate(c, paddedNext[i], { maxSegmentLength })
-      );
-    } catch {
-      interpolators = [
-        flubber.interpolate(currentPaths.join(' '), nextPaths.join(' '), {
-          maxSegmentLength,
-        }),
-      ];
-    }
-
-    const start = Date.now();
-
-    const animate = () => {
-      const elapsed = Date.now() - start;
-      let t = Math.min(elapsed / morphDuration, 1);
-
-      // easeInOutQuad
-      t = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-
-      const morphed = interpolators.map((fn) => fn(t));
-      setMorphPaths(morphed);
-
-      if (elapsed < morphDuration) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-      } else {
-        setCurrentIconIndex(targetIndex);
-        setIsAnimating(false);
-        setMorphPaths([]);
-      }
-    };
-
-    animate();
-  };
-
-  /** Auto-morph to next icon */
-  const morphToNext = () => {
-    const nextIndex = (currentIconIndex + 1) % icons.length;
-    morphToIndex(nextIndex);
-  };
-
-  /** Set up auto-morphing interval */
-  useEffect(() => {
-    autoMorphTimerRef.current = setInterval(() => {
-      morphToNext();
-    }, autoMorphInterval);
-
-    return () => {
-      if (autoMorphTimerRef.current) {
-        clearInterval(autoMorphTimerRef.current);
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [currentIconIndex, autoMorphInterval]);
-
-  const CurrentIcon = icons[currentIconIndex].Icon;
-  const currentColor = getColor(icons[currentIconIndex]);
-
-  return (
-    <div className={`inline-block ${className}`}>
-      <div className="relative">
-        {isAnimating && morphPaths.length > 0 ? (
-          <svg
-            width={size}
-            height={size}
-            viewBox="0 0 24 24"
-            className={currentColor}
-            stroke="currentColor"
-            color="currentColor"
-          >
-            {morphPaths.map((d, i) => (
-              <path
-                key={i}
-                d={d}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ))}
-          </svg>
-        ) : (
-          <CurrentIcon
-            size={size}
-            className={currentColor}
-            stroke="currentColor"
-            strokeWidth={1.5}
-          />
-        )}
-      </div>
-
-      {/* Hidden icons for path extraction */}
-      <div
-        style={{
-          position: 'absolute',
-          visibility: 'hidden',
-          pointerEvents: 'none',
-          left: '-9999px',
-        }}
-      >
-        {icons.map((icon, i) => (
-          <div key={i} ref={(el) => (iconRefs.current[i] = el)}>
-            <icon.Icon size={24} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+export const MiniFlubberAutoMorphCompleteTask = (props) => (
+  <FlubberMorphIcon
+    icons={[Circle, CheckCircle]}
+    cacheKey="task-complete"
+    mode="once"
+    startDelay={1000}
+    morphDuration={500}
+    {...props}
+  />
+);
 
 const TaskListing = ({ employees, allEmployees }) => {
   const { user, checkPermission } = useAuth();
@@ -285,19 +57,22 @@ const TaskListing = ({ employees, allEmployees }) => {
   // Check if user can view all employees (admin/manager)
   const canViewAllEmployees = checkPermission('canViewReports');
   
-  // Active-only for assign pickers / individual selector
-  const operationalEmployees = filterActiveEmployees(employees);
+  // Active-only for assign pickers / individual selector.
+  // Memoized: this feeds an effect dependency array below, and a fresh identity
+  // every render makes that effect re-run on every render.
+  const availableEmployees = useMemo(() => {
+    const operational = filterActiveEmployees(employees);
+    return canViewAllEmployees
+      ? operational
+      : operational.filter(emp => String(emp.id) === String(user?.employeeId || user?.id));
+  }, [employees, canViewAllEmployees, user?.employeeId, user?.id]);
 
-  // Filter employees based on role
-  const availableEmployees = canViewAllEmployees 
-    ? operationalEmployees
-    : operationalEmployees.filter(emp => String(emp.id) === String(user?.employeeId || user?.id));
-
-  const orgCohortEmployees = canViewAllEmployees
-    ? (orgStatusSegment === 'inactive'
-        ? filterInactiveEmployees(employeeDirectory)
-        : filterActiveEmployees(employeeDirectory))
-    : availableEmployees;
+  const orgCohortEmployees = useMemo(() => {
+    if (!canViewAllEmployees) return availableEmployees;
+    return orgStatusSegment === 'inactive'
+      ? filterInactiveEmployees(employeeDirectory)
+      : filterActiveEmployees(employeeDirectory);
+  }, [canViewAllEmployees, orgStatusSegment, employeeDirectory, availableEmployees]);
 
   // Set selected employee - default to logged-in user's employeeId
   const [selectedEmployee, setSelectedEmployee] = useState(null);

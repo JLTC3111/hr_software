@@ -1,4 +1,3 @@
-import { time } from "framer-motion";
 export default {
   nav: {
     menu: 'Menú',
@@ -198,6 +197,12 @@ export default {
     settings: 'CONFIGURACIÓN'
   },
   dashboard: {
+    workforce: 'Plantilla',
+    hours: 'Horas',
+    leave: 'Ausencias',
+    performance: 'Rendimiento',
+    approvals: 'Aprobaciones',
+    total: 'Total',
     regularAndOvertimeByEmployee: 'Horas Regulares y Extra por Empleado',
     employeeLabel: 'Empleado',
     currentMonth: 'Mes Actual',
@@ -459,6 +464,13 @@ export default {
   },
   // Time Tracking
   timeTracking: {
+    noRecords: 'No se encontraron registros de asistencia para este período',
+    approve: 'Aprobar',
+    reject: 'Rechazar',
+    approveSuccess: 'Solicitud de ausencia aprobada',
+    rejectSuccess: 'Solicitud de ausencia rechazada',
+    actionError: 'Error al actualizar la solicitud de ausencia',
+    rejectReasonPrompt: 'Introduce un motivo del rechazo (opcional):',
     on_leave: 'En Permiso',
     detailedBreakdown: 'Desglose Detallado del Seguimiento de Tiempo',
     title: 'Tableau de bord de suivi du temps',
@@ -1147,6 +1159,10 @@ export default {
     picker: 'Selector de hora'
   },
   common: {
+    notAvailable: 'N/D',
+    status: 'Estado',
+    refresh: 'Actualizar',
+    retry: 'Intentar de nuevo',
     viewDetails: 'Ver Detalles',
     results: 'Resultados',
     update: 'Actualizar',

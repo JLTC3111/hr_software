@@ -177,6 +177,12 @@ export default {
   },
   // Dashboard
   dashboard: {
+    workforce: '従業員',
+    hours: '時間',
+    leave: '休暇',
+    performance: 'パフォーマンス',
+    approvals: '承認',
+    total: '合計',
     regularAndOvertimeByEmployee: '従業員別の通常勤務時間と残業時間',
     employeeLabel: '従業員',
     currentMonth: '今月のデータ',
@@ -365,6 +371,13 @@ export default {
   },
   // Time Tracking
   timeTracking: {
+    noRecords: 'この期間の勤怠記録はありません',
+    approve: '承認',
+    reject: '却下',
+    approveSuccess: '休暇申請を承認しました',
+    rejectSuccess: '休暇申請を却下しました',
+    actionError: '休暇申請の更新中にエラーが発生しました',
+    rejectReasonPrompt: '却下の理由を入力してください（任意）:',
     on_leave: '休暇中',
     detailedBreakdown: '詳細な勤怠管理の内訳',
     title: '勤怠管理ダッシュボード',
@@ -1016,6 +1029,11 @@ export default {
     picker: '時刻ピッカー'
   },
   common: {
+    notAvailable: '該当なし',
+    noData: 'データがありません',
+    refresh: '更新',
+    retry: '再試行',
+    error: 'エラーが発生しました',
     viewDetails: '詳細を見る',
     results: '結果',
     email: 'メール',

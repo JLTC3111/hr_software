@@ -15,6 +15,23 @@ export const isSessionAuthError = (error) => {
   );
 };
 
+// At most one forced logout may ever be pending. After an idle period several
+// pages fail their fetches at once, and each used to queue its own delayed
+// logout; the stragglers then fired while the user was already re-entering
+// credentials, taking GoTrue's lock and wiping storage mid-sign-in.
+let scheduledLogoutTimer = null;
+
+/**
+ * Drop any pending forced logout. Called when a fresh sign-in starts so a
+ * logout queued by the previous session cannot land on top of it.
+ */
+export const cancelScheduledLogout = () => {
+  if (scheduledLogoutTimer) {
+    clearTimeout(scheduledLogoutTimer);
+    scheduledLogoutTimer = null;
+  }
+};
+
 /**
  * Force logout when a fetch fails due to an invalid/expired session.
  * Returns true if the error was handled (caller should stop further error UI).
@@ -40,9 +57,12 @@ export const handleSessionAuthError = (error, { logout, silent = false, setFetch
   }
 
   sessionStorage.setItem(LOGOUT_REASON_KEY, 'session');
-  setTimeout(() => {
-    logout?.();
-  }, SESSION_LOGOUT_DELAY_MS);
+  if (!scheduledLogoutTimer) {
+    scheduledLogoutTimer = setTimeout(() => {
+      scheduledLogoutTimer = null;
+      logout?.();
+    }, SESSION_LOGOUT_DELAY_MS);
+  }
 
   return true;
 };

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useLanguage, SUPPORTED_LANGUAGES } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
-import { useAuth } from '../contexts/AuthContext';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription, getDemoGoalTitle, getDemoGoalDescription, getDemoTimeEntries } from '../utils/demoHelper';
 import { 
@@ -79,7 +78,7 @@ const loadPdfLibs = async () => {
 };
 
 const Reports = () => {
-  const { handleSessionAuthError, runGuarded } = useSessionGuard();
+  const { handleSessionAuthError } = useSessionGuard();
   const { t, currentLanguage } = useLanguage();
   const { isDarkMode } = useTheme();
   
@@ -824,7 +823,7 @@ const Reports = () => {
       t('timeTracking.clockOut', 'Clock Out'),
       t('timeTracking.amountHours', 'Hours'),
       t('timeTracking.hourType', 'Hour Type'),
-      t('timeTracking.status', 'Status'),
+      t('common.status', 'Status'),
       t('timeTracking.notes', 'Notes'),
       t('timeTracking.createdAt', 'Created At')
     ];
@@ -1112,12 +1111,6 @@ const Reports = () => {
         if (v == null) return '';
         const s = String(v);
         return (/^[=+\-@]/.test(s) ? "'" + s : s);
-      };
-
-      const toDate = (d) => {
-        if (!d) return null;
-        const dt = new Date(d);
-        return isNaN(dt.getTime()) ? null : dt;
       };
 
       const toNumber = (n, fallback = 0) => {

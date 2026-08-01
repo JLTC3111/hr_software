@@ -177,6 +177,12 @@ export default {
   },
   // Dashboard
   dashboard: {
+    workforce: 'กำลังคน',
+    hours: 'ชั่วโมง',
+    leave: 'การลา',
+    performance: 'ผลงาน',
+    approvals: 'การอนุมัติ',
+    total: 'รวม',
     regularAndOvertimeByEmployee: 'ชั่วโมงปกติ & ล่วงเวลาตามพนักงาน',
     employeeLabel: 'พนักงาน',
     currentMonth: 'ข้อมูลของเดือนนี้',
@@ -365,6 +371,13 @@ export default {
   },
   // Time Tracking
   timeTracking: {
+    noRecords: 'ไม่พบบันทึกการเข้างานสำหรับช่วงเวลานี้',
+    approve: 'อนุมัติ',
+    reject: 'ปฏิเสธ',
+    approveSuccess: 'อนุมัติคำขอลาแล้ว',
+    rejectSuccess: 'ปฏิเสธคำขอลาแล้ว',
+    actionError: 'เกิดข้อผิดพลาดในการอัปเดตคำขอลา',
+    rejectReasonPrompt: 'โปรดระบุเหตุผลในการปฏิเสธ (ไม่บังคับ):',
     on_leave: 'ลา',
     detailedBreakdown: 'รายละเอียดการติดตามเวลาอย่างละเอียด',
     title: 'แดชบอร์ดการติดตามเวลา',
@@ -1051,6 +1064,10 @@ export default {
     picker: 'ตัวเลือกเวลา'
   },
   common: {
+    notAvailable: 'ไม่มีข้อมูล',
+    status: 'สถานะ',
+    refresh: 'รีเฟรช',
+    retry: 'ลองอีกครั้ง',
     viewDetails: 'ดูรายละเอียด',
     email: 'อีเมล',
     phone: 'โทรศัพท์',

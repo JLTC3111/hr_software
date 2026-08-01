@@ -11,7 +11,6 @@ const DotField = memo(({
   bulgeOnly = true,
   bulgeStrength = 78,
   glowRadius = 120,
-  sparkle = false,
   waveAmplitude = 2,
   waveSpeed = 0.025,
   waveFrequency = 0.03,

@@ -9,7 +9,7 @@ import { supabase } from '../config/supabaseClient';
 const ResetPassword = () => {
   const navigate = useNavigate();
   const { resetPassword } = useAuth();
-  const { isDarkMode, bg, text, toggleTheme } = useTheme();
+  const { isDarkMode, text, toggleTheme } = useTheme();
   const { language, changeLanguage, t } = useLanguage();
 
   const [newPassword, setNewPassword] = useState('');

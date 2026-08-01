@@ -172,7 +172,7 @@ const FallingText = ({
             });
             Matter.Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.08);
           });
-        } catch (_err) {
+        } catch {
           // ignore if engine cleared
         }
       }, preFallDelay);
@@ -210,7 +210,7 @@ const FallingText = ({
             // slight reduction in air friction to allow smoother travel
             body.frictionAir = 0.02;
           });
-        } catch (_err) {
+        } catch {
           // ignore if engine cleared
         }
       }, antiGravityDelay);

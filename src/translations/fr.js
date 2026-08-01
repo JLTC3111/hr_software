@@ -178,6 +178,12 @@ export default {
   },
   // Dashboard
   dashboard: {
+    workforce: 'Effectif',
+    hours: 'Heures',
+    leave: 'Congés',
+    performance: 'Performance',
+    approvals: 'Approbations',
+    total: 'Total',
     regularAndOvertimeByEmployee: 'Heures Régulières et Supplémentaires par Employé',
     employeeLabel: 'Employé',
     currentMonth: 'Mois Actuel',
@@ -347,6 +353,13 @@ export default {
   },
   // Time Tracking
   timeTracking: {
+    noRecords: 'Aucun enregistrement de présence pour cette période',
+    approve: 'Approuver',
+    reject: 'Refuser',
+    approveSuccess: 'Demande de congé approuvée',
+    rejectSuccess: 'Demande de congé refusée',
+    actionError: 'Erreur lors de la mise à jour de la demande de congé',
+    rejectReasonPrompt: 'Veuillez indiquer un motif de refus (facultatif) :',
     on_leave: 'En congé',
     detailedBreakdown: 'Répartition détaillée du suivi du temps',
     title: 'Tableau de bord de suivi du temps',
@@ -1135,6 +1148,9 @@ export default {
     picker: 'Sélecteur d\'heure'
   },
   common: {
+    notAvailable: 'N/D',
+    refresh: 'Actualiser',
+    retry: 'Réessayer',
     results: 'résultats',
     update: 'Mettre à jour',
     updating: 'Mise à jour...',

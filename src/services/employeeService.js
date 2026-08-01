@@ -1071,9 +1071,9 @@ export const deleteEmployeePdf = async (employeeId, pdfPath) => {
   if (isDemoMode()) {
     try {
       const demoKey = pdfPath || `demo_employee_pdf_${toEmployeeId(employeeId)}`;
-      try { localStorage.removeItem(demoKey); } catch (_e) { /* ignore */ }
-      try { await deleteDemoPdf(toEmployeeId(employeeId)); } catch (_e) { /* ignore */ }
-      try { updateDemoEmployee(toEmployeeId(employeeId), { pdf_document_url: null }); } catch (_uerr) { /* ignore */ }
+      try { localStorage.removeItem(demoKey); } catch { /* ignore */ }
+      try { await deleteDemoPdf(toEmployeeId(employeeId)); } catch { /* ignore */ }
+      try { updateDemoEmployee(toEmployeeId(employeeId), { pdf_document_url: null }); } catch { /* ignore */ }
       return { success: true };
     } catch (err) {
       console.error('❌ Error removing demo PDF from storage:', err);
