@@ -37,7 +37,7 @@ const Login = () => {
   const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [isGithubLoading, setIsGithubLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
-  const [idleLogoutNotice, setIdleLogoutNotice] = useState('');
+  const [showIdleLogoutNotice, setShowIdleLogoutNotice] = useState(false);
   const [titleReady, setTitleReady] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(
     () => typeof window !== 'undefined' && window.matchMedia(REDUCED_MOTION_QUERY).matches
@@ -71,12 +71,12 @@ const Login = () => {
   useEffect(() => {
     const reason = sessionStorage.getItem(LOGOUT_REASON_KEY);
     if (reason === 'idle' || reason === 'session') {
-      setIdleLogoutNotice(
-        t('login.idleLogoutMessage', 'You were signed out after a period of inactivity. Please sign in again.')
-      );
+      // Store the notice state, not a translated sentence. Resolving the copy
+      // during render keeps it in sync when the login language is changed.
+      setShowIdleLogoutNotice(true);
       sessionStorage.removeItem(LOGOUT_REASON_KEY);
     }
-  }, [t]);
+  }, []);
 
   useEffect(() => {
     const motionMq = window.matchMedia(REDUCED_MOTION_QUERY);
@@ -347,10 +347,15 @@ const Login = () => {
             </TextShimmer>
           </div>
 
-          {idleLogoutNotice && (
+          {showIdleLogoutNotice && (
             <div className={`relative mb-6 p-3 ${isDarkMode ? 'bg-amber-900/30 border-amber-700 text-amber-200' : 'bg-amber-50 border-amber-300 text-amber-900'} border rounded-lg flex items-center space-x-2`} role="status">
               <AlertCircle className="w-5 h-5 shrink-0" />
-              <span className="text-sm">{idleLogoutNotice}</span>
+              <span className="text-sm">
+                {t(
+                  'login.idleLogoutMessage',
+                  'You were signed out after a period of inactivity. Please sign in again.'
+                )}
+              </span>
             </div>
           )}
 
