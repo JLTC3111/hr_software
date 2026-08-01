@@ -26,6 +26,7 @@ import {
   deleteTranslation,
   fetchLocaleTranslations,
   fetchRecordTranslations,
+  fetchTranslationCoverage,
   fetchTranslatableRecords,
   normalizeSource,
   saveTranslationBatch,
@@ -59,7 +60,41 @@ import { isTranslationEditor } from '../utils/translationAccess';
 const isStale = (entry, storedSource) =>
   Boolean(storedSource) && normalizeSource(storedSource) !== entry.sourceText;
 
-const STATUS_FILTERS = ['all', 'untranslated', 'translated', 'stale'];
+const LEFT_PANEL_WIDTH_KEY = 'translation-studio-left-panel-width';
+const DEFAULT_LEFT_PANEL_WIDTH = 320;
+const MIN_LEFT_PANEL_WIDTH = 260;
+const MAX_LEFT_PANEL_WIDTH = 560;
+
+const fieldFilterKey = (entityType, field) => `${entityType}:${field}`;
+
+const allFieldFilters = () => new Set(
+  ENTITY_TYPES.flatMap((entityType) =>
+    TRANSLATABLE_ENTITIES[entityType].fields.map((field) => fieldFilterKey(entityType, field))
+  )
+);
+
+const initialLeftPanelWidth = () => {
+  if (typeof localStorage === 'undefined') return DEFAULT_LEFT_PANEL_WIDTH;
+  try {
+    const raw = localStorage.getItem(LEFT_PANEL_WIDTH_KEY);
+    if (raw == null) return DEFAULT_LEFT_PANEL_WIDTH;
+    const saved = Number(raw);
+    return Number.isFinite(saved)
+      ? Math.min(MAX_LEFT_PANEL_WIDTH, Math.max(MIN_LEFT_PANEL_WIDTH, saved))
+      : DEFAULT_LEFT_PANEL_WIDTH;
+  } catch {
+    return DEFAULT_LEFT_PANEL_WIDTH;
+  }
+};
+
+const persistLeftPanelWidth = (width) => {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(LEFT_PANEL_WIDTH_KEY, String(Math.round(width)));
+  } catch {
+    /* private browsing / disabled storage */
+  }
+};
 
 const TranslationStudio = () => {
   const { t, currentLanguage, refreshManualTranslations } = useLanguage();
@@ -77,8 +112,14 @@ const TranslationStudio = () => {
 
   // ---- filters --------------------------------------------------------------
   const [sources, setSources] = useState(() => new Set(ENTITY_TYPES));
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedFields, setSelectedFields] = useState(allFieldFilters);
   const [query, setQuery] = useState('');
+
+  // ---- layout ---------------------------------------------------------------
+  const [leftPanelWidth, setLeftPanelWidth] = useState(initialLeftPanelWidth);
+  const [isResizingLeftPanel, setIsResizingLeftPanel] = useState(false);
+  const leftPanelRef = useRef(null);
+  const leftPanelWidthRef = useRef(leftPanelWidth);
 
   // ---- selection & editor ---------------------------------------------------
   const [selectedKey, setSelectedKey] = useState(null);
@@ -99,8 +140,6 @@ const TranslationStudio = () => {
   // Coverage across the whole queue, keyed `entityType:entityId:field` →
   // Set(locale). Drives the per-row badges without a request per row.
   const [coverage, setCoverage] = useState(new Map());
-  // Keys whose stored translations were written against older source text.
-  const [staleKeys, setStaleKeys] = useState(new Set());
 
   const feedbackTimer = useRef(null);
 
@@ -117,6 +156,48 @@ const TranslationStudio = () => {
 
   useEffect(() => () => clearTimeout(feedbackTimer.current), []);
 
+  useEffect(() => {
+    leftPanelWidthRef.current = leftPanelWidth;
+  }, [leftPanelWidth]);
+
+  useEffect(() => {
+    if (!isResizingLeftPanel || typeof window === 'undefined') return undefined;
+
+    const panelLeft = leftPanelRef.current?.getBoundingClientRect().left;
+    if (!Number.isFinite(panelLeft)) return undefined;
+
+    const previousCursor = document.body.style.cursor;
+    const previousUserSelect = document.body.style.userSelect;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const handlePointerMove = (event) => {
+      const viewportLimit = Math.max(MIN_LEFT_PANEL_WIDTH, window.innerWidth - 440);
+      const next = Math.min(
+        MAX_LEFT_PANEL_WIDTH,
+        viewportLimit,
+        Math.max(MIN_LEFT_PANEL_WIDTH, event.clientX - panelLeft)
+      );
+      leftPanelWidthRef.current = next;
+      setLeftPanelWidth(next);
+    };
+
+    const handlePointerUp = () => {
+      persistLeftPanelWidth(leftPanelWidthRef.current);
+      setIsResizingLeftPanel(false);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp, { once: true });
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      document.body.style.cursor = previousCursor;
+      document.body.style.userSelect = previousUserSelect;
+    };
+  }, [isResizingLeftPanel]);
+
   // ---------------------------------------------------------------------------
   // Queue + coverage
   // ---------------------------------------------------------------------------
@@ -124,9 +205,9 @@ const TranslationStudio = () => {
     setLoading(true);
     setLoadError('');
 
-    const [records, ...localeRows] = await Promise.all([
+    const [records, translations] = await Promise.all([
       fetchTranslatableRecords(),
-      ...locales.map((locale) => fetchLocaleTranslations(locale)),
+      fetchTranslationCoverage(),
     ]);
 
     if (!records.success) {
@@ -136,41 +217,34 @@ const TranslationStudio = () => {
       return;
     }
 
-    // Current source text per key, so a stored translation can be compared
-    // against what the record actually says today.
-    const sourceByKey = new Map(records.data.map((entry) => [entry.key, entry.sourceText]));
+    // Never turn a failed coverage read into a plausible-looking 0/N or stale
+    // fraction. The translations table being absent has its own configuration
+    // warning; every other failure makes the queue unavailable until refreshed.
+    if (!translations.success && !translations.notConfigured) {
+      setLoadError(translations.error || 'coverage-load-failed');
+      setEntries([]);
+      setLoading(false);
+      return;
+    }
 
     const map = new Map();
-    const stale = new Set();
 
-    localeRows.forEach((result, index) => {
-      if (!result.success) return;
-      const locale = locales[index];
-      (result.data || []).forEach((row) => {
-        if (!(row.body || '').trim()) return;
-        const key = `${row.entity_type}:${row.entity_id}:${row.field}`;
-        if (!map.has(key)) map.set(key, new Set());
-        map.get(key).add(locale);
-
-        const current = sourceByKey.get(key);
-        // Only flag rows still in the queue; a key with no current source has
-        // had its record emptied or deleted, which is a different problem.
-        if (current != null && normalizeSource(row.source_text) !== current) {
-          stale.add(key);
-        }
-      });
+    (translations.data || []).forEach((row) => {
+      if (!(row.body || '').trim()) return;
+      const key = `${row.entity_type}:${row.entity_id}:${row.field}`;
+      if (!map.has(key)) map.set(key, new Set());
+      map.get(key).add(row.locale);
     });
 
     setEntries(records.data);
     setCoverage(map);
-    setStaleKeys(stale);
     // The queue reads the four source tables, which exist regardless; only the
     // translations table depends on migration 018. So the Studio can be fully
     // populated and still have nowhere to save to — say so explicitly rather
     // than letting the first Save fail.
     setStoreReady(isTranslationStoreAvailable());
     setLoading(false);
-  }, [locales]);
+  }, []);
 
   useEffect(() => {
     // Non-admins get the access-denied panel, so the queue — four table scans —
@@ -185,13 +259,10 @@ const TranslationStudio = () => {
   // ---------------------------------------------------------------------------
   // Filtering
   // ---------------------------------------------------------------------------
-  /**
-   * Everything except the source checkboxes. Split out so the per-source counts
-   * can answer "how many would this source contribute right now" — which is
-   * what makes them fall as work gets done, instead of showing a fixed total
-   * that never moves.
-   */
+  /** Everything except the source checkboxes. */
   const matchesFilters = useCallback((entry) => {
+    if (!selectedFields.has(fieldFilterKey(entry.entityType, entry.field))) return false;
+
     const needle = query.trim().toLowerCase();
 
     if (needle) {
@@ -199,19 +270,8 @@ const TranslationStudio = () => {
       if (!haystack.includes(needle)) return false;
     }
 
-    if (statusFilter === 'all') return true;
-
-    const covered = coverage.get(entry.key);
-    // "Translated" means every language other than the one the app is currently
-    // showing has something — a partial row still needs work, so grouping it
-    // with the finished ones would hide it from the queue.
-    const done = covered && covered.size >= locales.length - 1;
-
-    if (statusFilter === 'untranslated') return !covered || covered.size === 0;
-    if (statusFilter === 'translated') return Boolean(done);
-    if (statusFilter === 'stale') return staleKeys.has(entry.key);
     return true;
-  }, [query, statusFilter, coverage, staleKeys, locales.length]);
+  }, [query, selectedFields]);
 
   const visible = useMemo(
     () => entries.filter((entry) => sources.has(entry.entityType) && matchesFilters(entry)),
@@ -219,28 +279,48 @@ const TranslationStudio = () => {
   );
 
   /**
-   * Per-source counts, and how many of each are fully covered.
+   * Per-source record counts, and how many records are fully covered.
    *
-   * `matching` respects the active status filter and search, so translating an
-   * item under the "untranslated" filter visibly decrements its source. `done`
-   * is filter-independent — it is the standing progress figure, and it has to
-   * keep counting up even while you are looking at a filtered subset.
+   * The queue itself is one row per non-empty field, but the Sources section is
+   * about HR records. Sets keep a task with four populated fields from being
+   * reported as four tasks. A record is complete only when every populated
+   * translatable field has all target locales. Source freshness is separate
+   * metadata and must not make an otherwise complete record look untranslated.
    */
   const sourceCounts = useMemo(() => {
     const out = {};
-    ENTITY_TYPES.forEach((entityType) => { out[entityType] = { matching: 0, done: 0, total: 0 }; });
+    const entriesByRecord = new Map();
+    const totalRecords = new Map();
+
+    ENTITY_TYPES.forEach((entityType) => {
+      out[entityType] = { done: 0, total: 0 };
+      totalRecords.set(entityType, new Set());
+    });
 
     entries.forEach((entry) => {
-      const bucket = out[entry.entityType];
-      if (!bucket) return;
-      bucket.total += 1;
-      if (matchesFilters(entry)) bucket.matching += 1;
-      const covered = coverage.get(entry.key);
-      if (covered && covered.size >= locales.length - 1) bucket.done += 1;
+      if (!out[entry.entityType]) return;
+      totalRecords.get(entry.entityType).add(entry.entityId);
+
+      const key = `${entry.entityType}:${entry.entityId}`;
+      if (!entriesByRecord.has(key)) entriesByRecord.set(key, []);
+      entriesByRecord.get(key).push(entry);
+    });
+
+    ENTITY_TYPES.forEach((entityType) => {
+      out[entityType].total = totalRecords.get(entityType).size;
+
+      totalRecords.get(entityType).forEach((entityId) => {
+        const recordEntries = entriesByRecord.get(`${entityType}:${entityId}`) || [];
+        const complete = recordEntries.length > 0 && recordEntries.every((entry) => {
+          const covered = coverage.get(entry.key);
+          return covered && covered.size >= locales.length - 1;
+        });
+        if (complete) out[entityType].done += 1;
+      });
     });
 
     return out;
-  }, [entries, matchesFilters, coverage, locales.length]);
+  }, [entries, coverage, locales.length]);
 
   const selected = useMemo(
     () => visible.find((e) => e.key === selectedKey) || entries.find((e) => e.key === selectedKey) || null,
@@ -359,7 +439,11 @@ const TranslationStudio = () => {
   const runBulkTranslate = useCallback(async ({ overwrite }) => {
     if (!selected) return;
 
-    const targets = locales.filter((locale) => locale !== currentLanguage);
+    // The UI language is not necessarily the language of the source text. Keep
+    // every locale in the pass so switching the app to Vietnamese cannot hide
+    // Vietnamese while translating an English task. The detected source locale
+    // naturally produces unchanged output and is skipped below.
+    const targets = locales;
     const wouldReplace = overwrite
       ? targets.filter((locale) => (drafts[locale]?.body || '').trim()).length
       : 0;
@@ -425,7 +509,6 @@ const TranslationStudio = () => {
     let cancelled = false;
     Promise.all(
       locales
-        .filter((locale) => locale !== currentLanguage)
         .map(async (locale) => [locale, await translationAvailability(locale, currentLanguage)])
     ).then((pairs) => {
       if (!cancelled) setAvailability(Object.fromEntries(pairs));
@@ -483,21 +566,6 @@ const TranslationStudio = () => {
         return map;
       });
 
-      // Everything just written carries the current source text, so the row is
-      // only still stale if some *other* locale is lagging behind. Recomputed
-      // from `next` rather than blanket-cleared: clearing would hide the
-      // remaining out-of-date locales from the filter and its counts.
-      setStaleKeys((prev) => {
-        const anyStale = Object.values(next).some(
-          (entry) => normalizeSource(entry.sourceText) !== selected.sourceText
-        );
-        if (anyStale === prev.has(selected.key)) return prev;
-        const set = new Set(prev);
-        if (anyStale) set.add(selected.key);
-        else set.delete(selected.key);
-        return set;
-      });
-
       // A saved translation must be live everywhere immediately, not on next
       // login: reinstall the index for whatever language the app is showing.
       await reinstallActiveIndex();
@@ -534,18 +602,6 @@ const TranslationStudio = () => {
         map.set(selected.key, set);
         return map;
       });
-      // Deleting the lagging locale can be what makes a row no longer stale.
-      setStaleKeys((prev) => {
-        if (!prev.has(selected.key)) return prev;
-        const remaining = Object.entries(stored).filter(([code]) => code !== locale);
-        const anyStale = remaining.some(
-          ([, entry]) => normalizeSource(entry.sourceText) !== selected.sourceText
-        );
-        if (anyStale) return prev;
-        const set = new Set(prev);
-        set.delete(selected.key);
-        return set;
-      });
       await reinstallActiveIndex();
       flash('ok', t('translationStudio.removed', 'Removed'));
     } else {
@@ -553,7 +609,7 @@ const TranslationStudio = () => {
     }
 
     setBusy(false);
-  }, [selected, stored, flash, t, reinstallActiveIndex]);
+  }, [selected, flash, t, reinstallActiveIndex]);
 
   const toggleSource = (entityType) => {
     setSources((prev) => {
@@ -562,6 +618,36 @@ const TranslationStudio = () => {
       else next.add(entityType);
       return next;
     });
+  };
+
+  const toggleField = (entityType, fieldName) => {
+    const key = fieldFilterKey(entityType, fieldName);
+    setSelectedFields((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const resizeLeftPanelWithKeyboard = (event) => {
+    let next = leftPanelWidthRef.current;
+    if (event.key === 'ArrowLeft') next -= 20;
+    else if (event.key === 'ArrowRight') next += 20;
+    else if (event.key === 'Home') next = DEFAULT_LEFT_PANEL_WIDTH;
+    else return;
+
+    event.preventDefault();
+    next = Math.min(MAX_LEFT_PANEL_WIDTH, Math.max(MIN_LEFT_PANEL_WIDTH, next));
+    leftPanelWidthRef.current = next;
+    setLeftPanelWidth(next);
+    persistLeftPanelWidth(next);
+  };
+
+  const resetLeftPanelWidth = () => {
+    leftPanelWidthRef.current = DEFAULT_LEFT_PANEL_WIDTH;
+    setLeftPanelWidth(DEFAULT_LEFT_PANEL_WIDTH);
+    persistLeftPanelWidth(DEFAULT_LEFT_PANEL_WIDTH);
   };
 
   // ---------------------------------------------------------------------------
@@ -667,16 +753,46 @@ const TranslationStudio = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">
+      <div
+        className="grid grid-cols-1 lg:grid-cols-[var(--translation-studio-sidebar)_minmax(0,1fr)] gap-4"
+        style={{ '--translation-studio-sidebar': `${leftPanelWidth}px` }}
+      >
         {/* ---- Left rail: queue -------------------------------------------- */}
-        <aside className={cn(panel, 'p-4 space-y-4 h-fit lg:sticky lg:top-4')}>
+        <aside
+          ref={leftPanelRef}
+          className={cn(panel, 'relative p-4 space-y-4 h-fit lg:sticky lg:top-4')}
+        >
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-valuemin={MIN_LEFT_PANEL_WIDTH}
+            aria-valuemax={MAX_LEFT_PANEL_WIDTH}
+            aria-valuenow={Math.round(leftPanelWidth)}
+            aria-label={t('translationStudio.resizePanel', 'Resize source panel')}
+            tabIndex={0}
+            onPointerDown={(event) => {
+              event.preventDefault();
+              setIsResizingLeftPanel(true);
+            }}
+            onDoubleClick={resetLeftPanelWidth}
+            onKeyDown={resizeLeftPanelWithKeyboard}
+            className={cn(
+              'hidden lg:block absolute -right-2 top-3 bottom-3 z-10 w-4 cursor-col-resize rounded-full outline-none',
+              'after:absolute after:left-1/2 after:top-0 after:h-full after:w-1 after:-translate-x-1/2 after:rounded-full after:transition-colors',
+              isResizingLeftPanel
+                ? 'after:bg-blue-500'
+                : isDarkMode
+                  ? 'after:bg-gray-700 hover:after:bg-blue-500 focus:after:bg-blue-500'
+                  : 'after:bg-gray-300 hover:after:bg-blue-500 focus:after:bg-blue-500'
+            )}
+          />
           <div>
             <label className={cn('block text-xs font-semibold uppercase tracking-wide mb-2', text.secondary)}>
               {t('translationStudio.sources', 'Sources')}
             </label>
             <div className="space-y-1">
               {ENTITY_TYPES.map((entityType) => {
-                const { matching, done, total } = sourceCounts[entityType];
+                const { done, total } = sourceCounts[entityType];
                 return (
                   <label
                     key={entityType}
@@ -697,10 +813,12 @@ const TranslationStudio = () => {
                     </span>
                     <span
                       className={cn('text-xs tabular-nums', text.secondary)}
-                      title={t('translationStudio.sourceCountHint', 'Shown / fully translated / total')}
+                      title={t(
+                        'translationStudio.sourceCountHint',
+                        'Fully translated records / total records'
+                      )}
                     >
-                      {matching}
-                      <span className="opacity-50">{` · ${done}/${total}`}</span>
+                      <span className="opacity-70">{`${done}/${total}`}</span>
                     </span>
                   </label>
                 );
@@ -708,28 +826,52 @@ const TranslationStudio = () => {
             </div>
           </div>
 
-          <div>
-            <label className={cn('block text-xs font-semibold uppercase tracking-wide mb-2', text.secondary)}>
-              {t('translationStudio.status', 'Status')}
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {STATUS_FILTERS.map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setStatusFilter(value)}
-                  className={cn(
-                    'px-2.5 py-1 rounded-full text-xs border transition-colors',
-                    statusFilter === value
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : cn(text.secondary, border.primary, isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200')
-                  )}
-                >
-                  {t(`translationStudio.filter_${value}`, value)}
-                </button>
-              ))}
+          {sources.size > 0 && (
+            <div>
+              <label className={cn('block text-xs font-semibold uppercase tracking-wide mb-2', text.secondary)}>
+                {t('translationStudio.fields', 'Fields')}
+              </label>
+              <div className="space-y-2.5">
+                {ENTITY_TYPES.filter((entityType) => sources.has(entityType)).map((entityType) => (
+                  <div key={entityType}>
+                    {sources.size > 1 && (
+                      <div className={cn('mb-1 text-[10px] font-semibold uppercase tracking-wide', text.secondary)}>
+                        {t(TRANSLATABLE_ENTITIES[entityType].labelKey, entityType)}
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-1.5">
+                      {TRANSLATABLE_ENTITIES[entityType].fields.map((fieldName) => {
+                        const active = selectedFields.has(fieldFilterKey(entityType, fieldName));
+                        return (
+                          <button
+                            key={fieldName}
+                            type="button"
+                            aria-pressed={active}
+                            onClick={() => toggleField(entityType, fieldName)}
+                            className={cn(
+                              'px-2.5 py-1 rounded-full text-xs border transition-colors',
+                              active
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : cn(
+                                    text.secondary,
+                                    border.primary,
+                                    isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'
+                                  )
+                            )}
+                          >
+                            {t(
+                              `translationStudio.field_${fieldName}`,
+                              fieldName.replace(/_/g, ' ')
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="relative">
             <Search className={cn('w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2', text.secondary)} />
@@ -901,9 +1043,9 @@ const TranslationStudio = () => {
               {editorState === 'ready' && (
                 <div className="space-y-4">
                   {locales
-                    // No point translating a string into the language the
-                    // Studio is currently displaying it in.
-                    .filter((locale) => locale !== currentLanguage)
+                    // Show every locale. The interface language is not proof of
+                    // the source language, and hiding it previously left that
+                    // locale untranslated whenever an editor switched the UI.
                     .map((locale) => {
                       const lang = SUPPORTED_LANGUAGES[locale];
                       const value = drafts[locale]?.body || '';

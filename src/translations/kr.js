@@ -2232,7 +2232,8 @@ export default {
   translationStudio: {
     translateAll: '모두 번역',
     confirmTranslateAll: '이 텍스트의 기존 번역을 모두 기계 번역으로 바꾸시겠습니까? 저장을 누르기 전까지는 아무것도 저장되지 않습니다.',
-    sourceCountHint: '표시됨 / 번역 완료 / 전체',
+    sourceCountHint: '번역 완료 레코드 / 전체 레코드',
+    resizePanel: '원본 패널 크기 조절',
     accessDenied: '접근 거부: 관리자 권한이 필요합니다',
     downloading: '언어 모델 다운로드 중',
     suggestAll: '빈 칸 모두 제안',
@@ -2243,6 +2244,7 @@ export default {
     title: '번역 스튜디오',
     subtitle: '업무, 목표, 평가, 휴가 신청에 대한 수동 번역입니다. 앱 전체에서 자동 번역보다 우선합니다.',
     sources: '원본',
+    fields: '필드',
     sourceTasks: '업무',
     sourceGoals: '개인 목표',
     sourceReviews: '성과 평가',

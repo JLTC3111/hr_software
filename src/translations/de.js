@@ -2179,7 +2179,8 @@ export default {
   translationStudio: {
     translateAll: 'Alle übersetzen',
     confirmTranslateAll: 'Alle vorhandenen Übersetzungen dieses Textes durch maschinelle Ausgabe ersetzen? Es wird nichts gespeichert, bis Sie auf Speichern klicken.',
-    sourceCountHint: 'Angezeigt / vollständig übersetzt / gesamt',
+    sourceCountHint: 'Vollständig übersetzte Datensätze / Datensätze insgesamt',
+    resizePanel: 'Quellenbereich vergrößern oder verkleinern',
     accessDenied: 'Zugriff verweigert: Administratorrechte erforderlich',
     downloading: 'Sprachmodell wird heruntergeladen',
     suggestAll: 'Leere Felder vorschlagen',
@@ -2190,6 +2191,7 @@ export default {
     title: 'Übersetzungsstudio',
     subtitle: 'Von Hand verfasste Übersetzungen für Aufgaben, Ziele, Beurteilungen und Urlaubsanträge. Sie haben überall Vorrang vor den automatischen.',
     sources: 'Quellen',
+    fields: 'Felder',
     sourceTasks: 'Aufgaben',
     sourceGoals: 'Persönliche Ziele',
     sourceReviews: 'Leistungsbeurteilungen',

@@ -2243,7 +2243,8 @@ export default {
   translationStudio: {
     translateAll: 'すべて翻訳',
     confirmTranslateAll: 'このテキストの既存の翻訳をすべて機械翻訳で置き換えますか？保存を押すまで何も保存されません。',
-    sourceCountHint: '表示中 / 翻訳完了 / 合計',
+    sourceCountHint: '翻訳完了レコード / 全レコード',
+    resizePanel: 'ソースパネルの幅を変更',
     accessDenied: 'アクセス拒否: 管理者権限が必要です',
     downloading: '言語モデルをダウンロード中',
     suggestAll: '空欄をすべて提案',
@@ -2254,6 +2255,7 @@ export default {
     title: '翻訳スタジオ',
     subtitle: 'タスク・目標・評価・休暇申請の手動翻訳です。アプリ全体で自動翻訳より優先されます。',
     sources: 'ソース',
+    fields: 'フィールド',
     sourceTasks: 'タスク',
     sourceGoals: '個人目標',
     sourceReviews: '人事評価',

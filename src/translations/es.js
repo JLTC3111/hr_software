@@ -2303,7 +2303,8 @@ export default {
   translationStudio: {
     translateAll: 'Traducir todo',
     confirmTranslateAll: '¿Reemplazar todas las traducciones existentes de este texto con la salida automática? No se guarda nada hasta que pulses Guardar.',
-    sourceCountHint: 'Mostrados / totalmente traducidos / total',
+    sourceCountHint: 'Registros totalmente traducidos / total',
+    resizePanel: 'Cambiar el tamaño del panel de fuentes',
     accessDenied: 'Acceso denegado: se requieren privilegios de administrador',
     downloading: 'Descargando modelo de idioma',
     suggestAll: 'Sugerir campos vacíos',
@@ -2314,6 +2315,7 @@ export default {
     title: 'Estudio de traducción',
     subtitle: 'Traducciones escritas a mano para tareas, objetivos, evaluaciones y solicitudes de permiso. Tienen prioridad sobre las automáticas en toda la aplicación.',
     sources: 'Fuentes',
+    fields: 'Campos',
     sourceTasks: 'Tareas',
     sourceGoals: 'Objetivos personales',
     sourceReviews: 'Evaluaciones de desempeño',

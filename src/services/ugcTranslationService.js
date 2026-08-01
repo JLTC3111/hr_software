@@ -116,6 +116,44 @@ export const fetchLocaleTranslations = async (locale) => {
   }
 };
 
+/**
+ * Minimal, complete dataset used to calculate Studio coverage.
+ *
+ * Coverage used to be assembled from nine independent locale requests. A
+ * single failed request was silently ignored, leaving the persisted rows
+ * correct while the source counters stayed artificially low. Read every locale
+ * through one paginated path instead, and let the Studio reject the snapshot if
+ * this request fails.
+ */
+export const fetchTranslationCoverage = async () => {
+  if (isDemoMode() || tableMissing) return ok([]);
+
+  const pageSize = 1000;
+  const rows = [];
+
+  try {
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await supabase
+        .from('hr_ugc_translations')
+        .select('entity_type, entity_id, field, locale, body')
+        .order('entity_type')
+        .order('entity_id')
+        .order('field')
+        .order('locale')
+        .range(from, from + pageSize - 1);
+
+      if (error) throw error;
+      const page = data || [];
+      rows.push(...page);
+      if (page.length < pageSize) break;
+    }
+
+    return ok(rows);
+  } catch (error) {
+    return fail(error, 'fetchTranslationCoverage');
+  }
+};
+
 /** Every locale's translations for one record — what the Studio's editor edits. */
 export const fetchRecordTranslations = async (entityType, entityId) => {
   if (isDemoMode() || tableMissing) return ok([]);

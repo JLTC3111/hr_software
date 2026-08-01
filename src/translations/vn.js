@@ -2430,7 +2430,8 @@ export default {
   translationStudio: {
     translateAll: 'Dịch tất cả',
     confirmTranslateAll: 'Thay thế toàn bộ bản dịch hiện có của văn bản này bằng kết quả dịch máy? Không có gì được lưu cho đến khi bạn nhấn Lưu.',
-    sourceCountHint: 'Đang hiển thị / đã dịch xong / tổng',
+    sourceCountHint: 'Bản ghi đã dịch xong / tổng số bản ghi',
+    resizePanel: 'Thay đổi kích thước bảng nguồn',
     accessDenied: 'Từ chối truy cập: Cần quyền quản trị viên',
     downloading: 'Đang tải mô hình ngôn ngữ',
     suggestAll: 'Gợi ý các ô trống',
@@ -2441,6 +2442,7 @@ export default {
     title: 'Xưởng Dịch Thuật',
     subtitle: 'Bản dịch do người viết cho công việc, mục tiêu, đánh giá và đơn xin nghỉ. Chúng được ưu tiên hơn bản dịch tự động ở mọi nơi.',
     sources: 'Nguồn',
+    fields: 'Trường',
     sourceTasks: 'Công việc',
     sourceGoals: 'Mục tiêu cá nhân',
     sourceReviews: 'Đánh giá hiệu suất',

@@ -2349,7 +2349,8 @@ export default {
   translationStudio: {
     translateAll: 'Translate all',
     confirmTranslateAll: 'Replace all existing translations for this text with machine output? Nothing is saved until you press Save.',
-    sourceCountHint: 'Shown / fully translated / total',
+    sourceCountHint: 'Fully translated records / total records',
+    resizePanel: 'Resize source panel',
     accessDenied: 'Access Denied: Admin privileges required',
     downloading: 'Downloading language model',
     suggestAll: 'Suggest all empty',
@@ -2360,6 +2361,7 @@ export default {
     title: 'Translation Studio',
     subtitle: 'Hand-written translations for tasks, goals, reviews and leave requests. These override the automatic ones everywhere.',
     sources: 'Sources',
+    fields: 'Fields',
     sourceTasks: 'Tasks',
     sourceGoals: 'Personal Goals',
     sourceReviews: 'Performance Reviews',
