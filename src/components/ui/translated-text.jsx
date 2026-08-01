@@ -22,16 +22,27 @@ const RETRY_DELAYS_MS = [600, 1500, 3000, 6000, 12000];
  * translation arrives — UGC is never hidden behind a placeholder, so browsers
  * without on-device translation simply show the text as written.
  *
+ * Passing `record` ({ entityType, entityId, field }) opts the string into the
+ * hand-authored overrides in hr_ugc_translations: an editor's wording for that
+ * exact field wins over both the shared text index and the on-device model.
+ *
  * @returns {{ text: string, isTranslating: boolean, original: string }}
  */
-export function useTranslatedText(text, { enabled = true } = {}) {
+export function useTranslatedText(text, { enabled = true, record = null } = {}) {
   const { currentLanguage } = useLanguage();
   const original = text == null ? '' : String(text);
 
   const skip = !enabled || !original.trim() || isDemoMode();
 
+  // Identity, not the object: callers write record={{...}} inline, and a fresh
+  // object every render would restart the effect on every render.
+  const recordId = record
+    ? `${record.entityType}:${record.entityId}:${record.field}`
+    : '';
+  const lookup = recordId ? record : null;
+
   const [translated, setTranslated] = useState(
-    () => (skip ? original : peekCachedTranslation(original, currentLanguage) ?? original)
+    () => (skip ? original : peekCachedTranslation(original, currentLanguage, lookup) ?? original)
   );
   const [isTranslating, setIsTranslating] = useState(false);
 
@@ -44,7 +55,7 @@ export function useTranslatedText(text, { enabled = true } = {}) {
       return undefined;
     }
 
-    const hit = peekCachedTranslation(original, currentLanguage);
+    const hit = peekCachedTranslation(original, currentLanguage, lookup);
     if (hit != null) {
       setTranslated(hit);
       setIsTranslating(false);
@@ -59,7 +70,7 @@ export function useTranslatedText(text, { enabled = true } = {}) {
     let timer;
 
     const attemptTranslation = () => {
-      translateWithStatus(original, currentLanguage).then(({ text: out, status }) => {
+      translateWithStatus(original, currentLanguage, lookup).then(({ text: out, status }) => {
         if (cancelled) return;
         setTranslated(typeof out === 'string' && out ? out : original);
 
@@ -88,7 +99,10 @@ export function useTranslatedText(text, { enabled = true } = {}) {
       clearTimeout(timer);
       unsubscribe();
     };
-  }, [original, currentLanguage, enabled, skip]);
+    // `lookup` is intentionally absent: it is a new object literal on every
+    // render, and `recordId` is its stable value-equal stand-in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [original, currentLanguage, enabled, skip, recordId]);
 
   return { text: translated || original, isTranslating, original };
 }
@@ -99,12 +113,13 @@ export function TranslatedText({
   as: Component = 'span',
   className,
   enabled = true,
+  record = null,
   children,
   ...rest
 }) {
   const { text: value, isTranslating, original } = useTranslatedText(
     text ?? children,
-    { enabled }
+    { enabled, record }
   );
 
   return (

@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
-import { TrendingUp, Users, Award, FileText, Clock, AlarmClock, ChevronLeft, ChevronRight, ChevronDown, Building2, Bell, Cog, CheckSquare, Sparkles, X, UserPlus, CalendarDays } from 'lucide-react'
+import { TrendingUp, Users, Award, FileText, Clock, AlarmClock, ChevronLeft, ChevronRight, ChevronDown, Building2, Bell, Cog, CheckSquare, Sparkles, X, UserPlus, CalendarDays, Languages } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useNotifications } from '../contexts/NotificationContext'
+import { useAuth } from '../contexts/AuthContext'
+import { isTranslationEditor } from '../utils/translationAccess'
 
 const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -15,6 +17,8 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const { bg, text, hover, isDarkMode } = useTheme();
   const { t } = useLanguage();
   const { unreadCount } = useNotifications();
+  const { user } = useAuth();
+  const canEditTranslations = isTranslationEditor(user);
   
   // Handle resize
   const startResizing = (e) => {
@@ -95,6 +99,10 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
       section: t('sidebar.settings', 'SETTINGS'),
       items: [
         { path: '/notifications', name: t('nav.notifications', 'Notifications'), icon: Bell },
+        // Admin-only; the route and the RLS policies enforce the same rule.
+        ...(canEditTranslations
+          ? [{ path: '/translations', name: t('nav.translations', 'Translation Studio'), icon: Languages }]
+          : []),
         { path: '/settings', name: t('nav.settings', 'Settings'), icon: Cog },
       ]
     },

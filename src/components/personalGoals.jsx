@@ -791,7 +791,7 @@ const PersonalGoals = ({ employees }) => {
                     borderColor: 'transparent'
                   }}
                 >
-                  {isDemoMode() ? getDemoGoalTitle(goal, t) : <TranslatedText text={goal.title} />}
+                  {isDemoMode() ? getDemoGoalTitle(goal, t) : <TranslatedText text={goal.title} record={{ entityType: 'goal', entityId: goal.id, field: 'title' }} />}
                 </h4>
                 <div className="flex items-center space-x-2">
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(goal.status)}`}>
@@ -904,7 +904,7 @@ const PersonalGoals = ({ employees }) => {
                     <span className="font-medium">{t('personalGoals.strengths', 'Strengths')}: </span>
                     {isDemoMode()
                       ? getDemoReviewStrengths(review, t)
-                      : <TranslatedText text={review.strengths} />}
+                      : <TranslatedText text={review.strengths} record={{ entityType: 'review', entityId: review.id, field: 'strengths' }} />}
                   </p>
                 )}
                 {review.areasForImprovement && (
@@ -912,7 +912,7 @@ const PersonalGoals = ({ employees }) => {
                     <span className="font-medium">{t('personalGoals.areasForImprovement')}: </span>
                     {isDemoMode()
                       ? getDemoReviewAreasForImprovement(review, t)
-                      : <TranslatedText text={review.areasForImprovement} />}
+                      : <TranslatedText text={review.areasForImprovement} record={{ entityType: 'review', entityId: review.id, field: 'areas_for_improvement' }} />}
                   </p>
                 )}
               </div>
@@ -975,7 +975,7 @@ const PersonalGoals = ({ employees }) => {
                     borderColor: 'transparent'
                   }}
                 >
-                  {isDemoMode() ? getDemoGoalTitle(goal, t) : <TranslatedText text={goal.title} />}
+                  {isDemoMode() ? getDemoGoalTitle(goal, t) : <TranslatedText text={goal.title} record={{ entityType: 'goal', entityId: goal.id, field: 'title' }} />}
                 </h4>
               </div>
               <div className="flex items-center space-x-2">
@@ -1629,7 +1629,7 @@ const PersonalGoals = ({ employees }) => {
               {/* Title */}
               <div>
                 <h3 className="text-lg font-semibold mb-2">
-                  {isDemoMode() ? getDemoGoalTitle(viewingGoal, t) : <TranslatedText text={viewingGoal.title} />}
+                  {isDemoMode() ? getDemoGoalTitle(viewingGoal, t) : <TranslatedText text={viewingGoal.title} record={{ entityType: 'goal', entityId: viewingGoal.id, field: 'title' }} />}
                 </h3>
                 <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
                   viewingGoal.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
@@ -1657,7 +1657,7 @@ const PersonalGoals = ({ employees }) => {
                   {isDemoMode()
                     ? getDemoGoalDescription(viewingGoal, t)
                     : (viewingGoal.description
-                      ? <TranslatedText text={viewingGoal.description} />
+                      ? <TranslatedText text={viewingGoal.description} record={{ entityType: 'goal', entityId: viewingGoal.id, field: 'description' }} />
                       : t('common.noDescription', 'No description available'))}
                 </p>
               </div>

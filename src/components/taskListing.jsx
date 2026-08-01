@@ -716,7 +716,7 @@ const TaskListing = ({ employees, allEmployees }) => {
                         }
                       </button>
                       <h4 className={`font-semibold ${text.primary} ${task.status === 'completed' ? 'line-through' : ''}`}>
-                        {isDemoMode() ? getDemoTaskTitle(task, t) : <TranslatedText text={task.title} />}
+                        {isDemoMode() ? getDemoTaskTitle(task, t) : <TranslatedText text={task.title} record={{ entityType: 'task', entityId: task.id, field: 'title' }} />}
                       </h4>
                       <span className={`px-2 py-1 rounded text-xs ${getPriorityColor(task.priority)} ${task.status === 'completed' ? 'line-through' : ''}`}>
                         {t(`taskListing.${task.priority}`, task.priority)}
@@ -733,7 +733,7 @@ const TaskListing = ({ employees, allEmployees }) => {
                         </span>
                       )}
                     </div>
-                    <p className={`text-sm ${text.secondary} mb-2`}>{isDemoMode() ? getDemoTaskDescription(task, t) : <TranslatedText text={task.description} />}</p>
+                    <p className={`text-sm ${text.secondary} mb-2`}>{isDemoMode() ? getDemoTaskDescription(task, t) : <TranslatedText text={task.description} record={{ entityType: 'task', entityId: task.id, field: 'description' }} />}</p>
                     {task.due_date && (
                       <p className={`text-xs ${text.secondary} flex items-center space-x-1 mb-2`}>
                         <button

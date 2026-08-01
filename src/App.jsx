@@ -27,6 +27,7 @@ const Recruitment = lazy(() => import('./components/recruitment.jsx'));
 const LeaveManagement = lazy(() => import('./components/leaveManagement.jsx'));
 const Notifications = lazy(() => import('./components/notifications.jsx'));
 const Settings = lazy(() => import('./components/settings.jsx'));
+const TranslationStudio = lazy(() => import('./components/translationStudio.jsx'));
 const AddNewEmployee = lazy(() => import('./components/addNewEmployee.jsx'));
 const DeleteEmployeeManager = lazy(() => import('./components/deleteEmployeeManager.jsx'));
 const ControlPanel = lazy(() => import('./components/controlPanel.jsx'));
@@ -377,9 +378,13 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
                       path="/notifications" 
                       element={<Notifications />} 
                     />
-                    <Route 
-                      path="/settings" 
-                      element={<Settings />} 
+                    <Route
+                      path="/settings"
+                      element={<Settings />}
+                    />
+                    <Route
+                      path="/translations"
+                      element={<TranslationStudio />}
                     />
                     <Route 
                       path="/delete-manager" 

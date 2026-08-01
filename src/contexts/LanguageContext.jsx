@@ -1,5 +1,9 @@
 import _React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { prepareTranslation } from '../services/translateService.js';
+import { prepareTranslation, setManualTranslations } from '../services/translateService.js';
+import {
+  buildTranslationIndex,
+  fetchLocaleTranslations,
+} from '../services/ugcTranslationService.js';
 
 const LanguageContext = createContext();
 
@@ -28,6 +32,9 @@ export const LanguageProvider = ({ children }) => {
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [translations, setTranslations] = useState({});
   const [isChanging, setIsChanging] = useState(false);
+  // Bumped by the Translation Studio after a save, so an edit is live app-wide
+  // without a reload.
+  const [overridesVersion, setOverridesVersion] = useState(0);
 
   // Load translations dynamically
   useEffect(() => {
@@ -46,6 +53,27 @@ export const LanguageProvider = ({ children }) => {
 
     loadTranslations();
   }, [currentLanguage]);
+
+  // Install the hand-authored UGC overrides for this language.
+  //
+  // Separate from the UI translation bundles above: those ship with the app and
+  // cover fixed chrome, these are database rows covering text employees typed.
+  // A failure here is not fatal — every string falls back to its on-device
+  // machine translation, and then to the original.
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchLocaleTranslations(currentLanguage)
+      .then(({ success, data }) => {
+        if (cancelled) return;
+        setManualTranslations(currentLanguage, buildTranslationIndex(success ? data : []));
+      })
+      .catch(() => {
+        if (!cancelled) setManualTranslations(currentLanguage, null);
+      });
+
+    return () => { cancelled = true; };
+  }, [currentLanguage, overridesVersion]);
 
   // Load saved language from localStorage
   useEffect(() => {
@@ -93,6 +121,10 @@ export const LanguageProvider = ({ children }) => {
     return value || fallback || key;
   }, [translations]);
 
+  const refreshManualTranslations = useCallback(() => {
+    setOverridesVersion((v) => v + 1);
+  }, []);
+
   // Memoize the entire context value
   const value = useMemo(() => ({
     currentLanguage,
@@ -100,8 +132,9 @@ export const LanguageProvider = ({ children }) => {
     t,
     languages: SUPPORTED_LANGUAGES,
     isRTL: currentLanguage === 'ar', // Add if Arabic support needed
-    isChanging
-  }), [currentLanguage, changeLanguage, t, isChanging]);
+    isChanging,
+    refreshManualTranslations
+  }), [currentLanguage, changeLanguage, t, isChanging, refreshManualTranslations]);
 
   return (
     <LanguageContext.Provider value={value}>

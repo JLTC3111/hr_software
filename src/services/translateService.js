@@ -28,6 +28,60 @@ export const TRANSLATE_LANG_MAP = {
 
 const memoryCache = new Map();
 
+/**
+ * Hand-authored translations loaded from Supabase (see ugcTranslationService).
+ *
+ * These outrank everything else: a human wrote them, they are shared across all
+ * readers, and they survive a cache clear. The on-device model is only ever
+ * consulted for strings nobody has translated by hand.
+ */
+let manualIndex = { byRecord: new Map(), byText: new Map() };
+let manualLocale = null;
+
+/**
+ * Installs the manual overrides for one app language. Called by
+ * LanguageProvider on mount and on every language switch; also called by the
+ * Translation Studio after a save so the change is visible app-wide without a
+ * reload.
+ */
+export function setManualTranslations(appLang, index) {
+  manualLocale = appLang || null;
+  manualIndex = {
+    byRecord: index?.byRecord instanceof Map ? index.byRecord : new Map(),
+    byText: index?.byText instanceof Map ? index.byText : new Map(),
+  };
+  // Anything already on screen rendered against the old index (or none at all).
+  notifyTranslatorReady();
+}
+
+export function clearManualTranslations() {
+  setManualTranslations(null, null);
+}
+
+/**
+ * Synchronous manual-override lookup.
+ *
+ * `record` narrows the search to one field of one row, which is the only way to
+ * disambiguate two records that share wording but not meaning. Without it the
+ * text index still applies, but only where every author agreed on the same
+ * translation — buildTranslationIndex() drops contested strings.
+ */
+export function peekManualTranslation(text, appLang, record = null) {
+  if (!appLang || appLang !== manualLocale) return null;
+
+  if (record?.entityType && record?.entityId != null && record?.field) {
+    const hit = manualIndex.byRecord.get(
+      `${record.entityType}:${record.entityId}:${record.field}`
+    );
+    if (hit) return hit;
+  }
+
+  const source = (text == null ? '' : String(text)).trim();
+  if (!source) return null;
+  // `null` is the marker for a string with conflicting translations.
+  return manualIndex.byText.get(source) || null;
+}
+
 function hashText(text) {
   // Fast non-crypto hash for cache keys
   let h = 2166136261;
@@ -82,16 +136,36 @@ function setCache(key, value) {
 }
 
 /** Chromium exposes these as globals on secure origins (localhost counts). */
-const hasTranslator = () => typeof globalThis !== 'undefined' && 'Translator' in globalThis;
-const hasDetector = () => typeof globalThis !== 'undefined' && 'LanguageDetector' in globalThis;
+const hasTranslator = () => Boolean(getTranslatorApi());
+const hasDetector = () => Boolean(getDetectorApi());
+
+/**
+ * The API graduated from the origin-trial `self.ai.translator` shape to the
+ * `Translator` / `LanguageDetector` globals. Supporting both keeps the feature
+ * alive across Chrome versions instead of going dark on one of them.
+ */
+function getTranslatorApi() {
+  if (typeof globalThis === 'undefined') return null;
+  if (typeof globalThis.Translator?.create === 'function') return globalThis.Translator;
+  const legacy = globalThis.ai?.translator;
+  return typeof legacy?.create === 'function' ? legacy : null;
+}
+
+function getDetectorApi() {
+  if (typeof globalThis === 'undefined') return null;
+  if (typeof globalThis.LanguageDetector?.create === 'function') return globalThis.LanguageDetector;
+  const legacy = globalThis.ai?.languageDetector;
+  return typeof legacy?.create === 'function' ? legacy : null;
+}
 
 export const isLocalTranslationSupported = () => hasTranslator();
 
 let detectorPromise = null;
 const getDetector = () => {
-  if (!hasDetector()) return Promise.resolve(null);
+  const api = getDetectorApi();
+  if (!api) return Promise.resolve(null);
   if (!detectorPromise) {
-    detectorPromise = globalThis.LanguageDetector.create().catch((error) => {
+    detectorPromise = api.create().catch((error) => {
       console.warn('Language detector unavailable:', error?.message || error);
       return null;
     });
@@ -155,13 +229,117 @@ const notifyTranslatorReady = () => {
   });
 };
 
-const createTranslator = async (sourceLanguage, targetLanguage) => {
-  const availability = await globalThis.Translator.availability({
-    sourceLanguage,
-    targetLanguage,
-  });
+/**
+ * Raw availability for one language pair.
+ *
+ * 'available'   — model is on disk, translation is instant
+ * 'downloadable'/'downloading' — usable, but costs a model download first
+ * 'unavailable' — unsupported browser or pair
+ */
+const pairAvailability = async (sourceLanguage, targetLanguage) => {
+  const api = getTranslatorApi();
+  if (!api || !sourceLanguage || !targetLanguage) return 'unavailable';
+  if (sourceLanguage === targetLanguage) return 'unavailable';
 
-  if (!availability || availability === 'unavailable') {
+  try {
+    if (typeof api.availability === 'function') {
+      return (await api.availability({ sourceLanguage, targetLanguage })) || 'unavailable';
+    }
+    // Origin-trial shape: capabilities().languagePairAvailable()
+    if (typeof api.capabilities === 'function') {
+      const caps = await api.capabilities();
+      const state = caps?.languagePairAvailable?.(sourceLanguage, targetLanguage);
+      if (state === 'readily') return 'available';
+      if (state === 'after-download') return 'downloadable';
+    }
+  } catch {
+    return 'unavailable';
+  }
+  return 'unavailable';
+};
+
+const USABLE = new Set(['available', 'downloadable', 'downloading']);
+
+const routeCache = new Map();
+
+/**
+ * How to get from one BCP-47 language to another, and what it will cost:
+ * `{ hops, availability }`, or null when the pair is unreachable.
+ *
+ * Chrome ships packs paired with English, so a direct non-English pair usually
+ * reports 'unavailable' even though both halves exist. Pivoting makes every
+ * supported locale reachable rather than only English — and reporting the
+ * *worst* availability across the hops is what lets the UI say "this will
+ * download a model" before the user commits to waiting.
+ */
+const resolveRoute = (sourceLanguage, targetLanguage) => {
+  if (!sourceLanguage || !targetLanguage || sourceLanguage === targetLanguage) {
+    return Promise.resolve(null);
+  }
+
+  const key = `${sourceLanguage}->${targetLanguage}`;
+  if (routeCache.has(key)) return routeCache.get(key);
+
+  const pending = (async () => {
+    // Only settled verdicts are worth remembering. A 'downloadable' route
+    // becomes 'available' the moment its pack finishes, so caching that answer
+    // would leave the UI warning about a download that already happened.
+    const remember = (route) => {
+      if (!route || route.availability === 'available') routeCache.set(key, Promise.resolve(route));
+      else routeCache.delete(key);
+      return route;
+    };
+
+    const direct = await pairAvailability(sourceLanguage, targetLanguage);
+    if (USABLE.has(direct)) {
+      return remember({ hops: [[sourceLanguage, targetLanguage]], availability: direct });
+    }
+
+    if (sourceLanguage !== 'en' && targetLanguage !== 'en') {
+      const [first, second] = await Promise.all([
+        pairAvailability(sourceLanguage, 'en'),
+        pairAvailability('en', targetLanguage),
+      ]);
+      if (USABLE.has(first) && USABLE.has(second)) {
+        const ready = first === 'available' && second === 'available';
+        return remember({
+          hops: [[sourceLanguage, 'en'], ['en', targetLanguage]],
+          availability: ready ? 'available' : 'downloadable',
+        });
+      }
+    }
+
+    return remember(null);
+  })();
+
+  // Held only until it settles; remember() decides what actually persists.
+  routeCache.set(key, pending);
+  return pending;
+};
+
+/**
+ * What translating into `appLang` would cost right now, for UI that wants to
+ * warn before a multi-megabyte download: 'available' | 'downloadable' |
+ * 'unavailable'. `sourceAppLang` defaults to English, the usual authoring
+ * language for UGC in this app.
+ */
+export async function translationAvailability(appLang, sourceAppLang = 'en') {
+  const target = targetFor(appLang);
+  const source = targetFor(sourceAppLang);
+  if (!target || !source) return 'unavailable';
+  if (source === target) return 'available';
+
+  const route = await resolveRoute(source, target);
+  return route ? route.availability : 'unavailable';
+}
+
+const createTranslator = async (sourceLanguage, targetLanguage, onProgress) => {
+  const api = getTranslatorApi();
+  if (!api) return null;
+
+  const availability = await pairAvailability(sourceLanguage, targetLanguage);
+
+  if (availability === 'unavailable') {
     unavailablePairs.add(`${sourceLanguage}:${targetLanguage}`);
     return null;
   }
@@ -169,17 +347,31 @@ const createTranslator = async (sourceLanguage, targetLanguage) => {
   // 'downloadable'/'downloading' fetches a language pack first. Chrome may
   // require transient user activation for that, so this can reject — see
   // prepareTranslation(), which warms packs from the language switcher click.
-  return globalThis.Translator.create({ sourceLanguage, targetLanguage });
+  return api.create({
+    sourceLanguage,
+    targetLanguage,
+    monitor(m) {
+      if (typeof onProgress !== 'function') return;
+      m?.addEventListener?.('downloadprogress', (event) => {
+        // `loaded` is 0..1 in the shipped API; older builds sent raw bytes.
+        const loaded = Number(event?.loaded);
+        if (!Number.isFinite(loaded)) return;
+        const total = Number(event?.total);
+        const ratio = total > 0 ? loaded / total : loaded;
+        onProgress(Math.max(0, Math.min(1, ratio)));
+      });
+    },
+  });
 };
 
-const getTranslator = (sourceLanguage, targetLanguage) => {
+const getTranslator = (sourceLanguage, targetLanguage, onProgress) => {
   const key = `${sourceLanguage}:${targetLanguage}`;
 
   if (translatorPool.has(key)) return Promise.resolve(translatorPool.get(key));
   if (unavailablePairs.has(key)) return Promise.resolve(null);
   if (pendingTranslators.has(key)) return pendingTranslators.get(key);
 
-  const pending = createTranslator(sourceLanguage, targetLanguage)
+  const pending = createTranslator(sourceLanguage, targetLanguage, onProgress)
     .then((translator) => {
       if (translator) {
         translatorPool.set(key, translator);
@@ -228,7 +420,7 @@ const runTranslation = async (text, source, target) => {
  * handler (the language switcher): Chrome allows pack downloads during
  * transient user activation, which a render-time effect does not have.
  */
-export async function prepareTranslation(appLang, contentLanguages = ['en']) {
+export async function prepareTranslation(appLang, contentLanguages = ['en'], onProgress) {
   const target = targetFor(appLang);
   if (!target || !hasTranslator()) return false;
 
@@ -248,7 +440,10 @@ export async function prepareTranslation(appLang, contentLanguages = ['en']) {
   }
 
   const results = await Promise.all(
-    [...wanted].map((pair) => getTranslator(...pair.split(':')))
+    [...wanted].map((pair) => {
+      const [source, dest] = pair.split(':');
+      return getTranslator(source, dest, onProgress);
+    })
   );
   return results.some(Boolean);
 }
@@ -287,9 +482,17 @@ if (import.meta.env?.DEV && typeof globalThis !== 'undefined') {
 const targetFor = (appLang) => TRANSLATE_LANG_MAP[appLang] || null;
 
 /** Cache-only lookup so callers can render a known translation with no flash. */
-export function peekCachedTranslation(text, appLang) {
+export function peekCachedTranslation(text, appLang, record = null) {
+  if (!text) return null;
+
+  // Manual first, and before the target-language guard: an override is stored
+  // against the app's own language code, so it applies even for a UI language
+  // the on-device Translator has no BCP-47 mapping for.
+  const manual = peekManualTranslation(text, appLang, record);
+  if (manual) return manual;
+
   const target = targetFor(appLang);
-  if (!text || !target) return null;
+  if (!target) return null;
   ensureCache();
   return memoryCache.get(cacheKey(text, target)) ?? null;
 }
@@ -301,8 +504,13 @@ export function peekCachedTranslation(text, appLang) {
  * status: 'done'      — translated, or genuinely nothing to translate
  *         'pending'   — no usable model yet; retry later
  */
-export async function translateWithStatus(text, appLang) {
+export async function translateWithStatus(text, appLang, record = null) {
   const original = text == null ? '' : String(text);
+
+  // A human already answered this one. Nothing downstream can improve on it.
+  const manual = peekManualTranslation(original, appLang, record);
+  if (manual) return { text: manual, status: 'done' };
+
   const target = targetFor(appLang);
 
   if (!original.trim() || !target || isDemoMode()) {
@@ -346,8 +554,8 @@ export async function translateWithStatus(text, appLang) {
 }
 
 /** Translates one string, or resolves to the original if that isn't possible. */
-export async function translateText(text, appLang) {
-  const { text: out } = await translateWithStatus(text, appLang);
+export async function translateText(text, appLang, record = null) {
+  const { text: out } = await translateWithStatus(text, appLang, record);
   return out;
 }
 
@@ -357,7 +565,10 @@ export async function translateText(text, appLang) {
  */
 export async function translateTexts(texts, appLang) {
   const list = Array.isArray(texts) ? texts : [];
-  if (!hasTranslator() || !targetFor(appLang) || isDemoMode()) {
+  // Manual overrides work with no on-device model at all, so the shortcut only
+  // applies when there is nothing of either kind to contribute.
+  const hasManual = appLang === manualLocale && manualIndex.byText.size > 0;
+  if (isDemoMode() || (!hasManual && (!hasTranslator() || !targetFor(appLang)))) {
     return list.map((text) => (text == null ? '' : String(text)));
   }
 
