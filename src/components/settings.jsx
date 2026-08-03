@@ -601,10 +601,10 @@ const Settings = () => {
                         {t('settings.autoClockOutTime', 'Auto Clock Out Time')}
                       </label>
                       <TimePicker
-                        value={(settings?.auto_clock_out_time || '18:00').toString().slice(0, 5)}
+                        value={(settings?.auto_clock_out_time || '17:00').toString().slice(0, 5)}
                         onChange={(e) => handleSettingChange('auto_clock_out_time', e.target.value)}
                         inputClassName={`px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                        defaultOpenTime="18:00"
+                        defaultOpenTime="17:00"
                       />
                     </div>
                   )}

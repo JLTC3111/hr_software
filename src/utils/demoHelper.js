@@ -1851,7 +1851,7 @@ export const MOCK_SETTINGS = {
   default_dashboard_view: 'overview',
   items_per_page: 10,
   auto_clock_out: false,
-  auto_clock_out_time: '18:00:00',
+  auto_clock_out_time: '17:00:00',
   weekly_report: true
 };
 

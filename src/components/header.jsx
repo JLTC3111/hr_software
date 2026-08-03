@@ -8,7 +8,6 @@ import ThemeToggle from './themeToggle'
 import LanguageSelector from './LanguageSelector'
 import NotificationDropdown from './NotificationDropdown'
 import MobileHeaderMenu from './MobileHeaderMenu'
-import { TextType } from './motion-primitives'
 import { ShinyButton } from './ui/shiny-button'
 import { cn } from '@/lib/utils'
 
@@ -29,29 +28,19 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
 
   const displayName = user?.name || user?.email || t('header.user', 'HR Team');
 
-  const welcomePhrases = useMemo(() => {
-    const phraseKeys = [
-      'header.welcomePhrase1',
-      'header.welcomePhrase2',
-      'header.welcomePhrase3',
-      'header.welcomePhrase4',
-      'header.welcomePhrase5',
-      'header.welcomePhrase6',
-    ];
-    const fallbacks = [
-      'Welcome back, {name}',
-      'Great to see you, {name}',
-      'Hello, {name}!',
-      'Ready to manage HR, {name}?',
-      "Let's make today productive, {name}",
-      'Good to have you here, {name}',
-    ];
+  /**
+   * One fixed greeting, rendered as plain text.
+   *
+   * This used to cycle six phrases through a looping typewriter with a shimmer
+   * sweep. It sat in the corner of every screen and never stopped moving, which
+   * pulled the eye away from whatever the page was actually for. The greeting is
+   * ambient information, so it should not animate at all.
+   */
+  const greeting = useMemo(
+    () => t('header.welcomePhrase1', 'Welcome back, {name}').replace('{name}', displayName),
+    [t, displayName]
+  );
 
-    return phraseKeys.map((key, index) =>
-      t(key, fallbacks[index]).replace('{name}', displayName)
-    );
-  }, [t, displayName]);
-  
   return (
     <nav className={`${bg.secondary} shadow-sm border-b ${border.primary}`}>
       <div className="px-3 sm:px-4 lg:px-5 xl:px-6">
@@ -88,24 +77,15 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
 
           {/* Desktop actions */}
           <div className="hidden lg:flex items-center gap-4">
-            <div className="text-sm">
-              <TextType
-                as="span"
-                text={welcomePhrases}
-                shimmer
-                typingSpeed={45}
-                deletingSpeed={25}
-                pauseDuration={2500}
-                shimmerDuration={3}
-                loop
-                showCursor={false}
-                className={cn(
-                  isDarkMode
-                    ? '[--base-color:#9ca3af] [--base-gradient-color:#f9fafb]'
-                    : '[--base-color:#6b7280] [--base-gradient-color:#111827]'
-                )}
-              />
-            </div>
+            <span
+              className={cn(
+                'text-sm truncate max-w-[22rem]',
+                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              )}
+              title={greeting}
+            >
+              {greeting}
+            </span>
             <LanguageSelector />
             <ThemeToggle />
             <NotificationDropdown />

@@ -190,6 +190,8 @@ export default {
   // Dashboard
   dashboard: {
     workforce: 'Nhân sự',
+    headcount: 'Quân số',
+    attrition: 'Nghỉ việc',
     hours: 'Giờ',
     leave: 'Nghỉ phép',
     performance: 'Hiệu suất',
@@ -435,9 +437,9 @@ export default {
     others: 'người khác',
     missingPunch: 'Thiếu giờ ra',
     missingPunchOut: 'Thiếu giờ ra',
-    autoClose: 'Tự chốt 18:00',
-    autoCloseConfirm: 'Đặt giờ ra 18:00 cho {count} bản ghi còn mở? Thao tác này cập nhật bảng chấm công.',
-    autoCloseSuccess: 'Đã chốt {count} bản ghi lúc 18:00',
+    autoClose: 'Tự chốt {time}',
+    autoCloseConfirm: 'Đặt giờ ra {time} cho {count} bản ghi còn mở? Thao tác này cập nhật bảng chấm công.',
+    autoCloseSuccess: 'Đã chốt {count} bản ghi lúc {time}',
     reviewEach: 'Xem từng ca',
     overOvertimeCap: 'Vượt trần tăng ca',
     aboveCap: 'Vượt trần {cap}h',

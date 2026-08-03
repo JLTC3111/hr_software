@@ -28,6 +28,7 @@ import { validateAndRefreshSession } from '../utils/sessionHelper.js'
 import { retryWithBackoff, isRetryableError } from '../utils/retryHelper.js'
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js'
 import { getDemoEmployeeName, isDemoMode } from '../utils/demoHelper.js'
+import { filterInactiveEmployees } from '../utils/employeeStatus.js'
 import { FlubberMorphIcon } from './ui/flubber-morph-icon.jsx'
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill'
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js'
@@ -348,11 +349,11 @@ const Dashboard = ({ employees, applications }) => {
     }, {});
   }, [employees]);
 
-  /** Company + the two largest departments, exactly like the spec's [Company|Eng|Sales]. */
+  /** Company + the three largest departments — the spec's [Company|Eng|Sales|Office]. */
   const scopeOptions = useMemo(() => {
     const top = Object.entries(departmentCountsAll)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 2)
+      .slice(0, 3)
       .map(([dept]) => ({ value: dept, label: t(`employeeDepartment.${dept}`, dept) }));
     return [{ value: 'all', label: t('dashboard.company', 'Company') }, ...top];
   }, [departmentCountsAll, t]);
@@ -383,6 +384,23 @@ const Dashboard = ({ employees, applications }) => {
   const avgPerformance = trackingDataValues.length > 0
     ? (trackingDataValues.reduce((sum, emp) => sum + (emp?.performance || 0), 0) / trackingDataValues.length).toFixed(1)
     : '0.0';
+
+  /**
+   * Share of the scoped roster that is no longer active.
+   *
+   * This is a standing share, not a rate over the selected period: `employees`
+   * records a status but no termination date, so there is no way to ask who
+   * left *this month*. Labelled "Attrition" per the spec, with the tooltip
+   * spelling out what is actually being counted.
+   */
+  const attrition = useMemo(() => {
+    if (scopedEmployees.length === 0) return { pct: '0%', inactive: 0 };
+    const inactive = filterInactiveEmployees(scopedEmployees).length;
+    return {
+      pct: `${Math.round((inactive / scopedEmployees.length) * 100)}%`,
+      inactive,
+    };
+  }, [scopedEmployees]);
 
   // Check if we have any real data
   const hasRealData = trackingDataValues.some(emp => emp?.workDays > 0 || emp?.overtime > 0);
@@ -690,12 +708,26 @@ const Dashboard = ({ employees, applications }) => {
           <LiveClock ind={ind} live={hasRealData} />
         </TickerCell>
 
+        {/*
+          `dashboard.workforce` is defined as "Workforce" in en.js, so the
+          fallback here never showed; the strip read WORKFORCE. Its own key.
+        */}
         <TickerCell
           ind={ind}
-          label={t('dashboard.workforce', 'Headcount')}
+          label={t('dashboard.headcount', 'Headcount')}
           value={scopedEmployees.length}
           onClick={() => handleMetricClick('employees')}
           title={t('dashboard.totalEmployees')}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('dashboard.attrition', 'Attrition')}
+          value={attrition.pct}
+          onClick={() => handleMetricClick('employees')}
+          title={t(
+            'dashboard.attritionHint',
+            'Share of this roster marked inactive. Employees carry no termination date, so this is a standing share rather than a rate for the selected period.'
+          )}
         />
         <TickerCell
           ind={ind}

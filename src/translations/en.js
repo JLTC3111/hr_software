@@ -186,6 +186,8 @@ export default {
   // Dashboard
   dashboard: {
     workforce: 'Workforce',
+    headcount: 'Headcount',
+    attrition: 'Attrition',
     hours: 'Hours',
     leave: 'Leave',
     performance: 'Performance',
@@ -784,9 +786,9 @@ export default {
     others: 'others',
     missingPunch: 'Missing punch',
     missingPunchOut: 'Missing punch-out',
-    autoClose: 'Auto-close 18:00',
-    autoCloseConfirm: 'Set clock-out to 18:00 on {count} open entries? This updates the timesheets.',
-    autoCloseSuccess: '{count} entries closed at 18:00',
+    autoClose: 'Auto-close {time}',
+    autoCloseConfirm: 'Set clock-out to {time} on {count} open entries? This updates the timesheets.',
+    autoCloseSuccess: '{count} entries closed at {time}',
     reviewEach: 'Review each',
     overOvertimeCap: 'Over overtime cap',
     aboveCap: 'Above {cap}h cap',

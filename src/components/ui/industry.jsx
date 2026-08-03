@@ -345,7 +345,13 @@ export function LiveClock({ ind, live }) {
       <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.14em', opacity: 0.65 }}>
         LIVE
       </span>
-      <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 17, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+      {/*
+        Set to the size of the LIVE label next to it, not the 17px of a
+        TickerCell value. The wall clock is not a measurement of the business;
+        at figure size it competed with the metrics either side of it for the
+        one thing on the strip that changes every second.
+      */}
+      <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.06em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
         {pad(now.getHours())}:{pad(now.getMinutes())}:{pad(now.getSeconds())}
       </span>
     </>

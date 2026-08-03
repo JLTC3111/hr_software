@@ -197,6 +197,22 @@ const clockMinutes = (value) => {
   return hours * 60 + mins;
 };
 
+/**
+ * The standard working day, and the frame an auto-close snaps an open punch to.
+ * A clock-in earlier than the start is treated as the start: auto-close fills in
+ * a punch nobody made, so it should credit the standard day rather than an
+ * unverified early arrival.
+ */
+const WORKDAY_START = '08:30:00';
+const WORKDAY_END = '17:00:00';
+const WORKDAY_START_MINUTES = 8 * 60 + 30;
+const WORKDAY_END_MINUTES = 17 * 60;
+/**
+ * 'HH:MM:SS' → 'HH:MM', for the confirm prompt and the button label. 24-hour to
+ * match how every other time on this screen and in the Vietnamese copy reads.
+ */
+const shortTime = (value) => String(value).slice(0, 5);
+
 /** Monday 00:00 of the week containing `now`. */
 const startOfWeek = (now) => {
   const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -1059,16 +1075,17 @@ const TimeTracking = ({ employees: employeesProp }) => {
   }, []);
 
   /**
-   * Close every open punch at 18:00. This writes: it is the one action on the
-   * screen that changes records rather than filtering them, so it confirms with
-   * an explicit count first.
+   * Close every open punch at the end of the standard working day. This writes:
+   * it is the one action on the screen that changes records rather than
+   * filtering them, so it confirms with an explicit count first.
    */
   const handleAutoClose = useCallback(async () => {
     const open = missingPunch.rows;
     if (open.length === 0 || closingPunches) return;
 
     const confirmed = window.confirm(
-      t('timeTracking.autoCloseConfirm', 'Set clock-out to 18:00 on {count} open entries? This updates the timesheets.')
+      t('timeTracking.autoCloseConfirm', 'Set clock-out to {time} on {count} open entries? This updates the timesheets.')
+        .replace('{time}', shortTime(WORKDAY_END))
         .replace('{count}', String(open.length))
     );
     if (!confirmed) return;
@@ -1078,17 +1095,21 @@ const TimeTracking = ({ employees: employeesProp }) => {
     try {
       for (const entry of open) {
         const inMinutes = clockMinutes(entry.clock_in);
-        // 18:00 with no lunch deduction — an auto-close is a placeholder for a
-        // real punch, not an assertion about how the day was spent.
-        const hours = inMinutes == null ? Number(entry.hours) || 0 : Math.max(0, round1((18 * 60 - inMinutes) / 60));
+        // No lunch deduction — an auto-close is a placeholder for a real punch,
+        // not an assertion about how the day was spent. An entry with no
+        // readable clock-in is credited the full standard day.
+        const startMinutes = Math.max(inMinutes ?? WORKDAY_START_MINUTES, WORKDAY_START_MINUTES);
+        const hours = Math.max(0, round1((WORKDAY_END_MINUTES - startMinutes) / 60));
         const result = await timeTrackingService.updateTimeEntry(entry.id, {
-          clockOut: '18:00:00',
+          clockOut: WORKDAY_END,
           hours,
         });
         if (result.success) updated += 1;
       }
       setSuccessMessage(
-        t('timeTracking.autoCloseSuccess', '{count} entries closed at 18:00').replace('{count}', String(updated))
+        t('timeTracking.autoCloseSuccess', '{count} entries closed at {time}')
+          .replace('{count}', String(updated))
+          .replace('{time}', shortTime(WORKDAY_END))
       );
       overviewCacheRef.current = { key: '', data: [] };
       await Promise.all([fetchOrgEntries(), fetchOrgSummaries(), fetchTimeTrackingData({ silent: true })]);
@@ -2002,7 +2023,7 @@ const TimeTracking = ({ employees: employeesProp }) => {
                   <Btn ind={ind} variant="primary" disabled={closingPunches} onClick={handleAutoClose}>
                     {closingPunches
                       ? t('common.saving', 'Saving…')
-                      : t('timeTracking.autoClose', 'Auto-close 18:00')}
+                      : t('timeTracking.autoClose', 'Auto-close {time}').replace('{time}', shortTime(WORKDAY_END))}
                   </Btn>
                   <Btn ind={ind} onClick={() => openException('missingPunch')}>
                     {t('timeTracking.reviewEach', 'Review each')}
