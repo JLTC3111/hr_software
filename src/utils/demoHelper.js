@@ -1,6 +1,15 @@
 // Demo Mode Helper Utilities
 
 import { isEmployeeActive } from './employeeStatus.js';
+import {
+  buildDemoRoster,
+  buildRosterReviews,
+  buildRosterGoals,
+  buildRosterSkills,
+  buildRosterLeaveRequests,
+  buildRosterJobPostings,
+  buildRosterRecruitment,
+} from './demoRoster.js';
 
 const DEMO_STORAGE_KEY = 'hr_app_demo_mode';
 
@@ -639,7 +648,12 @@ export const MOCK_USER = {
   }
 };
 
-export const MOCK_EMPLOYEES = [
+/**
+ * The six original placeholders. Kept because MOCK_TASKS, MOCK_GOALS,
+ * MOCK_PERFORMANCE_REVIEWS and friends address them by id, and demo-emp-1 is
+ * the signed-in demo user.
+ */
+const CORE_DEMO_EMPLOYEES = [
   {
     id: 'demo-emp-1',
     name: 'Demo Admin',
@@ -746,6 +760,14 @@ export const MOCK_EMPLOYEES = [
   }
 ];
 
+/**
+ * The generated Vietnamese roster, sized so every screen has enough rows to
+ * look like a real organisation rather than a fixture.
+ */
+export const DEMO_ROSTER = buildDemoRoster({ avatarFor: (id) => getDemoAvatarUrl(id) });
+
+export const MOCK_EMPLOYEES = [...CORE_DEMO_EMPLOYEES, ...DEMO_ROSTER];
+
 const DEMO_EMPLOYEES_KEY = 'hr_app_demo_employees';
 const DELETED_DEMO_EMPLOYEE_IDS_KEY = 'hr_app_demo_deleted_employee_ids';
 
@@ -847,30 +869,67 @@ export const deleteDemoEmployee = (employeeId) => {
   return true;
 };
 
-// Generate some random time entries for the current month
+/**
+ * Time entries for the last three months, weekdays only.
+ *
+ * This used to cover the current month up to today, which meant that on the
+ * 1st-3rd of a month the whole demo had one or two days of data in it: empty
+ * charts, a flat hours bar and nothing to page through. The month and year
+ * selectors on the dashboard and timesheets also had nothing to select. Three
+ * months back is enough for the period-over-period deltas to be real.
+ */
+const TIME_ENTRY_MONTHS_BACK = 3;
+
+/**
+ * 'YYYY-MM-DD' in local time.
+ *
+ * The dates here are built with `new Date(year, month, day)`, which is local
+ * midnight. Serialising those with toISOString() converts to UTC first, so
+ * anywhere east of Greenwich every entry landed on the previous calendar day --
+ * which also slid Monday's rows onto Sunday and put weekend dates into a
+ * weekdays-only dataset.
+ */
+const localDateStr = (date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
 const generateMockTimeEntries = () => {
   const entries = [];
   const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  for (let monthOffset = TIME_ENTRY_MONTHS_BACK - 1; monthOffset >= 0; monthOffset -= 1) {
+    const cursor = new Date(today.getFullYear(), today.getMonth() - monthOffset, 1);
+    const year = cursor.getFullYear();
+    const month = cursor.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    // Never generate into the future: the current month stops at today.
+    const lastDay = monthOffset === 0 ? Math.min(daysInMonth, today.getDate()) : daysInMonth;
 
   // Generate entries by day first, then by employee for better interleaving
-  for (let day = 1; day <= Math.min(daysInMonth, today.getDate()); day++) {
+  for (let day = 1; day <= lastDay; day++) {
     const date = new Date(year, month, day);
     // Skip weekends
     if (date.getDay() === 0 || date.getDay() === 6) continue;
-    
-    const dateStr = date.toISOString().split('T')[0];
-    
+
+    const dateStr = localDateStr(date);
+    // Ids have to stay unique now that the same day number recurs each month.
+    const dayKey = dateStr;
+    const daysAgo = Math.round((today - date) / 86400000);
+
     MOCK_EMPLOYEES.forEach((emp, empIndex) => {
       // Use seeded random based on emp index and day for consistent results
       // This ensures all employees have entries, not just some
-      const seed = (empIndex * 31 + day) % 100;
+      const seed = (empIndex * 31 + day + month * 7) % 100;
       if (seed > 95) return; // Only ~5% absent rate
 
+      // The dashboard's decision column is built from time entries still
+      // awaiting approval. With everything pre-approved the queue was always
+      // empty, so the panel read as broken rather than as "nothing to do".
+      // Only the last fortnight is left pending: a queue of month-old items
+      // would make every entry look overdue.
+      const pending = daysAgo < 14 && (empIndex * 17 + day * 11) % 100 < 9;
+
       entries.push({
-        id: `te-${emp.id}-${day}`,
+        id: `te-${emp.id}-${dayKey}`,
         employee_id: emp.id,
         employee_name: emp.name,
         employee_nameKey: emp.nameKey,
@@ -879,7 +938,7 @@ const generateMockTimeEntries = () => {
         date: dateStr,
         hours: 8,
         hour_type: 'regular',
-        status: 'approved',
+        status: pending ? 'pending' : 'approved',
         clock_in: '09:00:00',
         clock_out: '17:00:00',
         employee: {
@@ -895,7 +954,7 @@ const generateMockTimeEntries = () => {
       const overtimeSeed = (empIndex * 37 + day * 3) % 100;
       if (overtimeSeed < 20) {
         entries.push({
-          id: `te-ot-${emp.id}-${day}`,
+          id: `te-ot-${emp.id}-${dayKey}`,
           employee_id: emp.id,
           employee_name: emp.name,
           employee_nameKey: emp.nameKey,
@@ -921,7 +980,7 @@ const generateMockTimeEntries = () => {
       const wfhSeed = (empIndex * 41 + day * 7) % 100;
       if (wfhSeed < 15) {
         entries.push({
-          id: `te-wfh-${emp.id}-${day}`,
+          id: `te-wfh-${emp.id}-${dayKey}`,
           employee_id: emp.id,
           employee_name: emp.name,
           employee_nameKey: emp.nameKey,
@@ -947,7 +1006,7 @@ const generateMockTimeEntries = () => {
       const bonusSeed = (empIndex * 53 + day * 11) % 100;
       if (bonusSeed < 5) {
         entries.push({
-          id: `te-bonus-${emp.id}-${day}`,
+          id: `te-bonus-${emp.id}-${dayKey}`,
           employee_id: emp.id,
           employee_name: emp.name,
           employee_nameKey: emp.nameKey,
@@ -968,18 +1027,52 @@ const generateMockTimeEntries = () => {
           }
         });
       }
+
+      // Days taken as leave (~4%). Nothing generated on_leave entries before,
+      // so the dashboard's Work vs Leave split was work-only and the Leave
+      // figure on the ticker sat at zero all month.
+      const leaveSeed = (empIndex * 59 + day * 13) % 100;
+      if (leaveSeed < 4) {
+        entries.push({
+          id: `te-leave-${emp.id}-${dayKey}`,
+          employee_id: emp.id,
+          employee_name: emp.name,
+          employee_nameKey: emp.nameKey,
+          employee_department: emp.department,
+          employee_position: emp.position,
+          date: dateStr,
+          hours: 8,
+          hour_type: 'on_leave',
+          status: 'approved',
+          clock_in: '09:00:00',
+          clock_out: '17:00:00',
+          employee: {
+            id: emp.id,
+            name: emp.name,
+            nameKey: emp.nameKey,
+            department: emp.department,
+            position: emp.position
+          }
+        });
+      }
     });
   }
+  }
 
-  // Add some holiday entries for specific dates - include all employees
+  // Add some holiday entries for specific dates - include all employees.
+  // `year`/`month` now belong to the month loop above, so the window this
+  // checks against is recomputed here from the range actually generated.
+  const rangeStart = new Date(today.getFullYear(), today.getMonth() - (TIME_ENTRY_MONTHS_BACK - 1), 1);
+  const holidayYear = today.getFullYear();
   const holidays = [
-    { date: `${year}-01-01`, name: 'New Year' },
-    { date: `${year}-12-25`, name: 'Christmas' }
+    { date: `${holidayYear}-01-01`, name: 'New Year' },
+    { date: `${holidayYear}-12-25`, name: 'Christmas' },
+    { date: `${holidayYear - 1}-12-25`, name: 'Christmas' }
   ];
-  
+
   holidays.forEach(holiday => {
-    if (holiday.date >= `${year}-${String(month + 1).padStart(2, '0')}-01` && 
-        holiday.date <= `${year}-${String(month + 1).padStart(2, '0')}-${daysInMonth}`) {
+    const when = new Date(`${holiday.date}T00:00:00`);
+    if (when >= rangeStart && when <= today) {
       MOCK_EMPLOYEES.forEach(emp => {
         entries.push({
           id: `te-hol-${emp.id}-${holiday.date}`,
@@ -1282,7 +1375,7 @@ export const MOCK_PERFORMANCE_REVIEWS = [
     id: 'review-1',
     employee_id: 'demo-emp-1',
     reviewer_id: 'demo-emp-2',
-    review_period: 'Q4 2024',
+    review_period: 'Q4-2024',
     review_periodKey: 'demoReviews.review-1.reviewPeriod',
     review_type: 'quarterly',
     overall_rating: 4.5,
@@ -1308,7 +1401,7 @@ export const MOCK_PERFORMANCE_REVIEWS = [
     id: 'review-2',
     employee_id: 'demo-emp-2',
     reviewer_id: 'demo-emp-1',
-    review_period: 'Q4 2024',
+    review_period: 'Q4-2024',
     review_periodKey: 'demoReviews.review-2.reviewPeriod',
     review_type: 'quarterly',
     overall_rating: 4.2,
@@ -1513,6 +1606,22 @@ export const deleteDemoSkill = (skillId) => {
   localStorage.setItem(DEMO_SKILLS_KEY, JSON.stringify(storedSkills));
 };
 
+/*
+ * Extend the hand-written fixtures with the generated roster's records.
+ *
+ * Appended in place rather than rebuilt as new arrays: MOCK_GOALS, MOCK_SKILLS
+ * and MOCK_PERFORMANCE_REVIEWS are imported by identity in several services, and
+ * reassigning them would leave those holding the six-person originals. The
+ * fixtures above stay first so demo-emp-1's hand-written story is what the demo
+ * user sees on their own screens.
+ */
+MOCK_PERFORMANCE_REVIEWS.push(...buildRosterReviews(DEMO_ROSTER));
+MOCK_GOALS.push(...buildRosterGoals(DEMO_ROSTER));
+MOCK_SKILLS.push(...buildRosterSkills(DEMO_ROSTER));
+
+/** Seeded leave, so the leave screen and its approvals are not empty. */
+export const MOCK_LEAVE_REQUESTS = buildRosterLeaveRequests(DEMO_ROSTER);
+
 export const MOCK_FEEDBACK = [
   {
     id: 'feedback-1',
@@ -1645,6 +1754,19 @@ export const MOCK_APPLICATIONS = [
   }
 ];
 
+const ROSTER_JOB_POSTINGS = buildRosterJobPostings();
+const ROSTER_RECRUITMENT = buildRosterRecruitment(ROSTER_JOB_POSTINGS);
+
+/*
+ * Recruitment shipped with two openings and two candidates, which is not a
+ * pipeline -- the funnel chart had a single bar per stage. Extend all three
+ * lists in place, keeping the two hand-written records first because their
+ * resumes and translation keys are what the recruitment walkthrough uses.
+ */
+MOCK_JOB_POSTINGS.push(...ROSTER_JOB_POSTINGS);
+MOCK_APPLICANTS.push(...ROSTER_RECRUITMENT.applicants);
+MOCK_APPLICATIONS.push(...ROSTER_RECRUITMENT.applications);
+
 export const MOCK_INTERVIEWS = [
   {
     id: 'int-1',
@@ -1660,6 +1782,8 @@ export const MOCK_INTERVIEWS = [
     application: MOCK_APPLICATIONS[1]
   }
 ];
+
+MOCK_INTERVIEWS.push(...ROSTER_RECRUITMENT.interviews);
 
 const DEMO_NOTIFICATIONS_KEY = 'hr_app_demo_notifications';
 
@@ -2158,7 +2282,10 @@ export const deleteDemoGoal = (goalId) => {
  */
 export const getDemoLeaveRequests = () => {
   const stored = localStorage.getItem(DEMO_LEAVE_REQUESTS_KEY);
-  return stored ? JSON.parse(stored) : [];
+  // Falls back to the seeded roster requests rather than an empty list, so the
+  // leave screen has history the first time it is opened. Once the demo user
+  // files or edits anything, localStorage holds the whole list and wins.
+  return stored ? JSON.parse(stored) : MOCK_LEAVE_REQUESTS;
 };
 
 /**
@@ -2167,8 +2294,9 @@ export const getDemoLeaveRequests = () => {
  * @returns {Object} - The added leave request
  */
 export const addDemoLeaveRequest = (leaveRequest) => {
-  const stored = localStorage.getItem(DEMO_LEAVE_REQUESTS_KEY);
-  const storedRequests = stored ? JSON.parse(stored) : [];
+  // Seeded requests included: reading localStorage directly here would drop
+  // them the first time the demo user files anything.
+  const storedRequests = [...getDemoLeaveRequests()];
   storedRequests.push(leaveRequest);
   localStorage.setItem(DEMO_LEAVE_REQUESTS_KEY, JSON.stringify(storedRequests));
   return leaveRequest;
@@ -2181,8 +2309,7 @@ export const addDemoLeaveRequest = (leaveRequest) => {
  * @returns {Object|null} - Updated leave request or null if not found
  */
 export const updateDemoLeaveRequest = (requestId, updates) => {
-  const stored = localStorage.getItem(DEMO_LEAVE_REQUESTS_KEY);
-  const storedRequests = stored ? JSON.parse(stored) : [];
+  const storedRequests = [...getDemoLeaveRequests()];
   
   const index = storedRequests.findIndex(r => r.id === requestId);
   if (index !== -1) {
@@ -2200,8 +2327,7 @@ export const updateDemoLeaveRequest = (requestId, updates) => {
  * @returns {boolean} - True if deleted
  */
 export const deleteDemoLeaveRequest = (requestId) => {
-  const stored = localStorage.getItem(DEMO_LEAVE_REQUESTS_KEY);
-  let storedRequests = stored ? JSON.parse(stored) : [];
+  let storedRequests = [...getDemoLeaveRequests()];
   
   storedRequests = storedRequests.filter(r => r.id !== requestId);
   localStorage.setItem(DEMO_LEAVE_REQUESTS_KEY, JSON.stringify(storedRequests));

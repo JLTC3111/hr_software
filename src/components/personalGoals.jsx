@@ -210,7 +210,7 @@ function CycleStep({ ind, state, title, meta, last }) {
  * markers. Recharts is overkill for five points and would not give the open
  * marker the rest of the system uses.
  */
-function RatingSpark({ ind, points, emptyLabel }) {
+function RatingSpark({ ind, points, emptyLabel, selfLabel = 'self-rated' }) {
   const W = 320;
   const H = 96;
   const PAD_X = 10;
@@ -254,11 +254,13 @@ function RatingSpark({ ind, points, emptyLabel }) {
             y={p.y - 3.5}
             width={7}
             height={7}
-            fill={ind.chrome}
+            // Open square for a calibrated review, filled for a quarter the
+            // employee logged themselves.
+            fill={p.selfOnly ? ind.accent : ind.chrome}
             stroke={ind.accent}
             strokeWidth={1.5}
           >
-            <title>{`${p.label} · ${fmt1(p.value)}`}</title>
+            <title>{`${p.label} · ${fmt1(p.value)}${p.selfOnly ? ` · ${selfLabel}` : ''}`}</title>
           </rect>
         ))}
       </svg>
@@ -596,6 +598,9 @@ const PersonalGoals = ({ employees }) => {
         key: q.key,
         label: `Q${q.quarter}'${String(q.year).slice(2)}`,
         value: Number.isFinite(value) && value > 0 ? value : null,
+        // A self-logged quarter is the employee's own average, not a calibrated
+        // review. The marker says so rather than passing it off as a review.
+        selfOnly: review?.review_type === 'self',
       };
     });
   }, [allReviews, selectedPeriod]);
@@ -749,6 +754,34 @@ const PersonalGoals = ({ employees }) => {
       }
 
       if (failures.length > 0) throw new Error(failures.join('; '));
+
+      /*
+       * Log the period's overall so the rating history has a point.
+       *
+       * skills_assessments is upserted per (employee, skill) and holds only the
+       * newest number, so saving there records the current standing but no
+       * history. The history line reads performance_reviews.overall_rating by
+       * quarter, which is why nothing ever appeared for an employee whose
+       * manager had not filed a review.
+       *
+       * Only ever creates. If a review row already exists for this period it is
+       * the manager's, and upsertPerformanceReviewByPeriod writes every rating
+       * column -- calling it with just the overall would null out the manager's
+       * per-skill ratings.
+       */
+      if (!periodReview && skillAverage > 0) {
+        const logged = await performanceService.upsertPerformanceReviewByPeriod({
+          employeeId: selectedEmployee,
+          reviewerId: selectedEmployee,
+          reviewPeriod: selectedPeriod,
+          reviewType: 'self',
+          overallRating: skillAverage,
+          status: 'draft',
+        });
+        if (!logged.success) {
+          console.error('Skill ratings saved, but the period overall was not logged:', logged.error);
+        }
+      }
 
       setAssessmentDirty(false);
       setAdjusting(false);
@@ -1449,6 +1482,7 @@ const PersonalGoals = ({ employees }) => {
                 ind={ind}
                 points={historyPoints}
                 emptyLabel={t('personalGoals.noRatingHistory', 'No rated quarters yet.')}
+                selfLabel={t('personalGoals.selfRated', 'self-rated')}
               />
             </div>
           </div>
