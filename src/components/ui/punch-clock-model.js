@@ -8,7 +8,8 @@
  * sits at the bottom-centre of the back plate, so the clock rests on the ground
  * plane at y=0 and mounts flush against a wall at z=0.
  *
- * Overall envelope ≈ 26 w × 43 h × 15 d.
+ * Overall envelope ≈ 28 w × 35 h × 15 d. The crown apexes at y = 32; the bell
+ * and the punch lever are what reach above it.
  */
 import * as THREE from 'three';
 
@@ -18,13 +19,27 @@ const { degToRad } = THREE.MathUtils;
 const DIAL = { x: 0, y: 20, z: 12.9 };
 const DIAL_RADIUS = 7.8;
 
+/**
+ * Enamel green for the case, in two values.
+ *
+ * The dark one is the true colour of the object, and it works against a dark
+ * page: the case sits near the background value, so the chrome and the dial
+ * read first and you see a clock. On a light page the same colour drops to a
+ * ~9% luminance silhouette, and a silhouette is read as shape before it is read
+ * as object — which is how a clock becomes a headstone. The light value keeps
+ * the hue and raises it to mid so the case stays a surface with light falling
+ * across it rather than a hole in the page.
+ */
+export const CASE_DARK = 0x2f4238;
+export const CASE_LIGHT = 0x5d7060;
+
 /* ────────────────────────────────────────────────────────────────────────────
  * Materials — four standard materials plus one for the glass. Every mesh in the
  * model reuses these instances; nothing allocates a material of its own.
  * ──────────────────────────────────────────────────────────────────────────── */
-export function createPunchClockMaterials() {
+export function createPunchClockMaterials({ caseColor = CASE_DARK } = {}) {
   const matCase = new THREE.MeshStandardMaterial({
-    color: 0x2f4238, // deep enamel green
+    color: caseColor,
     roughness: 0.45,
     metalness: 0.15,
   });
@@ -237,16 +252,29 @@ export function createPunchClock(options = {}) {
   caseBody.position.set(0, 17, 6.5);
   add(caseBody);
 
-  // Shallow arched crown. A half cylinder swept from PI/2 through PI puts the
-  // dome above the flat edge once the axis is laid along Z; sweeping from 0
-  // instead stands the half-disc on its side.
+  // Segmental crown. Once the axis is laid along Z, theta = PI is "up", so an
+  // arc centred on the top is thetaStart = PI - half, thetaLength = 2 * half.
+  //
+  // A radius-12 semicircle here would span the full 24 of body width and rise
+  // 12 above it — flat sides under a full-width dome, which is a headstone, not
+  // a clock. Trading radius for sweep keeps the arc meeting the body exactly at
+  // its corners while flattening the rise: at radius 20 the half-angle is
+  // asin(12/20), the centre drops to y = 28 - sqrt(20^2 - 12^2) = 12, and the
+  // crown rises 4 instead of 12.
+  const CROWN_RADIUS = 20;
+  const CROWN_HALF_ANGLE = Math.asin(12 / CROWN_RADIUS);
   const caseCrown = new THREE.Mesh(
-    new THREE.CylinderGeometry(12, 12, 13, 48, 1, false, Math.PI / 2, Math.PI),
+    new THREE.CylinderGeometry(
+      CROWN_RADIUS, CROWN_RADIUS, 13, 64, 1, false,
+      Math.PI - CROWN_HALF_ANGLE, CROWN_HALF_ANGLE * 2
+    ),
     matCase
   );
   caseCrown.name = 'caseCrown';
   caseCrown.rotation.x = Math.PI / 2;
-  caseCrown.position.set(0, 28, 6.5);
+  // The wedge runs from its axis out to the arc; the axis sits inside the body,
+  // so everything below the body's top edge is enclosed and never seen.
+  caseCrown.position.set(0, 28 - Math.sqrt(CROWN_RADIUS ** 2 - 12 ** 2), 6.5);
   add(caseCrown);
 
   const backPlate = new THREE.Mesh(new THREE.BoxGeometry(22, 26, 1), matCase);
@@ -258,6 +286,20 @@ export function createPunchClock(options = {}) {
   basePlinth.name = 'basePlinth';
   basePlinth.position.set(0, 3, 7);
   add(basePlinth);
+
+  // Two chrome mouldings, at the crown joint and the plinth joint. A headstone
+  // is one unbroken contour; a machine is assembled from parts. Each band is
+  // proud of the surface it sits on so it catches the key light and cuts the
+  // silhouette in three even where the case reads as a flat dark shape.
+  const cornice = new THREE.Mesh(new THREE.BoxGeometry(24.8, 0.6, 13.6), matChrome);
+  cornice.name = 'cornice';
+  cornice.position.set(0, 27.9, 6.5);
+  add(cornice);
+
+  const plinthBand = new THREE.Mesh(new THREE.BoxGeometry(26.6, 0.6, 14.5), matChrome);
+  plinthBand.name = 'plinthBand';
+  plinthBand.position.set(0, 6, 7);
+  add(plinthBand);
 
   // ── Dial ──────────────────────────────────────────────────────────────────
   // A torus already lies in the XY plane, which is exactly how a front-facing
@@ -379,14 +421,16 @@ export function createPunchClock(options = {}) {
   add(leverPivot);
 
   // ── Bell and mounting lugs ────────────────────────────────────────────────
-  // The crown arches to y=40, so the bell rides on the apex rather than the
-  // y=34 given in the spec, where it would sit entirely inside the crown.
+  // Seated on the crown's ridge. The old semicircular crown apexed at y=40 and
+  // would have swallowed the spec's y=34, so the bell was raised to ride on top
+  // of it; the segmental crown apexes at 32, which puts the bell back on the
+  // metal instead of floating above it.
   const bellDome = new THREE.Mesh(
     new THREE.SphereGeometry(3, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2),
     matChrome
   );
   bellDome.name = 'bellDome';
-  bellDome.position.set(0, 40, 6.5);
+  bellDome.position.set(0, 31.6, 6.5);
   add(bellDome);
 
   for (const [name, x] of [['mountLugL', -8], ['mountLugR', 8]]) {

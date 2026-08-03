@@ -1,5 +1,17 @@
+/**
+ * Control Panel — the account and system screen, in the industry system.
+ *
+ * Same three bands as every other screen: a 44px ticker, a left band carrying
+ * the evidence (who you are, what your credentials are, who has been visiting)
+ * and a 340px decision column on the chrome ground carrying the actions that
+ * leave the screen — switch role, restore demo data, read the manual, sign out.
+ *
+ * Every card is a <Blueprint> with its four registration marks. Status reads
+ * through weight and rule, never through red or green, so the old coloured
+ * alert boxes became hairline notices with a condensed kicker.
+ */
 import _React, { useState, useEffect, useRef } from 'react';
-import { User, LogOut, Key, BookOpen, Shield, Info, RefreshCcw, UserPen, UserCheck, UserX, UserMinus, Camera, KeySquare, Loader, Users, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
+import { User, LogOut, Key, BookOpen, Shield, RefreshCcw, UserPen, UserCheck, UserX, UserMinus, Camera, Loader, Users, Eye, EyeOff, AlertCircle, X } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
@@ -8,67 +20,9 @@ import { supabase } from '../config/supabaseClient.js';
 import { isDemoMode, getDemoEmployeeName, resetAllDemoData, resetDemoTimeEntries, resetDemoGoals, resetDemoTasks, resetDemoReviews, resetDemoSkills, resetDemoLeaveRequests } from '../utils/demoHelper.js';
 import { fetchVisitSummary } from '../services/visitService.js';
 import * as flubber from 'flubber';
-import { PageLiveClock } from './ui/page-live-clock';
-
-const getDemoRolePresentation = (role, isDarkMode, adminLabel = 'Demo Admin', employeeLabel = 'Demo Employee') => {
-  const isAdminRole = role === 'demo_admin';
-  return {
-    label: isAdminRole ? adminLabel : employeeLabel,
-    textClass: isAdminRole
-      ? isDarkMode
-        ? 'text-emerald-400'
-        : 'text-blue-900'
-      : isDarkMode
-        ? 'text-amber-300'
-        : 'text-red-900'
-  };
-};
-
-const RollingDemoRoleLabel = ({ role, isDarkMode, adminLabel, employeeLabel }) => {
-  const [currentRole, setCurrentRole] = useState(role);
-  const [nextRole, setNextRole] = useState(null);
-  const [isRolling, setIsRolling] = useState(false);
-  const timeoutRef = useRef(null);
-
-  useEffect(() => {
-    if (role === currentRole) return;
-    setNextRole(role);
-    setIsRolling(true);
-    timeoutRef.current = setTimeout(() => {
-      setCurrentRole(role);
-      setNextRole(null);
-      setIsRolling(false);
-    }, 320);
-
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, [role, currentRole]);
-
-  const { label: currentLabel, textClass: currentClass } = getDemoRolePresentation(currentRole, isDarkMode, adminLabel, employeeLabel);
-  const nextPresentation = nextRole ? getDemoRolePresentation(nextRole, isDarkMode, adminLabel, employeeLabel) : null;
-
-  return (
-    <div className="relative h-5 overflow-hidden min-w-48">
-      <span
-        className={`absolute inset-0 flex translate-y-1.25 items-center text-sm font-semibold whitespace-nowrap transition-all duration-300 ease-out ${
-          isRolling ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
-        } ${currentClass}`}
-      >
-        {currentLabel}
-      </span>
-      {nextPresentation && (
-        <span
-          className={`absolute inset-0 flex items-center text-sm font-semibold whitespace-nowrap transition-all duration-300 ease-out ${
-            isRolling ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
-          } ${nextPresentation.textClass}`}
-        >
-          {nextPresentation.label}
-        </span>
-      )}
-    </div>
-  );
-};
+import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
+import { Blueprint, Tag, Btn, Kicker, TickerCell, LiveClock, ColumnHeading } from './ui/industry.jsx';
+import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 
 export const MiniFlubberAutoMorphChangeRole = ({
   size = 18,
@@ -312,7 +266,8 @@ export const MiniFlubberAutoMorphChangeRole = ({
 };
 
 const ControlPanel = () => {
-  const { isDarkMode, _bg, text, _border } = useTheme();
+  const { isDarkMode } = useTheme();
+  const ind = getIndustry(isDarkMode);
   const { t } = useLanguage();
   const { user, signOut, switchDemoRole, checkPermission, handleSessionAuthError } = useAuth();
   const navigate = useNavigate();
@@ -366,8 +321,8 @@ const ControlPanel = () => {
   const [showEmployeePassword, setShowEmployeePassword] = useState(false);
   const [showEmployeeConfirm, setShowEmployeeConfirm] = useState(false);
 
-  // Demo Data Management state
-  const [showDemoDataManagement, setShowDemoDataManagement] = useState(false);
+  // Demo Data Management state. The restore bench is always on the decision
+  // column in demo mode, so there is no separate open/closed state any more.
   const [restoringDemoData, setRestoringDemoData] = useState(null);
 
   // Toast notification state
@@ -386,9 +341,6 @@ const ControlPanel = () => {
   const employeeId = user?.employee_id || user?.employeeId || null;
   const isAdmin = userRole === 'admin' || userRole === 'Admin';
   const canViewVisitAnalytics = checkPermission('canViewAuditLogs');
-
-  // Unique gradient id for inline SVG to avoid id collisions
-  const gradIdRef = useRef('grad-' + Math.random().toString(36).slice(2, 9));
 
   // Debug: Monitor showChangePassword state changes
   useEffect(() => {
@@ -951,1166 +903,802 @@ const ControlPanel = () => {
     }
   };
 
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <PageLiveClock
-          showSeparator={false}
-          textClassName={isDarkMode ? 'text-white' : 'text-gray-900'}
-          loading={loadingUsers || loadingEmployees || loadingVisits}
-          isDarkMode={isDarkMode}
-          fetchLabel={t('common.fetching', 'Fetching')}
-        />
+  /* ---------------- render ---------------- */
+
+  const caption = { fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, lineHeight: 1.5, margin: 0 };
+  const consequence = { fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, lineHeight: 1.45, margin: '3px 0 0' };
+  const fieldLabel = {
+    fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.14em',
+    textTransform: 'uppercase', color: ind.inkMuted, display: 'block', marginBottom: 5,
+  };
+  const fieldBox = {
+    width: '100%', fontFamily: BODY, fontSize: 13, color: ind.ink, background: 'transparent',
+    border: `1px solid ${ind.hairline}`, borderRadius: 0, padding: '7px 34px 7px 10px', outline: 'none',
+  };
+  const revealBtn = {
+    position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+    background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: ind.inkFaint, lineHeight: 0,
+  };
+  /* A setting row: label + the consequence of changing it, control on the right. */
+  const settingRow = {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20,
+    padding: '11px 0', borderTop: `1px solid ${ind.rule}`,
+  };
+  const demoLocked = isDemoMode();
+  const modeLabel = demoLocked ? t('controlPanel.modeDemo', 'Demo') : t('controlPanel.modeLive', 'Live');
+
+  /* A labelled plate — the read-only form for a value that cannot be edited here. */
+  const Plate = ({ label, value, title, mono = false }) => (
+    <div style={{ border: `1px solid ${ind.hairline}`, padding: '3px 12px', minWidth: 0 }} title={title}>
+      <div style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 9.5, letterSpacing: '.12em', textTransform: 'uppercase', color: ind.inkMuted }}>
+        {label}
       </div>
-      {/* User Info Card */}
-      <div 
-        className="rounded-lg shadow-sm p-4"
+      <div
         style={{
-          backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-          borderColor: isDarkMode ? '#4b5563' : '#e5e7eb',
-          borderWidth: '1px',
-          borderStyle: 'solid'
+          fontFamily: mono ? 'ui-monospace, SFMono-Regular, Menlo, monospace' : DISPLAY,
+          fontWeight: 600, fontSize: mono ? 12 : 14, color: ind.ink,
+          fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}
       >
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="relative group">
-            <div 
-              className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden border-2"
-              style={{
-                backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6',
-                borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-              }}
-            >
-              {uploadingAvatar ? (
-                <Loader className="w-6 h-6 animate-spin" style={{ color: '#3b82f6' }} />
-              ) : avatarUrl ? (
-                <img 
-                  src={avatarUrl} 
-                  alt={userName}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User className="w-8 h-8" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }} />
-              )}
-            </div>
-            {!uploadingAvatar && (
-              <label 
-                className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                title={t('controlPanel.uploadAvatar', 'Upload avatar')}
-              >
-                <Camera className="w-5 h-5 text-white" />
-                <input 
-                  type="file" 
-                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" 
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                />
-              </label>
-            )}
-          </div>
-          <div className="flex-1">
-            <h3 
-              className="font-semibold"
-              style={{ color: isDarkMode ? '#ffffff' : '#111827' }}
-            >
-              {userName}
-            </h3>
-            <p 
-              className="text-sm"
-              style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
-            >
-              {userEmail}
-            </p>
-          </div>
-        </div>
+        {value}
+      </div>
+    </div>
+  );
 
-        {/* Avatar Success Message */}
-        {avatarSuccess && (
-          <div 
-            className="mb-3 p-3 rounded-lg text-sm animate-fade-in"
-            style={{
-              backgroundColor: isDarkMode ? '#14532d' : '#dcfce7',
-              color: isDarkMode ? '#86efac' : '#166534',
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: isDarkMode ? '#166534' : '#86efac'
-            }}
-          >
-            <div className="flex items-center space-x-2">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span className="font-medium">{avatarSuccess}</span>
-            </div>
-          </div>
+  /* One hairline notice. Kind only changes the rule weight — never the hue. */
+  const Notice = ({ kind = 'ok', children, onDismiss }) => (
+    <div
+      style={{
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
+        border: `1px solid ${kind === 'ok' ? ind.hairline : ind.ink}`, padding: '9px 14px',
+      }}
+    >
+      <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink, lineHeight: 1.45 }}>{children}</span>
+      {onDismiss && (
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label={t('common.close', 'Close')}
+          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: ind.inkMuted, lineHeight: 0 }}
+        >
+          <X size={14} strokeWidth={1.5} />
+        </button>
+      )}
+    </div>
+  );
+
+  const panelHeader = (title, note) => (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+      <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 16, letterSpacing: '.06em', textTransform: 'uppercase', color: ind.ink }}>
+        {title}
+      </span>
+      {note && <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted }}>{note}</span>}
+    </div>
+  );
+
+  const passwordFormOpen =
+    showChangePassword && !isChangingPassword.current && localStorage.getItem('changingPassword') !== 'true';
+
+  return (
+    <div
+      data-screen-label="Control Panel"
+      style={{
+        border: `1px solid ${ind.hairline}`,
+        background: ind.ground,
+        color: ind.ink,
+        fontFamily: BODY,
+        fontSize: 14,
+        borderRadius: 0,
+      }}
+    >
+      {/* ── TICKER — the figures that never move ─────────────────────── */}
+      <div
+        style={{
+          height: 44,
+          background: ind.tickerBg,
+          color: ind.tickerInk,
+          borderBottom: `1px solid ${ind.hairline}`,
+          display: 'flex',
+          alignItems: 'stretch',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+        }}
+      >
+        <TickerCell ind={ind} title={demoLocked ? t('controlPanel.demoSession', 'Demo session — actions are simulated') : t('controlPanel.liveSession', 'Live session')}>
+          <LiveClock ind={ind} live={!demoLocked} />
+        </TickerCell>
+
+        <TickerCell ind={ind} label={t('controlPanel.role', 'Role')} value={getTranslatedRole(userRole).toUpperCase()} />
+        <TickerCell ind={ind} label={t('controlPanel.mode', 'Mode')} value={modeLabel.toUpperCase()} />
+
+        {canViewVisitAnalytics && (
+          <>
+            <TickerCell ind={ind} label={t('controlPanel.visit.total', 'Visits')} value={visitSummary.total} />
+            <TickerCell
+              ind={ind}
+              label={t('controlPanel.visit.last24h', 'Last 24h')}
+              value={visitSummary.last24h}
+              // The one figure on the strip that is worth acting on.
+              valueColor={visitSummary.last24h > 0 ? ind.tickerUp : undefined}
+            />
+            <TickerCell ind={ind} label={t('controlPanel.visit.distinctIps', 'Distinct IPs')} value={visitSummary.distinctIps} />
+          </>
         )}
 
-        {/* Role Info */}
-        <div 
-          className="p-3 rounded-lg mb-3"
+        <div
           style={{
-            backgroundColor: isDarkMode ? '#1f2937' : '#f9fafb',
-            borderWidth: '1px',
-            borderStyle: 'solid',
-            borderColor: isDarkMode ? '#374151' : '#e5e7eb'
+            flex: 1,
+            minWidth: 'max-content',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 10,
+            padding: '0 14px',
+            borderLeft: `1px solid ${ind.tickerRule}`,
           }}
         >
-          <div className="flex items-center space-x-2 mb-1">
-            <Shield className="w-4 h-4" style={{ color: '#3b82f6' }} />
-            <span 
-              className="text-sm font-semibold"
-              style={{ color: isDarkMode ? '#ffffff' : '#111827' }}
-            >
-              {t('controlPanel.role', 'Role')}: {getTranslatedRole(userRole)}
-            </span>
-          </div>
-          <p 
-            className="text-xs"
-            style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
-          >
-            {roleDescriptions[userRole] || t('controlPanel.standardAccess', 'Standard user access')}
-          </p>
+          <FetchElapsedPill
+            active={loadingUsers || loadingEmployees || loadingVisits}
+            isDarkMode
+            label={t('common.fetching', 'Fetching')}
+          />
+          <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.06em', color: ind.tickerInk, opacity: 0.8, whiteSpace: 'nowrap' }}>
+            {userEmail}
+          </span>
         </div>
+      </div>
 
-        {/* User IDs Section */}
-        <div 
-          className="p-3 rounded-lg mb-3 space-y-2"
-          style={{
-            backgroundColor: isDarkMode ? '#1f2937' : '#f9fafb',
-            borderWidth: '1px',
-            borderStyle: 'solid',
-            borderColor: isDarkMode ? '#374151' : '#e5e7eb'
-          }}
+      {/* ── BANDS ────────────────────────────────────────────────────── */}
+      <div className="flex flex-col lg:flex-row items-stretch">
+
+        {/* ── LEFT — who you are and what you can change ───────────── */}
+        <div
+          className="flex-1 min-w-0 flex flex-col"
+          style={{ padding: '22px 24px 20px', gap: 16, borderRight: `1px solid ${ind.hairline}` }}
         >
-          <div className="flex items-center justify-between">
-            <span 
-              className="text-xs font-medium"
-              style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
-            >
-              {t('controlPanel.userUuid', 'User UUID')}:
-            </span>
-            <code 
-              className="text-xs px-2 py-1 rounded font-mono"
-                style={{
-                backgroundColor: isDarkMode ? '#111827' : '#f3f4f6',
-                color: isDarkMode ? '#60a5fa' : '#2563eb',
-                borderWidth: '1px',
-                borderStyle: 'solid',
-                borderColor: isDarkMode ? '#374151' : '#e5e7eb'
-              }}
-              title={userId}
-            >
-              {userId.substring(0, 8)}...
-            </code>
-          </div>
-          
-          {employeeId && (
-            <div className="flex items-center justify-between">
-              <span 
-                className="text-xs font-medium"
-                style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
-              >
-                {t('controlPanel.employeeId', 'Employee ID')}:
-              </span>
-              <code 
-                className="text-xs px-2 py-1 rounded font-mono"
-                style={{
-                  backgroundColor: isDarkMode ? '#111827' : '#f3f4f6',
-                  color: isDarkMode ? '#34d399' : '#059669',
-                  borderWidth: '1px',
-                  borderStyle: 'solid',
-                  borderColor: isDarkMode ? '#374151' : '#e5e7eb'
-                }}
-              >
-                {employeeId}
-              </code>
+          {avatarSuccess && <Notice onDismiss={() => setAvatarSuccess('')}>{avatarSuccess}</Notice>}
+
+          {/* Title row — provenance sits in the title, not a footnote. */}
+          <div className="flex flex-wrap items-end justify-between" style={{ gap: 14 }}>
+            <div style={{ minWidth: 0 }}>
+              <h1 style={{ fontFamily: BODY, fontSize: 32, fontWeight: 400, margin: 0, color: ind.ink, lineHeight: 1.1 }}>
+                {t('controlPanel.title', 'Control Panel')}
+              </h1>
+              <p style={{ ...caption, marginTop: 6 }}>
+                {[
+                  `${t('controlPanel.signedInAs', 'Signed in as')} ${userName}`,
+                  getTranslatedRole(userRole),
+                  `${t('controlPanel.mode', 'Mode')} ${modeLabel.toLowerCase()}`,
+                ].join(' · ')}
+              </p>
             </div>
-          )}
-        </div>
+            <Btn ind={ind} onClick={openManual} style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+              <BookOpen size={13} strokeWidth={1.5} />
+              {t('controlPanel.readManual', 'Read Manual')}
+            </Btn>
+          </div>
 
-        {/* Reset Own Password */}
-        <div className="space-y-2">
-          <button
-            type="button"
-            onClick={() => {
-              if (isDemoMode()) return;
-              localStorage.removeItem('changingPassword');
-              isChangingPassword.current = false;
-              setShowChangePassword(!showChangePassword);
-            }}
-            disabled={isDemoMode()}
-            title={isDemoMode() ? t('controlPanel.demoModeDisabled', 'Disabled in demo mode') : ''}
-            className={`w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors 
-              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-              ${isDemoMode() ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
-            `}
-            style={{
-              backgroundColor: isDarkMode ? '#2d3748' : '#f4f6f8',
-              color: isDarkMode ? '#ffffff' : '#111827',
-              border: isDarkMode ? '1px solid #4a5568' : '1px solid #d1d5db'
-            }}
-            onMouseEnter={(e) => {
-              if (isDemoMode()) return;
-              e.currentTarget.style.backgroundColor = isDarkMode ? '#3b4860' : '#e2e8f0';
-            }}
-            onMouseLeave={(e) => {
-              if (isDemoMode()) return;
-              e.currentTarget.style.backgroundColor = isDarkMode ? '#2d3748' : '#f4f6f8';
-            }}
-          >
-            <Key className="w-4 h-4 group-hover:rotate-45 transition-transform duration-300" />
-            <span className="text-sm">{t('controlPanel.changeOwnPassword', 'Change Own Password')}</span>
-          </button>
-          
-          {/* Reset Other Employee Password */}
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={() => {
-                if (isDemoMode()) return;
-                setShowAdminReset(!showAdminReset);
-              }}
-              disabled={isDemoMode()}
-              title={isDemoMode() ? t('controlPanel.demoModeDisabled', 'Disabled in demo mode') : ''}
-              className={`
-                w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200
-                hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus-visible:ring-2 focus-visible:ring-blue-500
-                ${isDemoMode() ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
-              `}
-              style={{
-                backgroundColor: isDarkMode ? '#1f2f47' : '#eef3ff',
-                color: isDarkMode ? '#bfdbfe' : '#1e3a8a',
-              }}
-              onMouseEnter={(e) => {
-                if (isDemoMode()) return;
-                e.currentTarget.style.backgroundColor = isDarkMode ? '#28415f' : '#dbe4ff';
-              }}
-              onMouseLeave={(e) => {
-                if (isDemoMode()) return;
-                e.currentTarget.style.backgroundColor = isDarkMode ? '#1f2f47' : '#eef3ff';
-              }}
-            >
-              <Users className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
-              <span className="text-sm">{t('controlPanel.resetOtherUserPassword', 'Reset Other Employee Password')}</span>
-            </button>
-          )}
+          {/* ── Identity ───────────────────────────────────────────── */}
+          <Blueprint ind={ind} style={{ padding: '16px 20px 16px', flex: 'none' }}>
+            {panelHeader(
+              t('controlPanel.identity', 'Identity'),
+              t('controlPanel.identityScope', 'Scope: this sign-in only')
+            )}
 
-          {/* Visit analytics (admin / demo_admin) */}
-          {canViewVisitAnalytics && (
-            <div
-              className="w-full rounded-lg border p-3 space-y-2"
-              style={{
-                backgroundColor: isDarkMode ? '#0f172a' : '#f8fafc',
-                borderColor: isDarkMode ? '#1e293b' : '#e2e8f0',
-                color: isDarkMode ? '#e2e8f0' : '#0f172a'
-              }}
-            >
-              <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                  <span className="inline-block w-4 h-4" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
-                      <defs>
-                        <linearGradient id={gradIdRef.current} x1="0%" y1="0%" x2="100%" y2="0%" gradientUnits="objectBoundingBox">
-                          {/* animate the gradient transform to create a moving band effect */}
-                          <animateTransform
-                            attributeName="gradientTransform"
-                            type="translate"
-                            from="-1 0"
-                            to="1 0"
-                            dur="2.5s"
-                            repeatCount="indefinite"
-                          />
-                          <stop offset="0%" stopColor="#06b6d4" />
-                          <stop offset="50%" stopColor="#7c3aed" />
-                          <stop offset="100%" stopColor="#06b6d4" />
-                        </linearGradient>
-                      </defs>
-                      <path d="M3 12h3l3 8 4-16 3 8h3" fill="none" stroke={`url(#${gradIdRef.current})`} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </span>
-                  <span className={`text-sm transition-all ${isDarkMode ? 'text-amber-200' : 'text-blue-500'}`}>{t('controlPanel.visitAnalytics', 'Visit analytics')}</span>
+            <div className="flex flex-col sm:flex-row" style={{ gap: 18 }}>
+              {/* Square avatar — square controls everywhere, never a circle. */}
+              <div className="relative group" style={{ flex: 'none' }}>
+                <div
+                  style={{
+                    width: 72, height: 72, border: `1px solid ${ind.hairline}`, borderRadius: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+                    background: ind.chrome,
+                  }}
+                >
+                  {uploadingAvatar ? (
+                    <Loader className="animate-spin" size={20} strokeWidth={1.5} style={{ color: ind.accent }} />
+                  ) : avatarUrl ? (
+                    <img src={avatarUrl} alt={userName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <User size={28} strokeWidth={1.25} style={{ color: ind.inkFaint }} />
+                  )}
                 </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    type = "button"
-                    onClick={handleRefreshVisits}
-                    disabled={loadingVisits}
-                    className={`text-xs px-2 py-1 cursor-pointer rounded border ${loadingVisits ? 'opacity-60 cursor-not-allowed' : 'hover:bg-indigo-50 dark:hover:bg-slate-800'}`}
-                    style={{
-                      borderColor: isDarkMode ? '#1e293b' : '#e2e8f0',
-                      color: isDarkMode ? '#cbd5e1' : '#1e293b',
-                      backgroundColor: isDarkMode ? '#0f172a' : '#f8fafc'
-                    }}
-                    title={t('controlPanel.refreshVisitAnalytics', 'Refresh visit analytics')}
+                {!uploadingAvatar && (
+                  <label
+                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    title={t('controlPanel.uploadAvatar', 'Upload avatar')}
+                    style={{ background: 'rgba(29,31,32,.55)' }}
                   >
-                    {loadingVisits ? t('controlPanel.refreshing', 'Refreshing...') : t('controlPanel.refresh', 'Refresh')}
-                  </button>
-                  {loadingVisits && <Loader className="w-4 h-4 animate-spin text-indigo-500" />}
+                    <Camera size={18} strokeWidth={1.5} style={{ color: '#f2f2f3' }} />
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 20, letterSpacing: '.04em', textTransform: 'uppercase', color: ind.ink }}>
+                    {userName}
+                  </span>
+                  <Tag ind={ind} variant={isAdmin ? 'accent' : 'neutral'}>{getTranslatedRole(userRole)}</Tag>
                 </div>
+                <p style={{ ...caption, marginTop: 4 }}>{userEmail}</p>
+                <p style={{ ...consequence, marginTop: 8, display: 'flex', alignItems: 'flex-start', gap: 7 }}>
+                  <Shield size={13} strokeWidth={1.5} style={{ flex: 'none', marginTop: 1, color: ind.accent }} />
+                  <span>{roleDescriptions[userRole] || t('controlPanel.standardAccess', 'Standard user access')}</span>
+                </p>
+
+                <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
+                  <Plate label={t('controlPanel.userUuid', 'User UUID')} value={`${userId.substring(0, 8)}…`} title={userId} mono />
+                  {employeeId && <Plate label={t('controlPanel.employeeId', 'Employee ID')} value={employeeId} mono />}
+                </div>
+              </div>
+            </div>
+          </Blueprint>
+
+          {/* ── Credentials ────────────────────────────────────────── */}
+          <Blueprint ind={ind} style={{ padding: '16px 20px 6px', flex: 'none' }}>
+            {panelHeader(
+              t('controlPanel.credentials', 'Credentials'),
+              isAdmin
+                ? t('controlPanel.credentialsScopeAdmin', 'Scope: your sign-in · plus any account you administer')
+                : t('controlPanel.credentialsScope', 'Scope: your sign-in only')
+            )}
+
+            {/* Own password */}
+            <div style={settingRow}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontFamily: BODY, fontSize: 13.5, color: ind.ink }}>
+                  {t('controlPanel.changeOwnPassword', 'Change Own Password')}
+                </div>
+                <p style={consequence}>
+                  {demoLocked
+                    ? t('controlPanel.demoLockedNote', 'Locked in demo mode — nothing is written to the database')
+                    : t('controlPanel.ownPasswordNote', 'Takes effect immediately; this device stays signed in')}
+                </p>
+              </div>
+              <Btn
+                ind={ind}
+                disabled={demoLocked}
+                onClick={() => {
+                  if (demoLocked) return;
+                  localStorage.removeItem('changingPassword');
+                  isChangingPassword.current = false;
+                  setShowChangePassword(!showChangePassword);
+                }}
+                title={demoLocked ? t('controlPanel.demoModeDisabled', 'Function is locked') : ''}
+                style={{ flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}
+              >
+                <Key size={13} strokeWidth={1.5} />
+                {passwordFormOpen ? t('common.cancel', 'Cancel') : t('controlPanel.change', 'Change')}
+              </Btn>
+            </div>
+
+            {passwordFormOpen && (
+              <form onSubmit={handleChangePassword} style={{ padding: '4px 0 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {passwordError && <Notice kind="alert">{passwordError}</Notice>}
+                {passwordSuccess && <Notice>{passwordSuccess}</Notice>}
+
+                <div className="flex flex-col sm:flex-row" style={{ gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <label style={fieldLabel}>{t('controlPanel.newPassword', 'New Password')}</label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        value={passwordForm.newPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                        autoComplete="new-password"
+                        style={fieldBox}
+                      />
+                      <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} style={revealBtn} aria-label={t('controlPanel.togglePassword', 'Show or hide password')}>
+                        {showNewPassword ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <label style={fieldLabel}>{t('controlPanel.confirmPassword', 'Confirm Password')}</label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={passwordForm.confirmPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                        autoComplete="new-password"
+                        style={fieldBox}
+                      />
+                      <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={revealBtn} aria-label={t('controlPanel.togglePassword', 'Show or hide password')}>
+                        {showConfirmPassword ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 7 }}>
+                  <Btn ind={ind} variant="primary" type="submit">{t('common.save', 'Save')}</Btn>
+                  <Btn
+                    ind={ind}
+                    onClick={() => {
+                      localStorage.removeItem('changingPassword');
+                      isChangingPassword.current = false;
+                      setShowChangePassword(false);
+                      setPasswordForm({ newPassword: '', confirmPassword: '' });
+                      setPasswordError('');
+                    }}
+                  >
+                    {t('common.cancel', 'Cancel')}
+                  </Btn>
+                </div>
+              </form>
+            )}
+
+            {/* Reset another user's password — admin only */}
+            {isAdmin && (
+              <>
+                <div style={settingRow}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontFamily: BODY, fontSize: 13.5, color: ind.ink }}>
+                      {t('controlPanel.resetUserPassword', 'Reset User Password')}
+                    </div>
+                    <p style={consequence}>
+                      {allUsers.length > 0
+                        ? t('controlPanel.userPasswordNote', '{n} accounts in scope — they sign in with the new password immediately').replace('{n}', String(allUsers.length))
+                        : t('controlPanel.userPasswordNoteIdle', 'Signs the chosen account out of every device it is using')}
+                    </p>
+                  </div>
+                  <Btn
+                    ind={ind}
+                    disabled={demoLocked}
+                    onClick={() => { if (!demoLocked) setShowAdminReset(!showAdminReset); }}
+                    title={demoLocked ? t('controlPanel.demoModeDisabled', 'Function is locked') : ''}
+                    style={{ flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}
+                  >
+                    <Users size={13} strokeWidth={1.5} />
+                    {showAdminReset ? t('common.cancel', 'Cancel') : t('controlPanel.resetPassword', 'Reset Password')}
+                  </Btn>
+                </div>
+
+                {showAdminReset && (
+                  <form onSubmit={handleOthersPassword} style={{ padding: '4px 0 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {adminResetError && <Notice kind="alert">{adminResetError}</Notice>}
+                    {adminResetSuccess && <Notice>{adminResetSuccess}</Notice>}
+
+                    <div>
+                      <label style={fieldLabel}>{t('controlPanel.selectUser', 'Select User')}</label>
+                      {loadingUsers ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, ...caption }}>
+                          <Loader className="animate-spin" size={14} strokeWidth={1.5} />
+                          <span>{t('common.loading', 'Loading...')}</span>
+                        </div>
+                      ) : (
+                        <select
+                          value={selectedUserId}
+                          onChange={(e) => setSelectedUserId(e.target.value)}
+                          style={{ ...fieldBox, padding: '7px 10px' }}
+                        >
+                          <option value="">{t('controlPanel.chooseUser', '-- Choose a user --')}</option>
+                          {allUsers.map((u) => (
+                            <option key={u.id} value={u.id} style={{ color: '#1d1f20' }}>
+                              {u.full_name || u.email} ({u.email}) — {getTranslatedRole(u.role)}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row" style={{ gap: 12 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <label style={fieldLabel}>{t('controlPanel.newPassword', 'New Password')}</label>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type={showAdminPassword ? 'text' : 'password'}
+                            value={adminResetPassword}
+                            onChange={(e) => setAdminResetPassword(e.target.value)}
+                            placeholder={t('controlPanel.enterNewPassword', 'Enter new password')}
+                            style={fieldBox}
+                          />
+                          <button type="button" onClick={() => setShowAdminPassword(!showAdminPassword)} style={revealBtn} aria-label={t('controlPanel.togglePassword', 'Show or hide password')}>
+                            {showAdminPassword ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
+                          </button>
+                        </div>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <label style={fieldLabel}>{t('controlPanel.confirmPassword', 'Confirm Password')}</label>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type={showAdminConfirm ? 'text' : 'password'}
+                            value={adminResetConfirm}
+                            onChange={(e) => setAdminResetConfirm(e.target.value)}
+                            placeholder={t('controlPanel.confirmNewPassword', 'Confirm new password')}
+                            style={fieldBox}
+                          />
+                          <button type="button" onClick={() => setShowAdminConfirm(!showAdminConfirm)} style={revealBtn} aria-label={t('controlPanel.togglePassword', 'Show or hide password')}>
+                            {showAdminConfirm ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p style={{ ...consequence, borderTop: `1px solid ${ind.rule}`, paddingTop: 9 }}>
+                      <strong style={{ fontFamily: DISPLAY, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase' }}>
+                        {t('controlPanel.warning', 'Warning')}
+                      </strong>
+                      {' — '}
+                      {t('controlPanel.adminResetWarning', 'This will change the password for the selected user. They will need to use the new password to log in.')}
+                    </p>
+
+                    <div style={{ display: 'flex', gap: 7 }}>
+                      <Btn ind={ind} variant="primary" type="submit">{t('controlPanel.resetPassword', 'Reset Password')}</Btn>
+                      <Btn
+                        ind={ind}
+                        onClick={() => {
+                          setShowAdminReset(false);
+                          setSelectedUserId('');
+                          setAdminResetPassword('');
+                          setAdminResetConfirm('');
+                          setAdminResetError('');
+                        }}
+                      >
+                        {t('common.cancel', 'Cancel')}
+                      </Btn>
+                    </div>
+                  </form>
+                )}
+
+                {/* Reset an employee record's sign-in */}
+                <div style={settingRow}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontFamily: BODY, fontSize: 13.5, color: ind.ink }}>
+                      {t('controlPanel.resetEmployeePassword', 'Reset Employee Password')}
+                    </div>
+                    <p style={consequence}>
+                      {allEmployees.length > 0
+                        ? t('controlPanel.employeePasswordNote', '{n} employee records carry a sign-in of their own').replace('{n}', String(allEmployees.length))
+                        : t('controlPanel.employeePasswordNoteIdle', 'Only employee records linked to a user account can be reset')}
+                    </p>
+                  </div>
+                  <Btn
+                    ind={ind}
+                    disabled={demoLocked}
+                    onClick={() => { if (!demoLocked) setShowEmployeeReset(!showEmployeeReset); }}
+                    title={demoLocked ? t('controlPanel.demoModeDisabled', 'Function is locked') : ''}
+                    style={{ flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}
+                  >
+                    <Shield size={13} strokeWidth={1.5} />
+                    {showEmployeeReset ? t('common.cancel', 'Cancel') : t('controlPanel.resetPassword', 'Reset Password')}
+                  </Btn>
+                </div>
+
+                {showEmployeeReset && (
+                  <form onSubmit={handleEmployeeResetPassword} style={{ padding: '4px 0 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {employeeResetError && <Notice kind="alert">{employeeResetError}</Notice>}
+                    {employeeResetSuccess && <Notice>{employeeResetSuccess}</Notice>}
+
+                    <div>
+                      <label style={fieldLabel}>{t('controlPanel.selectEmployee', 'Select Employee')}</label>
+                      {loadingEmployees ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, ...caption }}>
+                          <Loader className="animate-spin" size={14} strokeWidth={1.5} />
+                          <span>{t('common.loading', 'Loading...')}</span>
+                        </div>
+                      ) : (
+                        <select
+                          value={selectedEmployeeId}
+                          onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                          style={{ ...fieldBox, padding: '7px 10px' }}
+                        >
+                          <option value="">{t('controlPanel.chooseEmployee', '-- Choose an employee --')}</option>
+                          {allEmployees.map((emp) => (
+                            <option key={emp.id} value={emp.id} style={{ color: '#1d1f20' }}>
+                              {getDemoEmployeeName(emp, t)} ({emp.email})
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row" style={{ gap: 12 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <label style={fieldLabel}>{t('controlPanel.newPassword', 'New Password')}</label>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type={showEmployeePassword ? 'text' : 'password'}
+                            value={employeeResetPassword}
+                            onChange={(e) => setEmployeeResetPassword(e.target.value)}
+                            placeholder={t('controlPanel.enterNewPassword', 'Enter new password')}
+                            style={fieldBox}
+                          />
+                          <button type="button" onClick={() => setShowEmployeePassword(!showEmployeePassword)} style={revealBtn} aria-label={t('controlPanel.togglePassword', 'Show or hide password')}>
+                            {showEmployeePassword ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
+                          </button>
+                        </div>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <label style={fieldLabel}>{t('controlPanel.confirmPassword', 'Confirm Password')}</label>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type={showEmployeeConfirm ? 'text' : 'password'}
+                            value={employeeResetConfirm}
+                            onChange={(e) => setEmployeeResetConfirm(e.target.value)}
+                            placeholder={t('controlPanel.confirmNewPassword', 'Confirm new password')}
+                            style={fieldBox}
+                          />
+                          <button type="button" onClick={() => setShowEmployeeConfirm(!showEmployeeConfirm)} style={revealBtn} aria-label={t('controlPanel.togglePassword', 'Show or hide password')}>
+                            {showEmployeeConfirm ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p style={{ ...consequence, borderTop: `1px solid ${ind.rule}`, paddingTop: 9 }}>
+                      <strong style={{ fontFamily: DISPLAY, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase' }}>
+                        {t('controlPanel.warning', 'Warning')}
+                      </strong>
+                      {' — '}
+                      {t('controlPanel.adminResetWarning', 'This will change the password for the selected user. They will need to use the new password to log in.')}
+                    </p>
+
+                    <div style={{ display: 'flex', gap: 7 }}>
+                      <Btn ind={ind} variant="primary" type="submit">{t('controlPanel.resetPassword', 'Reset Password')}</Btn>
+                      <Btn
+                        ind={ind}
+                        onClick={() => {
+                          setShowEmployeeReset(false);
+                          setSelectedEmployeeId('');
+                          setEmployeeResetPassword('');
+                          setEmployeeResetConfirm('');
+                          setEmployeeResetError('');
+                        }}
+                      >
+                        {t('common.cancel', 'Cancel')}
+                      </Btn>
+                    </div>
+                  </form>
+                )}
+              </>
+            )}
+          </Blueprint>
+
+          {/* ── Visit analytics — admin and demo admin ─────────────── */}
+          {canViewVisitAnalytics && (
+            <Blueprint ind={ind} style={{ padding: '16px 20px 16px', flex: 'none' }}>
+              <div className="flex items-baseline justify-between" style={{ gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 16, letterSpacing: '.06em', textTransform: 'uppercase', color: ind.ink }}>
+                    {t('controlPanel.visitAnalytics', 'Visit analytics')}
+                  </span>
+                  <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted }}>
+                    {t('controlPanel.visitScope', 'Scope: every session that reached the app')}
+                  </span>
+                </div>
+                <Btn
+                  ind={ind}
+                  onClick={handleRefreshVisits}
+                  disabled={loadingVisits}
+                  title={t('controlPanel.refreshVisitAnalytics', 'Refresh visit analytics')}
+                  style={{ flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}
+                >
+                  <RefreshCcw size={13} strokeWidth={1.5} className={loadingVisits ? 'animate-spin' : ''} />
+                  {loadingVisits ? t('controlPanel.refreshing', 'Refreshing...') : t('controlPanel.refresh', 'Refresh')}
+                </Btn>
               </div>
 
               {visitError ? (
-                <div className="text-xs text-red-500 flex items-center space-x-2">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>{visitError}</span>
-                </div>
+                <Notice kind="alert">{visitError}</Notice>
               ) : (
-                <div className="grid grid-cols-5 gap-2 text-xs">
-                  <div>
-                    <p className="text-slate-500">{t('controlPanel.visit.total', 'Total')}</p>
-                    <p className="text-sm font-medium" style={{ color: isDarkMode ? '#f1f5f9' : '#0f172a' }}>{visitSummary.total}</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-500">{t('controlPanel.visit.last24h', 'Last 24h')}</p>
-                    <p className="text-sm font-medium" style={{ color: isDarkMode ? '#f1f5f9' : '#0f172a' }}>{visitSummary.last24h}</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-500">{t('controlPanel.visit.distinctIps', 'Distinct IPs')}</p>
-                    <p className="text-sm font-medium" style={{ color: isDarkMode ? '#f1f5f9' : '#0f172a' }}>{visitSummary.distinctIps}</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-500">{t('controlPanel.visit.demoCount', 'Demo Sessions')}</p>
-                    <p className="text-sm font-medium" style={{ color: isDarkMode ? '#f1f5f9' : '#0f172a' }}>{visitSummary.demoCount ?? 0}</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-500">{t('controlPanel.visit.authorized', 'Authorized Sessions')}</p>
-                    <p className="text-sm font-medium" style={{ color: isDarkMode ? '#f1f5f9' : '#0f172a' }}>{visitSummary.authorizedSessions ?? 0}</p>
-                  </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(112px,1fr))', gap: 10 }}>
+                  <Plate label={t('controlPanel.visit.total', 'Total')} value={visitSummary.total} />
+                  <Plate label={t('controlPanel.visit.last24h', 'Last 24h')} value={visitSummary.last24h} />
+                  <Plate label={t('controlPanel.visit.distinctIps', 'Distinct IPs')} value={visitSummary.distinctIps} />
+                  <Plate label={t('controlPanel.visit.demoCount', 'Demo sessions')} value={visitSummary.demoCount ?? 0} />
+                  <Plate label={t('controlPanel.visit.authorized', 'Authorised')} value={visitSummary.authorizedSessions ?? 0} />
                 </div>
               )}
 
-              <div className="space-y-1 max-h-48 overflow-auto text-xs">
+              <div style={{ marginTop: 14, maxHeight: 208, overflowY: 'auto' }}>
                 {visitSummary.recent?.length === 0 && !visitError && (
-                  <p className="text-slate-500">{t('controlPanel.visit.noVisits', 'No visits logged yet.')}</p>
+                  <p style={caption}>{t('controlPanel.visit.noVisits', 'No visits logged yet.')}</p>
                 )}
                 {visitSummary.recent?.map((row) => (
-                  <div key={row.id} className="p-2 rounded border" style={{ borderColor: isDarkMode ? '#1f2937' : '#e2e8f0' }}>
-                    <div className="flex justify-between">
-                      <span className="font-semibold" style={{ color: isDarkMode ? '#f8fafc' : '#0f172a' }}>{row.ip || t('controlPanel.visit.unknownIp', 'unknown IP')}</span>
-                      <span className="text-slate-500">{new Date(row.created_at).toLocaleString()}</span>
-                    </div>
-                    <p className="text-slate-500 truncate">{row.path || '/'}</p>
-                    {row.referrer && <p className="text-slate-500 truncate">{t('controlPanel.visit.ref', 'Ref')}: {row.referrer}</p>}
+                  <div
+                    key={row.id}
+                    style={{
+                      display: 'flex', alignItems: 'flex-start', gap: 12,
+                      padding: '9px 0', borderTop: `1px solid ${ind.rule}`,
+                    }}
+                  >
+                    <span style={{ ...figure(11, ind.inkMuted), width: 96, flex: 'none', letterSpacing: '.1em' }}>
+                      {new Date(row.created_at).toLocaleString()}
+                    </span>
+                    <span style={{ minWidth: 0, flex: 1 }}>
+                      <span className="block" style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {row.path || '/'}
+                      </span>
+                      <span className="block" style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {row.ip || t('controlPanel.visit.unknownIp', 'unknown IP')}
+                        {row.referrer ? ` · ${t('controlPanel.visit.ref', 'Ref')}: ${row.referrer}` : ''}
+                      </span>
+                    </span>
                   </div>
                 ))}
               </div>
-            </div>
+            </Blueprint>
           )}
+        </div>
 
-          {/* Demo Data Management - Only show in demo mode */}
-          {isDemoMode() && (
+        {/* ── RIGHT — the decision column, 340px ────────────────────── */}
+        <aside
+          className="w-full lg:w-[340px] lg:shrink-0 flex flex-col"
+          style={{ background: ind.chrome, overflow: 'hidden' }}
+        >
+          <div style={{ padding: '20px 20px 12px', borderBottom: `1px solid ${ind.hairline}` }}>
+            <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+              <ColumnHeading ind={ind}>{t('controlPanel.session', 'Session')}</ColumnHeading>
+              <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, color: ind.accent, whiteSpace: 'nowrap' }}>
+                {modeLabel.toUpperCase()}
+              </span>
+            </div>
+            <p style={{ ...caption, marginTop: 6 }}>
+              {demoLocked
+                ? t('controlPanel.demoSessionNote', 'Demo data lives in this browser. Nothing here reaches the database.')
+                : t('controlPanel.liveSessionNote', 'These actions leave the screen. Everything else above is yours alone.')}
+            </p>
+          </div>
+
+          {/* Demo-only: role switch and the data restore bench */}
+          {demoLocked && (
             <>
-              <button
-                type="button"
-                onClick={() => {
-                  const nextRole = userRole === 'demo_admin' ? 'demo_employee' : 'demo_admin';
-                  switchDemoRole?.(nextRole);
-                }}
-                className={`w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${isDarkMode ? 'bg-slate-600 text-white' : 'bg-blue-50 text-gray-800'}`}
-              >
-                <MiniFlubberAutoMorphChangeRole isDarkMode={isDarkMode} className="group-hover:scale-105 origin-center transform transition-all duration-300" />
-                <div className="flex flex-col items-start text-left">
-                  <div className="flex items-baseline space-x-1">
-                    <span className="text-sm font-semibold">
-                      {t('controlPanel.switchToPrefix', 'Switch to')}
-                    </span>
-                    <RollingDemoRoleLabel
-                      role={userRole === 'demo_admin' ? 'demo_employee' : 'demo_admin'}
-                      isDarkMode={isDarkMode}
-                      adminLabel={t('controlPanel.demoAdminLabel', 'Demo Admin')}
-                      employeeLabel={t('controlPanel.demoEmployeeLabel', 'Demo Employee')}
-                    />
-                  </div>
-                  <span className="text-xs group-hover:font-bold">
-                    {t('controlPanel.demoRoleOnly', 'Demo mode only; toggles demo roles')}
+              <div style={{ padding: '14px 20px', borderBottom: `1px solid ${ind.rule}` }}>
+                <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+                  <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, letterSpacing: '.04em', textTransform: 'uppercase', color: ind.ink }}>
+                    {t('controlPanel.switchToPrefix', 'Switch to')}{' '}
+                    {userRole === 'demo_admin'
+                      ? t('controlPanel.demoEmployeeLabel', 'Demo Employee')
+                      : t('controlPanel.demoAdminLabel', 'Demo Admin')}
                   </span>
+                  <MiniFlubberAutoMorphChangeRole isDarkMode={isDarkMode} />
                 </div>
-              </button>
+                <p style={{ ...consequence, marginBottom: 10 }}>
+                  {t('controlPanel.demoRoleOnly', 'This feature is only available in demo mode')}
+                </p>
+                <Btn
+                  ind={ind}
+                  onClick={() => switchDemoRole?.(userRole === 'demo_admin' ? 'demo_employee' : 'demo_admin')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}
+                >
+                  <UserPen size={13} strokeWidth={1.5} />
+                  {t('controlPanel.switchRole', 'Switch role')}
+                </Btn>
+              </div>
 
-              <button
-                type="button"
-                onClick={() => setShowDemoDataManagement(!showDemoDataManagement)}
-                className={`w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${isDarkMode ? 'bg-slate-500 text-gray-100' : 'bg-purple-50 text-gray-800'}`}
-              >
-                <RefreshCcw className="w-3.75 h-3.75 group-hover:animate-spin origin-center transform transition-all" />
-                <span className={`text-sm font-semibold group-hover:font-bold`}>{t('controlPanel.restoreDemoData', 'Restore Demo Data')}</span>
-              </button>
+              <div style={{ padding: '14px 20px', borderBottom: `1px solid ${ind.rule}` }}>
+                <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+                  <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, letterSpacing: '.04em', textTransform: 'uppercase', color: ind.ink }}>
+                    {t('controlPanel.restoreDemoData', 'Restore Demo Data')}
+                  </span>
+                  <Tag ind={ind} variant="outline">{t('controlPanel.modeDemo', 'Demo')}</Tag>
+                </div>
+                <p style={{ ...consequence, marginBottom: 10 }}>
+                  {t('controlPanel.restoreDemoDataDescription', 'Restore default demo data for specific data types. This will reset any changes you made.')}
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
+                  {[
+                    { key: 'timeEntries', label: t('controlPanel.demoTimeEntries', 'Time Entries'), fn: resetDemoTimeEntries },
+                    { key: 'goals', label: t('controlPanel.demoGoals', 'Goals'), fn: resetDemoGoals },
+                    { key: 'tasks', label: t('controlPanel.demoTasks', 'Tasks'), fn: resetDemoTasks },
+                    { key: 'reviews', label: t('controlPanel.demoReviews', 'Reviews'), fn: resetDemoReviews },
+                    { key: 'skills', label: t('controlPanel.demoSkills', 'Skills'), fn: resetDemoSkills },
+                    { key: 'leaveRequests', label: t('controlPanel.demoLeaveRequests', 'Leave Requests'), fn: resetDemoLeaveRequests },
+                  ].map(({ key, label, fn }) => (
+                    <Btn
+                      ind={ind}
+                      key={key}
+                      disabled={restoringDemoData !== null}
+                      onClick={() => {
+                        setRestoringDemoData(key);
+                        setTimeout(() => {
+                          fn();
+                          setRestoringDemoData(null);
+                          setToast({ show: true, message: t('controlPanel.demoDataRestored', '{type} restored to defaults').replace('{type}', label), type: 'success' });
+                          setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000);
+                        }, 500);
+                      }}
+                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 11.5, padding: '4px 8px' }}
+                    >
+                      {restoringDemoData === key
+                        ? <Loader className="animate-spin" size={12} strokeWidth={1.5} />
+                        : <RefreshCcw size={12} strokeWidth={1.5} />}
+                      {label}
+                    </Btn>
+                  ))}
+                </div>
+
+                <Btn
+                  ind={ind}
+                  disabled={restoringDemoData !== null}
+                  onClick={() => {
+                    setRestoringDemoData('all');
+                    setTimeout(() => {
+                      resetAllDemoData();
+                      setRestoringDemoData(null);
+                      setToast({ show: true, message: t('controlPanel.allDemoDataRestored', 'All demo data restored to defaults'), type: 'success' });
+                      setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000);
+                    }, 500);
+                  }}
+                  style={{ width: '100%', marginTop: 7, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
+                >
+                  {restoringDemoData === 'all'
+                    ? <Loader className="animate-spin" size={13} strokeWidth={1.5} />
+                    : <RefreshCcw size={13} strokeWidth={1.5} />}
+                  {t('controlPanel.restoreAllDemoData', 'Restore All Demo Data')}
+                </Btn>
+              </div>
             </>
           )}
 
-          {/* Demo Data Restore */}
-          {isDemoMode() && showDemoDataManagement && (
-            <div 
-              className="p-4 rounded-lg space-y-3"
-              style={{
-                backgroundColor: isDarkMode ? '#1f2937' : '#f9fafb',
-                borderWidth: '1px',
-                borderStyle: 'solid',
-                borderColor: isDarkMode ? '#374151' : '#e5e7eb'
-              }}
-            >
-              <p 
-                className="text-xs mb-3"
-                style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
-              >
-                {t('controlPanel.restoreDemoDataDescription', 'Restore default demo data for specific data types. This will reset any changes you made.')}
-              </p>
-              
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { key: 'timeEntries', label: t('controlPanel.demoTimeEntries', 'Time Entries'), fn: resetDemoTimeEntries },
-                  { key: 'goals', label: t('controlPanel.demoGoals', 'Goals'), fn: resetDemoGoals },
-                  { key: 'tasks', label: t('controlPanel.demoTasks', 'Tasks'), fn: resetDemoTasks },
-                  { key: 'reviews', label: t('controlPanel.demoReviews', 'Reviews'), fn: resetDemoReviews },
-                  { key: 'skills', label: t('controlPanel.demoSkills', 'Skills'), fn: resetDemoSkills },
-                  { key: 'leaveRequests', label: t('controlPanel.demoLeaveRequests', 'Leave Requests'), fn: resetDemoLeaveRequests },
-                ].map(({ key, label, fn }) => (
-                  <button
-                    type="button"
-                    key={key}
-                    onClick={() => {
-                      setRestoringDemoData(key);
-                      setTimeout(() => {
-                        fn();
-                        setRestoringDemoData(null);
-                        setToast({ show: true, message: t('controlPanel.demoDataRestored', '{type} restored to defaults').replace('{type}', label), type: 'success' });
-                        setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000);
-                      }, 500);
-                    }}
-                    disabled={restoringDemoData !== null}
-                    className="flex cursor-pointer group items-center justify-center space-x-1 px-2 py-2 rounded text-xs transition-colors"
-                    style={{
-                      backgroundColor: isDarkMode ? '#374151' : '#e5e7eb',
-                      color: isDarkMode ? '#ffffff' : '#111827',
-                      opacity: restoringDemoData !== null ? 0.6 : 1
-                    }}
-                    onMouseEnter ={(e) => {
-                      e.currentTarget.style.backgroundColor = isDarkMode ? '#4b5563' : '#d1d5db';
-                      e.currentTarget.style.color = isDarkMode ? '#ffffff' : '#111827';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = isDarkMode ? '#374151' : '#e5e7eb';
-                      e.currentTarget.style.color = isDarkMode ? '#ffffff' : '#111827';
-                    }}
-                  >
-                    {restoringDemoData === key ? (
-                      <Loader className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <RefreshCcw className={`${text.primary} w-3 h-3 group-hover:animate-spin origin-center transform transition-all`} />
-                    )}
-                    <span>{label}</span>
-                  </button>
-                ))}
-              </div>
-              
-              <button
-                type="button"
-                onClick={() => {
-                  setRestoringDemoData('all');
-                  setTimeout(() => {
-                    resetAllDemoData();
-                    setRestoringDemoData(null);
-                    setToast({ show: true, message: t('controlPanel.allDemoDataRestored', 'All demo data restored to defaults'), type: 'success' });
-                    setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000);
-                  }, 500);
-                }}
-                disabled={restoringDemoData !== null}
-                className="w-full group cursor-pointer flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm transition-all restoreDemoData-button"
-                style={{
-                  color: isDarkMode ? '#000' : '#fff',
-                  opacity: restoringDemoData !== null ? 0.6 : 1
-                }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.fontWeight = isDarkMode ? '700' : '700';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.fontWeight = isDarkMode ? '500' : '500';
-                  }}
-              >
-                {restoringDemoData === 'all' ? ( 
-                  <Loader className="w-4 h-4 animate-spin" />
-                ) : (
-                  <RefreshCcw className={`w-4 h-4 ${isDarkMode ? 'text-gray-900' : 'text-white'} group-hover:animate-spin origin-center transform transition-all`} />
-                )}
-                <span>{t('controlPanel.restoreAllDemoData', 'Restore All Demo Data')}</span>
-              </button>
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={openManual}
-            className="w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
-            style={{
-              backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6',
-              color: isDarkMode ? '#ffffff' : '#111827'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = isDarkMode ? '#374151' : '#e5e7eb';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = isDarkMode ? '#1f2937' : '#f3f4f6';
-            }}
-          >
-            <BookOpen className="w-3.75 h-3.75 translate-y-px group-hover:animate-pulse" />
-            <span className="text-sm font-semibold">{t('controlPanel.readManual', 'Read Manual')}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="w-full group flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer"
-            style={{
-              backgroundColor: '#dc2626',
-              color: '#ffffff'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#b91c1c';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#dc2626';
-            }}
-          >
-            <LogOut className="w-4.25 h-4.25 group-hover:animate-ping transition-all" />
-            <span className="text-sm">{t('controlPanel.logout', 'Log Out')}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Change Password Form */}
-      {showChangePassword && !isChangingPassword.current && localStorage.getItem('changingPassword') !== 'true' && (
-        <div 
-          className="rounded-lg shadow-sm p-4"
-          style={{
-            backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-        
-          }}
-        >
-          <h4 
-            className="font-semibold mb-3 flex items-center space-x-2"
-            style={{ color: isDarkMode ? '#ffffff' : '#111827' }}
-          >
-            <KeySquare className="w-4 h-4 -rotate-90 transition-all duration-75" />
-            <span>{t('controlPanel.changePassword', 'Change Password')}</span>
-          </h4>
-
-          {passwordError && (
-            <div 
-              className="mb-3 p-2 rounded text-sm"
-              style={{
-                backgroundColor: isDarkMode ? '#7f1d1d' : '#fee2e2',
-                color: isDarkMode ? '#fca5a5' : '#991b1b'
-              }}
-            >
-              {passwordError}
-            </div>
-          )}
-
-          {passwordSuccess && (
-            <div 
-              className="mb-3 p-2 rounded text-sm"
-              style={{
-                backgroundColor: isDarkMode ? '#14532d' : '#dcfce7',
-                color: isDarkMode ? '#86efac' : '#166534'
-              }}
-            >
-              {passwordSuccess}
-            </div>
-          )}
-
-          <form onSubmit={handleChangePassword} className="space-y-3">
-            <div>
-              <label 
-                className="block text-xs font-medium mb-1"
-                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
-              >
-                {t('controlPanel.newPassword', 'New Password')}
-              </label>
-              <div className="relative">
-                <input
-                  type={showNewPassword ? "text" : "password"}
-                  value={passwordForm.newPassword}
-                  onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                  autoComplete="new-password"
-                  className="w-full px-3 py-2 pr-10 rounded border text-sm"
-                  style={{
-                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                    color: isDarkMode ? '#ffffff' : '#111827'
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition-opacity"
-                  style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
-                >
-                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label 
-                className="block text-xs font-medium mb-1"
-                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
-              >
-                {t('controlPanel.confirmPassword', 'Confirm Password')}
-              </label>
-              <div className="relative">
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={passwordForm.confirmPassword}
-                  onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                  autoComplete="new-password"
-                  className="w-full px-3 py-2 pr-10 rounded border text-sm"
-                  style={{
-                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                    color: isDarkMode ? '#ffffff' : '#111827'
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition-opacity"
-                  style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
-                >
-                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex space-x-2">
-              <button
-                type="submit"
-                className="flex-1 px-3 py-2 rounded text-sm font-medium transition-colors cursor-pointer"
-                style={{
-                  backgroundColor: isDarkMode ? '#2563eb' : '#3b82f6',
-                  color: '#ffffff',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#fff' : '#000';
-                  e.currentTarget.style.color = isDarkMode ? '#000000' : '#ffffff';
-                  e.currentTarget.style.fontWeight = '700';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#2563eb' : '#3b82f6';  
-                  e.currentTarget.style.color = isDarkMode ? '#fff' : '#fff';
-                  e.currentTarget.style.fontWeight = '500';
-                }}
-              >
-                {t('common.save', 'Save')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  // Clear the flag when cancelling
-                  localStorage.removeItem('changingPassword');
-                  isChangingPassword.current = false;
-                  setShowChangePassword(false);
-                  setPasswordForm({ newPassword: '', confirmPassword: '' });
-                  setPasswordError('');
-                }}
-                className="flex-1 px-3 py-2 rounded text-sm font-medium transition-colors cursor-pointer"
-                style={{
-                  backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6',
-                  color: isDarkMode ? '#ffffff' : '#111827'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#fde68a' : '#fef3c7';
-                  e.currentTarget.style.color = isDarkMode ? '#000000' : '#000000';
-                  e.currentTarget.style.fontWeight = '700';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#1f2937' : '#f3f4f6';
-                  e.currentTarget.style.color = isDarkMode ? '#ffffff' : '#111827';
-                  e.currentTarget.style.fontWeight = '500';
-                }}
-              >
-                {t('common.cancel', 'Cancel')}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Admin Password Reset Form */}
-      {isAdmin && showAdminReset && (
-        <div 
-          className="rounded-lg shadow-sm p-4"
-          style={{
-            backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-            borderColor: isDarkMode ? '#4b5563' : '#e5e7eb',
-            borderWidth: '1px',
-            borderStyle: 'solid'
-          }}
-        >
-          <h4 
-            className="font-semibold mb-3 flex items-center space-x-2"
-            style={{ color: isDarkMode ? '#ffffff' : '#111827' }}
-          >
-            <Users className="w-4 h-4" />
-            <span>{t('controlPanel.resetUserPassword', 'Reset User Password')}</span>
-          </h4>
-
-          {adminResetError && (
-            <div 
-              className="mb-3 p-2 rounded text-sm"
-              style={{
-                backgroundColor: isDarkMode ? '#7f1d1d' : '#fee2e2',
-                color: isDarkMode ? '#fca5a5' : '#991b1b'
-              }}
-            >
-              {adminResetError}
-            </div>
-          )}
-
-          {adminResetSuccess && (
-            <div 
-              className="mb-3 p-2 rounded text-sm"
-              style={{
-                backgroundColor: isDarkMode ? '#14532d' : '#dcfce7',
-                color: isDarkMode ? '#86efac' : '#166534'
-              }}
-            >
-              {adminResetSuccess}
-            </div>
-          )}
-
-          <form onSubmit={handleOthersPassword} className="space-y-3">
-            <div>
-              <label 
-                className="block text-xs font-medium mb-1"
-                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
-              >
-                {t('controlPanel.selectUser', 'Select User')}
-              </label>
-              {loadingUsers ? (
-                <div className="flex items-center space-x-2 text-sm" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
-                  <Loader className="w-4 h-4 animate-spin" />
-                  <span>{t('common.loading', 'Loading...')}</span>
-                </div>
-              ) : (
-                <select
-                  value={selectedUserId}
-                  onChange={(e) => setSelectedUserId(e.target.value)}
-                  className="w-full px-3 py-2 rounded border text-sm"
-                  style={{
-                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                    color: isDarkMode ? '#ffffff' : '#111827'
-                  }}
-                >
-                  <option value="">{t('controlPanel.chooseUser', '-- Choose a user --')}</option>
-                  {allUsers.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.full_name || u.email} ({u.email}) - {getTranslatedRole(u.role)}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            <div>
-              <label 
-                className="block text-xs font-medium mb-1"
-                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
-              >
-                {t('controlPanel.newPassword', 'New Password')}
-              </label>
-              <div className="relative">
-                <input
-                  type={showAdminPassword ? "text" : "password"}
-                  value={adminResetPassword}
-                  onChange={(e) => setAdminResetPassword(e.target.value)}
-                  className="w-full px-3 py-2 pr-10 rounded border text-sm"
-                  style={{
-                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                    color: isDarkMode ? '#ffffff' : '#111827'
-                  }}
-                  placeholder={t('controlPanel.enterNewPassword', 'Enter new password')}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowAdminPassword(!showAdminPassword)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition-opacity"
-                  style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
-                >
-                  {showAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label 
-                className="block text-xs font-medium mb-1"
-                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
-              >
-                {t('controlPanel.confirmPassword', 'Confirm Password')}
-              </label>
-              <div className="relative">
-                <input
-                  type={showAdminConfirm ? "text" : "password"}
-                  value={adminResetConfirm}
-                  onChange={(e) => setAdminResetConfirm(e.target.value)}
-                  className="w-full px-3 py-2 pr-10 rounded border text-sm"
-                  style={{
-                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                    color: isDarkMode ? '#ffffff' : '#111827'
-                  }}
-                  placeholder={t('controlPanel.confirmNewPassword', 'Confirm new password')}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowAdminConfirm(!showAdminConfirm)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition-opacity"
-                  style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
-                >
-                  {showAdminConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex space-x-2">
-              <button
-                type="submit"
-                className="flex-1 px-3 py-2 cursor-pointer rounded text-sm font-medium transition-colors"
-                style={{
-                  backgroundColor: isDarkMode ? '#ffffff' : '#000000',
-                  color: isDarkMode ? '#000000' : '#ffffff',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#1d4ed8' : '#2563eb';
-                  e.currentTarget.style.color = isDarkMode ? '#ffffff' : '#ffffff';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#ffffff' : '#000000';
-                  e.currentTarget.style.color = isDarkMode ? '#000000' : '#ffffff'; 
-                }}
-              >
-                {t('controlPanel.resetPassword', 'Reset Password')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAdminReset(false);
-                  setSelectedUserId('');
-                  setAdminResetPassword('');
-                  setAdminResetConfirm('');
-                  setAdminResetError('');
-                }}
-                className="flex-1 px-3 py-2 cursor-pointer rounded text-sm font-medium transition-all duration-100"
-                style={{
-                  backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6',
-                  color: isDarkMode ? '#ffffff' : '#111827'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#fde68a' : '#fef3c7';
-                  e.currentTarget.style.color = isDarkMode ? '#000000' : '#000000';
-                  e.currentTarget.style.fontWeight = '700';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#1f2937' : '#f3f4f6';
-                  e.currentTarget.style.color = isDarkMode ? '#ffffff' : '#111827';
-                  e.currentTarget.style.fontWeight = '500';
-                }}
-              >
-                {t('common.cancel', 'Cancel')}
-              </button>
-            </div>
-          </form>
-
-          {/* Warning Notice */}
-          <div 
-            className="mt-3 p-2 rounded text-xs"
-            style={{
-              backgroundColor: isDarkMode ? '#7c2d12' : '#fed7aa',
-              color: isDarkMode ? '#fbbf24' : '#92400e',
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: isDarkMode ? '#92400e' : '#fbbf24'
-            }}
-          >
-            <strong>{t('controlPanel.warning', 'Warning')}:</strong> {t('controlPanel.adminResetWarning', 'This will change the password for the selected user. They will need to use the new password to log in.')}
-          </div>
-        </div>
-      )}
-
-      {/* Admin Other Employees Password Reset Form */}
-      {isAdmin && showEmployeeReset && (
-        <div 
-          className="rounded-lg shadow-sm p-4"
-          style={{
-            backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-            borderColor: isDarkMode ? '#4b5563' : '#e5e7eb',
-            borderWidth: '1px',
-            borderStyle: 'solid'
-          }}
-        >
-          <h4 
-            className="font-semibold mb-3 flex items-center space-x-2"
-            style={{ color: isDarkMode ? '#ffffff' : '#111827' }}
-          >
-            <Shield className="w-4.25 h-4.25" />
-            <span>{t('controlPanel.resetEmployeePassword', '')}</span>
-          </h4>
-
-          {employeeResetError && (
-            <div 
-              className="mb-3 p-2 rounded text-sm"
-              style={{
-                backgroundColor: isDarkMode ? '#7f1d1d' : '#fee2e2',
-                color: isDarkMode ? '#fca5a5' : '#991b1b'
-              }}
-            >
-              {employeeResetError}
-            </div>
-          )}
-
-          {employeeResetSuccess && (
-            <div 
-              className="mb-3 p-2 rounded text-sm"
-              style={{
-                backgroundColor: isDarkMode ? '#14532d' : '#dcfce7',
-                color: isDarkMode ? '#86efac' : '#166534'
-              }}
-            >
-              {employeeResetSuccess}
-            </div>
-          )}
-
-          <form onSubmit={handleEmployeeResetPassword} className="space-y-3">
-            <div>
-              <label 
-                className="block text-xs font-medium mb-1"
-                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
-              >
-                {t('controlPanel.selectEmployee', 'Select Employee')}
-              </label>
-              {loadingEmployees ? (
-                <div className="flex items-center space-x-2 text-sm" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
-                  <Loader className="w-4 h-4 animate-spin" />
-                  <span>{t('common.loading', 'Loading...')}</span>
-                </div>
-              ) : (
-                <select
-                  value={selectedEmployeeId}
-                  onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                  className="w-full px-3 py-2 rounded border text-sm"
-                  style={{
-                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                    color: isDarkMode ? '#ffffff' : '#111827'
-                  }}
-                >
-                  <option value="">{t('controlPanel.chooseEmployee', '-- Choose an employee --')}</option>
-                  {allEmployees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {getDemoEmployeeName(emp, t)} ({emp.email})
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            <div>
-              <label 
-                className="block text-xs font-medium mb-1"
-                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
-              >
-                {t('controlPanel.newPassword', 'New Password')}
-              </label>
-              <div className="relative">
-                <input
-                  type={showEmployeePassword ? "text" : "password"}
-                  value={employeeResetPassword}
-                  onChange={(e) => setEmployeeResetPassword(e.target.value)}
-                  className="w-full px-3 py-2 pr-10 rounded border text-sm"
-                  style={{
-                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                    color: isDarkMode ? '#ffffff' : '#111827'
-                  }}
-                  placeholder={t('controlPanel.enterNewPassword', 'Enter new password')}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowEmployeePassword(!showEmployeePassword)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition-opacity"
-                  style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
-                >
-                  {showEmployeePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label 
-                className="block text-xs font-medium mb-1"
-                style={{ color: isDarkMode ? '#d1d5db' : '#374151' }}
-              >
-                {t('controlPanel.confirmPassword', 'Confirm Password')}
-              </label>
-              <div className="relative">
-                <input
-                  type={showEmployeeConfirm ? "text" : "password"}
-                  value={employeeResetConfirm}
-                  onChange={(e) => setEmployeeResetConfirm(e.target.value)}
-                  className="w-full px-3 py-2 pr-10 rounded border text-sm"
-                  style={{
-                    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                    color: isDarkMode ? '#ffffff' : '#111827'
-                  }}
-                  placeholder={t('controlPanel.confirmNewPassword', 'Confirm new password')}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowEmployeeConfirm(!showEmployeeConfirm)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:opacity-70 transition-opacity"
-                  style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}
-                >
-                  {showEmployeeConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex space-x-2">
-              <button
-                type="submit"
-                className="flex-1 px-3 py-2 rounded text-sm font-medium transition-colors"
-                style={{
-                  backgroundColor: '#dc2626',
-                  color: '#ffffff'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#b91c1c';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#dc2626';
-                }}
-              >
-                {t('controlPanel.resetPassword', 'Reset Password')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowEmployeeReset(false);
-                  setSelectedEmployeeId('');
-                  setEmployeeResetPassword('');
-                  setEmployeeResetConfirm('');
-                  setEmployeeResetError('');
-                }}
-                className="flex-1 px-3 py-2 rounded text-sm font-medium transition-colors"
-                style={{
-                  backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6',
-                  color: isDarkMode ? '#ffffff' : '#111827'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#374151' : '#e5e7eb';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#1f2937' : '#f3f4f6';
-                }}
-              >
-                {t('common.cancel', 'Cancel')}
-              </button>
-            </div>
-          </form>
-
-          {/* Warning Notice */}
-          <div 
-            className="mt-3 p-2 rounded text-xs"
-            style={{
-              backgroundColor: isDarkMode ? '#7c2d12' : '#fed7aa',
-              color: isDarkMode ? '#fbbf24' : '#92400e',
-              borderWidth: '1px',
-              borderStyle: 'solid',
-              borderColor: isDarkMode ? '#92400e' : '#fbbf24'
-            }}
-          >
-            <strong>{t('controlPanel.warning', 'Warning')}:</strong> {t('controlPanel.adminResetWarning', 'This will change the password for the selected user. They will need to use the new password to log in.')}
-          </div>
-        </div>
-      )}
-
-      {/* Info Card */}
-      <div 
-        className="rounded-lg shadow-sm p-3"
-        style={{
-          backgroundColor: isDarkMode ? '#1e3a5f' : '#eff6ff',
-          borderColor: isDarkMode ? '#1e40af' : '#bfdbfe',
-          borderWidth: '1px',
-          borderStyle: 'solid'
-        }}
-      >
-        <div className="flex items-start space-x-2">
-          <Info className="w-4 h-4 ml-0.5" style={{ color: '#3b82f6' }} />
-          <div>
-            <p 
-              className="text-xs font-medium mb-1"
-              style={{ color: isDarkMode ? '#93c5fd' : '#1e40af' }}
-            >
+          {/* Help */}
+          <div style={{ padding: '14px 20px', borderBottom: `1px solid ${ind.rule}` }}>
+            <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, letterSpacing: '.04em', textTransform: 'uppercase', color: ind.ink }}>
               {t('controlPanel.needHelp', 'Need Help?')}
-            </p>
-            <p 
-              className="text-xs"
-              style={{ color: isDarkMode ? '#bfdbfe' : '#1e40af' }}
-            >
+            </span>
+            <p style={{ ...consequence, marginBottom: 10 }}>
               {t('controlPanel.helpText', 'Check out the manual for detailed instructions on using the system.')}
             </p>
+            <Btn ind={ind} onClick={openManual} style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+              <BookOpen size={13} strokeWidth={1.5} />
+              {t('controlPanel.readManual', 'Read Manual')}
+            </Btn>
           </div>
-        </div>
+
+          {/* Sign out — the one commit on this screen */}
+          <div style={{ padding: '14px 20px 20px', marginTop: 'auto' }}>
+            <Kicker ind={ind} color={ind.inkMuted}>{t('controlPanel.endSession', 'End session')}</Kicker>
+            <p style={{ ...consequence, marginBottom: 10 }}>
+              {t('controlPanel.logoutNote', 'Signs this device out. Unsaved forms above are discarded.')}
+            </p>
+            <Btn
+              ind={ind}
+              variant="primary"
+              onClick={handleLogout}
+              style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
+            >
+              <LogOut size={13} strokeWidth={1.5} />
+              {t('controlPanel.logout', 'Log Out')}
+            </Btn>
+          </div>
+        </aside>
       </div>
 
-      {/* Toast Notification */}
+      {/* Toast — a hairline plate on the chrome ground, never a coloured banner */}
       {toast.show && (
-        <div className="fixed top-4 right-4 z-50 animate-fade-in">
-          <div className={`
-            rounded-lg p-4 shadow-lg flex items-center space-x-3
-            ${toast.type === 'success' 
-              ? `${isDarkMode ? 'bg-green-900/30' : 'bg-green-100'} border-l-4 border-green-600` 
-              : `${isDarkMode ? 'bg-red-900/30' : 'bg-red-100'} border-l-4 border-red-600`}
-          `}>
-            {toast.type === 'success' ? (
-              <Check className={`w-5 h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
-            ) : (
-              <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
-            )}
-            <span className={`
-              font-medium
-              ${toast.type === 'success' 
-                ? `${isDarkMode ? 'text-green-200' : 'text-green-800'}` 
-                : `${isDarkMode ? 'text-red-200' : 'text-red-800'}`}
-            `}>
-              {toast.message}
-            </span>
+        <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 50 }} className="animate-fade-in">
+          <div
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              background: ind.chrome, border: `1px solid ${ind.ink}`, borderRadius: 0, padding: '10px 14px',
+            }}
+          >
+            {toast.type === 'success'
+              ? <span aria-hidden="true" style={{ width: 6, height: 6, background: ind.accent, flex: 'none' }} />
+              : <AlertCircle size={15} strokeWidth={1.5} style={{ flex: 'none', color: ind.ink }} />}
+            <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink }}>{toast.message}</span>
           </div>
         </div>
       )}
 
       <style>{`
         @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-in {
-          animation: fadeIn 0.3s ease-out;
-        }
-        /* Hide browser's default password reveal icon */
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        /* Hide the browser's own password reveal icon — we draw our own. */
         input[type="password"]::-ms-reveal,
-        input[type="password"]::-ms-clear {
-          display: none;
-        }
+        input[type="password"]::-ms-clear { display: none; }
         input[type="password"]::-webkit-contacts-auto-fill-button,
         input[type="password"]::-webkit-credentials-auto-fill-button {
           visibility: hidden;

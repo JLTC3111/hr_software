@@ -1,5 +1,36 @@
+/**
+ * 3a — Chấm công / Time clock entry. Hours entered after the fact.
+ *
+ * The on-site counterpart is 3d (punchClock.jsx), which punches live. The two
+ * are deliberately not merged: 3a is a form with proof upload and an approval
+ * queue, 3d is a single dominant punch.
+ *
+ * The read, top to bottom:
+ *   ticker     — the six figures that never move, so you can scan them
+ *   page head  — what you are looking at, plus the scope switch
+ *   entry form — one blueprint. Left half collects the entry, the 212px right
+ *                half is the consequence: hours this will file, what the week
+ *                becomes, and the only two buttons on the card.
+ *   history    — the eight-column ledger, inline-editable, with the approve /
+ *                proof / delete actions on the row they belong to.
+ *   right rail — week, month and leave totals, plus the bulk entry point.
+ *
+ * Layout rules that are load-bearing, not taste:
+ *   - The ticker is a sibling of the two bands, never a child of one. It has to
+ *     span both columns.
+ *   - `min-w-0` on the left band and on the pane inside it. Without it the
+ *     eight-column table refuses to shrink and pushes the right rail off-screen.
+ *   - The right rail is 372px. 340 (3d's width) is too narrow for the hour-type
+ *     breakdown, which carries a label, a figure and a bar on one line.
+ *
+ * Design system: "Industry" (src/theme/industry.js). Radius 0, cards are
+ * outlines with four registration corners, status reads through weight and rule
+ * rather than red/green.
+ */
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Clock, Upload, Coffee, AlertCircle, Check, X, Clock5, FileCheck, AlarmClockPlus, Loader, Loader2, Calendar, ChevronsUpDown, CalendarClock, ArrowDownAZ, CalendarArrowUp, CalendarArrowDown, Hourglass, Timer, Shield, ShieldCheck, ShieldQuestion, FileImage, Pencil } from 'lucide-react';
+import {
+  AlertCircle, Calendar, Check, Clock, FileCheck, Loader2, Pencil, Search, Upload, Users, X,
+} from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
@@ -13,21 +44,54 @@ import AdminTimeEntry from './AdminTimeEntry.jsx';
 import { motion } from 'framer-motion';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { useSearchParams } from 'react-router-dom';
-import { ShinyButton } from './ui/shiny-button';
-import { SpecularButton } from './ui/specular-button';
-import { PageLiveClock } from './ui/page-live-clock';
-import { PunchClock } from './ui/punch-clock.jsx';
 import { DatePicker } from './ui/date-picker.jsx';
 import { TimePicker } from './ui/time-picker.jsx';
 import { COL } from '../utils/tableColumns.js';
 import { TableScroll, StackedDetail } from './ui/responsive-table.jsx';
 import { cn } from '@/lib/utils';
 import { useNotifications } from '../contexts/NotificationContext';
+import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
+import {
+  Blueprint, Bar, Tag, Btn, Seg, Kicker, ColumnHeading, TickerCell, LiveClock, FlatSelect,
+} from './ui/industry.jsx';
+import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
+import { formatDate } from '../utils/localeFormat.js';
 import {
   getHoursWorked,
   toExtendedInterval,
   extendedIntervalsOverlap,
 } from '../utils/timeEntryHelpers.js';
+
+/** A full-time week. The rail's "còn lại" figure is measured against this. */
+const CONTRACT_WEEK_HOURS = 40;
+
+/**
+ * A sortable column head. The direction reads as a caret in the label's own
+ * type rather than an icon, so the header row stays one typographic object.
+ */
+function SortableTh({ ind, active, dir, onClick, style, className, children }) {
+  return (
+    <th className={className} style={style}>
+      <button
+        type="button"
+        onClick={onClick}
+        style={{
+          font: 'inherit', color: active ? ind.ink : 'inherit', letterSpacing: 'inherit',
+          textTransform: 'inherit', background: 'none', border: 'none', padding: 0,
+          cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
+        }}
+      >
+        {children}
+        <span aria-hidden="true" style={{ opacity: active ? 1 : 0.35 }}>
+          {active && dir === 'asc' ? '▲' : '▼'}
+        </span>
+      </button>
+    </th>
+  );
+}
+/** The shift the "fill" button writes when you cannot be bothered to type it. */
+const STANDARD_CLOCK_IN = '09:00';
+const STANDARD_CLOCK_OUT = '17:00';
 
 export const AnimatedAlarmClockIcon = ({ className }) => {
   const clockBodyPath = "M32.48,104.77l-9.72,16.68c-0.4,0.68-1.03,1.14-1.74,1.33c-0.71,0.19-1.49,0.11-2.17-0.29c-0.68-0.4-1.14-1.03-1.33-1.74 c-0.19-0.71-0.11-1.49,0.29-2.17l10.15-17.4c-2.27-2.03-4.35-4.28-6.2-6.7c-2.01-2.63-3.75-5.47-5.2-8.49 c-1.54-3.21-2.73-6.61-3.54-10.16c-0.78-3.45-1.2-7.04-1.2-10.71c0-6.55,1.3-12.79,3.67-18.5c2.46-5.93,6.05-11.26,10.51-15.71 c4.46-4.46,9.79-8.05,15.71-10.51c5.7-2.36,11.95-3.67,18.5-3.67c6.55,0,12.8,1.3,18.5,3.67c5.93,2.45,11.26,6.05,15.71,10.5 c4.46,4.46,8.05,9.79,10.5,15.71c2.36,5.7,3.67,11.95,3.67,18.5c0,6.55-1.3,12.8-3.67,18.5c-2.46,5.93-6.05,11.26-10.5,15.71 c-0.39,0.39-0.82,0.8-1.28,1.23c-0.22,0.21-0.45,0.42-0.69,0.63l10.14,17.39c0.4,0.68,0.48,1.46,0.29,2.17 c-0.19,0.71-0.65,1.35-1.33,1.74c-0.68,0.4-1.46,0.48-2.17,0.29c-0.71-0.19-1.35-0.65-1.74-1.33l-9.72-16.67 c-3.84,2.69-8.1,4.84-12.65,6.33c-4.75,1.55-9.81,2.4-15.07,2.4c-2.76,0-5.48-0.24-8.14-0.69c-2.71-0.46-5.35-1.15-7.89-2.04 c-2.27-0.8-4.45-1.75-6.54-2.86C35.84,106.97,34.12,105.92,32.48,104.77L32.48,104.77z M56.22,39.63c0-0.79,0.32-1.5,0.84-2.03 l0.01-0.01c0.52-0.52,1.24-0.84,2.02-0.84c0.79,0,1.51,0.32,2.03,0.84l0,0c0.52,0.52,0.84,1.24,0.84,2.03v27.44h26.35 c0.79,0,1.51,0.32,2.03,0.84c0.02,0.02,0.04,0.05,0.06,0.07c0.48,0.52,0.78,1.21,0.78,1.96c0,0.79-0.32,1.5-0.84,2.03l-0.01,0.01 c-0.52,0.52-1.24,0.84-2.02,0.84H59.09c-0.79,0-1.5-0.32-2.03-0.84l-0.01-0.01c-0.52-0.52-0.84-1.24-0.84-2.02V39.63L56.22,39.63z M90.35,34.97c-3.94-3.94-8.63-7.1-13.84-9.26c-5.02-2.08-10.53-3.23-16.31-3.23S48.9,23.63,43.88,25.7 c-5.21,2.16-9.91,5.33-13.84,9.26c-3.94,3.94-7.1,8.63-9.26,13.84c-2.08,5.02-3.23,10.53-3.23,16.31c0,3.26,0.36,6.43,1.05,9.46 c0.71,3.13,1.75,6.12,3.1,8.94c1.38,2.87,3.07,5.58,5.04,8.06c1.98,2.5,4.24,4.77,6.72,6.77l0.06,0.05 c1.87,1.5,3.87,2.85,5.98,4.02c2.08,1.16,4.27,2.15,6.55,2.95c2.23,0.78,4.55,1.39,6.94,1.79c2.33,0.39,4.74,0.6,7.2,0.6 c5.78,0,11.29-1.15,16.31-3.23c5.21-2.16,9.91-5.33,13.84-9.26c3.94-3.94,7.1-8.63,9.26-13.84c2.08-5.02,3.23-10.53,3.23-16.31 s-1.15-11.29-3.23-16.31C97.45,43.6,94.28,38.9,90.35,34.97L90.35,34.97z M120.59,24.92c0,1.72-0.21,3.4-0.61,5.03 c-0.41,1.67-1.02,3.27-1.8,4.78c-0.79,1.53-1.76,2.97-2.89,4.31c-1.13,1.34-2.42,2.57-3.85,3.67c-0.63,0.48-1.39,0.67-2.11,0.57 c-0.73-0.09-1.42-0.46-1.9-1.09c-0.1-0.13-0.19-0.27-0.27-0.41c-0.07-0.13-0.13-0.27-0.18-0.4l-0.02-0.05 c-1.13-3.43-2.63-6.7-4.45-9.74c-1.85-3.09-4.04-5.95-6.52-8.54c-2.48-2.59-5.24-4.91-8.24-6.9c-2.96-1.97-6.16-3.62-9.53-4.9 c-0.74-0.28-1.3-0.83-1.6-1.5c-0.3-0.67-0.35-1.45-0.07-2.19c0.12-0.31,0.29-0.6,0.49-0.84c0.21-0.25,0.47-0.47,0.74-0.63 l0.01-0.01c2.26-1.51,4.78-2.64,7.42-3.4c2.76-0.79,5.67-1.19,8.57-1.19c2.24,0,4.5,0.24,6.7,0.7c2.18,0.46,4.29,1.14,6.27,2.04 c2.08,0.95,4.03,2.13,5.76,3.55c1.66,1.36,3.14,2.95,4.37,4.76c1.19,1.76,2.14,3.7,2.77,5.82 C120.26,20.4,120.59,22.58,120.59,24.92L120.59,24.92z M113.08,32.1c0.58-1.11,1.02-2.29,1.32-3.51c0.29-1.18,0.44-2.41,0.44-3.68 c0-1.77-0.24-3.4-0.68-4.89c-0.46-1.57-1.15-2.99-2.01-4.26c-0.91-1.34-2.02-2.53-3.29-3.56c-1.33-1.08-2.84-2-4.46-2.73 c-1.61-0.73-3.33-1.29-5.1-1.66c-1.79-0.38-3.65-0.57-5.51-0.57c-1.77,0-3.51,0.17-5.2,0.51c-0.89,0.18-1.77,0.41-2.62,0.69 c2.29,1.19,4.48,2.54,6.57,4.04c2.74,1.96,5.28,4.18,7.6,6.6c2.45,2.56,4.64,5.36,6.55,8.35c1.6,2.51,2.99,5.17,4.17,7.96 c0.27-0.32,0.53-0.65,0.78-0.98C112.18,33.68,112.66,32.91,113.08,32.1L113.08,32.1z M40.01,13.52c-3.43,1.13-6.7,2.63-9.74,4.45 c-3.09,1.85-5.95,4.04-8.54,6.52c-2.59,2.48-4.91,5.24-6.9,8.24c-1.97,2.96-3.62,6.16-4.9,9.53c-0.28,0.74-0.83,1.3-1.5,1.6 c-0.67,0.3-1.45,0.35-2.19,0.07c-0.31-0.12-0.59-0.28-0.83-0.49c-0.24-0.2-0.44-0.44-0.6-0.7c-0.77-1.14-1.46-2.36-2.06-3.63 c-0.6-1.27-1.1-2.59-1.51-3.94c-0.41-1.36-0.72-2.77-0.93-4.22C0.11,29.52,0,28.07,0,26.6c0-3.19,0.53-6.22,1.48-9.02 c1.01-2.96,2.49-5.65,4.31-8c1.42-1.83,3.05-3.43,4.82-4.78c1.79-1.36,3.73-2.47,5.76-3.27c2.1-0.83,4.3-1.34,6.53-1.49 c2.16-0.14,4.34,0.05,6.5,0.63c2.23,0.6,4.42,1.6,6.5,3.06c1.95,1.37,3.8,3.13,5.49,5.32c0.48,0.63,0.67,1.39,0.57,2.11 c-0.09,0.73-0.46,1.42-1.09,1.9c-0.13,0.1-0.27,0.19-0.41,0.27c-0.13,0.07-0.27,0.13-0.4,0.18L40.01,13.52L40.01,13.52z M17.78,20.34c2.56-2.45,5.36-4.65,8.36-6.55c2.52-1.6,5.19-3,7.98-4.18c-0.77-0.68-1.56-1.26-2.37-1.75 c-1.24-0.75-2.53-1.3-3.84-1.65c-1.54-0.41-3.11-0.55-4.67-0.45c-1.62,0.11-3.22,0.49-4.77,1.1c-1.56,0.62-3.05,1.46-4.43,2.51 c-1.38,1.05-2.65,2.3-3.75,3.72c-1.43,1.84-2.6,3.97-3.39,6.32c-0.75,2.21-1.17,4.63-1.17,7.18c0,1.21,0.09,2.39,0.25,3.53 c0.17,1.17,0.42,2.3,0.75,3.4c0.11,0.37,0.23,0.73,0.35,1.08c1.2-2.32,2.56-4.54,4.07-6.64C13.12,25.22,15.34,22.67,17.78,20.34 L17.78,20.34z"; 
@@ -119,9 +183,10 @@ export const AnimatedClockIcon = ({ className }) => {
   );
 };
 
-const TimeClockEntry = ({ currentLanguage }) => {
-  const { isDarkMode, bg, text, input, border } = useTheme();
-  const { t } = useLanguage();
+const TimeClockEntry = () => {
+  const { isDarkMode } = useTheme();
+  const { t, currentLanguage } = useLanguage();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
   const { user } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
   const { checkPendingApprovals } = useNotifications();
@@ -143,21 +208,6 @@ const TimeClockEntry = ({ currentLanguage }) => {
     proofFile: null
   });
 
-  // Animation variants for upload icon
-  const uploadVariants = {
-    rest: {
-      scale: 1,
-    },
-    hover: {
-      scale: [1, 1.1, 1],
-      transition: {
-        repeat: Infinity,
-        duration: 1.2,
-        ease: "easeInOut",
-      }
-    }
-  };
-  
   // Time entries state
   const [timeEntries, setTimeEntries] = useState([]);
   const [leaveRequests, setLeaveRequests] = useState([]);
@@ -1231,14 +1281,16 @@ const TimeClockEntry = ({ currentLanguage }) => {
     }, 0);
   };
 
+  // Chip order, not database order: the type you pick nine times out of ten sits
+  // first, then the two the system can usually infer, then the exceptions.
   const hourTypes = [
-    { value: 'regular', label: t('timeClock.hourTypes.regular'), color: 'blue' },
-    { value: 'holiday', label: t('timeClock.hourTypes.holiday'), color: 'purple' },
-    { value: 'weekend', label: t('timeClock.hourTypes.weekend'), color: 'green' },
-    { value: 'overtime', label: t('timeClock.hourTypes.overtime'), color: 'orange' },
-    { value: 'bonus', label: t('timeClock.hourTypes.bonus'), color: 'yellow' },
-    { value: 'wfh', label: t('timeClock.hourTypes.wfh'), color: 'cyan' },
-    { value: 'on_leave', label: t('timeClock.hourTypes.onLeave', 'On Leave'), color: 'pink', t: 'timeClock.hourTypes.onLeave' }
+    { value: 'regular', label: t('timeClock.hourTypes.regular') },
+    { value: 'weekend', label: t('timeClock.hourTypes.weekend') },
+    { value: 'holiday', label: t('timeClock.hourTypes.holiday') },
+    { value: 'overtime', label: t('timeClock.hourTypes.overtime') },
+    { value: 'bonus', label: t('timeClock.hourTypes.bonus') },
+    { value: 'wfh', label: t('timeClock.hourTypes.wfh') },
+    { value: 'on_leave', label: t('timeClock.hourTypes.onLeave', 'On Leave'), t: 'timeClock.hourTypes.onLeave' },
   ];
 
   const onLeaveForSelectedDate = useMemo(() => {
@@ -1529,1150 +1581,1201 @@ const TimeClockEntry = ({ currentLanguage }) => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'approved': return `text-green-800 bg-green-200 ${isDarkMode ? 'bg-green-900/30 text-green-400' : ''} font-semibold`;
-      case 'rejected': return `text-red-800 bg-red-200 ${isDarkMode ? 'bg-red-900/30 text-red-400' : ''} font-semibold`;
-      default: return `text-yellow-800 bg-yellow-200 ${isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : ''} font-semibold`;
+  /**
+   * Status reads through weight and rule, never through red/green:
+   * approved is settled and recedes to neutral, pending is the one that wants
+   * you, rejected is outlined so it stays legible without shouting.
+   */
+  const statusVariant = (status) => {
+    switch ((status || '').toLowerCase()) {
+      case 'approved': return 'neutral';
+      case 'rejected': return 'outline';
+      default: return 'accent';
     }
   };
 
+  /* ---------------------------------------------------------------- *
+   * Derived figures — everything the ticker and the right rail read
+   * ---------------------------------------------------------------- */
+
+  const fmtDay = useCallback(
+    (value) => formatDate(value, currentLanguage, { day: '2-digit', month: 'short' }),
+    [currentLanguage]
+  );
+
+  /** Sunday-start, to match the window calculateTotals() already counts against. */
+  const weekWindow = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now);
+    start.setDate(now.getDate() - now.getDay());
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    return { start, end };
+  }, []);
+
+  const weekRangeLabel = `${fmtDay(weekWindow.start)} – ${fmtDay(weekWindow.end)}`;
+  const monthLabel = formatDate(new Date(), currentLanguage, { month: 'long', year: 'numeric' });
+
+  /** One row per hour type, in chip order, for whichever period the rail asks for. */
+  const breakdownFor = (period) => hourTypes.map((type) => ({
+    ...type,
+    hours: calculateTotals(type.value, period),
+  }));
+
+  const weekBreakdown = breakdownFor('week');
+  const monthBreakdown = breakdownFor('month');
+  const weekTotal = calculateTotals('all', 'week');
+  const monthTotal = calculateTotals('all', 'month');
+  const weekPeak = Math.max(...weekBreakdown.map((row) => row.hours), 0);
+  const monthTop = [...monthBreakdown].sort((a, b) => b.hours - a.hours)[0];
+  const monthRest = monthBreakdown.filter((row) => row !== monthTop);
+  const leaveWeek = calculateLeaveDays('week');
+  const leaveMonth = calculateLeaveDays('month');
+
+  /** Hours this form will file if you submit it as it stands. */
+  const formHours = useMemo(() => {
+    if (formData.hourType === 'on_leave') return 0;
+    if (!formData.clockIn || !formData.clockOut) return 0;
+    const value = getHoursWorked(formData.date, formData.clockIn, formData.clockOut);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  }, [formData.date, formData.clockIn, formData.clockOut, formData.hourType]);
+
+  const weekProjected = weekTotal + formHours;
+  const weekRemaining = Math.max(0, CONTRACT_WEEK_HOURS - weekProjected);
+
+  const boardStats = useMemo(() => {
+    const list = Array.isArray(timeEntries) ? timeEntries : [];
+    const pending = list.filter((e) => (e.status || '').toLowerCase() === 'pending');
+    return {
+      pending: pending.length,
+      // Only pending rows count: an approved entry no longer needs its paperwork.
+      missingProof: pending.filter((e) => !e.proof_file_url && !e.proofFile).length,
+    };
+  }, [timeEntries]);
+
+  const hasRealData = initialLoadComplete && Array.isArray(timeEntries) && timeEntries.length > 0;
+
+  const meName = user?.name
+    || user?.user_metadata?.name
+    || user?.email?.split('@')[0]
+    || t('timeClock.myEntries', 'My Entries');
+
+  /**
+   * The scope switch. Bulk is a different screen (AdminTimeEntry), the other two
+   * are the same screen pointed at a different set of rows — so the seg reads its
+   * value back off the employee filter instead of keeping a second copy of it.
+   */
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const segValue = bulkOpen ? 'bulk' : (selectedEmployeeFilter === 'self' ? 'self' : 'admin');
+  const handleSegChange = (value) => {
+    if (value === 'bulk') {
+      setBulkOpen(true);
+      return;
+    }
+    setBulkOpen(false);
+    setSelectedEmployeeFilter(value === 'self' ? 'self' : 'all');
+  };
+
+  const entryDateLabel = formData.date
+    ? formatDate(formData.date, currentLanguage, {
+      day: '2-digit', month: 'short', year: 'numeric', weekday: 'long',
+    })
+    : '—';
+
+  const headSub = [
+    t('timeClock.subtitle'),
+    meName,
+    entryDateLabel,
+  ].filter(Boolean).join(' · ');
+
+  const captionStyle = {
+    fontFamily: BODY,
+    fontSize: 11.5,
+    color: ind.inkFaint,
+    margin: '6px 0 0',
+    lineHeight: 1.5,
+  };
+
+  const fieldLabelStyle = {
+    fontFamily: DISPLAY,
+    fontWeight: 600,
+    fontSize: 10,
+    letterSpacing: '.14em',
+    textTransform: 'uppercase',
+    color: ind.inkMuted,
+    display: 'block',
+    marginBottom: 4,
+  };
+
+  const thStyle = {
+    fontFamily: DISPLAY,
+    fontWeight: 600,
+    fontSize: 11,
+    letterSpacing: '.12em',
+    textTransform: 'uppercase',
+    color: ind.inkMuted,
+    padding: '0 10px 8px',
+    textAlign: 'left',
+    whiteSpace: 'nowrap',
+    userSelect: 'none',
+  };
+
+  const tdStyle = {
+    fontFamily: BODY,
+    fontSize: 13,
+    color: ind.ink,
+    padding: '9px 10px',
+    borderTop: `1px solid ${ind.rule}`,
+    verticalAlign: 'middle',
+  };
+
+  /** The 22px bordered squares that carry the per-row actions. */
+  const iconBtnStyle = {
+    width: 22,
+    height: 22,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: `1px solid ${ind.hairline}`,
+    background: 'transparent',
+    color: ind.ink,
+    borderRadius: 0,
+    cursor: 'pointer',
+    padding: 0,
+    flex: 'none',
+  };
+
+  const editInputClass = 'w-full min-w-[7rem] px-2 py-1 text-sm';
+  const editInputStyle = {
+    border: `1px solid ${ind.hairline}`,
+    background: 'transparent',
+    color: ind.ink,
+    borderRadius: 0,
+    fontFamily: BODY,
+  };
+
+  /** Validation reads through weight, not colour — the system has no red. */
+  const errorTextStyle = {
+    fontFamily: DISPLAY,
+    fontWeight: 600,
+    fontSize: 11,
+    letterSpacing: '.06em',
+    textTransform: 'uppercase',
+    color: ind.ink,
+    margin: '4px 0 0',
+  };
+
+  /** The employee column is dead weight when the ledger only holds your rows. */
+  const showEmployeeColumn = selectedEmployeeFilter !== 'self';
+
+  /** First and last date actually on screen, for the ledger foot. */
+  const ledgerRangeLabel = useMemo(() => {
+    const stamps = getSortedEntries
+      .map((entry) => new Date(entry.date || entry.created_at).getTime())
+      .filter((n) => Number.isFinite(n));
+    if (stamps.length === 0) return '';
+    const from = fmtDay(new Date(Math.min(...stamps)));
+    const to = fmtDay(new Date(Math.max(...stamps)));
+    return from === to ? from : `${from} – ${to}`;
+  }, [getSortedEntries, fmtDay]);
+
   return (
-    <div key={currentLanguage} className="space-y-6 w-full max-w-none">
-      {/* Toast Notification for Upload */}
-      {uploadToast.show && (
-        <div className="fixed top-4 right-4 z-50 animate-fade-in">
-          <div className={`
-            rounded-lg p-4 shadow-lg flex items-center space-x-3
-            ${uploadToast.type === 'success' 
-              ? `${isDarkMode ? 'bg-green-900/30' : 'bg-green-100'} border-l-4 border-green-600` 
-              : `${isDarkMode ? 'bg-red-900/30' : 'bg-red-100'} border-l-4 border-red-600`}
-          `}>
-            {uploadToast.type === 'success' ? (
-              <Check className={`w-5 h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
-            ) : (
-              <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
-            )}
-            <span className={`
-              font-medium
-              ${uploadToast.type === 'success' 
-                ? `${isDarkMode ? 'text-green-200' : 'text-green-800'}` 
-                : `${isDarkMode ? 'text-red-200' : 'text-red-800'}`}
-            `}>
-              {uploadToast.message}
-            </span>
-          </div>
-        </div>
-      )}
-      
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex flex-col gap-2 min-w-0">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <h1 className={`text-3xl font-bold ${text.primary}`}>
-              {t('timeClock.title')}
-            </h1>
-            <PageLiveClock
-              textClassName={text.primary}
-              separatorClassName={text.secondary}
-              showSeparator={false}
-              loading={loading}
-              isDarkMode={isDarkMode}
-              fetchLabel={t('common.fetching', 'Fetching')}
-            />
-          </div>
-          <p className={`${text.secondary}`}>
-            {t('timeClock.subtitle')}
-          </p>
-        </div>
-        <PunchClock
-          className="hidden sm:block shrink-0 w-[128px] h-[164px] -my-3"
-          isDarkMode={isDarkMode}
-        />
-      </div>
-
-      {/* Admin Time Entry Section (Only for admin/manager roles) */}
-      <AdminTimeEntry onEntriesChanged={fetchTimeEntries} />
-
-      {/* Success Message */}
-      {successMessage && (
-        <div className={`p-4 ${isDarkMode ? 'bg-green-900/30 border-green-700' : 'bg-green-100 border-green-400'} border rounded-lg flex items-center space-x-2`}>
-          <Check className={`w-5 h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
-          <span className={isDarkMode ? 'text-green-400' : 'text-green-700'}>{successMessage}</span>
-        </div>
-      )}
-
-      {/* General Error */}
-      {errors.general && (
-        <div className={`p-4 ${isDarkMode ? 'bg-red-900/30 border-red-700' : 'bg-red-100 border-red-400'} border rounded-lg flex items-center space-x-2`}>
-          <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
-          <span className={isDarkMode ? 'text-red-400' : 'text-red-700'}>{errors.general}</span>
-        </div>
-      )}
-
-      {/* Fetch Error Banner */}
-      {fetchError && (
-        <div className={`${isDarkMode ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-300'} rounded-lg border p-4 flex items-start space-x-3 slide-in-top`}>
-          <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'} flex-shrink-0 mt-0.5`} />
-          <div className="flex-1">
-            <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-red-400' : 'text-red-800'}`}>
-              {t('common.error', 'Error')}
-            </h3>
-            <p className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-700'} mt-1`}>
-              {fetchError}
-            </p>
-            <button
-              onClick={() => {
-                setFetchError(null);
-                loadData();
-              }}
-              className={`mt-2 text-xs font-medium ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} underline`}
-            >
-              {t('common.retry', 'Try Again')}
-            </button>
-          </div>
-          <button
-            onClick={() => setFetchError(null)}
-            className={`${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} transition-colors text-xl font-bold leading-none`}
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* New Entry Form */}
-        <div className="lg:col-span-2">
-          <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>
-            <h2 className={`text-xl font-semibold ${text.primary} mb-6 flex items-center`}>
-              <AlarmClockPlus className="w-5 h-5 mr-2" />
-              {t('timeClock.newEntry')}
-            </h2>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Date */}
-              <label className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'} mb-2`}>
-                {t('timeClock.selectDate', 'Select Date')}
-                </label>
-                
-                <div className="relative group">
-                  <DatePicker
-                    id="date-input"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    max={new Date().toISOString().split('T')[0]}
-                    icon={CalendarClock}
-                    inputClassName={`
-                    w-full px-4 py-2 
-                    rounded-lg border 
-                    ${bg.primary}
-                    ${text.primary}
-                    ${input.className} 
-                    ${input.border}
-                    ${errors.date ? 'border-red-500' : ''}
-                    pr-10 appearance-none cursor-pointer
-                    `}
-                  />
-                </div>
-                
-                {errors.date && (
-                <p className="mt-1 text-sm text-red-500">{errors.date}</p>
-                )}
-
-              {/* Clock In/Out Times */}
-              <div>
-              <label className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'} mb-2`}>
-                {t('timeClock.clockIn')}
-              </label>
-              
-              <TimePicker
-                id="clock-in-input"
-                value={formData.clockIn}
-                onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
-                icon={AnimatedClockIcon}
-                inputClassName={`w-full px-4 py-2 rounded-lg border 
-                  ${bg.primary}
-                  ${input.className} 
-                  ${isDarkMode ? 'text-white bg-gray-700 border-gray-600' : 'text-gray-900 bg-white border-gray-300'} 
-                  ${errors.clockIn ? 'border-red-500' : ''}
-                  pr-10 appearance-none cursor-pointer`}
-              />
-              {errors.clockIn && <p className="text-red-500 text-sm mt-1">{errors.clockIn}</p>}
-            </div>
-
-            {/* Clock Out */}
-            <div>
-              <label className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-700'} mb-2`}>
-                {t('timeClock.clockOut')}
-              </label>
-              
-              <TimePicker
-                id="clock-out-input"
-                value={formData.clockOut}
-                onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
-                icon={AnimatedAlarmClockIcon}
-                inputClassName={`w-full px-4 py-2 rounded-lg border 
-                  ${bg.primary}
-                  ${input.className} 
-                  ${isDarkMode ? 'text-white bg-gray-700 border-gray-600' : 'text-gray-900 bg-white border-gray-300'} 
-                  ${errors.clockOut ? 'border-red-500' : ''}
-                  pr-10 appearance-none cursor-pointer`}
-              />
-              {errors.clockOut && <p className="text-red-500 text-sm mt-1">{errors.clockOut}</p>}
-            </div>
-
-              {/* Hour Type */}
-              <div>
-                <label className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-black'} mb-2`}>
-                  {t('timeClock.hourType')}
-                </label>
-                <div className="relative w-full group">
-                    <select
-                        value={formData.hourType}
-                        onChange={(e) => setFormData({ ...formData, hourType: e.target.value })}
-                        className={`
-                            w-full px-4 py-2 rounded-lg border
-                            ${bg.primary}
-                            ${text.primary}
-                            ${border.primary}
-                            focus:ring-2 focus:ring-blue-500 focus:border-transparent                        
-                            pr-10
-                        `}
-                    >
-                        {hourTypes.map(type => (
-                            <option key={type.value} value={type.value}>{type.label}</option>
-                        ))}
-                    </select>
-                    <ChevronsUpDown className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-800'} ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors`} />
-                </div>
-              </div>
-
-              {/* File Upload */}
-              <div>
-                <label 
-                    htmlFor="proof-file-upload"
-                    className={`
-                        block text-sm font-medium mb-2
-                        ${isDarkMode ? 'text-white' : 'text-black'} 
-                        cursor-pointer
-                        w-full px-4 py-2 
-                        rounded-lg border 
-                        ${isDarkMode ? 'border-gray-600 hover:border-gray-500' : 'border-gray-300 hover:border-gray-400'}
-                        ${formData.proofFile ? (isDarkMode ? 'bg-green-900/30 border-green-600' : 'bg-green-50 border-green-400') : ''}
-                        text-left
-                        transition-colors
-                    `}
-                >
-                   <div className="flex items-center">
-                    <motion.div
-                        initial="rest" 
-                        whileHover="hover" 
-                        variants={uploadVariants}
-                        className="flex items-center"
-                    >
-                      <Upload className={`w-6 h-6 mr-4 p-0.5 border-2 border-dashed ${formData.proofFile ? 'border-green-500 text-green-500' : 'border-gray-500'}`} />
-                    </motion.div>
-                    <span className="flex-1">
-                      {formData.proofFile ? (
-                        <span className={`${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
-                          ✓ {formData.proofFile.name}
-                        </span>
-                      ) : (
-                        <>
-                          {t('timeClock.proof')}
-                          <span className="text-sm text-gray-500 ml-3">
-                              ({t('timeClock.optional')})
-                          </span>
-                        </>
-                      )}
-                    </span>
-                    {formData.proofFile && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setFormData({ ...formData, proofFile: null });
-                        }}
-                        className={`ml-2 p-1 rounded-full ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'}`}
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                </div>
-                </label>
-
-                <input
-                    id="proof-file-upload"
-                    type="file"
-                    accept=".jpg,.jpeg,.png,.pdf"
-                    onChange={handleFileChange}
-                    className="sr-only"
-                />
-                {errors.proofFile && <p className="text-red-500 text-sm mt-1">{errors.proofFile}</p>}
-            </div>
-
-              {/* Notes */}
-              <div>
-                <label className={`block text-sm font-medium ${isDarkMode ? 'text-white' : 'text-black'} mb-2`}>
-                  {t('timeClock.notes')}
-                  <span className="text-sm text-gray-500 ml-2">
-                    ({t('timeClock.optional')})
-                  </span>
-                </label>
-                <textarea
-                  id="notes-textarea"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  rows="3"
-                  placeholder={t('timeClock.notesPlaceholder')}
-                  className={`${bg.primary} w-full px-4 py-2 rounded-lg border ${input.className} ${isDarkMode ? 'text-white' : 'text-black'}`}
-                />
-              </div>
-
-              {/* Submit Button */}
-              <ShinyButton
-                type="submit"
-                disabled={isSubmitting}
-                shineOnHover
-                className={cn(
-                  'w-full py-2.5 px-6 text-sm font-medium border shadow-sm',
-                  isSubmitting
-                    ? isDarkMode
-                      ? 'bg-slate-700 text-slate-400 border-slate-600 cursor-not-allowed'
-                      : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                    : isDarkMode
-                      ? 'bg-blue-600 text-white border-blue-500 hover:bg-blue-500'
-                      : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
-                )}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>{t('timeClock.submitting')}</span>
-                  </>
-                ) : (
-                  <>
-                    <Clock5 className="w-4 h-4" />
-                    <span>{t('timeClock.submit')}</span>
-                  </>
-                )}
-              </ShinyButton>
-            </form>
-            {showLeaveModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-                     onClick={(e) => { if (e.target === e.currentTarget) setShowLeaveModal(false); }}>
-                      <div className={`${bg.secondary} rounded-lg shadow-xl max-w-md w-full p-6`}>
-                        <div className="flex justify-between items-center mb-4">
-                          <h3 className={`text-xl font-semibold ${text.primary}`}>
-                            {t('timeTracking.requestLeave', 'Request Leave')}
-                          </h3>
-                          <button onClick={() => setShowLeaveModal(false)} className={`group ${text.secondary} cursor-pointer rounded-2xl ${isDarkMode ? 'text-white' : 'text-red-500'} transition-all`}>
-                            <X
-                              className={`w-6 h-6 group-hover:animate-spin group-hover:scale-110 ${isDarkMode ? 'group-hover:bg-transparent' : 'group-hover:bg-black'} origin-center transform transition-all rounded-2xl`}
-                            />
-                          </button>
-                        </div>
-            
-                        <form onSubmit={handleLeaveSubmit} className="space-y-4">
-                          <div>
-                            <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                              {t('timeTracking.leaveType', 'Leave Type')}
-                            </label>
-                            <select
-                              value={leaveForm.type}
-                              onChange={(e) => setLeaveForm({ ...leaveForm, type: e.target.value })}
-                              className={`w-full px-4 py-2 ${text.primary} rounded-lg border ${input.className}`}
-                            >
-                              <option value="vacation">{t('timeTracking.vacation', 'Vacation')}</option>
-                              <option value="sick">{t('timeTracking.sickLeave', 'Sick Leave')}</option>
-                              <option value="personal">{t('timeTracking.personal', 'Personal Leave')}</option>
-                              <option value="unpaid">{t('timeTracking.unpaid', 'Unpaid Leave')}</option>
-                            </select>
-                          </div>
-            
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                                {t('timeTracking.startDate', 'Start Date')}
-                              </label>
-                              <DatePicker
-                                value={leaveForm.startDate}
-                                onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
-                                required
-                                icon={Calendar}
-                                inputClassName={`w-full px-4 py-2 cursor-pointer rounded-lg border ${isDarkMode ? 'border-white' : 'border-gray-900'} ${isDarkMode ? 'text-white' : 'text-gray-900'} pr-10 appearance-none`}
-                              />
-                            </div>
-                            <div>
-                              <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                                {t('timeTracking.endDate', 'End Date')}
-                              </label>
-                              <DatePicker
-                                value={leaveForm.endDate}
-                                onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
-                                required
-                                icon={Calendar}
-                                inputClassName={`w-full px-4 py-2 cursor-pointer rounded-lg border ${isDarkMode ? 'border-white' : 'border-gray-900'} ${isDarkMode ? 'text-white' : 'text-gray-900'} pr-10 appearance-none`}
-                              />
-                            </div>
-                          </div>
-            
-                          <div>
-                            <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                              {t('timeTracking.reason', 'Reason')}
-                            </label>
-                            <textarea
-                              value={leaveForm.reason}
-                              onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })}
-                              rows="3"
-                              placeholder={t('timeTracking.reasonPlaceholder', 'Briefly explain your leave request...')}
-                              className={`w-full px-4 py-2 ${text.primary} rounded-lg border ${input.className}`}
-                            />
-                          </div>
-            
-                          <div className="flex space-x-3 pt-4">
-                            <ShinyButton
-                              type="button"
-                              onClick={() => setShowLeaveModal(false)}
-                              className={cn(
-                                'flex-1 px-4 py-2 border-transparent',
-                                text.primary,
-                                isDarkMode
-                                  ? 'bg-linear-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700'
-                                  : 'bg-linear-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300'
-                              )}
-                            >
-                              {t('common.cancel', 'Cancel')}
-                            </ShinyButton>
-                            <ShinyButton
-                              type="submit"
-                              className={cn(
-                                'flex-1 px-4 py-2 text-sm font-medium shadow-sm',
-                                isDarkMode
-                                  ? 'bg-blue-600 text-white border-blue-500 hover:bg-blue-500'
-                                  : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
-                              )}
-                            >
-                              {t('common.leaveRequest', 'Submit Request')}
-                            </ShinyButton>
-                          </div>
-                        </form>
-                      </div>
-                    </div>
-                  )}
-            {/* Request Leave Button */}
-            <div className={`mt-4 pt-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-              <ShinyButton
-                type="button"
-                onClick={() => setShowLeaveModal(true)}
-                shineOnHover
-                className={cn(
-                  'group w-full py-2.5 px-6 text-sm font-medium shadow-sm',
-                  isDarkMode
-                    ? 'bg-slate-800 text-slate-100 border-slate-600 hover:bg-slate-700'
-                    : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50 hover:border-slate-400'
-                )}
-              >
-                <Coffee className="w-4 h-4 opacity-80 -translate-y-px" />
-                <span>{t('timeClock.requestLeave', 'Request Leave')}</span>
-              </ShinyButton>
-            </div>
-          </div>
-        </div>
-
-        {/* Summary Stats */}
-        <div className="space-y-6">
-          {/* Weekly Summary */}
-          <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>
-            <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-              {t('timeClock.weeklySummary')}
-            </h3>
-            <div className="space-y-3">
-              {hourTypes.map(type => (
-                <div key={type.value} className="flex justify-between items-center">
-                  <span className={`text-sm ${text.secondary}`}>{type.label}</span>
-                  <span className={`font-semibold ${text.primary}`}>
-                    {calculateTotals(type.value, 'week').toFixed(1)} {t('timeClock.hrs')}
-                  </span>
-                </div>
-              ))}
-              <div className={`pt-3 border-t ${border.primary} flex justify-between items-center`}>
-                <span className={`font-semibold ${text.primary}`}>
-                  {t('timeClock.total')}
-                </span>
-                <span className={`font-bold text-lg ${text.primary}`}>
-                  {calculateTotals('all', 'week').toFixed(1)} {t('timeClock.hrs')}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Monthly Summary */}
-          <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>
-            <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-              {t('timeClock.monthlySummary')}
-            </h3>
-            <div className="space-y-3">
-              {hourTypes.map(type => (
-                <div key={type.value} className="flex justify-between items-center">
-                  <span className={`text-sm ${text.secondary}`}>{type.label}</span>
-                  <span className={`font-semibold ${text.primary}`}>
-                    {calculateTotals(type.value, 'month').toFixed(1)} {t('timeClock.hrs')}
-                  </span>
-                </div>
-              ))}
-              <div className={`pt-3 border-t ${border.primary} flex justify-between items-center`}>
-                <span className={`font-semibold ${text.primary}`}>
-                  {t('timeClock.total')}
-                </span>
-                <span className={`font-bold text-lg ${text.primary}`}>
-                  {calculateTotals('all', 'month').toFixed(1)} {t('timeClock.hrs')}
-                </span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Leave Days Summary */}
-          <div className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary}`}>
-            <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-              {t('timeClock.leaveDays', 'Leave Days')}
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className={`text-sm ml-2 ${text.primary}`}>{t('timeClock.thisWeek', 'This Week')}</span>
-                <span className={`font-semibold text-sm ${text.primary}`}>
-                  {calculateLeaveDays('week').toFixed(1)} {t('timeClock.days')}
-                </span>
-              </div>
-              <div className={`pt-3 border-t ${border.primary} flex justify-between items-center`}>
-                <span className={`text-sm ml-2 ${text.primary}`}>
-                  {t('timeClock.thisMonth', 'This Month')}
-                </span>
-                <span className={`font-semibold text-sm ${text.primary}`}>
-                  {calculateLeaveDays('month').toFixed(1)} {t('timeClock.days')}
-                </span>
-              </div>
-              <div className={`text-xs italic ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-2`}>
-                {t('timeClock.includesPending', '* Includes pending & approved')}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Time Entries History */}
+    <div
+      key={currentLanguage}
+      data-screen-label="Chấm công"
+      style={{
+        border: `1px solid ${ind.hairline}`,
+        background: ind.ground,
+        color: ind.ink,
+        fontFamily: BODY,
+        fontSize: 14,
+        borderRadius: 0,
+      }}
+    >
+      {/* ── TICKER — spans both bands, so it is their sibling ───────── */}
       <div
-        ref={historySectionRef}
-        className={`${bg.secondary} rounded-lg shadow-lg p-6 ${border.primary} scroll-mt-24`}
+        style={{
+          height: 44, background: ind.tickerBg, color: ind.tickerInk,
+          borderBottom: `1px solid ${ind.hairline}`,
+          display: 'flex', alignItems: 'stretch', overflowX: 'auto', overflowY: 'hidden',
+        }}
       >
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-          <h2 className={`text-xl text-center font-semibold ${text.primary} flex items-center`}>
-            <Clock className="w-6 h-6 mr-2" />
-            {t('timeClock.history', 'Time Entry History')}
-          </h2>
+        <TickerCell ind={ind}>
+          <LiveClock ind={ind} live={hasRealData} />
+        </TickerCell>
+        <TickerCell ind={ind} label={t('timeClock.thisWeek', 'This Week')} value={`${weekTotal.toFixed(1)}h`} />
+        <TickerCell ind={ind} label={t('timeClock.thisMonth', 'This Month')} value={`${monthTotal.toFixed(1)}h`} />
+        <TickerCell
+          ind={ind}
+          label={t('timeClock.awaitingApproval', 'Awaiting approval')}
+          value={boardStats.pending}
+          // The one figure on the strip that asks somebody to decide.
+          valueColor={boardStats.pending > 0 ? ind.tickerUp : undefined}
+        />
+        <TickerCell ind={ind} label={t('timeClock.missingProof', 'Missing proof')} value={boardStats.missingProof} />
+        <TickerCell
+          ind={ind}
+          label={t('timeClock.leaveDays', 'Leave Days')}
+          value={`${leaveWeek.toFixed(1)}${t('timeClock.dayShort', 'd')}`}
+        />
 
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2">
-              <label className={`text-sm font-medium ${text.primary}`}>
-                {t('timeClock.filterByStatus', 'Status')}:
-              </label>
-              <div className="relative">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    if (e.target.value !== 'pending') {
-                      setReviewMode(false);
-                    }
-                  }}
-                  className={`
-                    px-4 py-2 pr-10 rounded-lg border
-                    ${bg.primary}
-                    ${text.primary}
-                    ${border.primary}
-                    focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                    min-w-[160px]
-                  `}
-                >
-                  <option value="all">{t('timeClock.allStatuses', 'All Statuses')}</option>
-                  <option value="pending">{t('status.pending', 'Pending')}</option>
-                  <option value="approved">{t('status.approved', 'Approved')}</option>
-                  <option value="rejected">{t('status.rejected', 'Rejected')}</option>
-                </select>
-                <ChevronsUpDown className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none h-5 w-5 ${isDarkMode ? 'text-white' : 'text-gray-800'}`} />
+        <div
+          style={{
+            flex: 1, minWidth: 'max-content', display: 'flex', alignItems: 'center',
+            justifyContent: 'flex-end', gap: 8, padding: '0 14px',
+            borderLeft: `1px solid ${ind.tickerRule}`,
+          }}
+        >
+          <FetchElapsedPill active={loading} isDarkMode label={t('common.fetching', 'Fetching')} />
+          {canManageTimeTracking ? (
+            <FlatSelect
+              ind={ind}
+              onDark
+              value={selectedEmployeeFilter}
+              onChange={(e) => {
+                setSelectedEmployeeFilter(e.target.value);
+                setBulkOpen(false);
+                setTimeout(() => fetchTimeEntries(), 100);
+              }}
+              aria-label={t('timeClock.viewEntries', 'View Entries')}
+              style={{ maxWidth: 220 }}
+            >
+              <option value="self" style={{ color: '#1d1f20' }}>{t('timeClock.myEntries', 'My Entries')}</option>
+              <option value="all" style={{ color: '#1d1f20' }}>{t('timeClock.allEmployees', 'All Employees')}</option>
+              {Array.isArray(allEmployees) && allEmployees.length > 0 && (
+                <optgroup label={t('timeClock.specificEmployee', 'Specific Employee')}>
+                  {allEmployees.map((emp) => (
+                    <option key={emp.id} value={emp.id} style={{ color: '#1d1f20' }}>
+                      {getDemoEmployeeName(emp, t)}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </FlatSelect>
+          ) : (
+            <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+              {meName}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* ── BANDS ─────────────────────────────────────────────────── */}
+      <div className="flex flex-col lg:flex-row items-stretch">
+
+        {/* ── LEFT — min-w-0 or the eight-column table wins ───────── */}
+        <div
+          className="flex-1 min-w-0 flex flex-col"
+          style={{ padding: '22px 24px 20px', gap: 16, borderRight: `1px solid ${ind.hairline}` }}
+        >
+          {successMessage && (
+            <div
+              className="flex items-center justify-between"
+              style={{ border: `1px solid ${ind.hairline}`, background: ind.accentWash, padding: '9px 12px', gap: 10 }}
+            >
+              <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink }}>{successMessage}</span>
+              <Check size={14} strokeWidth={1.5} style={{ flex: 'none', color: ind.accentDeep }} />
+            </div>
+          )}
+
+          {(errors.general || fetchError) && (
+            <div style={{ border: `1px solid ${ind.ink}`, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <AlertCircle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Kicker ind={ind} color={ind.ink}>{t('common.error', 'Error')}</Kicker>
+                <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 4 }}>
+                  {errors.general || fetchError}
+                </p>
+                {fetchError && (
+                  <button
+                    type="button"
+                    onClick={() => { setFetchError(null); loadData(); }}
+                    style={{
+                      marginTop: 8, background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                      fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5, letterSpacing: '.08em',
+                      textTransform: 'uppercase', color: ind.accentDeep, textDecoration: 'underline',
+                    }}
+                  >
+                    {t('common.retry', 'Try Again')}
+                  </button>
+                )}
               </div>
+              <button
+                type="button"
+                onClick={() => { setErrors({ ...errors, general: null }); setFetchError(null); }}
+                aria-label={t('common.close', 'Close')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0, flex: 'none' }}
+              >
+                <X size={15} strokeWidth={1.5} />
+              </button>
+            </div>
+          )}
+
+          {/* ── PAGE HEAD ──────────────────────────────────────────── */}
+          <div className="flex flex-wrap items-end justify-between" style={{ gap: 20 }}>
+            <div style={{ minWidth: 0 }}>
+              <h1 style={{ fontFamily: BODY, fontSize: 32, fontWeight: 400, margin: 0, color: ind.ink, lineHeight: 1.1 }}>
+                {t('timeClock.title')}
+              </h1>
+              <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 6 }}>
+                {headSub}
+              </p>
             </div>
 
-            {canManageTimeTracking && (
-              <div className="flex items-center gap-2">
-                <label className={`text-sm font-medium ${text.primary}`}>
-                  {t('timeClock.viewEntries', 'View Entries')}:
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedEmployeeFilter}
-                    onChange={(e) => {
-                      setSelectedEmployeeFilter(e.target.value);
-                      setTimeout(() => fetchTimeEntries(), 100);
-                    }}
-                    className={`
-                      px-4 py-2 pr-10 rounded-lg border
-                      ${bg.primary}
-                      ${text.primary}
-                      ${border.primary}
-                      focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                      min-w-[200px]
-                    `}
-                  >
-                    <option value="self">{t('timeClock.myEntries', 'My Entries')}</option>
-                    <option value="all">{t('timeClock.allEmployees', 'All Employees')}</option>
-                    {Array.isArray(allEmployees) && allEmployees.length > 0 && (
-                      <optgroup label={t('timeClock.specificEmployee', 'Specific Employee')}>
-                        {allEmployees.map((emp) => (
-                          <option key={emp.id} value={emp.id}>
-                            {getDemoEmployeeName(emp, t)} - {t(`employeePosition.${emp.position}`, emp.position)}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                  </select>
-                  <ChevronsUpDown className={`absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none h-5 w-5 ${isDarkMode ? 'text-white' : 'text-gray-800'}`} />
-                </div>
-              </div>
-            )}
+            <div className="flex flex-wrap items-center" style={{ gap: 10 }}>
+              {canManageTimeTracking && (
+                <Seg
+                  ind={ind}
+                  ariaLabel={t('timeClock.viewEntries', 'View Entries')}
+                  value={segValue}
+                  onChange={handleSegChange}
+                  options={[
+                    { value: 'self', label: t('timeClock.scopeMine', 'Mine') },
+                    { value: 'admin', label: t('timeClock.scopeAdmin', 'Admin') },
+                    { value: 'bulk', label: t('timeClock.scopeBulk', 'Bulk') },
+                  ]}
+                />
+              )}
+              <Btn
+                ind={ind}
+                onClick={() => setShowLeaveModal(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                <Calendar size={13} strokeWidth={1.5} />
+                {t('timeClock.requestLeave', 'Request Leave')}
+              </Btn>
+            </div>
           </div>
-        </div>
 
-        {reviewMode && (
-          <div
-            className={`mb-4 px-4 py-3 rounded-lg border ${
-              isDarkMode
-                ? 'bg-yellow-900/20 border-yellow-700 text-yellow-100'
-                : 'bg-yellow-50 border-yellow-200 text-yellow-900'
-            }`}
-          >
-            <p className="text-sm font-medium">
-              {t('timeClock.reviewPendingBanner', 'Showing time entries awaiting your review')}
-            </p>
-          </div>
-        )}
+          {bulkOpen ? (
+            /* Bulk entry and the standard-hours fill live in one place, so this
+               screen hands the whole band over rather than keeping a second copy
+               of the same form. */
+            <AdminTimeEntry onEntriesChanged={fetchTimeEntries} />
+          ) : (
+            <>
+              {/* ── ENTRY FORM ─────────────────────────────────────── */}
+              <form onSubmit={handleSubmit} style={{ flex: 'none' }}>
+                <Blueprint ind={ind} style={{ padding: '18px 20px 16px' }}>
+                  <div className="flex flex-col lg:flex-row" style={{ gap: 28 }}>
 
-        {getSortedEntries.length === 0 ? (
-          <div className="text-center py-12">
-            <Clock className={`w-16 h-16 mx-auto ${text.secondary} opacity-50 mb-4`} />
-            <p className={`${text.secondary}`}>
-              {statusFilter === 'pending'
-                ? t('timeClock.noPendingEntries', 'No pending time entries to review')
-                : t('timeClock.noEntries')}
-            </p>
-          </div>
-        ) : (
-          <TableScroll>
-              <table className="w-full items-center table-auto border-collapse">
-                <thead className="text-center">
-                  <tr className={`border-b ${border.primary}`}>
-                    <th 
-                      className={`text-center p-3 ${text.primary} font-semibold cursor-pointer select-none`}
-                      onClick={() => handleSort('date')}
-                    >
-                      <span className="inline-flex items-center justify-center gap-1">
-                        {t('timeClock.date', 'Date')}
-                        {sortKey === 'date' ? (
-                          sortDirection === 'asc' ? (
-                            <CalendarArrowUp
-                              className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
-                            />
-                          ) : (
-                            <CalendarArrowDown
-                              className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
-                            />
-                          )
-                        ) : (
-                          <CalendarArrowUp className="inline w-4 h-4 ml-1 transition-all duration-500 text-gray-400 hover:text-blue-400 hover:animate-pulse" />
-                        )}
-                      </span>
-                    </th>
-                    {selectedEmployeeFilter !== 'self' && (
-                      <th 
-                        className={`text-center p-3 ${text.primary} font-semibold cursor-pointer select-none`}
-                        onClick={() => handleSort('employee')}
-                      >
-                        <span className="inline-flex items-center justify-center gap-1">
-                          {t('timeClock.employee', 'Employee')}
-                          <ArrowDownAZ
-                            className={`inline w-4 h-4 ml-1 transition-all duration-1500 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                            style={{transition: 'transform 1.5s', transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                          />
-                        </span>
-                      </th>
-                    )}
-                    <th className={cn(colTimeClass, `text-center p-3 ${text.primary} font-semibold`)}>
-                      {t('timeClock.time', 'Time')}
-                    </th>
-                    <th 
-                      className={`text-center p-3 ${text.primary} font-semibold cursor-pointer select-none`}
-                      onClick={() => handleSort('hours')}
-                    >
-                      <span className="inline-flex items-center justify-center gap-1">
-                        {t('timeClock.hours', 'Hours')}
-                        <Hourglass
-                          className={`inline w-3.5 h-3.5 ml-1 transition-all duration-1500 ${sortKey === 'hours' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                          style={{transition: 'transform 1.5s', transform: sortKey === 'hours' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                        />
-                      </span>
-                    </th>
-                  <th
-                    className={cn(colTypeClass, `text-center p-3 ${text.primary} font-semibold cursor-pointer select-none`)}
-                    onClick={() => handleSort('type')}
-                  >
-                    <span className="inline-flex items-center justify-center gap-1">
-                      {t('timeClock.type', 'Type')}
-                      <Timer
-                        className={`inline w-4 h-4 ml-1 transition-all duration-1500 ${sortKey === 'type' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                        style={{transition: 'transform 1.5s', transform: sortKey === 'type' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                      />
-                    </span>
-                  </th>
-                  <th 
-                    className={`text-center p-3 ${text.primary} font-semibold cursor-pointer select-none`}
-                    onClick={() => handleSort('status')}
-                  >
-                    <span className="inline-flex items-center justify-center gap-1">
-                      {t('timeClock.status', 'Status')}
-                      {sortKey === 'status' ? (
-                        sortDirection === 'asc' ? (
-                          <ShieldCheck
-                            className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
-                          />
-                        ) : (
-                          <ShieldQuestion
-                            className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
-                          />
-                        )
-                      ) : (
-                        <ShieldCheck className="inline w-4 h-4 ml-1 transition-all duration-500 text-gray-400 hover:text-blue-400 hover:animate-pulse" />
-                      )}
-                    </span>
-                  </th>
-                  <th className={`text-center p-3 ${text.primary} font-semibold`}>
-                    {t('timeClock.proof', 'Proof')}
-                  </th>
-                  <th className={`text-center p-3 ${text.primary} font-semibold`}>
-                    {t('timeClock.actions', 'Actions')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="text-center">
-                {getSortedEntries.map((entry) => {
-                  const isEditing = editingEntryId === entry.id;
-                  const editable = canEditEntry(entry);
-                  const editInputClass = `w-full min-w-[7.5rem] px-2 py-1.5 rounded border text-sm ${bg.primary} ${text.primary} ${border.primary}`;
+                    {/* Collect */}
+                    <div className="flex-1 min-w-0 flex flex-col" style={{ gap: 14 }}>
+                      <div>
+                        <ColumnHeading ind={ind}>{t('timeClock.newEntry')}</ColumnHeading>
+                        <p style={captionStyle}>
+                          {t('timeClock.entryHint', 'Hours are filed for approval. Attach proof now, or from the ledger below.')}
+                        </p>
+                      </div>
 
-                  return (
-                  <tr
-                    key={entry.id}
-                    className={cn(
-                      `border-b ${border.primary} group cursor-pointer transition-colors duration-100`,
-                      isEditing
-                        ? (isDarkMode ? 'bg-amber-200 hover:bg-amber-200' : 'bg-blue-600 hover:bg-blue-600')
-                        : (isDarkMode ? 'hover:bg-amber-200' : 'hover:bg-blue-600')
-                    )}
-                  >
-                    <td className={cn(
-                      'p-3 text-center font-medium',
-                      `${text.primary} ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`,
-                      isEditing && (isDarkMode ? 'text-black' : 'text-white')
-                    )}>
-                      {isEditing ? (
-                        <div onClick={(e) => e.stopPropagation()}>
+                      <div className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: 12 }}>
+                        <div style={{ minWidth: 0 }}>
+                          <label htmlFor="date-input" style={fieldLabelStyle}>{t('timeClock.date', 'Date')}</label>
                           <DatePicker
-                            value={editForm.date}
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, date: e.target.value }))}
-                            inputClassName={editInputClass}
-                            className="min-w-[7.5rem]"
+                            flat
+                            id="date-input"
+                            value={formData.date}
+                            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                            max={new Date().toISOString().split('T')[0]}
+                          />
+                          {errors.date && <p style={errorTextStyle}>{errors.date}</p>}
+                        </div>
+
+                        <div style={{ minWidth: 0 }}>
+                          <label htmlFor="clock-in-input" style={fieldLabelStyle}>{t('timeClock.clockIn')}</label>
+                          <TimePicker
+                            flat
+                            id="clock-in-input"
+                            value={formData.clockIn}
+                            disabled={formData.hourType === 'on_leave'}
+                            onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
+                          />
+                          {errors.clockIn && <p style={errorTextStyle}>{errors.clockIn}</p>}
+                        </div>
+
+                        <div style={{ minWidth: 0 }}>
+                          <label htmlFor="clock-out-input" style={fieldLabelStyle}>{t('timeClock.clockOut')}</label>
+                          <TimePicker
+                            flat
+                            id="clock-out-input"
+                            value={formData.clockOut}
+                            disabled={formData.hourType === 'on_leave'}
+                            onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
+                          />
+                          {errors.clockOut && <p style={errorTextStyle}>{errors.clockOut}</p>}
+                        </div>
+                      </div>
+
+                      {/* Hour type — chips, because the list is short and the
+                          choice changes what the figure on the right says. */}
+                      <div>
+                        <span style={fieldLabelStyle}>{t('timeClock.hourType')}</span>
+                        <div className="flex flex-wrap" style={{ gap: 6 }}>
+                          {hourTypes.map((type) => {
+                            const active = formData.hourType === type.value;
+                            return (
+                              <button
+                                key={type.value}
+                                type="button"
+                                aria-pressed={active}
+                                onClick={() => setFormData({ ...formData, hourType: type.value })}
+                                style={{
+                                  fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5,
+                                  letterSpacing: '.08em', textTransform: 'uppercase',
+                                  padding: '5px 10px', borderRadius: 0, cursor: 'pointer', whiteSpace: 'nowrap',
+                                  background: active ? ind.accent : 'transparent',
+                                  color: active ? ind.accentInk : ind.inkGhost,
+                                  border: `1px solid ${active ? ind.accent : ind.hairline}`,
+                                  transition: 'background .15s ease, color .15s ease',
+                                }}
+                              >
+                                {type.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <p style={captionStyle}>
+                          {t('timeClock.autoDetectNote', 'Weekend and holiday follow from the date — change the type only when the day is an exception.')}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 12 }}>
+                        <div style={{ minWidth: 0 }}>
+                          <label htmlFor="notes-textarea" style={fieldLabelStyle}>
+                            {`${t('timeClock.notes')} · ${t('timeClock.optional')}`}
+                          </label>
+                          <textarea
+                            id="notes-textarea"
+                            value={formData.notes}
+                            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                            placeholder={t('timeClock.notesPlaceholder')}
+                            style={{
+                              width: '100%', height: 62, padding: '7px 10px', resize: 'vertical',
+                              border: `1px solid ${ind.hairline}`, borderRadius: 0,
+                              background: 'transparent', color: ind.ink,
+                              fontFamily: BODY, fontSize: 12.5,
+                            }}
                           />
                         </div>
-                      ) : (
-                        <>
-                          {entry.date || new Date(entry.created_at).toLocaleDateString()}
-                          {/* Stand-ins for the columns this viewport has dropped */}
-                          <StackedDetail
-                            showUntil="md"
-                            label={t('timeClock.type', 'Type')}
-                            value={hourTypes.find(type => type.value === (entry.hour_type || entry.hourType))?.label
-                              || entry.hour_type
-                              || entry.hourType}
-                          />
-                          <StackedDetail
-                            showUntil="lg"
-                            label={t('timeClock.time', 'Time')}
-                            value={(entry.hour_type || entry.hourType) === 'on_leave'
-                              ? '-'
-                              : `${formatTime(entry.clock_in || entry.clockIn)} - ${formatTime(entry.clock_out || entry.clockOut)}`}
-                          />
-                        </>
-                      )}
-                    </td>
-                    {selectedEmployeeFilter !== 'self' && (
-                      <td className={cn(
-                        'p-3 text-center font-medium',
-                        `${text.primary} ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`,
-                        isEditing && (isDarkMode ? 'text-black' : 'text-white')
-                      )}>
-                        {isDemoMode()
-                          ? (
-                              getDemoEmployeeName(
-                                { name: entry.employee_name || entry.employee?.name, nameKey: entry.employee_nameKey },
-                                t
-                              ) || entry.employee_name || entry.employee?.name || 'N/A'
-                            )
-                          : (entry.employee_name || entry.employee?.name || 'N/A')}
-                      </td>
-                    )}
-                    <td className={cn(
-                      colTimeClass,
-                      'p-3',
-                      `${text.secondary} ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`,
-                      isEditing && (isDarkMode ? 'text-black' : 'text-white')
-                    )}>
-                      {isEditing ? (
-                        editForm.hourType === 'on_leave' ? (
-                          <span>-</span>
-                        ) : (
-                          <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
-                            <TimePicker
-                              value={editForm.clockIn}
-                              onChange={(e) => handleEditTimeChange('clockIn', e.target.value)}
-                              inputClassName={editInputClass}
-                              className="min-w-[7.5rem]"
-                            />
-                            <span>-</span>
-                            <TimePicker
-                              value={editForm.clockOut}
-                              onChange={(e) => handleEditTimeChange('clockOut', e.target.value)}
-                              inputClassName={editInputClass}
-                              className="min-w-[7.5rem]"
-                            />
-                          </div>
-                        )
-                      ) : (
-                        (entry.hour_type || entry.hourType) === 'on_leave'
-                          ? '-'
-                          : `${formatTime(entry.clock_in || entry.clockIn)} - ${formatTime(entry.clock_out || entry.clockOut)}`
-                      )}
-                    </td>
-                    <td className={cn(
-                      'p-3 font-semibold',
-                      `${text.primary} ${isDarkMode ? 'group-hover:text-black' : 'group-hover:text-white'}`,
-                      isEditing && (isDarkMode ? 'text-black' : 'text-white')
-                    )}>
-                      {isEditing ? (
-                        <div className="inline-flex items-center gap-1 justify-center" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.25"
-                            value={editForm.hours}
-                            disabled={editForm.hourType === 'on_leave'}
-                            onChange={(e) => handleEditHoursChange(e.target.value)}
-                            className={`${editInputClass} max-w-[6rem] text-center`}
-                          />
-                          <span className="text-xs">{t('timeClock.hrs')}</span>
-                        </div>
-                      ) : (
-                        <>{entry.hours} {t('timeClock.hrs')}</>
-                      )}
-                    </td>
-                    <td className={cn(colTypeClass, 'p-3')}>
-                      {isEditing ? (
-                        <select
-                          value={editForm.hourType}
-                          onChange={(e) => handleEditTypeChange(e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
-                          className={editInputClass}
-                        >
-                          {hourTypes.map((type) => (
-                            <option key={type.value} value={type.value}>{type.label}</option>
-                          ))}
-                        </select>
-                      ) : (
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                        (entry.hour_type || entry.hourType) === 'regular' ? (isDarkMode ? 'bg-blue-900/30 text-blue-400 group-hover:text-black' : 'bg-blue-200 text-blue-900 group-hover:text-black') :
-                        (entry.hour_type || entry.hourType) === 'holiday' ? (isDarkMode ? 'bg-purple-900/30 text-purple-400 group-hover:text-black' : 'bg-purple-200 text-purple-900 group-hover:text-black') :
-                        (entry.hour_type || entry.hourType) === 'weekend' ? (isDarkMode ? 'bg-green-900/30 text-green-400 group-hover:text-black' : 'bg-green-200 text-green-900 group-hover:text-black') :
-                        (entry.hour_type || entry.hourType) === 'overtime' ? (isDarkMode ? 'bg-orange-900/30 text-orange-400 group-hover:text-black' : 'bg-orange-200 text-orange-900 group-hover:text-black') :
-                        (entry.hour_type || entry.hourType) === 'on_leave' ? (isDarkMode ? 'bg-pink-900/30 text-pink-400 group-hover:text-black' : 'bg-pink-200 text-pink-900 group-hover:text-black') :
-                        (isDarkMode ? 'bg-yellow-900/30 text-yellow-400 group-hover:text-black' : 'bg-yellow-200 text-yellow-900 group-hover:text-black')
-                      }`}>
-                        {hourTypes.find(t => t.value === (entry.hour_type || entry.hourType))?.label || (entry.hour_type || entry.hourType)?.charAt(0).toUpperCase() + (entry.hour_type || entry.hourType)?.slice(1)}
-                      </span>
-                      )}
-                    </td>
-                    <td className="p-3">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(entry.status)}`}>
-                        {translateStatus(entry.status)}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center justify-center gap-2">
-                        {(entry.proof_file_url || entry.proofFile) ? (
-                          entry.proof_file_url ? (
-                            isImageFile(entry.proof_file_type, entry.proof_file_url) ? (
-                              // Image preview button
+
+                        <div style={{ minWidth: 0 }}>
+                          <span style={fieldLabelStyle}>{t('timeClock.proof')}</span>
+                          <label
+                            htmlFor="proof-file-upload"
+                            className="flex items-center"
+                            style={{
+                              height: 62, gap: 10, padding: '0 12px', cursor: 'pointer',
+                              border: `1px dashed ${formData.proofFile ? ind.accent : ind.hairline}`,
+                              color: formData.proofFile ? ind.ink : ind.inkFaint,
+                            }}
+                          >
+                            <Upload size={16} strokeWidth={1.5} style={{ flex: 'none' }} />
+                            <span style={{ fontFamily: BODY, fontSize: 11.5, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {formData.proofFile ? formData.proofFile.name : t('timeClock.fileTypes')}
+                            </span>
+                            {formData.proofFile && (
                               <button
                                 type="button"
-                                className="inline-flex cursor-pointer hover:scale-110 transition-transform"
                                 onClick={(e) => {
+                                  e.preventDefault();
                                   e.stopPropagation();
-                                  setImagePreview({ show: true, url: entry.proof_file_url });
+                                  setFormData({ ...formData, proofFile: null });
                                 }}
-                                aria-label="View proof image"
-                                title={t('timeClock.viewProof', 'View proof image')}
-                                onMouseEnter={(e) => {
-                                  const el = e.currentTarget.querySelector('svg');
-                                  if (el) {
-                                    el.style.animation = 'pingOnce .25s ease-in-out 1';
-                                    el.onanimationend = () => (el.style.animation = '');
-                                  }
-                                }}
+                                aria-label={t('common.close', 'Close')}
+                                style={{ ...iconBtnStyle, marginLeft: 'auto' }}
                               >
-                                <FileCheck className={`w-5 h-5 ${isDarkMode ? 'text-green-100 group-hover:text-black' : 'text-green-900 group-hover:text-white'} transition-all duration-500`} />
+                                <X size={12} strokeWidth={1.5} />
                               </button>
-                            ) : (
-                              // Use regular link for PDFs and other files
-                              <a 
-                                href={entry.proof_file_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="inline-flex hover:scale-110 transition-transform"
-                                onClick={(e) => e.stopPropagation()}
-                                title={t('timeClock.downloadProof', 'Download proof file')}
-                              >
-                                <FileCheck className={`w-5 h-5 ${isDarkMode ? 'text-green-100 group-hover:text-black' : 'text-green-900 group-hover:text-white'} transition-all duration-500 hover:bg-gray-900`} />
-                              </a>
-                            )
-                          ) : (
-                            <FileCheck className={`w-5 h-5 ${isDarkMode ? 'text-green-100 group-hover:text-black' : 'text-green-600 group-hover:text-white'} transition-all duration-500 hover:bg-gray-900`} />
-                          )
-                        ) : (
-                          <span className={`text-xs ${text.secondary} group-hover:text-white`}></span>
-                        )}
-                        
-                        {/* Upload button for entries without proof */}
-                        {!entry.proof_file_url && (
-                          <div className="flex items-center gap-2">
-                            <label 
-                              htmlFor={`proof-upload-${entry.id}`}
-                              className="cursor-pointer inline-flex items-center"
-                              onClick={(e) => e.stopPropagation()}
-                              title={t('timeClock.uploadProof', 'Upload proof file')}
-                              onMouseEnter={(e) => {
-                                  const el = e.currentTarget.querySelector('svg');
-                                  if (el) {
-                                    el.style.animation = 'bounceOnce 1.25s ease-in-out 1';
-                                    el.onanimationend = () => (el.style.animation = '');
-                                  }
-                                }}
-                            >
-                              {uploadingProofId === entry.id ? (
-                                <div className="flex items-center gap-2">
-                                  <Loader className={`w-4 h-4 ${isDarkMode ? 'text-blue-400 group-hover:text-black' : 'text-blue-600 group-hover:text-white'} animate-spin`} />
-                                  {Object.values(uploadProgress)[0] > 0 && Object.values(uploadProgress)[0] < 100 && (
-                                    <span className={`text-xs ${isDarkMode ? 'text-blue-400 group-hover:text-black' : 'text-blue-600 group-hover:text-white'} font-medium`}>
-                                      {Object.values(uploadProgress)[0]}%
-                                    </span>
-                                  )}
-                                </div>
-                              ) : (
-                                <Upload className={`w-5 h-5 mr-1.75 ${isDarkMode ? 'text-blue-100 group-hover:text-black' : 'text-blue-600 group-hover:text-white'} transform transition-all duration-500`} />
-                              )}
-                              <input
-                                id={`proof-upload-${entry.id}`}
-                                type="file"
-                                accept="image/*,application/pdf,.doc,.docx,.txt"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    handleUploadProof(entry.id, file);
-                                    e.target.value = ''; // Reset input
-                                  }
-                                }}
-                                className="hidden"
-                                disabled={uploadingProofId === entry.id}
-                              />
-                            </label>
-                          </div>
-                        )}
+                            )}
+                          </label>
+                          <input
+                            id="proof-file-upload"
+                            type="file"
+                            accept=".jpg,.jpeg,.png,.pdf"
+                            onChange={handleFileChange}
+                            className="sr-only"
+                          />
+                          {errors.proofFile && <p style={errorTextStyle}>{errors.proofFile}</p>}
+                        </div>
                       </div>
-                    </td>
-                    <td className="p-3 text-center">
-                      <div className="flex items-center justify-center gap-2 group">
-                        {isEditing ? (
-                          <>
-                            <SpecularButton
-                              type="button"
-                              active
-                              shineOnHover
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                saveEditEntry();
-                              }}
-                              disabled={savingEntryId === entry.id}
-                              className={cn(
-                                'h-8 w-8 border-slate-300 bg-white px-0 py-0 text-black',
-                                'rounded-md hover:rounded-full group-hover:rounded-full'
-                              )}
-                              title={t('common.save', 'Save')}
-                            >
-                              {savingEntryId === entry.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Check className="w-4 h-4" />
-                              )}
-                            </SpecularButton>
-                            <SpecularButton
-                              type="button"
-                              active
-                              shineOnHover
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                cancelEditEntry();
-                              }}
-                              className={cn(
-                                'h-8 w-8 px-0 py-0',
-                                'rounded-md hover:rounded-full group-hover:rounded-full',
-                                isDarkMode
-                                  ? 'border-slate-400 bg-slate-900 text-slate-100'
-                                  : 'border-slate-300 bg-white text-slate-800'
-                              )}
-                              title={t('common.cancel', 'Cancel')}
-                            >
-                              <X className="w-4 h-4" />
-                            </SpecularButton>
-                          </>
-                        ) : (
-                          <>
-                        {editable && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              startEditEntry(entry);
-                            }}
-                            className={cn(
-                              'inline-flex h-8 w-8 items-center justify-center rounded-md border text-sm font-medium shadow-sm transition-colors',
-                              isDarkMode
-                                ? 'border-slate-500 bg-slate-800 text-slate-100 hover:bg-slate-700'
-                                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-400'
-                            )}
-                            title={t('common.edit', 'Edit')}
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        {/* Approve Button (only for pending entries and if user has permission) */}
-                        {entry.status === 'pending' && canApprove(entry) && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleApprove(entry.id);
-                            }}
-                            disabled={approvingEntryId === entry.id}
-                            className={`${isDarkMode ? 'text-green-200' : 'text-green-600'} hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-500`}
-                            title={t('timeClock.approve', 'Approve')}
-                            onMouseEnter={(e) => {
-                              const el = e.currentTarget.querySelector('svg');
-                              if (el) {
-                                el.style.animation = 'pulseOnce 1.5s ease-in-out 1';
-                                el.onanimationend = () => (el.style.animation = '');
-                              }
-                            }}
-                          >
-                            {approvingEntryId === entry.id ? (
-                              <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : (
-                              <Check className={`w-5 h-5 ${isDarkMode ? 'text-green-200 group-hover:text-black hover:bg-white group-hover:bg-transparent' : 'text-green-600 group-hover:text-white hover:bg-black group-hover:bg-transparent'} transition-all duration-500 rounded-2xl`} />
-                            )}
-                          </button>
-                        )}
-                        
-                        {/* Delete Button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(entry.id, entry);
-                          }}
-                          className={`${isDarkMode ? 'text-red-400' : 'text-red-600'} transition-all duration-500 hover:scale-110`}
-                          title={entry.proof_file_url ? t('timeClock.deleteOptions', 'Delete options') : t('timeClock.delete', 'Delete')}
-                          onMouseEnter={(e) => {
-                            const el = e.currentTarget.querySelector('svg');
-                            if (el) {
-                              el.style.animation = 'spinOnce 1.5s ease-in-out 1';
-                              el.onanimationend = () => (el.style.animation = '');
-                            }
-                          }}
-                        >
-                          <X className={`w-5 h-5 cursor-pointer ${isDarkMode ? 'group-hover:bg-white group-hover:text-black' : 'group-hover:bg-black group-hover:text-white'} rounded-2xl`} />
-                        </button>
-                          </>
-                        )}
 
+                      {canManageTimeTracking && (
+                        <div
+                          className="flex flex-wrap items-center"
+                          style={{ gap: 10, paddingTop: 12, borderTop: `1px solid ${ind.rule}` }}
+                        >
+                          <Tag ind={ind} variant="outline">{t('timeClock.adminTag', 'Admin')}</Tag>
+                          <div
+                            className="flex items-center"
+                            style={{ flex: 1, minWidth: 160, gap: 8, padding: '5px 10px', border: `1px solid ${ind.hairline}` }}
+                          >
+                            <Search size={13} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkFaint }} />
+                            <span
+                              style={{
+                                fontFamily: BODY, fontSize: 12, color: ind.inkMuted, minWidth: 0,
+                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {t('timeClock.filingFor', 'Filing for: {name}').replace('{name}', meName)}
+                            </span>
+                          </div>
+                          <Btn ind={ind} onClick={() => handleSegChange('bulk')}>
+                            {t('timeClock.changeEmployee', 'Change employee')}
+                          </Btn>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Consequence — the only figure on this card */}
+                    <div
+                      className="w-full lg:w-[212px] lg:shrink-0 lg:border-l lg:pl-6 flex flex-col"
+                      style={{ borderColor: ind.rule }}
+                    >
+                      <Kicker ind={ind}>{t('timeClock.willRecord', 'This entry will record')}</Kicker>
+                      <div className="flex items-baseline" style={{ gap: 6, margin: '4px 0 0' }}>
+                        <span style={{ ...figure(60, ind.ink), lineHeight: 0.92 }}>{formHours.toFixed(1)}</span>
+                        <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>{t('timeClock.hrs')}</span>
                       </div>
-                    </td>
-                  </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </TableScroll>
-        )}
+                      <p style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted, margin: '8px 0 0', lineHeight: 1.5 }}>
+                        {formData.hourType === 'on_leave'
+                          ? hourTypes.find((type) => type.value === 'on_leave')?.label
+                          : `${formData.clockIn || '--:--'} → ${formData.clockOut || '--:--'} · ${hourTypes.find((type) => type.value === formData.hourType)?.label || ''}`}
+                      </p>
+
+                      <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${ind.rule}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div className="flex items-baseline justify-between" style={{ gap: 8 }}>
+                          <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted }}>
+                            {t('timeClock.weekBecomes', 'This week becomes')}
+                          </span>
+                          <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, color: ind.ink, fontVariantNumeric: 'tabular-nums' }}>
+                            {weekProjected.toFixed(1)}
+                          </span>
+                        </div>
+                        <div className="flex items-baseline justify-between" style={{ gap: 8 }}>
+                          <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted }}>
+                            {t('timeClock.remainingOf', 'Remaining of {n}h').replace('{n}', String(CONTRACT_WEEK_HOURS))}
+                          </span>
+                          <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, color: ind.ink, fontVariantNumeric: 'tabular-nums' }}>
+                            {weekRemaining.toFixed(1)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={{ flex: 1, minHeight: 16 }} />
+
+                      <Btn
+                        ind={ind}
+                        onClick={() => setFormData({ ...formData, clockIn: STANDARD_CLOCK_IN, clockOut: STANDARD_CLOCK_OUT })}
+                        disabled={formData.hourType === 'on_leave'}
+                        style={{ width: '100%', marginBottom: 8 }}
+                      >
+                        {t('timeClock.fillStandard', 'Fill {from} – {to}')
+                          .replace('{from}', STANDARD_CLOCK_IN)
+                          .replace('{to}', STANDARD_CLOCK_OUT)}
+                      </Btn>
+                      {/* The single solid object on this card. */}
+                      <Btn
+                        ind={ind}
+                        variant="primary"
+                        type="submit"
+                        disabled={isSubmitting}
+                        style={{ width: '100%', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                      >
+                        {isSubmitting && <Loader2 size={13} className="animate-spin" />}
+                        {isSubmitting ? t('timeClock.submitting') : t('timeClock.submit')}
+                      </Btn>
+                    </div>
+                  </div>
+                </Blueprint>
+              </form>
+
+              {/* ── HISTORY ────────────────────────────────────────── */}
+              <div ref={historySectionRef} className="scroll-mt-24 flex-1 min-w-0">
+                <Blueprint ind={ind} style={{ padding: '14px 18px 12px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                  <div className="flex flex-wrap items-end justify-between" style={{ gap: 12 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <ColumnHeading ind={ind}>{t('timeClock.history', 'Time Entry History')}</ColumnHeading>
+                      <p style={captionStyle}>
+                        {t('timeClock.midnightNote', 'Shifts crossing midnight are counted against the day they started.')}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center" style={{ gap: 8 }}>
+                      <FlatSelect
+                        ind={ind}
+                        value={statusFilter}
+                        onChange={(e) => {
+                          setStatusFilter(e.target.value);
+                          if (e.target.value !== 'pending') setReviewMode(false);
+                        }}
+                        aria-label={t('timeClock.filterByStatus', 'Status')}
+                      >
+                        <option value="all">{t('timeClock.allStatuses', 'All Statuses')}</option>
+                        <option value="pending">{t('status.pending', 'Pending')}</option>
+                        <option value="approved">{t('status.approved', 'Approved')}</option>
+                        <option value="rejected">{t('status.rejected', 'Rejected')}</option>
+                      </FlatSelect>
+                    </div>
+                  </div>
+
+                  {reviewMode && (
+                    <div style={{ marginTop: 12, border: `1px solid ${ind.hairline}`, background: ind.accentWash, padding: '9px 12px' }}>
+                      <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink }}>
+                        {t('timeClock.reviewPendingBanner', 'Showing time entries awaiting your review')}
+                      </span>
+                    </div>
+                  )}
+
+                  {getSortedEntries.length === 0 ? (
+                    <div style={{ padding: '48px 0', textAlign: 'center' }}>
+                      <Clock size={28} strokeWidth={1} style={{ color: ind.inkFaint, margin: '0 auto 10px' }} />
+                      <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, margin: 0 }}>
+                        {statusFilter === 'pending'
+                          ? t('timeClock.noPendingEntries', 'No pending time entries to review')
+                          : t('timeClock.noEntries')}
+                      </p>
+                    </div>
+                  ) : (
+                    <TableScroll className="mt-3">
+                      <table style={{ width: '100%', minWidth: 720, borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                        <thead>
+                          <tr>
+                            <SortableTh ind={ind} style={{ ...thStyle, width: showEmployeeColumn ? '11%' : '15%' }} active={sortKey === 'date'} dir={sortDirection} onClick={() => handleSort('date')}>
+                              {t('timeClock.date', 'Date')}
+                            </SortableTh>
+                            {showEmployeeColumn && (
+                              <SortableTh ind={ind} style={{ ...thStyle, width: '17%' }} active={sortKey === 'employee'} dir={sortDirection} onClick={() => handleSort('employee')}>
+                                {t('timeClock.employee', 'Employee')}
+                              </SortableTh>
+                            )}
+                            <th className={colTimeClass} style={{ ...thStyle, width: '14%' }}>{t('timeClock.time', 'Time')}</th>
+                            <SortableTh ind={ind} style={{ ...thStyle, width: '8%', textAlign: 'right' }} active={sortKey === 'hours'} dir={sortDirection} onClick={() => handleSort('hours')}>
+                              {t('timeClock.hours', 'Hours')}
+                            </SortableTh>
+                            <SortableTh ind={ind} className={colTypeClass} style={{ ...thStyle, width: '17%' }} active={sortKey === 'type'} dir={sortDirection} onClick={() => handleSort('type')}>
+                              {t('timeClock.type', 'Type')}
+                            </SortableTh>
+                            <SortableTh ind={ind} style={{ ...thStyle, width: '13%' }} active={sortKey === 'status'} dir={sortDirection} onClick={() => handleSort('status')}>
+                              {t('timeClock.status', 'Status')}
+                            </SortableTh>
+                            <th style={{ ...thStyle, width: '10%', textAlign: 'center' }}>{t('timeClock.proof', 'Proof')}</th>
+                            <th style={{ ...thStyle, textAlign: 'right' }}>{t('timeClock.actions', 'Actions')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {getSortedEntries.map((entry) => {
+                            const isEditing = editingEntryId === entry.id;
+                            const editable = canEditEntry(entry);
+                            const entryType = entry.hour_type || entry.hourType;
+                            const typeLabel = hourTypes.find((type) => type.value === entryType)?.label || entryType;
+                            const timeText = entryType === 'on_leave'
+                              ? '—'
+                              : `${formatTime(entry.clock_in || entry.clockIn)} – ${formatTime(entry.clock_out || entry.clockOut)}`;
+
+                            return (
+                              <tr key={entry.id} style={isEditing ? { background: ind.accentWash } : undefined}>
+                                <td style={{ ...tdStyle, fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
+                                  {isEditing ? (
+                                    <DatePicker
+                                      flat
+                                      value={editForm.date}
+                                      onChange={(e) => setEditForm((prev) => ({ ...prev, date: e.target.value }))}
+                                    />
+                                  ) : (
+                                    <>
+                                      {entry.date || formatDate(entry.created_at, currentLanguage)}
+                                      {/* Stand-ins for the columns this viewport dropped */}
+                                      <StackedDetail showUntil="md" label={t('timeClock.type', 'Type')} value={typeLabel} />
+                                      <StackedDetail showUntil="lg" label={t('timeClock.time', 'Time')} value={timeText} />
+                                    </>
+                                  )}
+                                </td>
+
+                                {showEmployeeColumn && (
+                                  <td style={{ ...tdStyle, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {isDemoMode()
+                                      ? (getDemoEmployeeName(
+                                        { name: entry.employee_name || entry.employee?.name, nameKey: entry.employee_nameKey },
+                                        t
+                                      ) || entry.employee_name || entry.employee?.name || '—')
+                                      : (entry.employee_name || entry.employee?.name || '—')}
+                                  </td>
+                                )}
+
+                                <td className={colTimeClass} style={{ ...tdStyle, color: ind.inkGhost }}>
+                                  {isEditing ? (
+                                    editForm.hourType === 'on_leave' ? '—' : (
+                                      <div className="flex items-center" style={{ gap: 4 }}>
+                                        <TimePicker flat value={editForm.clockIn} onChange={(e) => handleEditTimeChange('clockIn', e.target.value)} />
+                                        <TimePicker flat value={editForm.clockOut} onChange={(e) => handleEditTimeChange('clockOut', e.target.value)} />
+                                      </div>
+                                    )
+                                  ) : timeText}
+                                </td>
+
+                                <td style={{ ...tdStyle, fontFamily: DISPLAY, fontWeight: 600, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                                  {isEditing ? (
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="0.25"
+                                      value={editForm.hours}
+                                      disabled={editForm.hourType === 'on_leave'}
+                                      onChange={(e) => handleEditHoursChange(e.target.value)}
+                                      className={cn(editInputClass, 'text-right')}
+                                      style={editInputStyle}
+                                    />
+                                  ) : Number(entry.hours || 0).toFixed(1)}
+                                </td>
+
+                                <td className={colTypeClass} style={tdStyle}>
+                                  {isEditing ? (
+                                    <select
+                                      value={editForm.hourType}
+                                      onChange={(e) => handleEditTypeChange(e.target.value)}
+                                      className={editInputClass}
+                                      style={editInputStyle}
+                                    >
+                                      {hourTypes.map((type) => (
+                                        <option key={type.value} value={type.value}>{type.label}</option>
+                                      ))}
+                                    </select>
+                                  ) : (
+                                    <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkGhost }}>{typeLabel}</span>
+                                  )}
+                                </td>
+
+                                <td style={tdStyle}>
+                                  <Tag ind={ind} variant={statusVariant(entry.status)}>{translateStatus(entry.status)}</Tag>
+                                </td>
+
+                                <td style={{ ...tdStyle, textAlign: 'center' }}>
+                                  {entry.proof_file_url ? (
+                                    isImageFile(entry.proof_file_type, entry.proof_file_url) ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => setImagePreview({ show: true, url: entry.proof_file_url })}
+                                        title={t('timeClock.viewProof', 'View proof image')}
+                                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: ind.accent }}
+                                      >
+                                        <FileCheck size={15} strokeWidth={1.5} />
+                                      </button>
+                                    ) : (
+                                      <a
+                                        href={entry.proof_file_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title={t('timeClock.downloadProof', 'Download proof file')}
+                                        style={{ color: ind.accent, display: 'inline-flex' }}
+                                      >
+                                        <FileCheck size={15} strokeWidth={1.5} />
+                                      </a>
+                                    )
+                                  ) : isLeaveHistoryRow(entry) ? (
+                                    <span style={{ color: ind.inkFaint }}>—</span>
+                                  ) : (
+                                    <label
+                                      htmlFor={`proof-upload-${entry.id}`}
+                                      title={t('timeClock.uploadProof', 'Upload proof file')}
+                                      style={{
+                                        cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
+                                        fontFamily: DISPLAY, fontWeight: 600, fontSize: 10,
+                                        letterSpacing: '.12em', textTransform: 'uppercase', color: ind.inkMuted,
+                                      }}
+                                    >
+                                      {uploadingProofId === entry.id ? (
+                                        <>
+                                          <Loader2 size={12} className="animate-spin" />
+                                          {Object.values(uploadProgress)[0] > 0 && `${Object.values(uploadProgress)[0]}%`}
+                                        </>
+                                      ) : (
+                                        t('timeClock.proofMissing', 'Missing')
+                                      )}
+                                      <input
+                                        id={`proof-upload-${entry.id}`}
+                                        type="file"
+                                        accept="image/*,application/pdf,.doc,.docx,.txt"
+                                        className="sr-only"
+                                        disabled={uploadingProofId === entry.id}
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) {
+                                            handleUploadProof(entry.id, file);
+                                            e.target.value = '';
+                                          }
+                                        }}
+                                      />
+                                    </label>
+                                  )}
+                                </td>
+
+                                <td style={{ ...tdStyle, textAlign: 'right' }}>
+                                  <div className="flex items-center justify-end" style={{ gap: 4 }}>
+                                    {isEditing ? (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={saveEditEntry}
+                                          disabled={savingEntryId === entry.id}
+                                          title={t('common.save', 'Save')}
+                                          style={iconBtnStyle}
+                                        >
+                                          {savingEntryId === entry.id
+                                            ? <Loader2 size={12} className="animate-spin" />
+                                            : <Check size={12} strokeWidth={1.5} />}
+                                        </button>
+                                        <button type="button" onClick={cancelEditEntry} title={t('common.cancel', 'Cancel')} style={iconBtnStyle}>
+                                          <X size={12} strokeWidth={1.5} />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        {entry.status === 'pending' && canApprove(entry) && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleApprove(entry.id)}
+                                            disabled={approvingEntryId === entry.id}
+                                            title={t('timeClock.approve', 'Approve')}
+                                            style={{ ...iconBtnStyle, borderColor: ind.accent, color: ind.accent }}
+                                          >
+                                            {approvingEntryId === entry.id
+                                              ? <Loader2 size={12} className="animate-spin" />
+                                              : <Check size={12} strokeWidth={1.5} />}
+                                          </button>
+                                        )}
+                                        {editable && (
+                                          <button type="button" onClick={() => startEditEntry(entry)} title={t('common.edit', 'Edit')} style={iconBtnStyle}>
+                                            <Pencil size={11} strokeWidth={1.5} />
+                                          </button>
+                                        )}
+                                        {!isLeaveHistoryRow(entry) && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleDelete(entry.id, entry)}
+                                            title={entry.proof_file_url ? t('timeClock.deleteOptions', 'Delete options') : t('timeClock.delete', 'Delete')}
+                                            style={iconBtnStyle}
+                                          >
+                                            <X size={12} strokeWidth={1.5} />
+                                          </button>
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </TableScroll>
+                  )}
+
+                  <div style={{ flex: 1, minHeight: 12 }} />
+
+                  <div
+                    className="flex flex-wrap items-center justify-between"
+                    style={{ gap: 10, paddingTop: 10, borderTop: `1px solid ${ind.rule}` }}
+                  >
+                    <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint }}>
+                      {t('timeClock.showingCount', 'Showing {n} of {total} entries')
+                        .replace('{n}', String(getSortedEntries.length))
+                        .replace('{total}', String(Array.isArray(timeEntries) ? timeEntries.length : 0))}
+                      {ledgerRangeLabel && ` · ${ledgerRangeLabel}`}
+                    </span>
+                    {(statusFilter !== 'all' || reviewMode) && (
+                      <button
+                        type="button"
+                        onClick={() => { setStatusFilter('all'); setReviewMode(false); }}
+                        style={{
+                          background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                          fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5, letterSpacing: '.08em',
+                          textTransform: 'uppercase', color: ind.accentDeep,
+                        }}
+                      >
+                        {t('timeClock.showAll', 'Show all')} →
+                      </button>
+                    )}
+                  </div>
+                </Blueprint>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* ── RIGHT — 372px. 340 is too narrow for label + figure + bar. ── */}
+        <aside
+          className="w-full lg:w-[372px] lg:shrink-0 flex flex-col"
+          style={{ background: ind.chrome, minWidth: 0 }}
+        >
+          {/* Week */}
+          <div style={{ padding: '20px 20px 12px', borderBottom: `1px solid ${ind.hairline}` }}>
+            <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+              <ColumnHeading ind={ind}>{t('timeClock.weeklySummary')}</ColumnHeading>
+              <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, color: ind.accent, whiteSpace: 'nowrap' }}>
+                {`${weekTotal.toFixed(1)} ${t('timeClock.hrs')}`}
+              </span>
+            </div>
+            <p style={captionStyle}>{weekRangeLabel}</p>
+          </div>
+
+          <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 10, borderBottom: `1px solid ${ind.hairline}` }}>
+            {weekBreakdown.map((row) => {
+              const live = row.hours > 0;
+              return (
+                <div key={row.value}>
+                  <div className="flex items-baseline justify-between" style={{ gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontFamily: BODY, fontSize: 12.5, color: live ? ind.ink : ind.inkFaint, minWidth: 0 }}>
+                      {row.label}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5,
+                        color: live ? ind.ink : ind.inkFaint,
+                        whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums',
+                      }}
+                    >
+                      {row.hours.toFixed(1)}
+                    </span>
+                  </div>
+                  {/* The bar is a hairline box with a fill inside, never a coloured box. */}
+                  <Bar
+                    ind={ind}
+                    value={weekPeak > 0 ? row.hours / weekPeak : 0}
+                    fill={row.hours === weekPeak && weekPeak > 0 ? ind.accent : rampAt(ind, 2)}
+                    height={6}
+                  />
+                </div>
+              );
+            })}
+
+            <div className="flex items-baseline justify-between" style={{ gap: 8, paddingTop: 10, borderTop: `1px solid ${ind.rule}` }}>
+              <ColumnHeading ind={ind} style={{ fontSize: 12 }}>{t('timeClock.total')}</ColumnHeading>
+              <span style={{ ...figure(20, ind.ink) }}>
+                {weekTotal.toFixed(1)}
+                <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted }}>{` ${t('timeClock.hrs')}`}</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Month */}
+          <div style={{ padding: '18px 20px 14px', borderBottom: `1px solid ${ind.hairline}` }}>
+            <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+              <ColumnHeading ind={ind}>{t('timeClock.monthlySummary')}</ColumnHeading>
+              <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, color: ind.accent, whiteSpace: 'nowrap' }}>
+                {`${monthTotal.toFixed(1)} ${t('timeClock.hrs')}`}
+              </span>
+            </div>
+            <p style={captionStyle}>{monthLabel}</p>
+
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {monthTop && (
+                <div className="flex items-baseline justify-between" style={{ gap: 8 }}>
+                  <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink, minWidth: 0 }}>{monthTop.label}</span>
+                  <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, color: ind.ink, fontVariantNumeric: 'tabular-nums' }}>
+                    {monthTop.hours.toFixed(1)}
+                  </span>
+                </div>
+              )}
+              {/* The other types collapse to one line: five zeroes stacked is not
+                  information, it is furniture. */}
+              <div className="flex items-baseline justify-between" style={{ gap: 8 }}>
+                <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkFaint, minWidth: 0 }}>
+                  {t('timeClock.otherTypes', '{n} other types').replace('{n}', String(monthRest.length))}
+                </span>
+                <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, color: ind.inkFaint, fontVariantNumeric: 'tabular-nums' }}>
+                  {monthRest.reduce((acc, row) => acc + row.hours, 0).toFixed(1)}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between" style={{ gap: 8 }}>
+                <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, minWidth: 0 }}>
+                  {t('timeClock.leaveDays', 'Leave Days')}
+                </span>
+                <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, color: ind.ink, fontVariantNumeric: 'tabular-nums' }}>
+                  {`${leaveWeek.toFixed(1)} / ${leaveMonth.toFixed(1)} ${t('timeClock.days')}`}
+                </span>
+              </div>
+
+              <div className="flex items-baseline justify-between" style={{ gap: 8, paddingTop: 10, borderTop: `1px solid ${ind.rule}` }}>
+                <ColumnHeading ind={ind} style={{ fontSize: 12 }}>{t('timeClock.total')}</ColumnHeading>
+                <span style={{ ...figure(20, ind.ink) }}>
+                  {monthTotal.toFixed(1)}
+                  <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted }}>{` ${t('timeClock.hrs')}`}</span>
+                </span>
+              </div>
+            </div>
+
+            <p style={{ ...captionStyle, fontStyle: 'italic', marginTop: 10 }}>
+              {t('timeClock.includesPending', '* Includes pending & approved')}
+            </p>
+          </div>
+
+          {/* Bulk — the entry point, not a second copy of the form */}
+          {canManageTimeTracking && (
+            <div style={{ padding: '18px 20px 20px' }}>
+              <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+                <ColumnHeading ind={ind} style={{ fontSize: 14 }}>
+                  {t('adminTimeEntry.bulkStandardHours.title', 'Bulk standard hours')}
+                </ColumnHeading>
+                <Tag ind={ind} variant="outline">{t('timeClock.adminTag', 'Admin')}</Tag>
+              </div>
+              <p style={captionStyle}>
+                {t('timeClock.bulkExplain', 'File a standard {from}–{to} day for every active employee across a date range. Weekends are skipped.')
+                  .replace('{from}', STANDARD_CLOCK_IN)
+                  .replace('{to}', STANDARD_CLOCK_OUT)}
+              </p>
+              <Btn
+                ind={ind}
+                variant="primary"
+                onClick={() => handleSegChange('bulk')}
+                style={{ width: '100%', marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                <Users size={13} strokeWidth={1.5} />
+                {t('timeClock.openBulk', 'Open bulk entry')}
+              </Btn>
+              <p style={{ ...captionStyle, marginTop: 8 }}>
+                {t('timeClock.bulkScope', '{n} active employees on file')
+                  .replace('{n}', String(Array.isArray(allEmployees) ? allEmployees.length : 0))}
+              </p>
+            </div>
+          )}
+        </aside>
       </div>
 
-      {/* Image Preview Modal */}
+      {/* ── Upload toast ──────────────────────────────────────────── */}
+      {uploadToast.show && (
+        <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 60 }}>
+          <div
+            className="flex items-center"
+            style={{
+              gap: 10, padding: '10px 14px', background: ind.ground,
+              border: `1px solid ${uploadToast.type === 'success' ? ind.hairline : ind.ink}`,
+              borderLeft: `3px solid ${uploadToast.type === 'success' ? ind.accent : ind.ink}`,
+            }}
+          >
+            {uploadToast.type === 'success'
+              ? <Check size={14} strokeWidth={1.5} style={{ color: ind.accentDeep, flex: 'none' }} />
+              : <AlertCircle size={14} strokeWidth={1.5} style={{ color: ind.ink, flex: 'none' }} />}
+            <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink }}>{uploadToast.message}</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Leave request modal ───────────────────────────────────── */}
+      {showLeaveModal && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(29,45,61,.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowLeaveModal(false); }}
+        >
+          <Blueprint ind={ind} style={{ background: ind.ground, width: '100%', maxWidth: 420 }}>
+            <form onSubmit={handleLeaveSubmit} style={{ padding: '18px 20px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div className="flex items-start justify-between" style={{ gap: 10 }}>
+                <ColumnHeading ind={ind}>{t('timeTracking.requestLeave', 'Request Leave')}</ColumnHeading>
+                <button
+                  type="button"
+                  onClick={() => setShowLeaveModal(false)}
+                  aria-label={t('common.close', 'Close')}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0 }}
+                >
+                  <X size={16} strokeWidth={1.5} />
+                </button>
+              </div>
+
+              <div>
+                <span style={fieldLabelStyle}>{t('timeTracking.leaveType', 'Leave Type')}</span>
+                <FlatSelect
+                  ind={ind}
+                  value={leaveForm.type}
+                  onChange={(e) => setLeaveForm({ ...leaveForm, type: e.target.value })}
+                  style={{ width: '100%' }}
+                >
+                  <option value="vacation">{t('timeTracking.vacation', 'Vacation')}</option>
+                  <option value="sick">{t('timeTracking.sickLeave', 'Sick Leave')}</option>
+                  <option value="personal">{t('timeTracking.personal', 'Personal Leave')}</option>
+                  <option value="unpaid">{t('timeTracking.unpaid', 'Unpaid Leave')}</option>
+                </FlatSelect>
+              </div>
+
+              <div className="grid grid-cols-2" style={{ gap: 12 }}>
+                <div style={{ minWidth: 0 }}>
+                  <span style={fieldLabelStyle}>{t('timeTracking.startDate', 'Start Date')}</span>
+                  <DatePicker
+                    flat
+                    required
+                    value={leaveForm.startDate}
+                    onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
+                  />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <span style={fieldLabelStyle}>{t('timeTracking.endDate', 'End Date')}</span>
+                  <DatePicker
+                    flat
+                    required
+                    value={leaveForm.endDate}
+                    onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <span style={fieldLabelStyle}>{t('timeTracking.reason', 'Reason')}</span>
+                <textarea
+                  value={leaveForm.reason}
+                  onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })}
+                  placeholder={t('timeTracking.reasonPlaceholder', 'Briefly explain your leave request...')}
+                  style={{
+                    width: '100%', height: 62, padding: '7px 10px', resize: 'vertical',
+                    border: `1px solid ${ind.hairline}`, borderRadius: 0,
+                    background: 'transparent', color: ind.ink, fontFamily: BODY, fontSize: 12.5,
+                  }}
+                />
+              </div>
+
+              <div className="flex items-center justify-end" style={{ gap: 8, paddingTop: 4 }}>
+                <Btn ind={ind} onClick={() => setShowLeaveModal(false)}>{t('common.cancel', 'Cancel')}</Btn>
+                <Btn ind={ind} variant="primary" type="submit" disabled={loading}>
+                  {t('common.leaveRequest', 'Submit Request')}
+                </Btn>
+              </div>
+            </form>
+          </Blueprint>
+        </div>
+      )}
+
+      {/* ── Proof preview ─────────────────────────────────────────── */}
       {imagePreview.show && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm"
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(29,45,61,.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
           onClick={() => setImagePreview({ show: false, url: '' })}
         >
-          <div 
-            className={`relative max-w-7xl max-h-[90vh] ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-2xl overflow-hidden`}
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }} onClick={(e) => e.stopPropagation()}>
             <button
+              type="button"
               onClick={() => setImagePreview({ show: false, url: '' })}
-              className="absolute top-4 right-4 z-10 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors"
-              aria-label="Close preview"
+              aria-label={t('common.close', 'Close')}
+              style={{
+                position: 'absolute', top: 8, right: 8, width: 28, height: 28,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                background: ind.ground, border: `1px solid ${ind.ink}`, color: ind.ink,
+                borderRadius: 0, cursor: 'pointer',
+              }}
             >
-              <X className="w-6 h-6" />
+              <X size={15} strokeWidth={1.5} />
             </button>
-            <div className="p-4">
-              <img
-                src={imagePreview.url}
-                alt="Proof Preview"
-                className="max-w-full max-h-[80vh] rounded-lg object-contain"
-                style={{
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                }}
-                onError={(e) => {
-                  console.error('Failed to load image:', imagePreview.url);
-                  e.target.style.display = 'none';
-                  const errorDiv = e.target.nextElementSibling;
-                  if (errorDiv) errorDiv.style.display = 'block';
-                }}
-              />
-              <div 
-                style={{ 
-                  display: 'none', 
-                  textAlign: 'center',
-                  padding: '2rem'
-                }}
-                className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}
-              >
-                <p className="text-lg font-medium">Failed to load image</p>
-                <p className="text-sm mt-2">The image may be corrupted or in an unsupported format.</p>
-              </div>
+            <img
+              src={imagePreview.url}
+              alt={t('timeClock.proof')}
+              style={{ maxWidth: '90vw', maxHeight: '90vh', display: 'block', border: `1px solid ${ind.hairline}` }}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                const fallback = e.currentTarget.nextElementSibling;
+                if (fallback) fallback.style.display = 'block';
+              }}
+            />
+            <div style={{ display: 'none', background: ind.ground, padding: 24, textAlign: 'center' }}>
+              <p style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, margin: 0 }}>
+                {t('timeClock.proofLoadFailed', 'This file could not be displayed.')}
+              </p>
             </div>
           </div>
         </div>

@@ -8,14 +8,20 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import {
   createPunchClock,
+  createPunchClockMaterials,
   setPunchClockTime,
   disposePunchClock,
+  CASE_DARK,
+  CASE_LIGHT,
 } from './punch-clock-model.js';
 
-const CLOCK_CENTRE = new THREE.Vector3(0, 21, 5);
+// Between the dial centre (y=20) and the model's midpoint (y=16), biased to the
+// dial — it is the subject, but the plinth should not fall out of frame.
+const CLOCK_CENTRE = new THREE.Vector3(0, 19, 5);
 
 export function PunchClock({
   className = '',
+  style,
   isDarkMode = false,
   live = true,
   spin = true,
@@ -76,7 +82,14 @@ export function PunchClock({
     rim.position.set(-40, 24, -18);
     scene.add(rim);
 
-    const clock = createPunchClock();
+    // Materials are built per mount, so the two themes never share an instance
+    // and nothing has to be re-coloured in place. The effect re-runs on
+    // `isDarkMode`, which rebuilds the scene with the right case value.
+    const clock = createPunchClock({
+      materials: createPunchClockMaterials({
+        caseColor: isDarkMode ? CASE_DARK : CASE_LIGHT,
+      }),
+    });
     // The model's origin is the bottom-centre of the back plate; drop it so the
     // clock is centred on the canvas rather than sitting on the bottom edge.
     const pedestal = new THREE.Group();
@@ -89,8 +102,8 @@ export function PunchClock({
       if (!w || !h) return;
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
-      // Pull back on narrow canvases so the full 43 cm of clock stays in frame.
-      camera.position.setLength(w / h < 0.9 ? 108 : 88);
+      // Pull back on narrow canvases so the full 35 cm of clock stays in frame.
+      camera.position.setLength(w / h < 0.9 ? 96 : 78);
       camera.lookAt(CLOCK_CENTRE);
       camera.updateProjectionMatrix();
     };
@@ -155,6 +168,7 @@ export function PunchClock({
     <div
       ref={hostRef}
       className={className}
+      style={style}
       role="img"
       aria-label="Mechanical punch clock"
     />
