@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext.jsx';
 import { useTheme } from '../../contexts/ThemeContext.jsx';
+import { getIndustry, DISPLAY, BODY } from '../../theme/industry.js';
 import { cn } from '@/lib/utils';
 
 /** Map app language codes → BCP-47 locales for Intl. */
@@ -61,6 +62,11 @@ function buildMonthGrid(viewYear, viewMonth) {
 /**
  * Drop-in replacement for native <input type="date"> with a localized React calendar.
  * value / onChange use YYYY-MM-DD strings (same as native date inputs).
+ *
+ * `flat` switches trigger and calendar to the "Industry" grammar (src/theme/industry.js):
+ * zero radius, hairline rules, transparent grounds, a 14px icon instead of 24px, and
+ * squared day cells. Screens built on that system pass it so the field stops reading
+ * like a rounded browser control dropped onto a drawing sheet.
  */
 export function DatePicker({
   value = '',
@@ -77,9 +83,11 @@ export function DatePicker({
   'aria-label': ariaLabel,
   showIcon = true,
   icon: Icon = CalendarIcon,
+  flat = false,
 }) {
   const { currentLanguage, t } = useLanguage();
   const { isDarkMode, bg, text, border } = useTheme();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
   const autoId = useId();
   const inputId = id || autoId;
   const rootRef = useRef(null);
@@ -234,25 +242,42 @@ export function DatePicker({
           if (disabled) return;
           setOpen((v) => !v);
         }}
-        className={cn(
-          'w-full px-3 py-2 pr-10 rounded-lg border text-left focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none appearance-none cursor-pointer',
-          bg?.primary || (isDarkMode ? 'bg-gray-800' : 'bg-white'),
-          text?.primary || (isDarkMode ? 'text-white' : 'text-gray-900'),
-          border?.primary || (isDarkMode ? 'border-gray-600' : 'border-gray-300'),
-          disabled && 'opacity-50 cursor-not-allowed',
-          inputClassName
-        )}
+        className={flat
+          ? cn('w-full text-left appearance-none cursor-pointer focus:outline-none', disabled && 'cursor-not-allowed', inputClassName)
+          : cn(
+            'w-full px-3 py-2 pr-10 rounded-lg border text-left focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none appearance-none cursor-pointer',
+            bg?.primary || (isDarkMode ? 'bg-gray-800' : 'bg-white'),
+            text?.primary || (isDarkMode ? 'text-white' : 'text-gray-900'),
+            border?.primary || (isDarkMode ? 'border-gray-600' : 'border-gray-300'),
+            disabled && 'opacity-50 cursor-not-allowed',
+            inputClassName
+          )}
+        style={flat ? {
+          fontFamily: BODY,
+          fontSize: 13,
+          color: displayValue ? ind.ink : ind.inkFaint,
+          background: 'transparent',
+          border: `1px solid ${ind.hairline}`,
+          borderRadius: 0,
+          padding: '6px 26px 6px 8px',
+          opacity: disabled ? 0.5 : 1,
+        } : undefined}
       >
-        <span className={cn(!displayValue && (isDarkMode ? 'text-gray-400' : 'text-gray-500'))}>
+        <span className={flat ? undefined : cn(!displayValue && (isDarkMode ? 'text-gray-400' : 'text-gray-500'))}>
           {displayValue || resolvedPlaceholder}
         </span>
       </button>
       {showIcon && (
         <Icon
-          className={cn(
-            'absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 pointer-events-none',
-            text?.secondary || (isDarkMode ? 'text-gray-400' : 'text-gray-500')
-          )}
+          size={flat ? 14 : undefined}
+          strokeWidth={flat ? 1.5 : undefined}
+          className={flat
+            ? 'absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none'
+            : cn(
+              'absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 pointer-events-none',
+              text?.secondary || (isDarkMode ? 'text-gray-400' : 'text-gray-500')
+            )}
+          style={flat ? { color: ind.inkMuted } : undefined}
           aria-hidden="true"
         />
       )}
@@ -263,11 +288,13 @@ export function DatePicker({
         createPortal(
           <div
             ref={panelRef}
-            style={panelStyle}
+            style={flat
+              ? { ...panelStyle, background: ind.ground, border: `1px solid ${ind.ink}`, borderRadius: 0, padding: 12, color: ind.ink, fontFamily: BODY }
+              : panelStyle}
             role="dialog"
             aria-modal="false"
             aria-label={t('datePicker.calendar', 'Calendar')}
-            className={cn(
+            className={flat ? undefined : cn(
               'rounded-xl border shadow-xl p-3',
               isDarkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'
             )}
@@ -276,7 +303,8 @@ export function DatePicker({
               <button
                 type="button"
                 className={cn(
-                  'p-1.5 rounded-lg transition-colors',
+                  'p-1.5 transition-colors',
+                  flat ? 'rounded-none' : 'rounded-lg',
                   isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
                 )}
                 onClick={() => shiftMonth(-1)}
@@ -284,11 +312,19 @@ export function DatePicker({
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <div className="text-sm font-semibold capitalize">{monthLabel}</div>
+              <div
+                className={flat ? undefined : 'text-sm font-semibold capitalize'}
+                style={flat
+                  ? { fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, letterSpacing: '.1em', textTransform: 'uppercase' }
+                  : undefined}
+              >
+                {monthLabel}
+              </div>
               <button
                 type="button"
                 className={cn(
-                  'p-1.5 rounded-lg transition-colors',
+                  'p-1.5 transition-colors',
+                  flat ? 'rounded-none' : 'rounded-lg',
                   isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
                 )}
                 onClick={() => shiftMonth(1)}
@@ -327,15 +363,21 @@ export function DatePicker({
                     disabled={disabledDay}
                     onClick={() => pickDay(day)}
                     className={cn(
-                      'h-8 rounded-lg text-sm transition-colors',
+                      'h-8 text-sm transition-colors',
+                      flat ? 'rounded-none' : 'rounded-lg',
                       disabledDay && 'opacity-30 cursor-not-allowed',
-                      selectedDay &&
-                        (isDarkMode
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-blue-600 text-white'),
+                      !flat && selectedDay && 'bg-blue-600 text-white',
                       !selectedDay && !disabledDay && (isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'),
-                      isToday && !selectedDay && (isDarkMode ? 'ring-1 ring-amber-500' : 'ring-1 ring-blue-400')
+                      !flat && isToday && !selectedDay && (isDarkMode ? 'ring-1 ring-amber-500' : 'ring-1 ring-blue-400')
                     )}
+                    style={flat ? {
+                      fontFamily: DISPLAY,
+                      fontWeight: 600,
+                      fontVariantNumeric: 'tabular-nums',
+                      background: selectedDay ? ind.accent : 'transparent',
+                      color: selectedDay ? ind.accentInk : ind.ink,
+                      border: isToday && !selectedDay ? `1px solid ${ind.hairline}` : '1px solid transparent',
+                    } : undefined}
                   >
                     {day.getDate()}
                   </button>
@@ -343,13 +385,20 @@ export function DatePicker({
               })}
             </div>
 
-            <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+            <div
+              className={cn('flex items-center justify-between mt-3 pt-2 border-t', !flat && 'border-gray-200 dark:border-gray-700')}
+              style={flat ? { borderTopColor: ind.hairline } : undefined}
+            >
               <button
                 type="button"
                 className={cn(
-                  'text-xs px-2 py-1 rounded-md',
+                  'text-xs px-2 py-1',
+                  flat ? 'rounded-none' : 'rounded-md',
                   isDarkMode ? 'hover:bg-gray-800 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
                 )}
+                style={flat
+                  ? { fontFamily: DISPLAY, fontWeight: 600, fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: ind.accentDeep }
+                  : undefined}
                 onClick={() => {
                   const iso = toISODate(today);
                   if (minDate && startOfDay(today) < startOfDay(minDate)) return;
@@ -363,9 +412,13 @@ export function DatePicker({
               <button
                 type="button"
                 className={cn(
-                  'text-xs px-2 py-1 rounded-md',
+                  'text-xs px-2 py-1',
+                  flat ? 'rounded-none' : 'rounded-md',
                   isDarkMode ? 'hover:bg-gray-800 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
                 )}
+                style={flat
+                  ? { fontFamily: DISPLAY, fontWeight: 600, fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: ind.accentDeep }
+                  : undefined}
                 onClick={() => {
                   emitChange('');
                   setOpen(false);

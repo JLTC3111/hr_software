@@ -1,5 +1,12 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+// Industry design system typeface: Barlow for body, Barlow Condensed for
+// display/figures. Loaded locally so the console renders offline.
+import '@fontsource/barlow/400.css'
+import '@fontsource/barlow/500.css'
+import '@fontsource/barlow/600.css'
+import '@fontsource/barlow-condensed/500.css'
+import '@fontsource/barlow-condensed/600.css'
 import './index.css'
 import React from 'react'
 import App from './App.jsx'

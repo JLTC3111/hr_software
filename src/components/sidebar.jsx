@@ -1,25 +1,52 @@
+/**
+ * Control rail — band one of the Organization Overview console.
+ *
+ * 64px collapsed, 236px expanded. The trick that makes the expand read as an
+ * expand rather than a reflow: the icon always sits in a fixed 64px grid cell,
+ * so it never moves — the label simply appears to the right of that cell. Do
+ * not centre the icon in the aside.
+ *
+ * Radius is 0 everywhere. The active item is one of only two solid objects in
+ * the whole system (the other is .btn-primary).
+ */
 import React, { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
-import { TrendingUp, Users, Award, FileText, Clock, AlarmClock, ChevronLeft, ChevronRight, ChevronDown, Building2, Bell, Cog, CheckSquare, Sparkles, X, UserPlus, CalendarDays, Languages } from 'lucide-react'
+import {
+  TrendingUp, Users, Award, FileText, AlarmClock, ChevronLeft, ChevronRight, ChevronDown,
+  Bell, Cog, CheckSquare, X, UserPlus, CalendarDays, Languages,
+} from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useNotifications } from '../contexts/NotificationContext'
 import { useAuth } from '../contexts/AuthContext'
 import { isTranslationEditor } from '../utils/translationAccess'
+import { getIndustry, DISPLAY, BODY } from '../theme/industry.js'
+
+/** Wayfinding anchor, not a logo — the header already carries the full lockup. */
+const BRAND_MARK = 'IC';
+const BRAND_NAME = 'ICUE HR Manager';
+
+const RAIL_COLLAPSED = 64;
+const RAIL_EXPANDED = 236;
+const ICON_CELL = 64;   // fixed — icons never move
+const ROW_H = 38;
 
 const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({});
-  const [hoveredItem, setHoveredItem] = useState(null);
-  const [sidebarWidth, setSidebarWidth] = useState(256);
+  const [hoveredItem, setHoveredItem] = useState(null); // drives the collapsed popovers
+  const [hoverKey, setHoverKey] = useState(null);       // drives the row hover wash
+  const [railWidth, setRailWidth] = useState(RAIL_EXPANDED);
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef(null);
-  const { bg, text, hover, isDarkMode } = useTheme();
+  const { isDarkMode } = useTheme();
   const { t } = useLanguage();
   const { unreadCount } = useNotifications();
   const { user } = useAuth();
   const canEditTranslations = isTranslationEditor(user);
-  
+
+  const ind = getIndustry(isDarkMode);
+
   // Handle resize
   const startResizing = (e) => {
     e.preventDefault();
@@ -29,10 +56,12 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (!isResizing) return;
-      
+
       const newWidth = e.clientX;
-      if (newWidth >= 200 && newWidth <= 600) { // Min 200px, Max 600px
-        setSidebarWidth(newWidth);
+      // Floor at the spec width so the rail cannot be dragged narrower than its
+      // expanded state; use the collapse toggle for that.
+      if (newWidth >= RAIL_EXPANDED && newWidth <= 420) {
+        setRailWidth(newWidth);
       }
     };
 
@@ -50,24 +79,24 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
       document.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isResizing]);
-  
+
   const menuStructure = [
     {
       section: t('sidebar.main', 'MAIN'),
       items: [
         { path: '/time-clock', name: t('nav.timeClock'), icon: AlarmClock },
-        { 
-          path: '/dashboard', 
-          name: t('nav.dashboard'), 
+        {
+          path: '/dashboard',
+          name: t('nav.dashboard'),
           icon: TrendingUp,
           subItems: [
             { path: '/dashboard', name: t('dashboard.overview', 'Overview') },
             { path: '/control-panel', name: t('nav.controlPanel', 'Control Panel') },
           ]
         },
-        { 
-          path: '/employees', 
-          name: t('nav.employees'), 
+        {
+          path: '/employees',
+          name: t('nav.employees'),
           icon: Users,
           subItems: [
             { path: '/time-tracking', name: t('nav.timeTracking', 'Time Tracking') },
@@ -76,9 +105,9 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           ]
         },
         { path: '/leave-management', name: t('nav.leaveManagement', 'Leave Management'), icon: CalendarDays },
-        { 
-          path: '/workload', 
-          name: t('nav.workload', 'Work Management'), 
+        {
+          path: '/workload',
+          name: t('nav.workload', 'Work Management'),
           icon: CheckSquare,
           subItems: [
             { path: '/task-listing', name: t('nav.taskListing', 'Task Listing') },
@@ -119,228 +148,424 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
     }));
   };
 
+  const width = isCollapsed ? RAIL_COLLAPSED : railWidth;
+
+  const displayName = user?.name || user?.email || '';
+  const initials = displayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(-2)
+    .map((p) => p[0])
+    .join('')
+    .toUpperCase() || '—';
+
+  /* -------------------------------------------------------------- styles */
+
+  const labelStyle = (active) => ({
+    fontFamily: active ? DISPLAY : BODY,
+    fontWeight: active ? 600 : 400,
+    fontSize: active ? 14.5 : 14,
+    letterSpacing: active ? '.05em' : 0,
+    textTransform: active ? 'uppercase' : 'none',
+    color: active ? ind.accentInk : ind.ink,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    flex: 1,
+    minWidth: 0,
+  });
+
+  const rowBase = {
+    height: ROW_H,
+    flex: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    width: '100%',
+    border: 'none',
+    borderRadius: 0,
+    background: 'transparent',
+    padding: 0,
+    cursor: 'pointer',
+    position: 'relative',
+    textAlign: 'left',
+    transition: 'background .15s ease',
+  };
+
+  /** The fixed 64px cell. Icons live here and never move. */
+  const IconCell = ({ children }) => (
+    <span
+      style={{
+        width: ICON_CELL,
+        flex: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+      }}
+    >
+      {children}
+    </span>
+  );
+
+  /** Active wins over hover — the accent row never washes out. */
+  const rowBg = (key, isActive) => {
+    if (isActive) return ind.accent;
+    return hoverKey === key ? ind.hover : 'transparent';
+  };
+
+  /** Count in a hairline box. The unread dot is a 5×5 square, never a circle. */
+  const Badge = ({ count, collapsed }) => {
+    if (!count) return null;
+    if (collapsed) {
+      return (
+        <span
+          aria-hidden="true"
+          style={{ position: 'absolute', top: 8, right: 14, width: 5, height: 5, background: ind.accent }}
+        />
+      );
+    }
+    return (
+      <span
+        style={{
+          marginRight: 14,
+          flex: 'none',
+          border: `1px solid ${ind.dark ? 'rgba(233,235,237,.3)' : 'rgba(29,31,32,.3)'}`,
+          padding: '1px 5px',
+          fontFamily: DISPLAY,
+          fontWeight: 600,
+          fontSize: 11,
+          lineHeight: 1.3,
+          color: ind.ink,
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {count > 9 ? '9+' : count}
+      </span>
+    );
+  };
+
+  const popoverStyle = {
+    position: 'absolute',
+    left: '100%',
+    marginLeft: 1,
+    background: ind.chrome,
+    border: `1px solid ${ind.ink}`,
+    borderRadius: 0,
+    padding: 4,
+    minWidth: 168,
+    zIndex: 50,
+  };
+
   return (
     <>
       {/* Mobile Menu Backdrop */}
       {isMobileMenuOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30 cursor-pointer"
+          className="lg:hidden fixed inset-0 z-30 cursor-pointer"
+          style={{ background: 'rgba(29,31,32,.5)' }}
           onClick={closeMobileMenu}
         />
       )}
 
-      {/* Sidebar */}
-      <div 
+      {/* Rail */}
+      <aside
         ref={sidebarRef}
-        style={{ width: isCollapsed ? '64px' : `${sidebarWidth}px` }}
+        style={{
+          width,
+          background: ind.chrome,
+          borderRight: `1px solid ${ind.hairline}`,
+          padding: '12px 0',
+          overflow: 'hidden',
+          transition: isResizing ? 'none' : 'width .2s ease',
+          color: ind.ink,
+        }}
         className={`
-          ${bg.secondary} 
-          shadow-sm 
-          h-screen  
-          ${!isResizing ? 'transition-all duration-300 ease-in-out' : ''}
+          h-screen lg:h-[calc(100vh-4rem)]
+          flex flex-col
           absolute lg:sticky
-          lg:block
+          lg:flex
           top-0
           left-0
           ${isMobileMenuOpen ? 'translate-x-0' : ' transform -translate-x-[200%] sm:hidden lg:translate-x-0'}
           z-40
         `}
       >
-        {/* Resize Handle */}
+        {/* Resize handle — only meaningful while expanded */}
         {!isCollapsed && (
           <div
             onMouseDown={startResizing}
-            className={`
-              hidden lg:block
-              absolute 
-              right-0 
-              top-0 
-              bottom-0 
-              w-1 
-              cursor-col-resize 
-              hover:bg-blue-500 
-              ${isResizing ? 'bg-blue-500' : 'bg-transparent'}
-              transition-colors
-              z-50
-            `}
-            style={{ touchAction: 'none' }}
+            className="hidden lg:block absolute right-0 top-0 bottom-0 w-1 cursor-col-resize z-50"
+            style={{ background: isResizing ? ind.accent : 'transparent', touchAction: 'none' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = ind.accent; }}
+            onMouseLeave={(e) => { if (!isResizing) e.currentTarget.style.background = 'transparent'; }}
           />
         )}
-        
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className={`hidden lg:block absolute cursor-pointer -right-3 top-20 z-10 ${bg.secondary} rounded-full  p-1 shadow-md border ${text.secondary} ${hover.bg} transition-all duration-400`}
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {isCollapsed ? (
-            <ChevronRight className={`h-4.5 w-4.5 ${text.primary}`} />
-          ) : (
-            <ChevronLeft className={`h-4.5 w-4.5 ${text.primary}`} />
-          )}
-        </button>
 
-        {/* Logo / Branding */}
-        <div
-          className={`p-4 border-b flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}
-          style={{ borderColor: isDarkMode ? '#4b5563' : '#d1d5db' }}
-        >
+        {/* Brand mark — 30×30, accent hairline */}
+        <div style={{ height: ROW_H, flex: 'none', display: 'flex', alignItems: 'center' }}>
+          <IconCell>
+            <NavLink
+              to="/dashboard"
+              onClick={closeMobileMenu}
+              aria-label={t('nav.dashboard', 'Dashboard')}
+              title={BRAND_NAME}
+              style={{
+                width: 30, height: 30, border: `1px solid ${ind.accent}`, borderRadius: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, letterSpacing: '.06em',
+                color: ind.accent,
+              }}
+            >
+              {BRAND_MARK}
+            </NavLink>
+          </IconCell>
           {!isCollapsed && (
+            // Mobile drawer close. Layout comes from classes, not rowBase —
+            // an inline display would beat `lg:hidden`.
             <button
               onClick={closeMobileMenu}
-              className={`lg:hidden p-1 rounded-lg ${hover.bg} transition-colors cursor-pointer`}
-              aria-label="Close menu"
+              className="lg:hidden flex items-center ml-auto"
+              aria-label={t('common.close', 'Close menu')}
+              style={{
+                height: 30, padding: '0 12px', border: 'none', borderRadius: 0,
+                background: 'transparent', cursor: 'pointer',
+              }}
             >
-              <X className={`h-5 w-5 ${text.primary}`} />
+              <X size={18} strokeWidth={1.5} style={{ color: ind.ink }} />
             </button>
           )}
         </div>
 
         {/* Navigation */}
-        <nav className="mt-4 px-3 flex-1">
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minHeight: 0, marginTop: 6 }}>
           {menuStructure.map((section, sectionIndex) => (
-            <div key={section.section} className={sectionIndex > 0 ? 'mt-6' : ''}>
-              {/* Section Header */}
-              {!isCollapsed && (
-                <h3 className={`px-3 mb-2 text-xs font-semibold uppercase tracking-wider ${text.secondary} opacity-60`}>
-                  {section.section}
-                </h3>
+            <React.Fragment key={section.section}>
+              {/* One hairline divider after MAIN; the spacer pushes SETTINGS down. */}
+              {sectionIndex === 1 && (
+                <hr style={{ border: 'none', borderTop: `1px solid ${ind.hairline}`, margin: '9px 20px' }} />
               )}
-              
-              {/* Menu Items */}
-              <div className="space-y-1">
-                {section.items.map((item) => {
-                  const Icon = item.icon;
-                  const hasSubItems = item.subItems && item.subItems.length > 0;
-                  // Submenus are expanded by default; only collapsed when explicitly toggled off
-                  const isExpanded = expandedMenus[item.name] !== false;
-                  
-                  return (
-                    <div key={item.name}>
-                      {/* Main Menu Item */}
-                      {hasSubItems && !isCollapsed ? (
-                        <button
-                          onClick={() => toggleSubmenu(item.name)}
-                          onMouseEnter={() => setHoveredItem(item.name)}
-                          onMouseLeave={() => setHoveredItem(null)}
-                          className={`
-                            w-full text-left px-3 py-2.5 rounded-lg flex items-center justify-between
-                            transition-all duration-200 cursor-pointer
-                            ${isExpanded ? `${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}` : `${hover.bg}`}
-                            ${text.secondary} hover:${text.primary}
-                          `}
+              {sectionIndex === 2 && <div style={{ flex: 1, minHeight: 9 }} />}
+
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                const hasSubItems = item.subItems && item.subItems.length > 0;
+                // Submenus are expanded by default; only collapsed when explicitly toggled off
+                const isExpanded = expandedMenus[item.name] !== false;
+                const badgeCount = item.path === '/notifications' ? unreadCount : 0;
+
+                return (
+                  <div key={item.name} style={{ position: 'relative', flex: 'none' }}>
+                    {/* Parent row */}
+                    {hasSubItems && !isCollapsed ? (
+                      <button
+                        onClick={() => toggleSubmenu(item.name)}
+                        onMouseEnter={() => { setHoveredItem(item.name); setHoverKey(item.name); }}
+                        onMouseLeave={() => { setHoveredItem(null); setHoverKey(null); }}
+                        style={{ ...rowBase, background: rowBg(item.name, false) }}
+                      >
+                        <IconCell>
+                          <Icon size={18} strokeWidth={1.5} style={{ color: ind.inkGhost }} />
+                        </IconCell>
+                        <span style={labelStyle(false)}>{item.name}</span>
+                        <ChevronDown
+                          size={15}
+                          strokeWidth={1.5}
+                          style={{
+                            flex: 'none', marginRight: 16, color: ind.inkMuted,
+                            transform: isExpanded ? 'rotate(180deg)' : 'none',
+                            transition: 'transform .2s ease',
+                          }}
+                        />
+                      </button>
+                    ) : (
+                      <NavLink
+                        to={item.path}
+                        end={hasSubItems}
+                        onClick={closeMobileMenu}
+                        onMouseEnter={() => { setHoveredItem(item.name); setHoverKey(item.name); }}
+                        onMouseLeave={() => { setHoveredItem(null); setHoverKey(null); }}
+                        title={isCollapsed ? item.name : undefined}
+                        style={({ isActive }) => ({
+                          ...rowBase,
+                          background: rowBg(item.name, isActive),
+                        })}
+                      >
+                        {({ isActive }) => (
+                          <>
+                            <IconCell>
+                              <Icon
+                                size={18}
+                                strokeWidth={1.5}
+                                style={{ color: isActive ? ind.accentInk : ind.inkGhost }}
+                              />
+                              {isCollapsed && <Badge count={badgeCount} collapsed />}
+                            </IconCell>
+                            {!isCollapsed && (
+                              <>
+                                <span style={labelStyle(isActive)}>{item.name}</span>
+                                <Badge count={badgeCount} />
+                              </>
+                            )}
+                          </>
+                        )}
+                      </NavLink>
+                    )}
+
+                    {/* Sub items — indented to start at the icon cell edge */}
+                    {hasSubItems && isExpanded && !isCollapsed && (
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {item.subItems.map((subItem) => (
+                          <NavLink
+                            key={subItem.path}
+                            to={subItem.path}
+                            end
+                            onClick={closeMobileMenu}
+                            onMouseEnter={() => setHoverKey(`sub:${subItem.path}`)}
+                            onMouseLeave={() => setHoverKey(null)}
+                            style={({ isActive }) => ({
+                              ...rowBase,
+                              height: 30,
+                              paddingLeft: ICON_CELL,
+                              background: rowBg(`sub:${subItem.path}`, isActive),
+                            })}
+                          >
+                            {({ isActive }) => (
+                              <span
+                                style={{
+                                  display: 'block',
+                                  fontFamily: isActive ? DISPLAY : BODY,
+                                  fontWeight: isActive ? 600 : 400,
+                                  fontSize: 13,
+                                  letterSpacing: isActive ? '.05em' : 0,
+                                  textTransform: isActive ? 'uppercase' : 'none',
+                                  color: isActive ? ind.accentInk : ind.ink,
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  paddingRight: 14,
+                                }}
+                              >
+                                {subItem.name}
+                              </span>
+                            )}
+                          </NavLink>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Collapsed: label tooltip */}
+                    {isCollapsed && !hasSubItems && hoveredItem === item.name && (
+                      <div style={{ ...popoverStyle, top: 0, minWidth: 0, padding: '7px 11px' }}>
+                        <span style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, whiteSpace: 'nowrap' }}>
+                          {item.name}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Collapsed: sub-item popover */}
+                    {isCollapsed && hasSubItems && hoveredItem === item.name && (
+                      <div
+                        style={{ ...popoverStyle, top: 0 }}
+                        onMouseEnter={() => setHoveredItem(item.name)}
+                        onMouseLeave={() => setHoveredItem(null)}
+                      >
+                        <div
+                          style={{
+                            padding: '4px 8px 6px',
+                            borderBottom: `1px solid ${ind.hairline}`,
+                            marginBottom: 3,
+                            fontFamily: DISPLAY, fontWeight: 600, fontSize: 10,
+                            letterSpacing: '.12em', textTransform: 'uppercase', color: ind.inkMuted,
+                            whiteSpace: 'nowrap',
+                          }}
                         >
-                          <div className="flex items-center space-x-3">
-                            <Icon className="h-5 w-5 shrink-0" />
-                            <span className="font-medium">{item.name}</span>
-                          </div>
-                          <ChevronDown 
-                            className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} 
-                          />
-                        </button>
-                      ) : (
-                        <NavLink
-                          to={item.path}
-                          end={hasSubItems}
-                          onClick={closeMobileMenu}
-                          onMouseEnter={() => setHoveredItem(item.name)}
-                          onMouseLeave={() => setHoveredItem(null)}
-                          className={({ isActive }) =>
-                            `w-full text-left px-3 py-2.5 rounded-lg flex items-center relative cursor-pointer
-                            ${isCollapsed ? 'justify-center' : 'space-x-3'}
-                            transition-all duration-200 ${
-                              isActive
-                                ? 'bg-blue-600 text-white font-medium shadow-md'
-                                : `${text.secondary} ${hover.bg} hover:${text.primary}`
-                            }`
-                          }
-                          title={isCollapsed ? item.name : ''}
-                        >
-                          <Icon className="h-5 w-5 shrink-0" />
-                          {!isCollapsed && (
-                            <span className="font-medium flex-1">{item.name}</span>
-                          )}
-                          {item.path === '/notifications' && unreadCount > 0 && (
-                            <span
-                              className={`${
-                                isCollapsed
-                                  ? 'absolute -top-1 -right-1'
-                                  : 'ml-auto'
-                              } bg-red-500 text-white text-xs font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center`}
-                              aria-hidden="true"
-                            >
-                              {unreadCount > 9 ? '9+' : unreadCount}
-                            </span>
-                          )}
-                          
-                          {/* Tooltip for collapsed state */}
-                          {isCollapsed && hoveredItem === item.name && (
-                            <div className={`absolute left-full ml-2 px-3 py-2 ${bg.secondary} border rounded-lg shadow-lg whitespace-nowrap z-50 scale-in`}
-                                 style={{ borderColor: isDarkMode ? '#4b5563' : '#d1d5db' }}>
-                              <span className={`text-sm font-medium ${text.primary}`}>{item.name}</span>
-                            </div>
-                          )}
-                        </NavLink>
-                      )}
-                      
-                      {/* Sub Menu Items */}
-                      {hasSubItems && isExpanded && !isCollapsed && (
-                        <div className="mt-1 ml-8 space-y-1 slide-in-up">
-                          {item.subItems.map((subItem) => (
-                            <NavLink
-                              key={subItem.path}
-                              to={subItem.path}
-                              end
-                              onClick={closeMobileMenu}
-                              className={({ isActive }) =>
-                                `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                                  isActive
-                                    ? 'bg-blue-600 text-white font-medium'
-                                    : `${text.secondary} ${hover.bg} hover:${text.primary}`
-                                }`
-                              }
-                            >
-                              {subItem.name}
-                            </NavLink>
-                          ))}
+                          {item.name}
                         </div>
-                      )}
-                      
-                      {/* Popover for collapsed state with sub-items */}
-                      {hasSubItems && isCollapsed && hoveredItem === item.name && (
-                        <div 
-                          className={`absolute left-full ml-2 top-0 ${bg.secondary} border rounded-lg shadow-xl p-2 min-w-40 z-50 scale-in`}
-                          style={{ borderColor: isDarkMode ? '#4b5563' : '#d1d5db' }}
-                        >
-                          <div className={`px-2 py-1 text-xs font-semibold ${text.primary} border-b mb-1`}
-                               style={{ borderColor: isDarkMode ? '#4b5563' : '#d1d5db' }}>
-                            {item.name}
-                          </div>
-                          {item.subItems.map((subItem) => (
-                            <NavLink
-                              key={subItem.path}
-                              to={subItem.path}
-                              onClick={closeMobileMenu}
-                              className={({ isActive }) =>
-                                `block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                                  isActive
-                                    ? 'bg-blue-600 text-white'
-                                    : `${text.secondary} ${hover.bg} hover:${text.primary}`
-                                }`
-                              }
-                            >
-                              {subItem.name}
-                            </NavLink>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                        {item.subItems.map((subItem) => (
+                          <NavLink
+                            key={subItem.path}
+                            to={subItem.path}
+                            onClick={closeMobileMenu}
+                            onMouseEnter={() => setHoverKey(`pop:${subItem.path}`)}
+                            onMouseLeave={() => setHoverKey(null)}
+                            style={({ isActive }) => ({
+                              display: 'block',
+                              padding: '6px 8px',
+                              borderRadius: 0,
+                              whiteSpace: 'nowrap',
+                              fontFamily: BODY,
+                              fontSize: 13,
+                              background: rowBg(`pop:${subItem.path}`, isActive),
+                              color: isActive ? ind.accentInk : ind.ink,
+                            })}
+                          >
+                            {subItem.name}
+                          </NavLink>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </React.Fragment>
           ))}
         </nav>
-      </div>
+
+        {/* Collapse toggle */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          onMouseEnter={() => setHoverKey('rail:collapse')}
+          onMouseLeave={() => setHoverKey(null)}
+          className="hidden lg:flex"
+          style={{ ...rowBase, marginTop: 2, background: rowBg('rail:collapse', false) }}
+          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={isCollapsed ? 'Expand' : 'Collapse'}
+        >
+          <IconCell>
+            {isCollapsed
+              ? <ChevronRight size={18} strokeWidth={1.5} style={{ color: ind.inkGhost }} />
+              : <ChevronLeft size={18} strokeWidth={1.5} style={{ color: ind.inkGhost }} />}
+          </IconCell>
+          {!isCollapsed && (
+            <span style={{ ...labelStyle(false), fontSize: 13, color: ind.inkMuted }}>
+              {t('sidebar.collapse', 'Collapse')}
+            </span>
+          )}
+        </button>
+
+        {/* Avatar — 30×30 hairline box, initials */}
+        <NavLink
+          to="/settings"
+          onClick={closeMobileMenu}
+          onMouseEnter={() => setHoverKey('rail:avatar')}
+          onMouseLeave={() => setHoverKey(null)}
+          style={{ ...rowBase, background: rowBg('rail:avatar', false) }}
+          title={displayName || t('nav.settings', 'Settings')}
+        >
+          <IconCell>
+            <span
+              style={{
+                width: 30, height: 30, border: `1px solid ${ind.hairline}`, borderRadius: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, letterSpacing: '.04em',
+                color: ind.ink,
+              }}
+            >
+              {initials}
+            </span>
+          </IconCell>
+          {!isCollapsed && (
+            <span
+              style={{
+                fontFamily: BODY, fontSize: 13, color: ind.inkMuted, flex: 1, minWidth: 0,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: 14,
+              }}
+            >
+              {displayName}
+            </span>
+          )}
+        </NavLink>
+      </aside>
     </>
   );
 };

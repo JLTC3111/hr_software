@@ -1,54 +1,51 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { Clock, Calendar, ArrowDownAZ, Users, X, Check, Pickaxe, Hourglass, ArrowUp01, Sailboat, Stamp, CircleQuestionMark, Funnel, ListFilterPlus, CalendarArrowDown, CalendarArrowUp, FileText, Coffee, CircleFadingArrowUp, Loader, BarChart3, PieChart, AlertCircle } from 'lucide-react'
+/**
+ * Time Tracking — direction 2a, "Load against contract".
+ *
+ * Three vertical bands, the same grammar as the rest of the console: the app
+ * rail (sidebar.jsx) → this main column → the 340px exceptions column, with a
+ * 44px steel ticker spanning both. The ticker replaces metric cards; per the
+ * spec the console never shows both.
+ *
+ * The central idea of this screen: rather than nine identical KPI cards, one
+ * dense chart plots every employee's month as a stacked bar against the
+ * contract line, and the table below it carries a load meter per row. The right
+ * column is not a passive list — it is the set of things that must be fixed
+ * before payroll closes.
+ *
+ * Design system: "Industry" (src/theme/industry.js). Radius is 0 everywhere,
+ * cards are outlines with four registration corners, status reads through
+ * weight and rule rather than colour.
+ */
+import _React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import {
+  Search, Download, ChevronRight, AlertCircle, X, Check, RefreshCw, Coffee,
+  CircleQuestionMark,
+} from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
 import * as timeTrackingService from '../services/timeTrackingService'
 import { supabase } from '../config/supabaseClient'
-import { AnimatedClockIcon } from './timeClockEntry'
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js'
 import { getDemoEmployeeName, isDemoMode, addDemoLeaveRequest, updateDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper'
 import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts'
-import { SlidingNumber, useNumberReplay } from './motion-primitives';
-import { PageLiveClock } from './ui/page-live-clock';
 import { DatePicker } from './ui/date-picker.jsx';
 import { filterActiveEmployees } from '../utils/employeeStatus.js';
 import { COL } from '../utils/tableColumns.js';
 import { TableScroll, StackedDetail } from './ui/responsive-table.jsx';
 import { cn } from '@/lib/utils';
 import { FlubberMorphIcon } from './ui/flubber-morph-icon.jsx';
+import { FetchElapsedPill } from './ui/fetch-elapsed-pill'
+import { BarChart, Bar as RBar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
+import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js'
+import {
+  Blueprint, Bar, Tag, Btn, Seg, Kicker, TickerCell, ColumnHeading,
+  LiveClock, FlatSelect,
+} from './ui/industry.jsx'
 
-function TimeCard({ title, value, unit, icon: Icon, color, onClick, useDarkIcon = false, iconProps = {}, text, border, isDarkMode, customIcons }) {
-  const { replayToken, bump } = useNumberReplay();
-  return (
-    <div
-      className={`group relative overflow-hidden rounded-lg p-6 border ${border.primary} ${onClick ? 'cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1' : ''}`}
-      onClick={onClick}
-      onMouseEnter={bump}
-    >
-      <div className="relative z-10 flex items-center justify-between">
-        <div>
-          <p className={`text-sm font-medium ${text.secondary}`}>{title}</p>
-          <p className={`text-2xl font-bold ${color} mt-1`}>
-            {typeof value === 'number' || (typeof value === 'string' && /^-?[\d.]+$/.test(String(value).trim())) ? (
-              <SlidingNumber value={Number(value) || 0} replayToken={replayToken} />
-            ) : (
-              value
-            )}
-            <span className={`text-sm font-normal ${text.secondary} ml-1`}>{unit}</span>
-          </p>
-        </div>
-        <div>
-          {useDarkIcon && customIcons?.has(Icon) ? (
-            <Icon className={`h-8 w-8 ${color}`} isDarkMode={isDarkMode} {...iconProps} />
-          ) : (
-            <Icon className={`h-8 w-8 ${color}`} aria-hidden="true" {...iconProps} />
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+/* ------------------------------------------------------------------ *
+ * Icons re-exported through components/index.jsx — keep both exports.
+ * ------------------------------------------------------------------ */
 
 // Static, so it is defined once at module scope instead of being rebuilt and
 // re-injected as a <style> element on every render. Steam inherits the parent's
@@ -107,46 +104,16 @@ export const AnimatedCoffeeIcon = ({ size = 40, className = '', isDarkMode = fal
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
             >
-                
+
                 {/* Steam Bar 1 (Left) - Delayed start */}
-                <line 
-                    x1="6" 
-                    y1="10" 
-                    x2="6" 
-                    y2="10" 
-                    className="steam-line" 
-                    style={{ animationDelay: '0.6s' }} 
-                />
-                
+                <line x1="6" y1="10" x2="6" y2="10" className="steam-line" style={{ animationDelay: '0.6s' }} />
                 {/* Steam Bar 2 (Center) - Instant start */}
-                <line 
-                    x1="9" 
-                    y1="10" 
-                    x2="9" 
-                    y2="10" 
-                    className="steam-line" 
-                    style={{ animationDelay: '0s' }} 
-                />
-                
+                <line x1="9" y1="10" x2="9" y2="10" className="steam-line" style={{ animationDelay: '0s' }} />
                 {/* Steam Bar 3 (Right) - Heaviest delay */}
-                <line 
-                    x1="12" 
-                    y1="10" 
-                    x2="12" 
-                    y2="10" 
-                    className="steam-line" 
-                    style={{ animationDelay: '1.2s' }} 
-                />
+                <line x1="12" y1="10" x2="12" y2="10" className="steam-line" style={{ animationDelay: '1.2s' }} />
                 {/* Steam Bar 4 (Right) - Heaviest delay */}
-                <line 
-                    x1="15" 
-                    y1="10" 
-                    x2="15" 
-                    y2="10" 
-                    className="steam-line" 
-                    style={{ animationDelay: '0.9s' }} 
-                />
-                
+                <line x1="15" y1="10" x2="15" y2="10" className="steam-line" style={{ animationDelay: '0.9s' }} />
+
             </svg>
         </div>
     );
@@ -178,8 +145,153 @@ export const MiniFlubberMorphingLeaveStatus = ({ status = 'pending', isDarkMode 
   );
 };
 
-// Icons that take an `isDarkMode` prop rather than styling off `currentColor`.
-const CUSTOM_ICONS = new Set([AnimatedCoffeeIcon, AnimatedClockIcon]);
+/* ------------------------------------------------------------------ *
+ * Screen constants — the policy this screen reads against
+ * ------------------------------------------------------------------ */
+
+/** Contract day. Everything on this screen is measured against days × 8h. */
+const CONTRACT_HOURS_PER_DAY = 8;
+/**
+ * Where the contract sits on the load meter's track. Leaving 17% of the track
+ * above it is what lets an over-contract month read as over rather than full.
+ */
+const CONTRACT_TICK = 0.83;
+/** Shift start and the grace window before a punch counts as late. */
+const SHIFT_START_MIN = 9 * 60;
+const LATE_GRACE_MIN = 5;
+/** A full extra day of overtime — the point at which the number is worth bolding. */
+const MATERIAL_OVERTIME_H = 8;
+/** Default monthly overtime cap; editable from the exceptions column. */
+const DEFAULT_OVERTIME_CAP_H = 20;
+const OVERTIME_CAP_KEY = 'hr.timeTracking.overtimeCap';
+/** Payroll closes on this day of the month following the period. */
+const PAYROLL_CLOSE_DAY = 3;
+/** hour_type values that are overtime rather than contracted time. */
+const OVERTIME_TYPES = new Set(['overtime', 'weekend', 'bonus', 'holiday']);
+const LEAVE_TYPES = new Set(['on_leave', 'vacation', 'sick_leave']);
+
+/* ------------------------------------------------------------------ *
+ * Helpers
+ * ------------------------------------------------------------------ */
+
+const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/** Mon–Fri count for a 1-indexed month. The contract's denominator. */
+const countWorkingDays = (month, year) => {
+  const last = new Date(year, month, 0).getDate();
+  let n = 0;
+  for (let day = 1; day <= last; day += 1) {
+    const wd = new Date(year, month - 1, day).getDay();
+    if (wd !== 0 && wd !== 6) n += 1;
+  }
+  return n;
+};
+
+/** 'HH:MM[:SS]' → minutes past midnight, or null when unparseable. */
+const clockMinutes = (value) => {
+  if (!value || typeof value !== 'string') return null;
+  const [h, m] = value.split(':');
+  const hours = Number(h);
+  const mins = Number(m);
+  if (!Number.isFinite(hours) || !Number.isFinite(mins)) return null;
+  return hours * 60 + mins;
+};
+
+/** Monday 00:00 of the week containing `now`. */
+const startOfWeek = (now) => {
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const shift = (d.getDay() + 6) % 7; // Mon = 0
+  d.setDate(d.getDate() - shift);
+  return d;
+};
+
+const round1 = (n) => Math.round((Number(n) || 0) * 10) / 10;
+const fmt1 = (n) => round1(n).toFixed(1);
+const fmtHours = (n) => `${Math.round(Number(n) || 0).toLocaleString()}h`;
+
+const csvCell = (value) => {
+  const text = value == null ? '' : String(value);
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+
+/* ------------------------------------------------------------------ *
+ * Small pieces
+ * ------------------------------------------------------------------ */
+
+/** Chart tooltip in the Industry idiom: hairline box, zero radius, no shadow. */
+function IndustryTooltip({ ind, active, payload, contractHours, labels }) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0]?.payload;
+  if (!row) return null;
+  return (
+    <div style={{ background: ind.chrome, border: `1px solid ${ind.ink}`, borderRadius: 0, padding: '8px 10px', minWidth: 170 }}>
+      <div style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, letterSpacing: '.04em', textTransform: 'uppercase', color: ind.ink }}>
+        {row.name}
+      </div>
+      <div style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, marginTop: 2 }}>{row.departmentLabel}</div>
+      {[
+        { label: labels.regular, value: `${fmt1(row.regular)}h` },
+        { label: labels.overtime, value: `${fmt1(row.overtime)}h` },
+        { label: labels.load, value: `${Math.round(row.load * 100)}% ${labels.ofContract} ${contractHours}h` },
+      ].map((line) => (
+        <div key={line.label} style={{ display: 'flex', justifyContent: 'space-between', gap: 18, marginTop: 4 }}>
+          <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted }}>{line.label}</span>
+          <span style={{ ...figure(13, ind.ink) }}>{line.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** One labelled hairline bar in the attendance block. */
+function AttendanceBar({ ind, label, value, share, fill }) {
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: 4 }}>
+        <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkGhost }}>{label}</span>
+        <span style={figure(13, ind.ink)}>{value}</span>
+      </div>
+      <Bar ind={ind} value={share} fill={fill} height={7} />
+    </div>
+  );
+}
+
+/**
+ * A one-line exception: title, detail, chevron. Compact by design — these are
+ * the cases that are real but not yet urgent.
+ */
+function ExceptionRow({ ind, title, detail, onClick, active }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full"
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+        padding: '12px 20px', textAlign: 'left', cursor: 'pointer',
+        background: active ? ind.hover : 'transparent',
+        border: 'none', borderBottom: `1px solid ${ind.rule}`,
+      }}
+    >
+      <span style={{ minWidth: 0 }}>
+        <span style={{
+          display: 'block', fontFamily: DISPLAY, fontWeight: 600, fontSize: 13.5,
+          letterSpacing: '.04em', textTransform: 'uppercase', color: ind.ink,
+        }}>
+          {title}
+        </span>
+        <span style={{ display: 'block', fontFamily: BODY, fontSize: 12, color: ind.inkMuted, marginTop: 2 }}>
+          {detail}
+        </span>
+      </span>
+      <ChevronRight size={15} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted }} />
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Time Tracking
+ * ------------------------------------------------------------------ */
 
 const TimeTracking = ({ employees: employeesProp }) => {
   // Memoized because this array feeds the effect/callback dependency arrays
@@ -188,12 +300,21 @@ const TimeTracking = ({ employees: employeesProp }) => {
   const employees = useMemo(() => filterActiveEmployees(employeesProp), [employeesProp]);
   const { user, checkPermission } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
-  const { isDarkMode, bg, text, border, input } = useTheme();
+  const { isDarkMode, input } = useTheme();
   const { t } = useLanguage();
-  
-  // Check if user can view overview tab (admin/manager only)
+
+  const ind = getIndustry(isDarkMode);
+  /**
+   * Dark steel is the heavy half of every stacked pair. On the dark theme the
+   * literal #1d2d3d would vanish into the ground, so the bright end of the ramp
+   * takes over the same job: maximum contrast against whatever the page is.
+   */
+  const heavyInk = isDarkMode ? ind.accentDeeper : ind.tickerBg;
+  const lightSteel = ind.ramp[3];
+
+  // Overview and the exceptions column are org-wide reads — admin/manager only.
   const canViewOverview = checkPermission('canViewReports');
-  
+
   // Auto-detect current logged-in user's employee_id
   const getCurrentEmployeeId = () => {
     if (user?.employeeId) {
@@ -202,26 +323,20 @@ const TimeTracking = ({ employees: employeesProp }) => {
     }
     return employees[0]?.id != null ? String(employees[0].id) : '';
   };
-  
-  const [selectedEmployee, setSelectedEmployee] = useState(() => getCurrentEmployeeId());
-      // Sorting state for overview table
-      const [sortKey, setSortKey] = useState('employee');
-      const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
 
-      // Handle header click for sorting
-      const handleSort = (key) => {
-        if (sortKey === key) {
-          setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-        } else {
-          setSortKey(key);
-          setSortDirection('asc');
-        }
-      };
+  const [selectedEmployee, setSelectedEmployee] = useState(() => getCurrentEmployeeId());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // 1-indexed for Supabase
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  // Add 'leaveRequests' tab for admin/manager
-  const [activeTab, setActiveTab] = useState('summary'); // 'summary', 'overview', 'leaveRequests'
-  
+  const [activeTab, setActiveTab] = useState(() => (checkPermission('canViewReports') ? 'overview' : 'summary'));
+
+  // Timesheets table
+  const [sortKey, setSortKey] = useState('total_hours');
+  const [sortDirection, setSortDirection] = useState('desc');
+  const [tableQuery, setTableQuery] = useState('');
+  const [showAllRows, setShowAllRows] = useState(false);
+  /** null | 'missingPunch' | 'overCap' | 'unapprovedOvertime' | 'underContract' */
+  const [exceptionFilter, setExceptionFilter] = useState(null);
+
   // Loading and data states
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
@@ -234,8 +349,17 @@ const TimeTracking = ({ employees: employeesProp }) => {
   const [timeEntries, setTimeEntries] = useState([]);
   const [allEmployeesData, setAllEmployeesData] = useState([]);
   const [overviewLoading, setOverviewLoading] = useState(false);
+  const [orgEntries, setOrgEntries] = useState([]);
+  const [prevOvertime, setPrevOvertime] = useState(null);
+  const [closingPunches, setClosingPunches] = useState(false);
   const overviewCacheRef = useRef({ key: '', data: [] });
-  
+
+  /** Review threshold, not a database policy — kept where the reviewer set it. */
+  const [overtimeCap, setOvertimeCap] = useState(() => {
+    const stored = Number(localStorage.getItem(OVERTIME_CAP_KEY));
+    return Number.isFinite(stored) && stored > 0 ? stored : DEFAULT_OVERTIME_CAP_H;
+  });
+
   // Modal states
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -278,7 +402,15 @@ const TimeTracking = ({ employees: employeesProp }) => {
     }
   }, []);
 
-  // Define fetch function that can be reused for visibility refresh
+  // ---------------------------------------------------------------- period
+
+  const monthStart = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
+  const monthEnd = iso(new Date(selectedYear, selectedMonth, 0));
+  const workingDays = useMemo(() => countWorkingDays(selectedMonth, selectedYear), [selectedMonth, selectedYear]);
+  const contractHours = workingDays * CONTRACT_HOURS_PER_DAY;
+
+  // ---------------------------------------------------------------- fetch
+
   const fetchTimeTrackingData = useCallback(async ({ silent = false } = {}) => {
     if (!selectedEmployee) {
       if (!silent) setLoading(false);
@@ -325,7 +457,7 @@ const TimeTracking = ({ employees: employeesProp }) => {
       if (handleSessionAuthError(error, { silent, setFetchError })) {
         return;
       }
-      
+
       if (!silent) {
         setFetchError(error.message || 'Failed to load time tracking data. Please try refreshing.');
       }
@@ -334,7 +466,7 @@ const TimeTracking = ({ employees: employeesProp }) => {
       if (!silent) setLoading(false);
     }
   }, [selectedEmployee, selectedMonth, selectedYear, withTimeout, handleSessionAuthError]);
-  
+
   // Fetch data from Supabase when employee or period changes
   useEffect(() => {
     fetchTimeTrackingData();
@@ -348,15 +480,101 @@ const TimeTracking = ({ employees: employeesProp }) => {
   );
   useAuthenticatedPageRefresh(silentRefresh);
 
-  // Fetch all leave requests for all employees (admin/manager only, when tab is open)
-  const fetchAllLeaveRequests = useCallback(async () => {
-    if (!canViewOverview || activeTab !== 'leaveRequests') {
+  /**
+   * Org-wide summaries. Not gated on the active tab any more: the ticker and the
+   * exceptions column are on screen whatever tab is showing, and both read these.
+   */
+  const fetchOrgSummaries = useCallback(async () => {
+    if (!canViewOverview || employees.length === 0) return;
+
+    const cacheKey = `${selectedYear}-${selectedMonth}-${employees.length}`;
+    if (overviewCacheRef.current.key === cacheKey) {
+      setAllEmployeesData(overviewCacheRef.current.data);
       return;
     }
 
+    setOverviewLoading(true);
     try {
-      // Scoped to the selected year like the Summary tab, but pending requests
-      // are always included so approvals dated outside the year stay actionable.
+      const result = await timeTrackingService.getOverviewEmployeeSummaries(
+        selectedMonth,
+        selectedYear,
+        employees
+      );
+      if (!result.success) return;
+      overviewCacheRef.current = { key: cacheKey, data: result.data };
+      setAllEmployeesData(result.data);
+    } catch (error) {
+      console.error('Error fetching overview data:', error);
+      handleSessionAuthError(error, { silent: true });
+    } finally {
+      setOverviewLoading(false);
+    }
+  }, [canViewOverview, employees, selectedMonth, selectedYear, handleSessionAuthError]);
+
+  useEffect(() => { fetchOrgSummaries(); }, [fetchOrgSummaries]);
+
+  /**
+   * Raw punches for the exceptions column. The range covers both the selected
+   * period and the current week, because "attendance, this week" always means
+   * this week regardless of which month the period picker is showing.
+   */
+  const fetchOrgEntries = useCallback(async () => {
+    if (!canViewOverview) return;
+
+    const now = new Date();
+    const weekStart = iso(startOfWeek(now));
+    const today = iso(now);
+    const startDate = monthStart < weekStart ? monthStart : weekStart;
+    const endDate = monthEnd > today ? monthEnd : today;
+
+    try {
+      const result = await withTimeout(
+        () => timeTrackingService.getAllTimeEntriesDetailed({ startDate, endDate }),
+        DEFAULT_REQUEST_TIMEOUT,
+        'load org time entries'
+      );
+      setOrgEntries(result.success && Array.isArray(result.data) ? result.data : []);
+    } catch (error) {
+      console.error('Error fetching org time entries:', error);
+      handleSessionAuthError(error, { silent: true });
+      setOrgEntries([]);
+    }
+  }, [canViewOverview, monthStart, monthEnd, withTimeout, handleSessionAuthError]);
+
+  useEffect(() => { fetchOrgEntries(); }, [fetchOrgEntries]);
+
+  /**
+   * Prior period overtime, for the ticker's delta. Deliberately non-blocking:
+   * any failure just means the delta stays hidden.
+   */
+  useEffect(() => {
+    if (!canViewOverview || employees.length === 0) return undefined;
+    let cancelled = false;
+
+    const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1;
+    const prevYear = selectedMonth === 1 ? selectedYear - 1 : selectedYear;
+
+    (async () => {
+      try {
+        const result = await timeTrackingService.getOverviewEmployeeSummaries(prevMonth, prevYear, employees);
+        if (cancelled || !result?.success) return;
+        const rows = (result.data || []).map((item) => item.data).filter(Boolean);
+        if (rows.length === 0) { setPrevOvertime(null); return; }
+        setPrevOvertime(rows.reduce((s, d) => s + (d.overtime_hours || 0) + (d.holiday_overtime_hours || 0), 0));
+      } catch {
+        if (!cancelled) setPrevOvertime(null); // the delta is optional
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [canViewOverview, employees, selectedMonth, selectedYear]);
+
+  // Leave requests across the org. Pending requests are always included so
+  // approvals dated outside the year stay actionable.
+  const fetchAllLeaveRequests = useCallback(async () => {
+    if (!canViewOverview) return;
+
+    try {
       const result = await withTimeout(
         () => timeTrackingService.getAllLeaveRequests({
           year: selectedYear,
@@ -365,17 +583,15 @@ const TimeTracking = ({ employees: employeesProp }) => {
         DEFAULT_REQUEST_TIMEOUT,
         'fetch all leave requests'
       );
-      if (result.success && Array.isArray(result.data)) {
-        setAllLeaveRequests(result.data);
-      } else {
-        setAllLeaveRequests([]);
-      }
+      setAllLeaveRequests(result.success && Array.isArray(result.data) ? result.data : []);
     } catch (error) {
       console.error('Error fetching all leave requests:', error);
       handleSessionAuthError(error, { silent: true });
       setAllLeaveRequests([]);
     }
-  }, [canViewOverview, activeTab, selectedYear, withTimeout, handleSessionAuthError]);
+  }, [canViewOverview, selectedYear, withTimeout, handleSessionAuthError]);
+
+  useEffect(() => { fetchAllLeaveRequests(); }, [fetchAllLeaveRequests]);
 
   // Subscribe to leave request changes so approvals sync automatically
   useEffect(() => {
@@ -394,236 +610,522 @@ const TimeTracking = ({ employees: employeesProp }) => {
     };
   }, [fetchTimeTrackingData, fetchAllLeaveRequests]);
 
-  useEffect(() => {
-    fetchAllLeaveRequests();
-  }, [fetchAllLeaveRequests]);
+  // ---------------------------------------------------------------- actions
 
-  // Subscribe to leave request changes so approvals sync automatically
-const handleApproveRequest = async (requestId) => {
-  if (!user?.employeeId) {
-    setSuccessMessage(t('timeTracking.actionError', 'Unable to determine approver'));
-    setTimeout(() => setSuccessMessage(''), 3000);
-    return;
-  }
-  
-  setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
-  
-  try {
-    if (isDemoMode()) {
-      // Persist approval in demo storage and update local state
-      try {
-        const updated = updateDemoLeaveRequest(requestId, {
-          status: 'approved',
-          approved_by_name: user?.name || '-',
-          updated_at: new Date().toISOString()
-        });
+  const handleApproveRequest = async (requestId) => {
+    if (!user?.employeeId) {
+      setSuccessMessage(t('timeTracking.actionError', 'Unable to determine approver'));
+      setTimeout(() => setSuccessMessage(''), 3000);
+      return;
+    }
 
-        if (updated) {
-          setAllLeaveRequests(prev => prev.map(r => r.id === requestId ? { ...r, ...updated } : r));
+    setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
+
+    try {
+      if (isDemoMode()) {
+        // Persist approval in demo storage and update local state
+        try {
+          const updated = updateDemoLeaveRequest(requestId, {
+            status: 'approved',
+            approved_by_name: user?.name || '-',
+            updated_at: new Date().toISOString()
+          });
+
+          if (updated) {
+            setAllLeaveRequests(prev => prev.map(r => r.id === requestId ? { ...r, ...updated } : r));
+            setSuccessMessage(t('timeTracking.approveSuccess', 'Request approved'));
+          } else {
+            setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
+          }
+        } catch (err) {
+          console.error('Demo approve error:', err);
+          setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
+        }
+      } else {
+        const result = await timeTrackingService.updateLeaveRequestStatus(requestId, 'approved', user.employeeId);
+
+        if (result.success) {
+          // Only update the specific request - preserve object references for others
+          setAllLeaveRequests(prev => prev.map(r => {
+            if (r.id === requestId) {
+              const updated = result.data || {};
+              return {
+                ...r,
+                ...updated,
+                status: 'approved',
+                approved_by_name: updated.approved_by_name || (user?.name || '-')
+              };
+            }
+            return r; // Keep same reference for unchanged items
+          }));
+
           setSuccessMessage(t('timeTracking.approveSuccess', 'Request approved'));
         } else {
+          setSuccessMessage(result.error || t('timeTracking.actionError', 'Error updating request'));
+        }
+      }
+    } catch (error) {
+      console.error('Error approving leave request:', error);
+      if (handleSessionAuthError(error, { silent: true })) return;
+      setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
+    } finally {
+      setProcessingRequests(prev => {
+        const copy = { ...prev };
+        delete copy[requestId];
+        return copy;
+      });
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    if (!user?.employeeId) {
+      setSuccessMessage(t('timeTracking.actionError', 'Unable to determine approver'));
+      setTimeout(() => setSuccessMessage(''), 3000);
+      return;
+    }
+
+    const reason = window.prompt(t('timeTracking.rejectReasonPrompt', 'Please enter a reason for rejection (optional):'));
+    if (reason === null) return;
+
+    setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
+
+    try {
+      if (isDemoMode()) {
+        try {
+          const updated = updateDemoLeaveRequest(requestId, {
+            status: 'rejected',
+            rejection_reason: reason || null,
+            updated_at: new Date().toISOString()
+          });
+
+          if (updated) {
+            setAllLeaveRequests(prev => prev.map(r => r.id === requestId ? { ...r, ...updated } : r));
+            setSuccessMessage(t('timeTracking.rejectSuccess', 'Request rejected'));
+          } else {
+            setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
+          }
+        } catch (err) {
+          console.error('Demo reject error:', err);
           setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
         }
-      } catch (err) {
-        console.error('Demo approve error:', err);
-        setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
-      }
-    } else {
-      const result = await timeTrackingService.updateLeaveRequestStatus(requestId, 'approved', user.employeeId);
-
-      if (result.success) {
-        // Only update the specific request - preserve object references for others
-        setAllLeaveRequests(prev => prev.map(r => {
-          if (r.id === requestId) {
-            const updated = result.data || {};
-            return { 
-              ...r, 
-              ...updated, 
-              status: 'approved', 
-              approved_by_name: updated.approved_by_name || (user?.name || '-') 
-            };
-          }
-          return r; // Keep same reference for unchanged items
-        }));
-        
-        setSuccessMessage(t('timeTracking.approveSuccess', 'Request approved'));
       } else {
-        setSuccessMessage(result.error || t('timeTracking.actionError', 'Error updating request'));
-      }
-    }
-  } catch (error) {
-    console.error('Error approving leave request:', error);
-    if (handleSessionAuthError(error, { silent: true })) return;
-    setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
-  } finally {
-    setProcessingRequests(prev => { 
-      const copy = { ...prev }; 
-      delete copy[requestId]; 
-      return copy; 
-    });
-    setTimeout(() => setSuccessMessage(''), 3000);
-  }
-};
+        const result = await timeTrackingService.updateLeaveRequestStatus(requestId, 'rejected', user.employeeId, reason || null);
 
-const handleRejectRequest = async (requestId) => {
-  if (!user?.employeeId) {
-    setSuccessMessage(t('timeTracking.actionError', 'Unable to determine approver'));
-    setTimeout(() => setSuccessMessage(''), 3000);
-    return;
-  }
-  
-  const reason = window.prompt(t('timeTracking.rejectReasonPrompt', 'Please enter a reason for rejection (optional):'));
-  if (reason === null) return;
-  
-  setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
-  
-  try {
-    if (isDemoMode()) {
-      try {
-        const updated = updateDemoLeaveRequest(requestId, {
-          status: 'rejected',
-          rejection_reason: reason || null,
-          updated_at: new Date().toISOString()
-        });
+        if (result.success) {
+          // Only update the specific request - preserve object references for others
+          setAllLeaveRequests(prev => prev.map(r => {
+            if (r.id === requestId) {
+              const updated = result.data || {};
+              return { ...r, ...updated, status: 'rejected' };
+            }
+            return r; // Keep same reference for unchanged items
+          }));
 
-        if (updated) {
-          setAllLeaveRequests(prev => prev.map(r => r.id === requestId ? { ...r, ...updated } : r));
           setSuccessMessage(t('timeTracking.rejectSuccess', 'Request rejected'));
         } else {
-          setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
+          setSuccessMessage(result.error || t('timeTracking.actionError', 'Error updating request'));
         }
-      } catch (err) {
-        console.error('Demo reject error:', err);
-        setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
       }
-    } else {
-      const result = await timeTrackingService.updateLeaveRequestStatus(requestId, 'rejected', user.employeeId, reason || null);
+    } catch (error) {
+      console.error('Error rejecting leave request:', error);
+      if (handleSessionAuthError(error, { silent: true })) return;
+      setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
+    } finally {
+      setProcessingRequests(prev => {
+        const copy = { ...prev };
+        delete copy[requestId];
+        return copy;
+      });
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
+  };
+
+  const handleLeaveSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Demo mode: persist leave request locally and update state
+      if (isDemoMode()) {
+        const daysCount = calculateDaysBetween(leaveForm.startDate, leaveForm.endDate);
+        const newLeaveRequest = {
+          id: `demo-leave-${Date.now()}`,
+          employee_id: selectedEmployee,
+          leave_type: leaveForm.type,
+          type: leaveForm.type,
+          start_date: leaveForm.startDate,
+          end_date: leaveForm.endDate,
+          reason: leaveForm.reason,
+          days_count: daysCount,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        try {
+          addDemoLeaveRequest(newLeaveRequest);
+        } catch (err) {
+          console.error('Failed to save demo leave request:', err);
+        }
+
+        setLeaveRequests(prev => Array.isArray(prev) ? [...prev, newLeaveRequest] : [newLeaveRequest]);
+        setAllLeaveRequests(prev => Array.isArray(prev) ? [...prev, newLeaveRequest] : [newLeaveRequest]);
+
+        setSuccessMessage(t('timeTracking.leaveSuccess', 'Leave request submitted successfully!'));
+        setShowLeaveModal(false);
+        setLeaveForm({ type: 'vacation', startDate: '', endDate: '', reason: '' });
+        setLoading(false);
+        setTimeout(() => setSuccessMessage(''), 3000);
+        return;
+      }
+
+      const result = await timeTrackingService.createLeaveRequest({
+        employeeId: selectedEmployee,
+        type: leaveForm.type,
+        startDate: leaveForm.startDate,
+        endDate: leaveForm.endDate,
+        reason: leaveForm.reason
+      });
 
       if (result.success) {
-        // Only update the specific request - preserve object references for others
-        setAllLeaveRequests(prev => prev.map(r => {
-          if (r.id === requestId) {
-            const updated = result.data || {};
-            return { ...r, ...updated, status: 'rejected' };
-          }
-          return r; // Keep same reference for unchanged items
-        }));
-        
-        setSuccessMessage(t('timeTracking.rejectSuccess', 'Request rejected'));
+        setSuccessMessage(t('timeTracking.leaveSuccess', 'Leave request submitted successfully!'));
+        setShowLeaveModal(false);
+
+        // Refresh leave requests and summary data
+        const leaveResult = await timeTrackingService.getLeaveRequests(selectedEmployee, { year: selectedYear });
+        if (leaveResult.success) setLeaveRequests(leaveResult.data);
+
+        // Refresh summary to update leave days count
+        const summaryResult = await timeTrackingService.getTimeTrackingSummary(selectedEmployee, selectedMonth, selectedYear);
+        if (summaryResult.success) setSummaryData(summaryResult.data);
+
+        setLeaveForm({ type: 'vacation', startDate: '', endDate: '', reason: '' });
       } else {
-        setSuccessMessage(result.error || t('timeTracking.actionError', 'Error updating request'));
+        setSuccessMessage(t('timeTracking.leaveError', 'Error submitting leave request'));
       }
+    } catch (error) {
+      console.error('Error submitting leave:', error);
+      if (handleSessionAuthError(error, { silent: true })) return;
+      setSuccessMessage(t('timeTracking.leaveError', 'Error submitting leave request'));
+    } finally {
+      setLoading(false);
+      setTimeout(() => setSuccessMessage(''), 3000);
     }
-  } catch (error) {
-    console.error('Error rejecting leave request:', error);
-    if (handleSessionAuthError(error, { silent: true })) return;
-    setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
-  } finally {
-    setProcessingRequests(prev => { 
-      const copy = { ...prev }; 
-      delete copy[requestId]; 
-      return copy; 
+  };
+
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDirection(key === 'employee' || key === 'department' ? 'asc' : 'desc');
+    }
+  };
+
+  const handleLeaveSort = (key) => {
+    if (leaveSortKey === key) {
+      setLeaveSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setLeaveSortKey(key);
+      setLeaveSortDirection('asc');
+    }
+  };
+
+  // ---------------------------------------------------------------- derive
+
+  const monthNames = [
+    t('months.january'), t('months.february'), t('months.march'), t('months.april'),
+    t('months.may'), t('months.june'), t('months.july'), t('months.august'),
+    t('months.september'), t('months.october'), t('months.november'), t('months.december')
+  ];
+  const getMonthName = (monthIndex) => monthNames[monthIndex - 1] || monthNames[0];
+  const periodLabel = `${getMonthName(selectedMonth)} ${selectedYear}`;
+
+  const thisYear = new Date().getFullYear();
+  const years = [thisYear - 2, thisYear - 1, thisYear, thisYear + 1];
+
+  /** One row per employee: the shape both the chart and the table read. */
+  const orgRows = useMemo(() => allEmployeesData
+    .filter((item) => item.data && item.employee)
+    .map((item) => {
+      const d = item.data;
+      const regular = d.regular_hours || 0;
+      const overtime = (d.overtime_hours || 0) + (d.holiday_overtime_hours || 0);
+      const total = d.total_hours || (regular + overtime);
+      const department = item.employee.department || '';
+      return {
+        id: String(item.employee.id),
+        employee: item.employee,
+        name: getDemoEmployeeName(item.employee, t) || item.employee.name || '—',
+        department,
+        departmentLabel: department ? t(`employeeDepartment.${department}`, department) : '—',
+        days: d.days_worked || 0,
+        leaveDays: d.leave_days || 0,
+        regular,
+        overtime,
+        total,
+        load: contractHours > 0 ? total / contractHours : 0,
+      };
+    }), [allEmployeesData, contractHours, t]);
+
+  const orgTotals = useMemo(() => orgRows.reduce((acc, r) => ({
+    regular: acc.regular + r.regular,
+    overtime: acc.overtime + r.overtime,
+    leaveDays: acc.leaveDays + r.leaveDays,
+    days: acc.days + r.days,
+    total: acc.total + r.total,
+  }), { regular: 0, overtime: 0, leaveDays: 0, days: 0, total: 0 }), [orgRows]);
+
+  /** Sorted descending so the bars that cross the contract line group at the left. */
+  const chartRows = useMemo(
+    () => [...orgRows].sort((a, b) => b.total - a.total),
+    [orgRows]
+  );
+  const overContractCount = useMemo(
+    () => orgRows.filter((r) => r.total > contractHours).length,
+    [orgRows, contractHours]
+  );
+
+  // -- exceptions ----------------------------------------------------
+
+  const monthEntries = useMemo(
+    () => orgEntries.filter((e) => e.date >= monthStart && e.date <= monthEnd),
+    [orgEntries, monthStart, monthEnd]
+  );
+
+  const employeeNameById = useMemo(() => {
+    const map = new Map();
+    employees.forEach((emp) => map.set(String(emp.id), getDemoEmployeeName(emp, t) || emp.name));
+    return map;
+  }, [employees, t]);
+
+  /** Clocked in, never clocked out. The single biggest payroll blocker. */
+  const missingPunch = useMemo(() => {
+    const rows = monthEntries.filter((e) =>
+      e.clock_in && !e.clock_out && !LEAVE_TYPES.has(e.hour_type)
+    );
+    const byEmployee = new Map();
+    rows.forEach((e) => {
+      const id = String(e.employee_id);
+      if (!byEmployee.has(id)) {
+        byEmployee.set(id, { id, name: e.employee_name || employeeNameById.get(id) || '—', count: 0 });
+      }
+      byEmployee.get(id).count += 1;
     });
-    setTimeout(() => setSuccessMessage(''), 3000);
-  }
-};
-  
-  // Fetch all employees data for Overview (single batched service call + cache)
-  useEffect(() => {
-    if (activeTab !== 'overview' || employees.length === 0) return undefined;
+    const dates = rows.map((e) => e.date).filter(Boolean).sort();
+    return {
+      rows,
+      people: Array.from(byEmployee.values()).sort((a, b) => b.count - a.count),
+      firstDate: dates[0] || null,
+      lastDate: dates[dates.length - 1] || null,
+    };
+  }, [monthEntries, employeeNameById]);
 
-    const cacheKey = `${selectedYear}-${selectedMonth}-${employees.length}`;
-    if (overviewCacheRef.current.key === cacheKey) {
-      setAllEmployeesData(overviewCacheRef.current.data);
-      return undefined;
+  const overCapRows = useMemo(
+    () => orgRows.filter((r) => r.overtime > overtimeCap).sort((a, b) => b.overtime - a.overtime),
+    [orgRows, overtimeCap]
+  );
+
+  const unapprovedOvertime = useMemo(() => {
+    const rows = monthEntries.filter((e) => e.status === 'pending' && OVERTIME_TYPES.has(e.hour_type));
+    return {
+      rows,
+      hours: rows.reduce((s, e) => s + (Number(e.hours) || 0), 0),
+      people: new Set(rows.map((e) => String(e.employee_id))).size,
+    };
+  }, [monthEntries]);
+
+  const underContractRows = useMemo(
+    () => orgRows.filter((r) => r.total < contractHours).sort((a, b) => a.total - b.total),
+    [orgRows, contractHours]
+  );
+
+  /**
+   * Attendance for the current week, always — the period picker moves the rest
+   * of the screen but "this week" has to mean this week.
+   */
+  const attendance = useMemo(() => {
+    if (!canViewOverview) return null;
+
+    const now = new Date();
+    const weekStart = iso(startOfWeek(now));
+    const today = iso(now);
+    const weekEntries = orgEntries.filter((e) => e.date >= weekStart && e.date <= today);
+
+    const earliestPunch = new Map();
+    const excused = new Set();
+    weekEntries.forEach((e) => {
+      const id = String(e.employee_id);
+      if (LEAVE_TYPES.has(e.hour_type)) { excused.add(id); return; }
+      const minutes = clockMinutes(e.clock_in);
+      if (minutes == null) return;
+      const current = earliestPunch.get(id);
+      if (current == null || minutes < current) earliestPunch.set(id, minutes);
+    });
+
+    // Approved leave also excuses an absence, even with no entry recorded.
+    allLeaveRequests.forEach((req) => {
+      if (req.status !== 'approved') return;
+      if (req.start_date > today || req.end_date < weekStart) return;
+      excused.add(String(req.employee_id));
+    });
+
+    let onTime = 0;
+    let late = 0;
+    earliestPunch.forEach((minutes) => {
+      if (minutes <= SHIFT_START_MIN + LATE_GRACE_MIN) onTime += 1;
+      else late += 1;
+    });
+
+    const accountedFor = new Set([...earliestPunch.keys(), ...excused]);
+    const absent = Math.max(0, employees.length - accountedFor.size);
+    const measured = onTime + late + absent;
+
+    return { onTime, late, absent, onTimeRate: measured > 0 ? (onTime / measured) * 100 : 0 };
+  }, [canViewOverview, orgEntries, allLeaveRequests, employees.length]);
+
+  const exceptionCount =
+    missingPunch.people.length + overCapRows.length +
+    (unapprovedOvertime.rows.length > 0 ? 1 : 0) +
+    (underContractRows.length > 0 ? 1 : 0);
+
+  const payrollCloseLabel = useMemo(() => {
+    const close = new Date(selectedYear, selectedMonth, PAYROLL_CLOSE_DAY);
+    return close.toLocaleDateString(undefined, { day: '2-digit', month: 'short' });
+  }, [selectedMonth, selectedYear]);
+
+  const fmtDayMonth = useCallback((value) => {
+    if (!value) return '';
+    const d = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(d.getTime())) return value;
+    return d.toLocaleDateString(undefined, { day: '2-digit', month: 'short' });
+  }, []);
+
+  // -- timesheets table ----------------------------------------------
+
+  const filteredRows = useMemo(() => {
+    let rows = orgRows;
+
+    if (exceptionFilter === 'missingPunch') {
+      const ids = new Set(missingPunch.people.map((p) => p.id));
+      rows = rows.filter((r) => ids.has(r.id));
+    } else if (exceptionFilter === 'overCap') {
+      rows = overCapRows;
+    } else if (exceptionFilter === 'unapprovedOvertime') {
+      const ids = new Set(unapprovedOvertime.rows.map((e) => String(e.employee_id)));
+      rows = rows.filter((r) => ids.has(r.id));
+    } else if (exceptionFilter === 'underContract') {
+      rows = underContractRows;
     }
 
-    let cancelled = false;
-    setOverviewLoading(true);
+    const q = tableQuery.trim().toLowerCase();
+    if (q) {
+      rows = rows.filter((r) =>
+        r.name.toLowerCase().includes(q) || r.departmentLabel.toLowerCase().includes(q)
+      );
+    }
+    return rows;
+  }, [orgRows, exceptionFilter, missingPunch.people, overCapRows, unapprovedOvertime.rows, underContractRows, tableQuery]);
 
-    const fetchOverview = async () => {
-      try {
-        const result = await timeTrackingService.getOverviewEmployeeSummaries(
-          selectedMonth,
-          selectedYear,
-          employees
-        );
-        if (cancelled || !result.success) return;
-
-        overviewCacheRef.current = { key: cacheKey, data: result.data };
-        setAllEmployeesData(result.data);
-      } catch (error) {
-        console.error('Error fetching overview data:', error);
-        handleSessionAuthError(error, { silent: true });
-      } finally {
-        if (!cancelled) setOverviewLoading(false);
+  const sortedRows = useMemo(() => {
+    const pick = (row) => {
+      switch (sortKey) {
+        case 'employee': return row.name.toLowerCase();
+        case 'department': return row.departmentLabel.toLowerCase();
+        case 'days_worked': return row.days;
+        case 'regular_hours': return row.regular;
+        case 'overtime': return row.overtime;
+        case 'load': return row.load;
+        case 'total_hours':
+        default: return row.total;
       }
     };
-
-    fetchOverview();
-    return () => { cancelled = true; };
-  }, [activeTab, selectedMonth, selectedYear, employees, handleSessionAuthError]);
-
-  const sortedOverviewEmployees = useMemo(() => {
-    const sorted = allEmployeesData.filter((item) => item.data);
-    sorted.sort((a, b) => {
-      let aValue;
-      let bValue;
-      switch (sortKey) {
-        case 'employee':
-          aValue = a.employee?.name?.toLowerCase() || '';
-          bValue = b.employee?.name?.toLowerCase() || '';
-          break;
-        case 'days_worked':
-          aValue = a.data?.days_worked || 0;
-          bValue = b.data?.days_worked || 0;
-          break;
-        case 'regular_hours':
-          aValue = a.data?.regular_hours || 0;
-          bValue = b.data?.regular_hours || 0;
-          break;
-        case 'overtime':
-          aValue = (a.data?.overtime_hours || 0) + (a.data?.holiday_overtime_hours || 0);
-          bValue = (b.data?.overtime_hours || 0) + (b.data?.holiday_overtime_hours || 0);
-          break;
-        case 'total_hours':
-          aValue = a.data?.total_hours || 0;
-          bValue = b.data?.total_hours || 0;
-          break;
-        default:
-          aValue = 0;
-          bValue = 0;
-      }
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    return [...filteredRows].sort((a, b) => {
+      const av = pick(a);
+      const bv = pick(b);
+      if (av < bv) return sortDirection === 'asc' ? -1 : 1;
+      if (av > bv) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-    return sorted;
-  }, [allEmployeesData, sortKey, sortDirection]);
+  }, [filteredRows, sortKey, sortDirection]);
 
-  const overviewChartStats = useMemo(() => {
-    const withData = sortedOverviewEmployees.filter((item) => item.data);
-    const maxRegularHours = Math.max(0, ...withData.map((item) => item.data?.regular_hours || 0));
-    const maxOvertimeHours = Math.max(0, ...withData.map((item) =>
-      (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0)
-    ));
-    return { withData, maxRegularHours, maxOvertimeHours };
-  }, [sortedOverviewEmployees]);
-  
-  // Calculate leave days from leave_requests (including pending)
+  const visibleRows = showAllRows ? sortedRows : sortedRows.slice(0, 10);
+
+  const openException = useCallback((key) => {
+    setExceptionFilter((current) => (current === key ? null : key));
+    setActiveTab('overview');
+    setShowAllRows(true);
+  }, []);
+
+  /**
+   * Close every open punch at 18:00. This writes: it is the one action on the
+   * screen that changes records rather than filtering them, so it confirms with
+   * an explicit count first.
+   */
+  const handleAutoClose = useCallback(async () => {
+    const open = missingPunch.rows;
+    if (open.length === 0 || closingPunches) return;
+
+    const confirmed = window.confirm(
+      t('timeTracking.autoCloseConfirm', 'Set clock-out to 18:00 on {count} open entries? This updates the timesheets.')
+        .replace('{count}', String(open.length))
+    );
+    if (!confirmed) return;
+
+    setClosingPunches(true);
+    let updated = 0;
+    try {
+      for (const entry of open) {
+        const inMinutes = clockMinutes(entry.clock_in);
+        // 18:00 with no lunch deduction — an auto-close is a placeholder for a
+        // real punch, not an assertion about how the day was spent.
+        const hours = inMinutes == null ? Number(entry.hours) || 0 : Math.max(0, round1((18 * 60 - inMinutes) / 60));
+        const result = await timeTrackingService.updateTimeEntry(entry.id, {
+          clockOut: '18:00:00',
+          hours,
+        });
+        if (result.success) updated += 1;
+      }
+      setSuccessMessage(
+        t('timeTracking.autoCloseSuccess', '{count} entries closed at 18:00').replace('{count}', String(updated))
+      );
+      overviewCacheRef.current = { key: '', data: [] };
+      await Promise.all([fetchOrgEntries(), fetchOrgSummaries(), fetchTimeTrackingData({ silent: true })]);
+    } catch (error) {
+      console.error('Error auto-closing punches:', error);
+      if (!handleSessionAuthError(error, { silent: true })) {
+        setSuccessMessage(t('timeTracking.actionError', 'Error updating entries'));
+      }
+    } finally {
+      setClosingPunches(false);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
+  }, [missingPunch.rows, closingPunches, t, fetchOrgEntries, fetchOrgSummaries, fetchTimeTrackingData, handleSessionAuthError]);
+
+  const handleRaiseCap = useCallback(() => {
+    const answer = window.prompt(
+      t('timeTracking.raiseCapPrompt', 'Monthly overtime cap, in hours:'),
+      String(overtimeCap)
+    );
+    if (answer === null) return;
+    const next = Number(answer);
+    if (!Number.isFinite(next) || next <= 0) return;
+    setOvertimeCap(next);
+    localStorage.setItem(OVERTIME_CAP_KEY, String(next));
+  }, [overtimeCap, t]);
+
+  // -- selected employee (Summary tab) --------------------------------
+
   const calculatedLeaveDays = useMemo(() => {
     if (!leaveRequests || leaveRequests.length === 0) return 0;
 
     return leaveRequests.reduce((total, req) => {
       // Include pending and approved, exclude rejected
       if (req.status === 'rejected') return total;
-      
-      const startDate = new Date(req.start_date);
-      const reqMonth = startDate.getMonth() + 1;
-      const reqYear = startDate.getFullYear();
 
-      // Only count if within selected month/year
-      if (reqYear === selectedYear && reqMonth === selectedMonth) {
+      const startDate = new Date(req.start_date);
+      if (startDate.getFullYear() === selectedYear && startDate.getMonth() + 1 === selectedMonth) {
         return total + (req.days_count || 0);
       }
       return total;
@@ -641,7 +1143,7 @@ const handleRejectRequest = async (requestId) => {
     entries.forEach((entry) => {
       const type = entry.hour_type || entry.hourType;
       const hours = Number(entry.hours) || 0;
-      if (type === 'on_leave' || type === 'vacation' || type === 'sick_leave') return;
+      if (LEAVE_TYPES.has(type)) return;
       if (entry.date) workDays.add(entry.date);
 
       if (type === 'regular' || type === 'wfh') regular += hours;
@@ -681,18 +1183,10 @@ const handleRejectRequest = async (requestId) => {
     leave_days: calculatedLeaveDays,
   };
 
-  // Attendance records alias (fix ReferenceError and expose timeEntries for the Summary table)
-  const attendanceRecords = timeEntries || [];
-
-  // Leave requests sorting helpers
-  const handleLeaveSort = (key) => {
-    if (leaveSortKey === key) {
-      setLeaveSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setLeaveSortKey(key);
-      setLeaveSortDirection('asc');
-    }
-  };
+  // Memoized so the export callback below keeps a stable identity.
+  const attendanceRecords = useMemo(() => timeEntries || [], [timeEntries]);
+  const selectedEmployeeName = employees.find((emp) => String(emp.id) === selectedEmployee)?.name || '—';
+  const ownOvertime = (currentData.overtime_hours || 0) + (currentData.holiday_overtime_hours || 0);
 
   const sortedLeaveRequests = useMemo(() => {
     const sorted = [...allLeaveRequests];
@@ -726,12 +1220,6 @@ const handleRejectRequest = async (requestId) => {
           bVal = b.start_date ? new Date(b.start_date).getTime() : 0;
       }
 
-      if (typeof aVal === 'number' && typeof bVal === 'number') {
-        if (aVal < bVal) return leaveSortDirection === 'asc' ? -1 : 1;
-        if (aVal > bVal) return leaveSortDirection === 'asc' ? 1 : -1;
-        return 0;
-      }
-
       if (aVal < bVal) return leaveSortDirection === 'asc' ? -1 : 1;
       if (aVal > bVal) return leaveSortDirection === 'asc' ? 1 : -1;
       return 0;
@@ -739,869 +1227,979 @@ const handleRejectRequest = async (requestId) => {
     return sorted;
   }, [allLeaveRequests, leaveSortKey, leaveSortDirection]);
 
-  const months = [
-    t('months.january'), t('months.february'), t('months.march'), t('months.april'), 
-    t('months.may'), t('months.june'), t('months.july'), t('months.august'), 
-    t('months.september'), t('months.october'), t('months.november'), t('months.december')
-  ];
-  
-  const getMonthName = (monthIndex) => {
-    return months[monthIndex - 1] || months[0];
-  };
+  // -- export ---------------------------------------------------------
 
-  const years = [2023, 2024, 2025];
+  const handleExport = useCallback(() => {
+    let header = [];
+    let body = [];
+    let name = 'time-tracking';
 
-  // Handler functions
-  const handleLeaveSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    try {
-      // Demo mode: persist leave request locally and update state
-      if (isDemoMode()) {
-        const daysCount = calculateDaysBetween(leaveForm.startDate, leaveForm.endDate);
-        const newLeaveRequest = {
-          id: `demo-leave-${Date.now()}`,
-          employee_id: selectedEmployee,
-          leave_type: leaveForm.type || leaveForm.type,
-          type: leaveForm.type,
-          start_date: leaveForm.startDate,
-          end_date: leaveForm.endDate,
-          reason: leaveForm.reason,
-          days_count: daysCount,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-
-        try {
-          addDemoLeaveRequest(newLeaveRequest);
-        } catch (err) {
-          console.error('Failed to save demo leave request:', err);
-        }
-
-        // If we're viewing leave requests for the current employee, update local list
-        setLeaveRequests(prev => Array.isArray(prev) ? [...prev, newLeaveRequest] : [newLeaveRequest]);
-
-        // Also add to allLeaveRequests (admin view) if relevant
-        setAllLeaveRequests(prev => Array.isArray(prev) ? [...prev, newLeaveRequest] : [newLeaveRequest]);
-
-        setSuccessMessage(t('timeTracking.leaveSuccess', 'Leave request submitted successfully!'));
-        setShowLeaveModal(false);
-
-        // Reset form
-        setLeaveForm({
-          type: 'vacation',
-          startDate: '',
-          endDate: '',
-          reason: ''
-        });
-
-        setLoading(false);
-        setTimeout(() => setSuccessMessage(''), 3000);
-        return;
-      }
-      const result = await timeTrackingService.createLeaveRequest({
-        employeeId: selectedEmployee,
-        type: leaveForm.type,
-        startDate: leaveForm.startDate,
-        endDate: leaveForm.endDate,
-        reason: leaveForm.reason
-      });
-      
-      if (result.success) {
-        setSuccessMessage(t('timeTracking.leaveSuccess', 'Leave request submitted successfully!'));
-        setShowLeaveModal(false);
-        
-        // Refresh leave requests and summary data
-        const leaveResult = await timeTrackingService.getLeaveRequests(selectedEmployee, {
-          year: selectedYear
-        });
-        if (leaveResult.success) {
-          setLeaveRequests(leaveResult.data);
-        }
-        
-        // Refresh summary to update leave days count
-        const summaryResult = await timeTrackingService.getTimeTrackingSummary(
-          selectedEmployee,
-          selectedMonth,
-          selectedYear
-        );
-        if (summaryResult.success) {
-          setSummaryData(summaryResult.data);
-        }
-        
-        // Reset form
-        setLeaveForm({
-          type: 'vacation',
-          startDate: '',
-          endDate: '',
-          reason: ''
-        });
-      } else {
-        setSuccessMessage(t('timeTracking.leaveError', 'Error submitting leave request'));
-      }
-    } catch (error) {
-      console.error('Error submitting leave:', error);
-      if (handleSessionAuthError(error, { silent: true })) return;
-      setSuccessMessage(t('timeTracking.leaveError', 'Error submitting leave request'));
-    } finally {
-      setLoading(false);
-      setTimeout(() => setSuccessMessage(''), 3000);
+    if (activeTab === 'leaveRequests') {
+      name = 'leave-requests';
+      header = ['Employee', 'Type', 'Start', 'End', 'Days', 'Status', 'Approved by'];
+      body = sortedLeaveRequests.map((r) => [
+        r.employee?.name || '', r.leave_type || '', r.start_date || '', r.end_date || '',
+        r.days_count ?? '', r.status || '', r.approved_by_name || '',
+      ]);
+    } else if (activeTab === 'overview') {
+      name = 'timesheets';
+      header = ['Employee', 'Department', 'Days', 'Regular', 'Overtime', 'Total', 'Load %'];
+      body = sortedRows.map((r) => [
+        r.name, r.departmentLabel, r.days, fmt1(r.regular), fmt1(r.overtime), fmt1(r.total),
+        Math.round(r.load * 100),
+      ]);
+    } else {
+      name = 'timesheet-detail';
+      header = ['Date', 'Employee', 'Clock in', 'Clock out', 'Hour type', 'Hours'];
+      body = attendanceRecords.map((r) => [
+        r.date || '', selectedEmployeeName, r.clock_in || r.clockIn || '',
+        r.clock_out || r.clockOut || '', r.hour_type || r.hourType || '', r.hours ?? '',
+      ]);
     }
+
+    // BOM so Excel reads the Vietnamese names as UTF-8.
+    const csv = '\ufeff' + [header, ...body].map((row) => row.map(csvCell).join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${name}-${selectedYear}-${String(selectedMonth).padStart(2, '0')}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    setSuccessMessage(t('timeTracking.exportSuccess', 'Report exported successfully!'));
+    setTimeout(() => setSuccessMessage(''), 3000);
+  }, [activeTab, sortedLeaveRequests, sortedRows, attendanceRecords, selectedEmployeeName, selectedMonth, selectedYear, t]);
+
+  // ---------------------------------------------------------------- style
+
+  const hasRealData = orgRows.length > 0 || attendanceRecords.length > 0;
+
+  /** `edge` drops the outer padding so the first and last columns sit flush. */
+  const th = (align = 'left', edge) => ({
+    textAlign: align,
+    paddingTop: 0,
+    paddingBottom: 7,
+    paddingLeft: edge === 'first' ? 0 : 8,
+    paddingRight: edge === 'last' ? 0 : 8,
+    borderBottom: `1px solid ${ind.hairline}`,
+    fontFamily: DISPLAY,
+    fontWeight: 600,
+    fontSize: 10,
+    letterSpacing: '.12em',
+    textTransform: 'uppercase',
+    color: ind.inkMuted,
+    whiteSpace: 'nowrap',
+  });
+
+  const sortCaret = (key) => (sortKey === key ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : '');
+
+  const tabOptions = [
+    { value: 'summary', label: t('timeTracking.summary', 'Summary') },
+    ...(canViewOverview
+      ? [
+          { value: 'overview', label: t('timeTracking.overview', 'Overview') },
+          { value: 'leaveRequests', label: t('timeTracking.leaveRequests', 'Leave requests') },
+        ]
+      : []),
+  ];
+
+  const chartLabels = {
+    regular: t('timeTracking.regularHours', 'Regular Hours'),
+    overtime: t('timeTracking.overtime', 'Overtime'),
+    load: t('timeTracking.load', 'Load'),
+    ofContract: t('timeTracking.ofContract', 'of'),
   };
-
-
-  const hasOvertimeHours = useMemo(
-    () => allEmployeesData.some((item) =>
-      (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0) > 0
-    ),
-    [allEmployeesData]
-  );
-
-  const topRegularHourEmployees = useMemo(() => (
-    [...overviewChartStats.withData]
-      .sort((a, b) => (b.data?.regular_hours || 0) - (a.data?.regular_hours || 0))
-      .slice(0, 10)
-  ), [overviewChartStats.withData]);
-
-  const topOvertimeEmployees = useMemo(() => (
-    [...overviewChartStats.withData]
-      .sort((a, b) => {
-        const aTotal = (a.data?.overtime_hours || 0) + (a.data?.holiday_overtime_hours || 0);
-        const bTotal = (b.data?.overtime_hours || 0) + (b.data?.holiday_overtime_hours || 0);
-        return bTotal - aTotal;
-      })
-      .slice(0, 10)
-  ), [overviewChartStats.withData]);
 
   return (
-    <div className="space-y-4 md:space-y-6 px-2 sm:px-0">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3 flex-wrap">
-          <h2 className={`font-bold ${text.primary}`} style={{fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'}}>{t('timeTracking.title')}</h2>
-          <PageLiveClock
-            textClassName={text.primary}
-            separatorClassName={text.secondary}
-            loading={loading}
-            isDarkMode={isDarkMode}
-            fetchLabel={t('common.fetching', 'Fetching')}
+    <div
+      style={{
+        border: `1px solid ${ind.hairline}`,
+        background: ind.ground,
+        color: ind.ink,
+        fontFamily: BODY,
+        fontSize: 14,
+        borderRadius: 0,
+      }}
+    >
+      {/* ── TICKER — replaces metric cards. Never both. ───────────────── */}
+      <div
+        style={{
+          height: 44,
+          background: ind.tickerBg,
+          color: ind.tickerInk,
+          borderBottom: `1px solid ${ind.hairline}`,
+          display: 'flex',
+          alignItems: 'stretch',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+        }}
+      >
+        <TickerCell ind={ind} title={hasRealData ? t('dashboard.liveData', 'Live data from Supabase') : t('dashboard.noData', 'No time tracking data yet')}>
+          <LiveClock ind={ind} live={hasRealData} />
+        </TickerCell>
+
+        <TickerCell
+          ind={ind}
+          label={t('timeTracking.workDays', 'Work Days')}
+          value={workingDays}
+          title={t('timeTracking.workingDaysInPeriod', 'Working days in this period')}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('timeTracking.regularHours', 'Regular')}
+          value={fmtHours(canViewOverview ? orgTotals.regular : currentData.regular_hours)}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('timeTracking.overtime', 'Overtime')}
+          value={fmtHours(canViewOverview ? orgTotals.overtime : ownOvertime)}
+          delta={canViewOverview && prevOvertime != null
+            ? Math.abs(Math.round(orgTotals.overtime - prevOvertime)) || null
+            : null}
+          deltaDirection={canViewOverview && prevOvertime != null && orgTotals.overtime >= prevOvertime ? 'up' : 'down'}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('timeTracking.leaveDays', 'Leave')}
+          value={`${Math.round(canViewOverview ? orgTotals.leaveDays : calculatedLeaveDays)}d`}
+        />
+        {canViewOverview && attendance && (
+          <TickerCell
+            ind={ind}
+            label={t('timeTracking.onTime', 'On time')}
+            value={`${attendance.onTimeRate.toFixed(1)}%`}
+            title={t('timeTracking.onTimeThisWeek', 'On-time arrivals this week')}
           />
-        </div>
-       
-        <div className="flex space-x-4">
-          {/* Employee Selector */}
-          <select
-            value={selectedEmployee || ''}
-            onChange={(e) => setSelectedEmployee(String(e.target.value))}
-            className={`${input.bg} ${input.text} px-4 py-2 border ${input.border} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${isDarkMode ? 'hover:bg-gray-500 hover:border-amber-50' : 'hover:bg-gray-100 hover:border-amber-800'}`}
-          >
-            {employees.map(employee => (
-              <option key={employee.id} value={String(employee.id)}>
-                {getDemoEmployeeName(employee, t)}
-              </option>
-            ))}
-          </select>
+        )}
+        {canViewOverview && (
+          <TickerCell
+            ind={ind}
+            label={t('timeTracking.missingPunch', 'Missing punch')}
+            value={missingPunch.rows.length}
+            // The one number on the strip that needs action.
+            valueColor={missingPunch.rows.length > 0 ? ind.tickerUp : undefined}
+            onClick={missingPunch.rows.length > 0 ? () => openException('missingPunch') : undefined}
+            title={t('timeTracking.missingPunchOut', 'Missing punch-out')}
+          />
+        )}
 
-          {/* Month Selector */}
-          <select
+        {/* Period picker — pushed right with flex:1 and a left hairline. */}
+        <div
+          style={{
+            flex: 1,
+            minWidth: 'max-content',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 8,
+            padding: '0 14px',
+            borderLeft: `1px solid ${ind.tickerRule}`,
+          }}
+        >
+          <FetchElapsedPill active={loading || overviewLoading} isDarkMode label={t('common.fetching', 'Fetching')} />
+          <FlatSelect
+            ind={ind}
+            onDark
             value={selectedMonth}
-            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-            className={`${input.bg} ${input.text} px-4 py-2 border ${input.border} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${isDarkMode ? 'hover:bg-gray-500 hover:border-amber-50' : 'hover:bg-gray-100 hover:border-amber-800'}`}
+            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+            aria-label={t('dashboard.currentMonth', 'Month')}
           >
-            {months.map((month, index) => (
-              <option key={index + 1} value={index + 1}>
-                {month}
-              </option>
+            {monthNames.map((month, i) => (
+              <option key={month} value={i + 1} style={{ color: '#1d1f20' }}>{month}</option>
             ))}
-          </select>
-
-          {/* Year Selector */}
-          <select
+          </FlatSelect>
+          <FlatSelect
+            ind={ind}
+            onDark
             value={selectedYear}
-            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-            className={`${input.bg} ${input.text} px-4 py-2 border ${input.border} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${isDarkMode ? 'hover:bg-gray-500 hover:border-amber-50' : 'hover:bg-gray-100 hover:border-amber-800'}`}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            aria-label="Year"
           >
-            {years.map(year => (
-              <option key={year} value={year}>
-                {year}
-              </option>
+            {years.map((y) => (
+              <option key={y} value={y} style={{ color: '#1d1f20' }}>{y}</option>
             ))}
-          </select>
+          </FlatSelect>
+          <button
+            type="button"
+            onClick={() => { overviewCacheRef.current = { key: '', data: [] }; fetchTimeTrackingData(); fetchOrgSummaries(); fetchOrgEntries(); }}
+            title={t('common.refresh', 'Refresh')}
+            aria-label={t('common.refresh', 'Refresh')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 26, height: 26, flex: 'none',
+              border: `1px solid ${ind.tickerRule}`, borderRadius: 0,
+              background: 'transparent', color: ind.tickerInk, cursor: 'pointer',
+            }}
+          >
+            <RefreshCw size={13} strokeWidth={1.5} className={loading || overviewLoading ? 'animate-spin' : undefined} />
+          </button>
         </div>
       </div>
 
-      {/* Error Banner */}
-      {fetchError && (
-        <div className={`${isDarkMode ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-300'} rounded-lg border p-4 flex items-start space-x-3 slide-in-top`}>
-          <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'} shrink-0 mt-0.5`} />
-          <div className="flex-1">
-            <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-red-400' : 'text-red-800'}`}>
-              {t('common.error', 'Error')}
-            </h3>
-            <p className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-700'} mt-1`}>
-              {fetchError}
-            </p>
-            <button
-              onClick={() => {
-                setFetchError(null);
-                fetchTimeTrackingData();
-              }}
-              className={`mt-2 text-xs font-medium ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} underline`}
-            >
-              {t('common.retry', 'Try Again')}
-            </button>
+      {/* ── BANDS ─────────────────────────────────────────────────────── */}
+      <div className="flex flex-col lg:flex-row items-stretch">
+
+        {/* ── MAIN ───────────────────────────────────────────────────── */}
+        <div
+          className="flex-1 min-w-0 flex flex-col"
+          style={{
+            padding: 24,
+            gap: 18,
+            borderRight: canViewOverview ? `1px solid ${ind.hairline}` : 'none',
+          }}
+        >
+          {/* Error banner */}
+          {fetchError && (
+            <div style={{ border: `1px solid ${ind.ink}`, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <AlertCircle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Kicker ind={ind} color={ind.ink}>{t('common.error', 'Error')}</Kicker>
+                <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 4 }}>{fetchError}</p>
+                <button
+                  type="button"
+                  onClick={() => { setFetchError(null); fetchTimeTrackingData(); }}
+                  style={{
+                    marginTop: 8, background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                    fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5, letterSpacing: '.08em',
+                    textTransform: 'uppercase', color: ind.accentDeep, textDecoration: 'underline',
+                  }}
+                >
+                  {t('common.retry', 'Try Again')}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFetchError(null)}
+                aria-label={t('common.close', 'Close')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0, flex: 'none' }}
+              >
+                <X size={15} strokeWidth={1.5} />
+              </button>
+            </div>
+          )}
+
+          {/* 3 — Page head */}
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div style={{ minWidth: 0 }}>
+              <h1
+                style={{
+                  fontFamily: DISPLAY, fontWeight: 600, fontSize: 32, lineHeight: 1.05,
+                  letterSpacing: '.02em', textTransform: 'uppercase', color: ind.ink, margin: 0,
+                }}
+              >
+                {t('nav.timeTracking', 'Time Tracking')}
+              </h1>
+              <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 6 }}>
+                {canViewOverview
+                  ? `${employees.length} ${t('timeTracking.employeesLower', 'employees')}`
+                  : selectedEmployeeName}
+                {' · '}
+                {workingDays} {t('timeTracking.workingDaysLower', 'working days')}
+                {' · '}
+                {t('timeTracking.contractLower', 'contract')} {CONTRACT_HOURS_PER_DAY}h/{t('timeTracking.dayShort', 'day')}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {tabOptions.length > 1 && (
+                <Seg
+                  ind={ind}
+                  options={tabOptions}
+                  value={activeTab}
+                  onChange={setActiveTab}
+                  ariaLabel={t('timeTracking.view', 'View')}
+                />
+              )}
+              <Btn ind={ind} onClick={handleExport} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Download size={13} strokeWidth={1.5} />
+                {t('common.export', 'Export')}
+              </Btn>
+            </div>
           </div>
-          <button
-            onClick={() => setFetchError(null)}
-            className={`${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} transition-colors text-xl font-bold leading-none`}
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-      )}
 
-      {/* Time Tracking Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <TimeCard
-          title={t('timeTracking.workDays')}
-          value={currentData.days_worked || 0}
-          unit={t('timeTracking.days')}
-          icon={Calendar}
-          color={isDarkMode ? "text-white" : "text-black"}
-          text={text}
-          border={border}
-          isDarkMode={isDarkMode}
-          customIcons={CUSTOM_ICONS}
-        />
-        <TimeCard
-          title={t('timeTracking.leaveDays')}
-          value={calculatedLeaveDays.toFixed(0)}
-          unit={t('timeTracking.days')}
-          icon={AnimatedCoffeeIcon}
-          useDarkIcon
-          color={isDarkMode ? "text-white" : "text-black"}
-          text={text}
-          border={border}
-          isDarkMode={isDarkMode}
-          customIcons={CUSTOM_ICONS}
-        />
-        <TimeCard
-          title={t('timeTracking.overtime')}
-          value={(currentData.overtime_hours || 0) + (currentData.holiday_overtime_hours || 0)}
-          unit={t('timeTracking.hours')}
-          icon={AnimatedClockIcon}
-          color={isDarkMode ? "text-white" : "text-black"}
-          text={text}
-          border={border}
-          isDarkMode={isDarkMode}
-          customIcons={CUSTOM_ICONS}
-        />
-      </div>
+          {/* 4 — Load against contract */}
+          {activeTab === 'overview' && canViewOverview && (
+            <Blueprint ind={ind} style={{ padding: '16px 20px 14px' }}>
+              <div className="flex flex-wrap items-start justify-between" style={{ gap: 12 }}>
+                <div style={{ minWidth: 0 }}>
+                  <Kicker ind={ind}>
+                    {`${t('timeTracking.loadAgainstContract', 'Load against contract')} — ${contractHours}h ${t('timeTracking.monthLower', 'month')}`}
+                  </Kicker>
+                  <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 6 }}>
+                    {t('timeTracking.everyEmployee', 'Every employee, sorted by total hours. Dashed line is the contract.')}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: 14, flex: 'none' }}>
+                  {[
+                    { label: t('timeTracking.regularHours', 'Regular'), color: ind.accent },
+                    { label: t('timeTracking.overtime', 'Overtime'), color: heavyInk },
+                  ].map((entry) => (
+                    <span key={entry.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <span aria-hidden="true" style={{ width: 9, height: 9, background: entry.color, flex: 'none' }} />
+                      <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>{entry.label}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
 
-      {/* Tab Navigation */}
-      <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-2`}>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setActiveTab('summary')}
-            className={`flex-1 px-4 py-2 rounded-lg transition-colors cursor-pointer flex items-center justify-center space-x-2 ${
-              activeTab === 'summary'
-                ? 'bg-blue-600 text-white'
-                : `${text.secondary} hover:${bg.primary}`
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            <span>{t('timeTracking.summary', 'Summary')}</span>
-          </button>
-          {/* Only show overview tab for admin/manager */}
-          {canViewOverview && (
+              <div style={{ height: 196, marginTop: 14 }}>
+                {chartRows.length === 0 ? (
+                  <div style={{ height: '100%', display: 'flex', alignItems: 'center', fontFamily: BODY, fontSize: 13, color: ind.inkMuted }}>
+                    {overviewLoading ? t('common.loading', 'Loading…') : t('dashboard.noData', 'No data available')}
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartRows} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap="12%">
+                      <XAxis dataKey="name" hide />
+                      <YAxis hide domain={[0, (max) => Math.max(max, contractHours * 1.1)]} />
+                      <Tooltip
+                        cursor={{ fill: ind.hover }}
+                        content={({ active, payload }) => (
+                          <IndustryTooltip
+                            ind={ind}
+                            active={active}
+                            payload={payload}
+                            contractHours={contractHours}
+                            labels={chartLabels}
+                          />
+                        )}
+                      />
+                      <RBar dataKey="regular" name={chartLabels.regular} stackId="load" fill={ind.accent} isAnimationActive={false} />
+                      <RBar dataKey="overtime" name={chartLabels.overtime} stackId="load" fill={heavyInk} isAnimationActive={false} />
+                      <ReferenceLine y={contractHours} stroke={ind.accent} strokeDasharray="4 3" strokeWidth={1} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+
+              <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 10 }}>
+                {t('timeTracking.loadCaption', '{over} of {total} employees finished above the {contract}h contract; overtime is the segment stacked on top.')
+                  .replace('{over}', String(overContractCount))
+                  .replace('{total}', String(orgRows.length))
+                  .replace('{contract}', String(contractHours))}
+              </p>
+            </Blueprint>
+          )}
+
+          {/* 5 — Timesheets */}
+          {activeTab === 'overview' && canViewOverview && (
+            <Blueprint ind={ind}>
+              <div
+                className="flex flex-wrap items-center justify-between"
+                style={{ gap: 12, padding: '14px 20px', borderBottom: `1px solid ${ind.hairline}` }}
+              >
+                <Kicker ind={ind}>{`${t('timeTracking.timesheets', 'Timesheets')} · ${periodLabel}`}</Kicker>
+
+                <div className="flex flex-wrap items-center" style={{ gap: 10 }}>
+                  {exceptionFilter && (
+                    <button
+                      type="button"
+                      onClick={() => setExceptionFilter(null)}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        border: `1px solid ${ind.ink}`, borderRadius: 0, background: 'transparent',
+                        padding: '3px 8px', cursor: 'pointer',
+                        fontFamily: DISPLAY, fontWeight: 600, fontSize: 10.5, letterSpacing: '.1em',
+                        textTransform: 'uppercase', color: ind.ink,
+                      }}
+                    >
+                      {t(`timeTracking.filter.${exceptionFilter}`, exceptionFilter)}
+                      <X size={11} strokeWidth={2} />
+                    </button>
+                  )}
+
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1px solid ${ind.hairline}`, padding: '3px 8px' }}>
+                    <Search size={13} strokeWidth={1.5} style={{ color: ind.inkMuted, flex: 'none' }} />
+                    <input
+                      value={tableQuery}
+                      onChange={(e) => setTableQuery(e.target.value)}
+                      placeholder={t('common.filter', 'Filter')}
+                      aria-label={t('common.filter', 'Filter')}
+                      style={{
+                        border: 'none', outline: 'none', background: 'transparent', color: ind.ink,
+                        fontFamily: BODY, fontSize: 12.5, width: 110, padding: 0,
+                      }}
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowAllRows((v) => !v)}
+                    style={{
+                      background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                      fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5, letterSpacing: '.08em',
+                      textTransform: 'uppercase', color: ind.accentDeep, whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {showAllRows
+                      ? `${t('timeTracking.topTen', 'Top 10')} ←`
+                      : `${t('common.all', 'All')} ${sortedRows.length} →`}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ padding: '10px 20px 16px' }}>
+                <TableScroll>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: BODY, fontSize: 13 }}>
+                    <thead>
+                      <tr>
+                        <th style={th('left', 'first')} onClick={() => handleSort('employee')} className="cursor-pointer select-none">
+                          {t('timeTracking.employee', 'Employee')}{sortCaret('employee')}
+                        </th>
+                        <th style={th('left')} onClick={() => handleSort('department')} className={cn(COL.md, 'cursor-pointer select-none')}>
+                          {t('employees.department', 'Department')}{sortCaret('department')}
+                        </th>
+                        <th style={th('right')} onClick={() => handleSort('days_worked')} className={cn(COL.md, 'cursor-pointer select-none')}>
+                          {t('timeTracking.daysShort', 'Days')}{sortCaret('days_worked')}
+                        </th>
+                        <th style={th('right')} onClick={() => handleSort('regular_hours')} className={cn(COL.lg, 'cursor-pointer select-none')}>
+                          {t('timeTracking.regularShort', 'Regular')}{sortCaret('regular_hours')}
+                        </th>
+                        <th style={th('right')} onClick={() => handleSort('overtime')} className={cn(COL.lg, 'cursor-pointer select-none')}>
+                          {t('timeTracking.overtimeShort', 'Overtime')}{sortCaret('overtime')}
+                        </th>
+                        <th style={th('right')} onClick={() => handleSort('total_hours')} className="cursor-pointer select-none">
+                          {t('timeTracking.totalShort', 'Total')}{sortCaret('total_hours')}
+                        </th>
+                        <th style={{ ...th('left', 'last'), width: 132, paddingLeft: 14 }} onClick={() => handleSort('load')} className="cursor-pointer select-none">
+                          {t('timeTracking.load', 'Load')}{sortCaret('load')}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibleRows.length === 0 && (
+                        <tr>
+                          <td colSpan={7} style={{ padding: '18px 0', color: ind.inkMuted }}>
+                            {overviewLoading ? t('common.loading', 'Loading…') : t('timeTracking.noRecords', 'No records for this period')}
+                          </td>
+                        </tr>
+                      )}
+                      {visibleRows.map((row) => {
+                        const loadPct = Math.round(row.load * 100);
+                        // Three bands, read in this order: over the overtime cap
+                        // is the loudest, then at/near contract, then under.
+                        const fill = row.overtime > overtimeCap
+                          ? heavyInk
+                          : row.load >= 0.98 ? ind.accent : lightSteel;
+                        const materialOvertime = row.overtime >= MATERIAL_OVERTIME_H;
+
+                        return (
+                          <tr key={row.id} style={{ borderBottom: `1px solid ${ind.rule}` }}>
+                            <td style={{ padding: '9px 8px 9px 0', color: ind.ink, minWidth: 0 }}>
+                              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.name}</div>
+                              {/* Stand-ins for the columns this viewport has dropped */}
+                              <StackedDetail showUntil="md" label={t('employees.department', 'Department')} value={row.departmentLabel} />
+                              <StackedDetail showUntil="md" label={t('timeTracking.daysShort', 'Days')} value={row.days} />
+                              <StackedDetail showUntil="lg" label={t('timeTracking.regularShort', 'Regular')} value={fmt1(row.regular)} />
+                              <StackedDetail showUntil="lg" label={t('timeTracking.overtimeShort', 'Overtime')} value={fmt1(row.overtime)} />
+                            </td>
+                            <td className={COL.md} style={{ padding: '9px 8px', color: ind.inkMuted, whiteSpace: 'nowrap' }}>
+                              {row.departmentLabel}
+                            </td>
+                            <td className={COL.md} style={{ padding: '9px 8px', textAlign: 'right', ...figure(13, ind.inkMuted) }}>
+                              {row.days}
+                            </td>
+                            <td className={COL.lg} style={{ padding: '9px 8px', textAlign: 'right', ...figure(13, ind.inkMuted) }}>
+                              {fmt1(row.regular)}
+                            </td>
+                            <td
+                              className={COL.lg}
+                              style={{
+                                padding: '9px 8px',
+                                textAlign: 'right',
+                                ...figure(13, materialOvertime ? ind.ink : ind.inkMuted),
+                                fontWeight: materialOvertime ? 700 : 600,
+                              }}
+                            >
+                              {fmt1(row.overtime)}
+                            </td>
+                            <td style={{ padding: '9px 8px', textAlign: 'right', ...figure(14, ind.ink) }}>
+                              {fmt1(row.total)}
+                            </td>
+                            <td style={{ padding: '9px 0 9px 14px', width: 132 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{ flex: 1, minWidth: 40 }}>
+                                  <Bar
+                                    ind={ind}
+                                    value={row.load * CONTRACT_TICK}
+                                    fill={fill}
+                                    marker={CONTRACT_TICK}
+                                    height={9}
+                                    title={`${fmt1(row.total)}h / ${contractHours}h`}
+                                  />
+                                </div>
+                                <span style={{ ...figure(12.5, ind.ink), width: 30, textAlign: 'right', flex: 'none' }}>
+                                  {loadPct}%
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </TableScroll>
+              </div>
+            </Blueprint>
+          )}
+
+          {/* Summary — one employee, the period in full */}
+          {activeTab === 'summary' && (
             <>
-              <button
-                onClick={() => setActiveTab('overview')}
-                className={`flex-1 px-4 py-2 rounded-lg cursor-pointer transition-colors flex items-center justify-center space-x-2 ${
-                  activeTab === 'overview'
-                    ? 'bg-blue-600 text-white'
-                    : `${text.secondary} hover:${bg.primary}`
-                }`}
-              >
-                <Users className="w-4 h-4" />
-                <span>{t('timeTracking.overview', 'Overview')}</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('leaveRequests')}
-                className={`flex-1 px-4 py-2 cursor-pointer rounded-lg transition-colors flex items-center justify-center space-x-2 ${
-                  activeTab === 'leaveRequests'
-                    ? 'bg-blue-600 text-white'
-                    : `${text.secondary} hover:${bg.primary}`
-                }`}
-              >
-                <Coffee className="w-4 h-4" />
-                <span>{t('timeTracking.leaveRequests', 'Leave Request Management')}</span>
-              </button>
+              <Blueprint ind={ind} style={{ padding: '16px 20px 18px' }}>
+                <div className="flex flex-wrap items-center justify-between" style={{ gap: 12 }}>
+                  <Kicker ind={ind}>{`${t('timeTracking.summary', 'Summary')} · ${periodLabel}`}</Kicker>
+                  <div className="flex items-center" style={{ gap: 10 }}>
+                    <FlatSelect
+                      ind={ind}
+                      value={selectedEmployee || ''}
+                      onChange={(e) => setSelectedEmployee(String(e.target.value))}
+                      aria-label={t('timeTracking.employee', 'Employee')}
+                    >
+                      {employees.map((employee) => (
+                        <option key={employee.id} value={String(employee.id)}>
+                          {getDemoEmployeeName(employee, t)}
+                        </option>
+                      ))}
+                    </FlatSelect>
+                    <Btn ind={ind} variant="primary" onClick={() => setShowLeaveModal(true)}>
+                      {t('timeTracking.requestLeave', 'Request Leave')}
+                    </Btn>
+                  </div>
+                </div>
+
+                <div
+                  className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6"
+                  style={{ gap: 18, marginTop: 18 }}
+                >
+                  {[
+                    { label: t('timeTracking.regularHours', 'Regular Hours'), value: fmt1(currentData.regular_hours), unit: 'h' },
+                    { label: t('timeTracking.overtimeHours', 'Overtime Hours'), value: fmt1(ownOvertime), unit: 'h' },
+                    { label: t('timeTracking.totalHours', 'Total Hours'), value: fmt1(currentData.total_hours), unit: 'h' },
+                    { label: t('timeTracking.workDays', 'Work Days'), value: currentData.days_worked || 0, unit: 'd' },
+                    { label: t('timeTracking.leaveDays', 'Leave Days'), value: fmt1(calculatedLeaveDays), unit: 'd', note: t('timeTracking.includesPending', '*incl. pending') },
+                    { label: t('timeTracking.load', 'Load'), value: contractHours > 0 ? Math.round(((currentData.total_hours || 0) / contractHours) * 100) : 0, unit: '%' },
+                  ].map((item) => (
+                    <div key={item.label} style={{ minWidth: 0 }}>
+                      <Kicker ind={ind} color={ind.inkMuted}>{item.label}</Kicker>
+                      <div style={{ ...figure(30, ind.ink), marginTop: 7 }}>
+                        {item.value}
+                        <span style={{ ...figure(15, ind.inkMuted), marginLeft: 2 }}>{item.unit}</span>
+                      </div>
+                      {item.note && (
+                        <div style={{ fontFamily: BODY, fontSize: 11, color: ind.inkFaint, marginTop: 4 }}>{item.note}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </Blueprint>
+
+              <Blueprint ind={ind}>
+                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${ind.hairline}` }}>
+                  <Kicker ind={ind}>{t('timeTracking.detailedBreakdown', 'Detailed Breakdown')}</Kicker>
+                </div>
+                <div style={{ padding: '10px 20px 16px' }}>
+                  <TableScroll>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: BODY, fontSize: 13 }}>
+                      <thead>
+                        <tr>
+                          <th style={th('left', 'first')}>{t('timeTracking.date', 'Date')}</th>
+                          <th style={th('left')} className={COL.lg}>{t('timeTracking.employee', 'Employee')}</th>
+                          <th style={th('left')} className={COL.md}>{t('timeTracking.time', 'Time')}</th>
+                          <th style={th('left')}>{t('timeTracking.hourType', 'Hour Type')}</th>
+                          <th style={th('right', 'last')}>{t('timeTracking.totalHours', 'Hours')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {attendanceRecords.length === 0 && (
+                          <tr>
+                            <td colSpan={5} style={{ padding: '18px 0', color: ind.inkMuted }}>
+                              {t('timeTracking.noRecords', 'No attendance records found for this period')}
+                            </td>
+                          </tr>
+                        )}
+                        {attendanceRecords.map((record, index) => {
+                          const hourType = record.hour_type || record.hourType || 'regular';
+                          const range = LEAVE_TYPES.has(hourType)
+                            ? '—'
+                            : `${record.clock_in || record.clockIn || '—'} – ${record.clock_out || record.clockOut || '—'}`;
+
+                          return (
+                            <tr key={record.id || index} style={{ borderBottom: `1px solid ${ind.rule}` }}>
+                              <td style={{ padding: '9px 8px 9px 0', color: ind.ink, whiteSpace: 'nowrap' }}>
+                                {record.date || (record.created_at ? new Date(record.created_at).toLocaleDateString() : '—')}
+                                {/* Stand-ins for the columns this viewport has dropped */}
+                                <StackedDetail showUntil="md" label={t('timeTracking.time', 'Time')} value={range} />
+                                <StackedDetail showUntil="lg" label={t('timeTracking.employee', 'Employee')} value={selectedEmployeeName} />
+                              </td>
+                              <td className={COL.lg} style={{ padding: '9px 8px', color: ind.inkMuted }}>{selectedEmployeeName}</td>
+                              <td className={COL.md} style={{ padding: '9px 8px', ...figure(13, ind.inkMuted) }}>{range}</td>
+                              <td style={{ padding: '9px 8px' }}>
+                                <Tag ind={ind} variant={OVERTIME_TYPES.has(hourType) ? 'outline' : 'neutral'}>
+                                  {t(`timeTracking.${hourType}`, hourType)}
+                                </Tag>
+                              </td>
+                              <td style={{ padding: '9px 0 9px 8px', textAlign: 'right', ...figure(14, ind.ink) }}>
+                                {fmt1(record.hours)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td colSpan={4} style={{ padding: '10px 8px 0 0', textAlign: 'right', fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, borderTop: `1px solid ${ind.hairline}` }}>
+                            {`${attendanceRecords.length} ${t('timeTracking.days', 'days')} · ${t('timeTracking.totalHours', 'Total Hours')}`}
+                          </td>
+                          <td style={{ padding: '10px 0 0 8px', textAlign: 'right', ...figure(16, ind.ink), borderTop: `1px solid ${ind.hairline}` }}>
+                            {fmt1(currentData.total_hours)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </TableScroll>
+                </div>
+              </Blueprint>
             </>
           )}
-        </div>
-      </div>
 
-    {/* Summary Tab */}
-    {activeTab === 'summary' && (
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
-          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-            {t('timeTracking.summary', `Summary for ${employees.find(emp => String(emp.id) === selectedEmployee)?.name} - ${getMonthName(selectedMonth)} ${selectedYear}`)}
-          </h3>
-          
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(380px,1fr))] gap-6">
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className={`${text.secondary} mr-12`}>{t('timeTracking.regularHours')}:</span>
-                <span className={`font-medium ${text.primary}`}>{currentData.regular_hours || 0} {t('timeTracking.hrs')}</span>
+          {/* Leave requests */}
+          {activeTab === 'leaveRequests' && canViewOverview && (
+            <Blueprint ind={ind}>
+              <div style={{ padding: '14px 20px', borderBottom: `1px solid ${ind.hairline}` }}>
+                <Kicker ind={ind}>{t('timeTracking.leaveRequestManagement', 'Leave Request Management')}</Kicker>
               </div>
-              <div className="flex justify-between">
-                <span className={`${text.secondary} mr-12`}>{t('timeTracking.overtimeHours')}:</span>
-                <span className={`font-medium ${text.primary}`}>
-                  {((currentData.overtime_hours || 0) + (currentData.holiday_overtime_hours || 0)).toFixed(1)} {t('timeTracking.hrs')}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className={`${text.secondary} mr-12`}>{t('timeTracking.totalHours')}:</span>
-                <span className={`font-medium ${text.primary}`}>{parseFloat(currentData.total_hours || 0).toFixed(1)} {t('timeTracking.hrs')}</span>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className={`${text.secondary} ml-12`}>{t('timeTracking.workDays')}:</span>
-                <span className={`font-medium ${text.primary}`}>{currentData.days_worked || 0} {t('timeTracking.days')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className={`${text.secondary} ml-12`}>{t('timeTracking.leaveDays')}:</span>
-                <span className={`font-medium ${text.primary}`}>
-                  {calculatedLeaveDays.toFixed(1)} {t('timeTracking.days')}
-                  <span className="text-xs text-gray-500 ml-1">({t('timeTracking.includesPending', '*incl. pending')})</span>
-                </span>
-              </div>
-              <div className={`flex justify-between border-t ${border.primary} pt-3`}>
-                <span className={`${text.primary} font-semibold ml-12`}>{t('timeTracking.attendanceRate')}:</span>
-                <span className={`font-bold ${text.primary}`}>
-                  {(currentData.attendance_rate || 0).toFixed(1)}%
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Detailed Breakdown Table */}
-          <div className="mt-8">
-            <h4 className={`text-md font-semibold ${text.primary} mb-4`}>
-              {t('timeTracking.detailedBreakdown', 'Detailed Breakdown')}
-            </h4>
-            
-            <TableScroll>
-              <table className={`w-full border ${border.primary}`}>
-                <thead className={`${bg.tertiary}`}>
-                  <tr>
-                    <th className={`${text.primary} py-3 px-4 text-center font-semibold border-b ${border.primary}`}>
-                      {t('timeTracking.date', 'Date')}
-                    </th>
-                    <th className={cn(COL.lg, `${text.primary} py-3 px-4 text-center font-semibold border-b ${border.primary}`)}>
-                      {t('timeTracking.employee', 'Employee')}
-                    </th>
-                    <th className={cn(COL.md, `${text.primary} py-3 px-4 text-center font-semibold border-b ${border.primary}`)}>
-                      {t('timeTracking.time', 'Hours Worked')}
-                    </th>
-                    <th className={`${text.primary} py-3 px-4 text-center font-semibold border-b ${border.primary}`}>
-                      {t('timeTracking.hourType', 'Hour Type')}
-                    </th>
-                    <th className={`${text.primary} py-3 px-4 text-right font-semibold border-b ${border.primary}`}>
-                      {t('timeTracking.totalHours', 'Total Hours')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {attendanceRecords && attendanceRecords.length > 0 ? (
-                    attendanceRecords.map((record, index) => {
-                      const recordEmployeeName = record.employee_name
-                        || employees.find(emp => String(emp.id) === String(record.employee_id))?.name
-                        || employees.find(emp => String(emp.id) === selectedEmployee)?.name
-                        || '-';
-                      const recordClockRange = (record.hour_type === 'on_leave' || record.hourType === 'on_leave')
-                        ? '-'
-                        : `${record.clock_in || record.clockIn} - ${record.clock_out || record.clockOut}`;
-
-                      return (
-                      <tr key={record.id || index} className={`border-b ${border.primary} ${isDarkMode ? 'hover:bg-blue-700' : 'hover:bg-amber-100'} group cursor-pointer transition-colors`}>
-                        <td className={`p-3 ${text.primary} text-center font-medium`}>
-                            {record.date || (record.created_at ? new Date(record.created_at).toLocaleDateString() : '-')}
-                            {/* Stand-ins for the columns this viewport has dropped */}
-                            <StackedDetail showUntil="md" label={t('timeTracking.time', 'Hours Worked')} value={recordClockRange} />
-                            <StackedDetail showUntil="lg" label={t('timeTracking.employee', 'Employee')} value={recordEmployeeName} />
-                          </td>
-                        <td className={cn(COL.lg, `p-3 ${text.primary} text-center font-medium`)}>
-                            {recordEmployeeName}
-                        </td>
-                        <td className={cn(COL.md, `p-3 text-center ${text.secondary}`)}>
-                            {recordClockRange}
-                        </td>
-                        <td className={`${text.primary} py-3 px-4 text-center`}>
-                          <span className={`inline-flex items-center px-2 py-1 text-xs font-medium ${
-                            (record.hour_type || record.hourType) === 'regular' ? (isDarkMode ? 'bg-blue-900/30 text-blue-400 group-hover:text-white' : 'bg-blue-200 text-blue-900 group-hover:text-black')  :
-                            (record.hour_type || record.hourType) === 'holiday' ? (isDarkMode ? 'bg-purple-900/30 text-purple-400 group-hover:text-white' : 'bg-purple-200 text-purple-900 group-hover:text-black') :
-                            (record.hour_type || record.hourType) === 'weekend' ? (isDarkMode ? 'bg-green-900/30 text-green-400 group-hover:text-white' : 'bg-green-200 text-green-900 group-hover:text-black') :
-                            (record.hour_type || record.hourType) === 'on_leave' ? (isDarkMode ? 'bg-orange-900/30 text-orange-400 group-hover:text-white' : 'bg-orange-200 text-orange-900 group-hover:text-black') :
-                            (isDarkMode ? 'bg-yellow-900/30 text-yellow-400 group-hover:text-white' : 'bg-yellow-200 text-yellow-900 group-hover:text-black')
-                          }`}>
-                            {t(`timeTracking.${record.hour_type || 'regular'}`, record.hour_type || 'regular')}
-                          </span>
-                        </td>
-                        <td className={`p-3 text-center ${text.primary} font-semibold`}>
-                          {record.hours} {t('timeClock.hrs')}
-                        </td>
+              <div style={{ padding: '10px 20px 16px' }}>
+                <TableScroll>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: BODY, fontSize: 13 }}>
+                    <thead>
+                      <tr>
+                        <th style={th('left', 'first')} onClick={() => handleLeaveSort('requested_by')} className="cursor-pointer select-none">
+                          {t('timeTracking.requestedBy', 'Requested By')}
+                        </th>
+                        <th style={th('left')} onClick={() => handleLeaveSort('leave_type')} className={cn(COL.md, 'cursor-pointer select-none')}>
+                          {t('timeTracking.leaveType', 'Leave Type')}
+                        </th>
+                        <th style={th('left')} onClick={() => handleLeaveSort('start_date')} className={cn(COL.lg, 'cursor-pointer select-none')}>
+                          {t('timeTracking.startDate', 'Start Date')}
+                        </th>
+                        <th style={th('right')} onClick={() => handleLeaveSort('days_count')} className="cursor-pointer select-none">
+                          {t('timeTracking.leaveDays', 'Days')}
+                        </th>
+                        <th style={th('left')} onClick={() => handleLeaveSort('status')} className="cursor-pointer select-none">
+                          {t('common.status', 'Status')}
+                        </th>
+                        <th style={th('right', 'last')}>{t('timeTracking.approvedBy', 'Approved By')}</th>
                       </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan="5" className={`${text.secondary} py-8 px-4 text-center`}>
-                        {t('timeTracking.noRecords', 'No attendance records found for this period')}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-                <tfoot className={`${bg.tertiary} font-semibold`}>
-                  <tr>
-                    <td colSpan="4" className={`${text.primary} py-3 px-4 text-right border-t-2 ${border.primary}`}>
-                      {t('timeTracking.daysWorked', 'Total Days')}:
-                    </td>
-                    <td className={`${text.primary} py-3 px-4 text-right border-t-2 ${border.primary}`}>
-                      {attendanceRecords ? attendanceRecords.length : 0} {t('timeTracking.days')}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td colSpan="4" className={`${text.primary} py-3 px-4 text-right border-t ${border.primary}`}>
-                      {t('timeTracking.totalHours', 'Total Hours')}:
-                    </td>
-                    <td className={`${text.primary} py-3 px-4 text-right border-t ${border.primary}`}>
-                      <span className={`font-medium ${text.primary}`}>{parseFloat(currentData.total_hours || 0).toFixed(1)} {t('timeTracking.hrs')}</span>
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </TableScroll>
-          </div>
-        </div>
-      )}
+                    </thead>
+                    <tbody>
+                      {sortedLeaveRequests.length === 0 && (
+                        <tr>
+                          <td colSpan={6} style={{ padding: '18px 0', color: ind.inkMuted }}>
+                            {t('leave.noRequests', 'No leave requests yet.')}
+                          </td>
+                        </tr>
+                      )}
+                      {sortedLeaveRequests.map((req, idx) => {
+                        const leaveTypeLabel = t(`timeTracking.${req.leave_type === 'sick' ? 'sickLeave' : req.leave_type}`, req.leave_type || '—');
+                        const busy = !!processingRequests[req.id];
 
-      {/* Overview Tab */}
-      {activeTab === 'overview' && (
-      <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
-        <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-          {t('timeTracking.overviewTitle', 'Company Overview')} - {getMonthName(selectedMonth)} {selectedYear}
-        </h3>
-
-        {overviewLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader className="w-8 h-8 animate-spin text-blue-600" />
-          </div>
-        ) : (
-        <>
-        {/* Regular Hours By Employee */}
-        <div className={`grid grid-cols-1 ${hasOvertimeHours ? 'lg:grid-cols-2' : ''} gap-6 mb-6`}>
-          <div className={`${bg.primary} rounded-lg p-4 border ${border.primary}`}>
-            <div className="flex items-center space-x-2 mb-4">
-              <BarChart3 className={`w-5 h-5 ${text.primary}`} />
-              <h4 className={`font-semibold ${text.primary}`}>
-                {t('timeTracking.regularHoursChart', 'Regular Hours by Employee')}
-              </h4>
-            </div>
-            <div className="space-y-3">
-              {topRegularHourEmployees.map((item) => {
-                  const maxHours = overviewChartStats.maxRegularHours;
-                  const percentage = maxHours > 0 ? ((item.data?.regular_hours || 0) / maxHours) * 100 : 0;
-                  return (
-                    <div key={item.employee.id} className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className={text.secondary}>{getDemoEmployeeName(item.employee, t)}</span>
-                        <span className={text.primary}>{item.data?.regular_hours || 0} hrs</span>
-                      </div>
-                      <div className={`w-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} rounded-full h-2`}>
-                        <div
-                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-            <div className="mt-4 flex items-center justify-center space-x-2">
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-blue-600 rounded"></div>
-                <span className={`text-sm ${text.secondary}`}>{t('timeTracking.regularHoursLegend', 'Regular Hours')}</span>
+                        return (
+                          <tr key={req.id || idx} style={{ borderBottom: `1px solid ${ind.rule}` }}>
+                            <td style={{ padding: '9px 8px 9px 0', color: ind.ink, minWidth: 0 }}>
+                              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {req.employee?.name || '—'}
+                              </div>
+                              {/* Stand-ins for the columns this viewport has dropped */}
+                              <StackedDetail showUntil="md" label={t('timeTracking.leaveType', 'Leave Type')} value={leaveTypeLabel} />
+                              <StackedDetail showUntil="lg" label={t('timeTracking.startDate', 'Start Date')} value={req.start_date} />
+                            </td>
+                            <td className={COL.md} style={{ padding: '9px 8px', color: ind.inkMuted }}>{leaveTypeLabel}</td>
+                            <td className={COL.lg} style={{ padding: '9px 8px', ...figure(13, ind.inkMuted), whiteSpace: 'nowrap' }}>
+                              {req.start_date} – {req.end_date}
+                            </td>
+                            <td style={{ padding: '9px 8px', textAlign: 'right', ...figure(14, ind.ink) }}>{req.days_count}</td>
+                            <td style={{ padding: '9px 8px' }}>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                                <Tag ind={ind} variant={req.status === 'pending' ? 'accent' : req.status === 'approved' ? 'neutral' : 'outline'}>
+                                  {t(`timeTracking.requestStatus.${req.status}`, req.status)}
+                                </Tag>
+                                <MiniFlubberMorphingLeaveStatus isDarkMode={isDarkMode} status={req.status} size={16} />
+                              </span>
+                            </td>
+                            <td style={{ padding: '9px 0 9px 8px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                              {req.status === 'pending' ? (
+                                <span style={{ display: 'inline-flex', gap: 8 }}>
+                                  <Btn ind={ind} variant="primary" disabled={busy} onClick={() => handleApproveRequest(req.id)}>
+                                    {t('common.approve', 'Approve')}
+                                  </Btn>
+                                  <Btn ind={ind} disabled={busy} onClick={() => handleRejectRequest(req.id)}>
+                                    {t('common.decline', 'Decline')}
+                                  </Btn>
+                                </span>
+                              ) : (
+                                <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted }}>
+                                  {req.approved_by_name || '—'}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </TableScroll>
               </div>
-            </div>
-          </div>
-
-          {/* Total Overtime Hours By Employee */}
-          {hasOvertimeHours && (
-          <div className={`${bg.primary} rounded-lg p-4 border ${border.primary}`}>
-            <div className="flex items-center space-x-2 mb-4">
-              <PieChart className={`w-5 h-5 ${text.primary}`} />
-              <h4 className={`font-semibold ${text.primary}`}>
-                {t('timeTracking.overtimeHoursChart', 'Overtime Hours by Employee')}
-              </h4>
-            </div>
-            <div className="space-y-3">
-              {topOvertimeEmployees.map((item) => {
-                  const overtimeTotal = (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0);
-                  const maxOT = overviewChartStats.maxOvertimeHours;
-                  const percentage = maxOT > 0 ? (overtimeTotal / maxOT) * 100 : 0;
-                  return (
-                    <div key={item.employee.id} className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className={text.secondary}>{getDemoEmployeeName(item.employee, t)}</span>
-                        <span className={text.primary}>{overtimeTotal.toFixed(1)} hrs</span>
-                      </div>
-                      <div className={`w-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} rounded-full h-2`}>
-                        <div
-                          className="bg-orange-600 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-            <div className="mt-4 flex items-center justify-center space-x-2">
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-orange-600 rounded"></div>
-                <span className={`text-sm ${text.secondary}`}>{t('timeTracking.totalOvertimeLegend', 'Total Overtime')}</span>
-              </div>
-            </div>
-          </div>
+            </Blueprint>
           )}
         </div>
 
-        {/* All Employees Table */}
-        <TableScroll>
-          <table className="w-full">
-            <thead>
-              <tr className={`border-b ${border.primary}`}>
-                <th
-                  className={`text-left py-3 px-4 ${text.primary} font-semibold cursor-pointer select-none`}
-                  onClick={() => handleSort('employee')}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    {t('timeTracking.employee', 'Employee')}
-                    <ArrowDownAZ
-                      className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                      style={{transition: 'transform 0.5s', transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                    />
-                  </span>
-                </th>
-                <th
-                  className={cn(COL.md, `text-right py-3 px-4 ${text.primary} font-semibold cursor-pointer select-none`)}
-                  onClick={() => handleSort('days_worked')}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    {t('timeTracking.daysWorked', 'Days Worked')}
-                        {sortKey === 'days_worked' ? (
-                      sortDirection === 'asc' ? (
-                        <CalendarArrowUp
-                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
-                        />
-                      ) : (
-                        <CalendarArrowDown
-                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
-                        />
-                      )
-                    ) : (
-                      <CalendarArrowUp className="inline w-4 h-4 ml-1 transition-all duration-500 text-gray-400 hover:text-blue-400 hover:animate-pulse" />
-                    )}
-                  </span>
-                </th>
-                <th
-                  className={cn(COL.lg, `text-right py-3 px-4 ${text.primary} font-semibold cursor-pointer select-none`)}
-                  onClick={() => handleSort('regular_hours')}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    {t('timeTracking.regularHours', 'Regular Hours')}
-                    <CircleFadingArrowUp
-                      className={`inline w-4 h-4  ml-1 transition-all duration-500 ${sortKey === 'regular_hours' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                      style={{transition: 'transform 0.5s', transform: sortKey === 'regular_hours' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                    />
-                  </span>
-                </th>
-                <th
-                  className={cn(COL.lg, `text-right py-3 px-4 ${text.primary} font-semibold cursor-pointer select-none`)}
-                  onClick={() => handleSort('overtime')}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    {t('timeTracking.overtime', 'Overtime')}
-                    <Pickaxe
-                      className={`inline w-3 h-3 ml-1 transition-all duration-500 ${sortKey === 'overtime' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                      style={{transition: 'transform 0.5s', transform: sortKey === 'overtime' && sortDirection === 'asc' ? 'rotate(90deg)' : 'none' }}
-                    />
-                  </span>
-                </th>
-                <th
-                  className={`text-right py-3 px-4 ${text.primary} font-semibold cursor-pointer select-none`}
-                  onClick={() => handleSort('total_hours')}
-                >
-                  <span className={`inline-flex items-center gap-1 `}>
-                    {t('timeTracking.totalHoursLabel', 'Total Hours')}
-                      <Hourglass
-                      className={`inline w-3.5 h-3.5 ml-1 transition-all duration-500 ${sortKey === 'total_hours' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                      style={{transition: 'transform 0.5s', transform: sortKey === 'total_hours' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                    />
-                  </span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedOverviewEmployees.map((item) => {
-                const overtimeTotal = (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0);
-                const regularHours = item.data?.regular_hours?.toFixed(1) || '0.0';
+        {/* ── EXCEPTIONS COLUMN — 340px fixed ────────────────────────── */}
+        {canViewOverview && (
+          <aside
+            className="w-full lg:w-[340px] lg:shrink-0 flex flex-col"
+            style={{ background: ind.chrome }}
+          >
+            {/* Header — the deadline is what makes this column time-bound */}
+            <div style={{ padding: '20px 20px 16px', borderBottom: `1px solid ${ind.hairline}` }}>
+              <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+                <ColumnHeading ind={ind}>{t('timeTracking.exceptions', 'Exceptions')}</ColumnHeading>
+                <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted }}>
+                  {exceptionCount} {t('dashboard.items', 'items')}
+                </span>
+              </div>
+              <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 6 }}>
+                {t('timeTracking.fixBeforePayroll', 'Fix before payroll closes')} {payrollCloseLabel}
+              </p>
+            </div>
 
-                return (
-                <tr key={item.employee.id}>
-                  <td className={`text-left py-3 px-4 ${text.secondary}`}>
-                    {getDemoEmployeeName(item.employee, t)}
-                    {/* Stand-ins for the columns this viewport has dropped */}
-                    <StackedDetail showUntil="md" label={t('timeTracking.daysWorked', 'Days Worked')} value={item.data?.days_worked || 0} />
-                    <StackedDetail showUntil="lg" label={t('timeTracking.regularHours', 'Regular Hours')} value={regularHours} />
-                    <StackedDetail showUntil="lg" label={t('timeTracking.overtime', 'Overtime')} value={overtimeTotal.toFixed(1)} />
-                  </td>
-                  <td className={cn(COL.md, `text-right py-3 px-4 ${text.secondary}`)}>{item.data?.days_worked || 0}</td>
-                  <td className={cn(COL.lg, `text-right py-3 px-4 ${text.secondary}`)}>{regularHours}</td>
-                  <td className={cn(COL.lg, `text-right py-3 px-4 ${text.secondary}`)}>{overtimeTotal.toFixed(1)}</td>
-                  <td className={`text-right py-3 px-4 font-semibold ${text.primary}`}>{parseFloat(item.data?.total_hours || 0).toFixed(1)}</td>
-                </tr>
-                );
-              })}
-              <tr className={`border-t-2 ${border.primary} font-bold`}>
-                <td className={`py-3 px-4 ${text.primary}`}>{t('dashboard.total', 'Total')}</td>
-                <td className={cn(COL.md, `text-right py-3 px-4 ${text.primary}`)}>
-                  {allEmployeesData.reduce((sum, item) => sum + (item.data?.days_worked || 0), 0)}
-                </td>
-                <td className={cn(COL.lg, `text-right py-3 px-4 ${text.primary}`)}>
-                  {allEmployeesData.reduce((sum, item) => sum + (item.data?.regular_hours || 0), 0).toFixed(1)}
-                </td>
-                <td className={cn(COL.lg, `text-right py-3 px-4 ${text.primary}`)}>
-                  {allEmployeesData.reduce((sum, item) =>
-                    sum + (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0), 0
-                  ).toFixed(1)}
-                </td>
-                <td className={`text-right py-3 px-4 ${text.primary}`}>
-                  {allEmployeesData.reduce((sum, item) => sum + (item.data?.total_hours || 0), 0).toFixed(1)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+            {/* Priority 1 — missing punch-out */}
+            {missingPunch.people.length > 0 && (
+              <div style={{ padding: '16px 20px', background: ind.accentWash, borderBottom: `1px solid ${ind.rule}` }}>
+                <div className="flex items-start justify-between" style={{ gap: 10 }}>
+                  <span style={{
+                    fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, letterSpacing: '.05em',
+                    textTransform: 'uppercase', color: ind.ink,
+                  }}>
+                    {t('timeTracking.missingPunchOut', 'Missing punch-out')}
+                  </span>
+                  <Tag ind={ind}>
+                    {missingPunch.people.length} {t('timeTracking.people', 'ppl')}
+                  </Tag>
+                </div>
 
-        </TableScroll>
-        </>
+                <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 6 }}>
+                  {/* Name the third person rather than say "+1 others". */}
+                  {missingPunch.people.slice(0, missingPunch.people.length === 3 ? 3 : 2).map((p) => p.name).join(', ')}
+                  {missingPunch.people.length > 3 &&
+                    ` +${missingPunch.people.length - 2} ${t('timeTracking.others', 'others')}`}
+                  {missingPunch.firstDate && ` · ${fmtDayMonth(missingPunch.firstDate)}`}
+                  {missingPunch.lastDate && missingPunch.lastDate !== missingPunch.firstDate &&
+                    `–${fmtDayMonth(missingPunch.lastDate)}`}
+                </p>
+
+                <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                  <Btn ind={ind} variant="primary" disabled={closingPunches} onClick={handleAutoClose}>
+                    {closingPunches
+                      ? t('common.saving', 'Saving…')
+                      : t('timeTracking.autoClose', 'Auto-close 18:00')}
+                  </Btn>
+                  <Btn ind={ind} onClick={() => openException('missingPunch')}>
+                    {t('timeTracking.reviewEach', 'Review each')}
+                  </Btn>
+                </div>
+              </div>
+            )}
+
+            {/* Priority 2 — over the overtime cap */}
+            {overCapRows.length > 0 && (
+              <div style={{ padding: '16px 20px', background: ind.accentWash, borderBottom: `1px solid ${ind.rule}` }}>
+                <div className="flex items-start justify-between" style={{ gap: 10 }}>
+                  <span style={{
+                    fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, letterSpacing: '.05em',
+                    textTransform: 'uppercase', color: ind.ink,
+                  }}>
+                    {t('timeTracking.overOvertimeCap', 'Over overtime cap')}
+                  </span>
+                  <Tag ind={ind}>
+                    {overCapRows.length} {t('timeTracking.people', 'ppl')}
+                  </Tag>
+                </div>
+
+                <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 6 }}>
+                  {t('timeTracking.aboveCap', 'Above {cap}h cap').replace('{cap}', String(overtimeCap))}
+                  {' — '}
+                  {overCapRows[0].departmentLabel}
+                  {`, ${t('timeTracking.topIs', 'highest')} ${fmt1(overCapRows[0].overtime)}h`}
+                </p>
+
+                <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                  <Btn ind={ind} variant="primary" onClick={() => openException('overCap')}>
+                    {t('timeTracking.openCases', 'Open cases')}
+                  </Btn>
+                  <Btn ind={ind} onClick={handleRaiseCap}>
+                    {t('timeTracking.raiseCap', 'Raise cap')}
+                  </Btn>
+                </div>
+              </div>
+            )}
+
+            {/* Compact rows — real, not yet urgent */}
+            {unapprovedOvertime.rows.length > 0 && (
+              <ExceptionRow
+                ind={ind}
+                active={exceptionFilter === 'unapprovedOvertime'}
+                title={t('timeTracking.unapprovedOvertime', 'Unapproved overtime')}
+                detail={t('timeTracking.acrossTimesheets', '{hours}h across {count} timesheets')
+                  .replace('{hours}', fmt1(unapprovedOvertime.hours))
+                  .replace('{count}', String(unapprovedOvertime.rows.length))}
+                onClick={() => openException('unapprovedOvertime')}
+              />
+            )}
+
+            {underContractRows.length > 0 && (
+              <ExceptionRow
+                ind={ind}
+                active={exceptionFilter === 'underContract'}
+                title={t('timeTracking.underContractHours', 'Under contract hours')}
+                detail={`${underContractRows[0].name} · ${fmt1(underContractRows[0].total)}/${contractHours}h`}
+                onClick={() => openException('underContract')}
+              />
+            )}
+
+            {exceptionCount === 0 && (
+              <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, padding: '18px 20px', borderBottom: `1px solid ${ind.rule}` }}>
+                {t('timeTracking.noExceptions', 'Nothing is blocking payroll for this period.')}
+              </p>
+            )}
+
+            {/* Attendance, this week */}
+            {attendance && (
+              <div style={{ padding: '18px 20px 22px' }}>
+                <ColumnHeading ind={ind} style={{ fontSize: 13 }}>
+                  {t('timeTracking.attendanceThisWeek', 'Attendance, this week')}
+                </ColumnHeading>
+                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {[
+                    { label: t('timeTracking.onTime', 'On time'), value: attendance.onTime },
+                    { label: t('timeTracking.lateArrival', 'Late arrival'), value: attendance.late },
+                    { label: t('timeTracking.absentUnreported', 'Absent, unreported'), value: attendance.absent },
+                  ].map((row, i) => (
+                    <AttendanceBar
+                      key={row.label}
+                      ind={ind}
+                      label={row.label}
+                      value={row.value}
+                      share={employees.length > 0 ? row.value / employees.length : 0}
+                      fill={rampAt(ind, i * 2)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </aside>
         )}
       </div>
-      )}
 
-      {/* Leave Requests Tab (moved out of overview) */}
-      {activeTab === 'leaveRequests' && canViewOverview && (
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 mt-6`}>
-          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>{t('timeTracking.leaveRequestManagement', 'Leave Request Management')}</h3>
-          <div className="mt-2">
-            <TableScroll>
-              <table className="w-full">
-                <thead>
-                  <tr className={`border-b ${border.primary}`}>
-                    <th className={`${text.primary} py-2 px-4 text-left cursor-pointer`} onClick={() => handleLeaveSort('days_count')}>
-                      <span className="inline-flex items-center gap-1">
-                        {t('timeTracking.leaveDays', 'Leave Days')}
-                        <ArrowUp01 className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'days_count' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'days_count' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
-                      </span>
-                    </th>
-                    <th className={cn(COL.md, `${text.primary} py-2 px-4 text-left cursor-pointer`)} onClick={() => handleLeaveSort('leave_type')}>
-                      <span className="inline-flex items-center gap-1">
-                        {t('timeTracking.leaveType', 'Leave Type')}
-                        <Sailboat className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'leave_type' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'leave_type' && leaveSortDirection === 'asc' ? 'rotateY(180deg)' : 'none' }} />
-                      </span>
-                    </th>
-                    <th className={`${text.primary} py-2 px-4 text-left cursor-pointer`} onClick={() => handleLeaveSort('status')}>
-                      <span className="inline-flex items-center gap-1">
-                        {t('common.status', 'Status')}
-                        <ListFilterPlus className={`inline w-4.5 h-4.5 ml-1 transition-all duration-500 ${leaveSortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'status' && leaveSortDirection === 'asc' ? 'rotateY(180deg)' : 'none' }} />
-                      </span>
-                    </th>
-                    <th className={`${text.primary} py-2 px-4 text-left cursor-pointer`} onClick={() => handleLeaveSort('requested_by')}>
-                      <span className="inline-flex items-center gap-1">
-                        {t('timeTracking.requestedBy', 'Requested By')}
-                        <ArrowDownAZ className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'requested_by' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'requested_by' && leaveSortDirection === 'asc' ? 'rotate(180deg)' : 'none' }} />
-                      </span>
-                    </th>
-                    <th className={`${text.primary} py-2 px-4 text-left cursor-pointer`} onClick={() => handleLeaveSort('approved_by')}>
-                      <span className="inline-flex items-center gap-1">
-                        {t('timeTracking.approvedBy', 'Approved By')}
-                        <Stamp className={`inline w-4 h-4 ml-1 transition-all duration-500 ${leaveSortKey === 'approved_by' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-amber-400 hover:animate-pulse'}`} style={{ transform: leaveSortKey === 'approved_by' && leaveSortDirection === 'asc' ? 'rotateY(180deg)' : 'none' }} />
-                      </span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allLeaveRequests.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="py-4 text-center text-gray-500">
-                        {t('leave.noRequests', 'No leave requests yet.')}
-                      </td>
-                    </tr>
-                  ) : (
-                    sortedLeaveRequests.map((req, idx) => {
-                      const leaveTypeLabel = (() => {
-                        switch (req.leave_type) {
-                          case 'sick': return t('timeTracking.sickLeave', 'Sick Leave');
-                          case 'vacation': return t('timeTracking.vacation', 'Vacation');
-                          case 'personal': return t('timeTracking.personal', 'Personal Leave');
-                          case 'unpaid': return t('timeTracking.unpaid', 'Unpaid Leave');
-                          default: return req.leave_type || '-';
-                        }
-                      })();
-
-                      return (
-                      <tr key={req.id || idx}>
-                        <td className={`${text.primary} py-2 px-4 text-center`}>{req.days_count}</td>
-                        <td className={cn(COL.md, `${text.primary} py-2 px-4`)}>{leaveTypeLabel}</td>
-                        <td className={`${text.primary} py-2 px-4`}>
-                          <div className="flex items-center justify-between">
-                            <span>{t(`timeTracking.${req.status}`, req.status)}</span>
-                            <MiniFlubberMorphingLeaveStatus isDarkMode={isDarkMode} status={req.status} size={20} className={`${text.primary} ml-4`} />
-                          </div>
-                        </td>
-                        <td className={`${text.primary} py-2 px-4`}>
-                          {req.employee?.name || '-'}
-                          {/* Stand-in for the column this viewport has dropped */}
-                          <StackedDetail showUntil="md" label={t('timeTracking.leaveType', 'Leave Type')} value={leaveTypeLabel} />
-                        </td>
-                        <td className={`${text.primary} py-2 px-4 flex justify-center items-center gap-2`}>
-                          {req.status === 'pending' ? (
-                            <>
-                              <button
-                                onClick={() => handleApproveRequest(req.id)}
-                                disabled={!!processingRequests[req.id]}
-                                title={t('timeTracking.approve', 'Approve')}
-                                className={`text-green-600 hover:animate-pulse ${isDarkMode ? 'hover:bg-gray-100' : 'hover:bg-gray-700'} rounded-4xl hover:scale-120 transition-all duration-500 ${processingRequests[req.id] ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                              >
-                                <Check className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleRejectRequest(req.id)}
-                                disabled={!!processingRequests[req.id]}
-                                title={t('timeTracking.reject', 'Reject')}
-                                className={`text-red-600 -translate-y-px hover:scale-120 hover:rotate-180 transition-transform duration-1500 ${isDarkMode ? 'hover:bg-gray-200' : 'hover:bg-gray-300'} rounded-4xl ${processingRequests[req.id] ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </>
-                          ) : (
-                            req.approved_by_name || '-'
-                          )}
-                        </td>
-                      </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </TableScroll>
-          </div>
-        </div>
-      )}
-
-      {/* Success Message */}
+      {/* Success message */}
       {successMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2 animate-fade-in">
-          <Check className="w-5 h-5" />
+        <div
+          style={{
+            position: 'fixed', top: 16, right: 16, zIndex: 50,
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '10px 14px', borderRadius: 0,
+            background: ind.accent, color: ind.accentInk,
+            fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, letterSpacing: '.04em',
+          }}
+        >
+          <Check size={15} strokeWidth={2} />
           <span>{successMessage}</span>
         </div>
       )}
 
-      {/* Leave Request Modal */}
+      {/* Leave request modal */}
       {showLeaveModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className={`${bg.secondary} rounded-lg shadow-xl max-w-md w-full p-6`}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className={`text-xl font-semibold ${text.primary}`}>
-                {t('timeTracking.requestLeave', 'Request Leave')}
-              </h3>
-              <button onClick={() => setShowLeaveModal(false)} className={`${text.secondary} hover:${text.primary}`}>
-                <X className="w-5 h-5" />
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          style={{ background: 'rgba(29,31,32,.55)' }}
+        >
+          <div style={{ background: ind.ground, border: `1px solid ${ind.ink}`, borderRadius: 0, width: '100%', maxWidth: 440, padding: 24 }}>
+            <div className="flex justify-between items-start" style={{ gap: 12 }}>
+              <ColumnHeading ind={ind}>{t('timeTracking.requestLeave', 'Request Leave')}</ColumnHeading>
+              <button
+                type="button"
+                onClick={() => setShowLeaveModal(false)}
+                aria-label={t('common.close', 'Close')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0 }}
+              >
+                <X size={16} strokeWidth={1.5} />
               </button>
             </div>
 
-            <form onSubmit={handleLeaveSubmit} className="space-y-4">
+            <form onSubmit={handleLeaveSubmit} style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                  {t('timeTracking.leaveType', 'Leave Type')}
-                </label>
-                <select
+                <Kicker ind={ind} color={ind.inkMuted}>{t('timeTracking.leaveType', 'Leave Type')}</Kicker>
+                <FlatSelect
+                  ind={ind}
                   value={leaveForm.type}
                   onChange={(e) => setLeaveForm({ ...leaveForm, type: e.target.value })}
-                  className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                  style={{ marginTop: 6, width: '100%', padding: '7px 8px' }}
                 >
                   <option value="vacation">{t('timeTracking.vacation', 'Vacation')}</option>
                   <option value="sick">{t('timeTracking.sickLeave', 'Sick Leave')}</option>
                   <option value="personal">{t('timeTracking.personal', 'Personal Leave')}</option>
                   <option value="unpaid">{t('timeTracking.unpaid', 'Unpaid Leave')}</option>
-                </select>
+                </FlatSelect>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2" style={{ gap: 14 }}>
                 <div>
-                  <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                    {t('timeTracking.startDate', 'Start Date')}
-                  </label>
+                  <Kicker ind={ind} color={ind.inkMuted}>{t('timeTracking.startDate', 'Start Date')}</Kicker>
                   <DatePicker
                     value={leaveForm.startDate}
                     onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
                     required
-                    inputClassName={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                    inputClassName={`w-full px-3 py-2 border ${input.className}`}
                   />
                 </div>
                 <div>
-                  <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                    {t('timeTracking.endDate', 'End Date')}
-                  </label>
+                  <Kicker ind={ind} color={ind.inkMuted}>{t('timeTracking.endDate', 'End Date')}</Kicker>
                   <DatePicker
                     value={leaveForm.endDate}
                     onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
                     required
-                    inputClassName={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                    inputClassName={`w-full px-3 py-2 border ${input.className}`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                  {t('timeTracking.reason', 'Reason')}
-                </label>
+                <Kicker ind={ind} color={ind.inkMuted}>{t('timeTracking.reason', 'Reason')}</Kicker>
                 <textarea
                   value={leaveForm.reason}
                   onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })}
                   rows="3"
                   placeholder={t('timeTracking.reasonPlaceholder', 'Briefly explain your leave request...')}
-                  className={`w-full px-4 py-2 rounded-lg border ${input.className}`}
+                  style={{
+                    marginTop: 6, width: '100%', padding: '8px 10px', borderRadius: 0,
+                    border: `1px solid ${ind.hairline}`, background: 'transparent', color: ind.ink,
+                    fontFamily: BODY, fontSize: 13, outline: 'none', resize: 'vertical',
+                  }}
                 />
               </div>
 
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowLeaveModal(false)}
-                  className={`flex-1 px-4 py-2 border ${isDarkMode ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-300 hover:bg-gray-50'} rounded-lg transition-colors`}
-                >
+              <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                <Btn ind={ind} onClick={() => setShowLeaveModal(false)} style={{ flex: 1, padding: '8px 12px' }}>
                   {t('common.cancel', 'Cancel')}
-                </button>
+                </Btn>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                  style={{
+                    flex: 1, padding: '8px 12px', borderRadius: 0, cursor: 'pointer',
+                    background: ind.accent, color: ind.accentInk, border: `1px solid ${ind.accent}`,
+                    fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.04em',
+                    textTransform: 'uppercase',
+                  }}
                 >
                   {t('common.leaveRequest', 'Submit Request')}
                 </button>
@@ -1610,7 +2208,6 @@ const handleRejectRequest = async (requestId) => {
           </div>
         </div>
       )}
-      
     </div>
   );
 };

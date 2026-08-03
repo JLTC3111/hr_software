@@ -29,12 +29,12 @@ function Digit({ value, place }: { value: number; place: number }) {
   }, [animatedValue, valueRoundedToPlace]);
 
   return (
-    <div className="relative inline-block w-[1ch] overflow-clip leading-none tabular-nums">
-      <div className="invisible">0</div>
+    <span className="relative inline-block w-[1ch] overflow-clip leading-none tabular-nums">
+      <span className="invisible block">0</span>
       {Array.from({ length: 10 }, (_, i) => (
         <Number key={i} mv={animatedValue} number={i} />
       ))}
-    </div>
+    </span>
   );
 }
 
@@ -83,6 +83,8 @@ export type SlidingNumberProps = {
   replayToken?: number;
   /** Re-animate from 0 when the number itself is hovered (default true) */
   replayOnHover?: boolean;
+  /** Thousands separator between integer digit groups. '' disables grouping. */
+  groupSeparator?: string;
 };
 
 /** Bump `replayToken` on hover so SlidingNumber re-counts from 0 */
@@ -102,6 +104,7 @@ export function SlidingNumber({
   className,
   replayToken = 0,
   replayOnHover = true,
+  groupSeparator = ',',
 }: SlidingNumberProps) {
   const absTarget = Math.abs(value);
   const [animated, setAnimated] = useState(0);
@@ -154,13 +157,17 @@ export function SlidingNumber({
       }}
     >
       {value < 0 && <span>-</span>}
-      {integerDigits.map((_, index) => (
-        <Digit
-          key={`int-${integerPlaces[index]}-${integerDigits.length}`}
-          value={animatedInteger}
-          place={integerPlaces[index]}
-        />
-      ))}
+      {integerDigits.map((_, index) => {
+        // A separator goes after this digit when a whole group of three follows it.
+        const remaining = integerDigits.length - 1 - index;
+        const separator = groupSeparator && remaining > 0 && remaining % 3 === 0;
+        return (
+          <React.Fragment key={`int-${integerPlaces[index]}-${integerDigits.length}`}>
+            <Digit value={animatedInteger} place={integerPlaces[index]} />
+            {separator && <span aria-hidden="true">{groupSeparator}</span>}
+          </React.Fragment>
+        );
+      })}
       {decimalPart && (
         <>
           <span>{decimalSeparator}</span>

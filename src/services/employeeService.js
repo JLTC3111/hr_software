@@ -270,23 +270,44 @@ export const createEmployee = async (employeeData) => {
       }
     }
 
-    const { data, error } = await supabase
-      .from('employees')
-      .insert([{
-        name: employeeData.name,
-        position: employeeData.position,
-        department: employeeData.department,
-        email: employeeData.email,
-        dob: employeeData.dob || null,
-        address: employeeData.address || null,
-        phone: employeeData.phone || null,
-        start_date: employeeData.startDate || new Date().toISOString().split('T')[0],
-        status: employeeData.status || 'Active',
-        performance: employeeData.performance || 4.0,
-        photo: employeeData.photo || null
-      }])
-      .select()
-      .single();
+    let payload = {
+      name: employeeData.name,
+      position: employeeData.position,
+      department: employeeData.department,
+      email: employeeData.email,
+      dob: employeeData.dob || null,
+      address: employeeData.address || null,
+      phone: employeeData.phone || null,
+      start_date: employeeData.startDate || new Date().toISOString().split('T')[0],
+      status: employeeData.status || 'Active',
+      performance: employeeData.performance || 4.0,
+      photo: employeeData.photo || null,
+    };
+    // Optional columns: present in some deployments of this schema, absent in
+    // others. They are added here and dropped below if the table rejects them,
+    // so the record still saves instead of the whole insert failing.
+    if (employeeData.salary != null) payload.salary = employeeData.salary;
+    if (employeeData.nationalId) payload.national_id = employeeData.nationalId;
+
+    const droppedColumns = [];
+    let data = null;
+    let error = null;
+
+    // Bounded by the field count: every retry removes exactly one column.
+    for (let attempt = 0; attempt <= Object.keys(payload).length; attempt += 1) {
+      ({ data, error } = await supabase.from('employees').insert([payload]).select().single());
+      if (!error) break;
+
+      const unknown = error.code === 'PGRST204'
+        ? /'([^']+)' column/.exec(error.message || '')?.[1]
+        : null;
+      if (!unknown || !(unknown in payload)) break;
+
+      console.warn(`employees has no '${unknown}' column — retrying without it`);
+      droppedColumns.push(unknown);
+      const { [unknown]: _removed, ...remaining } = payload;
+      payload = remaining;
+    }
 
     if (error) {
       // Handle duplicate key constraint errors with user-friendly messages
@@ -304,7 +325,7 @@ export const createEmployee = async (employeeData) => {
       }
       throw error;
     }
-    return { success: true, data };
+    return { success: true, data, droppedColumns };
   } catch (error) {
     console.error('Error creating employee:', error);
     return { success: false, error: error.message };

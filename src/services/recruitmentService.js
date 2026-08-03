@@ -55,18 +55,76 @@ export const getAllJobPostings = async (filters = {}) => {
 };
 
 /**
- * Create job posting
+ * The form speaks in the names the UI uses; `job_postings` (migration 005) stores
+ * some of them under different names. Keep the translation here so the form does
+ * not have to know the table.
+ */
+const JOB_POSTING_ALIASES = {
+  employment_type: 'position_type',
+};
+
+/** PostgREST's "column not found in schema cache" code. */
+const PGRST_UNKNOWN_COLUMN = 'PGRST204';
+
+/** Pull the offending column out of `Could not find the 'x' column of 'y' ...`. */
+const unknownColumnFrom = (error) => {
+  if (error?.code !== PGRST_UNKNOWN_COLUMN) return null;
+  return /'([^']+)' column/.exec(error.message || '')?.[1] || null;
+};
+
+/**
+ * Shape a posting for the table: apply the aliases, fold a min/max pair into the
+ * single `salary_range` string the table actually has, and drop empty values so
+ * we never send a column just to write '' into it.
+ */
+const normalizeJobPosting = (jobData) => {
+  const { salary_min: min, salary_max: max, ...rest } = jobData;
+
+  const out = {};
+  Object.entries(rest).forEach(([key, value]) => {
+    if (value === '' || value === null || value === undefined) return;
+    out[JOB_POSTING_ALIASES[key] || key] = value;
+  });
+
+  if (min != null && max != null) out.salary_range = `${min} - ${max}`;
+  else if (min != null) out.salary_range = `${min}+`;
+  else if (max != null) out.salary_range = `up to ${max}`;
+
+  return out;
+};
+
+/**
+ * Create job posting.
+ *
+ * Deployments of this schema have drifted, so an insert can fail on a column the
+ * local table simply does not have. Rather than lose the whole posting, drop the
+ * rejected column and retry, then report what was left out — the caller surfaces
+ * it so the omission is visible instead of silent.
  */
 export const createJobPosting = async (jobData) => {
-  try {
-    const { data, error } = await supabase
-      .from('job_postings')
-      .insert([jobData])
-      .select()
-      .single();
+  let payload = normalizeJobPosting(jobData);
+  const droppedColumns = [];
 
-    if (error) throw error;
-    return { success: true, data };
+  try {
+    // Bounded by the field count: every retry removes exactly one column.
+    for (let attempt = 0; attempt <= Object.keys(payload).length; attempt += 1) {
+      const { data, error } = await supabase
+        .from('job_postings')
+        .insert([payload])
+        .select()
+        .single();
+
+      if (!error) return { success: true, data, droppedColumns };
+
+      const unknown = unknownColumnFrom(error);
+      if (!unknown || !(unknown in payload)) throw error;
+
+      console.warn(`job_postings has no '${unknown}' column — retrying without it`);
+      droppedColumns.push(unknown);
+      const { [unknown]: _removed, ...remaining } = payload;
+      payload = remaining;
+    }
+    throw new Error('Could not match the job posting to the job_postings table');
   } catch (error) {
     console.error('Error creating job posting:', error);
     return { success: false, error: error.message };

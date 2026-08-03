@@ -332,7 +332,7 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
                     />
                     <Route 
                       path="/employees/add" 
-                      element={<AddNewEmployee refetchEmployees={refetchEmployees} />} 
+                      element={<AddNewEmployee employees={employees} refetchEmployees={refetchEmployees} />}
                     />
                     <Route 
                       path="/time-tracking" 

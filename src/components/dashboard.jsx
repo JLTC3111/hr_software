@@ -1,131 +1,93 @@
-import _React, { useState, useEffect, useCallback } from 'react'
-import { Heart, AlertCircle, TreePalm, Car, Salad, Clapperboard, Laptop, Form, PhoneCall, CupSoda, Flame, DatabaseZap, HouseWifi, Funnel, HeartPlus, Coffee, AlarmClock, Gauge, BriefcaseBusiness, WifiPen, TrendingUp, LineChart, BatteryCharging, PersonStanding, Volleyball, FileUser, RefreshCw, Users, User, Speech } from 'lucide-react'
-import StatsCard from './statsCard.jsx'
+/**
+ * Organization Overview — direction 1b, "Control rail".
+ *
+ * Three vertical bands: the app rail (sidebar.jsx) → this main column → the
+ * decision column. A 44px ticker spans main + decision and replaces metric
+ * cards; per the spec the console never shows both.
+ *
+ * Design system: "Industry" (src/theme/industry.js). Radius is 0 everywhere,
+ * cards are outlines with four registration corners, status reads through
+ * weight and rule rather than colour.
+ */
+import _React, { useState, useEffect, useCallback, useMemo } from 'react'
+import {
+  Heart, AlertCircle, TreePalm, Car, Salad, Clapperboard, Laptop, Form, PhoneCall,
+  CupSoda, Flame, HouseWifi, HeartPlus, Coffee, AlarmClock, Gauge, BriefcaseBusiness,
+  WifiPen, TrendingUp, LineChart, BatteryCharging, PersonStanding, Volleyball,
+  DatabaseZap, RefreshCw, Users, User, Speech, ArrowRight, X,
+} from 'lucide-react'
 import MetricDetailModal from './metricDetailModal.jsx'
 import { useTheme } from '../contexts/ThemeContext.jsx'
 import { useLanguage } from '../contexts/LanguageContext.jsx'
-import { Bar, BarChart, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts'
+import { useAuth } from '../contexts/AuthContext'
+import { Area, AreaChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar as RBar } from 'recharts'
 import * as timeTrackingService from '../services/timeTrackingService.js'
-import { withTimeout } from '../utils/supabaseTimeout.js';
-import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts.js';
-import { validateAndRefreshSession } from '../utils/sessionHelper.js';
-import { retryWithBackoff, isRetryableError } from '../utils/retryHelper.js';
-import { AnimatedClockIcon, AnimatedAlarmClockIcon } from './timeClockEntry.jsx'
-import { AnimatedCoffeeIcon, MiniFlubberMorphingLeaveStatus } from './timeTracking.jsx';
-import { MiniFlubberAutoMorphInProgress, MiniFlubberAutoMorphEmployees } from './taskReview.jsx'
-import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
-import { getDemoEmployeeName, isDemoMode } from '../utils/demoHelper.js';
-import { AnimatedGroup, InView, TextEffect, Spotlight, SlidingNumber, useNumberReplay } from './motion-primitives'
-import { BorderBeam } from './ui/border-beam'
-import { MagicBento } from './ui/magic-bento'
-import { PageLiveClock } from './ui/page-live-clock'
-import { cn } from '@/lib/utils'
-import { FlubberMorphIcon } from './ui/flubber-morph-icon.jsx';
+import { withTimeout } from '../utils/supabaseTimeout.js'
+import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts.js'
+import { validateAndRefreshSession } from '../utils/sessionHelper.js'
+import { retryWithBackoff, isRetryableError } from '../utils/retryHelper.js'
+import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js'
+import { getDemoEmployeeName, isDemoMode } from '../utils/demoHelper.js'
+import { FlubberMorphIcon } from './ui/flubber-morph-icon.jsx'
+import { FetchElapsedPill } from './ui/fetch-elapsed-pill'
+import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js'
+import {
+  Blueprint, Bar, Tag, Btn, Seg, Kicker, Delta, TickerCell, ColumnHeading,
+  LiveClock, FlatSelect,
+} from './ui/industry.jsx'
 
-const CHART_SERIES = {
-  performance: { light: '#3B82F6', dark: '#60A5FA' },
-  regular: { light: '#3B82F6', dark: '#60A5FA' },
-  overtime: { light: '#D946EF', dark: '#E879F9' },
-  workDays: { light: '#3B82F6', dark: '#60A5FA' },
-  leaveDays: { light: '#CBD5E1', dark: '#64748B' },
-  accent: { light: '#06B6D4', dark: '#22D3EE' },
-};
+/* ------------------------------------------------------------------ *
+ * Flubber morph icons.
+ * Re-exported through components/index.jsx — keep all five exports.
+ * ------------------------------------------------------------------ */
 
-const DEPT_PALETTE = {
-  light: ['#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE', '#DBEAFE'],
-  dark: ['#DBEAFE', '#BFDBFE', '#93C5FD', '#60A5FA', '#3B82F6', '#2563EB', '#1E40AF'],
-};
+export const MiniFlubberAutoMorphEmployeesDashboard = (props) => (
+  <FlubberMorphIcon icons={[Users, User, Speech, PersonStanding]} cacheKey="dash-employees" morphInterval={1000} morphDuration={500} {...props} />
+);
 
-function getChartTheme(isDarkMode) {
-  return {
-    grid: isDarkMode ? 'rgba(148,163,184,0.12)' : 'rgba(15,23,42,0.06)',
-    tick: isDarkMode ? '#94A3B8' : '#6B7280',
-    tooltipBg: isDarkMode ? '#0B1220' : '#FFFFFF',
-    tooltipBorder: isDarkMode ? 'rgba(148,163,184,0.16)' : 'rgba(15,23,42,0.08)',
-    tooltipText: isDarkMode ? '#F1F5F9' : '#111827',
-    legend: isDarkMode ? '#94A3B8' : '#6B7280',
-    cursor: isDarkMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.06)',
-    series: (key) => (isDarkMode ? CHART_SERIES[key].dark : CHART_SERIES[key].light),
-    dept: isDarkMode ? DEPT_PALETTE.dark : DEPT_PALETTE.light,
-  };
-}
+export const MiniFlubberAutoMorphVacation = (props) => (
+  <FlubberMorphIcon icons={[Coffee, Salad, Car, Volleyball, TreePalm, Clapperboard]} cacheKey="dash-vacation" morphInterval={1000} morphDuration={500} {...props} />
+);
 
-function ChartTooltipBox({ active, payload, label, isDarkMode, title, chartTheme }) {
+export const MiniFlubberAutoMorphOfficeWork = (props) => (
+  <FlubberMorphIcon icons={[AlarmClock, Laptop, CupSoda, Form, PhoneCall]} cacheKey="dash-office" morphInterval={1000} morphDuration={500} {...props} />
+);
+
+export const MiniFlubberAutoMorphOverTime = (props) => (
+  <FlubberMorphIcon icons={[Heart, HeartPlus, PersonStanding, HouseWifi, Flame]} cacheKey="dash-overtime" morphInterval={1000} morphDuration={500} {...props} />
+);
+
+export const MiniFlubberAutoMorphPerformance = (props) => (
+  <FlubberMorphIcon icons={[LineChart, BriefcaseBusiness, Gauge, DatabaseZap, BatteryCharging, WifiPen, TrendingUp]} cacheKey="dash-performance" morphInterval={1000} morphDuration={500} {...props} />
+);
+
+/* ------------------------------------------------------------------ *
+ * Small pieces
+ * ------------------------------------------------------------------ */
+
+/** Chart tooltip in the Industry idiom: hairline box, zero radius, no shadow colour. */
+function IndustryTooltip({ ind, active, payload, label, title }) {
   if (!active || !payload?.length) return null;
-
   const seen = new Set();
-  const unique = payload.filter((p) => {
+  const rows = payload.filter((p) => {
     const key = String(p.dataKey || p.name || '').trim().toLowerCase();
     if (!key || seen.has(key)) return false;
     seen.add(key);
     return true;
   });
-
   return (
-    <div
-      style={{
-        background: chartTheme.tooltipBg,
-        border: `1px solid ${chartTheme.tooltipBorder}`,
-        borderRadius: 8,
-        padding: '8px 10px',
-        color: chartTheme.tooltipText,
-        boxShadow: isDarkMode
-          ? '0 10px 28px rgba(0,0,0,0.4)'
-          : '0 10px 28px rgba(15,23,42,0.08)',
-        minWidth: 148,
-      }}
-    >
-      <div
-        style={{
-          fontWeight: 500,
-          marginBottom: 6,
-          fontSize: 12,
-          color: isDarkMode ? '#94A3B8' : '#6B7280',
-        }}
-      >
+    <div style={{ background: ind.chrome, border: `1px solid ${ind.ink}`, borderRadius: 0, padding: '8px 10px', minWidth: 150 }}>
+      <div style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', color: ind.inkMuted, marginBottom: 6 }}>
         {title || label}
       </div>
-      {unique.map((p, idx) => (
-        <div
-          key={idx}
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            gap: 20,
-            marginBottom: idx === unique.length - 1 ? 0 : 4,
-            fontSize: 12,
-            lineHeight: 1.35,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <div
-              style={{
-                width: 10,
-                height: 2,
-                borderRadius: 999,
-                background: p.color || chartTheme.tooltipText,
-              }}
-            />
-            <span style={{ color: isDarkMode ? '#CBD5E1' : '#4B5563' }}>{p.name || p.dataKey}</span>
-          </div>
-          <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{p.value}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ChartSeriesLegend({ items, isDarkMode }) {
-  return (
-    <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1">
-      {items.map((item) => (
-        <div key={item.label} className="flex items-center gap-2">
-          <span
-            className="h-0.5 w-3 rounded-full"
-            style={{ background: item.color }}
-          />
-          <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-            {item.label}
+      {rows.map((p, i) => (
+        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 18, alignItems: 'center', marginTop: i === 0 ? 0 : 4 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted }}>
+            <span aria-hidden="true" style={{ width: 8, height: 8, background: p.color || ind.accent, flex: 'none' }} />
+            {p.name || p.dataKey}
+          </span>
+          <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, color: ind.ink, fontVariantNumeric: 'tabular-nums' }}>
+            {p.value}
           </span>
         </div>
       ))}
@@ -133,149 +95,56 @@ function ChartSeriesLegend({ items, isDarkMode }) {
   );
 }
 
-function ChartPanelHeader({ label, value, hint, legend, text }) {
+/** Figure block: kicker + big number + caption. */
+function FigureBlock({ ind, kicker: kickerText, value, caption, note, size = 62 }) {
   return (
-    <div className="mb-5 flex items-start justify-between gap-4">
-      <div className="min-w-0">
-        <p className={`text-sm ${text.secondary}`}>{label}</p>
-        {value != null && value !== '' && (
-          <p className={`mt-1 text-2xl font-semibold tracking-tight tabular-nums ${text.primary}`}>
-            {value}
-          </p>
-        )}
-        {hint ? (
-          <p className={`mt-0.5 text-xs ${text.secondary}`}>{hint}</p>
-        ) : null}
-      </div>
-      {legend ? <div className="shrink-0 pt-1">{legend}</div> : null}
-    </div>
-  );
-}
-
-function ChartSummaryList({ items, isDarkMode, text, border }) {
-  return (
-    <ul className={`mt-5 divide-y ${border.primary}`}>
-      {items.map((item) => (
-        <li key={item.label} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
-          <div className="flex items-center gap-2.5">
-            <span
-              className="h-0.5 w-3 rounded-full"
-              style={{ background: item.color }}
-            />
-            <span className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
-              {item.label}
-            </span>
-          </div>
-          <span className={`text-sm font-semibold tabular-nums ${text.primary}`}>
-            {item.value}
-          </span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-const chartCardClass = (bg, border) =>
-  cn(
-    bg.secondary,
-    'group relative overflow-hidden rounded-xl border p-5 md:p-6 shadow-sm transition-shadow duration-300 hover:shadow-md',
-    border.primary
-  );
-
-function HoverMetricCard({
-  onClick,
-  className,
-  children,
-  beam,
-}) {
-  const { replayToken, bump } = useNumberReplay();
-  return (
-    <div
-      onClick={onClick}
-      onMouseEnter={bump}
-      className={cn(
-        'group relative overflow-hidden',
-        onClick && 'cursor-pointer',
-        className
+    <div style={{ minWidth: 0 }}>
+      <Kicker ind={ind}>{kickerText}</Kicker>
+      <div style={{ ...figure(size, ind.ink), marginTop: 8 }}>{value}</div>
+      {caption && (
+        <div style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 8 }}>{caption}</div>
       )}
-    >
-      {beam}
-      {typeof children === 'function' ? children(replayToken) : children}
+      {note && <div style={{ marginTop: 5 }}>{note}</div>}
     </div>
   );
-};
+}
 
-export const MiniFlubberAutoMorphEmployeesDashboard = (props) => (
-  <FlubberMorphIcon
-    icons={[Users, User, Speech, PersonStanding]}
-    cacheKey="dash-employees"
-    morphInterval={1000}
-    morphDuration={500}
-    {...props}
-  />
-);
-
-export const MiniFlubberAutoMorphVacation = (props) => (
-  <FlubberMorphIcon
-    icons={[Coffee, Salad, Car, Volleyball, TreePalm, Clapperboard]}
-    cacheKey="dash-vacation"
-    morphInterval={1000}
-    morphDuration={500}
-    {...props}
-  />
-);
-
-export const MiniFlubberAutoMorphOfficeWork = (props) => (
-  <FlubberMorphIcon
-    icons={[AlarmClock, Laptop, CupSoda, Form, PhoneCall]}
-    cacheKey="dash-office"
-    morphInterval={1000}
-    morphDuration={500}
-    {...props}
-  />
-);
-
-export const MiniFlubberAutoMorphOverTime = (props) => (
-  <FlubberMorphIcon
-    icons={[Heart, HeartPlus, PersonStanding, HouseWifi, Flame]}
-    cacheKey="dash-overtime"
-    morphInterval={1000}
-    morphDuration={500}
-    {...props}
-  />
-);
-
-export const MiniFlubberAutoMorphPerformance = (props) => (
-  <FlubberMorphIcon
-    icons={[LineChart, BriefcaseBusiness, Gauge, DatabaseZap, BatteryCharging, WifiPen, TrendingUp]}
-    cacheKey="dash-performance"
-    morphInterval={1000}
-    morphDuration={500}
-    {...props}
-  />
-);
+/* ------------------------------------------------------------------ *
+ * Dashboard
+ * ------------------------------------------------------------------ */
 
 const Dashboard = ({ employees, applications }) => {
-  const { isDarkMode, bg, text, border } = useTheme();
+  const { isDarkMode } = useTheme();
   const { t } = useLanguage();
+  const { user } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
-  
+
+  const ind = getIndustry(isDarkMode);
+
   const [loading, setLoading] = useState(true);
   const [timeTrackingData, setTimeTrackingData] = useState({});
   const [allEmployeesData, setAllEmployeesData] = useState([]);
   const [leaveRequestsData, setLeaveRequestsData] = useState({});
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
   const [pendingApprovals, setPendingApprovals] = useState([]);
-  
+  const [decidingId, setDecidingId] = useState(null);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState({ type: '', data: [], title: '' });
   const [fetchError, setFetchError] = useState(null);
-  
+
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
-  // Define fetch function that can be reused
+  /** 'all' or a department name — scopes the ticker, the figures and the queue. */
+  const [scope, setScope] = useState('all');
+
+  /** Real prior-period totals, used for the ticker deltas. Never blocks the page. */
+  const [prevTotals, setPrevTotals] = useState(null);
+
+  // ---------------------------------------------------------------- fetch
+
   const fetchDashboardData = useCallback(async (options = {}) => {
     const { silent = false } = options;
     if (import.meta.env.DEV) console.log('📊 [Dashboard] fetchDashboardData called:', { employeeCount: employees.length, silent, isDemoMode: isDemoMode() });
@@ -284,12 +153,12 @@ const Dashboard = ({ employees, applications }) => {
       if (!silent) setLoading(false);
       return;
     }
-    
+
     if (!silent) {
       setLoading(true);
       setFetchError(null); // Clear any previous errors
     }
-    
+
     try {
       // Skip session validation in demo mode - demo data doesn't require authentication
       if (!isDemoMode()) {
@@ -299,7 +168,7 @@ const Dashboard = ({ employees, applications }) => {
           throw new Error(sessionValidation.error);
         }
       }
-      
+
       // Wrap the fetch logic with retry mechanism
       await retryWithBackoff(async () => {
         // Two batched calls cover the whole roster. This previously issued one
@@ -407,19 +276,19 @@ const Dashboard = ({ employees, applications }) => {
           console.log(`🔄 Dashboard: Retrying fetch (${attempt}/2) after ${delay}ms...`);
         }
       });
-        
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
 
-        if (handleSessionAuthError(error, { setFetchError })) {
-          return;
-        }
-        
-        // Set user-visible error message for other errors
-        setFetchError(error.message || 'Failed to load dashboard data. Please try refreshing the page.');
-      } finally {
-          if (!silent) setLoading(false);
-        }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+
+      if (handleSessionAuthError(error, { setFetchError })) {
+        return;
+      }
+
+      // Set user-visible error message for other errors
+      setFetchError(error.message || 'Failed to load dashboard data. Please try refreshing the page.');
+    } finally {
+      if (!silent) setLoading(false);
+    }
   }, [employees, selectedMonth, selectedYear, handleSessionAuthError]);
 
   // Memoize the silent refresh callback
@@ -437,108 +306,255 @@ const Dashboard = ({ employees, applications }) => {
   // Use visibility refresh hook to reload data when page becomes visible after idle
   useAuthenticatedPageRefresh(silentRefresh);
 
-  // Calculate aggregate stats
-  const trackingDataValues = Object.values(timeTrackingData);
+  /**
+   * Prior period, fetched separately so the ticker deltas are real numbers
+   * rather than decoration. Deliberately non-blocking: any failure just means
+   * the deltas stay hidden, and nothing about the main load path changes.
+   */
+  useEffect(() => {
+    if (employees.length === 0) return undefined;
+    let cancelled = false;
+
+    const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1;
+    const prevYear = selectedMonth === 1 ? selectedYear - 1 : selectedYear;
+
+    (async () => {
+      try {
+        const result = await timeTrackingService.getOverviewEmployeeSummaries(prevMonth, prevYear, employees);
+        if (cancelled || !result?.success) return;
+        const rows = (result.data || []).map((item) => item.data).filter(Boolean);
+        if (rows.length === 0) { setPrevTotals(null); return; }
+        setPrevTotals({
+          regularHours: rows.reduce((s, d) => s + (d.regular_hours || 0), 0),
+          overtime: rows.reduce((s, d) => s + (d.overtime_hours || 0) + (d.holiday_overtime_hours || 0), 0),
+          leaveDays: rows.reduce((s, d) => s + (d.leave_days || 0), 0),
+          workDays: rows.reduce((s, d) => s + (d.days_worked || 0), 0),
+        });
+      } catch {
+        if (!cancelled) setPrevTotals(null); // deltas are optional
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [employees, selectedMonth, selectedYear]);
+
+  // ---------------------------------------------------------------- scope
+
+  const departmentCountsAll = useMemo(() => {
+    return employees.reduce((acc, emp) => {
+      const key = emp.department || 'Unassigned';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+  }, [employees]);
+
+  /** Company + the two largest departments, exactly like the spec's [Company|Eng|Sales]. */
+  const scopeOptions = useMemo(() => {
+    const top = Object.entries(departmentCountsAll)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 2)
+      .map(([dept]) => ({ value: dept, label: t(`employeeDepartment.${dept}`, dept) }));
+    return [{ value: 'all', label: t('dashboard.company', 'Company') }, ...top];
+  }, [departmentCountsAll, t]);
+
+  // A department can disappear from the roster while it is selected.
+  useEffect(() => {
+    if (scope !== 'all' && !scopeOptions.some((o) => o.value === scope)) setScope('all');
+  }, [scope, scopeOptions]);
+
+  const scopedEmployees = useMemo(
+    () => (scope === 'all' ? employees : employees.filter((e) => (e.department || 'Unassigned') === scope)),
+    [employees, scope]
+  );
+
+  const scopedIds = useMemo(() => new Set(scopedEmployees.map((e) => String(e.id))), [scopedEmployees]);
+
+  // ---------------------------------------------------------------- totals
+
+  const trackingDataValues = useMemo(
+    () => scopedEmployees.map((e) => timeTrackingData[String(e.id)]).filter(Boolean),
+    [scopedEmployees, timeTrackingData]
+  );
+
   const totalWorkDays = trackingDataValues.reduce((sum, emp) => sum + (emp?.workDays || 0), 0);
   const totalLeaveDays = trackingDataValues.reduce((sum, emp) => sum + (emp?.leaveDays || 0), 0);
   const totalOvertime = trackingDataValues.reduce((sum, emp) => sum + (emp?.overtime || 0) + (emp?.holidayOvertime || 0), 0).toFixed(1);
   const totalRegularHours = trackingDataValues.reduce((sum, emp) => sum + (emp?.regularHours || 0), 0).toFixed(0);
-  const avgPerformance = trackingDataValues.length > 0 
+  const avgPerformance = trackingDataValues.length > 0
     ? (trackingDataValues.reduce((sum, emp) => sum + (emp?.performance || 0), 0) / trackingDataValues.length).toFixed(1)
     : '0.0';
-  
+
   // Check if we have any real data
   const hasRealData = trackingDataValues.some(emp => emp?.workDays > 0 || emp?.overtime > 0);
 
+  /** Deltas only appear when the prior period actually returned rows. */
+  const deltas = useMemo(() => {
+    if (!prevTotals || scope !== 'all') return {};
+    const mk = (curr, prev, digits = 0) => {
+      const diff = curr - prev;
+      if (!Number.isFinite(diff) || Math.abs(diff) < (digits ? 0.05 : 0.5)) return null;
+      return { value: Math.abs(diff).toFixed(digits), direction: diff > 0 ? 'up' : 'down' };
+    };
+    return {
+      regularHours: mk(Number(totalRegularHours), prevTotals.regularHours),
+      overtime: mk(Number(totalOvertime), prevTotals.overtime, 1),
+      leaveDays: mk(totalLeaveDays, prevTotals.leaveDays),
+      workDays: mk(totalWorkDays, prevTotals.workDays),
+    };
+  }, [prevTotals, scope, totalRegularHours, totalOvertime, totalLeaveDays, totalWorkDays]);
+
   // Helper function to generate display names for charts - always use last name
-  const getUniqueDisplayName = (employee) => {
+  const getUniqueDisplayName = useCallback((employee) => {
     const translatedName = getDemoEmployeeName(employee, t);
     const nameParts = translatedName.trim().split(/\s+/).filter(part => part.length > 0);
     if (nameParts.length === 0) return `Employee #${employee.id}`;
-    
-    // Always use last name for cleaner, more compact display
-    const lastName = nameParts[nameParts.length - 1];
-    return lastName;
-  };
 
-  // Performance data for bar chart
-  const performanceData = employees.map(emp => ({
+    // Always use last name for cleaner, more compact display
+    return nameParts[nameParts.length - 1];
+  }, [t]);
+
+  // ---------------------------------------------------------------- series
+
+  // Performance data for the hero area chart
+  const performanceData = useMemo(() => scopedEmployees.map(emp => ({
     name: getUniqueDisplayName(emp),
     fullName: getDemoEmployeeName(emp, t), // Keep full name for tooltip
     id: emp.id,
     performance: timeTrackingData[String(emp.id)]?.performance || 4.0,
-    overtime: timeTrackingData[String(emp.id)]?.overtime || 0
-  }));
+    overtime: timeTrackingData[String(emp.id)]?.overtime || 0,
+  })), [scopedEmployees, timeTrackingData, getUniqueDisplayName, t]);
 
-  // Department distribution for pie chart
-  const departmentCounts = employees.reduce((acc, emp) => {
-    acc[emp.department] = (acc[emp.department] || 0) + 1;
-    return acc;
-  }, {});
+  const performanceScores = performanceData.map((d) => d.performance);
+  const performanceHigh = performanceScores.length ? Math.max(...performanceScores).toFixed(1) : '—';
+  const performanceLow = performanceScores.length ? Math.min(...performanceScores).toFixed(1) : '—';
 
-  const departmentData = Object.entries(departmentCounts).map(([dept, count]) => ({
-    name: t(`employeeDepartment.${dept}`, dept),
-    value: count
-  }));
+  // Headcount by department (always company-wide — the roster does not change with scope)
+  const departmentRows = useMemo(() => {
+    const total = employees.length || 1;
+    return Object.entries(departmentCountsAll)
+      .map(([dept, count]) => ({
+        dept,
+        label: t(`employeeDepartment.${dept}`, dept),
+        count,
+        share: count / total,
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [departmentCountsAll, employees.length, t]);
 
-  // Leave requests summary - use ALL employees, not just top 5
-  const leaveData = employees.map(emp => {
+  const departmentTotal = departmentRows.reduce((s, r) => s + r.count, 0);
+
+  // Hours logged — regular + overtime, ranked
+  const hoursRows = useMemo(() => allEmployeesData
+    .filter((item) => item.data && scopedIds.has(String(item.employee?.id)))
+    .map((item) => ({
+      id: item.employee.id,
+      name: getUniqueDisplayName(item.employee),
+      fullName: getDemoEmployeeName(item.employee, t) || item.employee.name,
+      regularHours: item.data?.regular_hours || 0,
+      overtimeHours: (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0),
+    }))
+    .sort((a, b) => (b.regularHours + b.overtimeHours) - (a.regularHours + a.overtimeHours))
+    .slice(0, 8), [allEmployeesData, scopedIds, getUniqueDisplayName, t]);
+
+  const hoursRegularTotal = hoursRows.reduce((sum, row) => sum + (row.regularHours || 0), 0);
+  const hoursOvertimeTotal = hoursRows.reduce((sum, row) => sum + (row.overtimeHours || 0), 0);
+  const hoursMaxTotal = Math.max(1, ...hoursRows.map((row) => (row.regularHours || 0) + (row.overtimeHours || 0)));
+
+  // Work vs leave days
+  const leaveData = useMemo(() => scopedEmployees.map(emp => {
     const empId = String(emp.id);
     return {
       name: getUniqueDisplayName(emp),
       fullName: getDemoEmployeeName(emp, t), // Keep full name for tooltip
       id: emp.id,
       leaveDays: leaveRequestsData[empId] || timeTrackingData[empId]?.leaveDays || 0,
-      workDays: timeTrackingData[empId]?.workDays || 0
+      workDays: timeTrackingData[empId]?.workDays || 0,
     };
-  });
+  }), [scopedEmployees, leaveRequestsData, timeTrackingData, getUniqueDisplayName, t]);
 
-  const chartTheme = getChartTheme(isDarkMode);
-  const axisTick = { fontSize: 11, fill: chartTheme.tick };
-  const departmentChartData = [...departmentData].sort((a, b) => (b.value || 0) - (a.value || 0));
-  const departmentTotal = departmentChartData.reduce((sum, d) => sum + (d.value || 0), 0);
-  const hoursChartData = allEmployeesData
-    .filter((item) => item.data)
-    .map((item) => ({
-      name: getUniqueDisplayName(item.employee),
-      fullName: item.employee.name,
-      regularHours: item.data?.regular_hours || 0,
-      overtimeHours: (item.data?.overtime_hours || 0) + (item.data?.holiday_overtime_hours || 0),
-    }))
-    .sort((a, b) => (b.regularHours + b.overtimeHours) - (a.regularHours + a.overtimeHours))
-    .slice(0, 10);
-  const hoursChartRegularTotal = hoursChartData.reduce((sum, row) => sum + (row.regularHours || 0), 0);
-  const hoursChartOvertimeTotal = hoursChartData.reduce((sum, row) => sum + (row.overtimeHours || 0), 0);
-  const hoursChartMaxTotal = Math.max(
-    1,
-    ...hoursChartData.map((row) => (row.regularHours || 0) + (row.overtimeHours || 0))
-  );
-  const hoursEditorial = {
-    ink: isDarkMode ? '#60A5FA' : '#3B82F6',
-    mute: isDarkMode ? '#94A3B8' : '#94A3B8',
-    track: isDarkMode ? 'rgba(148,163,184,0.14)' : 'rgba(59,130,246,0.08)',
-  };
   const leaveChartWorkTotal = leaveData.reduce((sum, row) => sum + (row.workDays || 0), 0);
   const leaveChartLeaveTotal = leaveData.reduce((sum, row) => sum + (row.leaveDays || 0), 0);
 
   // Top performers
-  const topPerformers = employees
+  const topPerformers = useMemo(() => scopedEmployees
     .map(emp => ({
       ...emp,
       performance: timeTrackingData[String(emp.id)]?.performance || 4.0,
-      overtime: timeTrackingData[String(emp.id)]?.overtime || 0
+      overtime: timeTrackingData[String(emp.id)]?.overtime || 0,
     }))
     .sort((a, b) => b.performance - a.performance)
-    .slice(0, 5);
+    .slice(0, 5), [scopedEmployees, timeTrackingData]);
+
+  // ---------------------------------------------------------------- queue
+
+  /** Pending time entries, scoped and oldest first — the decision column's spine. */
+  const decisionQueue = useMemo(() => {
+    const rows = pendingApprovals.filter((a) => {
+      const empId = String(a.employee?.id ?? a.employee_id ?? '');
+      return scope === 'all' || scopedIds.has(empId);
+    });
+    return rows
+      .map((a) => {
+        const when = a.date || a.created_at || null;
+        const waitedDays = when
+          ? Math.max(0, Math.floor((Date.now() - new Date(when).getTime()) / 86400000))
+          : 0;
+        return { ...a, _when: when, _waitedDays: waitedDays };
+      })
+      .sort((a, b) => b._waitedDays - a._waitedDays);
+  }, [pendingApprovals, scope, scopedIds]);
+
+  const oldestWaited = decisionQueue.length ? decisionQueue[0]._waitedDays : 0;
+  const overdueCount = decisionQueue.filter((r) => r._waitedDays >= 2).length;
+
+  /** Hiring pipeline, read off the applications already loaded by App.jsx. */
+  const pipeline = useMemo(() => {
+    const norm = (s) => String(s || '').trim().toLowerCase();
+    const count = (...names) => applications.filter((a) => names.includes(norm(a.status)) || names.includes(norm(a.stage))).length;
+    return [
+      { key: 'screening', label: t('dashboard.pipeline.screening', 'Screening'), value: count('under review', 'screening', 'applied', 'new') },
+      { key: 'shortlisted', label: t('dashboard.pipeline.shortlisted', 'Shortlisted'), value: count('shortlisted') },
+      { key: 'interview', label: t('dashboard.pipeline.interview', 'Interview'), value: count('interview scheduled', 'interview') },
+      { key: 'offer', label: t('dashboard.pipeline.offer', 'Offer'), value: count('offer extended', 'offer') },
+    ];
+  }, [applications, t]);
+
+  const pipelineMax = Math.max(1, ...pipeline.map((p) => p.value));
+
+  // ---------------------------------------------------------------- actions
+
+  /** Approve / decline straight from the queue, same service the time clock uses. */
+  const handleDecision = useCallback(async (entry, status) => {
+    setDecidingId(entry.id);
+    try {
+      const approverId = user?.employee_id || user?.employeeId || user?.id;
+      const result = await timeTrackingService.updateTimeEntryStatus(entry.id, status, approverId);
+      if (result.success) {
+        setPendingApprovals((prev) => prev.filter((a) => a.id !== entry.id));
+        setPendingApprovalsCount((n) => Math.max(0, n - 1));
+        // Pull fresh totals so the hours/overtime figures agree with the queue.
+        fetchDashboardData({ silent: true });
+      } else {
+        setFetchError(result.error || t('timeClock.approvalError', 'Failed to update entry'));
+      }
+    } catch (error) {
+      console.error('Error updating approval:', error);
+      if (handleSessionAuthError(error, { setFetchError })) return;
+      setFetchError(error.message || t('timeClock.approvalError', 'Failed to update entry'));
+    } finally {
+      setDecidingId(null);
+    }
+  }, [user, fetchDashboardData, handleSessionAuthError, t]);
 
   // Handle metric click - prepare data and open modal
   const handleMetricClick = (metricType) => {
+    const roster = scopedEmployees;
     let data = [];
     let title = '';
-    
-    switch(metricType) {
+
+    switch (metricType) {
       case 'employees':
-        data = employees.map(emp => ({
+        data = roster.map(emp => ({
           employeeName: getDemoEmployeeName(emp, t),
           department: emp.department,
           position: emp.position,
@@ -546,9 +562,9 @@ const Dashboard = ({ employees, applications }) => {
         }));
         title = t('dashboard.totalEmployees');
         break;
-        
+
       case 'performance':
-        data = employees.map(emp => ({
+        data = roster.map(emp => ({
           employeeName: getDemoEmployeeName(emp, t),
           position: emp.position,
           department: emp.department,
@@ -557,9 +573,9 @@ const Dashboard = ({ employees, applications }) => {
         }));
         title = t('dashboard.avgPerformance');
         break;
-        
+
       case 'regularHours':
-        data = employees.map(emp => ({
+        data = roster.map(emp => ({
           employeeName: getDemoEmployeeName(emp, t),
           position: emp.position,
           department: emp.department,
@@ -568,9 +584,9 @@ const Dashboard = ({ employees, applications }) => {
         }));
         title = t('dashboard.totalRegularHours', '');
         break;
-        
+
       case 'overtime':
-        data = employees.map(emp => ({
+        data = roster.map(emp => ({
           employeeName: getDemoEmployeeName(emp, t),
           position: emp.position,
           department: emp.department,
@@ -579,9 +595,9 @@ const Dashboard = ({ employees, applications }) => {
         }));
         title = t('dashboard.totalOvertime');
         break;
-        
+
       case 'leave':
-        data = employees.map(emp => {
+        data = roster.map(emp => {
           const empId = String(emp.id);
           return {
             employeeName: getDemoEmployeeName(emp, t),
@@ -593,9 +609,9 @@ const Dashboard = ({ employees, applications }) => {
         });
         title = t('dashboard.totalLeave');
         break;
-      
+
       case 'workDays':
-        data = employees.map(emp => ({
+        data = roster.map(emp => ({
           employeeName: getDemoEmployeeName(emp, t),
           position: emp.position,
           department: emp.department,
@@ -604,9 +620,9 @@ const Dashboard = ({ employees, applications }) => {
         }));
         title = t('dashboard.totalWorkDays');
         break;
-        
+
       case 'pendingRequests':
-        data = pendingApprovals.map(approval => ({
+        data = decisionQueue.map(approval => ({
           employeeName: approval.employee?.name || approval.employeeName || 'Unknown Employee',
           department: approval.employee?.department || approval.department || 'N/A',
           requestType: approval.hour_type || approval.requestType || 'Time Entry',
@@ -616,855 +632,723 @@ const Dashboard = ({ employees, applications }) => {
         }));
         title = t('dashboard.pendingRequests', 'Pending Requests');
         break;
-        
+
       case 'applications':
         data = applications;
         title = t('dashboard.activeApplications');
         break;
-        
+
       default:
         return;
     }
-    
+
     setModalConfig({ type: metricType, data, title });
     setModalOpen(true);
   };
 
+  // ---------------------------------------------------------------- render
+
+  const monthNames = [
+    ['january', 'January'], ['february', 'February'], ['march', 'March'], ['april', 'April'],
+    ['may', 'May'], ['june', 'June'], ['july', 'July'], ['august', 'August'],
+    ['september', 'September'], ['october', 'October'], ['november', 'November'], ['december', 'December'],
+  ];
+  const periodLabel = `${t(`months.${monthNames[selectedMonth - 1][0]}`, monthNames[selectedMonth - 1][1])} ${selectedYear}`;
+  const scopeLabel = scopeOptions.find((o) => o.value === scope)?.label ?? '';
+
+  const axisTick = {
+    fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.12em', fill: ind.inkMuted,
+  };
+
+  const sectionRule = { borderTop: `1px solid ${ind.rule}` };
+
   return (
-    <div className="space-y-4 md:space-y-6 w-full">
-      <div className={`${bg.secondary} rounded-lg border ${border.primary} p-3 flex items-center justify-between slide-in-left flex-wrap gap-3`}>
-        <div className="flex items-center space-x-2">
-          <DatabaseZap className={`w-4 h-4 ${hasRealData ? 'text-green-600' : 'text-yellow-600'}`} />
-          <TextEffect
-            as="span"
-            per="word"
-            preset="fade"
-            className={`text-sm ${text.secondary}`}
-            speedReveal={1.4}
-          >
-            {hasRealData 
-              ? t('dashboard.liveData', 'Live data from Supabase')
-              : t('dashboard.noData', 'No time tracking data yet')
-            }
-          </TextEffect>
-          <span className={`hidden sm:inline text-sm font-mono ${text.secondary} opacity-70`}>·</span>
-          <PageLiveClock
-            showSeparator={false}
-            textClassName={text.primary}
-            loading={loading}
-            isDarkMode={isDarkMode}
-            fetchLabel={t('common.fetching', 'Fetching')}
-          />
-        </div>
-        
-        {/* Month/Year Selector */}
-        <div className="flex items-center space-x-2">
-          <Funnel className={`w-4 h-4 ${text.secondary}`} />
-          <select
+    <div
+      style={{
+        border: `1px solid ${ind.hairline}`,
+        background: ind.ground,
+        color: ind.ink,
+        fontFamily: BODY,
+        fontSize: 14,
+        borderRadius: 0,
+      }}
+    >
+      {/* ── TICKER — replaces metric cards. Never both. ───────────────── */}
+      <div
+        style={{
+          height: 44,
+          background: ind.tickerBg,
+          color: ind.tickerInk,
+          borderBottom: `1px solid ${ind.hairline}`,
+          display: 'flex',
+          alignItems: 'stretch',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+        }}
+      >
+        <TickerCell ind={ind} title={hasRealData ? t('dashboard.liveData', 'Live data from Supabase') : t('dashboard.noData', 'No time tracking data yet')}>
+          <LiveClock ind={ind} live={hasRealData} />
+        </TickerCell>
+
+        <TickerCell
+          ind={ind}
+          label={t('dashboard.workforce', 'Headcount')}
+          value={scopedEmployees.length}
+          onClick={() => handleMetricClick('employees')}
+          title={t('dashboard.totalEmployees')}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('dashboard.hours', 'Hours')}
+          value={Number(totalRegularHours).toLocaleString()}
+          delta={deltas.regularHours?.value}
+          deltaDirection={deltas.regularHours?.direction}
+          onClick={() => handleMetricClick('regularHours')}
+          title={t('dashboard.totalRegularHours', 'Total Regular Hours')}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('dashboard.performance', 'Perf')}
+          value={avgPerformance}
+          onClick={() => handleMetricClick('performance')}
+          title={t('dashboard.avgPerformance')}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('dashboard.overtime', 'Overtime')}
+          value={`${totalOvertime}h`}
+          delta={deltas.overtime?.value}
+          deltaDirection={deltas.overtime?.direction}
+          onClick={() => handleMetricClick('overtime')}
+          title={t('dashboard.totalOvertime')}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('dashboard.leave', 'Leave')}
+          value={totalLeaveDays}
+          delta={deltas.leaveDays?.value}
+          deltaDirection={deltas.leaveDays?.direction}
+          onClick={() => handleMetricClick('leave')}
+          title={t('dashboard.totalLeave')}
+        />
+
+        {/* Period selector — pushed right with flex:1 and a left hairline. */}
+        <div
+          style={{
+            flex: 1,
+            minWidth: 'max-content',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 8,
+            padding: '0 14px',
+            borderLeft: `1px solid ${ind.tickerRule}`,
+          }}
+        >
+          <FetchElapsedPill active={loading} isDarkMode label={t('common.fetching', 'Fetching')} />
+          <FlatSelect
+            ind={ind}
+            onDark
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(Number(e.target.value))}
-            className={`${text.primary} px-3 py-1.5 rounded-lg border ${border.primary} text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer transition-colors ${isDarkMode ? 'hover:border-gray-100' : 'hover:border-gray-900'}`}
+            aria-label={t('dashboard.currentMonth', 'Month')}
           >
-            <option value={1}>{t('months.january', 'January')}</option>
-            <option value={2}>{t('months.february', 'February')}</option>
-            <option value={3}>{t('months.march', 'March')}</option>
-            <option value={4}>{t('months.april', 'April')}</option>
-            <option value={5}>{t('months.may', 'May')}</option>
-            <option value={6}>{t('months.june', 'June')}</option>
-            <option value={7}>{t('months.july', 'July')}</option>
-            <option value={8}>{t('months.august', 'August')}</option>
-            <option value={9}>{t('months.september', 'September')}</option>
-            <option value={10}>{t('months.october', 'October')}</option>
-            <option value={11}>{t('months.november', 'November')}</option>
-            <option value={12}>{t('months.december', 'December')}</option>
-          </select>
-          
-          <select
+            {monthNames.map(([key, fallback], i) => (
+              <option key={key} value={i + 1} style={{ color: '#1d1f20' }}>
+                {t(`months.${key}`, fallback)}
+              </option>
+            ))}
+          </FlatSelect>
+          <FlatSelect
+            ind={ind}
+            onDark
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className={`${text.primary} px-3 py-1.5 rounded-lg border ${border.primary} text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer transition-colors ${isDarkMode ? 'hover:border-gray-100' : 'hover:border-gray-900'}`}
+            aria-label="Year"
           >
-            <option value={2024}>2024</option>
-            <option value={2025}>2025</option>
-            <option value={2026}>2026</option>
-          </select>
-        </div>
-        
-        <button 
-          type = "button"
-          onClick={() => globalThis.location.reload()}
-          className="flex items-center space-x-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-all duration-200 hover:scale-105"
-        >
-          <RefreshCw className="h-3 w-3" />
-          <span>{t('common.refresh', 'Refresh')}</span>
-        </button>
-      </div>
-      
-      {/* Error Banner */}
-      {fetchError && (
-        <div className={`${isDarkMode ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-300'} rounded-lg border p-4 flex items-start space-x-3 slide-in-top`}>
-          <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'} shrink-0 mt-0.5`} />
-          <div className="flex-1">
-            <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-red-400' : 'text-red-800'}`}>
-              {t('common.error', 'Error')}
-            </h3>
-            <p className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-700'} mt-1`}>
-              {fetchError}
-            </p>
-            <button
-              type = "button"
-              onClick={() => {
-                setFetchError(null);
-                fetchDashboardData();
-              }}
-              className={`mt-2 text-xs font-medium ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} underline`}
-            >
-              {t('common.retry', 'Try Again')}
-            </button>
-          </div>
+            {[2024, 2025, 2026].map((y) => (
+              <option key={y} value={y} style={{ color: '#1d1f20' }}>{y}</option>
+            ))}
+          </FlatSelect>
           <button
-            type = "button"
-            onClick={() => setFetchError(null)}
-            className={`${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} transition-colors`}
-            aria-label="Close"
+            type="button"
+            onClick={() => fetchDashboardData()}
+            title={t('common.refresh', 'Refresh')}
+            aria-label={t('common.refresh', 'Refresh')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 26, height: 26, flex: 'none',
+              border: `1px solid ${ind.tickerRule}`, borderRadius: 0,
+              background: 'transparent', color: ind.tickerInk, cursor: 'pointer',
+            }}
           >
-            ×
+            <RefreshCw size={13} strokeWidth={1.5} className={loading ? 'animate-spin' : undefined} />
           </button>
         </div>
-      )}
-      
-      {/* Key Metrics */}
-      <AnimatedGroup
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6"
-        preset="blur-slide"
-      >
-        <StatsCard 
-          title={t('dashboard.totalEmployees')} 
-          value={employees.length} 
-          icon={MiniFlubberAutoMorphEmployeesDashboard} 
-          staticIcon={Users}
-          iconHoverOnly
-          color={isDarkMode ? "#ffffff" : "#1f1f1f"}
-          size={24}
-          isDarkMode={isDarkMode}
-          onClick={() => handleMetricClick('employees')}
-        />
-        <StatsCard 
-          title={t('dashboard.totalRegularHours', '')} 
-          value={`${totalRegularHours}h`} 
-          icon={MiniFlubberAutoMorphOfficeWork} 
-          staticIcon={AlarmClock}
-          iconHoverOnly
-          size={28}
-          color={isDarkMode ? "#ffffff" : "#1f1f1f"}
-          isDarkMode={isDarkMode}
-          onClick={() => handleMetricClick('regularHours')}
-        />
-        <StatsCard 
-          title={t('dashboard.avgPerformance')} 
-          value={avgPerformance} 
-          icon={MiniFlubberAutoMorphPerformance} 
-          staticIcon={Gauge}
-          iconHoverOnly
-          size={28}
-          isDarkMode={isDarkMode}
-          color={isDarkMode ? "#ffffff" : "#1f1f1f"}
-          onClick={() => handleMetricClick('performance')}
-        />
-        <StatsCard 
-          title={t('dashboard.totalOvertime')} 
-          value={`${totalOvertime}h`} 
-          icon={MiniFlubberAutoMorphOverTime} 
-          staticIcon={HeartPlus}
-          iconHoverOnly
-          size={28}
-          isDarkMode={isDarkMode}
-          color={isDarkMode ? "#ffffff" : "#1f1f1f"}
-          onClick={() => handleMetricClick('overtime')}
-        />
-        <StatsCard 
-          title={t('dashboard.totalLeave')} 
-          value={totalLeaveDays} 
-          icon={MiniFlubberAutoMorphVacation} 
-          staticIcon={Coffee}
-          iconHoverOnly
-          size={28}
-          isDarkMode={isDarkMode}
-          color={isDarkMode ? "#ffffff" : "#1f1f1f"}
-          onClick={() => handleMetricClick('leave')}
-        />
-      </AnimatedGroup>
+      </div>
 
-      {/* Magic Bento overview */}
-      <MagicBento
-        isDarkMode={isDarkMode}
-        enableStars
-        enableSpotlight
-        enableBorderGlow
-        enableMagnetism
-        clickEffect
-        items={[
-          {
-            label: t('dashboard.workforce', 'Workforce'),
-            title: String(employees.length),
-            description: t('dashboard.totalEmployees'),
-            value: employees.length,
-            onClick: () => handleMetricClick('employees'),
-          },
-          {
-            label: t('dashboard.hours', 'Hours'),
-            title: `${totalRegularHours}h`,
-            description: t('dashboard.totalRegularHours', 'Total Regular Hours'),
-            value: Number(totalRegularHours) || 0,
-            suffix: 'h',
-            onClick: () => handleMetricClick('regularHours'),
-          },
-          {
-            label: t('dashboard.performance', 'Performance'),
-            title: String(avgPerformance),
-            description: t('dashboard.avgPerformance'),
-            value: Number(avgPerformance) || 0,
-            onClick: () => handleMetricClick('performance'),
-          },
-          {
-            label: t('dashboard.overtime', 'Overtime'),
-            title: `${totalOvertime}h`,
-            description: t('dashboard.totalOvertime'),
-            value: Number(totalOvertime) || 0,
-            suffix: 'h',
-            onClick: () => handleMetricClick('overtime'),
-          },
-          {
-            label: t('dashboard.leave', 'Leave'),
-            title: String(totalLeaveDays),
-            description: t('dashboard.totalLeave'),
-            value: Number(totalLeaveDays) || 0,
-            onClick: () => handleMetricClick('leave'),
-          },
-          {
-            label: t('dashboard.approvals', 'Approvals'),
-            title: String(pendingApprovalsCount),
-            description: t('dashboard.pendingRequests', 'Pending Requests'),
-            value: Number(pendingApprovalsCount) || 0,
-            onClick: () => handleMetricClick('pendingRequests'),
-          },
-        ]}
-      />
+      {/* ── BANDS ─────────────────────────────────────────────────────── */}
+      <div className="flex flex-col lg:flex-row items-stretch">
 
-      {/* Charts Row 1 */}
-      <InView
-        once
-        variants={{
-          hidden: { opacity: 0, y: 28 },
-          visible: { opacity: 1, y: 0 },
-        }}
-        transition={{ duration: 0.45, ease: 'easeOut' }}
-        viewOptions={{ margin: '-40px' }}
-      >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Employee Performance Chart */}
-        <div className={chartCardClass(bg, border)}>
-          <BorderBeam showOnHover size={110} duration={10} borderWidth={1.5} colorFrom="#3b82f6" colorTo="#06b6d4" />
-          <div className="relative z-10">
-          <ChartPanelHeader
-            label={t('dashboard.employeePerformance')}
-            value={avgPerformance}
-            hint={t('dashboard.avgPerformance')}
-            text={text}
-            legend={
-              <ChartSeriesLegend
-                isDarkMode={isDarkMode}
-                items={[{
-                  label: t('dashboard.performanceRating', 'Performance Rating'),
-                  color: chartTheme.series('performance'),
-                }]}
-              />
-            }
-          />
-          <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={performanceData} margin={{ top: 8, right: 8, left: -12, bottom: 28 }}>
-              <defs>
-                <linearGradient id="performanceAreaFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={chartTheme.series('performance')} stopOpacity={0.22} />
-                  <stop offset="100%" stopColor={chartTheme.series('performance')} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid vertical={false} stroke={chartTheme.grid} strokeDasharray="0" />
-              <XAxis
-                dataKey="name"
-                axisLine={false}
-                tickLine={false}
-                angle={-28}
-                textAnchor="end"
-                height={48}
-                interval={0}
-                tick={axisTick}
-              />
-              <YAxis
-                hide
-                domain={[0, 5]}
-              />
-              <Tooltip
-                cursor={{ stroke: chartTheme.grid, strokeWidth: 1 }}
-                content={({ active, payload, label }) => (
-                  <ChartTooltipBox
-                    active={active}
-                    payload={payload}
-                    label={label}
-                    isDarkMode={isDarkMode}
-                    chartTheme={chartTheme}
-                    title={
-                      payload?.[0]?.payload?.fullName
-                        ? `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}`
-                        : label
-                    }
-                  />
-                )}
-              />
-              <Area
-                type="monotone"
-                dataKey="performance"
-                name={t('dashboard.performanceRating', 'Performance Rating')}
-                stroke={chartTheme.series('performance')}
-                strokeWidth={2}
-                fill="url(#performanceAreaFill)"
-                dot={false}
-                activeDot={{
-                  r: 4,
-                  fill: chartTheme.series('performance'),
-                  stroke: isDarkMode ? '#0B1220' : '#FFFFFF',
-                  strokeWidth: 2,
-                }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-          </div>
-        </div>
+        {/* ── MAIN — the only band that scrolls ──────────────────────── */}
+        <div
+          className="flex-1 min-w-0 flex flex-col"
+          style={{ padding: 24, gap: 18, borderRight: `1px solid ${ind.hairline}` }}
+        >
+          {/* Error banner */}
+          {fetchError && (
+            <div style={{ border: `1px solid ${ind.ink}`, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <AlertCircle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Kicker ind={ind} color={ind.ink}>{t('common.error', 'Error')}</Kicker>
+                <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 4 }}>{fetchError}</p>
+                <button
+                  type="button"
+                  onClick={() => { setFetchError(null); fetchDashboardData(); }}
+                  style={{
+                    marginTop: 8, background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                    fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5, letterSpacing: '.08em',
+                    textTransform: 'uppercase', color: ind.accentDeep, textDecoration: 'underline',
+                  }}
+                >
+                  {t('common.retry', 'Try Again')}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFetchError(null)}
+                aria-label={t('common.close', 'Close')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0, flex: 'none' }}
+              >
+                <X size={15} strokeWidth={1.5} />
+              </button>
+            </div>
+          )}
 
-        {/* Department Distribution */}
-        <div className={chartCardClass(bg, border)} style={{ animationDelay: '0.1s' }}>
-          <BorderBeam showOnHover size={110} duration={11} delay={1} borderWidth={1.5} colorFrom="#3b82f6" colorTo="#d946ef" />
-          <div className="relative z-10">
-          <ChartPanelHeader
-            label={t('dashboard.departmentDist')}
-            value={departmentTotal}
-            hint={t('dashboard.totalEmployees')}
-            text={text}
-          />
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart
-              layout="vertical"
-              data={departmentChartData}
-              margin={{ top: 0, right: 36, left: 4, bottom: 0 }}
-              barCategoryGap="32%"
-            >
-              <CartesianGrid horizontal={false} stroke={chartTheme.grid} strokeDasharray="0" />
-              <XAxis
-                type="number"
-                hide
-                allowDecimals={false}
-              />
-              <YAxis
-                type="category"
-                dataKey="name"
-                axisLine={false}
-                tickLine={false}
-                width={96}
-                tick={axisTick}
-              />
-              <Tooltip
-                cursor={{ fill: chartTheme.cursor }}
-                content={({ active, payload }) => {
-                  if (!active || !payload?.length) return null;
-                  const item = payload[0];
-                  const pct = departmentTotal > 0 ? Math.round((item.value / departmentTotal) * 100) : 0;
-                  return (
-                    <ChartTooltipBox
-                      active={active}
-                      payload={[{
-                        name: item.payload?.name || item.name,
-                        value: `${item.value} · ${pct}%`,
-                        color: item.color || chartTheme.series('regular'),
-                      }]}
-                      isDarkMode={isDarkMode}
-                      chartTheme={chartTheme}
-                      title={t('dashboard.departmentDist')}
-                    />
-                  );
-                }}
-              />
-              <Bar
-                dataKey="value"
-                radius={[0, 4, 4, 0]}
-                maxBarSize={16}
-                name={t('dashboard.departmentDist')}
-                label={{
-                  position: 'right',
-                  fill: chartTheme.tick,
-                  fontSize: 11,
+          {/* 1 — Title row */}
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div style={{ minWidth: 0 }}>
+              <h1
+                style={{
+                  fontFamily: DISPLAY, fontWeight: 600, fontSize: 34, lineHeight: 1.05,
+                  letterSpacing: '.02em', textTransform: 'uppercase', color: ind.ink, margin: 0,
                 }}
               >
-                {departmentChartData.map((_entry, index) => (
-                  <Cell
-                    key={`dept-${index}`}
-                    fill={chartTheme.dept[index % chartTheme.dept.length]}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+                {t('dashboard.overview', 'Organization Overview')}
+              </h1>
+              <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 6 }}>
+                {scope === 'all' ? periodLabel : `${scopeLabel} · ${periodLabel}`}
+                {' · '}
+                {hasRealData
+                  ? t('dashboard.liveData', 'Live data from Supabase')
+                  : t('dashboard.noData', 'No time tracking data yet')}
+              </p>
+            </div>
+            <Seg
+              ind={ind}
+              options={scopeOptions}
+              value={scope}
+              onChange={setScope}
+              ariaLabel={t('employees.department', 'Department')}
+            />
           </div>
-        </div>
-      </div>
-      </InView>
 
-      {/* Charts Row 2 - Regular + Overtime Hours (editorial horizontal bars) */}
-      <InView
-        once
-        variants={{
-          hidden: { opacity: 0, y: 28 },
-          visible: { opacity: 1, y: 0 },
-        }}
-        transition={{ duration: 0.45, ease: 'easeOut' }}
-        viewOptions={{ margin: '-40px' }}
-      >
-      <div className="grid grid-cols-1 gap-6">
-        <div className={cn(chartCardClass(bg, border), 'overflow-visible')}>
-          <BorderBeam showOnHover size={120} duration={12} borderWidth={1.5} colorFrom="#3b82f6" colorTo="#94a3b8" />
-          <div className="relative z-10">
-                <ChartPanelHeader
-                  label={t('dashboard.regularAndOvertimeByEmployee', 'Regular & Overtime Hours by Employee')}
-                  value={`${Math.round(hoursChartRegularTotal + hoursChartOvertimeTotal)}h`}
-                  hint={t('dashboard.acrossEmployees', 'Across employees')}
-                  text={text}
-                  legend={
-                    <ChartSeriesLegend
-                      isDarkMode={isDarkMode}
-                      items={[
-                        {
-                          label: t('dashboard.regularHoursLegend', 'Regular Hours'),
-                          color: hoursEditorial.ink,
-                        },
-                        {
-                          label: t('dashboard.totalOvertimeLegend', 'Overtime Hours'),
-                          color: hoursEditorial.mute,
-                        },
-                      ]}
-                    />
+          {/* 2 — Hero figure */}
+          <Blueprint ind={ind} style={{ padding: '18px 20px 12px' }}>
+            <div className="flex flex-col md:flex-row gap-5 md:gap-8">
+              <div style={{ flex: 'none', width: 190 }}>
+                <FigureBlock
+                  ind={ind}
+                  kicker={t('dashboard.avgPerformance', 'Average Performance')}
+                  value={avgPerformance}
+                  caption={`${t('dashboard.outOf', 'of')} 5.0 · ${performanceData.length} ${t('dashboard.reviews', 'reviews')}`}
+                  note={
+                    // Labelled explicitly: these are the roster's spread, not a
+                    // period-over-period change. Only the ticker carries deltas.
+                    performanceScores.length > 0 && (
+                      <span style={{ display: 'inline-flex', gap: 12, alignItems: 'center' }}>
+                        <Delta ind={ind} direction="up">{`${t('dashboard.high', 'High')} ${performanceHigh}`}</Delta>
+                        <Delta ind={ind} direction="down">{`${t('dashboard.low', 'Low')} ${performanceLow}`}</Delta>
+                      </span>
+                    )
                   }
                 />
+              </div>
+              <div style={{ flex: 1, minWidth: 0, height: 176 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={performanceData} margin={{ top: 6, right: 4, left: 4, bottom: 4 }}>
+                    <defs>
+                      <linearGradient id="ind-perf-fill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={ind.accent} stopOpacity={0.22} />
+                        <stop offset="100%" stopColor={ind.accent} stopOpacity={0.04} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} stroke={ind.rule} strokeDasharray="0" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} interval="preserveStartEnd" height={20} tick={axisTick} />
+                    <YAxis hide domain={[0, 5]} />
+                    <Tooltip
+                      cursor={{ stroke: ind.hairline, strokeWidth: 1 }}
+                      content={({ active, payload, label }) => (
+                        <IndustryTooltip
+                          ind={ind}
+                          active={active}
+                          payload={payload}
+                          label={label}
+                          title={payload?.[0]?.payload?.fullName
+                            ? `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}`
+                            : label}
+                        />
+                      )}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="performance"
+                      name={t('dashboard.performanceRating', 'Performance Rating')}
+                      stroke={ind.accent}
+                      strokeWidth={2}
+                      fill="url(#ind-perf-fill)"
+                      dot={false}
+                      activeDot={{ r: 3, fill: ind.accent, stroke: ind.ground, strokeWidth: 2 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </Blueprint>
 
-                {hoursChartData.length === 0 ? (
-                  <p className={`py-10 text-center text-sm ${text.secondary}`}>
+          {/* 3 — Two figures side by side */}
+          <div className="grid grid-cols-1 xl:grid-cols-2" style={{ gap: 18 }}>
+
+            {/* Headcount by department */}
+            <Blueprint ind={ind} style={{ padding: '16px 20px 18px', display: 'flex', flexDirection: 'column' }}>
+              <div className="flex items-baseline justify-between gap-3">
+                <Kicker ind={ind}>{t('dashboard.departmentDist', 'Headcount by Dept')}</Kicker>
+                <button
+                  type="button"
+                  onClick={() => handleMetricClick('employees')}
+                  style={{ ...figure(20, ind.ink), background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                  title={t('dashboard.totalEmployees')}
+                >
+                  {departmentTotal}
+                </button>
+              </div>
+              <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {departmentRows.length === 0 && (
+                  <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted }}>{t('dashboard.noData', 'No data available')}</p>
+                )}
+                {departmentRows.map((row, i) => {
+                  const selectable = scopeOptions.some((o) => o.value === row.dept);
+                  return (
+                    <button
+                      key={row.dept}
+                      type="button"
+                      onClick={() => selectable && setScope(scope === row.dept ? 'all' : row.dept)}
+                      disabled={!selectable}
+                      title={selectable ? t('dashboard.filterByDept', 'Filter by department') : row.label}
+                      style={{
+                        background: 'none', border: 'none', padding: 0, textAlign: 'left',
+                        cursor: selectable ? 'pointer' : 'default', width: '100%',
+                      }}
+                    >
+                      <div className="flex items-baseline justify-between" style={{ gap: 10, marginBottom: 4 }}>
+                        <span style={{
+                          fontFamily: BODY, fontSize: 13,
+                          color: scope === row.dept ? ind.ink : ind.inkGhost,
+                          fontWeight: scope === row.dept ? 600 : 400,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          {row.label}
+                        </span>
+                        <span style={{ ...figure(14, ind.ink), flex: 'none' }}>{row.count}</span>
+                      </div>
+                      <Bar ind={ind} value={row.share} fill={rampAt(ind, i)} />
+                    </button>
+                  );
+                })}
+              </div>
+            </Blueprint>
+
+            {/* Hours logged */}
+            <Blueprint ind={ind} style={{ padding: '16px 20px 18px', display: 'flex', flexDirection: 'column' }}>
+              <div className="flex items-baseline justify-between gap-3">
+                <Kicker ind={ind}>{t('dashboard.regularAndOvertimeByEmployee', 'Hours Logged')}</Kicker>
+                <button
+                  type="button"
+                  onClick={() => handleMetricClick('regularHours')}
+                  style={{ ...figure(20, ind.ink), background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                  title={t('dashboard.totalRegularHours', 'Total Regular Hours')}
+                >
+                  {Math.round(hoursRegularTotal + hoursOvertimeTotal)}h
+                </button>
+              </div>
+
+              {/* Legend — regular is the accent, overtime the deep tone. */}
+              <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
+                {[
+                  { label: t('dashboard.regularHoursLegend', 'Regular'), color: ind.accent, value: `${Math.round(hoursRegularTotal)}h` },
+                  { label: t('dashboard.totalOvertimeLegend', 'Overtime'), color: ind.accentDeeper, value: `${hoursOvertimeTotal.toFixed(1)}h` },
+                ].map((l) => (
+                  <span key={l.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <span aria-hidden="true" style={{ width: 8, height: 8, background: l.color, flex: 'none' }} />
+                    <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', color: ind.inkMuted }}>
+                      {l.label}
+                    </span>
+                    <span style={{ ...figure(12, ind.ink) }}>{l.value}</span>
+                  </span>
+                ))}
+              </div>
+
+              <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {hoursRows.length === 0 && (
+                  <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted }}>
                     {t('dashboard.noData', 'No time tracking data yet')}
                   </p>
-                ) : (
-                  <div className={`divide-y ${isDarkMode ? 'divide-slate-700/60' : 'divide-slate-100'}`}>
-                    {hoursChartData.map((row) => {
-                      const regular = Number(row.regularHours) || 0;
-                      const overtime = Number(row.overtimeHours) || 0;
-                      const total = regular + overtime;
-                      const totalWidth = `${(total / hoursChartMaxTotal) * 100}%`;
-                      const regularShare = total > 0 ? (regular / total) * 100 : 0;
-                      const overtimeShare = total > 0 ? (overtime / total) * 100 : 0;
-                      const employeeLabel = row.fullName || row.name;
-                      const regularLabel = t('dashboard.regularHoursLegend', 'Regular Hours');
-                      const overtimeLabel = t('dashboard.totalOvertimeLegend', 'Overtime Hours');
-                      const fmtH = (n) => n.toFixed(n % 1 ? 1 : 0);
-
-                      return (
-                        <div
-                          key={`${row.name}-${row.fullName}`}
-                          className="group/hours relative z-0 cursor-default py-3.5 first:pt-0 last:pb-0 hover:z-30"
-                        >
-                          <div className="mb-2 flex items-baseline justify-between gap-3">
-                            <p className={`min-w-0 truncate text-sm font-medium ${text.primary}`}>
-                              {employeeLabel}
-                            </p>
-                            <p className={`shrink-0 text-sm tabular-nums ${text.secondary}`}>
-                              <span className={`font-semibold ${text.primary}`}>
-                                {fmtH(total)}h
-                              </span>
-                              {overtime > 0 && (
-                                <span className="ml-2 text-xs opacity-80">
-                                  {fmtH(regular)} + {fmtH(overtime)} OT
-                                </span>
-                              )}
-                            </p>
-                          </div>
-                          <div
-                            className="relative h-2.5 w-full overflow-hidden rounded-full"
-                            style={{ background: hoursEditorial.track }}
-                          >
-                            <div
-                              className="flex h-full overflow-hidden rounded-full transition-[width] duration-500 ease-out"
-                              style={{ width: totalWidth }}
-                            >
-                              <div
-                                className="h-full"
-                                style={{ width: `${regularShare}%`, background: hoursEditorial.ink }}
-                              />
-                              {overtimeShare > 0 && (
-                                <div
-                                  className="h-full"
-                                  style={{ width: `${overtimeShare}%`, background: hoursEditorial.mute }}
-                                />
-                              )}
-                            </div>
-                          </div>
-
-                          <div
-                            className={cn(
-                              'pointer-events-none absolute left-1/2 top-1/2 z-30 w-max min-w-[11.5rem] -translate-x-1/2 -translate-y-1/2 rounded-lg border px-3 py-2 opacity-0 shadow-lg transition-opacity duration-150 group-hover/hours:opacity-100',
-                              isDarkMode
-                                ? 'border-slate-700 bg-slate-950 text-slate-100'
-                                : 'border-slate-200 bg-white text-slate-900'
-                            )}
-                            role="tooltip"
-                          >
-                            <p className={cn('mb-1.5 text-xs font-medium', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
-                              {`${t('dashboard.employeeLabel', 'Employee')}: ${employeeLabel}`}
-                            </p>
-                            <div className="space-y-1 text-xs">
-                              <div className="flex items-center justify-between gap-6">
-                                <span className="inline-flex items-center gap-2">
-                                  <span className="h-0.5 w-2.5 rounded-full" style={{ background: hoursEditorial.ink }} />
-                                  <span className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{regularLabel}</span>
-                                </span>
-                                <span className="font-semibold tabular-nums">{fmtH(regular)}h</span>
-                              </div>
-                              <div className="flex items-center justify-between gap-6">
-                                <span className="inline-flex items-center gap-2">
-                                  <span className="h-0.5 w-2.5 rounded-full" style={{ background: hoursEditorial.mute }} />
-                                  <span className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{overtimeLabel}</span>
-                                </span>
-                                <span className="font-semibold tabular-nums">{fmtH(overtime)}h</span>
-                              </div>
-                              <div className={cn('mt-1.5 flex items-center justify-between gap-6 border-t pt-1.5', isDarkMode ? 'border-slate-700' : 'border-slate-100')}>
-                                <span className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{t('dashboard.total', 'Total')}</span>
-                                <span className="font-semibold tabular-nums">{fmtH(total)}h</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
                 )}
-
-                <ChartSummaryList
-                  isDarkMode={isDarkMode}
-                  text={text}
-                  border={border}
-                  items={[
-                    {
-                      label: t('dashboard.regularHoursLegend', 'Regular Hours'),
-                      value: `${Math.round(hoursChartRegularTotal)}h`,
-                      color: hoursEditorial.ink,
-                    },
-                    {
-                      label: t('dashboard.totalOvertimeLegend', 'Overtime Hours'),
-                      value: `${hoursChartOvertimeTotal.toFixed(1)}h`,
-                      color: hoursEditorial.mute,
-                    },
-                  ]}
-                />
-          </div>
-        </div>
-      </div>
-      </InView>
-
-      {/* Charts Row 3 */}
-      <InView
-        once
-        variants={{
-          hidden: { opacity: 0, y: 28 },
-          visible: { opacity: 1, y: 0 },
-        }}
-        transition={{ duration: 0.45, ease: 'easeOut' }}
-        viewOptions={{ margin: '-40px' }}
-      >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Work & Leave Days Comparison */}
-        <div className={chartCardClass(bg, border)}>
-          <BorderBeam showOnHover size={110} duration={10} borderWidth={1.5} colorFrom="#3b82f6" colorTo="#94a3b8" />
-          <div className="relative z-10">
-          <ChartPanelHeader
-            label={t('dashboard.workLeaveComp')}
-            value={leaveChartWorkTotal + leaveChartLeaveTotal}
-            hint={t('dashboard.acrossEmployees', 'Across employees')}
-            text={text}
-            legend={
-              <ChartSeriesLegend
-                isDarkMode={isDarkMode}
-                items={[
-                  {
-                    label: t('dashboard.totalWorkDays', 'Total Work Days'),
-                    color: chartTheme.series('workDays'),
-                  },
-                  {
-                    label: t('dashboard.totalLeave', 'Total Leave'),
-                    color: chartTheme.series('leaveDays'),
-                  },
-                ]}
-              />
-            }
-          />
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={leaveData} margin={{ top: 4, right: 8, left: -8, bottom: 32 }} barCategoryGap="30%" barGap={3}>
-              <CartesianGrid vertical={false} stroke={chartTheme.grid} strokeDasharray="0" />
-              <XAxis
-                dataKey="name"
-                axisLine={false}
-                tickLine={false}
-                angle={-28}
-                textAnchor="end"
-                height={48}
-                interval={0}
-                tick={axisTick}
-              />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                tick={axisTick}
-                width={28}
-              />
-              <Tooltip
-                cursor={{ fill: chartTheme.cursor }}
-                content={({ active, payload, label }) => (
-                  <ChartTooltipBox
-                    active={active}
-                    payload={payload}
-                    label={label}
-                    isDarkMode={isDarkMode}
-                    chartTheme={chartTheme}
-                    title={
-                      payload?.[0]?.payload?.fullName
-                        ? `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}`
-                        : label
-                    }
-                  />
-                )}
-              />
-              <Bar
-                dataKey="workDays"
-                fill={chartTheme.series('workDays')}
-                name={t('dashboard.totalWorkDays', 'Total Work Days')}
-                radius={[3, 3, 0, 0]}
-                maxBarSize={18}
-              />
-              <Bar
-                dataKey="leaveDays"
-                fill={chartTheme.series('leaveDays')}
-                name={t('dashboard.totalLeave', 'Total Leave')}
-                radius={[3, 3, 0, 0]}
-                maxBarSize={18}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-          <ChartSummaryList
-            isDarkMode={isDarkMode}
-            text={text}
-            border={border}
-            items={[
-              {
-                label: t('dashboard.totalWorkDays', 'Total Work Days'),
-                value: leaveChartWorkTotal,
-                color: chartTheme.series('workDays'),
-              },
-              {
-                label: t('dashboard.totalLeave', 'Total Leave'),
-                value: leaveChartLeaveTotal,
-                color: chartTheme.series('leaveDays'),
-              },
-            ]}
-          />
-          </div>
-        </div>
-
-        {/* Top Performers */}
-        <div className={chartCardClass(bg, border)}>
-          <BorderBeam showOnHover size={110} duration={10} delay={0.5} borderWidth={1.5} colorFrom="#3b82f6" colorTo="#06b6d4" />
-          <div className="relative z-10">
-          <ChartPanelHeader
-            label={t('dashboard.topPerformers')}
-            value={topPerformers[0]?.performance?.toFixed?.(1) ?? topPerformers[0]?.performance ?? '—'}
-            hint={topPerformers[0] ? getDemoEmployeeName(topPerformers[0], t) : undefined}
-            text={text}
-          />
-          <ul className={`divide-y ${border.primary}`}>
-            {topPerformers.map((emp, index) => {
-              const score = Number(emp.performance) || 0;
-              const widthPct = Math.max(8, Math.min(100, (score / 5) * 100));
-              return (
-                <li key={emp.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className={`w-5 shrink-0 text-xs tabular-nums ${text.secondary}`}>
-                      {index + 1}
-                    </span>
-                    {emp.photo ? (
-                      <img
-                        src={emp.photo}
-                        alt={getDemoEmployeeName(emp, t)}
-                        className={`h-8 w-8 rounded-full object-cover border ${border.primary}`}
-                      />
-                    ) : (
-                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                        isDarkMode ? 'bg-slate-700 text-slate-200' : 'bg-slate-100 text-slate-700'
-                      }`}>
-                        {getDemoEmployeeName(emp, t).charAt(0)}
+                {hoursRows.map((row) => {
+                  const regular = Number(row.regularHours) || 0;
+                  const overtime = Number(row.overtimeHours) || 0;
+                  const total = regular + overtime;
+                  const fmtH = (n) => n.toFixed(n % 1 ? 1 : 0);
+                  return (
+                    <div key={row.id}>
+                      <div className="flex items-baseline justify-between" style={{ gap: 10, marginBottom: 4 }}>
+                        <span style={{ fontFamily: BODY, fontSize: 13, color: ind.inkGhost, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {row.fullName || row.name}
+                        </span>
+                        <span style={{ ...figure(14, ind.ink), flex: 'none' }}>
+                          {fmtH(total)}h
+                          {overtime > 0 && (
+                            <span style={{ fontSize: 11, color: ind.inkMuted, marginLeft: 6 }}>
+                              +{fmtH(overtime)} OT
+                            </span>
+                          )}
+                        </span>
                       </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className={`truncate text-sm font-medium ${text.primary}`}>
-                        {getDemoEmployeeName(emp, t)}
-                      </p>
-                      <p className={`truncate text-xs ${text.secondary}`}>
-                        {t(`employeePosition.${emp.position}`)}
-                      </p>
-                      <div className={`mt-1.5 h-1 w-28 overflow-hidden rounded-full ${isDarkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
-                        <div
-                          className="h-full rounded-full bg-blue-500"
-                          style={{ width: `${widthPct}%` }}
-                        />
+                      {/* One hairline box, two fills: regular then overtime. */}
+                      <div
+                        title={`${row.fullName || row.name} — ${fmtH(regular)}h + ${fmtH(overtime)}h OT`}
+                        style={{ position: 'relative', height: 8, border: `1px solid ${ind.hairline}`, display: 'flex' }}
+                      >
+                        <div style={{ width: `${(regular / hoursMaxTotal) * 100}%`, height: '100%', background: ind.accent, transition: 'width .45s ease' }} />
+                        <div style={{ width: `${(overtime / hoursMaxTotal) * 100}%`, height: '100%', background: ind.accentDeeper, transition: 'width .45s ease' }} />
                       </div>
                     </div>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className={`text-sm font-semibold tabular-nums ${text.primary}`}>{emp.performance}</p>
-                    <p className={`text-xs tabular-nums ${text.secondary}`}>
-                      {emp.overtime}h {t('dashboard.overtime')}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                  );
+                })}
+              </div>
+            </Blueprint>
+          </div>
+
+          {/* 4 — Work vs leave, and the ranked roster table */}
+          <div className="grid grid-cols-1 xl:grid-cols-2" style={{ gap: 18 }}>
+
+            {/* Work vs leave days */}
+            <Blueprint ind={ind} style={{ padding: '16px 20px 18px', display: 'flex', flexDirection: 'column' }}>
+              <div className="flex items-baseline justify-between gap-3">
+                <Kicker ind={ind}>{t('dashboard.workLeaveComp', 'Work vs Leave Days')}</Kicker>
+                <button
+                  type="button"
+                  onClick={() => handleMetricClick('workDays')}
+                  style={{ ...figure(20, ind.ink), background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                  title={t('dashboard.totalWorkDays')}
+                >
+                  {leaveChartWorkTotal + leaveChartLeaveTotal}
+                </button>
+              </div>
+              <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
+                {[
+                  { label: t('dashboard.totalWorkDays', 'Work Days'), color: ind.accent, value: leaveChartWorkTotal },
+                  { label: t('dashboard.totalLeave', 'Leave'), color: ind.ramp[3], value: leaveChartLeaveTotal },
+                ].map((l) => (
+                  <span key={l.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <span aria-hidden="true" style={{ width: 8, height: 8, background: l.color, flex: 'none' }} />
+                    <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', color: ind.inkMuted }}>
+                      {l.label}
+                    </span>
+                    <span style={{ ...figure(12, ind.ink) }}>{l.value}</span>
+                  </span>
+                ))}
+              </div>
+              <div style={{ height: 208, marginTop: 12 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={leaveData} margin={{ top: 4, right: 4, left: -14, bottom: 4 }} barCategoryGap="30%" barGap={2}>
+                    <CartesianGrid vertical={false} stroke={ind.rule} strokeDasharray="0" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} interval="preserveStartEnd" height={20} tick={axisTick} />
+                    <YAxis axisLine={false} tickLine={false} tick={axisTick} width={34} />
+                    <Tooltip
+                      cursor={{ fill: ind.hover }}
+                      content={({ active, payload, label }) => (
+                        <IndustryTooltip
+                          ind={ind}
+                          active={active}
+                          payload={payload}
+                          label={label}
+                          title={payload?.[0]?.payload?.fullName
+                            ? `${t('dashboard.employeeLabel', 'Employee')}: ${payload[0].payload.fullName}`
+                            : label}
+                        />
+                      )}
+                    />
+                    <RBar dataKey="workDays" name={t('dashboard.totalWorkDays', 'Total Work Days')} fill={ind.accent} maxBarSize={16} />
+                    <RBar dataKey="leaveDays" name={t('dashboard.totalLeave', 'Total Leave')} fill={ind.ramp[3]} maxBarSize={16} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Blueprint>
+
+            {/* Top performers — table idiom: numeric right-aligned, last column an inline bar */}
+            <Blueprint ind={ind} style={{ padding: '16px 20px 18px', display: 'flex', flexDirection: 'column' }}>
+              <div className="flex items-baseline justify-between gap-3">
+                <Kicker ind={ind}>{t('dashboard.topPerformers', 'Top Performers')}</Kicker>
+                <button
+                  type="button"
+                  onClick={() => handleMetricClick('performance')}
+                  style={{ ...figure(20, ind.ink), background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                  title={t('dashboard.avgPerformance')}
+                >
+                  {topPerformers[0]?.performance?.toFixed?.(1) ?? '—'}
+                </button>
+              </div>
+
+              <div style={{ marginTop: 12, overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: BODY, fontSize: 13 }}>
+                  <thead>
+                    <tr>
+                      {[
+                        { k: 'rank', label: '#', align: 'left', w: 26 },
+                        { k: 'name', label: t('employees.name', 'Employee'), align: 'left' },
+                        { k: 'ot', label: t('dashboard.overtime', 'OT'), align: 'right' },
+                        { k: 'score', label: t('dashboard.performanceRating', 'Rating'), align: 'right' },
+                        { k: 'bar', label: '', align: 'left', w: 84 },
+                      ].map((c) => (
+                        <th
+                          key={c.k}
+                          style={{
+                            textAlign: c.align, width: c.w, padding: '0 0 7px',
+                            borderBottom: `1px solid ${ind.hairline}`,
+                            fontFamily: DISPLAY, fontWeight: 600, fontSize: 10,
+                            letterSpacing: '.12em', textTransform: 'uppercase', color: ind.inkMuted,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {c.label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topPerformers.length === 0 && (
+                      <tr>
+                        <td colSpan={5} style={{ padding: '14px 0', color: ind.inkMuted }}>
+                          {t('dashboard.noData', 'No data available')}
+                        </td>
+                      </tr>
+                    )}
+                    {topPerformers.map((emp, index) => {
+                      const score = Number(emp.performance) || 0;
+                      return (
+                        <tr key={emp.id} style={{ borderBottom: `1px solid ${ind.rule}` }}>
+                          <td style={{ padding: '9px 0', ...figure(12, ind.inkMuted) }}>{index + 1}</td>
+                          <td style={{ padding: '9px 8px 9px 0', color: ind.ink, minWidth: 0 }}>
+                            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {getDemoEmployeeName(emp, t)}
+                            </div>
+                            <div style={{ fontSize: 11.5, color: ind.inkMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {t(`employeePosition.${emp.position}`, emp.position || '')}
+                            </div>
+                          </td>
+                          <td style={{ padding: '9px 8px', textAlign: 'right', ...figure(13, ind.inkMuted), whiteSpace: 'nowrap' }}>
+                            {emp.overtime}h
+                          </td>
+                          <td style={{ padding: '9px 8px', textAlign: 'right', ...figure(14, ind.ink) }}>
+                            {score.toFixed(1)}
+                          </td>
+                          <td style={{ padding: '9px 0 9px 8px', width: 84 }}>
+                            <Bar ind={ind} value={score / 5} fill={rampAt(ind, index)} marker={0.8} />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Blueprint>
           </div>
         </div>
+
+        {/* ── DECISION COLUMN — 372px fixed ──────────────────────────── */}
+        <aside
+          className="w-full lg:w-[372px] lg:shrink-0 flex flex-col"
+          style={{ background: ind.chrome }}
+        >
+          {/* Header block */}
+          <div style={{ padding: '20px 20px 16px', borderBottom: `1px solid ${ind.hairline}` }}>
+            <button
+              type="button"
+              onClick={() => handleMetricClick('pendingRequests')}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', width: '100%' }}
+              title={t('dashboard.pendingRequests', 'Pending Requests')}
+            >
+              <ColumnHeading ind={ind}>{t('dashboard.needsDecision', 'Needs a Decision')}</ColumnHeading>
+            </button>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 8 }}>
+              <span style={figure(26, ind.accent)}>{decisionQueue.length}</span>
+              <span style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted }}>
+                {t('dashboard.items', 'items')}
+                {scope !== 'all' && ` · ${scopeLabel}`}
+              </span>
+            </div>
+            <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 4 }}>
+              {decisionQueue.length === 0
+                ? t('dashboard.queueClear', 'Queue is clear')
+                : `${t('dashboard.oldestWaited', 'Oldest has waited')} ${oldestWaited} ${oldestWaited === 1 ? t('common.day', 'day') : t('common.days', 'days')}`}
+              {overdueCount > 0 && ` · ${overdueCount} ${t('dashboard.overdue', 'overdue')}`}
+            </p>
+            {/* The queue itself is time entries; the count also covers leave and
+                overtime approvals, which are decided on their own screens. */}
+            {pendingApprovalsCount > decisionQueue.length && (
+              <p style={{ fontFamily: BODY, fontSize: 12, color: ind.inkFaint, marginTop: 2 }}>
+                {`${pendingApprovalsCount} ${t('dashboard.pendingApprovalsTotal', 'pending across all approvals')}`}
+              </p>
+            )}
+          </div>
+
+          {/* Item hierarchy: tinted actionable ×2 → plain actionable → queued */}
+          <div style={{ flex: 1 }}>
+            {decisionQueue.length === 0 && (
+              <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, padding: '18px 20px' }}>
+                {t('dashboard.nothingPending', 'Nothing is waiting on you right now.')}
+              </p>
+            )}
+
+            {decisionQueue.slice(0, 4).map((entry, i) => {
+              const emp = entry.employee;
+              const name = (emp ? getDemoEmployeeName(emp, t) : '') || entry.employeeName || t('common.unknown', 'Unknown');
+              const hours = Number(entry.hours) || 0;
+              const kind = entry.hour_type || entry.requestType || 'regular';
+              const busy = decidingId === entry.id;
+              return (
+                <div
+                  key={entry.id}
+                  style={{
+                    padding: '14px 20px',
+                    background: i < 2 ? ind.accentWash : 'transparent',
+                    borderBottom: `1px solid ${ind.rule}`,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                    <span style={{
+                      fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, letterSpacing: '.03em',
+                      textTransform: 'uppercase', color: ind.ink, minWidth: 0,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      {name}
+                    </span>
+                    <Tag ind={ind} variant={entry._waitedDays >= 2 ? 'outline' : 'accent'}>
+                      {entry._waitedDays >= 2
+                        ? t('dashboard.overdue', 'Overdue')
+                        : t('common.pending', 'Pending')}
+                    </Tag>
+                  </div>
+
+                  <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 5 }}>
+                    {t(`timeClock.hourTypes.${kind}`, String(kind))} · {hours}h
+                    {entry._when && ` · ${new Date(entry._when).toLocaleDateString()}`}
+                  </p>
+
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                    <Btn ind={ind} variant="primary" disabled={busy} onClick={() => handleDecision(entry, 'approved')}>
+                      {t('common.approve', 'Approve')}
+                    </Btn>
+                    <Btn ind={ind} variant="secondary" disabled={busy} onClick={() => handleDecision(entry, 'rejected')}>
+                      {t('common.decline', 'Decline')}
+                    </Btn>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Queued — no buttons, arrow right, opens the full table */}
+            {decisionQueue.slice(4, 9).map((entry) => {
+              const emp = entry.employee;
+              const name = (emp ? getDemoEmployeeName(emp, t) : '') || entry.employeeName || t('common.unknown', 'Unknown');
+              return (
+                <button
+                  key={entry.id}
+                  type="button"
+                  onClick={() => handleMetricClick('pendingRequests')}
+                  className="w-full"
+                  style={{
+                    padding: '12px 20px', background: 'transparent', border: 'none',
+                    borderBottom: `1px solid ${ind.rule}`, cursor: 'pointer', textAlign: 'left',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+                  }}
+                >
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: 'block', fontFamily: BODY, fontSize: 13, color: ind.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {name}
+                    </span>
+                    <span style={{ display: 'block', fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted }}>
+                      {t(`timeClock.hourTypes.${entry.hour_type || 'regular'}`, String(entry.hour_type || 'regular'))} · {Number(entry.hours) || 0}h
+                    </span>
+                  </span>
+                  <ArrowRight size={15} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted }} />
+                </button>
+              );
+            })}
+
+            {decisionQueue.length > 9 && (
+              <button
+                type="button"
+                onClick={() => handleMetricClick('pendingRequests')}
+                className="w-full"
+                style={{
+                  padding: '12px 20px', background: 'transparent', border: 'none',
+                  borderBottom: `1px solid ${ind.rule}`, cursor: 'pointer', textAlign: 'left',
+                  fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5, letterSpacing: '.08em',
+                  textTransform: 'uppercase', color: ind.accentDeep,
+                }}
+              >
+                {`+${decisionQueue.length - 9} ${t('dashboard.more', 'more')} — ${t('dashboard.viewAll', 'View All')}`}
+              </button>
+            )}
+          </div>
+
+          {/* Second section — hiring */}
+          <div style={{ ...sectionRule, padding: '18px 20px 22px' }}>
+            <button
+              type="button"
+              onClick={() => handleMetricClick('applications')}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', width: '100%' }}
+              title={t('dashboard.activeApplications', 'Active Applications')}
+            >
+              <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+                <ColumnHeading ind={ind} style={{ fontSize: 13 }}>
+                  {t('nav.recruitment', 'Hiring')}
+                </ColumnHeading>
+                <span style={figure(16, ind.ink)}>{applications.length}</span>
+              </div>
+            </button>
+
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {applications.length === 0 && (
+                <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted }}>
+                  {t('dashboard.noApplications', 'No active applications')}
+                </p>
+              )}
+              {applications.length > 0 && pipeline.map((stage, i) => (
+                <div key={stage.key}>
+                  <div className="flex items-baseline justify-between" style={{ gap: 10, marginBottom: 4 }}>
+                    <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkGhost }}>{stage.label}</span>
+                    <span style={figure(13, ind.ink)}>{stage.value}</span>
+                  </div>
+                  <Bar ind={ind} value={stage.value / pipelineMax} fill={rampAt(ind, i)} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
       </div>
-      </InView>
-
-      {/* Additional Stats */}
-      <InView
-        once
-        variants={{
-          hidden: { opacity: 0, y: 24 },
-          visible: { opacity: 1, y: 0 },
-        }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
-        viewOptions={{ margin: '-30px' }}
-      >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <HoverMetricCard
-          onClick={() => handleMetricClick('workDays')}
-          className={cn(
-            bg.secondary,
-            'rounded-xl shadow-sm border p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1',
-            border.primary
-          )}
-          beam={
-            <BorderBeam showOnHover size={80} duration={8} borderWidth={2} colorFrom="#10b981" colorTo="#06b6d4" />
-          }
-        >
-          {(replayToken) => (
-            <>
-              <Spotlight className={isDarkMode ? 'bg-emerald-400/15' : 'bg-emerald-400/10'} size={160} />
-              <div className="relative z-10">
-                <div className="flex items-center space-x-3 mb-2">
-                  <AnimatedClockIcon isDarkMode={isDarkMode} className={`w-5 h-5 ${text.primary}`} />
-                  <h4 className={`font-semibold ${text.primary}`}>
-                    {t('dashboard.totalWorkDays')}
-                  </h4>
-                </div>
-                <div className={`text-3xl font-bold ${text.primary}`}>
-                  <SlidingNumber
-                    value={Number(totalWorkDays) || 0}
-                    replayToken={replayToken}
-                    className={text.primary}
-                  />
-                </div>
-                <p className={`text-sm ${text.secondary} mt-1`}>
-                  {t('dashboard.acrossEmployees')}
-                </p>
-              </div>
-            </>
-          )}
-        </HoverMetricCard>
-
-        <HoverMetricCard
-          onClick={() => handleMetricClick('applications')}
-          className={cn(
-            bg.secondary,
-            'rounded-xl shadow-sm border p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1',
-            border.primary
-          )}
-          beam={
-            <BorderBeam showOnHover size={80} duration={9} delay={0.8} borderWidth={2} colorFrom="#3b82f6" colorTo="#8b5cf6" />
-          }
-        >
-          {(replayToken) => (
-            <>
-              <Spotlight className={isDarkMode ? 'bg-blue-400/15' : 'bg-blue-400/10'} size={160} />
-              <div className="relative z-10">
-                <div className="flex items-center space-x-3 mb-2">
-                  <FileUser className={`w-5 h-5 ${text.primary}`} />
-                  <h4 className={`font-semibold ${text.primary}`}>
-                    {t('dashboard.activeApplications')}
-                  </h4>
-                </div>
-                <div className={`text-3xl font-bold ${text.primary}`}>
-                  <SlidingNumber
-                    value={applications.length}
-                    replayToken={replayToken}
-                    className={text.primary}
-                  />
-                </div>
-                <p className={`text-sm ${text.secondary} mt-1`}>
-                  {t('dashboard.pendingReview')}
-                </p>
-              </div>
-            </>
-          )}
-        </HoverMetricCard>
-
-        <HoverMetricCard
-          onClick={() => handleMetricClick('pendingRequests')}
-          className={cn(
-            bg.secondary,
-            'rounded-xl shadow-sm border p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1',
-            border.primary
-          )}
-          beam={
-            <BorderBeam showOnHover size={80} duration={8.5} delay={1.2} borderWidth={2} colorFrom="#f59e0b" colorTo="#ef4444" />
-          }
-        >
-          {(replayToken) => (
-            <>
-              <Spotlight className={isDarkMode ? 'bg-amber-400/15' : 'bg-amber-400/10'} size={160} />
-              <div className="relative z-10">
-                <div className="flex items-center space-x-3 mb-2">
-                  <MiniFlubberAutoMorphInProgress isDarkMode={isDarkMode} className={`w-5 h-5 ${text.primary}`} />
-                  <h4 className={`font-semibold ${text.primary}`}>
-                    {t('dashboard.pendingRequests')}
-                  </h4>
-                </div>
-                <div className={`text-3xl font-bold ${text.primary}`}>
-                  <SlidingNumber
-                    value={Number(pendingApprovalsCount) || 0}
-                    replayToken={replayToken}
-                    className={text.primary}
-                  />
-                </div>
-                <p className={`text-sm ${text.secondary} mt-1`}>
-                  {t('dashboard.pendingApprovals', '')}
-                </p>
-              </div>
-            </>
-          )}
-        </HoverMetricCard>
-      </div>
-      </InView>
 
       {/* Metric Detail Modal */}
       <MetricDetailModal
@@ -1477,4 +1361,5 @@ const Dashboard = ({ employees, applications }) => {
     </div>
   );
 };
+
 export default Dashboard;

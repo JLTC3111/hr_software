@@ -1,38 +1,302 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Star, Sparkle, TrendingUp, Calendar, User, Award, Goal, ShieldEllipsis, MessageSquare, Plus, Edit, Eye, X, Save, ChevronRight, ChevronLeft, Trash2 } from 'lucide-react';
+/**
+ * Personal Goals — direction 2c, "Calibrated assessment".
+ *
+ * Three vertical bands, the same grammar as the rest of the console: the app
+ * rail (sidebar.jsx) → this main column → a 372px column of three stacked
+ * plates, with a 44px steel ticker spanning both.
+ *
+ * The central idea of this screen: a self-rating on its own says nothing. Every
+ * skill row therefore carries three marks on one track — the person's own
+ * rating as a fill, the manager's as a tick that overshoots the track, and the
+ * company median as a faint interior hairline — so the gap between how someone
+ * sees themselves and how they are seen is the thing you actually read. The
+ * footer states that read in words.
+ *
+ * Design system: "Industry" (src/theme/industry.js). Radius is 0 everywhere,
+ * cards are outlines with four registration corners, status reads through
+ * weight and rule rather than colour.
+ */
+import _React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import {
+  Plus, X, Save, ChevronRight, Download, AlertCircle, Trash2, Edit,
+} from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { isDemoMode, getDemoGoalTitle, getDemoGoalDescription, getDemoSkills, upsertDemoSkill, getDemoReviewStrengths, getDemoReviewAreasForImprovement } from '../utils/demoHelper';
+import {
+  isDemoMode, getDemoGoalTitle, getDemoGoalDescription, getDemoSkills,
+  getDemoReviewStrengths, getDemoReviewAreasForImprovement, getDemoEmployeeName,
+} from '../utils/demoHelper';
 import { formatDate } from '../utils/localeFormat.js';
 import * as performanceService from '../services/performanceService';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
-import { ShinyButton } from './ui/shiny-button';
-import { SlidingNumber } from './motion-primitives';
-import { NumberTicker } from './ui/number-ticker';
-import { PageLiveClock } from './ui/page-live-clock';
 import { DatePicker } from './ui/date-picker.jsx';
 import { TranslatedText } from './ui/translated-text.jsx';
-import { cn } from '@/lib/utils';
 import { filterActiveEmployees } from '../utils/employeeStatus.js';
+import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import {
   PERFORMANCE_SKILLS,
   buildPerformanceAssessment,
-  mergeReviewRatingsIntoSkills
+  mergeReviewRatingsIntoSkills,
+  medianOf,
 } from '../utils/performanceAssessment.js';
+import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
+import {
+  Blueprint, Bar, Tag, Btn, Seg, Kicker, TickerCell, ColumnHeading,
+  LiveClock, FlatSelect,
+} from './ui/industry.jsx';
+
+/* ------------------------------------------------------------------ *
+ * Screen constants — the policy this screen reads against
+ * ------------------------------------------------------------------ */
+
+/**
+ * A quarter's review closes on the 15th of the quarter's middle month, so the
+ * cycle runs inside the quarter it assesses rather than trailing it.
+ */
+const REVIEW_CLOSE_DAY = 15;
+/** Below this the fill drops to light steel — the score that needs a sentence. */
+const STRONG_RATING = 4;
+/** Self and manager have to differ by this much before it is worth discussing. */
+const GAP_THRESHOLD = 0.4;
+/** How far behind its own timeline a goal falls before it reads AT RISK. */
+const AT_RISK_SLIP_PP = 15;
+/** Quarters plotted in the rating history. */
+const HISTORY_QUARTERS = 5;
+/** Marks the employee's one-click acknowledgement inside employee_comments. */
+const ACK_MARKER = '[acknowledged]';
+
+const MONO = "'Barlow Condensed', 'Barlow', ui-monospace, monospace";
+
+/* ------------------------------------------------------------------ *
+ * Helpers
+ * ------------------------------------------------------------------ */
+
+/** 'Q3-2026' → { quarter: 3, year: 2026 }. */
+const parsePeriod = (period) => {
+  const match = /^Q([1-4])-(\d{4})$/.exec(String(period || ''));
+  if (!match) return null;
+  return { quarter: Number(match[1]), year: Number(match[2]) };
+};
+
+const formatPeriod = (quarter, year) => `Q${quarter}-${year}`;
+
+/** The `n` quarters ending at `period`, oldest first. */
+const quartersEndingAt = (period, n) => {
+  const parsed = parsePeriod(period);
+  if (!parsed) return [];
+  const out = [];
+  let { quarter, year } = parsed;
+  for (let i = 0; i < n; i += 1) {
+    out.unshift({ quarter, year, key: formatPeriod(quarter, year) });
+    quarter -= 1;
+    if (quarter === 0) { quarter = 4; year -= 1; }
+  }
+  return out;
+};
+
+/** Deadline for the period's review — 15th of its middle month. */
+const reviewCloseDate = (period) => {
+  const parsed = parsePeriod(period);
+  if (!parsed) return null;
+  const middleMonth = (parsed.quarter - 1) * 3 + 1; // 0-indexed: Feb, May, Aug, Nov
+  return new Date(parsed.year, middleMonth, REVIEW_CLOSE_DAY);
+};
+
+const daysBetween = (from, to) => Math.round((to - from) / 86400000);
+
+/** Up to two initials, e.g. "Đỗ Bảo Long" → "ĐL". */
+const initialsOf = (name) => {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '—';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
+const round1 = (n) => Math.round((Number(n) || 0) * 10) / 10;
+const fmt1 = (n) => round1(n).toFixed(1);
+
+const csvCell = (value) => {
+  const text = value == null ? '' : String(value);
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+
+/* ------------------------------------------------------------------ *
+ * Small pieces
+ * ------------------------------------------------------------------ */
+
+/**
+ * One calibrated skill row. The track carries three marks at once:
+ *   - a solid fill for the self-rating (light steel when it is below 4)
+ *   - a dark-steel tick, overshooting the track, for the manager's rating
+ *   - a faint interior hairline for the company median
+ * Manager left of the fill means the person over-rated themselves; right of it,
+ * under-rated.
+ */
+function SkillMeter({ ind, heavyInk, self, manager, median }) {
+  const pct = (value) => `${Math.max(0, Math.min(5, Number(value) || 0)) / 5 * 100}%`;
+  const strong = self >= STRONG_RATING;
+  return (
+    <div style={{ position: 'relative', height: 10, border: `1px solid ${ind.hairline}`, borderRadius: 0 }}>
+      <div
+        style={{
+          width: pct(self),
+          height: '100%',
+          background: strong ? ind.accent : ind.ramp[1],
+          transition: 'width .35s ease',
+        }}
+      />
+      {median != null && (
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute', top: 2, bottom: 2, left: pct(median),
+            width: 1, background: ind.inkFaint,
+          }}
+        />
+      )}
+      {manager != null && (
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute', top: -4, bottom: -4, left: pct(manager),
+            width: 2, marginLeft: -1, background: heavyInk,
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/** One node of the review-cycle timeline. */
+function CycleStep({ ind, state, title, meta, last }) {
+  const done = state === 'done';
+  const current = state === 'current';
+  return (
+    <div style={{ display: 'flex', gap: 10 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 'none', width: 9 }}>
+        <span
+          aria-hidden="true"
+          style={{
+            width: 9, height: 9, flex: 'none',
+            background: done ? ind.accent : 'transparent',
+            border: `1px solid ${done || current ? ind.accent : ind.inkFaint}`,
+          }}
+        />
+        {!last && <span aria-hidden="true" style={{ width: 1, flex: 1, minHeight: 22, background: ind.rule }} />}
+      </div>
+      <div style={{ minWidth: 0, paddingBottom: last ? 0 : 12 }}>
+        <div
+          style={{
+            fontFamily: BODY,
+            fontSize: 13,
+            fontWeight: current ? 600 : 400,
+            color: current || done ? ind.ink : ind.inkMuted,
+          }}
+        >
+          {title}
+        </div>
+        {meta && (
+          <div style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, marginTop: 2 }}>{meta}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Quarterly overall rating as a hand-drawn line: accent stroke, open square
+ * markers. Recharts is overkill for five points and would not give the open
+ * marker the rest of the system uses.
+ */
+function RatingSpark({ ind, points, emptyLabel }) {
+  const W = 320;
+  const H = 96;
+  const PAD_X = 10;
+  const PAD_Y = 12;
+
+  const rated = points.filter((p) => p.value != null);
+  if (rated.length === 0) {
+    return (
+      <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, padding: '12px 0' }}>{emptyLabel}</p>
+    );
+  }
+
+  const values = rated.map((p) => p.value);
+  const rawMin = Math.min(...values);
+  const rawMax = Math.max(...values);
+  // Pad the domain so a flat-ish run still reads as a line rather than a rule.
+  const min = Math.max(0, rawMin - (rawMax - rawMin < 0.5 ? 0.5 : 0.3));
+  const max = Math.min(5, rawMax + (rawMax - rawMin < 0.5 ? 0.5 : 0.3));
+  const span = max - min || 1;
+
+  const step = points.length > 1 ? (W - PAD_X * 2) / (points.length - 1) : 0;
+  const xy = points.map((p, i) => ({
+    ...p,
+    x: PAD_X + step * i,
+    y: p.value == null ? null : PAD_Y + (1 - (p.value - min) / span) * (H - PAD_Y * 2),
+  }));
+
+  const path = xy
+    .filter((p) => p.y != null)
+    .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+    .join(' ');
+
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} role="img" aria-label={emptyLabel}>
+        <path d={path} fill="none" stroke={ind.accent} strokeWidth={1.5} />
+        {xy.filter((p) => p.y != null).map((p) => (
+          <rect
+            key={p.key}
+            x={p.x - 3.5}
+            y={p.y - 3.5}
+            width={7}
+            height={7}
+            fill={ind.chrome}
+            stroke={ind.accent}
+            strokeWidth={1.5}
+          >
+            <title>{`${p.label} · ${fmt1(p.value)}`}</title>
+          </rect>
+        ))}
+      </svg>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+        {points.map((p) => (
+          <span
+            key={p.key}
+            style={{
+              fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.1em',
+              textTransform: 'uppercase', color: ind.inkMuted,
+            }}
+          >
+            {p.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Personal Goals
+ * ------------------------------------------------------------------ */
 
 const PersonalGoals = ({ employees }) => {
   const { t, currentLanguage } = useLanguage();
-  const { isDarkMode, text } = useTheme();
+  const { isDarkMode } = useTheme();
   const { user, checkPermission } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
+
+  const ind = getIndustry(isDarkMode);
+  /** The manager's tick has to be the heaviest mark on the track, either theme. */
+  const heavyInk = isDarkMode ? ind.accentDeeper : ind.tickerBg;
 
   // Match the review_period format already used by performance reviews, e.g. Q4-2025.
   const getCurrentQuarter = (date = new Date()) => {
     const year = date.getFullYear();
-    const month = date.getMonth(); // 0-11
-    const quarter = Math.floor(month / 3) + 1; // 1-4
+    const quarter = Math.floor(date.getMonth() / 3) + 1;
     return `Q${quarter}-${year}`;
   };
 
@@ -68,6 +332,7 @@ const PersonalGoals = ({ employees }) => {
       if (fallback) setSelectedEmployee(fallback);
     }
   }, [user, availableEmployees, selectedEmployee]);
+
   const [selectedPeriod, setSelectedPeriod] = useState(() => getCurrentQuarter());
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
@@ -76,11 +341,17 @@ const PersonalGoals = ({ employees }) => {
   const [viewingGoal, setViewingGoal] = useState(null);
   const [editingGoal, setEditingGoal] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
   const [goals, setGoals] = useState([]);
-  const [reviews, setReviews] = useState([]);
+  /** Every review this employee has, all periods — feeds history and the plates. */
+  const [allReviews, setAllReviews] = useState([]);
   const [skills, setSkills] = useState([]);
+  /** Company medians per skill for the period. Optional: absent means no mark. */
+  const [companyMedians, setCompanyMedians] = useState({});
   const [assessmentDirty, setAssessmentDirty] = useState(false);
   const [savingAssessment, setSavingAssessment] = useState(false);
+  const [adjusting, setAdjusting] = useState(false);
+  const [ackBusy, setAckBusy] = useState(false);
   const fetchRequestIdRef = useRef(0);
 
   // Form state for new goal
@@ -94,55 +365,16 @@ const PersonalGoals = ({ employees }) => {
     progressPercentage: 0
   });
 
-  // Helper functions to translate department and position values
-  const translateDepartment = (department) => {
-    if (!department) return '';
-    return t(`departments.${department}`, department);
-  };
-  
-  const translatePosition = (position) => {
-    if (!position) return '';
-    return t(`employeePosition.${position}`, position);
-  };
+  const translateDepartment = (department) => (department ? t(`departments.${department}`, department) : '');
+  const translatePosition = (position) => (position ? t(`employeePosition.${position}`, position) : '');
 
-  // Fetch the period-specific review when the employee or quarter changes.
-  useEffect(() => {
-    if (selectedEmployee) {
-      setAssessmentDirty(false);
-      fetchGoalsAndReviews();
-    }
-    // The fetch intentionally keys only on the selected employee/period.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedEmployee, selectedPeriod]);
+  // ---------------------------------------------------------------- fetch
 
-  // ESC key handler to close modals
-  useEffect(() => {
-    const handleEscKey = (event) => {
-      if (event.key === 'Escape') {
-        if (showAddGoalModal) {
-          setShowAddGoalModal(false);
-        } else if (showEditGoalModal) {
-          setShowEditGoalModal(false);
-        } else if (showViewGoalModal) {
-          setShowViewGoalModal(false);
-          setViewingGoal(null);
-        }
-      }
-    };
-
-    // Add event listener
-    document.addEventListener('keydown', handleEscKey);
-
-    // Cleanup
-    return () => {
-      document.removeEventListener('keydown', handleEscKey);
-    };
-  }, [showAddGoalModal, showEditGoalModal, showViewGoalModal]);
-
-  const fetchGoalsAndReviews = async (options = {}) => {
+  const fetchGoalsAndReviews = useCallback(async (options = {}) => {
     const { silent = false } = options;
+    if (!selectedEmployee) return;
     const requestId = ++fetchRequestIdRef.current;
-    if (!silent) setLoading(true);
+    if (!silent) { setLoading(true); setFetchError(null); }
     try {
       if (!isDemoMode()) {
         const sessionValidation = await validateAndRefreshSession();
@@ -151,151 +383,426 @@ const PersonalGoals = ({ employees }) => {
         }
       }
 
-      // Fetch goals
-      const goalsResult = await performanceService.getAllPerformanceGoals({
-        employeeId: selectedEmployee
-      });
-      if (goalsResult.success) {
-        setGoals(goalsResult.data || []);
-      }
+      const [goalsResult, reviewsResult] = await Promise.all([
+        performanceService.getAllPerformanceGoals({ employeeId: selectedEmployee }),
+        // Every period in one read: the selected quarter's review is picked out
+        // of this list, so history and the plates can never disagree.
+        performanceService.getAllPerformanceReviews({ employeeId: selectedEmployee }),
+      ]);
 
-      // Fetch reviews
-      const reviewsResult = await performanceService.getAllPerformanceReviews({
-        employeeId: selectedEmployee,
-        reviewPeriod: selectedPeriod
-      });
-      const periodReviews = reviewsResult.success ? reviewsResult.data || [] : [];
-
-      // Fetch skills assessments
       let skillsData = [];
       let skillsError = null;
-
       if (isDemoMode()) {
-        // Use persisted demo skills from localStorage
-        const allDemoSkills = getDemoSkills();
-        // Filter by selected employee
-        skillsData = allDemoSkills.filter(skill => 
-          String(skill.employee_id) === String(selectedEmployee)
-        );
-        // If no skills for this employee yet, provide default demo skills
-        if (skillsData.length === 0) {
-          skillsData = [
-            { id: `demo-skill-1-${selectedEmployee}`, employee_id: selectedEmployee, skill_name: 'React', skill_category: 'Technical', rating: 4, proficiency_level: 'advanced', assessment_date: '2023-01-01' },
-            { id: `demo-skill-2-${selectedEmployee}`, employee_id: selectedEmployee, skill_name: 'Communication', skill_category: 'Soft Skills', rating: 5, proficiency_level: 'advanced', assessment_date: '2023-01-01' },
-            { id: `demo-skill-3-${selectedEmployee}`, employee_id: selectedEmployee, skill_name: 'Project Management', skill_category: 'Management', rating: 3, proficiency_level: 'intermediate', assessment_date: '2023-01-01' }
-          ];
-        }
+        skillsData = getDemoSkills().filter(skill => String(skill.employee_id) === String(selectedEmployee));
       } else {
         const skillsResult = await performanceService.getSkillsByEmployee(selectedEmployee);
-        skillsData = skillsResult.data;
+        skillsData = skillsResult.data || [];
         skillsError = skillsResult.success ? null : skillsResult.error;
       }
 
       if (requestId !== fetchRequestIdRef.current) return;
 
-      setReviews(periodReviews);
-      if (!skillsError && skillsData) {
-        setSkills(mergeReviewRatingsIntoSkills(skillsData, periodReviews[0], selectedEmployee));
-      } else {
-        setSkills(mergeReviewRatingsIntoSkills([], periodReviews[0], selectedEmployee));
-      }
+      if (goalsResult.success) setGoals(goalsResult.data || []);
+      const reviews = reviewsResult.success ? reviewsResult.data || [] : [];
+      setAllReviews(reviews);
+
+      const periodReview = reviews.find(r => r.review_period === selectedPeriod) || null;
+      setSkills(mergeReviewRatingsIntoSkills(skillsError ? [] : skillsData, periodReview, selectedEmployee));
     } catch (error) {
       console.error('Error fetching performance data:', error);
-      if (handleSessionAuthError(error, { silent })) {
-        return;
-      }
+      if (handleSessionAuthError(error, { silent, setFetchError })) return;
+      if (!silent) setFetchError(error.message || 'Failed to load performance data.');
     } finally {
       if (!silent) setLoading(false);
     }
-  };
+  }, [selectedEmployee, selectedPeriod, handleSessionAuthError]);
 
-  useAuthenticatedPageRefresh(() => fetchGoalsAndReviews({ silent: true }));
+  useEffect(() => {
+    setAssessmentDirty(false);
+    setAdjusting(false);
+    fetchGoalsAndReviews();
+  }, [fetchGoalsAndReviews]);
 
-  // Keep slider movement local; save the complete assessment as one review record.
+  useAuthenticatedPageRefresh(useCallback(
+    () => fetchGoalsAndReviews({ silent: true }),
+    [fetchGoalsAndReviews]
+  ));
+
+  /**
+   * Company medians for the period. Deliberately non-blocking and unguarded by
+   * role: row-level security decides what comes back, and an empty result just
+   * means the median hairline is not drawn.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const result = await performanceService.getAllPerformanceReviews({ reviewPeriod: selectedPeriod });
+        if (cancelled || !result?.success) return;
+        const rows = result.data || [];
+        const medians = {};
+        PERFORMANCE_SKILLS.forEach((definition) => {
+          medians[definition.skillName] = medianOf(rows.map((r) => Number(r[definition.reviewColumn])));
+        });
+        setCompanyMedians(medians);
+      } catch {
+        if (!cancelled) setCompanyMedians({}); // the median mark is optional
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedPeriod]);
+
+  // ESC closes whichever modal is open
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key !== 'Escape') return;
+      if (showAddGoalModal) setShowAddGoalModal(false);
+      else if (showEditGoalModal) { setShowEditGoalModal(false); setEditingGoal(null); }
+      else if (showViewGoalModal) { setShowViewGoalModal(false); setViewingGoal(null); }
+    };
+    document.addEventListener('keydown', handleEscKey);
+    return () => document.removeEventListener('keydown', handleEscKey);
+  }, [showAddGoalModal, showEditGoalModal, showViewGoalModal]);
+
+  // ---------------------------------------------------------------- derive
+
+  const periodReview = useMemo(
+    () => allReviews.find(r => r.review_period === selectedPeriod) || null,
+    [allReviews, selectedPeriod]
+  );
+
+  const currentEmployee = availableEmployees.find(emp => String(emp.id) === selectedEmployee) || null;
+
+  const employeeName = currentEmployee
+    ? (getDemoEmployeeName(currentEmployee, t) || currentEmployee.name)
+    : '—';
+
+  const tenureLabel = useMemo(() => {
+    const raw = currentEmployee?.start_date || currentEmployee?.startDate || currentEmployee?.hire_date;
+    if (!raw) return null;
+    const start = new Date(raw);
+    if (Number.isNaN(start.getTime())) return null;
+    const now = new Date();
+    let months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+    if (now.getDate() < start.getDate()) months -= 1;
+    if (months < 0) return null;
+    const years = Math.floor(months / 12);
+    const rest = months % 12;
+    return years > 0
+      ? `${years}${t('personalGoals.yearsShort', 'y')} ${rest}${t('personalGoals.monthsShort', 'm')}`
+      : `${rest}${t('personalGoals.monthsShort', 'm')}`;
+  }, [currentEmployee, t]);
+
+  /** The five calibrated rows the assessment figure draws. */
+  const skillRows = useMemo(() => PERFORMANCE_SKILLS.map((definition) => {
+    const skill = skills.find(s => s.skill_name === definition.skillName);
+    return {
+      key: definition.key,
+      skillName: definition.skillName,
+      category: definition.category,
+      label: t(`personalGoals.${definition.key}`, definition.skillName),
+      self: Number(skill?.rating || 0),
+      manager: skill?.managerRating ?? null,
+      median: companyMedians[definition.skillName] ?? null,
+    };
+  }), [skills, companyMedians, t]);
+
+  /** Average of the rated skills — the same arithmetic the save path uses. */
+  const skillAverage = useMemo(() => buildPerformanceAssessment(skills).overallRating, [skills]);
+
+  /** Gaps worth a conversation, in the words the footer prints. */
+  const calibrationGaps = useMemo(() => skillRows
+    .filter(r => r.manager != null && r.self > 0 && Math.abs(r.manager - r.self) >= GAP_THRESHOLD)
+    .map(r => ({ label: r.label, direction: r.manager > r.self ? 'above' : 'below' })),
+  [skillRows]);
+
+  const hasManagerRatings = skillRows.some(r => r.manager != null);
+
+  const calibrationRead = useMemo(() => {
+    if (!hasManagerRatings) {
+      return t('personalGoals.noManagerRatings', 'No manager ratings for this period yet.');
+    }
+    if (calibrationGaps.length === 0) {
+      return t('personalGoals.noGaps', 'Self and manager agree within half a point across every skill.');
+    }
+    const list = calibrationGaps
+      .map(g => `${g.label.toLowerCase()} ${g.direction === 'above'
+        ? t('personalGoals.ratedAboveSelf', 'rated above self')
+        : t('personalGoals.ratedBelowSelf', 'below')}`)
+      .join(', ');
+    return `${t('personalGoals.gapsToDiscuss', '{count} gaps to discuss').replace('{count}', String(calibrationGaps.length))}: ${list}`;
+  }, [calibrationGaps, hasManagerRatings, t]);
+
+  /**
+   * Goals in the shape the blueprint section renders. ON TRACK / AT RISK is a
+   * real calculation, not a stored field: a goal is at risk once it is overdue,
+   * or once its progress has slipped materially behind its own elapsed timeline.
+   */
+  const goalRows = useMemo(() => {
+    const today = new Date();
+    return goals.map((goal) => {
+      const progress = Number(goal.progress) || 0;
+      const complete = goal.status === 'completed' || goal.status === 'achieved' || progress >= 100;
+      const target = goal.target_date ? new Date(goal.target_date) : null;
+      const started = goal.created_at ? new Date(goal.created_at) : null;
+
+      let state = 'onTrack';
+      let expected = null;
+      if (complete) {
+        state = 'complete';
+      } else if (target && !Number.isNaN(target.getTime()) && today > target) {
+        state = 'atRisk';
+      } else if (target && started && !Number.isNaN(target.getTime()) && !Number.isNaN(started.getTime()) && target > started) {
+        expected = Math.max(0, Math.min(1, (today - started) / (target - started))) * 100;
+        if (progress + AT_RISK_SLIP_PP < expected) state = 'atRisk';
+      }
+
+      const daysLeft = target && !Number.isNaN(target.getTime()) ? daysBetween(today, target) : null;
+
+      return {
+        raw: goal,
+        id: goal.id,
+        title: isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title,
+        description: isDemoMode() ? getDemoGoalDescription(goal, t) : goal.description,
+        status: goal.status,
+        progress,
+        complete,
+        state,
+        expected,
+        targetDate: goal.target_date,
+        daysLeft,
+        priority: goal.priority,
+        category: goal.category,
+      };
+    });
+  }, [goals, t]);
+
+  const openGoals = useMemo(() => goalRows.filter(g => !g.complete), [goalRows]);
+  const completedGoals = useMemo(() => goalRows.filter(g => g.complete), [goalRows]);
+  const inProgressCount = goalRows.filter(g => !g.complete && g.status !== 'pending').length;
+
+  /** Open goals first, in deadline order, then the completed ones. */
+  const orderedGoals = useMemo(() => [
+    ...openGoals.slice().sort((a, b) => String(a.targetDate || '').localeCompare(String(b.targetDate || ''))),
+    ...completedGoals,
+  ], [openGoals, completedGoals]);
+
+  const historyPoints = useMemo(() => {
+    const byPeriod = new Map(allReviews.map(r => [r.review_period, r]));
+    return quartersEndingAt(selectedPeriod, HISTORY_QUARTERS).map(q => {
+      const review = byPeriod.get(q.key);
+      const value = Number(review?.overall_rating);
+      return {
+        key: q.key,
+        label: `Q${q.quarter}'${String(q.year).slice(2)}`,
+        value: Number.isFinite(value) && value > 0 ? value : null,
+      };
+    });
+  }, [allReviews, selectedPeriod]);
+
+  /** Overall for the period, and the move since the quarter before it. */
+  const overall = useMemo(() => {
+    const current = Number(periodReview?.overall_rating) || skillAverage || 0;
+    const previous = historyPoints.length >= 2 ? historyPoints[historyPoints.length - 2].value : null;
+    const delta = previous != null && current > 0 ? round1(current - previous) : null;
+    return { value: current, delta };
+  }, [periodReview, skillAverage, historyPoints]);
+
+  const closeDate = useMemo(() => reviewCloseDate(selectedPeriod), [selectedPeriod]);
+  const closeLabel = closeDate
+    ? closeDate.toLocaleDateString(undefined, { day: '2-digit', month: 'short' }).toUpperCase()
+    : '—';
+  const daysToClose = closeDate ? daysBetween(new Date(), closeDate) : null;
+
+  /**
+   * The cycle is derived, not stored: there is no workflow table, so each step
+   * is inferred from the records that would exist if it had happened.
+   */
+  const cycleSteps = useMemo(() => {
+    const selfDate = skills
+      .map(s => s.assessment_date)
+      .filter(Boolean)
+      .sort()
+      .pop() || null;
+    const selfDone = skillRows.some(r => r.self > 0) && Boolean(selfDate);
+    const managerDone = hasManagerRatings;
+    const status = periodReview?.status || null;
+    const signedOff = status === 'approved' || status === 'completed';
+    const calibrated = signedOff || status === 'submitted';
+
+    const steps = [
+      {
+        key: 'self',
+        title: t('personalGoals.stepSelfAssessment', 'Self-assessment submitted'),
+        meta: selfDate ? formatDate(selfDate, currentLanguage) : t('personalGoals.notYet', 'Not yet'),
+        state: selfDone ? 'done' : 'todo',
+      },
+      {
+        key: 'manager',
+        title: t('personalGoals.stepManagerRating', 'Manager rating entered'),
+        meta: [
+          periodReview?.review_date ? formatDate(periodReview.review_date, currentLanguage) : null,
+          periodReview?.reviewer?.name || null,
+        ].filter(Boolean).join(' · ') || t('personalGoals.notYet', 'Not yet'),
+        state: managerDone ? 'done' : 'todo',
+      },
+      {
+        key: 'calibration',
+        title: t('personalGoals.stepCalibration', 'Calibration meeting'),
+        meta: periodReview?.reviewer?.name || t('personalGoals.awaitingSchedule', 'Not scheduled'),
+        state: calibrated ? 'done' : 'todo',
+      },
+      {
+        key: 'signoff',
+        title: t('personalGoals.stepSignOff', 'Sign-off & next-quarter goals'),
+        meta: closeDate
+          ? `${t('personalGoals.byDate', 'by')} ${formatDate(closeDate.toISOString().split('T')[0], currentLanguage)}`
+          : '',
+        state: signedOff ? 'done' : 'todo',
+      },
+    ];
+
+    // Exactly one open step is "now" — the first that has not happened.
+    const nextIndex = steps.findIndex(s => s.state === 'todo');
+    if (nextIndex >= 0) steps[nextIndex].state = 'current';
+    return steps;
+  }, [skills, skillRows, hasManagerRatings, periodReview, closeDate, currentLanguage, t]);
+
+  const managerNote = useMemo(() => {
+    if (!periodReview) return null;
+    const strengths = isDemoMode()
+      ? getDemoReviewStrengths(periodReview, t)
+      : periodReview.strengths;
+    const areas = isDemoMode()
+      ? getDemoReviewAreasForImprovement(periodReview, t)
+      : periodReview.areas_for_improvement;
+    if (!strengths && !areas) return null;
+    const employeeComment = periodReview.employee_comments || '';
+    return {
+      id: periodReview.id,
+      strengths,
+      areas,
+      author: periodReview.reviewer?.name || t('personalGoals.reviewer', 'Reviewer'),
+      date: periodReview.review_date,
+      acknowledged: employeeComment.startsWith(ACK_MARKER),
+      reply: employeeComment.startsWith(ACK_MARKER)
+        ? employeeComment.slice(ACK_MARKER.length).trim()
+        : employeeComment,
+    };
+  }, [periodReview, t]);
+
+  const currentYear = new Date().getFullYear();
+  const periodOptions = useMemo(() => {
+    const out = [];
+    for (const year of [currentYear - 1, currentYear]) {
+      for (const q of [1, 2, 3, 4]) {
+        out.push({ value: `Q${q}-${year}`, label: `Q${q} ${year}` });
+      }
+    }
+    return out;
+  }, [currentYear]);
+
+  // ---------------------------------------------------------------- actions
+
+  /** Slider movement stays local; the whole assessment saves as one action. */
   const handleUpdateSkillRating = (skillName, category, newRating) => {
     if (!selectedEmployee) return;
-    const roundedRating = Math.round(newRating * 10) / 10;
-    const proficiencyLevel = roundedRating >= 4 ? 'advanced' : roundedRating >= 3 ? 'intermediate' : 'beginner';
-
-    setSkills(prevSkills =>
-      prevSkills.map(skill =>
-        skill.skill_name === skillName
-          ? {
-              ...skill,
-              skill_category: category,
-              rating: roundedRating,
-              proficiency_level: proficiencyLevel
-            }
-          : skill
-      )
-    );
+    const rounded = Math.round(newRating * 10) / 10;
+    setSkills(prev => prev.map(skill =>
+      skill.skill_name === skillName
+        ? {
+            ...skill,
+            skill_category: category,
+            rating: rounded,
+            proficiency_level: rounded >= 4 ? 'advanced' : rounded >= 3 ? 'intermediate' : 'beginner',
+          }
+        : skill
+    ));
     setAssessmentDirty(true);
   };
 
+  /**
+   * Saves the employee's own numbers to skills_assessments — the table that
+   * holds self-ratings. The manager's ratings live on the review row and are
+   * read-only here; they are entered on the Performance Review screen.
+   */
   const handleSaveSkillAssessment = async () => {
-    if (!selectedEmployee || !selectedPeriod || !assessmentDirty) return;
-
-    const { ratings, overallRating } = buildPerformanceAssessment(skills);
+    if (!selectedEmployee || !assessmentDirty || savingAssessment) return;
 
     setSavingAssessment(true);
     try {
-      const result = await performanceService.upsertPerformanceReviewByPeriod({
-        employeeId: selectedEmployee,
-        reviewerId: user?.employeeId || selectedEmployee,
-        reviewPeriod: selectedPeriod,
-        reviewType: 'quarterly',
-        overallRating,
-        ...ratings,
-        status: reviews[0]?.status || 'draft'
-      });
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to save performance assessment');
+      const failures = [];
+      for (const definition of PERFORMANCE_SKILLS) {
+        const skill = skills.find(s => s.skill_name === definition.skillName);
+        const rating = Number(skill?.rating || 0);
+        if (rating < 1) continue; // an unrated skill is not an assertion
+        const result = await performanceService.upsertSkillAssessment({
+          employeeId: selectedEmployee,
+          skillName: definition.skillName,
+          skillCategory: definition.category,
+          rating,
+          proficiencyLevel: rating >= 4 ? 'advanced' : rating >= 3 ? 'intermediate' : 'beginner',
+          assessedBy: user?.employeeId || selectedEmployee,
+          assessmentDate: new Date().toISOString().split('T')[0],
+        });
+        if (!result.success) failures.push(`${definition.skillName}: ${result.error}`);
       }
 
-      if (isDemoMode()) {
-        for (const definition of PERFORMANCE_SKILLS) {
-          const rating = ratings[definition.serviceField];
-          if (rating <= 0) continue;
-          upsertDemoSkill({
-            employee_id: selectedEmployee,
-            skill_name: definition.skillName,
-            skill_category: definition.category,
-            rating,
-            proficiency_level: rating >= 4 ? 'advanced' : rating >= 3 ? 'intermediate' : 'beginner',
-            assessment_date: new Date().toISOString().split('T')[0]
-          });
-        }
-      }
+      if (failures.length > 0) throw new Error(failures.join('; '));
 
       setAssessmentDirty(false);
+      setAdjusting(false);
       await fetchGoalsAndReviews({ silent: true });
-      alert(t('personalGoals.ratingUpdated', 'Performance assessment saved successfully!'));
+      alert(t('personalGoals.ratingUpdated', 'Assessment saved.'));
     } catch (error) {
-      console.error('Error saving performance assessment:', error);
+      console.error('Error saving skill assessment:', error);
       if (handleSessionAuthError(error)) return;
-      alert(`${t('personalGoals.ratingUpdateError', 'Failed to save performance assessment')}: ${error.message}`);
+      alert(`${t('personalGoals.ratingUpdateError', 'Failed to save assessment')}: ${error.message}`);
     } finally {
       setSavingAssessment(false);
     }
   };
 
-  // Handler for viewing goal details
+  /** Acknowledge and Reply both write the employee's side of the review record. */
+  const writeEmployeeComment = async (text) => {
+    if (!managerNote?.id || ackBusy) return;
+    setAckBusy(true);
+    try {
+      const result = await performanceService.updatePerformanceReview(managerNote.id, {
+        employeeComments: text,
+      });
+      if (!result.success) throw new Error(result.error || 'Failed to save');
+      await fetchGoalsAndReviews({ silent: true });
+    } catch (error) {
+      console.error('Error saving employee comment:', error);
+      if (handleSessionAuthError(error)) return;
+      alert(`${t('personalGoals.replyError', 'Could not save your response')}: ${error.message}`);
+    } finally {
+      setAckBusy(false);
+    }
+  };
+
+  const handleAcknowledge = () => writeEmployeeComment(`${ACK_MARKER} ${managerNote?.reply || ''}`.trim());
+
+  const handleReply = () => {
+    const answer = window.prompt(
+      t('personalGoals.replyPrompt', 'Your response to this review:'),
+      managerNote?.reply || ''
+    );
+    if (answer === null) return;
+    const prefix = managerNote?.acknowledged ? `${ACK_MARKER} ` : '';
+    writeEmployeeComment(`${prefix}${answer}`.trim());
+  };
+
   const handleViewGoal = (goal) => {
     setViewingGoal(goal);
     setShowViewGoalModal(true);
   };
 
-  // Handlers for modals
   const handleAddGoal = () => {
     setGoalForm({
-      title: '',
-      description: '',
-      category: 'general',
-      targetDate: '',
-      priority: 'medium',
-      status: 'pending',
-      progressPercentage: 0
+      title: '', description: '', category: 'general',
+      targetDate: '', priority: 'medium', status: 'pending', progressPercentage: 0,
     });
     setShowAddGoalModal(true);
   };
@@ -303,9 +810,7 @@ const PersonalGoals = ({ employees }) => {
   const handleSubmitGoal = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
     try {
-      // Use service for both demo and non-demo mode (service handles persistence)
       const result = await performanceService.createPerformanceGoal({
         employeeId: selectedEmployee,
         ...goalForm,
@@ -314,7 +819,7 @@ const PersonalGoals = ({ employees }) => {
 
       if (result.success) {
         setShowAddGoalModal(false);
-        fetchGoalsAndReviews(); // Refresh data
+        fetchGoalsAndReviews();
         alert(t('personalGoals.goalCreatedSuccess', 'Goal created successfully!'));
       } else {
         alert(t('personalGoals.goalCreatedError', 'Failed to create goal: ') + result.error);
@@ -324,36 +829,30 @@ const PersonalGoals = ({ employees }) => {
       if (handleSessionAuthError(error)) return;
       alert(t('personalGoals.goalCreatedError', 'Failed to create goal: ') + error.message);
     }
-    
     setLoading(false);
   };
 
-  const handleEditGoal = (goal) => {
-    // Find the original goal from goals array to get all fields
-    const originalGoal = goals.find(g => g.id === goal.id);
-    if (originalGoal) {
-      setEditingGoal(originalGoal);
-      setGoalForm({
-        title: isDemoMode() ? getDemoGoalTitle(originalGoal, t) : originalGoal.title,
-        description: isDemoMode() ? getDemoGoalDescription(originalGoal, t) : originalGoal.description,
-        category: originalGoal.category,
-        targetDate: originalGoal.target_date,
-        priority: originalGoal.priority,
-        status: originalGoal.status,
-        progressPercentage: originalGoal.progress || 0
-      });
-      setShowEditGoalModal(true);
-    }
+  const handleEditGoal = (goalRow) => {
+    const originalGoal = goals.find(g => g.id === goalRow.id);
+    if (!originalGoal) return;
+    setEditingGoal(originalGoal);
+    setGoalForm({
+      title: isDemoMode() ? getDemoGoalTitle(originalGoal, t) : originalGoal.title,
+      description: isDemoMode() ? getDemoGoalDescription(originalGoal, t) : originalGoal.description,
+      category: originalGoal.category,
+      targetDate: originalGoal.target_date,
+      priority: originalGoal.priority,
+      status: originalGoal.status,
+      progressPercentage: originalGoal.progress || 0
+    });
+    setShowEditGoalModal(true);
   };
 
   const handleUpdateGoal = async (e) => {
     e.preventDefault();
     if (!editingGoal) return;
-    
     setLoading(true);
-    
     try {
-      // Use service for both demo and non-demo mode (service handles persistence)
       const result = await performanceService.updatePerformanceGoal(editingGoal.id, {
         ...goalForm,
         progressPercentage: goalForm.progressPercentage
@@ -362,7 +861,7 @@ const PersonalGoals = ({ employees }) => {
       if (result.success) {
         setShowEditGoalModal(false);
         setEditingGoal(null);
-        fetchGoalsAndReviews(); // Refresh data
+        fetchGoalsAndReviews();
         alert(t('personalGoals.goalUpdatedSuccess', 'Goal updated successfully!'));
       } else {
         alert(t('personalGoals.goalUpdatedError', 'Failed to update goal: ') + result.error);
@@ -372,23 +871,19 @@ const PersonalGoals = ({ employees }) => {
       if (handleSessionAuthError(error)) return;
       alert(t('personalGoals.goalUpdatedError', 'Failed to update goal: ') + error.message);
     }
-    
     setLoading(false);
   };
 
-  // Handle delete goal
   const handleDeleteGoal = async (goalId) => {
-    if (!window.confirm(t('personalGoals.confirmDeleteGoal', 'Are you sure you want to delete this goal?'))) {
-      return;
-    }
+    if (!window.confirm(t('personalGoals.confirmDeleteGoal', 'Are you sure you want to delete this goal?'))) return;
 
     setLoading(true);
-    
     try {
       const result = await performanceService.deletePerformanceGoal(goalId);
-
       if (result.success) {
-        fetchGoalsAndReviews(); // Refresh data
+        setShowViewGoalModal(false);
+        setViewingGoal(null);
+        fetchGoalsAndReviews();
         alert(t('personalGoals.goalDeletedSuccess', 'Goal deleted successfully!'));
       } else {
         alert(t('personalGoals.goalDeletedError', 'Failed to delete goal: ') + result.error);
@@ -398,1334 +893,776 @@ const PersonalGoals = ({ employees }) => {
       if (handleSessionAuthError(error)) return;
       alert(t('personalGoals.goalDeletedError', 'Failed to delete goal: ') + error.message);
     }
-    
     setLoading(false);
   };
 
-  // Calculate overall rating from reviews
-  const calculateOverallRating = () => {
-    // Calculate average from skills assessments
-    const skillNames = ['Technical Skills', 'Communication', 'Leadership', 'Teamwork', 'Problem Solving'];
-    const skillRatings = skillNames
-      .map(name => skills.find(s => s.skill_name === name))
-      .filter(skill => skill && skill.rating > 0)
-      .map(skill => skill.rating);
-    
-    if (skillRatings.length === 0) return 0;
-    return skillRatings.reduce((sum, rating) => sum + rating, 0) / skillRatings.length;
+  const handleExportReview = useCallback(() => {
+    const header = ['Section', 'Item', 'Self', 'Manager', 'Company median', 'Detail'];
+    const body = [
+      ...skillRows.map(r => [
+        'Skill', r.label, fmt1(r.self),
+        r.manager == null ? '' : fmt1(r.manager),
+        r.median == null ? '' : fmt1(r.median),
+        '',
+      ]),
+      ['Overall', t('personalGoals.overallPerformance', 'Overall'), fmt1(skillAverage), fmt1(overall.value), '', ''],
+      ...orderedGoals.map(g => [
+        'Goal', g.title, `${g.progress}%`, '', '',
+        `${g.state} · ${g.targetDate || ''}`,
+      ]),
+    ];
+
+    const csv = '﻿' + [header, ...body].map(row => row.map(csvCell).join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `review-${String(employeeName).replace(/\s+/g, '-').toLowerCase()}-${selectedPeriod}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [skillRows, orderedGoals, skillAverage, overall.value, employeeName, selectedPeriod, t]);
+
+  // ---------------------------------------------------------------- style
+
+  const hasRealData = goals.length > 0 || allReviews.length > 0 || skillRows.some(r => r.self > 0);
+
+  const fieldStyle = {
+    width: '100%', padding: '7px 10px', borderRadius: 0,
+    border: `1px solid ${ind.hairline}`, background: 'transparent', color: ind.ink,
+    fontFamily: BODY, fontSize: 13, outline: 'none',
   };
 
-  // Prepare current data from state
-  const currentData = {
-    overallRating: calculateOverallRating(),
-    goals: goals.map(goal => ({
-      id: goal.id,
-      title: isDemoMode() ? getDemoGoalTitle(goal, t) : goal.title,
-      status: goal.status,
-      progress: goal.progress || 0,
-      deadline: goal.target_date,
-      description: isDemoMode() ? getDemoGoalDescription(goal, t) : goal.description,
-      category: goal.category,
-      priority: goal.priority
-    })),
-    reviews: reviews.map(review => ({
-      id: review.id,
-      reviewer: review.reviewer?.name || 'Manager',
-      rating: review.overall_rating || 0,
-      date: review.review_date,
-      type: review.review_type,
-      strengths: review.strengths,
-      areasForImprovement: review.areas_for_improvement
-    })),
-    skills: skills
+  const stateLabel = {
+    onTrack: t('personalGoals.onTrack', 'On track'),
+    atRisk: t('personalGoals.atRisk', 'At risk'),
+    complete: t('personalGoals.complete', 'Complete'),
   };
 
-  // Generate period options for the current year (Q1..Q4).
-  // Labels use translation keys if available, otherwise fall back to "<year> Q<quarter>".
-  const currentYear = new Date().getFullYear();
-  const periods = [1, 2, 3, 4].map(q => ({
-    value: `Q${q}-${currentYear}`,
-    label: t(`personalGoals.q${q}_${currentYear}`, `${currentYear} Q${q}`)
-  }));
+  const tabOptions = [
+    { value: 'overview', label: t('personalGoals.overview', 'Overview') },
+    { value: 'goals', label: t('personalGoals.goalsTab', 'Goals') },
+    { value: 'history', label: t('personalGoals.history', 'History') },
+  ];
 
-  const StarRating = ({ rating, size = 'w-5 h-5', editable = false, onRatingChange }) => {
-    const [hoverRating, setHoverRating] = useState(0);
-    const [newRating, setNewRating] = useState(rating);
-
-    const handleStarClick = (starValue) => {
-      if (!editable) return;
-      setNewRating(starValue);
-      if (onRatingChange) {
-        onRatingChange(starValue);
-      }
-    };
-
-    const handleStarHover = (starValue) => {
-      if (editable) {
-        setHoverRating(starValue);
-      }
-    };
+  /* -- goal row, shared by the Overview and Goals tabs ----------------- */
+  const renderGoalRow = (goal, index) => {
+    const atRisk = goal.state === 'atRisk';
+    const fill = goal.complete ? ind.ramp[3] : atRisk ? heavyInk : ind.accent;
 
     return (
-      <div className="flex items-center space-x-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`${size} ${
-              star <= (hoverRating || newRating) ? `${text.primary} fill-current` : 'text-gray-300'
-            } ${editable ? 'cursor-pointer hover:scale-110 transition-transform' : ''}`}
-            onClick={() => handleStarClick(star)}
-            onMouseEnter={() => handleStarHover(star)}
-            onMouseLeave={() => setHoverRating(0)}
-          />
-        ))}
-      </div>
+      <button
+        key={goal.id}
+        type="button"
+        onClick={() => handleViewGoal(goal)}
+        className="w-full"
+        style={{
+          display: 'flex', alignItems: 'flex-start', gap: 14, textAlign: 'left',
+          padding: '13px 20px', cursor: 'pointer', background: 'transparent',
+          border: 'none', borderTop: index === 0 ? 'none' : `1px solid ${ind.rule}`,
+          opacity: goal.complete ? 0.62 : 1,
+        }}
+      >
+        {/* Blueprint item marker — a drawing reference, not a bullet */}
+        <span
+          aria-hidden="true"
+          style={{
+            fontFamily: MONO, fontWeight: 600, fontSize: 13, letterSpacing: '.06em',
+            color: ind.accent, flex: 'none', width: 20, paddingTop: 1,
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {String(index + 1).padStart(2, '0')}
+        </span>
+
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span
+            style={{
+              display: 'block', fontFamily: BODY, fontSize: 13.5, color: ind.ink,
+              textDecoration: goal.complete ? 'line-through' : 'none',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}
+          >
+            {goal.title}
+          </span>
+          <span
+            style={{
+              display: 'block', fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted,
+              marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}
+          >
+            {[
+              goal.targetDate
+                ? `${goal.complete ? t('personalGoals.closed', 'Closed') : t('personalGoals.due', 'Due')} ${formatDate(goal.targetDate, currentLanguage)}`
+                : null,
+              !goal.complete && goal.daysLeft != null
+                ? (goal.daysLeft < 0
+                    ? t('personalGoals.overdueDays', '{n} days overdue').replace('{n}', String(Math.abs(goal.daysLeft)))
+                    : t('personalGoals.daysLeft', '{n} days left').replace('{n}', String(goal.daysLeft)))
+                : null,
+              !goal.complete && goal.expected != null
+                ? t('personalGoals.expectedBy', 'timeline says {n}%').replace('{n}', String(Math.round(goal.expected)))
+                : null,
+              goal.description || null,
+            ].filter(Boolean).join(' · ')}
+          </span>
+        </span>
+
+        {/* Fixed status block so the column stays a straight edge */}
+        <span style={{ flex: 'none', width: 150 }}>
+          <span style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+            <span style={figure(14, ind.ink)}>
+              {goal.complete ? '' : `${Math.round(goal.progress)}%`}
+            </span>
+            <span
+              style={{
+                fontFamily: DISPLAY, fontWeight: 600, fontSize: 10.5, letterSpacing: '.12em',
+                textTransform: 'uppercase',
+                color: atRisk ? ind.accentDeep : ind.inkMuted,
+              }}
+            >
+              {stateLabel[goal.state]}
+            </span>
+          </span>
+          <span style={{ display: 'block', marginTop: 6 }}>
+            <Bar ind={ind} value={goal.complete ? 1 : goal.progress / 100} fill={fill} height={7} />
+          </span>
+        </span>
+
+        <ChevronRight size={15} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted, marginTop: 3 }} />
+      </button>
     );
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'in-progress': return 'bg-blue-100 text-blue-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'completed': return t('personalGoals.completed');
-      case 'achieved': return t('personalGoals.achieved');
-      case 'in_progress': return t('personalGoals.inProgress');
-      case 'in-progress': return t('personalGoals.inProgress');
-      case 'pending': return t('personalGoals.pending');
-      case 'not-started': return t('personalGoals.notStarted');
-      default: return status;
-    }
-  };
-
-  const OverviewTab = () => (
-    <div className="space-y-6">
-      {/* Overall Performance Card */}
-      <div 
-        className="rounded-lg shadow-sm border p-6"
-        style={{
-          backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-          color: isDarkMode ? '#ffffff' : '#111827',
-          borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-        }}
+  const goalsSection = (
+    <Blueprint ind={ind}>
+      <div
+        className="flex flex-wrap items-start justify-between"
+        style={{ gap: 12, padding: '14px 20px', borderBottom: `1px solid ${ind.hairline}` }}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h3 
-            className="text-lg font-semibold"
-            style={{
-              backgroundColor: 'transparent',
-              color: isDarkMode ? '#ffffff' : '#111827',
-              borderColor: 'transparent'
-            }}
-          >
-            {t('personalGoals.overallPerformance')}
-          </h3>
-         
+        <div style={{ minWidth: 0 }}>
+          <Kicker ind={ind}>{t('personalGoals.currentGoals', 'Current goals')}</Kicker>
+          <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 6 }}>
+            {`${inProgressCount} ${t('personalGoals.inProgressLower', 'in progress')} · ${completedGoals.length} ${t('personalGoals.completedThisYear', 'completed')}`}
+          </p>
         </div>
-        <StarRating 
-          rating={currentData.overallRating} 
-          size="w-6 h-6" 
-          editable={false}
-        />
+        <Btn ind={ind} onClick={handleAddGoal} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <Plus size={13} strokeWidth={1.5} />
+          {t('personalGoals.addGoal', 'Add goal')}
+        </Btn>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div 
-          className="rounded-lg shadow-sm border p-6"
-          style={{
-            backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-            color: isDarkMode ? '#ffffff' : '#111827',
-            borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-          }}
-        >
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-transparent rounded-full">
-              <ShieldEllipsis className={`h-6 w-6 ${text.primary}`} />
-            </div>
-            <div>
-              <p 
-                className="text-sm"
-                style={{
-                  backgroundColor: 'transparent',
-                  color: isDarkMode ? '#d1d5db' : '#4b5563',
-                  borderColor: 'transparent'
-                }}
-              >
-                {t('personalGoals.goalsInProgress', 'Goals In Progress')}
-              </p>
-              <p 
-                className="text-2xl font-bold"
-                style={{
-                  backgroundColor: 'transparent',
-                  color: isDarkMode ? '#ffffff' : '#111827',
-                  borderColor: 'transparent'
-                }}
-              >
-                <SlidingNumber
-                  value={currentData.goals.filter(g => g.status === 'in_progress' || g.status === 'in-progress').length}
-                />
-              </p>
-            </div>
-          </div>
-        </div>
-        <div 
-          className="rounded-lg shadow-sm border p-6"
-          style={{
-            backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-            color: isDarkMode ? '#ffffff' : '#111827',
-            borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-          }}
-        >
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-transparent rounded-full">
-              <Sparkle className={`h-6 w-6 ${text.primary}`} />
-            </div>
-            <div>
-              <p 
-                className="text-sm"
-                style={{
-                  backgroundColor: 'transparent',
-                  color: isDarkMode ? '#d1d5db' : '#4b5563',
-                  borderColor: 'transparent'
-                }}
-              >
-                {t('personalGoals.avgSkillRating')}
-              </p>
-              <p 
-                className="text-2xl font-bold"
-                style={{
-                  backgroundColor: 'transparent',
-                  color: isDarkMode ? '#ffffff' : '#111827',
-                  borderColor: 'transparent'
-                }}
-              >
-                <SlidingNumber
-                  value={
-                    currentData.skills.length > 0
-                      ? Number(
-                          (
-                            currentData.skills.reduce((acc, skill) => acc + skill.rating, 0) /
-                            currentData.skills.length
-                          ).toFixed(1)
-                        )
-                      : 0
-                  }
-                />
-              </p>
-            </div>
-          </div>
-        </div>
-        <div 
-          className="rounded-lg shadow-sm border p-6"
-          style={{
-            backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-            color: isDarkMode ? '#ffffff' : '#111827',
-            borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-          }}
-        >
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-transparent rounded-full">
-              <Goal className={`h-6 w-6 ${text.primary}`} />
-            </div>
-            <div>
-              <p 
-                className="text-sm"
-                style={{
-                  backgroundColor: 'transparent',
-                  color: isDarkMode ? '#d1d5db' : '#4b5563',
-                  borderColor: 'transparent'
-                }}
-              >
-                {t('personalGoals.goalsCompleted')}
-              </p>
-              <p 
-                className="text-2xl font-bold"
-                style={{
-                  backgroundColor: 'transparent',
-                  color: isDarkMode ? '#ffffff' : '#111827',
-                  borderColor: 'transparent'
-                }}
-              >
-                <SlidingNumber value={currentData.goals.filter(g => g.status === 'completed').length} />
-                /
-                <SlidingNumber value={currentData.goals.length} />
-              </p>
-            </div>
-          </div>
-        </div>
+      <div>
+        {orderedGoals.length === 0 && (
+          <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, padding: '18px 20px' }}>
+            {loading ? t('common.loading', 'Loading…') : t('personalGoals.noGoals', 'No goals for this employee yet.')}
+          </p>
+        )}
+        {orderedGoals.map(renderGoalRow)}
       </div>
-
-      {/* Individual Skills Rating */}
-      <div 
-        className="rounded-lg shadow-sm border p-6"
-        style={{
-          backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-          color: isDarkMode ? '#ffffff' : '#111827',
-          borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-        }}
-      >
-        <h3 
-          className="text-lg font-semibold mb-4"
-          style={{
-            backgroundColor: 'transparent',
-            color: isDarkMode ? '#ffffff' : '#111827',
-            borderColor: 'transparent'
-          }}
-        >
-          {t('personalGoals.skillsAssessment')}
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[
-            { key: 'technicalSkills', label: t('personalGoals.technical', 'Technical Skills'), category: 'technical', skillName: 'Technical Skills' },
-            { key: 'communication', label: t('personalGoals.communication', 'Communication'), category: 'communication', skillName: 'Communication' },
-            { key: 'leadership', label: t('personalGoals.leadership', 'Leadership'), category: 'leadership', skillName: 'Leadership' },
-            { key: 'teamwork', label: t('personalGoals.teamwork', 'Teamwork'), category: 'teamwork', skillName: 'Teamwork' },
-            { key: 'problemSolving', label: t('personalGoals.problemSolving', 'Problem Solving'), category: 'problem_solving', skillName: 'Problem Solving' }
-          ].map(({ key, label, category, skillName }) => {
-            const skill = currentData.skills.find(s => s.skill_name === skillName);
-            const currentRating = skill?.rating || 0;
-            
-            return (
-              <div key={key} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">{label}</label>
-                  <span className="text-sm font-semibold">{currentRating.toFixed(1)}/5.0</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="5"
-                  step="0.5"
-                  value={currentRating}
-                  onChange={(e) => {
-                    const newRating = parseFloat(e.target.value);
-                    handleUpdateSkillRating(skillName, category, newRating);
-                  }}
-                  className="w-full h-2 rounded-lg appearance-none cursor-pointer"
-                    style={{
-                      background: `linear-gradient(to right, #9f9f9f 0%, #9f9f9f 2.5%, ${isDarkMode ? '#ffffff' : '#374151'} ${(currentRating / 5) * 100}%, ${isDarkMode ? '#4b5563' : '#e5e7eb'} ${(currentRating / 5) * 100}%, ${isDarkMode ? '#4b5563' : '#e5e7eb'} 100%)`
-                    }}
-                 />
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>{t('personalGoals.beginner', 'Beginner')}</span>
-                  <span>{t('personalGoals.advanced', 'Advanced')}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="mt-6 flex justify-end">
-          <button
-            type="button"
-            onClick={handleSaveSkillAssessment}
-            disabled={!assessmentDirty || savingAssessment}
-            className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-            style={{
-              backgroundColor: isDarkMode ? '#2563eb' : '#2563eb',
-              borderColor: isDarkMode ? '#60a5fa' : '#1d4ed8',
-              color: '#ffffff'
-            }}
-          >
-            <Save className="h-4 w-4" />
-            <span>
-              {savingAssessment
-                ? t('common.saving', 'Saving...')
-                : t('personalGoals.saveAssessment', 'Save Assessment')}
-            </span>
-          </button>
-        </div>
-      </div>
-
-      {/* Recent Goals */}
-      <div 
-        className="rounded-lg shadow-sm border p-6"
-        style={{
-          backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-          color: isDarkMode ? '#ffffff' : '#111827',
-          borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-        }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 
-            className="text-lg font-semibold"
-            style={{
-              backgroundColor: 'transparent',
-              color: isDarkMode ? '#ffffff' : '#111827',
-              borderColor: 'transparent'
-            }}
-          >
-            {t('personalGoals.currentGoals')}
-          </h3>
-          <button 
-            onClick={handleAddGoal}
-            className={`px-4 py-2 text-white rounded-lg ${isDarkMode ? 'bg-transparent' : 'bg-transparent'} flex items-center space-x-2 cursor-pointer transition-colors`}
-            
-          >
-            <Plus className={`h-4 w-4 ${text.secondary}`} />
-            <span style={{ color: isDarkMode ? '#ffffff' : '#111827' }}>{t('personalGoals.addGoal')}</span>
-          </button>
-        </div>
-        <div className="space-y-4">
-          {currentData.goals.slice(0, 3).map(goal => (
-            <div 
-              key={goal.id} 
-              className="border rounded-lg p-4"
-              style={{
-                backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
-                color: isDarkMode ? '#ffffff' : '#111827',
-                borderColor: isDarkMode ? '#6b7280' : '#d1d5db'
-              }}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <h4 
-                  className="font-medium"
-                  style={{
-                    backgroundColor: 'transparent',
-                    color: isDarkMode ? '#ffffff' : '#111827',
-                    borderColor: 'transparent'
-                  }}
-                >
-                  {isDemoMode() ? getDemoGoalTitle(goal, t) : <TranslatedText text={goal.title} record={{ entityType: 'goal', entityId: goal.id, field: 'title' }} />}
-                </h4>
-                <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(goal.status)}`}>
-                    {getStatusText(goal.status)}
-                  </span>
-                  <button 
-                    className={`cursor-pointer ${isDarkMode ? 'hover:bg-gray-50' : 'hover:bg-gray-800'} rounded transition-colors border`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditGoal(goal);
-                    }}
-                    title={t('personalGoals.editGoal', 'Edit goal')}
-                    style={{
-                      backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
-                      color: isDarkMode ? '#ffffff' : '#111827',
-                      borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-                    }}
-                  >
-                    <Edit className={`h-4.5 w-4.5 ${text.secondary}`} />
-                  </button>
-                  <button 
-                    className={`cursor-pointer ${isDarkMode ? 'hover:bg-red-900' : 'hover:bg-red-100'} rounded transition-colors border`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteGoal(goal.id);
-                    }}
-                    title={t('personalGoals.deleteGoal', 'Delete goal')}
-                    style={{
-                      backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
-                      color: isDarkMode ? '#f87171' : '#dc2626',
-                      borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-                    }}
-                  >
-                    <Trash2 className="h-4.5 w-4.5" />
-                  </button>
-                </div>
-              </div>
-          
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center space-x-2">
-                  <span 
-                    style={{
-                      backgroundColor: 'transparent',
-                      color: isDarkMode ? '#d1d5db' : '#4b5563',
-                      borderColor: 'transparent'
-                    }}
-                  >
-                    <NumberTicker value={Number(goal.progress) || 0} />% {t('personalGoals.complete')}
-                  </span>
-                  <span 
-                    style={{
-                      backgroundColor: 'transparent',
-                      color: isDarkMode ? '#d1d5db' : '#4b5563',
-                      borderColor: 'transparent'
-                    }}
-                  >
-                    | {t('personalGoals.due')}: {formatDate(goal.deadline, currentLanguage)}
-                  </span>
-                </div>
-                <button 
-                  onClick={() => handleViewGoal(goal)}
-                  className="flex items-center space-x-1 px-2 py-1 rounded transition-colors cursor-pointer"
-                  style={{
-                    backgroundColor: 'transparent',
-                    color: isDarkMode ? '#60a5fa' : '#2563eb',
-                    borderColor: 'transparent'
-                  }}
-                  title={t('personalGoals.viewDetails', 'View Details')}
-                >
-                  <Eye className="h-4 w-4" />
-                  <span className="text-sm">{t('personalGoals.viewDetails', 'View Details')}</span>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Performance Reviews — reviewer free text, auto-translated like other UGC */}
-      {currentData.reviews.length > 0 && (
-        <div
-          className="rounded-lg shadow-sm border p-6"
-          style={{
-            backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-            color: isDarkMode ? '#ffffff' : '#111827',
-            borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-          }}
-        >
-          <h3 className="font-semibold mb-4">
-            {t('personalGoals.performanceReviews', 'Performance Reviews')}
-          </h3>
-          <div className="space-y-4">
-            {currentData.reviews.map(review => (
-              <div
-                key={review.id}
-                className="border-t pt-4 first:border-t-0 first:pt-0"
-                style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                  <span className="text-sm font-medium">
-                    {t('personalGoals.reviewer')}: {review.reviewer}
-                  </span>
-                  <span className={`text-xs ${text.secondary}`}>
-                    {formatDate(review.date, currentLanguage)}
-                    {review.rating ? ` · ${t('personalGoals.rating')}: ${review.rating}` : ''}
-                  </span>
-                </div>
-                {review.strengths && (
-                  <p className={`text-sm ${text.secondary} mb-1`}>
-                    <span className="font-medium">{t('personalGoals.strengths', 'Strengths')}: </span>
-                    {isDemoMode()
-                      ? getDemoReviewStrengths(review, t)
-                      : <TranslatedText text={review.strengths} record={{ entityType: 'review', entityId: review.id, field: 'strengths' }} />}
-                  </p>
-                )}
-                {review.areasForImprovement && (
-                  <p className={`text-sm ${text.secondary}`}>
-                    <span className="font-medium">{t('personalGoals.areasForImprovement')}: </span>
-                    {isDemoMode()
-                      ? getDemoReviewAreasForImprovement(review, t)
-                      : <TranslatedText text={review.areasForImprovement} record={{ entityType: 'review', entityId: review.id, field: 'areas_for_improvement' }} />}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+    </Blueprint>
   );
-
-  const GoalsTab = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 
-          className="text-lg font-semibold"
-          style={{
-            backgroundColor: 'transparent',
-            color: isDarkMode ? '#ffffff' : '#111827',
-            borderColor: 'transparent'
-          }}
-        >
-          {t('personalGoals.performanceGoals')}
-        </h3>
-        <div className="flex items-center space-x-2">
-          <ShinyButton 
-            type="button"
-            onClick={handleAddGoal}
-            className={cn(
-              'px-4 py-2 border',
-              isDarkMode
-                ? 'bg-blue-600 border-blue-500 text-white hover:bg-blue-700'
-                : 'bg-blue-600 border-blue-500 text-white hover:bg-blue-700'
-            )}
-          >
-            <Plus className="h-4 w-4" />
-            <span>{t('personalGoals.addNewGoal')}</span>
-          </ShinyButton>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        {currentData.goals.map(goal => (
-          <div 
-            key={goal.id} 
-            className="rounded-lg shadow-sm border p-6"
-            style={{
-              backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-              color: isDarkMode ? '#ffffff' : '#111827',
-              borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-            }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <Goal className={`h-5 w-5 ${text.secondary}`} />
-                <h4 
-                  className="font-semibold"
-                  style={{
-                    backgroundColor: 'transparent',
-                    color: isDarkMode ? '#ffffff' : '#111827',
-                    borderColor: 'transparent'
-                  }}
-                >
-                  {isDemoMode() ? getDemoGoalTitle(goal, t) : <TranslatedText text={goal.title} record={{ entityType: 'goal', entityId: goal.id, field: 'title' }} />}
-                </h4>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(goal.status)}`}>
-                  {getStatusText(goal.status)}
-                </span>
-                <button 
-                  className={`p-2 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} rounded transition-colors border`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEditGoal(goal);
-                  }}
-                  title={t('personalGoals.editGoal', 'Edit goal')}
-                  style={{
-                    backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
-                    color: isDarkMode ? '#ffffff' : '#111827',
-                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-                  }}
-                >
-                  <Edit className={`h-4 w-4 ${text.secondary}`} />
-                </button>
-                <button 
-                  className={`p-2 ${isDarkMode ? 'hover:bg-red-900' : 'hover:bg-red-100'} rounded transition-colors border`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteGoal(goal.id);
-                  }}
-                  title={t('personalGoals.deleteGoal', 'Delete goal')}
-                  style={{
-                    backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
-                    color: isDarkMode ? '#f87171' : '#dc2626',
-                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <span 
-                  className="text-sm font-medium"
-                  style={{
-                    backgroundColor: 'transparent',
-                    color: isDarkMode ? '#d1d5db' : '#374151',
-                    borderColor: 'transparent'
-                  }}
-                >
-                  {t('personalGoals.progress')}
-                </span>
-                <span 
-                  className="text-sm font-bold"
-                  style={{
-                    backgroundColor: 'transparent',
-                    color: isDarkMode ? '#9ca3af' : '#6b7280',
-                    borderColor: 'transparent'
-                  }}
-                >
-                  <NumberTicker value={Number(goal.progress) || 0} />%
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center space-x-2">
-                <Calendar className={`h-4 w-4 ${text.secondary}`} />
-                <span 
-                  style={{
-                    backgroundColor: 'transparent',
-                    color: isDarkMode ? '#9ca3af' : '#6b7280',
-                    borderColor: 'transparent'
-                  }}
-                >
-                  {t('personalGoals.deadline')}: {formatDate(goal.deadline, currentLanguage)}
-                </span>
-              </div>
-              <button 
-                onClick={() => handleViewGoal(goal)}
-                className="flex items-center space-x-1 px-2 py-1 rounded transition-colors cursor-pointer"
-                style={{
-                  backgroundColor: 'transparent',
-                  color: isDarkMode ? '#60a5fa' : '#2563eb',
-                  borderColor: 'transparent'
-                }}
-                title={t('personalGoals.viewDetails', 'View Details')}
-              >
-                <Eye className="h-4 w-4" />
-                <span className="text-sm">{t('personalGoals.viewDetails', 'View Details')}</span>
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  const currentEmployee = availableEmployees.find(emp => String(emp.id) === selectedEmployee);
 
   return (
-    <div className="space-y-4 md:space-y-6 px-2 sm:px-0">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 gap-15">
-        <div className="flex items-center space-x-4">
-          <h2 
-            className="font-bold"
-            style={{
-              backgroundColor: 'transparent',
-              color: isDarkMode ? '#ffffff' : '#111827',
-              borderColor: 'transparent',
-              fontSize: 'clamp(1.25rem, 3vw, 1.5rem)'
-            }}
-          >
-            {t('personalGoals.title')}
-          </h2>
-          <PageLiveClock
-            textClassName={isDarkMode ? 'text-white' : 'text-gray-900'}
-            separatorClassName={isDarkMode ? 'text-gray-400' : 'text-gray-500'}
-            loading={loading}
-            isDarkMode={isDarkMode}
-            fetchLabel={t('common.fetching', 'Fetching')}
-          />
-          {currentEmployee && (
-            <div className="flex items-center space-x-3">
-              {currentEmployee.photo ? (
-                <img 
-                  src={currentEmployee.photo} 
-                  className={`w-10 h-10 rounded-full object-cover border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}
-                />
-              ) : (
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white bg-blue-500`}>
-                  {currentEmployee.name?.charAt(0) || 'U'}
-                </div>
-              )}
-            
-            </div>
-          )}
-        </div>
-        <div className="flex space-x-4">
-          {/* Employee Selector - Only show for admin/manager */}
+    <div
+      style={{
+        border: `1px solid ${ind.hairline}`,
+        background: ind.ground,
+        color: ind.ink,
+        fontFamily: BODY,
+        fontSize: 14,
+        borderRadius: 0,
+      }}
+    >
+      {/* ── TICKER — replaces metric cards. Never both. ───────────────── */}
+      <div
+        style={{
+          height: 44,
+          background: ind.tickerBg,
+          color: ind.tickerInk,
+          borderBottom: `1px solid ${ind.hairline}`,
+          display: 'flex',
+          alignItems: 'stretch',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+        }}
+      >
+        <TickerCell ind={ind}>
+          <LiveClock ind={ind} live={hasRealData} />
+        </TickerCell>
+
+        <TickerCell
+          ind={ind}
+          label={t('personalGoals.overallPerformance', 'Overall')}
+          value={overall.value > 0 ? fmt1(overall.value) : '—'}
+          delta={overall.delta ? Math.abs(overall.delta).toFixed(1) : null}
+          deltaDirection={overall.delta > 0 ? 'up' : 'down'}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('personalGoals.inProgress', 'In progress')}
+          value={inProgressCount}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('personalGoals.goalsCompleted', 'Completed')}
+          value={`${completedGoals.length}/${goalRows.length}`}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('personalGoals.avgSkillRating', 'Skill avg')}
+          value={skillAverage > 0 ? fmt1(skillAverage) : '—'}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('personalGoals.reviewDue', 'Review due')}
+          value={closeLabel}
+          // The deadline is the one figure on the strip that runs out.
+          valueColor={ind.tickerUp}
+          title={daysToClose != null
+            ? t('personalGoals.daysLeft', '{n} days left').replace('{n}', String(daysToClose))
+            : undefined}
+        />
+
+        {/* Scope controls — pushed right with flex:1 and a left hairline. */}
+        <div
+          style={{
+            flex: 1,
+            minWidth: 'max-content',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 8,
+            padding: '0 14px',
+            borderLeft: `1px solid ${ind.tickerRule}`,
+          }}
+        >
+          <FetchElapsedPill active={loading} isDarkMode label={t('common.fetching', 'Fetching')} />
           {canViewAllEmployees && availableEmployees.length > 1 && (
-            <select
-              value={selectedEmployee}
+            <FlatSelect
+              ind={ind}
+              onDark
+              value={selectedEmployee || ''}
               onChange={(e) => setSelectedEmployee(String(e.target.value))}
-              className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              style={{
-                backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-                color: isDarkMode ? '#ffffff' : '#111827',
-                borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-              }}
+              aria-label={t('personalGoals.employee', 'Employee')}
+              style={{ maxWidth: 190 }}
             >
               {availableEmployees.map(employee => (
-                <option key={employee.id} value={String(employee.id)}>
-                  {employee.name} • {translateDepartment(employee.department)} • {translatePosition(employee.position)}
+                <option key={employee.id} value={String(employee.id)} style={{ color: '#1d1f20' }}>
+                  {getDemoEmployeeName(employee, t) || employee.name}
                 </option>
               ))}
-            </select>
+            </FlatSelect>
           )}
-
-          {/* Period Selector */}
-          <select
+          <FlatSelect
+            ind={ind}
+            onDark
             value={selectedPeriod}
             onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            style={{
-              backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-              color: isDarkMode ? '#ffffff' : '#111827',
-              borderColor: isDarkMode ? '#4b5563' : '#d1d5db'
-            }}
+            aria-label={t('personalGoals.period', 'Period')}
           >
-            {periods.map(period => (
-              <option key={period.value} value={period.value}>
+            {periodOptions.map(period => (
+              <option key={period.value} value={period.value} style={{ color: '#1d1f20' }}>
                 {period.label}
               </option>
             ))}
-          </select>
+          </FlatSelect>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div 
-        className="border-b"
-        style={{
-          borderColor: isDarkMode ? '#4b5563' : '#e5e7eb'
-        }}
-      >
-        <nav className="-mb-px flex space-x-8">
-          {[
-            { id: 'overview', name: t('personalGoals.overview') },
-            { id: 'goals', name: t('personalGoals.goalsTab') }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm cursor-pointer ${
-                activeTab === tab.id
-                  ? 'border-blue-500'
-                  : `border-transparent hover:border-gray-300`
-              }`}
-              style={{
-                color: activeTab === tab.id 
-                  ? isDarkMode ? '#ffffff' : '#9f9f9f' 
-                  : isDarkMode ? '#9ca3af' : '#6b7280',
-                borderBottomColor: activeTab === tab.id 
-                  ? '#2563eb' 
-                  : 'transparent'
-              }}
-            >
-              {tab.name}
-            </button>
-          ))}
-        </nav>
+      {/* ── BANDS ─────────────────────────────────────────────────────── */}
+      <div className="flex flex-col lg:flex-row items-stretch">
+
+        {/* ── MAIN ───────────────────────────────────────────────────── */}
+        <div
+          className="flex-1 min-w-0 flex flex-col"
+          style={{ padding: 24, gap: 18, borderRight: `1px solid ${ind.hairline}` }}
+        >
+          {fetchError && (
+            <div style={{ border: `1px solid ${ind.ink}`, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <AlertCircle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Kicker ind={ind} color={ind.ink}>{t('common.error', 'Error')}</Kicker>
+                <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 4 }}>{fetchError}</p>
+                <button
+                  type="button"
+                  onClick={() => { setFetchError(null); fetchGoalsAndReviews(); }}
+                  style={{
+                    marginTop: 8, background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                    fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5, letterSpacing: '.08em',
+                    textTransform: 'uppercase', color: ind.accentDeep, textDecoration: 'underline',
+                  }}
+                >
+                  {t('common.retry', 'Try Again')}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFetchError(null)}
+                aria-label={t('common.close', 'Close')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0, flex: 'none' }}
+              >
+                <X size={15} strokeWidth={1.5} />
+              </button>
+            </div>
+          )}
+
+          {/* Identity head */}
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div style={{ display: 'flex', gap: 16, minWidth: 0 }}>
+              <div
+                aria-hidden="true"
+                style={{
+                  width: 52, height: 52, flex: 'none', borderRadius: 0,
+                  border: `1px solid ${ind.hairline}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  overflow: 'hidden',
+                }}
+              >
+                {currentEmployee?.photo ? (
+                  <img src={currentEmployee.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <span style={{ ...figure(20, ind.accent), letterSpacing: '.04em' }}>{initialsOf(employeeName)}</span>
+                )}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <h1
+                  style={{
+                    fontFamily: DISPLAY, fontWeight: 600, fontSize: 30, lineHeight: 1.05,
+                    letterSpacing: '.02em', textTransform: 'uppercase', color: ind.ink, margin: 0,
+                  }}
+                >
+                  {employeeName}
+                </h1>
+                <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 6 }}>
+                  {[
+                    translatePosition(currentEmployee?.position),
+                    translateDepartment(currentEmployee?.department),
+                    tenureLabel ? `${t('personalGoals.withCompany', 'with the company')} ${tenureLabel}` : null,
+                  ].filter(Boolean).join(' · ')}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <Seg
+                ind={ind}
+                options={tabOptions}
+                value={activeTab}
+                onChange={setActiveTab}
+                ariaLabel={t('personalGoals.view', 'View')}
+              />
+              <Btn ind={ind} onClick={handleExportReview} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Download size={13} strokeWidth={1.5} />
+                {t('personalGoals.exportReview', 'Export review')}
+              </Btn>
+            </div>
+          </div>
+
+          {/* Skills assessment — the core figure */}
+          {activeTab === 'overview' && (
+            <Blueprint ind={ind}>
+              <div
+                className="flex flex-wrap items-start justify-between"
+                style={{ gap: 12, padding: '16px 20px 0' }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <Kicker ind={ind}>
+                    {`${t('personalGoals.skillsAssessment', 'Skills assessment')} · ${selectedPeriod.replace('-', ' ')}`}
+                  </Kicker>
+                  <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 6 }}>
+                    {t('personalGoals.assessmentLead', 'Self-rating as fill, manager as marker, company median dashed.')}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: 14, flex: 'none', paddingTop: 2 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <span aria-hidden="true" style={{ width: 9, height: 9, background: ind.accent, flex: 'none' }} />
+                    <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>{t('personalGoals.self', 'Self')}</span>
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <span aria-hidden="true" style={{ width: 2, height: 11, background: heavyInk, flex: 'none' }} />
+                    <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>{t('personalGoals.manager', 'Manager')}</span>
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <span aria-hidden="true" style={{ width: 1, height: 11, background: ind.inkFaint, flex: 'none' }} />
+                    <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>{t('personalGoals.median', 'Median')}</span>
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ padding: '16px 20px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {skillRows.map((row) => (
+                  <div key={row.key}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
+                      <span style={{ fontFamily: BODY, fontSize: 13, color: ind.ink }}>{row.label}</span>
+                      <span style={{ whiteSpace: 'nowrap' }}>
+                        <span style={figure(15, ind.ink)}>{fmt1(row.self)}</span>
+                        <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>
+                          {row.manager == null
+                            ? ` / ${t('personalGoals.noManagerShort', 'no mgr rating')}`
+                            : ` / ${t('personalGoals.mgrShort', 'mgr')} `}
+                        </span>
+                        {row.manager != null && <span style={figure(15, ind.inkGhost)}>{fmt1(row.manager)}</span>}
+                      </span>
+                    </div>
+                    <SkillMeter ind={ind} heavyInk={heavyInk} self={row.self} manager={row.manager} median={row.median} />
+                    {adjusting && (
+                      <input
+                        type="range"
+                        min="0"
+                        max="5"
+                        step="0.5"
+                        value={row.self}
+                        onChange={(e) => handleUpdateSkillRating(row.skillName, row.category, parseFloat(e.target.value))}
+                        aria-label={row.label}
+                        style={{ width: '100%', marginTop: 8, accentColor: ind.accent, cursor: 'pointer' }}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* The read, in words, beside the two actions */}
+              <div
+                className="flex flex-wrap items-center justify-between"
+                style={{ gap: 12, margin: '18px 20px 0', padding: '14px 0 16px', borderTop: `1px solid ${ind.hairline}` }}
+              >
+                <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, minWidth: 0, flex: 1 }}>
+                  {calibrationRead}
+                </p>
+                <div style={{ display: 'flex', gap: 8, flex: 'none' }}>
+                  <Btn ind={ind} onClick={() => setAdjusting(v => !v)}>
+                    {adjusting ? t('common.done', 'Done') : t('personalGoals.adjustRatings', 'Adjust ratings')}
+                  </Btn>
+                  <Btn
+                    ind={ind}
+                    variant="primary"
+                    disabled={!assessmentDirty || savingAssessment}
+                    onClick={handleSaveSkillAssessment}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <Save size={13} strokeWidth={1.5} />
+                    {savingAssessment ? t('common.saving', 'Saving…') : t('personalGoals.saveAssessment', 'Save assessment')}
+                  </Btn>
+                </div>
+              </div>
+            </Blueprint>
+          )}
+
+          {(activeTab === 'overview' || activeTab === 'goals') && goalsSection}
+
+          {/* History — every review this employee has */}
+          {activeTab === 'history' && (
+            <Blueprint ind={ind}>
+              <div style={{ padding: '14px 20px', borderBottom: `1px solid ${ind.hairline}` }}>
+                <Kicker ind={ind}>{t('personalGoals.performanceReviews', 'Performance reviews')}</Kicker>
+              </div>
+              <div>
+                {allReviews.length === 0 && (
+                  <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, padding: '18px 20px' }}>
+                    {loading ? t('common.loading', 'Loading…') : t('personalGoals.noReviews', 'No reviews recorded yet.')}
+                  </p>
+                )}
+                {allReviews.map((review, i) => (
+                  <div
+                    key={review.id}
+                    style={{ padding: '14px 20px', borderTop: i === 0 ? 'none' : `1px solid ${ind.rule}` }}
+                  >
+                    <div className="flex flex-wrap items-baseline justify-between" style={{ gap: 10 }}>
+                      <span style={{
+                        fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, letterSpacing: '.05em',
+                        textTransform: 'uppercase', color: ind.ink,
+                      }}>
+                        {String(review.review_period || '').replace('-', ' ')}
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 10 }}>
+                        <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>
+                          {review.reviewer?.name || t('personalGoals.reviewer', 'Reviewer')}
+                          {review.review_date ? ` · ${formatDate(review.review_date, currentLanguage)}` : ''}
+                        </span>
+                        <span style={figure(16, ind.ink)}>{fmt1(review.overall_rating)}</span>
+                      </span>
+                    </div>
+                    {review.strengths && (
+                      <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 6 }}>
+                        <span style={{ color: ind.ink }}>{t('personalGoals.strengths', 'Strengths')}: </span>
+                        {isDemoMode()
+                          ? getDemoReviewStrengths(review, t)
+                          : <TranslatedText text={review.strengths} record={{ entityType: 'review', entityId: review.id, field: 'strengths' }} />}
+                      </p>
+                    )}
+                    {review.areas_for_improvement && (
+                      <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 3 }}>
+                        <span style={{ color: ind.ink }}>{t('personalGoals.areasForImprovement', 'Areas for improvement')}: </span>
+                        {isDemoMode()
+                          ? getDemoReviewAreasForImprovement(review, t)
+                          : <TranslatedText text={review.areas_for_improvement} record={{ entityType: 'review', entityId: review.id, field: 'areas_for_improvement' }} />}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Blueprint>
+          )}
+        </div>
+
+        {/* ── RIGHT COLUMN — 372px, three stacked plates ─────────────── */}
+        <aside
+          className="w-full lg:w-[372px] lg:shrink-0 flex flex-col"
+          style={{ background: ind.chrome }}
+        >
+          {/* Review cycle */}
+          <div style={{ padding: '20px 20px 22px', borderBottom: `1px solid ${ind.hairline}` }}>
+            <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+              <ColumnHeading ind={ind}>{t('personalGoals.reviewCycle', 'Review cycle')}</ColumnHeading>
+              <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted }}>
+                {selectedPeriod.replace('-', ' ')}
+              </span>
+            </div>
+            <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 6, marginBottom: 16 }}>
+              {closeDate
+                ? `${t('personalGoals.closes', 'Closes')} ${formatDate(closeDate.toISOString().split('T')[0], currentLanguage)}`
+                : ''}
+              {daysToClose != null && (
+                daysToClose >= 0
+                  ? ` · ${t('personalGoals.daysLeft', '{n} days left').replace('{n}', String(daysToClose))}`
+                  : ` · ${t('personalGoals.overdueDays', '{n} days overdue').replace('{n}', String(Math.abs(daysToClose)))}`
+              )}
+            </p>
+            {cycleSteps.map((step, i) => (
+              <CycleStep
+                key={step.key}
+                ind={ind}
+                state={step.state}
+                title={step.title}
+                meta={step.meta}
+                last={i === cycleSteps.length - 1}
+              />
+            ))}
+          </div>
+
+          {/* Rating history */}
+          <div style={{ padding: '20px 20px 22px', borderBottom: `1px solid ${ind.hairline}` }}>
+            <ColumnHeading ind={ind} style={{ fontSize: 13 }}>
+              {t('personalGoals.ratingHistory', 'Rating history')}
+            </ColumnHeading>
+            <div style={{ marginTop: 12 }}>
+              <RatingSpark
+                ind={ind}
+                points={historyPoints}
+                emptyLabel={t('personalGoals.noRatingHistory', 'No rated quarters yet.')}
+              />
+            </div>
+          </div>
+
+          {/* Manager note — the one legitimate accent border, because it quotes */}
+          <div style={{ padding: '20px 20px 24px' }}>
+            <ColumnHeading ind={ind} style={{ fontSize: 13 }}>
+              {t('personalGoals.managerNote', 'Manager note')}
+            </ColumnHeading>
+
+            {!managerNote && (
+              <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 12 }}>
+                {t('personalGoals.noManagerNote', 'No written feedback for this period yet.')}
+              </p>
+            )}
+
+            {managerNote && (
+              <>
+                <blockquote
+                  style={{
+                    borderLeft: `2px solid ${ind.accent}`,
+                    padding: '2px 0 2px 12px',
+                    margin: '12px 0 0',
+                  }}
+                >
+                  {managerNote.strengths && (
+                    <p style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, lineHeight: 1.5 }}>
+                      {managerNote.strengths}
+                    </p>
+                  )}
+                  {managerNote.areas && (
+                    <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, lineHeight: 1.5, marginTop: 8 }}>
+                      {managerNote.areas}
+                    </p>
+                  )}
+                </blockquote>
+
+                <p style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted, marginTop: 10 }}>
+                  {managerNote.author}
+                  {managerNote.date ? ` · ${formatDate(managerNote.date, currentLanguage)}` : ''}
+                </p>
+
+                {managerNote.reply && (
+                  <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink, marginTop: 10 }}>
+                    <span style={{ color: ind.inkMuted }}>{t('personalGoals.yourReply', 'Your reply')}: </span>
+                    {managerNote.reply}
+                  </p>
+                )}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
+                  {managerNote.acknowledged ? (
+                    <Tag ind={ind} variant="neutral">{t('personalGoals.acknowledged', 'Acknowledged')}</Tag>
+                  ) : (
+                    <Btn ind={ind} variant="primary" disabled={ackBusy} onClick={handleAcknowledge}>
+                      {t('personalGoals.acknowledge', 'Acknowledge')}
+                    </Btn>
+                  )}
+                  <Btn ind={ind} disabled={ackBusy} onClick={handleReply}>
+                    {t('personalGoals.reply', 'Reply')}
+                  </Btn>
+                </div>
+              </>
+            )}
+          </div>
+        </aside>
       </div>
 
-      {/* Tab Content */}
-      {activeTab === 'overview' && <OverviewTab />}
-      {activeTab === 'goals' && <GoalsTab />}
-
-      {/* Add New Goal Modal */}
+      {/* ── Add goal ─────────────────────────────────────────────────── */}
       {showAddGoalModal && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowAddGoalModal(false);
-            }
-          }}
-        >
-          <div 
-            className="rounded-lg shadow-xl max-w-3xl w-full p-6 my-8"
-            style={{
-              backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-              color: isDarkMode ? '#ffffff' : '#111827'
-            }}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">{t('personalGoals.addNewGoal', 'Add New Goal')}</h2>
-              <button
-                onClick={() => setShowAddGoalModal(false)}
-                className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
-              >
-                <X className={`h-5 w-5 ${text.secondary}`} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmitGoal} className="space-y-4">
-              {/* Title */}
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  {t('personalGoals.goalTitle', 'Goal Title')} <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={goalForm.title}
-                  onChange={(e) => setGoalForm({...goalForm, title: e.target.value})}
-                  placeholder={t('personalGoals.goalTitlePlaceholder', 'Enter goal title')}
-                  className="w-full px-4 py-2 rounded-lg border transition-colors"
-                  style={{
-                    backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                    color: isDarkMode ? '#ffffff' : '#111827'
-                  }}
-                />
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  {t('personalGoals.goalDescription', 'Description')}
-                </label>
-                <textarea
-                  rows="3"
-                  value={goalForm.description}
-                  onChange={(e) => setGoalForm({...goalForm, description: e.target.value})}
-                  placeholder={t('personalGoals.goalDescriptionPlaceholder', 'Describe the goal objectives')}
-                  className="w-full px-4 py-2 rounded-lg border transition-colors"
-                  style={{
-                    backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                    color: isDarkMode ? '#ffffff' : '#111827'
-                  }}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Category */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    {t('personalGoals.category', 'Category')}
-                  </label>
-                  <select
-                    value={goalForm.category}
-                    onChange={(e) => setGoalForm({...goalForm, category: e.target.value})}
-                    className="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer"
-                    style={{
-                      backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-                      borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                      color: isDarkMode ? '#ffffff' : '#111827'
-                    }}
-                  >
-                    <option value="general">{t('personalGoals.general', 'General')}</option>
-                    <option value="technical">{t('personalGoals.technical', 'Technical')}</option>
-                    <option value="leadership">{t('personalGoals.leadership', 'Leadership')}</option>
-                    <option value="project">{t('personalGoals.project', 'Project')}</option>
-                    <option value="professional_development">{t('personalGoals.professionalDevelopment', 'Professional Development')}</option>
-                  </select>
-                </div>
-
-                {/* Priority */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    {t('personalGoals.priority', 'Priority')}
-                  </label>
-                  <select
-                    value={goalForm.priority}
-                    onChange={(e) => setGoalForm({...goalForm, priority: e.target.value})}
-                    className="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer"
-                    style={{
-                      backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-                      borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                      color: isDarkMode ? '#ffffff' : '#111827'
-                    }}
-                  >
-                    <option value="low">{t('personalGoals.low', 'Low')}</option>
-                    <option value="medium">{t('personalGoals.medium', 'Medium')}</option>
-                    <option value="high">{t('personalGoals.high', 'High')}</option>
-                    <option value="critical">{t('personalGoals.critical', 'Critical')}</option>
-                  </select>
-                </div>
-
-                {/* Target Date */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    {t('personalGoals.targetDate', 'Target Date')}
-                  </label>
-                  <DatePicker
-                    value={goalForm.targetDate}
-                    onChange={(e) => setGoalForm({...goalForm, targetDate: e.target.value})}
-                    icon={Calendar}
-                    inputClassName="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer"
-                  />
-                </div>
-
-                {/* Status */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    {t('personalGoals.status', 'Status')}
-                  </label>
-                  <select
-                    value={goalForm.status}
-                    onChange={(e) => setGoalForm({...goalForm, status: e.target.value})}
-                    className="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer"
-                    style={{
-                      backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-                      borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                      color: isDarkMode ? '#ffffff' : '#111827'
-                    }}
-                  >
-                    <option value="pending">{t('personalGoals.pending', 'Pending')}</option>
-                    <option value="in_progress">{t('personalGoals.inProgress', 'In Progress')}</option>
-                    <option value="completed">{t('personalGoals.completed', 'Completed')}</option>
-                    <option value="cancelled">{t('personalGoals.cancelled', 'Cancelled')}</option>
-                    <option value="on_hold">{t('personalGoals.onHold', 'On Hold')}</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-3 pt-4 border-t"
-                style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}
-              >
-                <ShinyButton
-                  type="button"
-                  onClick={() => setShowAddGoalModal(false)}
-                  className={cn(
-                    'px-4 py-2',
-                    isDarkMode
-                      ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600'
-                      : 'bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200'
-                  )}
-                >
-                  {t('common.cancel', 'Cancel')}
-                </ShinyButton>
-                <ShinyButton
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white border-blue-500 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Save className="h-4 w-4 text-white" />
-                  <span>{loading ? t('common.saving', 'Saving...') : t('common.save', 'Save')}</span>
-                </ShinyButton>
-              </div>
-            </form>
-          </div>
-        </div>
+        <GoalFormModal
+          ind={ind}
+          t={t}
+          title={t('personalGoals.addNewGoal', 'Add new goal')}
+          form={goalForm}
+          setForm={setGoalForm}
+          loading={loading}
+          onSubmit={handleSubmitGoal}
+          onClose={() => setShowAddGoalModal(false)}
+          fieldStyle={fieldStyle}
+          submitLabel={loading ? t('common.saving', 'Saving…') : t('common.save', 'Save')}
+        />
       )}
 
-      {/* Edit Goal Modal */}
+      {/* ── Edit goal ────────────────────────────────────────────────── */}
       {showEditGoalModal && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowEditGoalModal(false);
-              setEditingGoal(null);
-            }
-          }}
-        >
-          <div 
-            className="rounded-lg shadow-xl max-w-3xl w-full p-6 my-8"
-            style={{
-              backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-              color: isDarkMode ? '#ffffff' : '#111827'
-            }}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">{t('personalGoals.title', 'Edit Goal')}</h2>
-              <button
-                onClick={() => {
-                  setShowEditGoalModal(false);
-                  setEditingGoal(null);
-                }}
-                className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
-              >
-                <X className={`h-5 w-5 ${text.secondary}`} />
-              </button>
-            </div>
-
-            <form onSubmit={handleUpdateGoal} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  {t('personalGoals.goalTitle', 'Goal Title')} <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={goalForm.title}
-                  onChange={(e) => setGoalForm({...goalForm, title: e.target.value})}
-                  className="w-full px-4 py-2 rounded-lg border transition-colors"
-                  style={{
-                    backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                    color: isDarkMode ? '#ffffff' : '#111827'
-                  }}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  {t('personalGoals.goalDescription', 'Description')}
-                </label>
-                <textarea
-                  rows="3"
-                  value={goalForm.description}
-                  onChange={(e) => setGoalForm({...goalForm, description: e.target.value})}
-                  className="w-full px-4 py-2 rounded-lg border transition-colors"
-                  style={{
-                    backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-                    borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                    color: isDarkMode ? '#ffffff' : '#111827'
-                  }}
-                />
-              </div>
-            
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  {t('personalGoals.progress', 'Progress')} 
-                  <span className="ml-2 font-bold text-red-600">{goalForm.progressPercentage}%</span>
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="0.5"
-                  value={goalForm.progressPercentage}
-                  onChange={(e) => setGoalForm({...goalForm, progressPercentage: parseFloat(e.target.value)})}
-                  className={`w-full h-3 rounded-lg appearance-none cursor-pointer ${goalForm.progressPercentage === 100 ? 'cursor-not-allowed opacity-50' : ''}`}
-                  disabled={goalForm.progressPercentage === 100}
-                  style={{
-                    background: `linear-gradient(to right,
-                      ${isDarkMode ? '#6b7280' : '#9f9f9f'} 0%,
-                      ${isDarkMode ? '#6b7280' : '#9f9f9f'} 2.5%,
-                      ${isDarkMode ? '#ffffff' : '#374151'} ${goalForm.progressPercentage}%,
-                      ${isDarkMode ? '#4b5563' : '#e5e7eb'} ${goalForm.progressPercentage}%,
-                      ${isDarkMode ? '#4b5563' : '#e5e7eb'} 100%)`
-                  }}
-                />
-                <div className="flex justify-between text-xs mt-1" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
-                  <span>0%</span>
-                  <span>50%</span>
-                  <span>100%</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Category */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    {t('personalGoals.category', 'Category')}
-                  </label>
-                  <select
-                    value={goalForm.category}
-                    onChange={(e) => setGoalForm({...goalForm, category: e.target.value})}
-                    className="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer"
-                    style={{
-                      backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-                      borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                      color: isDarkMode ? '#ffffff' : '#111827'
-                    }}
-                  >
-                    <option value="general">{t('personalGoals.general', 'General')}</option>
-                    <option value="technical">{t('personalGoals.technical', 'Technical')}</option>
-                    <option value="leadership">{t('personalGoals.leadership', 'Leadership')}</option>
-                    <option value="project">{t('personalGoals.project', 'Project')}</option>
-                    <option value="professional_development">{t('personalGoals.professionalDevelopment', 'Professional Development')}</option>
-                  </select>
-                </div>
-
-                {/* Priority */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    {t('personalGoals.priority', 'Priority')}
-                  </label>
-                  <select
-                    value={goalForm.priority}
-                    onChange={(e) => setGoalForm({...goalForm, priority: e.target.value})}
-                    className="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer"
-                    style={{
-                      backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-                      borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                      color: isDarkMode ? '#ffffff' : '#111827'
-                    }}
-                  >
-                    <option value="low">{t('personalGoals.low', 'Low')}</option>
-                    <option value="medium">{t('personalGoals.medium', 'Medium')}</option>
-                    <option value="high">{t('personalGoals.high', 'High')}</option>
-                    <option value="critical">{t('personalGoals.critical', 'Critical')}</option>
-                  </select>
-                </div>
-
-                {/* Target Date */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    {t('personalGoals.targetDate', 'Target Date')}
-                  </label>
-                  <DatePicker
-                    value={goalForm.targetDate}
-                    onChange={(e) => setGoalForm({...goalForm, targetDate: e.target.value})}
-                    icon={Calendar}
-                    inputClassName="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer"
-                  />
-                </div>
-
-                {/* Status */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    {t('personalGoals.status', 'Status')}
-                  </label>
-                  <select
-                    value={goalForm.status}
-                    onChange={(e) => setGoalForm({...goalForm, status: e.target.value})}
-                    className="w-full px-4 py-2 rounded-lg border transition-colors cursor-pointer"
-                    style={{
-                      backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-                      borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
-                      color: isDarkMode ? '#ffffff' : '#111827'
-                    }}
-                  >
-                    <option value="pending">{t('personalGoals.pending', '')}</option>
-                    <option value="in_progress">{t('personalGoals.inProgress', '')}</option>
-                    <option value="completed">{t('personalGoals.completed', '')}</option>
-                    <option value="cancelled">{t('personalGoals.cancelled', '')}</option>
-                    <option value="on_hold">{t('personalGoals.onHold', '')}</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-3 pt-4 border-t"
-                style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}
-              >
-                <ShinyButton
-                  type="button"
-                  onClick={() => {
-                    setShowEditGoalModal(false);
-                    setEditingGoal(null);
-                  }}
-                  className={cn(
-                    'px-4 py-2',
-                    isDarkMode
-                      ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600'
-                      : 'bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200'
-                  )}
-                >
-                  {t('common.cancel', 'Cancel')}
-                </ShinyButton>
-                <ShinyButton
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white border-blue-500 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Save className="h-4 w-4 text-white" />
-                  <span>{loading ? t('common.updating', 'Updating...') : t('common.update', '')}</span>
-                </ShinyButton>
-              </div>
-            </form>
-          </div>
-        </div>
+        <GoalFormModal
+          ind={ind}
+          t={t}
+          title={t('personalGoals.editGoal', 'Edit goal')}
+          form={goalForm}
+          setForm={setGoalForm}
+          loading={loading}
+          onSubmit={handleUpdateGoal}
+          onClose={() => { setShowEditGoalModal(false); setEditingGoal(null); }}
+          fieldStyle={fieldStyle}
+          submitLabel={loading ? t('common.updating', 'Updating…') : t('common.update', 'Update')}
+          showProgress
+        />
       )}
 
-      {/* View Goal Modal */}
+      {/* ── View goal ────────────────────────────────────────────────── */}
       {showViewGoalModal && viewingGoal && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto"
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 p-4 overflow-y-auto"
+          style={{ background: 'rgba(29,31,32,.55)' }}
           onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowViewGoalModal(false);
-              setViewingGoal(null);
-            }
+            if (e.target === e.currentTarget) { setShowViewGoalModal(false); setViewingGoal(null); }
           }}
         >
-          <div 
-            className="rounded-lg shadow-xl max-w-2xl w-full my-8"
-            style={{
-              backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-              color: isDarkMode ? '#ffffff' : '#111827'
-            }}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b"
-              style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}
+          <div style={{ background: ind.ground, border: `1px solid ${ind.ink}`, borderRadius: 0, width: '100%', maxWidth: 560 }}>
+            <div
+              className="flex items-start justify-between"
+              style={{ gap: 12, padding: '18px 20px', borderBottom: `1px solid ${ind.hairline}` }}
             >
-              <div className="flex items-center space-x-3">
-                <Goal className="h-6 w-6 text-blue-500" />
-                <h2 className="text-xl font-bold">{t('personalGoals.goalDetails', 'Goal Details')}</h2>
-              </div>
+              <ColumnHeading ind={ind}>{t('personalGoals.goalDetails', 'Goal details')}</ColumnHeading>
               <button
-                onClick={() => {
-                  setShowViewGoalModal(false);
-                  setViewingGoal(null);
-                }}
-                className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors cursor-pointer`}
+                type="button"
+                onClick={() => { setShowViewGoalModal(false); setViewingGoal(null); }}
+                aria-label={t('common.close', 'Close')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0 }}
               >
-                <X className="h-5 w-5" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }} />
+                <X size={16} strokeWidth={1.5} />
               </button>
             </div>
 
-            {/* Content */}
-            <div className="p-6 space-y-6">
-              {/* Title */}
+            <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <h3 className="text-lg font-semibold mb-2">
-                  {isDemoMode() ? getDemoGoalTitle(viewingGoal, t) : <TranslatedText text={viewingGoal.title} record={{ entityType: 'goal', entityId: viewingGoal.id, field: 'title' }} />}
+                <h3 style={{
+                  fontFamily: DISPLAY, fontWeight: 600, fontSize: 20, letterSpacing: '.02em',
+                  textTransform: 'uppercase', color: ind.ink, margin: 0,
+                  textDecoration: viewingGoal.complete ? 'line-through' : 'none',
+                }}>
+                  {viewingGoal.title}
                 </h3>
-                <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
-                  viewingGoal.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                  viewingGoal.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                  viewingGoal.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                }`}>
-                  {t(`personalGoals.${viewingGoal.status}`, viewingGoal.status)}
-                </span>
+                <div style={{ marginTop: 8 }}>
+                  <Tag ind={ind} variant={viewingGoal.state === 'atRisk' ? 'outline' : viewingGoal.complete ? 'neutral' : 'accent'}>
+                    {stateLabel[viewingGoal.state]}
+                  </Tag>
+                </div>
               </div>
 
-              {/* Description */}
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
-                  {t('personalGoals.goalDescription', 'Description')}
-                </label>
-                <p className="text-base leading-relaxed whitespace-pre-wrap" 
-                  style={{ 
-                    backgroundColor: isDarkMode ? '#374151' : '#f9fafb',
-                    padding: '12px 16px',
-                    borderRadius: '8px',
-                    color: isDarkMode ? '#e5e7eb' : '#374151'
-                  }}
-                >
-                  {isDemoMode()
-                    ? getDemoGoalDescription(viewingGoal, t)
-                    : (viewingGoal.description
-                      ? <TranslatedText text={viewingGoal.description} record={{ entityType: 'goal', entityId: viewingGoal.id, field: 'description' }} />
-                      : t('common.noDescription', 'No description available'))}
+                <Kicker ind={ind} color={ind.inkMuted}>{t('personalGoals.goalDescription', 'Description')}</Kicker>
+                <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 6, whiteSpace: 'pre-wrap', lineHeight: 1.55 }}>
+                  {viewingGoal.description || t('common.noDescription', 'No description available')}
                 </p>
               </div>
 
-              {/* Details Grid */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2" style={{ gap: 16 }}>
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
-                    {t('personalGoals.category', 'Category')}
-                  </label>
-                  <p className="font-medium capitalize">{t(`personalGoals.${viewingGoal.category}`, viewingGoal.category)}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
-                    {t('personalGoals.priority', 'Priority')}
-                  </label>
-                  <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${
-                    viewingGoal.priority === 'high' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                    viewingGoal.priority === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                  }`}>
-                    {t(`personalGoals.${viewingGoal.priority}`, viewingGoal.priority)}
-                  </span>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
-                    {t('personalGoals.deadline', 'Deadline')}
-                  </label>
-                  <p className="font-medium flex items-center">
-                    <Calendar className="h-4 w-4 mr-2" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }} />
-                    {formatDate(viewingGoal.deadline, currentLanguage) || '-'}
+                  <Kicker ind={ind} color={ind.inkMuted}>{t('personalGoals.category', 'Category')}</Kicker>
+                  <p style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, marginTop: 5 }}>
+                    {t(`personalGoals.${viewingGoal.category}`, viewingGoal.category || '—')}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
-                    {t('personalGoals.progress', 'Progress')}
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <div className="flex-1 h-2 rounded-full bg-gray-200 dark:bg-gray-600">
-                      <div 
-                        className="h-2 rounded-full bg-blue-500"
-                        style={{ width: `${viewingGoal.progress || 0}%` }}
+                  <Kicker ind={ind} color={ind.inkMuted}>{t('personalGoals.priority', 'Priority')}</Kicker>
+                  <p style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, marginTop: 5 }}>
+                    {t(`personalGoals.${viewingGoal.priority}`, viewingGoal.priority || '—')}
+                  </p>
+                </div>
+                <div>
+                  <Kicker ind={ind} color={ind.inkMuted}>{t('personalGoals.deadline', 'Deadline')}</Kicker>
+                  <p style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, marginTop: 5 }}>
+                    {viewingGoal.targetDate ? formatDate(viewingGoal.targetDate, currentLanguage) : '—'}
+                  </p>
+                </div>
+                <div>
+                  <Kicker ind={ind} color={ind.inkMuted}>{t('personalGoals.progress', 'Progress')}</Kicker>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 7 }}>
+                    <div style={{ flex: 1 }}>
+                      <Bar
+                        ind={ind}
+                        value={viewingGoal.complete ? 1 : viewingGoal.progress / 100}
+                        fill={viewingGoal.complete ? ind.ramp[3] : viewingGoal.state === 'atRisk' ? heavyInk : ind.accent}
+                        height={7}
                       />
                     </div>
-                    <span className="font-bold text-sm">
-                      <NumberTicker value={Number(viewingGoal.progress) || 0} />%
+                    <span style={{ ...figure(13, ind.ink), width: 34, textAlign: 'right' }}>
+                      {Math.round(viewingGoal.progress)}%
                     </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="flex justify-end p-6 border-t"
-              style={{ borderColor: isDarkMode ? '#4b5563' : '#e5e7eb' }}
+            <div
+              className="flex flex-wrap items-center justify-between"
+              style={{ gap: 10, padding: '14px 20px', borderTop: `1px solid ${ind.hairline}` }}
             >
-              <ShinyButton
-                type="button"
-                onClick={() => {
-                  setShowViewGoalModal(false);
-                  setViewingGoal(null);
-                }}
-                className="px-4 py-2 bg-blue-600 text-white border-blue-500 hover:bg-blue-700"
+              <Btn
+                ind={ind}
+                onClick={() => handleDeleteGoal(viewingGoal.id)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                {t('common.close', 'Close')}
-              </ShinyButton>
+                <Trash2 size={13} strokeWidth={1.5} />
+                {t('common.delete', 'Delete')}
+              </Btn>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <Btn
+                  ind={ind}
+                  onClick={() => {
+                    setShowViewGoalModal(false);
+                    handleEditGoal(viewingGoal);
+                  }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  <Edit size={13} strokeWidth={1.5} />
+                  {t('common.edit', 'Edit')}
+                </Btn>
+                <Btn ind={ind} variant="primary" onClick={() => { setShowViewGoalModal(false); setViewingGoal(null); }}>
+                  {t('common.close', 'Close')}
+                </Btn>
+              </div>
             </div>
           </div>
         </div>
@@ -1733,5 +1670,172 @@ const PersonalGoals = ({ employees }) => {
     </div>
   );
 };
+
+/* ------------------------------------------------------------------ *
+ * Goal form — add and edit are the same fields, so they are one component
+ * ------------------------------------------------------------------ */
+
+function GoalFormModal({ ind, t, title, form, setForm, loading, onSubmit, onClose, fieldStyle, submitLabel, showProgress = false }) {
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50 p-4 overflow-y-auto"
+      style={{ background: 'rgba(29,31,32,.55)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{ background: ind.ground, border: `1px solid ${ind.ink}`, borderRadius: 0, width: '100%', maxWidth: 620 }}>
+        <div
+          className="flex items-start justify-between"
+          style={{ gap: 12, padding: '18px 20px', borderBottom: `1px solid ${ind.hairline}` }}
+        >
+          <ColumnHeading ind={ind}>{title}</ColumnHeading>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('common.close', 'Close')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0 }}
+          >
+            <X size={16} strokeWidth={1.5} />
+          </button>
+        </div>
+
+        <form onSubmit={onSubmit}>
+          <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div>
+              <Kicker ind={ind} color={ind.inkMuted}>{t('personalGoals.goalTitle', 'Goal title')}</Kicker>
+              <input
+                type="text"
+                required
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                placeholder={t('personalGoals.goalTitlePlaceholder', 'Enter goal title')}
+                style={{ ...fieldStyle, marginTop: 6 }}
+              />
+            </div>
+
+            <div>
+              <Kicker ind={ind} color={ind.inkMuted}>{t('personalGoals.goalDescription', 'Description')}</Kicker>
+              <textarea
+                rows="3"
+                value={form.description || ''}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder={t('personalGoals.goalDescriptionPlaceholder', 'Describe the goal objectives')}
+                style={{ ...fieldStyle, marginTop: 6, resize: 'vertical' }}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 14 }}>
+              <div>
+                <Kicker ind={ind} color={ind.inkMuted}>{t('personalGoals.category', 'Category')}</Kicker>
+                <select
+                  value={form.category}
+                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  style={{ ...fieldStyle, marginTop: 6, cursor: 'pointer' }}
+                >
+                  <option value="general">{t('personalGoals.general', 'General')}</option>
+                  <option value="technical">{t('personalGoals.technical', 'Technical')}</option>
+                  <option value="leadership">{t('personalGoals.leadership', 'Leadership')}</option>
+                  <option value="project">{t('personalGoals.project', 'Project')}</option>
+                  <option value="professional_development">{t('personalGoals.professionalDevelopment', 'Professional Development')}</option>
+                </select>
+              </div>
+
+              <div>
+                <Kicker ind={ind} color={ind.inkMuted}>{t('personalGoals.priority', 'Priority')}</Kicker>
+                <select
+                  value={form.priority}
+                  onChange={(e) => setForm({ ...form, priority: e.target.value })}
+                  style={{ ...fieldStyle, marginTop: 6, cursor: 'pointer' }}
+                >
+                  <option value="low">{t('personalGoals.low', 'Low')}</option>
+                  <option value="medium">{t('personalGoals.medium', 'Medium')}</option>
+                  <option value="high">{t('personalGoals.high', 'High')}</option>
+                  <option value="critical">{t('personalGoals.critical', 'Critical')}</option>
+                </select>
+              </div>
+
+              <div>
+                <Kicker ind={ind} color={ind.inkMuted}>{t('personalGoals.targetDate', 'Target date')}</Kicker>
+                <DatePicker
+                  flat
+                  value={form.targetDate || ''}
+                  onChange={(e) => setForm({ ...form, targetDate: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Kicker ind={ind} color={ind.inkMuted}>{t('personalGoals.status', 'Status')}</Kicker>
+                <select
+                  value={form.status}
+                  onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  style={{ ...fieldStyle, marginTop: 6, cursor: 'pointer' }}
+                >
+                  <option value="pending">{t('personalGoals.pending', 'Pending')}</option>
+                  <option value="in_progress">{t('personalGoals.inProgress', 'In Progress')}</option>
+                  <option value="completed">{t('personalGoals.completed', 'Completed')}</option>
+                  <option value="cancelled">{t('personalGoals.cancelled', 'Cancelled')}</option>
+                  <option value="on_hold">{t('personalGoals.onHold', 'On Hold')}</option>
+                </select>
+              </div>
+            </div>
+
+            {showProgress && (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                  <Kicker ind={ind} color={ind.inkMuted}>{t('personalGoals.progress', 'Progress')}</Kicker>
+                  <span style={figure(15, ind.ink)}>{Math.round(Number(form.progressPercentage) || 0)}%</span>
+                </div>
+                {(() => {
+                  const pct = Math.max(0, Math.min(100, Number(form.progressPercentage) || 0));
+                  const track = ind.dark ? 'rgba(233,235,237,.14)' : 'rgba(29,31,32,.12)';
+                  return (
+                    <input
+                      className="industry-range"
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={pct}
+                      onChange={(e) => setForm({ ...form, progressPercentage: Number(e.target.value) })}
+                      aria-label={t('personalGoals.progress', 'Progress')}
+                      style={{
+                        width: '100%',
+                        marginTop: 8,
+                        cursor: 'pointer',
+                        '--ind-accent': ind.accent,
+                        background: `linear-gradient(to right, ${ind.accent} 0%, ${ind.accent} ${pct}%, ${track} ${pct}%, ${track} 100%)`,
+                      }}
+                    />
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+
+          <div
+            className="flex justify-end"
+            style={{ gap: 10, padding: '14px 20px', borderTop: `1px solid ${ind.hairline}` }}
+          >
+            <Btn ind={ind} onClick={onClose}>{t('common.cancel', 'Cancel')}</Btn>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '4px 12px', borderRadius: 0,
+                cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1,
+                background: ind.accent, color: ind.accentInk, border: `1px solid ${ind.accent}`,
+                fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.04em',
+                textTransform: 'uppercase',
+              }}
+            >
+              <Save size={13} strokeWidth={1.5} />
+              {submitLabel}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 export default PersonalGoals;

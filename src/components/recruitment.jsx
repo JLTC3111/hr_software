@@ -1,1252 +1,1385 @@
-import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import { Plus, Calendar, Eye, X, Check, XCircle, Star, FileText, Users, ClipboardCheck, UserCheck, ChevronRight, ChevronDown, Briefcase, Clock, TrendingUp, ArrowRight, Search, MapPin, Video, Save, MessageSquare } from 'lucide-react';
+/**
+ * Recruitment Pipeline — direction 2b, "the board is the content".
+ *
+ * Full-width main column (no decision rail) with a 44px steel ticker across the
+ * top, because on this screen the board *is* the thing you came to read.
+ *
+ * The read, top to bottom:
+ *   ticker      — the six figures that never change position, so you can scan them
+ *   page head   — what the board contains, plus the three controls that reshape it
+ *   stage strip — five equal cells whose 5px underbars taper with share of intake.
+ *                 The taper IS the funnel; there is no separate funnel graphic.
+ *   board       — five blueprint columns of hairline candidate rectangles. Exactly
+ *                 one card in Interview and one in Offer is promoted to the accent
+ *                 tint and given a live line + two inline buttons, so the eye lands
+ *                 on today's work without reading a single name.
+ *
+ * Column heights stay equal because a flex spacer pushes the "N more →" foot to
+ * the bottom of every column. Hired ends with a YTD plate instead, and its cards
+ * end with "Create record →" so hiring and employee records are one flow.
+ *
+ * Design system: "Industry" (src/theme/industry.js). Radius is 0 everywhere,
+ * cards are outlines with four registration corners, status reads through weight
+ * and rule rather than colour.
+ */
+import _React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { X, Save, Calendar, MapPin, Video, MessageSquare, AlertCircle, Star } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import {
   getAllApplications,
+  getAllJobPostings,
+  getUpcomingInterviews,
   updateApplicationStatus,
   updateApplicationRating,
   createInterviewSchedule,
   getRecruitmentStats,
-  createJobPosting
+  createJobPosting,
 } from '../services/recruitmentService';
 import { isDemoMode, getDemoApplicationStatus, getDemoJobTitle, getDemoJobDescription, getDemoApplicationNotes } from '../utils/demoHelper';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
-import { SlidingNumber } from './motion-primitives';
-import { NumberTicker } from './ui/number-ticker';
-import { PageLiveClock } from './ui/page-live-clock';
+import { formatDate as formatLocaleDate, groupNumberInput } from '../utils/localeFormat.js';
 import { DatePicker } from './ui/date-picker.jsx';
 import { TimePicker } from './ui/time-picker.jsx';
 import { TranslatedText } from './ui/translated-text.jsx';
+import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
+import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
+import {
+  Blueprint, Tag, Btn, Seg, Kicker, TickerCell, LiveClock, FlatSelect,
+} from './ui/industry.jsx';
+
+/* ------------------------------------------------------------------ *
+ * Screen constants — the policy this board reads against
+ * ------------------------------------------------------------------ */
+
+/** The five cells of the funnel, in order. `status` is the value stored on a row. */
+const STAGES = [
+  { key: 'screening', status: 'under review' },
+  { key: 'shortlisted', status: 'shortlisted' },
+  { key: 'interview', status: 'interview scheduled' },
+  { key: 'offer', status: 'offer extended' },
+  { key: 'hired', status: 'hired' },
+];
+
+const STAGE_KEYS = STAGES.map(s => s.key);
+
+/** Cards shown before a column collapses the rest behind "N more →". */
+const CARDS_PER_COLUMN = 4;
+/** A screening card older than this stops reading "CV parsed" and starts asking for a human. */
+const STALE_SCREENING_DAYS = 5;
+/** Hires the month is measured against, for the HIRED cell's "of N target". */
+const MONTHLY_HIRE_TARGET = 3;
+/** "Offers accepted this week" and the YTD plate both read against these windows. */
+const WEEK_DAYS = 7;
+
+const DAY_MS = 86400000;
+
+/* ------------------------------------------------------------------ *
+ * Helpers
+ * ------------------------------------------------------------------ */
+
+const parseDate = (value) => {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+const daysSince = (value) => {
+  const d = parseDate(value);
+  if (!d) return null;
+  return Math.max(0, Math.floor((Date.now() - d.getTime()) / DAY_MS));
+};
+
+/** How long this candidate has sat in their current stage. */
+const ageInStage = (app) => daysSince(app?.reviewed_date || app?.application_date) ?? 0;
+
+const candidateName = (app) => (
+  app?.applicant?.full_name
+  || `${app?.applicant?.first_name || ''} ${app?.applicant?.last_name || ''}`.trim()
+  || app?.candidateName
+  || ''
+);
+
+const stageKeyOf = (app) => {
+  const status = String(app?.status || '').toLowerCase();
+  return STAGES.find(s => s.status === status)?.key || null;
+};
+
+const departmentOf = (app) => app?.job_posting?.department || app?.department || null;
+
+const pct = (n, d) => (d > 0 ? Math.round((n / d) * 100) : 0);
+
+/* ------------------------------------------------------------------ *
+ * Recruitment
+ * ------------------------------------------------------------------ */
 
 const Recruitment = () => {
-  const { t } = useLanguage();
-  const { isDarkMode, bg, text, border } = useTheme();
+  const { t, currentLanguage } = useLanguage();
+  const { isDarkMode } = useTheme();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
+  const navigate = useNavigate();
   const { handleSessionAuthError } = useSessionGuard();
+
   const [applications, setApplications] = useState([]);
+  const [jobPostings, setJobPostings] = useState([]);
+  const [interviews, setInterviews] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedApplication, setSelectedApplication] = useState(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [showPostJobModal, setShowPostJobModal] = useState(false);
-  const [viewMode, setViewMode] = useState('pipeline'); // 'pipeline' or 'table'
-  const [expandedStage, setExpandedStage] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [interviewApplication, setInterviewApplication] = useState(null);
-  
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const [fetchError, setFetchError] = useState(null);
 
-  const fetchData = async (options = {}) => {
+  const [viewMode, setViewMode] = useState('board');   // 'board' | 'table'
+  const [searchQuery, setSearchQuery] = useState('');
+  const [department, setDepartment] = useState('all');
+  const [expandedColumns, setExpandedColumns] = useState([]);
+
+  const [detailApplication, setDetailApplication] = useState(null);
+  const [detailFocus, setDetailFocus] = useState(null);   // 'rating' | 'notes' | null
+  const [interviewApplication, setInterviewApplication] = useState(null);
+  const [showPostJobModal, setShowPostJobModal] = useState(false);
+
+  const fetchData = useCallback(async (options = {}) => {
     const { silent = false } = options;
     if (!silent) setLoading(true);
     try {
       if (!isDemoMode()) {
         const sessionValidation = await validateAndRefreshSession();
-        if (!sessionValidation.success) {
-          throw new Error(sessionValidation.error);
-        }
+        if (!sessionValidation.success) throw new Error(sessionValidation.error);
       }
 
-      const [applicationsResult, statsResult] = await Promise.all([
+      const [applicationsResult, statsResult, postingsResult, interviewsResult] = await Promise.all([
         getAllApplications(),
-        getRecruitmentStats()
+        getRecruitmentStats(),
+        getAllJobPostings(),
+        getUpcomingInterviews(),
       ]);
 
-      if (applicationsResult.success) {
-        setApplications(applicationsResult.data);
-      }
-      if (statsResult.success) {
-        setStats(statsResult.data);
-      }
+      if (applicationsResult.success) setApplications(applicationsResult.data || []);
+      if (statsResult.success) setStats(statsResult.data);
+      if (postingsResult.success) setJobPostings(postingsResult.data || []);
+      if (interviewsResult.success) setInterviews(interviewsResult.data || []);
+      setFetchError(null);
     } catch (error) {
       console.error('Error fetching recruitment data:', error);
-      handleSessionAuthError(error, { silent });
+      if (!handleSessionAuthError(error, { silent })) {
+        setFetchError(error.message || t('errors.loadFailed', 'Failed to load data'));
+      }
     } finally {
       if (!silent) setLoading(false);
     }
-  };
+  }, [handleSessionAuthError, t]);
 
+  useEffect(() => { fetchData(); }, [fetchData]);
   useAuthenticatedPageRefresh(() => fetchData({ silent: true }));
 
-  const handleStatusUpdate = async (applicationId, newStatus) => {
+  const hasRealData = !loading && !fetchError && applications.length > 0;
+
+  /* -- scoping ---------------------------------------------------- */
+
+  const searchableText = useCallback((app) => ([
+    candidateName(app),
+    app.job_posting?.title || app.job_posting?.position || app.position || '',
+    departmentOf(app) || '',
+    app.applicant?.email || app.email || '',
+  ].join(' ').toLowerCase()), []);
+
+  const scopedApplications = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return applications.filter(app => {
+      if (department !== 'all' && departmentOf(app) !== department) return false;
+      if (q && !searchableText(app).includes(q)) return false;
+      return true;
+    });
+  }, [applications, searchQuery, department, searchableText]);
+
+  const departmentOptions = useMemo(() => {
+    const seen = new Set();
+    applications.forEach(app => { const d = departmentOf(app); if (d) seen.add(d); });
+    jobPostings.forEach(job => { if (job.department) seen.add(job.department); });
+    return Array.from(seen).sort();
+  }, [applications, jobPostings]);
+
+  /* -- the funnel ------------------------------------------------- */
+
+  /** Every stage's candidates, longest-waiting first — the work surfaces itself. */
+  const byStage = useMemo(() => {
+    const out = Object.fromEntries(STAGE_KEYS.map(k => [k, []]));
+    scopedApplications.forEach(app => {
+      const key = stageKeyOf(app);
+      if (key) out[key].push(app);
+    });
+    STAGE_KEYS.forEach(k => out[k].sort((a, b) => ageInStage(b) - ageInStage(a)));
+    return out;
+  }, [scopedApplications]);
+
+  const counts = useMemo(
+    () => Object.fromEntries(STAGE_KEYS.map(k => [k, byStage[k].length])),
+    [byStage]
+  );
+
+  /**
+   * Share of intake per stage — the number the underbars encode. Intake is the
+   * screening count, so screening always reads 100% and the taper below it is
+   * the funnel. Guarded so a stage can never overrun the bar.
+   */
+  const intake = useMemo(
+    () => Math.max(counts.screening, ...STAGE_KEYS.map(k => counts[k]), 1),
+    [counts]
+  );
+
+  /** Interview schedules keyed by application, soonest first. */
+  const nextInterviewByApp = useMemo(() => {
+    const map = new Map();
+    [...interviews]
+      .filter(i => parseDate(i.scheduled_date))
+      .sort((a, b) => new Date(a.scheduled_date) - new Date(b.scheduled_date))
+      .forEach(i => {
+        const id = i.application_id || i.application?.id;
+        if (id && !map.has(id)) map.set(id, i);
+      });
+    return map;
+  }, [interviews]);
+
+  /**
+   * The one promoted card per column. Interview promotes whoever is scheduled
+   * soonest; Offer promotes whoever has been waiting longest on a reply.
+   */
+  const promoted = useMemo(() => {
+    const interviewPool = byStage.interview;
+    const withSchedule = interviewPool
+      .filter(app => nextInterviewByApp.has(app.id))
+      .sort((a, b) => new Date(nextInterviewByApp.get(a.id).scheduled_date)
+        - new Date(nextInterviewByApp.get(b.id).scheduled_date));
+    return {
+      interview: (withSchedule[0] || interviewPool[0])?.id ?? null,
+      offer: byStage.offer[0]?.id ?? null,   // already sorted oldest-in-stage first
+    };
+  }, [byStage, nextInterviewByApp]);
+
+  /* -- ticker figures --------------------------------------------- */
+
+  const metrics = useMemo(() => {
+    const total = applications.length;
+    const active = applications.filter(a => {
+      const key = stageKeyOf(a);
+      return key && key !== 'hired';
+    }).length;
+    const hired = applications.filter(a => stageKeyOf(a) === 'hired');
+    const conversion = pct(hired.length, total);
+
+    // Time to hire is measured, not assumed: application → the day they were hired.
+    const spans = hired
+      .map(a => {
+        const from = parseDate(a.application_date);
+        const to = parseDate(a.reviewed_date);
+        if (!from || !to || to < from) return null;
+        return Math.round((to - from) / DAY_MS);
+      })
+      .filter(n => n != null);
+    const timeToHire = spans.length
+      ? Math.round(spans.reduce((s, n) => s + n, 0) / spans.length)
+      : null;
+
+    const offersOut = applications.filter(a => stageKeyOf(a) === 'offer').length;
+    const openReqs = jobPostings.filter(j => ['open', 'active', 'published'].includes(String(j.status || '').toLowerCase())).length;
+    const acceptedThisWeek = hired.filter(a => (daysSince(a.reviewed_date) ?? 999) < WEEK_DAYS).length;
+
+    const now = new Date();
+    const hiredThisMonth = hired.filter(a => {
+      const d = parseDate(a.reviewed_date);
+      return d && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).length;
+    const hiredThisYear = hired.filter(a => {
+      const d = parseDate(a.reviewed_date);
+      return d && d.getFullYear() === now.getFullYear();
+    }).length;
+
+    return {
+      total, active, conversion, timeToHire, offersOut, openReqs,
+      acceptedThisWeek, hiredThisMonth, hiredThisYear,
+    };
+  }, [applications, jobPostings]);
+
+  /* -- actions ---------------------------------------------------- */
+
+  const handleStatusUpdate = useCallback(async (applicationId, newStatus) => {
     try {
       const result = await updateApplicationStatus(applicationId, newStatus);
       if (result.success) {
-        fetchData(); // Refresh data
-        alert(t('recruitment.statusUpdated', 'Status updated successfully!'));
+        await fetchData({ silent: true });
+      } else {
+        setFetchError(result.error || t('errors.updateFailed', 'Failed to update status'));
       }
     } catch (error) {
       console.error('Error updating status:', error);
       if (handleSessionAuthError(error)) return;
-      alert(t('errors.updateFailed', 'Failed to update status'));
+      setFetchError(error.message || t('errors.updateFailed', 'Failed to update status'));
     }
-  };
+  }, [fetchData, handleSessionAuthError, t]);
 
-  const handleScheduleInterview = (application) => {
-    setInterviewApplication(application);
-  };
-
-  // Candidate name / position / department text used for searching
-  const getSearchableText = useCallback((app) => {
-    const name = app.applicant?.full_name
-      || `${app.applicant?.first_name || ''} ${app.applicant?.last_name || ''}`.trim()
-      || app.candidateName
-      || '';
-    const position = app.job_posting?.title || app.job_posting?.position || app.position || '';
-    const department = app.job_posting?.department || app.department || '';
-    const email = app.applicant?.email || app.email || '';
-    return `${name} ${position} ${department} ${email}`.toLowerCase();
+  const openDetail = useCallback((app, focus = null) => {
+    setDetailApplication(app);
+    setDetailFocus(focus);
   }, []);
 
-  // Apply the search query first so it affects both the pipeline and table views
-  const searchedApplications = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return applications;
-    return applications.filter(app => getSearchableText(app).includes(q));
-  }, [applications, searchQuery, getSearchableText]);
+  const advanceStage = useCallback((app) => {
+    const idx = STAGE_KEYS.indexOf(stageKeyOf(app));
+    if (idx < 0 || idx >= STAGES.length - 1) return;
+    handleStatusUpdate(app.id, STAGES[idx + 1].status);
+  }, [handleStatusUpdate]);
 
-  const filteredApplications = useMemo(() => {
-    return filterStatus === 'all' 
-      ? searchedApplications 
-      : searchedApplications.filter(app => app.status === filterStatus);
-  }, [searchedApplications, filterStatus]);
+  const toggleColumn = useCallback((key) => {
+    setExpandedColumns(prev => (prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]));
+  }, []);
 
-  // Group applications by pipeline stage
-  const pipelineData = useMemo(() => {
-    const stages = {
-      'under review': { 
-        key: 'underReview',
-        label: t('recruitment.pipeline.screening', 'Screening'),
-        description: t('recruitment.pipeline.screeningDesc', 'Initial application review'),
-        icon: FileText,
-        color: 'yellow',
-        applications: []
-      },
-      'shortlisted': { 
-        key: 'shortlisted',
-        label: t('recruitment.pipeline.shortlisted', 'Shortlisted'),
-        description: t('recruitment.pipeline.shortlistedDesc', 'Qualified candidates'),
-        icon: Users,
-        color: 'blue',
-        applications: []
-      },
-      'interview scheduled': { 
-        key: 'interview',
-        label: t('recruitment.pipeline.interview', 'Interview'),
-        description: t('recruitment.pipeline.interviewDesc', 'Interview process'),
-        icon: ClipboardCheck,
-        color: 'purple',
-        applications: []
-      },
-      'offer extended': { 
-        key: 'offer',
-        label: t('recruitment.pipeline.offer', 'Offer'),
-        description: t('recruitment.pipeline.offerDesc', 'Job offer extended'),
-        icon: Briefcase,
-        color: 'orange',
-        applications: []
-      },
-      'hired': { 
-        key: 'hired',
-        label: t('recruitment.pipeline.hired', 'Hired'),
-        description: t('recruitment.pipeline.hiredDesc', 'Successfully hired'),
-        icon: UserCheck,
-        color: 'green',
-        applications: []
-      },
-      'rejected': { 
-        key: 'rejected',
-        label: t('recruitment.pipeline.rejected', 'Rejected'),
-        description: t('recruitment.pipeline.rejectedDesc', 'Not proceeding'),
-        icon: XCircle,
-        color: 'red',
-        applications: []
-      }
-    };
+  /* -- labels ------------------------------------------------------ */
 
-    searchedApplications.forEach(app => {
-      const status = app.status?.toLowerCase() || 'under review';
-      if (stages[status]) {
-        stages[status].applications.push(app);
-      }
-    });
+  const stageLabel = useCallback((key) => ({
+    screening: t('recruitment.pipeline.screening', 'Screening'),
+    shortlisted: t('recruitment.pipeline.shortlisted', 'Shortlisted'),
+    interview: t('recruitment.pipeline.interview', 'Interview'),
+    offer: t('recruitment.pipeline.offer', 'Offer'),
+    hired: t('recruitment.pipeline.hired', 'Hired'),
+  }[key] || key), [t]);
 
-    return stages;
-  }, [searchedApplications, t]);
-
-  // Calculate pipeline metrics
-  const pipelineMetrics = useMemo(() => {
-    const total = applications.length;
-    const activeInPipeline = applications.filter(a => 
-      !['hired', 'rejected'].includes(a.status?.toLowerCase())
-    ).length;
-    const conversionRate = total > 0 
-      ? ((pipelineData.hired.applications.length / total) * 100).toFixed(1)
-      : 0;
-    const avgTimeToHire = '14'; // Placeholder - would calculate from actual data
-    
-    return { total, activeInPipeline, conversionRate, avgTimeToHire };
-  }, [applications, pipelineData]);
-
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'under review': return `${isDarkMode ? 'bg-yellow-900 text-yellow-300' : 'bg-yellow-100 text-yellow-800'}`;
-      case 'shortlisted': return `${isDarkMode ? 'bg-blue-900 text-blue-300' : 'bg-blue-100 text-blue-800'}`;
-      case 'interview scheduled': return `${isDarkMode ? 'bg-purple-900 text-purple-300' : 'bg-purple-100 text-purple-800'}`;
-      case 'offer extended': return `${isDarkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-800'}`;
-      case 'hired': return `${isDarkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-800'}`;
-      case 'rejected': return `${isDarkMode ? 'bg-red-900 text-red-300' : 'bg-red-100 text-red-800'}`;
-      default: return `${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800'}`;
+  /**
+   * The line under each stage count. Screening states the raw intake; the middle
+   * stages state what share of the stage above them got through; Offer states how
+   * many replies are outstanding; Hired states progress against the month's target.
+   */
+  const stageQualifier = useCallback((key, index) => {
+    if (key === 'screening') return `${counts.screening} ${t('recruitment.candidates', 'candidates')}`;
+    if (key === 'offer') {
+      return t('recruitment.board.awaitingReply', '{n} awaiting reply').replace('{n}', String(counts.offer));
     }
-  };
+    if (key === 'hired') {
+      return t('recruitment.board.ofTarget', 'of {n} target').replace('{n}', String(MONTHLY_HIRE_TARGET));
+    }
+    const prev = counts[STAGE_KEYS[index - 1]];
+    return t('recruitment.board.passRate', '{n}% pass').replace('{n}', String(pct(counts[key], prev)));
+  }, [counts, t]);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return t('common.notAvailable', 'N/A');
-    return new Date(dateString).toLocaleDateString();
-  };
+  const roleOf = useCallback((app) => {
+    if (isDemoMode()) return getDemoJobTitle(app.job_posting, t);
+    if (app.job_posting?.title) return <TranslatedText text={app.job_posting.title} />;
+    if (app.job_posting?.position) return t(`employeePosition.${app.job_posting.position}`, app.job_posting.position);
+    return t('common.notAvailable', 'N/A');
+  }, [t]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  const shortDate = useCallback(
+    (value) => (value ? formatLocaleDate(value, currentLanguage, { day: 'numeric', month: 'short' }) : '—'),
+    [currentLanguage]
+  );
+
+  /* -- render ------------------------------------------------------ */
+
+  const headSub = [
+    t('recruitment.board.openReqs', '{n} open requisitions').replace('{n}', String(metrics.openReqs)),
+    t('recruitment.board.inPlay', '{n} candidates in play').replace('{n}', String(metrics.active)),
+    t('recruitment.board.acceptedThisWeek', '{n} offers accepted this week').replace('{n}', String(metrics.acceptedThisWeek)),
+  ].join(' · ');
 
   return (
-    <div className="space-y-6 px-2 sm:px-0">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-        <div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h2 className={`text-2xl font-bold ${text.primary}`}>
-              {t('recruitment.title', 'Recruitment')}
-            </h2>
-            <PageLiveClock
-              textClassName={text.primary}
-              separatorClassName={text.secondary}
-              loading={loading}
-              isDarkMode={isDarkMode}
-              fetchLabel={t('common.fetching', 'Fetching')}
-            />
-          </div>
-          <p className={`text-sm ${text.secondary} mt-1`}>
-            {t('recruitment.subtitle', 'Manage your hiring pipeline and track candidates')}
-          </p>
+    <div
+      style={{
+        border: `1px solid ${ind.hairline}`,
+        background: ind.ground,
+        color: ind.ink,
+        fontFamily: BODY,
+        fontSize: 14,
+        borderRadius: 0,
+      }}
+    >
+      {/* ── TICKER — replaces metric cards. Never both. ─────────────── */}
+      <div
+        style={{
+          height: 44,
+          background: ind.tickerBg,
+          color: ind.tickerInk,
+          borderBottom: `1px solid ${ind.hairline}`,
+          display: 'flex',
+          alignItems: 'stretch',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+        }}
+      >
+        <TickerCell ind={ind}>
+          <LiveClock ind={ind} live={hasRealData} />
+        </TickerCell>
+
+        <TickerCell ind={ind} label={t('recruitment.metrics.totalCandidates', 'Candidates')} value={metrics.total} />
+        <TickerCell ind={ind} label={t('recruitment.metrics.activeInPipeline', 'Active')} value={metrics.active} />
+        <TickerCell ind={ind} label={t('recruitment.metrics.conversionRate', 'Conversion')} value={`${metrics.conversion}%`} />
+        <TickerCell
+          ind={ind}
+          label={t('recruitment.metrics.avgTimeToHire', 'Time to hire')}
+          value={metrics.timeToHire != null ? `${metrics.timeToHire}d` : '—'}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('recruitment.metrics.offersOut', 'Offers out')}
+          value={metrics.offersOut}
+          // The one figure on the strip that decays: every day it sits, it costs you.
+          valueColor={ind.tickerUp}
+        />
+        <TickerCell ind={ind} label={t('recruitment.metrics.openReqs', 'Open reqs')} value={metrics.openReqs} />
+
+        <div
+          style={{
+            flex: 1,
+            minWidth: 'max-content',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 8,
+            padding: '0 14px',
+            borderLeft: `1px solid ${ind.tickerRule}`,
+          }}
+        >
+          <FetchElapsedPill active={loading} isDarkMode label={t('common.fetching', 'Fetching')} />
+          <FlatSelect
+            ind={ind}
+            onDark
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+            aria-label={t('recruitment.department', 'Department')}
+            style={{ maxWidth: 200 }}
+          >
+            <option value="all" style={{ color: '#1d1f20' }}>
+              {t('recruitment.board.allDepartments', 'All departments')}
+            </option>
+            {departmentOptions.map(dept => (
+              <option key={dept} value={dept} style={{ color: '#1d1f20' }}>
+                {t(`employeeDepartment.${dept}`, dept)}
+              </option>
+            ))}
+          </FlatSelect>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Search */}
-          <div className="relative">
-            <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${text.secondary}`} />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('recruitment.searchPlaceholder', 'Search candidates...')}
-              className={`pl-9 pr-8 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary} text-sm w-48 sm:w-60 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-            />
-            {searchQuery && (
+      </div>
+
+      <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 18 }}>
+        {fetchError && (
+          <div style={{ border: `1px solid ${ind.ink}`, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            <AlertCircle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Kicker ind={ind} color={ind.ink}>{t('common.error', 'Error')}</Kicker>
+              <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 4 }}>{fetchError}</p>
               <button
-                onClick={() => setSearchQuery('')}
-                className={`absolute right-2 top-1/2 -translate-y-1/2 ${text.secondary} hover:${text.primary} cursor-pointer`}
-                title={t('common.clear', 'Clear')}
+                type="button"
+                onClick={() => { setFetchError(null); fetchData(); }}
+                style={{
+                  marginTop: 8, background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                  fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5, letterSpacing: '.08em',
+                  textTransform: 'uppercase', color: ind.accentDeep, textDecoration: 'underline',
+                }}
               >
-                <X className="w-4 h-4" />
+                {t('common.retry', 'Try Again')}
               </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFetchError(null)}
+              aria-label={t('common.close', 'Close')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0, flex: 'none' }}
+            >
+              <X size={15} strokeWidth={1.5} />
+            </button>
+          </div>
+        )}
+
+        {/* ── PAGE HEAD ────────────────────────────────────────────── */}
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div style={{ minWidth: 0 }}>
+            <h1
+              style={{
+                fontFamily: DISPLAY, fontWeight: 600, fontSize: 30, lineHeight: 1.05,
+                letterSpacing: '.02em', textTransform: 'uppercase', color: ind.ink, margin: 0,
+              }}
+            >
+              {t('recruitment.title', 'Recruitment Pipeline')}
+            </h1>
+            <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 6 }}>
+              {headSub}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <SearchField ind={ind} value={searchQuery} onChange={setSearchQuery} t={t} />
+            <Seg
+              ind={ind}
+              ariaLabel={t('recruitment.viewMode', 'View')}
+              value={viewMode}
+              onChange={setViewMode}
+              options={[
+                { value: 'board', label: t('recruitment.boardView', 'Board') },
+                { value: 'table', label: t('recruitment.tableView', 'Table') },
+              ]}
+            />
+            <Btn ind={ind} variant="primary" onClick={() => setShowPostJobModal(true)}>
+              + {t('recruitment.postNewJob', 'Post new job')}
+            </Btn>
+          </div>
+        </div>
+
+        {/* ── STAGE STRIP — the underbar taper is the funnel ────────── */}
+        <div style={{ overflowX: 'auto' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: `repeat(${STAGES.length}, minmax(0, 1fr))`,
+              border: `1px solid ${ind.hairline}`,
+              minWidth: 720,
+            }}
+          >
+            {STAGES.map((stage, index) => {
+              const terminal = stage.key === 'hired';
+              return (
+                <div
+                  key={stage.key}
+                  style={{
+                    padding: '12px 14px 0',
+                    borderLeft: index === 0 ? 'none' : `1px solid ${ind.hairline}`,
+                    background: terminal ? ind.accentWash : 'transparent',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                  }}
+                >
+                  <Kicker ind={ind} color={ind.inkMuted}>
+                    {terminal
+                      ? `${stageLabel(stage.key)}, ${formatLocaleDate(new Date().toISOString(), currentLanguage, { month: 'long' })}`
+                      : stageLabel(stage.key)}
+                  </Kicker>
+                  <div style={figure(26, ind.ink)}>{counts[stage.key]}</div>
+                  <div style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted }}>
+                    {stageQualifier(stage.key, index)}
+                  </div>
+                  {/* 5px accent underbar — width is this stage's share of intake. */}
+                  <div style={{ marginTop: 'auto', paddingTop: 10 }}>
+                    <div style={{ height: 5, background: ind.rule }}>
+                      <div
+                        style={{
+                          height: '100%',
+                          width: `${Math.min(100, pct(counts[stage.key], intake))}%`,
+                          background: ind.accent,
+                          transition: 'width .45s ease',
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── BOARD / TABLE ────────────────────────────────────────── */}
+        {viewMode === 'board' ? (
+          <div style={{ overflowX: 'auto' }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${STAGES.length}, minmax(0, 1fr))`,
+                gap: 14,
+                alignItems: 'stretch',
+                minWidth: 980,
+              }}
+            >
+              {STAGES.map(stage => (
+                <StageColumn
+                  key={stage.key}
+                  ind={ind}
+                  t={t}
+                  stageKey={stage.key}
+                  label={stageLabel(stage.key)}
+                  applications={byStage[stage.key]}
+                  expanded={expandedColumns.includes(stage.key)}
+                  onToggleExpand={() => toggleColumn(stage.key)}
+                  promotedId={promoted[stage.key] ?? null}
+                  nextInterviewByApp={nextInterviewByApp}
+                  roleOf={roleOf}
+                  shortDate={shortDate}
+                  onOpen={openDetail}
+                  onAdvance={advanceStage}
+                  // Hand the hired candidate to 2d so the record starts prefilled
+                  // and can stamp its own provenance instead of being retyped.
+                  onCreateRecord={(app) => navigate('/employees/add', {
+                    state: {
+                      fromApplication: {
+                        id: app.id,
+                        name: candidateName(app),
+                        email: app.applicant?.email || '',
+                        phone: app.applicant?.phone || '',
+                        department: departmentOf(app) || '',
+                        position: app.job_posting?.position || '',
+                        jobTitle: app.job_posting?.title || '',
+                        offerDate: app.reviewed_date || app.application_date || null,
+                      },
+                    },
+                  })}
+                  ytd={{ hires: metrics.hiredThisYear, avgDays: metrics.timeToHire }}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <CandidateTable
+            ind={ind}
+            t={t}
+            applications={scopedApplications}
+            stats={stats}
+            roleOf={roleOf}
+            shortDate={shortDate}
+            stageLabel={stageLabel}
+            onOpen={openDetail}
+            onSchedule={setInterviewApplication}
+          />
+        )}
+      </div>
+
+      {/* ── MODALS ───────────────────────────────────────────────────── */}
+      {detailApplication && (
+        <ApplicationDetailModal
+          ind={ind}
+          application={detailApplication}
+          focus={detailFocus}
+          onClose={() => { setDetailApplication(null); setDetailFocus(null); }}
+          onUpdate={() => fetchData({ silent: true })}
+          onStatusUpdate={handleStatusUpdate}
+          onScheduleInterview={(app) => {
+            setDetailApplication(null);
+            setDetailFocus(null);
+            setInterviewApplication(app);
+          }}
+        />
+      )}
+
+      {interviewApplication && (
+        <InterviewScheduleModal
+          ind={ind}
+          application={interviewApplication}
+          onClose={() => setInterviewApplication(null)}
+          onSuccess={() => { setInterviewApplication(null); fetchData({ silent: true }); }}
+        />
+      )}
+
+      {showPostJobModal && (
+        <PostJobModal
+          ind={ind}
+          onClose={() => setShowPostJobModal(false)}
+          onSuccess={(droppedColumns) => {
+            setShowPostJobModal(false);
+            // The posting saved, but this deployment's table had no home for these.
+            if (droppedColumns?.length) {
+              setFetchError(
+                t('recruitment.fieldsNotStored', 'Job posted, but these fields are not in your job_postings table and were not saved: {fields}')
+                  .replace('{fields}', droppedColumns.join(', '))
+              );
+            }
+            fetchData({ silent: true });
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ *
+ * Search field — a hairline box, not a pill
+ * ------------------------------------------------------------------ */
+
+function SearchField({ ind, value, onChange, t }) {
+  return (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+      <span
+        aria-hidden="true"
+        style={{ position: 'absolute', left: 8, fontSize: 12, color: ind.inkMuted, lineHeight: 1 }}
+      >
+        ⌕
+      </span>
+      <input
+        type="search"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={t('recruitment.searchPlaceholder', 'Search candidates')}
+        aria-label={t('recruitment.searchPlaceholder', 'Search candidates')}
+        style={{
+          fontFamily: BODY,
+          fontSize: 13,
+          color: ind.ink,
+          background: 'transparent',
+          border: `1px solid ${ind.hairline}`,
+          borderRadius: 0,
+          padding: '5px 26px 5px 22px',
+          width: 210,
+          outline: 'none',
+        }}
+      />
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange('')}
+          aria-label={t('common.clear', 'Clear')}
+          style={{
+            position: 'absolute', right: 6, background: 'none', border: 'none',
+            padding: 0, cursor: 'pointer', color: ind.inkMuted, lineHeight: 0,
+          }}
+        >
+          <X size={13} strokeWidth={1.5} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Board column
+ * ------------------------------------------------------------------ */
+
+/**
+ * One blueprint column. The flex spacer before the foot is what keeps every
+ * column the same height regardless of how many cards it holds.
+ */
+function StageColumn({
+  ind, t, stageKey, label, applications, expanded, onToggleExpand, promotedId,
+  nextInterviewByApp, roleOf, shortDate, onOpen, onAdvance, onCreateRecord, ytd,
+}) {
+  const visible = expanded ? applications : applications.slice(0, CARDS_PER_COLUMN);
+  const hidden = applications.length - visible.length;
+  const isHired = stageKey === 'hired';
+
+  const moreLink = (hidden > 0 || expanded) ? (
+    <button
+      type="button"
+      onClick={onToggleExpand}
+      style={{
+        background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left',
+        fontFamily: DISPLAY, fontWeight: 600, fontSize: 11, letterSpacing: '.1em',
+        textTransform: 'uppercase', color: ind.accentDeep,
+      }}
+    >
+      {expanded
+        ? t('recruitment.board.showLess', 'Show less ↑')
+        : t('recruitment.board.more', '{n} more →').replace('{n}', String(hidden))}
+    </button>
+  ) : null;
+
+  return (
+    <Blueprint ind={ind} style={{ display: 'flex', flexDirection: 'column', minHeight: 340 }}>
+      {/* Column header */}
+      <div
+        style={{
+          display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+          gap: 8, padding: '9px 11px', borderBottom: `1px solid ${ind.hairline}`,
+        }}
+      >
+        <Kicker ind={ind} color={ind.ink} style={{ letterSpacing: '.13em' }}>{label}</Kicker>
+        <span style={figure(13, ind.inkMuted)}>{applications.length}</span>
+      </div>
+
+      {/* Cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 11 }}>
+        {visible.length === 0 ? (
+          <p style={{ fontFamily: BODY, fontSize: 12, color: ind.inkFaint }}>
+            {t('recruitment.pipeline.noCandidates', 'No candidates in this stage')}
+          </p>
+        ) : (
+          visible.map(app => (
+            <CandidateCard
+              key={app.id}
+              ind={ind}
+              t={t}
+              app={app}
+              stageKey={stageKey}
+              promoted={app.id === promotedId}
+              interview={nextInterviewByApp.get(app.id) || null}
+              roleOf={roleOf}
+              shortDate={shortDate}
+              onOpen={onOpen}
+              onAdvance={onAdvance}
+              onCreateRecord={onCreateRecord}
+            />
+          ))
+        )}
+        {/* Hired keeps its overflow link with the cards; its foot belongs to the YTD plate. */}
+        {isHired && moreLink}
+      </div>
+
+      {/* Spacer — this is what equalises column heights. */}
+      <div style={{ flex: 1 }} />
+
+      {/* Foot */}
+      {isHired ? (
+        <div style={{ borderTop: `1px solid ${ind.hairline}`, padding: '9px 11px' }}>
+          <Kicker ind={ind} color={ind.inkMuted}>{t('recruitment.board.yearToDate', 'Year to date')}</Kicker>
+          <div style={{ fontFamily: BODY, fontSize: 12, color: ind.ink, marginTop: 4 }}>
+            {t('recruitment.board.ytdHires', '{n} hires').replace('{n}', String(ytd.hires))}
+            {' · '}
+            {ytd.avgDays != null
+              ? t('recruitment.board.ytdAvg', '{n}d avg').replace('{n}', String(ytd.avgDays))
+              : '—'}
+          </div>
+        </div>
+      ) : moreLink ? (
+        <div style={{ padding: '9px 11px' }}>{moreLink}</div>
+      ) : null}
+    </Blueprint>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Candidate card
+ * ------------------------------------------------------------------ */
+
+/**
+ * Tag semantics, consistent across the deck:
+ *   neutral — an automatic state nobody has to act on ("CV parsed")
+ *   outline — waiting on a human ("Needs review", "Negotiating")
+ *   accent  — scored or settled positive ("Score 4.2", "Signed")
+ */
+function tagFor(app, stageKey, t) {
+  const rating = Number(app.rating) || 0;
+  const scored = { variant: 'accent', text: t('recruitment.board.tagScore', 'Score {n}').replace('{n}', rating.toFixed(1)) };
+
+  switch (stageKey) {
+    case 'hired':
+      return { variant: 'accent', text: t('recruitment.board.tagSigned', 'Signed') };
+    case 'offer':
+      return app.notes
+        ? { variant: 'outline', text: t('recruitment.board.tagNegotiating', 'Negotiating') }
+        : { variant: 'outline', text: t('recruitment.board.tagAwaiting', 'Awaiting') };
+    case 'interview':
+      return rating
+        ? scored
+        : { variant: 'outline', text: t('recruitment.board.tagAwaiting', 'Awaiting') };
+    case 'shortlisted':
+      return rating
+        ? scored
+        : { variant: 'outline', text: t('recruitment.board.tagNeedsReview', 'Needs review') };
+    default:
+      if (rating) return scored;
+      return ageInStage(app) >= STALE_SCREENING_DAYS
+        ? { variant: 'outline', text: t('recruitment.board.tagNeedsReview', 'Needs review') }
+        : { variant: 'neutral', text: t('recruitment.board.tagCvParsed', 'CV parsed') };
+  }
+}
+
+/**
+ * A hairline rectangle — never a pastel avatar circle. Quiet by default; only the
+ * one promoted card in Interview and Offer trades its tag row for a live line and
+ * two inline buttons, so the eye finds today's work without reading names.
+ */
+function CandidateCard({ ind, t, app, stageKey, promoted, interview, roleOf, shortDate, onOpen, onAdvance, onCreateRecord }) {
+  const canPromote = promoted && (stageKey === 'interview' || stageKey === 'offer');
+  const age = ageInStage(app);
+  const tag = tagFor(app, stageKey, t);
+
+  const liveLine = (() => {
+    if (stageKey === 'interview') {
+      const when = interview ? new Date(interview.scheduled_date) : null;
+      if (!when) return t('recruitment.board.panelUnscheduled', 'Panel not scheduled');
+      const today = when.toDateString() === new Date().toDateString();
+      const time = `${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}`;
+      return today
+        ? t('recruitment.board.panelToday', 'Panel today {time}').replace('{time}', time)
+        : t('recruitment.board.panelOn', 'Panel {date} {time}').replace('{date}', shortDate(interview.scheduled_date)).replace('{time}', time);
+    }
+    return t('recruitment.board.awaitingSent', 'Awaiting reply · sent {n}d ago').replace('{n}', String(age));
+  })();
+
+  return (
+    <div
+      style={{
+        border: `1px solid ${canPromote ? ind.accent : ind.hairline}`,
+        background: canPromote ? ind.accentWash : 'transparent',
+        borderRadius: 0,
+        padding: '8px 10px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 5,
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => onOpen(app)}
+        title={t('common.view', 'View')}
+        style={{
+          background: 'none', border: 'none', padding: 0, margin: 0, cursor: 'pointer',
+          textAlign: 'left', display: 'block', width: '100%',
+          fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, lineHeight: 1.15,
+          letterSpacing: '.05em', textTransform: 'uppercase', color: ind.ink,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}
+      >
+        {candidateName(app) || t('common.notAvailable', 'N/A')}
+      </button>
+
+      <div
+        style={{
+          fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}
+      >
+        {roleOf(app)}
+      </div>
+
+      {canPromote ? (
+        <>
+          <div style={{ fontFamily: BODY, fontSize: 11.5, color: ind.ink, marginTop: 1 }}>
+            {liveLine}
+          </div>
+          <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
+            {stageKey === 'interview' ? (
+              <>
+                <Btn ind={ind} variant="primary" onClick={() => onOpen(app, 'rating')} style={{ fontSize: 11, padding: '3px 8px' }}>
+                  {t('recruitment.board.scorecard', 'Scorecard')}
+                </Btn>
+                <Btn ind={ind} onClick={() => onAdvance(app)} style={{ fontSize: 11, padding: '3px 8px' }}>
+                  {t('recruitment.board.move', 'Move')}
+                </Btn>
+              </>
+            ) : (
+              <>
+                <Btn ind={ind} variant="primary" onClick={() => onOpen(app, 'notes')} style={{ fontSize: 11, padding: '3px 8px' }}>
+                  {t('recruitment.board.chase', 'Chase')}
+                </Btn>
+                <Btn ind={ind} onClick={() => onOpen(app)} style={{ fontSize: 11, padding: '3px 8px' }}>
+                  {t('recruitment.board.revise', 'Revise')}
+                </Btn>
+              </>
             )}
           </div>
-          {/* View Toggle */}
-          <div className={`flex rounded-lg border ${border.primary} overflow-hidden`}>
-            <button
-              onClick={() => setViewMode('pipeline')}
-              className={`px-3 py-2 text-sm font-medium transition-colors cursor-pointer ${
-                viewMode === 'pipeline'
-                  ? 'bg-blue-600 text-white'
-                  : `${bg.secondary} ${text.secondary} hover:${bg.tertiary}`
-              }`}
-            >
-              {t('recruitment.pipelineView', 'Pipeline')}
-            </button>
-            <button
-              onClick={() => setViewMode('table')}
-              className={`px-3 py-2 text-sm font-medium transition-colors cursor-pointer ${
-                viewMode === 'table'
-                  ? 'bg-blue-600 text-white'
-                  : `${bg.secondary} ${text.secondary} hover:${bg.tertiary}`
-              }`}
-            >
-              {t('recruitment.tableView', 'Table')}
-            </button>
-          </div>
-          <button 
-            onClick={() => setShowPostJobModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 transition-colors cursor-pointer"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('recruitment.postNewJob', 'Post New Job')}</span>
-          </button>
+        </>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 1 }}>
+          <Tag ind={ind} variant={tag.variant}>{tag.text}</Tag>
+          <span style={figure(11, ind.inkMuted)}>{age}d</span>
         </div>
-      </div>
+      )}
 
-      {/* Pipeline Metrics Summary */}
-      <div className={`grid grid-cols-2 md:grid-cols-4 gap-4`}>
-        <MetricCard
-          icon={Users}
-          label={t('recruitment.metrics.totalCandidates', 'Total Candidates')}
-          value={pipelineMetrics.total}
-          color="blue"
-        />
-        <MetricCard
-          icon={TrendingUp}
-          label={t('recruitment.metrics.activeInPipeline', 'Active in Pipeline')}
-          value={pipelineMetrics.activeInPipeline}
-          color="purple"
-        />
-        <MetricCard
-          icon={UserCheck}
-          label={t('recruitment.metrics.conversionRate', 'Conversion Rate')}
-          value={`${pipelineMetrics.conversionRate}%`}
-          color="green"
-        />
-        <MetricCard
-          icon={Clock}
-          label={t('recruitment.metrics.avgTimeToHire', 'Avg. Time to Hire')}
-          value={`${pipelineMetrics.avgTimeToHire} ${t('common.days', 'days')}`}
-          color="orange"
-        />
-      </div>
-
-      {/* Visual Pipeline Timeline */}
-      {viewMode === 'pipeline' && (
-        <RecruitmentPipeline
-          pipelineData={pipelineData}
-          expandedStage={expandedStage}
-          setExpandedStage={setExpandedStage}
-          onViewApplication={(app) => {
-            setSelectedApplication(app);
-            setShowDetailModal(true);
+      {stageKey === 'hired' && (
+        <button
+          type="button"
+          onClick={() => onCreateRecord(app)}
+          style={{
+            background: 'none', border: 'none', padding: 0, marginTop: 2, cursor: 'pointer',
+            textAlign: 'left', fontFamily: DISPLAY, fontWeight: 600, fontSize: 10.5,
+            letterSpacing: '.1em', textTransform: 'uppercase', color: ind.accentDeep,
           }}
-          onStatusUpdate={handleStatusUpdate}
-          formatDate={formatDate}
-        />
+        >
+          {t('recruitment.board.createRecord', 'Create record →')}
+        </button>
       )}
+    </div>
+  );
+}
 
-      {/* Stats Cards - Only show in table view */}
-      {viewMode === 'table' && stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-          <StatCard
-            label={t('recruitment.total', 'Total')}
-            value={stats.total}
-            color="blue"
-            onClick={() => setFilterStatus('all')}
-            active={filterStatus === 'all'}
-          />
-          <StatCard
-            label={t('recruitment.underReview', 'Under Review')}
-            value={stats.underReview}
-            color="yellow"
-            onClick={() => setFilterStatus('under review')}
-            active={filterStatus === 'under review'}
-          />
-          <StatCard
-            label={t('recruitment.shortListed', 'Shortlisted')}
-            value={stats.shortlisted}
-            color="blue"
-            onClick={() => setFilterStatus('shortlisted')}
-            active={filterStatus === 'shortlisted'}
-          />
-          <StatCard
-            label={t('recruitment.interviews', 'Interviews')}
-            value={stats.interviewScheduled}
-            color="purple"
-            onClick={() => setFilterStatus('interview scheduled')}
-            active={filterStatus === 'interview scheduled'}
-          />
-          <StatCard
-            label={t('recruitment.offers', 'Offers')}
-            value={stats.offerExtended}
-            color="green"
-            onClick={() => setFilterStatus('offer extended')}
-            active={filterStatus === 'offer extended'}
-          />
-          <StatCard
-            label={t('recruitment.hired', 'Hired')}
-            value={stats.hired}
-            color="green"
-            onClick={() => setFilterStatus('hired')}
-            active={filterStatus === 'hired'}
-          />
-          <StatCard
-            label={t('recruitment.rejected', 'Rejected')}
-            value={stats.rejected}
-            color="red"
-            onClick={() => setFilterStatus('rejected')}
-            active={filterStatus === 'rejected'}
-          />
+/* ------------------------------------------------------------------ *
+ * Table view
+ * ------------------------------------------------------------------ */
+
+function CandidateTable({ ind, t, applications, stats, roleOf, shortDate, stageLabel, onOpen, onSchedule }) {
+  const th = {
+    fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.14em',
+    textTransform: 'uppercase', color: ind.inkMuted, textAlign: 'left',
+    padding: '8px 12px', borderBottom: `1px solid ${ind.hairline}`, whiteSpace: 'nowrap',
+  };
+  const td = {
+    fontFamily: BODY, fontSize: 13, color: ind.ink,
+    padding: '9px 12px', borderBottom: `1px solid ${ind.rule}`, verticalAlign: 'top',
+  };
+
+  return (
+    <div style={{ border: `1px solid ${ind.hairline}` }}>
+      {stats && (
+        <div
+          style={{
+            display: 'flex', flexWrap: 'wrap', gap: 18, padding: '10px 12px',
+            borderBottom: `1px solid ${ind.hairline}`,
+          }}
+        >
+          {[
+            [t('recruitment.total', 'Total'), stats.total],
+            [t('recruitment.underReview', 'Under review'), stats.underReview],
+            [t('recruitment.shortListed', 'Shortlisted'), stats.shortlisted],
+            [t('recruitment.interviews', 'Interviews'), stats.interviewScheduled],
+            [t('recruitment.offers', 'Offers'), stats.offerExtended],
+            [t('recruitment.hired', 'Hired'), stats.hired],
+            [t('recruitment.rejected', 'Rejected'), stats.rejected],
+          ].map(([label, value]) => (
+            <div key={label} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              <Kicker ind={ind} color={ind.inkMuted}>{label}</Kicker>
+              <span style={figure(15, ind.ink)}>{value ?? 0}</span>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Applications Table - Only show in table view */}
-      {viewMode === 'table' && (
-      <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} overflow-hidden`}>
-        <div className={`p-6 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <h3 className={`text-lg font-semibold ${text.primary}`}>
-            {t('recruitment.applications', 'Applications')}
-            {filterStatus !== 'all' && ` - ${filterStatus}`}
-          </h3>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className={`${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 860 }}>
+          <thead>
+            <tr>
+              <th style={th}>{t('recruitment.candidate', 'Candidate')}</th>
+              <th style={th}>{t('recruitment.position', 'Position')}</th>
+              <th style={th}>{t('recruitment.department', 'Department')}</th>
+              <th style={th}>{t('recruitment.stage', 'Stage')}</th>
+              <th style={th}>{t('recruitment.rating', 'Rating')}</th>
+              <th style={th}>{t('recruitment.appliedDate', 'Applied')}</th>
+              <th style={{ ...th, textAlign: 'right' }}>{t('recruitment.actions', 'Actions')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {applications.length === 0 ? (
               <tr>
-                <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${text.secondary}`}>
-                  {t('recruitment.candidate', 'Candidate')}
-                </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${text.secondary}`}>
-                  {t('recruitment.position', 'Position')}
-                </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${text.secondary}`}>
-                  {t('recruitment.department', 'Department')}
-                </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${text.secondary}`}>
-                  {t('recruitment.experience', 'Experience')}
-                </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${text.secondary}`}>
-                  {t('recruitment.rating', 'Rating')}
-                </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${text.secondary}`}>
-                  {t('recruitment.statusLabel', 'Status')}
-                </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${text.secondary}`}>
-                  {t('recruitment.appliedDate', 'Applied Date')}
-                </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${text.secondary}`}>
-                  {t('recruitment.actions', 'Actions')}
-                </th>
+                <td colSpan={7} style={{ ...td, textAlign: 'center', color: ind.inkFaint, padding: '32px 12px' }}>
+                  {t('recruitment.noApplications', 'No applications found')}
+                </td>
               </tr>
-            </thead>
-            <tbody className={`divide-y ${border.primary}`}>
-              {filteredApplications.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
-                    {t('recruitment.noApplications', 'No applications found')}
-                  </td>
-                </tr>
-              ) : (
-                filteredApplications.map(application => (
-                  <tr 
-                    key={application.id} 
-                    className={`${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}
-                  >
-                    <td className={`px-6 py-4 whitespace-nowrap`}>
-                      <div>
-                        <div className={`text-sm font-medium ${text.primary}`}>
-                          {application.applicant?.full_name || application.applicant?.first_name 
-                            ? `${application.applicant?.first_name || ''} ${application.applicant?.last_name || ''}`.trim() 
-                            : t('common.notAvailable', 'N/A')}
-                        </div>
-                        <div className={`text-sm ${text.secondary}`}>
-                          {application.applicant?.email || t('common.notAvailable', 'N/A')}
-                        </div>
+            ) : (
+              applications.map(app => {
+                const key = stageKeyOf(app);
+                return (
+                  <tr key={app.id}>
+                    <td style={td}>
+                      <div style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, letterSpacing: '.04em', textTransform: 'uppercase' }}>
+                        {candidateName(app) || t('common.notAvailable', 'N/A')}
+                      </div>
+                      <div style={{ fontSize: 11.5, color: ind.inkMuted }}>
+                        {app.applicant?.email || t('common.notAvailable', 'N/A')}
                       </div>
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>
-                      {application.job_posting?.position 
-                        ? t(`employeePosition.${application.job_posting.position}`, application.job_posting.position)
+                    <td style={td}>{roleOf(app)}</td>
+                    <td style={td}>
+                      {departmentOf(app)
+                        ? t(`employeeDepartment.${departmentOf(app)}`, departmentOf(app))
                         : t('common.notAvailable', 'N/A')}
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>
-                      {application.job_posting?.department 
-                        ? t(`employeeDepartment.${application.job_posting.department}`, application.job_posting.department)
-                        : t('common.notAvailable', 'N/A')}
+                    <td style={td}>
+                      {key
+                        ? <Tag ind={ind} variant={key === 'hired' ? 'accent' : 'neutral'}>{stageLabel(key)}</Tag>
+                        : <Tag ind={ind} variant="outline">
+                            {isDemoMode()
+                              ? getDemoApplicationStatus(app, t)
+                              : t(`recruitment.status.${String(app.status || '').toLowerCase().replace(/\s+/g, '')}`, app.status)}
+                          </Tag>}
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>
-                      {application.applicant?.years_of_experience || 0} {t('recruitment.years', 'years')}
+                    <td style={{ ...td, fontVariantNumeric: 'tabular-nums' }}>
+                      {app.rating ? `${app.rating}/5` : '—'}
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap`}>
-                      {application.rating ? (
-                        <div className="flex items-center">
-                          <Star className={`w-4 h-4 ${isDarkMode ? 'text-white fill-white' : 'text-gray-800 fill-gray-800'}`} />
-                          <span className={`ml-1 text-sm ${text.primary}`}>{application.rating}/5</span>
-                        </div>
-                      ) : (
-                        <span className={`text-sm ${text.secondary}`}>-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(application.status)}`}>
-                        {isDemoMode()
-                          ? getDemoApplicationStatus(application, t)
-                          : t(`recruitment.status.${application.status?.toLowerCase().replace(/\s+/g, '')}`, application.status)
-                        }
-                      </span>
-                    </td>
-                    <td className={`text-center px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>
-                      {formatDate(application.application_date)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2 justify-center">
-                        <button 
-                          onClick={() => {
-                            setSelectedApplication(application);
-                            setShowDetailModal(true);
-                          }}
-                          className={`cursor-pointer ${isDarkMode ? 'text-white hover:text-blue-300' : 'text-gray-800 hover:text-blue-600'}`}
-                          title={t('recruitmentActions.view', 'View')}
-                        >
-                          <Eye className={`w-5 h-5`} />
-                        </button>
-                        {application.status === 'shortlisted' && (
-                          <button 
-                            onClick={() => handleScheduleInterview(application)}
-                            className={`${isDarkMode ? 'text-green-400 hover:text-green-300' : 'text-green-600 hover:text-green-900'}`}
-                            title={t('recruitmentActions.schedule', 'Schedule Interview')}
-                          >
-                            <Calendar className="w-4 h-4" />
-                          </button>
-                        )}
-                        {application.status !== 'rejected' && application.status !== 'hired' && (
-                          <button 
-                            onClick={() => handleStatusUpdate(application.id, 'rejected')}
-                            className={`cursor-pointer ${isDarkMode ? 'text-red-400 hover:rotate-360' : 'text-red-800 hover:rotate-360' } transition-transform duration-200`}
-                            title={t('recruitmentActions.reject', 'Reject')}
-                          >
-                            <XCircle className="w-4 h-4" />
-                          </button>
+                    <td style={td}>{shortDate(app.application_date)}</td>
+                    <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'inline-flex', gap: 6 }}>
+                        <Btn ind={ind} onClick={() => onOpen(app)} style={{ fontSize: 11, padding: '3px 8px' }}>
+                          {t('common.view', 'View')}
+                        </Btn>
+                        {key === 'shortlisted' && (
+                          <Btn ind={ind} onClick={() => onSchedule(app)} style={{ fontSize: 11, padding: '3px 8px' }}>
+                            {t('recruitment.scheduleInterview', 'Schedule')}
+                          </Btn>
                         )}
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
-      )}
-
-      {/* Application Detail Modal */}
-      {showDetailModal && selectedApplication && (
-        <ApplicationDetailModal
-          application={selectedApplication}
-          onClose={() => {
-            setShowDetailModal(false);
-            setSelectedApplication(null);
-          }}
-          onUpdate={fetchData}
-          onStatusUpdate={handleStatusUpdate}
-          onScheduleInterview={(app) => {
-            setShowDetailModal(false);
-            setSelectedApplication(null);
-            handleScheduleInterview(app);
-          }}
-        />
-      )}
-
-      {/* Interview Schedule Modal */}
-      {interviewApplication && (
-        <InterviewScheduleModal
-          application={interviewApplication}
-          onClose={() => setInterviewApplication(null)}
-          onSuccess={() => {
-            setInterviewApplication(null);
-            fetchData();
-          }}
-        />
-      )}
-
-      {/* Post Job Modal */}
-      {showPostJobModal && (
-        <PostJobModal
-          onClose={() => setShowPostJobModal(false)}
-          onSuccess={() => {
-            setShowPostJobModal(false);
-            fetchData();
-          }}
-        />
-      )}
     </div>
   );
-};
+}
 
-// Stat Card Component
-const StatCard = ({ label, value, color, onClick, active }) => {
-  const { text, border, isDarkMode } = useTheme();
-  
-  const colorClasses = {
-    blue: `border-blue-500 ${isDarkMode ? 'bg-blue-900' : 'bg-blue-50'}`,
-    yellow: `border-yellow-500 ${isDarkMode ? 'bg-yellow-900' : 'bg-yellow-50'}`,
-    purple: `border-purple-500 ${isDarkMode ? 'bg-purple-900' : 'bg-purple-50'}`,
-    green: `border-green-500 ${isDarkMode ? 'bg-green-900' : 'bg-green-50'}`,
-    red: `border-red-500 ${isDarkMode ? 'bg-red-900' : 'bg-red-50'}`
-  };
+/* ------------------------------------------------------------------ *
+ * Modal shell
+ * ------------------------------------------------------------------ */
 
+function ModalShell({ ind, title, subtitle, onClose, maxWidth = 620, children, footer }) {
+  const { t } = useLanguage();
   return (
     <div
-      onClick={onClick}
-      className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
-        active ? colorClasses[color] : `${border.primary} ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`
-      }`}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(29,31,32,.55)' }}
+      onClick={onClose}
     >
-      <div className={`text-sm font-medium ${text.secondary} mb-1`}>{label}</div>
-      <div className={`text-2xl font-bold ${text.primary}`}>
-        {typeof value === 'number' || (typeof value === 'string' && /^-?[\d.]+%?$/.test(String(value).trim())) ? (
-          String(value).includes('%') ? (
-            <>
-              <NumberTicker value={parseFloat(String(value)) || 0} className={text.primary} />%
-            </>
-          ) : (
-            <SlidingNumber value={Number(value) || 0} />
-          )
-        ) : (
-          value
+      <div
+        style={{
+          background: ind.ground, border: `1px solid ${ind.ink}`, borderRadius: 0,
+          width: '100%', maxWidth, maxHeight: '90vh', display: 'flex', flexDirection: 'column',
+          color: ind.ink, fontFamily: BODY,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          style={{
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+            gap: 12, padding: '14px 20px', borderBottom: `1px solid ${ind.hairline}`,
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontFamily: DISPLAY, fontWeight: 600, fontSize: 18, letterSpacing: '.05em',
+                textTransform: 'uppercase', lineHeight: 1.1,
+              }}
+            >
+              {title}
+            </div>
+            {subtitle && (
+              <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 4 }}>{subtitle}</p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('common.close', 'Close')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0, flex: 'none' }}
+          >
+            <X size={16} strokeWidth={1.5} />
+          </button>
+        </div>
+
+        <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>{children}</div>
+
+        {footer && (
+          <div
+            style={{
+              display: 'flex', justifyContent: 'flex-end', gap: 10,
+              padding: '14px 20px', borderTop: `1px solid ${ind.hairline}`, flexWrap: 'wrap',
+            }}
+          >
+            {footer}
+          </div>
         )}
       </div>
     </div>
   );
-};
+}
 
-// Metric Card Component
-const MetricCard = memo(({ icon: Icon, label, value, color }) => {
-  const { text, border, isDarkMode, bg } = useTheme();
-  
-  const colorConfig = {
-    blue: { bg: isDarkMode ? 'bg-blue-900/50' : 'bg-blue-50', icon: isDarkMode ? 'text-blue-400' : 'text-blue-600' },
-    purple: { bg: isDarkMode ? 'bg-purple-900/50' : 'bg-purple-50', icon: isDarkMode ? 'text-purple-400' : 'text-purple-600' },
-    green: { bg: isDarkMode ? 'bg-green-900/50' : 'bg-green-50', icon: isDarkMode ? 'text-green-400' : 'text-green-600' },
-    orange: { bg: isDarkMode ? 'bg-orange-900/50' : 'bg-orange-50', icon: isDarkMode ? 'text-orange-400' : 'text-orange-600' }
-  };
-
-  const config = colorConfig[color] || colorConfig.blue;
-
-  return (
-    <div className={`${bg.secondary} rounded-xl p-4 border ${border.primary} hover:shadow-md transition-shadow`}>
-      <div className="flex items-center space-x-3">
-        <div className={`p-2 rounded-lg ${config.bg}`}>
-          <Icon className={`w-5 h-5 ${config.icon}`} />
-        </div>
-        <div>
-          <p className={`text-xs font-medium ${text.secondary}`}>{label}</p>
-          <p className={`text-xl font-bold ${text.primary}`}>
-            {typeof value === 'number' || (typeof value === 'string' && /^-?[\d.]+%?$/.test(String(value).trim())) ? (
-              String(value).includes('%') ? (
-                <>
-                  <NumberTicker value={parseFloat(String(value)) || 0} className={text.primary} />%
-                </>
-              ) : (
-                <SlidingNumber value={Number(value) || 0} />
-              )
-            ) : (
-              value
-            )}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+/** Shared field chrome for the modals — hairline box, zero radius. */
+const fieldStyle = (ind) => ({
+  width: '100%',
+  fontFamily: BODY,
+  fontSize: 13,
+  color: ind.ink,
+  background: 'transparent',
+  border: `1px solid ${ind.hairline}`,
+  borderRadius: 0,
+  padding: '6px 8px',
+  outline: 'none',
 });
 
-MetricCard.displayName = 'MetricCard';
-
-// Recruitment Pipeline Component
-const RecruitmentPipeline = memo(({ 
-  pipelineData, 
-  expandedStage, 
-  setExpandedStage, 
-  onViewApplication, 
-  onStatusUpdate,
-  formatDate,
-}) => {
-  const { t } = useLanguage();
-  const { isDarkMode, bg, text, border } = useTheme();
-
-  const stages = ['under review', 'shortlisted', 'interview scheduled', 'offer extended', 'hired'];
-  
-  const colorConfig = {
-    yellow: { 
-      bg: isDarkMode ? 'bg-yellow-900/30' : 'bg-yellow-50',
-      border: 'border-yellow-500',
-      text: isDarkMode ? 'text-yellow-400' : 'text-yellow-700',
-      dot: 'bg-yellow-500'
-    },
-    blue: { 
-      bg: isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50',
-      border: 'border-blue-500',
-      text: isDarkMode ? 'text-blue-400' : 'text-blue-700',
-      dot: 'bg-blue-500'
-    },
-    purple: { 
-      bg: isDarkMode ? 'bg-purple-900/30' : 'bg-purple-50',
-      border: 'border-purple-500',
-      text: isDarkMode ? 'text-purple-400' : 'text-purple-700',
-      dot: 'bg-purple-500'
-    },
-    orange: { 
-      bg: isDarkMode ? 'bg-orange-900/30' : 'bg-orange-50',
-      border: 'border-orange-500',
-      text: isDarkMode ? 'text-orange-400' : 'text-orange-700',
-      dot: 'bg-orange-500'
-    },
-    green: { 
-      bg: isDarkMode ? 'bg-green-900/30' : 'bg-green-50',
-      border: 'border-green-500',
-      text: isDarkMode ? 'text-green-400' : 'text-green-700',
-      dot: 'bg-green-500'
-    },
-    red: { 
-      bg: isDarkMode ? 'bg-red-900/30' : 'bg-red-50',
-      border: 'border-red-500',
-      text: isDarkMode ? 'text-red-400' : 'text-red-700',
-      dot: 'bg-red-500'
-    }
-  };
-
+/**
+ * Grouped numeric field. Salaries run to seven figures here, so the value is
+ * displayed with thousands separators and the raw digits are handed back to the
+ * form — `type="number"` would reject the commas outright.
+ */
+function NumberField({ ind, name, value, onChange }) {
+  const { currentLanguage } = useLanguage();
   return (
-    <div className={`${bg.secondary} rounded-xl border ${border.primary} p-6`}>
-      {/* Pipeline Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h3 className={`text-lg font-semibold ${text.primary}`}>
-          {t('recruitment.pipeline.title', 'Recruitment Pipeline')}
-        </h3>
-        <div className={`text-sm ${text.secondary}`}>
-          {t('recruitment.pipeline.clickToExpand', 'Click stages to view candidates')}
-        </div>
-      </div>
-
-      {/* Visual Pipeline Timeline */}
-      <div className="relative">
-        {/* Connection Line */}
-        <div className="absolute top-8 left-0 right-0 h-1 bg-linear-to-r from-yellow-500 via-purple-500 to-green-500 rounded-full opacity-30" />
-        
-        {/* Stages */}
-        <div className="grid grid-cols-5 gap-2 md:gap-4 relative z-10">
-          {stages.map((stageKey, index) => {
-            const stage = pipelineData[stageKey];
-            if (!stage) return null;
-            
-            const Icon = stage.icon;
-            const config = colorConfig[stage.color];
-            const isExpanded = expandedStage === stageKey;
-            const count = stage.applications.length;
-
-            return (
-              <div key={stageKey} className="flex flex-col items-center">
-                {/* Stage Circle */}
-                <button
-                  onClick={() => setExpandedStage(isExpanded ? null : stageKey)}
-                  className={`relative w-14 h-14 md:w-16 md:h-16 rounded-full ${config.bg} border-2 ${config.border} flex items-center justify-center transition-all duration-300 hover:scale-110 cursor-pointer ${isExpanded ? 'ring-4 ring-offset-2 ring-offset-gray-900 ' + config.border.replace('border-', 'ring-') : ''}`}
-                >
-                  <Icon className={`w-6 h-6 md:w-7 md:h-7 ${config.text}`} />
-                  {/* Count Badge */}
-                  {count > 0 && (
-                    <span className={`absolute -top-1 -right-1 w-5 h-5 md:w-6 md:h-6 ${config.dot} text-white text-xs font-bold rounded-full flex items-center justify-center`}>
-                      {count}
-                    </span>
-                  )}
-                </button>
-
-                {/* Stage Label */}
-                <div className="mt-3 text-center">
-                  <p className={`text-xs md:text-sm font-medium ${text.primary} line-clamp-1`}>
-                    {stage.label}
-                  </p>
-                  <p className={`text-xs ${text.secondary} hidden md:block`}>
-                    {count} {t('recruitment.candidates', 'candidates')}
-                  </p>
-                </div>
-
-                {/* Arrow */}
-                {index < stages.length - 1 && (
-                  <div className="absolute top-8 hidden md:block" style={{ left: `${(index + 1) * 20 - 2}%` }}>
-                    <ArrowRight className={`w-4 h-4 ${text.secondary}`} />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Expanded Stage Details */}
-      {expandedStage && pipelineData[expandedStage] && (
-        <div className={`mt-6 pt-6 border-t ${border.primary}`}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-2">
-              {(() => {
-                const stage = pipelineData[expandedStage];
-                const Icon = stage.icon;
-                const config = colorConfig[stage.color];
-                return (
-                  <>
-                    <div className={`p-2 rounded-lg ${config.bg}`}>
-                      <Icon className={`w-5 h-5 ${config.text}`} />
-                    </div>
-                    <div>
-                      <h4 className={`font-semibold ${text.primary}`}>{stage.label}</h4>
-                      <p className={`text-sm ${text.secondary}`}>{stage.description}</p>
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-            <button
-              onClick={() => setExpandedStage(null)}
-              className={`p-1 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors cursor-pointer`}
-            >
-              <X className={`w-5 h-5 ${text.secondary}`} />
-            </button>
-          </div>
-
-          {/* Candidates List */}
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {pipelineData[expandedStage].applications.length === 0 ? (
-              <div className={`text-center py-8 ${text.secondary}`}>
-                {t('recruitment.pipeline.noCandidates', 'No candidates in this stage')}
-              </div>
-            ) : (
-              pipelineData[expandedStage].applications.map(app => (
-                <CandidateCard
-                  key={app.id}
-                  application={app}
-                  onView={() => onViewApplication(app)}
-                  onStatusUpdate={onStatusUpdate}
-                  formatDate={formatDate}
-                  currentStage={expandedStage}
-                  stages={stages}
-                />
-              ))
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Rejected Section (Separate) */}
-      {pipelineData.rejected?.applications.length > 0 && (
-        <div className={`mt-6 pt-6 border-t ${border.primary}`}>
-          <button
-            onClick={() => setExpandedStage(expandedStage === 'rejected' ? null : 'rejected')}
-            className={`flex items-center justify-between w-full p-3 rounded-lg ${colorConfig.red.bg} border ${colorConfig.red.border} cursor-pointer transition-all hover:opacity-80`}
-          >
-            <div className="flex items-center space-x-3">
-              <XCircle className={`w-5 h-5 ${colorConfig.red.text}`} />
-              <span className={`font-medium ${colorConfig.red.text}`}>
-                {t('recruitment.pipeline.rejected', 'Rejected')} ({pipelineData.rejected.applications.length})
-              </span>
-            </div>
-            {expandedStage === 'rejected' ? (
-              <ChevronDown className={`w-5 h-5 ${colorConfig.red.text}`} />
-            ) : (
-              <ChevronRight className={`w-5 h-5 ${colorConfig.red.text}`} />
-            )}
-          </button>
-
-          {expandedStage === 'rejected' && (
-            <div className="mt-3 space-y-3 max-h-64 overflow-y-auto">
-              {pipelineData.rejected.applications.map(app => (
-                <CandidateCard
-                  key={app.id}
-                  application={app}
-                  onView={() => onViewApplication(app)}
-                  formatDate={formatDate}
-                  currentStage="rejected"
-                  isRejected
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+    <input
+      type="text"
+      inputMode="numeric"
+      name={name}
+      value={groupNumberInput(value, currentLanguage)}
+      onChange={(e) => {
+        const raw = String(e.target.value).replace(/[^\d.-]/g, '');
+        onChange({ target: { name, value: raw } });
+      }}
+      placeholder="0"
+      style={{ ...fieldStyle(ind), fontVariantNumeric: 'tabular-nums' }}
+    />
   );
-});
+}
 
-RecruitmentPipeline.displayName = 'RecruitmentPipeline';
-
-// Candidate Card Component
-const CandidateCard = memo(({ application, onView, onStatusUpdate, formatDate, currentStage, stages, isRejected }) => {
-  const { t } = useLanguage();
-  const { isDarkMode, text, border } = useTheme();
-
-  // Get next stage in pipeline
-  const getNextStage = () => {
-    if (!stages || isRejected) return null;
-    const currentIndex = stages.indexOf(currentStage);
-    if (currentIndex === -1 || currentIndex >= stages.length - 1) return null;
-    return stages[currentIndex + 1];
-  };
-
-  const nextStage = getNextStage();
-
-  const stageLabels = {
-    'under review': t('recruitment.status.underreview', 'Under Review'),
-    'shortlisted': t('recruitment.status.shortlisted', 'Shortlisted'),
-    'interview scheduled': t('recruitment.status.interviewscheduled', 'Interview'),
-    'offer extended': t('recruitment.status.offerextended', 'Offer'),
-    'hired': t('recruitment.status.hired', 'Hired')
-  };
-
+function Field({ ind, label, children }) {
   return (
-    <div className={`${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'} rounded-lg p-4 border ${border.primary} hover:shadow-md transition-all`}>
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center space-x-2">
-            <h5 className={`font-medium ${text.primary} truncate`}>
-              {application.applicant?.full_name || 
-               `${application.applicant?.first_name || ''} ${application.applicant?.last_name || ''}`.trim() ||
-               t('common.notAvailable', 'N/A')}
-            </h5>
-            {application.rating && (
-              <div className="flex items-center">
-                <Star className={`w-3 h-3 ${isDarkMode ? 'text-yellow-400 fill-yellow-400' : 'text-yellow-500 fill-yellow-500'}`} />
-                <span className={`text-xs ${text.secondary} ml-1`}>{application.rating}</span>
-              </div>
-            )}
-          </div>
-          <p className={`text-sm ${text.secondary} truncate`}>
-            {isDemoMode()
-              ? getDemoJobTitle(application.job_posting, t)
-              : (application.job_posting?.title
-                ? <TranslatedText text={application.job_posting.title} />
-                : (application.job_posting?.position
-                  ? t(`employeePosition.${application.job_posting.position}`, application.job_posting.position)
-                  : null))}
-          </p>
-          <div className="flex items-center space-x-3 mt-2">
-            <span className={`text-xs ${text.secondary}`}>
-              {application.applicant?.years_of_experience || 0} {t('recruitment.yearsExperience', 'years exp.')}
-            </span>
-            <span className={`text-xs ${text.secondary}`}>
-              {formatDate(application.application_date)}
-            </span>
-          </div>
-        </div>
-        
-        <div className="flex items-center space-x-2 ml-4">
-          <button
-            onClick={onView}
-            className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'} transition-colors cursor-pointer`}
-            title={t('common.view', 'View')}
-          >
-            <Eye className={`w-4 h-4 ${text.secondary}`} />
-          </button>
-          
-          {nextStage && onStatusUpdate && (
-            <button
-              onClick={() => onStatusUpdate(application.id, nextStage)}
-              className={`p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors cursor-pointer`}
-              title={`${t('recruitment.moveTo', 'Move to')} ${stageLabels[nextStage] || nextStage}`}
-            >
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          )}
-          
-          {!isRejected && onStatusUpdate && currentStage !== 'hired' && (
-            <button
-              onClick={() => onStatusUpdate(application.id, 'rejected')}
-              className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-red-900/50' : 'hover:bg-red-50'} transition-colors cursor-pointer`}
-              title={t('recruitment.reject', 'Reject')}
-            >
-              <XCircle className={`w-4 h-4 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+    <label style={{ display: 'block' }}>
+      <Kicker ind={ind} color={ind.inkMuted} style={{ marginBottom: 5 }}>{label}</Kicker>
+      {children}
+    </label>
   );
-});
+}
 
-CandidateCard.displayName = 'CandidateCard';
+/* ------------------------------------------------------------------ *
+ * Post job
+ * ------------------------------------------------------------------ */
 
-// Post Job Modal Component
-const PostJobModal = ({ onClose, onSuccess }) => {
-  const { bg, text, border, isDarkMode } = useTheme();
+const PostJobModal = ({ ind, onClose, onSuccess }) => {
   const { t } = useLanguage();
   const { handleSessionAuthError } = useSessionGuard();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
-    title: '',
-    department: '',
-    location: '',
-    employment_type: 'full_time',
-    experience_level: '',
-    salary_min: '',
-    salary_max: '',
-    description: '',
-    requirements: '',
-    status: 'open'
+    title: '', department: '', location: '', employment_type: 'full_time',
+    experience_level: '', salary_min: '', salary_max: '', description: '',
+    requirements: '', status: 'open',
   });
 
   const departments = [
-    { value: 'engineering', label: t('employeeDepartment.engineering', 'Engineering') },
-    { value: 'marketing', label: t('employeeDepartment.marketing', 'Marketing') },
-    { value: 'sales', label: t('employeeDepartment.sales', 'Sales') },
-    { value: 'finance', label: t('employeeDepartment.finance', 'Finance') },
-    { value: 'human_resources', label: t('employeeDepartment.human_resources', 'Human Resources') },
-    { value: 'operations', label: t('employeeDepartment.operations', 'Operations') },
-    { value: 'customer_support', label: t('employeeDepartment.customer_support', 'Customer Support') },
-    { value: 'product', label: t('employeeDepartment.product', 'Product') },
-    { value: 'design', label: t('employeeDepartment.design', 'Design') },
-    { value: 'it', label: t('employeeDepartment.it', 'IT') }
+    'engineering', 'marketing', 'sales', 'finance', 'human_resources',
+    'operations', 'customer_support', 'product', 'design', 'it',
   ];
 
   const employmentTypes = [
     { value: 'full_time', label: t('recruitment.fullTime', 'Full Time') },
     { value: 'part_time', label: t('recruitment.partTime', 'Part Time') },
     { value: 'contract', label: t('recruitment.contract', 'Contract') },
-    { value: 'internship', label: t('recruitment.internship', 'Internship') }
+    { value: 'internship', label: t('recruitment.internship', 'Internship') },
   ];
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.title.trim() || !formData.department) {
-      alert(t('validation.required', 'Please fill in required fields'));
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const result = await createJobPosting({
-        ...formData,
-        salary_min: formData.salary_min ? parseInt(formData.salary_min) : null,
-        salary_max: formData.salary_max ? parseInt(formData.salary_max) : null
-      });
-
-      if (result.success) {
-        alert(t('recruitment.jobPosted', 'Job posted successfully!'));
-        onSuccess();
-      } else {
-        alert(result.error || t('errors.saveFailed', 'Failed to post job'));
-      }
-    } catch (error) {
-      console.error('Error posting job:', error);
-      if (handleSessionAuthError(error)) return;
-      alert(t('errors.saveFailed', 'Failed to post job'));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.title.trim() || !formData.department) {
+      setError(t('validation.required', 'Please fill in required fields'));
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await createJobPosting({
+        ...formData,
+        salary_min: formData.salary_min ? parseInt(formData.salary_min, 10) : null,
+        salary_max: formData.salary_max ? parseInt(formData.salary_max, 10) : null,
+      });
+      if (result.success) onSuccess(result.droppedColumns);
+      else setError(result.error || t('errors.saveFailed', 'Failed to post job'));
+    } catch (err) {
+      console.error('Error posting job:', err);
+      if (handleSessionAuthError(err)) return;
+      setError(err.message || t('errors.saveFailed', 'Failed to post job'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
+    <ModalShell
+      ind={ind}
+      title={t('recruitment.postNewJob', 'Post new job')}
+      onClose={onClose}
+      maxWidth={680}
+      footer={(
+        <>
+          <Btn ind={ind} onClick={onClose}>{t('common.cancel', 'Cancel')}</Btn>
+          <Btn ind={ind} variant="primary" disabled={loading} onClick={handleSubmit}>
+            {loading ? t('common.saving', 'Saving...') : t('recruitment.postJob', 'Post job')}
+          </Btn>
+        </>
+      )}
     >
-      <div 
-        className={`${bg.primary} rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden`}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className={`flex justify-between items-center p-6 border-b ${border.primary}`}>
-          <h2 className={`text-xl font-semibold ${text.primary}`}>{t('recruitment.postNewJob', 'Post New Job')}</h2>
-          <button 
-            onClick={onClose}
-            className={`${text.secondary} hover:${text.primary} cursor-pointer`}
-          >
-            <X className="w-5 h-5" />
-          </button>
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 14 }}>
+        {error && (
+          <p className="md:col-span-2" style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink, border: `1px solid ${ind.ink}`, padding: '8px 10px' }}>
+            {error}
+          </p>
+        )}
+
+        <div className="md:col-span-2">
+          <Field ind={ind} label={`${t('recruitment.jobTitle', 'Job title')} *`}>
+            <input
+              type="text" name="title" value={formData.title} onChange={handleChange}
+              placeholder={t('recruitment.enterJobTitle', 'Enter job title')}
+              style={fieldStyle(ind)} required
+            />
+          </Field>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Job Title */}
-            <div className="md:col-span-2">
-              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>
-                {t('recruitment.jobTitle', 'Job Title')} *
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
-                placeholder={t('recruitment.enterJobTitle', 'Enter job title')}
-                required
-              />
-            </div>
+        <Field ind={ind} label={`${t('recruitment.department', 'Department')} *`}>
+          <select name="department" value={formData.department} onChange={handleChange} style={fieldStyle(ind)} required>
+            <option value="">{t('common.select', 'Select')}</option>
+            {departments.map(dept => (
+              <option key={dept} value={dept}>{t(`employeeDepartment.${dept}`, dept)}</option>
+            ))}
+          </select>
+        </Field>
 
-            {/* Department */}
-            <div>
-              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>
-                {t('recruitment.department', 'Department')} *
-              </label>
-              <select
-                name="department"
-                value={formData.department}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
-                required
-              >
-                <option value="">{t('common.select', 'Select')}</option>
-                {departments.map(dept => (
-                  <option key={dept.value} value={dept.value}>{dept.label}</option>
-                ))}
-              </select>
-            </div>
+        <Field ind={ind} label={t('recruitment.location', 'Location')}>
+          <input
+            type="text" name="location" value={formData.location} onChange={handleChange}
+            placeholder={t('recruitment.enterLocation', 'Enter location')} style={fieldStyle(ind)}
+          />
+        </Field>
 
-            {/* Location */}
-            <div>
-              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>
-                {t('recruitment.location', 'Location')}
-              </label>
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
-                placeholder={t('recruitment.enterLocation', 'Enter location')}
-              />
-            </div>
+        <Field ind={ind} label={t('recruitment.employmentType', 'Employment type')}>
+          <select name="employment_type" value={formData.employment_type} onChange={handleChange} style={fieldStyle(ind)}>
+            {employmentTypes.map(type => (
+              <option key={type.value} value={type.value}>{type.label}</option>
+            ))}
+          </select>
+        </Field>
 
-            {/* Employment Type */}
-            <div>
-              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>
-                {t('recruitment.employmentType', 'Employment Type')}
-              </label>
-              <select
-                name="employment_type"
-                value={formData.employment_type}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
-              >
-                {employmentTypes.map(type => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
-                ))}
-              </select>
-            </div>
+        <Field ind={ind} label={t('recruitment.experienceLevel', 'Experience level')}>
+          <input
+            type="text" name="experience_level" value={formData.experience_level} onChange={handleChange}
+            placeholder={t('recruitment.enterExperience', 'e.g., 3-5 years')} style={fieldStyle(ind)}
+          />
+        </Field>
 
-            {/* Experience Level */}
-            <div>
-              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>
-                {t('recruitment.experienceLevel', 'Experience Level')}
-              </label>
-              <input
-                type="text"
-                name="experience_level"
-                value={formData.experience_level}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
-                placeholder={t('recruitment.enterExperience', 'e.g., 3-5 years')}
-              />
-            </div>
+        <Field ind={ind} label={t('recruitment.salaryMin', 'Minimum salary')}>
+          <NumberField ind={ind} name="salary_min" value={formData.salary_min} onChange={handleChange} />
+        </Field>
 
-            {/* Salary Range */}
-            <div>
-              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>
-                {t('recruitment.salaryMin', 'Minimum Salary')}
-              </label>
-              <input
-                type="number"
-                name="salary_min"
-                value={formData.salary_min}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
-                placeholder="0"
-              />
-            </div>
+        <Field ind={ind} label={t('recruitment.salaryMax', 'Maximum salary')}>
+          <NumberField ind={ind} name="salary_max" value={formData.salary_max} onChange={handleChange} />
+        </Field>
 
-            <div>
-              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>
-                {t('recruitment.salaryMax', 'Maximum Salary')}
-              </label>
-              <input
-                type="number"
-                name="salary_max"
-                value={formData.salary_max}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
-                placeholder="0"
-              />
-            </div>
+        <div className="md:col-span-2">
+          <Field ind={ind} label={t('recruitment.description', 'Job description')}>
+            <textarea
+              name="description" value={formData.description} onChange={handleChange} rows={4}
+              placeholder={t('recruitment.enterDescription', 'Enter job description')}
+              style={{ ...fieldStyle(ind), resize: 'vertical' }}
+            />
+          </Field>
+        </div>
 
-            {/* Description */}
-            <div className="md:col-span-2">
-              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>
-                {t('recruitment.description', 'Job Description')}
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={4}
-                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
-                placeholder={t('recruitment.enterDescription', 'Enter job description')}
-              />
-            </div>
-
-            {/* Requirements */}
-            <div className="md:col-span-2">
-              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>
-                {t('recruitment.requirements', 'Requirements')}
-              </label>
-              <textarea
-                name="requirements"
-                value={formData.requirements}
-                onChange={handleChange}
-                rows={4}
-                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
-                placeholder={t('recruitment.enterRequirements', 'Enter job requirements')}
-              />
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className={`flex justify-end space-x-3 mt-6 pt-4 border-t ${border.primary}`}>
-            <button
-              type="button"
-              onClick={onClose}
-              className={`px-4 py-2 ${isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'} rounded-lg cursor-pointer`}
-            >
-              {t('common.cancel', 'Cancel')}
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
-            >
-              {loading ? t('common.saving', 'Saving...') : t('recruitment.postJob', 'Post Job')}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="md:col-span-2">
+          <Field ind={ind} label={t('recruitment.requirements', 'Requirements')}>
+            <textarea
+              name="requirements" value={formData.requirements} onChange={handleChange} rows={4}
+              placeholder={t('recruitment.enterRequirements', 'Enter job requirements')}
+              style={{ ...fieldStyle(ind), resize: 'vertical' }}
+            />
+          </Field>
+        </div>
+      </form>
+    </ModalShell>
   );
 };
 
-// Application Detail Modal
-const ApplicationDetailModal = ({ application, onClose, onUpdate, onStatusUpdate, onScheduleInterview }) => {
-  const { bg, text, border, isDarkMode } = useTheme();
-  const { t } = useLanguage();
+/* ------------------------------------------------------------------ *
+ * Application detail
+ * ------------------------------------------------------------------ */
+
+const STATUS_OPTIONS = [
+  ['under review', 'recruitment.underReview', 'Under Review'],
+  ['shortlisted', 'recruitment.shortListed', 'Shortlisted'],
+  ['interview scheduled', 'recruitment.interviews', 'Interview Scheduled'],
+  ['offer extended', 'recruitment.offerExtended', 'Offer Extended'],
+  ['hired', 'recruitment.hired', 'Hired'],
+  ['rejected', 'recruitment.rejected', 'Rejected'],
+];
+
+const ApplicationDetailModal = ({ ind, application, focus, onClose, onUpdate, onStatusUpdate, onScheduleInterview }) => {
+  const { t, currentLanguage } = useLanguage();
   const { handleSessionAuthError } = useSessionGuard();
 
   const [rating, setRating] = useState(application.rating || 0);
   const [notes, setNotes] = useState(application.notes || '');
   const [status, setStatus] = useState(application.status || 'under review');
   const [saving, setSaving] = useState(false);
-
-  const statusOptions = [
-    { value: 'under review', label: t('recruitment.underReview', 'Under Review') },
-    { value: 'shortlisted', label: t('recruitment.shortListed', 'Shortlisted') },
-    { value: 'interview scheduled', label: t('recruitment.interviews', 'Interview Scheduled') },
-    { value: 'offer extended', label: t('recruitment.offers', 'Offer Extended') },
-    { value: 'hired', label: t('recruitment.hired', 'Hired') },
-    { value: 'rejected', label: t('recruitment.rejected', 'Rejected') }
-  ];
+  const [error, setError] = useState(null);
 
   const handleSave = async () => {
     setSaving(true);
+    setError(null);
     try {
       await updateApplicationRating(application.id, rating, notes);
       if (status !== application.status && onStatusUpdate) {
@@ -1254,223 +1387,203 @@ const ApplicationDetailModal = ({ application, onClose, onUpdate, onStatusUpdate
       }
       if (onUpdate) await onUpdate();
       onClose();
-    } catch (error) {
-      console.error('Error saving application:', error);
-      if (handleSessionAuthError(error)) return;
-      alert(t('errors.saveFailed', 'Failed to save changes'));
+    } catch (err) {
+      console.error('Error saving application:', err);
+      if (handleSessionAuthError(err)) return;
+      setError(err.message || t('errors.saveFailed', 'Failed to save changes'));
     } finally {
       setSaving(false);
     }
   };
 
+  const rows = [
+    [t('recruitment.position', 'Position'), isDemoMode()
+      ? getDemoJobTitle(application.job_posting, t)
+      : (application.job_posting?.title ? <TranslatedText text={application.job_posting.title} /> : null)],
+    [t('recruitment.department', 'Department'), application.job_posting?.department
+      ? t(`employeeDepartment.${application.job_posting.department}`, application.job_posting.department) : null],
+    [t('recruitment.appliedDate', 'Applied date'), application.application_date
+      ? formatLocaleDate(application.application_date, currentLanguage) : null],
+    [t('recruitment.statusLabel', 'Status'), application.status
+      ? (isDemoMode()
+        ? getDemoApplicationStatus(application, t)
+        : t(`recruitment.status.${String(application.status).toLowerCase().replace(/\s+/g, '')}`, application.status))
+      : null],
+    [t('common.email', 'Email'), application.applicant?.email],
+    [t('common.phone', 'Phone'), application.applicant?.phone],
+    [t('recruitment.experience', 'Experience'),
+      `${application.applicant?.years_of_experience || application.applicant?.years_experience || 0} ${t('recruitment.years', 'years')}`],
+    [t('recruitment.currentCompany', 'Current company'), application.applicant?.current_company],
+    [t('recruitment.currentPosition', 'Current position'), isDemoMode()
+      ? t(application.applicant?.currentPositionKey, application.applicant?.current_position)
+      : application.applicant?.current_position],
+    [t('recruitment.education', 'Education'), isDemoMode()
+      ? t(application.applicant?.educationLevelKey, application.applicant?.education_level)
+      : application.applicant?.education_level],
+  ];
+
+  const jobDescription = application.job_posting?.description
+    ? (isDemoMode() ? getDemoJobDescription(application.job_posting, t) : <TranslatedText text={application.job_posting.description} />)
+    : null;
+  const existingNotes = application.notes
+    ? (isDemoMode() ? getDemoApplicationNotes(application, t) : <TranslatedText text={application.notes} />)
+    : null;
+
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
+    <ModalShell
+      ind={ind}
+      title={candidateName(application) || t('common.notAvailable', 'N/A')}
+      subtitle={[
+        application.job_posting?.title,
+        application.job_posting?.department
+          ? t(`employeeDepartment.${application.job_posting.department}`, application.job_posting.department)
+          : null,
+      ].filter(Boolean).join(' · ')}
+      onClose={onClose}
+      maxWidth={680}
+      footer={(
+        <>
+          <Btn ind={ind} onClick={() => onScheduleInterview && onScheduleInterview(application)} style={{ marginRight: 'auto' }}>
+            <Calendar size={13} strokeWidth={1.5} style={{ display: 'inline', marginRight: 5, verticalAlign: '-2px' }} />
+            {t('recruitment.scheduleInterview', 'Schedule interview')}
+          </Btn>
+          <Btn ind={ind} onClick={onClose}>{t('common.close', 'Close')}</Btn>
+          <Btn ind={ind} variant="primary" disabled={saving} onClick={handleSave}>
+            <Save size={13} strokeWidth={1.5} style={{ display: 'inline', marginRight: 5, verticalAlign: '-2px' }} />
+            {saving ? t('common.saving', 'Saving...') : t('common.save', 'Save')}
+          </Btn>
+        </>
+      )}
     >
-      <div 
-        className={`${bg.secondary} rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className={`flex justify-between items-center p-6 border-b ${border.primary} sticky top-0 ${bg.secondary} z-10`}>
-          <h2 className={`text-2xl font-bold ${text.primary}`}>
-            {application.applicant?.full_name
-              || `${application.applicant?.first_name || ''} ${application.applicant?.last_name || ''}`.trim()
-              || application.candidateName}
-          </h2>
-          <button
-            onClick={onClose}
-            className={`p-2 rounded-lg ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} transition-colors`}
-          >
-            <X className="w-5 h-5" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
-          </button>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        {error && (
+          <p style={{ fontFamily: BODY, fontSize: 12.5, border: `1px solid ${ind.ink}`, padding: '8px 10px' }}>{error}</p>
+        )}
+
+        <div>
+          {rows.map(([label, value]) => (
+            <div
+              key={label}
+              style={{ display: 'flex', gap: 12, padding: '6px 0', borderBottom: `1px solid ${ind.rule}` }}
+            >
+              <div style={{ width: 168, flex: 'none' }}>
+                <Kicker ind={ind} color={ind.inkMuted}>{label}</Kicker>
+              </div>
+              <div style={{ flex: 1, minWidth: 0, fontFamily: BODY, fontSize: 13 }}>
+                {value || t('common.notAvailable', 'N/A')}
+              </div>
+            </div>
+          ))}
         </div>
 
-        <div className="p-6 space-y-6">
-          {/* Job Details */}
+        {jobDescription && (
           <div>
-            <h3 className={`text-lg font-semibold ${text.primary} mb-3`}>{t('recruitment.jobDetails', 'Job Details')}</h3>
-            <div className="space-y-2">
-              <DetailRow
-                label={t('recruitment.position', 'Position')}
-                value={isDemoMode()
-                  ? getDemoJobTitle(application.job_posting, t)
-                  : (application.job_posting?.title
-                    ? <TranslatedText text={application.job_posting.title} />
-                    : null)}
-              />
-              {application.job_posting?.description ? (
-                <DetailRow
-                  label={t('recruitment.description', 'Job Description')}
-                  value={isDemoMode()
-                    ? getDemoJobDescription(application.job_posting, t)
-                    : <TranslatedText text={application.job_posting.description} />}
-                />
-              ) : null}
-              <DetailRow label={t('recruitment.department', 'Department')} value={application.job_posting?.department ? t(`employeeDepartment.${application.job_posting.department}`, application.job_posting.department) : null} />
-              <DetailRow label={t('recruitment.appliedDate', 'Applied Date')} value={application.application_date ? new Date(application.application_date).toLocaleDateString() : null} />
-              <DetailRow
-                label={t('recruitment.statusLabel', 'Status')}
-                value={application.status ? (isDemoMode() ? getDemoApplicationStatus(application, t) : t(`recruitment.status.${application.status?.toLowerCase().replace(/\\s+/g, '')}`, application.status)) : null}
-              />
-              {application.notes ? (
-                <DetailRow
-                  label={t('recruitment.notes', 'Notes')}
-                  value={isDemoMode()
-                    ? getDemoApplicationNotes(application, t)
-                    : <TranslatedText text={application.notes} />}
-                />
-              ) : null}
-            </div>
+            <Kicker ind={ind} color={ind.inkMuted}>{t('recruitment.description', 'Job description')}</Kicker>
+            <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkGhost, marginTop: 6 }}>{jobDescription}</p>
           </div>
+        )}
 
-          {/* Applicant Details */}
+        {existingNotes && (
           <div>
-            <h3 className={`text-lg font-semibold ${text.primary} mb-3`}>{t('recruitment.applicantInfo', 'Applicant Information')}</h3>
-            <div className="space-y-2">
-              <DetailRow label={t('common.email', 'Email')} value={application.applicant?.email} />
-              <DetailRow label={t('common.phone', 'Phone')} value={application.applicant?.phone} />
-              <DetailRow label={t('recruitment.experience', 'Experience')} value={`${application.applicant?.years_of_experience || 0} ${t('recruitment.years', 'years')}`} />
-              <DetailRow label={t('recruitment.currentCompany', 'Current Company')} value={application.applicant?.current_company} />
-              <DetailRow label={t('recruitment.currentPosition', 'Current Position')} value={isDemoMode() ? t(application.applicant?.currentPositionKey, application.applicant?.current_position) : application.applicant?.current_position} />
-              <DetailRow label={t('recruitment.education', 'Education')} value={isDemoMode() ? t(application.applicant?.educationLevelKey, application.applicant?.education_level) : application.applicant?.education_level} />
-            </div>
+            <Kicker ind={ind} color={ind.inkMuted}>{t('recruitment.notes', 'Notes on file')}</Kicker>
+            <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkGhost, marginTop: 6 }}>{existingNotes}</p>
           </div>
+        )}
 
-          {/* Links */}
-          {(application.applicant?.resume_url || application.applicant?.linkedin_profile) && (
-            <div>
-              <h3 className={`text-lg font-semibold ${text.primary} mb-3`}>{t('recruitment.links', 'Links')}</h3>
-              <div className="space-y-2">
-                {application.applicant?.resume_url && (
-                  <a 
-                    href={application.applicant.resume_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className={`${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'} flex items-center space-x-2`}
-                  >
-                    <span>{t('recruitment.viewResume', 'View Resume')}</span>
-                  </a>
-                )}
-                {application.applicant?.linkedin_profile && (
-                  <a 
-                    href={application.applicant.linkedin_profile} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className={`${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'} flex items-center space-x-2`}
-                  >
-                    <span>{t('recruitment.linkedinProfile', 'LinkedIn Profile')}</span>
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Evaluation (editable) */}
-          <div className={`p-4 rounded-lg border ${border.primary} ${isDarkMode ? 'bg-gray-700/40' : 'bg-gray-50'} space-y-4`}>
-            <h3 className={`text-lg font-semibold ${text.primary} flex items-center space-x-2`}>
-              <ClipboardCheck className="w-5 h-5" />
-              <span>{t('recruitment.evaluation', 'Evaluation')}</span>
-            </h3>
-
-            {/* Rating */}
-            <div>
-              <label className={`block text-sm font-medium ${text.secondary} mb-2`}>{t('recruitment.rating', 'Rating')}</label>
-              <div className="flex items-center space-x-1">
-                {[1, 2, 3, 4, 5].map(value => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setRating(value === rating ? 0 : value)}
-                    className="cursor-pointer transition-transform hover:scale-110"
-                    title={`${value}/5`}
-                  >
-                    <Star className={`w-6 h-6 ${value <= rating ? 'text-yellow-400 fill-yellow-400' : text.secondary}`} />
-                  </button>
-                ))}
-                <span className={`ml-2 text-sm ${text.secondary}`}>{rating > 0 ? `${rating}/5` : t('recruitment.notRated', 'Not rated')}</span>
-              </div>
-            </div>
-
-            {/* Status */}
-            <div>
-              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('recruitment.statusLabel', 'Status')}</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+        {(application.applicant?.resume_url || application.applicant?.linkedin_profile) && (
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            {application.applicant?.resume_url && (
+              <a
+                href={application.applicant.resume_url} target="_blank" rel="noopener noreferrer"
+                style={{
+                  fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5, letterSpacing: '.08em',
+                  textTransform: 'uppercase', color: ind.accentDeep, textDecoration: 'underline',
+                }}
               >
-                {statusOptions.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
+                {t('recruitment.viewResume', 'View resume')} →
+              </a>
+            )}
+            {application.applicant?.linkedin_profile && (
+              <a
+                href={application.applicant.linkedin_profile} target="_blank" rel="noopener noreferrer"
+                style={{
+                  fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5, letterSpacing: '.08em',
+                  textTransform: 'uppercase', color: ind.accentDeep, textDecoration: 'underline',
+                }}
+              >
+                {t('recruitment.linkedinProfile', 'LinkedIn profile')} →
+              </a>
+            )}
+          </div>
+        )}
 
-            {/* Notes */}
-            <div>
-              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('recruitment.notes', 'Notes')}</label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-                placeholder={t('recruitment.notesPlaceholder', 'Add interview notes or feedback...')}
-                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary} resize-none`}
-              />
+        {/* Evaluation */}
+        <div style={{ border: `1px solid ${ind.hairline}`, padding: 14, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <Kicker ind={ind} color={ind.ink}>{t('recruitment.evaluation', 'Evaluation')}</Kicker>
+
+          <div>
+            <Kicker ind={ind} color={ind.inkMuted} style={{ marginBottom: 6 }}>{t('recruitment.rating', 'Rating')}</Kicker>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              {[1, 2, 3, 4, 5].map(value => (
+                <button
+                  key={value}
+                  type="button"
+                  autoFocus={focus === 'rating' && value === 1}
+                  onClick={() => setRating(value === rating ? 0 : value)}
+                  title={`${value}/5`}
+                  style={{ background: 'none', border: 'none', padding: 2, cursor: 'pointer', lineHeight: 0 }}
+                >
+                  <Star
+                    size={18}
+                    strokeWidth={1.5}
+                    style={{ color: value <= rating ? ind.accent : ind.inkFaint }}
+                    fill={value <= rating ? ind.accent : 'none'}
+                  />
+                </button>
+              ))}
+              <span style={{ marginLeft: 8, fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted }}>
+                {rating > 0 ? `${rating}/5` : t('recruitment.notRated', 'Not rated')}
+              </span>
             </div>
           </div>
-        </div>
 
-        {/* Footer */}
-        <div className={`flex flex-col sm:flex-row justify-between gap-3 p-6 border-t ${border.primary}`}>
-          <button
-            onClick={() => onScheduleInterview && onScheduleInterview(application)}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer flex items-center justify-center space-x-2"
-          >
-            <Calendar className="w-4 h-4" />
-            <span>{t('recruitment.scheduleInterview', 'Schedule Interview')}</span>
-          </button>
-          <div className="flex space-x-3 justify-end">
-            <button
-              onClick={onClose}
-              className={`px-4 py-2 ${isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'} rounded-lg cursor-pointer`}
-            >
-              {t('common.close', 'Close')}
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 cursor-pointer flex items-center space-x-2"
-            >
-              <Save className="w-4 h-4" />
-              <span>{saving ? t('common.saving', 'Saving...') : t('common.save', 'Save')}</span>
-            </button>
-          </div>
+          <Field ind={ind} label={t('recruitment.statusLabel', 'Status')}>
+            <select value={status} onChange={(e) => setStatus(e.target.value)} style={fieldStyle(ind)}>
+              {STATUS_OPTIONS.map(([value, key, fallback]) => (
+                <option key={value} value={value}>{t(key, fallback)}</option>
+              ))}
+            </select>
+          </Field>
+
+          <Field ind={ind} label={t('recruitment.notes', 'Notes')}>
+            <textarea
+              value={notes}
+              autoFocus={focus === 'notes'}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              placeholder={t('recruitment.notesPlaceholder', 'Add interview notes or feedback...')}
+              style={{ ...fieldStyle(ind), resize: 'vertical' }}
+            />
+          </Field>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 };
 
-// Interview Schedule Modal
-const InterviewScheduleModal = ({ application, onClose, onSuccess }) => {
-  const { bg, text, border, isDarkMode } = useTheme();
+/* ------------------------------------------------------------------ *
+ * Interview scheduling
+ * ------------------------------------------------------------------ */
+
+const InterviewScheduleModal = ({ ind, application, onClose, onSuccess }) => {
   const { t } = useLanguage();
   const { handleSessionAuthError } = useSessionGuard();
   const [loading, setLoading] = useState(false);
-
-  const candidateName = application.applicant?.full_name
-    || `${application.applicant?.first_name || ''} ${application.applicant?.last_name || ''}`.trim()
-    || application.candidateName
-    || t('common.notAvailable', 'N/A');
+  const [error, setError] = useState(null);
 
   const [form, setForm] = useState({
-    date: '',
-    time: '10:00',
-    interview_type: 'video',
-    duration_minutes: 60,
-    location: '',
-    notes: ''
+    date: '', time: '10:00', interview_type: 'video',
+    duration_minutes: 60, location: '', notes: '',
   });
 
   const interviewTypes = [
@@ -1478,22 +1591,25 @@ const InterviewScheduleModal = ({ application, onClose, onSuccess }) => {
     { value: 'video', label: t('recruitment.interviewType.video', 'Video') },
     { value: 'in-person', label: t('recruitment.interviewType.inPerson', 'In Person') },
     { value: 'technical', label: t('recruitment.interviewType.technical', 'Technical') },
-    { value: 'hr', label: t('recruitment.interviewType.hr', 'HR') }
+    { value: 'hr', label: t('recruitment.interviewType.hr', 'HR') },
   ];
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.date) {
-      alert(t('recruitment.selectDate', 'Please select an interview date'));
+      setError(t('recruitment.selectDate', 'Please select an interview date'));
       return;
     }
     setLoading(true);
+    setError(null);
     try {
-      const scheduledDate = new Date(`${form.date}T${form.time || '00:00'}`).toISOString();
-
       if (isDemoMode()) {
         // Persisting interviews is not available in demo mode — simulate success.
-        alert(t('recruitment.interviewScheduled', 'Interview scheduled successfully!'));
         onSuccess();
         return;
       }
@@ -1501,159 +1617,94 @@ const InterviewScheduleModal = ({ application, onClose, onSuccess }) => {
       const result = await createInterviewSchedule({
         application_id: application.id,
         interview_type: form.interview_type,
-        scheduled_date: scheduledDate,
-        duration_minutes: parseInt(form.duration_minutes) || 60,
+        scheduled_date: new Date(`${form.date}T${form.time || '00:00'}`).toISOString(),
+        duration_minutes: parseInt(form.duration_minutes, 10) || 60,
         location: form.location || null,
         feedback: form.notes || null,
-        status: 'scheduled'
+        status: 'scheduled',
       });
 
-      if (result.success) {
-        alert(t('recruitment.interviewScheduled', 'Interview scheduled successfully!'));
-        onSuccess();
-      } else {
-        alert(result.error || t('errors.saveFailed', 'Failed to schedule interview'));
-      }
-    } catch (error) {
-      console.error('Error scheduling interview:', error);
-      if (handleSessionAuthError(error)) return;
-      alert(t('errors.saveFailed', 'Failed to schedule interview'));
+      if (result.success) onSuccess();
+      else setError(result.error || t('errors.saveFailed', 'Failed to schedule interview'));
+    } catch (err) {
+      console.error('Error scheduling interview:', err);
+      if (handleSessionAuthError(err)) return;
+      setError(err.message || t('errors.saveFailed', 'Failed to schedule interview'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-  };
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className={`${bg.secondary} rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto`} onClick={(e) => e.stopPropagation()}>
-        <div className={`flex justify-between items-center p-6 border-b ${border.primary}`}>
-          <div>
-            <h2 className={`text-xl font-semibold ${text.primary} flex items-center space-x-2`}>
-              <Calendar className="w-5 h-5" />
-              <span>{t('recruitment.scheduleInterview', 'Schedule Interview')}</span>
-            </h2>
-            <p className={`text-sm ${text.secondary} mt-1`}>{candidateName}</p>
-          </div>
-          <button onClick={onClose} className={`${text.secondary} hover:${text.primary} cursor-pointer`}>
-            <X className="w-5 h-5" />
-          </button>
+    <ModalShell
+      ind={ind}
+      title={t('recruitment.scheduleInterview', 'Schedule interview')}
+      subtitle={candidateName(application) || t('common.notAvailable', 'N/A')}
+      onClose={onClose}
+      maxWidth={560}
+      footer={(
+        <>
+          <Btn ind={ind} onClick={onClose}>{t('common.cancel', 'Cancel')}</Btn>
+          <Btn ind={ind} variant="primary" disabled={loading} onClick={handleSubmit}>
+            {loading ? t('common.saving', 'Saving...') : t('recruitment.confirmSchedule', 'Confirm schedule')}
+          </Btn>
+        </>
+      )}
+    >
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {error && (
+          <p style={{ fontFamily: BODY, fontSize: 12.5, border: `1px solid ${ind.ink}`, padding: '8px 10px' }}>{error}</p>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 14 }}>
+          <Field ind={ind} label={`${t('recruitment.interviewDate', 'Date')} *`}>
+            <DatePicker flat name="date" value={form.date} onChange={handleChange} required />
+          </Field>
+          <Field ind={ind} label={t('recruitment.interviewTime', 'Time')}>
+            <TimePicker flat name="time" value={form.time} onChange={handleChange} />
+          </Field>
+          <Field ind={ind} label={t('recruitment.interviewTypeLabel', 'Interview type')}>
+            <select name="interview_type" value={form.interview_type} onChange={handleChange} style={fieldStyle(ind)}>
+              {interviewTypes.map(type => (
+                <option key={type.value} value={type.value}>{type.label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field ind={ind} label={t('recruitment.duration', 'Duration (min)')}>
+            <input type="number" name="duration_minutes" min="15" step="15" value={form.duration_minutes} onChange={handleChange} style={fieldStyle(ind)} />
+          </Field>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('recruitment.interviewDate', 'Date')} *</label>
-              <DatePicker
-                name="date"
-                value={form.date}
-                onChange={handleChange}
-                inputClassName={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
-                required
-              />
-            </div>
-            <div>
-              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('recruitment.interviewTime', 'Time')}</label>
-              <TimePicker
-                name="time"
-                value={form.time}
-                onChange={handleChange}
-                inputClassName={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
-              />
-            </div>
-            <div>
-              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('recruitment.interviewTypeLabel', 'Interview Type')}</label>
-              <select
-                name="interview_type"
-                value={form.interview_type}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
-              >
-                {interviewTypes.map(type => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('recruitment.duration', 'Duration (min)')}</label>
-              <input
-                type="number"
-                name="duration_minutes"
-                min="15"
-                step="15"
-                value={form.duration_minutes}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className={`block text-sm font-medium ${text.secondary} mb-1 flex items-center space-x-1`}>
-              {form.interview_type === 'video' ? <Video className="w-4 h-4" /> : <MapPin className="w-4 h-4" />}
-              <span>{form.interview_type === 'video' ? t('recruitment.meetingLink', 'Meeting Link') : t('recruitment.location', 'Location')}</span>
-            </label>
+        <Field
+          ind={ind}
+          label={form.interview_type === 'video'
+            ? t('recruitment.meetingLink', 'Meeting link')
+            : t('recruitment.location', 'Location')}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {form.interview_type === 'video'
+              ? <Video size={14} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted }} />
+              : <MapPin size={14} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted }} />}
             <input
-              type="text"
-              name="location"
-              value={form.location}
-              onChange={handleChange}
+              type="text" name="location" value={form.location} onChange={handleChange}
               placeholder={form.interview_type === 'video' ? 'https://...' : t('recruitment.enterLocation', 'Enter location')}
-              className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary}`}
+              style={fieldStyle(ind)}
             />
           </div>
+        </Field>
 
-          <div>
-            <label className={`block text-sm font-medium ${text.secondary} mb-1 flex items-center space-x-1`}>
-              <MessageSquare className="w-4 h-4" />
-              <span>{t('recruitment.notes', 'Notes')}</span>
-            </label>
+        <Field ind={ind} label={t('recruitment.notes', 'Notes')}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <MessageSquare size={14} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted, marginTop: 7 }} />
             <textarea
-              name="notes"
-              value={form.notes}
-              onChange={handleChange}
-              rows={3}
+              name="notes" value={form.notes} onChange={handleChange} rows={3}
               placeholder={t('recruitment.interviewNotesPlaceholder', 'Agenda, interviewers, things to prepare...')}
-              className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.secondary} ${text.primary} resize-none`}
+              style={{ ...fieldStyle(ind), resize: 'vertical' }}
             />
           </div>
-
-          <div className={`flex justify-end space-x-3 pt-2 border-t ${border.primary}`}>
-            <button
-              type="button"
-              onClick={onClose}
-              className={`px-4 py-2 ${isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'} rounded-lg cursor-pointer`}
-            >
-              {t('common.cancel', 'Cancel')}
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
-            >
-              {loading ? t('common.saving', 'Saving...') : t('recruitment.confirmSchedule', 'Confirm Schedule')}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// Detail Row Component
-const DetailRow = ({ label, value }) => {
-  const { text } = useTheme();
-  const { t } = useLanguage();
-  
-  return (
-    <div className="flex">
-      <span className={`w-40 font-medium ${text.secondary}`}>{label}:</span>
-      <span className={`flex-1 ${text.primary}`}>{value || t('common.notAvailable', 'N/A')}</span>
-    </div>
+        </Field>
+      </form>
+    </ModalShell>
   );
 };
 

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Clock } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext.jsx';
 import { useTheme } from '../../contexts/ThemeContext.jsx';
+import { getIndustry, DISPLAY, BODY } from '../../theme/industry.js';
 import { cn } from '@/lib/utils';
 import { DATE_LOCALES } from './date-picker.jsx';
 
@@ -159,9 +160,12 @@ export function TimePicker({
   icon: Icon = Clock,
   allowClear = true,
   defaultOpenTime = '09:00',
+  flat = false,
 }) {
   const { currentLanguage, t } = useLanguage();
   const { isDarkMode, bg, text, border } = useTheme();
+  // See DatePicker: `flat` renders the control in the "Industry" grammar.
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
   const autoId = useId();
   const inputId = id || autoId;
   const rootRef = useRef(null);
@@ -303,25 +307,42 @@ export function TimePicker({
           if (disabled) return;
           setOpen((v) => !v);
         }}
-        className={cn(
-          'w-full px-3 py-2 pr-10 rounded-lg border text-left focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none appearance-none cursor-pointer',
-          bg?.primary || (isDarkMode ? 'bg-gray-800' : 'bg-white'),
-          text?.primary || (isDarkMode ? 'text-white' : 'text-gray-900'),
-          border?.primary || (isDarkMode ? 'border-gray-600' : 'border-gray-300'),
-          disabled && 'opacity-50 cursor-not-allowed',
-          inputClassName
-        )}
+        className={flat
+          ? cn('w-full text-left appearance-none cursor-pointer focus:outline-none', disabled && 'cursor-not-allowed', inputClassName)
+          : cn(
+            'w-full px-3 py-2 pr-10 rounded-lg border text-left focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none appearance-none cursor-pointer',
+            bg?.primary || (isDarkMode ? 'bg-gray-800' : 'bg-white'),
+            text?.primary || (isDarkMode ? 'text-white' : 'text-gray-900'),
+            border?.primary || (isDarkMode ? 'border-gray-600' : 'border-gray-300'),
+            disabled && 'opacity-50 cursor-not-allowed',
+            inputClassName
+          )}
+        style={flat ? {
+          fontFamily: BODY,
+          fontSize: 13,
+          color: displayValue ? ind.ink : ind.inkFaint,
+          background: 'transparent',
+          border: `1px solid ${ind.hairline}`,
+          borderRadius: 0,
+          padding: '6px 26px 6px 8px',
+          opacity: disabled ? 0.5 : 1,
+        } : undefined}
       >
-        <span className={cn(!displayValue && (isDarkMode ? 'text-gray-400' : 'text-gray-500'))}>
+        <span className={flat ? undefined : cn(!displayValue && (isDarkMode ? 'text-gray-400' : 'text-gray-500'))}>
           {displayValue || resolvedPlaceholder}
         </span>
       </button>
       {showIcon && (
         <Icon
-          className={cn(
-            'absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 pointer-events-none',
-            text?.secondary || (isDarkMode ? 'text-gray-400' : 'text-gray-500')
-          )}
+          size={flat ? 14 : undefined}
+          strokeWidth={flat ? 1.5 : undefined}
+          className={flat
+            ? 'absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none'
+            : cn(
+              'absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 pointer-events-none',
+              text?.secondary || (isDarkMode ? 'text-gray-400' : 'text-gray-500')
+            )}
+          style={flat ? { color: ind.inkMuted } : undefined}
           isDarkMode={isDarkMode}
           aria-hidden="true"
         />
@@ -333,11 +354,13 @@ export function TimePicker({
         createPortal(
           <div
             ref={panelRef}
-            style={panelStyle}
+            style={flat
+              ? { ...panelStyle, background: ind.ground, border: `1px solid ${ind.ink}`, borderRadius: 0, padding: 12, color: ind.ink, fontFamily: BODY }
+              : panelStyle}
             role="dialog"
             aria-modal="false"
             aria-label={t('timePicker.picker', 'Time picker')}
-            className={cn(
+            className={flat ? undefined : cn(
               'rounded-xl border shadow-xl p-3',
               isDarkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'
             )}
@@ -395,16 +418,21 @@ export function TimePicker({
             <div
               className={cn(
                 'flex items-center justify-between mt-3 pt-2 border-t',
-                isDarkMode ? 'border-gray-700' : 'border-gray-200'
+                !flat && (isDarkMode ? 'border-gray-700' : 'border-gray-200')
               )}
+              style={flat ? { borderTopColor: ind.hairline } : undefined}
             >
               {allowClear ? (
                 <button
                   type="button"
                   className={cn(
-                    'text-xs px-2 py-1 rounded-md',
+                    'text-xs px-2 py-1',
+                    flat ? 'rounded-none' : 'rounded-md',
                     isDarkMode ? 'hover:bg-gray-800 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
                   )}
+                  style={flat
+                    ? { fontFamily: DISPLAY, fontWeight: 600, fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: ind.accentDeep }
+                    : undefined}
                   onClick={() => {
                     emitChange('');
                     setOpen(false);
@@ -417,7 +445,12 @@ export function TimePicker({
               )}
               <button
                 type="button"
-                className="text-xs px-3 py-1.5 rounded-md font-medium bg-blue-600 hover:bg-blue-700 text-white"
+                className={flat
+                  ? 'text-xs px-3 py-1.5'
+                  : 'text-xs px-3 py-1.5 rounded-md font-medium bg-blue-600 hover:bg-blue-700 text-white'}
+                style={flat
+                  ? { fontFamily: DISPLAY, fontWeight: 600, fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', background: ind.accent, color: ind.accentInk, borderRadius: 0 }
+                  : undefined}
                 onClick={commitDraft}
               >
                 {t('timePicker.done', 'Done')}
