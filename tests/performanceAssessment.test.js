@@ -5,7 +5,7 @@ import {
   mergeReviewRatingsIntoSkills
 } from '../src/utils/performanceAssessment.js';
 
-test('period review ratings override all-time skill ratings, including zero', () => {
+test('self ratings are kept, and the period review only fills skills never self-rated', () => {
   const skills = [
     { id: 1, skill_name: 'Technical Skills', rating: 5 },
     { id: 2, skill_name: 'Communication', rating: 4 }
@@ -20,9 +20,25 @@ test('period review ratings override all-time skill ratings, including zero', ()
 
   const merged = mergeReviewRatingsIntoSkills(skills, review, 'employee-1');
 
-  assert.deepEqual(merged.map(skill => skill.rating), [3.5, 0, 4, 4.5, 3]);
+  // Technical/Communication keep the self-rating; the three unrated skills fall
+  // back to the reviewer's number rather than showing as zero.
+  assert.deepEqual(merged.map(skill => skill.rating), [5, 4, 4, 4.5, 3]);
+  // The reviewer's number stays addressable on every skill, including where it
+  // lost to a self-rating and where the reviewer entered a literal 0.
+  assert.deepEqual(merged.map(skill => skill.managerRating), [3.5, 0, 4, 4.5, 3]);
   assert.equal(merged[0].id, 1);
   assert.equal(merged[2].employee_id, 'employee-1');
+});
+
+test('managerRating is null, not zero, when the period has no review row', () => {
+  const merged = mergeReviewRatingsIntoSkills(
+    [{ skill_name: 'Teamwork', rating: 4 }],
+    null,
+    'employee-3'
+  );
+
+  assert.deepEqual(merged.map(skill => skill.managerRating), [null, null, null, null, null]);
+  assert.deepEqual(merged.map(skill => skill.rating), [0, 0, 0, 4, 0]);
 });
 
 test('a new period falls back to existing assessments and fills missing skills', () => {
