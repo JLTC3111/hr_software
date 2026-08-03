@@ -16,6 +16,7 @@ import { useSearchParams } from 'react-router-dom';
 import { ShinyButton } from './ui/shiny-button';
 import { SpecularButton } from './ui/specular-button';
 import { PageLiveClock } from './ui/page-live-clock';
+import { PunchClock } from './ui/punch-clock.jsx';
 import { DatePicker } from './ui/date-picker.jsx';
 import { TimePicker } from './ui/time-picker.jsx';
 import { COL } from '../utils/tableColumns.js';
@@ -1565,23 +1566,29 @@ const TimeClockEntry = ({ currentLanguage }) => {
       )}
       
       {/* Header */}
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <h1 className={`text-3xl font-bold ${text.primary}`}>
-            {t('timeClock.title')}
-          </h1>
-          <PageLiveClock
-            textClassName={text.primary}
-            separatorClassName={text.secondary}
-            showSeparator={false}
-            loading={loading}
-            isDarkMode={isDarkMode}
-            fetchLabel={t('common.fetching', 'Fetching')}
-          />
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-2 min-w-0">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <h1 className={`text-3xl font-bold ${text.primary}`}>
+              {t('timeClock.title')}
+            </h1>
+            <PageLiveClock
+              textClassName={text.primary}
+              separatorClassName={text.secondary}
+              showSeparator={false}
+              loading={loading}
+              isDarkMode={isDarkMode}
+              fetchLabel={t('common.fetching', 'Fetching')}
+            />
+          </div>
+          <p className={`${text.secondary}`}>
+            {t('timeClock.subtitle')}
+          </p>
         </div>
-        <p className={`${text.secondary}`}>
-          {t('timeClock.subtitle')}
-        </p>
+        <PunchClock
+          className="hidden sm:block shrink-0 w-[128px] h-[164px] -my-3"
+          isDarkMode={isDarkMode}
+        />
       </div>
 
       {/* Admin Time Entry Section (Only for admin/manager roles) */}

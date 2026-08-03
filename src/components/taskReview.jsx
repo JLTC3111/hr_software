@@ -1,1359 +1,1439 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Calendar, 
-  GraduationCap, 
-  Pickaxe,
-  Award, 
-  Star, 
-  ListCheck,
-  MailCheck,
-  School,
-  CheckCircle, 
-  Clock, 
-  CalendarCheck2,
-  ListTodo,
-  AlertCircle,
-  BarChart3,
-  Users,
-  User,
-  List,
-  Medal,
-  Filter,
-  ChevronDown,
-  ChevronUp,
-  Loader,
-  UserCheck,
-  CircleCheck,
-  ShieldCheck,
-  Hourglass,
-  Edit2,
-  MessageSquare,
-  CircleQuestionMark,
-  X,
-  Goal,
-  Building,
-  Mails,
-  CircleCheckBig,
-  CheckCheck,
-  CloudCheck,
-  MonitorCheck,
-  PersonStanding,
-  Speech,
-  Save,
-  Ellipsis,
-  BellElectric,
-  Trophy,
-  BadgeCheck,
-  Eye,
-  CalendarOff,
-  BellMinus,
-  TimerOff,
-  CalendarX,
-} from 'lucide-react';
+/**
+ * Performance Reviews — one question, answered three ways: is this review cycle
+ * going to land, and is the result trustworthy?
+ *
+ *   stage plate   — where the cycle is. Four stages, absolute counts, and a
+ *                   projected close date, so "77%" is never the whole answer.
+ *   histogram     — what the org average is actually made of. An average of 4.4
+ *                   says nothing until you can see the shape underneath it.
+ *   dept chart    — every team against the org line, so calibration starts from
+ *                   evidence rather than from whoever argues hardest.
+ *   right column  — the only place with buttons: the sign-offs this manager
+ *                   personally owes, and the manager reviews that are late.
+ *
+ * No element repeats a number another element already carries, except the org
+ * average, which appears in the ticker, in the histogram caption and as the
+ * vertical rule on every department bar. It is the screen's anchor value.
+ *
+ * Where the numbers come from — everything is derived, nothing is stored twice:
+ *   in scope        active employees, narrowed by the segment control
+ *   self-assessment a skills assessment logged inside the cycle quarter, an
+ *                   employee comment on the review, or a self-logged review row
+ *   manager review  a review row with an overall rating that is not self-logged
+ *   calibration     that review submitted (status submitted/approved/acknowledged)
+ *   signed off      status approved or acknowledged
+ *   overdue         no manager review filed and its deadline already passed
+ *
+ * A viewer without canViewReports is scoped to their own record, so the same
+ * layout degrades to a one-person cycle rather than leaking the org's scores.
+ *
+ * Design system: "Industry" (src/theme/industry.js). Radius is 0 everywhere,
+ * cards are outlines with four registration corners, status reads through
+ * weight and rule rather than colour.
+ */
+import _React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { ArrowRight, AlertCircle, X } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
-import * as workloadService from '../services/workloadService.js';
+import * as performanceService from '../services/performanceService.js';
+import { notifyUser } from '../services/notificationService.js';
+import { getAllUsers } from '../services/userService.js';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
-import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription } from '../utils/demoHelper.js';
-import { FlubberMorphIcon } from './ui/flubber-morph-icon.jsx';
-import { ShinyButton } from './ui/shiny-button';
-import { SlidingNumber, useNumberReplay } from './motion-primitives';
-import { NumberTicker } from './ui/number-ticker';
-import { PageLiveClock } from './ui/page-live-clock';
+import { isDemoMode, getDemoEmployeeName } from '../utils/demoHelper.js';
+import { filterActiveEmployees } from '../utils/employeeStatus.js';
+import { formatDate } from '../utils/localeFormat.js';
 import { TranslatedText } from './ui/translated-text.jsx';
-import { cn } from '@/lib/utils';
+import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
+import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
 import {
-  filterActiveEmployees,
-  partitionEmployeesByStatus,
-} from '../utils/employeeStatus.js';
+  Blueprint, Bar, Tag, Btn, Seg, Kicker, TickerCell, ColumnHeading,
+  LiveClock, FlatSelect,
+} from './ui/industry.jsx';
 
-function OrgStatCard({ label, value, suffix = '', icon, align = 'left', bg, border, text, percent = false }) {
-  const { replayToken, bump } = useNumberReplay();
-  const numeric =
-    typeof value === 'number' || (typeof value === 'string' && /^-?[\d.]+$/.test(String(value).trim()));
+/* ------------------------------------------------------------------ *
+ * Screen constants — the policy this cycle is read against
+ * ------------------------------------------------------------------ */
 
+/** Calibration sits on the 15th of the quarter's middle month, as on Personal Goals. */
+const CALIBRATION_DAY = 15;
+/** A manager review has to exist before it can be calibrated, so it is due earlier. */
+const MANAGER_REVIEW_LEAD_DAYS = 7;
+/** Window behind "▲ N this week" on the ticker and the plate. */
+const RECENT_WINDOW_DAYS = 7;
+/** Below this many sign-offs in that window there is no rate worth projecting from. */
+const MIN_RATE_SAMPLE = 3;
+/** Histogram axis. Eight buckets, half a point apart. */
+const SCORE_MIN = 1.5;
+const SCORE_MAX = 5;
+const SCORE_STEP = 0.5;
+/** Department bars measure from here, so the org average lands mid-track. */
+const DEPT_SCALE_FLOOR = 3.5;
+/** At or above this a review is worth flagging in the sign-off queue. */
+const PROMOTION_SCORE = 4.5;
+/** Sign-off queue: two rows carry buttons, three more are named, the rest is a count. */
+const EXPANDED_ROWS = 2;
+const COMPACT_ROWS = 3;
+/** Departments listed in the overdue block before it stops naming them. */
+const OVERDUE_ROWS = 3;
+
+const DAY_MS = 86400000;
+
+/** Review statuses, in pipeline order. */
+const REACHED_CALIBRATION = new Set(['submitted', 'approved', 'acknowledged']);
+const SIGNED_OFF = new Set(['approved', 'acknowledged']);
+/** The status a review sits at while it waits for this manager's signature. */
+const AWAITING_STATUS = 'submitted';
+
+/** Positions that read as "runs a department" when naming who owes a review. */
+const MANAGER_POSITION = /manager|director|head|lead|chief|supervisor/i;
+
+/* ------------------------------------------------------------------ *
+ * Helpers
+ * ------------------------------------------------------------------ */
+
+/** 'Q3-2026' → { quarter: 3, year: 2026 }. Non-quarterly periods are ignored. */
+const parsePeriod = (period) => {
+  const match = /^Q([1-4])-(\d{4})$/.exec(String(period || ''));
+  if (!match) return null;
+  return { quarter: Number(match[1]), year: Number(match[2]) };
+};
+
+const formatPeriodKey = (quarter, year) => `Q${quarter}-${year}`;
+
+const periodOf = (date) => formatPeriodKey(Math.floor(date.getMonth() / 3) + 1, date.getFullYear());
+
+const previousPeriodKey = (period) => {
+  const parsed = parsePeriod(period);
+  if (!parsed) return null;
+  const { quarter, year } = parsed;
+  return quarter === 1 ? formatPeriodKey(4, year - 1) : formatPeriodKey(quarter - 1, year);
+};
+
+/** Newest first — the cycle selector and the "which cycle is current" default. */
+const comparePeriodsDesc = (a, b) => {
+  const pa = parsePeriod(a);
+  const pb = parsePeriod(b);
+  if (!pa || !pb) return 0;
+  return pb.year - pa.year || pb.quarter - pa.quarter;
+};
+
+/** The three months a cycle assesses, as [start, end). */
+const periodWindow = (period) => {
+  const parsed = parsePeriod(period);
+  if (!parsed) return null;
+  const start = new Date(parsed.year, (parsed.quarter - 1) * 3, 1);
+  const end = new Date(parsed.year, parsed.quarter * 3, 1);
+  return { start, end };
+};
+
+/** Calibration session date — 15th of the quarter's middle month. */
+const calibrationDate = (period) => {
+  const parsed = parsePeriod(period);
+  if (!parsed) return null;
+  return new Date(parsed.year, (parsed.quarter - 1) * 3 + 1, CALIBRATION_DAY);
+};
+
+const daysBetween = (from, to) => Math.round((to - from) / DAY_MS);
+
+const parseDate = (value) => {
+  if (!value) return null;
+  const d = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+const round1 = (n) => Math.round((Number(n) || 0) * 10) / 10;
+const fmt1 = (n) => round1(n).toFixed(1);
+const pct = (n, d) => (d > 0 ? Math.round((n / d) * 100) : 0);
+
+const mean = (values) => (values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : 0);
+
+/** Snap a rating onto the histogram's half-point axis. */
+const bucketFor = (score) => {
+  const snapped = Math.round(Number(score) / SCORE_STEP) * SCORE_STEP;
+  return Math.min(SCORE_MAX, Math.max(SCORE_MIN, snapped));
+};
+
+const SCORE_BUCKETS = (() => {
+  const out = [];
+  for (let s = SCORE_MIN; s <= SCORE_MAX + 0.001; s += SCORE_STEP) out.push(round1(s));
+  return out;
+})();
+
+/** A self-logged review is a rating the employee gave themselves — never calibrated. */
+const isSelfLogged = (review) => String(review?.review_type || '') === 'self';
+
+const ratingOf = (review) => {
+  const value = Number(review?.overall_rating);
+  return Number.isFinite(value) && value > 0 ? value : null;
+};
+
+/**
+ * When a manager review stopped being on time. The row's own due_date wins;
+ * without one the cycle's calibration lead applies.
+ */
+const managerReviewDeadline = (review, calibration) => {
+  const own = parseDate(review?.due_date);
+  if (own) return own;
+  if (!calibration) return null;
+  return new Date(calibration.getTime() - MANAGER_REVIEW_LEAD_DAYS * DAY_MS);
+};
+
+/* ------------------------------------------------------------------ *
+ * Figures
+ * ------------------------------------------------------------------ */
+
+/** One stage of the pipeline: tracked label, absolute count, hairline track. */
+function StageBar({ ind, label, count, total, note, fill }) {
   return (
-    <div
-      onMouseEnter={bump}
-      className={`${bg.secondary} group relative overflow-hidden rounded-lg p-4 border ${border.primary}`}
-    >
-      <div className="relative z-10 flex items-center justify-between mb-2">
-        {icon}
-        <span className={`text-2xl font-bold ${text.primary}`}>
-          {numeric ? (
-            percent ? (
-              <>
-                <NumberTicker value={Number(value) || 0} className={text.primary} />
-                {suffix}
-              </>
-            ) : (
-              <>
-                <SlidingNumber value={Number(value) || 0} replayToken={replayToken} />
-                {suffix}
-              </>
-            )
-          ) : (
-            <>
-              {value}
-              {suffix}
-            </>
-          )}
+    <div>
+      <div className="flex items-baseline justify-between" style={{ gap: 10, marginBottom: 4 }}>
+        <span
+          style={{
+            fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, letterSpacing: '.06em',
+            textTransform: 'uppercase', color: ind.ink, whiteSpace: 'nowrap',
+          }}
+        >
+          {label}
+        </span>
+        <span
+          style={{
+            fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}
+        >
+          <span style={{ ...figure(13, ind.ink) }}>{count}</span>
+          {` / ${total}`}
+          {note ? ` · ${note}` : ''}
         </span>
       </div>
-      <p
-        className={cn(
-          'relative z-10 text-sm',
-          align === 'right' ? 'text-right' : 'text-left',
-          text.secondary
-        )}
-      >
-        {label}
-      </p>
+      <Bar ind={ind} value={total > 0 ? count / total : 0} fill={fill} height={12} />
     </div>
   );
 }
 
-export const MiniFlubberAutoMorphTotalTasks = (props) => (
-  <FlubberMorphIcon
-    icons={[ListTodo, CalendarCheck2, Mails, Building]}
-    cacheKey="review-total"
-    morphInterval={10000}
-    morphDuration={4500}
-    {...props}
-  />
-);
+/**
+ * Vertical histogram of the cycle's scores. Column heights are a share of the
+ * tallest bucket, so the plot fills whatever height the grid row hands it, and
+ * fill weight climbs with score — the shape reads as ink as well as height.
+ */
+function ScoreHistogram({ ind, buckets, peak, emptyLabel }) {
+  if (!buckets.some((b) => b.count > 0)) {
+    return (
+      <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, margin: 'auto 0' }}>{emptyLabel}</p>
+    );
+  }
 
-export const MiniFlubberAutoMorphEmployees = (props) => (
-  <FlubberMorphIcon
-    icons={[Users, User, Speech, PersonStanding]}
-    cacheKey="review-employees"
-    morphInterval={10000}
-    morphDuration={4500}
-    {...props}
-  />
-);
+  return (
+    <div className="flex" style={{ flex: 1, minHeight: 0, alignItems: 'flex-end', gap: 7 }}>
+      {buckets.map((bucket) => {
+        const isPeak = bucket.score === peak;
+        return (
+          <div
+            key={bucket.score}
+            className="flex flex-col"
+            style={{ flex: 1, height: '100%', justifyContent: 'flex-end', gap: 5, minWidth: 0 }}
+            title={`${fmt1(bucket.score)} — ${bucket.count}`}
+          >
+            <span
+              style={{
+                fontFamily: DISPLAY, fontWeight: 600, fontSize: 10.5, textAlign: 'center',
+                color: isPeak ? ind.ink : ind.inkFaint, fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {bucket.count}
+            </span>
+            {/* A bucket with people in it never draws as a hairline — floor the
+                height so a count of 1 against a peak of 77 is still visible. */}
+            <div style={{ height: `${Math.max(bucket.share, bucket.count > 0 ? 3 : 0)}%`, border: `1px solid ${ind.hairline}` }}>
+              <div style={{ height: '100%', background: bucket.fill }} />
+            </div>
+            <span
+              style={{
+                fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.06em',
+                textAlign: 'center', color: isPeak ? ind.ink : ind.inkFaint,
+              }}
+            >
+              {fmt1(bucket.score)}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
-export const MiniFlubberAutoMorphCompletionRate = (props) => (
-  <FlubberMorphIcon
-    icons={[CircleCheck, ListCheck, MailCheck]}
-    cacheKey="review-completion"
-    morphInterval={10000}
-    morphDuration={4500}
-    {...props}
-  />
-);
+/**
+ * Departments against the org line. Every row carries the same rule, so the
+ * comparison is between each team and the org, never between adjacent rows.
+ */
+function DepartmentChart({ ind, rows, orgAvg, floor, emptyLabel }) {
+  if (rows.length === 0) {
+    return (
+      <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, margin: 'auto 0' }}>{emptyLabel}</p>
+    );
+  }
 
-export const MiniFlubberAutoMorphInProgress = (props) => (
-  <FlubberMorphIcon
-    icons={[CircleQuestionMark, Hourglass, Loader, Ellipsis, BellElectric, Goal]}
-    cacheKey="review-inprogress"
-    morphInterval={10000}
-    morphDuration={4500}
-    {...props}
-  />
-);
+  const span = SCORE_MAX - floor;
+  const position = (score) => Math.max(0, Math.min(1, (score - floor) / span));
 
-export const MiniFlubberAutoMorphQuality = (props) => (
-  <FlubberMorphIcon
-    icons={[BadgeCheck, Star, Medal, Award, Trophy]}
-    cacheKey="review-quality"
-    morphInterval={10000}
-    morphDuration={4500}
-    {...props}
-  />
-);
+  return (
+    <div className="flex flex-col" style={{ flex: 1, minHeight: 0, justifyContent: 'space-between', gap: 9 }}>
+      {rows.map((row, index) => (
+        <div key={row.key}>
+          <div className="flex items-baseline justify-between" style={{ gap: 10, marginBottom: 4 }}>
+            <span
+              style={{
+                fontFamily: BODY, fontSize: 12.5, color: ind.ink,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}
+            >
+              {row.label}
+              <span style={{ color: ind.inkFaint, marginLeft: 8 }}>{row.n}</span>
+            </span>
+            <span style={{ ...figure(13, ind.ink), flex: 'none' }}>{fmt1(row.score)}</span>
+          </div>
+          {/* Paired ranks share a ramp step, so seven departments still read as
+              four weights rather than seven near-identical blues. */}
+          <Bar
+            ind={ind}
+            value={position(row.score)}
+            fill={rampAt(ind, Math.floor(index / 2))}
+            height={9}
+            marker={position(orgAvg)}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
 
-export const MiniFlubberAutoMorphCompletedWork = (props) => (
-  <FlubberMorphIcon
-    icons={[ShieldCheck, CheckCheck, CircleCheckBig, CloudCheck, MonitorCheck]}
-    cacheKey="review-completed"
-    morphInterval={10000}
-    morphDuration={4500}
-    {...props}
-  />
-);
+/** Five segments, one per whole point of the score. */
+function ScoreMeter({ ind, score, fill }) {
+  const filled = Math.max(0, Math.min(5, Math.floor(Number(score) || 0)));
+  return (
+    <div className="flex" style={{ gap: 4, marginBottom: 9 }} aria-hidden="true">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <div
+          key={i}
+          style={{
+            flex: 1,
+            height: 6,
+            background: i < filled ? fill : 'transparent',
+            border: i < filled ? '1px solid transparent' : `1px solid ${ind.inkFaint}`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
-export const MiniFlubberAutoMorphOverdueTasks = (props) => (
-  <FlubberMorphIcon
-    icons={[AlertCircle, CalendarOff, BellMinus, TimerOff, CalendarX]}
-    cacheKey="review-overdue"
-    morphInterval={10000}
-    morphDuration={4500}
-    {...props}
-  />
-);
+/* ------------------------------------------------------------------ *
+ * Performance Reviews
+ * ------------------------------------------------------------------ */
 
 const TaskReview = ({ employees, allEmployees }) => {
   const { user, checkPermission } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
-  const { isDarkMode, bg, text, border } = useTheme();
-  const { t } = useLanguage();
-  
-  // State management
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState(() => checkPermission('canViewReports') ? 'organization' : 'individual');
-  const [orgStatusSegment, setOrgStatusSegment] = useState('active');
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [filterPriority, setFilterPriority] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
-  // Track which employee cards are collapsed. Empty set => all expanded by default.
-  const [collapsedEmployees, setCollapsedEmployees] = useState(() => new Set());
-  const toggleEmployeeExpanded = (employeeId) => {
-    setCollapsedEmployees(prev => {
-      const next = new Set(prev);
-      if (next.has(employeeId)) {
-        next.delete(employeeId);
-      } else {
-        next.add(employeeId);
-      }
-      return next;
-    });
-  };
-  const [orgStats, setOrgStats] = useState(null);
-  const [employeeStats, setEmployeeStats] = useState({});
-  const [reviewingTask, setReviewingTask] = useState(null);
-  const [reviewForm, setReviewForm] = useState({
-    qualityRating: 0,
-    managerComments: '',
-    status: ''
-  });
-  const [successMessage, setSuccessMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
-  
-  // Modal ref
-  const reviewModalRef = React.useRef(null);
+  const { isDarkMode } = useTheme();
+  const { t, currentLanguage } = useLanguage();
+  const ind = getIndustry(isDarkMode);
 
-  const employeeDirectory = useMemo(
-    () => (allEmployees?.length ? allEmployees : employees),
+  const [reviews, setReviews] = useState([]);
+  const [skills, setSkills] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
+  const [notice, setNotice] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+  const [selectedPeriod, setSelectedPeriod] = useState(() => periodOf(new Date()));
+  const [periodTouched, setPeriodTouched] = useState(false);
+  const [segment, setSegment] = useState('all');
+  const [openReview, setOpenReview] = useState(null);
+
+  const canViewAll = checkPermission('canViewReports');
+  const canSignOff = checkPermission('canManagePerformance');
+  const viewerEmployeeId = String(user?.employeeId || user?.id || '');
+
+  const directory = useMemo(
+    () => (allEmployees?.length ? allEmployees : employees) || [],
     [allEmployees, employees]
   );
 
-  // Permissions
-  const canViewAllEmployees = checkPermission('canViewReports');
-
-  // Memoized so these arrays keep a stable identity across renders — they feed
-  // downstream memos and effects, and re-filtering the roster on every render
-  // is pure waste on a page this size.
-  const availableEmployees = useMemo(() => {
-    const operational = filterActiveEmployees(employees);
-    return canViewAllEmployees
-      ? operational
-      : operational.filter(emp => String(emp.id) === String(user?.employeeId));
-  }, [employees, canViewAllEmployees, user?.employeeId]);
-
-  const { active: directoryActive, inactive: directoryInactive } = useMemo(
-    () => partitionEmployeesByStatus(employeeDirectory),
-    [employeeDirectory]
+  const nameOf = useCallback(
+    (employee) => (employee ? getDemoEmployeeName(employee, t) || employee.name || '' : ''),
+    [t]
   );
 
-  const cohortEmployees = canViewAllEmployees
-    ? (orgStatusSegment === 'inactive' ? directoryInactive : directoryActive)
-    : availableEmployees;
+  const departmentLabel = useCallback(
+    (key) => (key ? t(`employeeDepartment.${key}`, String(key).replace(/_/g, ' ')) : t('common.unassigned', 'Unassigned')),
+    [t]
+  );
 
-  const activeEmployeeCount = directoryActive.length;
-  const inactiveEmployeeCount = directoryInactive.length;
+  /* ---------------- data ---------------- */
 
-  // Ensure non-privileged users can't remain on Organization view
-  useEffect(() => {
-    if (!canViewAllEmployees && viewMode === 'organization') {
-      setViewMode('individual');
-    }
-  }, [canViewAllEmployees, viewMode]);
-
-  // Default selected employee to the logged-in user's employeeId for non-admin users
-  useEffect(() => {
-    if (user && employees.length > 0 && !selectedEmployee) {
-      const userEmployeeId = String(user.employeeId || user.id);
-      const userEmployee = employees.find(emp => String(emp.id) === userEmployeeId);
-      if (userEmployee) {
-        setSelectedEmployee(String(userEmployee.id));
-      }
-    }
-  }, [user, employees, selectedEmployee]);
-
-  // Fetch tasks from Supabase
-  const fetchTasks = async (options = {}) => {
+  const fetchAll = useCallback(async (options = {}) => {
     const { silent = false } = options;
     if (!silent) setLoading(true);
     try {
       if (!isDemoMode()) {
-        const sessionValidation = await validateAndRefreshSession();
-        if (!sessionValidation.success) {
-          throw new Error(sessionValidation.error);
-        }
+        const session = await validateAndRefreshSession();
+        if (!session.success) throw new Error(session.error);
       }
 
-      let result;
-      if (viewMode === 'individual' && selectedEmployee) {
-        result = await workloadService.getEmployeeTasks(selectedEmployee);
-      } else {
-        result = await workloadService.getAllTasks();
-      }
-      
-      if (result.success) {
-        setTasks(result.data);
-      }
+      const [reviewResult, skillResult] = await Promise.all([
+        performanceService.getAllPerformanceReviews(),
+        performanceService.getAllSkillsAssessments(),
+      ]);
+
+      if (!reviewResult.success) throw new Error(reviewResult.error || 'Failed to load reviews');
+      setReviews(reviewResult.data || []);
+      setSkills(skillResult.success ? (skillResult.data || []) : []);
+      setFetchError(null);
     } catch (error) {
-      console.error('Error fetching tasks:', error);
-      handleSessionAuthError(error, { silent });
+      console.error('Error loading performance reviews:', error);
+      if (handleSessionAuthError(error, { silent })) return;
+      setFetchError(error.message);
     } finally {
       if (!silent) setLoading(false);
     }
-  };
+  }, [handleSessionAuthError]);
 
-  useAuthenticatedPageRefresh(() => fetchTasks({ silent: true }));
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useAuthenticatedPageRefresh(() => fetchAll({ silent: true }));
 
-  // Fetch organization statistics
-  const fetchOrgStats = async () => {
-    try {
-      const result = await workloadService.getOrganizationTaskStats();
-      if (result.success) {
-        setOrgStats(result.data);
-      }
-    } catch (error) {
-      console.error('Error fetching org stats:', error);
-      handleSessionAuthError(error, { silent: true });
-    }
-  };
+  const hasRealData = !loading && !fetchError && reviews.length > 0;
 
-  // Fetch employee statistics
-  const fetchEmployeeStats = async (employeeId) => {
-    try {
-      const result = await workloadService.getEmployeeTaskStats(employeeId);
-      if (result.success) {
-        setEmployeeStats(prev => ({
-          ...prev,
-          [employeeId]: result.data
-        }));
-      }
-    } catch (error) {
-      console.error('Error fetching employee stats:', error);
-      handleSessionAuthError(error, { silent: true });
-    }
-  };
+  /* ---------------- cycle ---------------- */
 
-  // Load data on mount
+  /** Every quarter the data knows about, newest first, plus the live one. */
+  const periodOptions = useMemo(() => {
+    const keys = new Set([periodOf(new Date())]);
+    reviews.forEach((review) => {
+      if (parsePeriod(review.review_period)) keys.add(review.review_period);
+    });
+    return [...keys].sort(comparePeriodsDesc);
+  }, [reviews]);
+
+  // Land on the newest cycle the data actually has, unless the user picked one.
   useEffect(() => {
-    fetchTasks();
-    if (viewMode === 'organization') {
-      fetchOrgStats();
-    }
-  }, [viewMode, selectedEmployee]);
+    if (periodTouched || periodOptions.length === 0) return;
+    const withReviews = periodOptions.find((key) => reviews.some((r) => r.review_period === key));
+    setSelectedPeriod(withReviews || periodOptions[0]);
+  }, [periodOptions, reviews, periodTouched]);
 
-  // Load employee stats
-  useEffect(() => {
-    if (viewMode === 'organization' && cohortEmployees.length > 0) {
-      cohortEmployees.forEach(emp => {
-        if (!employeeStats[emp.id]) {
-          fetchEmployeeStats(emp.id);
-        }
-      });
-    } else if (viewMode === 'individual' && selectedEmployee) {
-      fetchEmployeeStats(selectedEmployee);
-    }
-  }, [viewMode, selectedEmployee, cohortEmployees]);
+  const calibration = useMemo(() => calibrationDate(selectedPeriod), [selectedPeriod]);
+  const daysToCalibration = calibration ? daysBetween(new Date(), calibration) : null;
+  const calibrationLabel = calibration
+    ? formatDate(calibration, currentLanguage, { day: '2-digit', month: 'short' })
+    : '—';
 
-  // Real-time subscription
+  /* ---------------- scope ---------------- */
+
+  const activeEmployees = useMemo(() => filterActiveEmployees(employees), [employees]);
+
+  /** The two biggest departments join Company in the segment control. */
+  const segmentOptions = useMemo(() => {
+    const counts = new Map();
+    activeEmployees.forEach((emp) => {
+      const key = emp.department;
+      if (key) counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 2);
+    return [
+      { value: 'all', label: t('taskReview.company', 'Company') },
+      ...top.map(([key]) => ({ value: key, label: departmentLabel(key) })),
+    ];
+  }, [activeEmployees, t, departmentLabel]);
+
   useEffect(() => {
-    const channel = workloadService.subscribeToTaskChanges(
-      viewMode === 'individual' ? selectedEmployee : null,
-      (payload) => {
-        console.log('Task change:', payload);
-        fetchTasks();
-        if (viewMode === 'organization') {
-          fetchOrgStats();
-        }
+    if (segment !== 'all' && !segmentOptions.some((o) => o.value === segment)) setSegment('all');
+  }, [segmentOptions, segment]);
+
+  const scopeEmployees = useMemo(() => {
+    if (!canViewAll) {
+      return activeEmployees.filter((emp) => String(emp.id) === viewerEmployeeId);
+    }
+    if (segment === 'all') return activeEmployees;
+    return activeEmployees.filter((emp) => emp.department === segment);
+  }, [activeEmployees, canViewAll, viewerEmployeeId, segment]);
+
+  /* ---------------- the cycle, per employee ---------------- */
+
+  /**
+   * One row per employee in scope, carrying their review for this cycle, the
+   * one before it, and the four pipeline flags every figure on the screen is
+   * counted from. Built once so no two panels can disagree.
+   */
+  const cycleRows = useMemo(() => {
+    const previousKey = previousPeriodKey(selectedPeriod);
+    const window = periodWindow(selectedPeriod);
+
+    const byEmployee = new Map();
+    const previousByEmployee = new Map();
+    reviews.forEach((review) => {
+      const id = String(review.employee_id);
+      if (review.review_period === selectedPeriod) {
+        // A manager's row is the cycle's row; a self-log only fills in where
+        // no manager has written one yet.
+        const held = byEmployee.get(id);
+        if (!held || (isSelfLogged(held) && !isSelfLogged(review))) byEmployee.set(id, review);
+      } else if (review.review_period === previousKey && !isSelfLogged(review)) {
+        previousByEmployee.set(id, review);
       }
-    );
+    });
 
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [viewMode, selectedEmployee]);
+    const selfAssessed = new Set();
+    skills.forEach((skill) => {
+      const on = parseDate(skill.assessment_date);
+      if (!window || !on || (on >= window.start && on < window.end)) {
+        selfAssessed.add(String(skill.employee_id));
+      }
+    });
 
-  // Filter tasks
-  const filteredTasks = useMemo(() => {
-    let filtered = [...tasks];
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter(task => task.status === filterStatus);
-    }
-    if (filterPriority !== 'all') {
-      filtered = filtered.filter(task => task.priority === filterPriority);
-    }
-    return filtered;
-  }, [tasks, filterStatus, filterPriority]);
+    return scopeEmployees.map((employee) => {
+      const id = String(employee.id);
+      const review = byEmployee.get(id) || null;
+      const previous = previousByEmployee.get(id) || null;
+      const status = String(review?.status || '');
+      const score = review && !isSelfLogged(review) ? ratingOf(review) : null;
+      const previousScore = ratingOf(previous);
+      const deadline = managerReviewDeadline(review, calibration);
 
-  const cohortEmployeeIds = useMemo(
-    () => new Set(cohortEmployees.map((e) => String(e.id))),
-    [cohortEmployees]
-  );
+      const managerDone = score != null;
+      // The pipeline is cumulative, so a filed manager review is itself proof
+      // the self-assessment stage was passed. Without this a closed cycle reads
+      // 0/78 self-assessed and 78/78 signed off, which is not a pipeline.
+      const selfDone = managerDone
+        || selfAssessed.has(id)
+        || Boolean(review?.employee_comments)
+        || (review != null && isSelfLogged(review));
+      const calibrated = managerDone && REACHED_CALIBRATION.has(status);
+      const signedOff = managerDone && SIGNED_OFF.has(status);
 
-  // Group tasks by employee (Active/Inactive cohort only)
-  const tasksByEmployee = useMemo(() => {
-    const grouped = {};
-    cohortEmployees.forEach(emp => {
-      const empTasks = filteredTasks.filter(
-        task => String(task.employee_id) === String(emp.id) || 
-                (task.employee && String(task.employee.id) === String(emp.id))
-      );
-      grouped[emp.id] = {
-        employee: emp,
-        tasks: empTasks,
-        stats: employeeStats[emp.id] || {}
+      return {
+        id,
+        employee,
+        review,
+        score,
+        previousScore,
+        delta: score != null && previousScore != null ? round1(score - previousScore) : null,
+        status,
+        selfDone,
+        managerDone,
+        calibrated,
+        signedOff,
+        overdue: !managerDone && deadline != null && deadline < new Date(),
+        awaiting: managerDone && !signedOff && status === AWAITING_STATUS,
+        waitedDays: (() => {
+          const since = parseDate(review?.submitted_at) || parseDate(review?.review_date) || parseDate(review?.updated_at);
+          return since ? Math.max(0, daysBetween(since, new Date())) : null;
+        })(),
+        signedOffRecently: (() => {
+          if (!SIGNED_OFF.has(status)) return false;
+          const on = parseDate(review?.approved_at) || parseDate(review?.updated_at);
+          return on != null && daysBetween(on, new Date()) <= RECENT_WINDOW_DAYS;
+        })(),
       };
     });
-    return grouped;
-  }, [filteredTasks, cohortEmployees, employeeStats]);
+  }, [reviews, skills, scopeEmployees, selectedPeriod, calibration]);
 
-  const cohortOrgStats = useMemo(() => {
-    const cohortTasks = filteredTasks.filter(
-      (task) => cohortEmployeeIds.has(String(task.employee_id))
-        || (task.employee && cohortEmployeeIds.has(String(task.employee.id)))
-    );
-    const totalTasks = cohortTasks.length;
-    const completed = cohortTasks.filter((t) => t.status === 'completed').length;
-    const inProgress = cohortTasks.filter((t) => t.status === 'in-progress').length;
-    const pending = cohortTasks.filter((t) => t.status === 'pending').length;
-    const cancelled = cohortTasks.filter((t) => t.status === 'cancelled').length;
-    const overdue = cohortTasks.filter(
-      (t) => t.status !== 'completed' && t.due_date && new Date(t.due_date) < new Date()
-    ).length;
-    const rated = cohortTasks.filter((t) => t.quality_rating > 0);
-    const avgQuality = rated.length
-      ? rated.reduce((sum, t) => sum + Number(t.quality_rating || 0), 0) / rated.length
-      : 0;
+  const inScope = cycleRows.length;
+
+  const stages = useMemo(() => {
+    const count = (predicate) => cycleRows.filter(predicate).length;
     return {
-      totalTasks,
-      completed,
-      inProgress,
-      pending,
-      cancelled,
-      overdue,
-      totalEmployees: cohortEmployees.length,
-      avgQualityRating: Number(avgQuality.toFixed(1)),
-      completionRate: totalTasks > 0 ? Math.round((completed / totalTasks) * 100) : 0,
+      self: count((r) => r.selfDone),
+      manager: count((r) => r.managerDone),
+      calibrated: count((r) => r.calibrated),
+      signedOff: count((r) => r.signedOff),
+      overdue: count((r) => r.overdue),
+      recent: count((r) => r.signedOffRecently),
     };
-  }, [filteredTasks, cohortEmployeeIds, cohortEmployees.length]);
+  }, [cycleRows]);
 
-  const getPriorityColor = (priority) => {
-    switch(priority) {
-      case 'high': return isDarkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-800';
-      case 'medium': return isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-800';
-      case 'low': return isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800';
-      default: return isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800';
+  /* ---------------- scores ---------------- */
+
+  const scored = useMemo(() => cycleRows.filter((r) => r.score != null), [cycleRows]);
+  const orgAvg = useMemo(() => round1(mean(scored.map((r) => r.score))), [scored]);
+
+  const previousAvg = useMemo(() => {
+    const values = cycleRows.map((r) => r.previousScore).filter((v) => v != null);
+    return values.length ? round1(mean(values)) : null;
+  }, [cycleRows]);
+
+  const avgDelta = previousAvg != null && scored.length ? round1(orgAvg - previousAvg) : null;
+
+  const histogram = useMemo(() => {
+    const counts = new Map(SCORE_BUCKETS.map((score) => [score, 0]));
+    scored.forEach((row) => {
+      const bucket = round1(bucketFor(row.score));
+      counts.set(bucket, (counts.get(bucket) || 0) + 1);
+    });
+    const max = Math.max(...counts.values(), 0);
+    const buckets = SCORE_BUCKETS.map((score, index) => ({
+      score,
+      count: counts.get(score) || 0,
+      share: max > 0 ? (counts.get(score) / max) * 100 : 0,
+      // Weight climbs with score: the top of the scale carries the deepest ink.
+      fill: rampAt(ind, Math.max(0, 3 - Math.floor(index / 2))),
+    }));
+    let peak = null;
+    buckets.forEach((bucket) => {
+      if (max > 0 && bucket.count === max && peak == null) peak = bucket.score;
+    });
+    const atOrAbovePeak = peak == null ? 0 : scored.filter((r) => bucketFor(r.score) >= peak).length;
+    return { buckets, peak, peakShare: pct(atOrAbovePeak, scored.length) };
+  }, [scored, ind]);
+
+  const departmentRows = useMemo(() => {
+    const groups = new Map();
+    scored.forEach((row) => {
+      const key = row.employee.department || '—';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(row.score);
+    });
+    return [...groups.entries()]
+      .map(([key, values]) => ({
+        key,
+        label: departmentLabel(key),
+        n: values.length,
+        score: round1(mean(values)),
+      }))
+      .sort((a, b) => b.score - a.score || b.n - a.n);
+  }, [scored, departmentLabel]);
+
+  /**
+   * The nominal scale starts at 3.5, but it drops to keep half a point of
+   * headroom under the weakest team — a department sitting exactly on the floor
+   * would otherwise draw a zero-width bar and read as missing data.
+   */
+  const deptFloor = useMemo(() => {
+    if (departmentRows.length === 0) return DEPT_SCALE_FLOOR;
+    const lowest = departmentRows.reduce((low, row) => Math.min(low, row.score), SCORE_MAX);
+    return Math.min(DEPT_SCALE_FLOOR, Math.floor((lowest - 0.5) * 2) / 2);
+  }, [departmentRows]);
+
+  const belowOrg = departmentRows.filter((row) => row.score < orgAvg).length;
+
+  /* ---------------- the decision column ---------------- */
+
+  /** Reviews this viewer personally owes a signature on, oldest wait first. */
+  const awaitingRows = useMemo(() => {
+    const mine = cycleRows.filter((row) => {
+      if (!row.awaiting) return false;
+      if (canSignOff) return true;
+      return String(row.review?.reviewer_id || '') === viewerEmployeeId;
+    });
+    return mine.sort((a, b) => (b.waitedDays ?? 0) - (a.waitedDays ?? 0));
+  }, [cycleRows, canSignOff, viewerEmployeeId]);
+
+  const oldestWait = awaitingRows.length ? (awaitingRows[0].waitedDays ?? null) : null;
+
+  /** Sign-off rights: the performance permission, or being the named reviewer. */
+  const mayDecide = useCallback(
+    (row) => canSignOff || String(row?.review?.reviewer_id || '') === viewerEmployeeId,
+    [canSignOff, viewerEmployeeId]
+  );
+
+  /**
+   * Departments with manager reviews past their deadline, and who owes them —
+   * the department's manager where one can be named, otherwise the reviewer
+   * already on the row.
+   */
+  const overdueRows = useMemo(() => {
+    const groups = new Map();
+    cycleRows.filter((row) => row.overdue).forEach((row) => {
+      const key = row.employee.department || '—';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(row);
+    });
+
+    return [...groups.entries()]
+      .map(([key, rows]) => {
+        const manager = directory.find(
+          (emp) => emp.department === key && MANAGER_POSITION.test(String(emp.position || ''))
+        ) || directory.find(
+          (emp) => String(emp.id) === String(rows.find((r) => r.review?.reviewer_id)?.review?.reviewer_id)
+        ) || null;
+        return { key, label: departmentLabel(key), manager, late: rows.length };
+      })
+      .sort((a, b) => b.late - a.late);
+  }, [cycleRows, directory, departmentLabel]);
+
+  const namedOverdue = overdueRows.slice(0, OVERDUE_ROWS);
+  const remindable = namedOverdue.filter((row) => row.manager);
+
+  /* ---------------- projection ---------------- */
+
+  /**
+   * A close date is only honest if there is a rate behind it, and one sign-off
+   * is not a rate — extrapolating from it puts the close date years out. Under
+   * the sample floor the slot states the work left instead.
+   */
+  const projection = useMemo(() => {
+    const remaining = inScope - stages.signedOff;
+    if (remaining <= 0) {
+      return { kind: 'done' };
     }
-  };
-
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'completed': return isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800';
-      case 'in-progress': return isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-800';
-      case 'pending': return isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800';
-      default: return isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800';
+    if (stages.recent < MIN_RATE_SAMPLE) {
+      return { kind: 'remaining', remaining };
     }
-  };
-
-  const calculateProgress = (empTasks) => {
-    if (empTasks.length === 0) return 0;
-    const completed = empTasks.filter(t => t.status === 'completed').length;
-    return Math.round((completed / empTasks.length) * 100);
-  };
-
-  const calculateAvgQuality = (empTasks) => {
-    const rated = empTasks.filter(t => t.quality_rating > 0);
-    if (rated.length === 0) return 0;
-    const avg = rated.reduce((sum, t) => sum + t.quality_rating, 0) / rated.length;
-    return avg.toFixed(1);
-  };
-
-  // Organization View
-  const OrganizationView = () => {
-    const currentUserEmployeeId = String(user?.employeeId || user?.id || '');
-    const filteredEmployees = cohortEmployees.filter(emp => String(emp.id) !== currentUserEmployeeId);
-
-    const countActiveTasks = (empTasks = []) =>
-      empTasks.filter((task) => {
-        const status = String(task.status || '').toLowerCase();
-        return status === 'in-progress' || status === 'pending';
-      }).length;
-
-    const breakdownRows = (() => {
-      const allRows = Object.values(tasksByEmployee);
-
-      // Show every employee — including those with no active tasks.
-      const rowsExcludingSelf = allRows
-        .filter(({ employee }) => filteredEmployees.some(e => String(e.id) === String(employee.id)));
-
-      // If excluding the current user would leave nothing (common in demo setups),
-      // fall back to showing everyone (including the current user).
-      const rows = rowsExcludingSelf.length === 0 ? allRows : rowsExcludingSelf;
-
-      // Priority: active tasks → total tasks → highest performance/quality
-      return [...rows].sort((a, b) => {
-        const aActive = countActiveTasks(a.tasks);
-        const bActive = countActiveTasks(b.tasks);
-        if (bActive !== aActive) return bActive - aActive;
-
-        const aTotal = a.tasks?.length || 0;
-        const bTotal = b.tasks?.length || 0;
-        if (bTotal !== aTotal) return bTotal - aTotal;
-
-        const aQuality = Number(calculateAvgQuality(a.tasks)) || Number(a.employee?.performance) || 0;
-        const bQuality = Number(calculateAvgQuality(b.tasks)) || Number(b.employee?.performance) || 0;
-        if (bQuality !== aQuality) return bQuality - aQuality;
-
-        return String(a.employee?.name || '').localeCompare(String(b.employee?.name || ''));
-      });
-    })();
-
-    const allExpanded = breakdownRows.every(({ employee }) => !collapsedEmployees.has(employee.id));
-    const toggleAll = () => {
-      if (allExpanded) {
-        setCollapsedEmployees(new Set(breakdownRows.map(({ employee }) => employee.id)));
-      } else {
-        setCollapsedEmployees(new Set());
-      }
+    const perDay = stages.recent / RECENT_WINDOW_DAYS;
+    const closes = new Date(Date.now() + Math.ceil(remaining / perDay) * DAY_MS);
+    return {
+      kind: 'rate',
+      remaining,
+      closes,
+      marginDays: calibration ? daysBetween(closes, calibration) : null,
     };
+  }, [inScope, stages.signedOff, stages.recent, calibration]);
 
-    const displayOrgStats = cohortOrgStats.totalTasks > 0 || cohortEmployees.length > 0
-      ? cohortOrgStats
-      : orgStats;
+  /* ---------------- actions ---------------- */
 
-    return (
-      <div className="space-y-6">
-        {displayOrgStats && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <OrgStatCard
-              label={t('taskReview.totalTasks')}
-              value={displayOrgStats.totalTasks}
-              icon={<MiniFlubberAutoMorphTotalTasks isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />}
-              bg={bg}
-              border={border}
-              text={text}
-            />
-            <OrgStatCard
-              label={t('taskReview.employees')}
-              value={displayOrgStats.totalEmployees}
-              icon={<MiniFlubberAutoMorphEmployees size={24} isDarkMode={isDarkMode} />}
-              bg={bg}
-              border={border}
-              text={text}
-            />
-            <OrgStatCard
-              label={t('taskReview.completed')}
-              value={displayOrgStats.completed}
-              align="right"
-              icon={<MiniFlubberAutoMorphCompletedWork isDarkMode={isDarkMode} className={`w-6 h-6 ${text.secondary}`} />}
-              bg={bg}
-              border={border}
-              text={text}
-            />
-            <OrgStatCard
-              label={t('taskReview.inProgress')}
-              value={displayOrgStats.inProgress}
-              icon={<MiniFlubberAutoMorphInProgress size={24} isDarkMode={isDarkMode} />}
-              bg={bg}
-              border={border}
-              text={text}
-            />
-            <OrgStatCard
-              label={t('taskReview.completion')}
-              value={displayOrgStats.completionRate}
-              suffix="%"
-              percent
-              align="right"
-              icon={<MiniFlubberAutoMorphCompletionRate isDarkMode={isDarkMode} className={`w-5 h-5 mr-8 ${text.secondary}`} />}
-              bg={bg}
-              border={border}
-              text={text}
-            />
-            <OrgStatCard
-              label={t('taskReview.quality')}
-              value={displayOrgStats.avgQualityRating}
-              align="right"
-              icon={<MiniFlubberAutoMorphQuality isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />}
-              bg={bg}
-              border={border}
-              text={text}
-            />
-          </div>
-        )}
-      <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className={`text-lg font-semibold ${text.primary}`}>
-            {t('taskReview.employeeBreakdown')}
-          </h3>
-          {breakdownRows.length > 0 && (
-            <button
-              type="button"
-              onClick={toggleAll}
-              className={`flex items-center space-x-1 text-sm px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-            >
-              {allExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              <span>{allExpanded ? t('taskReview.collapseAll', 'Collapse All') : t('taskReview.expandAll', 'Expand All')}</span>
-            </button>
-          )}
-        </div>
-        <div className="space-y-3">
-          {breakdownRows.length === 0 ? (
-            <div className="text-center py-10">
-              <p className={text.secondary}>
-                {orgStatusSegment === 'inactive'
-                  ? t('taskReview.noInactiveEmployees', 'No inactive employees in this organization.')
-                  : t('taskReview.noEmployeesWithTasks', 'No tasks match the selected filters.')}
-              </p>
-            </div>
-          ) : breakdownRows.map(({ employee, tasks: empTasks }) => {
-            const isExpanded = !collapsedEmployees.has(employee.id);
-            const progress = calculateProgress(empTasks);
-            const avgQuality = calculateAvgQuality(empTasks);
-            return (
-              <div key={employee.id} className={`border ${border.primary} rounded-lg overflow-hidden`}>
-                <div className={`p-4 cursor-pointer ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`} onClick={() => toggleEmployeeExpanded(employee.id)}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3 flex-1">
-                      {employee.photo ? (
-                        <img src={employee.photo} alt={getDemoEmployeeName(employee, t)} className={`w-10 h-10 rounded-full object-cover border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`} />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center font-bold text-white">
-                          {getDemoEmployeeName(employee, t)?.charAt(0) || 'U'}
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className={`font-semibold ${text.primary}`}>{getDemoEmployeeName(employee, t)}</p>
-                          {orgStatusSegment === 'inactive' && (
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide ${
-                              isDarkMode ? 'bg-red-900/30 text-red-300' : 'bg-red-100 text-red-700'
-                            }`}>
-                              {t('employees.inactive', 'Inactive')}
-                            </span>
-                          )}
-                        </div>
-                        <p className={`text-xs ${text.secondary}`}>
-                          {t(`employeePosition.${employee.position}`) || employee.position} • {t(`employeeDepartment.${employee.department}`) || employee.department}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-6 text-sm">
-                      <div className="text-center">
-                        <p className={`font-semibold ${text.primary}`}>
-                          {empTasks.filter((task) => {
-                            const status = String(task.status || '').toLowerCase();
-                            return status === 'in-progress' || status === 'pending';
-                          }).length}
-                        </p>
-                        <p className={`text-xs ${text.secondary}`}>{t('taskReview.activeTasks', 'Active')}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className={`font-semibold ${text.primary}`}>{empTasks.length}</p>
-                        <p className={`text-xs ${text.secondary}`}>{t('taskReview.tasks')}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className={`font-semibold ${text.primary}`}>{progress}%</p>
-                        <p className={`text-xs ${text.secondary}`}>{t('taskReview.progress')}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className={`font-semibold ${text.primary}`}>{avgQuality}/5</p>
-                        <p className={`text-xs ${text.secondary}`}>{t('taskReview.quality')}</p>
-                      </div>
-                      {isExpanded ? <ChevronUp className={`w-5 h-5 ${text.secondary}`} /> : <ChevronDown className={`w-5 h-5 ${text.secondary}`} />}
-                    </div>
-                  </div>
-                  <div className={`mt-3 w-full rounded-full h-2 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                    <div className="bg-linear-to-r from-blue-500 to-blue-600 h-2 rounded-full" style={{ width: `${progress}%` }}></div>
-                  </div>
-                </div>
-                {isExpanded && (
-                  <div className={`border-t ${border.primary} p-4 ${isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
-                    {empTasks.length === 0 && (
-                      <div className="flex flex-col items-center justify-center py-6 text-center">
-                        <CalendarOff className={`w-8 h-8 mb-2 ${text.secondary}`} />
-                        <p className={`text-sm ${text.secondary}`}>{t('taskReview.noActiveTasks', 'No active tasks for this employee.')}</p>
-                      </div>
-                    )}
-                    <div className="space-y-3">
-                      {empTasks.map(task => (
-                        <div key={task.id} className={`p-4 rounded ${bg.secondary} border ${border.primary} hover:shadow-md transition-all`}>
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-2">
-                                <h4 className={`font-semibold ${text.primary}`}>{isDemoMode() ? getDemoTaskTitle(task, t) : <TranslatedText text={task.title} record={{ entityType: 'task', entityId: task.id, field: 'title' }} />}</h4>
-                                <span className={`px-2 py-0.5 rounded text-xs ${getStatusColor(task.status)}`}>
-                                  {t(`status.${task.status}`) || task.status}
-                                </span>
-                                <span className={`px-2 py-0.5 rounded text-xs ${getPriorityColor(task.priority)}`}>
-                                  {t(`taskListing.${task.priority}`) || task.priority}
-                                </span>
-                              </div>
-                              {task.description && <p className={`text-sm ${text.secondary} mb-3`}>{isDemoMode() ? getDemoTaskDescription(task, t) : <TranslatedText text={task.description} record={{ entityType: 'task', entityId: task.id, field: 'description' }} />}</p>}
-                              
-                              {/* Task Details Grid */}
-                              <div className="grid grid-cols-2 gap-3 mb-3">
-                                {task.due_date && (
-                                  <div className={`flex items-center space-x-2 ${text.secondary} text-xs`}>
-                                    <Calendar className="w-4 h-4" />
-                                    <div>
-                                      <p className="font-medium">{t('taskReview.dueDate')}</p>
-                                      <p className={text.primary}>{new Date(task.due_date).toLocaleDateString()}</p>
-                                    </div>
-                                  </div>
-                                )}
-                                <div className={`flex items-center space-x-2 ${text.secondary} text-xs`}>
-                                  <User className="w-4 h-4" />
-                                  <div>
-                                    <p className="font-medium">{t('taskReview.assignedTo')}</p>
-                                    <p className={text.primary}>{employeeDirectory.find(e => e.id === task.employee_id)?.name || t('taskReview.unknown')}</p>
-                                  </div>
-                                </div>
-                                {task.created_by && (
-                                  <div className={`flex items-center space-x-2 ${text.secondary} text-xs`}>
-                                    <UserCheck className="w-4 h-4" />
-                                    <div>
-                                      <p className="font-medium">{t('taskReview.assignedBy')}</p>
-                                      <p className={text.primary}>{employeeDirectory.find(e => e.id === task.created_by)?.name || t('taskReview.unknown')}</p>
-                                    </div>
-                                  </div>
-                                )}
-                                {task.quality_rating > 0 && (
-                                  <div className={`flex items-center space-x-2 ${text.secondary} text-xs`}>
-                                    <Star className="w-4 h-4 text-yellow-400" />
-                                    <div>
-                                      <p className="font-medium">{t('taskReview.qualityRating')}</p>
-                                      <p className={text.primary}>{task.quality_rating}/5 ⭐</p>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-
-                              {task.self_assessment && (
-                                <div className={`mt-2 p-3 rounded ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'} border-l-4 border-blue-500`}>
-                                  <p className={`text-xs font-semibold ${text.primary} mb-1 flex items-center space-x-1`}>
-                                    <MessageSquare className="w-3 h-3" />
-                                    <span>{t('taskReview.employeeSelfAssessment')}:</span>
-                                  </p>
-                                  <p className={`text-sm ${text.secondary}`}>{isDemoMode() ? task.self_assessment : <TranslatedText text={task.self_assessment} record={{ entityType: 'task', entityId: task.id, field: 'self_assessment' }} />}</p>
-                                </div>
-                              )}
-                              {task.comments && (
-                                <div className={`mt-2 p-3 rounded ${isDarkMode ? 'bg-amber-600/20' : 'bg-amber-50'} border-l-4 border-amber-500`}>
-                                  <p className={`text-xs font-semibold ${text.primary} mb-1 flex items-center space-x-1`}>
-                                    <Award className="w-3 h-3" />
-                                    <span>{t('taskReview.managerEvaluation')}:</span>
-                                  </p>
-                                  <p className={`text-sm ${text.secondary}`}>{isDemoMode() ? task.comments : <TranslatedText text={task.comments} record={{ entityType: 'task', entityId: task.id, field: 'comments' }} />}</p>
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* Review Button */}
-                            {checkPermission('canViewReports') && (
-                              <ShinyButton
-                                type="button"
-                                onClick={() => {
-                                  setReviewingTask(task);
-                                  setReviewForm({
-                                    qualityRating: task.quality_rating || 0,
-                                    managerComments: task.comments || '',
-                                    status: task.status || 'pending'
-                                  });
-                                }}
-                                className={cn(
-                                  'ml-4 px-4 py-2 text-white border-blue-500',
-                                  isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
-                                )}
-                              >
-                                <Edit2 className="w-4 h-4" />
-                                <span>{t('taskReview.review')}</span>
-                              </ShinyButton>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  )};
-
-  const IndividualView = () => {
-    const empData = selectedEmployee ? tasksByEmployee[selectedEmployee] : null;
-    const stats = empData?.stats || {};
-    const empTasks = empData?.tasks || [];
-    if (!selectedEmployee || !empData) {
-      return (
-        <div className={`${bg.secondary} rounded-lg p-8 text-center border ${border.primary}`}>
-          <p className={text.secondary}>{t('taskReview.selectEmployeeToView')}</p>
-        </div>
-      );
-    }
-    return (
-      <div className="space-y-6">
-        <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
-          <div className="flex items-center space-x-4">
-            {empData.employee.photo ? (
-              <img src={empData.employee.photo} alt={getDemoEmployeeName(empData.employee, t)} className={`w-16 h-16 rounded-full object-cover border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`} />
-            ) : (
-              <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center font-bold text-2xl text-white">
-                {getDemoEmployeeName(empData.employee, t)?.charAt(0) || 'U'}
-              </div>
-            )}
-            <div>
-              <h3 className={`text-xl font-bold ${text.primary}`}>{getDemoEmployeeName(empData.employee, t)}</h3>
-              <p className={`text-sm ${text.secondary}`}>
-                {t(`employeePosition.${empData.employee.position}`) || empData.employee.position} • {t(`employeeDepartment.${empData.employee.department}`) || empData.employee.department}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <div className="flex items-center justify-between mb-2">
-              <MiniFlubberAutoMorphTotalTasks isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />
-              <span className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={stats.total || 0} /></span>
-            </div>
-            <p className={`text-sm ${text.secondary}`}>{t('taskReview.total')}</p>
-          </div>
-          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <div className="flex items-center justify-between mb-2">
-              <MiniFlubberAutoMorphCompletedWork isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />
-              <span className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={stats.completed || 0} /></span>
-            </div>
-            <p className={`text-sm ${text.secondary}`}>{t('taskReview.completed')}</p>
-          </div>
-          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <div className="flex items-center justify-between mb-2">
-              <MiniFlubberAutoMorphInProgress isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />
-              <span className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={stats.inProgress || 0} /></span>
-            </div>
-            <p className={`text-sm ${text.secondary}`}>{t('taskReview.inProgress')}</p>
-          </div>
-          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <div className="flex items-center justify-between mb-2">
-              <MiniFlubberAutoMorphOverdueTasks isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />
-              <span className={`text-2xl font-bold ${text.primary}`}><SlidingNumber value={stats.overdue || 0} /></span>
-            </div>
-            <p className={`text-sm ${text.secondary}`}>{t('taskReview.overdue')}</p>
-          </div>
-          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <div className="flex items-center justify-between mb-2">
-              <MiniFlubberAutoMorphCompletionRate isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />
-              <span className={`text-2xl font-bold ${text.primary}`}>
-                <NumberTicker value={Number(stats.completionRate) || 0} className={text.primary} />%
-              </span>
-            </div>
-            <p className={`text-sm ${text.secondary}`}>{t('taskReview.completion')}</p>
-          </div>
-          <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-            <div className="flex items-center justify-between mb-2">
-              <MiniFlubberAutoMorphQuality isDarkMode={isDarkMode} className={`w-5 h-5 ${text.secondary}`} />
-              <span className={`text-2xl font-bold ${text.primary}`}>
-                <SlidingNumber value={Number(stats.avgQualityRating) || 0} />
-              </span>
-            </div>
-            <p className={`text-sm ${text.secondary}`}>{t('taskReview.quality')}</p>
-          </div>
-        </div>
-        <div className={`${bg.secondary} rounded-lg p-6 border ${border.primary}`}>
-          <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>{t('taskReview.taskList')}</h3>
-          <div className="space-y-4">
-            {empTasks.map(task => (
-              <div key={task.id} className={`p-4 rounded border ${border.primary} ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-all hover:shadow-md`}>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <h4 className={`font-semibold ${text.primary}`}>{isDemoMode() ? getDemoTaskTitle(task, t) : <TranslatedText text={task.title} record={{ entityType: 'task', entityId: task.id, field: 'title' }} />}</h4>
-                      <span className={`px-2 py-0.5 rounded text-xs ${getStatusColor(task.status)}`}>
-                        {t(`status.${task.status}`) || task.status}
-                      </span>
-                      <span className={`px-2 py-0.5 rounded text-xs ${getPriorityColor(task.priority)}`}>
-                        {t(`taskListing.${task.priority}`) || task.priority}
-                      </span>
-                    </div>
-                    {task.description && <p className={`text-sm ${text.secondary} mb-3`}>{isDemoMode() ? getDemoTaskDescription(task, t) : <TranslatedText text={task.description} record={{ entityType: 'task', entityId: task.id, field: 'description' }} />}</p>}
-                    
-                    {/* Task Details Grid */}
-                    <div className="grid grid-cols-2 gap-3 mb-3">
-                      {task.due_date && (
-                        <div className={`flex items-center space-x-2 ${text.secondary} text-xs`}>
-                          <Calendar className="w-4 h-4" />
-                          <div>
-                            <p className="font-medium">{t('taskReview.dueDate')}</p>
-                            <p className={text.primary}>{new Date(task.due_date).toLocaleDateString()}</p>
-                          </div>
-                        </div>
-                      )}
-                      <div className={`flex items-center space-x-2 ${text.secondary} text-xs`}>
-                        <User className="w-4 h-4" />
-                        <div>
-                          <p className="font-medium">{t('taskReview.assignedTo')}</p>
-                          <p className={text.primary}>{employeeDirectory.find(e => e.id === task.employee_id)?.name || t('taskReview.unknown')}</p>
-                        </div>
-                      </div>
-                      {task.created_by && (
-                        <div className={`flex items-center space-x-2 ${text.secondary} text-xs`}>
-                          <UserCheck className="w-4 h-4" />
-                          <div>
-                            <p className="font-medium">{t('taskReview.assignedBy')}</p>
-                            <p className={text.primary}>{employeeDirectory.find(e => e.id === task.created_by)?.name || t('taskReview.unknown')}</p>
-                          </div>
-                        </div>
-                      )}
-                      {task.quality_rating > 0 && (
-                        <div className={`flex items-center space-x-2 ${text.secondary} text-xs`}>
-                          <Star className="w-4 h-4 text-yellow-400" />
-                          <div>
-                            <p className="font-medium">{t('taskReview.qualityRating')}</p>
-                            <p className={text.primary}>{task.quality_rating}/5 ⭐</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {task.self_assessment && (
-                      <div className={`mt-2 p-3 rounded ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'} border-l-4 border-blue-500`}>
-                        <p className={`text-xs font-semibold ${text.primary} mb-1 flex items-center space-x-1`}>
-                          <MessageSquare className="w-3 h-3" />
-                          <span>{t('taskReview.employeeSelfAssessment')}:</span>
-                        </p>
-                        <p className={`text-sm ${text.secondary}`}>{isDemoMode() ? task.self_assessment : <TranslatedText text={task.self_assessment} record={{ entityType: 'task', entityId: task.id, field: 'self_assessment' }} />}</p>
-                      </div>
-                    )}
-                    {task.comments && (
-                      <div className={`mt-2 p-3 rounded ${isDarkMode ? 'bg-amber-600/20' : 'bg-amber-50'} border-l-4 border-amber-500`}>
-                        <p className={`text-xs font-semibold ${text.primary} mb-1 flex items-center space-x-1`}>
-                          <Award className="w-3 h-3" />
-                          <span>{t('taskReview.managerEvaluation')}:</span>
-                        </p>
-                        <p className={`text-sm ${text.secondary}`}>{isDemoMode() ? task.comments : <TranslatedText text={task.comments} record={{ entityType: 'task', entityId: task.id, field: 'comments' }} />}</p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Review Button */}
-                  {checkPermission('canViewReports') && (
-                    <ShinyButton
-                      type="button"
-                      onClick={() => {
-                        setReviewingTask(task);
-                        setReviewForm({
-                          qualityRating: task.quality_rating || 0,
-                          managerComments: task.comments || '',
-                          status: task.status || 'pending'
-                        });
-                      }}
-                      className={cn(
-                        'ml-4 px-4 py-2 text-white border-blue-500',
-                        isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
-                      )}
-                    >
-                      <Edit2 className="w-4 h-4" />
-                      <span>{t('taskReview.review')}</span>
-                    </ShinyButton>
-                  )}
-                </div>
-              </div>
-            ))}
-            {empTasks.length === 0 && (
-              <div className="text-center py-8">
-                <p className={text.secondary}>{t('taskReview.noTasksForEmployee')}</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-  
-  // Handle review submission
-  const handleReviewSubmit = async () => {
-    if (!reviewingTask) return;
-
-    // Service expects camelCase (also accepts snake_case as fallback)
-    const updateData = {
-      qualityRating: reviewForm.qualityRating,
-      comments: reviewForm.managerComments,
-      status: reviewForm.status,
-    };
-
+  const applyReviewUpdate = useCallback(async (row, updates, message) => {
+    if (!row?.review?.id) return;
+    setBusyId(row.review.id);
     try {
-      const result = await workloadService.updateTask(reviewingTask.id, updateData);
-
-      if (result.success) {
-        const savedTask = {
-          ...reviewingTask,
-          ...(result.data || {}),
-          quality_rating: result.data?.quality_rating ?? reviewForm.qualityRating,
-          comments: result.data?.comments ?? reviewForm.managerComments,
-          status: result.data?.status ?? reviewForm.status,
-        };
-
-        // Update local list immediately so the rating persists in the UI
-        setTasks((prev) =>
-          prev.map((task) =>
-            String(task.id) === String(reviewingTask.id) ? { ...task, ...savedTask } : task
-          )
-        );
-
-        // Force stats refresh for the reviewed employee
-        const employeeId = reviewingTask.employee_id || reviewingTask.employee?.id;
-        if (employeeId != null) {
-          setEmployeeStats((prev) => {
-            const next = { ...prev };
-            delete next[employeeId];
-            delete next[String(employeeId)];
-            return next;
-          });
-          fetchEmployeeStats(employeeId);
-        }
-
-        setSuccessMessage(t('taskReview.reviewSubmitSuccess'));
-        setReviewingTask(null);
-        setReviewForm({ qualityRating: 0, managerComments: '', status: 'pending' });
-
-        if (viewMode === 'organization') {
-          fetchTasks({ silent: true });
-          fetchOrgStats();
-        } else if (selectedEmployee) {
-          fetchTasks({ silent: true });
-        }
-
-        setTimeout(() => setSuccessMessage(''), 3000);
-      } else {
-        setErrorMessage(result.error || t('taskReview.reviewSubmitFailed'));
-        setTimeout(() => setErrorMessage(''), 3000);
-      }
+      const result = await performanceService.updatePerformanceReview(row.review.id, updates);
+      if (!result.success) throw new Error(result.error || 'Update failed');
+      setReviews((prev) => prev.map((review) => (
+        String(review.id) === String(row.review.id)
+          ? { ...review, ...(result.data || {}), status: updates.status ?? review.status }
+          : review
+      )));
+      setOpenReview(null);
+      setNotice({ kind: 'ok', text: message });
     } catch (error) {
-      console.error('Error submitting review:', error);
+      console.error('Error updating review:', error);
       if (handleSessionAuthError(error)) return;
-      setErrorMessage(t('taskReview.reviewSubmitError'));
-      setTimeout(() => setErrorMessage(''), 3000);
+      setNotice({ kind: 'error', text: error.message });
+    } finally {
+      setBusyId(null);
     }
+  }, [handleSessionAuthError]);
+
+  const signOff = useCallback((row) => applyReviewUpdate(
+    row,
+    { status: 'approved' },
+    t('taskReview.signedOffMessage', '{name} signed off.').replace('{name}', nameOf(row.employee))
+  ), [applyReviewUpdate, t, nameOf]);
+
+  const sendBack = useCallback((row) => applyReviewUpdate(
+    row,
+    { status: 'draft' },
+    t('taskReview.sentBackMessage', '{name} sent back for revision.').replace('{name}', nameOf(row.employee))
+  ), [applyReviewUpdate, t, nameOf]);
+
+  const remindManagers = useCallback(async () => {
+    if (remindable.length === 0) return;
+    setBusyId('remind');
+    try {
+      // Notifications address hr_users, employees address employees, so the
+      // reminder has to be routed through the account behind the manager.
+      const userResult = await getAllUsers();
+      const accountFor = new Map(
+        (userResult.success ? userResult.data || [] : [])
+          .filter((account) => account.employee_id != null)
+          .map((account) => [String(account.employee_id), account.id])
+      );
+
+      const sent = remindable
+        .map((row) => ({ row, userId: accountFor.get(String(row.manager.id)) }))
+        .filter(({ userId }) => Boolean(userId));
+
+      await Promise.all(sent.map(({ row, userId }) => notifyUser(
+        userId,
+        t('taskReview.reminderTitle', 'Manager reviews outstanding'),
+        t('taskReview.reminderBody', '{n} review(s) for {dept} are past their deadline for {cycle}.')
+          .replace('{n}', String(row.late))
+          .replace('{dept}', row.label)
+          .replace('{cycle}', selectedPeriod.replace('-', ' ')),
+        { type: 'warning', category: 'performance', actionUrl: '/task-review', actionLabel: t('taskReview.review', 'Review') }
+      )));
+
+      setNotice(sent.length > 0
+        ? {
+          kind: 'ok',
+          text: t('taskReview.remindedMessage', 'Reminded {n} manager(s).').replace('{n}', String(sent.length)),
+        }
+        : {
+          kind: 'error',
+          text: t('taskReview.remindNoAccounts', 'None of those managers has an account to notify.'),
+        });
+    } catch (error) {
+      console.error('Error sending reminders:', error);
+      if (handleSessionAuthError(error)) return;
+      setNotice({ kind: 'error', text: error.message });
+    } finally {
+      setBusyId(null);
+    }
+  }, [remindable, t, selectedPeriod, handleSessionAuthError]);
+
+  useEffect(() => {
+    if (!notice) return undefined;
+    const id = setTimeout(() => setNotice(null), 4000);
+    return () => clearTimeout(id);
+  }, [notice]);
+
+  useEffect(() => {
+    if (!openReview) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setOpenReview(null); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [openReview]);
+
+  /* ---------------- copy ---------------- */
+
+  const cycleLabel = selectedPeriod.replace('-', ' ');
+
+  const headline = [
+    `${t('taskReview.cycle', 'Cycle')} ${cycleLabel}`,
+    t('taskReview.inScopeCount', '{n} employees in scope').replace('{n}', String(inScope)),
+    calibration
+      ? `${t('taskReview.calibration', 'calibration')} ${calibrationLabel}${
+        daysToCalibration != null
+          ? `, ${daysToCalibration >= 0
+            ? t('taskReview.daysOut', '{n} days out').replace('{n}', String(daysToCalibration))
+            : t('taskReview.daysPast', '{n} days past').replace('{n}', String(Math.abs(daysToCalibration)))}`
+          : ''}`
+      : null,
+  ].filter(Boolean).join(' · ');
+
+  const metaStyle = { fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint };
+  const captionStyle = { fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint, marginTop: 5, lineHeight: 1.45 };
+  const figureTitle = {
+    fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, letterSpacing: '.06em',
+    textTransform: 'uppercase', color: ind.ink,
   };
 
-  // Handle ESC key to close modal
-  useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === 'Escape' && reviewingTask) {
-        setReviewingTask(null);
-        setReviewForm({ qualityRating: 0, managerComments: '', status: 'pending' });
-      }
-    };
-
-    globalThis.addEventListener('keydown', handleEscape);
-    return () => globalThis.removeEventListener('keydown', handleEscape);
-  }, [reviewingTask]);
-
-  // Handle outside click to close modal
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (reviewModalRef.current && !reviewModalRef.current.contains(e.target) && reviewingTask) {
-        setReviewingTask(null);
-        setReviewForm({ qualityRating: 0, managerComments: '', status: 'pending' });
-      }
-    };
-
-    if (reviewingTask) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [reviewingTask]);
+  /* ---------------- render ---------------- */
 
   return (
-    <div className="space-y-6">
-      {/* Success/Error Messages */}
-      {successMessage && (
-        <div className={`p-4 rounded-lg border-l-4 border-green-500 ${isDarkMode ? 'bg-green-900/20' : 'bg-green-50'} flex items-center justify-between`}>
-          <div className="flex items-center space-x-2">
-            <CheckCircle className="w-5 h-5 text-green-500" />
-            <p className={`font-medium ${text.primary}`}>{successMessage}</p>
-          </div>
-          <button type="button" onClick={() => setSuccessMessage('')} className={text.secondary}>
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-      )}
-      {errorMessage && (
-        <div className={`p-4 rounded-lg border-l-4 border-red-500 ${isDarkMode ? 'bg-red-900/20' : 'bg-red-50'} flex items-center justify-between`}>
-          <div className="flex items-center space-x-2">
-            <AlertCircle className="w-5 h-5 text-red-500" />
-            <p className={`font-medium ${text.primary}`}>{errorMessage}</p>
-          </div>
-          <button type="button" onClick={() => setErrorMessage('')} className={text.secondary}>
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-      )}
+    <div
+      style={{
+        border: `1px solid ${ind.hairline}`,
+        background: ind.ground,
+        color: ind.ink,
+        fontFamily: BODY,
+        fontSize: 14,
+        borderRadius: 0,
+      }}
+    >
+      {/* ── TICKER — the six figures that never move ─────────────────── */}
+      <div
+        style={{
+          height: 44,
+          background: ind.tickerBg,
+          color: ind.tickerInk,
+          borderBottom: `1px solid ${ind.hairline}`,
+          display: 'flex',
+          alignItems: 'stretch',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+        }}
+      >
+        <TickerCell ind={ind}>
+          <LiveClock ind={ind} live={hasRealData} />
+        </TickerCell>
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h2 className={`text-2xl font-bold ${text.primary}`}>{t('taskReview.title')}</h2>
-            <PageLiveClock
-              textClassName={text.primary}
-              separatorClassName={text.secondary}
-              loading={loading}
-              isDarkMode={isDarkMode}
-              fetchLabel={t('common.fetching', 'Fetching')}
-            />
-          </div>
-          <p className={`text-sm ${text.secondary} mt-1`}>{t('taskReview.subtitle')}</p>
-        </div>
-        {canViewAllEmployees && (
-          <div className="flex space-x-2 flex-wrap">
-            <button
-              type="button"
-              onClick={() => { setViewMode('organization'); setSelectedEmployee(null); }}
-              className={`px-4 py-2 rounded-lg cursor-pointer transition-colors ${viewMode === 'organization' ? 'bg-blue-600 text-white' : isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
-            >
-              <School className="w-4 h-4 inline-block mr-2 -translate-y-0.5" />{t('taskReview.organization')}
-            </button>
-            <button 
-              type="button"
-              onClick={() => {
-                setViewMode('individual');
-                if (!selectedEmployee && user?.employeeId) {
-                  setSelectedEmployee(String(user.employeeId));
-                }
-              }}
-              className={`px-4 py-2 rounded-lg cursor-pointer transition-colors ${viewMode === 'individual' ? 'bg-amber-600 text-white' : isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
-            >
-              <GraduationCap className="w-4 h-4 inline-block mr-2 -translate-y-0.5" />{t('taskReview.individual')}
-            </button>
-            {viewMode === 'organization' && (
-              <div className={`inline-flex rounded-lg border overflow-hidden ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
-                <button
-                  type="button"
-                  onClick={() => setOrgStatusSegment('active')}
-                  className={`px-3 py-2 text-sm font-medium transition-colors cursor-pointer ${
-                    orgStatusSegment === 'active'
-                      ? isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-900 text-white'
-                      : isDarkMode ? 'bg-gray-800 text-gray-200 hover:bg-gray-700' : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                  aria-pressed={orgStatusSegment === 'active'}
-                >
-                  {t('employees.active', 'Active')} ({activeEmployeeCount})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOrgStatusSegment('inactive')}
-                  className={`px-3 py-2 text-sm font-medium transition-colors cursor-pointer ${
-                    orgStatusSegment === 'inactive'
-                      ? isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-900 text-white'
-                      : isDarkMode ? 'bg-gray-800 text-gray-200 hover:bg-gray-700' : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                  aria-pressed={orgStatusSegment === 'inactive'}
-                >
-                  {t('employees.inactive', 'Inactive')} ({inactiveEmployeeCount})
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-      {viewMode === 'individual' && canViewAllEmployees && (
-        <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-          <label className={`block text-sm font-medium ${text.primary} mb-2`}>{t('taskReview.selectEmployee')}</label>
-          <select
-            value={selectedEmployee || ''}
-            onChange={(e) => setSelectedEmployee(e.target.value)}
-            className={`w-full px-4 py-2 rounded-lg border ${border.primary} ${text.primary}`}
-            style={{ backgroundColor: isDarkMode ? '#4b5563' : '#ffffff', color: isDarkMode ? '#ffffff' : '#111827' }}
+        <TickerCell ind={ind} label={t('taskReview.inScope', 'In scope')} value={inScope} />
+        <TickerCell
+          ind={ind}
+          label={t('taskReview.signedOff', 'Signed off')}
+          value={stages.signedOff}
+          delta={stages.recent > 0 ? stages.recent : null}
+          title={t('taskReview.signedOffThisWeek', 'Signed off in the last 7 days')}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('taskReview.avgScore', 'Avg score')}
+          value={scored.length ? fmt1(orgAvg) : '—'}
+          delta={avgDelta ? Math.abs(avgDelta).toFixed(1) : null}
+          deltaDirection={avgDelta > 0 ? 'up' : 'down'}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('taskReview.overdue', 'Overdue')}
+          value={stages.overdue}
+          // The one figure on the strip that asks for action.
+          valueColor={stages.overdue > 0 ? ind.tickerUp : undefined}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('taskReview.calibrationLabel', 'Calibration')}
+          value={calibrationLabel.toUpperCase()}
+        />
+
+        <div
+          style={{
+            flex: 1,
+            minWidth: 'max-content',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 8,
+            padding: '0 14px',
+            borderLeft: `1px solid ${ind.tickerRule}`,
+          }}
+        >
+          <FetchElapsedPill active={loading} isDarkMode label={t('common.fetching', 'Fetching')} />
+          <FlatSelect
+            ind={ind}
+            onDark
+            value={selectedPeriod}
+            onChange={(e) => { setPeriodTouched(true); setSelectedPeriod(e.target.value); }}
+            aria-label={t('taskReview.cycle', 'Cycle')}
           >
-            <option value="">{t('taskReview.chooseEmployee')}</option>
-            {availableEmployees.map(emp => (
-              <option key={emp.id} value={emp.id}>
-                {getDemoEmployeeName(emp, t)} - {t(`employeePosition.${emp.position}`) || emp.position}
+            {periodOptions.map((key) => (
+              <option key={key} value={key} style={{ color: '#1d1f20' }}>
+                {`${t('taskReview.cycle', 'Cycle')} ${key.replace('-', ' ')}`}
               </option>
             ))}
-          </select>
-        </div>
-      )}
-      <div className={`${bg.secondary} rounded-lg p-4 border ${border.primary}`}>
-        <div className="flex flex-wrap items-center gap-4">
-          <Filter className={`w-5 h-5 ${text.secondary}`} />
-          <div className="flex items-center space-x-2">
-            <span className={`text-sm ${text.secondary}`}>{t('taskReview.status')}:</span>
-            <button type="button" onClick={() => setFilterStatus('all')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'all' ? 'bg-blue-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.all')}</button>
-            <button type="button" onClick={() => setFilterStatus('completed')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'completed' ? 'bg-green-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.completed')}</button>
-            <button type="button" onClick={() => setFilterStatus('in-progress')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'in-progress' ? 'bg-amber-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.inProgress')}</button>
-            <button type="button" onClick={() => setFilterStatus('pending')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterStatus === 'pending' ? 'bg-gray-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.pending')}</button>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className={`text-sm ${text.secondary}`}>{t('taskReview.priority')}:</span>
-            <button type="button" onClick={() => setFilterPriority('all')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'all' ? 'bg-blue-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.all')}</button>
-            <button type="button" onClick={() => setFilterPriority('high')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'high' ? 'bg-red-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.high')}</button>
-            <button type="button" onClick={() => setFilterPriority('medium')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'medium' ? 'bg-yellow-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.medium')}</button>
-            <button type="button" onClick={() => setFilterPriority('low')} className={`px-3 py-1 rounded text-sm cursor-pointer ${filterPriority === 'low' ? 'bg-green-600 text-white' : isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600'}`}>{t('taskReview.low')}</button>
-          </div>
+          </FlatSelect>
         </div>
       </div>
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader className="w-8 h-8 animate-spin text-blue-600" />
-        </div>
-      ) : (viewMode === 'organization' && checkPermission('canViewReports')) ? <OrganizationView /> : <IndividualView />}
 
-      {/* Review Modal */}
-      {reviewingTask && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div ref={reviewModalRef} className={`${bg.secondary} rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border ${border.primary}`}>
-            <div className={`sticky top-0 ${bg.secondary} border-b ${border.primary} px-6 py-4 flex items-center justify-between`}>
-              <div>
-                <h3 className={`text-xl font-bold ${text.primary}`}>{t('taskReview.reviewTask')}</h3>
-                <p className={`text-sm ${text.secondary} mt-1`}>{isDemoMode() ? getDemoTaskTitle(reviewingTask, t) : <TranslatedText text={reviewingTask.title} record={{ entityType: 'task', entityId: reviewingTask.id, field: 'title' }} />}</p>
+      {/* ── BANDS ────────────────────────────────────────────────────── */}
+      <div className="flex flex-col lg:flex-row items-stretch">
+
+        {/* ── LEFT — the evidence ──────────────────────────────────── */}
+        <div
+          className="flex-1 min-w-0 flex flex-col"
+          style={{ padding: '22px 24px 20px', gap: 18, borderRight: `1px solid ${ind.hairline}` }}
+        >
+          {fetchError && (
+            <div style={{ border: `1px solid ${ind.ink}`, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <AlertCircle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Kicker ind={ind} color={ind.ink}>{t('common.error', 'Error')}</Kicker>
+                <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 4 }}>{fetchError}</p>
+                <button
+                  type="button"
+                  onClick={() => fetchAll()}
+                  style={{
+                    marginTop: 8, background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                    fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5, letterSpacing: '.08em',
+                    textTransform: 'uppercase', color: ind.accentDeep, textDecoration: 'underline',
+                  }}
+                >
+                  {t('common.retry', 'Try Again')}
+                </button>
               </div>
+            </div>
+          )}
+
+          {notice && (
+            <div
+              className="flex items-center justify-between"
+              style={{ gap: 12, border: `1px solid ${notice.kind === 'ok' ? ind.hairline : ind.ink}`, padding: '9px 14px' }}
+            >
+              <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink }}>{notice.text}</span>
               <button
                 type="button"
-                onClick={() => {
-                  setReviewingTask(null);
-                  setReviewForm({ qualityRating: 0, managerComments: '', status: 'pending' });
-                }}
-                className={`${text.secondary} hover:${text.primary} transition-colors`}
+                onClick={() => setNotice(null)}
+                aria-label={t('common.close', 'Close')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0 }}
               >
-                <X className="w-6 h-6" />
+                <X size={14} strokeWidth={1.5} />
               </button>
             </div>
+          )}
 
-            <div className="p-6 space-y-6">
-              {/* Task Information */}
-              <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} border ${border.primary}`}>
-                <h4 className={`font-semibold ${text.primary} mb-3 flex items-center space-x-2`}>
-                  <Eye className="w-4 h-4" />
-                  <span>{t('taskReview.taskDetails')}</span>
-                </h4>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <p className={`${text.secondary} font-medium`}>{t('taskReview.assignedTo')}:</p>
-                    <p className={text.primary}>{employeeDirectory.find(e => e.id === reviewingTask.employee_id)?.name || t('taskReview.unknown')}</p>
-                  </div>
-                  <div>
-                    <p className={`${text.secondary} font-medium`}>{t('taskReview.assignedBy')}:</p>
-                    <p className={text.primary}>{employeeDirectory.find(e => e.id === reviewingTask.created_by)?.name || t('taskReview.unknown')}</p>
-                  </div>
-                  {reviewingTask.due_date && (
-                    <div>
-                      <p className={`${text.secondary} font-medium`}>{t('taskReview.dueDate')}:</p>
-                      <p className={text.primary}>{new Date(reviewingTask.due_date).toLocaleDateString()}</p>
-                    </div>
+          {/* Header row */}
+          <div className="flex flex-wrap items-end justify-between" style={{ gap: 14 }}>
+            <div style={{ minWidth: 0 }}>
+              <h1 style={{ fontFamily: BODY, fontSize: 32, fontWeight: 400, margin: 0, color: ind.ink, lineHeight: 1.1 }}>
+                {t('taskReview.title', 'Performance Reviews')}
+              </h1>
+              <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 6 }}>{headline}</p>
+            </div>
+            {canViewAll && segmentOptions.length > 1 && (
+              <Seg
+                ind={ind}
+                options={segmentOptions}
+                value={segment}
+                onChange={setSegment}
+                ariaLabel={t('taskReview.scope', 'Scope')}
+              />
+            )}
+          </div>
+
+          {/* ── Cycle plate ────────────────────────────────────────── */}
+          <Blueprint ind={ind} style={{ padding: '18px 20px 14px', flex: 'none' }}>
+            <div className="flex flex-col md:flex-row items-stretch" style={{ gap: 34 }}>
+              <div style={{ flex: 'none', width: 200 }}>
+                <Kicker ind={ind}>{t('taskReview.cycleCompletion', 'Cycle completion')}</Kicker>
+                <div style={{ ...figure(62, ind.ink), margin: '6px 0 2px' }}>
+                  {`${pct(stages.signedOff, inScope)}%`}
+                </div>
+                <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginBottom: 12, lineHeight: 1.45 }}>
+                  {t('taskReview.ofSignedOff', '{n} of {total} signed off')
+                    .replace('{n}', String(stages.signedOff))
+                    .replace('{total}', String(inScope))}
+                  {stages.recent > 0 && (
+                    <>
+                      <br />
+                      <span style={{ color: ind.accentDeep }}>
+                        {`▲ ${stages.recent} `}
+                        {t('taskReview.thisWeek', 'this week')}
+                      </span>
+                    </>
                   )}
-                  <div>
-                    <p className={`${text.secondary} font-medium`}>{t('taskReview.priority')}:</p>
-                    <span className={`px-2 py-0.5 rounded text-xs ${getPriorityColor(reviewingTask.priority)}`}>{reviewingTask.priority}</span>
-                  </div>
-                </div>
-                {reviewingTask.description && (
-                  <div className="mt-3">
-                    <p className={`${text.secondary} font-medium`}>{t('taskReview.description')}:</p>
-                    <p className={`${text.primary} text-sm mt-1`}>{isDemoMode() ? getDemoTaskDescription(reviewingTask, t) : <TranslatedText text={reviewingTask.description} record={{ entityType: 'task', entityId: reviewingTask.id, field: 'description' }} />}</p>
-                  </div>
-                )}
-                {reviewingTask.self_assessment && (
-                  <div className={`mt-3 p-3 rounded ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'} border-l-4 border-blue-500`}>
-                    <p className={`${text.primary} font-semibold text-sm mb-1`}>{t('taskReview.employeeSelfAssessment')}:</p>
-                    <p className={`${text.secondary} text-sm`}>{isDemoMode() ? reviewingTask.self_assessment : <TranslatedText text={reviewingTask.self_assessment} record={{ entityType: 'task', entityId: reviewingTask.id, field: 'self_assessment' }} />}</p>
-                  </div>
-                )}
+                </p>
+                <p style={{ ...captionStyle, borderTop: `1px solid ${ind.rule}`, paddingTop: 9, marginTop: 0 }}>
+                  {projection.kind === 'done' && t('taskReview.projectionDone', 'Every review in scope is signed off.')}
+                  {projection.kind === 'remaining' && t(
+                    'taskReview.projectionRemaining',
+                    '{n} still to sign off before calibration on {date}.'
+                  ).replace('{n}', String(projection.remaining)).replace('{date}', calibrationLabel)}
+                  {projection.kind === 'rate' && (
+                    <>
+                      {t('taskReview.projectionRate', 'At this rate the cycle closes')}
+                      {' '}
+                      <span style={{ color: ind.ink, fontWeight: 600 }}>
+                        {formatDate(projection.closes, currentLanguage, { day: '2-digit', month: 'short' })}
+                      </span>
+                      {projection.marginDays != null && (
+                        projection.marginDays >= 0
+                          ? ` — ${t('taskReview.beforeCalibration', '{n} days before calibration.').replace('{n}', String(projection.marginDays))}`
+                          : ` — ${t('taskReview.afterCalibration', '{n} days after calibration.').replace('{n}', String(Math.abs(projection.marginDays)))}`
+                      )}
+                    </>
+                  )}
+                </p>
               </div>
 
-              {/* Quality Rating */}
-              <div>
-                <label className={`block text-sm font-semibold ${text.primary} mb-3`}>
-                  {t('taskReview.qualityRatingStars')}
-                </label>
-                <div className="flex items-center space-x-2">
-                  {[1, 2, 3, 4, 5].map(rating => (
-                    <button
-                      type="button"
-                      key={rating}
-                      onClick={() => setReviewForm({ ...reviewForm, qualityRating: rating })}
-                      className={`transition-all cursor-pointer ${reviewForm.qualityRating >= rating ? 'text-yellow-400 scale-110' : isDarkMode ? 'text-gray-600' : 'text-gray-300'} hover:scale-125`}
-                    >
-                      <Star className={`w-8 h-8 ${reviewForm.qualityRating >= rating ? 'fill-yellow-400' : ''}`} />
-                    </button>
-                  ))}
-                  <span className={`ml-4 ${text.primary} font-semibold text-lg`}>
-                    {reviewForm.qualityRating > 0 ? `${reviewForm.qualityRating}/5` : t('taskReview.notRated')}
-                  </span>
-                </div>
-              </div>
-
-              {/* Status Update */}
-              <div>
-                <label className={`block text-sm font-semibold ${text.primary} mb-2`}>
-                  {t('taskReview.updateStatus')}
-                </label>
-                <select
-                  value={reviewForm.status}
-                  onChange={(e) => setReviewForm({ ...reviewForm, status: e.target.value })}
-                  className={`w-full px-4 py-2 rounded-lg border ${border.primary} ${text.primary}`}
-                  style={{ backgroundColor: isDarkMode ? '#4b5563' : '#ffffff', color: isDarkMode ? '#ffffff' : '#111827' }}
-                >
-                  <option value="pending">{t('taskReview.pending')}</option>
-                  <option value="in-progress">{t('taskReview.inProgress')}</option>
-                  <option value="completed">{t('taskReview.completed')}</option>
-                </select>
-              </div>
-
-              {/* Manager Comments */}
-              <div>
-                <label className={`block text-sm font-semibold ${text.primary} mb-2`}>
-                  {t('taskReview.managerEvaluationComments')}
-                </label>
-                <textarea
-                  value={reviewForm.managerComments}
-                  onChange={(e) => setReviewForm({ ...reviewForm, managerComments: e.target.value })}
-                  placeholder={t('taskReview.feedbackPlaceholder')}
-                  rows={6}
-                  className={`w-full px-4 py-2 rounded-lg border ${border.primary} ${text.primary} resize-none`}
-                  style={{ backgroundColor: isDarkMode ? '#4b5563' : '#ffffff', color: isDarkMode ? '#ffffff' : '#111827' }}
+              {/* The pipeline. Ramp descends with depth: the deepest accent is
+                  the stage that is finished, the palest the one still open. */}
+              <div
+                className="flex flex-col"
+                style={{ flex: 1, minWidth: 0, justifyContent: 'center', gap: 13 }}
+              >
+                <StageBar
+                  ind={ind}
+                  label={t('taskReview.stageSelf', 'Self-assessment')}
+                  count={stages.self}
+                  total={inScope}
+                  note={stages.self >= inScope
+                    ? t('taskReview.complete', 'complete')
+                    : t('taskReview.nOutstanding', '{n} outstanding').replace('{n}', String(inScope - stages.self))}
+                  fill={rampAt(ind, 0)}
+                />
+                <StageBar
+                  ind={ind}
+                  label={t('taskReview.stageManager', 'Manager review')}
+                  count={stages.manager}
+                  total={inScope}
+                  note={stages.overdue > 0
+                    ? t('taskReview.nOverdue', '{n} overdue').replace('{n}', String(stages.overdue))
+                    : t('taskReview.nToFile', '{n} to file').replace('{n}', String(inScope - stages.manager))}
+                  fill={rampAt(ind, 1)}
+                />
+                <StageBar
+                  ind={ind}
+                  label={t('taskReview.stageCalibration', 'Calibration')}
+                  count={stages.calibrated}
+                  total={inScope}
+                  note={`${t('taskReview.session', 'session')} ${calibrationLabel}`}
+                  fill={rampAt(ind, 2)}
+                />
+                <StageBar
+                  ind={ind}
+                  label={t('taskReview.stageSignedOff', 'Signed off')}
+                  count={stages.signedOff}
+                  total={inScope}
+                  note={awaitingRows.length > 0
+                    ? t('taskReview.nWaitOnYou', '{n} wait on you').replace('{n}', String(awaitingRows.length))
+                    : t('taskReview.noneWaitOnYou', 'none wait on you')}
+                  fill={rampAt(ind, 3)}
                 />
               </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <ShinyButton
-                  type="button"
-                  onClick={() => {
-                    setReviewingTask(null);
-                    setReviewForm({ qualityRating: 0, managerComments: '', status: 'pending' });
-                  }}
-                  className={cn(
-                    'px-6 py-2 border',
-                    border.primary,
-                    text.primary,
-                    isDarkMode ? 'hover:bg-gray-700 bg-transparent' : 'hover:bg-gray-100 bg-white'
-                  )}
-                >
-                  <X className="w-4 h-4" />
-                  <span>{t('taskReview.cancel')}</span>
-                </ShinyButton>
-                <ShinyButton
-                  type="button"
-                  onClick={handleReviewSubmit}
-                  className={cn(
-                    'px-6 py-2 text-white border-blue-500',
-                    isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
-                  )}
-                >
-                  <Save className="w-4 h-4" />
-                  <span>{t('taskReview.submitReview')}</span>
-                </ShinyButton>
-              </div>
             </div>
+          </Blueprint>
+
+          {/* ── Bottom pair ────────────────────────────────────────── */}
+          <div
+            className="grid grid-cols-1 lg:grid-cols-2"
+            style={{ gap: 18, flex: 1, minHeight: 300 }}
+          >
+            {/* Score distribution */}
+            <Blueprint ind={ind} style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+                <span style={figureTitle}>{t('taskReview.scoreDistribution', 'Score distribution')}</span>
+                <span style={metaStyle}>
+                  {t('taskReview.nReviews', '{n} reviews').replace('{n}', String(scored.length))}
+                </span>
+              </div>
+              <p style={{ ...captionStyle, marginBottom: 14 }}>
+                {scored.length > 0 && histogram.peak != null
+                  ? t('taskReview.distributionCaption', 'The {avg} average peaks at {peak} — {pct}% of reviews sit at or above it')
+                    .replace('{avg}', fmt1(orgAvg))
+                    .replace('{peak}', fmt1(histogram.peak))
+                    .replace('{pct}', String(histogram.peakShare))
+                  : t('taskReview.distributionEmptyCaption', 'No scored reviews in this cycle yet')}
+              </p>
+              <ScoreHistogram
+                ind={ind}
+                buckets={histogram.buckets}
+                peak={histogram.peak}
+                emptyLabel={t('taskReview.noScores', 'Nothing has been scored in this cycle yet.')}
+              />
+            </Blueprint>
+
+            {/* Average by department */}
+            <Blueprint ind={ind} style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+                <span style={figureTitle}>{t('taskReview.averageByDepartment', 'Average by department')}</span>
+                <span style={metaStyle}>
+                  {t('taskReview.scaleRange', 'scale {from} – {to}')
+                    .replace('{from}', fmt1(deptFloor))
+                    .replace('{to}', fmt1(SCORE_MAX))}
+                </span>
+              </div>
+              <p style={{ ...captionStyle, marginBottom: 14 }}>
+                {departmentRows.length > 0
+                  ? t('taskReview.departmentCaption', 'The vertical rule is the org average, {avg} — {n} department(s) sit under it')
+                    .replace('{avg}', fmt1(orgAvg))
+                    .replace('{n}', String(belowOrg))
+                  : t('taskReview.departmentEmptyCaption', 'Department averages appear once reviews are scored')}
+              </p>
+              <DepartmentChart
+                ind={ind}
+                rows={departmentRows}
+                orgAvg={orgAvg}
+                floor={deptFloor}
+                emptyLabel={t('taskReview.noDepartmentScores', 'No department has a scored review in this cycle.')}
+              />
+            </Blueprint>
           </div>
         </div>
+
+        {/* ── RIGHT — the decision column, 372px ───────────────────── */}
+        <aside
+          className="w-full lg:w-[372px] lg:shrink-0 flex flex-col"
+          style={{ background: ind.chrome, overflow: 'hidden' }}
+        >
+          {/* Awaiting your sign-off */}
+          <div style={{ padding: '20px 20px 12px', borderBottom: `1px solid ${ind.hairline}` }}>
+            <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+              <ColumnHeading ind={ind}>{t('taskReview.awaitingSignOff', 'Awaiting your sign-off')}</ColumnHeading>
+              <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, color: ind.accent, whiteSpace: 'nowrap' }}>
+                {t('taskReview.nReviews', '{n} reviews').replace('{n}', String(awaitingRows.length))}
+              </span>
+            </div>
+            <p style={captionStyle}>
+              {awaitingRows.length > 0 && oldestWait != null
+                ? `${t('taskReview.oldestWaited', 'Oldest has waited {n} day(s)').replace('{n}', String(oldestWait))} · ${t('taskReview.calibrationCloses', 'calibration closes {date}').replace('{date}', calibrationLabel)}`
+                : t('taskReview.calibrationCloses', 'calibration closes {date}').replace('{date}', calibrationLabel)}
+            </p>
+          </div>
+
+          {awaitingRows.length === 0 && (
+            <div style={{ padding: '16px 20px', borderBottom: `1px solid ${ind.rule}` }}>
+              <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, lineHeight: 1.5 }}>
+                {t('taskReview.nothingAwaiting', 'Nothing is waiting on your signature for this cycle.')}
+              </p>
+            </div>
+          )}
+
+          {/* Two expanded rows — the focused one carries the tint */}
+          {awaitingRows.slice(0, EXPANDED_ROWS).map((row, index) => (
+            <div
+              key={row.id}
+              style={{
+                padding: '14px 20px',
+                borderBottom: `1px solid ${ind.rule}`,
+                background: index === 0 ? ind.accentWash : 'transparent',
+              }}
+            >
+              <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setOpenReview(row)}
+                  style={{
+                    fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, letterSpacing: '.04em',
+                    textTransform: 'uppercase', color: ind.ink, background: 'none', border: 'none',
+                    padding: 0, cursor: 'pointer', textAlign: 'left', minWidth: 0,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}
+                >
+                  {nameOf(row.employee)}
+                </button>
+                <span style={{ ...figure(20, ind.ink), flex: 'none' }}>{fmt1(row.score)}</span>
+              </div>
+
+              <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkGhost, margin: '2px 0 6px', lineHeight: 1.45 }}>
+                {[
+                  departmentLabel(row.employee.department),
+                  row.employee.position ? t(`employeePosition.${row.employee.position}`, String(row.employee.position).replace(/_/g, ' ')) : null,
+                  row.delta != null && row.delta !== 0
+                    ? `${row.delta > 0 ? '▲' : '▼'} ${Math.abs(row.delta).toFixed(1)} ${t('taskReview.sinceLastCycle', 'since')} ${(previousPeriodKey(selectedPeriod) || '').replace('-', ' ')}`
+                    : (row.previousScore != null ? t('taskReview.scoreUnchanged', 'score unchanged') : null),
+                  row.score >= PROMOTION_SCORE ? t('taskReview.flaggedForPromotion', 'flagged for promotion') : null,
+                ].filter(Boolean).join(' · ')}
+              </p>
+
+              <ScoreMeter ind={ind} score={row.score} fill={rampAt(ind, index)} />
+
+              <div className="flex" style={{ gap: 7 }}>
+                <Btn
+                  ind={ind}
+                  variant="primary"
+                  disabled={!mayDecide(row) || busyId === row.review?.id}
+                  onClick={() => signOff(row)}
+                >
+                  {t('taskReview.signOff', 'Sign off')}
+                </Btn>
+                <Btn
+                  ind={ind}
+                  disabled={!mayDecide(row) || busyId === row.review?.id}
+                  onClick={() => sendBack(row)}
+                >
+                  {t('taskReview.sendBack', 'Send back')}
+                </Btn>
+              </div>
+            </div>
+          ))}
+
+          {/* Three compact rows */}
+          {awaitingRows.slice(EXPANDED_ROWS, EXPANDED_ROWS + COMPACT_ROWS).map((row) => (
+            <button
+              key={row.id}
+              type="button"
+              onClick={() => setOpenReview(row)}
+              className="flex items-center justify-between w-full"
+              style={{
+                padding: '12px 20px',
+                borderBottom: `1px solid ${ind.rule}`,
+                gap: 10,
+                background: 'transparent',
+                border: 'none',
+                borderBottomWidth: 1,
+                borderBottomStyle: 'solid',
+                borderBottomColor: ind.rule,
+                borderRadius: 0,
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <span style={{ minWidth: 0 }}>
+                <span
+                  className="block"
+                  style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                >
+                  {nameOf(row.employee)}
+                </span>
+                <span className="block" style={{ ...metaStyle, marginTop: 2 }}>
+                  {`${departmentLabel(row.employee.department)} · ${fmt1(row.score)}`}
+                  {row.waitedDays != null
+                    ? ` · ${t('taskReview.waitedDays', 'waited {n} day(s)').replace('{n}', String(row.waitedDays))}`
+                    : ''}
+                </span>
+              </span>
+              <ArrowRight size={15} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkFaint }} />
+            </button>
+          ))}
+
+          {/* Overdue manager reviews */}
+          <div style={{ padding: '18px 20px 12px', borderBottom: `1px solid ${ind.hairline}`, marginTop: 6 }}>
+            <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+              <ColumnHeading ind={ind}>{t('taskReview.overdueManagerReviews', 'Overdue manager reviews')}</ColumnHeading>
+              <Tag ind={ind} variant="outline">{stages.overdue}</Tag>
+            </div>
+          </div>
+
+          <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 11 }}>
+            {namedOverdue.length === 0 && (
+              <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, lineHeight: 1.5 }}>
+                {t('taskReview.noOverdueReviews', 'Every manager review is still inside its deadline.')}
+              </p>
+            )}
+
+            {namedOverdue.map((row, index) => (
+              <div key={row.key}>
+                <div className="flex items-baseline justify-between" style={{ gap: 10, marginBottom: 4 }}>
+                  <span
+                    style={{
+                      fontFamily: BODY, fontSize: 12.5, color: ind.ink, minWidth: 0,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {row.label}
+                    {row.manager ? ` · ${nameOf(row.manager)}` : ''}
+                  </span>
+                  <span style={{ ...figure(12.5, ind.ink), flex: 'none' }}>
+                    {t('taskReview.nLate', '{n} late').replace('{n}', String(row.late))}
+                  </span>
+                </div>
+                <Bar
+                  ind={ind}
+                  value={stages.overdue > 0 ? row.late / stages.overdue : 0}
+                  fill={rampAt(ind, index)}
+                  height={8}
+                />
+              </div>
+            ))}
+
+            {remindable.length > 0 && canSignOff && (
+              <Btn
+                ind={ind}
+                onClick={remindManagers}
+                disabled={busyId === 'remind'}
+                style={{ alignSelf: 'flex-start', marginTop: 2 }}
+              >
+                {t('taskReview.remindAll', 'Remind all {n}').replace('{n}', String(remindable.length))}
+              </Btn>
+            )}
+          </div>
+        </aside>
+      </div>
+
+      {/* ── Review detail ────────────────────────────────────────────── */}
+      {openReview && (
+        <ReviewModal
+          ind={ind}
+          t={t}
+          currentLanguage={currentLanguage}
+          row={openReview}
+          name={nameOf(openReview.employee)}
+          departmentLabel={departmentLabel}
+          period={selectedPeriod}
+          canSignOff={mayDecide(openReview)}
+          busy={busyId === openReview.review?.id}
+          onSignOff={() => signOff(openReview)}
+          onSendBack={() => sendBack(openReview)}
+          onClose={() => setOpenReview(null)}
+        />
       )}
     </div>
   );
 };
+
+/* ------------------------------------------------------------------ *
+ * Review detail — the written half of the review, and the two decisions
+ * ------------------------------------------------------------------ */
+
+const COMPETENCIES = [
+  ['technical_skills_rating', 'Technical'],
+  ['communication_rating', 'Communication'],
+  ['leadership_rating', 'Leadership'],
+  ['teamwork_rating', 'Teamwork'],
+  ['problem_solving_rating', 'Problem solving'],
+];
+
+function ReviewModal({
+  ind, t, currentLanguage, row, name, departmentLabel, period,
+  canSignOff, busy, onSignOff, onSendBack, onClose,
+}) {
+  const review = row.review || {};
+  const passages = [
+    ['strengths', t('taskReview.strengths', 'Strengths'), review.strengths],
+    ['areas', t('taskReview.areasForImprovement', 'Areas for improvement'), review.areas_for_improvement],
+    ['achievements', t('taskReview.achievements', 'Achievements'), review.achievements],
+    ['comments', t('taskReview.managerComments', 'Manager comments'), review.comments],
+    ['employee', t('taskReview.employeeSelfAssessment', 'Employee self-assessment'), review.employee_comments],
+  ].filter(([, , text]) => Boolean(text));
+
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50 p-4 overflow-y-auto"
+      style={{ background: 'rgba(29,31,32,.55)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{ background: ind.ground, border: `1px solid ${ind.ink}`, borderRadius: 0, width: '100%', maxWidth: 560 }}>
+        <div
+          className="flex items-start justify-between"
+          style={{ gap: 12, padding: '18px 20px', borderBottom: `1px solid ${ind.hairline}` }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <ColumnHeading ind={ind}>{name}</ColumnHeading>
+            <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 4 }}>
+              {[
+                departmentLabel(row.employee.department),
+                `${t('taskReview.cycle', 'Cycle')} ${period.replace('-', ' ')}`,
+                review.review_date ? formatDate(review.review_date, currentLanguage) : null,
+              ].filter(Boolean).join(' · ')}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('common.close', 'Close')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0 }}
+          >
+            <X size={16} strokeWidth={1.5} />
+          </button>
+        </div>
+
+        <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="flex items-end justify-between" style={{ gap: 14 }}>
+            <div>
+              <Kicker ind={ind}>{t('taskReview.overallRating', 'Overall')}</Kicker>
+              <div style={{ ...figure(38, ind.ink), marginTop: 4 }}>{fmt1(row.score)}</div>
+            </div>
+            {row.delta != null && (
+              <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted }}>
+                {row.delta === 0
+                  ? t('taskReview.scoreUnchanged', 'score unchanged')
+                  : `${row.delta > 0 ? '▲' : '▼'} ${Math.abs(row.delta).toFixed(1)} ${t('taskReview.sinceLastCycle', 'since')} ${(previousPeriodKey(period) || '').replace('-', ' ')}`}
+              </span>
+            )}
+          </div>
+
+          {COMPETENCIES.some(([key]) => Number(review[key]) > 0) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {COMPETENCIES.map(([key, label], index) => {
+                const value = Number(review[key]);
+                if (!Number.isFinite(value) || value <= 0) return null;
+                return (
+                  <div key={key}>
+                    <div className="flex items-baseline justify-between" style={{ gap: 10, marginBottom: 3 }}>
+                      <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink }}>
+                        {t(`taskReview.competency.${key}`, label)}
+                      </span>
+                      <span style={figure(12.5, ind.ink)}>{fmt1(value)}</span>
+                    </div>
+                    <Bar ind={ind} value={value / SCORE_MAX} fill={rampAt(ind, Math.floor(index / 2))} height={7} />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {passages.length === 0 && (
+            <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted }}>
+              {t('taskReview.noWrittenReview', 'No written feedback was recorded on this review.')}
+            </p>
+          )}
+
+          {passages.map(([key, label, text]) => (
+            <div key={key}>
+              <Kicker ind={ind} color={ind.inkMuted}>{label}</Kicker>
+              <p style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, marginTop: 5, lineHeight: 1.5 }}>
+                {isDemoMode()
+                  ? text
+                  : <TranslatedText text={text} record={{ entityType: 'performance_review', entityId: review.id, field: key }} />}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div
+          className="flex items-center justify-end"
+          style={{ gap: 8, padding: '14px 20px', borderTop: `1px solid ${ind.hairline}` }}
+        >
+          <Btn ind={ind} onClick={onClose}>{t('taskReview.cancel', 'Cancel')}</Btn>
+          <Btn ind={ind} disabled={!canSignOff || busy} onClick={onSendBack}>
+            {t('taskReview.sendBack', 'Send back')}
+          </Btn>
+          <Btn ind={ind} variant="primary" disabled={!canSignOff || busy} onClick={onSignOff}>
+            {t('taskReview.signOff', 'Sign off')}
+          </Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default TaskReview;

@@ -19,6 +19,7 @@ const Dashboard = lazy(() => import('./components/dashboard.jsx'));
 const Employee = lazy(() => import('./components/employee.jsx'));
 const TimeTracking = lazy(() => import('./components/timeTracking.jsx'));
 const TimeClockEntry = lazy(() => import('./components/timeClockEntry.jsx'));
+const PunchClock = lazy(() => import('./components/punchClock.jsx'));
 const TaskListing = lazy(() => import('./components/taskListing.jsx'));
 const TaskReview = lazy(() => import('./components/taskReview.jsx'));
 const PersonalGoals = lazy(() => import('./components/personalGoals.jsx'));
@@ -338,9 +339,13 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
                       path="/time-tracking" 
                       element={<TimeTracking employees={activeEmployees} />} 
                     />
-                    <Route 
-                      path="/task-review" 
-                      element={<TaskReview employees={activeEmployees} allEmployees={employees} />} 
+                    <Route
+                      path="/punch-clock"
+                      element={<PunchClock employees={activeEmployees} allEmployees={employees} />}
+                    />
+                    <Route
+                      path="/task-review"
+                      element={<TaskReview employees={activeEmployees} allEmployees={employees} />}
                     />
                     <Route 
                       path="/personal-goals" 

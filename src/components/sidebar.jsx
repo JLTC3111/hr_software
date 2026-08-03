@@ -13,7 +13,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   TrendingUp, Users, Award, FileText, AlarmClock, ChevronLeft, ChevronRight, ChevronDown,
-  Bell, Cog, CheckSquare, X, UserPlus, CalendarDays, Languages,
+  Bell, Cog, CheckSquare, X, UserPlus, CalendarDays, Languages, Timer,
 } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -85,6 +85,9 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
       section: t('sidebar.main', 'MAIN'),
       items: [
         { path: '/time-clock', name: t('nav.timeClock'), icon: AlarmClock },
+        // 3d, the live on-site punch. Deliberately its own entry: 3a above
+        // enters hours after the fact, this one is for people on the floor.
+        { path: '/punch-clock', name: t('nav.punchClock', 'Punch Clock'), icon: Timer },
         {
           path: '/dashboard',
           name: t('nav.dashboard'),
