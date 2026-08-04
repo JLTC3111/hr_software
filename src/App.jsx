@@ -7,6 +7,7 @@ import { useLanguage } from './contexts/LanguageContext'
 import { useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { UploadProvider } from './contexts/UploadContext'
+import { SheetProvider } from './contexts/SheetContext'
 // Eagerly loaded components (needed immediately)
 import Header from './components/header.jsx';
 import Sidebar from './components/sidebar.jsx';
@@ -216,7 +217,8 @@ const HRManagementApp = () => {
   return (
     <UploadProvider>
       <NotificationProvider>
-        <AppContent 
+        <SheetProvider>
+        <AppContent
           employees={employees}
           activeEmployees={activeEmployees}
           applications={applications}
@@ -233,6 +235,7 @@ const HRManagementApp = () => {
           isMobileMenuOpen={isMobileMenuOpen}
           setIsMobileMenuOpen={setIsMobileMenuOpen}
         />
+        </SheetProvider>
       </NotificationProvider>
     </UploadProvider>
   );
@@ -302,15 +305,17 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
           <Route path="/*" element={
             isAuthenticated ? (
               <div className={`min-h-screen ${bg.primary}`}>
-                <Header 
-                  key={currentLanguage} 
+                {/* No `key={currentLanguage}` on either of these. `t` already
+                    re-renders them through context; remounting on every switch
+                    threw away the rail's collapse/expand state and closed any
+                    open menu, which read as the switcher misbehaving. */}
+                <Header
                   isMobileMenuOpen={isMobileMenuOpen}
                   setIsMobileMenuOpen={setIsMobileMenuOpen}
                 />
-              
+
               <div className="flex w-full min-w-0">
-                <Sidebar 
-                  key={currentLanguage} 
+                <Sidebar
                   isMobileMenuOpen={isMobileMenuOpen}
                   setIsMobileMenuOpen={setIsMobileMenuOpen}
                 />

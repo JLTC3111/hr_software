@@ -2,7 +2,9 @@ export default {
   nav: {
     menu: 'Menú',
     workload: 'Gestión de Trabajo',
-    timeClock: 'Reloj de fichar',
+    attendanceHub: 'Asistencia',
+    timeClock: 'Registro horario',
+    punchClock: 'Reloj de fichar',
     dashboard: 'Panel de control',
     employees: 'Empleados',
     recruitment: 'Reclutamiento',
@@ -108,6 +110,7 @@ export default {
     subtitle: 'Inicia sesión para acceder a tu panel',
     email: 'Correo Electrónico',
     password: 'Contraseña',
+    requestDemo: 'Solicitar demo',
     emailPlaceholder: 'tu@example.com',
     passwordPlaceholder: '••••••••',
     emailRequired: 'El correo electrónico es obligatorio',
@@ -1367,7 +1370,8 @@ export default {
     // Notification messages
     timeEntriesAwaiting: 'Tienes {0} entradas de tiempo esperando aprobación',
     reviewNow: 'Revisar Ahora',
-    viewDetails: 'Ver detalles'
+    viewDetails: 'Ver detalles',
+    viewAll: 'Ver todas las notificaciones',
   },
   // Task Review
   taskReview: {

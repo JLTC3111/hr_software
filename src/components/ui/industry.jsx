@@ -21,7 +21,7 @@ import { DISPLAY, BODY, kicker as kickerStyle } from '../../theme/industry.js';
 
 const CORNER = 7;
 
-function Corner({ pos, color }) {
+export function Corner({ pos, color }) {
   const v = { position: 'absolute', width: CORNER, height: CORNER, pointerEvents: 'none' };
   const edge = `1px solid ${color}`;
   const map = {

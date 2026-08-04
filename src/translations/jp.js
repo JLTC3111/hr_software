@@ -3,7 +3,9 @@ export default {
   nav: {
     menu: 'メニュー',
     workload: '業務管理',
+    attendanceHub: '勤怠',
     timeClock: 'タイムクロック',
+    punchClock: 'タイムレコーダー',
     dashboard: 'ダッシュボード',
     employees: '従業員',
     recruitment: '採用',
@@ -111,6 +113,7 @@ export default {
     password: 'パスワード',
     emailPlaceholder: 'you@example.com',
     passwordPlaceholder: '••••••••',
+    requestDemo: 'デモをリクエスト',
     emailRequired: 'メールアドレスは必須です',
     emailInvalid: 'メールアドレスが無効です',
     passwordRequired: 'パスワードは必須です',
@@ -1327,7 +1330,8 @@ export default {
     // Notification messages
     timeEntriesAwaiting: '{0}件の時間入力が承認待ちです',
     reviewNow: '今すぐ確認',
-    viewDetails: '詳細を表示'
+    viewDetails: '詳細を表示',
+    viewAll: 'すべての通知を表示',
   },
   // Settings
   settings: {

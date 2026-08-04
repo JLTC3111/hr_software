@@ -1,35 +1,44 @@
 /**
  * Control rail — band one of the Organization Overview console.
  *
- * 64px collapsed, 236px expanded. The trick that makes the expand read as an
- * expand rather than a reflow: the icon always sits in a fixed 64px grid cell,
- * so it never moves — the label simply appears to the right of that cell. Do
- * not centre the icon in the aside.
+ * 64px collapsed, 236px expanded, in two distinct geometries:
  *
- * Radius is 0 everywhere. The active item is one of only two solid objects in
- * the whole system (the other is .btn-primary).
+ *   collapsed — the icon sits in a fixed 64px grid cell, centred, so the rail
+ *               reads as a strip of glyphs and nothing else.
+ *   expanded  — "1a Ledger": rows are 7px/8px with a 10px icon-to-label gutter,
+ *               and a submenu is a hairline *branch* indented 17px + 10px so its
+ *               children hang under that gutter rather than under the label.
+ *
+ * The branch rule is the whole idea: nesting is drawn, not indented into
+ * ambiguity. Radius is 0 everywhere. The active child is a solid steel block —
+ * one of only two solid objects in the system (the other is .btn-primary).
  */
 import React, { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
-  TrendingUp, Users, Award, FileText, AlarmClock, ChevronLeft, ChevronRight, ChevronDown,
-  Bell, Cog, CheckSquare, X, UserPlus, CalendarDays, Languages, Timer, SlidersHorizontal,
+  TrendingUp, Users, Award, FileText, AlarmClock, ChevronDown, ChevronLeft,
+  Bell, Cog, CheckSquare, X, UserPlus, Languages,
 } from 'lucide-react'
-import { useTheme } from '../contexts/ThemeContext'
-import { useLanguage } from '../contexts/LanguageContext'
-import { useNotifications } from '../contexts/NotificationContext'
-import { useAuth } from '../contexts/AuthContext'
-import { isTranslationEditor } from '../utils/translationAccess'
+import { useTheme } from '../contexts/ThemeContext.jsx'
+import { useLanguage } from '../contexts/LanguageContext.jsx'
+import { useNotifications } from '../contexts/NotificationContext.jsx'
+import { useAuth } from '../contexts/AuthContext.jsx'
+import { isTranslationEditor } from '../utils/translationAccess.js'
 import { getIndustry, DISPLAY, BODY } from '../theme/industry.js'
-
-/** Wayfinding anchor, not a logo — the header already carries the full lockup. */
-const BRAND_MARK = 'IC';
-const BRAND_NAME = 'ICUE HR Manager';
 
 const RAIL_COLLAPSED = 64;
 const RAIL_EXPANDED = 236;
-const ICON_CELL = 64;   // fixed — icons never move
+const ICON_CELL = 64;   // collapsed: icons are centred in this cell and never move
+const ICON_BOX = 18;    // expanded: the icon's own box, gutter comes from ROW_GAP
+const ROW_GAP = 10;
+/** Top / right / bottom / left. The top is a pixel under the bottom so a run of
+ *  rows sits up against its section rule rather than floating below it. */
+const ROW_PAD = '5px 8px 6px';
 const ROW_H = 38;
+
+/** The submenu branch: 17px of margin + 10px of padding either side of the rule. */
+const BRANCH_MARGIN = 17;
+const BRANCH_PAD = 10;
 
 const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -84,10 +93,21 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
     {
       section: t('sidebar.main', 'MAIN'),
       items: [
-        { path: '/time-clock', name: t('nav.timeClock'), icon: AlarmClock },
-        // 3d, the live on-site punch. Deliberately its own entry: 3a above
-        // enters hours after the fact, this one is for people on the floor.
-        { path: '/punch-clock', name: t('nav.punchClock', 'Punch Clock'), icon: Timer },
+        {
+          // Groups the three attendance-facing entries — clocking in after the
+          // fact, punching in live on-site, and the leave calendar — under one
+          // branch instead of three loose top-level rows.
+          path: '/time-clock',
+          name: t('nav.attendanceHub', 'Trung Tâm'),
+          icon: AlarmClock,
+          subItems: [
+            { path: '/time-clock', name: t('nav.timeClock') },
+            // 3d, the live on-site punch. Deliberately its own entry: the row
+            // above enters hours after the fact, this one is for people on the floor.
+            { path: '/punch-clock', name: t('nav.punchClock', 'Punch Clock') },
+            { path: '/leave-management', name: t('nav.leaveManagement', 'Leave Management') },
+          ]
+        },
         {
           path: '/dashboard',
           name: t('nav.dashboard'),
@@ -95,6 +115,9 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           subItems: [
             { path: '/dashboard', name: t('dashboard.overview', 'Overview') },
             { path: '/control-panel', name: t('nav.controlPanel', 'Control Panel') },
+            // The rules themselves — they belong with the console that reports
+            // on them, not with /settings, which is this device's preferences.
+            { path: '/policy-controls', name: t('nav.policyControls', 'Policy Controls') },
           ]
         },
         {
@@ -107,7 +130,6 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
             { path: '/employees/add', name: t('employees.addNew', 'Add New') },
           ]
         },
-        { path: '/leave-management', name: t('nav.leaveManagement', 'Leave Management'), icon: CalendarDays },
         {
           path: '/workload',
           name: t('nav.workload', 'Work Management'),
@@ -135,8 +157,6 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
         ...(canEditTranslations
           ? [{ path: '/translations', name: t('nav.translations', 'Translation Studio'), icon: Languages }]
           : []),
-        // The rules themselves live here; /settings is this device's preferences.
-        { path: '/policy-controls', name: t('nav.policyControls', 'Policy Controls'), icon: SlidersHorizontal },
         { path: '/settings', name: t('nav.settings', 'Settings'), icon: Cog },
       ]
     },
@@ -155,21 +175,13 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
 
   const width = isCollapsed ? RAIL_COLLAPSED : railWidth;
 
-  const displayName = user?.name || user?.email || '';
-  const initials = displayName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(-2)
-    .map((p) => p[0])
-    .join('')
-    .toUpperCase() || '—';
-
   /* -------------------------------------------------------------- styles */
 
+  /** Parent-row label. 13.5px in the ledger; the active row goes to display caps. */
   const labelStyle = (active) => ({
     fontFamily: active ? DISPLAY : BODY,
     fontWeight: active ? 600 : 400,
-    fontSize: active ? 14.5 : 14,
+    fontSize: active ? 14 : 13.5,
     letterSpacing: active ? '.05em' : 0,
     textTransform: active ? 'uppercase' : 'none',
     color: active ? ind.accentInk : ind.ink,
@@ -180,8 +192,23 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
     minWidth: 0,
   });
 
+  /** Section rule — MAIN / ANALYTICS / SETTINGS. */
+  const sectionStyle = {
+    fontFamily: DISPLAY,
+    fontWeight: 600,
+    fontSize: 10,
+    letterSpacing: '.16em',
+    textTransform: 'uppercase',
+    color: ind.dark ? 'rgba(233,235,237,.42)' : 'rgba(29,31,32,.42)',
+    padding: '0 8px',
+    margin: '8px 0 4px',
+    whiteSpace: 'nowrap',
+  };
+
+  /** Child links sit a shade above muted — readable, but never louder than a parent. */
+  const subInk = ind.dark ? 'rgba(233,235,237,.72)' : 'rgba(29,31,32,.72)';
+
   const rowBase = {
-    height: ROW_H,
     flex: 'none',
     display: 'flex',
     alignItems: 'center',
@@ -189,18 +216,25 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
     border: 'none',
     borderRadius: 0,
     background: 'transparent',
-    padding: 0,
     cursor: 'pointer',
     position: 'relative',
     textAlign: 'left',
     transition: 'background .15s ease',
+    // Collapsed keeps the fixed-cell geometry so glyphs stay centred in 64px;
+    // expanded switches to the ledger's 7px/8px row with a 10px gutter.
+    ...(isCollapsed
+      ? { height: ROW_H, padding: 0, gap: 0 }
+      : { minHeight: 32, padding: ROW_PAD, gap: ROW_GAP }),
   };
 
-  /** The fixed 64px cell. Icons live here and never move. */
-  const IconCell = ({ children }) => (
+  /**
+   * The icon holder. 64px and centred while collapsed; while expanded it shrinks
+   * to the glyph itself and the gutter comes from the row's gap.
+   */
+  const IconCell = ({ children, size = ICON_BOX }) => (
     <span
       style={{
-        width: ICON_CELL,
+        width: isCollapsed ? ICON_CELL : size,
         flex: 'none',
         display: 'flex',
         alignItems: 'center',
@@ -232,7 +266,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
     return (
       <span
         style={{
-          marginRight: 14,
+          marginLeft: 'auto',
           flex: 'none',
           border: `1px solid ${ind.dark ? 'rgba(233,235,237,.3)' : 'rgba(29,31,32,.3)'}`,
           padding: '1px 5px',
@@ -280,16 +314,29 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           background: ind.chrome,
           borderRight: `1px solid ${ind.hairline}`,
           padding: '12px 0',
-          overflow: 'hidden',
+          // The nav can outgrow a short viewport once a submenu is open, and a
+          // clipped rail is worse than a scrolled one. X stays hidden so the
+          // collapse transition never shows a horizontal bar.
+          overflowY: 'auto',
+          overflowX: 'hidden',
           transition: isResizing ? 'none' : 'width .2s ease',
           color: ind.ink,
+          /*
+           * The band is sticky at the top of the viewport, so the rail hangs off
+           * its underside at every width and fills exactly what is left.
+           *
+           * It used to stick to `top:0` while sizing itself `100vh - header`,
+           * which left a header-tall gap under the rail as soon as you scrolled;
+           * and on mobile it was `absolute` against the document, so opening the
+           * drawer part-way down a page put it off-screen entirely.
+           */
+          top: 'var(--app-header-h, 60px)',
+          height: 'calc(100vh - var(--app-header-h, 60px))',
         }}
         className={`
-          h-screen lg:h-[calc(100vh-4rem)]
           flex flex-col
-          absolute lg:sticky
+          fixed lg:sticky
           lg:flex
-          top-0
           left-0
           ${isMobileMenuOpen ? 'translate-x-0' : ' transform -translate-x-[200%] sm:hidden lg:translate-x-0'}
           z-40
@@ -306,50 +353,26 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           />
         )}
 
-        {/* Brand mark — 30×30, accent hairline */}
-        <div style={{ height: ROW_H, flex: 'none', display: 'flex', alignItems: 'center' }}>
-          <IconCell>
-            <NavLink
-              to="/dashboard"
-              onClick={closeMobileMenu}
-              aria-label={t('nav.dashboard', 'Dashboard')}
-              title={BRAND_NAME}
-              style={{
-                width: 30, height: 30, border: `1px solid ${ind.accent}`, borderRadius: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, letterSpacing: '.06em',
-                color: ind.accent,
-              }}
-            >
-              {BRAND_MARK}
-            </NavLink>
-          </IconCell>
-          {!isCollapsed && (
-            // Mobile drawer close. Layout comes from classes, not rowBase —
-            // an inline display would beat `lg:hidden`.
-            <button
-              onClick={closeMobileMenu}
-              className="lg:hidden flex items-center ml-auto"
-              aria-label={t('common.close', 'Close menu')}
-              style={{
-                height: 30, padding: '0 12px', border: 'none', borderRadius: 0,
-                background: 'transparent', cursor: 'pointer',
-              }}
-            >
-              <X size={18} strokeWidth={1.5} style={{ color: ind.ink }} />
-            </button>
-          )}
-        </div>
+        {/*
+          No brand mark. The lockup lives in the steel band above, and a second
+          one here put two marks in the same top-left corner. What is left is the
+          drawer's close control, which only exists below lg — on desktop the
+          rail starts straight at the first nav row.
+        */}
 
         {/* Navigation */}
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minHeight: 0, marginTop: 6 }}>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minHeight: 0, marginTop: 2 }}>
           {menuStructure.map((section, sectionIndex) => (
             <React.Fragment key={section.section}>
               {/* One hairline divider after MAIN; the spacer pushes SETTINGS down. */}
               {sectionIndex === 1 && (
-                <hr style={{ border: 'none', borderTop: `1px solid ${ind.hairline}`, margin: '9px 20px' }} />
+                <hr style={{ border: 'none', borderTop: `1px solid ${ind.hairline}`, margin: '9px 8px' }} />
               )}
               {sectionIndex === 2 && <div style={{ flex: 1, minHeight: 9 }} />}
+
+              {/* Section rule. Collapsed there is no room for words — the divider
+                  above already does the grouping. */}
+              {!isCollapsed && <div style={sectionStyle}>{section.section}</div>}
 
               {section.items.map((item) => {
                 const Icon = item.icon;
@@ -373,10 +396,10 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                         </IconCell>
                         <span style={labelStyle(false)}>{item.name}</span>
                         <ChevronDown
-                          size={15}
+                          size={14}
                           strokeWidth={1.5}
                           style={{
-                            flex: 'none', marginRight: 16, color: ind.inkMuted,
+                            flex: 'none', marginLeft: 'auto', color: ind.ink, opacity: 0.4,
                             transform: isExpanded ? 'rotate(180deg)' : 'none',
                             transition: 'transform .2s ease',
                           }}
@@ -416,45 +439,63 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
                       </NavLink>
                     )}
 
-                    {/* Sub items — indented to start at the icon cell edge */}
+                    {/*
+                      Sub items — the branch. 17px of margin puts the rule under
+                      the parent's icon-to-label gutter, 10px of padding sets the
+                      children off it. The hairline *is* the nesting; the labels
+                      are not indented far enough to carry it on their own.
+
+                      The Dashboard branch breathes one pixel more than the rest
+                      — its children are whole consoles, not views of one, and
+                      the list reads tight at 5px.
+                    */}
                     {hasSubItems && isExpanded && !isCollapsed && (
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        {item.subItems.map((subItem) => (
-                          <NavLink
-                            key={subItem.path}
-                            to={subItem.path}
-                            end
-                            onClick={closeMobileMenu}
-                            onMouseEnter={() => setHoverKey(`sub:${subItem.path}`)}
-                            onMouseLeave={() => setHoverKey(null)}
-                            style={({ isActive }) => ({
-                              ...rowBase,
-                              height: 30,
-                              paddingLeft: ICON_CELL,
-                              background: rowBg(`sub:${subItem.path}`, isActive),
-                            })}
-                          >
-                            {({ isActive }) => (
-                              <span
-                                style={{
-                                  display: 'block',
-                                  fontFamily: isActive ? DISPLAY : BODY,
-                                  fontWeight: isActive ? 600 : 400,
-                                  fontSize: 13,
-                                  letterSpacing: isActive ? '.05em' : 0,
-                                  textTransform: isActive ? 'uppercase' : 'none',
-                                  color: isActive ? ind.accentInk : ind.ink,
-                                  whiteSpace: 'nowrap',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  paddingRight: 14,
-                                }}
-                              >
-                                {subItem.name}
-                              </span>
-                            )}
-                          </NavLink>
-                        ))}
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 2,
+                          margin: `2px 0 2px ${BRANCH_MARGIN}px`,
+                          paddingLeft: BRANCH_PAD,
+                          borderLeft: `1px solid ${ind.hairline}`,
+                        }}
+                      >
+                        {item.subItems.map((subItem) => {
+                          const padY = item.path === '/dashboard' ? 6 : 5;
+                          return (
+                            <NavLink
+                              key={subItem.path}
+                              to={subItem.path}
+                              end
+                              onClick={closeMobileMenu}
+                              onMouseEnter={() => setHoverKey(`sub:${subItem.path}`)}
+                              onMouseLeave={() => setHoverKey(null)}
+                              style={({ isActive }) => ({
+                                display: 'block',
+                                border: 'none',
+                                borderRadius: 0,
+                                textDecoration: 'none',
+                                // The active child is a solid steel block, so it
+                                // carries the 6px padding regardless of the list.
+                                padding: isActive ? '6px 10px' : `${padY}px 10px`,
+                                background: rowBg(`sub:${subItem.path}`, isActive),
+                                fontFamily: isActive ? DISPLAY : BODY,
+                                fontWeight: isActive ? 600 : 400,
+                                fontSize: 13,
+                                lineHeight: 1.3,
+                                letterSpacing: isActive ? '.05em' : 0,
+                                textTransform: isActive ? 'uppercase' : 'none',
+                                color: isActive ? ind.accentInk : subInk,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                transition: 'background .15s ease',
+                              })}
+                            >
+                              {subItem.name}
+                            </NavLink>
+                          );
+                        })}
                       </div>
                     )}
 
@@ -516,60 +557,40 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           ))}
         </nav>
 
-        {/* Collapse toggle */}
+        {/*
+          No avatar row. The rail ends at its last nav item plus the collapse
+          control below: the band above already states who is signed in, and
+          Settings is reachable from the SETTINGS section a few rows up, so an
+          avatar here would have been a second door to the same screen.
+        */}
         <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          onMouseEnter={() => setHoverKey('rail:collapse')}
-          onMouseLeave={() => setHoverKey(null)}
+          onClick={() => setIsCollapsed((prev) => !prev)}
+          aria-label={isCollapsed ? t('sidebar.expand', 'Expand sidebar') : t('sidebar.collapse', 'Collapse sidebar')}
+          title={isCollapsed ? t('sidebar.expand', 'Expand sidebar') : t('sidebar.collapse', 'Collapse sidebar')}
           className="hidden lg:flex"
-          style={{ ...rowBase, marginTop: 2, background: rowBg('rail:collapse', false) }}
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          title={isCollapsed ? 'Expand' : 'Collapse'}
+          style={{
+            flex: 'none',
+            alignItems: 'center',
+            justifyContent: isCollapsed ? 'center' : 'flex-end',
+            height: ROW_H,
+            padding: isCollapsed ? 0 : '0 12px',
+            border: 'none',
+            borderRadius: 0,
+            borderTop: `1px solid ${ind.hairline}`,
+            background: 'transparent',
+            cursor: 'pointer',
+          }}
         >
-          <IconCell>
-            {isCollapsed
-              ? <ChevronRight size={18} strokeWidth={1.5} style={{ color: ind.inkGhost }} />
-              : <ChevronLeft size={18} strokeWidth={1.5} style={{ color: ind.inkGhost }} />}
-          </IconCell>
-          {!isCollapsed && (
-            <span style={{ ...labelStyle(false), fontSize: 13, color: ind.inkMuted }}>
-              {t('sidebar.collapse', 'Collapse')}
-            </span>
-          )}
+          <ChevronLeft
+            size={18}
+            strokeWidth={1.5}
+            style={{
+              color: ind.inkGhost,
+              transform: isCollapsed ? 'none' : 'rotate(180deg)',
+              transition: 'transform 1.5s ease',
+            }}
+          />
         </button>
-
-        {/* Avatar — 30×30 hairline box, initials */}
-        <NavLink
-          to="/settings"
-          onClick={closeMobileMenu}
-          onMouseEnter={() => setHoverKey('rail:avatar')}
-          onMouseLeave={() => setHoverKey(null)}
-          style={{ ...rowBase, background: rowBg('rail:avatar', false) }}
-          title={displayName || t('nav.settings', 'Settings')}
-        >
-          <IconCell>
-            <span
-              style={{
-                width: 30, height: 30, border: `1px solid ${ind.hairline}`, borderRadius: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, letterSpacing: '.04em',
-                color: ind.ink,
-              }}
-            >
-              {initials}
-            </span>
-          </IconCell>
-          {!isCollapsed && (
-            <span
-              style={{
-                fontFamily: BODY, fontSize: 13, color: ind.inkMuted, flex: 1, minWidth: 0,
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: 14,
-              }}
-            >
-              {displayName}
-            </span>
-          )}
-        </NavLink>
       </aside>
     </>
   );

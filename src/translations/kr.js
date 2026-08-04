@@ -3,8 +3,10 @@ export default {
   nav: {
     menu: '메뉴',
     workload: '업무 관리',
+    attendanceHub: '근태',
     timeClock: '시간 기록',
     dashboard: '대시보드',
+    punchClock: '근태관리',
     employees: '직원',
     recruitment: '채용',
     leaveManagement: '휴가 관리',
@@ -111,6 +113,7 @@ export default {
     password: '비밀번호',
     emailPlaceholder: 'you@example.com',
     passwordPlaceholder: '••••••••',
+    requestDemo: '데모 요청',
     emailRequired: '이메일은 필수입니다',
     emailInvalid: '이메일이 유효하지 않습니다',
     passwordRequired: '비밀번호는 필수입니다',
@@ -1299,7 +1302,8 @@ export default {
     // Notification messages
     timeEntriesAwaiting: '{0}개의 시간 입력이 승인 대기 중입니다',
     reviewNow: '지금 확인',
-    viewDetails: '세부정보 보기'
+    viewDetails: '세부정보 보기',
+    viewAll: '모든 알림 보기',
   },
   // Settings
   settings: {

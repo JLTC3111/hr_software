@@ -3,7 +3,9 @@ export default {
   nav: {
     menu: 'เมนู',
     workload: 'การจัดการงาน',
+    attendanceHub: 'การเข้างาน',
     timeClock: 'นาฬิกาบันทึกเวลา',
+    punchClock: 'ระบบลงเวลาทำงาน',
     dashboard: 'แดชบอร์ด',
     employees: 'พนักงาน',
     recruitment: 'การสรรหา',
@@ -113,6 +115,7 @@ export default {
     passwordPlaceholder: '••••••••',
     emailRequired: 'จำเป็นต้องกรอกอีเมล',
     emailInvalid: 'อีเมลไม่ถูกต้อง',
+    requestDemo: 'ขอทดลองใช้งาน',
     passwordRequired: 'จำเป็นต้องกรอกรหัสผ่าน',
     passwordTooShort: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',
     invalidCredentials: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
@@ -1359,7 +1362,8 @@ export default {
     // Notification messages
     timeEntriesAwaiting: 'คุณมี {0} รายการเวลารอการอนุมัติ',
     reviewNow: 'ตรวจสอบตอนนี้',
-    viewDetails: 'ดูรายละเอียด'
+    viewDetails: 'ดูรายละเอียด',
+    ดูการแจ้งเตือนทั้งหมด: 'ดูการแจ้งเตือนทั้งหมด',
   },
   // Settings
   settings: {

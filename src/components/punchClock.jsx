@@ -34,7 +34,6 @@ import {
   Blueprint, Bar, Tag, Btn, Seg, Kicker, TickerCell, ColumnHeading, LiveClock, FlatSelect,
 } from './ui/industry.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
-import { PunchClock as PunchClock3D } from './ui/punch-clock.jsx';
 
 /* ------------------------------------------------------------------ *
  * Shift and axis constants
@@ -474,16 +473,6 @@ const PunchClock = ({ employees = [], allEmployees = [], showNotes = false }) =>
   const onBreak = Boolean(session?.breaks?.some((b) => b.end == null));
   const punchedIn = Boolean(session?.clockIn != null);
   const overtimeMin = punchedIn ? workedAfter(dayIntervals, SHIFT_END_MIN) : 0;
-  // Nothing recorded yet today: no elapsed time, no "counting from", nothing to
-  // put in the hero's 76px slot. The one state where the object can stand in
-  // for the digits without competing with them.
-  //
-  // Gated on the first fetch having settled. An empty `entries` during load is
-  // indistinguishable from a genuinely empty day, and without the gate the
-  // canvas builds on mount and is torn down again the moment the day arrives.
-  // The digits hold the slot until we actually know — they are the wall clock,
-  // so they are never wrong while we wait.
-  const beforeFirstPunch = !loading && !punchedIn && elapsedMin === 0;
 
   /* ---------------- the floor ---------------- */
 
@@ -847,26 +836,17 @@ const PunchClock = ({ employees = [], allEmployees = [], showNotes = false }) =>
                     : t('punchClock.notPunchedIn', 'Not punched in')}
                 </Kicker>
                 {/* The largest thing on any screen in the console. Nothing else
-                    on the board comes near it. Before the first punch the slot
-                    holds the object rather than the digits — the two never
-                    coexist, so there is still only one dominant figure. */}
-                {beforeFirstPunch ? (
-                  <PunchClock3D
-                    isDarkMode={isDarkMode}
-                    style={{ width: 120, height: 120, margin: '2px 0', marginLeft: -10 }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      ...figure(76, ind.ink),
-                      lineHeight: 0.94,
-                      letterSpacing: '-.01em',
-                      margin: '6px 0 4px',
-                    }}
-                  >
-                    {clockText}
-                  </div>
-                )}
+                    on the board comes near it. */}
+                <div
+                  style={{
+                    ...figure(76, ind.ink),
+                    lineHeight: 0.94,
+                    letterSpacing: '-.01em',
+                    margin: '6px 0 4px',
+                  }}
+                >
+                  {clockText}
+                </div>
                 <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, margin: 0, lineHeight: 1.5 }}>
                   {punchedIn || elapsedMin > 0
                     ? `${dateLabel} · ${t('punchClock.onClock', 'on the clock {n}').replace('{n}', durLabel(elapsedMin))} · ${t('punchClock.breakTotal', 'break {n}').replace('{n}', durLabel(breakMin))}`

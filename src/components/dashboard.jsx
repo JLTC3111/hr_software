@@ -2,8 +2,10 @@
  * Organization Overview — direction 1b, "Control rail".
  *
  * Three vertical bands: the app rail (sidebar.jsx) → this main column → the
- * decision column. A 44px ticker spans main + decision and replaces metric
- * cards; per the spec the console never shows both.
+ * decision column. The screen's four headline figures are published to the
+ * header as sheet 01's KPI cells (see usePublishSheet below), so the 44px
+ * ticker keeps only what belongs next to the period controls — the live
+ * indicator and the two standing ratios. Each figure is stated once.
  *
  * Design system: "Industry" (src/theme/industry.js). Radius is 0 everywhere,
  * cards are outlines with four registration corners, status reads through
@@ -20,6 +22,7 @@ import MetricDetailModal from './metricDetailModal.jsx'
 import { useTheme } from '../contexts/ThemeContext.jsx'
 import { useLanguage } from '../contexts/LanguageContext.jsx'
 import { useAuth } from '../contexts/AuthContext'
+import { usePublishSheet } from '../contexts/SheetContext.jsx'
 import { Area, AreaChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar as RBar } from 'recharts'
 import * as timeTrackingService from '../services/timeTrackingService.js'
 import { withTimeout } from '../utils/supabaseTimeout.js'
@@ -129,6 +132,9 @@ const Dashboard = ({ employees, applications }) => {
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [decidingId, setDecidingId] = useState(null);
+
+  /** Stamped on every successful load — the header states it as "last update". */
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState({ type: '', data: [], title: '' });
@@ -278,6 +284,7 @@ const Dashboard = ({ employees, applications }) => {
         }
       });
 
+      setLastUpdatedAt(new Date());
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
 
@@ -680,6 +687,72 @@ const Dashboard = ({ employees, applications }) => {
 
   const sectionRule = { borderTop: `1px solid ${ind.rule}` };
 
+  /*
+   * Sheet 01. The header states what this screen is and carries its four
+   * headline figures; the ticker below keeps the readings that come with the
+   * period controls (the live clock, attrition, performance). The figures are
+   * stated once, in one place — the console never shows both.
+   */
+  usePublishSheet(
+    () => ({
+      no: '01',
+      title: t('dashboard.overview', 'Organization Overview'),
+      meta: [
+        periodLabel,
+        `${scopedEmployees.length} ${t('dashboard.headcount', 'Headcount').toLowerCase()}`,
+        lastUpdatedAt
+          ? `${t('dashboard.lastUpdate', 'Last update')} ${lastUpdatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+          : null,
+      ],
+      kpis: [
+        {
+          label: t('dashboard.headcount', 'Headcount'),
+          value: scopedEmployees.length,
+          onClick: () => handleMetricClick('employees'),
+          title: t('dashboard.totalEmployees'),
+        },
+        {
+          label: t('dashboard.hours', 'Hours'),
+          value: Number(totalRegularHours).toLocaleString(),
+          delta: deltas.regularHours?.value,
+          deltaDirection: deltas.regularHours?.direction,
+          onClick: () => handleMetricClick('regularHours'),
+          title: t('dashboard.totalRegularHours', 'Total Regular Hours'),
+        },
+        {
+          label: t('dashboard.overtime', 'Overtime'),
+          value: `${totalOvertime}h`,
+          delta: deltas.overtime?.value,
+          deltaDirection: deltas.overtime?.direction,
+          onClick: () => handleMetricClick('overtime'),
+          title: t('dashboard.totalOvertime'),
+        },
+        {
+          label: t('dashboard.leave', 'Leave'),
+          value: totalLeaveDays,
+          delta: deltas.leaveDays?.value,
+          deltaDirection: deltas.leaveDays?.direction,
+          onClick: () => handleMetricClick('leave'),
+          title: t('dashboard.totalLeave'),
+        },
+      ],
+      onRefresh: () => fetchDashboardData(),
+      refreshing: loading,
+      primary: pendingApprovalsCount > 0
+        ? {
+            label: `${pendingApprovalsCount} ${t('dashboard.approvals', 'Approvals')}`,
+            title: t('dashboard.pendingRequests', 'Pending Requests'),
+            onClick: () => handleMetricClick('pendingRequests'),
+          }
+        : null,
+    }),
+    [
+      t, periodLabel, scopedEmployees.length, lastUpdatedAt, totalRegularHours,
+      totalOvertime, totalLeaveDays, deltas, loading, pendingApprovalsCount,
+      fetchDashboardData,
+    ]
+  );
+
   return (
     <div
       style={{
@@ -691,7 +764,7 @@ const Dashboard = ({ employees, applications }) => {
         borderRadius: 0,
       }}
     >
-      {/* ── TICKER — replaces metric cards. Never both. ───────────────── */}
+      {/* ── TICKER — live state + the period controls ─────────────────── */}
       <div
         style={{
           height: 44,
@@ -709,16 +782,11 @@ const Dashboard = ({ employees, applications }) => {
         </TickerCell>
 
         {/*
-          `dashboard.workforce` is defined as "Workforce" in en.js, so the
-          fallback here never showed; the strip read WORKFORCE. Its own key.
+          Headcount, hours, overtime and leave are now stated once, in the
+          header's KPI cells (see usePublishSheet above). What is left here is
+          what belongs beside the period controls: the live indicator and the
+          two standing ratios.
         */}
-        <TickerCell
-          ind={ind}
-          label={t('dashboard.headcount', 'Headcount')}
-          value={scopedEmployees.length}
-          onClick={() => handleMetricClick('employees')}
-          title={t('dashboard.totalEmployees')}
-        />
         <TickerCell
           ind={ind}
           label={t('dashboard.attrition', 'Attrition')}
@@ -731,37 +799,10 @@ const Dashboard = ({ employees, applications }) => {
         />
         <TickerCell
           ind={ind}
-          label={t('dashboard.hours', 'Hours')}
-          value={Number(totalRegularHours).toLocaleString()}
-          delta={deltas.regularHours?.value}
-          deltaDirection={deltas.regularHours?.direction}
-          onClick={() => handleMetricClick('regularHours')}
-          title={t('dashboard.totalRegularHours', 'Total Regular Hours')}
-        />
-        <TickerCell
-          ind={ind}
           label={t('dashboard.performance', 'Perf')}
           value={avgPerformance}
           onClick={() => handleMetricClick('performance')}
           title={t('dashboard.avgPerformance')}
-        />
-        <TickerCell
-          ind={ind}
-          label={t('dashboard.overtime', 'Overtime')}
-          value={`${totalOvertime}h`}
-          delta={deltas.overtime?.value}
-          deltaDirection={deltas.overtime?.direction}
-          onClick={() => handleMetricClick('overtime')}
-          title={t('dashboard.totalOvertime')}
-        />
-        <TickerCell
-          ind={ind}
-          label={t('dashboard.leave', 'Leave')}
-          value={totalLeaveDays}
-          delta={deltas.leaveDays?.value}
-          deltaDirection={deltas.leaveDays?.direction}
-          onClick={() => handleMetricClick('leave')}
-          title={t('dashboard.totalLeave')}
         />
 
         {/* Period selector — pushed right with flex:1 and a left hairline. */}

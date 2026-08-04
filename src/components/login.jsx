@@ -19,6 +19,14 @@ const LoginLaserBackground = lazy(() => import('./LoginLaserBackground'));
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
 
+/**
+ * Demo mode is closed until further notice. The button stays on the page as
+ * "Request Demo", but instead of logging the visitor in it opens a mailto: to
+ * DEMO_REQUEST_EMAIL. Flip this to false to hand the self-serve demo back.
+ */
+const DEMO_LOCKED = true;
+const DEMO_REQUEST_EMAIL = 'support@icue.vn';
+
 const Login = () => {
   const { login, loginAsDemo, forgotPassword, isAuthenticated, user, loading } = useAuth();
   const { isDarkMode, text } = useTheme();
@@ -535,10 +543,15 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Demo Mode Button */}
+          {/* Demo Mode Button — locked, see DEMO_LOCKED; opens a mailto: instead */}
           <ShinyButton
             type="button"
+            shineOnHover={DEMO_LOCKED}
             onClick={async () => {
+              if (DEMO_LOCKED) {
+                window.location.href = `mailto:${DEMO_REQUEST_EMAIL}?subject=${encodeURIComponent('Demo Request')}`;
+                return;
+              }
               setLoginError('');
               setIsDemoLoading(true);
               try {
@@ -559,6 +572,7 @@ const Login = () => {
               isFormBusy && 'disabled:opacity-50'
             )}
             disabled={isFormBusy}
+            title={DEMO_LOCKED ? t('login.requestDemoNote', `Email ${DEMO_REQUEST_EMAIL} to request a demo`) : undefined}
           >
             {isDemoLoading ? (
               <span className="flex items-center justify-center gap-2 normal-case tracking-normal">
@@ -574,7 +588,9 @@ const Login = () => {
                   className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gray-600'}`}
                   style={{ transform: 'scaleX(-1)' }}
                 />
-                {t('login.tryDemo', 'Try Demo Mode')}
+                {DEMO_LOCKED
+                  ? t('login.requestDemo', 'Request Demo')
+                  : t('login.tryDemo', 'Try Demo Mode')}
               </span>
             )}
           </ShinyButton>

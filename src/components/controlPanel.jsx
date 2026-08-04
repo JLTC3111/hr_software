@@ -23,6 +23,7 @@ import * as flubber from 'flubber';
 import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
 import { Blueprint, Tag, Btn, Kicker, TickerCell, LiveClock, ColumnHeading } from './ui/industry.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
+import { PunchClock as PunchClock3D } from './ui/punch-clock.jsx';
 
 export const MiniFlubberAutoMorphChangeRole = ({
   size = 18,
@@ -1060,17 +1061,26 @@ const ControlPanel = () => {
 
           {/* Title row — provenance sits in the title, not a footnote. */}
           <div className="flex flex-wrap items-end justify-between" style={{ gap: 14 }}>
-            <div style={{ minWidth: 0 }}>
-              <h1 style={{ fontFamily: BODY, fontSize: 32, fontWeight: 400, margin: 0, color: ind.ink, lineHeight: 1.1 }}>
-                {t('controlPanel.title', 'Control Panel')}
-              </h1>
-              <p style={{ ...caption, marginTop: 6 }}>
-                {[
-                  `${t('controlPanel.signedInAs', 'Signed in as')} ${userName}`,
-                  getTranslatedRole(userRole),
-                  `${t('controlPanel.mode', 'Mode')} ${modeLabel.toLowerCase()}`,
-                ].join(' · ')}
-              </p>
+            <div className="flex items-center" style={{ gap: 10, minWidth: 0 }}>
+              {/* The object, not a figure. The panel carries no hero number, so
+                  the clock can sit beside the title without competing with one;
+                  it reads the same wall time as the ticker's LIVE cell. */}
+              <PunchClock3D
+                isDarkMode={isDarkMode}
+                style={{ width: 84, height: 84, flex: 'none', marginLeft: -8 }}
+              />
+              <div style={{ minWidth: 0 }}>
+                <h1 style={{ fontFamily: BODY, fontSize: 32, fontWeight: 400, margin: 0, color: ind.ink, lineHeight: 1.1 }}>
+                  {t('controlPanel.title', 'Control Panel')}
+                </h1>
+                <p style={{ ...caption, marginTop: 6 }}>
+                  {[
+                    `${t('controlPanel.signedInAs', 'Signed in as')} ${userName}`,
+                    getTranslatedRole(userRole),
+                    `${t('controlPanel.mode', 'Mode')} ${modeLabel.toLowerCase()}`,
+                  ].join(' · ')}
+                </p>
+              </div>
             </div>
             <Btn ind={ind} onClick={openManual} style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
               <BookOpen size={13} strokeWidth={1.5} />

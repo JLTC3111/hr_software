@@ -3,7 +3,9 @@ export default {
   nav: {
     menu: 'Menü',
     workload: 'Arbeitsverwaltung',
+    attendanceHub: 'Anwesenheit',
     timeClock: 'Zeiterfassung',
+    punchClock: 'Stempeluhr',
     dashboard: 'Dashboard',
     employees: 'Mitarbeiter',
     recruitment: 'Personalbeschaffung',
@@ -110,6 +112,7 @@ export default {
     subtitle: 'Melden Sie sich an, um auf Ihr Dashboard zuzugreifen',
     email: 'E-Mail-Adresse',
     password: 'Passwort',
+    requestDemo: 'Demo anfordern',
     emailPlaceholder: 'sie@example.com',
     passwordPlaceholder: '••••••••',
     emailRequired: 'E-Mail ist erforderlich',
@@ -1416,7 +1419,8 @@ export default {
     // Notification messages
     timeEntriesAwaiting: 'Sie haben {0} Zeiteinträge, die auf Genehmigung warten',
     reviewNow: 'Jetzt Überprüfen',
-    viewDetails: 'Details Anzeigen'
+    viewDetails: 'Details Anzeigen',
+    viewAll: 'Alle Benachrichtigungen anzeigen',
   },
   // Settings
   settings: {

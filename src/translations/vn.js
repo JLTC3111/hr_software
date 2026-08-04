@@ -3,9 +3,10 @@ export default {
   nav: {
     menu: 'Menu',
     workload: 'Quản Lý Công Việc',
+    attendanceHub: 'Trung Tâm',
     timeClock: 'Chấm Công',
     punchClock: 'Bấm Giờ',
-    dashboard: 'Bảng Điều Khiển',
+    dashboard: 'Trung Tâm',
     employees: 'Nhân Viên',
     recruitment: 'Tuyển Dụng',
     leaveManagement: 'Quản Lý Nghỉ Phép',
@@ -118,12 +119,21 @@ export default {
     welcomePhrase5: 'Hãy làm việc hiệu quả hôm nay, {name}',
     welcomePhrase6: 'Rất vui có bạn ở đây, {name}',
     user: 'Đội ngũ HR',
-    logout: 'Đăng xuất'
+    logout: 'Đăng xuất',
+    notifications: 'Thông báo',
+    // Ô phiên làm việc trên dải thép: nhãn giãn chữ phía trên tên người dùng.
+    welcomeBack: 'Chào mừng trở lại',
+    // Dưới ký hiệu ICUE, cỡ 9px/.2em.
+    consoleTag: 'Bảng điều khiển nhân sự',
+    // Nhãn phía trên tiêu đề trang: "TỜ 01".
+    sheet: 'Tờ'
   },
   // Login
   login: {
     idleLogoutMessage: 'Bạn đã bị đăng xuất sau khi không hoạt động trong một thời gian. Vui lòng đăng nhập lại.',
     tryDemo: 'Thử Chế Độ Demo',
+    requestDemo: 'Yêu Cầu Dùng Thử',
+    requestDemoNote: 'Gửi email đến support@icue.vn để yêu cầu bản demo',
     success: 'Email đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư đến của bạn.',
     title: 'Quản lý HR',
     subtitle: 'Đăng nhập để truy cập bảng điều khiển',
@@ -187,7 +197,9 @@ export default {
   sidebar: {
     main: 'Chính',
     analytics: 'Phân Tích',
-    settings: 'Cài Đặt'
+    settings: 'Cài Đặt',
+    collapse: 'Thu Gọn Thanh Bên',
+    expand: 'Mở Rộng Thanh Bên'
   },
   // Dashboard
   dashboard: {
@@ -205,7 +217,8 @@ export default {
     liveData: 'Dữ liệu trực tiếp từ Supabase',
     noData: 'Không có dữ liệu khả dụng',
     title: 'Tổng Quan Bảng Điều Khiển',
-    overview: 'Tổng Quan Tổ Chức',
+    overview: 'Tổng Quan Nhân Sự',
+    lastUpdate: 'Cập nhật',
     totalEmployees: 'Tổng Số Nhân Viên',
     totalRegularHours: 'Tổng Giờ Làm Thường',
     pendingApprovals: 'Phê Duyệt Đang Chờ',
@@ -1622,7 +1635,8 @@ export default {
     // Notification messages
     timeEntriesAwaiting: 'Bạn có {0} mục thời gian đang chờ phê duyệt',
     reviewNow: 'Xem Ngay',
-    viewDetails: 'Xem Chi Tiết'
+    viewDetails: 'Xem Chi Tiết',
+    viewAll: 'Xem Tất Cả Thông Báo',
   },
   // Recruitment Status
   recruitmentStatus: {
@@ -1955,7 +1969,7 @@ export default {
   },
   // 3d — màn hình bấm giờ trực tiếp
   punchClock: {
-    title: 'Bấm giờ',
+    title: 'Bấm Giờ',
     shift: 'ca',
     scope: 'Phạm vi',
     scopeMine: 'Của tôi',

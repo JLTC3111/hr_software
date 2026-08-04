@@ -30,7 +30,7 @@ import { Blueprint, Tag, Btn, TickerCell, LiveClock, ColumnHeading, FlatSelect }
  * Constants — these agree with the Organization Overview figures.
  * ------------------------------------------------------------------ */
 
-const ORG_NAME = 'Minh Phát Group';
+const ORG_NAME = 'Company Group';
 const EMPLOYEE_COUNT = 248;
 const ROLE_COUNT = 6;
 const INITIAL_VERSION = '4.2';
@@ -671,8 +671,16 @@ const PolicyControls = () => {
             borderLeft: `1px solid ${ind.tickerRule}`,
           }}
         >
-          <FlatSelect ind={ind} onDark value={ORG_NAME} onChange={() => {}} aria-label={t('policyControls.organisation', 'Organisation')}>
-            <option value={ORG_NAME} style={{ color: '#1d1f20' }}>{ORG_NAME}</option>
+          <FlatSelect
+            ind={ind}
+            onDark
+            value={ORG_NAME}
+            onChange={() => {}}
+            aria-label={t('policyControls.organisation', 'Organisation')}
+          >
+            <option value={ORG_NAME} style={{ color: '#1d1f20' }}>
+              {ORG_NAME}
+            </option>
           </FlatSelect>
         </div>
       </div>

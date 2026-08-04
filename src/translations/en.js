@@ -3,6 +3,7 @@ export default {
   nav: {
     menu: 'Menu',
     workload: 'Work Management',
+    attendanceHub: 'Attendance',
     timeClock: 'Time Clock',
     punchClock: 'Punch Clock',
     dashboard: 'Dashboard',
@@ -102,7 +103,13 @@ export default {
     welcomePhrase6: 'Good to have you here, {name}',
     user: 'HR Team',
     logout: 'Logout',
-    notifications: 'Notifications'
+    notifications: 'Notifications',
+    // The steel band's session cell: a tracked label over the user's name.
+    welcomeBack: 'Welcome back',
+    // Under the ICUE mark, at 9px/.2em.
+    consoleTag: 'Workforce Console',
+    // The eyebrow above every page title: "SHEET 01".
+    sheet: 'Sheet'
   },
   // Login
   login: {
@@ -128,6 +135,8 @@ export default {
     githubError: 'Failed to login with GitHub',
     tryDemoLoading: 'Loading demo...',
     tryDemo: "Try Demo Mode",
+    requestDemo: 'Request Demo',
+    requestDemoNote: 'Email support@icue.vn to request a demo',
     forgotPasswordModal: {
       title: 'Reset Password',
       description: 'Enter your email address and we\'ll send you a link to reset your password.',
@@ -183,7 +192,9 @@ export default {
   sidebar: {
     main: 'MAIN',
     analytics: 'ANALYTICS',
-    settings: 'SETTINGS'
+    settings: 'SETTINGS',
+    collapse: 'Collapse sidebar',
+    expand: 'Expand sidebar'
   },
   // Dashboard
   dashboard: {
@@ -203,6 +214,7 @@ export default {
     title: 'Dashboard Overview',
     pendingApprovals: 'Pending Approvals',
     overview: 'Organization Overview',
+    lastUpdate: 'Last update',
     totalEmployees: 'Total Employees',
     totalRegularHours: 'Total Regular Hours',
     activeEmployees: 'Active Employees',

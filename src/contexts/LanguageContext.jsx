@@ -28,8 +28,18 @@ export const SUPPORTED_LANGUAGES = {
   es: { code: 'es', name: 'Español', flag: '/flags/es.svg' }
 };
 
+/** The saved choice, read before first paint. */
+const initialLanguage = () => {
+  if (typeof localStorage === 'undefined') return 'en';
+  const saved = localStorage.getItem('hr-app-language');
+  return saved && SUPPORTED_LANGUAGES[saved] ? saved : 'en';
+};
+
 export const LanguageProvider = ({ children }) => {
-  const [currentLanguage, setCurrentLanguage] = useState('en');
+  // Read straight out of storage rather than mounting on 'en' and correcting in
+  // an effect: that ordering loaded the English bundle first, then the real one,
+  // so a Vietnamese session flashed English on every reload.
+  const [currentLanguage, setCurrentLanguage] = useState(initialLanguage);
   const [translations, setTranslations] = useState({});
   const [isChanging, setIsChanging] = useState(false);
   // Bumped by the Translation Studio after a save, so an edit is live app-wide
@@ -75,13 +85,12 @@ export const LanguageProvider = ({ children }) => {
     return () => { cancelled = true; };
   }, [currentLanguage, overridesVersion]);
 
-  // Load saved language from localStorage
+  // Tell the document what language it is in. Without this the <html> element
+  // stays lang="en" whatever the user picks, which is what screen readers,
+  // hyphenation and the browser's own translate prompt actually read.
   useEffect(() => {
-    const savedLanguage = localStorage.getItem('hr-app-language');
-    if (savedLanguage && SUPPORTED_LANGUAGES[savedLanguage]) {
-      setCurrentLanguage(savedLanguage);
-    }
-  }, []);
+    document.documentElement.lang = currentLanguage;
+  }, [currentLanguage]);
 
   // Memoize changeLanguage to prevent recreation on each render
   const changeLanguage = useCallback((languageCode) => {

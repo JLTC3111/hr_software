@@ -10,7 +10,9 @@ const ResetPassword = () => {
   const navigate = useNavigate();
   const { resetPassword } = useAuth();
   const { isDarkMode, text, toggleTheme } = useTheme();
-  const { language, changeLanguage, t } = useLanguage();
+  // The context publishes `currentLanguage`; destructuring `language` left it
+  // undefined, so the picker never marked the active row and the flag never drew.
+  const { currentLanguage: language, changeLanguage, t } = useLanguage();
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

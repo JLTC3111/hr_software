@@ -3,8 +3,10 @@ export default {
   nav: {
     menu: 'Меню',
     workload: 'Управление Работой',
+    attendanceHub: 'Посещаемость',
     timeClock: 'Учет времени',
     dashboard: 'Панель управления',
+    punchClock: 'Учёт рабочего времени',
     employees: 'Сотрудники',
     recruitment: 'Подбор персонала',
     leaveManagement: 'Управление отпусками',
@@ -111,6 +113,7 @@ export default {
     password: 'Пароль',
     emailPlaceholder: 'you@example.com',
     passwordPlaceholder: '••••••••',
+    requestDemo: 'Запросить демо',
     emailRequired: 'Электронная почта обязательна',
     emailInvalid: 'Неверный адрес электронной почты',
     passwordRequired: 'Пароль обязателен',
@@ -1322,7 +1325,8 @@ export default {
     // Notification messages
     timeEntriesAwaiting: 'У вас {0} записей времени ожидают утверждения',
     reviewNow: 'Просмотреть сейчас',
-    viewDetails: 'Просмотр деталей'
+    viewDetails: 'Просмотр деталей',
+    viewAll: 'Просмотреть все уведомления',
   },
   // Settings
   settings: {

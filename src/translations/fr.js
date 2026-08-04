@@ -3,7 +3,9 @@ export default {
   nav: {
     menu: 'Menu',
     workload: 'Gestion du travail',
+    attendanceHub: 'Présence',
     timeClock: 'Horloge de pointage',
+    punchClock: 'Pointeuse',
     dashboard: 'Tableau de bord',
     employees: 'Employés',
     recruitment: 'Recrutement',
@@ -111,6 +113,7 @@ export default {
     password: 'Mot de passe',
     emailPlaceholder: 'you@example.com',
     passwordPlaceholder: '••••••••',
+    requestDemo: 'Demander une démo',
     emailRequired: 'L\'e-mail est requis',
     emailInvalid: 'L\'e-mail est invalide',
     passwordRequired: 'Le mot de passe est requis',
@@ -1349,7 +1352,8 @@ export default {
     // Notification messages
     timeEntriesAwaiting: 'Vous avez {0} entrées de temps en attente d\'approbation',
     reviewNow: 'Examiner maintenant',
-    viewDetails: 'Voir les détails'
+    viewDetails: 'Voir les détails',
+    viewAll: 'Voir toutes les notifications',
   },
   // Settings
   settings: {
