@@ -32,6 +32,7 @@ const TranslationStudio = lazy(() => import('./components/translationStudio.jsx'
 const AddNewEmployee = lazy(() => import('./components/addNewEmployee.jsx'));
 const DeleteEmployeeManager = lazy(() => import('./components/deleteEmployeeManager.jsx'));
 const ControlPanel = lazy(() => import('./components/controlPanel.jsx'));
+const PolicyControls = lazy(() => import('./components/policyControls.jsx'));
 const AdvancedHelpCenter = lazy(() => import('./components/AdvancedHelpCenter.jsx'));
 const ProductionHelpCenter = lazy(() => import('./components/ProductionHelpCenter.jsx'));
 const FlubberIconTest = lazy(() => import('./components/FlubberIconTest.jsx'));
@@ -351,9 +352,13 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
                       path="/personal-goals" 
                       element={<PersonalGoals employees={activeEmployees} />} 
                     />
-                    <Route 
-                      path="/control-panel" 
-                      element={<ControlPanel />} 
+                    <Route
+                      path="/control-panel"
+                      element={<ControlPanel />}
+                    />
+                    <Route
+                      path="/policy-controls"
+                      element={<PolicyControls />}
                     />
                     <Route 
                       path="/help-center" 

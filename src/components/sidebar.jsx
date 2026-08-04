@@ -13,7 +13,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   TrendingUp, Users, Award, FileText, AlarmClock, ChevronLeft, ChevronRight, ChevronDown,
-  Bell, Cog, CheckSquare, X, UserPlus, CalendarDays, Languages, Timer,
+  Bell, Cog, CheckSquare, X, UserPlus, CalendarDays, Languages, Timer, SlidersHorizontal,
 } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -135,6 +135,8 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
         ...(canEditTranslations
           ? [{ path: '/translations', name: t('nav.translations', 'Translation Studio'), icon: Languages }]
           : []),
+        // The rules themselves live here; /settings is this device's preferences.
+        { path: '/policy-controls', name: t('nav.policyControls', 'Policy Controls'), icon: SlidersHorizontal },
         { path: '/settings', name: t('nav.settings', 'Settings'), icon: Cog },
       ]
     },

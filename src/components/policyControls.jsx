@@ -268,18 +268,37 @@ const PolicyControls = () => {
 
   const set = (key, value) => setDraft((d) => ({ ...d, [key]: value }));
 
-  /** Your own edits: upsert into the queue, or drop the item when you land back on the published value. */
+  /**
+   * Your own edits join the queue. One rule can only carry one pending change,
+   * so editing a rule someone else has already asked about takes that item over
+   * rather than opening a second one — otherwise the count would say two
+   * changes where the spec sheet only has one.
+   */
   const edit = (key, value, name, format) => {
     set(key, value);
     setQueue((q) => {
-      const rest = q.filter((item) => !(item.key === key && item.origin === 'edit'));
-      if (value === published[key]) return rest;
+      // Back on the published value: there is nothing pending on this rule.
+      if (value === published[key]) return q.filter((item) => item.key !== key);
+
+      const existing = q.find((item) => item.key === key);
+      if (existing) {
+        return q.map((item) => (item.key === key
+          ? {
+            ...item,
+            from: item.from ?? format(published[key]),
+            to: format(value),
+            value,
+            queuedText: null,
+            state: 'accepted',
+          }
+          : item));
+      }
+
       return [
-        ...rest,
+        ...q,
         {
           id: `edit-${key}`,
           key,
-          origin: 'edit',
           name,
           from: format(published[key]),
           to: format(value),

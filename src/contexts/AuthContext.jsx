@@ -17,6 +17,13 @@ import {
 
 const AuthContext = createContext();
 
+/**
+ * How long after a successful sign-in a SIGNED_OUT event is treated as teardown
+ * left over from the session we just replaced, rather than a real sign-out.
+ * See the comment in `login()` for why such events exist at all.
+ */
+const STALE_SIGNED_OUT_GRACE_MS = 10000;
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -38,6 +45,11 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const isRefreshing = useRef(false);
   const lastVisibilityCheck = useRef(Date.now());
+  // Timestamp of the most recent successful sign-in, plus a flag for sign-outs
+  // we asked for ourselves. Together they let the SIGNED_OUT handler tell a real
+  // sign-out from teardown belonging to the session we just replaced.
+  const lastSignInAt = useRef(0);
+  const intentionalSignOut = useRef(false);
 
   const clearAuthState = async () => {
     console.log('🧹 Clearing auth state and setting loading = false');
@@ -45,9 +57,10 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
     setSession(null);
     setLoading(false);
-    
+
     // Sign out from Supabase to clear any lingering session
     try {
+      intentionalSignOut.current = true;
       await supabase.auth.signOut();
     } catch (error) {
       console.error('Error during sign out:', error);
@@ -158,7 +171,20 @@ export const AuthProvider = ({ children }) => {
           if (mounted) setLoading(false);
         }
       } else if (event === 'SIGNED_OUT') {
+        // GoTrue emits SIGNED_OUT from _removeSession(), which several teardown
+        // paths reach on their own schedule — a slow signOut() and a
+        // _recoverAndRefresh() that gives up on a dead refresh token both land
+        // here. Either can fire *after* a newer sign-in has already saved its
+        // session, and honouring it silently undoes that sign-in.
+        if (
+          !intentionalSignOut.current &&
+          Date.now() - lastSignInAt.current < STALE_SIGNED_OUT_GRACE_MS
+        ) {
+          console.warn('🚪 Ignoring SIGNED_OUT from the session that was just replaced');
+          return;
+        }
         console.log('🚪 User signed out');
+        intentionalSignOut.current = false;
         setUser(null);
         setIsAuthenticated(false);
         setSession(null);
@@ -587,20 +613,38 @@ export const AuthProvider = ({ children }) => {
       // storage and take the auth lock underneath us.
       cancelScheduledLogout();
 
-      // After idle logout, a timed-out network signOut can leave GoTrue's lock held
-      // and storage half-cleared. Clear local session first so sign-in isn't blocked
-      // (hard refresh works today because it remounts the client + wipes storage).
+      // Retire whatever session is already persisted before signing in.
+      //
+      // This used to race `signOut({ scope: 'local' })` against a 2.5s timeout.
+      // That was the bug behind "I have to try to log in, then hard-refresh":
+      // signOut() awaits the client's initializePromise before it does anything,
+      // and a stale persisted token is exactly what makes that promise slow —
+      // the client is still round-tripping a dead refresh token. So the 2.5s
+      // elapsed, login continued, and the signOut kept running orphaned. It then
+      // reached _removeSession() *after* signInWithPassword had saved the new
+      // session, deleting that session from storage and emitting SIGNED_OUT.
+      // Credentials were accepted and the login was then thrown away. With no
+      // persisted token — a private window, or after manually clearing it —
+      // initialize() returns immediately, signOut finishes inside the 2.5s, and
+      // sign-in worked. Hence the three workarounds.
+      //
+      // Instead: let the client finish booting first, so any teardown it decides
+      // on lands before the new session exists rather than on top of it. Bounded
+      // so a hung boot cannot pin the login form indefinitely; the SIGNED_OUT
+      // guard in onAuthStateChange backstops that case. getSession() awaits the
+      // same initializePromise signOut() would have.
       try {
         supabase.auth.stopAutoRefresh?.();
-        clearAuthStorage();
         await Promise.race([
-          supabase.auth.signOut({ scope: 'local' }),
-          new Promise((resolve) => setTimeout(resolve, 2500)),
+          supabase.auth.getSession().catch(() => null),
+          new Promise((resolve) => setTimeout(resolve, DEFAULT_REQUEST_TIMEOUT + 2000)),
         ]);
+        // Synchronous and lock-free, so it cannot be left in flight.
+        clearAuthStorage();
       } catch (prepError) {
         console.warn('Pre-login session clear:', prepError?.message || prepError);
       }
-      
+
       // Set storage type based on rememberMe checkbox
       if (typeof window !== 'undefined') {
         if (rememberMe) {
@@ -640,6 +684,11 @@ export const AuthProvider = ({ children }) => {
       );
 
       if (error) throw error;
+
+      // Stamp before anything else awaits: from here on, a SIGNED_OUT belongs to
+      // the session we just replaced unless we asked for it ourselves.
+      lastSignInAt.current = Date.now();
+      intentionalSignOut.current = false;
 
       console.log('✅ Login successful');
       try {
@@ -816,6 +865,10 @@ export const AuthProvider = ({ children }) => {
         console.log('✅ Demo mode disabled');
         return;
       }
+
+      // Mark this as a sign-out we asked for, so the SIGNED_OUT handler does not
+      // mistake it for teardown of a replaced session and ignore it.
+      intentionalSignOut.current = true;
 
       // Stop background refresh so it cannot keep holding the GoTrue lock
       try {
