@@ -27,12 +27,12 @@
  * not restyled per cell.
  */
 import _React, { useEffect, useMemo, useRef, useState } from 'react'
-import { LogOut, Menu, X, Sun, Moon, ChevronDown, Building2 } from 'lucide-react'
-import { useTheme } from '../contexts/ThemeContext'
-import { useLanguage } from '../contexts/LanguageContext'
-import { useAuth } from '../contexts/AuthContext'
+import { LogOut, Menu, X, Sun, Moon, ChevronDown } from 'lucide-react'
+import { useTheme } from '../contexts/ThemeContext.jsx'
+import { useLanguage } from '../contexts/LanguageContext.jsx'
+import { useAuth } from '../contexts/AuthContext.jsx'
 import { useNavigate } from 'react-router-dom'
-import NotificationDropdown from './NotificationDropdown'
+import NotificationDropdown from './NotificationDropdown.jsx'
 import { useMinWidth } from '../hooks/useMinWidth.js'
 import { getIndustry, DISPLAY, BODY } from '../theme/industry.js'
 
@@ -313,7 +313,7 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
             background: 'transparent', color: ind.tickerUp,
           }}
         >
-          <Building2 size={19} strokeWidth={1.5} />
+          <img src="/logoIcons/logo.png" alt="" style={{ width: 18, height: 18 }} />
         </span>
         <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
           <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 21, letterSpacing: '.07em' }}>

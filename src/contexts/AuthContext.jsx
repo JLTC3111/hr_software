@@ -4,6 +4,9 @@ import {
   validateAndRefreshSession,
   handleSessionAuthError as handleSessionAuthErrorUtil,
   cancelScheduledLogout,
+  isRejectedByServer,
+  markSessionVerified,
+  resetSessionVerification,
 } from '../utils/sessionHelper.js';
 import { isDemoMode, enableDemoMode, disableDemoMode, MOCK_USER, getDemoEmployees, attachSeededRandomUserPhotos, DEMO_CONFIG } from '../utils/demoHelper.js';
 import { useSessionKeepAlive } from '../hooks/useSessionKeepAlive.js';
@@ -23,6 +26,15 @@ const AuthContext = createContext();
  * See the comment in `login()` for why such events exist at all.
  */
 const STALE_SIGNED_OUT_GRACE_MS = 10000;
+
+/**
+ * How long to wait for GoTrue's INITIAL_SESSION before giving up and letting
+ * the app render unauthenticated. The event is emitted once the client has
+ * finished loading and, where needed, refreshing the persisted session, so it
+ * normally arrives in milliseconds — but the router now waits on this, and a
+ * client wedged on a dead refresh token must not pin the app on a spinner.
+ */
+const AUTH_BOOTSTRAP_TIMEOUT_MS = 12000;
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -50,6 +62,8 @@ export const AuthProvider = ({ children }) => {
   // sign-out from teardown belonging to the session we just replaced.
   const lastSignInAt = useRef(0);
   const intentionalSignOut = useRef(false);
+  // Shared in-flight profile request — see fetchProfileOnce.
+  const profileFetch = useRef(null);
 
   const clearAuthState = async () => {
     console.log('🧹 Clearing auth state and setting loading = false');
@@ -57,6 +71,7 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
     setSession(null);
     setLoading(false);
+    resetSessionVerification();
 
     // Sign out from Supabase to clear any lingering session
     try {
@@ -65,110 +80,181 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Error during sign out:', error);
     }
+    // signOut() goes through the timeout-wrapped fetch and can abort midway,
+    // leaving GoTrue half-signed-out with the token still persisted. Wiping
+    // storage unconditionally is what makes the next load start clean.
+    clearAuthStorage();
   };
-  
+
+  /**
+   * Two bootstrap paths can ask for the same profile at once — an OAuth or
+   * recovery callback emits SIGNED_IN while INITIAL_SESSION is still resolving.
+   * Share the request instead of running it twice and letting the slower writer
+   * overwrite the faster one.
+   */
+  const fetchProfileOnce = (userId) => {
+    if (profileFetch.current && profileFetch.current.id === userId) {
+      return profileFetch.current.promise;
+    }
+    const entry = { id: userId };
+    entry.promise = (async () => {
+      try {
+        await fetchUserProfile(userId);
+      } finally {
+        if (profileFetch.current === entry) profileFetch.current = null;
+      }
+    })();
+    profileFetch.current = entry;
+    return entry.promise;
+  };
+
+  /**
+   * Auth bootstrap.
+   *
+   * Restoration is driven by GoTrue's own INITIAL_SESSION event rather than a
+   * one-off read at mount. The client emits it after it has loaded — and where
+   * necessary refreshed — whatever was persisted, so it is the first moment at
+   * which "is there a session" has a meaningful answer. Reading storage
+   * ourselves would only tell us a token exists, which is not the same thing:
+   * the restored session is therefore verified against the server with
+   * getUser() before the app trusts it, and a token the server rejects is
+   * removed rather than left to fail the same way on every reload.
+   *
+   * Every path resolves `loading`, because the router waits on it.
+   */
   useEffect(() => {
     let mounted = true;
-    
-    // Initialize session on mount
-    const initializeAuth = async () => {
+    let settled = false;
+
+    const settle = () => {
+      if (!mounted || settled) return;
+      settled = true;
+      setLoading(false);
+    };
+
+    // Demo mode never touches GoTrue. Set it up before subscribing, but still
+    // subscribe, so signing in for real from a demo session is observed.
+    if (isDemoMode()) {
+      console.log('🧪 Demo mode detected');
+      setUser(MOCK_USER);
+      setIsAuthenticated(true);
+
       try {
-        console.log('🔍 Initializing auth...');
-        
-        // Check for demo mode first
-        if (isDemoMode()) {
-          console.log('🧪 Demo mode detected');
-          setUser(MOCK_USER);
-          setIsAuthenticated(true);
-
-          // If demo config requests seeded RandomUser faces, prefetch them (non-blocking)
-          try {
-            if (DEMO_CONFIG && DEMO_CONFIG.enableRandomFaces) {
-              const demoEmployees = getDemoEmployees();
-              // fire-and-forget; this will populate the photo cache so subsequent calls use the photos
-              attachSeededRandomUserPhotos(demoEmployees).then(() => {
-                console.log('📸 Prefetched seeded demo photos');
-              }).catch(err => {
-                console.warn('Failed to prefetch seeded demo photos', err);
-              });
-            }
-          } catch (err) {
-            console.warn('Error during demo photo prefetch setup', err);
-          }
-
-          setLoading(false);
-          return;
+        if (DEMO_CONFIG && DEMO_CONFIG.enableRandomFaces) {
+          // Fire-and-forget: populates the photo cache for later reads.
+          attachSeededRandomUserPhotos(getDemoEmployees())
+            .then(() => console.log('📸 Prefetched seeded demo photos'))
+            .catch((err) => console.warn('Failed to prefetch seeded demo photos', err));
         }
+      } catch (err) {
+        console.warn('Error during demo photo prefetch setup', err);
+      }
 
-        // Get the current session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (!mounted) return;
-        
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-          setLoading(false);
-          return;
+      settle();
+    }
+
+    /**
+     * Throw away a persisted session the server will not honour. Without this
+     * the same dead token is re-read on every load and fails identically each
+     * time, with no path back to a clean state but clearing site data by hand.
+     */
+    const discardRestoredSession = async (reason, error) => {
+      console.warn(`🧹 Discarding restored session — ${reason}`, error || '');
+      try {
+        intentionalSignOut.current = true;
+        await supabase.auth.signOut();
+      } catch (signOutError) {
+        // Expected when the network is the reason we got here; storage still
+        // has to go, which is what clearAuthStorage() is for.
+        console.warn('signOut while discarding failed; clearing storage anyway', signOutError);
+      }
+      clearAuthStorage();
+      resetSessionVerification();
+      if (!mounted) return;
+      setUser(null);
+      setIsAuthenticated(false);
+      setSession(null);
+    };
+
+    const restoreSession = async (initialSession) => {
+      if (!initialSession) {
+        console.log('✅ No session to restore');
+        settle();
+        return;
+      }
+
+      // The session came out of storage. Ask the server whether it is real.
+      let verifiedUser = null;
+      let error = null;
+      try {
+        const result = await supabase.auth.getUser();
+        verifiedUser = result.data?.user ?? null;
+        error = result.error ?? null;
+      } catch (thrown) {
+        // A throw here is the transport failing, not a verdict on the session.
+        error = thrown;
+      }
+      if (!mounted) return;
+
+      if (error || !verifiedUser) {
+        if (isRejectedByServer(error)) {
+          await discardRestoredSession('the server rejected the stored token', error);
+        } else {
+          // Unreachable server proves nothing. Keep the token for the next
+          // attempt rather than signing someone out for being offline.
+          console.warn('⚠️ Could not verify the restored session; leaving it in place', error);
         }
+        settle();
+        return;
+      }
 
-        if (!session) {
-          console.log('✅ No session found on mount');
-          setLoading(false);
-          return;
-        }
-
-        // Verify the session is valid
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (!mounted) return;
-        
-        if (userError || !user) {
-          console.error('Invalid or expired session:', userError);
-          await supabase.auth.signOut();
-          setLoading(false);
-          return;
-        }
-
-        // Real session is valid - disable demo mode if it was enabled
-        disableDemoMode();
-
-        // Session is valid - fetch user profile
-        console.log('✅ Valid session found, loading profile...');
-        setSession(session);
-        await fetchUserProfile(user.id);
-        
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-        if (mounted) setLoading(false);
+      markSessionVerified();
+      disableDemoMode();
+      console.log('✅ Restored session verified, loading profile...');
+      setSession(initialSession);
+      try {
+        await fetchProfileOnce(verifiedUser.id);
+      } catch (profileError) {
+        console.error('Error loading profile during restore:', profileError);
+      } finally {
+        settle();
       }
     };
 
-    initializeAuth();
-
-    // Listen for auth state changes
+    // React to the session lifecycle, not to a single read at startup.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
       if (!mounted) return;
-      
+
       console.log('🔔 Auth event:', event);
 
-      if (event === 'SIGNED_IN' && session) {
+      if (event === 'INITIAL_SESSION') {
+        // A demo session has already been established above and owns the state.
+        if (isDemoMode()) {
+          settle();
+          return;
+        }
+        await restoreSession(nextSession);
+      } else if (event === 'SIGNED_IN' && nextSession) {
         console.log('🔐 User signed in');
         // Clear demo mode when a real user signs in
         disableDemoMode();
-        
-        setSession(session);
+        // The session just came from the server, so it needs no verification.
+        markSessionVerified();
+
+        setSession(nextSession);
         setLoading(true);
-        
+        settled = false;
+
         try {
           // Fetch profile immediately
-          await fetchUserProfile(session.user.id);
+          await fetchProfileOnce(nextSession.user.id);
           setIsAuthenticated(true);
         } catch (error) {
           console.error('Error loading profile after sign in:', error);
         } finally {
-          if (mounted) setLoading(false);
+          settle();
         }
       } else if (event === 'SIGNED_OUT') {
         // GoTrue emits SIGNED_OUT from _removeSession(), which several teardown
@@ -185,15 +271,26 @@ export const AuthProvider = ({ children }) => {
         }
         console.log('🚪 User signed out');
         intentionalSignOut.current = false;
+        resetSessionVerification();
         setUser(null);
         setIsAuthenticated(false);
         setSession(null);
-        setLoading(false);
-      } else if (event === 'TOKEN_REFRESHED' && session) {
+        settled = false;
+        settle();
+      } else if (event === 'TOKEN_REFRESHED' && nextSession) {
         console.log('🔄 Token refreshed');
-        setSession(session);
+        setSession(nextSession);
+        // The refresh token survived a round-trip — that is a server-side proof
+        // of validity, so the next fetch need not repeat it.
+        markSessionVerified();
         // Don't reload profile, just update session
-      } else if (event === 'USER_UPDATED' && session) {
+      } else if (event === 'PASSWORD_RECOVERY') {
+        // Emitted when detectSessionInUrl consumes a recovery link. The reset
+        // screen drives the rest; all that is needed here is to stop waiting.
+        console.log('🔑 Password recovery session detected');
+        if (nextSession) setSession(nextSession);
+        settle();
+      } else if (event === 'USER_UPDATED' && nextSession) {
         console.log('👤 User updated');
         // Check if this is a password change - if so, skip profile reload
         // Password changes don't affect user metadata, so no need to reload
@@ -202,13 +299,23 @@ export const AuthProvider = ({ children }) => {
           console.log('⏭️ Skipping profile reload for password change');
         } else {
           console.log('🔄 Reloading profile for user update');
-          await fetchUserProfile(session.user.id);
+          await fetchProfileOnce(nextSession.user.id);
         }
       }
     });
 
+    // If INITIAL_SESSION never arrives, render unauthenticated rather than
+    // holding the app on a spinner for ever.
+    const watchdog = setTimeout(() => {
+      if (!settled) {
+        console.warn('⚠️ No INITIAL_SESSION within the bootstrap window; continuing unauthenticated');
+        settle();
+      }
+    }, AUTH_BOOTSTRAP_TIMEOUT_MS);
+
     return () => {
       mounted = false;
+      clearTimeout(watchdog);
       subscription.unsubscribe();
     };
   }, []);
@@ -285,20 +392,29 @@ export const AuthProvider = ({ children }) => {
             
             // Verify the user is still valid
             const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
-            
+
             if (userError || !currentUser) {
+              // A tab waking up on a dead connection is the common case here.
+              // Failing to reach the server says nothing about the session, and
+              // tearing down on it would sign people out for changing networks.
+              if (!isRejectedByServer(userError)) {
+                console.warn('⚠️ Could not verify the user after visibility change; leaving the session alone', userError);
+                return;
+              }
               console.warn('User verification failed after visibility change:', userError);
-              const retryRefresh = await validateAndRefreshSession();
+              const retryRefresh = await validateAndRefreshSession({ forceVerify: true });
               if (!retryRefresh.success && isAuthenticated) {
                 await clearAuthState();
               }
               return;
             }
-            
+
+            markSessionVerified();
+
             // If we don't have user data in state, reload the profile
             if (!user) {
               console.log('🔄 User state empty - reloading profile...');
-              await fetchUserProfile(currentUser.id);
+              await fetchProfileOnce(currentUser.id);
             }
           } else {
             // No session in memory — try one recovery refresh before signing out
@@ -882,6 +998,8 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       setSession(null);
       setLoading(false);
+      // Whatever the server last confirmed no longer applies to anyone.
+      resetSessionVerification();
 
       // Mirror contract app: wipe persisted tokens before signOut
       clearAuthStorage();

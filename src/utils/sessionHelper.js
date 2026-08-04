@@ -1,6 +1,10 @@
 import { supabase } from '../config/supabaseClient';
 import { isDemoMode } from './demoHelper.js';
 import { LOGOUT_REASON_KEY } from '../config/requestTimeouts.js';
+import { isRejectedByServer } from './authErrors.js';
+
+/* Re-exported so callers keep importing their session helpers from one place. */
+export { isRejectedByServer };
 
 export const SESSION_LOGOUT_DELAY_MS = 2000;
 
@@ -13,6 +17,66 @@ export const isSessionAuthError = (error) => {
     errorMsg.includes('jwt expired') ||
     errorMsg.includes('invalid jwt')
   );
+};
+
+/**
+ * How long a server-side verification stays good for. Below this the local
+ * token is taken at face value; past it the next validation asks the server.
+ */
+export const SESSION_VERIFY_INTERVAL_MS = 5 * 60 * 1000;
+
+/**
+ * When the session was last proved valid *by the server* — a getUser() call or
+ * a successful token refresh, both of which round-trip. Reading storage does
+ * not count, which is the whole point: a persisted token says a session once
+ * existed, not that it still does. A token revoked elsewhere, a deleted user,
+ * or a sign-out on another device all leave the stored JWT parsing perfectly
+ * well until it expires on its own.
+ */
+let lastVerifiedAt = 0;
+let verifyInFlight = null;
+
+/** Record that the server has just confirmed the session. */
+export const markSessionVerified = () => {
+  lastVerifiedAt = Date.now();
+};
+
+/** Forget the confirmation, so the next validation round-trips again. */
+export const resetSessionVerification = () => {
+  lastVerifiedAt = 0;
+  verifyInFlight = null;
+};
+
+/**
+ * Ask the server whether the session is still real. Shared between concurrent
+ * callers so a screenful of parallel fetches costs one request.
+ *
+ * @returns {Promise<{ok: boolean, rejected: boolean, error?: string}>}
+ *          `ok` false with `rejected` false means we could not reach the server
+ *          — unproven, not invalid, so callers should not sign anyone out.
+ */
+const verifyWithServer = async () => {
+  if (verifyInFlight) return verifyInFlight;
+
+  verifyInFlight = (async () => {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) {
+        if (isRejectedByServer(error)) {
+          return { ok: false, rejected: true, error: error?.message || 'Session is no longer valid' };
+        }
+        return { ok: false, rejected: false, error: error?.message || 'Could not reach the auth server' };
+      }
+      markSessionVerified();
+      return { ok: true, rejected: false };
+    } catch (error) {
+      return { ok: false, rejected: false, error: error?.message || 'Could not reach the auth server' };
+    } finally {
+      verifyInFlight = null;
+    }
+  })();
+
+  return verifyInFlight;
 };
 
 // At most one forced logout may ever be pending. After an idle period several
@@ -71,11 +135,24 @@ export const handleSessionAuthError = (error, { logout, silent = false, setFetch
 let refreshInProgress = null;
 
 /**
- * Validates the current Supabase session and refreshes if needed
- * @returns {Promise<{success: boolean, error?: string}>}
+ * Validates the current Supabase session, refreshing it when it is close to
+ * expiry and confirming it against the server when the last confirmation has
+ * gone stale.
+ *
+ * getSession() alone is not a validity check: it decodes whatever is in
+ * storage. Every screen calls this before fetching, so it is where the
+ * distinction has to be enforced — but not on every call, or each fetch would
+ * carry an extra round-trip. Hence SESSION_VERIFY_INTERVAL_MS, with a refresh
+ * counting as a confirmation because it round-trips too.
+ *
+ * @param {object}  options
+ * @param {boolean} options.quiet        suppress the informational logging
+ * @param {boolean} options.forceVerify  round-trip regardless of the interval
+ * @param {boolean} options.skipVerify   local checks only (used by the poller)
+ * @returns {Promise<{success: boolean, error?: string, unverified?: boolean}>}
  */
 export const validateAndRefreshSession = async (options = {}) => {
-  const { quiet = false } = options;
+  const { quiet = false, forceVerify = false, skipVerify = false } = options;
   try {
     // Get current session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -127,6 +204,9 @@ export const validateAndRefreshSession = async (options = {}) => {
             }
 
             console.log('✅ Session refreshed by concurrent worker');
+            /* A refresh is a server round-trip that the refresh token had to
+               survive — that is a stronger proof than getUser(). */
+            markSessionVerified();
           } else {
             // Start a refresh and store the promise so other callers can await it
             refreshInProgress = supabase.auth.refreshSession();
@@ -143,6 +223,7 @@ export const validateAndRefreshSession = async (options = {}) => {
             }
 
             console.log('✅ Session refreshed successfully');
+            markSessionVerified();
           }
         } catch (err) {
           // Ensure the global promise is cleared on unexpected errors
@@ -150,13 +231,37 @@ export const validateAndRefreshSession = async (options = {}) => {
           console.error('❌ Unexpected error during session refresh:', err);
           return { success: false, error: err.message || 'Session refresh failed' };
         }
-      } else {
+      } else if (!quiet) {
         console.log('✅ Session valid, expires in:', Math.round(timeUntilExpiry / 60000), 'minutes');
       }
     }
 
+    /*
+     * Everything above this line was decided from the stored token. Ask the
+     * server whether it still stands behind it — the token parses and has not
+     * expired even after it has been revoked, the user deleted, or a sign-out
+     * performed on another device.
+     */
+    if (!skipVerify) {
+      const stale = Date.now() - lastVerifiedAt > SESSION_VERIFY_INTERVAL_MS;
+      if (forceVerify || stale) {
+        const verdict = await verifyWithServer();
+        if (!verdict.ok) {
+          if (verdict.rejected) {
+            if (!quiet) console.warn('🚫 Server rejected the stored session:', verdict.error);
+            return { success: false, error: verdict.error || 'Session is no longer valid. Please sign in again.' };
+          }
+          /* Unreachable server proves nothing. Let the caller proceed on the
+             local token and report the doubt rather than signing anyone out
+             because their connection dropped. */
+          if (!quiet) console.warn('⚠️ Could not verify the session with the server:', verdict.error);
+          return { success: true, unverified: true, error: verdict.error };
+        }
+      }
+    }
+
     return { success: true };
-    
+
   } catch (error) {
     console.error('❌ Session validation error:', error);
     return {

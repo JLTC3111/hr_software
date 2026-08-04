@@ -243,7 +243,7 @@ const HRManagementApp = () => {
 
 const AppContent = ({ employees, activeEmployees, applications, selectedEmployee, isEditMode, onViewEmployee, onEditEmployee, onDeleteEmployee, onCloseModal, onPhotoUpdate, refetchEmployees, loading, error, isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const { bg, text } = useTheme();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const { currentLanguage } = useLanguage();
 
   // Record a visit when auth state becomes available (or when in demo mode)
@@ -252,6 +252,26 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
       logVisit();
     }
   }, [isAuthenticated]);
+
+  /*
+   * Wait for the auth bootstrap before routing.
+   *
+   * `isAuthenticated` is false while GoTrue is still restoring and verifying a
+   * persisted session, so routing on it alone sent every returning user to
+   * /login on a hard refresh and then bounced them back once the profile
+   * landed. "Not authenticated yet" and "not authenticated" are different
+   * answers and only one of them is a reason to show the login form.
+   *
+   * AuthProvider guarantees this resolves — every bootstrap path settles it,
+   * and a watchdog covers a client that never emits INITIAL_SESSION.
+   */
+  if (authLoading) {
+    return (
+      <div className={`min-h-screen ${bg.primary} flex items-center justify-center`}>
+        <PageLoader />
+      </div>
+    );
+  }
 
   if (error && isAuthenticated) {
     return (

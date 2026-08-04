@@ -4,6 +4,7 @@ import {
   ensureActivityListeners,
   isRecentlyActive,
 } from '../utils/activityTracker.js';
+import { markSessionVerified } from '../utils/sessionHelper.js';
 import { SESSION_KEEPALIVE_ACTIVITY_MS } from '../config/requestTimeouts.js';
 
 /**
@@ -35,6 +36,10 @@ export const useSessionKeepAlive = ({ enabled = true } = {}) => {
           const { error: refreshError } = await supabase.auth.refreshSession();
           if (refreshError) {
             console.warn('Session refresh failed:', refreshError.message);
+          } else {
+            /* The refresh token survived a round-trip, which is the proof of
+               validity that reading storage can never give. */
+            markSessionVerified();
           }
         }
       }
