@@ -28,6 +28,4 @@ dist-ssr
 *.sln
 *.sw?
 
-# PDF export fonts (downloaded via npm run fonts:download / pre-build)
-public/fonts/*.ttf
 !public/fonts/.gitkeep
