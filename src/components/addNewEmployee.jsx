@@ -30,6 +30,7 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import * as employeeService from '../services/employeeService.js';
 import { DatePicker } from './ui/date-picker.jsx';
 import { formatDate as formatLocaleDate, formatNumber, groupNumberInput, parseNumberInput } from '../utils/localeFormat.js';
+import { DEPARTMENT_KEYS } from '../utils/departments.js';
 import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
 import { Blueprint, Btn, Kicker } from './ui/industry.jsx';
 
@@ -143,11 +144,10 @@ const AddNewEmployee = ({ employees = [], refetchEmployees }) => {
 
   /* -- reference data ----------------------------------------------- */
 
-  const departments = useMemo(() => [
-    'legal_compliance', 'technology', 'internal_affairs', 'human_resources',
-    'office_unit', 'board_of_directors', 'finance', 'engineering',
-    'sales', 'marketing', 'design', 'part_time_employee',
-  ].map(value => ({ value, label: t(`employeeDepartment.${value}`, value) })), [t]);
+  const departments = useMemo(
+    () => DEPARTMENT_KEYS.map(value => ({ value, label: t(`employeeDepartment.${value}`, value) })),
+    [t]
+  );
 
   const positions = useMemo(() => [
     'general_manager', 'senior_developer', 'hr_specialist', 'accountant',

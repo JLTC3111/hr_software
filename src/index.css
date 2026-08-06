@@ -194,6 +194,18 @@ select::-ms-expand {
 }
 
 @layer base {
+  /* Tell the browser which scheme its own chrome is drawing against. Without
+     this the UA keeps painting form controls — the text caret among them — from
+     the light palette even while the app is in dark mode, which is how a black
+     cursor ended up invisible in the dark login fields. */
+  :root {
+    color-scheme: light;
+  }
+
+  :root.dark {
+    color-scheme: dark;
+  }
+
   /* ✅ Light mode autofill fix */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
@@ -201,6 +213,8 @@ select::-ms-expand {
     -webkit-box-shadow: 0 0 0px 1000px theme('colors.white') inset !important;
     box-shadow: 0 0 0px 1000px theme('colors.white') inset !important;
     -webkit-text-fill-color: theme('colors.gray.900') !important;
+    /* The fill colour above does not move the caret, so state it too. */
+    caret-color: theme('colors.gray.900') !important;
     transition: background-color 9999s ease-in-out 0s;
   }
 
@@ -211,6 +225,7 @@ select::-ms-expand {
     -webkit-box-shadow: 0 0 0px 1000px theme('colors.gray.700') inset !important;
     box-shadow: 0 0 0px 1000px theme('colors.gray.700') inset !important;
     -webkit-text-fill-color: theme('colors.white') !important;
+    caret-color: theme('colors.white') !important;
     transition: background-color 9999s ease-in-out 0s;
   }
 }

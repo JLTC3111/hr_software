@@ -392,8 +392,8 @@ const Login = () => {
                   onChange={handleChange}
                   className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors ${
                     isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                      ? 'bg-gray-700 border-gray-600 text-white caret-white placeholder-gray-400' 
+                      : 'bg-white border-gray-300 text-gray-900 caret-gray-900 placeholder-gray-500'
                   } ${errors.email ? 'border-red-500 focus:ring-red-500' : ''}`}
                   placeholder={t('login.emailPlaceholder', 'you@example.com')}
                   autoComplete="email"
@@ -424,8 +424,8 @@ const Login = () => {
                   onChange={handleChange}
                   className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors ${
                     isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                      ? 'bg-gray-700 border-gray-600 text-white caret-white placeholder-gray-400' 
+                      : 'bg-white border-gray-300 text-gray-900 caret-gray-900 placeholder-gray-500'
                   } ${errors.password ? 'border-red-500 focus:ring-red-500' : ''}`}
                   placeholder={t('login.passwordPlaceholder', '••••••••')}
                   autoComplete="current-password"
@@ -661,8 +661,8 @@ const Login = () => {
                       }}
                       className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors ${
                         isDarkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                          ? 'bg-gray-700 border-gray-600 text-white caret-white placeholder-gray-400' 
+                          : 'bg-white border-gray-300 text-gray-900 caret-gray-900 placeholder-gray-500'
                       }`}
                       placeholder={t('login.forgotPasswordModal.emailPlaceholder', 'you@example.com')}
                       autoComplete="email"

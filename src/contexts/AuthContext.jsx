@@ -9,6 +9,7 @@ import {
   resetSessionVerification,
 } from '../utils/sessionHelper.js';
 import { isDemoMode, enableDemoMode, disableDemoMode, MOCK_USER, getDemoEmployees, attachSeededRandomUserPhotos, DEMO_CONFIG } from '../utils/demoHelper.js';
+import { withTimeout } from '../utils/supabaseTimeout.js';
 import { useSessionKeepAlive } from '../hooks/useSessionKeepAlive.js';
 import { useIdleLogout } from '../hooks/useIdleLogout.js';
 import {
@@ -35,6 +36,21 @@ const STALE_SIGNED_OUT_GRACE_MS = 10000;
  * client wedged on a dead refresh token must not pin the app on a spinner.
  */
 const AUTH_BOOTSTRAP_TIMEOUT_MS = 12000;
+
+/**
+ * How long the "is this stored token real?" call may take before the bootstrap
+ * treats the server as unreachable. Comfortably inside the bootstrap window
+ * above, so a slow verification resolves the router itself rather than being
+ * cut off by the watchdog and leaving the session half-restored.
+ */
+const AUTH_VERIFY_TIMEOUT_MS = 8000;
+
+/**
+ * How long the profile load may take before the router stops waiting for it.
+ * The load is several sequential queries and none of them is individually
+ * bounded, so without this one stalled query holds the whole app.
+ */
+const AUTH_PROFILE_TIMEOUT_MS = 10000;
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -64,6 +80,11 @@ export const AuthProvider = ({ children }) => {
   const intentionalSignOut = useRef(false);
   // Shared in-flight profile request — see fetchProfileOnce.
   const profileFetch = useRef(null);
+  // Whether the auth bootstrap has reported back to the router, and the timer
+  // that guarantees it eventually does. Refs, not closure variables, so
+  // re-running the bootstrap effect cannot lose either one.
+  const bootstrapSettled = useRef(false);
+  const bootstrapWatchdog = useRef(null);
 
   const clearAuthState = async () => {
     console.log('🧹 Clearing auth state and setting loading = false');
@@ -124,12 +145,57 @@ export const AuthProvider = ({ children }) => {
    */
   useEffect(() => {
     let mounted = true;
-    let settled = false;
 
+    /**
+     * Release the router.
+     *
+     * Deliberately keyed on a ref rather than on this effect run's `mounted`
+     * flag. AuthProvider is not unmounted when React re-runs the effect — which
+     * StrictMode does on every mount in development — so a bootstrap that
+     * finishes against the previous run still has a live component to report
+     * to. Gating on `mounted` threw that answer away, and because the previous
+     * run's watchdog was cleared at the same moment, a refresh could be left
+     * with nothing at all able to lower the spinner. The ref makes settling
+     * idempotent and unstealable.
+     */
     const settle = () => {
-      if (!mounted || settled) return;
-      settled = true;
+      if (bootstrapWatchdog.current) {
+        clearTimeout(bootstrapWatchdog.current);
+        bootstrapWatchdog.current = null;
+      }
+      if (bootstrapSettled.current) return;
+      bootstrapSettled.current = true;
       setLoading(false);
+    };
+
+    /**
+     * Arm the last line of defence: if the bootstrap does not report back, render
+     * unauthenticated rather than holding the app on a spinner for ever.
+     */
+    const armWatchdog = () => {
+      if (bootstrapWatchdog.current) clearTimeout(bootstrapWatchdog.current);
+      bootstrapWatchdog.current = setTimeout(() => {
+        bootstrapWatchdog.current = null;
+        if (bootstrapSettled.current) return;
+        console.warn('⚠️ Auth bootstrap did not report back in time; continuing unauthenticated');
+        settle();
+      }, AUTH_BOOTSTRAP_TIMEOUT_MS);
+    };
+
+    /**
+     * Put the app back on the spinner, with a fresh watchdog behind it.
+     *
+     * Anything that raises `loading` again after the first bootstrap has to come
+     * through here. GoTrue emits SIGNED_IN during startup whenever it renews an
+     * expired access token, and that handler used to raise `loading` on its own:
+     * the original watchdog had already been spent, so the only thing left that
+     * could lower it was the profile fetch — six sequential queries, none of them
+     * bounded. One stalled query and the tab spun for ever. That is the hang.
+     */
+    const beginBootstrap = () => {
+      bootstrapSettled.current = false;
+      setLoading(true);
+      armWatchdog();
     };
 
     // Demo mode never touches GoTrue. Set it up before subscribing, but still
@@ -184,17 +250,27 @@ export const AuthProvider = ({ children }) => {
       }
 
       // The session came out of storage. Ask the server whether it is real.
+      //
+      // Bounded, because this call is the app's gate: GoTrue serialises auth
+      // requests behind a Web Lock, so one stuck refresh holds every later
+      // caller — including this one — for as long as the transport allows, and
+      // the router waits the whole time. A timeout here is not a verdict on the
+      // session, it is the same "could not reach the server" answer as a
+      // transport failure, and is handled as such below.
       let verifiedUser = null;
       let error = null;
       try {
-        const result = await supabase.auth.getUser();
+        const result = await withTimeout(supabase.auth.getUser(), AUTH_VERIFY_TIMEOUT_MS);
         verifiedUser = result.data?.user ?? null;
         error = result.error ?? null;
       } catch (thrown) {
         // A throw here is the transport failing, not a verdict on the session.
         error = thrown;
       }
-      if (!mounted) return;
+      // No `mounted` check: React may have re-run this effect (StrictMode does,
+      // every time), and abandoning the bootstrap here is what used to strand
+      // the router. The component is still alive; the writes below are
+      // idempotent, and on a genuine unmount React discards them anyway.
 
       if (error || !verifiedUser) {
         if (isRejectedByServer(error)) {
@@ -213,8 +289,11 @@ export const AuthProvider = ({ children }) => {
       console.log('✅ Restored session verified, loading profile...');
       setSession(initialSession);
       try {
-        await fetchProfileOnce(verifiedUser.id);
+        await withTimeout(fetchProfileOnce(verifiedUser.id), AUTH_PROFILE_TIMEOUT_MS);
       } catch (profileError) {
+        // A timeout does not cancel the underlying queries: if the profile
+        // arrives late it still sets the user and the app moves off the login
+        // screen by itself. What matters here is that the router stops waiting.
         console.error('Error loading profile during restore:', profileError);
       } finally {
         settle();
@@ -244,12 +323,11 @@ export const AuthProvider = ({ children }) => {
         markSessionVerified();
 
         setSession(nextSession);
-        setLoading(true);
-        settled = false;
+        beginBootstrap();
 
         try {
           // Fetch profile immediately
-          await fetchProfileOnce(nextSession.user.id);
+          await withTimeout(fetchProfileOnce(nextSession.user.id), AUTH_PROFILE_TIMEOUT_MS);
           setIsAuthenticated(true);
         } catch (error) {
           console.error('Error loading profile after sign in:', error);
@@ -275,7 +353,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setIsAuthenticated(false);
         setSession(null);
-        settled = false;
+        bootstrapSettled.current = false;
         settle();
       } else if (event === 'TOKEN_REFRESHED' && nextSession) {
         console.log('🔄 Token refreshed');
@@ -304,19 +382,18 @@ export const AuthProvider = ({ children }) => {
       }
     });
 
-    // If INITIAL_SESSION never arrives, render unauthenticated rather than
-    // holding the app on a spinner for ever.
-    const watchdog = setTimeout(() => {
-      if (!settled) {
-        console.warn('⚠️ No INITIAL_SESSION within the bootstrap window; continuing unauthenticated');
-        settle();
-      }
-    }, AUTH_BOOTSTRAP_TIMEOUT_MS);
+    // Cover the first bootstrap — no INITIAL_SESSION, or a call wedged behind
+    // GoTrue's lock. Every later return to the spinner arms its own through
+    // beginBootstrap(), so the router is never waiting on nothing.
+    if (!bootstrapSettled.current) armWatchdog();
 
     return () => {
       mounted = false;
-      clearTimeout(watchdog);
       subscription.unsubscribe();
+      // The watchdog deliberately outlives this cleanup. React re-runs the
+      // effect on every StrictMode mount, and disarming a timer that belongs to
+      // a bootstrap still in flight is how the guarantee got lost. `settle` is
+      // idempotent and React drops a state write to an unmounted tree.
     };
   }, []);
 

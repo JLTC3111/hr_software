@@ -14,11 +14,14 @@
  *   - Every card is a <Blueprint> with its four corner marks; every bar is a
  *     hairline box with a fill inside.
  *
- * On the data: `time_entries.clock_out` is NOT NULL, so the schema has no notion
- * of a punch that is still open. The running session therefore lives client-side
- * (localStorage, per employee) and is written as an ordinary time entry when you
- * punch out. Everything else on the screen — who is on the floor, who is late,
- * the department split, the week — is derived from real entries.
+ * On the data: `time_entries.clock_out` is NOT NULL, so that table can only
+ * describe a finished shift. A punch that is still open lives in `open_punches`
+ * (one row per employee — see punchClockService.js) with a localStorage mirror
+ * for instant restore, and is written as an ordinary time entry when you punch
+ * out. The pair is what keeps a clock running across an idle logout, a browser
+ * refresh, or a move to another machine. Everything else on the screen — who is
+ * on the floor, who is late, the department split, the week — is derived from
+ * filed entries.
  */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { RefreshCw, ArrowRight, AlertCircle, X } from 'lucide-react';
@@ -26,6 +29,7 @@ import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import * as timeTrackingService from '../services/timeTrackingService.js';
+import * as punchClockService from '../services/punchClockService.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { isDemoMode, getDemoEmployeeName } from '../utils/demoHelper.js';
@@ -383,6 +387,62 @@ const PunchClock = ({ employees = [], allEmployees = [], showNotes = false }) =>
     return () => clearInterval(id);
   }, []);
 
+  /**
+   * Restore the open punch whenever the identity or the day changes.
+   *
+   * Two sources, in this order:
+   *
+   *   localStorage  instant, so the clock is already running on the first paint
+   *                 and there is no flash of "not punched in". The useState
+   *                 initialiser above only runs once, with whatever `employeeId`
+   *                 held at that instant, so reading again here is what removes
+   *                 the assumption that auth had already rehydrated the user
+   *                 before this screen mounted — after an idle logout it has
+   *                 not, and the punch used to sit in storage with a stopped
+   *                 clock on screen.
+   *
+   *   open_punches  authoritative, because it is the only copy that survives a
+   *                 different browser or machine, or cleared site data. It wins
+   *                 when both exist, and when only the local copy exists it gets
+   *                 pushed up — that is the punch that was started while the
+   *                 table was unreachable.
+   *
+   * Elapsed time is measured from `clockIn` against the wall clock, so putting
+   * the session back is all it takes for time away to be counted.
+   */
+  useEffect(() => {
+    if (!employeeId) return undefined;
+
+    const local = readSession(employeeId, today);
+    setSession((current) => {
+      if (local) return local;
+      // Nothing stored for this identity and day: drop anything held in memory
+      // from a previous one, which is also what rolls a session over at midnight.
+      return current && current.date === today ? current : null;
+    });
+
+    let cancelled = false;
+    (async () => {
+      const result = await punchClockService.getOpenPunch(employeeId, today);
+      if (cancelled || !result.success) return;
+
+      if (result.data) {
+        setSession(result.data);
+        writeSession(employeeId, result.data);
+      } else if (local) {
+        // Started on this device while the table was out of reach. Publish it
+        // rather than letting the next machine find nothing.
+        punchClockService.saveOpenPunch(employeeId, local);
+      } else if (result.stale) {
+        // A punch from an earlier day. The screen never resumes one, and leaving
+        // the row behind would keep answering this query for ever.
+        punchClockService.clearOpenPunch(employeeId);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [employeeId, today]);
+
   const now = nowMin(tick);
 
   const directory = useMemo(
@@ -630,9 +690,23 @@ const PunchClock = ({ employees = [], allEmployees = [], showNotes = false }) =>
 
   /* ---------------- actions ---------------- */
 
+  /**
+   * The one way the punch changes. Writes both copies: localStorage first
+   * because it is synchronous and the screen reads it back on the next mount,
+   * then the table, which is what another machine will find. A failed write to
+   * the table is logged rather than surfaced — the punch is safe locally either
+   * way, and interrupting someone clocking on to report a sync problem would
+   * cost more than it explains.
+   */
   const commit = useCallback((next) => {
     setSession(next);
     writeSession(employeeId, next);
+    const remote = next
+      ? punchClockService.saveOpenPunch(employeeId, next)
+      : punchClockService.clearOpenPunch(employeeId);
+    remote.then((result) => {
+      if (!result?.success) console.warn('Open punch did not reach the server:', result?.error);
+    });
   }, [employeeId]);
 
   const handlePunchIn = useCallback(() => {
