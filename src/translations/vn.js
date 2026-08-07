@@ -3,7 +3,7 @@ export default {
   nav: {
     menu: 'Menu',
     workload: 'Quản Lý Công Việc',
-    attendanceHub: 'Trung Tâm',
+    attendanceHub: 'Quản Lý Thời Gian',
     timeClock: 'Chấm Công',
     punchClock: 'Bấm Giờ',
     dashboard: 'Trung Tâm',

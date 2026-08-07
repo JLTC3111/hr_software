@@ -16,7 +16,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
-  TrendingUp, Users, Award, FileText, AlarmClock, ChevronDown, ChevronLeft,
+  TrendingUp, Users, Award, FileText, AlarmClock, ChevronDown, ChevronRight,
   Bell, Cog, CheckSquare, X, UserPlus, Languages,
 } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext.jsx'
@@ -581,13 +581,13 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
             cursor: 'pointer',
           }}
         >
-          <ChevronLeft
+          <ChevronRight
             size={18}
             strokeWidth={1.5}
             style={{
               color: ind.inkGhost,
               transform: isCollapsed ? 'none' : 'rotate(180deg)',
-              transition: 'transform 1.5s ease',
+              transition: 'transform 0.5s ease',
             }}
           />
         </button>
