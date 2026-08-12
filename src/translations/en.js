@@ -28,6 +28,12 @@ export default {
   // Leave Management
   leave: {
     subtitle: 'Plan, request and approve time off on a shared calendar.',
+    // Sheet chrome
+    month: 'Month',
+    byType: 'By type',
+    ofNRequests: 'of {n} requests',
+    pendingNote: 'Approve or reject them on their row in the ledger.',
+    nothingPending: 'Nothing is waiting on a decision.',
     requestLeave: 'Request Leave',
     requestsTitle: 'Leave Requests',
     noRequests: 'No leave requests yet.',
@@ -1672,6 +1678,10 @@ export default {
     averageSalary: 'Average Salary',
     exportToCSV: "Export to CSV",
     exportAllData: 'Export All Data',
+    export: 'Export',
+    exportScopeNote: 'Exports carry every filtered record, not just the 50 previewed.',
+    leaveType: 'Type',
+    rate: 'Rate',
     // Date Range Options
     today: 'Today',
     thisWeek: 'This Week',
@@ -1807,6 +1817,7 @@ export default {
   common: {
     refresh: 'Refresh',
     reload: 'Reload',
+    previous: 'Previous',
     retry: 'Try Again',
     results: 'Results',
     total: 'Total',
@@ -1972,6 +1983,13 @@ export default {
   // Notifications
   notifications: {
     title: 'Notifications',
+    // Ledger chrome
+    shown: 'Shown',
+    nShownOf: '{shown} of {total} shown',
+    ofN: 'of {n}',
+    byCategory: 'By category',
+    byType: 'By type',
+    leavingMarksRead: 'Leaving this screen marks everything shown as read.',
     employeeAdded: 'Employee Added',
     addedTo: 'added to',
     unreadCount: '{0} unread',
@@ -2102,7 +2120,57 @@ export default {
     autoClockOutDesc: 'Automatically clock out at a specific time',
     autoClockOutTime: 'Auto Clock Out Time',
     weeklyReport: 'Weekly Report',
-    weeklyReportDesc: 'Receive a weekly summary of your work activities'
+    weeklyReportDesc: 'Receive a weekly summary of your work activities',
+    // Spec-sheet chrome
+    on: 'On',
+    off: 'Off',
+    sections: 'Settings sections',
+    unsaved: 'Unsaved',
+    unsavedChanges: 'Unsaved changes',
+    nUnsaved: '{n} unsaved',
+    allSaved: 'All changes saved',
+    nItems: '{n} items',
+    nothingUntilSaved: 'Nothing takes effect until saved',
+    queueEmpty: 'The draft and your saved settings agree. Change a row to open one.',
+    revert: 'Revert',
+    account: 'Account',
+    saveN: 'Save {n} changes',
+    nothingToSave: 'Nothing to save',
+    loadFailed: 'Your settings could not be loaded.',
+    themes: {
+      light: 'Light',
+      dark: 'Dark',
+      system: 'System'
+    },
+    scope: {
+      notifications: 'Scope: this account · applies on your next sign-in',
+      topics: 'Scope: every channel above · a topic that is off is never sent',
+      appearance: 'Scope: this browser · saved to your account',
+      language: 'Scope: the whole interface · takes effect on save',
+      privacy: 'Scope: what colleagues see on your directory card',
+      work: 'Scope: your own time records and landing page'
+    },
+    note: {
+      email: 'Delivered to {email}',
+      desktop: 'The browser asks for permission the first time this is turned on',
+      frequency: 'Real-time delivers as events happen; a digest batches them into one message',
+      timeTracking: 'Approvals, missing punches and proof requests',
+      performance: 'Review cycles, goals and self-assessments',
+      employee: 'Joiners, leavers and directory changes',
+      recruitment: 'New applications and stage changes',
+      system: 'Maintenance windows and release notes',
+      theme: 'System follows the operating system setting',
+      dateFormat: 'Used by every date on screen and in exports',
+      timeFormat: 'Applies to the clock, the ledgers and the punch history',
+      itemsPerPage: 'Every table in the app pages at this size',
+      language: 'Text without a translation falls back to English',
+      timezone: 'Every timestamp on screen is rendered in this zone',
+      visibility: 'Managers and admins always keep access for HR purposes',
+      showEmail: 'Turning this off hides it from the directory, not from HR',
+      showPhone: 'Turning this off hides it from the directory, not from HR',
+      dashboard: 'The view the Organisation Overview opens in',
+      autoClockOutTime: 'An open punch left running past this time is closed at it'
+    }
   },
   // Control Panel
   controlPanel: {
@@ -3340,6 +3408,12 @@ export default {
   },
   // Translation Studio (manual UGC translations)
   translationStudio: {
+    // Ticker figures
+    strings: 'Strings',
+    inQueue: 'In queue',
+    locales: 'Locales',
+    coverage: 'Coverage',
+    selected: 'Selected',
     translateAll: 'Translate all',
     confirmTranslateAll: 'Replace all existing translations for this text with machine output? Nothing is saved until you press Save.',
     sourceCountHint: 'Fully translated records / total records',

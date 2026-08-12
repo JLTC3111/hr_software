@@ -1,14 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import _React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Check,
   Download,
   Languages,
-  Loader,
+  Loader2,
   RefreshCw,
   Save,
   Search,
-  Sparkles,
   Trash2,
   Wand2,
 } from 'lucide-react';
@@ -16,9 +15,10 @@ import { useLanguage, SUPPORTED_LANGUAGES } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { isDemoMode } from '../utils/demoHelper';
-import { cn } from '@/lib/utils';
 import { ShinyButton } from './ui/shiny-button';
-import { PageLiveClock } from './ui/page-live-clock';
+import { getIndustry, DISPLAY, BODY } from '../theme/industry.js';
+import { Blueprint, Bar, Tag, Btn, Kicker, ColumnHeading, TickerCell, LiveClock } from './ui/industry.jsx';
+import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import {
   ENTITY_TYPES,
   TRANSLATABLE_ENTITIES,
@@ -98,7 +98,8 @@ const persistLeftPanelWidth = (width) => {
 
 const TranslationStudio = () => {
   const { t, currentLanguage, refreshManualTranslations } = useLanguage();
-  const { isDarkMode, bg, text, border } = useTheme();
+  const { isDarkMode } = useTheme();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
   const { user } = useAuth();
 
   const demo = isDemoMode();
@@ -651,12 +652,96 @@ const TranslationStudio = () => {
   };
 
   // ---------------------------------------------------------------------------
-  // Styling helpers
+  // Styling — "Industry" (src/theme/industry.js). Radius 0, hairline rules,
+  // status through weight rather than red / amber / green.
   // ---------------------------------------------------------------------------
-  const panel = cn('rounded-xl border', bg.secondary, border.primary);
-  const field = cn(
-    'w-full px-3 py-2 rounded-lg border text-sm',
-    isDarkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'
+  const frameStyle = {
+    border: `1px solid ${ind.hairline}`,
+    background: ind.ground,
+    color: ind.ink,
+    fontFamily: BODY,
+    fontSize: 14,
+    borderRadius: 0,
+  };
+  const caption = { fontFamily: BODY, fontSize: 13, color: ind.inkMuted, lineHeight: 1.5, margin: 0 };
+  const fieldLabelStyle = {
+    fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.14em',
+    textTransform: 'uppercase', color: ind.inkMuted, display: 'block', marginBottom: 6,
+  };
+  const textareaStyle = {
+    width: '100%', padding: '7px 10px', resize: 'vertical',
+    border: `1px solid ${ind.hairline}`, borderRadius: 0,
+    background: 'transparent', color: ind.ink, fontFamily: BODY, fontSize: 13,
+  };
+  const iconBtnStyle = {
+    width: 22, height: 22, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    border: `1px solid ${ind.hairline}`, background: 'transparent', color: ind.ink,
+    borderRadius: 0, cursor: 'pointer', padding: 0, flex: 'none',
+  };
+  const chipStyle = (active) => ({
+    fontFamily: DISPLAY, fontWeight: 600, fontSize: 10.5, letterSpacing: '.08em',
+    textTransform: 'uppercase', padding: '3px 8px', borderRadius: 0, cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    background: active ? ind.accent : 'transparent',
+    color: active ? ind.accentInk : ind.inkGhost,
+    border: `1px solid ${active ? ind.accent : ind.hairline}`,
+    transition: 'background .15s ease, color .15s ease',
+  });
+
+  /** A locale is "target" when it is one of the ones an entry must carry. */
+  const targetLocaleCount = Math.max(1, locales.length - 1);
+
+  /** How much of the whole queue is finished — the ticker's one live figure. */
+  const coveragePercent = useMemo(() => {
+    if (entries.length === 0) return 0;
+    const complete = entries.filter(
+      (entry) => (coverage.get(entry.key)?.size || 0) >= targetLocaleCount
+    ).length;
+    return Math.round((complete / entries.length) * 100);
+  }, [entries, coverage, targetLocaleCount]);
+
+  const selectedCovered = selected ? (coverage.get(selected.key)?.size || 0) : 0;
+
+  const ticker = (
+    <div
+      style={{
+        height: 44, background: ind.tickerBg, color: ind.tickerInk,
+        borderBottom: `1px solid ${ind.hairline}`,
+        display: 'flex', alignItems: 'stretch', overflowX: 'auto', overflowY: 'hidden',
+      }}
+    >
+      <TickerCell ind={ind}>
+        <LiveClock ind={ind} live={entries.length > 0} />
+      </TickerCell>
+      <TickerCell ind={ind} label={t('translationStudio.strings', 'Strings')} value={entries.length} />
+      <TickerCell ind={ind} label={t('translationStudio.inQueue', 'In queue')} value={visible.length} />
+      <TickerCell ind={ind} label={t('translationStudio.locales', 'Locales')} value={targetLocaleCount} />
+      <TickerCell
+        ind={ind}
+        label={t('translationStudio.coverage', 'Coverage')}
+        value={`${coveragePercent}%`}
+        // The one figure on the strip that says how much work is left.
+        valueColor={coveragePercent < 100 ? ind.tickerUp : undefined}
+      />
+      <TickerCell
+        ind={ind}
+        label={t('translationStudio.selected', 'Selected')}
+        value={selected ? `${selectedCovered}/${targetLocaleCount}` : '—'}
+      />
+
+      <div
+        style={{
+          flex: 1, minWidth: 'max-content', display: 'flex', alignItems: 'center',
+          justifyContent: 'flex-end', gap: 8, padding: '0 14px',
+          borderLeft: `1px solid ${ind.tickerRule}`,
+        }}
+      >
+        <FetchElapsedPill active={loading || busy || suggestingAll} isDarkMode label={t('common.fetching', 'Fetching')} />
+        <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+          {(currentLanguage || '').toUpperCase()}
+        </span>
+      </div>
+    </div>
   );
 
   // Mirrors the access-denied panel in userManagement.jsx. This only removes
@@ -664,16 +749,17 @@ const TranslationStudio = () => {
   // refuse a write.
   if (!canEdit) {
     return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center space-x-2">
-            <AlertTriangle className="w-5 h-5 text-red-600" />
-            <span className="text-red-800 font-medium">
-              {t(
-                'translationStudio.accessDenied',
-                'Access Denied: Admin privileges required'
-              )}
-            </span>
+      <div data-screen-label="Translation Studio" style={frameStyle}>
+        {ticker}
+        <div style={{ padding: '48px 24px', display: 'flex', justifyContent: 'center' }}>
+          <div style={{ border: `1px solid ${ind.ink}`, padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'flex-start', maxWidth: 460 }}>
+            <AlertTriangle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
+            <div style={{ minWidth: 0 }}>
+              <Kicker ind={ind} color={ind.ink}>{t('common.error', 'Error')}</Kicker>
+              <p style={{ ...caption, marginTop: 4 }}>
+                {t('translationStudio.accessDenied', 'Access Denied: Admin privileges required')}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -682,500 +768,529 @@ const TranslationStudio = () => {
 
   if (demo) {
     return (
-      <div className="p-6">
-        <div className={cn(panel, 'p-8 text-center')}>
-          <Languages className={cn('w-10 h-10 mx-auto mb-3', text.secondary)} />
-          <h2 className={cn('text-lg font-semibold mb-2', text.primary)}>
-            {t('translationStudio.title', 'Translation Studio')}
-          </h2>
-          <p className={cn('text-sm', text.secondary)}>
-            {t(
-              'translationStudio.demoUnavailable',
-              'Translations are stored on the server and are unavailable in demo mode.'
-            )}
-          </p>
+      <div data-screen-label="Translation Studio" style={frameStyle}>
+        {ticker}
+        <div style={{ padding: '48px 24px', display: 'flex', justifyContent: 'center' }}>
+          <Blueprint ind={ind} style={{ padding: '32px 28px', textAlign: 'center', maxWidth: 460 }}>
+            <Languages size={26} strokeWidth={1.25} style={{ color: ind.inkFaint, margin: '0 auto' }} />
+            <div style={{ marginTop: 12 }}>
+              <ColumnHeading ind={ind}>{t('translationStudio.title', 'Translation Studio')}</ColumnHeading>
+            </div>
+            <p style={{ ...caption, marginTop: 6 }}>
+              {t(
+                'translationStudio.demoUnavailable',
+                'Translations are stored on the server and are unavailable in demo mode.'
+              )}
+            </p>
+          </Blueprint>
         </div>
       </div>
     );
   }
 
+  /** A configuration warning: ink border, never amber. */
+  const notice = (message) => (
+    <div style={{ border: `1px solid ${ind.ink}`, padding: '11px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+      <AlertTriangle size={15} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
+      <p style={{ ...caption, fontSize: 12.5 }}>{message}</p>
+    </div>
+  );
+
   return (
-    <div className="p-4 sm:p-6 space-y-4">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className={cn('text-2xl font-bold flex items-center gap-2', text.primary)}>
-            <Languages className="w-6 h-6 text-blue-500" />
-            {t('translationStudio.title', 'Translation Studio')}
-          </h1>
-          <p className={cn('text-sm mt-1', text.secondary)}>
-            {t(
-              'translationStudio.subtitle',
-              'Hand-written translations for tasks, goals, reviews and leave requests. These override the automatic ones everywhere.'
-            )}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <PageLiveClock />
-          <ShinyButton
-            type="button"
+    <div data-screen-label="Translation Studio" style={frameStyle}>
+      {ticker}
+
+      {/* ── ONE BAND — the queue is the index, the editor is the panel ─── */}
+      <div style={{ padding: '22px 24px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* ── PAGE HEAD ─────────────────────────────────────────────── */}
+        <div className="flex flex-wrap items-end justify-between" style={{ gap: 16 }}>
+          <div style={{ minWidth: 0 }}>
+            <h1 style={{ fontFamily: BODY, fontSize: 32, fontWeight: 400, margin: 0, color: ind.ink, lineHeight: 1.1 }}>
+              {t('translationStudio.title', 'Translation Studio')}
+            </h1>
+            <p style={{ ...caption, marginTop: 6 }}>
+              {t(
+                'translationStudio.subtitle',
+                'Hand-written translations for tasks, goals, reviews and leave requests. These override the automatic ones everywhere.'
+              )}
+            </p>
+          </div>
+
+          <Btn
+            ind={ind}
             onClick={loadQueue}
             disabled={loading}
-            className={cn('px-3 py-2 border flex items-center gap-2', text.secondary, border.primary)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flex: 'none' }}
           >
-            <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
+            <RefreshCw size={13} strokeWidth={1.5} className={loading ? 'animate-spin' : undefined} />
             {t('common.refresh', 'Refresh')}
-          </ShinyButton>
+          </Btn>
         </div>
-      </div>
 
-      {!storeReady && (
-        <div className={cn(panel, 'px-4 py-3 text-sm flex items-start gap-2 border-amber-500/50', text.secondary)}>
-          <AlertTriangle className="w-4 h-4 mt-0.5 text-amber-500 shrink-0" />
-          <span>
-            {t(
-              'translationStudio.notConfigured',
-              'The translations table is missing. Apply migration 018_hr_ugc_translations.sql (supabase db push) to enable saving.'
-            )}
-          </span>
-        </div>
-      )}
+        {!storeReady && notice(t(
+          'translationStudio.notConfigured',
+          'The translations table is missing. Apply migration 018_hr_ugc_translations.sql (supabase db push) to enable saving.'
+        ))}
 
-      {!isLocalTranslationSupported() && (
-        <div className={cn(panel, 'px-4 py-3 text-sm flex items-start gap-2', text.secondary)}>
-          <AlertTriangle className="w-4 h-4 mt-0.5 text-amber-500 shrink-0" />
-          <span>
-            {t(
-              'translationStudio.noLocalModel',
-              'This browser has no on-device translator, so machine drafts are unavailable. You can still write translations by hand.'
-            )}
-          </span>
-        </div>
-      )}
+        {!isLocalTranslationSupported() && notice(t(
+          'translationStudio.noLocalModel',
+          'This browser has no on-device translator, so machine drafts are unavailable. You can still write translations by hand.'
+        ))}
 
-      <div
-        className="grid grid-cols-1 lg:grid-cols-[var(--translation-studio-sidebar)_minmax(0,1fr)] gap-4"
-        style={{ '--translation-studio-sidebar': `${leftPanelWidth}px` }}
-      >
-        {/* ---- Left rail: queue -------------------------------------------- */}
-        <aside
-          ref={leftPanelRef}
-          className={cn(panel, 'relative p-4 space-y-4 h-fit lg:sticky lg:top-4')}
+        <div
+          className="grid grid-cols-1 lg:grid-cols-[var(--translation-studio-sidebar)_minmax(0,1fr)]"
+          style={{ '--translation-studio-sidebar': `${leftPanelWidth}px`, gap: 16 }}
         >
-          <div
-            role="separator"
-            aria-orientation="vertical"
-            aria-valuemin={MIN_LEFT_PANEL_WIDTH}
-            aria-valuemax={MAX_LEFT_PANEL_WIDTH}
-            aria-valuenow={Math.round(leftPanelWidth)}
-            aria-label={t('translationStudio.resizePanel', 'Resize source panel')}
-            tabIndex={0}
-            onPointerDown={(event) => {
-              event.preventDefault();
-              setIsResizingLeftPanel(true);
-            }}
-            onDoubleClick={resetLeftPanelWidth}
-            onKeyDown={resizeLeftPanelWithKeyboard}
-            className={cn(
-              'hidden lg:block absolute -right-2 top-3 bottom-3 z-10 w-4 cursor-col-resize rounded-full outline-none',
-              'after:absolute after:left-1/2 after:top-0 after:h-full after:w-1 after:-translate-x-1/2 after:rounded-full after:transition-colors',
-              isResizingLeftPanel
-                ? 'after:bg-blue-500'
-                : isDarkMode
-                  ? 'after:bg-gray-700 hover:after:bg-blue-500 focus:after:bg-blue-500'
-                  : 'after:bg-gray-300 hover:after:bg-blue-500 focus:after:bg-blue-500'
-            )}
-          />
-          <div>
-            <label className={cn('block text-xs font-semibold uppercase tracking-wide mb-2', text.secondary)}>
-              {t('translationStudio.sources', 'Sources')}
-            </label>
-            <div className="space-y-1">
-              {ENTITY_TYPES.map((entityType) => {
-                const { done, total } = sourceCounts[entityType];
-                return (
-                  <label
-                    key={entityType}
-                    className={cn(
-                      'flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer text-sm',
-                      isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200',
-                      text.primary
-                    )}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={sources.has(entityType)}
-                      onChange={() => toggleSource(entityType)}
-                      className="rounded"
-                    />
-                    <span className="flex-1">
-                      {t(TRANSLATABLE_ENTITIES[entityType].labelKey, entityType)}
-                    </span>
-                    <span
-                      className={cn('text-xs tabular-nums', text.secondary)}
-                      title={t(
-                        'translationStudio.sourceCountHint',
-                        'Fully translated records / total records'
-                      )}
-                    >
-                      <span className="opacity-70">{`${done}/${total}`}</span>
-                    </span>
-                  </label>
-                );
-              })}
+          {/* ---- Queue: the index this screen navigates by ---------------- */}
+          <aside
+            ref={leftPanelRef}
+            className="relative h-fit lg:sticky lg:top-4"
+            style={{ border: `1px solid ${ind.hairline}`, background: ind.chrome }}
+          >
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-valuemin={MIN_LEFT_PANEL_WIDTH}
+              aria-valuemax={MAX_LEFT_PANEL_WIDTH}
+              aria-valuenow={Math.round(leftPanelWidth)}
+              aria-label={t('translationStudio.resizePanel', 'Resize source panel')}
+              tabIndex={0}
+              onPointerDown={(event) => {
+                event.preventDefault();
+                setIsResizingLeftPanel(true);
+              }}
+              onDoubleClick={resetLeftPanelWidth}
+              onKeyDown={resizeLeftPanelWithKeyboard}
+              className="hidden lg:block absolute -right-2 top-3 bottom-3 z-10 w-4 cursor-col-resize outline-none"
+              style={{ background: 'transparent' }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  position: 'absolute', left: '50%', top: 0, height: '100%', width: 1,
+                  transform: 'translateX(-50%)',
+                  background: isResizingLeftPanel ? ind.accent : ind.hairline,
+                  transition: 'background .15s ease',
+                }}
+              />
             </div>
-          </div>
 
-          {sources.size > 0 && (
-            <div>
-              <label className={cn('block text-xs font-semibold uppercase tracking-wide mb-2', text.secondary)}>
-                {t('translationStudio.fields', 'Fields')}
-              </label>
-              <div className="space-y-2.5">
-                {ENTITY_TYPES.filter((entityType) => sources.has(entityType)).map((entityType) => (
-                  <div key={entityType}>
-                    {sources.size > 1 && (
-                      <div className={cn('mb-1 text-[10px] font-semibold uppercase tracking-wide', text.secondary)}>
-                        {t(TRANSLATABLE_ENTITIES[entityType].labelKey, entityType)}
+            {/* Sources — the count is a coverage bar, not a bare fraction. */}
+            <div style={{ padding: '14px 14px 10px', borderBottom: `1px solid ${ind.hairline}` }}>
+              <span style={fieldLabelStyle}>{t('translationStudio.sources', 'Sources')}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {ENTITY_TYPES.map((entityType) => {
+                  const { done, total } = sourceCounts[entityType];
+                  const on = sources.has(entityType);
+                  return (
+                    <button
+                      key={entityType}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => toggleSource(entityType)}
+                      className="w-full text-left"
+                      style={{
+                        background: 'transparent', border: 'none', borderRadius: 0,
+                        padding: 0, cursor: 'pointer', opacity: on ? 1 : 0.45,
+                      }}
+                    >
+                      <span className="flex items-center" style={{ gap: 8 }}>
+                        <span
+                          style={{
+                            width: 13, height: 13, flex: 'none', display: 'inline-flex',
+                            alignItems: 'center', justifyContent: 'center',
+                            border: `1px solid ${on ? ind.accent : ind.hairline}`,
+                            background: on ? ind.accent : 'transparent',
+                            color: ind.accentInk,
+                          }}
+                        >
+                          {on && <Check size={9} strokeWidth={2.5} />}
+                        </span>
+                        <span
+                          style={{
+                            flex: 1, minWidth: 0, fontFamily: BODY, fontSize: 12.5, color: ind.ink,
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {t(TRANSLATABLE_ENTITIES[entityType].labelKey, entityType)}
+                        </span>
+                        <span
+                          title={t('translationStudio.sourceCountHint', 'Fully translated records / total records')}
+                          style={{
+                            fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5, color: ind.inkMuted,
+                            fontVariantNumeric: 'tabular-nums', flex: 'none',
+                          }}
+                        >
+                          {`${done}/${total}`}
+                        </span>
+                      </span>
+                      <span className="block" style={{ marginTop: 5 }}>
+                        <Bar ind={ind} value={total ? done / total : 0} height={5} />
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {sources.size > 0 && (
+              <div style={{ padding: '12px 14px', borderBottom: `1px solid ${ind.hairline}` }}>
+                <span style={fieldLabelStyle}>{t('translationStudio.fields', 'Fields')}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {ENTITY_TYPES.filter((entityType) => sources.has(entityType)).map((entityType) => (
+                    <div key={entityType}>
+                      {sources.size > 1 && (
+                        <span
+                          className="block"
+                          style={{
+                            fontFamily: DISPLAY, fontWeight: 600, fontSize: 9.5, letterSpacing: '.12em',
+                            textTransform: 'uppercase', color: ind.inkFaint, marginBottom: 4,
+                          }}
+                        >
+                          {t(TRANSLATABLE_ENTITIES[entityType].labelKey, entityType)}
+                        </span>
+                      )}
+                      <div className="flex flex-wrap" style={{ gap: 5 }}>
+                        {TRANSLATABLE_ENTITIES[entityType].fields.map((fieldName) => {
+                          const active = selectedFields.has(fieldFilterKey(entityType, fieldName));
+                          return (
+                            <button
+                              key={fieldName}
+                              type="button"
+                              aria-pressed={active}
+                              onClick={() => toggleField(entityType, fieldName)}
+                              style={chipStyle(active)}
+                            >
+                              {t(`translationStudio.field_${fieldName}`, fieldName.replace(/_/g, ' '))}
+                            </button>
+                          );
+                        })}
                       </div>
-                    )}
-                    <div className="flex flex-wrap gap-1.5">
-                      {TRANSLATABLE_ENTITIES[entityType].fields.map((fieldName) => {
-                        const active = selectedFields.has(fieldFilterKey(entityType, fieldName));
-                        return (
-                          <button
-                            key={fieldName}
-                            type="button"
-                            aria-pressed={active}
-                            onClick={() => toggleField(entityType, fieldName)}
-                            className={cn(
-                              'px-2.5 py-1 rounded-full text-xs border transition-colors',
-                              active
-                                ? 'bg-blue-600 text-white border-blue-600'
-                                : cn(
-                                    text.secondary,
-                                    border.primary,
-                                    isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'
-                                  )
-                            )}
-                          >
-                            {t(
-                              `translationStudio.field_${fieldName}`,
-                              fieldName.replace(/_/g, ' ')
-                            )}
-                          </button>
-                        );
-                      })}
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ padding: '12px 14px', borderBottom: `1px solid ${ind.hairline}` }}>
+              <div className="flex items-center" style={{ gap: 8, padding: '5px 10px', border: `1px solid ${ind.hairline}` }}>
+                <Search size={13} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkFaint }} />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={t('translationStudio.searchPlaceholder', 'Search text, record or employee')}
+                  aria-label={t('translationStudio.searchPlaceholder', 'Search text, record or employee')}
+                  style={{
+                    flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent',
+                    color: ind.ink, fontFamily: BODY, fontSize: 12.5, padding: 0,
+                  }}
+                />
               </div>
             </div>
-          )}
 
-          <div className="relative">
-            <Search className={cn('w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2', text.secondary)} />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t('translationStudio.searchPlaceholder', 'Search text, record or employee')}
-              className={cn(field, 'pl-9')}
-            />
-          </div>
-
-          <div className="max-h-[60vh] overflow-y-auto -mx-1 px-1 space-y-1">
-            {loading && (
-              <div className="flex justify-center py-8">
-                <Loader className="w-6 h-6 animate-spin text-blue-500" />
-              </div>
-            )}
-
-            {!loading && loadError && (
-              <p className="text-sm text-red-500 py-4">
-                {t('translationStudio.loadError', 'Could not load translatable content.')}
-              </p>
-            )}
-
-            {!loading && !loadError && visible.length === 0 && (
-              <p className={cn('text-sm py-4', text.secondary)}>
-                {t('translationStudio.empty', 'Nothing matches these filters.')}
-              </p>
-            )}
-
-            {!loading && visible.map((entry) => {
-              const covered = coverage.get(entry.key);
-              const done = covered ? covered.size : 0;
-              const active = entry.key === selectedKey;
-
-              return (
-                <button
-                  key={entry.key}
-                  type="button"
-                  onClick={() => setSelectedKey(entry.key)}
-                  className={cn(
-                    'w-full text-left px-3 py-2 rounded-lg border transition-colors',
-                    active
-                      ? 'border-blue-500 bg-blue-500/10'
-                      : cn(border.primary, isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200')
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-2 mb-0.5">
-                    <span className={cn('text-[10px] uppercase tracking-wide font-semibold', text.secondary)}>
-                      {t(TRANSLATABLE_ENTITIES[entry.entityType].labelKey, entry.entityType)}
-                      {' · '}
-                      {t(`translationStudio.field_${entry.field}`, entry.field.replace(/_/g, ' '))}
-                    </span>
-                    <span
-                      className={cn(
-                        'text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0',
-                        done === 0
-                          ? 'bg-gray-500/20 text-gray-400'
-                          : done >= locales.length - 1
-                          ? 'bg-green-500/20 text-green-500'
-                          : 'bg-amber-500/20 text-amber-500'
-                      )}
-                    >
-                      {done}/{locales.length - 1}
-                    </span>
-                  </div>
-                  <p className={cn('text-sm line-clamp-2', text.primary)}>{entry.sourceText}</p>
-                  {entry.employeeName && (
-                    <p className={cn('text-xs mt-0.5 truncate', text.secondary)}>{entry.employeeName}</p>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </aside>
-
-        {/* ---- Right pane: editor ------------------------------------------ */}
-        <section className={cn(panel, 'p-4 sm:p-6')}>
-          {!selected && (
-            <p className={cn('text-sm py-12 text-center', text.secondary)}>
-              {t('translationStudio.selectPrompt', 'Pick a string on the left to translate it.')}
-            </p>
-          )}
-
-          {selected && (
-            <>
-              <header className="mb-5">
-                <div className={cn('text-xs uppercase tracking-wide font-semibold mb-1', text.secondary)}>
-                  {t(TRANSLATABLE_ENTITIES[selected.entityType].labelKey, selected.entityType)}
-                  {' · '}
-                  {selected.recordLabel}
-                  {' · '}
-                  {t(`translationStudio.field_${selected.field}`, selected.field.replace(/_/g, ' '))}
-                </div>
-                <div
-                  className={cn(
-                    'p-3 rounded-lg border whitespace-pre-wrap text-sm',
-                    isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200',
-                    text.primary
-                  )}
-                >
-                  {selected.sourceText}
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3 mt-3">
-                  <ShinyButton
-                    type="button"
-                    onClick={suggestAll}
-                    disabled={suggestingAll || busy || !isLocalTranslationSupported()}
-                    className={cn(
-                      'px-3 py-1.5 border flex items-center gap-2 text-sm disabled:opacity-40',
-                      text.secondary,
-                      border.primary
-                    )}
-                  >
-                    {suggestingAll ? (
-                      <Loader className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Wand2 className="w-4 h-4" />
-                    )}
-                    {t('translationStudio.suggestAll', 'Suggest all empty')}
-                  </ShinyButton>
-
-                  <ShinyButton
-                    type="button"
-                    onClick={translateAll}
-                    disabled={suggestingAll || busy || !isLocalTranslationSupported()}
-                    className={cn(
-                      'px-3 py-1.5 border flex items-center gap-2 text-sm disabled:opacity-40',
-                      text.secondary,
-                      border.primary
-                    )}
-                  >
-                    <Languages className="w-4 h-4" />
-                    {t('translationStudio.translateAll', 'Translate all')}
-                  </ShinyButton>
-
-                  <span className={cn('text-xs', text.secondary)}>
-                    {t(
-                      'translationStudio.suggestHint',
-                      'Fills blank boxes only. Nothing is saved until you review it.'
-                    )}
-                  </span>
-
-                  {downloadProgress != null && (
-                    <span className={cn('text-xs flex items-center gap-2', text.secondary)}>
-                      <Download className="w-3.5 h-3.5" />
-                      {t('translationStudio.downloading', 'Downloading language model')}
-                      {' '}
-                      {Math.round(downloadProgress * 100)}%
-                    </span>
-                  )}
-                </div>
-              </header>
-
-              {editorState === 'loading' && (
-                <div className="flex justify-center py-10">
-                  <Loader className="w-6 h-6 animate-spin text-blue-500" />
+            <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+              {loading && (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '28px 0' }}>
+                  <Loader2 size={18} strokeWidth={1.5} className="animate-spin" style={{ color: ind.inkMuted }} />
                 </div>
               )}
 
-              {editorState === 'error' && (
-                <p className="text-sm text-red-500 py-6">
+              {!loading && loadError && (
+                <p style={{ ...caption, fontSize: 12.5, padding: '16px 14px' }}>
                   {t('translationStudio.loadError', 'Could not load translatable content.')}
                 </p>
               )}
 
-              {editorState === 'ready' && (
-                <div className="space-y-4">
-                  {locales
-                    // Show every locale. The interface language is not proof of
-                    // the source language, and hiding it previously left that
-                    // locale untranslated whenever an editor switched the UI.
-                    .map((locale) => {
-                      const lang = SUPPORTED_LANGUAGES[locale];
-                      const value = drafts[locale]?.body || '';
-                      const savedEntry = stored[locale];
-                      const stale = savedEntry && isStale(selected, savedEntry.sourceText);
+              {!loading && !loadError && visible.length === 0 && (
+                <p style={{ ...caption, fontSize: 12.5, padding: '16px 14px' }}>
+                  {t('translationStudio.empty', 'Nothing matches these filters.')}
+                </p>
+              )}
 
-                      return (
-                        <div key={locale}>
-                          <div className="flex items-center justify-between gap-2 mb-1.5">
-                            <label
-                              htmlFor={`tr-${locale}`}
-                              className={cn('flex items-center gap-2 text-sm font-medium', text.primary)}
-                            >
-                              {lang?.flag && (
-                                <img src={lang.flag} alt="" className="w-5 h-3.5 object-cover rounded-sm" />
-                              )}
-                              {lang?.name || locale}
-                              {savedEntry && !stale && (
-                                <Check className="w-3.5 h-3.5 text-green-500" aria-hidden />
-                              )}
-                              {stale && (
-                                <span
-                                  className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500"
-                                  title={savedEntry.sourceText}
-                                >
-                                  {t('translationStudio.stale', 'source changed')}
-                                </span>
-                              )}
-                            </label>
+              {!loading && visible.map((entry, index) => {
+                const covered = coverage.get(entry.key);
+                const done = covered ? covered.size : 0;
+                const active = entry.key === selectedKey;
+                const variant = done === 0 ? 'neutral' : done >= targetLocaleCount ? 'accent' : 'outline';
 
-                            <div className="flex items-center gap-1">
-                              {availability[locale] === 'downloadable' && (
-                                <span
-                                  className={cn('text-[10px] flex items-center gap-1', text.secondary)}
-                                  title={t(
-                                    'translationStudio.needsDownload',
-                                    'Suggesting this language downloads a model first'
-                                  )}
-                                >
-                                  <Download className="w-3 h-3" />
-                                </span>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => machineDraft(locale)}
-                                disabled={
-                                  drafting === locale
-                                  || suggestingAll
-                                  || !isLocalTranslationSupported()
-                                  || availability[locale] === 'unavailable'
-                                }
-                                title={t('translationStudio.machineDraft', 'Machine draft')}
-                                className={cn(
-                                  'p-1.5 rounded-lg transition-colors disabled:opacity-40',
-                                  isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200',
-                                  text.secondary
-                                )}
-                              >
-                                {drafting === locale ? (
-                                  <Loader className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Wand2 className="w-4 h-4" />
-                                )}
-                              </button>
-                              {savedEntry && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDelete(locale)}
-                                  disabled={busy}
-                                  title={t('translationStudio.remove', 'Remove')}
-                                  className={cn(
-                                    'p-1.5 rounded-lg transition-colors disabled:opacity-40 hover:text-red-500',
-                                    isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200',
-                                    text.secondary
-                                  )}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-
-                          <textarea
-                            id={`tr-${locale}`}
-                            rows={Math.min(6, Math.max(2, Math.ceil(selected.sourceText.length / 70)))}
-                            value={value}
-                            onChange={(e) => updateDraft(locale, e.target.value)}
-                            placeholder={selected.sourceText}
-                            className={field}
-                          />
-                        </div>
-                      );
-                    })}
-
-                  <div className={cn('flex items-center gap-3 pt-2 border-t', border.primary)}>
-                    <ShinyButton
-                      type="button"
-                      onClick={handleSave}
-                      disabled={busy || dirtyLocales.length === 0}
-                      className="px-4 py-2 bg-blue-600 text-white border-blue-500 hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
-                    >
-                      {busy ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                      {dirtyLocales.length
-                        ? `${t('common.save', 'Save')} (${dirtyLocales.length})`
-                        : t('common.save', 'Save')}
-                    </ShinyButton>
-
-                    {feedback && (
+                return (
+                  <button
+                    key={entry.key}
+                    type="button"
+                    onClick={() => setSelectedKey(entry.key)}
+                    className="w-full text-left"
+                    style={{
+                      display: 'block', padding: '10px 14px 10px 11px', cursor: 'pointer',
+                      border: 'none', borderRadius: 0,
+                      borderTop: index === 0 ? 'none' : `1px solid ${ind.rule}`,
+                      // The active row is an accent edge and a wash, never a filled card.
+                      borderLeft: `3px solid ${active ? ind.accent : 'transparent'}`,
+                      background: active ? ind.accentWash : 'transparent',
+                      transition: 'background .15s ease',
+                    }}
+                    onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = ind.hover; }}
+                    onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <span className="flex items-center justify-between" style={{ gap: 8, marginBottom: 3 }}>
                       <span
-                        className={cn(
-                          'text-sm flex items-center gap-1.5',
-                          feedback.kind === 'ok' && 'text-green-500',
-                          feedback.kind === 'warn' && 'text-amber-500',
-                          feedback.kind === 'error' && 'text-red-500'
-                        )}
+                        style={{
+                          fontFamily: DISPLAY, fontWeight: 600, fontSize: 9.5, letterSpacing: '.12em',
+                          textTransform: 'uppercase', color: ind.inkFaint, minWidth: 0,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}
                       >
-                        {feedback.kind === 'ok' ? (
-                          <Sparkles className="w-4 h-4" />
-                        ) : (
-                          <AlertTriangle className="w-4 h-4" />
-                        )}
-                        {feedback.message}
+                        {`${t(TRANSLATABLE_ENTITIES[entry.entityType].labelKey, entry.entityType)} · ${t(`translationStudio.field_${entry.field}`, entry.field.replace(/_/g, ' '))}`}
+                      </span>
+                      <Tag ind={ind} variant={variant}>{`${done}/${targetLocaleCount}`}</Tag>
+                    </span>
+                    <span className="block line-clamp-2" style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, lineHeight: 1.45 }}>
+                      {entry.sourceText}
+                    </span>
+                    {entry.employeeName && (
+                      <span className="block truncate" style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint, marginTop: 2 }}>
+                        {entry.employeeName}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          {/* ---- Editor --------------------------------------------------- */}
+          <Blueprint ind={ind} style={{ padding: '18px 20px 16px', minWidth: 0 }}>
+            {!selected && (
+              <p style={{ ...caption, padding: '48px 0', textAlign: 'center' }}>
+                {t('translationStudio.selectPrompt', 'Pick a string on the left to translate it.')}
+              </p>
+            )}
+
+            {selected && (
+              <>
+                <header style={{ marginBottom: 16 }}>
+                  <Kicker ind={ind}>
+                    {`${t(TRANSLATABLE_ENTITIES[selected.entityType].labelKey, selected.entityType)} · ${selected.recordLabel} · ${t(`translationStudio.field_${selected.field}`, selected.field.replace(/_/g, ' '))}`}
+                  </Kicker>
+
+                  {/* The source. The one tinted box on this screen. */}
+                  <div
+                    style={{
+                      marginTop: 8, padding: '10px 12px', whiteSpace: 'pre-wrap',
+                      border: `1px solid ${ind.hairline}`, background: ind.accentWash,
+                      fontFamily: BODY, fontSize: 13.5, color: ind.ink, lineHeight: 1.5,
+                    }}
+                  >
+                    {selected.sourceText}
+                  </div>
+
+                  <div className="flex flex-wrap items-center" style={{ gap: 10, marginTop: 12 }}>
+                    <Btn
+                      ind={ind}
+                      onClick={suggestAll}
+                      disabled={suggestingAll || busy || !isLocalTranslationSupported()}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    >
+                      {suggestingAll
+                        ? <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />
+                        : <Wand2 size={13} strokeWidth={1.5} />}
+                      {t('translationStudio.suggestAll', 'Suggest all empty')}
+                    </Btn>
+
+                    <Btn
+                      ind={ind}
+                      onClick={translateAll}
+                      disabled={suggestingAll || busy || !isLocalTranslationSupported()}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <Languages size={13} strokeWidth={1.5} />
+                      {t('translationStudio.translateAll', 'Translate all')}
+                    </Btn>
+
+                    <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint, minWidth: 0 }}>
+                      {t('translationStudio.suggestHint', 'Fills blank boxes only. Nothing is saved until you review it.')}
+                    </span>
+
+                    {downloadProgress != null && (
+                      <span
+                        className="inline-flex items-center"
+                        style={{
+                          gap: 6, fontFamily: DISPLAY, fontWeight: 600, fontSize: 11,
+                          letterSpacing: '.08em', textTransform: 'uppercase', color: ind.accentDeep,
+                        }}
+                      >
+                        <Download size={12} strokeWidth={1.5} />
+                        {`${t('translationStudio.downloading', 'Downloading language model')} ${Math.round(downloadProgress * 100)}%`}
                       </span>
                     )}
                   </div>
-                </div>
-              )}
-            </>
-          )}
-        </section>
+                </header>
+
+                {editorState === 'loading' && (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+                    <Loader2 size={18} strokeWidth={1.5} className="animate-spin" style={{ color: ind.inkMuted }} />
+                  </div>
+                )}
+
+                {editorState === 'error' && (
+                  <p style={{ ...caption, padding: '24px 0' }}>
+                    {t('translationStudio.loadError', 'Could not load translatable content.')}
+                  </p>
+                )}
+
+                {editorState === 'ready' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    {locales
+                      // Show every locale. The interface language is not proof of
+                      // the source language, and hiding it previously left that
+                      // locale untranslated whenever an editor switched the UI.
+                      .map((locale) => {
+                        const lang = SUPPORTED_LANGUAGES[locale];
+                        const value = drafts[locale]?.body || '';
+                        const savedEntry = stored[locale];
+                        const stale = savedEntry && isStale(selected, savedEntry.sourceText);
+
+                        return (
+                          <div key={locale}>
+                            <div className="flex items-center justify-between" style={{ gap: 8, marginBottom: 5 }}>
+                              <label
+                                htmlFor={`tr-${locale}`}
+                                className="flex items-center"
+                                style={{
+                                  gap: 8, minWidth: 0,
+                                  fontFamily: DISPLAY, fontWeight: 600, fontSize: 12,
+                                  letterSpacing: '.08em', textTransform: 'uppercase', color: ind.ink,
+                                }}
+                              >
+                                {lang?.flag && (
+                                  <img
+                                    src={lang.flag}
+                                    alt=""
+                                    style={{ width: 18, height: 12, objectFit: 'cover', flex: 'none', border: `1px solid ${ind.hairline}` }}
+                                  />
+                                )}
+                                {lang?.name || locale}
+                                {savedEntry && !stale && (
+                                  <Check size={13} strokeWidth={1.5} style={{ color: ind.accentDeep, flex: 'none' }} aria-hidden />
+                                )}
+                                {stale && (
+                                  <span title={savedEntry.sourceText}>
+                                    <Tag ind={ind} variant="outline">{t('translationStudio.stale', 'source changed')}</Tag>
+                                  </span>
+                                )}
+                              </label>
+
+                              <div className="flex items-center" style={{ gap: 5, flex: 'none' }}>
+                                {availability[locale] === 'downloadable' && (
+                                  <span
+                                    title={t('translationStudio.needsDownload', 'Suggesting this language downloads a model first')}
+                                    style={{ color: ind.inkFaint, display: 'inline-flex' }}
+                                  >
+                                    <Download size={12} strokeWidth={1.5} />
+                                  </span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => machineDraft(locale)}
+                                  disabled={
+                                    drafting === locale
+                                    || suggestingAll
+                                    || !isLocalTranslationSupported()
+                                    || availability[locale] === 'unavailable'
+                                  }
+                                  title={t('translationStudio.machineDraft', 'Machine draft')}
+                                  aria-label={t('translationStudio.machineDraft', 'Machine draft')}
+                                  style={{
+                                    ...iconBtnStyle,
+                                    opacity: (drafting === locale || suggestingAll || !isLocalTranslationSupported() || availability[locale] === 'unavailable') ? 0.4 : 1,
+                                  }}
+                                >
+                                  {drafting === locale
+                                    ? <Loader2 size={12} strokeWidth={1.5} className="animate-spin" />
+                                    : <Wand2 size={12} strokeWidth={1.5} />}
+                                </button>
+                                {savedEntry && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDelete(locale)}
+                                    disabled={busy}
+                                    title={t('translationStudio.remove', 'Remove')}
+                                    aria-label={t('translationStudio.remove', 'Remove')}
+                                    style={{ ...iconBtnStyle, opacity: busy ? 0.4 : 1 }}
+                                  >
+                                    <Trash2 size={12} strokeWidth={1.5} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            <textarea
+                              id={`tr-${locale}`}
+                              rows={Math.min(6, Math.max(2, Math.ceil(selected.sourceText.length / 70)))}
+                              value={value}
+                              onChange={(e) => updateDraft(locale, e.target.value)}
+                              placeholder={selected.sourceText}
+                              style={textareaStyle}
+                            />
+                          </div>
+                        );
+                      })}
+
+                    <div
+                      className="flex flex-wrap items-center"
+                      style={{ gap: 12, paddingTop: 12, borderTop: `1px solid ${ind.rule}` }}
+                    >
+                      {/* The single solid object on this screen — kept as a
+                          ShinyButton so the commit still catches the light. */}
+                      <ShinyButton
+                        type="button"
+                        onClick={handleSave}
+                        disabled={busy || dirtyLocales.length === 0}
+                        shineOnHover
+                        className="rounded-none border px-3 py-1"
+                        style={{
+                          borderRadius: 0,
+                          background: dirtyLocales.length ? ind.accent : 'transparent',
+                          color: dirtyLocales.length ? ind.accentInk : ind.inkMuted,
+                          borderColor: dirtyLocales.length ? ind.accent : ind.hairline,
+                          opacity: busy ? 0.5 : 1,
+                          cursor: dirtyLocales.length && !busy ? 'pointer' : 'not-allowed',
+                        }}
+                      >
+                        {busy
+                          ? <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />
+                          : <Save size={13} strokeWidth={1.5} />}
+                        <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.04em', textTransform: 'uppercase' }}>
+                          {dirtyLocales.length
+                            ? `${t('common.save', 'Save')} (${dirtyLocales.length})`
+                            : t('common.save', 'Save')}
+                        </span>
+                      </ShinyButton>
+
+                      {feedback && (
+                        <span
+                          className="inline-flex items-center"
+                          style={{
+                            gap: 6, fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5,
+                            letterSpacing: '.08em', textTransform: 'uppercase',
+                            // Success is accent; anything else is full ink. No red.
+                            color: feedback.kind === 'ok' ? ind.accentDeep : ind.ink,
+                          }}
+                        >
+                          {feedback.kind === 'ok'
+                            ? <Check size={13} strokeWidth={1.5} />
+                            : <AlertTriangle size={13} strokeWidth={1.5} />}
+                          {feedback.message}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </Blueprint>
+        </div>
       </div>
     </div>
   );

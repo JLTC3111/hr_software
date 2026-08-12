@@ -3,27 +3,16 @@ import { useLanguage, SUPPORTED_LANGUAGES } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription, getDemoGoalTitle, getDemoGoalDescription, getDemoTimeEntries } from '../utils/demoHelper';
-import { 
-  Calendar, 
-  Download, 
-  Users, 
-  Filter, 
-  BarChart3, 
-  Gauge,
+import {
+  Download,
+  Users,
   Goal,
-  Clock, 
-  CheckCircle, 
-  ShieldCheck,
-  ShieldQuestion,
-  Hourglass,
+  Clock,
+  CheckCircle,
   FileText,
-  Database,
-  Loader,
-  CalendarArrowUp,
-  CalendarArrowDown,
-  ArrowDownAZ,
-  Timer,
-  AlertCircle
+  Loader2,
+  AlertCircle,
+  X
 } from 'lucide-react';
 import timeTrackingService from '../services/timeTrackingService';
 import { withTimeout } from '../utils/supabaseTimeout';
@@ -49,12 +38,13 @@ import {
 import { TranslatedText } from './ui/translated-text.jsx';
 import { translateTexts } from '../services/translateService.js';
 import { SpecularButton } from './ui/specular-button';
-import { MagicBento } from './ui/magic-bento';
 import { SlidingNumber } from './motion-primitives';
 import { NumberTicker } from './ui/number-ticker';
-import { PageLiveClock } from './ui/page-live-clock';
 import { DatePicker } from './ui/date-picker.jsx';
 import { cn } from '@/lib/utils';
+import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
+import { Blueprint, Bar, Tag, Btn, Seg, Kicker, ColumnHeading, TickerCell, LiveClock, FlatSelect } from './ui/industry.jsx';
+import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import {
   choosePdfFont,
   getPdfTableFont,
@@ -81,7 +71,8 @@ const Reports = () => {
   const { handleSessionAuthError } = useSessionGuard();
   const { t, currentLanguage } = useLanguage();
   const { isDarkMode } = useTheme();
-  
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
+
   // Helper function to translate department values
   const translateDepartment = (department) => {
     if (!department) return '';
@@ -118,21 +109,6 @@ const Reports = () => {
     return categoryMap[category] || category;
   };
   
-  // Theme classes
-  const bg = {
-    primary: isDarkMode ? 'bg-gray-800' : 'bg-white',
-    secondary: isDarkMode ? 'bg-gray-900' : 'bg-gray-50'
-  };
-  
-  const text = {
-    primary: isDarkMode ? 'text-white' : 'text-gray-900',
-    secondary: isDarkMode ? 'text-gray-300' : 'text-gray-600'
-  };
-  
-  const border = {
-    primary: isDarkMode ? 'border-gray-700' : 'border-gray-200'
-  };
-
   // State
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
@@ -798,19 +774,6 @@ const Reports = () => {
 
     return base;
   }, [activeTab, stats, t]);
-
-  const specularPrimaryClass = cn(
-    'px-5 py-2.5 text-sm',
-    isDarkMode
-      ? 'border-slate-200 bg-slate-100 text-slate-900 hover:bg-white'
-      : 'border-slate-900 bg-slate-900 text-white hover:bg-slate-800'
-  );
-  const specularSecondaryClass = cn(
-    'px-5 py-2.5 text-sm',
-    isDarkMode
-      ? 'border-slate-500 bg-slate-800 text-slate-100 hover:bg-slate-700'
-      : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
-  );
 
   const buildTimeEntryCsvRows = (timeEntries, ugcMap = null) => {
     const headers = [
@@ -2772,1041 +2735,945 @@ const Reports = () => {
     }
   };
 
-  return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className={`${bg.secondary} rounded-xl border ${border.primary} p-6`}>
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className={`text-2xl font-semibold tracking-tight ${text.primary} mb-1`}>
-              {t('nav.reports', 'Reports & Analytics')}
-            </h1>
-            <p className={`text-sm ${text.secondary}`}>
-              {t('reports.subtitle', 'Export comprehensive data for time entries, tasks, and personal goals')}
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-2 flex-wrap">
-            <Database className={`w-4 h-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
-            <span className={`text-sm ${text.secondary}`}>
-              {t('reports.liveData', 'Live data from Supabase')}
+  /* ------------------------------------------------------------------ *
+   * "Industry" chrome (src/theme/industry.js). Radius 0, cards are
+   * outlines with four registration corners, and status reads through
+   * weight and rule rather than a coloured pill per state.
+   * ------------------------------------------------------------------ */
+
+  const frameStyle = {
+    border: `1px solid ${ind.hairline}`,
+    background: ind.ground,
+    color: ind.ink,
+    fontFamily: BODY,
+    fontSize: 14,
+    borderRadius: 0,
+  };
+  const caption = { fontFamily: BODY, fontSize: 13, color: ind.inkMuted, lineHeight: 1.5, margin: 0 };
+  const columnNote = { fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, lineHeight: 1.45, margin: '6px 0 0' };
+  const fieldLabelStyle = {
+    fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.14em',
+    textTransform: 'uppercase', color: ind.inkMuted, display: 'block', marginBottom: 4,
+  };
+  const thStyle = {
+    fontFamily: DISPLAY, fontWeight: 600, fontSize: 11, letterSpacing: '.12em',
+    textTransform: 'uppercase', color: ind.inkMuted,
+    padding: '0 10px 8px', textAlign: 'left', whiteSpace: 'nowrap', userSelect: 'none',
+  };
+  const tdStyle = {
+    fontFamily: BODY, fontSize: 13, color: ind.ink,
+    padding: '9px 10px', borderTop: `1px solid ${ind.rule}`, verticalAlign: 'middle',
+  };
+  const subCellStyle = { fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint, marginTop: 2 };
+
+  /**
+   * approved / completed is settled work → filled accent.
+   * pending / in progress is asking for something → outline.
+   * everything else is passive → neutral.
+   */
+  const statusVariant = (status) => {
+    const value = String(status || '').toLowerCase();
+    if (value === 'approved' || value === 'completed') return 'accent';
+    if (value === 'pending' || value === 'in_progress' || value === 'in-progress') return 'outline';
+    return 'neutral';
+  };
+
+  const priorityVariant = (priority) => {
+    const value = String(priority || '').toLowerCase();
+    if (value === 'high') return 'outline';
+    if (value === 'medium') return 'accent';
+    return 'neutral';
+  };
+
+  const employeeNameOf = (item) =>
+    (isDemoMode() ? getDemoEmployeeName(item.employee, t) : (item.employee?.name || t('taskReview.unknown', 'Unknown')));
+
+  /**
+   * A sortable column head. The direction reads as a caret in the label's own
+   * type rather than an icon, so the header row stays one typographic object.
+   */
+  const SortableTh = ({ sortId, children }) => {
+    const active = sortKey === sortId;
+    return (
+      <th style={thStyle}>
+        <button
+          type="button"
+          onClick={() => handleSort(sortId)}
+          style={{
+            font: 'inherit', color: active ? ind.ink : 'inherit', letterSpacing: 'inherit',
+            textTransform: 'inherit', background: 'none', border: 'none', padding: 0,
+            cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
+          }}
+        >
+          {children}
+          <span aria-hidden="true" style={{ opacity: active ? 1 : 0.35 }}>
+            {active && sortDirection === 'asc' ? '▲' : '▼'}
+          </span>
+        </button>
+      </th>
+    );
+  };
+
+  /** One figure block: the form every derived number on this screen takes. */
+  const FigureBlock = ({ item, size = 26 }) => (
+    <div style={{ border: `1px solid ${ind.hairline}`, padding: '9px 11px', minWidth: 0 }}>
+      <Kicker ind={ind}>{item.label}</Kicker>
+      <div className="flex items-baseline" style={{ gap: 3, margin: '5px 0 0' }}>
+        {typeof item.value === 'number' ? (
+          <>
+            <span style={{ ...figure(size, ind.ink), lineHeight: 1 }}>
+              <SlidingNumber value={item.value} />
             </span>
-            <PageLiveClock
-              textClassName={text.primary}
-              separatorClassName={text.secondary}
-              loading={loading}
-              isDarkMode={isDarkMode}
-              fetchLabel={t('common.fetching', 'Fetching')}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Error Banner */}
-      {fetchError && (
-        <div className={`${isDarkMode ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-300'} rounded-lg border p-4 flex items-start space-x-3 slide-in-top`}>
-          <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'} shrink-0 mt-0.5`} />
-          <div className="flex-1">
-            <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-red-400' : 'text-red-800'}`}>
-              {t('common.error', 'Error')}
-            </h3>
-            <p className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-700'} mt-1`}>
-              {fetchError}
-            </p>
-            <SpecularButton
-              type="button"
-              onClick={() => {
-                setFetchError(null);
-                fetchReportData();
-              }}
-              shineOnHover
-              className={cn(
-                'mt-2 px-3 py-1.5 text-xs',
-                isDarkMode
-                  ? 'border-red-800/60 bg-red-950/40 text-red-200 hover:bg-red-900/50'
-                  : 'border-red-200 bg-white text-red-700 hover:bg-red-50'
-              )}
-            >
-              {t('common.retry', 'Try Again')}
-            </SpecularButton>
-          </div>
-          <button
-            onClick={() => setFetchError(null)}
-            className={`${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-700'} transition-colors text-xl font-bold leading-none`}
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-      )}
-
-      {/* Export Button - shows current tab data count */}
-      <div className={`${bg.secondary} rounded-xl border ${border.primary} p-5`}>
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-          <div className="flex-1">
-            <h2 className={`text-base font-semibold tracking-tight ${text.primary} mb-1 flex items-center gap-2`}>
-              {activeTab === 'time-entries' && t('reports.timeEntries', 'Time Entries')}
-              {activeTab === 'tasks' && t('reports.tasks', 'Tasks')}
-              {activeTab === 'goals' && t('reports.goals', 'Personal Goals')}
-              {activeTab === 'leave' && t('reports.leave', 'Leave Requests')}
-              {selectedEmployee !== 'all' && (
-                <span
-                  className={cn(
-                    'px-2.5 py-0.5 text-xs font-medium rounded-md border',
-                    isDarkMode
-                      ? 'border-slate-600 bg-slate-800 text-slate-200'
-                      : 'border-slate-200 bg-slate-100 text-slate-700'
-                  )}
-                >
-                  {t('reports.individualReport', 'Individual Report')}
-                </span>
-              )}
-            </h2>
-            <p className={`text-sm ${text.secondary}`}>
-              {stats.totalRecords} {t('reports.recordsFound', 'records found')} 
-              {selectedEmployee !== 'all' && ` ${t('reports.for', 'for')} ${reportData.employees.find(emp => String(emp.id) === String(selectedEmployee))?.name}`}
-              {` ${t('reports.from', 'from')} ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}`}
-            </p>
-            {selectedEmployee !== 'all' && (
-              <p className={`text-xs ${isDarkMode ? 'text-amber-100' : 'text-blue-600'} mt-1 flex items-center gap-1 italic`}>
-                <Users className="w-3 h-3" />
-                {t('reports.exportingIncludes', 'Exporting will include this employee\'s detailed performance report')}
-              </p>
+            {item.suffix && (
+              <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted }}>{item.suffix}</span>
             )}
-          </div>
-          
-          <div className="flex flex-wrap gap-3">
-            <SpecularButton
-              type="button"
-              onClick={exportAllToCSV}
-              disabled={exporting}
-              shineOnHover
-              className={cn(specularPrimaryClass, exporting && 'opacity-50')}
-              title={t('reports.exportingIncludes', 'Exporting will include all filtered data, not just previewed records')}
-            >
-              {exporting ? (
-                <Loader className="w-4 h-4 animate-spin" />
-              ) : (
-                <Download className="w-4 h-4 opacity-80" />
-              )}
-              {t('reports.exportToCSV', 'Export to CSV')}
-            </SpecularButton>
+          </>
+        ) : (
+          <span style={{ ...figure(size, ind.ink), lineHeight: 1 }}>{item.title}</span>
+        )}
+      </div>
+      <p
+        style={{
+          fontFamily: BODY, fontSize: 11, color: ind.inkFaint, margin: '4px 0 0',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}
+      >
+        {item.description}
+      </p>
+    </div>
+  );
 
-            <SpecularButton
-              type="button"
-              onClick={exportToExcel}
-              disabled={exporting}
-              shineOnHover
-              className={cn(specularSecondaryClass, exporting && 'opacity-50')}
-              title={t('reports.excelExportHint', 'Export all data types with summary, charts, and detailed sheets')}
-            >
-              {exporting ? (
-                <Loader className="w-4 h-4 animate-spin" />
-              ) : (
-                <FileText className="w-4 h-4 opacity-80" />
-              )}
-              {t('reports.exportToExcel', 'Export to Excel')}
-            </SpecularButton>
+  /** A label / figure line in the rail or a breakdown box. */
+  const StatLine = ({ label, value, suffix, decimals }) => (
+    <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+      <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted, minWidth: 0 }}>{label}</span>
+      <span
+        style={{
+          fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, color: ind.ink,
+          fontVariantNumeric: 'tabular-nums', flex: 'none',
+        }}
+      >
+        {decimals != null
+          ? <NumberTicker value={value} decimalPlaces={decimals} />
+          : <SlidingNumber value={value} />}
+        {suffix}
+      </span>
+    </div>
+  );
 
-            <SpecularButton
-              type="button"
-              onClick={exportToPDF}
-              disabled={exporting}
-              shineOnHover
-              className={cn(specularSecondaryClass, exporting && 'opacity-50')}
-              title={t('reports.pdfExportHint', 'Export PDF with visual charts, summary, and detailed tables for all data types')}
-            >
-              {exporting ? (
-                <Loader className="w-4 h-4 animate-spin" />
-              ) : (
-                <FileText className="w-4 h-4 opacity-80" />
-              )}
-              {t('reports.exportToPDF', 'Export to PDF')}
-            </SpecularButton>
-          </div>
+  const selectedEmployeeRecord = reportData.employees.find(emp => String(emp.id) === String(selectedEmployee));
+  const rangeLabel = `${filters.startDate} → ${filters.endDate}`;
+
+  const activeTabLabel = {
+    'all': t('reports.all', 'All Data Types'),
+    'time-entries': t('reports.timeEntries', 'Time Entries'),
+    'tasks': t('reports.tasks', 'Tasks'),
+    'goals': t('reports.goals', 'Personal Goals'),
+    'leave': t('reports.leave', 'Leave Requests'),
+  }[activeTab] || activeTab;
+
+  return (
+    <div data-screen-label="Reports" style={frameStyle}>
+
+      {/* ── TICKER — the overview figures, derived per data type ────── */}
+      <div
+        style={{
+          height: 44, background: ind.tickerBg, color: ind.tickerInk,
+          borderBottom: `1px solid ${ind.hairline}`,
+          display: 'flex', alignItems: 'stretch', overflowX: 'auto', overflowY: 'hidden',
+        }}
+      >
+        <TickerCell ind={ind}>
+          <LiveClock ind={ind} live={!loading && stats.totalRecords > 0} />
+        </TickerCell>
+
+        {/* Same array the decision column renders, so the strip and the rail
+            can never report different numbers. */}
+        {overviewBentoItems.map((item, index) => (
+          <TickerCell
+            key={`${item.label}-${index}`}
+            ind={ind}
+            label={item.label}
+            // `title` already carries its own unit, so the suffix is not repeated.
+            value={item.title}
+            // The record count is the figure the whole screen is about.
+            valueColor={index === 0 && stats.totalRecords > 0 ? ind.tickerUp : undefined}
+          />
+        ))}
+
+        <TickerCell ind={ind} label={t('reports.dateRange', 'Date Range')} value={rangeLabel} />
+
+        <div
+          style={{
+            flex: 1, minWidth: 'max-content', display: 'flex', alignItems: 'center',
+            justifyContent: 'flex-end', gap: 8, padding: '0 14px',
+            borderLeft: `1px solid ${ind.tickerRule}`,
+          }}
+        >
+          <FetchElapsedPill active={loading || exporting} isDarkMode label={t('common.fetching', 'Fetching')} />
+          <FlatSelect
+            ind={ind}
+            onDark
+            value={selectedEmployee}
+            onChange={(e) => setSelectedEmployee(e.target.value)}
+            aria-label={t('reports.employee', 'Employee')}
+            style={{ maxWidth: 240 }}
+          >
+            <option value="all" style={{ color: '#1d1f20' }}>
+              {`${t('reports.allEmployees', 'All Employees')} (${activeEmployees.length})`}
+            </option>
+            {[...activeEmployees]
+              .sort((a, b) => getDemoEmployeeName(a, t).localeCompare(getDemoEmployeeName(b, t)))
+              .map(emp => (
+                <option key={emp.id} value={emp.id} style={{ color: '#1d1f20' }}>
+                  {getDemoEmployeeName(emp, t)}
+                </option>
+              ))}
+          </FlatSelect>
         </div>
       </div>
 
-      {/* Quick Filters */}
-      <div className={`${bg.secondary} rounded-xl border ${border.primary} p-6`}>
-        <h3 className={`text-base font-semibold tracking-tight ${text.primary} mb-4`}>
-          {t('reports.quickFilters', 'Quick Filters')}
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Employee Filter - Enhanced */}
-          <div>
-            <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-              <Users className="w-4 h-4 inline mr-1" />
-              {t('reports.employee', 'Employee')} 
+      {/* ── BANDS ──────────────────────────────────────────────────── */}
+      <div className="flex flex-col lg:flex-row items-stretch">
+
+        {/* ── LEFT — min-w-0 or the preview table wins ──────────────── */}
+        <div
+          className="flex-1 min-w-0 flex flex-col"
+          style={{ padding: '22px 24px 20px', gap: 16, borderRight: `1px solid ${ind.hairline}` }}
+        >
+          {fetchError && (
+            <div style={{ border: `1px solid ${ind.ink}`, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <AlertCircle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Kicker ind={ind} color={ind.ink}>{t('common.error', 'Error')}</Kicker>
+                <p style={{ ...caption, marginTop: 4 }}>{fetchError}</p>
+                <Btn
+                  ind={ind}
+                  onClick={() => { setFetchError(null); fetchReportData(); }}
+                  style={{ marginTop: 10 }}
+                >
+                  {t('common.retry', 'Try Again')}
+                </Btn>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFetchError(null)}
+                aria-label={t('common.close', 'Close')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0, flex: 'none' }}
+              >
+                <X size={15} strokeWidth={1.5} />
+              </button>
+            </div>
+          )}
+
+          {/* ── PAGE HEAD ───────────────────────────────────────────── */}
+          <div className="flex flex-wrap items-end justify-between" style={{ gap: 16 }}>
+            <div style={{ minWidth: 0 }}>
+              <h1 style={{ fontFamily: BODY, fontSize: 32, fontWeight: 400, margin: 0, color: ind.ink, lineHeight: 1.1 }}>
+                {t('nav.reports', 'Reports & Analytics')}
+              </h1>
+              <p style={{ ...caption, marginTop: 6 }}>
+                {[
+                  t('reports.subtitle', 'Export comprehensive data for time entries, tasks, and personal goals'),
+                  `${stats.totalRecords} ${t('reports.recordsFound', 'records found')}`,
+                  selectedEmployeeRecord ? getDemoEmployeeName(selectedEmployeeRecord, t) : null,
+                  rangeLabel,
+                ].filter(Boolean).join(' · ')}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center" style={{ gap: 8 }}>
+              <Seg
+                ind={ind}
+                ariaLabel={t('reports.dataType', 'Data Type')}
+                value={activeTab}
+                onChange={setActiveTab}
+                options={[
+                  { value: 'all', label: t('reports.all', 'All') },
+                  { value: 'time-entries', label: t('reports.timeEntries', 'Time') },
+                  { value: 'tasks', label: t('reports.tasks', 'Tasks') },
+                  { value: 'goals', label: t('reports.goals', 'Goals') },
+                  { value: 'leave', label: t('reports.leave', 'Leave') },
+                ]}
+              />
               {selectedEmployee !== 'all' && (
-                <span className="ml-2 px-2 py-0.5 text-xs">
-                 
-                </span>
+                <Tag ind={ind} variant="outline">{t('reports.individualReport', 'Individual Report')}</Tag>
               )}
-            </label>
-            <select
-              value={selectedEmployee}
-              onChange={(e) => setSelectedEmployee(e.target.value)}
-              className={`w-full px-3 py-2 rounded-lg border ${selectedEmployee !== 'all' ? 'border-blue-500 ring-2 ring-blue-500' : border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-            >
-              <option value="all">
-                {t('reports.allEmployees', 'All Employees')} ({activeEmployees.length})
-              </option>
-              <optgroup label="──────────────────────">
+            </div>
+          </div>
+
+          {/* ── FILTER STRIP ────────────────────────────────────────── */}
+          <div
+            className="flex flex-wrap items-end"
+            style={{ gap: 14, padding: '12px 14px', border: `1px solid ${ind.hairline}` }}
+          >
+            <div style={{ minWidth: 200, flex: '1 1 200px' }}>
+              <label htmlFor="report-employee" style={fieldLabelStyle}>
+                {t('reports.employee', 'Employee')}
+              </label>
+              <FlatSelect
+                ind={ind}
+                id="report-employee"
+                value={selectedEmployee}
+                onChange={(e) => setSelectedEmployee(e.target.value)}
+                style={{ width: '100%', textTransform: 'none', letterSpacing: '.02em' }}
+              >
+                <option value="all">
+                  {`${t('reports.allEmployees', 'All Employees')} (${activeEmployees.length})`}
+                </option>
                 {[...activeEmployees]
                   .sort((a, b) => getDemoEmployeeName(a, t).localeCompare(getDemoEmployeeName(b, t)))
                   .map(emp => (
                     <option key={emp.id} value={emp.id}>
-                      {getDemoEmployeeName(emp, t)} • {translateDepartment(emp.department)} • {translatePosition(emp.position)}
+                      {`${getDemoEmployeeName(emp, t)} · ${translateDepartment(emp.department)} · ${translatePosition(emp.position)}`}
                     </option>
                   ))}
-              </optgroup>
-            </select>
+              </FlatSelect>
+            </div>
+
+            <div style={{ minWidth: 160 }}>
+              <label htmlFor="report-range" style={fieldLabelStyle}>
+                {t('reports.dateRange', 'Date Range')}
+              </label>
+              <FlatSelect
+                ind={ind}
+                id="report-range"
+                value={dateRange}
+                onChange={(e) => setDateRange(e.target.value)}
+                style={{ width: '100%' }}
+              >
+                <option value="today">{t('reports.today', 'Today')}</option>
+                <option value="this-week">{t('reports.thisWeek', 'This Week')}</option>
+                <option value="this-month">{t('reports.thisMonth', 'This Month')}</option>
+                <option value="last-month">{t('reports.lastMonth', 'Last Month')}</option>
+                <option value="this-quarter">{t('reports.thisQuarter', 'This Quarter')}</option>
+                <option value="this-year">{t('reports.thisYear', 'This Year')}</option>
+                <option value="custom">{t('reports.customRange', 'Custom Range')}</option>
+              </FlatSelect>
+            </div>
+
+            {dateRange === 'custom' && (
+              <>
+                <div style={{ minWidth: 0, width: 148 }}>
+                  <label htmlFor="report-start" style={fieldLabelStyle}>
+                    {t('reports.startDate', 'Start Date')}
+                  </label>
+                  <DatePicker
+                    flat
+                    id="report-start"
+                    value={filters.startDate}
+                    onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                  />
+                </div>
+                <div style={{ minWidth: 0, width: 148 }}>
+                  <label htmlFor="report-end" style={fieldLabelStyle}>
+                    {t('reports.endDate', 'End Date')}
+                  </label>
+                  <DatePicker
+                    flat
+                    id="report-end"
+                    value={filters.endDate}
+                    onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                  />
+                </div>
+              </>
+            )}
+
             {selectedEmployee !== 'all' && (
-              <p className={`mt-1 text-xs ${isDarkMode ? 'text-amber-100' : 'text-blue-600'} flex items-center gap-1 italic`}>
-                <BarChart3 className="w-3 h-3" />
-                {t('reports.individualMetrics', 'Individual performance metrics shown below')}
+              <p className="inline-flex items-center" style={{ ...caption, fontSize: 11.5, gap: 6, flex: '1 1 100%' }}>
+                <Users size={12} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkFaint }} />
+                {t('reports.exportingIncludes', 'Exporting will include this employee\'s detailed performance report')}
               </p>
             )}
           </div>
 
-          {/* Date Range Preset */}
-          <div>
-            <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-              <Calendar className="w-4 h-4 inline mr-1" />
-              {t('reports.dateRange', 'Date Range')}
-            </label>
-            <select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-            >
-              <option value="today">{t('reports.today', 'Today')}</option>
-              <option value="this-week">{t('reports.thisWeek', 'This Week')}</option>
-              <option value="this-month">{t('reports.thisMonth', 'This Month')}</option>
-              <option value="last-month">{t('reports.lastMonth', 'Last Month')}</option>
-              <option value="this-quarter">{t('reports.thisQuarter', 'This Quarter')}</option>
-              <option value="this-year">{t('reports.thisYear', 'This Year')}</option>
-              <option value="custom">{t('reports.customRange', 'Custom Range')}</option>
-            </select>
-          </div>
+          {/* ── INDIVIDUAL PERFORMANCE ──────────────────────────────── */}
+          {selectedEmployee !== 'all' && (() => {
+            const employee = selectedEmployeeRecord;
+            if (!employee) return null;
 
-          {/* Tab selector */}
-          <div>
-            <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-              <Filter className="w-4 h-4 inline mr-1" />
-              {t('reports.dataType', 'Data Type')}
-            </label>
-            <select
-              value={activeTab}
-              onChange={(e) => setActiveTab(e.target.value)}
-              className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-            >
-              <option value="all">{t('reports.all', 'All Data Types')}</option>
-              <option value="time-entries">{t('reports.timeEntries', 'Time Entries')}</option>
-              <option value="tasks">{t('reports.tasks', 'Tasks')}</option>
-              <option value="goals">{t('reports.goals', 'Personal Goals')}</option>
-              <option value="leave">{t('reports.leave', 'Leave Requests')}</option>
-            </select>
-          </div>
-        </div>
+            const employeeTimeEntries = reportData.timeEntries.filter(e => String(e.employee_id) === String(employee.id));
+            const employeeTasks = reportData.tasks.filter(task => String(task.employee_id) === String(employee.id));
+            const employeeGoals = reportData.goals.filter(g => String(g.employee_id) === String(employee.id));
 
-        {/* Custom Date Range */}
-        {dateRange === 'custom' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div>
-              <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                {t('reports.startDate', 'Start Date')}
-              </label>
-              <DatePicker
-                value={filters.startDate}
-                onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                inputClassName={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-              />
-            </div>
+            const totalHours = employeeTimeEntries.reduce((sum, e) => sum + (e.hours || 0), 0);
+            const regularHours = employeeTimeEntries.filter(e => e.hour_type === 'regular').reduce((sum, e) => sum + (e.hours || 0), 0);
+            // Include both overtime and bonus as overtime hours
+            const overtimeHours = employeeTimeEntries.filter(e => e.hour_type === 'overtime' || e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
+            const wfhHours = employeeTimeEntries.filter(e => e.hour_type === 'wfh').reduce((sum, e) => sum + (e.hours || 0), 0);
+            // Leave days (on_leave entries count as days)
+            const leaveDays = employeeTimeEntries.filter(e => e.hour_type === 'on_leave').length;
+            // Days worked (count unique dates with time entries)
+            const daysWorked = new Set(employeeTimeEntries.map(e => e.date)).size;
+            const pendingEntries = employeeTimeEntries.filter(e => e.status === 'pending').length;
+            const approvedEntries = employeeTimeEntries.filter(e => e.status === 'approved').length;
 
-            <div>
-              <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                {t('reports.endDate', 'End Date')}
-              </label>
-              <DatePicker
-                value={filters.endDate}
-                onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                inputClassName={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-              />
-            </div>
-          </div>
-        )}
-      </div>
+            const completedTasks = employeeTasks.filter(task => task.status === 'completed').length;
+            const inProgressTasks = employeeTasks.filter(task => task.status === 'in_progress').length;
+            const pendingTasks = employeeTasks.filter(task => task.status === 'pending').length;
+            const taskCompletionRate = employeeTasks.length > 0 ? ((completedTasks / employeeTasks.length) * 100).toFixed(1) : 0;
 
-      {/* Individual Employee Statistics */}
-      {selectedEmployee !== 'all' && (() => {
-        const employee = reportData.employees.find(emp => String(emp.id) === String(selectedEmployee));
-        if (!employee) return null;
+            const completedGoals = employeeGoals.filter(g => g.status === 'completed').length;
+            const inProgressGoals = employeeGoals.filter(g => g.status === 'in_progress').length;
+            const goalCompletionRate = employeeGoals.length > 0 ? ((completedGoals / employeeGoals.length) * 100).toFixed(1) : 0;
+            const avgProgress = employeeGoals.length > 0 ? (employeeGoals.reduce((sum, g) => sum + (g.status === 'completed' ? 100 : (g.progress || 0)), 0) / employeeGoals.length).toFixed(1) : 0;
 
-        const employeeTimeEntries = reportData.timeEntries.filter(e => String(e.employee_id) === String(employee.id));
-        const employeeTasks = reportData.tasks.filter(t => String(t.employee_id) === String(employee.id));
-        const employeeGoals = reportData.goals.filter(g => String(g.employee_id) === String(employee.id));
-
-        const totalHours = employeeTimeEntries.reduce((sum, e) => sum + (e.hours || 0), 0);
-        const regularHours = employeeTimeEntries.filter(e => e.hour_type === 'regular').reduce((sum, e) => sum + (e.hours || 0), 0);
-        // Include both overtime and bonus as overtime hours
-        const overtimeHours = employeeTimeEntries.filter(e => e.hour_type === 'overtime' || e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
-        const wfhHours = employeeTimeEntries.filter(e => e.hour_type === 'wfh').reduce((sum, e) => sum + (e.hours || 0), 0);
-        // Leave days (on_leave entries count as days)
-        const leaveDays = employeeTimeEntries.filter(e => e.hour_type === 'on_leave').length;
-        // Days worked (count unique dates with time entries)
-        const daysWorked = new Set(employeeTimeEntries.map(e => e.date)).size;
-        const pendingEntries = employeeTimeEntries.filter(e => e.status === 'pending').length;
-        const approvedEntries = employeeTimeEntries.filter(e => e.status === 'approved').length;
-
-        const completedTasks = employeeTasks.filter(t => t.status === 'completed').length;
-        const inProgressTasks = employeeTasks.filter(t => t.status === 'in_progress').length;
-        const pendingTasks = employeeTasks.filter(t => t.status === 'pending').length;
-        const taskCompletionRate = employeeTasks.length > 0 ? ((completedTasks / employeeTasks.length) * 100).toFixed(1) : 0;
-
-        const completedGoals = employeeGoals.filter(g => g.status === 'completed').length;
-        const inProgressGoals = employeeGoals.filter(g => g.status === 'in_progress').length;
-        const goalCompletionRate = employeeGoals.length > 0 ? ((completedGoals / employeeGoals.length) * 100).toFixed(1) : 0;
-        const avgProgress = employeeGoals.length > 0 ? (employeeGoals.reduce((sum, g) => sum + (g.status === 'completed' ? 100 : (g.progress || 0)), 0) / employeeGoals.length).toFixed(1) : 0;
-
-        const employeeBentoItems = [];
-        if (activeTab === 'time-entries' || activeTab === 'all') {
-          employeeBentoItems.push(
-            {
-              label: t('reports.hours', 'Hours'),
-              title: `${totalHours.toFixed(1)}h`,
-              description: t('reports.totalHours', 'Total Hours'),
-              value: Number(totalHours.toFixed(1)),
-              suffix: 'h',
-            },
-            {
-              label: t('reports.regular', 'Regular'),
-              title: `${regularHours.toFixed(1)}h`,
-              description: t('reports.regularHours', 'Regular Hours'),
-              value: Number(regularHours.toFixed(1)),
-              suffix: 'h',
-            },
-            {
-              label: t('reports.overtime', 'Overtime'),
-              title: `${overtimeHours.toFixed(1)}h`,
-              description: t('reports.overtime', 'Overtime'),
-              value: Number(overtimeHours.toFixed(1)),
-              suffix: 'h',
-            },
-            {
-              label: t('reports.wfh', 'WFH'),
-              title: `${wfhHours.toFixed(1)}h`,
-              description: t('reports.wfh', 'Working From Home'),
-              value: Number(wfhHours.toFixed(1)),
-              suffix: 'h',
-            },
-            {
-              label: t('reports.leave', 'Leave'),
-              title: String(leaveDays),
-              description: t('reports.leaveDays', 'Leave Days'),
-              value: Number(leaveDays) || 0,
-            },
-            {
-              label: t('reports.days', 'Days'),
-              title: String(daysWorked),
-              description: t('reports.daysWorked', 'Days Worked'),
-              value: Number(daysWorked) || 0,
+            const employeeBentoItems = [];
+            if (activeTab === 'time-entries' || activeTab === 'all') {
+              employeeBentoItems.push(
+                {
+                  label: t('reports.hours', 'Hours'),
+                  title: `${totalHours.toFixed(1)}h`,
+                  description: t('reports.totalHours', 'Total Hours'),
+                  value: Number(totalHours.toFixed(1)),
+                  suffix: 'h',
+                },
+                {
+                  label: t('reports.regular', 'Regular'),
+                  title: `${regularHours.toFixed(1)}h`,
+                  description: t('reports.regularHours', 'Regular Hours'),
+                  value: Number(regularHours.toFixed(1)),
+                  suffix: 'h',
+                },
+                {
+                  label: t('reports.overtime', 'Overtime'),
+                  title: `${overtimeHours.toFixed(1)}h`,
+                  description: t('reports.overtime', 'Overtime'),
+                  value: Number(overtimeHours.toFixed(1)),
+                  suffix: 'h',
+                },
+                {
+                  label: t('reports.wfh', 'WFH'),
+                  title: `${wfhHours.toFixed(1)}h`,
+                  description: t('reports.wfh', 'Working From Home'),
+                  value: Number(wfhHours.toFixed(1)),
+                  suffix: 'h',
+                },
+                {
+                  label: t('reports.leave', 'Leave'),
+                  title: String(leaveDays),
+                  description: t('reports.leaveDays', 'Leave Days'),
+                  value: Number(leaveDays) || 0,
+                },
+                {
+                  label: t('reports.days', 'Days'),
+                  title: String(daysWorked),
+                  description: t('reports.daysWorked', 'Days Worked'),
+                  value: Number(daysWorked) || 0,
+                }
+              );
             }
-          );
-        }
-        if (activeTab === 'tasks' || activeTab === 'all') {
-          employeeBentoItems.push({
-            label: t('reports.tasks', 'Tasks'),
-            title: `${completedTasks}/${employeeTasks.length}`,
-            description: t('reports.tasksDone', 'Tasks Done'),
-            value: completedTasks,
-          });
-        }
-        if (activeTab === 'goals' || activeTab === 'all') {
-          employeeBentoItems.push(
-            {
-              label: t('reports.completion', 'Completion'),
-              title: `${activeTab === 'goals' ? goalCompletionRate : taskCompletionRate}%`,
-              description: t('reports.completion', 'Completion'),
-              value: Number(activeTab === 'goals' ? goalCompletionRate : taskCompletionRate) || 0,
-              suffix: '%',
-            },
-            {
-              label: t('reports.progress', 'Progress'),
-              title: `${avgProgress}%`,
-              description: t('reports.goalProgress', 'Goal Progress'),
-              value: Number(avgProgress) || 0,
-              suffix: '%',
+            if (activeTab === 'tasks' || activeTab === 'all') {
+              employeeBentoItems.push({
+                label: t('reports.tasks', 'Tasks'),
+                title: `${completedTasks}/${employeeTasks.length}`,
+                description: t('reports.tasksDone', 'Tasks Done'),
+                value: completedTasks,
+              });
             }
-          );
-        }
+            if (activeTab === 'goals' || activeTab === 'all') {
+              employeeBentoItems.push(
+                {
+                  label: t('reports.completion', 'Completion'),
+                  title: `${activeTab === 'goals' ? goalCompletionRate : taskCompletionRate}%`,
+                  description: t('reports.completion', 'Completion'),
+                  value: Number(activeTab === 'goals' ? goalCompletionRate : taskCompletionRate) || 0,
+                  suffix: '%',
+                },
+                {
+                  label: t('reports.progress', 'Progress'),
+                  title: `${avgProgress}%`,
+                  description: t('reports.goalProgress', 'Goal Progress'),
+                  value: Number(avgProgress) || 0,
+                  suffix: '%',
+                }
+              );
+            }
 
-        return (
-          <div className={`${bg.secondary} rounded-xl border ${border.primary} p-6`}>
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <h3 className={`text-xl font-semibold tracking-tight ${text.primary} mb-1`}>
-                  {getDemoEmployeeName(employee, t)} — {t('reports.performanceSummary', 'Performance')}
-                </h3>
-                <p className={`${text.secondary} text-sm`}>
-                  {translateDepartment(employee.department)} · {translatePosition(employee.position)}
-                </p>
-                <p className={`${text.secondary} text-xs mt-1`}>
-                  {t('reports.reportPeriod', 'Report Period')}: {filters.startDate} {t('reports.to', 'to')} {filters.endDate}
-                </p>
-              </div>
+            return (
+              <Blueprint ind={ind} style={{ padding: '18px 20px 16px' }}>
+                <div className="flex flex-wrap items-end justify-between" style={{ gap: 12 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <ColumnHeading ind={ind}>
+                      {`${getDemoEmployeeName(employee, t)} — ${t('reports.performanceSummary', 'Performance')}`}
+                    </ColumnHeading>
+                    <p style={{ ...caption, fontSize: 12, marginTop: 4 }}>
+                      {`${translateDepartment(employee.department)} · ${translatePosition(employee.position)}`}
+                    </p>
+                  </div>
+                  <p style={{ ...caption, fontSize: 11.5, flex: 'none' }}>
+                    {`${t('reports.reportPeriod', 'Report Period')}: ${rangeLabel}`}
+                  </p>
+                </div>
+
+                {employeeBentoItems.length > 0 && (
+                  <div
+                    className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6"
+                    style={{ gap: 8, marginTop: 14 }}
+                  >
+                    {employeeBentoItems.map((item, index) => (
+                      <FigureBlock key={`${item.label}-${index}`} item={item} size={22} />
+                    ))}
+                  </div>
+                )}
+
+                {/* Breakdown — three hairline boxes, one per data type. */}
+                <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 12, marginTop: 14 }}>
+                  {(activeTab === 'time-entries' || activeTab === 'all') && (
+                    <div style={{ border: `1px solid ${ind.hairline}`, padding: '12px 14px' }}>
+                      <div className="flex items-center" style={{ gap: 7, marginBottom: 9 }}>
+                        <Clock size={13} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted }} />
+                        <ColumnHeading ind={ind} style={{ fontSize: 12 }}>
+                          {`${t('reports.timeEntries', 'Time Entries')} (${employeeTimeEntries.length})`}
+                        </ColumnHeading>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                        <StatLine label={t('reports.approved', 'Approved')} value={approvedEntries} />
+                        <StatLine label={t('reports.pending', 'Pending')} value={pendingEntries} />
+                        <StatLine label={t('reports.regularHours', 'Regular Hours')} value={Number(regularHours.toFixed(1))} suffix="h" />
+                        <StatLine label={t('reports.overtime', 'Overtime')} value={Number(overtimeHours.toFixed(1))} suffix="h" />
+                        <StatLine label={t('reports.wfh', 'WFH')} value={Number(wfhHours.toFixed(1))} suffix="h" />
+                        <StatLine label={t('reports.leaveDays', 'Leave Days')} value={Number(leaveDays) || 0} />
+                      </div>
+                    </div>
+                  )}
+
+                  {(activeTab === 'tasks' || activeTab === 'all') && (
+                    <div style={{ border: `1px solid ${ind.hairline}`, padding: '12px 14px' }}>
+                      <div className="flex items-center" style={{ gap: 7, marginBottom: 9 }}>
+                        <CheckCircle size={13} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted }} />
+                        <ColumnHeading ind={ind} style={{ fontSize: 12 }}>
+                          {`${t('reports.tasks', 'Tasks')} (${employeeTasks.length})`}
+                        </ColumnHeading>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                        <StatLine label={t('reports.completed', 'Completed')} value={completedTasks} />
+                        <StatLine label={t('reports.inProgress', 'In Progress')} value={inProgressTasks} />
+                        <StatLine label={t('reports.pending', 'Pending')} value={pendingTasks} />
+                        <StatLine label={t('reports.completionRate', 'Completion Rate')} value={Number(taskCompletionRate) || 0} decimals={1} suffix="%" />
+                      </div>
+                      <div style={{ marginTop: 9 }}>
+                        <Bar ind={ind} value={(Number(taskCompletionRate) || 0) / 100} height={6} />
+                      </div>
+                    </div>
+                  )}
+
+                  {(activeTab === 'goals' || activeTab === 'all') && (
+                    <div style={{ border: `1px solid ${ind.hairline}`, padding: '12px 14px' }}>
+                      <div className="flex items-center" style={{ gap: 7, marginBottom: 9 }}>
+                        <Goal size={13} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted }} />
+                        <ColumnHeading ind={ind} style={{ fontSize: 12 }}>
+                          {`${t('reports.goals', 'Goals')} (${employeeGoals.length})`}
+                        </ColumnHeading>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                        <StatLine label={t('reports.completed', 'Completed')} value={completedGoals} />
+                        <StatLine label={t('reports.inProgress', 'In Progress')} value={inProgressGoals} />
+                        <StatLine label={t('reports.avgProgress', 'Avg Progress')} value={Number(avgProgress) || 0} decimals={1} suffix="%" />
+                        <StatLine label={t('reports.totalGoals', 'Total Goals')} value={employeeGoals.length} />
+                      </div>
+                      <div style={{ marginTop: 9 }}>
+                        <Bar ind={ind} value={(Number(avgProgress) || 0) / 100} height={6} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Blueprint>
+            );
+          })()}
+
+          {/* ── PREVIEW LEDGER ──────────────────────────────────────── */}
+          <Blueprint ind={ind} style={{ padding: '16px 16px 0' }}>
+            <div className="flex flex-wrap items-baseline justify-between" style={{ gap: 10, marginBottom: 12 }}>
+              <ColumnHeading ind={ind}>{t('reports.dataPreview', 'Data Preview')}</ColumnHeading>
+              <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, color: ind.inkMuted }}>
+                {activeTabLabel}
+              </span>
             </div>
 
-            {employeeBentoItems.length > 0 && (
-              <MagicBento
-                isDarkMode={isDarkMode}
-                enableStars
-                enableSpotlight
-                enableBorderGlow
-                enableMagnetism
-                clickEffect
-                glowColor={isDarkMode ? '148, 163, 184' : '71, 85, 105'}
-                gridClassName="xl:grid-cols-3"
-                items={employeeBentoItems}
-              />
-            )}
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
+                <thead>
+                  <tr>
+                    {activeTab === 'all' && (
+                      <>
+                        <th style={thStyle}>{t('reports.type', 'Type')}</th>
+                        <th style={thStyle}>{t('reports.employees', 'Employee')}</th>
+                        <th style={thStyle}>{t('reports.details', 'Details')}</th>
+                        <th style={thStyle}>{t('reports.status', 'Status')}</th>
+                        <th style={thStyle}>{t('reports.date', 'Date')}</th>
+                      </>
+                    )}
 
-            {/* Detailed Breakdown */}
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Time Entries Breakdown - Show only for time-entries or all */}
-              {(activeTab === 'time-entries' || activeTab === 'all') && (
-                <div className={`p-4 rounded-xl border ${border.primary}`}>
-                  <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
-                    <Clock className="w-4 h-4" />
-                    {t('reports.timeEntries', 'Time Entries')} ({employeeTimeEntries.length})
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className={text.secondary}>{t('reports.approved', 'Approved')}:</span>
-                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={approvedEntries} /></span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className={text.secondary}>{t('reports.pending', 'Pending')}:</span>
-                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={pendingEntries} /></span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className={text.secondary}>{t('reports.regularHours', 'Regular Hours')}:</span>
-                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={Number(regularHours.toFixed(1))} />h</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className={text.secondary}>{t('reports.overtime', 'Overtime')}:</span>
-                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={Number(overtimeHours.toFixed(1))} />h</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className={text.secondary}>{t('reports.wfh', 'WFH')}:</span>
-                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={Number(wfhHours.toFixed(1))} />h</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className={text.secondary}>{t('reports.leaveDays', 'Leave Days')}:</span>
-                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={Number(leaveDays) || 0} /></span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Tasks Breakdown - Show only for tasks or all */}
-              {(activeTab === 'tasks' || activeTab === 'all') && (
-                <div className={`p-4 rounded-xl border ${border.primary}`}>
-                  <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
-                    <CheckCircle className="w-4 h-4" />
-                    {t('reports.tasks', 'Tasks')} ({employeeTasks.length})
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className={text.secondary}>{t('reports.completed', 'Completed')}:</span>
-                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={completedTasks} /></span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className={text.secondary}>{t('reports.inProgress', 'In Progress')}:</span>
-                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={inProgressTasks} /></span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className={text.secondary}>{t('reports.pending', 'Pending')}:</span>
-                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={pendingTasks} /></span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className={text.secondary}>{t('reports.completionRate', 'Completion Rate')}:</span>
-                      <span className={`font-medium ${text.primary}`}><NumberTicker value={Number(taskCompletionRate) || 0} decimalPlaces={1} className={text.primary} />%</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Goals Breakdown - Show only for goals or all */}
-              {(activeTab === 'goals' || activeTab === 'all') && (
-                <div className={`p-4 rounded-xl border ${border.primary}`}>
-                  <h4 className={`font-semibold ${text.primary} mb-3 flex items-center gap-2`}>
-                    <Goal className="w-4 h-4" />
-                    {t('reports.goals', 'Goals')} ({employeeGoals.length})
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className={text.secondary}>{t('reports.completed', 'Completed')}:</span>
-                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={completedGoals} /></span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className={text.secondary}>{t('reports.inProgress', 'In Progress')}:</span>
-                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={inProgressGoals} /></span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className={text.secondary}>{t('reports.avgProgress', 'Avg Progress')}:</span>
-                      <span className={`font-medium ${text.primary}`}><NumberTicker value={Number(avgProgress) || 0} decimalPlaces={1} className={text.primary} />%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className={text.secondary}>{t('reports.totalGoals', 'Total Goals')}:</span>
-                      <span className={`font-medium ${text.primary}`}><SlidingNumber value={employeeGoals.length} /></span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* Stats Overview */}
-      <MagicBento
-        isDarkMode={isDarkMode}
-        enableStars
-        enableSpotlight
-        enableBorderGlow
-        enableMagnetism
-        clickEffect
-        glowColor={isDarkMode ? '148, 163, 184' : '71, 85, 105'}
-        gridClassName="xl:grid-cols-4"
-        items={overviewBentoItems}
-      />
-
-      {/* Preview Table */}
-      <div className={`${bg.secondary} rounded-lg border ${border.primary}`}>
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h3 className={`text-lg font-semibold ${text.primary}`}>
-            {t('reports.dataPreview', 'Data Preview')} 
-          </h3>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className={`${bg.primary}`}>
-              <tr>
-                {activeTab === 'all' && (
-                  <>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.type', 'Type')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.employees', 'Employee')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.details', 'Details')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.status', 'Status')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.date', 'Date')}</th>
-                  </>
-                )}
-                
-                {activeTab === 'time-entries' && (
-                  <>
-                    <th 
-                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
-                      onClick={() => handleSort('employee')}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        {t('reports.employees', 'Employee')}
-                        <ArrowDownAZ
-                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                          style={{ transition: 'transform 0.5s', transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                        />
-                      </span>
-                    </th>
-                    <th 
-                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
-                      onClick={() => handleSort('date')}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        {t('reports.date', 'Date')}
-                        {sortKey === 'date' ? (
-                          sortDirection === 'asc' ? (
-                            <CalendarArrowUp className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`} />
-                          ) : (
-                            <CalendarArrowDown className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`} />
-                          )
-                        ) : (
-                          <CalendarArrowUp className="inline w-4 h-4 ml-1 transition-all duration-500 text-gray-400 hover:text-blue-400 hover:animate-pulse" />
-                        )}
-                      </span>
-                    </th>
-                    <th 
-                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
-                      onClick={() => handleSort('hours')}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        {t('reports.hours', 'Hours')}
-                        <Hourglass
-                          className={`inline w-3.5 h-3.5 ml-1 transition-all duration-500 ${sortKey === 'hours' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                          style={{ transition: 'transform 0.5s', transform: sortKey === 'hours' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                        />
-                      </span>
-                    </th>
-                    <th 
-                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
-                      onClick={() => handleSort('type')}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        {t('reports.type', 'Type')}
-                        <Timer
-                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'type' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                          style={{ transition: 'transform 0.5s', transform: sortKey === 'type' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                        />
-                      </span>
-                    </th>
-                    <th 
-                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
-                      onClick={() => handleSort('status')}
-                    >
-                      <span className="inline-flex items-center justify-center gap-1">
-                        {t('reports.status', 'Status')}
-                        {sortKey === 'status' ? (
-                          sortDirection === 'asc' ? (
-                            <ShieldCheck
-                              className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
-                            />
-                          ) : (
-                            <ShieldQuestion
-                              className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
-                            />
-                          )
-                        ) : (
-                          <ShieldCheck className="inline w-4 h-4 ml-1 transition-all duration-500 text-gray-400 hover:text-blue-400 hover:animate-pulse" />
-                        )}
-                      </span>
-                    </th>
-                  </>
-                )}
-                
-                {activeTab === 'tasks' && (
-                  <>
-                    <th 
-                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
-                      onClick={() => handleSort('employee')}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        {t('reports.employees', 'Employee')}
-                        <ArrowDownAZ
-                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                          style={{ transition: 'transform 0.5s', transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                        />
-                      </span>
-                    </th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.task', 'Task')}</th>
-                    <th 
-                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
-                      onClick={() => handleSort('priority')}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        {t('reports.priority', 'Priority')}
-                        <Timer
-                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'priority' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                          style={{ transition: 'transform 0.5s', transform: sortKey === 'priority' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                        />
-                      </span>
-                    </th>
-                    <th 
-                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
-                      onClick={() => handleSort('status')}
-                    >
-                      <span className="inline-flex items-center justify-center gap-1">
-                        {t('reports.status', 'Status')}
-                        {sortKey === 'status' ? (
-                          sortDirection === 'asc' ? (
-                            <ShieldCheck
-                              className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
-                            />
-                          ) : (
-                            <ShieldQuestion
-                              className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
-                            />
-                          )
-                        ) : (
-                          <ShieldCheck className="inline w-4 h-4 ml-1 transition-all duration-500 text-gray-400 hover:text-blue-400 hover:animate-pulse" />
-                        )}
-                      </span>
-                    </th>
-                    <th 
-                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
-                      onClick={() => handleSort('date')}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        {t('reports.dueDate', 'Due Date')}
-                        {sortKey === 'date' ? (
-                          sortDirection === 'asc' ? (
-                            <CalendarArrowUp className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`} />
-                          ) : (
-                            <CalendarArrowDown className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`} />
-                          )
-                        ) : (
-                          <CalendarArrowUp className="inline w-4 h-4 ml-1 transition-all duration-500 text-gray-400 hover:text-blue-400 hover:animate-pulse" />
-                        )}
-                      </span>
-                    </th>
-                  </>
-                )}
-                
-                {activeTab === 'goals' && (
-                  <>
-                    <th 
-                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
-                      onClick={() => handleSort('employee')}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        {t('reports.employees', 'Employee')}
-                        <ArrowDownAZ
-                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                          style={{ transition: 'transform 0.5s', transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                        />
-                      </span>
-                    </th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.goal', 'Goal')}</th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.category', 'Category')}</th>
-                    <th 
-                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
-                      onClick={() => handleSort('status')}
-                    >
-                      <span className="inline-flex items-center justify-center gap-1">
-                        {t('reports.status', 'Status')}
-                        {sortKey === 'status' ? (
-                          sortDirection === 'asc' ? (
-                            <ShieldCheck
-                              className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
-                            />
-                          ) : (
-                            <ShieldQuestion
-                              className={`inline w-4 h-4 ml-1 transition-all duration-500 ${isDarkMode ? 'text-white' : 'text-black'}`}
-                            />
-                          )
-                        ) : (
-                          <ShieldCheck className="inline w-4 h-4 ml-1 transition-all duration-500 text-gray-400 hover:text-blue-400 hover:animate-pulse" />
-                        )}
-                      </span>
-                    </th>
-                    <th 
-                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
-                      onClick={() => handleSort('progress')}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        {t('reports.progress', 'Progress')}
-                        <Gauge
-                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'progress' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                          style={{ transition: 'transform 0.5s', transform: sortKey === 'progress' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                        />
-                      </span>
-                    </th>
-                  </>
-                )}
-
-                {activeTab === 'leave' && (
-                  <>
-                    <th
-                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
-                      onClick={() => handleSort('employee')}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        {t('reports.employees', 'Employee')}
-                        <ArrowDownAZ
-                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'employee' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                          style={{ transition: 'transform 0.5s', transform: sortKey === 'employee' && sortDirection === 'asc' ? 'rotate(180deg)' : 'none' }}
-                        />
-                      </span>
-                    </th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.leaveType', 'Type')}</th>
-                    <th
-                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
-                      onClick={() => handleSort('date')}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        {t('reports.dateRange', 'Date Range')}
-                        {sortKey === 'date' ? (
-                          sortDirection === 'asc' ? (
-                            <CalendarArrowUp className={`inline w-4 h-4 ml-1 ${isDarkMode ? 'text-white' : 'text-black'}`} />
-                          ) : (
-                            <CalendarArrowDown className={`inline w-4 h-4 ml-1 ${isDarkMode ? 'text-white' : 'text-black'}`} />
-                          )
-                        ) : (
-                          <CalendarArrowUp className="inline w-4 h-4 ml-1 text-gray-400 hover:text-blue-400 hover:animate-pulse" />
-                        )}
-                      </span>
-                    </th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider`}>{t('reports.days', 'Days')}</th>
-                    <th
-                      className={`px-6 py-3 text-left text-xs font-medium ${text.secondary} uppercase tracking-wider cursor-pointer select-none hover:text-blue-500`}
-                      onClick={() => handleSort('status')}
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        {t('reports.status', 'Status')}
-                        <ShieldCheck
-                          className={`inline w-4 h-4 ml-1 transition-all duration-500 ${sortKey === 'status' ? (isDarkMode ? 'text-white' : 'text-black') : 'text-gray-400 hover:text-blue-400 hover:animate-pulse'}`}
-                        />
-                      </span>
-                    </th>
-                  </>
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {(activeTab === 'all' ? (getSortedData.timeEntries?.length + getSortedData.tasks?.length + getSortedData.goals?.length === 0) : getSortedData.length === 0) ? (
-                <tr>
-                  <td colSpan={5} className={`px-6 py-12 text-center ${text.secondary}`}>
-                    <div className="flex flex-col items-center">
-                      <FileText className="w-12 h-12 mb-4 opacity-50" />
-                      <p className="text-lg font-medium mb-2">{t('reports.noData', 'No data found')}</p>
-                      <p className="text-sm">{t('reports.adjustFilters', 'Try adjusting your filters or date range')}</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : activeTab === 'all' ? (
-                <>
-                  {/* Time Entries */}
-                  {(getSortedData.timeEntries || []).map((item, index) => (
-                    <tr key={`time-${index}`} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
-                      <td className={`px-6 py-4 whitespace-nowrap`}>
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                          {translateDataType('timeEntry')}
-                        </span>
-                      </td>
-                      <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
-                        <div>
-                          <div className="text-sm font-medium">{isDemoMode() ? getDemoEmployeeName(item.employee, t) : (item.employee?.name || 'Unknown')}</div>
-                          <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
-                        </div>
-                      </td>
-                      <td className={`px-6 py-4 ${text.primary}`}>
-                        <div className="text-sm">{item.hours || 0}h - {translateHourType(item.hour_type)}</div>
-                      </td>
-                      <td className={`px-6 py-4 whitespace-nowrap`}>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          item.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                          item.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                          'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                        }`}>
-                          {translateStatus(item.status)}
-                        </span>
-                      </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{item.date}</td>
-                    </tr>
-                  ))}
-                  
-                  {/* Tasks */}
-                  {(getSortedData.tasks || []).map((item, index) => (
-                    <tr key={`task-${index}`} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
-                      <td className={`px-6 py-4 whitespace-nowrap`}>
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                          {translateDataType('task')}
-                        </span>
-                      </td>
-                      <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
-                        <div>
-                          <div className="text-sm font-medium">{isDemoMode() ? getDemoEmployeeName(item.employee, t) : (item.employee?.name || 'Unknown')}</div>
-                          <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
-                        </div>
-                      </td>
-                      <td className={`px-6 py-4 ${text.primary}`}>
-                        <div className="text-sm font-medium max-w-xs truncate">{isDemoMode() ? getDemoTaskTitle(item, t) : <TranslatedText text={item.title} />}</div>
-                        <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{isDemoMode() ? getDemoTaskDescription(item, t) : <TranslatedText text={item.description} />}</div>
-                      </td>
-                      <td className={`px-6 py-4 whitespace-nowrap`}>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          item.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                          item.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                          'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
-                        }`}>
-                          {translateStatus(item.status)}
-                        </span>
-                      </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{item.due_date || '-'}</td>
-                    </tr>
-                  ))}
-                  
-                  {/* Goals */}
-                  {(getSortedData.goals || []).map((item, index) => (
-                    <tr key={`goal-${index}`} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
-                      <td className={`px-6 py-4 whitespace-nowrap`}>
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                          {translateDataType('goal')}
-                        </span>
-                      </td>
-                      <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
-                        <div>
-                          <div className="text-sm font-medium">{isDemoMode() ? getDemoEmployeeName(item.employee, t) : (item.employee?.name || 'Unknown')}</div>
-                          <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
-                        </div>
-                      </td>
-                      <td className={`px-6 py-4 ${text.primary}`}>
-                        <div className="text-sm font-medium max-w-xs truncate">{isDemoMode() ? getDemoGoalTitle(item, t) : <TranslatedText text={item.title} />}</div>
-                        <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{translateCategory(item.category)} - {item.status === 'completed' ? 100 : (item.progress || 0)}%</div>
-                      </td>
-                      <td className={`px-6 py-4 whitespace-nowrap`}>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          item.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                          item.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                          'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
-                        }`}>
-                          {translateStatus(item.status)}
-                        </span>
-                      </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{item.target_date || '-'}</td>
-                    </tr>
-                  ))}
-                </>
-              ) : (
-                getSortedData.map((item, index) => (
-                  <tr key={index} className={`${bg.secondary} hover:${bg.primary} transition-colors`}>
                     {activeTab === 'time-entries' && (
                       <>
-                        <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
-                          <div>
-                            <div className="text-sm font-medium">{isDemoMode() ? getDemoEmployeeName(item.employee, t) : (item.employee?.name || 'Unknown')}</div>
-                            <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
-                          </div>
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{item.date}</td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>
-                          <span className="font-medium">{item.hours || 0}h</span>
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap`}>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            item.hour_type === 'regular' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                            item.hour_type === 'overtime' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
-                            'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
-                          }`}>
-                            {translateHourType(item.hour_type)}
-                          </span>
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap`}>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            item.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                            item.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                            'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                          }`}>
-                            {translateStatus(item.status)}
-                          </span>
-                        </td>
+                        <SortableTh sortId="employee">{t('reports.employees', 'Employee')}</SortableTh>
+                        <SortableTh sortId="date">{t('reports.date', 'Date')}</SortableTh>
+                        <SortableTh sortId="hours">{t('reports.hours', 'Hours')}</SortableTh>
+                        <SortableTh sortId="type">{t('reports.type', 'Type')}</SortableTh>
+                        <SortableTh sortId="status">{t('reports.status', 'Status')}</SortableTh>
                       </>
                     )}
-                    
+
                     {activeTab === 'tasks' && (
                       <>
-                        <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
-                          <div>
-                            <div className="text-sm font-medium">{isDemoMode() ? getDemoEmployeeName(item.employee, t) : (item.employee?.name || 'Unknown')}</div>
-                            <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
-                          </div>
-                        </td>
-                        <td className={`px-6 py-4 ${text.primary}`}>
-                          <div className="text-sm font-medium max-w-xs truncate">{isDemoMode() ? getDemoTaskTitle(item, t) : <TranslatedText text={item.title} />}</div>
-                          <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{isDemoMode() ? getDemoTaskDescription(item, t) : <TranslatedText text={item.description} />}</div>
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap`}>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            item.priority === 'high' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                            item.priority === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                            'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                          }`}>
-                            {translatePriority(item.priority)}
-                          </span>
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap`}>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            item.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                            item.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                            'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
-                          }`}>
-                            {translateStatus(item.status)}
-                          </span>
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{item.due_date || '-'}</td>
+                        <SortableTh sortId="employee">{t('reports.employees', 'Employee')}</SortableTh>
+                        <th style={thStyle}>{t('reports.task', 'Task')}</th>
+                        <SortableTh sortId="priority">{t('reports.priority', 'Priority')}</SortableTh>
+                        <SortableTh sortId="status">{t('reports.status', 'Status')}</SortableTh>
+                        <SortableTh sortId="date">{t('reports.dueDate', 'Due Date')}</SortableTh>
                       </>
                     )}
-                    
+
                     {activeTab === 'goals' && (
                       <>
-                        <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
-                          <div>
-                            <div className="text-sm font-medium">{isDemoMode() ? getDemoEmployeeName(item.employee, t) : (item.employee?.name || 'Unknown')}</div>
-                            <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
-                          </div>
-                        </td>
-                        <td className={`px-6 py-4 ${text.primary}`}>
-                          <div className="text-sm font-medium max-w-xs truncate">{isDemoMode() ? getDemoGoalTitle(item, t) : <TranslatedText text={item.title} />}</div>
-                          <div className={`text-sm ${text.secondary} max-w-xs truncate`}>{isDemoMode() ? getDemoGoalDescription(item, t) : <TranslatedText text={item.description} />}</div>
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{translateCategory(item.category)}</td>
-                        <td className={`px-6 py-4 whitespace-nowrap`}>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            item.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                            item.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                            'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
-                          }`}>
-                            {translateStatus(item.status)}
-                          </span>
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
-                          <div className="flex items-center">
-                            <div className={`w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-3`}>
-                              <div 
-                                className="bg-blue-600 h-2 rounded-full" 
-                                style={{width: `${Math.min(item.status === 'completed' ? 100 : (item.progress || 0), 100)}%`}}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-medium"><NumberTicker value={item.status === 'completed' ? 100 : (item.progress || 0)} className="text-sm font-medium" />%</span>
-                          </div>
-                        </td>
+                        <SortableTh sortId="employee">{t('reports.employees', 'Employee')}</SortableTh>
+                        <th style={thStyle}>{t('reports.goal', 'Goal')}</th>
+                        <th style={thStyle}>{t('reports.category', 'Category')}</th>
+                        <SortableTh sortId="status">{t('reports.status', 'Status')}</SortableTh>
+                        <SortableTh sortId="progress">{t('reports.progress', 'Progress')}</SortableTh>
                       </>
                     )}
 
                     {activeTab === 'leave' && (
                       <>
-                        <td className={`px-6 py-4 whitespace-nowrap ${text.primary}`}>
-                          <div>
-                            <div className="text-sm font-medium">{isDemoMode() ? getDemoEmployeeName(item.employee, t) : (item.employee?.name || 'Unknown')}</div>
-                            <div className={`text-sm ${text.secondary}`}>{translateDepartment(item.employee?.department)}</div>
-                          </div>
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap`}>
-                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                            {t(`timeTracking.${item.leave_type === 'sick' ? 'sickLeave' : item.leave_type === 'personal' ? 'personal' : 'vacation'}`, item.leave_type)}
-                          </span>
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>
-                          {(item.start_date || '').slice(0, 10)} → {(item.end_date || item.start_date || '').slice(0, 10)}
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${text.primary}`}>{item.days_count ?? '-'}</td>
-                        <td className={`px-6 py-4 whitespace-nowrap`}>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            item.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                            item.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                            'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                          }`}>
-                            {translateStatus(item.status)}
-                          </span>
-                        </td>
+                        <SortableTh sortId="employee">{t('reports.employees', 'Employee')}</SortableTh>
+                        <th style={thStyle}>{t('reports.leaveType', 'Type')}</th>
+                        <SortableTh sortId="date">{t('reports.dateRange', 'Date Range')}</SortableTh>
+                        <th style={thStyle}>{t('reports.days', 'Days')}</th>
+                        <SortableTh sortId="status">{t('reports.status', 'Status')}</SortableTh>
                       </>
                     )}
                   </tr>
-                ))
+                </thead>
+
+                <tbody>
+                  {(activeTab === 'all'
+                    ? (getSortedData.timeEntries?.length + getSortedData.tasks?.length + getSortedData.goals?.length === 0)
+                    : getSortedData.length === 0) ? (
+                    <tr>
+                      <td colSpan={5} style={{ ...tdStyle, padding: '44px 10px', textAlign: 'center' }}>
+                        <FileText size={26} strokeWidth={1.25} style={{ color: ind.inkFaint, margin: '0 auto' }} />
+                        <div style={{ marginTop: 10 }}>
+                          <ColumnHeading ind={ind}>{t('reports.noData', 'No data found')}</ColumnHeading>
+                        </div>
+                        <p style={{ ...caption, marginTop: 5 }}>
+                          {t('reports.adjustFilters', 'Try adjusting your filters or date range')}
+                        </p>
+                      </td>
+                    </tr>
+                  ) : activeTab === 'all' ? (
+                    <>
+                      {(getSortedData.timeEntries || []).map((item, index) => (
+                        <tr key={`time-${index}`}>
+                          <td style={tdStyle}>
+                            <Tag ind={ind} variant="neutral">{translateDataType('timeEntry')}</Tag>
+                          </td>
+                          <td style={tdStyle}>
+                            <div>{employeeNameOf(item)}</div>
+                            <div style={subCellStyle}>{translateDepartment(item.employee?.department)}</div>
+                          </td>
+                          <td style={tdStyle}>
+                            {`${item.hours || 0}h · ${translateHourType(item.hour_type)}`}
+                          </td>
+                          <td style={tdStyle}>
+                            <Tag ind={ind} variant={statusVariant(item.status)}>{translateStatus(item.status)}</Tag>
+                          </td>
+                          <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{item.date}</td>
+                        </tr>
+                      ))}
+
+                      {(getSortedData.tasks || []).map((item, index) => (
+                        <tr key={`task-${index}`}>
+                          <td style={tdStyle}>
+                            <Tag ind={ind} variant="neutral">{translateDataType('task')}</Tag>
+                          </td>
+                          <td style={tdStyle}>
+                            <div>{employeeNameOf(item)}</div>
+                            <div style={subCellStyle}>{translateDepartment(item.employee?.department)}</div>
+                          </td>
+                          <td style={{ ...tdStyle, maxWidth: 280 }}>
+                            <div className="truncate">
+                              {isDemoMode() ? getDemoTaskTitle(item, t) : <TranslatedText text={item.title} />}
+                            </div>
+                            <div className="truncate" style={subCellStyle}>
+                              {isDemoMode() ? getDemoTaskDescription(item, t) : <TranslatedText text={item.description} />}
+                            </div>
+                          </td>
+                          <td style={tdStyle}>
+                            <Tag ind={ind} variant={statusVariant(item.status)}>{translateStatus(item.status)}</Tag>
+                          </td>
+                          <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{item.due_date || '—'}</td>
+                        </tr>
+                      ))}
+
+                      {(getSortedData.goals || []).map((item, index) => (
+                        <tr key={`goal-${index}`}>
+                          <td style={tdStyle}>
+                            <Tag ind={ind} variant="neutral">{translateDataType('goal')}</Tag>
+                          </td>
+                          <td style={tdStyle}>
+                            <div>{employeeNameOf(item)}</div>
+                            <div style={subCellStyle}>{translateDepartment(item.employee?.department)}</div>
+                          </td>
+                          <td style={{ ...tdStyle, maxWidth: 280 }}>
+                            <div className="truncate">
+                              {isDemoMode() ? getDemoGoalTitle(item, t) : <TranslatedText text={item.title} />}
+                            </div>
+                            <div className="truncate" style={subCellStyle}>
+                              {`${translateCategory(item.category)} · ${item.status === 'completed' ? 100 : (item.progress || 0)}%`}
+                            </div>
+                          </td>
+                          <td style={tdStyle}>
+                            <Tag ind={ind} variant={statusVariant(item.status)}>{translateStatus(item.status)}</Tag>
+                          </td>
+                          <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{item.target_date || '—'}</td>
+                        </tr>
+                      ))}
+                    </>
+                  ) : (
+                    getSortedData.map((item, index) => (
+                      <tr key={index}>
+                        {activeTab === 'time-entries' && (
+                          <>
+                            <td style={tdStyle}>
+                              <div>{employeeNameOf(item)}</div>
+                              <div style={subCellStyle}>{translateDepartment(item.employee?.department)}</div>
+                            </td>
+                            <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{item.date}</td>
+                            <td style={{ ...tdStyle, fontFamily: DISPLAY, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                              {`${item.hours || 0}h`}
+                            </td>
+                            <td style={tdStyle}>
+                              <Tag ind={ind} variant="neutral">{translateHourType(item.hour_type)}</Tag>
+                            </td>
+                            <td style={tdStyle}>
+                              <Tag ind={ind} variant={statusVariant(item.status)}>{translateStatus(item.status)}</Tag>
+                            </td>
+                          </>
+                        )}
+
+                        {activeTab === 'tasks' && (
+                          <>
+                            <td style={tdStyle}>
+                              <div>{employeeNameOf(item)}</div>
+                              <div style={subCellStyle}>{translateDepartment(item.employee?.department)}</div>
+                            </td>
+                            <td style={{ ...tdStyle, maxWidth: 320 }}>
+                              <div className="truncate">
+                                {isDemoMode() ? getDemoTaskTitle(item, t) : <TranslatedText text={item.title} />}
+                              </div>
+                              <div className="truncate" style={subCellStyle}>
+                                {isDemoMode() ? getDemoTaskDescription(item, t) : <TranslatedText text={item.description} />}
+                              </div>
+                            </td>
+                            <td style={tdStyle}>
+                              <Tag ind={ind} variant={priorityVariant(item.priority)}>{translatePriority(item.priority)}</Tag>
+                            </td>
+                            <td style={tdStyle}>
+                              <Tag ind={ind} variant={statusVariant(item.status)}>{translateStatus(item.status)}</Tag>
+                            </td>
+                            <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{item.due_date || '—'}</td>
+                          </>
+                        )}
+
+                        {activeTab === 'goals' && (
+                          <>
+                            <td style={tdStyle}>
+                              <div>{employeeNameOf(item)}</div>
+                              <div style={subCellStyle}>{translateDepartment(item.employee?.department)}</div>
+                            </td>
+                            <td style={{ ...tdStyle, maxWidth: 320 }}>
+                              <div className="truncate">
+                                {isDemoMode() ? getDemoGoalTitle(item, t) : <TranslatedText text={item.title} />}
+                              </div>
+                              <div className="truncate" style={subCellStyle}>
+                                {isDemoMode() ? getDemoGoalDescription(item, t) : <TranslatedText text={item.description} />}
+                              </div>
+                            </td>
+                            <td style={tdStyle}>{translateCategory(item.category)}</td>
+                            <td style={tdStyle}>
+                              <Tag ind={ind} variant={statusVariant(item.status)}>{translateStatus(item.status)}</Tag>
+                            </td>
+                            <td style={{ ...tdStyle, minWidth: 150 }}>
+                              <div className="flex items-center" style={{ gap: 8 }}>
+                                <div style={{ flex: 1, minWidth: 60 }}>
+                                  <Bar
+                                    ind={ind}
+                                    value={Math.min(item.status === 'completed' ? 100 : (item.progress || 0), 100) / 100}
+                                    fill={rampAt(ind, item.status === 'completed' ? 0 : 2)}
+                                    height={6}
+                                  />
+                                </div>
+                                <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, fontVariantNumeric: 'tabular-nums', flex: 'none' }}>
+                                  <NumberTicker value={item.status === 'completed' ? 100 : (item.progress || 0)} />%
+                                </span>
+                              </div>
+                            </td>
+                          </>
+                        )}
+
+                        {activeTab === 'leave' && (
+                          <>
+                            <td style={tdStyle}>
+                              <div>{employeeNameOf(item)}</div>
+                              <div style={subCellStyle}>{translateDepartment(item.employee?.department)}</div>
+                            </td>
+                            <td style={tdStyle}>
+                              <Tag ind={ind} variant="neutral">
+                                {t(`timeTracking.${item.leave_type === 'sick' ? 'sickLeave' : item.leave_type === 'personal' ? 'personal' : 'vacation'}`, item.leave_type)}
+                              </Tag>
+                            </td>
+                            <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+                              {`${(item.start_date || '').slice(0, 10)} → ${(item.end_date || item.start_date || '').slice(0, 10)}`}
+                            </td>
+                            <td style={{ ...tdStyle, fontFamily: DISPLAY, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                              {item.days_count ?? '—'}
+                            </td>
+                            <td style={tdStyle}>
+                              <Tag ind={ind} variant={statusVariant(item.status)}>{translateStatus(item.status)}</Tag>
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Ledger foot — the preview is capped; the export is not. */}
+            <div
+              className="flex flex-wrap items-center justify-between"
+              style={{ gap: 10, padding: '10px 0', marginTop: 4, borderTop: `1px solid ${ind.hairline}` }}
+            >
+              <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint }}>
+                {currentData.length > 50
+                  ? `${t('reports.showingFirst50of', 'Showing first 50 of')} ${currentData.length} ${t('reports.records', 'records')}`
+                  : `${stats.totalRecords} ${t('reports.recordsFound', 'records found')}`}
+              </span>
+              {currentData.length > 50 && (
+                <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint }}>
+                  {t('reports.exportForAll', 'Export to CSV to get all records.')}
+                </span>
               )}
-            </tbody>
-          </table>
+            </div>
+          </Blueprint>
         </div>
 
-        {currentData.length > 50 && (
-          <div className={`px-6 py-4 border-t border-gray-200 dark:border-gray-700 ${bg.primary}`}>
-            <p className={`text-sm ${text.secondary} text-center`}>
-              {t('reports.showingFirst50of', 'Showing first 50 of')} {currentData.length} {t('reports.records', 'records')}. 
-              <span className="font-medium ml-1">{t('reports.exportForAll', 'Export to CSV to get all records.')}</span>
+        {/* ── RIGHT — the figures and the export, 340px ─────────────── */}
+        <aside
+          className="w-full lg:w-[340px] lg:shrink-0 flex flex-col"
+          style={{ background: ind.chrome, overflow: 'hidden' }}
+        >
+          <div style={{ padding: '20px 20px 16px', borderBottom: `1px solid ${ind.hairline}` }}>
+            <Kicker ind={ind}>{overviewBentoItems[0]?.description || t('reports.totalRecords', 'Total Records')}</Kicker>
+            <div className="flex items-baseline" style={{ gap: 8, margin: '4px 0 0' }}>
+              <span style={{ ...figure(52, ind.ink), lineHeight: 0.92 }}>
+                <SlidingNumber value={Number(stats.totalRecords) || 0} />
+              </span>
+              <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>{activeTabLabel}</span>
+            </div>
+            <p style={columnNote}>{rangeLabel}</p>
+          </div>
+
+          {/* The rest of the same array the ticker renders. */}
+          {overviewBentoItems.slice(1).map((item, index) => (
+            <div
+              key={`${item.label}-${index}`}
+              className="flex items-baseline justify-between"
+              style={{ gap: 12, padding: '11px 20px', borderBottom: `1px solid ${ind.rule}` }}
+            >
+              <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, minWidth: 0 }}>
+                {item.description}
+              </span>
+              <span
+                style={{
+                  fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, color: ind.ink,
+                  fontVariantNumeric: 'tabular-nums', flex: 'none',
+                }}
+              >
+                {typeof item.value === 'number' ? <SlidingNumber value={item.value} /> : item.title}
+                {item.suffix}
+              </span>
+            </div>
+          ))}
+
+          {/* Export — the only place on the screen that writes a file. */}
+          <div style={{ padding: '18px 20px 12px', marginTop: 6, borderBottom: `1px solid ${ind.hairline}` }}>
+            <ColumnHeading ind={ind}>{t('reports.export', 'Export')}</ColumnHeading>
+            <p style={columnNote}>
+              {t('reports.exportScopeNote', 'Exports carry every filtered record, not just the 50 previewed.')}
             </p>
           </div>
-        )}
+
+          <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[
+              {
+                key: 'csv',
+                onClick: exportAllToCSV,
+                label: t('reports.exportToCSV', 'Export to CSV'),
+                title: t('reports.exportingIncludes', 'Exporting will include all filtered data, not just previewed records'),
+                Icon: Download,
+                primary: true,
+              },
+              {
+                key: 'excel',
+                onClick: exportToExcel,
+                label: t('reports.exportToExcel', 'Export to Excel'),
+                title: t('reports.excelExportHint', 'Export all data types with summary, charts, and detailed sheets'),
+                Icon: FileText,
+                primary: false,
+              },
+              {
+                key: 'pdf',
+                onClick: exportToPDF,
+                label: t('reports.exportToPDF', 'Export to PDF'),
+                title: t('reports.pdfExportHint', 'Export PDF with visual charts, summary, and detailed tables for all data types'),
+                Icon: FileText,
+                primary: false,
+              },
+            ].map((action) => {
+              const ActionIcon = action.Icon;
+              return (
+                /* Kept as SpecularButtons — the sheen is what marks the three
+                   actions that leave the app. Re-skinned, not stripped. */
+                <SpecularButton
+                  key={action.key}
+                  type="button"
+                  onClick={action.onClick}
+                  disabled={exporting}
+                  shineOnHover
+                  title={action.title}
+                  className={cn('w-full rounded-none border px-3 py-1.5')}
+                  style={{
+                    borderRadius: 0,
+                    background: action.primary ? ind.accent : 'transparent',
+                    color: action.primary ? ind.accentInk : ind.ink,
+                    borderColor: action.primary ? ind.accent : ind.hairline,
+                    opacity: exporting ? 0.5 : 1,
+                    cursor: exporting ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {exporting
+                    ? <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />
+                    : <ActionIcon size={13} strokeWidth={1.5} style={{ opacity: 0.8 }} />}
+                  <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.04em', textTransform: 'uppercase' }}>
+                    {action.label}
+                  </span>
+                </SpecularButton>
+              );
+            })}
+          </div>
+
+          {selectedEmployee !== 'all' && (
+            <div style={{ padding: '0 20px 18px' }}>
+              <p style={{ ...columnNote, margin: 0 }}>
+                {t('reports.exportingIncludes', 'Exporting will include this employee\'s detailed performance report')}
+              </p>
+            </div>
+          )}
+        </aside>
       </div>
     </div>
   );

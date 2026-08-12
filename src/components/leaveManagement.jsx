@@ -1,4 +1,29 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+/**
+ * Leave Management — the shared calendar as a drawing sheet.
+ *
+ * The read, top to bottom:
+ *   ticker   — requests, pending, approved days this year, on leave today.
+ *              The four figures that used to be stat tiles; they belong on the
+ *              strip with every other screen's figures.
+ *   head     — what you are looking at, the scope seg, and the two ways in:
+ *              file for yourself, or file on behalf of someone.
+ *   calendar — one blueprint. Six weeks of hairline cells; a selected range is
+ *              an accent wash with a rule along its top edge, never a filled
+ *              blue block. Each day carries at most two leave chips.
+ *   ledger   — the requests below the calendar, one hairline rule per row, with
+ *              approve / reject on the row they belong to.
+ *   rail     — the pending figure, the filters, and the same requests counted by
+ *              leave type. Every number is derived from `visibleRequests`, so
+ *              the rail cannot disagree with the calendar.
+ *
+ * Leave types are told apart by the accent ramp (rampAt), not by four different
+ * hues — and status reads through weight and rule: pending is an outline, an
+ * approved day is filled accent, a rejected one is struck through. No red, no
+ * green.
+ *
+ * Design system: "Industry" (src/theme/industry.js).
+ */
+import _React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -7,20 +32,13 @@ import {
   Check,
   Clock,
   CalendarDays,
-  CalendarCheck,
-  CalendarClock,
-  Hourglass,
   Palmtree,
-  UserMinus,
   Stethoscope,
   User,
-  Loader,
-  CheckCircle,
+  Loader2,
   AlertCircle,
-  Filter,
   MousePointerClick,
   ArrowRight,
-  Sparkles,
   UserPlus,
   ShieldCheck,
 } from 'lucide-react';
@@ -31,16 +49,24 @@ import * as timeTrackingService from '../services/timeTrackingService';
 import { isDemoMode, getDemoEmployeeName, updateDemoLeaveRequest } from '../utils/demoHelper';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { SlidingNumber } from './motion-primitives';
-import { PageLiveClock } from './ui/page-live-clock';
 import { DatePicker } from './ui/date-picker.jsx';
 import { TimePicker } from './ui/time-picker.jsx';
 import { filterActiveEmployees } from '../utils/employeeStatus.js';
+import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
+import { Blueprint, Bar, Tag, Btn, Seg, Kicker, ColumnHeading, TickerCell, LiveClock, FlatSelect } from './ui/industry.jsx';
+import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 
 /* @refresh reset */
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const WEEKDAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+/** Order fixes each type's place on the accent ramp, so a colour never moves. */
+const LEAVE_TYPES = ['vacation', 'sick', 'personal', 'other'];
+
+/** pending asks for a decision, approved is settled, rejected is closed. */
+const STATUS_VARIANT = { pending: 'outline', approved: 'accent', rejected: 'neutral' };
 
 // Local-safe date key (avoids UTC off-by-one)
 const toKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -51,7 +77,8 @@ const fromKey = (key) => {
 const normalize = (value) => (value || '').toString().slice(0, 10);
 
 const LeaveManagement = ({ employees = [], allEmployees }) => {
-  const { bg, text, border, hover, isDarkMode } = useTheme();
+  const { isDarkMode } = useTheme();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
   const { t } = useLanguage();
   const { user, checkPermission, isAuthenticated } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
@@ -143,13 +170,13 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
     fetchData({ silent: true });
   });
 
-  // ---- Leave type styling ----
+  // ---- Leave type identity: label, icon, and a fixed place on the ramp ----
   const leaveTypeMeta = useMemo(() => ({
-    vacation: { label: t('timeTracking.vacation', 'Vacation'), Icon: Palmtree, dot: 'bg-blue-500', chip: isDarkMode ? 'bg-blue-900/50 text-blue-200 border-blue-700' : 'bg-blue-100 text-blue-800 border-blue-300' },
-    sick: { label: t('timeTracking.sickLeave', 'Sick Leave'), Icon: Stethoscope, dot: 'bg-rose-500', chip: isDarkMode ? 'bg-rose-900/50 text-rose-200 border-rose-700' : 'bg-rose-100 text-rose-800 border-rose-300' },
-    personal: { label: t('timeTracking.personal', 'Personal Leave'), Icon: User, dot: 'bg-purple-500', chip: isDarkMode ? 'bg-purple-900/50 text-purple-200 border-purple-700' : 'bg-purple-100 text-purple-800 border-purple-300' },
-    other: { label: t('leave.other', 'Other'), Icon: CalendarDays, dot: 'bg-gray-500', chip: isDarkMode ? 'bg-gray-700 text-gray-200 border-gray-600' : 'bg-gray-100 text-gray-800 border-gray-300' },
-  }), [t, isDarkMode]);
+    vacation: { label: t('timeTracking.vacation', 'Vacation'), Icon: Palmtree, tone: rampAt(ind, 0) },
+    sick: { label: t('timeTracking.sickLeave', 'Sick Leave'), Icon: Stethoscope, tone: rampAt(ind, 1) },
+    personal: { label: t('timeTracking.personal', 'Personal Leave'), Icon: User, tone: rampAt(ind, 2) },
+    other: { label: t('leave.other', 'Other'), Icon: CalendarDays, tone: rampAt(ind, 3) },
+  }), [t, ind]);
 
   const metaFor = useCallback((type) => leaveTypeMeta[type] || leaveTypeMeta.other, [leaveTypeMeta]);
 
@@ -287,6 +314,8 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
     return { pending, approvedDays, total: visibleRequests.length, byType };
   }, [visibleRequests, currentMonth]);
 
+  const onLeaveToday = requestsForDay(toKey(new Date())).filter(r => r.status === 'approved').length;
+
   // ---- Admin actions ----
   const refreshAfterMutation = () => {
     leaveCacheRef.current = { key: '', data: [] };
@@ -335,505 +364,713 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
     setRejectTarget(null);
   };
 
-  const statusBadge = (status) => {
-    switch (status) {
-      case 'approved': return isDarkMode ? 'bg-green-900/40 text-green-300' : 'bg-green-100 text-green-800';
-      case 'rejected': return isDarkMode ? 'bg-red-900/40 text-red-300' : 'bg-red-100 text-red-800';
-      default: return isDarkMode ? 'bg-amber-900/40 text-amber-300' : 'bg-amber-100 text-amber-800';
-    }
-  };
-
   const isAdmin = canManageLeave;
   const defaultModalEmployee = employeeFilter !== 'all' ? String(employeeFilter) : (myEmployeeId || (pickerEmployees[0]?.id != null ? String(pickerEmployees[0].id) : ''));
-  const borderPrimary = border.primary;
+
+  const monthLabel = `${t(`months.${MONTHS[currentMonth.getMonth()].toLowerCase()}`, MONTHS[currentMonth.getMonth()])} ${currentMonth.getFullYear()}`;
+
+  /* ---------------- shared styles ---------------- */
+
+  const caption = { fontFamily: BODY, fontSize: 13, color: ind.inkMuted, lineHeight: 1.5, margin: 0 };
+  const columnNote = { fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, lineHeight: 1.45, margin: '6px 0 0' };
+  const fieldLabelStyle = {
+    fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.14em',
+    textTransform: 'uppercase', color: ind.inkMuted, display: 'block', marginBottom: 6,
+  };
+  const iconBtnStyle = {
+    width: 24, height: 24, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    border: `1px solid ${ind.hairline}`, background: 'transparent', color: ind.ink,
+    borderRadius: 0, cursor: 'pointer', padding: 0, flex: 'none',
+  };
+  const chipStyle = (active) => ({
+    fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5, letterSpacing: '.08em',
+    textTransform: 'uppercase', padding: '5px 10px', borderRadius: 0, cursor: 'pointer',
+    whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6,
+    background: active ? ind.accent : 'transparent',
+    color: active ? ind.accentInk : ind.inkGhost,
+    border: `1px solid ${active ? ind.accent : ind.hairline}`,
+    transition: 'background .15s ease, color .15s ease',
+  });
+
+  const byTypeRows = LEAVE_TYPES
+    .map((type) => ({ type, count: stats.byType[type] || 0, meta: metaFor(type) }))
+    .filter((row) => row.count > 0);
+  const byTypeTotal = byTypeRows.reduce((sum, row) => sum + row.count, 0) || 1;
 
   return (
-    <div className="space-y-6">
-      {/* Messages */}
-      {successMessage && (
-        <div className={`p-4 rounded-lg border-l-4 border-green-500 ${isDarkMode ? 'bg-green-900/20' : 'bg-green-50'} flex items-center space-x-2`}>
-          <CheckCircle className="w-5 h-5 text-green-500" />
-          <p className={`font-medium ${text.primary}`}>{successMessage}</p>
-        </div>
-      )}
-      {errorMessage && (
-        <div className={`p-4 rounded-lg border-l-4 border-red-500 ${isDarkMode ? 'bg-red-900/20' : 'bg-red-50'} flex items-center space-x-2`}>
-          <AlertCircle className="w-5 h-5 text-red-500" />
-          <p className={`font-medium ${text.primary}`}>{errorMessage}</p>
-        </div>
-      )}
+    <div
+      data-screen-label="Leave Management"
+      style={{
+        border: `1px solid ${ind.hairline}`,
+        background: ind.ground,
+        color: ind.ink,
+        fontFamily: BODY,
+        fontSize: 14,
+        borderRadius: 0,
+      }}
+    >
+      {/* ── TICKER ───────────────────────────────────────────────── */}
+      <div
+        style={{
+          height: 44, background: ind.tickerBg, color: ind.tickerInk,
+          borderBottom: `1px solid ${ind.hairline}`,
+          display: 'flex', alignItems: 'stretch', overflowX: 'auto', overflowY: 'hidden',
+        }}
+      >
+        <TickerCell ind={ind}>
+          <LiveClock ind={ind} live={leaveRequests.length > 0} />
+        </TickerCell>
+        <TickerCell ind={ind} label={t('leave.totalRequests', 'Total Requests')} value={stats.total} />
+        <TickerCell
+          ind={ind}
+          label={t('leave.pending', 'Pending')}
+          value={stats.pending}
+          // The one figure on the strip that asks somebody to decide.
+          valueColor={stats.pending > 0 ? ind.tickerUp : undefined}
+        />
+        <TickerCell ind={ind} label={t('leave.approvedDaysYear', 'Approved Days (Year)')} value={stats.approvedDays} />
+        <TickerCell ind={ind} label={t('leave.onLeaveToday', 'On Leave Today')} value={onLeaveToday} />
+        <TickerCell ind={ind} label={t('leave.month', 'Month')} value={monthLabel} />
 
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h2 className={`text-2xl font-bold ${text.primary}`}>{t('nav.leaveManagement', 'Leave Management')}</h2>
-            <PageLiveClock
-              textClassName={text.primary}
-              separatorClassName={text.secondary}
-              loading={loading}
-              isDarkMode={isDarkMode}
-              fetchLabel={t('common.fetching', 'Fetching')}
-            />
-          </div>
-          <p className={`text-sm ${text.secondary} mt-1`}>{t('leave.subtitle', 'Plan, request and approve time off on a shared calendar.')}</p>
+        <div
+          style={{
+            flex: 1, minWidth: 'max-content', display: 'flex', alignItems: 'center',
+            justifyContent: 'flex-end', gap: 8, padding: '0 14px',
+            borderLeft: `1px solid ${ind.tickerRule}`,
+          }}
+        >
+          <FetchElapsedPill active={loading} isDarkMode label={t('common.fetching', 'Fetching')} />
+          {isAdmin && scope === 'all' ? (
+            <FlatSelect
+              ind={ind}
+              onDark
+              value={employeeFilter || 'all'}
+              onChange={(e) => setEmployeeFilter(e.target.value)}
+              aria-label={t('leave.employee', 'Employee')}
+              style={{ maxWidth: 220 }}
+            >
+              <option value="all" style={{ color: '#1d1f20' }}>{t('leave.allEmployees', 'All Employees')}</option>
+              {pickerEmployees.map(emp => (
+                <option key={emp.id} value={String(emp.id)} style={{ color: '#1d1f20' }}>
+                  {getDemoEmployeeName(emp, t)}
+                </option>
+              ))}
+            </FlatSelect>
+          ) : (
+            <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+              {t('leave.mine', 'My Leave')}
+            </span>
+          )}
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          {isAdmin && (
-            <div className={`flex rounded-lg border ${border.primary} overflow-hidden`}>
-              <button
-                onClick={() => setScope('all')}
-                className={`px-3 py-2 text-sm font-medium cursor-pointer transition-colors ${scope === 'all' ? 'bg-blue-600 text-white' : `${bg.secondary} ${text.secondary}`}`}
-              >
-                {t('leave.everyone', 'Everyone')}
-              </button>
-              <button
-                onClick={() => setScope('mine')}
-                className={`px-3 py-2 text-sm font-medium cursor-pointer transition-colors ${scope === 'mine' ? 'bg-blue-600 text-white' : `${bg.secondary} ${text.secondary}`}`}
-              >
-                {t('leave.mine', 'My Leave')}
-              </button>
+      </div>
+
+      {/* ── BANDS ────────────────────────────────────────────────── */}
+      <div className="flex flex-col lg:flex-row items-stretch">
+
+        {/* ── LEFT — calendar and ledger. min-w-0 or the grid wins. ─ */}
+        <div
+          className="flex-1 min-w-0 flex flex-col"
+          style={{ padding: '22px 24px 20px', gap: 16, borderRight: `1px solid ${ind.hairline}` }}
+        >
+          {successMessage && (
+            <div
+              className="flex items-center justify-between"
+              style={{ border: `1px solid ${ind.hairline}`, background: ind.accentWash, padding: '9px 12px', gap: 10 }}
+            >
+              <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink }}>{successMessage}</span>
+              <Check size={14} strokeWidth={1.5} style={{ flex: 'none', color: ind.accentDeep }} />
             </div>
           )}
-          {isAdmin && (
-            <button
-              onClick={openAdminRequest}
-              className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-all cursor-pointer border ${border.primary}
-                ${isDarkMode ? 'bg-emerald-900/30 text-emerald-200 hover:bg-emerald-900/50 border-emerald-700' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border-emerald-300'}`}
-            >
-              <UserPlus className="h-4 w-4" />
-              <span>{t('leave.addForEmployee', 'Add for Employee')}</span>
-            </button>
+          {errorMessage && (
+            <div style={{ border: `1px solid ${ind.ink}`, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <AlertCircle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
+              <div style={{ minWidth: 0 }}>
+                <Kicker ind={ind} color={ind.ink}>{t('common.error', 'Error')}</Kicker>
+                <p style={{ ...caption, marginTop: 4 }}>{errorMessage}</p>
+              </div>
+            </div>
           )}
-          <button
-            onClick={openRequestForSelection}
-            className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-all cursor-pointer
-              ${selectionComplete
-                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg ring-2 ring-blue-400 ring-offset-2 ring-offset-transparent scale-[1.02] animate-pulse'
-                : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-            title={selectionComplete
-              ? t('leave.rangeReady', 'Dates selected — click to request leave')
-              : t('leave.selectDatesFirst', 'Click a start and end date on the calendar first.')}
-          >
-            <Plus className="h-4 w-4" />
-            <span>{t('leave.requestLeave', 'Request Leave')}</span>
-            {selectionComplete && (
-              <span className="hidden sm:inline text-xs opacity-90 ml-1">
-                ({selectionDayCount} {t('leave.days', 'days')})
-              </span>
-            )}
-          </button>
-        </div>
-      </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatTile IconComponent={CalendarDays} label={t('leave.totalRequests', 'Total Requests')} value={stats.total} colorKey="blue" />
-        <StatTile IconComponent={Hourglass} label={t('leave.pending', 'Pending')} value={stats.pending} colorKey="amber" />
-        <StatTile IconComponent={CalendarCheck} label={t('leave.approvedDaysYear', 'Approved Days (Year)')} value={stats.approvedDays} colorKey="green" />
-        <StatTile IconComponent={UserMinus} label={t('leave.onLeaveToday', 'On Leave Today')} value={requestsForDay(toKey(new Date())).filter(r => r.status === 'approved').length} colorKey="purple" />
-      </div>
+          {/* ── PAGE HEAD ─────────────────────────────────────────── */}
+          <div className="flex flex-wrap items-end justify-between" style={{ gap: 16 }}>
+            <div style={{ minWidth: 0 }}>
+              <h1 style={{ fontFamily: BODY, fontSize: 32, fontWeight: 400, margin: 0, color: ind.ink, lineHeight: 1.1 }}>
+                {t('nav.leaveManagement', 'Leave Management')}
+              </h1>
+              <p style={{ ...caption, marginTop: 6 }}>
+                {t('leave.subtitle', 'Plan, request and approve time off on a shared calendar.')}
+              </p>
+            </div>
 
-      {/* Calendar */}
-      <div className={`${bg.secondary} rounded-xl border ${border.primary} overflow-hidden shadow-lg ${isDarkMode ? 'shadow-black/20 ring-1 ring-white/5' : 'shadow-blue-500/10 ring-1 ring-blue-500/10'}`}>
-        {/* Calendar header */}
-        <div className={`flex items-center justify-between p-4 border-b ${border.primary} ${isDarkMode ? 'bg-gradient-to-r from-blue-950/60 to-indigo-950/40' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}`}>
-          <div className="flex items-center gap-2">
-            <button onClick={prevMonth} className={`p-2 rounded-lg ${hover.bg} cursor-pointer`} aria-label="Previous month">
-              <ChevronLeft className={`w-5 h-5 ${text.primary}`} />
-            </button>
-            <h3 className={`text-lg font-semibold ${text.primary} w-48 text-center`}>
-              {t(`months.${MONTHS[currentMonth.getMonth()].toLowerCase()}`, MONTHS[currentMonth.getMonth()])} {currentMonth.getFullYear()}
-            </h3>
-            <button onClick={nextMonth} className={`p-2 rounded-lg ${hover.bg} cursor-pointer`} aria-label="Next month">
-              <ChevronRight className={`w-5 h-5 ${text.primary}`} />
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            {(selStart || selEnd) && (
-              <button
-                onClick={() => { setSelStart(null); setSelEnd(null); }}
-                className={`px-3 py-1.5 text-sm rounded-lg ${hover.bg} ${text.secondary} cursor-pointer flex items-center gap-1`}
+            <div className="flex flex-wrap items-center" style={{ gap: 8 }}>
+              {isAdmin && (
+                <Seg
+                  ind={ind}
+                  ariaLabel={t('leave.employee', 'Employee')}
+                  value={scope}
+                  onChange={setScope}
+                  options={[
+                    { value: 'all', label: t('leave.everyone', 'Everyone') },
+                    { value: 'mine', label: t('leave.mine', 'My Leave') },
+                  ]}
+                />
+              )}
+              {isAdmin && (
+                <Btn ind={ind} onClick={openAdminRequest} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <UserPlus size={13} strokeWidth={1.5} />
+                  {t('leave.addForEmployee', 'Add for Employee')}
+                </Btn>
+              )}
+              {/* The single solid object on this screen. */}
+              <Btn
+                ind={ind}
+                variant="primary"
+                onClick={openRequestForSelection}
+                title={selectionComplete
+                  ? t('leave.rangeReady', 'Dates selected — click to request leave')
+                  : t('leave.selectDatesFirst', 'Click a start and end date on the calendar first.')}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                <X className="w-4 h-4" /> {t('leave.clearSelection', 'Clear selection')}
-              </button>
-            )}
-            <button onClick={goToToday} className={`px-3 py-1.5 text-sm rounded-lg border ${border.primary} ${text.primary} ${hover.bg} cursor-pointer`}>
-              {t('leave.today', 'Today')}
-            </button>
+                <Plus size={13} strokeWidth={1.5} />
+                {t('leave.requestLeave', 'Request Leave')}
+                {selectionComplete && (
+                  <span style={{ opacity: 0.8, fontVariantNumeric: 'tabular-nums' }}>
+                    {`· ${selectionDayCount} ${t('leave.days', 'days')}`}
+                  </span>
+                )}
+              </Btn>
+            </div>
           </div>
-        </div>
 
-        {/* Selection guide — step indicator */}
-        <div className={`px-4 py-3 border-b ${border.primary} ${isDarkMode ? 'bg-gray-800/50' : 'bg-blue-50/60'}`}>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="flex items-center gap-2 flex-1">
-              {[1, 2].map((step) => {
-                const active = (step === 1 && selectionPhase === 'pickStart')
-                  || (step === 2 && selectionPhase === 'pickEnd');
-                const done = (step === 1 && selectionPhase !== 'pickStart')
-                  || (step === 2 && selectionPhase === 'ready');
+          {/* ── CALENDAR ──────────────────────────────────────────── */}
+          <Blueprint ind={ind} style={{ padding: 0, overflow: 'hidden' }}>
+            {/* Month bar */}
+            <div
+              className="flex flex-wrap items-center justify-between"
+              style={{ gap: 10, padding: '12px 14px', borderBottom: `1px solid ${ind.hairline}` }}
+            >
+              <div className="flex items-center" style={{ gap: 8 }}>
+                <button type="button" onClick={prevMonth} aria-label={t('common.previous', 'Previous')} style={iconBtnStyle}>
+                  <ChevronLeft size={14} strokeWidth={1.5} />
+                </button>
+                <span
+                  style={{
+                    fontFamily: DISPLAY, fontWeight: 600, fontSize: 16, letterSpacing: '.06em',
+                    textTransform: 'uppercase', color: ind.ink, minWidth: 168, textAlign: 'center',
+                  }}
+                >
+                  {monthLabel}
+                </span>
+                <button type="button" onClick={nextMonth} aria-label={t('common.next', 'Next')} style={iconBtnStyle}>
+                  <ChevronRight size={14} strokeWidth={1.5} />
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center" style={{ gap: 8 }}>
+                {(selStart || selEnd) && (
+                  <Btn ind={ind} onClick={() => { setSelStart(null); setSelEnd(null); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <X size={12} strokeWidth={1.5} />
+                    {t('leave.clearSelection', 'Clear selection')}
+                  </Btn>
+                )}
+                <Btn ind={ind} onClick={goToToday}>{t('leave.today', 'Today')}</Btn>
+              </div>
+            </div>
+
+            {/* Selection guide — two steps, read through weight not colour */}
+            <div
+              className="flex flex-col sm:flex-row sm:items-center"
+              style={{ gap: 12, padding: '10px 14px', borderBottom: `1px solid ${ind.rule}`, background: ind.accentWash }}
+            >
+              <div className="flex items-center" style={{ gap: 8, flex: 'none' }}>
+                {[1, 2].map((step) => {
+                  const active = (step === 1 && selectionPhase === 'pickStart')
+                    || (step === 2 && selectionPhase === 'pickEnd');
+                  const done = (step === 1 && selectionPhase !== 'pickStart')
+                    || (step === 2 && selectionPhase === 'ready');
+                  return (
+                    <_React.Fragment key={step}>
+                      {step === 2 && <ArrowRight size={13} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkFaint }} />}
+                      <span
+                        className="inline-flex items-center"
+                        style={{
+                          gap: 7, padding: '4px 9px',
+                          border: `1px solid ${active || done ? ind.accent : ind.hairline}`,
+                          background: done ? ind.accent : 'transparent',
+                          color: done ? ind.accentInk : active ? ind.ink : ind.inkFaint,
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 15, height: 15, flex: 'none', display: 'inline-flex',
+                            alignItems: 'center', justifyContent: 'center',
+                            border: `1px solid ${done ? ind.accentInk : active ? ind.accent : ind.hairline}`,
+                            fontFamily: DISPLAY, fontWeight: 600, fontSize: 9.5, lineHeight: 1,
+                          }}
+                        >
+                          {done ? '✓' : step}
+                        </span>
+                        <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase' }}>
+                          {step === 1
+                            ? t('leave.stepPickStart', 'Click your first day')
+                            : t('leave.stepPickEnd', 'Click your last day')}
+                        </span>
+                      </span>
+                    </_React.Fragment>
+                  );
+                })}
+              </div>
+
+              <p className="inline-flex items-center" style={{ ...caption, fontSize: 11.5, gap: 6, minWidth: 0 }}>
+                {selectionPhase === 'ready' ? (
+                  <>
+                    <Check size={13} strokeWidth={1.5} style={{ flex: 'none', color: ind.accentDeep }} />
+                    {`${t('leave.selectionRange', 'Selected')}: ${selStart} → ${selEnd} · ${selectionDayCount} ${t('leave.days', 'days')}`}
+                  </>
+                ) : (
+                  <>
+                    <MousePointerClick size={13} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkFaint }} />
+                    {selectionPhase === 'pickEnd'
+                      ? t('leave.selectEndHint', 'Now click the end date (or the same day for a single day).')
+                      : t('leave.selectStartHint', 'Tip: click a day to start a leave request, then click the end day.')}
+                  </>
+                )}
+              </p>
+            </div>
+
+            {/* Weekday header */}
+            <div className="grid grid-cols-7" style={{ borderBottom: `1px solid ${ind.hairline}` }}>
+              {WEEKDAYS.map((d, i) => {
+                const isWeekend = i === 0 || i === 6;
                 return (
-                  <React.Fragment key={step}>
-                    {step === 2 && <ArrowRight className={`w-4 h-4 shrink-0 ${text.tertiary}`} />}
-                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-colors
-                      ${done ? (isDarkMode ? 'bg-green-900/40 text-green-300' : 'bg-green-100 text-green-800')
-                        : active ? (isDarkMode ? 'bg-blue-900/50 text-blue-200 ring-1 ring-blue-500' : 'bg-blue-100 text-blue-800 ring-1 ring-blue-400')
-                          : `${bg.tertiary} ${text.tertiary}`}`}>
-                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold
-                        ${done ? 'bg-green-600 text-white' : active ? 'bg-blue-600 text-white' : isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                        {done ? '✓' : step}
-                      </span>
-                      <span>
-                        {step === 1
-                          ? t('leave.stepPickStart', 'Click your first day')
-                          : t('leave.stepPickEnd', 'Click your last day')}
-                      </span>
-                    </div>
-                  </React.Fragment>
+                  <div
+                    key={d}
+                    style={{
+                      padding: '7px 4px', textAlign: 'center',
+                      borderRight: i === 6 ? 'none' : `1px solid ${ind.rule}`,
+                      background: isWeekend ? ind.hover : 'transparent',
+                    }}
+                  >
+                    <span
+                      className="block"
+                      style={{
+                        fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.14em',
+                        textTransform: 'uppercase', color: isWeekend ? ind.inkFaint : ind.inkMuted,
+                      }}
+                    >
+                      {t(`weekdaysShort.${d.toLowerCase()}`, d)}
+                    </span>
+                    <span
+                      className="hidden md:block"
+                      style={{ fontFamily: BODY, fontSize: 10, color: ind.inkFaint, marginTop: 1 }}
+                    >
+                      {t(`weekdays.${d.toLowerCase()}`, WEEKDAY_FULL[i])}
+                    </span>
+                  </div>
                 );
               })}
             </div>
-            <p className={`text-xs sm:text-sm ${selectionPhase === 'ready' ? (isDarkMode ? 'text-green-300' : 'text-green-700') : text.secondary}`}>
-              {selectionPhase === 'ready' && (
-                <span className="inline-flex items-center gap-1 font-medium">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  {t('leave.selectionRange', 'Selected')}: {selStart} → {selEnd}
-                  <span className={`ml-1 ${text.tertiary}`}>({selectionDayCount} {t('leave.days', 'days')})</span>
-                </span>
+
+            {/* Days grid — the shell always renders; the fetch overlays it */}
+            <div style={{ position: 'relative' }}>
+              {loading && (
+                <div
+                  style={{
+                    position: 'absolute', inset: 0, zIndex: 10, display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', gap: 10,
+                    background: ind.dark ? 'rgba(21,24,27,.6)' : 'rgba(242,242,243,.65)',
+                  }}
+                >
+                  <Loader2 size={18} strokeWidth={1.5} className="animate-spin" style={{ color: ind.inkMuted }} />
+                </div>
               )}
-              {selectionPhase === 'pickEnd' && (
-                <span className="inline-flex items-center gap-1">
-                  <MousePointerClick className="w-3.5 h-3.5" />
-                  {t('leave.selectEndHint', 'Now click the end date (or the same day for a single day).')}
-                </span>
-              )}
-              {selectionPhase === 'pickStart' && (
-                <span className="inline-flex items-center gap-1">
-                  <MousePointerClick className="w-3.5 h-3.5" />
-                  {t('leave.selectStartHint', 'Tip: click a day to start a leave request, then click the end day.')}
-                </span>
-              )}
+
+              <div className="grid grid-cols-7">
+                {weeks.flat().map((cell, idx) => {
+                  const dayRequests = leaveByDay.get(cell.key) || [];
+                  const selected = inSelection(cell.key);
+                  const isRangeStart = selStart === cell.key;
+                  const isRangeEnd = selEnd === cell.key;
+                  const isInRange = selected && Boolean(selEnd);
+                  const isEdge = isRangeStart || isRangeEnd || (selected && !selEnd);
+
+                  return (
+                    <button
+                      type="button"
+                      key={cell.key + idx}
+                      onClick={() => handleDayClick(cell.key)}
+                      title={cell.inMonth && selectionPhase !== 'ready'
+                        ? t('leave.clickToSelect', 'Click to select this day')
+                        : undefined}
+                      className="relative text-left min-h-[96px] md:min-h-[120px] group"
+                      style={{
+                        padding: 7,
+                        borderBottom: `1px solid ${ind.rule}`,
+                        borderRight: (idx + 1) % 7 === 0 ? 'none' : `1px solid ${ind.rule}`,
+                        borderRadius: 0,
+                        borderTop: 'none',
+                        borderLeft: 'none',
+                        cursor: 'pointer',
+                        // Selection is a wash plus an inset rule — never a filled block.
+                        background: selected
+                          ? ind.accentWash
+                          : !cell.inMonth
+                            ? 'transparent'
+                            : cell.isWeekend ? ind.hover : 'transparent',
+                        boxShadow: isEdge ? `inset 0 0 0 1px ${ind.accent}` : undefined,
+                        opacity: cell.inMonth ? 1 : 0.45,
+                        transition: 'background .15s ease',
+                      }}
+                    >
+                      {isInRange && (
+                        <span
+                          aria-hidden="true"
+                          style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 2, background: ind.accent }}
+                        />
+                      )}
+
+                      <div className="flex items-center justify-between" style={{ gap: 4 }}>
+                        <span
+                          style={{
+                            minWidth: 22, height: 20, padding: '0 4px',
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            fontFamily: DISPLAY, fontWeight: 600, fontSize: 13,
+                            fontVariantNumeric: 'tabular-nums',
+                            // Today is the only filled square in the grid.
+                            background: cell.isToday ? ind.accent : 'transparent',
+                            color: cell.isToday ? ind.accentInk : cell.inMonth ? ind.ink : ind.inkFaint,
+                          }}
+                        >
+                          {cell.day}
+                        </span>
+
+                        <span className="flex items-center" style={{ gap: 4 }}>
+                          {(isRangeStart || (isRangeEnd && selEnd)) && (
+                            <span
+                              style={{
+                                fontFamily: DISPLAY, fontWeight: 600, fontSize: 9, letterSpacing: '.12em',
+                                textTransform: 'uppercase', color: ind.accentDeep,
+                              }}
+                            >
+                              {isRangeStart ? t('leave.rangeStart', 'Start') : t('leave.rangeEnd', 'End')}
+                            </span>
+                          )}
+                          {dayRequests.length > 2 && (
+                            <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, color: ind.inkFaint, fontVariantNumeric: 'tabular-nums' }}>
+                              {`+${dayRequests.length - 2}`}
+                            </span>
+                          )}
+                        </span>
+                      </div>
+
+                      <div style={{ marginTop: 5, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        {dayRequests.slice(0, 2).map(req => {
+                          const meta = metaFor(req.leave_type);
+                          const rejected = req.status === 'rejected';
+                          return (
+                            <span
+                              key={req.id}
+                              className="block truncate"
+                              style={{
+                                fontFamily: BODY, fontSize: 10, lineHeight: 1.5,
+                                padding: '1px 5px',
+                                // The type reads off the ramp on the left edge;
+                                // a pending request keeps a dashed outline.
+                                border: `1px ${req.status === 'pending' ? 'dashed' : 'solid'} ${ind.hairline}`,
+                                borderLeftWidth: 3,
+                                borderLeftStyle: 'solid',
+                                borderLeftColor: meta.tone,
+                                color: ind.ink,
+                                opacity: rejected ? 0.45 : 1,
+                                textDecoration: rejected ? 'line-through' : 'none',
+                              }}
+                              title={`${employeeName(req)} • ${meta.label} • ${t(`status.${req.status}`, req.status)}`}
+                            >
+                              {isAdmin && scope === 'all' ? `${employeeName(req).split(' ')[0]} · ${meta.label}` : meta.label}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Once a range is picked, the way out of the calendar */}
+            {selectionComplete && (
+              <div
+                className="flex flex-col sm:flex-row sm:items-center"
+                style={{ gap: 12, padding: '12px 14px', borderTop: `1px solid ${ind.hairline}`, background: ind.accentWash }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <ColumnHeading ind={ind} style={{ fontSize: 13 }}>
+                    {t('leave.rangeReady', 'Dates selected — ready to request leave')}
+                  </ColumnHeading>
+                  <p style={{ ...caption, fontSize: 11.5, marginTop: 4 }}>
+                    {`${selStart} → ${selEnd} · ${selectionDayCount} ${t('leave.days', 'days')}`}
+                  </p>
+                </div>
+                <Btn
+                  ind={ind}
+                  variant="primary"
+                  onClick={openRequestForSelection}
+                  style={{ flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px' }}
+                >
+                  <Plus size={13} strokeWidth={1.5} />
+                  {t('leave.requestLeaveNow', 'Request Leave Now')}
+                </Btn>
+              </div>
+            )}
+          </Blueprint>
+
+          {/* ── LEDGER ────────────────────────────────────────────── */}
+          <Blueprint ind={ind} style={{ padding: 0 }}>
+            <div
+              className="flex flex-wrap items-baseline justify-between"
+              style={{ gap: 10, padding: '13px 16px', borderBottom: `1px solid ${ind.hairline}` }}
+            >
+              <ColumnHeading ind={ind}>{t('leave.requestsTitle', 'Leave Requests')}</ColumnHeading>
+              <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, color: ind.inkMuted, fontVariantNumeric: 'tabular-nums' }}>
+                {`${visibleRequests.length} / ${leaveRequests.length}`}
+              </span>
+            </div>
+
+            {visibleRequests.length === 0 ? (
+              <p style={{ ...caption, padding: '32px 16px', textAlign: 'center' }}>
+                {t('leave.noRequests', 'No leave requests yet.')}
+              </p>
+            ) : (
+              [...visibleRequests]
+                .sort((a, b) => normalize(b.start_date).localeCompare(normalize(a.start_date)))
+                .map((req, index) => {
+                  const meta = metaFor(req.leave_type);
+                  const Icon = meta.Icon;
+                  const canModerate = isAdmin && scope === 'all' && req.status === 'pending';
+                  const rejected = req.status === 'rejected';
+                  return (
+                    <div
+                      key={req.id}
+                      className="flex flex-col sm:flex-row sm:items-center"
+                      style={{
+                        gap: 12, padding: '12px 16px',
+                        borderTop: index === 0 ? 'none' : `1px solid ${ind.rule}`,
+                        opacity: rejected ? 0.6 : 1,
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 30, height: 30, flex: 'none', display: 'inline-flex',
+                          alignItems: 'center', justifyContent: 'center',
+                          border: `1px solid ${ind.hairline}`, borderLeft: `3px solid ${meta.tone}`,
+                          color: ind.ink,
+                        }}
+                      >
+                        <Icon size={14} strokeWidth={1.5} />
+                      </span>
+
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="flex flex-wrap items-center" style={{ gap: 8 }}>
+                          {isAdmin && scope === 'all' && (
+                            <span style={{ fontFamily: BODY, fontSize: 14, color: ind.ink }}>{employeeName(req)}</span>
+                          )}
+                          <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted }}>{meta.label}</span>
+                          <Tag ind={ind} variant={STATUS_VARIANT[req.status] || 'neutral'}>
+                            {t(`status.${req.status}`, req.status)}
+                          </Tag>
+                        </div>
+
+                        <div className="flex flex-wrap items-center" style={{ gap: 10, marginTop: 4 }}>
+                          <span
+                            className="inline-flex items-center"
+                            style={{
+                              gap: 5, fontFamily: DISPLAY, fontWeight: 600, fontSize: 11,
+                              letterSpacing: '.06em', color: ind.inkMuted, fontVariantNumeric: 'tabular-nums',
+                            }}
+                          >
+                            <CalendarDays size={12} strokeWidth={1.5} />
+                            {`${normalize(req.start_date)} → ${normalize(req.end_date || req.start_date)}`}
+                          </span>
+                          {req.days_count != null && (
+                            <span
+                              className="inline-flex items-center"
+                              style={{
+                                gap: 5, fontFamily: DISPLAY, fontWeight: 600, fontSize: 11,
+                                letterSpacing: '.06em', color: ind.inkMuted, fontVariantNumeric: 'tabular-nums',
+                              }}
+                            >
+                              <Clock size={12} strokeWidth={1.5} />
+                              {`${req.days_count} ${t('leave.days', 'days')}`}
+                            </span>
+                          )}
+                        </div>
+
+                        {req.reason && (
+                          <p className="truncate" style={{ fontFamily: BODY, fontSize: 12, color: ind.inkFaint, margin: '4px 0 0' }}>
+                            {req.reason}
+                          </p>
+                        )}
+                      </div>
+
+                      {canModerate && (
+                        <div className="flex items-center" style={{ gap: 7, flex: 'none' }}>
+                          <Btn ind={ind} variant="primary" onClick={() => handleApprove(req)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                            <Check size={12} strokeWidth={1.5} />
+                            {t('leave.approve', 'Approve')}
+                          </Btn>
+                          <Btn ind={ind} onClick={() => setRejectTarget(req)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, borderColor: ind.ink }}>
+                            <X size={12} strokeWidth={1.5} />
+                            {t('leave.reject', 'Reject')}
+                          </Btn>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+            )}
+          </Blueprint>
+        </div>
+
+        {/* ── RIGHT — the decision column, 340px ─────────────────── */}
+        <aside
+          className="w-full lg:w-[340px] lg:shrink-0 flex flex-col"
+          style={{ background: ind.chrome, overflow: 'hidden' }}
+        >
+          <div style={{ padding: '20px 20px 16px', borderBottom: `1px solid ${ind.hairline}` }}>
+            <Kicker ind={ind}>{t('leave.pending', 'Pending')}</Kicker>
+            <div className="flex items-baseline" style={{ gap: 8, margin: '4px 0 0' }}>
+              {/* The one figure on this screen worth watching move. */}
+              <span style={{ ...figure(52, ind.ink), lineHeight: 0.92 }}>
+                <SlidingNumber value={Number(stats.pending) || 0} />
+              </span>
+              <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>
+                {t('leave.ofNRequests', 'of {n} requests').replace('{n}', String(stats.total))}
+              </span>
+            </div>
+            <p style={columnNote}>
+              {stats.pending > 0 && isAdmin
+                ? t('leave.pendingNote', 'Approve or reject them on their row in the ledger.')
+                : t('leave.nothingPending', 'Nothing is waiting on a decision.')}
             </p>
           </div>
-        </div>
 
-        {/* Weekday header — full-width band with weekend emphasis */}
-        <div className={`grid grid-cols-7 border-b ${border.primary} ${isDarkMode ? 'bg-gray-900/80' : 'bg-gray-100'}`}>
-          {WEEKDAYS.map((d, i) => {
-            const isWeekend = i === 0 || i === 6;
-            return (
-              <div
-                key={d}
-                className={`px-1 py-3 text-center border-r last:border-r-0 ${border.primary}
-                  ${isWeekend ? (isDarkMode ? 'bg-gray-800/90' : 'bg-gray-200/80') : ''}`}
-              >
-                <span className={`block text-[10px] sm:text-xs font-bold uppercase tracking-widest
-                  ${isWeekend ? (isDarkMode ? 'text-rose-300' : 'text-rose-600') : text.primary}`}>
-                  {t(`weekdaysShort.${d.toLowerCase()}`, d)}
-                </span>
-                <span className={`hidden md:block text-[10px] mt-0.5 ${isWeekend ? (isDarkMode ? 'text-rose-400/70' : 'text-rose-500/80') : text.tertiary}`}>
-                  {t(`weekdays.${d.toLowerCase()}`, WEEKDAY_FULL[i])}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+          {/* Filters */}
+          <div style={{ padding: '18px 20px 12px', borderBottom: `1px solid ${ind.hairline}` }}>
+            <ColumnHeading ind={ind}>{t('leave.filtersTitle', 'Filters & Legend')}</ColumnHeading>
+          </div>
 
-        {/* Days grid — always render shell; overlay spinner only while fetching */}
-        <div className="relative">
-          {loading && (
-            <div className={`absolute inset-0 z-10 flex items-center justify-center ${isDarkMode ? 'bg-gray-900/50' : 'bg-white/60'} backdrop-blur-[1px]`}>
-              <Loader className="w-8 h-8 animate-spin text-blue-600" />
-            </div>
-          )}
-          <div className="grid grid-cols-7">
-            {weeks.flat().map((cell, idx) => {
-              const dayRequests = leaveByDay.get(cell.key) || [];
-              const selected = inSelection(cell.key);
-              const isRangeStart = selStart === cell.key;
-              const isRangeEnd = selEnd === cell.key;
-              const isInRange = selected && Boolean(selEnd);
-              const isRangeMiddle = isInRange && !isRangeStart && !isRangeEnd;
-              const awaitingEnd = selectionPhase === 'pickEnd' && isRangeStart;
-
-              const cellSurface = (() => {
-                if (isInRange || (selected && !selEnd)) {
-                  if (isDarkMode) {
-                    if (isRangeStart || isRangeEnd) return 'bg-blue-700/45 ring-2 ring-inset ring-blue-400';
-                    if (isRangeMiddle) return 'bg-blue-800/35';
-                    return 'bg-blue-900/40 ring-2 ring-inset ring-blue-500';
-                  }
-                  if (isRangeStart || isRangeEnd) return 'bg-blue-300 ring-2 ring-inset ring-blue-600';
-                  if (isRangeMiddle) return 'bg-blue-200/90';
-                  return 'bg-blue-200 ring-2 ring-inset ring-blue-500';
-                }
-                if (!cell.inMonth) return isDarkMode ? 'bg-gray-900/40' : 'bg-gray-50/70';
-                if (cell.isWeekend) return isDarkMode ? 'bg-gray-800/60' : 'bg-gray-50';
-                return '';
-              })();
-
-              return (
+          <div style={{ padding: '14px 20px', borderBottom: `1px solid ${ind.rule}` }}>
+            <span style={fieldLabelStyle}>{t('leave.statusFilter', 'Status')}</span>
+            <div className="flex flex-wrap" style={{ gap: 6 }}>
+              {[
+                { value: 'all', label: t('leave.allStatuses', 'All') },
+                { value: 'pending', label: t('leave.pending', 'Pending') },
+                { value: 'approved', label: t('status.approved', 'Approved') },
+                { value: 'rejected', label: t('status.rejected', 'Rejected') },
+              ].map(opt => (
                 <button
+                  key={opt.value}
                   type="button"
-                  key={cell.key + idx}
-                  onClick={() => handleDayClick(cell.key)}
-                  title={cell.inMonth && selectionPhase !== 'ready'
-                    ? t('leave.clickToSelect', 'Click to select this day')
-                    : undefined}
-                  className={`relative text-left min-h-[96px] md:min-h-[120px] p-2 border-b border-r ${border.primary} transition-all cursor-pointer group
-                    ${cellSurface}
-                    ${!selected && cell.inMonth ? hover.bg : ''}
-                    ${awaitingEnd ? 'animate-pulse' : ''}
-                  `}
+                  aria-pressed={statusFilter === opt.value}
+                  onClick={() => setStatusFilter(opt.value)}
+                  style={chipStyle(statusFilter === opt.value)}
                 >
-                  {isInRange && (
-                    <span
-                      aria-hidden
-                      className={`pointer-events-none absolute inset-x-0 top-0 h-1
-                        ${isDarkMode ? 'bg-blue-400' : 'bg-blue-500'}
-                        ${isRangeStart ? 'left-1 rounded-l-full' : ''}
-                        ${isRangeEnd ? 'right-1 rounded-r-full' : ''}`}
-                    />
-                  )}
-                  <div className="flex items-center justify-between gap-1 relative z-[1]">
-                    <span className={`inline-flex items-center justify-center min-w-[1.75rem] h-7 px-1 rounded-full text-sm
-                      ${cell.isToday ? 'bg-blue-600 text-white font-bold shadow-sm'
-                        : isInRange ? (isDarkMode ? 'bg-blue-600 text-white font-semibold' : 'bg-blue-600 text-white font-semibold')
-                          : selected && !selEnd ? 'bg-blue-600 text-white font-semibold'
-                            : cell.inMonth ? text.primary : text.tertiary}`}>
-                      {cell.day}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      {isRangeStart && (
-                        <span className={`text-[9px] font-bold uppercase px-1 py-0.5 rounded ${isDarkMode ? 'bg-blue-700 text-blue-100' : 'bg-blue-600 text-white'}`}>
-                          {t('leave.rangeStart', 'Start')}
-                        </span>
-                      )}
-                      {isRangeEnd && selEnd && (
-                        <span className={`text-[9px] font-bold uppercase px-1 py-0.5 rounded ${isDarkMode ? 'bg-blue-700 text-blue-100' : 'bg-blue-600 text-white'}`}>
-                          {t('leave.rangeEnd', 'End')}
-                        </span>
-                      )}
-                      {dayRequests.length > 2 && (
-                        <span className={`text-[10px] ${text.secondary}`}>+{dayRequests.length - 2}</span>
-                      )}
-                    </div>
-                  </div>
-                  {cell.inMonth && selectionPhase === 'pickStart' && dayRequests.length === 0 && (
-                    <span className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 text-[9px] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap ${text.tertiary}`}>
-                      {t('leave.clickToSelect', 'Click to select')}
-                    </span>
-                  )}
-                  <div className="mt-1 space-y-1">
-                    {dayRequests.slice(0, 2).map(req => {
-                      const meta = metaFor(req.leave_type);
-                      return (
-                        <div
-                          key={req.id}
-                          className={`text-[10px] leading-tight px-1.5 py-0.5 rounded border truncate ${meta.chip} ${req.status === 'rejected' ? 'opacity-50 line-through' : ''} ${req.status === 'pending' ? 'border-dashed' : ''}`}
-                          title={`${employeeName(req)} • ${meta.label} • ${t(`status.${req.status}`, req.status)}`}
-                        >
-                          {isAdmin && scope === 'all' ? `${employeeName(req).split(' ')[0]} · ${meta.label}` : meta.label}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  {opt.label}
                 </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* In-calendar CTA once a date range is selected */}
-        {selectionComplete && (
-          <div className={`p-4 border-t ${border.primary} ${isDarkMode ? 'bg-gradient-to-r from-blue-900/40 to-indigo-900/40' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}`}>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm font-semibold ${text.primary}`}>
-                  {t('leave.rangeReady', 'Dates selected — ready to request leave')}
-                </p>
-                <p className={`text-xs ${text.secondary} mt-0.5`}>
-                  {selStart} → {selEnd} · {selectionDayCount} {t('leave.days', 'days')}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={openRequestForSelection}
-                className="shrink-0 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg ring-2 ring-blue-400/60 hover:ring-blue-300 transition-all cursor-pointer animate-pulse hover:animate-none"
-              >
-                <Plus className="w-5 h-5" />
-                {t('leave.requestLeaveNow', 'Request Leave Now')}
-              </button>
+              ))}
             </div>
           </div>
-        )}
-      </div>
 
-      {/* Filters + Legend — below calendar */}
-      <div className={`${bg.secondary} rounded-xl border ${border.primary} overflow-hidden shadow-sm`}>
-        <div className={`px-5 py-3.5 border-b ${border.primary} flex items-center gap-2 ${isDarkMode ? 'bg-gray-800/40' : 'bg-gray-50/80'}`}>
-          <Filter className={`w-4 h-4 ${text.secondary}`} />
-          <h3 className={`text-sm font-semibold ${text.primary}`}>{t('leave.filtersTitle', 'Filters & Legend')}</h3>
-        </div>
-        <div className="p-5 space-y-4">
-          <div className="flex flex-col lg:flex-row lg:items-start gap-4">
-            <div className="flex-1 space-y-3">
-              <div>
-                <p className={`text-xs font-medium uppercase tracking-wide ${text.tertiary} mb-2`}>{t('leave.statusFilter', 'Status')}</p>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { value: 'all', label: t('leave.allStatuses', 'All') },
-                    { value: 'pending', label: t('leave.pending', 'Pending') },
-                    { value: 'approved', label: t('status.approved', 'Approved') },
-                    { value: 'rejected', label: t('status.rejected', 'Rejected') },
-                  ].map(opt => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setStatusFilter(opt.value)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer border
-                        ${statusFilter === opt.value
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                          : `${border.primary} ${bg.tertiary} ${text.secondary} hover:border-blue-400/60`}`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className={`text-xs font-medium uppercase tracking-wide ${text.tertiary} mb-2`}>{t('leave.type', 'Type')}</p>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { value: 'all', label: t('leave.allTypes', 'All Types') },
-                    { value: 'vacation', label: leaveTypeMeta.vacation.label },
-                    { value: 'sick', label: leaveTypeMeta.sick.label },
-                    { value: 'personal', label: leaveTypeMeta.personal.label },
-                  ].map(opt => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setTypeFilter(opt.value)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer border flex items-center gap-1.5
-                        ${typeFilter === opt.value
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                          : `${border.primary} ${bg.tertiary} ${text.secondary} hover:border-blue-400/60`}`}
-                    >
-                      {opt.value !== 'all' && <span className={`w-2 h-2 rounded-full ${metaFor(opt.value).dot}`} />}
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {isAdmin && scope === 'all' && (
-                <div>
-                  <p className={`text-xs font-medium uppercase tracking-wide ${text.tertiary} mb-2`}>{t('leave.employee', 'Employee')}</p>
-                  <select
-                    value={employeeFilter || 'all'}
-                    onChange={(e) => setEmployeeFilter(e.target.value)}
-                    className={`w-full sm:w-auto min-w-[200px] px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary} text-sm`}
+          <div style={{ padding: '14px 20px', borderBottom: `1px solid ${ind.rule}` }}>
+            <span style={fieldLabelStyle}>{t('leave.type', 'Type')}</span>
+            <div className="flex flex-wrap" style={{ gap: 6 }}>
+              {[
+                { value: 'all', label: t('leave.allTypes', 'All Types') },
+                { value: 'vacation', label: leaveTypeMeta.vacation.label },
+                { value: 'sick', label: leaveTypeMeta.sick.label },
+                { value: 'personal', label: leaveTypeMeta.personal.label },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  aria-pressed={typeFilter === opt.value}
+                  onClick={() => setTypeFilter(opt.value)}
+                  style={chipStyle(typeFilter === opt.value)}
+                >
+                  {opt.value !== 'all' && (
+                    <span aria-hidden="true" style={{ width: 7, height: 7, flex: 'none', background: metaFor(opt.value).tone }} />
+                  )}
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Legend, which is also the breakdown — one thing, not two. */}
+          <div style={{ padding: '18px 20px 12px', borderBottom: `1px solid ${ind.hairline}` }}>
+            <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+              <ColumnHeading ind={ind} style={{ fontSize: 13 }}>{t('leave.legendTitle', 'Legend')}</ColumnHeading>
+              <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, color: ind.inkMuted }}>
+                {t('leave.byType', 'By type')}
+              </span>
+            </div>
+          </div>
+
+          {byTypeRows.length === 0 ? (
+            <div style={{ padding: '14px 20px', borderBottom: `1px solid ${ind.rule}` }}>
+              <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted }}>
+                {t('leave.noRequests', 'No leave requests yet.')}
+              </p>
+            </div>
+          ) : byTypeRows.map((row) => (
+            <div key={row.type} style={{ padding: '11px 20px', borderBottom: `1px solid ${ind.rule}` }}>
+              <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+                <span className="inline-flex items-center" style={{ gap: 7, minWidth: 0 }}>
+                  <span aria-hidden="true" style={{ width: 8, height: 8, flex: 'none', background: row.meta.tone }} />
+                  <span
+                    style={{
+                      fontFamily: BODY, fontSize: 12.5, color: ind.ink, minWidth: 0,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}
                   >
-                    <option value="all">{t('leave.allEmployees', 'All Employees')}</option>
-                    {pickerEmployees.map(emp => (
-                      <option key={emp.id} value={String(emp.id)}>{getDemoEmployeeName(emp, t)}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-            <div className={`lg:w-56 shrink-0 rounded-lg border ${border.primary} p-3 ${isDarkMode ? 'bg-gray-900/30' : 'bg-white/60'}`}>
-              <p className={`text-xs font-medium uppercase tracking-wide ${text.tertiary} mb-2`}>{t('leave.legendTitle', 'Legend')}</p>
-              <div className="space-y-2">
-                {['vacation', 'sick', 'personal'].map(type => (
-                  <div key={type} className="flex items-center gap-2">
-                    <span className={`w-3 h-3 rounded-full shrink-0 ${metaFor(type).dot}`} />
-                    <span className={`text-xs ${text.secondary}`}>{metaFor(type).label}</span>
-                  </div>
-                ))}
-                <div className={`pt-2 mt-2 border-t ${border.primary} space-y-1.5`}>
-                  <div className="flex items-center gap-2">
-                    <span className={`w-8 h-3 rounded border border-dashed ${isDarkMode ? 'border-amber-500/60' : 'border-amber-500'}`} />
-                    <span className={`text-xs ${text.secondary}`}>{t('leave.pending', 'Pending')}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`w-8 h-3 rounded ${isDarkMode ? 'bg-green-900/50 border border-green-700' : 'bg-green-100 border border-green-300'}`} />
-                    <span className={`text-xs ${text.secondary}`}>{t('status.approved', 'Approved')}</span>
-                  </div>
-                </div>
+                    {row.meta.label}
+                  </span>
+                </span>
+                <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, color: ind.ink, fontVariantNumeric: 'tabular-nums' }}>
+                  {row.count}
+                </span>
+              </div>
+              <div style={{ marginTop: 6 }}>
+                <Bar ind={ind} value={row.count / byTypeTotal} fill={row.meta.tone} height={6} />
               </div>
             </div>
+          ))}
+
+          {/* How status is drawn, so the calendar chips need no caption. */}
+          <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span className="inline-flex items-center" style={{ gap: 8 }}>
+              <span aria-hidden="true" style={{ width: 26, height: 12, flex: 'none', border: `1px dashed ${ind.hairline}` }} />
+              <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted }}>{t('leave.pending', 'Pending')}</span>
+            </span>
+            <span className="inline-flex items-center" style={{ gap: 8 }}>
+              <span aria-hidden="true" style={{ width: 26, height: 12, flex: 'none', border: `1px solid ${ind.hairline}`, background: ind.accentWash }} />
+              <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted }}>{t('status.approved', 'Approved')}</span>
+            </span>
+            <span className="inline-flex items-center" style={{ gap: 8 }}>
+              <span aria-hidden="true" style={{ width: 26, height: 12, flex: 'none', border: `1px solid ${ind.hairline}`, opacity: 0.45 }} />
+              <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, textDecoration: 'line-through' }}>
+                {t('status.rejected', 'Rejected')}
+              </span>
+            </span>
           </div>
-        </div>
+        </aside>
       </div>
 
-      {/* Requests list */}
-      <div className={`${bg.secondary} rounded-xl border ${border.primary} overflow-hidden`}>
-        <div className={`p-4 border-b ${border.primary} flex items-center gap-2`}>
-          <CalendarClock className={`w-5 h-5 ${text.secondary}`} />
-          <h3 className={`text-lg font-semibold ${text.primary}`}>{t('leave.requestsTitle', 'Leave Requests')}</h3>
-        </div>
-        <div className="divide-y divide-gray-200 dark:divide-gray-700">
-          {visibleRequests.length === 0 ? (
-            <div className={`p-8 text-center ${text.secondary}`}>{t('leave.noRequests', 'No leave requests yet.')}</div>
-          ) : (
-            [...visibleRequests]
-              .sort((a, b) => normalize(b.start_date).localeCompare(normalize(a.start_date)))
-              .map(req => {
-                const meta = metaFor(req.leave_type);
-                const Icon = meta.Icon;
-                const canModerate = isAdmin && scope === 'all' && req.status === 'pending';
-                return (
-                  <div key={req.id} className={`p-4 flex flex-col sm:flex-row sm:items-center gap-3 ${hover.bg} transition-colors`}>
-                    <div className={`p-2 rounded-lg ${meta.chip} border shrink-0`}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {(isAdmin && scope === 'all') && (
-                          <span className={`font-semibold ${text.primary}`}>{employeeName(req)}</span>
-                        )}
-                        <span className={`text-sm ${text.secondary}`}>{meta.label}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusBadge(req.status)}`}>
-                          {t(`status.${req.status}`, req.status)}
-                        </span>
-                      </div>
-                      <div className={`text-sm ${text.secondary} mt-0.5 flex items-center gap-2 flex-wrap`}>
-                        <CalendarDays className="w-3.5 h-3.5" />
-                        <span>{normalize(req.start_date)} → {normalize(req.end_date || req.start_date)}</span>
-                        {req.days_count != null && (
-                          <span className="inline-flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{req.days_count} {t('leave.days', 'days')}</span>
-                        )}
-                      </div>
-                      {req.reason && <p className={`text-sm ${text.tertiary} mt-1 truncate`}>{req.reason}</p>}
-                    </div>
-                    {canModerate && (
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          onClick={() => handleApprove(req)}
-                          className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm flex items-center gap-1 cursor-pointer"
-                        >
-                          <Check className="w-4 h-4" /> {t('leave.approve', 'Approve')}
-                        </button>
-                        <button
-                          onClick={() => setRejectTarget(req)}
-                          className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm flex items-center gap-1 cursor-pointer"
-                        >
-                          <X className="w-4 h-4" /> {t('leave.reject', 'Reject')}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-          )}
-        </div>
-      </div>
-
-      {/* Request Modal */}
+      {/* ── Modals ───────────────────────────────────────────────── */}
       {showRequestModal && (
         <LeaveRequestModal
           t={t}
+          ind={ind}
           employees={pickerEmployees}
           canManageLeave={canManageLeave}
           mode={requestModalMode}
@@ -842,7 +1079,6 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
           initialStart={selStart}
           initialEnd={selEnd || selStart}
           leaveTypeMeta={leaveTypeMeta}
-          borderPrimary={borderPrimary}
           onClose={() => setShowRequestModal(false)}
           onSuccess={(message) => {
             setShowRequestModal(false);
@@ -859,6 +1095,7 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
       {rejectTarget && (
         <RejectLeaveModal
           t={t}
+          ind={ind}
           employeeName={employeeName(rejectTarget)}
           onClose={() => setRejectTarget(null)}
           onConfirm={confirmReject}
@@ -868,34 +1105,18 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
   );
 };
 
-// ---- Stat tile ----
-const StatTile = ({ IconComponent, label, value, colorKey }) => {
-  const Icon = IconComponent;
-  const { bg, text, border, isDarkMode } = useTheme();
-  const colorMap = {
-    blue: isDarkMode ? 'bg-blue-900/40 text-blue-300' : 'bg-blue-100 text-blue-700',
-    amber: isDarkMode ? 'bg-amber-900/40 text-amber-300' : 'bg-amber-100 text-amber-700',
-    green: isDarkMode ? 'bg-green-900/40 text-green-300' : 'bg-green-100 text-green-700',
-    purple: isDarkMode ? 'bg-purple-900/40 text-purple-300' : 'bg-purple-100 text-purple-700',
-  };
-  return (
-    <div className={`${bg.secondary} rounded-xl p-4 border ${border.primary} flex items-center gap-3`}>
-      <div className={`p-2 rounded-lg ${colorMap[colorKey] || colorMap.blue}`}>
-        <Icon className="w-5 h-5" aria-hidden="true" />
-      </div>
-      <div>
-        <p className={`text-xs ${text.secondary}`}>{label}</p>
-        <p className={`text-xl font-bold ${text.primary}`}>
-          <SlidingNumber value={Number(value) || 0} />
-        </p>
-      </div>
-    </div>
-  );
+/* ------------------------------------------------------------------ *
+ * Modals — Blueprint dialogs, same as every other overlay on the board
+ * ------------------------------------------------------------------ */
+
+const overlayStyle = {
+  position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(29,45,61,.72)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
 };
 
-// ---- Request modal ----
 const LeaveRequestModal = ({
   t,
+  ind,
   employees,
   canManageLeave,
   mode,
@@ -904,17 +1125,14 @@ const LeaveRequestModal = ({
   initialStart,
   initialEnd,
   leaveTypeMeta,
-  borderPrimary,
   onClose,
   onSuccess,
   onError,
 }) => {
-  const { bg, text, border, isDarkMode } = useTheme();
   const { handleSessionAuthError } = useSessionGuard();
   const [loading, setLoading] = useState(false);
   const isAdminMode = mode === 'admin';
   const allowManualDates = isAdminMode;
-  const inactiveBorderClass = borderPrimary || border.primary;
 
   const [form, setForm] = useState({
     employeeId: defaultEmployeeId || myEmployeeId || (employees[0]?.id ? String(employees[0].id) : ''),
@@ -1001,35 +1219,50 @@ const LeaveRequestModal = ({
     ? t('leave.addLeaveForEmployee', 'Add Leave for Employee')
     : t('leave.requestLeave', 'Request Leave');
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className={`${bg.secondary} rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto`} onClick={(e) => e.stopPropagation()}>
-        <div className={`flex justify-between items-center p-6 border-b ${border.primary}`}>
-          <h2 className={`text-xl font-semibold ${text.primary} flex items-center gap-2`}>
-            {isAdminMode ? <UserPlus className="w-5 h-5" /> : <CalendarDays className="w-5 h-5" />}
-            {modalTitle}
-          </h2>
-          <button onClick={onClose} className={`${text.secondary} hover:${text.primary} cursor-pointer`}>
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+  const labelStyle = {
+    fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.14em',
+    textTransform: 'uppercase', color: ind.inkMuted, display: 'block', marginBottom: 4,
+  };
+  const noteStyle = { fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint, margin: '5px 0 0', lineHeight: 1.45 };
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+  return (
+    <div style={overlayStyle} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <Blueprint ind={ind} style={{ background: ind.ground, width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto' }}>
+        <form onSubmit={handleSubmit} style={{ padding: '18px 20px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="flex items-start justify-between" style={{ gap: 10 }}>
+            <span className="inline-flex items-center" style={{ gap: 8, minWidth: 0 }}>
+              {isAdminMode
+                ? <UserPlus size={15} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted }} />
+                : <CalendarDays size={15} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted }} />}
+              <ColumnHeading ind={ind}>{modalTitle}</ColumnHeading>
+            </span>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t('common.close', 'Close')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0, flex: 'none' }}
+            >
+              <X size={16} strokeWidth={1.5} />
+            </button>
+          </div>
+
           {canManageLeave && (
             <div>
-              <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('leave.employee', 'Employee')}</label>
-              <select
+              <label htmlFor="leave-employee" style={labelStyle}>{t('leave.employee', 'Employee')}</label>
+              <FlatSelect
+                ind={ind}
+                id="leave-employee"
                 value={form.employeeId || ''}
                 onChange={(e) => handleChange('employeeId', e.target.value)}
-                className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary}`}
+                style={{ width: '100%', textTransform: 'none', letterSpacing: '.02em' }}
               >
                 {employees.map(emp => (
                   <option key={emp.id} value={String(emp.id)}>{getDemoEmployeeName(emp, t)}</option>
                 ))}
-              </select>
+              </FlatSelect>
               {isAdminMode && (
-                <p className={`text-xs ${text.tertiary} mt-1 flex items-center gap-1`}>
-                  <ShieldCheck className="w-3.5 h-3.5" />
+                <p className="inline-flex items-center" style={{ ...noteStyle, gap: 5 }}>
+                  <ShieldCheck size={12} strokeWidth={1.5} />
                   {t('leave.onBehalfNote', 'You are submitting leave on behalf of this employee.')}
                 </p>
               )}
@@ -1037,8 +1270,8 @@ const LeaveRequestModal = ({
           )}
 
           <div>
-            <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('timeTracking.leaveType', 'Leave Type')}</label>
-            <div className="grid grid-cols-3 gap-2">
+            <span style={labelStyle}>{t('timeTracking.leaveType', 'Leave Type')}</span>
+            <div className="grid grid-cols-3" style={{ gap: 6 }}>
               {['vacation', 'sick', 'personal'].map(type => {
                 const meta = leaveTypeMeta[type];
                 const Icon = meta.Icon;
@@ -1047,17 +1280,21 @@ const LeaveRequestModal = ({
                   <button
                     type="button"
                     key={type}
+                    aria-pressed={active}
                     onClick={() => handleChange('type', type)}
-                    className={(() => {
-                      const base = 'flex flex-col items-center gap-1 py-3 rounded-lg border transition-colors cursor-pointer';
-                      if (active) {
-                        return `${base} border-blue-500 ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'}`;
-                      }
-                      return `${base} ${inactiveBorderClass}`;
-                    })()}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                      padding: '10px 6px', borderRadius: 0, cursor: 'pointer',
+                      border: `1px solid ${active ? ind.accent : ind.hairline}`,
+                      borderTop: `3px solid ${meta.tone}`,
+                      background: active ? ind.accentWash : 'transparent',
+                      color: ind.ink,
+                    }}
                   >
-                    <Icon className={`w-5 h-5 ${active ? 'text-blue-500' : text.secondary}`} />
-                    <span className={`text-xs ${active ? text.primary : text.secondary}`}>{meta.label}</span>
+                    <Icon size={16} strokeWidth={1.5} style={{ color: active ? ind.accentDeep : ind.inkMuted }} />
+                    <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 11, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+                      {meta.label}
+                    </span>
                   </button>
                 );
               })}
@@ -1065,141 +1302,174 @@ const LeaveRequestModal = ({
           </div>
 
           {allowManualDates ? (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('leave.rangeStart', 'Start')}</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 12 }}>
+              <div style={{ minWidth: 0 }}>
+                <label htmlFor="leave-start" style={labelStyle}>{t('leave.rangeStart', 'Start')}</label>
                 <DatePicker
+                  flat
+                  id="leave-start"
                   value={form.startDate}
                   onChange={(e) => handleChange('startDate', e.target.value)}
-                  inputClassName={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary}`}
                 />
               </div>
-              <div>
-                <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('leave.rangeEnd', 'End')}</label>
+              <div style={{ minWidth: 0 }}>
+                <label htmlFor="leave-end" style={labelStyle}>{t('leave.rangeEnd', 'End')}</label>
                 <DatePicker
+                  flat
+                  id="leave-end"
                   value={form.endDate}
                   min={form.startDate || undefined}
                   onChange={(e) => handleChange('endDate', e.target.value)}
-                  inputClassName={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary}`}
                 />
               </div>
-              <p className={`col-span-2 text-xs ${text.tertiary}`}>
+              <p style={{ ...noteStyle, margin: 0 }} className="sm:col-span-2">
                 {dayCount > 0 ? `${dayCount} ${t('leave.days', 'days')}` : t('leave.manualDates', 'Enter start and end dates.')}
               </p>
             </div>
           ) : (
-            <div className={`rounded-lg border ${border.primary} ${bg.tertiary} p-3`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-xs ${text.secondary}`}>{t('leave.selectedDates', 'Selected Dates')}</p>
-                  <p className={`text-sm font-medium ${text.primary}`}>
+            <div style={{ border: `1px solid ${ind.hairline}`, padding: '10px 12px' }}>
+              <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+                <span style={{ minWidth: 0 }}>
+                  <Kicker ind={ind}>{t('leave.selectedDates', 'Selected Dates')}</Kicker>
+                  <span
+                    className="block"
+                    style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 15, color: ind.ink, marginTop: 3, fontVariantNumeric: 'tabular-nums' }}
+                  >
                     {form.startDate || '—'} {form.endDate && form.endDate !== form.startDate ? `→ ${form.endDate}` : ''}
-                  </p>
-                </div>
-                <span className={`text-sm font-semibold ${text.primary}`}>{dayCount} {t('leave.days', 'days')}</span>
+                  </span>
+                </span>
+                <span style={{ ...figure(20, ind.ink) }}>
+                  {dayCount}
+                  <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted }}>{` ${t('leave.days', 'days')}`}</span>
+                </span>
               </div>
-              <p className={`text-[11px] ${text.tertiary} mt-1`}>{t('leave.adjustOnCalendar', 'Close this dialog to re-pick dates on the calendar.')}</p>
+              <p style={noteStyle}>{t('leave.adjustOnCalendar', 'Close this dialog to re-pick dates on the calendar.')}</p>
             </div>
           )}
 
-          <div className="flex items-center gap-2">
-            <input
-              id="halfDay"
-              type="checkbox"
-              checked={form.halfDay}
-              onChange={(e) => handleChange('halfDay', e.target.checked)}
-              className="w-4 h-4 rounded"
-            />
-            <label htmlFor="halfDay" className={`text-sm ${text.primary} cursor-pointer`}>{t('leave.halfDay', 'Half day')}</label>
-          </div>
+          {/* Square check, never a rounded box. */}
+          <button
+            type="button"
+            onClick={() => handleChange('halfDay', !form.halfDay)}
+            aria-pressed={form.halfDay}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 9, alignSelf: 'flex-start',
+              background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: ind.ink,
+            }}
+          >
+            <span
+              style={{
+                width: 15, height: 15, flex: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                border: `1px solid ${form.halfDay ? ind.accent : ind.hairline}`,
+                background: form.halfDay ? ind.accent : 'transparent',
+                color: ind.accentInk,
+              }}
+            >
+              {form.halfDay && <Check size={10} strokeWidth={2} />}
+            </span>
+            <span style={{ fontFamily: BODY, fontSize: 13 }}>{t('leave.halfDay', 'Half day')}</span>
+          </button>
 
           {!form.halfDay && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={`block text-sm font-medium ${text.secondary} mb-1 flex items-center gap-1`}>
-                  <Clock className="w-3.5 h-3.5" />{t('leave.startTime', 'Start Time')}
-                </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 12 }}>
+              <div style={{ minWidth: 0 }}>
+                <label htmlFor="leave-start-time" style={labelStyle}>{t('leave.startTime', 'Start Time')}</label>
                 <TimePicker
+                  flat
+                  id="leave-start-time"
                   value={form.startTime}
                   onChange={(e) => handleChange('startTime', e.target.value)}
-                  inputClassName={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary}`}
                 />
               </div>
-              <div>
-                <label className={`block text-sm font-medium ${text.secondary} mb-1 flex items-center gap-1`}>
-                  <Clock className="w-3.5 h-3.5" />{t('leave.endTime', 'End Time')}
-                </label>
+              <div style={{ minWidth: 0 }}>
+                <label htmlFor="leave-end-time" style={labelStyle}>{t('leave.endTime', 'End Time')}</label>
                 <TimePicker
+                  flat
+                  id="leave-end-time"
                   value={form.endTime}
                   onChange={(e) => handleChange('endTime', e.target.value)}
-                  inputClassName={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary}`}
                 />
               </div>
             </div>
           )}
 
           <div>
-            <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('leave.reason', 'Reason')}</label>
+            <label htmlFor="leave-reason" style={labelStyle}>{t('leave.reason', 'Reason')}</label>
             <textarea
+              id="leave-reason"
               value={form.reason}
               onChange={(e) => handleChange('reason', e.target.value)}
               rows={3}
               placeholder={t('leave.reasonPlaceholder', 'Add an optional note for your manager...')}
-              className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary} resize-none`}
+              style={{
+                width: '100%', padding: '7px 10px', resize: 'vertical',
+                border: `1px solid ${ind.hairline}`, borderRadius: 0,
+                background: 'transparent', color: ind.ink, fontFamily: BODY, fontSize: 12.5,
+              }}
             />
           </div>
 
           {canManageLeave && (
-            <div className={`flex items-start gap-2 p-3 rounded-lg border ${border.primary} ${isDarkMode ? 'bg-emerald-900/20 border-emerald-800' : 'bg-emerald-50 border-emerald-200'}`}>
-              <input
-                id="autoApprove"
-                type="checkbox"
-                checked={form.autoApprove}
-                onChange={(e) => handleChange('autoApprove', e.target.checked)}
-                className="w-4 h-4 rounded mt-0.5"
-              />
-              <label htmlFor="autoApprove" className={`text-sm ${text.primary} cursor-pointer`}>
-                <span className="font-medium flex items-center gap-1">
-                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                  {t('leave.autoApprove', 'Approve immediately')}
-                </span>
-                <span className={`block text-xs ${text.secondary} mt-0.5`}>
-                  {t('leave.autoApproveHint', 'Skip the pending queue and mark this request as approved.')}
-                </span>
-              </label>
-            </div>
-          )}
-
-          <div className={`flex justify-end gap-3 pt-2 border-t ${border.primary}`}>
             <button
               type="button"
-              onClick={onClose}
-              className={`px-4 py-2 ${isDarkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'} rounded-lg cursor-pointer`}
+              onClick={() => handleChange('autoApprove', !form.autoApprove)}
+              aria-pressed={form.autoApprove}
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: 10, textAlign: 'left',
+                padding: '10px 12px', borderRadius: 0, cursor: 'pointer',
+                border: `1px solid ${form.autoApprove ? ind.accent : ind.hairline}`,
+                background: form.autoApprove ? ind.accentWash : 'transparent',
+              }}
             >
-              {t('common.cancel', 'Cancel')}
+              <span
+                style={{
+                  width: 15, height: 15, flex: 'none', marginTop: 2, display: 'inline-flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  border: `1px solid ${form.autoApprove ? ind.accent : ind.hairline}`,
+                  background: form.autoApprove ? ind.accent : 'transparent',
+                  color: ind.accentInk,
+                }}
+              >
+                {form.autoApprove && <Check size={10} strokeWidth={2} />}
+              </span>
+              <span style={{ minWidth: 0 }}>
+                <span className="inline-flex items-center" style={{ gap: 6 }}>
+                  <ShieldCheck size={13} strokeWidth={1.5} style={{ color: ind.accentDeep }} />
+                  <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, letterSpacing: '.08em', textTransform: 'uppercase', color: ind.ink }}>
+                    {t('leave.autoApprove', 'Approve immediately')}
+                  </span>
+                </span>
+                <span className="block" style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, marginTop: 3 }}>
+                  {t('leave.autoApproveHint', 'Skip the pending queue and mark this request as approved.')}
+                </span>
+              </span>
             </button>
-            <button
+          )}
+
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end" style={{ gap: 8, paddingTop: 4, borderTop: `1px solid ${ind.rule}` }}>
+            <Btn ind={ind} onClick={onClose}>{t('common.cancel', 'Cancel')}</Btn>
+            <Btn
+              ind={ind}
+              variant="primary"
               type="submit"
               disabled={loading || dayCount === 0}
-              className={`px-4 py-2 rounded-lg disabled:opacity-50 cursor-pointer text-white
-                ${form.autoApprove && canManageLeave ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
             >
+              {loading && <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />}
               {loading
                 ? t('common.saving', 'Saving...')
                 : form.autoApprove && canManageLeave
                   ? t('leave.submitAndApprove', 'Submit & Approve')
                   : t('leave.submitRequest', 'Submit Request')}
-            </button>
+            </Btn>
           </div>
         </form>
-      </div>
+      </Blueprint>
     </div>
   );
 };
 
-// ---- Reject modal ----
-const RejectLeaveModal = ({ t, employeeName, onClose, onConfirm }) => {
-  const { bg, text, border, isDarkMode } = useTheme();
+const RejectLeaveModal = ({ t, ind, employeeName, onClose, onConfirm }) => {
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -1213,47 +1483,63 @@ const RejectLeaveModal = ({ t, employeeName, onClose, onConfirm }) => {
     }
   };
 
+  const labelStyle = {
+    fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.14em',
+    textTransform: 'uppercase', color: ind.inkMuted, display: 'block', marginBottom: 4,
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className={`${bg.secondary} rounded-xl shadow-2xl w-full max-w-md`} onClick={(e) => e.stopPropagation()}>
-        <div className={`flex justify-between items-center p-5 border-b ${border.primary}`}>
-          <h2 className={`text-lg font-semibold ${text.primary}`}>{t('leave.rejectTitle', 'Reject Leave Request')}</h2>
-          <button onClick={onClose} className={`${text.secondary} cursor-pointer`} type="button">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <p className={`text-sm ${text.secondary}`}>
+    <div style={overlayStyle} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <Blueprint ind={ind} style={{ background: ind.ground, width: '100%', maxWidth: 420 }}>
+        <form onSubmit={handleSubmit} style={{ padding: '18px 20px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="flex items-start justify-between" style={{ gap: 10 }}>
+            <ColumnHeading ind={ind}>{t('leave.rejectTitle', 'Reject Leave Request')}</ColumnHeading>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t('common.close', 'Close')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0, flex: 'none' }}
+            >
+              <X size={16} strokeWidth={1.5} />
+            </button>
+          </div>
+
+          <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, margin: 0, lineHeight: 1.5 }}>
             {(t('leave.rejectConfirm', 'Reject leave for {{name}}?')).replace('{{name}}', employeeName)}
           </p>
+
           <div>
-            <label className={`block text-sm font-medium ${text.secondary} mb-1`}>{t('leave.rejectReasonLabel', 'Reason (optional)')}</label>
+            <label htmlFor="reject-reason" style={labelStyle}>{t('leave.rejectReasonLabel', 'Reason (optional)')}</label>
             <textarea
+              id="reject-reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={3}
               placeholder={t('leave.rejectReasonPlaceholder', 'Explain why this request is being rejected...')}
-              className={`w-full px-3 py-2 rounded-lg border ${border.primary} ${bg.tertiary} ${text.primary} resize-none`}
+              style={{
+                width: '100%', padding: '7px 10px', resize: 'vertical',
+                border: `1px solid ${ind.hairline}`, borderRadius: 0,
+                background: 'transparent', color: ind.ink, fontFamily: BODY, fontSize: 12.5,
+              }}
             />
           </div>
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className={`px-4 py-2 rounded-lg cursor-pointer ${isDarkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-200 text-gray-800'}`}
-            >
-              {t('common.cancel', 'Cancel')}
-            </button>
-            <button
+
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end" style={{ gap: 8, paddingTop: 4, borderTop: `1px solid ${ind.rule}` }}>
+            <Btn ind={ind} onClick={onClose}>{t('common.cancel', 'Cancel')}</Btn>
+            {/* Rejection is the loud action here, so it takes the ink outline
+                rather than the accent fill an approval would get. */}
+            <Btn
+              ind={ind}
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 cursor-pointer"
+              style={{ borderColor: ind.ink, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
             >
+              {loading && <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />}
               {loading ? t('common.saving', 'Saving...') : t('leave.confirmReject', 'Reject Request')}
-            </button>
+            </Btn>
           </div>
         </form>
-      </div>
+      </Blueprint>
     </div>
   );
 };

@@ -1,23 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Settings as SettingsIcon, 
-  Bell, 
-  Palette, 
-  Globe, 
-  Shield, 
-  Briefcase, 
-  Save, 
-  RotateCcw,
+/**
+ * Settings — your own preferences, read as a spec sheet.
+ *
+ * Same grammar as Policy Controls (policyControls.jsx), because it is the same
+ * kind of screen: every row shows its value, what it applies to and what
+ * changing it costs, and nothing commits until you save. The tab bar is gone —
+ * a 184px numbered section index sits beside a single panel, so a new
+ * preference area arrives as another numbered panel rather than a sixth tab.
+ *
+ * Derived, never typed twice: the section definitions below are the only place
+ * a setting's label, note and formatter exist. The ticker's UNSAVED figure, the
+ * decision column and the label on the save button all read the same `pending`
+ * array, which is a diff of the draft against what was last saved — so the
+ * button cannot claim there is nothing to save while the column lists three
+ * changes.
+ *
+ * Design system: "Industry" (src/theme/industry.js). Radius 0, cards are
+ * outlines with four registration corners, toggles are squares and never pills,
+ * and state reads through weight and rule rather than red/green.
+ */
+import _React, { useState, useEffect, useMemo, useCallback } from 'react';
+import {
   Download,
   Upload,
-  Check,
-  X,
+  RotateCcw,
+  Save,
   Loader,
-  User,
-  Mail,
-  Phone,
-  Eye,
-  EyeOff
+  Check,
+  AlertCircle,
+  ArrowRight,
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -30,22 +40,137 @@ import { useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { ensureValidSession } from '../hooks/useSessionGuard.js';
 import * as settingsService from '../services/settingsService';
 import { ShinyButton } from './ui/shiny-button';
-import { PageLiveClock } from './ui/page-live-clock';
 import { TimePicker } from './ui/time-picker.jsx';
-import { cn } from '@/lib/utils';
+import { getIndustry, DISPLAY, BODY } from '../theme/industry.js';
+import { Blueprint, Btn, Kicker, ColumnHeading, TickerCell, LiveClock, FlatSelect } from './ui/industry.jsx';
+import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
+
+/* ------------------------------------------------------------------ *
+ * Controls — the Industry forms of the three things this screen edits
+ * ------------------------------------------------------------------ */
+
+/** State word + a square box holding a square knob. Never a pill. */
+function Toggle({ ind, on, onChange, label, t }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!on)}
+      aria-pressed={!!on}
+      aria-label={label}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 9, flex: 'none',
+        background: 'none', border: 'none', borderRadius: 0, padding: 0, cursor: 'pointer',
+      }}
+    >
+      <span
+        style={{
+          fontFamily: DISPLAY, fontWeight: 600, fontSize: 11, letterSpacing: '.12em',
+          textTransform: 'uppercase', color: on ? ind.accent : ind.ink, opacity: on ? 1 : 0.45,
+        }}
+      >
+        {on ? t('settings.on', 'On') : t('settings.off', 'Off')}
+      </span>
+      <span
+        style={{
+          width: 34, height: 18, padding: 1, borderRadius: 0,
+          border: `1px solid ${on ? ind.accent : ind.inkFaint}`,
+          display: 'flex', alignItems: 'center',
+          justifyContent: on ? 'flex-end' : 'flex-start',
+        }}
+      >
+        <span style={{ width: 14, height: 14, background: on ? ind.accent : ind.inkFaint }} />
+      </span>
+    </button>
+  );
+}
+
+/** −  value  +  · three cells in one hairline box. */
+function Stepper({ ind, value, onChange, step = 1, min, max, label }) {
+  const sign = {
+    width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'transparent', border: 'none', borderRadius: 0, padding: 0,
+    fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, color: ind.inkMuted,
+    cursor: 'pointer', lineHeight: 1,
+  };
+  const bump = (delta) => {
+    const next = Number(value) + delta * step;
+    if (!Number.isFinite(next)) return;
+    if (min != null && next < min) return;
+    if (max != null && next > max) return;
+    onChange(next);
+  };
+  return (
+    <div
+      role="group"
+      aria-label={label}
+      style={{ display: 'flex', alignItems: 'stretch', border: `1px solid ${ind.hairline}`, flex: 'none' }}
+    >
+      <button type="button" style={sign} onClick={() => bump(-1)} aria-label="−">−</button>
+      <div
+        style={{
+          padding: '4px 14px',
+          borderLeft: `1px solid ${ind.hairline}`,
+          borderRight: `1px solid ${ind.hairline}`,
+          fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, color: ind.ink,
+          minWidth: 56, textAlign: 'center', fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {value}
+      </div>
+      <button type="button" style={sign} onClick={() => bump(1)} aria-label="+">+</button>
+    </div>
+  );
+}
+
+/** A short, fixed list reads as chips — the choice is the whole control. */
+function Chips({ ind, options, value, onChange, label }) {
+  return (
+    <div role="group" aria-label={label} className="flex flex-wrap" style={{ gap: 6, flex: 'none' }}>
+      {options.map((opt) => {
+        const active = opt.value === value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(opt.value)}
+            style={{
+              fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5,
+              letterSpacing: '.08em', textTransform: 'uppercase',
+              padding: '5px 10px', borderRadius: 0, cursor: 'pointer', whiteSpace: 'nowrap',
+              background: active ? ind.accent : 'transparent',
+              color: active ? ind.accentInk : ind.inkGhost,
+              border: `1px solid ${active ? ind.accent : ind.hairline}`,
+              transition: 'background .15s ease, color .15s ease',
+            }}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Screen
+ * ------------------------------------------------------------------ */
 
 const Settings = () => {
-  const { bg, text, border, hover, isDarkMode, toggleTheme } = useTheme();
+  const { isDarkMode, toggleTheme } = useTheme();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
   const { t, changeLanguage, currentLanguage } = useLanguage();
   const { user, handleSessionAuthError } = useAuth();
   const { requestNotificationPermission, updateNotificationPrefs } = useNotifications();
 
-  const [activeTab, setActiveTab] = useState('notifications');
+  const [activeSection, setActiveSection] = useState('01');
   const [settings, setSettings] = useState(null);
+  /** What the server last confirmed. The draft is diffed against this. */
+  const [savedSettings, setSavedSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
+  const [importError, setImportError] = useState('');
 
   // Load settings on mount
   useEffect(() => {
@@ -59,9 +184,10 @@ const Settings = () => {
     try {
       await ensureValidSession();
       const result = await settingsService.getUserSettings(user.id);
-    
+
       if (result.success) {
         setSettings(result.data);
+        setSavedSettings(result.data);
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -75,7 +201,6 @@ const Settings = () => {
 
   const handleSettingChange = (field, value) => {
     setSettings(prev => ({ ...prev, [field]: value }));
-    setHasChanges(true);
     setSaveSuccess(false);
   };
 
@@ -103,10 +228,10 @@ const Settings = () => {
     try {
       await ensureValidSession();
       const result = await settingsService.updateUserSettings(user.id, settings);
-    
+
       if (result.success) {
         setSettings(result.data);
-        setHasChanges(false);
+        setSavedSettings(result.data);
         setSaveSuccess(true);
 
         applySavedSettings(result.data);
@@ -127,10 +252,10 @@ const Settings = () => {
 
     setSaving(true);
     const result = await settingsService.resetToDefault(user.id);
-    
+
     if (result.success) {
       setSettings(result.data);
-      setHasChanges(false);
+      setSavedSettings(result.data);
       applySavedSettings(result.data);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -162,526 +287,732 @@ const Settings = () => {
         const result = await settingsService.importSettings(user.id, e.target.result);
         if (result.success) {
           setSettings(result.data);
-          setHasChanges(false);
+          setSavedSettings(result.data);
           applySavedSettings(result.data);
           setSaveSuccess(true);
           setTimeout(() => setSaveSuccess(false), 3000);
         }
       } catch {
-        alert(t('settings.importError', 'Failed to import settings'));
+        setImportError(t('settings.importError', 'Failed to import settings'));
       }
     };
     reader.readAsText(file);
   };
 
-  const tabs = [
-    { id: 'notifications', label: t('settings.notifications', 'Notifications'), icon: Bell },
-    { id: 'appearance', label: t('settings.appearance', 'Appearance'), icon: Palette },
-    { id: 'language', label: t('settings.language', 'Language'), icon: Globe },
-    { id: 'privacy', label: t('settings.privacy', 'Privacy'), icon: Shield },
-    { id: 'work', label: t('settings.work', 'Work Preferences'), icon: Briefcase }
-  ];
+  /* ---------------- the spec sheet ---------------- */
 
-  if (loading) {
+  /** Postgres hands back HH:MM:SS; the picker speaks HH:MM. */
+  const shortTime = (v) => (v ?? '').toString().slice(0, 5);
+
+  /**
+   * The single definition of every setting on this screen. The panel renders
+   * from it and the decision column diffs against it, so a row's label can
+   * never disagree with the label on its pending change.
+   */
+  const sections = useMemo(() => [
+    {
+      num: '01',
+      key: 'notifications',
+      label: t('settings.notifications', 'Notifications'),
+      scope: t('settings.scope.notifications', 'Scope: this account · applies on your next sign-in'),
+      rows: [
+        {
+          key: 'email_notifications',
+          label: t('settings.emailNotifications', 'Email Notifications'),
+          note: user?.email
+            ? t('settings.note.email', 'Delivered to {email}').replace('{email}', user.email)
+            : t('settings.emailNotificationsDesc', 'Receive notifications via email'),
+          control: { type: 'toggle' },
+        },
+        {
+          key: 'push_notifications',
+          label: t('settings.pushNotifications', 'Push Notifications'),
+          note: t('settings.pushNotificationsDesc', 'Receive push notifications in the app'),
+          control: { type: 'toggle' },
+        },
+        {
+          key: 'desktop_notifications',
+          label: t('settings.desktopNotifications', 'Desktop Notifications'),
+          note: t('settings.note.desktop', 'The browser asks for permission the first time this is turned on'),
+          control: { type: 'toggle', permission: true },
+        },
+        {
+          key: 'notification_sound',
+          label: t('settings.notificationSound', 'Notification Sound'),
+          note: t('settings.notificationSoundDesc', 'Play a sound when new notifications arrive'),
+          control: { type: 'toggle' },
+        },
+        {
+          key: 'notification_frequency',
+          label: t('settings.notificationFrequency', 'Notification Frequency'),
+          note: t('settings.note.frequency', 'Real-time delivers as events happen; a digest batches them into one message'),
+          control: {
+            type: 'chips',
+            options: [
+              { value: 'realtime', label: t('settings.realtime', 'Real-time') },
+              { value: 'daily', label: t('settings.daily', 'Daily Digest') },
+              { value: 'weekly', label: t('settings.weekly', 'Weekly Summary') },
+            ],
+          },
+        },
+      ],
+    },
+    {
+      num: '02',
+      key: 'topics',
+      label: t('settings.notifyMeAbout', 'Notify me about'),
+      scope: t('settings.scope.topics', 'Scope: every channel above · a topic that is off is never sent'),
+      rows: [
+        { key: 'notify_time_tracking', label: t('settings.timeTrackingNotifications', 'Time Tracking'), note: t('settings.note.timeTracking', 'Approvals, missing punches and proof requests'), control: { type: 'toggle' } },
+        { key: 'notify_performance', label: t('settings.performanceNotifications', 'Performance Reviews'), note: t('settings.note.performance', 'Review cycles, goals and self-assessments'), control: { type: 'toggle' } },
+        { key: 'notify_employee_updates', label: t('settings.employeeNotifications', 'Employee Updates'), note: t('settings.note.employee', 'Joiners, leavers and directory changes'), control: { type: 'toggle' } },
+        { key: 'notify_recruitment', label: t('settings.recruitmentNotifications', 'Recruitment'), note: t('settings.note.recruitment', 'New applications and stage changes'), control: { type: 'toggle' } },
+        { key: 'notify_system', label: t('settings.systemNotifications', 'System Updates'), note: t('settings.note.system', 'Maintenance windows and release notes'), control: { type: 'toggle' } },
+      ],
+    },
+    {
+      num: '03',
+      key: 'appearance',
+      label: t('settings.appearance', 'Appearance'),
+      scope: t('settings.scope.appearance', 'Scope: this browser · saved to your account'),
+      rows: [
+        {
+          key: 'theme',
+          label: t('settings.theme', 'Theme'),
+          note: t('settings.note.theme', 'System follows the operating system setting'),
+          control: {
+            type: 'chips',
+            options: settingsService.getAvailableThemes().map((theme) => ({
+              value: theme.value,
+              label: t(`settings.themes.${theme.value}`, theme.label),
+            })),
+          },
+        },
+        {
+          key: 'date_format',
+          label: t('settings.dateFormat', 'Date Format'),
+          note: t('settings.note.dateFormat', 'Used by every date on screen and in exports'),
+          control: { type: 'select', options: settingsService.getDateFormats() },
+        },
+        {
+          key: 'time_format',
+          label: t('settings.timeFormat', 'Time Format'),
+          note: t('settings.note.timeFormat', 'Applies to the clock, the ledgers and the punch history'),
+          control: { type: 'select', options: settingsService.getTimeFormats() },
+        },
+        {
+          key: 'items_per_page',
+          label: t('settings.itemsPerPage', 'Items Per Page'),
+          note: t('settings.note.itemsPerPage', 'Every table in the app pages at this size'),
+          control: { type: 'stepper', step: 5, min: 5, max: 100 },
+        },
+      ],
+    },
+    {
+      num: '04',
+      key: 'language',
+      label: t('settings.languageRegion', 'Language & Region'),
+      scope: t('settings.scope.language', 'Scope: the whole interface · takes effect on save'),
+      rows: [
+        {
+          key: 'language',
+          label: t('settings.language', 'Language'),
+          note: t('settings.note.language', 'Text without a translation falls back to English'),
+          control: {
+            type: 'select',
+            options: settingsService.getAvailableLanguages().map((lang) => ({
+              value: lang.code,
+              label: `${lang.nativeName} (${lang.name})`,
+            })),
+          },
+        },
+        {
+          key: 'timezone',
+          label: t('settings.timezone', 'Timezone'),
+          note: t('settings.note.timezone', 'Every timestamp on screen is rendered in this zone'),
+          control: { type: 'select', options: settingsService.getTimezones() },
+        },
+      ],
+    },
+    {
+      num: '05',
+      key: 'privacy',
+      label: t('settings.privacy', 'Privacy'),
+      scope: t('settings.scope.privacy', 'Scope: what colleagues see on your directory card'),
+      rows: [
+        {
+          key: 'profile_visibility',
+          label: t('settings.profileVisibility', 'Profile Visibility'),
+          note: t('settings.note.visibility', 'Managers and admins always keep access for HR purposes'),
+          control: {
+            type: 'chips',
+            options: [
+              { value: 'all', label: t('settings.visibilityAll', 'Everyone') },
+              { value: 'team', label: t('settings.visibilityTeam', 'My Team') },
+              { value: 'managers', label: t('settings.visibilityManagers', 'Managers Only') },
+              { value: 'private', label: t('settings.visibilityPrivate', 'Private') },
+            ],
+          },
+        },
+        {
+          key: 'show_email',
+          label: t('settings.showEmail', 'Show Email Address'),
+          note: t('settings.note.showEmail', 'Turning this off hides it from the directory, not from HR'),
+          control: { type: 'toggle' },
+        },
+        {
+          key: 'show_phone',
+          label: t('settings.showPhone', 'Show Phone Number'),
+          note: t('settings.note.showPhone', 'Turning this off hides it from the directory, not from HR'),
+          control: { type: 'toggle' },
+        },
+      ],
+    },
+    {
+      num: '06',
+      key: 'work',
+      label: t('settings.workPreferences', 'Work Preferences'),
+      scope: t('settings.scope.work', 'Scope: your own time records and landing page'),
+      rows: [
+        {
+          key: 'default_dashboard_view',
+          label: t('settings.defaultDashboard', 'Default Dashboard View'),
+          note: t('settings.note.dashboard', 'The view the Organisation Overview opens in'),
+          control: {
+            type: 'chips',
+            options: [
+              { value: 'overview', label: t('settings.overviewView', 'Overview') },
+              { value: 'detailed', label: t('settings.detailedView', 'Detailed') },
+              { value: 'compact', label: t('settings.compactView', 'Compact') },
+            ],
+          },
+        },
+        {
+          key: 'auto_clock_out',
+          label: t('settings.autoClockOut', 'Auto Clock Out'),
+          note: t('settings.autoClockOutDesc', 'Automatically clock out at a specific time'),
+          control: { type: 'toggle' },
+        },
+        {
+          key: 'auto_clock_out_time',
+          label: t('settings.autoClockOutTime', 'Auto Clock Out Time'),
+          note: t('settings.note.autoClockOutTime', 'An open punch left running past this time is closed at it'),
+          // Only meaningful while the switch above is on, but it stays in the
+          // definition so a change to it still reaches the decision column.
+          when: (s) => !!s?.auto_clock_out,
+          normalize: shortTime,
+          control: { type: 'time' },
+        },
+        {
+          key: 'weekly_report',
+          label: t('settings.weeklyReport', 'Weekly Report'),
+          note: t('settings.weeklyReportDesc', 'Receive a weekly summary of your work activities'),
+          control: { type: 'toggle' },
+        },
+      ],
+    },
+  ], [t, user?.email]);
+
+  /** Flat index of every row, in section order. */
+  const rowsByKey = useMemo(() => {
+    const map = new Map();
+    sections.forEach((section) => section.rows.forEach((row) => map.set(row.key, row)));
+    return map;
+  }, [sections]);
+
+  /** How a value reads once it is out of its control. */
+  const formatValue = useCallback((row, value) => {
+    const norm = row.normalize ? row.normalize(value) : value;
+    switch (row.control.type) {
+      case 'toggle':
+        return norm ? t('settings.on', 'On') : t('settings.off', 'Off');
+      case 'chips':
+      case 'select': {
+        const opt = row.control.options.find((o) => o.value === norm);
+        return opt ? opt.label : String(norm ?? '—');
+      }
+      default:
+        return String(norm ?? '—');
+    }
+  }, [t]);
+
+  /**
+   * The draft against what was last saved. Everything on this screen that
+   * counts changes counts this array.
+   */
+  const pending = useMemo(() => {
+    if (!settings || !savedSettings) return [];
+    const out = [];
+    rowsByKey.forEach((row, key) => {
+      const norm = row.normalize || ((v) => v);
+      const before = norm(savedSettings[key]) ?? null;
+      const after = norm(settings[key]) ?? null;
+      if (before === after) return;
+      out.push({
+        key,
+        label: row.label,
+        from: formatValue(row, savedSettings[key]),
+        to: formatValue(row, settings[key]),
+      });
+    });
+    return out;
+  }, [settings, savedSettings, rowsByKey, formatValue]);
+
+  const hasChanges = pending.length > 0;
+
+  const activeIndex = Math.max(0, sections.findIndex((s) => s.num === activeSection));
+  const panel = sections[activeIndex];
+
+  /* ---------------- shared styles ---------------- */
+
+  const caption = { fontFamily: BODY, fontSize: 13, color: ind.inkMuted, lineHeight: 1.5, margin: 0 };
+  const noteStyle = { fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, lineHeight: 1.45, margin: '3px 0 0' };
+  const columnNote = { fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, lineHeight: 1.45, margin: '6px 0 0' };
+
+  /** A <label> cannot be a <button>, so the import trigger borrows Btn's face. */
+  const btnFace = {
+    fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.04em',
+    textTransform: 'uppercase', padding: '4px 12px', borderRadius: 0, cursor: 'pointer',
+    background: 'transparent', color: ind.ink, border: `1px solid ${ind.hairline}`,
+    display: 'inline-flex', alignItems: 'center', gap: 6,
+  };
+
+  const frameStyle = {
+    border: `1px solid ${ind.hairline}`,
+    background: ind.ground,
+    color: ind.ink,
+    fontFamily: BODY,
+    fontSize: 14,
+    borderRadius: 0,
+  };
+
+  const ticker = (
+    <div
+      style={{
+        height: 44, background: ind.tickerBg, color: ind.tickerInk,
+        borderBottom: `1px solid ${ind.hairline}`,
+        display: 'flex', alignItems: 'stretch', overflowX: 'auto', overflowY: 'hidden',
+      }}
+    >
+      <TickerCell ind={ind}>
+        <LiveClock ind={ind} live={!!settings} />
+      </TickerCell>
+      <TickerCell ind={ind} label={t('settings.theme', 'Theme')} value={formatShort(settings?.theme)} />
+      <TickerCell ind={ind} label={t('settings.language', 'Language')} value={(settings?.language || currentLanguage || '').toUpperCase()} />
+      <TickerCell ind={ind} label={t('settings.timeFormat', 'Time Format')} value={formatShort(settings?.time_format)} />
+      <TickerCell
+        ind={ind}
+        label={t('settings.unsaved', 'Unsaved')}
+        value={pending.length}
+        // The one figure on the strip that asks somebody to act.
+        valueColor={pending.length > 0 ? ind.tickerUp : undefined}
+      />
+      <div
+        style={{
+          flex: 1, minWidth: 'max-content', display: 'flex', alignItems: 'center',
+          justifyContent: 'flex-end', gap: 8, padding: '0 14px',
+          borderLeft: `1px solid ${ind.tickerRule}`,
+        }}
+      >
+        <FetchElapsedPill active={loading || saving} isDarkMode label={t('common.fetching', 'Fetching')} />
+        <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+          {user?.email || user?.name || '—'}
+        </span>
+      </div>
+    </div>
+  );
+
+  if (loading || !settings) {
     return (
-      <div className={`p-8 ${bg.primary} min-h-screen`}>
-        <div className="max-w-none w-full mx-auto">
-          <div className="flex items-center justify-center py-12">
-            <Loader className="w-12 h-12 animate-spin text-blue-600" />
-          </div>
+      <div data-screen-label="Settings" style={frameStyle}>
+        {ticker}
+        <div style={{ padding: '64px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+          {loading ? (
+            <>
+              <Loader size={18} strokeWidth={1.5} className="animate-spin" style={{ color: ind.inkMuted }} />
+              <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.12em', textTransform: 'uppercase', color: ind.inkMuted }}>
+                {t('common.loading', 'Loading')}
+              </span>
+            </>
+          ) : (
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', maxWidth: 420 }}>
+              <AlertCircle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
+              <div>
+                <Kicker ind={ind} color={ind.ink}>{t('common.error', 'Error')}</Kicker>
+                <p style={{ ...caption, marginTop: 4 }}>
+                  {t('settings.loadFailed', 'Your settings could not be loaded.')}
+                </p>
+                <Btn ind={ind} onClick={loadSettings} style={{ marginTop: 12 }}>
+                  {t('common.retry', 'Try Again')}
+                </Btn>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
+  const renderControl = (row) => {
+    const value = settings[row.key];
+    switch (row.control.type) {
+      case 'toggle':
+        return (
+          <Toggle
+            ind={ind}
+            t={t}
+            label={row.label}
+            on={!!value}
+            onChange={async (next) => {
+              // The browser only grants the permission inside the click.
+              if (row.control.permission && next) {
+                const granted = await requestNotificationPermission();
+                if (!granted) return;
+              }
+              handleSettingChange(row.key, next);
+            }}
+          />
+        );
+      case 'chips':
+        return (
+          <Chips
+            ind={ind}
+            label={row.label}
+            options={row.control.options}
+            value={value}
+            onChange={(next) => handleSettingChange(row.key, next)}
+          />
+        );
+      case 'select':
+        return (
+          <FlatSelect
+            ind={ind}
+            aria-label={row.label}
+            value={value ?? ''}
+            onChange={(e) => handleSettingChange(row.key, e.target.value)}
+            style={{ flex: 'none', maxWidth: 260, textTransform: 'none', letterSpacing: '.02em' }}
+          >
+            {row.control.options.map((opt) => (
+              <option key={opt.value} value={opt.value} style={{ color: '#1d1f20' }}>
+                {opt.label}
+              </option>
+            ))}
+          </FlatSelect>
+        );
+      case 'stepper':
+        return (
+          <Stepper
+            ind={ind}
+            label={row.label}
+            value={Number(value) || row.control.min}
+            step={row.control.step}
+            min={row.control.min}
+            max={row.control.max}
+            onChange={(next) => handleSettingChange(row.key, next)}
+          />
+        );
+      case 'time':
+        return (
+          <div style={{ flex: 'none', width: 128 }}>
+            <TimePicker
+              flat
+              id={`setting-${row.key}`}
+              value={shortTime(value || '17:00')}
+              onChange={(e) => handleSettingChange(row.key, e.target.value)}
+              defaultOpenTime="17:00"
+            />
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className={`p-4 md:p-8 ${bg.primary} min-h-screen`}>
-      <div className="max-w-none w-full mx-auto">
-        {/* Header */}
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 mb-6`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <SettingsIcon className="h-8 w-8 text-blue-600" />
-              <div>
-                <h1 className={`font-bold ${text.primary}`} style={{fontSize: 'clamp(1.25rem, 3.5vw, 1.5rem)'}}>
-                  {t('settings.title', 'Settings')}
-                </h1>
-                <p className={`text-sm ${text.secondary}`}>
-                  {t('settings.subtitle', 'Manage your preferences and account settings')}
-                </p>
+    <div data-screen-label="Settings" style={frameStyle}>
+      {ticker}
+
+      {/* ── BANDS ────────────────────────────────────────────────── */}
+      <div className="flex flex-col lg:flex-row items-stretch">
+
+        {/* ── LEFT — the spec sheet ─────────────────────────────── */}
+        <div
+          className="flex-1 min-w-0 flex flex-col"
+          style={{ padding: '22px 24px 20px', gap: 16, borderRight: `1px solid ${ind.hairline}` }}
+        >
+          {saveSuccess && (
+            <div
+              className="flex items-center justify-between"
+              style={{ border: `1px solid ${ind.hairline}`, background: ind.accentWash, padding: '9px 12px', gap: 10 }}
+            >
+              <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink }}>
+                {t('settings.saved', 'Saved!')}
+              </span>
+              <Check size={14} strokeWidth={1.5} style={{ flex: 'none', color: ind.accentDeep }} />
+            </div>
+          )}
+
+          {importError && (
+            <div style={{ border: `1px solid ${ind.ink}`, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <AlertCircle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Kicker ind={ind} color={ind.ink}>{t('common.error', 'Error')}</Kicker>
+                <p style={{ ...caption, marginTop: 4 }}>{importError}</p>
               </div>
+              <Btn ind={ind} onClick={() => setImportError('')}>{t('common.close', 'Close')}</Btn>
+            </div>
+          )}
+
+          {/* Title row — the only commit on the board sits here. */}
+          <div className="flex flex-wrap items-end justify-between" style={{ gap: 14 }}>
+            <div style={{ minWidth: 0 }}>
+              <h1 style={{ fontFamily: BODY, fontSize: 32, fontWeight: 400, margin: 0, color: ind.ink, lineHeight: 1.1 }}>
+                {t('settings.title', 'Settings')}
+              </h1>
+              <p style={{ ...caption, marginTop: 6 }}>
+                {[
+                  t('settings.subtitle', 'Manage your preferences and account settings'),
+                  user?.email,
+                  hasChanges
+                    ? t('settings.nUnsaved', '{n} unsaved').replace('{n}', String(pending.length))
+                    : t('settings.allSaved', 'All changes saved'),
+                ].filter(Boolean).join(' · ')}
+              </p>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center space-x-2">
-              <PageLiveClock
-                textClassName={text.primary}
-                separatorClassName={text.secondary}
-                showSeparator={false}
-                loading={loading}
-                isDarkMode={isDarkMode}
-                fetchLabel={t('common.fetching', 'Fetching')}
-              />
-              {saveSuccess && (
-                <div className={`flex items-center space-x-2 px-4 py-2 ${isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700'} rounded-lg`}>
-                  <Check className="h-4 w-4" />
-                  <span className="text-sm font-medium">{t('settings.saved', 'Saved!')}</span>
-                </div>
-              )}
-              
-              <ShinyButton
-                type="button"
-                onClick={exportSettings}
-                className={cn('px-4 py-2', hover.bg, text.secondary)}
-                title={t('settings.export', 'Export settings')}
-              >
-                <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('settings.export', 'Export')}</span>
-              </ShinyButton>
+            <div className="flex flex-wrap items-center" style={{ gap: 8, flex: 'none' }}>
+              <Btn ind={ind} onClick={exportSettings} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Download size={13} strokeWidth={1.5} />
+                {t('settings.export', 'Export')}
+              </Btn>
 
-              <label className={`px-4 py-2 rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer`}>
-                <Upload className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('settings.import', 'Import')}</span>
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={importSettings}
-                  className="hidden"
-                />
+              <label style={btnFace}>
+                <Upload size={13} strokeWidth={1.5} />
+                {t('settings.import', 'Import')}
+                <input type="file" accept=".json" onChange={importSettings} className="sr-only" />
               </label>
 
+              <Btn ind={ind} onClick={resetSettings} disabled={saving} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <RotateCcw size={13} strokeWidth={1.5} />
+                {t('settings.reset', 'Reset')}
+              </Btn>
+
+              {/* The single solid object on this screen. Kept as a ShinyButton
+                  so the commit still catches the light — re-skinned to the
+                  system rather than replaced. */}
               <ShinyButton
                 type="button"
-                onClick={resetSettings}
-                className={cn('px-4 py-2', hover.bg, text.secondary)}
-                title={t('settings.reset', 'Reset to defaults')}
+                onClick={saveSettings}
+                disabled={saving || !hasChanges}
+                shineOnHover
+                className="rounded-none border px-3 py-1"
+                style={{
+                  borderRadius: 0,
+                  background: hasChanges ? ind.accent : 'transparent',
+                  color: hasChanges ? ind.accentInk : ind.inkMuted,
+                  borderColor: hasChanges ? ind.accent : ind.hairline,
+                  opacity: saving ? 0.5 : 1,
+                  cursor: hasChanges && !saving ? 'pointer' : 'not-allowed',
+                }}
               >
-                <RotateCcw className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('settings.reset', 'Reset')}</span>
+                {saving
+                  ? <Loader size={13} strokeWidth={1.5} className="animate-spin" />
+                  : <Save size={13} strokeWidth={1.5} />}
+                <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.04em', textTransform: 'uppercase' }}>
+                  {hasChanges
+                    ? t('settings.saveN', 'Save {n} changes').replace('{n}', String(pending.length))
+                    : t('settings.nothingToSave', 'Nothing to save')}
+                </span>
               </ShinyButton>
+            </div>
+          </div>
 
-              {hasChanges && (
-                <ShinyButton
-                  type="button"
-                  onClick={saveSettings}
-                  disabled={saving}
-                  className="px-6 py-2 bg-blue-600 text-white border-blue-500 hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {saving ? (
-                    <Loader className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4" />
-                  )}
-                  <span>{t('settings.saveChanges', 'Save Changes')}</span>
-                </ShinyButton>
-              )}
+          {/* Two-level navigation: the section index beside the panel. */}
+          <div className="flex flex-col md:flex-row" style={{ gap: 16, flex: 1, minHeight: 0 }}>
+            <nav
+              aria-label={t('settings.sections', 'Settings sections')}
+              className="md:w-[184px] md:shrink-0"
+              style={{
+                display: 'flex', flexDirection: 'column', gap: 1,
+                borderTop: `1px solid ${ind.hairline}`,
+                borderBottom: `1px solid ${ind.hairline}`,
+                padding: '8px 0',
+                alignSelf: 'flex-start',
+              }}
+            >
+              {sections.map((s) => {
+                const active = s.num === panel.num;
+                // A section with an unsaved row says so on the index.
+                const dirty = s.rows.some((row) => pending.some((p) => p.key === row.key));
+                return (
+                  <button
+                    key={s.num}
+                    type="button"
+                    onClick={() => setActiveSection(s.num)}
+                    aria-current={active ? 'true' : undefined}
+                    style={{
+                      display: 'flex', alignItems: 'baseline', gap: 10,
+                      padding: '8px 10px', textAlign: 'left', border: 'none', borderRadius: 0,
+                      cursor: 'pointer',
+                      background: active ? ind.accent : 'transparent',
+                      color: active ? ind.accentInk : ind.ink,
+                      transition: 'background .15s ease',
+                    }}
+                    onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = ind.hover; }}
+                    onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.12em',
+                        color: active ? ind.accentInk : ind.inkFaint,
+                        opacity: active ? 0.7 : 1,
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
+                    >
+                      {s.num}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, letterSpacing: '.05em',
+                        textTransform: 'uppercase', flex: 1, minWidth: 0,
+                      }}
+                    >
+                      {s.label}
+                    </span>
+                    {dirty && (
+                      <span
+                        aria-hidden="true"
+                        style={{ width: 6, height: 6, flex: 'none', background: active ? ind.accentInk : ind.accent }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* The panel. Bottom padding is 6px: the last row's border closes it. */}
+            <div className="flex-1 min-w-0">
+              <Blueprint ind={ind} style={{ padding: '16px 20px 6px' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.16em', color: ind.accent }}>
+                    {panel.num}
+                  </span>
+                  <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 16, letterSpacing: '.06em', textTransform: 'uppercase', color: ind.ink }}>
+                    {panel.label}
+                  </span>
+                  {/* No panel is scopeless. */}
+                  <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted }}>{panel.scope}</span>
+                </div>
+
+                {panel.rows
+                  .filter((row) => !row.when || row.when(settings))
+                  .map((row) => (
+                    <div
+                      key={row.key}
+                      className="flex flex-wrap items-center justify-between"
+                      style={{ gap: 20, padding: '11px 0', borderTop: `1px solid ${ind.rule}` }}
+                    >
+                      <div style={{ minWidth: 0, flex: '1 1 240px' }}>
+                        <div style={{ fontFamily: BODY, fontSize: 13.5, color: ind.ink }}>{row.label}</div>
+                        <p style={noteStyle}>{row.note}</p>
+                      </div>
+                      {renderControl(row)}
+                    </div>
+                  ))}
+              </Blueprint>
             </div>
           </div>
         </div>
 
-        {/* Content Area - Full Width */}
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-4 md:p-6 mb-6`}>
-            {/* Notifications Settings */}
-            {activeTab === 'notifications' && (
-              <div className="space-y-6">
-                <div>
-                  <h2 className={`font-bold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.25rem)'}}>
-                    {t('settings.notificationPreferences', 'Notification Preferences')}
-                  </h2>
-                  
-                  {/* Notification Channels */}
-                  <div className="space-y-4">
-                    <SettingToggle
-                      label={t('settings.emailNotifications', 'Email Notifications')}
-                      description={t('settings.emailNotificationsDesc', 'Receive notifications via email')}
-                      checked={settings?.email_notifications}
-                      onChange={(checked) => handleSettingChange('email_notifications', checked)}
-                    />
-                    
-                    <SettingToggle
-                      label={t('settings.pushNotifications', 'Push Notifications')}
-                      description={t('settings.pushNotificationsDesc', 'Receive push notifications in the app')}
-                      checked={settings?.push_notifications}
-                      onChange={(checked) => handleSettingChange('push_notifications', checked)}
-                    />
-                    
-                    <SettingToggle
-                      label={t('settings.desktopNotifications', 'Desktop Notifications')}
-                      description={t('settings.desktopNotificationsDesc', 'Show browser notifications on desktop')}
-                      checked={settings?.desktop_notifications}
-                      onChange={async (checked) => {
-                        if (checked) {
-                          const granted = await requestNotificationPermission();
-                          if (granted) {
-                            handleSettingChange('desktop_notifications', true);
-                          }
-                        } else {
-                          handleSettingChange('desktop_notifications', false);
-                        }
-                      }}
-                    />
-
-                    <SettingToggle
-                      label={t('settings.notificationSound', 'Notification Sound')}
-                      description={t('settings.notificationSoundDesc', 'Play a sound when new notifications arrive')}
-                      checked={settings?.notification_sound}
-                      onChange={(checked) => handleSettingChange('notification_sound', checked)}
-                    />
-                  </div>
-
-                  {/* Notification Frequency */}
-                  <div className="mt-6">
-                    <label className={`block text-sm font-medium ${text.secondary} mb-2`}>
-                      {t('settings.notificationFrequency', 'Notification Frequency')}
-                    </label>
-                    <select
-                      value={settings?.notification_frequency || 'realtime'}
-                      onChange={(e) => handleSettingChange('notification_frequency', e.target.value)}
-                      className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
-                    >
-                      <option value="realtime">{t('settings.realtime', 'Real-time')}</option>
-                      <option value="daily">{t('settings.daily', 'Daily Digest')}</option>
-                      <option value="weekly">{t('settings.weekly', 'Weekly Summary')}</option>
-                    </select>
-                  </div>
-
-                  {/* Category Notifications */}
-                  <div className="mt-6">
-                    <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-                      {t('settings.notifyMeAbout', 'Notify me about')}
-                    </h3>
-                    <div className="space-y-3">
-                      <SettingToggle
-                        label={t('settings.timeTrackingNotifications', 'Time Tracking')}
-                        checked={settings?.notify_time_tracking}
-                        onChange={(checked) => handleSettingChange('notify_time_tracking', checked)}
-                      />
-                      <SettingToggle
-                        label={t('settings.performanceNotifications', 'Performance Reviews')}
-                        checked={settings?.notify_performance}
-                        onChange={(checked) => handleSettingChange('notify_performance', checked)}
-                      />
-                      <SettingToggle
-                        label={t('settings.employeeNotifications', 'Employee Updates')}
-                        checked={settings?.notify_employee_updates}
-                        onChange={(checked) => handleSettingChange('notify_employee_updates', checked)}
-                      />
-                      <SettingToggle
-                        label={t('settings.recruitmentNotifications', 'Recruitment')}
-                        checked={settings?.notify_recruitment}
-                        onChange={(checked) => handleSettingChange('notify_recruitment', checked)}
-                      />
-                      <SettingToggle
-                        label={t('settings.systemNotifications', 'System Updates')}
-                        checked={settings?.notify_system}
-                        onChange={(checked) => handleSettingChange('notify_system', checked)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Appearance Settings */}
-            {activeTab === 'appearance' && (
-              <div className="space-y-6">
-                <h2 className={`font-bold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.25rem)'}}>
-                  {t('settings.appearanceSettings', 'Appearance Settings')}
-                </h2>
-
-                {/* Theme Selection */}
-                <div>
-                  <label className={`block text-sm font-medium ${text.secondary} mb-2`}>
-                    {t('settings.theme', 'Theme')}
-                  </label>
-                  <div className="grid grid-cols-3 gap-4">
-                    {settingsService.getAvailableThemes().map((theme) => (
-                      <button
-                        key={theme.value}
-                        onClick={() => handleSettingChange('theme', theme.value)}
-                        className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                          settings?.theme !== theme.value ? hover.bg : ''
-                        }`}
-                        style={{
-                          borderColor: settings?.theme === theme.value 
-                            ? (isDarkMode ? '#60a5fa' : '#2563eb')
-                            : (isDarkMode ? '#4b5563' : '#d1d5db'),
-                          backgroundColor: settings?.theme === theme.value
-                            ? (isDarkMode ? 'rgba(30, 58, 138, 0.3)' : '#eff6ff')
-                            : 'transparent'
-                        }}
-                      >
-                        <div className={`font-medium ${text.primary}`}>{theme.label}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Date Format */}
-                <div>
-                  <label className={`block text-sm font-medium ${text.secondary} mb-2`}>
-                    {t('settings.dateFormat', 'Date Format')}
-                  </label>
-                  <select
-                    value={settings?.date_format || 'MM/DD/YYYY'}
-                    onChange={(e) => handleSettingChange('date_format', e.target.value)}
-                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
-                  >
-                    {settingsService.getDateFormats().map((format) => (
-                      <option key={format.value} value={format.value}>
-                        {format.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Time Format */}
-                <div>
-                  <label className={`block text-sm font-medium ${text.secondary} mb-2`}>
-                    {t('settings.timeFormat', 'Time Format')}
-                  </label>
-                  <select
-                    value={settings?.time_format || '12h'}
-                    onChange={(e) => handleSettingChange('time_format', e.target.value)}
-                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
-                  >
-                    {settingsService.getTimeFormats().map((format) => (
-                      <option key={format.value} value={format.value}>
-                        {format.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Items Per Page */}
-                <div>
-                  <label className={`block text-sm font-medium ${text.secondary} mb-2`}>
-                    {t('settings.itemsPerPage', 'Items Per Page')}
-                  </label>
-                  <input
-                    type="number"
-                    min="5"
-                    max="100"
-                    value={settings?.items_per_page || 10}
-                    onChange={(e) => handleSettingChange('items_per_page', parseInt(e.target.value))}
-                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Language & Region Settings */}
-            {activeTab === 'language' && (
-              <div className="space-y-6">
-                <h2 className={`font-bold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.25rem)'}}>
-                  {t('settings.languageRegion', 'Language & Region')}
-                </h2>
-
-                {/* Language */}
-                <div>
-                  <label className={`block text-sm font-medium ${text.secondary} mb-2`}>
-                    {t('settings.language', 'Language')}
-                  </label>
-                  <select
-                    value={settings?.language || 'en'}
-                    onChange={(e) => handleSettingChange('language', e.target.value)}
-                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
-                  >
-                    {settingsService.getAvailableLanguages().map((lang) => (
-                      <option key={lang.code} value={lang.code}>
-                        {lang.nativeName} ({lang.name})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Timezone */}
-                <div>
-                  <label className={`block text-sm font-medium ${text.secondary} mb-2`}>
-                    {t('settings.timezone', 'Timezone')}
-                  </label>
-                  <select
-                    value={settings?.timezone || 'UTC'}
-                    onChange={(e) => handleSettingChange('timezone', e.target.value)}
-                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
-                  >
-                    {settingsService.getTimezones().map((tz) => (
-                      <option key={tz.value} value={tz.value}>
-                        {tz.label}
-                      </option>
-                    ))}
-                  </select>
-                  <p className={`text-xs ${text.secondary} mt-1`}>
-                    {t('settings.timezoneNote', 'Timezones organized by region (Americas, Europe, Asia, Australia & Pacific, Africa)')}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Privacy Settings */}
-            {activeTab === 'privacy' && (
-              <div className="space-y-6">
-                <h2 className={`font-bold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.25rem)'}}>
-                  {t('settings.privacySettings', 'Privacy Settings')}
-                </h2>
-
-                {/* Profile Visibility */}
-                <div>
-                  <label className={`block text-sm font-medium ${text.secondary} mb-2`}>
-                    {t('settings.profileVisibility', 'Profile Visibility')}
-                  </label>
-                  <select
-                    value={settings?.profile_visibility || 'all'}
-                    onChange={(e) => handleSettingChange('profile_visibility', e.target.value)}
-                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
-                  >
-                    <option value="all">{t('settings.visibilityAll', 'Everyone')}</option>
-                    <option value="team">{t('settings.visibilityTeam', 'My Team')}</option>
-                    <option value="managers">{t('settings.visibilityManagers', 'Managers Only')}</option>
-                    <option value="private">{t('settings.visibilityPrivate', 'Private')}</option>
-                  </select>
-                </div>
-
-                {/* Contact Information Visibility */}
-                <div className="space-y-3">
-                  <h3 className={`text-lg font-semibold ${text.primary}`}>
-                    {t('settings.contactVisibility', 'Contact Information Visibility')}
-                  </h3>
-                  <SettingToggle
-                    label={t('settings.showEmail', 'Show Email Address')}
-                    checked={settings?.show_email}
-                    onChange={(checked) => handleSettingChange('show_email', checked)}
-                    icon={<Mail className="h-5 w-5" />}
-                  />
-                  <SettingToggle
-                    label={t('settings.showPhone', 'Show Phone Number')}
-                    checked={settings?.show_phone}
-                    onChange={(checked) => handleSettingChange('show_phone', checked)}
-                    icon={<Phone className="h-5 w-5" />}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Work Preferences */}
-            {activeTab === 'work' && (
-              <div className="space-y-6">
-                <h2 className={`font-bold ${text.primary} mb-4`} style={{fontSize: 'clamp(1rem, 2.5vw, 1.25rem)'}}>
-                  {t('settings.workPreferences', 'Work Preferences')}
-                </h2>
-
-                {/* Default Dashboard View */}
-                <div>
-                  <label className={`block text-sm font-medium ${text.secondary} mb-2`}>
-                    {t('settings.defaultDashboard', 'Default Dashboard View')}
-                  </label>
-                  <select
-                    value={settings?.default_dashboard_view || 'overview'}
-                    onChange={(e) => handleSettingChange('default_dashboard_view', e.target.value)}
-                    className={`w-full px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
-                  >
-                    <option value="overview">{t('settings.overviewView', 'Overview')}</option>
-                    <option value="detailed">{t('settings.detailedView', 'Detailed')}</option>
-                    <option value="compact">{t('settings.compactView', 'Compact')}</option>
-                  </select>
-                </div>
-
-                {/* Auto Clock Out */}
-                <div className="space-y-4">
-                  <SettingToggle
-                    label={t('settings.autoClockOut', 'Auto Clock Out')}
-                    description={t('settings.autoClockOutDesc', 'Automatically clock out at a specific time')}
-                    checked={settings?.auto_clock_out}
-                    onChange={(checked) => handleSettingChange('auto_clock_out', checked)}
-                  />
-
-                  {settings?.auto_clock_out && (
-                    <div className="ml-8">
-                      <label className={`block text-sm font-medium ${text.secondary} mb-2`}>
-                        {t('settings.autoClockOutTime', 'Auto Clock Out Time')}
-                      </label>
-                      <TimePicker
-                        value={(settings?.auto_clock_out_time || '17:00').toString().slice(0, 5)}
-                        onChange={(e) => handleSettingChange('auto_clock_out_time', e.target.value)}
-                        inputClassName={`px-4 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                        defaultOpenTime="17:00"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Weekly Report */}
-                <SettingToggle
-                  label={t('settings.weeklyReport', 'Weekly Report')}
-                  description={t('settings.weeklyReportDesc', 'Receive a weekly summary of your work activities')}
-                  checked={settings?.weekly_report}
-                  onChange={(checked) => handleSettingChange('weekly_report', checked)}
-                />
-              </div>
-            )}
-        </div>
-
-        {/* Navigation Tabs - Bottom Section for All Screen Sizes */}
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-4`}>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`
-                    flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 cursor-pointer
-                    ${isActive
-                      ? 'bg-blue-600 text-white shadow-md transform scale-105'
-                      : `${text.secondary} ${hover.bg} hover:scale-102`
-                    }
-                  `}
-                >
-                  <Icon className="h-5 w-5 flex-shrink-0" />
-                  <span className="font-medium text-sm">{tab.label}</span>
-                </button>
-              );
-            })}
+        {/* ── RIGHT — what is not saved yet, 340px ───────────────── */}
+        <aside
+          className="w-full lg:w-[340px] lg:shrink-0 flex flex-col"
+          style={{ background: ind.chrome, overflow: 'hidden' }}
+        >
+          <div style={{ padding: '20px 20px 12px', borderBottom: `1px solid ${ind.hairline}` }}>
+            <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+              <ColumnHeading ind={ind}>{t('settings.unsavedChanges', 'Unsaved changes')}</ColumnHeading>
+              <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, color: ind.accent, whiteSpace: 'nowrap' }}>
+                {t('settings.nItems', '{n} items').replace('{n}', String(pending.length))}
+              </span>
+            </div>
+            <p style={columnNote}>{t('settings.nothingUntilSaved', 'Nothing takes effect until saved')}</p>
           </div>
-        </div>
+
+          {pending.length === 0 && (
+            <div style={{ padding: '16px 20px', borderBottom: `1px solid ${ind.rule}` }}>
+              <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, lineHeight: 1.5 }}>
+                {t('settings.queueEmpty', 'The draft and your saved settings agree. Change a row to open one.')}
+              </p>
+            </div>
+          )}
+
+          {pending.map((item) => (
+            <div key={item.key} style={{ padding: '14px 20px', borderBottom: `1px solid ${ind.rule}` }}>
+              <span
+                className="block"
+                style={{
+                  fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, letterSpacing: '.04em',
+                  textTransform: 'uppercase', color: ind.ink,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}
+              >
+                {item.label}
+              </span>
+
+              {/* Size and ink carry the direction of the change. No red, no green. */}
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, margin: '7px 0 8px', flexWrap: 'wrap' }}>
+                <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 15, color: ind.ink, opacity: 0.45, textDecoration: 'line-through' }}>
+                  {item.from}
+                </span>
+                <ArrowRight size={14} strokeWidth={1.5} style={{ flex: 'none', color: ind.ink, opacity: 0.45 }} />
+                <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 18, color: ind.ink }}>
+                  {item.to}
+                </span>
+              </div>
+
+              <Btn ind={ind} onClick={() => handleSettingChange(item.key, savedSettings[item.key])}>
+                {t('settings.revert', 'Revert')}
+              </Btn>
+            </div>
+          ))}
+
+          {/* Account — the scope every row above is written against. */}
+          <div style={{ padding: '18px 20px 12px', marginTop: 6, borderBottom: `1px solid ${ind.hairline}` }}>
+            <ColumnHeading ind={ind}>{t('settings.account', 'Account')}</ColumnHeading>
+          </div>
+          {[
+            { label: t('controlPanel.role', 'Role'), value: t(`controlPanel.roles.${user?.role}`, user?.role || '—') },
+            { label: t('common.email', 'Email'), value: user?.email || '—' },
+            { label: t('settings.language', 'Language'), value: (settings.language || currentLanguage || '').toUpperCase() },
+            { label: t('settings.timezone', 'Timezone'), value: settings.timezone || 'UTC' },
+          ].map((entry) => (
+            <div
+              key={entry.label}
+              className="flex items-baseline justify-between"
+              style={{ gap: 12, padding: '10px 20px', borderBottom: `1px solid ${ind.rule}` }}
+            >
+              <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted, flex: 'none' }}>{entry.label}</span>
+              <span
+                style={{
+                  fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, color: ind.ink,
+                  minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}
+              >
+                {entry.value}
+              </span>
+            </div>
+          ))}
+        </aside>
       </div>
     </div>
   );
 };
 
-// Reusable Toggle Component
-const SettingToggle = ({ label, description, checked, onChange, icon }) => {
-  const { text, isDarkMode } = useTheme();
-  
-  return (
-    <div className="flex items-start justify-between py-3">
-      <div className="flex items-start space-x-3 flex-1">
-        {icon && <div className={text.secondary}>{icon}</div>}
-        <div>
-          <div className={`font-medium ${text.primary}`}>{label}</div>
-          {description && (
-            <div className={`text-sm ${text.secondary} mt-0.5`}>{description}</div>
-          )}
-        </div>
-      </div>
-      <button
-        onClick={() => onChange(!checked)}
-        className={`
-          relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer
-          ${checked ? 'bg-blue-600' : isDarkMode ? 'bg-gray-700' : 'bg-gray-300'}
-        `}
-      >
-        <span
-          className={`
-            inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-            ${checked ? 'translate-x-6' : 'translate-x-1'}
-          `}
-        />
-      </button>
-    </div>
-  );
-};
+/** Ticker values are short and tracked; a raw token is fine, empty is not. */
+function formatShort(value) {
+  if (value == null || value === '') return '—';
+  return String(value).toUpperCase();
+}
 
 export default Settings;

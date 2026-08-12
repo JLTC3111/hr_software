@@ -28,6 +28,12 @@ export default {
   // Leave Management
   leave: {
     subtitle: 'Lập kế hoạch, yêu cầu và phê duyệt nghỉ phép trên lịch dùng chung.',
+    // Chrome của bản vẽ
+    month: 'Tháng',
+    byType: 'Theo loại',
+    ofNRequests: 'trên {n} yêu cầu',
+    pendingNote: 'Phê duyệt hoặc từ chối ngay tại dòng của yêu cầu trong sổ.',
+    nothingPending: 'Không có yêu cầu nào đang chờ quyết định.',
     requestLeave: 'Yêu Cầu Nghỉ Phép',
     requestsTitle: 'Yêu Cầu Nghỉ Phép',
     noRequests: 'Chưa có yêu cầu nghỉ phép nào.',
@@ -1276,6 +1282,9 @@ export default {
     timeEntries: 'Giờ làm việc',
     custom: 'Tùy chỉnh',
     export: 'Xuất báo cáo',
+    exportScopeNote: 'Tệp xuất chứa toàn bộ bản ghi đã lọc, không chỉ 50 dòng xem trước.',
+    leaveType: 'Loại',
+    rate: 'Tỷ lệ',
     customReports: 'Báo cáo tùy chỉnh',
     createNewReport: 'Tạo báo cáo mới',
     selectCriteria: 'Chọn tiêu chí báo cáo',
@@ -1654,6 +1663,7 @@ export default {
     status: 'Trạng thái',
     refresh: 'Làm mới',
     reload: 'Tải lại',
+    previous: 'Trước',
     retry: 'Thử lại',
     viewDetails: 'Xem Chi Tiết',
     email: 'Email',
@@ -1777,6 +1787,15 @@ export default {
   // Notifications
   notifications: {
     title: 'Thông báo',
+    // Chrome của sổ thông báo
+    shown: 'Đang hiện',
+    nShownOf: 'Hiện {shown} trên {total}',
+    ofN: 'trên {n}',
+    byCategory: 'Theo nhóm',
+    byType: 'Theo loại',
+    leavingMarksRead: 'Rời khỏi màn hình này sẽ đánh dấu mọi mục đang hiện là đã đọc.',
+    loadMore: 'Tải thêm',
+    loadingMore: 'Đang tải...',
     employeeAdded: 'Nhân viên đã được thêm',
     addedTo: 'được thêm vào',
     unreadCount: '{0} chưa đọc',
@@ -1935,7 +1954,57 @@ export default {
     autoClockOutDesc: 'Tự động chấm công ra vào một thời điểm cụ thể',
     autoClockOutTime: 'Thời gian tự động chấm công ra',
     weeklyReport: 'Báo cáo hàng tuần',
-    weeklyReportDesc: 'Nhận tóm tắt hàng tuần về các hoạt động công việc của bạn'
+    weeklyReportDesc: 'Nhận tóm tắt hàng tuần về các hoạt động công việc của bạn',
+    // Chrome của bảng thông số
+    on: 'Bật',
+    off: 'Tắt',
+    sections: 'Nhóm cài đặt',
+    unsaved: 'Chưa lưu',
+    unsavedChanges: 'Thay đổi chưa lưu',
+    nUnsaved: '{n} chưa lưu',
+    allSaved: 'Đã lưu mọi thay đổi',
+    nItems: '{n} mục',
+    nothingUntilSaved: 'Không có gì hiệu lực cho đến khi lưu',
+    queueEmpty: 'Bản nháp và cài đặt đã lưu đang trùng nhau. Đổi một dòng để tạo thay đổi.',
+    revert: 'Hoàn tác',
+    account: 'Tài khoản',
+    saveN: 'Lưu {n} thay đổi',
+    nothingToSave: 'Không có gì để lưu',
+    loadFailed: 'Không tải được cài đặt của bạn.',
+    themes: {
+      light: 'Sáng',
+      dark: 'Tối',
+      system: 'Hệ thống'
+    },
+    scope: {
+      notifications: 'Phạm vi: tài khoản này · áp dụng từ lần đăng nhập kế tiếp',
+      topics: 'Phạm vi: mọi kênh ở trên · chủ đề đang tắt sẽ không bao giờ được gửi',
+      appearance: 'Phạm vi: trình duyệt này · lưu vào tài khoản của bạn',
+      language: 'Phạm vi: toàn bộ giao diện · có hiệu lực khi lưu',
+      privacy: 'Phạm vi: những gì đồng nghiệp thấy trên thẻ danh bạ của bạn',
+      work: 'Phạm vi: hồ sơ chấm công và trang mặc định của bạn'
+    },
+    note: {
+      email: 'Gửi tới {email}',
+      desktop: 'Trình duyệt sẽ hỏi quyền trong lần bật đầu tiên',
+      frequency: 'Thời gian thực gửi ngay khi có sự kiện; bản tóm tắt gộp lại thành một tin',
+      timeTracking: 'Phê duyệt, thiếu chấm công và yêu cầu minh chứng',
+      performance: 'Chu kỳ đánh giá, mục tiêu và tự đánh giá',
+      employee: 'Nhân viên mới, nghỉ việc và thay đổi danh bạ',
+      recruitment: 'Hồ sơ ứng tuyển mới và thay đổi vòng tuyển',
+      system: 'Lịch bảo trì và ghi chú phát hành',
+      theme: 'Hệ thống sẽ theo thiết lập của hệ điều hành',
+      dateFormat: 'Dùng cho mọi ngày hiển thị trên màn hình và trong tệp xuất',
+      timeFormat: 'Áp dụng cho đồng hồ, sổ giờ công và lịch sử chấm công',
+      itemsPerPage: 'Mọi bảng trong ứng dụng phân trang theo kích thước này',
+      language: 'Nội dung chưa dịch sẽ hiển thị bằng tiếng Anh',
+      timezone: 'Mọi mốc thời gian trên màn hình hiển thị theo múi giờ này',
+      visibility: 'Quản lý và quản trị viên luôn giữ quyền truy cập cho mục đích nhân sự',
+      showEmail: 'Tắt mục này chỉ ẩn khỏi danh bạ, không ẩn với bộ phận nhân sự',
+      showPhone: 'Tắt mục này chỉ ẩn khỏi danh bạ, không ẩn với bộ phận nhân sự',
+      dashboard: 'Chế độ mà Tổng Quan Tổ Chức mở lên',
+      autoClockOutTime: 'Ca chấm công còn mở quá giờ này sẽ được đóng tại thời điểm đó'
+    }
   },
   // Task Listing
   taskListing: {
@@ -3435,6 +3504,12 @@ export default {
   },
   // Translation Studio (manual UGC translations)
   translationStudio: {
+    // Số liệu trên thanh chạy
+    strings: 'Chuỗi',
+    inQueue: 'Trong hàng đợi',
+    locales: 'Ngôn ngữ',
+    coverage: 'Độ phủ',
+    selected: 'Đang chọn',
     translateAll: 'Dịch tất cả',
     confirmTranslateAll: 'Thay thế toàn bộ bản dịch hiện có của văn bản này bằng kết quả dịch máy? Không có gì được lưu cho đến khi bạn nhấn Lưu.',
     sourceCountHint: 'Bản ghi đã dịch xong / tổng số bản ghi',

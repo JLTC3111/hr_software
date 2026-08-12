@@ -1,5 +1,22 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Bell, CheckCheck, Trash2, Filter, AlertCircle, Trash, Info, CheckCircle, AlertTriangle, Inbox, ExternalLink, RefreshCw } from 'lucide-react';
+/**
+ * Notifications — the inbox as a ledger, not a stack of coloured cards.
+ *
+ * The read, top to bottom:
+ *   ticker  — total, unread, errors, warnings. The four figures that used to be
+ *             stat cards below the title; they belong on the strip with every
+ *             other screen's figures.
+ *   head    — what you are looking at, plus the status seg and the bulk actions.
+ *   ledger  — one blueprint, one hairline rule per row. Unread carries a 3px
+ *             accent edge and a wash; type reads through a Tag, never through a
+ *             red or green card background.
+ *   rail    — the unread figure, then the same inbox counted by category and by
+ *             type, both derived from the notification list rather than typed.
+ *
+ * Design system: "Industry" (src/theme/industry.js). Radius 0, cards are
+ * outlines with four registration corners, status reads through weight and rule.
+ */
+import _React, { useState, useEffect, useRef, useMemo } from 'react';
+import { CheckCheck, Filter, AlertCircle, Trash2, Trash, Info, CheckCircle, AlertTriangle, Inbox, ExternalLink, RefreshCw, Loader2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -12,34 +29,17 @@ import {
 } from '../utils/demoHelper';
 import { resolveNotificationActionUrl } from '../utils/notificationNavigation';
 import { ShinyButton } from './ui/shiny-button';
-import { SlidingNumber, useNumberReplay } from './motion-primitives';
-import { PageLiveClock } from './ui/page-live-clock';
-import { cn } from '@/lib/utils';
-
-function NotificationStatCard({ label, value, border, text }) {
-  const { replayToken, bump } = useNumberReplay();
-  return (
-    <div
-      onMouseEnter={bump}
-      className={cn(
-        'group relative overflow-hidden p-3 rounded-lg bg-transparent border',
-        border.primary
-      )}
-    >
-      <p className={`relative z-10 text-xs ${text.secondary}`}>{label}</p>
-      <div className={`relative z-10 text-2xl font-bold ${text.primary}`}>
-        <SlidingNumber value={Number(value) || 0} replayToken={replayToken} />
-      </div>
-    </div>
-  );
-}
+import { SlidingNumber } from './motion-primitives';
+import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
+import { Blueprint, Bar, Tag, Btn, Seg, Kicker, ColumnHeading, TickerCell, LiveClock, FlatSelect } from './ui/industry.jsx';
+import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 
 export const MiniFlubberAutoMorphDelete = ({
   size = 16,
   className = '',
   isDarkMode = false,
   autoMorphInterval = 1250,
-  morphDuration = 500, 
+  morphDuration = 500,
 }) => {
   const [currentIconIndex, setCurrentIconIndex] = useState(0);
   const [morphPaths, setMorphPaths] = useState([]);
@@ -273,8 +273,32 @@ export const MiniFlubberAutoMorphDelete = ({
   );
 };
 
+/**
+ * Severity through weight and rule. An error is an outline — the loudest thing
+ * the system has — a success is filled accent, and everything else stays quiet.
+ */
+const TYPE_VARIANT = {
+  error: 'outline',
+  warning: 'outline',
+  success: 'accent',
+  info: 'neutral',
+};
+
+/** Tally one field of the notification list, biggest bucket first. */
+const countBy = (notifications, key) => {
+  const counts = new Map();
+  notifications.forEach((n) => {
+    const value = n[key] || (key === 'type' ? 'info' : 'general');
+    counts.set(value, (counts.get(value) || 0) + 1);
+  });
+  return [...counts.entries()]
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count);
+};
+
 const Notifications = () => {
-  const { bg, text, border, hover, isDarkMode } = useTheme();
+  const { isDarkMode } = useTheme();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
   const { t } = useLanguage();
   const navigate = useNavigate();
   const {
@@ -386,29 +410,16 @@ const Notifications = () => {
 
   // Get icon for notification type
   const getTypeIcon = (type) => {
+    const props = { size: 15, strokeWidth: 1.5, style: { color: ind.inkMuted, flex: 'none' } };
     switch (type) {
       case 'success':
-        return <CheckCircle className={`h-5 w-5 ${text.secondary}`} />;
+        return <CheckCircle {...props} />;
       case 'error':
-        return <AlertCircle className={`h-5 w-5 ${text.secondary}`} />;
+        return <AlertCircle {...props} style={{ ...props.style, color: ind.ink }} />;
       case 'warning':
-        return <AlertTriangle className={`h-5 w-5 ${text.secondary}`} />;
+        return <AlertTriangle {...props} style={{ ...props.style, color: ind.ink }} />;
       default:
-        return <Info className={`h-5 w-5 ${text.secondary}`} />;
-    }
-  };
-
-  // Get color classes for notification type
-  const getTypeColor = (type) => {
-    switch (type) {
-      case 'success':
-        return isDarkMode ? 'border-green-700 bg-green-900/20' : 'border-green-200 bg-green-50';
-      case 'error':
-        return isDarkMode ? 'border-red-700 bg-red-900/20' : 'border-red-200 bg-red-50';
-      case 'warning':
-        return isDarkMode ? 'border-yellow-700 bg-yellow-900/20' : 'border-yellow-200 bg-yellow-50';
-      default:
-        return isDarkMode ? 'border-blue-700 bg-blue-900/20' : 'border-blue-200 bg-blue-50';
+        return <Info {...props} />;
     }
   };
 
@@ -544,6 +555,16 @@ const Notifications = () => {
     return categoryMap[category] || category;
   };
 
+  const getTranslatedType = (type) => {
+    const typeMap = {
+      info: t('notifications.info', 'Info'),
+      success: t('notifications.success', 'Success'),
+      warning: t('notifications.warning', 'Warning'),
+      error: t('notifications.error', 'Error'),
+    };
+    return typeMap[type] || type || t('notifications.info', 'Info');
+  };
+
   const getNotificationTitleText = (notification) => {
     const demoTitle = getDemoNotificationTitle(notification, t);
     if (demoTitle && demoTitle !== notification.title) {
@@ -568,192 +589,249 @@ const Notifications = () => {
     return getTranslatedActionLabel(notification.action_label || '');
   };
 
+  /**
+   * The rail's two breakdowns. Counted off the same list the ledger renders, so
+   * the shares cannot disagree with the rows.
+   */
+  const byCategory = useMemo(() => countBy(notifications, 'category'), [notifications]);
+  const byType = useMemo(() => countBy(notifications, 'type'), [notifications]);
+  const railTotal = notifications.length || 1;
+
+  /* ---------------- shared chrome ---------------- */
+
+  const caption = { fontFamily: BODY, fontSize: 13, color: ind.inkMuted, lineHeight: 1.5, margin: 0 };
+  const columnNote = { fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, lineHeight: 1.45, margin: '6px 0 0' };
+  const fieldLabelStyle = {
+    fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.14em',
+    textTransform: 'uppercase', color: ind.inkMuted, display: 'block', marginBottom: 4,
+  };
+  const iconBtnStyle = {
+    width: 22, height: 22, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    border: `1px solid ${ind.hairline}`, background: 'transparent', color: ind.ink,
+    borderRadius: 0, cursor: 'pointer', padding: 0, flex: 'none',
+  };
+
+  const frameStyle = {
+    border: `1px solid ${ind.hairline}`,
+    background: ind.ground,
+    color: ind.ink,
+    fontFamily: BODY,
+    fontSize: 14,
+    borderRadius: 0,
+  };
+
+  const ticker = (
+    <div
+      style={{
+        height: 44, background: ind.tickerBg, color: ind.tickerInk,
+        borderBottom: `1px solid ${ind.hairline}`,
+        display: 'flex', alignItems: 'stretch', overflowX: 'auto', overflowY: 'hidden',
+      }}
+    >
+      <TickerCell ind={ind}>
+        <LiveClock ind={ind} live={notifications.length > 0} />
+      </TickerCell>
+      <TickerCell ind={ind} label={t('notifications.total', 'Total')} value={stats?.total_notifications ?? notifications.length} />
+      <TickerCell
+        ind={ind}
+        label={t('notifications.unread', 'Unread')}
+        value={stats?.unread_count ?? unreadCount}
+        // The one figure on the strip that asks somebody to act.
+        valueColor={(stats?.unread_count ?? unreadCount) > 0 ? ind.tickerUp : undefined}
+      />
+      <TickerCell ind={ind} label={t('notifications.errors', 'Errors')} value={stats?.error_count ?? 0} />
+      <TickerCell ind={ind} label={t('notifications.warnings', 'Warnings')} value={stats?.warning_count ?? 0} />
+      <TickerCell ind={ind} label={t('notifications.shown', 'Shown')} value={filteredNotifications.length} />
+
+      <div
+        style={{
+          flex: 1, minWidth: 'max-content', display: 'flex', alignItems: 'center',
+          justifyContent: 'flex-end', gap: 8, padding: '0 14px',
+          borderLeft: `1px solid ${ind.tickerRule}`,
+        }}
+      >
+        <FetchElapsedPill active={loading || isRefreshing || loadingMore} isDarkMode label={t('common.fetching', 'Fetching')} />
+        <FlatSelect
+          ind={ind}
+          onDark
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          aria-label={t('notifications.category', 'Category')}
+          style={{ maxWidth: 200 }}
+        >
+          <option value="all" style={{ color: '#1d1f20' }}>{t('notifications.allCategories', 'All Categories')}</option>
+          <option value="general" style={{ color: '#1d1f20' }}>{t('notifications.general', 'General')}</option>
+          <option value="time_tracking" style={{ color: '#1d1f20' }}>{t('notifications.timeTracking', 'Time Tracking')}</option>
+          <option value="performance" style={{ color: '#1d1f20' }}>{t('notifications.performance', 'Performance')}</option>
+          <option value="employee" style={{ color: '#1d1f20' }}>{t('notifications.employee', 'Employee')}</option>
+          <option value="recruitment" style={{ color: '#1d1f20' }}>{t('notifications.recruitment', 'Recruitment')}</option>
+          <option value="system" style={{ color: '#1d1f20' }}>{t('notifications.system', 'System')}</option>
+        </FlatSelect>
+      </div>
+    </div>
+  );
+
   if (loading && notifications.length === 0) {
     return (
-      <div className={`p-4 md:p-8 ${bg.primary} min-h-screen`}>
-        <div className="max-w-none w-full mx-auto">
-          <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 mb-6`}>
-            <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-              <div className="flex items-center space-x-3">
-                <Bell className={`h-8 w-8 ${isDarkMode ? 'text-white' : 'text-gray-900'}`} />
-                <h1 className={`text-4xl font-bold ${text.primary}`}>
-                  {t('notifications.title', 'Notifications')}
-                </h1>
-              </div>
-              <PageLiveClock
-                textClassName={text.primary}
-                separatorClassName={text.secondary}
-                showSeparator={false}
-                loading
-                isDarkMode={isDarkMode}
-                fetchLabel={t('common.fetching', 'Fetching')}
-              />
-            </div>
-          </div>
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-          </div>
+      <div data-screen-label="Notifications" style={frameStyle}>
+        {ticker}
+        <div style={{ padding: '64px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+          <Loader2 size={18} strokeWidth={1.5} className="animate-spin" style={{ color: ind.inkMuted }} />
+          <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.12em', textTransform: 'uppercase', color: ind.inkMuted }}>
+            {t('common.loading', 'Loading')}
+          </span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`p-4 md:p-8 ${bg.primary} min-h-screen`}>
-      <div className="max-w-none w-full mx-auto gap-7">
-        {/* Header */}
-        <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 mb-6`}>
-          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-            <div className="flex items-center space-x-3">
-              <Bell className={`h-8 w-8 ${isDarkMode ? 'text-white' : 'text-gray-900'}`} />
-              <h1 className={`text-4xl font-bold ${text.primary}`}>
+    <div data-screen-label="Notifications" style={frameStyle}>
+      {ticker}
+
+      {/* ── BANDS ────────────────────────────────────────────────── */}
+      <div className="flex flex-col lg:flex-row items-stretch">
+
+        {/* ── LEFT — the ledger. min-w-0 or long messages win. ───── */}
+        <div
+          className="flex-1 min-w-0 flex flex-col"
+          style={{ padding: '22px 24px 20px', gap: 16, borderRight: `1px solid ${ind.hairline}` }}
+        >
+          {/* ── PAGE HEAD ─────────────────────────────────────────── */}
+          <div className="flex flex-wrap items-end justify-between" style={{ gap: 16 }}>
+            <div style={{ minWidth: 0 }}>
+              <h1 style={{ fontFamily: BODY, fontSize: 32, fontWeight: 400, margin: 0, color: ind.ink, lineHeight: 1.1 }}>
                 {t('notifications.title', 'Notifications')}
               </h1>
+              <p style={{ ...caption, marginTop: 6 }}>
+                {[
+                  t('notifications.nShownOf', '{shown} of {total} shown')
+                    .replace('{shown}', String(filteredNotifications.length))
+                    .replace('{total}', String(notifications.length)),
+                  t('notifications.unreadCount', '{0} unread').replace('{0}', String(unreadCount)),
+                ].join(' · ')}
+              </p>
             </div>
-            <PageLiveClock
-              textClassName={text.primary}
-              separatorClassName={text.secondary}
-              showSeparator={false}
-              loading={loading || isRefreshing || loadingMore}
-              isDarkMode={isDarkMode}
-              fetchLabel={t('common.fetching', 'Fetching')}
-            />
-          </div>
-          
-          {/* Action Buttons - Separated from header */}
-          <div className="flex items-center space-x-2 flex-wrap gap-2">
-            <button
-              onClick={handleRefresh}
-              disabled={isRefreshing || isBulkActionRunning}
-              className={`px-4 py-2 rounded-lg group ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer disabled:opacity-50`}
-              title={t('notifications.refresh', 'Refresh')}
-            >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''} group-hover:animate-spin origin-center transform transition-all`} />
-              <span className="hidden sm:inline">{t('notifications.refresh', 'Refresh')}</span>
-            </button>
-            
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`px-4 py-2 group rounded-lg ${hover.bg} ${text.secondary} flex items-center space-x-2 transition-colors cursor-pointer`}
-              title={t('notifications.filters', 'Filters')}
-            >
-              <Filter className="h-4 w-4 group-hover:animate-pulse origin-center transform transition-all" />
-              <span className="hidden sm:inline">{t('notifications.filters', 'Filters')}</span>
-            </button>
-            
-            {unreadCount > 0 && (
-              <ShinyButton
-                type="button"
-                onClick={handleMarkAllAsRead}
-                disabled={isBulkActionRunning}
-                className={cn('group px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed', hover.bg, text.secondary)}
-                title={t('notifications.markAllRead', 'Mark all as read')}
-              >
-                <CheckCheck className="h-4 w-4 group-hover:animate-ping origin-center transform transition-all" />
-                <span className="hidden sm:inline">{t('notifications.markAllRead', 'Mark all as read')}</span>
-              </ShinyButton>
-            )}
-            
-            {notifications.length > 0 && (
-              <ShinyButton
-                type="button"
-                onMouseEnter={() => setIsHoveringDeleteAll(true)}
-                onMouseLeave={() => setIsHoveringDeleteAll(false)}
-                onClick={handleDeleteAll}
-                disabled={isBulkActionRunning}
-                className={cn('px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed', hover.bg, text.secondary)}
-                title={t('notifications.deleteAll', 'Delete all')}
-              >
-                {isHoveringDeleteAll ? (
-                  <MiniFlubberAutoMorphDelete size={16} className="h-4 w-4 transition-all" isDarkMode={isDarkMode} />
-                ) : (
-                  <Trash2 className="h-4 w-4 group-hover:scale-110 transition-all" />
-                )}
-                <span className="hidden sm:inline">{t('notifications.deleteAll', 'Delete all')}</span>
-              </ShinyButton>
-            )}
-          </div>
 
-          {/* Statistics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-            <NotificationStatCard
-              label={t('notifications.total', 'Total')}
-              value={stats.total_notifications}
-              border={border}
-              text={text}
-            />
-            <NotificationStatCard
-              label={t('notifications.unread', 'Unread')}
-              value={stats.unread_count}
-              border={border}
-              text={text}
-            />
-            <NotificationStatCard
-              label={t('notifications.errors', 'Errors')}
-              value={stats.error_count}
-              border={border}
-              text={text}
-            />
-            <NotificationStatCard
-              label={t('notifications.warnings', 'Warnings')}
-              value={stats.warning_count}
-              border={border}
-              text={text}
-            />
-          </div>
-        </div>
+            <div className="flex flex-wrap items-center" style={{ gap: 8 }}>
+              <Seg
+                ind={ind}
+                ariaLabel={t('notifications.status', 'Status')}
+                value={filter}
+                onChange={setFilter}
+                options={[
+                  { value: 'all', label: t('notifications.allNotifications', 'All') },
+                  { value: 'unread', label: t('notifications.unreadOnly', 'Unread') },
+                  { value: 'read', label: t('notifications.readOnly', 'Read') },
+                ]}
+              />
 
-        {/* Filters Panel */}
-        {showFilters && (
-          <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6 mb-6`}>
-            <h3 className={`text-lg font-semibold ${text.primary} mb-4`}>
-              {t('notifications.filterBy', 'Filter By')}
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Status Filter */}
-              <div>
-                <label className={`block text-sm font-medium ${text.secondary} mb-2`}>
-                  {t('notifications.status', 'Status')}
-                </label>
-                <select
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  className={`w-full px-3 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
+              <Btn
+                ind={ind}
+                onClick={handleRefresh}
+                disabled={isRefreshing || isBulkActionRunning}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              >
+                <RefreshCw size={13} strokeWidth={1.5} className={isRefreshing ? 'animate-spin' : undefined} />
+                {t('notifications.refresh', 'Refresh')}
+              </Btn>
+
+              <Btn
+                ind={ind}
+                onClick={() => setShowFilters((v) => !v)}
+                aria-pressed={showFilters}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  background: showFilters ? ind.accentWash : 'transparent',
+                }}
+              >
+                <Filter size={13} strokeWidth={1.5} />
+                {t('notifications.filters', 'Filters')}
+              </Btn>
+
+              {unreadCount > 0 && (
+                /* Kept as a ShinyButton — the sweep is what marks the two bulk
+                   actions apart from the per-row ones. Re-skinned, not stripped. */
+                <ShinyButton
+                  type="button"
+                  onClick={handleMarkAllAsRead}
+                  disabled={isBulkActionRunning}
+                  shineOnHover
+                  className="rounded-none border px-3 py-1"
+                  title={t('notifications.markAllRead', 'Mark all as read')}
+                  style={{
+                    borderRadius: 0, background: ind.accent, color: ind.accentInk,
+                    borderColor: ind.accent, opacity: isBulkActionRunning ? 0.5 : 1,
+                  }}
                 >
-                  <option value="all">{t('notifications.allNotifications', 'All Notifications')}</option>
-                  <option value="unread">{t('notifications.unreadOnly', 'Unread Only')}</option>
-                  <option value="read">{t('notifications.readOnly', 'Read Only')}</option>
-                </select>
-              </div>
+                  <CheckCheck size={13} strokeWidth={1.5} />
+                  <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.04em', textTransform: 'uppercase' }}>
+                    {t('notifications.markAllRead', 'Mark all as read')}
+                  </span>
+                </ShinyButton>
+              )}
 
-              {/* Type Filter */}
-              <div>
-                <label className={`block text-sm font-medium ${text.secondary} mb-2`}>
+              {notifications.length > 0 && (
+                <ShinyButton
+                  type="button"
+                  onMouseEnter={() => setIsHoveringDeleteAll(true)}
+                  onMouseLeave={() => setIsHoveringDeleteAll(false)}
+                  onClick={handleDeleteAll}
+                  disabled={isBulkActionRunning}
+                  shineOnHover
+                  className="rounded-none border px-3 py-1"
+                  title={t('notifications.deleteAll', 'Delete all')}
+                  style={{
+                    borderRadius: 0, background: 'transparent', color: ind.ink,
+                    borderColor: ind.ink, opacity: isBulkActionRunning ? 0.5 : 1,
+                  }}
+                >
+                  {isHoveringDeleteAll
+                    ? <MiniFlubberAutoMorphDelete size={14} isDarkMode={isDarkMode} />
+                    : <Trash2 size={13} strokeWidth={1.5} />}
+                  <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.04em', textTransform: 'uppercase' }}>
+                    {t('notifications.deleteAll', 'Delete all')}
+                  </span>
+                </ShinyButton>
+              )}
+            </div>
+          </div>
+
+          {/* ── FILTER STRIP ──────────────────────────────────────── */}
+          {showFilters && (
+            <div
+              className="flex flex-wrap items-end"
+              style={{ gap: 14, padding: '12px 14px', border: `1px solid ${ind.hairline}` }}
+            >
+              <div style={{ minWidth: 160 }}>
+                <label htmlFor="notif-type-filter" style={fieldLabelStyle}>
                   {t('notifications.type', 'Type')}
                 </label>
-                <select
+                <FlatSelect
+                  ind={ind}
+                  id="notif-type-filter"
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
-                  className={`w-full px-3 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
+                  style={{ width: '100%' }}
                 >
                   <option value="all">{t('notifications.allTypes', 'All Types')}</option>
                   <option value="info">{t('notifications.info', 'Info')}</option>
                   <option value="success">{t('notifications.success', 'Success')}</option>
                   <option value="warning">{t('notifications.warning', 'Warning')}</option>
                   <option value="error">{t('notifications.error', 'Error')}</option>
-                </select>
+                </FlatSelect>
               </div>
 
-              {/* Category Filter */}
-              <div>
-                <label className={`block text-sm font-medium ${text.secondary} mb-2`}>
+              <div style={{ minWidth: 180 }}>
+                <label htmlFor="notif-category-filter" style={fieldLabelStyle}>
                   {t('notifications.category', 'Category')}
                 </label>
-                <select
+                <FlatSelect
+                  ind={ind}
+                  id="notif-category-filter"
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  className={`w-full px-3 py-2 ${bg.primary} ${text.primary} border ${border.primary} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
+                  style={{ width: '100%' }}
                 >
                   <option value="all">{t('notifications.allCategories', 'All Categories')}</option>
                   <option value="general">{t('notifications.general', 'General')}</option>
@@ -762,145 +840,257 @@ const Notifications = () => {
                   <option value="employee">{t('notifications.employee', 'Employee')}</option>
                   <option value="recruitment">{t('notifications.recruitment', 'Recruitment')}</option>
                   <option value="system">{t('notifications.system', 'System')}</option>
-                </select>
+                </FlatSelect>
               </div>
-            </div>
-          </div>
-        )}
 
-        {/* Notifications List */}
-        {filteredNotifications.length === 0 ? (
-          <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-12`}>
-            <div className="text-center">
-              <Inbox className={`h-16 w-16 ${text.secondary} mx-auto mb-4 opacity-50`} />
-              <h3 className={`text-xl font-semibold ${text.primary} mb-2`}>
-                {t('notifications.noNotifications', 'No notifications')}
-              </h3>
-              <p className={`${text.secondary}`}>
-                {hasActiveFilters || notifications.length > 0
-                  ? t('notifications.noNotificationsFilter', 'No notifications match your filters')
-                  : t('notifications.noNotificationsYet', 'You don\'t have any notifications yet')
-                }
-              </p>
+              <div style={{ flex: 1 }} />
+
               {hasActiveFilters && (
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="mt-4 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 cursor-pointer"
-                >
+                <Btn ind={ind} onClick={clearFilters}>
                   {t('notifications.clearFilters', 'Clear filters')}
-                </button>
+                </Btn>
               )}
             </div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filteredNotifications.map((notification) => (
-              <div
-                key={notification.id}
-                role={notification.action_url ? 'button' : undefined}
-                tabIndex={notification.action_url ? 0 : undefined}
-                onClick={() => handleNotificationClick(notification)}
-                onKeyDown={(e) => {
-                  if (notification.action_url && (e.key === 'Enter' || e.key === ' ')) {
-                    e.preventDefault();
-                    handleNotificationClick(notification);
-                  }
-                }}
-                className={`rounded-lg shadow-sm border
-                  ${getTypeColor(notification.type)}
-                  cursor-pointer hover:shadow-md
-                  ${!notification.is_read ? 'border-l-4 border-l-blue-600' : border.primary}
-                  ${updatingNotifications.has(notification.id) ? 'opacity-50 pointer-events-none' : ''}
-                  p-4 transition-all duration-200
-                `}
-              >
-                <div className="flex items-start space-x-4">
-                  {/* Icon */}
-                  <div className="shrink-0 mt-1">
-                    {updatingNotifications.has(notification.id) ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                    ) : (
-                      getTypeIcon(notification.type)
-                    )}
-                  </div>
+          )}
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <h4 className={`font-semibold ${text.primary}`}>
-                            {getNotificationTitleText(notification)}
-                          </h4>
-                          {!notification.is_read && (
-                            <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
-                          )}
-                        </div>
-                        <p className={`text-sm ${text.secondary} mt-1`}>
-                          {getNotificationMessageText(notification)}
-                        </p>
-                        
-                        {/* Action Button */}
-                        {notification.action_url && notification.action_label && (
-                          <span className="mt-2 text-sm text-blue-600 font-medium inline-flex items-center space-x-1">
-                            <span>{getNotificationActionLabelText(notification)}</span>
-                            <ExternalLink className="h-3 w-3" />
-                          </span>
+          {/* ── LEDGER ────────────────────────────────────────────── */}
+          {filteredNotifications.length === 0 ? (
+            <Blueprint ind={ind} style={{ padding: '48px 24px', textAlign: 'center' }}>
+              <Inbox size={28} strokeWidth={1.25} style={{ color: ind.inkFaint, margin: '0 auto' }} />
+              <div style={{ marginTop: 12 }}>
+                <ColumnHeading ind={ind}>{t('notifications.noNotifications', 'No notifications')}</ColumnHeading>
+              </div>
+              <p style={{ ...caption, marginTop: 6 }}>
+                {hasActiveFilters || notifications.length > 0
+                  ? t('notifications.noNotificationsFilter', 'No notifications match your filters')
+                  : t('notifications.noNotificationsYet', 'You don\'t have any notifications yet')}
+              </p>
+              {hasActiveFilters && (
+                <Btn ind={ind} onClick={clearFilters} style={{ marginTop: 14 }}>
+                  {t('notifications.clearFilters', 'Clear filters')}
+                </Btn>
+              )}
+            </Blueprint>
+          ) : (
+            <Blueprint ind={ind} style={{ padding: '4px 0 0' }}>
+              {filteredNotifications.map((notification, index) => {
+                const unread = !notification.is_read;
+                const busy = updatingNotifications.has(notification.id);
+                const actionable = !!notification.action_url;
+                return (
+                  <div
+                    key={notification.id}
+                    role={actionable ? 'button' : undefined}
+                    tabIndex={actionable ? 0 : undefined}
+                    onClick={() => handleNotificationClick(notification)}
+                    onKeyDown={(e) => {
+                      if (actionable && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault();
+                        handleNotificationClick(notification);
+                      }
+                    }}
+                    style={{
+                      display: 'flex', gap: 12, alignItems: 'flex-start',
+                      padding: '12px 16px 12px 13px',
+                      borderTop: index === 0 ? 'none' : `1px solid ${ind.rule}`,
+                      // The unread mark is an edge and a wash, never a coloured card.
+                      borderLeft: `3px solid ${unread ? ind.accent : 'transparent'}`,
+                      background: unread ? ind.accentWash : 'transparent',
+                      cursor: actionable ? 'pointer' : 'default',
+                      opacity: busy ? 0.5 : 1,
+                      pointerEvents: busy ? 'none' : undefined,
+                      transition: 'background .15s ease',
+                    }}
+                  >
+                    <span style={{ marginTop: 2, flex: 'none' }}>
+                      {busy
+                        ? <Loader2 size={15} strokeWidth={1.5} className="animate-spin" style={{ color: ind.inkMuted }} />
+                        : getTypeIcon(notification.type)}
+                    </span>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="flex flex-wrap items-center" style={{ gap: 8 }}>
+                        <span style={{ fontFamily: BODY, fontSize: 14, color: ind.ink, minWidth: 0 }}>
+                          {getNotificationTitleText(notification)}
+                        </span>
+                        <Tag ind={ind} variant={TYPE_VARIANT[notification.type] || 'neutral'}>
+                          {getTranslatedType(notification.type)}
+                        </Tag>
+                        {unread && (
+                          <span aria-hidden="true" style={{ width: 6, height: 6, background: ind.accent, flex: 'none' }} />
                         )}
                       </div>
 
-                      {/* Actions */}
-                      <div className="flex items-center space-x-2 ml-4">
-                        {!notification.is_read && (
-                          <button
-                            onClick={(e) => handleMarkAsRead(e, notification.id)}
-                            className={`p-2 rounded-lg ${hover.bg} ${text.secondary} transition-colors cursor-pointer`}
-                            title={t('notifications.markAsRead', 'Mark as read')}
-                          >
-                            <CheckCheck className="h-4 w-4" />
-                          </button>
-                        )}
-                        <button
-                          onClick={(e) => handleDelete(e, notification.id)}
-                          className={`p-2 rounded-lg ${hover.bg} ${text.primary} transition-colors cursor-pointer`}
-                          title={t('notifications.delete', 'Delete')}
+                      <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, margin: '4px 0 0', lineHeight: 1.5 }}>
+                        {getNotificationMessageText(notification)}
+                      </p>
+
+                      {notification.action_url && notification.action_label && (
+                        <span
+                          className="inline-flex items-center"
+                          style={{
+                            gap: 5, marginTop: 6,
+                            fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5, letterSpacing: '.08em',
+                            textTransform: 'uppercase', color: ind.accentDeep,
+                          }}
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                          {getNotificationActionLabelText(notification)}
+                          <ExternalLink size={11} strokeWidth={1.5} />
+                        </span>
+                      )}
+
+                      <div className="flex flex-wrap items-center" style={{ gap: 10, marginTop: 7 }}>
+                        <span
+                          style={{
+                            fontFamily: DISPLAY, fontWeight: 600, fontSize: 10.5, letterSpacing: '.1em',
+                            textTransform: 'uppercase', color: ind.inkFaint, fontVariantNumeric: 'tabular-nums',
+                          }}
+                        >
+                          {formatTime(notification.created_at)}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: DISPLAY, fontWeight: 600, fontSize: 10.5, letterSpacing: '.1em',
+                            textTransform: 'uppercase', color: ind.inkFaint,
+                          }}
+                        >
+                          {getTranslatedCategory(notification.category)}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Metadata */}
-                    <div className="flex items-center space-x-4 mt-2">
-                      <span className={`text-xs ${text.secondary}`}>
-                        {formatTime(notification.created_at)}
-                      </span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} ${text.secondary}`}>
-                        {getTranslatedCategory(notification.category)}
-                      </span>
+                    <div className="flex items-center" style={{ gap: 6, flex: 'none' }}>
+                      {unread && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleMarkAsRead(e, notification.id)}
+                          title={t('notifications.markAsRead', 'Mark as read')}
+                          aria-label={t('notifications.markAsRead', 'Mark as read')}
+                          style={iconBtnStyle}
+                        >
+                          <CheckCheck size={12} strokeWidth={1.5} />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => handleDelete(e, notification.id)}
+                        title={t('notifications.delete', 'Delete')}
+                        aria-label={t('notifications.delete', 'Delete')}
+                        style={iconBtnStyle}
+                      >
+                        <Trash2 size={12} strokeWidth={1.5} />
+                      </button>
                     </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                );
+              })}
 
-            {hasMoreNotifications && (
-              <div className="flex justify-center pt-2">
-                <ShinyButton
-                  type="button"
-                  onClick={loadMoreNotifications}
-                  disabled={loadingMore}
-                  className={cn('px-6 py-2 border text-sm font-medium disabled:opacity-50', border.primary, hover.bg, text.secondary)}
-                >
-                  {loadingMore
-                    ? t('notifications.loadingMore', 'Loading...')
-                    : t('notifications.loadMore', 'Load more')}
-                </ShinyButton>
+              {/* Ledger foot — the range, and the way to extend it. */}
+              <div
+                className="flex flex-wrap items-center justify-between"
+                style={{ gap: 10, padding: '10px 16px', borderTop: `1px solid ${ind.hairline}` }}
+              >
+                <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint }}>
+                  {t('notifications.nShownOf', '{shown} of {total} shown')
+                    .replace('{shown}', String(filteredNotifications.length))
+                    .replace('{total}', String(notifications.length))}
+                </span>
+                {hasMoreNotifications && (
+                  <Btn ind={ind} onClick={loadMoreNotifications} disabled={loadingMore}>
+                    {loadingMore
+                      ? t('notifications.loadingMore', 'Loading...')
+                      : t('notifications.loadMore', 'Load more')}
+                  </Btn>
+                )}
               </div>
-            )}
+            </Blueprint>
+          )}
+        </div>
+
+        {/* ── RIGHT — the same inbox, counted, 340px ─────────────── */}
+        <aside
+          className="w-full lg:w-[340px] lg:shrink-0 flex flex-col"
+          style={{ background: ind.chrome, overflow: 'hidden' }}
+        >
+          <div style={{ padding: '20px 20px 16px', borderBottom: `1px solid ${ind.hairline}` }}>
+            <Kicker ind={ind}>{t('notifications.unread', 'Unread')}</Kicker>
+            <div className="flex items-baseline" style={{ gap: 8, margin: '4px 0 0' }}>
+              {/* SlidingNumber kept from the old stat cards — the one figure on
+                  this screen that is worth watching move. */}
+              <span style={{ ...figure(52, ind.ink), lineHeight: 0.92 }}>
+                <SlidingNumber value={Number(unreadCount) || 0} />
+              </span>
+              <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>
+                {t('notifications.ofN', 'of {n}').replace('{n}', String(notifications.length))}
+              </span>
+            </div>
+            <p style={columnNote}>
+              {unreadCount > 0
+                ? t('notifications.leavingMarksRead', 'Leaving this screen marks everything shown as read.')
+                : t('notifications.allCaughtUp', "You're all caught up!")}
+            </p>
           </div>
-        )}
+
+          <div style={{ padding: '18px 20px 12px', borderBottom: `1px solid ${ind.hairline}` }}>
+            <ColumnHeading ind={ind}>{t('notifications.byCategory', 'By category')}</ColumnHeading>
+          </div>
+          {byCategory.length === 0 ? (
+            <div style={{ padding: '14px 20px', borderBottom: `1px solid ${ind.rule}` }}>
+              <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted }}>—</p>
+            </div>
+          ) : byCategory.map((row, i) => (
+            <button
+              key={row.value}
+              type="button"
+              onClick={() => setCategoryFilter(categoryFilter === row.value ? 'all' : row.value)}
+              className="w-full text-left"
+              style={{
+                padding: '11px 20px',
+                background: categoryFilter === row.value ? ind.accentWash : 'transparent',
+                border: 'none',
+                borderBottom: `1px solid ${ind.rule}`,
+                borderRadius: 0,
+                cursor: 'pointer',
+                transition: 'background .15s ease',
+              }}
+            >
+              <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+                <span
+                  style={{
+                    fontFamily: BODY, fontSize: 12.5, color: ind.ink, minWidth: 0,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}
+                >
+                  {getTranslatedCategory(row.value)}
+                </span>
+                <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, color: ind.ink, fontVariantNumeric: 'tabular-nums' }}>
+                  {row.count}
+                </span>
+              </div>
+              <div style={{ marginTop: 6 }}>
+                <Bar ind={ind} value={row.count / railTotal} fill={rampAt(ind, i)} height={6} />
+              </div>
+            </button>
+          ))}
+
+          <div style={{ padding: '18px 20px 12px', marginTop: 6, borderBottom: `1px solid ${ind.hairline}` }}>
+            <ColumnHeading ind={ind}>{t('notifications.byType', 'By type')}</ColumnHeading>
+          </div>
+          {byType.map((row) => (
+            <div
+              key={row.value}
+              className="flex items-center justify-between"
+              style={{ gap: 12, padding: '10px 20px', borderBottom: `1px solid ${ind.rule}` }}
+            >
+              <Tag ind={ind} variant={TYPE_VARIANT[row.value] || 'neutral'}>
+                {getTranslatedType(row.value)}
+              </Tag>
+              <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, color: ind.ink, fontVariantNumeric: 'tabular-nums' }}>
+                {row.count}
+              </span>
+            </div>
+          ))}
+        </aside>
       </div>
     </div>
   );
