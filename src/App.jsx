@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react'
+import { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Loader } from 'lucide-react'
@@ -13,31 +13,39 @@ import Header from './components/header.jsx';
 import Sidebar from './components/sidebar.jsx';
 import Login from './components/login.jsx';
 import EmployeeModal from './components/employeeModal.jsx';
+import RouteErrorBoundary from './components/RouteErrorBoundary.jsx';
 import { filterActiveEmployees } from './utils/employeeStatus.js';
+import { lazyWithRetry } from './utils/lazyWithRetry.js';
 
-// Lazy loaded route components for code splitting
-const Dashboard = lazy(() => import('./components/dashboard.jsx'));
-const Employee = lazy(() => import('./components/employee.jsx'));
-const TimeTracking = lazy(() => import('./components/timeTracking.jsx'));
-const TimeClockEntry = lazy(() => import('./components/timeClockEntry.jsx'));
-const PunchClock = lazy(() => import('./components/punchClock.jsx'));
-const TaskListing = lazy(() => import('./components/taskListing.jsx'));
-const TaskReview = lazy(() => import('./components/taskReview.jsx'));
-const PersonalGoals = lazy(() => import('./components/personalGoals.jsx'));
-const Reports = lazy(() => import('./components/reports.jsx'));
-const Recruitment = lazy(() => import('./components/recruitment.jsx'));
-const LeaveManagement = lazy(() => import('./components/leaveManagement.jsx'));
-const Notifications = lazy(() => import('./components/notifications.jsx'));
-const Settings = lazy(() => import('./components/settings.jsx'));
-const TranslationStudio = lazy(() => import('./components/translationStudio.jsx'));
-const AddNewEmployee = lazy(() => import('./components/addNewEmployee.jsx'));
-const DeleteEmployeeManager = lazy(() => import('./components/deleteEmployeeManager.jsx'));
-const ControlPanel = lazy(() => import('./components/controlPanel.jsx'));
-const PolicyControls = lazy(() => import('./components/policyControls.jsx'));
-const AdvancedHelpCenter = lazy(() => import('./components/AdvancedHelpCenter.jsx'));
-const ProductionHelpCenter = lazy(() => import('./components/ProductionHelpCenter.jsx'));
-const FlubberIconTest = lazy(() => import('./components/FlubberIconTest.jsx'));
-const ResetPassword = lazy(() => import('./components/ResetPassword.jsx'));
+// Lazy loaded route components for code splitting.
+//
+// lazyWithRetry, not React.lazy: switching page is a network request for a
+// chunk, and after an idle tab that request can fail — a deploy has replaced
+// the fingerprinted filenames, or the machine has only just woken up. React
+// caches a rejected lazy import for ever, so one failure used to kill the route
+// permanently and, through the root error boundary, the whole app with it.
+const Dashboard = lazyWithRetry(() => import('./components/dashboard.jsx'));
+const Employee = lazyWithRetry(() => import('./components/employee.jsx'));
+const TimeTracking = lazyWithRetry(() => import('./components/timeTracking.jsx'));
+const TimeClockEntry = lazyWithRetry(() => import('./components/timeClockEntry.jsx'));
+const PunchClock = lazyWithRetry(() => import('./components/punchClock.jsx'));
+const TaskListing = lazyWithRetry(() => import('./components/taskListing.jsx'));
+const TaskReview = lazyWithRetry(() => import('./components/taskReview.jsx'));
+const PersonalGoals = lazyWithRetry(() => import('./components/personalGoals.jsx'));
+const Reports = lazyWithRetry(() => import('./components/reports.jsx'));
+const Recruitment = lazyWithRetry(() => import('./components/recruitment.jsx'));
+const LeaveManagement = lazyWithRetry(() => import('./components/leaveManagement.jsx'));
+const Notifications = lazyWithRetry(() => import('./components/notifications.jsx'));
+const Settings = lazyWithRetry(() => import('./components/settings.jsx'));
+const TranslationStudio = lazyWithRetry(() => import('./components/translationStudio.jsx'));
+const AddNewEmployee = lazyWithRetry(() => import('./components/addNewEmployee.jsx'));
+const DeleteEmployeeManager = lazyWithRetry(() => import('./components/deleteEmployeeManager.jsx'));
+const ControlPanel = lazyWithRetry(() => import('./components/controlPanel.jsx'));
+const PolicyControls = lazyWithRetry(() => import('./components/policyControls.jsx'));
+const AdvancedHelpCenter = lazyWithRetry(() => import('./components/AdvancedHelpCenter.jsx'));
+const ProductionHelpCenter = lazyWithRetry(() => import('./components/ProductionHelpCenter.jsx'));
+const FlubberIconTest = lazyWithRetry(() => import('./components/FlubberIconTest.jsx'));
+const ResetPassword = lazyWithRetry(() => import('./components/ResetPassword.jsx'));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -342,6 +350,10 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
                 
                 {/* Main Content - Full width utilization */}
                 <div className="min-w-0 flex-1 w-full p-3 sm:p-4 lg:p-5 xl:p-6">
+                  {/* Scoped to the routed pane so a screen that fails leaves the
+                      header and rail standing, instead of taking the whole app
+                      down through the root boundary. */}
+                  <RouteErrorBoundary>
                   <Suspense fallback={<PageLoader />}>
                   <Routes>
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -428,6 +440,7 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
                     <Route path="*" element={<Navigate to="/dashboard" replace />} />
                   </Routes>
                   </Suspense>
+                  </RouteErrorBoundary>
                 </div>
               </div>
 

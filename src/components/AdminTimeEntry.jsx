@@ -1,5 +1,19 @@
-import _React, { useState, useEffect } from 'react';
-import { Clock, UserPlus, Save, X, Search, AlertCircle, Calendar, LogIn, LogOut, Check, Upload, FileText, ChevronsUpDown, Users, CalendarRange } from 'lucide-react';
+/**
+ * Bulk scope of 3a (timeClockEntry.jsx) — filing hours *for other people*.
+ *
+ * Rendered into the left band of the time clock screen when the scope seg is set
+ * to "Bulk", so it deliberately has no shell of its own: the page head, ticker
+ * and padding already belong to the parent. What it contributes is two
+ * blueprints — the multi-employee entry form, and the standard-hours fill.
+ *
+ * Design system: "Industry" (src/theme/industry.js). Radius 0, cards are
+ * outlines with four registration corners, the primary button is the only solid
+ * object on the card, and status reads through weight and rule rather than
+ * red/green — which is why the success and failure banners here differ by their
+ * border weight and icon, not by colour.
+ */
+import _React, { useState, useEffect, useMemo } from 'react';
+import { Clock, Save, X, Search, AlertCircle, Calendar, LogIn, LogOut, Check, Upload, Users, CalendarRange } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
@@ -11,6 +25,8 @@ import { SpecularButton } from './ui/specular-button';
 import { DatePicker } from './ui/date-picker.jsx';
 import { TimePicker } from './ui/time-picker.jsx';
 import { cn } from '@/lib/utils';
+import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
+import { Blueprint, Tag, Btn, Kicker, ColumnHeading } from './ui/industry.jsx';
 import {
   getHoursWorked,
   toExtendedInterval,
@@ -22,7 +38,8 @@ const ClockInIcon = ({ className, ...props }) => (
 );
 
 const AdminTimeEntry = ({ onEntriesChanged }) => {
-  const { isDarkMode, bg, text, border } = useTheme();
+  const { isDarkMode } = useTheme();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
   const { t } = useLanguage();
   const { user, checkPermission } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
@@ -49,8 +66,6 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
   });
   const [bulkFillLoading, setBulkFillLoading] = useState(false);
   const [showBulkConfirmModal, setShowBulkConfirmModal] = useState(false);
-
-  const dateInputClassName = `w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer`;
 
   const getBulkFillErrorMessage = (error) => {
     if (!error) {
@@ -84,15 +99,21 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
   // Check if user has permission
   const canManageTimeTracking = checkPermission('canManageTimeTracking');
 
-  const _hourTypes = [
-    { value: 'regular', label: t('timeClock.hourTypes.regular'), color: 'blue' },
-    { value: 'holiday', label: t('timeClock.hourTypes.holiday'), color: 'purple' },
-    { value: 'weekend', label: t('timeClock.hourTypes.weekend'), color: 'green' },
-    { value: 'overtime', label: t('timeClock.hourTypes.overtime'), color: 'orange' },
-    { value: 'bonus', label: t('timeClock.hourTypes.bonus'), color: 'yellow' },
-    { value: 'wfh', label: t('timeClock.hourTypes.wfh'), color: 'cyan' },
-    { value: 'on_leave', label: t('timeClock.hourTypes.onLeave', 'On Leave'), color: 'pink', t: 'timeClock.hourTypes.onLeave' }
+  /**
+   * Chips, not a select. The list is short and fixed, and the choice changes
+   * what the figure on the right of the card says — the same grammar the
+   * single-entry form on this screen uses.
+   */
+  const hourTypes = [
+    { value: 'regular', label: t('adminTimeEntry.hourTypes.regular', 'Regular Hours') },
+    { value: 'overtime', label: t('adminTimeEntry.hourTypes.overtime', 'Overtime') },
+    { value: 'weekend', label: t('adminTimeEntry.hourTypes.weekend', 'Weekend/Overtime') },
+    { value: 'holiday', label: t('adminTimeEntry.hourTypes.holiday', 'Holiday') },
+    { value: 'bonus', label: t('adminTimeEntry.hourTypes.bonus', 'Bonus Hours') },
+    { value: 'wfh', label: t('adminTimeEntry.hourTypes.wfh', 'Working From Home (Online)') },
+    { value: 'on_leave', label: t('adminTimeEntry.hourTypes.onLeave', 'On Leave') }
   ];
+
   useEffect(() => {
     if (canManageTimeTracking) {
       fetchEmployees();
@@ -171,9 +192,9 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     console.log('Submit - Selected employees:', selectedEmployees);
-    
+
     if (selectedEmployees.length === 0) {
       setErrorMessage(t('adminTimeEntry.selectAtLeastOne', 'Please select at least one employee'));
       return;
@@ -215,7 +236,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
       let proofFileName = null;
       let proofFileType = null;
       let proofFilePath = null;
-      
+
       if (formData.proofFile) {
         // Convert base64 back to file for upload
         const base64Data = formData.proofFile.data;
@@ -225,24 +246,24 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
           byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
         const byteArray = new Uint8Array(byteNumbers);
-        
+
         // Create File object - use first employee's ID for upload
-        const file = new File([byteArray], formData.proofFile.name, { 
+        const file = new File([byteArray], formData.proofFile.name, {
           type: formData.proofFile.type,
           lastModified: Date.now()
         });
-        
+
         const uploadResult = await timeTrackingService.uploadProofFile(file, selectedEmployees[0].id);
         if (uploadResult.success) {
           proofFileUrl = uploadResult.url;
-          
+
           // Fix for Demo Mode with IndexedDB fallback:
           // If uploadProofFile returns null URL (because it used IndexedDB),
           // use a temporary Blob URL so it shows up in the table immediately.
           if (!proofFileUrl && isDemoMode()) {
             proofFileUrl = URL.createObjectURL(file);
           }
-          
+
           proofFileName = uploadResult.fileName;
           proofFileType = uploadResult.fileType;
           proofFilePath = uploadResult.storagePath;
@@ -283,25 +304,25 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
         existingEntries = data;
         checkError = error;
       }
-      
+
       if (checkError) {
         console.error('Error checking existing entries:', checkError);
         setErrorMessage(t('adminTimeEntry.errors.checkFailed', 'Failed to check for existing entries'));
         setLoading(false);
         return;
       }
-      
+
       // Check for time overlaps for each employee
       const employeesWithOverlaps = [];
       const employeesWithoutOverlaps = [];
 
       const newClockInSeconds = isOnLeave ? null : timeStringToSeconds(clockInTime);
       const newClockOutSeconds = isOnLeave ? null : timeStringToSeconds(clockOutTime);
-      
+
       for (const emp of selectedEmployees) {
         const empExistingEntries = existingEntries.filter(e => String(e.employee_id) === String(emp.id));
         let hasOverlap = false;
-        
+
         if (!isOnLeave) {
           if (newClockInSeconds == null || newClockOutSeconds == null) {
             setErrorMessage(t('adminTimeEntry.errors.invalidTime', 'Invalid clock-in or clock-out time'));
@@ -319,21 +340,21 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
             const newInterval = toExtendedInterval(newClockInSeconds, newClockOutSeconds);
             const existingInterval = toExtendedInterval(existingClockInSeconds, existingClockOutSeconds);
             const isOverlapping = extendedIntervalsOverlap(newInterval, existingInterval);
-            
+
             if (isOverlapping) {
               hasOverlap = true;
               break;
             }
           }
         }
-        
+
         if (hasOverlap) {
           employeesWithOverlaps.push(emp);
         } else {
           employeesWithoutOverlaps.push(emp);
         }
       }
-      
+
       // If all employees have overlapping entries, show error
       if (employeesWithoutOverlaps.length === 0) {
         const names = employeesWithOverlaps.map(e => e.name).join(', ');
@@ -346,16 +367,16 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
         setLoading(false);
         return;
       }
-      
+
       // Show warning if some employees have overlapping entries
       if (employeesWithOverlaps.length > 0) {
         const names = employeesWithOverlaps.map(e => e.name).join(', ');
         console.log(`Skipping employees with overlapping ${formData.hourType} entries: ${names}`);
       }
-      
+
       const employeesWithoutEntries = employeesWithoutOverlaps;
       const employeesWithEntries = employeesWithOverlaps;
-      
+
       // Create entries only for employees without existing entries
       const entries = employeesWithoutEntries.map(emp => ({
         employeeId: emp.id,
@@ -384,17 +405,17 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
           `adminTimeEntry.hourTypes.${hourTypeKey}`,
           t(`timeClock.hourTypes.${hourTypeKey}`, formData.hourType)
         );
-        
-        let message = employeesWithoutEntries.length === 1 
+
+        let message = employeesWithoutEntries.length === 1
           ? `${hourTypeLabel} ${t('adminTimeEntry.entryAddedSuccess', 'time entry added successfully for')} ${processedNames}`
           : `${hourTypeLabel} ${t('adminTimeEntry.entriesAddedSuccess', 'time entries added successfully for')} ${employeesWithoutEntries.length} ${t('adminTimeEntry.employees', 'employees')}: ${processedNames}`;
-        
+
         // Add warning about skipped employees if any
         if (employeesWithEntries.length > 0) {
           const skippedNames = employeesWithEntries.map(e => e.name).join(', ');
           message += ` (${t('adminTimeEntry.skippedEmployees', 'Skipped {count} employee(s) with existing {hourType} entries: {names}').replace('{count}', employeesWithEntries.length).replace('{hourType}', hourTypeLabel).replace('{names}', skippedNames)})`;
         }
-        
+
         setSuccessMessage(message);
         // Reset form and allow all employees to be selectable again
         setFormData({
@@ -494,7 +515,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
   const toggleEmployeeSelection = (employee) => {
     setSelectedEmployees(prev => {
       const isSelected = prev.some(e => e.id === employee.id);
-      return isSelected 
+      return isSelected
         ? prev.filter(e => e.id !== employee.id)
         : [...prev, employee];
     });
@@ -508,7 +529,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
   const filteredEmployees = employees.filter(emp => {
     // Don't show employees that are already selected
     if (selectedEmployees.some(e => e.id === emp.id)) return false;
-    
+
     // Apply search filter
     return (
       emp.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -517,339 +538,491 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
     );
   });
 
+  /* ---------------------------------------------------------------- *
+   * Shared type — the same scale the single-entry form on this screen
+   * uses, so the two scopes read as one page.
+   * ---------------------------------------------------------------- */
+
+  const captionStyle = {
+    fontFamily: BODY,
+    fontSize: 11.5,
+    color: ind.inkFaint,
+    margin: '6px 0 0',
+    lineHeight: 1.5,
+  };
+
+  const fieldLabelStyle = {
+    fontFamily: DISPLAY,
+    fontWeight: 600,
+    fontSize: 10,
+    letterSpacing: '.14em',
+    textTransform: 'uppercase',
+    color: ind.inkMuted,
+    display: 'block',
+    marginBottom: 4,
+  };
+
+  /** Btn's type, applied inside SpecularButton where its own classes reach. */
+  const specularLabelStyle = {
+    fontFamily: DISPLAY,
+    fontWeight: 600,
+    fontSize: 12.5,
+    letterSpacing: '.04em',
+    textTransform: 'uppercase',
+  };
+
+  const iconBtnStyle = {
+    width: 20,
+    height: 20,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: `1px solid ${ind.hairline}`,
+    background: 'transparent',
+    color: ind.ink,
+    borderRadius: 0,
+    cursor: 'pointer',
+    padding: 0,
+    flex: 'none',
+  };
+
+  /** The hours a single row of this submission will carry. */
+  const formHours = useMemo(() => {
+    if (isOnLeave) return 0;
+    const value = getHoursWorked(formData.date, formData.clockIn, formData.clockOut);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  }, [isOnLeave, formData.date, formData.clockIn, formData.clockOut]);
+
+  const selectedCount = selectedEmployees.length;
+  const hourTypeLabel = hourTypes.find((type) => type.value === formData.hourType)?.label || '';
+
   if (!canManageTimeTracking) {
     return (
-      <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
-        <div className={`flex items-center space-x-3 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>
-          <AlertCircle className="w-6 h-6" />
-          <p className="font-medium">{t('adminTimeEntry.accessDenied', 'Access Denied: You don\'t have permission to manage time entries for other employees.')}</p>
+      <div style={{ border: `1px solid ${ind.ink}`, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+        <AlertCircle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
+        <div style={{ minWidth: 0 }}>
+          <Kicker ind={ind} color={ind.ink}>{t('common.error', 'Error')}</Kicker>
+          <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 4 }}>
+            {t('adminTimeEntry.accessDenied', 'Access Denied: You don\'t have permission to manage time entries for other employees.')}
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`${bg.secondary} rounded-lg shadow-sm border ${border.primary} p-6`}>
-      <div className="flex items-center space-x-3 mb-6">
-        <UserPlus className={`w-6 h-6 ${isDarkMode ? 'text-white' : 'text-black'}`} />
-        <h3 className={`text-xl font-bold ${text.primary}`}>
-          {t('adminTimeEntry.title', 'Admin Time Entry')}
-        </h3>
-      </div>
-
-      <p className={`${text.secondary} mb-6`}>
-        {t('adminTimeEntry.description', 'Enter time entries for employees (Admin/Manager only)')}
-      </p>
-
-      {/* Success Message */}
+    <div className="flex flex-col" style={{ gap: 16 }}>
+      {/* ── Banners — weight and icon carry the verdict, not colour ─── */}
       {successMessage && (
-        <div className={`mb-4 p-4 border rounded-lg flex items-center space-x-2 ${isDarkMode ? 'bg-green-900 border-green-700' : 'bg-green-50 border-green-200'}`}>
-          <Check className={`w-5 h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
-          <span className={isDarkMode ? 'text-green-200' : 'text-green-800'}>{successMessage}</span>
+        <div
+          className="flex items-start justify-between"
+          style={{ border: `1px solid ${ind.hairline}`, background: ind.accentWash, padding: '9px 12px', gap: 10 }}
+        >
+          <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink }}>{successMessage}</span>
+          <Check size={14} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.accentDeep }} />
         </div>
       )}
 
-      {/* Error Message */}
       {errorMessage && (
-        <div className={`mb-4 p-4 border rounded-lg flex items-center space-x-2 ${isDarkMode ? 'bg-red-900 border-red-700' : 'bg-red-50 border-red-200'}`}>
-          <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`} />
-          <span className={isDarkMode ? 'text-red-200' : 'text-red-800'}>{errorMessage}</span>
+        <div style={{ border: `1px solid ${ind.ink}`, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+          <AlertCircle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <Kicker ind={ind} color={ind.ink}>{t('common.error', 'Error')}</Kicker>
+            <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 4 }}>{errorMessage}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setErrorMessage('')}
+            aria-label={t('common.close', 'Close')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0, flex: 'none' }}
+          >
+            <X size={15} strokeWidth={1.5} />
+          </button>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Employee Selection */}
-        <div>
-          <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-            <div className="flex items-center space-x-2">
-              <Users className="w-4 h-4" />
-              <span>{t('adminTimeEntry.selectEmployees', 'Select Employees')} *</span>
-              {selectedEmployees.length > 0 && (
-                <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? 'bg-blue-800 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
-                  {selectedEmployees.length} {t('adminTimeEntry.selected', 'selected')}
-                </span>
-              )}
-            </div>
-          </label>
-          
-          {/* Search Input */}
-          <div className="relative mb-2">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder={t('adminTimeEntry.searchEmployees', 'Search employees...')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-            />
-          </div>
+      {/* ── ENTRY FORM ───────────────────────────────────────────── */}
+      <form onSubmit={handleSubmit}>
+        <Blueprint ind={ind} style={{ padding: '18px 20px 16px' }}>
+          <div className="flex flex-col lg:flex-row" style={{ gap: 28 }}>
 
-          {/* Employee List */}
-          {searchTerm && (
-            <div className={`max-h-48 overflow-y-auto border ${border.primary} rounded-lg ${bg.primary}`}>
-              {filteredEmployees.length > 0 ? (
-                filteredEmployees.map((emp) => {
-                  const isSelected = selectedEmployees.some(e => e.id === emp.id);
-                  return (
-                    <div
-                      key={emp.id}
-                      onClick={() => toggleEmployeeSelection(emp)}
-                      className={`p-3 cursor-pointer ${isDarkMode ? 'hover:bg-blue-800' : 'hover:bg-blue-50'} transition-colors ${
-                        isSelected ? (isDarkMode ? 'bg-blue-800' : 'bg-blue-100') : ''
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className={`font-medium ${text.primary}`}>{getDemoEmployeeName(emp, t)}</div>
-                          <div className={`text-sm ${text.secondary}`}>
-                            {t(`employeePosition.${emp.position}`, emp.position)} • {t(`employeeDepartment.${emp.department}`, emp.department)}
-                          </div>
-                        </div>
-                        {isSelected && (
-                          <Check className={`w-5 h-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className={`p-4 text-center ${text.secondary}`}>{t('adminTimeEntry.noEmployees', 'No employees found')}</div>
-              )}
-            </div>
-          )}
-
-          {/* Selected Employees Display */}
-          {selectedEmployees.length > 0 && (
-            <div className={`mt-2 space-y-2`}>
-              <div className={`text-sm font-medium ${text.primary} flex items-center space-x-2`}>
-                <span>{t('adminTimeEntry.selectedEmployees', 'Selected Employees')}:</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? 'bg-green-800 text-green-200' : 'bg-green-100 text-green-800'}`}>
-                  {selectedEmployees.length} {selectedEmployees.length === 1 ? 'employee' : 'employees'}
-                </span>
+            {/* Collect */}
+            <div className="flex-1 min-w-0 flex flex-col" style={{ gap: 14 }}>
+              <div className="flex flex-wrap items-baseline justify-between" style={{ gap: 10 }}>
+                <div style={{ minWidth: 0 }}>
+                  <ColumnHeading ind={ind}>{t('adminTimeEntry.title', 'Admin Time Entry')}</ColumnHeading>
+                  <p style={captionStyle}>
+                    {t('adminTimeEntry.description', 'Enter time entries for employees (Admin/Manager only)')}
+                  </p>
+                </div>
+                <Tag ind={ind} variant="outline">{t('timeClock.adminTag', 'Admin')}</Tag>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {selectedEmployees.map((emp) => (
-                  <div
-                    key={emp.id}
-                    className={`px-3 py-1.5 border ${border.primary} rounded-lg ${bg.primary} flex items-center space-x-2`}
+
+              {/* Employees */}
+              <div>
+                <label htmlFor="admin-employee-search" style={fieldLabelStyle}>
+                  {t('adminTimeEntry.selectEmployees', 'Select Employees')}
+                </label>
+
+                <div
+                  className="flex items-center"
+                  style={{ gap: 8, padding: '5px 10px', border: `1px solid ${ind.hairline}` }}
+                >
+                  <Search size={13} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkFaint }} />
+                  <input
+                    id="admin-employee-search"
+                    type="text"
+                    placeholder={t('adminTimeEntry.searchEmployees', 'Search employees...')}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{
+                      flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent',
+                      color: ind.ink, fontFamily: BODY, fontSize: 12.5, padding: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: DISPLAY, fontWeight: 600, fontSize: 11, letterSpacing: '.08em',
+                      textTransform: 'uppercase', color: ind.inkFaint, flex: 'none',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
                   >
-                    <div>
-                      <div className={`text-sm font-medium ${text.primary}`}>{getDemoEmployeeName(emp, t)}</div>
-                      <div className={`text-xs ${text.secondary}`}>
-                        {t(`employeePosition.${emp.position}`, emp.position)} • {t(`employeeDepartment.${emp.department}`, emp.department)}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeEmployee(emp.id)}
-                      className={`transition-colors ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-800'}`}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                    {`${selectedCount} ${t('adminTimeEntry.selected', 'selected')}`}
+                  </span>
+                </div>
+
+                {/* Results — only while searching, same as before */}
+                {searchTerm && (
+                  <div
+                    style={{
+                      maxHeight: 192, overflowY: 'auto',
+                      borderLeft: `1px solid ${ind.hairline}`,
+                      borderRight: `1px solid ${ind.hairline}`,
+                      borderBottom: `1px solid ${ind.hairline}`,
+                    }}
+                  >
+                    {filteredEmployees.length > 0 ? (
+                      filteredEmployees.map((emp) => (
+                        <button
+                          key={emp.id}
+                          type="button"
+                          onClick={() => toggleEmployeeSelection(emp)}
+                          className="w-full flex items-center justify-between"
+                          style={{
+                            gap: 10, padding: '7px 10px', textAlign: 'left', cursor: 'pointer',
+                            background: 'transparent', border: 'none',
+                            borderTop: `1px solid ${ind.rule}`, borderRadius: 0,
+                            transition: 'background .15s ease',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = ind.hover; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                        >
+                          <span style={{ minWidth: 0 }}>
+                            <span
+                              style={{
+                                display: 'block', fontFamily: BODY, fontSize: 13, color: ind.ink,
+                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {getDemoEmployeeName(emp, t)}
+                            </span>
+                            <span
+                              style={{
+                                display: 'block', fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint,
+                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {`${t(`employeePosition.${emp.position}`, emp.position)} · ${t(`employeeDepartment.${emp.department}`, emp.department)}`}
+                            </span>
+                          </span>
+                          <span style={{ ...iconBtnStyle, pointerEvents: 'none' }}>
+                            <Check size={12} strokeWidth={1.5} style={{ opacity: 0.35 }} />
+                          </span>
+                        </button>
+                      ))
+                    ) : (
+                      <p style={{ ...captionStyle, margin: 0, padding: '10px' }}>
+                        {t('adminTimeEntry.noEmployees', 'No employees found')}
+                      </p>
+                    )}
                   </div>
-                ))}
+                )}
+
+                {/* Selected */}
+                {selectedCount > 0 ? (
+                  <div className="flex flex-wrap" style={{ gap: 6, marginTop: 8 }}>
+                    {selectedEmployees.map((emp) => (
+                      <span
+                        key={emp.id}
+                        className="inline-flex items-center"
+                        style={{ gap: 8, padding: '4px 6px 4px 9px', border: `1px solid ${ind.hairline}`, maxWidth: '100%' }}
+                      >
+                        <span style={{ minWidth: 0 }}>
+                          <span
+                            style={{
+                              display: 'block', fontFamily: BODY, fontSize: 12.5, color: ind.ink,
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {getDemoEmployeeName(emp, t)}
+                          </span>
+                          <span
+                            style={{
+                              display: 'block', fontFamily: BODY, fontSize: 11, color: ind.inkFaint,
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {t(`employeePosition.${emp.position}`, emp.position)}
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeEmployee(emp.id)}
+                          aria-label={t('common.remove', 'Remove')}
+                          style={iconBtnStyle}
+                        >
+                          <X size={11} strokeWidth={1.5} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={captionStyle}>
+                    {t('adminTimeEntry.searchHint', 'Search by name, email or position, then pick everyone this entry is filed for.')}
+                  </p>
+                )}
               </div>
-            </div>
-          )}
-        </div>
 
-        {/* Date */}
-        <div>
-          <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-            {t('adminTimeEntry.date', 'Date')} *
-          </label>
-          <DatePicker
-            id="admin-date-input"
-            value={formData.date}
-            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-            max={new Date().toISOString().split('T')[0]}
-            inputClassName={dateInputClassName}
-            required
-            icon={Calendar}
-          />
-        </div>
+              {/* When */}
+              <div className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: 12 }}>
+                <div style={{ minWidth: 0 }}>
+                  <label htmlFor="admin-date-input" style={fieldLabelStyle}>
+                    {t('adminTimeEntry.date', 'Date')}
+                  </label>
+                  <DatePicker
+                    flat
+                    id="admin-date-input"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    max={new Date().toISOString().split('T')[0]}
+                    required
+                    icon={Calendar}
+                  />
+                </div>
 
-        {/* Clock In & Clock Out */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-              {t('adminTimeEntry.clockIn', 'Clock In')} {isOnLeave ? '' : '*'}
-            </label>
-            <TimePicker
-              id="admin-clockin-input"
-              value={isOnLeave ? '' : formData.clockIn}
-              onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
-              inputClassName={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer`}
-              required={!isOnLeave}
-              disabled={isOnLeave}
-              defaultOpenTime="09:00"
-              icon={ClockInIcon}
-            />
-          </div>
-          <div>
-            <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-              {t('adminTimeEntry.clockOut', 'Clock Out')} {isOnLeave ? '' : '*'}
-            </label>
-            <TimePicker
-              id="admin-clockout-input"
-              value={isOnLeave ? '' : formData.clockOut}
-              onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
-              inputClassName={`w-full px-4 py-2 pr-12 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer`}
-              required={!isOnLeave}
-              disabled={isOnLeave}
-              defaultOpenTime="17:00"
-              icon={LogOut}
-            />
-          </div>
-        </div>
+                <div style={{ minWidth: 0 }}>
+                  <label htmlFor="admin-clockin-input" style={fieldLabelStyle}>
+                    {t('adminTimeEntry.clockIn', 'Clock In')}
+                  </label>
+                  <TimePicker
+                    flat
+                    id="admin-clockin-input"
+                    value={isOnLeave ? '' : formData.clockIn}
+                    onChange={(e) => setFormData({ ...formData, clockIn: e.target.value })}
+                    required={!isOnLeave}
+                    disabled={isOnLeave}
+                    defaultOpenTime="09:00"
+                    icon={ClockInIcon}
+                  />
+                </div>
 
-        {/* Hour Type */}
-        <div className="relative w-full group">
-          <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-            {t('adminTimeEntry.hourType', 'Hour Type')} *
-          </label>
-          <select
-            value={formData.hourType}
-                        onChange={(e) => setFormData({ ...formData, hourType: e.target.value })}
-                        className={`
-                            w-full px-4 py-2 rounded-lg border
-                            ${bg.primary}
-                            ${text.primary}
-                            ${border.primary}
-                            focus:ring-2 focus:ring-blue-500 focus:border-transparent                        
-                            pr-10
-                        `}
-          >
-            <option value="regular">{t('adminTimeEntry.hourTypes.regular', 'Regular Hours')}</option>
-            <option value="overtime">{t('adminTimeEntry.hourTypes.overtime', 'Overtime')}</option>
-            <option value="weekend">{t('adminTimeEntry.hourTypes.weekend', 'Weekend/Overtime')}</option>
-            <option value="holiday">{t('adminTimeEntry.hourTypes.holiday', 'Holiday')}</option>
-            <option value="bonus">{t('adminTimeEntry.hourTypes.bonus', 'Bonus Hours')}</option>
-            <option value="wfh">{t('adminTimeEntry.hourTypes.wfh', 'Working From Home (Online)')}</option>
-            <option value="on_leave">{t('adminTimeEntry.hourTypes.onLeave', 'On Leave')}</option>
-          </select>
-          <ChevronsUpDown className={`absolute top-[70%] right-3 transform -translate-y-1/2 pointer-events-none h-6 w-6 ${isDarkMode ? 'text-white' : 'text-gray-800'} ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors`} />
-        </div>
-
-        {/* Notes */}
-        <div>
-          <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-            {t('adminTimeEntry.notes', 'Notes')} ({t('timeClock.optional', 'Optional')})
-          </label>
-          <textarea
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            rows={3}
-            placeholder={t('adminTimeEntry.notesPlaceholder', 'Add any notes about this time entry...')}
-            className={`w-full px-4 py-2 border ${border.primary} rounded-lg ${bg.primary} ${text.primary} focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-          />
-        </div>
-
-        {/* Proof of Work File Upload */}
-        <div>
-          <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-            {t('timeClock.proof', 'Proof of Work')} ({t('timeClock.optional', 'Optional')})
-          </label>
-          
-          {!formData.proofFile ? (
-            <div className={`border-2 border-dashed ${border.primary} rounded-lg p-6 text-center ${isDarkMode ? 'hover:border-amber-500' : 'hover:border-blue-500'} transition-colors`}>
-              <input
-                type="file"
-                id="admin-proof-file"
-                accept="image/*,application/pdf,.doc,.docx,.txt"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <label
-                htmlFor="admin-proof-file"
-                className="cursor-pointer flex flex-col items-center group"
-              >
-                <Upload className={`w-8 h-8 ${text.secondary} mb-2 ${isDarkMode ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'} transition-colors`} />
-                <span className={`text-sm ${text.primary} font-medium`}>
-                  {t('timeClock.uploadFile', 'Click to upload proof of work')}
-                </span>
-                <span className={`text-xs ${text.secondary} mt-1`}>
-                  {t('timeClock.fileTypes', 'Supports: Images, PDF, Documents (Max 50MB)')}
-                </span>
-              </label>
-            </div>
-          ) : (
-            <div className={`border ${border.primary} rounded-lg p-4 flex items-center justify-between ${bg.primary}`}>
-              <div className="flex items-center space-x-3">
-                <FileText className={`w-5 h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
-                <div>
-                  <div className={`text-sm font-medium ${text.primary}`}>{formData.proofFile.name}</div>
-                  <div className={`text-xs ${text.secondary}`}>
-                    {(formData.proofFile.data.length / 1024 / 1024).toFixed(2)} MB
-                  </div>
+                <div style={{ minWidth: 0 }}>
+                  <label htmlFor="admin-clockout-input" style={fieldLabelStyle}>
+                    {t('adminTimeEntry.clockOut', 'Clock Out')}
+                  </label>
+                  <TimePicker
+                    flat
+                    id="admin-clockout-input"
+                    value={isOnLeave ? '' : formData.clockOut}
+                    onChange={(e) => setFormData({ ...formData, clockOut: e.target.value })}
+                    required={!isOnLeave}
+                    disabled={isOnLeave}
+                    defaultOpenTime="17:00"
+                    icon={LogOut}
+                  />
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={handleRemoveFile}
-                className={`transition-colors ${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-800'}`}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          )}
-        </div>
 
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={loading || selectedEmployees.length === 0}
-          className={`w-full flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-colors border ${
-            loading || selectedEmployees.length === 0
-              ? isDarkMode
-                ? 'bg-slate-700 text-slate-400 border-slate-600 cursor-not-allowed'
-                : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-              : isDarkMode
-                ? 'bg-blue-600 text-white border-blue-500 hover:bg-blue-500'
-                : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 shadow-sm'
-          }`}
-        >
-          {loading ? (
-            <>
-              <Clock className="w-4 h-4 animate-spin" />
-              <span>{t('adminTimeEntry.submitting', 'Submitting...')}</span>
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4" />
-              <span>
-                {selectedEmployees.length > 1 
-                  ? `${t('adminTimeEntry.submitBulkEntries', 'Submit Entries for {0} Employees').replace('{0}', selectedEmployees.length)}`
-                  : t('adminTimeEntry.submitButton', 'Submit Time Entry')
-                }
-              </span>
-            </>
-          )}
-        </button>
+              {/* Hour type */}
+              <div>
+                <span style={fieldLabelStyle}>{t('adminTimeEntry.hourType', 'Hour Type')}</span>
+                <div className="flex flex-wrap" style={{ gap: 6 }}>
+                  {hourTypes.map((type) => {
+                    const active = formData.hourType === type.value;
+                    return (
+                      <button
+                        key={type.value}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setFormData({ ...formData, hourType: type.value })}
+                        style={{
+                          fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5,
+                          letterSpacing: '.08em', textTransform: 'uppercase',
+                          padding: '5px 10px', borderRadius: 0, cursor: 'pointer', whiteSpace: 'nowrap',
+                          background: active ? ind.accent : 'transparent',
+                          color: active ? ind.accentInk : ind.inkGhost,
+                          border: `1px solid ${active ? ind.accent : ind.hairline}`,
+                          transition: 'background .15s ease, color .15s ease',
+                        }}
+                      >
+                        {type.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Notes + proof */}
+              <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 12 }}>
+                <div style={{ minWidth: 0 }}>
+                  <label htmlFor="admin-notes-textarea" style={fieldLabelStyle}>
+                    {`${t('adminTimeEntry.notes', 'Notes')} · ${t('timeClock.optional', 'Optional')}`}
+                  </label>
+                  <textarea
+                    id="admin-notes-textarea"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder={t('adminTimeEntry.notesPlaceholder', 'Add any notes about this time entry...')}
+                    style={{
+                      width: '100%', height: 62, padding: '7px 10px', resize: 'vertical',
+                      border: `1px solid ${ind.hairline}`, borderRadius: 0,
+                      background: 'transparent', color: ind.ink,
+                      fontFamily: BODY, fontSize: 12.5,
+                    }}
+                  />
+                </div>
+
+                <div style={{ minWidth: 0 }}>
+                  <span style={fieldLabelStyle}>
+                    {`${t('timeClock.proof', 'Proof of Work')} · ${t('timeClock.optional', 'Optional')}`}
+                  </span>
+                  <label
+                    htmlFor="admin-proof-file"
+                    className="flex items-center"
+                    style={{
+                      height: 62, gap: 10, padding: '0 12px', cursor: 'pointer',
+                      border: `1px dashed ${formData.proofFile ? ind.accent : ind.hairline}`,
+                      color: formData.proofFile ? ind.ink : ind.inkFaint,
+                    }}
+                  >
+                    <Upload size={16} strokeWidth={1.5} style={{ flex: 'none' }} />
+                    <span style={{ fontFamily: BODY, fontSize: 11.5, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {formData.proofFile
+                        ? `${formData.proofFile.name} · ${(formData.proofFile.data.length / 1024 / 1024).toFixed(2)} MB`
+                        : t('timeClock.fileTypes', 'Supports: Images, PDF, Documents (Max 50MB)')}
+                    </span>
+                    {formData.proofFile && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleRemoveFile();
+                        }}
+                        aria-label={t('common.close', 'Close')}
+                        style={{ ...iconBtnStyle, marginLeft: 'auto' }}
+                      >
+                        <X size={11} strokeWidth={1.5} />
+                      </button>
+                    )}
+                  </label>
+                  <input
+                    id="admin-proof-file"
+                    type="file"
+                    accept="image/*,application/pdf,.doc,.docx,.txt"
+                    onChange={handleFileChange}
+                    className="sr-only"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Consequence — the only figure on this card */}
+            <div
+              className="w-full lg:w-[212px] lg:shrink-0 lg:border-l lg:pl-6 flex flex-col"
+              style={{ borderColor: ind.rule }}
+            >
+              <Kicker ind={ind}>{t('adminTimeEntry.willFile', 'This will file')}</Kicker>
+              <div className="flex items-baseline" style={{ gap: 6, margin: '4px 0 0' }}>
+                <span style={{ ...figure(60, ind.ink), lineHeight: 0.92 }}>{formHours.toFixed(1)}</span>
+                <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>{t('timeClock.hrs', 'hrs')}</span>
+              </div>
+              <p style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted, margin: '8px 0 0', lineHeight: 1.5 }}>
+                {isOnLeave
+                  ? hourTypeLabel
+                  : `${formData.clockIn || '--:--'} → ${formData.clockOut || '--:--'} · ${hourTypeLabel}`}
+              </p>
+
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${ind.rule}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div className="flex items-baseline justify-between" style={{ gap: 8 }}>
+                  <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted }}>
+                    {t('adminTimeEntry.selectedEmployees', 'Selected Employees')}
+                  </span>
+                  <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, color: ind.ink, fontVariantNumeric: 'tabular-nums' }}>
+                    {selectedCount}
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between" style={{ gap: 8 }}>
+                  <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted }}>
+                    {t('adminTimeEntry.totalHoursFiled', 'Total hours filed')}
+                  </span>
+                  <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, color: ind.ink, fontVariantNumeric: 'tabular-nums' }}>
+                    {(formHours * selectedCount).toFixed(1)}
+                  </span>
+                </div>
+              </div>
+
+              <p style={{ ...captionStyle, marginTop: 10 }}>
+                {t('adminTimeEntry.autoApprovedNote', '* Entries filed here are approved on submission')}
+              </p>
+
+              <div style={{ flex: 1, minHeight: 16 }} />
+
+              {/* The single solid object on this card. */}
+              <Btn
+                ind={ind}
+                variant="primary"
+                type="submit"
+                disabled={loading || selectedCount === 0}
+                style={{ width: '100%', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                {loading
+                  ? <Clock size={13} strokeWidth={1.5} className="animate-spin" />
+                  : <Save size={13} strokeWidth={1.5} />}
+                {loading
+                  ? t('adminTimeEntry.submitting', 'Submitting...')
+                  : selectedCount > 1
+                    ? t('adminTimeEntry.submitBulkEntries', 'Submit Entries for {0} Employees').replace('{0}', selectedCount)
+                    : t('adminTimeEntry.submitButton', 'Submit Time Entry')}
+              </Btn>
+            </div>
+          </div>
+        </Blueprint>
       </form>
 
-      <div className={`mt-8 pt-8 border-t ${border.primary}`}>
-        <div className="flex items-center space-x-3 mb-4">
-          <CalendarRange className={`w-6 h-6 ${isDarkMode ? 'text-white' : 'text-black'}`} />
-          <h4 className={`text-lg font-bold ${text.primary}`}>
-            {t('adminTimeEntry.bulkStandardHours.title', 'Bulk Standard Hours')}
-          </h4>
-        </div>
+      {/* ── BULK STANDARD HOURS — the tinted card on this screen ──── */}
+      <form onSubmit={handleBulkStandardHoursFill}>
+        <Blueprint ind={ind} tint style={{ padding: '18px 20px 16px' }}>
+          <div className="flex flex-wrap items-baseline justify-between" style={{ gap: 10 }}>
+            <ColumnHeading ind={ind}>
+              {t('adminTimeEntry.bulkStandardHours.title', 'Bulk Standard Hours')}
+            </ColumnHeading>
+            <Tag ind={ind} variant="outline">{t('timeClock.adminTag', 'Admin')}</Tag>
+          </div>
+          <p style={captionStyle}>
+            {t(
+              'adminTimeEntry.bulkStandardHours.description',
+              'Automatically create 9:00 AM – 5:00 PM regular hour entries for all employees on weekdays only. Saturdays and Sundays are excluded. Existing overlapping entries are skipped.'
+            )}
+          </p>
 
-        <p className={`${text.secondary} mb-4`}>
-          {t(
-            'adminTimeEntry.bulkStandardHours.description',
-            'Automatically create 9:00 AM – 5:00 PM regular hour entries for all employees on weekdays only. Saturdays and Sundays are excluded. Existing overlapping entries are skipped.'
-          )}
-        </p>
-
-        <form onSubmit={handleBulkStandardHoursFill} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="admin-bulk-start-date" className={`block text-sm font-medium ${text.primary} mb-2`}>
-                {t('adminTimeEntry.bulkStandardHours.startDate', 'Start Date')} *
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 items-end" style={{ gap: 12, marginTop: 14 }}>
+            <div style={{ minWidth: 0 }}>
+              <label htmlFor="admin-bulk-start-date" style={fieldLabelStyle}>
+                {t('adminTimeEntry.bulkStandardHours.startDate', 'Start Date')}
               </label>
               <DatePicker
+                flat
                 id="admin-bulk-start-date"
                 value={bulkFillData.startDate}
                 onChange={(e) => {
@@ -860,79 +1033,105 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                   }));
                 }}
                 max={new Date().toISOString().split('T')[0]}
-                inputClassName={dateInputClassName}
                 required
                 icon={Calendar}
               />
             </div>
-            <div>
-              <label htmlFor="admin-bulk-end-date" className={`block text-sm font-medium ${text.primary} mb-2`}>
-                {t('adminTimeEntry.bulkStandardHours.endDate', 'End Date')} *
+
+            <div style={{ minWidth: 0 }}>
+              <label htmlFor="admin-bulk-end-date" style={fieldLabelStyle}>
+                {t('adminTimeEntry.bulkStandardHours.endDate', 'End Date')}
               </label>
               <DatePicker
+                flat
                 id="admin-bulk-end-date"
                 value={bulkFillData.endDate}
                 onChange={(e) => setBulkFillData((prev) => ({ ...prev, endDate: e.target.value }))}
                 min={bulkFillData.startDate}
                 max={new Date().toISOString().split('T')[0]}
-                inputClassName={dateInputClassName}
                 required
                 icon={Calendar}
               />
             </div>
+
+            {/* Re-skinned to the system rather than replaced: the sheen is what
+                marks this as the action that touches every employee at once. */}
+            <SpecularButton
+              type="submit"
+              disabled={bulkFillLoading || loading}
+              shineOnHover
+              className="w-full rounded-none border"
+              style={{
+                padding: '7px 12px',
+                borderRadius: 0,
+                background: ind.accent,
+                color: ind.accentInk,
+                borderColor: ind.accent,
+              }}
+            >
+              {/* The sheen's own label span carries Tailwind's text-sm /
+                  normal-case, so the system's type has to be set here. */}
+              {bulkFillLoading ? (
+                <>
+                  <Clock size={13} strokeWidth={1.5} className="animate-spin" />
+                  <span style={specularLabelStyle}>
+                    {t('adminTimeEntry.bulkStandardHours.filling', 'Filling standard hours...')}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <CalendarRange size={13} strokeWidth={1.5} />
+                  <span style={specularLabelStyle}>
+                    {t('adminTimeEntry.bulkStandardHours.fillButton', 'Fill 9 AM – 5 PM for All Employees')}
+                  </span>
+                </>
+              )}
+            </SpecularButton>
           </div>
 
-          <SpecularButton
-            type="submit"
-            disabled={bulkFillLoading || loading}
-            shineOnHover
-            className={cn(
-              'w-full gap-2 px-6 py-2.5',
-              bulkFillLoading || loading
-                ? isDarkMode
-                  ? 'border-slate-600 bg-slate-700 text-slate-400'
-                  : 'border-slate-200 bg-slate-100 text-slate-400'
-                : isDarkMode
-                  ? 'border-slate-500 bg-slate-800 text-slate-100 hover:bg-slate-700'
-                  : 'border-slate-300 bg-white text-slate-900 hover:bg-slate-50'
-            )}
-          >
-            {bulkFillLoading ? (
-              <>
-                <Clock className="w-4 h-4 animate-spin" />
-                <span>{t('adminTimeEntry.bulkStandardHours.filling', 'Filling standard hours...')}</span>
-              </>
-            ) : (
-              <>
-                <CalendarRange className="w-4 h-4 opacity-80" />
-                <span>
-                  {t('adminTimeEntry.bulkStandardHours.fillButton', 'Fill 9 AM – 5 PM for All Employees')}
-                </span>
-              </>
-            )}
-          </SpecularButton>
-        </form>
-      </div>
+          <p style={{ ...captionStyle, marginTop: 10 }}>
+            {t('adminTimeEntry.bulkScopeNote', '* {n} employees on file')
+              .replace('{n}', String(employees.length))}
+          </p>
+        </Blueprint>
+      </form>
 
+      {/* ── Confirm ──────────────────────────────────────────────── */}
       {showBulkConfirmModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-          onClick={() => setShowBulkConfirmModal(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(29,45,61,.72)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowBulkConfirmModal(false); }}
         >
-          <div
-            className={`w-full max-w-md rounded-lg shadow-xl border ${border.primary} ${bg.secondary} p-6`}
-            onClick={(e) => e.stopPropagation()}
+          <Blueprint
+            ind={ind}
+            style={{ background: ind.ground, width: '100%', maxWidth: 420 }}
             role="dialog"
             aria-modal="true"
             aria-labelledby="bulk-fill-confirm-title"
           >
-            <div className="flex items-start space-x-3 mb-4">
-              <AlertCircle className={`w-6 h-6 flex-shrink-0 ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`} />
-              <div>
-                <h5 id="bulk-fill-confirm-title" className={`text-lg font-bold ${text.primary}`}>
-                  {t('adminTimeEntry.bulkStandardHours.confirmTitle', 'Confirm Bulk Standard Hours')}
-                </h5>
-                <p className={`mt-2 text-sm ${text.secondary}`}>
+            <div style={{ padding: '18px 20px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div className="flex items-start justify-between" style={{ gap: 10 }}>
+                <div id="bulk-fill-confirm-title" style={{ minWidth: 0 }}>
+                  <ColumnHeading ind={ind}>
+                    {t('adminTimeEntry.bulkStandardHours.confirmTitle', 'Confirm Bulk Standard Hours')}
+                  </ColumnHeading>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowBulkConfirmModal(false)}
+                  aria-label={t('common.close', 'Close')}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0, flex: 'none' }}
+                >
+                  <X size={16} strokeWidth={1.5} />
+                </button>
+              </div>
+
+              <div className="flex" style={{ gap: 12, alignItems: 'flex-start' }}>
+                <Users size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.inkMuted }} />
+                <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, lineHeight: 1.55, margin: 0 }}>
                   {t(
                     'adminTimeEntry.bulkStandardHours.confirmMessage',
                     'Create 9 AM – 5 PM regular hour entries for all employees from {start} to {end}? Saturdays and Sundays will be excluded. Employees with overlapping entries will be skipped.'
@@ -941,29 +1140,17 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                     .replace('{end}', bulkFillData.endDate)}
                 </p>
               </div>
-            </div>
 
-            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setShowBulkConfirmModal(false)}
-                className={`px-4 py-2 rounded-lg border-0 transition-all ${
-                  isDarkMode
-                    ? 'bg-linear-to-r from-gray-700 to-gray-800 text-white hover:from-gray-600 hover:to-gray-700'
-                    : 'bg-linear-to-r from-gray-100 to-gray-200 text-gray-900 hover:from-gray-200 hover:to-gray-300'
-                }`}
-              >
-                {t('adminTimeEntry.bulkStandardHours.cancelButton', 'Cancel')}
-              </button>
-              <button
-                type="button"
-                onClick={executeBulkStandardHoursFill}
-                className="px-4 py-2 rounded-lg text-white transition-all bg-linear-to-r from-emerald-500 via-green-600 to-teal-600 hover:from-emerald-600 hover:via-green-700 hover:to-teal-700"
-              >
-                {t('adminTimeEntry.bulkStandardHours.confirmButton', 'Yes, Fill Hours')}
-              </button>
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end" style={{ gap: 8, paddingTop: 4, borderTop: `1px solid ${ind.rule}` }}>
+                <Btn ind={ind} onClick={() => setShowBulkConfirmModal(false)}>
+                  {t('adminTimeEntry.bulkStandardHours.cancelButton', 'Cancel')}
+                </Btn>
+                <Btn ind={ind} variant="primary" onClick={executeBulkStandardHoursFill}>
+                  {t('adminTimeEntry.bulkStandardHours.confirmButton', 'Yes, Fill Hours')}
+                </Btn>
+              </div>
             </div>
-          </div>
+          </Blueprint>
         </div>
       )}
     </div>

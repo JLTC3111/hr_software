@@ -1047,6 +1047,11 @@ export default {
     entriesAddedSuccess: 'Time entries added successfully for',
     employees: 'employees',
     skippedEmployees: 'Skipped {count} employee(s) with existing entries: {names}',
+    searchHint: 'Search by name, email or position, then pick everyone this entry is filed for.',
+    willFile: 'This will file',
+    totalHoursFiled: 'Total hours filed',
+    autoApprovedNote: '* Entries filed here are approved on submission',
+    bulkScopeNote: '* {n} employees on file',
     hourTypes: {
       regular: 'Regular Hours',
       holiday: 'Holiday',
@@ -1795,8 +1800,13 @@ export default {
     placeholder: '--:--',
     picker: 'Time picker'
   },
+  routeError: {
+    message: 'This screen could not be opened. The rest of the app is still working — pick another page from the menu, or reload.'
+  },
+
   common: {
     refresh: 'Refresh',
+    reload: 'Reload',
     retry: 'Try Again',
     results: 'Results',
     total: 'Total',

@@ -517,6 +517,11 @@ export default {
     entriesAddedSuccess: 'Đã thêm mục nhập giờ thành công cho',
     employees: 'Nhân viên',
     skippedEmployees: 'Đã bỏ qua {count} nhân viên có mục nhập hiện tại: {names}',
+    searchHint: 'Tìm theo tên, email hoặc vị trí, rồi chọn những nhân viên được ghi nhận trong mục nhập này.',
+    willFile: 'Mục nhập này sẽ ghi',
+    totalHoursFiled: 'Tổng giờ sẽ ghi',
+    autoApprovedNote: '* Mục nhập tại đây được duyệt ngay khi gửi',
+    bulkScopeNote: '* {n} nhân viên trong hệ thống',
     hourTypes: {
       regular: 'Giờ Làm Thường',
       holiday: 'Ngày Lễ',
@@ -1640,10 +1645,15 @@ export default {
     placeholder: '--:--',
     picker: 'Chọn giờ'
   },
+  routeError: {
+    message: 'Không mở được màn hình này. Phần còn lại của ứng dụng vẫn hoạt động — hãy chọn trang khác từ menu, hoặc tải lại.'
+  },
+
   common: {
     notAvailable: 'Không có',
     status: 'Trạng thái',
     refresh: 'Làm mới',
+    reload: 'Tải lại',
     retry: 'Thử lại',
     viewDetails: 'Xem Chi Tiết',
     email: 'Email',
