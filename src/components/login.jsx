@@ -6,7 +6,8 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { disableDemoMode } from '../utils/demoHelper';
 import ThemeToggle from './themeToggle';
 import LanguageSelector from './LanguageSelector';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { resolvePostLoginRoute } from '../config/routes.js';
 import { LOGOUT_REASON_KEY, DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts.js';
 import { TextEffect, TextShimmer, Spotlight } from './motion-primitives';
 import { ShimmerButton } from './ui/shimmer-button';
@@ -32,7 +33,8 @@ const Login = () => {
   const { isDarkMode, text } = useTheme();
   const { t, currentLanguage } = useLanguage();
   const navigate = useNavigate();
-  
+  const location = useLocation();
+
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -130,13 +132,16 @@ const Login = () => {
 
 
     if (!loading && isAuthenticated && user) {
-      console.log('✅ All conditions met - Redirecting to /dashboard');
+      // Return them to the screen they were on if arriving here was an
+      // interrupted session restore rather than a deliberate sign-out.
+      const target = resolvePostLoginRoute(location.state?.from);
+      console.log(`✅ All conditions met - Redirecting to ${target}`);
       setIsLoading(false);
-      navigate('/dashboard', { replace: true });
+      navigate(target, { replace: true });
     } else if (!loading && !isAuthenticated) {
       console.log('✅ Loading complete - User can login');
     }
-  }, [isAuthenticated, user, loading, navigate]);
+  }, [isAuthenticated, user, loading, navigate, location]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

@@ -99,6 +99,12 @@ export const AuthProvider = ({ children }) => {
   // re-running the bootstrap effect cannot lose either one.
   const bootstrapSettled = useRef(false);
   const bootstrapWatchdog = useRef(null);
+  // Whether GoTrue has emitted INITIAL_SESSION yet, and the session its startup
+  // replay handed us before that. Together they separate "the client is
+  // replaying what was in storage" from "someone just signed in" — see the
+  // SIGNED_IN branch of onAuthStateChange.
+  const initialSessionSeen = useRef(false);
+  const replayedSession = useRef(null);
 
   const clearAuthState = async () => {
     console.log('🧹 Clearing auth state and setting loading = false');
@@ -342,24 +348,53 @@ export const AuthProvider = ({ children }) => {
       // the router. The component is still alive; the writes below are
       // idempotent, and on a genuine unmount React discards them anyway.
 
-      if (error || !verifiedUser) {
-        if (isRejectedByServer(error)) {
-          await discardRestoredSession('the server rejected the stored token', error);
-        } else {
-          // Unreachable server proves nothing. Keep the token for the next
-          // attempt rather than signing someone out for being offline.
-          console.warn('⚠️ Could not verify the restored session; leaving it in place', error);
+      if (error && !isRejectedByServer(error)) {
+        /*
+         * Unreachable server proves nothing — and this branch used to act as
+         * though it did. It kept the token, said so in a comment, then settled
+         * with `isAuthenticated` still false, which drops the router onto
+         * <Navigate to="/login" replace> and destroys the URL the user
+         * refreshed from. A timed-out getUser() is not a verdict; carry on with
+         * the local token, exactly as validateAndRefreshSession() does when it
+         * returns `unverified`. The next call that needs certainty will ask
+         * again, and a genuinely dead token fails there instead of here.
+         */
+        console.warn('⚠️ Could not verify the restored session; continuing on the stored token', error);
+      } else if (error || !verifiedUser) {
+        await discardRestoredSession('the server rejected the stored token', error);
+        settle();
+        return;
+      } else {
+        markSessionVerified();
+      }
+
+      /*
+       * Falling back to the stored session's user id, guarded: when the client
+       * cannot produce a real user object it substitutes a proxy that *throws*
+       * on property access (auth-js `userNotAvailableProxy`). An exception here
+       * escapes into GoTrue's subscriber loop and never reaches settle(),
+       * leaving the app on the spinner until the watchdog trips.
+       */
+      let profileUserId = verifiedUser?.id ?? null;
+      if (!profileUserId) {
+        try {
+          profileUserId = initialSession.user?.id ?? null;
+        } catch {
+          profileUserId = null;
         }
+      }
+
+      if (!profileUserId) {
+        console.warn('⚠️ Restored session has no usable user id; leaving the token for the next load');
         settle();
         return;
       }
 
-      markSessionVerified();
       disableDemoMode();
-      console.log('✅ Restored session verified, loading profile...');
+      console.log('✅ Restored session accepted, loading profile...');
       setSession(initialSession);
       try {
-        await withTimeout(fetchProfileOnce(verifiedUser.id), AUTH_PROFILE_TIMEOUT_MS);
+        await withTimeout(fetchProfileOnce(profileUserId), AUTH_PROFILE_TIMEOUT_MS);
       } catch (profileError) {
         // A timeout does not cancel the underlying queries: if the profile
         // arrives late it still sets the user and the app moves off the login
@@ -379,17 +414,57 @@ export const AuthProvider = ({ children }) => {
       console.log('🔔 Auth event:', event);
 
       if (event === 'INITIAL_SESSION') {
+        initialSessionSeen.current = true;
         // A demo session has already been established above and owns the state.
         if (isDemoMode()) {
+          replayedSession.current = null;
           settle();
           return;
         }
-        await restoreSession(nextSession);
+        /*
+         * `_emitInitialSession` reports whatever `_useSession` could load, and
+         * emits null if that throws. Falling back to the session the startup
+         * replay already handed us keeps a transient storage read from looking
+         * like a sign-out. Anything that genuinely retired the session came
+         * through SIGNED_OUT, which clears this.
+         */
+        const bootSession = nextSession ?? replayedSession.current;
+        replayedSession.current = null;
+        await restoreSession(bootSession);
       } else if (event === 'SIGNED_IN' && nextSession) {
+        /*
+         * Not necessarily a sign-in.
+         *
+         * GoTrue's `_recoverAndRefresh()` ends every startup with a valid stored
+         * token by emitting SIGNED_IN (auth-js GoTrueClient.js:1933) — it is
+         * replaying persisted state, not reporting a new authentication. Because
+         * `_notifyAllSubscribers` awaits each callback, handling it here ran the
+         * whole profile chain to completion *before* `initializePromise`
+         * resolved, and then INITIAL_SESSION arrived and ran it all over again
+         * with a getUser() round-trip in front. Two profile loads and an extra
+         * round-trip on every single refresh: the 5-7 second spinner.
+         *
+         * INITIAL_SESSION is guaranteed to follow (the emitter awaits the same
+         * promise), so let it own the restore and just remember the session.
+         *
+         * The discriminator is ordering, not content: nothing from a real
+         * sign-in can precede INITIAL_SESSION, because initialization has long
+         * since resolved by then.
+         */
+        if (!initialSessionSeen.current) {
+          console.log('🔁 Startup session replay — deferring to INITIAL_SESSION');
+          replayedSession.current = nextSession;
+          return;
+        }
+
         console.log('🔐 User signed in');
         // Clear demo mode when a real user signs in
         disableDemoMode();
-        // The session just came from the server, so it needs no verification.
+        // This session came from the server — signInWithPassword, or an OAuth
+        // callback — so it needs no verification. (The startup replay above
+        // reaches none of this: that session came out of storage, and calling
+        // markSessionVerified() on it would have vouched for a token nobody
+        // had checked.)
         markSessionVerified();
 
         setSession(nextSession);
@@ -419,6 +494,9 @@ export const AuthProvider = ({ children }) => {
         }
         console.log('🚪 User signed out');
         intentionalSignOut.current = false;
+        // Whatever the startup replay was holding is retired with the session,
+        // so INITIAL_SESSION cannot fall back onto it.
+        replayedSession.current = null;
         resetSessionVerification();
         setUser(null);
         setIsAuthenticated(false);
@@ -651,35 +729,32 @@ export const AuthProvider = ({ children }) => {
         console.log('⚠️ No email mapping found, using auth ID directly (backward compatibility)');
       }
       
-      // Fetch user from hr_users table using the resolved hr_user_id
-      const { data, error } = await supabase
-        .from('hr_users')
-        .select('*')
-        .eq('id', hrUserId)
-        .single();
+      /*
+       * These two do not depend on each other — only both on hrUserId — and
+       * running them in sequence put another full round-trip in front of the
+       * first paint. The whole chain is on the critical path for rendering the
+       * app, so every serialized hop here is spinner the user sits through.
+       */
+      const [
+        { data, error },
+        { data: userEmails },
+      ] = await Promise.all([
+        supabase.from('hr_users').select('*').eq('id', hrUserId).single(),
+        supabase.from('user_emails').select('email').eq('hr_user_id', hrUserId),
+      ]);
 
       // If no record found, mark for creation
       if (!data && !error) {
         shouldCreateProfile = true;
       }
-      
-      // If successful, try to fetch employee name by matching email
+
+      // Build array of emails to search for a matching employee record
+      const emailsToSearch = [];
       if (data && data.email && !error) {
-        // Get all emails for this user from user_emails table
-        const { data: userEmails } = await supabase
-          .from('user_emails')
-          .select('email')
-          .eq('hr_user_id', hrUserId);
-        
-        // Build array of emails to search
-        const emailsToSearch = [];
-        
         // Split hr_users.email in case it has semicolon-separated emails
-        if (data.email) {
-          const hrUserEmails = data.email.split(';').map(e => e.trim()).filter(e => e);
-          emailsToSearch.push(...hrUserEmails);
-        }
-        
+        const hrUserEmails = data.email.split(';').map(e => e.trim()).filter(e => e);
+        emailsToSearch.push(...hrUserEmails);
+
         // Add all emails from user_emails table
         if (userEmails && userEmails.length > 0) {
           userEmails.forEach(ue => {
@@ -688,44 +763,42 @@ export const AuthProvider = ({ children }) => {
             }
           });
         }
-        
-        console.log(`🔍 Searching employees table with emails:`, emailsToSearch);
-        
-        // Try to find employee by any of these emails
-        const { data: employeeData, error: employeeError } = await supabase
-          .from('employees')
-          .select('name, id, email')
-          .in('email', emailsToSearch)
-          .limit(1);
-        
-        console.log(`📊 Employee query result:`, { employeeData, employeeError, searchedEmails: emailsToSearch });
-        
-        if (employeeData && employeeData.length > 0 && employeeData[0].name) {
-          console.log(`✅ Found employee: ${employeeData[0].name} (${employeeData[0].email})`);
-          data.employee_name = employeeData[0].name;
-          data.employee_id = employeeData[0].id;
-        } else {
-          console.log(`⚠️ No employee found for emails:`, emailsToSearch);
-          // Let's also check what employees exist with similar emails
-          const { data: allEmployees } = await supabase
-            .from('employees')
-            .select('name, email')
-            .limit(10);
-          console.log(`📋 Sample employees in database:`, allEmployees);
-        }
       }
-      
-      // If successful and has manager_id, try to fetch manager separately
-      if (data && data.manager_id && !error) {
-        const { data: managerData } = await supabase
-          .from('hr_users')
-          .select('id, full_name, email, position')
-          .eq('id', data.manager_id)
-          .maybeSingle();
-        
-        if (managerData) {
-          data.manager = managerData;
-        }
+
+      /*
+       * The employee match and the manager lookup both depend on the hr_users
+       * row and not on each other, so they go together rather than one after
+       * the other.
+       *
+       * The "sample employees" query that used to run whenever no match was
+       * found has gone with them. It fetched ten unrelated rows purely to print
+       * them, on the critical path, for every user who has no employee record —
+       * paying a round-trip of first-paint latency for a debug aid.
+       */
+      const [employeeResult, managerResult] = await Promise.all([
+        emailsToSearch.length > 0
+          ? supabase.from('employees').select('name, id, email').in('email', emailsToSearch).limit(1)
+          : Promise.resolve({ data: null }),
+        data && data.manager_id && !error
+          ? supabase
+              .from('hr_users')
+              .select('id, full_name, email, position')
+              .eq('id', data.manager_id)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+
+      const employeeData = employeeResult.data;
+      if (data && employeeData && employeeData.length > 0 && employeeData[0].name) {
+        console.log(`✅ Found employee: ${employeeData[0].name} (${employeeData[0].email})`);
+        data.employee_name = employeeData[0].name;
+        data.employee_id = employeeData[0].id;
+      } else if (emailsToSearch.length > 0) {
+        console.log('⚠️ No employee found for emails:', emailsToSearch);
+      }
+
+      if (data && managerResult.data) {
+        data.manager = managerResult.data;
       }
 
       if (error) {
@@ -759,12 +832,19 @@ export const AuthProvider = ({ children }) => {
         
         console.log(`👤 Name selection: employeeName="${employeeName}" | full_name="${data.full_name}" | first_name="${data.first_name}"`);
         
-        // Update last_login timestamp
-        await supabase
+        // Update last_login timestamp. Fire-and-forget: nothing on screen reads
+        // it, and awaiting a write held the first paint behind a round-trip.
+        supabase
           .from('hr_users')
           .update({ last_login: new Date().toISOString() })
-          .eq('id', hrUserId);
-        
+          .eq('id', hrUserId)
+          .then(({ error: lastLoginError }) => {
+            if (lastLoginError) {
+              console.warn('Could not record last_login:', lastLoginError.message);
+            }
+          });
+
+
         setUser({
           id: data.id,
           email: data.email,

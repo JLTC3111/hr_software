@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
 import React from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Loader } from 'lucide-react'
 import { useTheme } from './contexts/ThemeContext'
 import { useLanguage } from './contexts/LanguageContext'
@@ -56,6 +56,7 @@ const PageLoader = () => (
 import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
 import { logVisit } from './services/visitService';
+import { resolvePostLoginRoute } from './config/routes.js';
 import { isDemoMode } from './utils/demoHelper';
 
 const HRManagementApp = () => {
@@ -249,6 +250,45 @@ const HRManagementApp = () => {
   );
 };
 
+/**
+ * Send an unauthenticated visitor to the login screen, remembering where they
+ * were.
+ *
+ * The bare <Navigate to="/login" replace> this replaces was silently
+ * destructive. Auth resolves asynchronously, so this branch is reached not only
+ * by people who are genuinely signed out but by anyone whose session is still
+ * being restored — and `replace` overwrote the URL they had asked for. By the
+ * time the profile landed there was nothing left to return to, so they were
+ * dropped on the dashboard no matter which screen they had reloaded from.
+ */
+const RedirectToLogin = () => {
+  const location = useLocation();
+  const from = `${location.pathname}${location.search}`;
+  return (
+    <Navigate
+      to="/login"
+      replace
+      state={from && from !== '/login' ? { from } : undefined}
+    />
+  );
+};
+
+/**
+ * The /login route.
+ *
+ * A component rather than an inline ternary because it has to read the location
+ * state that RedirectToLogin left behind. It also has to *win* the race against
+ * the login screen's own redirect effect: when `isAuthenticated` flips, this
+ * element is re-evaluated in the same render that would unmount <Login />, so
+ * Login's effect never gets to run. Whichever of the two fires, both now aim at
+ * the same place.
+ */
+const LoginRoute = ({ isAuthenticated }) => {
+  const location = useLocation();
+  if (!isAuthenticated) return <Login />;
+  return <Navigate to={resolvePostLoginRoute(location.state?.from)} replace />;
+};
+
 const AppContent = ({ employees, activeEmployees, applications, selectedEmployee, isEditMode, onViewEmployee, onEditEmployee, onDeleteEmployee, onCloseModal, onPhotoUpdate, refetchEmployees, loading, error, isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const { bg, text } = useTheme();
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -301,9 +341,7 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
     <Router>
       <Routes>
         {/* Public Routes */}
-        <Route path="/login" element={
-          isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
-        } />
+        <Route path="/login" element={<LoginRoute isAuthenticated={isAuthenticated} />} />
         
         {/* Allow reset-password even when authenticated (user needs to complete password change) */}
         <Route
@@ -455,7 +493,7 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
               />
             </div>
           ) : (
-            <Navigate to="/login" replace />
+            <RedirectToLogin />
           )
         } />
       </Routes>
