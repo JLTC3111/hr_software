@@ -103,6 +103,15 @@ export default {
     user: 'Équipe RH',
     logout: 'Se deconnecter'
   },
+  // Session lifecycle: the idle countdown shown before an automatic sign-out.
+  session: {
+    idleWarningTitle: 'Toujours là ?',
+    idleWarningBody: 'Vous êtes inactif depuis un moment. Par sécurité, vous serez déconnecté automatiquement.',
+    idleWarningCountdown: 'Déconnexion dans',
+    idleWarningSeconds: 'secondes',
+    staySignedIn: 'Rester connecté',
+    signOutNow: 'Se déconnecter',
+  },
   // Login
   login: {
     idleLogoutMessage: 'Vous avez été déconnecté après une période d\'inactivité. Veuillez vous reconnecter.',

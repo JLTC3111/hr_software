@@ -9,9 +9,16 @@ import {
   resetSessionVerification,
 } from '../utils/sessionHelper.js';
 import { isDemoMode, enableDemoMode, disableDemoMode, MOCK_USER, getDemoEmployees, attachSeededRandomUserPhotos, DEMO_CONFIG } from '../utils/demoHelper.js';
+import {
+  clearPersistedActivity,
+  getIdleDurationMs,
+  getPersistedIdleDurationMs,
+  resetActivity,
+} from '../utils/activityTracker.js';
 import { withTimeout } from '../utils/supabaseTimeout.js';
 import { useSessionKeepAlive } from '../hooks/useSessionKeepAlive.js';
 import { useIdleLogout } from '../hooks/useIdleLogout.js';
+import IdleWarningModal from '../components/idleWarningModal.jsx';
 import {
   DEFAULT_REQUEST_TIMEOUT,
   IDLE_LOGOUT_TIMEOUT,
@@ -51,6 +58,13 @@ const AUTH_VERIFY_TIMEOUT_MS = 8000;
  * bounded, so without this one stalled query holds the whole app.
  */
 const AUTH_PROFILE_TIMEOUT_MS = 10000;
+
+/**
+ * How long the sign-out that throws away an unusable session may take. Short:
+ * it runs at boot while GoTrue's lock is held, and the storage wipe that
+ * follows is what actually retires the session — the call itself is a courtesy.
+ */
+const AUTH_DISCARD_TIMEOUT_MS = 4000;
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -223,12 +237,29 @@ export const AuthProvider = ({ children }) => {
      * Throw away a persisted session the server will not honour. Without this
      * the same dead token is re-read on every load and fails identically each
      * time, with no path back to a clean state but clearing site data by hand.
+     *
+     * `scope` matters more here than anywhere else in the file. A default
+     * (global) signOut is a network round-trip to /logout, and GoTrue holds its
+     * Web Lock for the whole call — during boot, with the login form the very
+     * next thing the user touches. login() then waits on getSession() behind
+     * that same lock, which is the "credentials accepted, nothing happens, have
+     * to hard-refresh" failure logout() already had to be rewritten to avoid.
+     * A rejected token is rare enough to pay for revocation; the idle path is
+     * the common one and passes 'local', where there is nothing to revoke —
+     * the point is only to stop this client reusing the token.
+     *
+     * Bounded either way, so a wedged auth lock cannot hold the app on the
+     * spinner until the bootstrap watchdog trips. The storage wipe below is
+     * what actually guarantees the session is gone, and it always runs.
      */
-    const discardRestoredSession = async (reason, error) => {
+    const discardRestoredSession = async (reason, error, { scope } = {}) => {
       console.warn(`🧹 Discarding restored session — ${reason}`, error || '');
       try {
         intentionalSignOut.current = true;
-        await supabase.auth.signOut();
+        await withTimeout(
+          scope ? supabase.auth.signOut({ scope }) : supabase.auth.signOut(),
+          AUTH_DISCARD_TIMEOUT_MS
+        );
       } catch (signOutError) {
         // Expected when the network is the reason we got here; storage still
         // has to go, which is what clearAuthStorage() is for.
@@ -245,6 +276,45 @@ export const AuthProvider = ({ children }) => {
     const restoreSession = async (initialSession) => {
       if (!initialSession) {
         console.log('✅ No session to restore');
+        settle();
+        return;
+      }
+
+      /*
+       * A restored session is only as good as the idle rule that governs it.
+       *
+       * useIdleLogout can only expire a tab that stays open, so on its own it
+       * left the main case unhandled: close the app, come back tomorrow, and
+       * the persisted token was restored and verified exactly as if no time had
+       * passed. That is the automatic sign-in after an idle period. The stamp
+       * now survives reloads and closed tabs, so the same rule can be applied
+       * here — before the session is trusted, and before any network call.
+       *
+       * No stamp at all is "unknown", not "idle": a store cleared by hand, or
+       * the first load after this shipped. Signing someone out on absence of
+       * evidence is the mistake this file avoids everywhere else, so stamp the
+       * moment instead and let the normal rule take over from here.
+       */
+      const persistedIdleMs = getPersistedIdleDurationMs();
+      if (persistedIdleMs === null) {
+        resetActivity();
+      } else if (persistedIdleMs >= IDLE_LOGOUT_TIMEOUT) {
+        console.warn(
+          `🚪 Session idle for ~${Math.round(persistedIdleMs / 60000)} min — signing out instead of restoring`
+        );
+        try {
+          sessionStorage.setItem(LOGOUT_REASON_KEY, 'idle');
+        } catch {
+          // The notice is cosmetic; the sign-out below is not.
+        }
+        // Local scope: see discardRestoredSession. This is the hot path now, and
+        // it runs immediately before someone signs in again.
+        await discardRestoredSession(
+          'the idle timeout elapsed while the app was away',
+          null,
+          { scope: 'local' }
+        );
+        clearPersistedActivity();
         settle();
         return;
       }
@@ -410,6 +480,14 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (document.visibilityState === 'visible') {
+        // Past the idle window there is nothing here worth renewing: useIdleLogout
+        // is about to end this session, and refreshing the token first only races
+        // that logout and puts a fresh token in storage on the way out.
+        if (getIdleDurationMs() >= IDLE_LOGOUT_TIMEOUT) {
+          console.log('⏭️ Skipping session refresh - past the idle timeout');
+          return;
+        }
+
         const now = Date.now();
         const timeSinceLastCheck = now - lastVisibilityCheck.current;
         if (timeSinceLastCheck < 60000) {
@@ -882,6 +960,10 @@ export const AuthProvider = ({ children }) => {
       // the session we just replaced unless we asked for it ourselves.
       lastSignInAt.current = Date.now();
       intentionalSignOut.current = false;
+      // Start this session's idle clock now. Without it the session inherits
+      // whatever stamp the store still held, and a sign-in that follows a long
+      // absence would be measured as though it had already been idle.
+      resetActivity();
 
       console.log('✅ Login successful');
       try {
@@ -1080,6 +1162,9 @@ export const AuthProvider = ({ children }) => {
 
       // Mirror contract app: wipe persisted tokens before signOut
       clearAuthStorage();
+      // The idle clock belongs to the session that just ended, not to whoever
+      // signs in next.
+      clearPersistedActivity();
 
       // Local scope clears in-memory session without a network round-trip.
       // A timed-out *global* signOut was leaving GoTrue locked so re-login
@@ -1163,10 +1248,13 @@ export const AuthProvider = ({ children }) => {
   const sessionHooksEnabled = isAuthenticated && !isDemoMode();
   useSessionKeepAlive({ enabled: sessionHooksEnabled });
 
+  const [idleWarningOpen, setIdleWarningOpen] = useState(false);
+
   const idleLogoutInProgressRef = useRef(false);
   const handleIdleLogout = useCallback(async () => {
     if (idleLogoutInProgressRef.current) return;
     idleLogoutInProgressRef.current = true;
+    setIdleWarningOpen(false);
     try {
       sessionStorage.setItem(LOGOUT_REASON_KEY, 'idle');
       await authActionsRef.current?.logout?.();
@@ -1176,15 +1264,54 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const handleIdleWarning = useCallback(({ remainingMs }) => {
-    const minutes = Math.max(1, Math.ceil(remainingMs / 60000));
-    console.warn(`Session will end in ~${minutes} min due to inactivity.`);
+    console.warn(`Session will end in ~${Math.round(remainingMs / 1000)}s due to inactivity.`);
+    setIdleWarningOpen(true);
   }, []);
+
+  // Any genuine interaction anywhere in the app clears the warning through the
+  // activity tracker, so the countdown never outlives the idleness it reports.
+  const handleIdleWarningCleared = useCallback(() => {
+    setIdleWarningOpen(false);
+  }, []);
+
+  const handleStaySignedIn = useCallback(async () => {
+    setIdleWarningOpen(false);
+    resetActivity();
+    /*
+     * Extending the idle clock without renewing the token is how the stale-token
+     * problem starts. Fourteen idle minutes is long enough for the access token
+     * to be at or past expiry — a keep-alive tick can have been missed, or the
+     * tab suspended through one — so "stay signed in" that only reset the clock
+     * would hand the user back an app that 401s on their next click. Repair it
+     * now, while they are demonstrably here.
+     */
+    try {
+      const result = await validateAndRefreshSession({ quiet: true });
+      if (!result.success) {
+        console.warn('Could not renew the session after the idle warning:', result.error);
+      }
+    } catch (err) {
+      console.warn('Could not renew the session after the idle warning:', err?.message || err);
+    }
+  }, []);
+
+  const handleSignOutNow = useCallback(async () => {
+    setIdleWarningOpen(false);
+    sessionStorage.setItem(LOGOUT_REASON_KEY, 'idle');
+    await authActionsRef.current?.logout?.();
+  }, []);
+
+  // A session that ends for any other reason must not leave the countdown up.
+  useEffect(() => {
+    if (!sessionHooksEnabled) setIdleWarningOpen(false);
+  }, [sessionHooksEnabled]);
 
   useIdleLogout({
     enabled: sessionHooksEnabled,
     timeoutMs: IDLE_LOGOUT_TIMEOUT,
     warnBeforeMs: IDLE_LOGOUT_WARN_BEFORE_MS,
     onWarning: handleIdleWarning,
+    onWarningCleared: handleIdleWarningCleared,
     onIdle: handleIdleLogout,
   });
 
@@ -1215,6 +1342,14 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={value}>
       {children}
+      {/* Outside `children` on purpose: the countdown belongs to the session,
+          not to whatever screen happens to be routed. */}
+      <IdleWarningModal
+        open={idleWarningOpen}
+        timeoutMs={IDLE_LOGOUT_TIMEOUT}
+        onStay={handleStaySignedIn}
+        onSignOut={handleSignOutNow}
+      />
     </AuthContext.Provider>
   );
 };

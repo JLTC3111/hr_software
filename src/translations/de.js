@@ -103,6 +103,15 @@ export default {
     user: 'HR-Team',
     logout: 'Abmelden'
   },
+  // Session lifecycle: the idle countdown shown before an automatic sign-out.
+  session: {
+    idleWarningTitle: 'Noch da?',
+    idleWarningBody: 'Sie waren eine Weile inaktiv. Aus Sicherheitsgründen werden Sie automatisch abgemeldet.',
+    idleWarningCountdown: 'Abmeldung in',
+    idleWarningSeconds: 'Sekunden',
+    staySignedIn: 'Angemeldet bleiben',
+    signOutNow: 'Jetzt abmelden',
+  },
   // Login
   login: {
     idleLogoutMessage: 'Sie wurden nach einem Zeitraum der Inaktivität abgemeldet. Bitte melden Sie sich erneut an.',

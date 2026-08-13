@@ -103,6 +103,15 @@ export default {
     user: 'HRチーム',
     logout: 'ログアウト'
   },
+  // Session lifecycle: the idle countdown shown before an automatic sign-out.
+  session: {
+    idleWarningTitle: 'まだご利用中ですか?',
+    idleWarningBody: 'しばらく操作がありません。セキュリティのため自動的にログアウトします。',
+    idleWarningCountdown: 'ログアウトまで',
+    idleWarningSeconds: '秒',
+    staySignedIn: 'ログインを維持',
+    signOutNow: '今すぐログアウト',
+  },
   // Login
   login: {
     idleLogoutMessage: '一定期間の非アクティブ状態が続いたため、サインアウトしました。再度サインインしてください。',

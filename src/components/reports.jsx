@@ -1,17 +1,21 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useNavigate } from 'react-router-dom';
 import { useLanguage, SUPPORTED_LANGUAGES } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { useAuth } from "../contexts/AuthContext";
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription, getDemoGoalTitle, getDemoGoalDescription, getDemoTimeEntries } from '../utils/demoHelper';
 import {
   Download,
-  Users,
   Goal,
   Clock,
   CheckCircle,
   FileText,
   Loader2,
   AlertCircle,
+  AlertTriangle,
+  ArrowRight,
+  Check,
   X
 } from 'lucide-react';
 import timeTrackingService from '../services/timeTrackingService';
@@ -28,8 +32,9 @@ import {
   buildCombinedCsvContent,
   computeEmployeePerformance,
   computeExportStats,
+  countWorkingDays,
   createPdfReportLayout,
-  filterExportSnapshotByTab,
+  filterExportSnapshotByScope,
   formatHours,
   meterFilledBlocks,
   PDF_TOKENS,
@@ -43,7 +48,7 @@ import { NumberTicker } from './ui/number-ticker';
 import { DatePicker } from './ui/date-picker.jsx';
 import { cn } from '@/lib/utils';
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
-import { Blueprint, Bar, Tag, Btn, Seg, Kicker, ColumnHeading, TickerCell, LiveClock, FlatSelect } from './ui/industry.jsx';
+import { Bar, Tag, Btn, Seg, Kicker, ColumnHeading, TickerCell, LiveClock, FlatSelect } from './ui/industry.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import {
   choosePdfFont,
@@ -67,10 +72,188 @@ const loadPdfLibs = async () => {
   return { jsPDF: jsPdfModule.jsPDF, autoTable: autoTableModule.default ?? autoTableModule };
 };
 
+/**
+ * The four record types the sheet can put in an export. Scope is a set, not a
+ * tab: an export normally carries several of them at once.
+ */
+const SCOPE_KEYS = ['timeEntries', 'leave', 'tasks', 'goals'];
+
+/** Rows shown in the preview before "Load 50" is pressed. */
+const PREVIEW_PAGE = 50;
+
+/**
+ * The date a record sits on for period purposes. Time entries and leave carry a
+ * real date; a task or a goal is placed by when it is due, and an undated one by
+ * when it was raised, so nothing drops out of the period for want of a due date.
+ */
+const recordDate = (item) =>
+  String(item?.date || item?.due_date || item?.target_date || item?.start_date || item?.created_at || '').slice(0, 10);
+
+const withinRange = (item, startDate, endDate) => {
+  const date = recordDate(item);
+  return Boolean(date) && date >= startDate && date <= endDate;
+};
+
+/** ISO-8601 week number, so the volume strip agrees with payroll's week labels. */
+const isoWeekNumber = (date) => {
+  const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNumber = target.getUTCDay() || 7;
+  target.setUTCDate(target.getUTCDate() + 4 - dayNumber);
+  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+  return Math.ceil((((target - yearStart) / 86400000) + 1) / 7);
+};
+
+const formatBytes = (bytes) => {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 KB';
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+/**
+ * Hours booked against one person on one day, past which the entry is far more
+ * often a duplicate punch than a real shift. Flagged before export, not blocked.
+ */
+const LONG_SHIFT_HOURS = 12;
+
+/** The page head reports the last file that actually left, so it is written on success. */
+const LAST_EXPORT_KEY = 'icue.reports.lastExport';
+
+/* ------------------------------------------------------------------ *
+ * Sheet primitives. Module level, so a re-render of the screen does not
+ * remount the selects and date pickers living inside them.
+ * ------------------------------------------------------------------ */
+
+/** The four registration crosses that mark a band of the sheet. */
+function BandMarks({ ind }) {
+  return (
+    <>
+      {[
+        { top: -5, left: -5 }, { top: -5, right: -5 },
+        { bottom: -5, left: -5 }, { bottom: -5, right: -5 },
+      ].map((position, index) => (
+        <span key={index} aria-hidden="true" style={{ position: 'absolute', width: 11, height: 11, ...position }}>
+          <span style={{ position: 'absolute', top: 5, left: 0, width: 11, height: 1, background: ind.inkFaint }} />
+          <span style={{ position: 'absolute', left: 5, top: 0, width: 1, height: 11, background: ind.inkFaint }} />
+        </span>
+      ))}
+    </>
+  );
+}
+
+/**
+ * A band is a hairline grid: the 1px gaps let the band's own background show
+ * through, so the rules stay continuous however the columns wrap.
+ */
+function Band({ ind, className, children }) {
+  return (
+    <div style={{ position: 'relative', margin: '0 0 26px' }}>
+      <BandMarks ind={ind} />
+      <div
+        className={className}
+        style={{
+          display: 'grid', gap: 1, background: ind.hairline,
+          border: `1px solid ${ind.hairline}`,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Cell({ ind, className, children }) {
+  return (
+    <div className={className} style={{ background: ind.ground, padding: '14px 16px 16px', minWidth: 0 }}>
+      {children}
+    </div>
+  );
+}
+
+/** Numbered panel heading — "01 · RECORDS". */
+function PanelHead({ ind, num, title, right }) {
+  return (
+    <div className="flex items-baseline justify-between" style={{ gap: 10, marginBottom: 12 }}>
+      <div className="flex items-baseline" style={{ gap: 8, minWidth: 0 }}>
+        {num && (
+          <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.16em', color: ind.accent }}>
+            {num}
+          </span>
+        )}
+        <span
+          style={{
+            fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, letterSpacing: '.14em',
+            textTransform: 'uppercase', color: ind.ink,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}
+        >
+          {title}
+        </span>
+      </div>
+      {right}
+    </div>
+  );
+}
+
+/** One figure block: the form every derived number on this screen takes. */
+function FigureBlock({ ind, label, value, suffix, description, size = 22 }) {
+  return (
+    <div style={{ border: `1px solid ${ind.hairline}`, padding: '9px 11px', minWidth: 0 }}>
+      <Kicker ind={ind}>{label}</Kicker>
+      <div className="flex items-baseline" style={{ gap: 3, margin: '5px 0 0' }}>
+        <span style={{ ...figure(size, ind.ink), lineHeight: 1 }}>
+          <SlidingNumber value={value} />
+        </span>
+        {suffix && <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted }}>{suffix}</span>}
+      </div>
+      <p
+        style={{
+          fontFamily: BODY, fontSize: 11, color: ind.inkFaint, margin: '4px 0 0',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}
+      >
+        {description}
+      </p>
+    </div>
+  );
+}
+
+/** A label / figure line inside a breakdown box. */
+function StatLine({ ind, label, value, suffix, decimals }) {
+  return (
+    <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
+      <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted, minWidth: 0 }}>{label}</span>
+      <span
+        style={{
+          fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, color: ind.ink,
+          fontVariantNumeric: 'tabular-nums', flex: 'none',
+        }}
+      >
+        {/* Counts snap between whole numbers; a rate rolls its decimal. */}
+        {decimals != null
+          ? <NumberTicker value={value} decimalPlaces={decimals} />
+          : <SlidingNumber value={value} />}
+        {suffix}
+      </span>
+    </div>
+  );
+}
+
+const readLastExport = () => {
+  try {
+    const raw = window.localStorage.getItem(LAST_EXPORT_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && parsed.filename ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
 const Reports = () => {
   const { handleSessionAuthError } = useSessionGuard();
   const { t, currentLanguage } = useLanguage();
   const { isDarkMode } = useTheme();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
 
   // Helper function to translate department values
@@ -83,17 +266,6 @@ const Reports = () => {
   const translatePosition = (position) => {
     if (!position) return '';
     return t(`employeePosition.${position}`, position);
-  };
-  
-  // Helper function to translate data type labels
-  const translateDataType = (type) => {
-    if (!type) return '';
-    const typeMap = {
-      'timeEntry': t('dataType.timeEntry', 'Time Entry'),
-      'task': t('dataType.task', 'Task'),
-      'goal': t('dataType.goal', 'Goal')
-    };
-    return typeMap[type] || type;
   };
   
   // Helper function to translate category labels
@@ -109,21 +281,136 @@ const Reports = () => {
     return categoryMap[category] || category;
   };
   
+  const translateHourType = (hourType) => {
+    if (!hourType) return '';
+    const type = hourType.toLowerCase();
+    switch (type) {
+      case 'regular':
+        return t('timeClock.hourTypes.regular', 'Regular Hours');
+      case 'holiday':
+        return t('timeClock.hourTypes.holiday', 'Holiday Hours');
+      case 'weekend':
+        return t('timeClock.hourTypes.weekend', 'Weekend Overtime');
+      case 'overtime':
+        return t('timeClock.hourTypes.overtime', 'Overtime');
+      case 'bonus':
+        return t('timeClock.hourTypes.bonus', 'Bonus Hours');
+      case 'wfh':
+        return t('timeClock.hourTypes.wfh', 'Working From Home');
+      case 'on_leave':
+        return t('timeClock.hourTypes.onLeave', 'On Leave');  
+      default:
+        return hourType;
+    }
+  };
+
+  const translateLeaveType = (leaveType) => {
+    if (!leaveType) return '';
+    const type = leaveType.toLowerCase();
+    switch (type) {
+      case 'sick':
+        return t('timeTracking.sickLeave', 'Sick Leave');
+      case 'personal':
+        return t('timeTracking.personal', 'Personal');
+      case 'vacation':
+        return t('timeTracking.vacation', 'Vacation');
+      default:
+        return leaveType;
+    }
+  };
+
+  // Helper function to translate status
+  const translateStatus = (status) => {
+    if (!status) return '';
+    const stat = status.toLowerCase();
+    switch (stat) {
+      case 'pending':
+        return t('reports.statusPending', 'Pending');
+      case 'approved':
+        return t('reports.statusApproved', 'Approved');
+      case 'rejected':
+        return t('reports.statusRejected', 'Rejected');
+      case 'completed':
+        return t('reports.statusCompleted', 'Completed');
+      case 'in progress':
+      case 'in_progress':
+      case 'in-progress':
+        return t('reports.statusInProgress', 'In Progress');
+      case 'not started':
+      case 'not_started':
+      case 'not-started':
+        return t('reports.statusNotStarted', 'Not Started');
+      default:
+        return status;
+    }
+  };
+
+  // Helper function to translate priority
+  const translatePriority = (priority) => {
+    if (!priority) return '';
+    const prio = priority.toLowerCase();
+    switch (prio) {
+      case 'low':
+        return t('reports.priorityLow', 'Low');
+      case 'medium':
+        return t('reports.priorityMedium', 'Medium');
+      case 'high':
+        return t('reports.priorityHigh', 'High');
+      default:
+        return priority;
+    }
+  };
+
+  // Localizes the "Entered by admin:" prefix; the free-text body is looked up
+  // from the pre-translated UGC map when one is supplied (export paths).
+  const translateNotes = (notes, ugcMap = null) => {
+    if (!notes) return '';
+    // Check if notes starts with "Entered by admin:" (case insensitive, optional colon)
+    const adminPrefixRegex = /^Entered by admin:?\s*/i;
+    const match = notes.match(adminPrefixRegex);
+
+    if (match) {
+      const translatedPrefix = t('timeTracking.enteredByAdmin', 'Entered by admin:');
+      const body = notes.slice(match[0].length);
+      // Replace the matched prefix with the translated one and ensure a space follows
+      return translatedPrefix + ' ' + (ugcMap ? (ugcMap.get(body) ?? body) : body);
+    }
+    return ugcMap ? (ugcMap.get(notes) ?? notes) : notes;
+  };
+
   // State
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const [exporting, setExporting] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
+
+  // 01 · Records — which record types the export carries.
+  const [scope, setScope] = useState({ timeEntries: true, leave: true, tasks: true, goals: true });
+  // 02 · People
   const [selectedEmployee, setSelectedEmployee] = useState('all');
+  const [selectedUnit, setSelectedUnit] = useState('all');
+  const [activeOnly, setActiveOnly] = useState(true);
+  // 03 · Period
   const [dateRange, setDateRange] = useState('this-month');
   const [filters, setFilters] = useState({
     startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0]
   });
-  
-  // Sorting state for Data Preview table
+
+  // Preview ledger
   const [sortKey, setSortKey] = useState('date');
   const [sortDirection, setSortDirection] = useState('desc');
+  const [visibleRows, setVisibleRows] = useState(PREVIEW_PAGE);
+  const [hiddenColumns, setHiddenColumns] = useState(() => new Set());
+  const [columnMenuOpen, setColumnMenuOpen] = useState(false);
+  /** Set by the "before you export" checks: narrows the preview to the rows a check is about. */
+  const [attention, setAttention] = useState(null);
+  const [peopleListOpen, setPeopleListOpen] = useState(false);
+
+  // Export dock
+  const [exportFormat, setExportFormat] = useState('csv');
+  const [lastExport, setLastExport] = useState(readLastExport);
+
+  const columnMenuRef = useRef(null);
 
   // Data state
   const [reportData, setReportData] = useState({
@@ -155,15 +442,44 @@ const Reports = () => {
     fetchEmployees();
   }, []);
 
-  // Default operational cohort excludes inactive (picker + "all" aggregates)
   const activeEmployees = useMemo(
     () => filterActiveEmployees(reportData.employees),
     [reportData.employees]
   );
-  const activeEmployeeIds = useMemo(
-    () => new Set(activeEmployees.map((e) => String(e.id))),
-    [activeEmployees]
-  );
+
+  /** Units come off the roster; there is no unit table to read them from. */
+  const units = useMemo(() => {
+    const source = activeOnly ? activeEmployees : reportData.employees;
+    return [...new Set(source.map((emp) => emp.department).filter(Boolean))].sort();
+  }, [activeOnly, activeEmployees, reportData.employees]);
+
+  /**
+   * 02 · People resolved into the one list every figure on the sheet is scoped
+   * to. A named person wins over a unit, a unit over the whole roster.
+   */
+  const cohort = useMemo(() => {
+    if (selectedEmployee !== 'all') {
+      return reportData.employees.filter((emp) => String(emp.id) === String(selectedEmployee));
+    }
+    let list = activeOnly ? activeEmployees : reportData.employees;
+    if (selectedUnit !== 'all') {
+      list = list.filter((emp) => (emp.department || '') === selectedUnit);
+    }
+    return list;
+  }, [selectedEmployee, selectedUnit, activeOnly, activeEmployees, reportData.employees]);
+
+  const cohortIds = useMemo(() => new Set(cohort.map((emp) => String(emp.id))), [cohort]);
+
+  /**
+   * Rows belong to the cohort by employee id. Until the roster has loaded there
+   * is nothing to match against, so everything passes rather than nothing.
+   */
+  const inCohort = useCallback((item) => {
+    if (reportData.employees.length === 0) return true;
+    const id = item?.employee_id ?? item?.employee?.id;
+    if (id == null) return false;
+    return cohortIds.has(String(id));
+  }, [cohortIds, reportData.employees.length]);
 
   // Update date filters when range changes
   useEffect(() => {
@@ -232,8 +548,6 @@ const Reports = () => {
         const { startDate, endDate } = filters;
         // Don't parse as int - IDs might be UUIDs
         const employeeId = selectedEmployee === 'all' ? null : selectedEmployee;
-      
-      console.log('Fetching data for:', { selectedEmployee, employeeId, activeTab, startDate, endDate });
 
       const fetchTimeEntries = async () => {
         let allTimeEntries = [];
@@ -278,22 +592,22 @@ const Reports = () => {
 
       const fetchTasks = async () => {
         const tasksResponse = await getAllTasks(employeeId ? { employeeId } : {});
-        const tasks = tasksResponse.success ? tasksResponse.data : [];
+        let tasks = tasksResponse.success ? tasksResponse.data : [];
         if (employeeId) {
-          return tasks.filter(task => String(task.employee_id) === String(employeeId));
+          tasks = tasks.filter(task => String(task.employee_id) === String(employeeId));
         }
-        return tasks;
+        return tasks.filter(task => withinRange(task, startDate, endDate));
       };
 
       const fetchGoals = async () => {
         const goalsResponse = await performanceService.getAllPerformanceGoals(
           employeeId ? { employeeId } : {}
         );
-        const goals = goalsResponse.success ? goalsResponse.data : [];
+        let goals = goalsResponse.success ? goalsResponse.data : [];
         if (employeeId) {
-          return goals.filter(goal => String(goal.employee_id) === String(employeeId));
+          goals = goals.filter(goal => String(goal.employee_id) === String(employeeId));
         }
-        return goals;
+        return goals.filter(goal => withinRange(goal, startDate, endDate));
       };
 
       const fetchLeave = async () => {
@@ -310,32 +624,27 @@ const Reports = () => {
         return leaveData;
       };
 
-      if (activeTab === 'all') {
-        const [timeEntries, tasks, goals] = await Promise.all([
-          fetchTimeEntries(),
-          fetchTasks(),
-          fetchGoals(),
-        ]);
-        setReportData(prev => ({ ...prev, timeEntries, tasks, goals }));
-      } else if (activeTab === 'time-entries') {
-        const timeEntries = await fetchTimeEntries();
-        setReportData(prev => ({ ...prev, timeEntries }));
-      } else if (activeTab === 'tasks') {
-        const tasks = await fetchTasks();
-        setReportData(prev => ({ ...prev, tasks }));
-      } else if (activeTab === 'goals') {
-        const goals = await fetchGoals();
-        setReportData(prev => ({ ...prev, goals }));
-      } else if (activeTab === 'leave') {
-        const leaveData = await fetchLeave();
-        setReportData(prev => ({
-          ...prev,
-          leave: leaveData.map(req => ({
-            ...req,
-            employee: req.employee || prev.employees.find(emp => String(emp.id) === String(req.employee_id)) || null
-          }))
-        }));
-      }
+      // All four types are always loaded: scope is a set of tick boxes now, and
+      // ticking one must not cost a round trip.
+      const [timeEntries, tasks, goals, leaveData] = await Promise.all([
+        fetchTimeEntries(),
+        fetchTasks(),
+        fetchGoals(),
+        fetchLeave(),
+      ]);
+
+      setReportData(prev => ({
+        ...prev,
+        timeEntries,
+        tasks,
+        goals,
+        // Leave arrives without its employee joined; the roster already loaded
+        // is the only place to resolve the name and unit from.
+        leave: leaveData.map(req => ({
+          ...req,
+          employee: req.employee || prev.employees.find(emp => String(emp.id) === String(req.employee_id)) || null
+        }))
+      }));
       }, {
         maxRetries: 2,
         shouldRetry: isRetryableError,
@@ -356,7 +665,7 @@ const Reports = () => {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [filters, selectedEmployee, activeTab, handleSessionAuthError]);
+  }, [filters, selectedEmployee, handleSessionAuthError]);
 
   const loadAllReportDataForExport = useCallback(async () => {
     const { startDate, endDate } = filters;
@@ -401,12 +710,14 @@ const Reports = () => {
     if (employeeId) {
       tasks = tasks.filter((task) => String(task.employee_id) === String(employeeId));
     }
+    tasks = tasks.filter((task) => withinRange(task, startDate, endDate));
 
     const goalsResponse = await performanceService.getAllPerformanceGoals(employeeId ? { employeeId } : {});
     let goals = goalsResponse.success ? goalsResponse.data || [] : [];
     if (employeeId) {
       goals = goals.filter((goal) => String(goal.employee_id) === String(employeeId));
     }
+    goals = goals.filter((goal) => withinRange(goal, startDate, endDate));
 
     const leaveResponse = await timeTrackingService.getAllLeaveRequests({});
     let leave = leaveResponse.success ? leaveResponse.data || [] : [];
@@ -424,22 +735,23 @@ const Reports = () => {
         employee: req.employee || reportData.employees.find((emp) => String(emp.id) === String(req.employee_id)) || null,
       }));
 
-    const exportData = {
-      timeEntries: allTimeEntries,
-      tasks,
-      goals,
-      leave,
-      employees: reportData.employees
-    };
-
+    // The screen keeps the unscoped fetch so the figures stay live; the export
+    // gets the cohort-narrowed copy so the file matches what 02 · People says.
     setReportData((prev) => ({ ...prev, timeEntries: allTimeEntries, tasks, goals, leave }));
-    return exportData;
-  }, [filters, selectedEmployee, reportData.employees]);
+
+    return {
+      timeEntries: allTimeEntries.filter(inCohort),
+      tasks: tasks.filter(inCohort),
+      goals: goals.filter(inCohort),
+      leave: leave.filter(inCohort),
+      employees: cohort,
+    };
+  }, [filters, selectedEmployee, reportData.employees, inCohort, cohort]);
 
   const getFilteredExportData = useCallback(async () => {
     const snapshot = await loadAllReportDataForExport();
-    return filterExportSnapshotByTab(activeTab, snapshot);
-  }, [loadAllReportDataForExport, activeTab]);
+    return filterExportSnapshotByScope(scope, snapshot);
+  }, [loadAllReportDataForExport, scope]);
 
   // Effect to fetch data when filters/tab/employee changes (no need to wait for employees list)
   useEffect(() => {
@@ -464,316 +776,494 @@ const Reports = () => {
     }
   };
 
-  // Get current data based on active tab (filtered by selectedEmployee if not 'all')
-  const currentData = useMemo(() => {
-    // Helper to filter data by selected employee; "all" = active cohort only
-    const filterByEmployee = (data) => {
-      if (selectedEmployee === 'all') {
-        return (data || []).filter((item) => {
-          const id = item?.employee_id ?? item?.employee?.id;
-          if (id == null) return true;
-          return activeEmployeeIds.has(String(id));
-        });
-      }
-      return (data || []).filter(item => String(item.employee_id) === String(selectedEmployee));
+  /* ------------------------------------------------------------------ *
+   * Derived sheet state.
+   *
+   * One chain — cohort → scope → ledger — feeds the ticker, the
+   * composition band, the preview and the export dock. They read the same
+   * arrays, so the sheet cannot report two different totals for one export.
+   * ------------------------------------------------------------------ */
+
+  /** Everything the 02 · People selection allows, before the scope ticks. */
+  const cohortData = useMemo(() => ({
+    timeEntries: (reportData.timeEntries || []).filter(inCohort),
+    leave: (reportData.leave || []).filter(inCohort),
+    tasks: (reportData.tasks || []).filter(inCohort),
+    goals: (reportData.goals || []).filter(inCohort),
+  }), [reportData.timeEntries, reportData.leave, reportData.tasks, reportData.goals, inCohort]);
+
+  /** The export scope proper: the cohort narrowed to the ticked record types. */
+  const scopedData = useMemo(() => ({
+    timeEntries: scope.timeEntries ? cohortData.timeEntries : [],
+    leave: scope.leave ? cohortData.leave : [],
+    tasks: scope.tasks ? cohortData.tasks : [],
+    goals: scope.goals ? cohortData.goals : [],
+  }), [cohortData, scope]);
+
+  const employeeById = useMemo(() => {
+    const map = new Map();
+    (reportData.employees || []).forEach((emp) => map.set(String(emp.id), emp));
+    return map;
+  }, [reportData.employees]);
+
+  /** approved_by / assigned_by / created_by are employee ids, not names. */
+  const nameOfEmployeeId = useCallback((id) => {
+    if (id == null || id === '') return '';
+    const employee = employeeById.get(String(id));
+    return employee ? getDemoEmployeeName(employee, t) : '';
+  }, [employeeById, t]);
+
+  /**
+   * One row model for all four record types. The preview is a ledger of the
+   * export rather than a table per type, so a leave request and a time entry
+   * have to line up in the same columns.
+   */
+  const ledgerRows = useMemo(() => {
+    const rows = [];
+    const dash = '—';
+
+    const common = (item) => {
+      const employee = item.employee || employeeById.get(String(item.employee_id)) || null;
+      return {
+        employeeId: String(item.employee_id ?? employee?.id ?? ''),
+        employee: employee ? getDemoEmployeeName(employee, t) : t('reports.unknown', 'Unknown'),
+        unit: translateDepartment(employee?.department) || dash,
+        status: String(item.status || '').toLowerCase(),
+      };
     };
 
-    switch (activeTab) {
-      case 'all':
-        return {
-          timeEntries: filterByEmployee(reportData.timeEntries),
-          tasks: filterByEmployee(reportData.tasks),
-          goals: filterByEmployee(reportData.goals)
-        };
-      case 'time-entries':
-        return filterByEmployee(reportData.timeEntries);
-      case 'tasks':
-        return filterByEmployee(reportData.tasks);
-      case 'goals':
-        return filterByEmployee(reportData.goals);
-      case 'leave':
-        return filterByEmployee(reportData.leave);
-      default:
-        return [];
-    }
-  }, [activeTab, reportData, selectedEmployee, activeEmployeeIds]);
-
-  // Sorting function for table data
-  const getSortedData = useMemo(() => {
-    const sortArray = (arr) => {
-      if (!arr || arr.length === 0) return arr;
-      const sorted = [...arr];
-      sorted.sort((a, b) => {
-        let aValue, bValue;
-        switch (sortKey) {
-          case 'date':
-            aValue = new Date(a.date || a.due_date || a.target_date || a.start_date || a.created_at).getTime();
-            bValue = new Date(b.date || b.due_date || b.target_date || b.start_date || b.created_at).getTime();
-            break;
-          case 'employee':
-            aValue = (a.employee?.name || '').toLowerCase();
-            bValue = (b.employee?.name || '').toLowerCase();
-            break;
-          case 'hours':
-            aValue = a.hours || 0;
-            bValue = b.hours || 0;
-            break;
-          case 'status':
-            aValue = (a.status || '').toLowerCase();
-            bValue = (b.status || '').toLowerCase();
-            break;
-          case 'progress':
-            aValue = a.progress || 0;
-            bValue = b.progress || 0;
-            break;
-          case 'priority':
-            const priorityOrder = { high: 3, medium: 2, low: 1 };
-            aValue = priorityOrder[a.priority] || 0;
-            bValue = priorityOrder[b.priority] || 0;
-            break;
-          case 'type':
-            aValue = (a.hour_type || a.hourType || '').toLowerCase();
-            bValue = (b.hour_type || b.hourType || '').toLowerCase();
-            break;
-          default:
-            aValue = 0;
-            bValue = 0;
-        }
-        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-        return 0;
+    scopedData.timeEntries.forEach((entry, index) => {
+      const premium = ['overtime', 'bonus', 'weekend', 'holiday'].includes(String(entry.hour_type || '').toLowerCase());
+      rows.push({
+        ...common(entry),
+        key: `time-${entry.id ?? index}`,
+        kind: 'time',
+        date: recordDate(entry),
+        note: entry.notes ? translateNotes(entry.notes) : '',
+        noteIsUgc: false,
+        typeLabel: translateHourType(entry.hour_type) || t('reports.type', 'Type'),
+        typeVariant: premium ? 'outline' : 'neutral',
+        amount: Number(entry.hours) || 0,
+        amountText: formatHours(entry.hours),
+        approvedBy: nameOfEmployeeId(entry.approved_by),
+        source: t('reports.sourceTime', 'Time entries'),
       });
-      return sorted;
+    });
+
+    scopedData.leave.forEach((request, index) => {
+      rows.push({
+        ...common(request),
+        key: `leave-${request.id ?? index}`,
+        kind: 'leave',
+        date: (request.start_date || '').slice(0, 10),
+        note: [
+          `${(request.start_date || '').slice(0, 10)} → ${(request.end_date || request.start_date || '').slice(0, 10)}`,
+          request.reason || '',
+        ].filter(Boolean).join(' · '),
+        noteIsUgc: false,
+        typeLabel: translateLeaveType(request.leave_type),
+        typeVariant: 'neutral',
+        amount: Number(request.days_count) || 0,
+        amountText: `${Number(request.days_count) || 0} ${t('reports.daysShort', 'd')}`,
+        approvedBy: nameOfEmployeeId(request.approved_by),
+        source: t('reports.sourceLeave', 'Leave management'),
+      });
+    });
+
+    scopedData.tasks.forEach((task, index) => {
+      rows.push({
+        ...common(task),
+        key: `task-${task.id ?? index}`,
+        kind: 'task',
+        date: recordDate(task),
+        note: isDemoMode() ? getDemoTaskTitle(task, t) : (task.title || ''),
+        noteIsUgc: !isDemoMode(),
+        typeLabel: translatePriority(task.priority) || t('dataType.task', 'Task'),
+        typeVariant: String(task.priority || '').toLowerCase() === 'high' ? 'outline' : 'neutral',
+        amount: 0,
+        amountText: dash,
+        approvedBy: nameOfEmployeeId(task.created_by),
+        source: t('reports.sourceTasks', 'Task listing'),
+      });
+    });
+
+    scopedData.goals.forEach((goal, index) => {
+      const progress = goal.status === 'completed' ? 100 : (Number(goal.progress) || 0);
+      rows.push({
+        ...common(goal),
+        key: `goal-${goal.id ?? index}`,
+        kind: 'goal',
+        date: recordDate(goal),
+        note: isDemoMode() ? getDemoGoalTitle(goal, t) : (goal.title || ''),
+        noteIsUgc: !isDemoMode(),
+        typeLabel: translateCategory(goal.category) || t('dataType.goal', 'Goal'),
+        typeVariant: 'neutral',
+        amount: progress,
+        amountText: `${progress}%`,
+        approvedBy: nameOfEmployeeId(goal.assigned_by),
+        source: t('reports.sourceGoals', 'Personal goals'),
+      });
+    });
+
+    return rows;
+  }, [scopedData, employeeById, nameOfEmployeeId, t]);
+
+  /** Time entries and leave are the two types anyone approves. */
+  const approvableRows = useMemo(
+    () => [...scopedData.timeEntries, ...scopedData.leave],
+    [scopedData]
+  );
+
+  const totals = useMemo(() => {
+    const hours = scopedData.timeEntries.reduce((sum, entry) => sum + (Number(entry.hours) || 0), 0);
+    return {
+      rows: ledgerRows.length,
+      hours,
+      pending: approvableRows.filter((row) => String(row.status).toLowerCase() === 'pending').length,
+      people: cohort.length,
+      workingDays: countWorkingDays(filters.startDate, filters.endDate),
+    };
+  }, [ledgerRows.length, scopedData.timeEntries, approvableRows, cohort.length, filters.startDate, filters.endDate]);
+
+  /** Counts for 01 · RECORDS, including the types that are not ticked. */
+  const availableCounts = useMemo(() => ({
+    timeEntries: cohortData.timeEntries.length,
+    leave: cohortData.leave.length,
+    tasks: cohortData.tasks.length,
+    goals: cohortData.goals.length,
+  }), [cohortData]);
+
+  /** Composition by record type: counts, because the % column has to share one unit. */
+  const byType = useMemo(() => {
+    const rows = [];
+
+    if (scope.timeEntries) {
+      const buckets = new Map();
+      scopedData.timeEntries.forEach((entry) => {
+        const key = String(entry.hour_type || 'regular').toLowerCase();
+        const bucket = buckets.get(key) || { count: 0, hours: 0 };
+        bucket.count += 1;
+        bucket.hours += Number(entry.hours) || 0;
+        buckets.set(key, bucket);
+      });
+      buckets.forEach((bucket, key) => {
+        rows.push({ id: `hour-${key}`, label: translateHourType(key), count: bucket.count, hours: bucket.hours });
+      });
+    }
+    if (scope.leave && scopedData.leave.length > 0) {
+      rows.push({ id: 'leave', label: t('reports.leave', 'Leave Requests'), count: scopedData.leave.length });
+    }
+    if (scope.tasks && scopedData.tasks.length > 0) {
+      rows.push({ id: 'tasks', label: t('reports.tasks', 'Tasks'), count: scopedData.tasks.length });
+    }
+    if (scope.goals && scopedData.goals.length > 0) {
+      rows.push({ id: 'goals', label: t('reports.personalGoals', 'Personal Goals'), count: scopedData.goals.length });
+    }
+
+    const total = rows.reduce((sum, row) => sum + row.count, 0);
+    return rows
+      .sort((a, b) => b.count - a.count)
+      .map((row) => ({ ...row, pct: total > 0 ? row.count / total : 0 }));
+  }, [scope, scopedData, t]);
+
+  /** Approval state of everything approvable in scope. */
+  const byStatus = useMemo(() => {
+    const countOf = (status) =>
+      approvableRows.filter((row) => String(row.status).toLowerCase() === status).length;
+    return {
+      total: approvableRows.length,
+      approved: countOf('approved'),
+      pending: countOf('pending'),
+      rejected: countOf('rejected'),
+    };
+  }, [approvableRows]);
+
+  /**
+   * Volume across the period. Weeks up to ten of them, months beyond that, so
+   * the strip never turns into a hairline comb.
+   */
+  const byWeek = useMemo(() => {
+    const start = new Date(`${filters.startDate}T00:00:00`);
+    const end = new Date(`${filters.endDate}T00:00:00`);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return [];
+
+    const spanDays = Math.round((end - start) / 86400000) + 1;
+    const monthly = spanDays > 70;
+    const bucketStart = (date) => {
+      if (monthly) return new Date(date.getFullYear(), date.getMonth(), 1);
+      const copy = new Date(date);
+      copy.setDate(copy.getDate() - ((copy.getDay() + 6) % 7)); // ISO weeks start Monday
+      return copy;
+    };
+    const nextBucket = (date) => (monthly
+      ? new Date(date.getFullYear(), date.getMonth() + 1, 1)
+      : new Date(date.getFullYear(), date.getMonth(), date.getDate() + 7));
+
+    const buckets = [];
+    for (let cursor = bucketStart(start); cursor <= end; cursor = nextBucket(cursor)) {
+      const from = new Date(cursor);
+      const to = new Date(nextBucket(cursor).getTime() - 86400000);
+      buckets.push({
+        from,
+        to,
+        label: monthly
+          ? from.toLocaleDateString(undefined, { month: 'short' }).toUpperCase()
+          : `W${isoWeekNumber(from)}`,
+        count: 0,
+        partial: false,
+      });
+    }
+    if (buckets.length === 0) return [];
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    buckets.forEach((bucket) => {
+      bucket.partial = today >= bucket.from && today <= bucket.to;
+    });
+
+    ledgerRows.forEach((row) => {
+      if (!row.date) return;
+      const date = new Date(`${row.date}T00:00:00`);
+      if (Number.isNaN(date.getTime())) return;
+      for (let i = buckets.length - 1; i >= 0; i -= 1) {
+        if (date >= buckets[i].from) {
+          if (date <= buckets[i].to) buckets[i].count += 1;
+          return;
+        }
+      }
+    });
+
+    const max = Math.max(...buckets.map((bucket) => bucket.count), 1);
+    return buckets.map((bucket) => ({ ...bucket, share: bucket.count / max }));
+  }, [filters.startDate, filters.endDate, ledgerRows]);
+
+  /** employee|date pairs carrying more than a plausible day of work. */
+  const longShiftKeys = useMemo(() => {
+    const perDay = new Map();
+    scopedData.timeEntries.forEach((entry) => {
+      const key = `${entry.employee_id}|${recordDate(entry)}`;
+      perDay.set(key, (perDay.get(key) || 0) + (Number(entry.hours) || 0));
+    });
+    const flagged = new Set();
+    perDay.forEach((hours, key) => {
+      if (hours > LONG_SHIFT_HOURS) flagged.add(key);
+    });
+    return flagged;
+  }, [scopedData.timeEntries]);
+
+  const peopleWithNoRecords = useMemo(() => {
+    if (reportData.employees.length === 0) return [];
+    const covered = new Set(ledgerRows.map((row) => row.employeeId).filter(Boolean));
+    return cohort.filter((employee) => !covered.has(String(employee.id)));
+  }, [cohort, ledgerRows, reportData.employees.length]);
+
+  /**
+   * Before you export: everything about this scope that the person pressing
+   * Export would rather know now than find in the file. Each one carries the
+   * action that resolves it.
+   */
+  const checks = useMemo(() => {
+    const list = [];
+    const isPending = (row) => String(row.status).toLowerCase() === 'pending';
+    const pendingTime = scopedData.timeEntries.filter(isPending).length;
+    const pendingLeave = scopedData.leave.filter(isPending).length;
+    const rejected = approvableRows.filter((row) => String(row.status).toLowerCase() === 'rejected').length;
+
+    if (pendingTime > 0) {
+      list.push({
+        id: 'pending-time',
+        Icon: AlertTriangle,
+        lead: `${pendingTime} ${t('reports.checkEntriesPending', 'entries are still pending')}`,
+        rest: t('reports.checkExportsAsPending', 'they will export with status PENDING.'),
+        actionLabel: t('reports.checkApproveFirst', 'Approve first'),
+        onAction: () => navigate('/time-tracking'),
+      });
+    }
+    if (pendingLeave > 0) {
+      list.push({
+        id: 'pending-leave',
+        Icon: AlertTriangle,
+        lead: `${pendingLeave} ${t('reports.checkLeavePending', 'leave requests are still pending')}`,
+        rest: t('reports.checkExportsAsPending', 'they will export with status PENDING.'),
+        actionLabel: t('reports.checkOpenLeave', 'Open leave'),
+        onAction: () => navigate('/leave-management'),
+      });
+    }
+    if (peopleWithNoRecords.length > 0) {
+      const names = peopleWithNoRecords.slice(0, 2).map((employee) => getDemoEmployeeName(employee, t)).join(', ');
+      const extra = peopleWithNoRecords.length - Math.min(2, peopleWithNoRecords.length);
+      list.push({
+        id: 'no-records',
+        Icon: AlertTriangle,
+        lead: `${peopleWithNoRecords.length} ${t('reports.checkPeopleNoRecords', 'people have no records in range')}`,
+        rest: extra > 0 ? `${names} +${extra}` : names,
+        actionLabel: t('reports.checkOpenList', 'Open list'),
+        onAction: () => setPeopleListOpen(true),
+      });
+    }
+    if (longShiftKeys.size > 0) {
+      list.push({
+        id: 'long-shift',
+        Icon: Clock,
+        lead: `${longShiftKeys.size} ${t('reports.checkLongShifts', 'days booked over 12h for one person')}`,
+        rest: t('reports.checkLongShiftsNote', 'usually a duplicate punch rather than a real shift.'),
+        actionLabel: t('reports.checkReview', 'Review'),
+        onAction: () => setAttention('long-shift'),
+      });
+    }
+    if (rejected > 0) {
+      list.push({
+        id: 'rejected',
+        Icon: AlertCircle,
+        lead: `${rejected} ${t('reports.checkRejectedRows', 'rejected rows are in scope')}`,
+        rest: t('reports.checkRejectedNote', 'they export with status REJECTED.'),
+        actionLabel: t('reports.checkReview', 'Review'),
+        onAction: () => setAttention('rejected'),
+      });
+    }
+    return list;
+  }, [scopedData, approvableRows, peopleWithNoRecords, longShiftKeys, navigate, t]);
+
+  /* ── Preview ledger: attention filter → sort → page ──────────────── */
+
+  const attentionRows = useMemo(() => {
+    switch (attention) {
+      case 'approved':
+      case 'pending':
+      case 'rejected':
+        return ledgerRows.filter((row) => row.status === attention);
+      case 'long-shift':
+        return ledgerRows.filter((row) => row.kind === 'time' && longShiftKeys.has(`${row.employeeId}|${row.date}`));
+      default:
+        return ledgerRows;
+    }
+  }, [ledgerRows, attention, longShiftKeys]);
+
+  const sortedRows = useMemo(() => {
+    const rows = [...attentionRows];
+    const direction = sortDirection === 'asc' ? 1 : -1;
+    rows.sort((a, b) => {
+      const left = sortKey === 'amount' ? a.amount : String(a[sortKey] ?? '').toLowerCase();
+      const right = sortKey === 'amount' ? b.amount : String(b[sortKey] ?? '').toLowerCase();
+      if (left < right) return -1 * direction;
+      if (left > right) return 1 * direction;
+      return 0;
+    });
+    return rows;
+  }, [attentionRows, sortKey, sortDirection]);
+
+  const previewRows = useMemo(() => sortedRows.slice(0, visibleRows), [sortedRows, visibleRows]);
+
+  // A new scope is a new ledger; paging and any check filter start over.
+  useEffect(() => {
+    setVisibleRows(PREVIEW_PAGE);
+  }, [scope, selectedEmployee, selectedUnit, activeOnly, filters, attention]);
+
+  /* ── Export dock ─────────────────────────────────────────────────── */
+
+  /** What 02 · People resolves to in a filename. */
+  const exportScopeName = useMemo(() => {
+    if (selectedEmployee !== 'all') {
+      const employee = employeeById.get(String(selectedEmployee));
+      return employee ? getDemoEmployeeName(employee, t) : t('reports.employee', 'Employee');
+    }
+    if (selectedUnit !== 'all') return translateDepartment(selectedUnit);
+    return t('reports.allEmployees', 'All Employees');
+  }, [selectedEmployee, selectedUnit, employeeById, t]);
+
+  /**
+   * The one filename builder. The dock prints what the export writes because
+   * both call this — the three writers no longer each spell it out.
+   */
+  const buildExportFilename = useCallback((extension) => {
+    const safe = (value, fallback) => {
+      const text = String(value ?? '').trim().replace(/\s+/g, '_').replace(/[\\/:*?"<>|]/g, '');
+      return text || fallback;
+    };
+    const prefix = safe(t('reports.filenamePrefix', 'HR_Report_'), 'HR_Report').replace(/_+$/, '');
+    return `${prefix}_${safe(exportScopeName, 'All_Employees')}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.${extension}`;
+  }, [exportScopeName, filters.startDate, filters.endDate, currentLanguage, t]);
+
+  /**
+   * CSV size, measured off the fields the CSV writer actually emits for a
+   * sample of the records in hand — not a constant per row, because a task
+   * description weighs many times what a punch does. XLSX compresses and PDF
+   * paginates, so neither gets an estimate.
+   */
+  const estimatedCsvBytes = useMemo(() => {
+    if (totals.rows === 0) return 0;
+
+    const SAMPLE = 25;
+    const HEADER_AND_METADATA_BYTES = 700;
+
+    const sizeOf = (records, fieldsOf) => {
+      if (records.length === 0) return 0;
+      const sample = records.slice(0, SAMPLE);
+      const bytes = sample.reduce((sum, record) => {
+        const line = fieldsOf(record).map((field) => String(field ?? '')).join(',');
+        // UTF-8: Vietnamese and CJK cost more than one byte a character.
+        return sum + new Blob([`${line}\r\n`]).size;
+      }, 0);
+      return Math.round((bytes / sample.length) * records.length);
     };
 
-    if (activeTab === 'all') {
-      return {
-        timeEntries: sortArray(currentData.timeEntries),
-        tasks: sortArray(currentData.tasks),
-        goals: sortArray(currentData.goals)
-      };
+    return HEADER_AND_METADATA_BYTES
+      + sizeOf(scopedData.timeEntries, (entry) => [
+        entry.employee?.name, entry.employee?.department, entry.employee?.position, entry.date,
+        entry.clock_in, entry.clock_out, entry.hours, entry.hour_type, entry.status, entry.notes, entry.created_at,
+      ])
+      + sizeOf(scopedData.tasks, (task) => [
+        task.employee?.name, task.employee?.department, task.title, task.description, task.priority,
+        task.status, task.due_date, task.created_at, task.updated_at,
+      ])
+      + sizeOf(scopedData.goals, (goal) => [
+        goal.employee?.name, goal.employee?.department, goal.title, goal.description, goal.category,
+        goal.status, goal.progress, goal.target_date, goal.notes, goal.created_at, goal.updated_at,
+      ])
+      + sizeOf(scopedData.leave, (request) => [
+        request.employee?.name, request.employee?.department, request.leave_type,
+        request.start_date, request.end_date, request.days_count, request.status, request.reason, request.created_at,
+      ]);
+  }, [scopedData, totals.rows]);
+
+  const rememberExport = useCallback((filename, rows) => {
+    const entry = {
+      filename,
+      rows,
+      at: new Date().toISOString(),
+      by: user?.name || user?.user_metadata?.name || user?.email || '',
+    };
+    setLastExport(entry);
+    try {
+      window.localStorage.setItem(LAST_EXPORT_KEY, JSON.stringify(entry));
+    } catch {
+      /* private browsing — the header simply keeps the previous line */
     }
-    return sortArray(currentData);
-  }, [currentData, sortKey, sortDirection, activeTab]);
+  }, [user]);
 
-  // Calculate statistics
-  const stats = useMemo(() => {
-    const data = currentData;
-    
-    if (activeTab === 'all') {
-      // Combined statistics for all data types
-      const timeEntries = data.timeEntries || [];
-      const tasks = data.tasks || [];
-      const goals = data.goals || [];
-      
-      const totalRecords = timeEntries.length + tasks.length + goals.length;
-      const totalHours = timeEntries.reduce((sum, entry) => sum + (entry.hours || 0), 0);
-      const approvedTime = timeEntries.filter(entry => entry.status === 'approved').length;
-      const completedTasks = tasks.filter(task => task.status === 'completed').length;
-      const achievedGoals = goals.filter(goal => goal.status === 'completed').length;
-      
-      return {
-        totalRecords,
-        totalHours: totalHours.toFixed(1),
-        timeEntriesCount: timeEntries.length,
-        tasksCount: tasks.length,
-        goalsCount: goals.length,
-        approvedTime,
-        completedTasks,
-        achievedGoals
-      };
-    }
-    
-    const totalRecords = data.length;
+  // The column menu is a popover: anything outside it closes it.
+  useEffect(() => {
+    if (!columnMenuOpen) return undefined;
+    const onPointerDown = (event) => {
+      if (columnMenuRef.current && !columnMenuRef.current.contains(event.target)) {
+        setColumnMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [columnMenuOpen]);
 
-    if (activeTab === 'time-entries') {
-      const totalHours = data.reduce((sum, entry) => sum + (entry.hours || 0), 0);
-      const approved = data.filter(entry => entry.status === 'approved').length;
-      const pending = data.filter(entry => entry.status === 'pending').length;
-      
-      return {
-        totalRecords,
-        totalHours: totalHours.toFixed(1),
-        approved,
-        pending
-      };
-    } else if (activeTab === 'tasks') {
-      const completed = data.filter(task => task.status === 'completed').length;
-      const inProgress = data.filter(task => task.status === 'in-progress').length;
-      const completionRate = totalRecords > 0 ? Math.round((completed / totalRecords) * 100) : 0;
-      
-      return {
-        totalRecords,
-        completed,
-        inProgress,
-        completionRate
-      };
-    } else if (activeTab === 'goals') {
-      const achieved = data.filter(goal => goal.status === 'completed').length;
-      const inProgress = data.filter(goal => goal.status === 'in_progress').length;
-      const averageProgress = totalRecords > 0 ? 
-        Math.round(data.reduce((sum, goal) => sum + (goal.progress || 0), 0) / totalRecords) : 0;
-      
-      return {
-        totalRecords,
-        achieved,
-        inProgress,
-        averageProgress
-      };
-    } else if (activeTab === 'leave') {
-      const approved = data.filter(req => req.status === 'approved').length;
-      const pending = data.filter(req => req.status === 'pending').length;
-      const totalLeaveDays = data
-        .filter(req => req.status === 'approved')
-        .reduce((sum, req) => sum + (Number(req.days_count) || 0), 0);
-
-      return {
-        totalRecords,
-        approved,
-        pending,
-        totalLeaveDays
-      };
-    }
-
-    return { totalRecords };
-  }, [activeTab, currentData]);
-
-  const overviewBentoItems = useMemo(() => {
-    const recordsLabel = t('reports.totalRecords', 'Total Records');
-    const base = [
-      {
-        label: t('reports.overview', 'Overview'),
-        title: String(stats.totalRecords || 0),
-        description: recordsLabel,
-        value: Number(stats.totalRecords) || 0,
-      },
-    ];
-
-    if (activeTab === 'all') {
-      return [
-        ...base,
-        {
-          label: t('reports.timeEntries', 'Time Entries'),
-          title: String(stats.timeEntriesCount || 0),
-          description: t('reports.totalEntries', 'Total Entries'),
-          value: Number(stats.timeEntriesCount) || 0,
-        },
-        {
-          label: t('reports.tasks', 'Tasks'),
-          title: String(stats.tasksCount || 0),
-          description: t('reports.tasks', 'Tasks'),
-          value: Number(stats.tasksCount) || 0,
-        },
-        {
-          label: t('reports.goals', 'Goals'),
-          title: String(stats.goalsCount || 0),
-          description: t('reports.goals', 'Goals'),
-          value: Number(stats.goalsCount) || 0,
-        },
-      ];
-    }
-
-    if (activeTab === 'time-entries') {
-      return [
-        ...base,
-        {
-          label: t('reports.hours', 'Hours'),
-          title: `${stats.totalHours || 0}h`,
-          description: t('reports.totalHours', 'Total Hours'),
-          value: Number(stats.totalHours) || 0,
-          suffix: 'h',
-        },
-        {
-          label: t('reports.approved', 'Approved'),
-          title: String(stats.approved || 0),
-          description: t('reports.approved', 'Approved'),
-          value: Number(stats.approved) || 0,
-        },
-        {
-          label: t('reports.pending', 'Pending'),
-          title: String(stats.pending || 0),
-          description: t('reports.pending', 'Pending'),
-          value: Number(stats.pending) || 0,
-        },
-      ];
-    }
-
-    if (activeTab === 'tasks') {
-      return [
-        ...base,
-        {
-          label: t('reports.completed', 'Completed'),
-          title: String(stats.completed || 0),
-          description: t('reports.completed', 'Completed'),
-          value: Number(stats.completed) || 0,
-        },
-        {
-          label: t('reports.inProgress', 'In Progress'),
-          title: String(stats.inProgress || 0),
-          description: t('reports.inProgress', 'In Progress'),
-          value: Number(stats.inProgress) || 0,
-        },
-        {
-          label: t('reports.rate', 'Rate'),
-          title: `${stats.completionRate || 0}%`,
-          description: t('reports.completionRate', 'Completion Rate'),
-          value: Number(stats.completionRate) || 0,
-          suffix: '%',
-        },
-      ];
-    }
-
-    if (activeTab === 'goals') {
-      return [
-        ...base,
-        {
-          label: t('reports.achieved', 'Achieved'),
-          title: String(stats.achieved || 0),
-          description: t('reports.achieved', 'Achieved'),
-          value: Number(stats.achieved) || 0,
-        },
-        {
-          label: t('reports.inProgress', 'In Progress'),
-          title: String(stats.inProgress || 0),
-          description: t('reports.inProgress', 'In Progress'),
-          value: Number(stats.inProgress) || 0,
-        },
-        {
-          label: t('reports.progress', 'Progress'),
-          title: `${stats.averageProgress || 0}%`,
-          description: t('reports.avgProgress', 'Avg Progress'),
-          value: Number(stats.averageProgress) || 0,
-          suffix: '%',
-        },
-      ];
-    }
-
-    if (activeTab === 'leave') {
-      return [
-        ...base,
-        {
-          label: t('reports.approved', 'Approved'),
-          title: String(stats.approved || 0),
-          description: t('reports.approved', 'Approved'),
-          value: Number(stats.approved) || 0,
-        },
-        {
-          label: t('reports.pending', 'Pending'),
-          title: String(stats.pending || 0),
-          description: t('reports.pending', 'Pending'),
-          value: Number(stats.pending) || 0,
-        },
-        {
-          label: t('reports.leaveDays', 'Leave Days'),
-          title: String(stats.totalLeaveDays || 0),
-          description: t('reports.totalLeaveDays', 'Total Leave Days'),
-          value: Number(stats.totalLeaveDays) || 0,
-        },
-      ];
-    }
-
-    return base;
-  }, [activeTab, stats, t]);
+  // Escape closes whichever of the two overlays is open.
+  useEffect(() => {
+    if (!columnMenuOpen && !peopleListOpen) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key !== 'Escape') return;
+      setColumnMenuOpen(false);
+      setPeopleListOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [columnMenuOpen, peopleListOpen]);
 
   const buildTimeEntryCsvRows = (timeEntries, ugcMap = null) => {
     const headers = [
@@ -913,10 +1403,9 @@ const Reports = () => {
     setExporting(true);
     try {
       const exportData = await getFilteredExportData();
-      const { timeEntries, tasks, goals, leave, employees: allEmployees } = exportData;
-      const employees = selectedEmployee === 'all'
-        ? filterActiveEmployees(allEmployees)
-        : allEmployees;
+      // `employees` is already the 02 · People cohort — unit, active-only and
+      // single-person selection are resolved before the snapshot gets here.
+      const { timeEntries, tasks, goals, leave, employees } = exportData;
       const exportStats = computeExportStats(timeEntries, tasks, goals, leave);
 
       if (exportStats.totalRecords === 0) {
@@ -929,16 +1418,13 @@ const Reports = () => {
       );
 
       const languageName = SUPPORTED_LANGUAGES[currentLanguage]?.name || 'English';
-      const employeeName = selectedEmployee !== 'all'
-        ? employees.find((emp) => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_')
-        : t('reports.allEmployees', 'All Employees');
 
       const metadataRows = [
         `"${t('reports.performanceReport', 'HR PERFORMANCE REPORT')}"`,
         `"${t('reports.language', 'Report Language')}: ${languageName}"`,
         `"${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}"`,
         `"${t('reports.period', 'Period')}: ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}"`,
-        `"${t('reports.employee', 'Employee')}: ${selectedEmployee === 'all' ? t('reports.allEmployees', 'All Employees') : (employees.find((emp) => String(emp.id) === String(selectedEmployee))?.name || '')}"`
+        `"${t('reports.employee', 'Employee')}: ${selectedEmployee === 'all' ? exportScopeName : (employees.find((emp) => String(emp.id) === String(selectedEmployee))?.name || exportScopeName)}"`
       ];
 
       const sections = [{
@@ -949,9 +1435,7 @@ const Reports = () => {
           [t('reports.timeEntries', 'Time Entries'), exportStats.timeEntriesCount],
           [t('reports.tasks', 'Tasks'), exportStats.tasksCount],
           [t('reports.goals', 'Goals'), exportStats.goalsCount],
-          ...(leave.length > 0 || activeTab === 'leave' || activeTab === 'all'
-            ? [[t('reports.leave', 'Leave Requests'), exportStats.leaveCount]]
-            : []),
+          ...(scope.leave ? [[t('reports.leave', 'Leave Requests'), exportStats.leaveCount]] : []),
           [t('reports.totalHours', 'Total Hours'), `${exportStats.totalHours}h`],
           [t('reports.approved', 'Approved'), exportStats.approvedTime],
           [t('reports.completedTasks', 'Completed Tasks'), exportStats.completedTasks],
@@ -1025,7 +1509,7 @@ const Reports = () => {
       }
 
       const csvContent = buildCombinedCsvContent({ metadataRows, sections });
-      const filename = `${t('reports.filenamePrefix', 'HR_Report')}_${employeeName}_${filters.startDate}_${t('reports.to', 'to')}_${filters.endDate}_${currentLanguage.toUpperCase()}.csv`;
+      const filename = buildExportFilename('csv');
       const blob = new Blob(['\uFEFF' + csvContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -1036,6 +1520,7 @@ const Reports = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
+      rememberExport(filename, exportStats.totalRecords);
       alert(t('reports.csvExportSuccess', 'CSV report exported successfully with all data types in one file!'));
     } catch (error) {
       console.error('Error exporting combined CSV:', error);
@@ -1055,10 +1540,7 @@ const Reports = () => {
       const tasks = exportSnapshot.tasks;
       const goals = exportSnapshot.goals;
       const leave = exportSnapshot.leave;
-      const allEmployees = exportSnapshot.employees;
-      const employees = selectedEmployee === 'all'
-        ? filterActiveEmployees(allEmployees)
-        : allEmployees;
+      const employees = exportSnapshot.employees;
 
       if (timeEntries.length === 0 && tasks.length === 0 && goals.length === 0 && leave.length === 0) {
         alert(t('reports.noData', 'No data available for the selected period'));
@@ -1081,13 +1563,6 @@ const Reports = () => {
         return Number.isFinite(num) ? num : fallback;
       };
 
-      // Safe filename part: trim, replace spaces with underscores, sanitize Excel string
-      const toFilePart = (value, fallback = '') => {
-        const raw = value ?? fallback;
-        const safe = String(raw).trim().replace(/\s+/g, '_');
-        return sanitize(safe || fallback);
-      };
-
       // Localized label helper
       const tr = (key, fallback) => t(key, fallback);
 
@@ -1105,10 +1580,10 @@ const Reports = () => {
         goals: tr('reports.excel.sheets.goals', 'Goals')
       };
       
-      // Employee name for filename
-      const employeeName = selectedEmployee !== 'all' ? 
-        employees.find(emp => String(emp.id) === String(selectedEmployee))?.name?.replace(/\s+/g, '_') : 
-        tr('reports.allEmployees', 'All Employees').replace(/\s+/g, '_');
+      // Who the workbook is about: a person, a unit, or the whole roster.
+      const employeeName = selectedEmployee !== 'all'
+        ? (employees.find(emp => String(emp.id) === String(selectedEmployee))?.name || exportScopeName)
+        : exportScopeName;
 
       // ==================== SUMMARY/METRICS SHEET WITH STYLING ====================
       const summarySheet = workbook.addWorksheet(sheetNames.summary, {
@@ -1136,7 +1611,7 @@ const Reports = () => {
       currentRow++;
       
       summarySheet.getCell(`A${currentRow}`).value = tr('reports.excel.employee', 'Employee');
-      summarySheet.getCell(`B${currentRow}`).value = selectedEmployee === 'all' ? tr('reports.allEmployees', 'All Employees') : employeeName;
+      summarySheet.getCell(`B${currentRow}`).value = employeeName;
       summarySheet.getCell(`A${currentRow}`).font = { bold: true };
       currentRow++;
       
@@ -1974,16 +2449,9 @@ const Reports = () => {
         goalsSheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
       }
 
-      // Write the file with ExcelJS
-      // Safe filename and export
-      const filenamePrefixRaw = tr('reports.filenamePrefix', 'HR_Report_');
-      const prefixPart = toFilePart(filenamePrefixRaw || 'HR_Report_');
-      const normalizedPrefix = prefixPart.endsWith('_') ? prefixPart : `${prefixPart}_`;
-      const safeEmployee = toFilePart(employeeName || tr('reports.allEmployees', 'All Employees'));
-      const rangeSeparator = toFilePart(tr('reports.to', 'to'), 'to');
-      const rawFilename = `${normalizedPrefix}${safeEmployee}_${filters.startDate}_${rangeSeparator}_${filters.endDate}_${currentLanguage.toUpperCase()}.xlsx`;
-      // Use raw filename so browsers keep readable Unicode names; safe parts already sanitized
-      const filename = rawFilename;
+      // Write the file with ExcelJS. The name comes from the same builder the
+      // dock prints, so the two can never drift apart.
+      const filename = buildExportFilename('xlsx');
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = URL.createObjectURL(blob);
@@ -1994,7 +2462,8 @@ const Reports = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
+
+      rememberExport(filename, timeEntries.length + tasks.length + goals.length + leave.length);
       alert(t('reports.exportSuccess', 'Excel report exported successfully with styled tables, metrics, and chart data!'));
     } catch (error) {
       console.error('Error exporting Excel:', error);
@@ -2085,103 +2554,6 @@ const Reports = () => {
     return cleaned || 'N/A';
   };
 
-  const translateHourType = (hourType) => {
-    if (!hourType) return '';
-    const type = hourType.toLowerCase();
-    switch (type) {
-      case 'regular':
-        return t('timeClock.hourTypes.regular', 'Regular Hours');
-      case 'holiday':
-        return t('timeClock.hourTypes.holiday', 'Holiday Hours');
-      case 'weekend':
-        return t('timeClock.hourTypes.weekend', 'Weekend Overtime');
-      case 'overtime':
-        return t('timeClock.hourTypes.overtime', 'Overtime');
-      case 'bonus':
-        return t('timeClock.hourTypes.bonus', 'Bonus Hours');
-      case 'wfh':
-        return t('timeClock.hourTypes.wfh', 'Working From Home');
-      case 'on_leave':
-        return t('timeClock.hourTypes.onLeave', 'On Leave');  
-      default:
-        return hourType;
-    }
-  };
-
-  const translateLeaveType = (leaveType) => {
-    if (!leaveType) return '';
-    const type = leaveType.toLowerCase();
-    switch (type) {
-      case 'sick':
-        return t('timeTracking.sickLeave', 'Sick Leave');
-      case 'personal':
-        return t('timeTracking.personal', 'Personal');
-      case 'vacation':
-        return t('timeTracking.vacation', 'Vacation');
-      default:
-        return leaveType;
-    }
-  };
-
-  // Helper function to translate status
-  const translateStatus = (status) => {
-    if (!status) return '';
-    const stat = status.toLowerCase();
-    switch (stat) {
-      case 'pending':
-        return t('reports.statusPending', 'Pending');
-      case 'approved':
-        return t('reports.statusApproved', 'Approved');
-      case 'rejected':
-        return t('reports.statusRejected', 'Rejected');
-      case 'completed':
-        return t('reports.statusCompleted', 'Completed');
-      case 'in progress':
-      case 'in_progress':
-      case 'in-progress':
-        return t('reports.statusInProgress', 'In Progress');
-      case 'not started':
-      case 'not_started':
-      case 'not-started':
-        return t('reports.statusNotStarted', 'Not Started');
-      default:
-        return status;
-    }
-  };
-
-  // Helper function to translate priority
-  const translatePriority = (priority) => {
-    if (!priority) return '';
-    const prio = priority.toLowerCase();
-    switch (prio) {
-      case 'low':
-        return t('reports.priorityLow', 'Low');
-      case 'medium':
-        return t('reports.priorityMedium', 'Medium');
-      case 'high':
-        return t('reports.priorityHigh', 'High');
-      default:
-        return priority;
-    }
-  };
-
-  // Localizes the "Entered by admin:" prefix; the free-text body is looked up
-  // from the pre-translated UGC map when one is supplied (export paths).
-  const translateNotes = (notes, ugcMap = null) => {
-    if (!notes) return '';
-    // Check if notes starts with "Entered by admin:" (case insensitive, optional colon)
-    const adminPrefixRegex = /^Entered by admin:?\s*/i;
-    const match = notes.match(adminPrefixRegex);
-
-    if (match) {
-      const translatedPrefix = t('timeTracking.enteredByAdmin', 'Entered by admin:');
-      const body = notes.slice(match[0].length);
-      // Replace the matched prefix with the translated one and ensure a space follows
-      return translatedPrefix + ' ' + (ugcMap ? (ugcMap.get(body) ?? body) : body);
-    }
-    return ugcMap ? (ugcMap.get(notes) ?? notes) : notes;
-  };
-
   const mapUgc = (ugcMap, text) => {
     if (!text) return '';
     return ugcMap?.get(text) ?? text;
@@ -2233,10 +2605,7 @@ const Reports = () => {
       const tasks = exportSnapshot.tasks;
       const goals = exportSnapshot.goals;
       const leave = exportSnapshot.leave;
-      const allEmployees = exportSnapshot.employees;
-      const employees = selectedEmployee === 'all'
-        ? filterActiveEmployees(allEmployees)
-        : allEmployees;
+      const employees = exportSnapshot.employees;
       const exportStats = computeExportStats(timeEntries, tasks, goals, leave);
 
       if (exportStats.totalRecords === 0) {
@@ -2349,18 +2718,15 @@ const Reports = () => {
 
       const reportTitle = t('reports.performanceReport', 'HR PERFORMANCE REPORT');
 
-      // Employee name for filename - sanitize for safe filename
+      // Who the report is about, as the running header says it: a person, a unit
+      // or the whole roster.
       const rawEmployeeName = selectedEmployee !== 'all' ?
         employees.find(emp => String(emp.id) === String(selectedEmployee))?.name :
-        t('reports.allEmployees', 'All Employees');
-      // Only sanitize filename if Unicode font failed to load, otherwise keep original
-      const employeeName = unicodeFontLoaded ?
-        (rawEmployeeName || `${t('reports.allEmployees', '')}`).replace(/\s+/g, '_').replace(/[<>:"/\\|?*]/g, '_') :
-        cleanTextForPDF(rawEmployeeName || `${t('reports.allEmployees', '')}`, false).replace(/\s+/g, '_');
+        exportScopeName;
 
-      const displayEmployeeName = selectedEmployee === 'all' ?
-        t('reports.allEmployees', 'All Employees') :
-        (unicodeFontLoaded ? rawEmployeeName : cleanTextForPDF(rawEmployeeName, false));
+      const displayEmployeeName = unicodeFontLoaded
+        ? rawEmployeeName
+        : cleanTextForPDF(rawEmployeeName, false);
 
       // Running header on continuation pages: "Report — Employee · Page N", then a 2px rule.
       const emDash = unicodeFontLoaded ? '—' : '-';
@@ -2668,7 +3034,9 @@ const Reports = () => {
         );
       }
 
-      if (selectedEmployee === 'all' && employees.length > 0 && activeTab !== 'leave') {
+      // The per-person overview is scored from hours, tasks and goals, so it is
+      // only meaningful when at least one of those types is in scope.
+      if (selectedEmployee === 'all' && employees.length > 0 && (scope.timeEntries || scope.tasks || scope.goals)) {
         addPdfTable(
           t('reports.excel.sheets.allEmployeesOverview', 'ALL EMPLOYEES OVERVIEW').toUpperCase(),
           [
@@ -2722,9 +3090,10 @@ const Reports = () => {
       }
 
       // Save the PDF
-      const filename = `${t('reports.filenamePrefix', 'HR_Report')}_${employeeName}_${filters.startDate}_to_${filters.endDate}_${currentLanguage.toUpperCase()}.pdf`;
+      const filename = buildExportFilename('pdf');
       doc.save(filename);
-      
+
+      rememberExport(filename, exportStats.totalRecords);
       alert(t('reports.pdfExportSuccess', 'PDF report exported successfully!'));
     } catch (error) {
       console.error('Error exporting PDF:', error);
@@ -2739,6 +3108,10 @@ const Reports = () => {
    * "Industry" chrome (src/theme/industry.js). Radius 0, cards are
    * outlines with four registration corners, and status reads through
    * weight and rule rather than a coloured pill per state.
+   *
+   * The screen is one full-width spec sheet: scope, composition, preview
+   * and the export dock stacked down the page, each band ruled off with
+   * registration crosses at its corners.
    * ------------------------------------------------------------------ */
 
   const frameStyle = {
@@ -2750,7 +3123,7 @@ const Reports = () => {
     borderRadius: 0,
   };
   const caption = { fontFamily: BODY, fontSize: 13, color: ind.inkMuted, lineHeight: 1.5, margin: 0 };
-  const columnNote = { fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, lineHeight: 1.45, margin: '6px 0 0' };
+  const noteStyle = { fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, lineHeight: 1.45, margin: 0 };
   const fieldLabelStyle = {
     fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.14em',
     textTransform: 'uppercase', color: ind.inkMuted, display: 'block', marginBottom: 4,
@@ -2765,6 +3138,7 @@ const Reports = () => {
     padding: '9px 10px', borderTop: `1px solid ${ind.rule}`, verticalAlign: 'middle',
   };
   const subCellStyle = { fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint, marginTop: 2 };
+  const figureStyle = { fontFamily: DISPLAY, fontWeight: 600, fontVariantNumeric: 'tabular-nums' };
 
   /**
    * approved / completed is settled work → filled accent.
@@ -2778,104 +3152,120 @@ const Reports = () => {
     return 'neutral';
   };
 
-  const priorityVariant = (priority) => {
-    const value = String(priority || '').toLowerCase();
-    if (value === 'high') return 'outline';
-    if (value === 'medium') return 'accent';
-    return 'neutral';
+  const rangeLabel = `${filters.startDate} → ${filters.endDate}`;
+  const scopeCount = SCOPE_KEYS.filter((key) => scope[key]).length;
+
+  /* ── 01 · RECORDS ─────────────────────────────────────────────────── */
+
+  const scopeCards = [
+    { key: 'timeEntries', label: t('reports.timeEntries', 'Time Entries'), count: availableCounts.timeEntries },
+    { key: 'leave', label: t('reports.leave', 'Leave Requests'), count: availableCounts.leave },
+    { key: 'tasks', label: t('reports.tasks', 'Tasks'), count: availableCounts.tasks },
+    { key: 'goals', label: t('reports.personalGoals', 'Personal Goals'), count: availableCounts.goals },
+  ];
+
+  /** Never let the sheet reach an export with nothing in it. */
+  const toggleScope = (key) => {
+    setScope((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      return SCOPE_KEYS.some((scopeKey) => next[scopeKey]) ? next : prev;
+    });
   };
 
-  const employeeNameOf = (item) =>
-    (isDemoMode() ? getDemoEmployeeName(item.employee, t) : (item.employee?.name || t('taskReview.unknown', 'Unknown')));
+  /* ── Preview ledger columns ───────────────────────────────────────── */
 
-  /**
-   * A sortable column head. The direction reads as a caret in the label's own
-   * type rather than an icon, so the header row stays one typographic object.
-   */
-  const SortableTh = ({ sortId, children }) => {
-    const active = sortKey === sortId;
-    return (
-      <th style={thStyle}>
-        <button
-          type="button"
-          onClick={() => handleSort(sortId)}
-          style={{
-            font: 'inherit', color: active ? ind.ink : 'inherit', letterSpacing: 'inherit',
-            textTransform: 'inherit', background: 'none', border: 'none', padding: 0,
-            cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
-          }}
-        >
-          {children}
-          <span aria-hidden="true" style={{ opacity: active ? 1 : 0.35 }}>
-            {active && sortDirection === 'asc' ? '▲' : '▼'}
-          </span>
-        </button>
-      </th>
-    );
+  const previewColumns = [
+    { id: 'date', label: t('reports.date', 'Date'), locked: true },
+    { id: 'employee', label: t('reports.employees', 'Employee'), locked: true },
+    { id: 'unit', label: t('reports.unit', 'Unit') },
+    { id: 'typeLabel', label: t('reports.type', 'Type') },
+    { id: 'amount', label: t('reports.hours', 'Hours'), align: 'right' },
+    { id: 'status', label: t('reports.status', 'Status') },
+    { id: 'approvedBy', label: t('reports.approvedBy', 'Approved by') },
+    { id: 'source', label: t('reports.source', 'Source') },
+  ];
+  const visibleColumns = previewColumns.filter((column) => !hiddenColumns.has(column.id));
+
+  const toggleColumn = (id) => {
+    setHiddenColumns((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
-  /** One figure block: the form every derived number on this screen takes. */
-  const FigureBlock = ({ item, size = 26 }) => (
-    <div style={{ border: `1px solid ${ind.hairline}`, padding: '9px 11px', minWidth: 0 }}>
-      <Kicker ind={ind}>{item.label}</Kicker>
-      <div className="flex items-baseline" style={{ gap: 3, margin: '5px 0 0' }}>
-        {typeof item.value === 'number' ? (
+  const attentionLabel = {
+    approved: t('reports.statusApproved', 'Approved'),
+    pending: t('reports.statusPending', 'Pending'),
+    rejected: t('reports.statusRejected', 'Rejected'),
+    'long-shift': t('reports.checkLongShiftsShort', 'Over 12h'),
+  }[attention];
+
+  const renderCell = (row, column) => {
+    switch (column.id) {
+      case 'date':
+        return <span style={{ ...figureStyle, fontSize: 12.5, letterSpacing: '.06em' }}>{row.date || '—'}</span>;
+      case 'employee':
+        return (
           <>
-            <span style={{ ...figure(size, ind.ink), lineHeight: 1 }}>
-              <SlidingNumber value={item.value} />
-            </span>
-            {item.suffix && (
-              <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted }}>{item.suffix}</span>
+            <div className="truncate">{row.employee}</div>
+            {row.note && (
+              <div className="truncate" style={subCellStyle}>
+                {row.noteIsUgc ? <TranslatedText text={row.note} /> : row.note}
+              </div>
             )}
           </>
-        ) : (
-          <span style={{ ...figure(size, ind.ink), lineHeight: 1 }}>{item.title}</span>
-        )}
-      </div>
-      <p
-        style={{
-          fontFamily: BODY, fontSize: 11, color: ind.inkFaint, margin: '4px 0 0',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}
-      >
-        {item.description}
-      </p>
-    </div>
-  );
+        );
+      case 'typeLabel':
+        return <Tag ind={ind} variant={row.typeVariant}>{row.typeLabel}</Tag>;
+      case 'amount':
+        return <span style={{ ...figureStyle, fontSize: 13 }}>{row.amountText}</span>;
+      case 'status':
+        return <Tag ind={ind} variant={statusVariant(row.status)}>{translateStatus(row.status)}</Tag>;
+      default:
+        return row[column.id] || '—';
+    }
+  };
 
-  /** A label / figure line in the rail or a breakdown box. */
-  const StatLine = ({ label, value, suffix, decimals }) => (
-    <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
-      <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted, minWidth: 0 }}>{label}</span>
-      <span
-        style={{
-          fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, color: ind.ink,
-          fontVariantNumeric: 'tabular-nums', flex: 'none',
-        }}
-      >
-        {decimals != null
-          ? <NumberTicker value={value} decimalPlaces={decimals} />
-          : <SlidingNumber value={value} />}
-        {suffix}
-      </span>
-    </div>
-  );
+  /* ── Export dock ──────────────────────────────────────────────────── */
 
-  const selectedEmployeeRecord = reportData.employees.find(emp => String(emp.id) === String(selectedEmployee));
-  const rangeLabel = `${filters.startDate} → ${filters.endDate}`;
+  const exportFormats = [
+    { value: 'csv', label: 'CSV' },
+    { value: 'xlsx', label: 'XLSX' },
+    { value: 'pdf', label: 'PDF' },
+  ];
 
-  const activeTabLabel = {
-    'all': t('reports.all', 'All Data Types'),
-    'time-entries': t('reports.timeEntries', 'Time Entries'),
-    'tasks': t('reports.tasks', 'Tasks'),
-    'goals': t('reports.goals', 'Personal Goals'),
-    'leave': t('reports.leave', 'Leave Requests'),
-  }[activeTab] || activeTab;
+  const runExport = () => {
+    if (exportFormat === 'xlsx') return exportToExcel();
+    if (exportFormat === 'pdf') return exportToPDF();
+    return exportAllToCSV();
+  };
+
+  const resetSheet = () => {
+    setScope({ timeEntries: true, leave: true, tasks: true, goals: true });
+    setSelectedEmployee('all');
+    setSelectedUnit('all');
+    setActiveOnly(true);
+    setDateRange('this-month');
+    setAttention(null);
+    setHiddenColumns(new Set());
+  };
+
+  const lastExportLine = lastExport
+    ? [
+        lastExport.filename,
+        `${Number(lastExport.rows || 0).toLocaleString()} ${t('reports.records', 'records')}`,
+        lastExport.by
+          ? `${t('reports.by', 'by')} ${lastExport.by}, ${new Date(lastExport.at).toLocaleString()}`
+          : new Date(lastExport.at).toLocaleString(),
+      ].join(' · ')
+    : null;
 
   return (
     <div data-screen-label="Reports" style={frameStyle}>
 
-      {/* ── TICKER — the overview figures, derived per data type ────── */}
+      {/* ── TICKER — what this export currently amounts to ───────────── */}
       <div
         style={{
           height: 44, background: ind.tickerBg, color: ind.tickerInk,
@@ -2884,24 +3274,24 @@ const Reports = () => {
         }}
       >
         <TickerCell ind={ind}>
-          <LiveClock ind={ind} live={!loading && stats.totalRecords > 0} />
+          <LiveClock ind={ind} live={!loading && totals.rows > 0} />
         </TickerCell>
-
-        {/* Same array the decision column renders, so the strip and the rail
-            can never report different numbers. */}
-        {overviewBentoItems.map((item, index) => (
-          <TickerCell
-            key={`${item.label}-${index}`}
-            ind={ind}
-            label={item.label}
-            // `title` already carries its own unit, so the suffix is not repeated.
-            value={item.title}
-            // The record count is the figure the whole screen is about.
-            valueColor={index === 0 && stats.totalRecords > 0 ? ind.tickerUp : undefined}
-          />
-        ))}
-
-        <TickerCell ind={ind} label={t('reports.dateRange', 'Date Range')} value={rangeLabel} />
+        <TickerCell
+          ind={ind}
+          label={t('reports.inScope', 'In scope')}
+          value={totals.rows.toLocaleString()}
+        />
+        {/* Light steel singles out the one figure on the strip that asks for
+            something to be done before the file is written. */}
+        <TickerCell
+          ind={ind}
+          label={t('reports.pending', 'Pending')}
+          value={totals.pending.toLocaleString()}
+          valueColor={totals.pending > 0 ? ind.tickerUp : undefined}
+          title={t('reports.pendingTickerHint', 'Time entries and leave still awaiting approval')}
+        />
+        <TickerCell ind={ind} label={t('reports.people', 'People')} value={totals.people.toLocaleString()} />
+        <TickerCell ind={ind} label={t('reports.range', 'Range')} value={rangeLabel} />
 
         <div
           style={{
@@ -2911,448 +3301,680 @@ const Reports = () => {
           }}
         >
           <FetchElapsedPill active={loading || exporting} isDarkMode label={t('common.fetching', 'Fetching')} />
-          <FlatSelect
-            ind={ind}
-            onDark
-            value={selectedEmployee}
-            onChange={(e) => setSelectedEmployee(e.target.value)}
-            aria-label={t('reports.employee', 'Employee')}
-            style={{ maxWidth: 240 }}
-          >
-            <option value="all" style={{ color: '#1d1f20' }}>
-              {`${t('reports.allEmployees', 'All Employees')} (${activeEmployees.length})`}
-            </option>
-            {[...activeEmployees]
-              .sort((a, b) => getDemoEmployeeName(a, t).localeCompare(getDemoEmployeeName(b, t)))
-              .map(emp => (
-                <option key={emp.id} value={emp.id} style={{ color: '#1d1f20' }}>
-                  {getDemoEmployeeName(emp, t)}
-                </option>
-              ))}
-          </FlatSelect>
         </div>
       </div>
 
-      {/* ── BANDS ──────────────────────────────────────────────────── */}
-      <div className="flex flex-col lg:flex-row items-stretch">
+      {/* ── SHEET ───────────────────────────────────────────────────── */}
+      <div style={{ padding: '22px 26px 26px' }}>
 
-        {/* ── LEFT — min-w-0 or the preview table wins ──────────────── */}
-        <div
-          className="flex-1 min-w-0 flex flex-col"
-          style={{ padding: '22px 24px 20px', gap: 16, borderRight: `1px solid ${ind.hairline}` }}
-        >
-          {fetchError && (
-            <div style={{ border: `1px solid ${ind.ink}`, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <AlertCircle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <Kicker ind={ind} color={ind.ink}>{t('common.error', 'Error')}</Kicker>
-                <p style={{ ...caption, marginTop: 4 }}>{fetchError}</p>
-                <Btn
-                  ind={ind}
-                  onClick={() => { setFetchError(null); fetchReportData(); }}
-                  style={{ marginTop: 10 }}
-                >
-                  {t('common.retry', 'Try Again')}
-                </Btn>
-              </div>
-              <button
-                type="button"
-                onClick={() => setFetchError(null)}
-                aria-label={t('common.close', 'Close')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0, flex: 'none' }}
-              >
-                <X size={15} strokeWidth={1.5} />
-              </button>
+        {fetchError && (
+          <div
+            style={{
+              border: `1px solid ${ind.ink}`, padding: '12px 14px', marginBottom: 20,
+              display: 'flex', gap: 12, alignItems: 'flex-start',
+            }}
+          >
+            <AlertCircle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Kicker ind={ind} color={ind.ink}>{t('common.error', 'Error')}</Kicker>
+              <p style={{ ...caption, marginTop: 4 }}>{fetchError}</p>
+              <Btn ind={ind} onClick={() => { setFetchError(null); fetchReportData(); }} style={{ marginTop: 10 }}>
+                {t('common.retry', 'Try Again')}
+              </Btn>
             </div>
-          )}
+            <button
+              type="button"
+              onClick={() => setFetchError(null)}
+              aria-label={t('common.close', 'Close')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0, flex: 'none' }}
+            >
+              <X size={15} strokeWidth={1.5} />
+            </button>
+          </div>
+        )}
 
-          {/* ── PAGE HEAD ───────────────────────────────────────────── */}
-          <div className="flex flex-wrap items-end justify-between" style={{ gap: 16 }}>
-            <div style={{ minWidth: 0 }}>
-              <h1 style={{ fontFamily: BODY, fontSize: 32, fontWeight: 400, margin: 0, color: ind.ink, lineHeight: 1.1 }}>
-                {t('nav.reports', 'Reports & Analytics')}
-              </h1>
-              <p style={{ ...caption, marginTop: 6 }}>
-                {[
-                  t('reports.subtitle', 'Export comprehensive data for time entries, tasks, and personal goals'),
-                  `${stats.totalRecords} ${t('reports.recordsFound', 'records found')}`,
-                  selectedEmployeeRecord ? getDemoEmployeeName(selectedEmployeeRecord, t) : null,
-                  rangeLabel,
-                ].filter(Boolean).join(' · ')}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center" style={{ gap: 8 }}>
-              <Seg
-                ind={ind}
-                ariaLabel={t('reports.dataType', 'Data Type')}
-                value={activeTab}
-                onChange={setActiveTab}
-                options={[
-                  { value: 'all', label: t('reports.all', 'All') },
-                  { value: 'time-entries', label: t('reports.timeEntries', 'Time') },
-                  { value: 'tasks', label: t('reports.tasks', 'Tasks') },
-                  { value: 'goals', label: t('reports.goals', 'Goals') },
-                  { value: 'leave', label: t('reports.leave', 'Leave') },
-                ]}
-              />
-              {selectedEmployee !== 'all' && (
-                <Tag ind={ind} variant="outline">{t('reports.individualReport', 'Individual Report')}</Tag>
-              )}
-            </div>
+        {/* ── PAGE HEAD ─────────────────────────────────────────────── */}
+        <div className="flex flex-wrap items-end justify-between" style={{ gap: 16, marginBottom: 22 }}>
+          <div style={{ minWidth: 0 }}>
+            <h1 style={{ fontFamily: BODY, fontSize: 32, fontWeight: 400, margin: 0, color: ind.ink, lineHeight: 1.1 }}>
+              {t('nav.reports', 'Reports')}
+            </h1>
+            <p style={{ ...caption, marginTop: 6 }}>
+              {lastExportLine
+                ? `${t('reports.lastExport', 'Last export')} ${lastExportLine}`
+                : t('reports.subtitle', 'Export comprehensive data for time entries, tasks, and personal goals')}
+            </p>
           </div>
 
-          {/* ── FILTER STRIP ────────────────────────────────────────── */}
-          <div
-            className="flex flex-wrap items-end"
-            style={{ gap: 14, padding: '12px 14px', border: `1px solid ${ind.hairline}` }}
-          >
-            <div style={{ minWidth: 200, flex: '1 1 200px' }}>
-              <label htmlFor="report-employee" style={fieldLabelStyle}>
-                {t('reports.employee', 'Employee')}
-              </label>
+          <div className="flex flex-wrap items-center" style={{ gap: 8 }}>
+            <Btn ind={ind} onClick={() => fetchReportData()} disabled={loading}>
+              {loading ? t('common.loading', 'Loading') : t('common.refresh', 'Refresh')}
+            </Btn>
+            <Btn ind={ind} onClick={resetSheet}>{t('reports.resetFilters', 'Reset Filters')}</Btn>
+          </div>
+        </div>
+
+        {/* ── 01 · RECORDS / 02 · PEOPLE / 03 · PERIOD ──────────────── */}
+        <Band ind={ind} className="grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
+          <Cell ind={ind} className="md:col-span-2">
+            <PanelHead
+              ind={ind}
+              num="01"
+              title={t('reports.records', 'Records')}
+              right={
+                <span style={{ ...noteStyle, flex: 'none' }}>
+                  {`${scopeCount}/${SCOPE_KEYS.length} ${t('reports.selected', 'selected')}`}
+                </span>
+              }
+            />
+            <div className="grid grid-cols-2 lg:grid-cols-4" style={{ gap: 8 }}>
+              {scopeCards.map((card) => {
+                const on = scope[card.key];
+                return (
+                  <button
+                    key={card.key}
+                    type="button"
+                    onClick={() => toggleScope(card.key)}
+                    aria-pressed={on}
+                    style={{
+                      textAlign: 'left', padding: '9px 11px', borderRadius: 0, cursor: 'pointer',
+                      border: `1px solid ${on ? ind.accent : ind.hairline}`,
+                      background: on ? ind.accentWash : 'transparent',
+                      transition: 'background .15s ease, border-color .15s ease',
+                    }}
+                  >
+                    <span className="flex items-center" style={{ gap: 7 }}>
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          width: 12, height: 12, flex: 'none', display: 'inline-flex',
+                          alignItems: 'center', justifyContent: 'center',
+                          border: `1px solid ${on ? ind.accent : ind.inkFaint}`,
+                          background: on ? ind.accent : 'transparent',
+                        }}
+                      >
+                        {on && <Check size={9} strokeWidth={3} style={{ color: ind.accentInk }} />}
+                      </span>
+                      <span
+                        style={{
+                          ...figureStyle, fontSize: 10, letterSpacing: '.14em', textTransform: 'uppercase',
+                          color: on ? ind.ink : ind.inkMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {card.label}
+                      </span>
+                    </span>
+                    <span
+                      style={{
+                        ...figure(24, on ? ind.ink : ind.inkFaint),
+                        display: 'block', marginTop: 6,
+                      }}
+                    >
+                      <SlidingNumber value={card.count} />
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </Cell>
+
+          <Cell ind={ind}>
+            <PanelHead ind={ind} num="02" title={t('reports.people', 'People')} />
+            <FlatSelect
+              ind={ind}
+              id="report-employee"
+              value={selectedEmployee}
+              onChange={(e) => setSelectedEmployee(e.target.value)}
+              aria-label={t('reports.employee', 'Employee')}
+              style={{ width: '100%', textTransform: 'none', letterSpacing: '.02em', padding: '6px 8px' }}
+            >
+              <option value="all">
+                {`${t('reports.allEmployees', 'All Employees')} · ${activeOnly ? activeEmployees.length : reportData.employees.length}`}
+              </option>
+              {[...(activeOnly ? activeEmployees : reportData.employees)]
+                .sort((a, b) => getDemoEmployeeName(a, t).localeCompare(getDemoEmployeeName(b, t)))
+                .map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    {`${getDemoEmployeeName(emp, t)} · ${translateDepartment(emp.department)}`}
+                  </option>
+                ))}
+            </FlatSelect>
+
+            <div className="flex flex-wrap items-center" style={{ gap: 8, marginTop: 10 }}>
               <FlatSelect
                 ind={ind}
-                id="report-employee"
-                value={selectedEmployee}
-                onChange={(e) => setSelectedEmployee(e.target.value)}
-                style={{ width: '100%', textTransform: 'none', letterSpacing: '.02em' }}
+                value={selectedUnit}
+                onChange={(e) => setSelectedUnit(e.target.value)}
+                aria-label={t('reports.byUnit', 'By unit')}
+                disabled={selectedEmployee !== 'all'}
+                style={{
+                  textTransform: 'none', letterSpacing: '.02em',
+                  opacity: selectedEmployee !== 'all' ? 0.45 : 1,
+                  cursor: selectedEmployee !== 'all' ? 'not-allowed' : 'pointer',
+                }}
               >
-                <option value="all">
-                  {`${t('reports.allEmployees', 'All Employees')} (${activeEmployees.length})`}
-                </option>
-                {[...activeEmployees]
-                  .sort((a, b) => getDemoEmployeeName(a, t).localeCompare(getDemoEmployeeName(b, t)))
-                  .map(emp => (
-                    <option key={emp.id} value={emp.id}>
-                      {`${getDemoEmployeeName(emp, t)} · ${translateDepartment(emp.department)} · ${translatePosition(emp.position)}`}
-                    </option>
-                  ))}
+                <option value="all">{t('reports.byUnit', 'By unit')}</option>
+                {units.map((unit) => (
+                  <option key={unit} value={unit}>{translateDepartment(unit)}</option>
+                ))}
               </FlatSelect>
-            </div>
 
-            <div style={{ minWidth: 160 }}>
-              <label htmlFor="report-range" style={fieldLabelStyle}>
-                {t('reports.dateRange', 'Date Range')}
-              </label>
-              <FlatSelect
+              <Btn
                 ind={ind}
-                id="report-range"
-                value={dateRange}
-                onChange={(e) => setDateRange(e.target.value)}
-                style={{ width: '100%' }}
+                variant={activeOnly ? 'primary' : 'secondary'}
+                onClick={() => setActiveOnly((prev) => !prev)}
+                aria-pressed={activeOnly}
+                title={t('reports.activeOnlyHint', 'Exclude people who have left the company')}
               >
-                <option value="today">{t('reports.today', 'Today')}</option>
-                <option value="this-week">{t('reports.thisWeek', 'This Week')}</option>
-                <option value="this-month">{t('reports.thisMonth', 'This Month')}</option>
-                <option value="last-month">{t('reports.lastMonth', 'Last Month')}</option>
-                <option value="this-quarter">{t('reports.thisQuarter', 'This Quarter')}</option>
-                <option value="this-year">{t('reports.thisYear', 'This Year')}</option>
-                <option value="custom">{t('reports.customRange', 'Custom Range')}</option>
-              </FlatSelect>
+                {t('reports.activeOnly', 'Active only')}
+              </Btn>
             </div>
 
-            {dateRange === 'custom' && (
-              <>
-                <div style={{ minWidth: 0, width: 148 }}>
-                  <label htmlFor="report-start" style={fieldLabelStyle}>
-                    {t('reports.startDate', 'Start Date')}
-                  </label>
+            <p style={{ ...noteStyle, marginTop: 10 }}>
+              {`${totals.people} ${t('reports.peopleInScope', 'people in scope')}`}
+              {peopleWithNoRecords.length > 0 && ` · ${peopleWithNoRecords.length} ${t('reports.withoutRecords', 'without records')}`}
+            </p>
+          </Cell>
+
+          <Cell ind={ind}>
+            <PanelHead ind={ind} num="03" title={t('reports.period', 'Period')} />
+            <Seg
+              ind={ind}
+              ariaLabel={t('reports.dateRange', 'Date Range')}
+              value={dateRange}
+              onChange={setDateRange}
+              options={[
+                { value: 'this-month', label: t('reports.thisMonth', 'This Month') },
+                { value: 'last-month', label: t('reports.lastMonth', 'Last Month') },
+                { value: 'this-quarter', label: t('reports.quarter', 'Quarter') },
+                { value: 'custom', label: t('reports.custom', 'Custom') },
+              ]}
+            />
+
+            {dateRange === 'custom' ? (
+              <div className="flex flex-wrap items-end" style={{ gap: 10, marginTop: 12 }}>
+                <div style={{ width: 148 }}>
+                  <label htmlFor="report-start" style={fieldLabelStyle}>{t('reports.startDate', 'Start Date')}</label>
                   <DatePicker
                     flat
                     id="report-start"
                     value={filters.startDate}
-                    onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                    onChange={(e) => setFilters((prev) => ({ ...prev, startDate: e.target.value }))}
                   />
                 </div>
-                <div style={{ minWidth: 0, width: 148 }}>
-                  <label htmlFor="report-end" style={fieldLabelStyle}>
-                    {t('reports.endDate', 'End Date')}
-                  </label>
+                <div style={{ width: 148 }}>
+                  <label htmlFor="report-end" style={fieldLabelStyle}>{t('reports.endDate', 'End Date')}</label>
                   <DatePicker
                     flat
                     id="report-end"
                     value={filters.endDate}
-                    onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                    onChange={(e) => setFilters((prev) => ({ ...prev, endDate: e.target.value }))}
                   />
                 </div>
-              </>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-baseline" style={{ gap: 10, marginTop: 12 }}>
+                <span style={{ ...figureStyle, fontSize: 14, letterSpacing: '.06em', color: ind.ink }}>
+                  {filters.startDate}
+                </span>
+                <span style={{ color: ind.inkFaint }}>→</span>
+                <span style={{ ...figureStyle, fontSize: 14, letterSpacing: '.06em', color: ind.ink }}>
+                  {filters.endDate}
+                </span>
+              </div>
             )}
 
-            {selectedEmployee !== 'all' && (
-              <p className="inline-flex items-center" style={{ ...caption, fontSize: 11.5, gap: 6, flex: '1 1 100%' }}>
-                <Users size={12} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkFaint }} />
-                {t('reports.exportingIncludes', 'Exporting will include this employee\'s detailed performance report')}
-              </p>
-            )}
-          </div>
-
-          {/* ── INDIVIDUAL PERFORMANCE ──────────────────────────────── */}
-          {selectedEmployee !== 'all' && (() => {
-            const employee = selectedEmployeeRecord;
-            if (!employee) return null;
-
-            const employeeTimeEntries = reportData.timeEntries.filter(e => String(e.employee_id) === String(employee.id));
-            const employeeTasks = reportData.tasks.filter(task => String(task.employee_id) === String(employee.id));
-            const employeeGoals = reportData.goals.filter(g => String(g.employee_id) === String(employee.id));
-
-            const totalHours = employeeTimeEntries.reduce((sum, e) => sum + (e.hours || 0), 0);
-            const regularHours = employeeTimeEntries.filter(e => e.hour_type === 'regular').reduce((sum, e) => sum + (e.hours || 0), 0);
-            // Include both overtime and bonus as overtime hours
-            const overtimeHours = employeeTimeEntries.filter(e => e.hour_type === 'overtime' || e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
-            const wfhHours = employeeTimeEntries.filter(e => e.hour_type === 'wfh').reduce((sum, e) => sum + (e.hours || 0), 0);
-            // Leave days (on_leave entries count as days)
-            const leaveDays = employeeTimeEntries.filter(e => e.hour_type === 'on_leave').length;
-            // Days worked (count unique dates with time entries)
-            const daysWorked = new Set(employeeTimeEntries.map(e => e.date)).size;
-            const pendingEntries = employeeTimeEntries.filter(e => e.status === 'pending').length;
-            const approvedEntries = employeeTimeEntries.filter(e => e.status === 'approved').length;
-
-            const completedTasks = employeeTasks.filter(task => task.status === 'completed').length;
-            const inProgressTasks = employeeTasks.filter(task => task.status === 'in_progress').length;
-            const pendingTasks = employeeTasks.filter(task => task.status === 'pending').length;
-            const taskCompletionRate = employeeTasks.length > 0 ? ((completedTasks / employeeTasks.length) * 100).toFixed(1) : 0;
-
-            const completedGoals = employeeGoals.filter(g => g.status === 'completed').length;
-            const inProgressGoals = employeeGoals.filter(g => g.status === 'in_progress').length;
-            const goalCompletionRate = employeeGoals.length > 0 ? ((completedGoals / employeeGoals.length) * 100).toFixed(1) : 0;
-            const avgProgress = employeeGoals.length > 0 ? (employeeGoals.reduce((sum, g) => sum + (g.status === 'completed' ? 100 : (g.progress || 0)), 0) / employeeGoals.length).toFixed(1) : 0;
-
-            const employeeBentoItems = [];
-            if (activeTab === 'time-entries' || activeTab === 'all') {
-              employeeBentoItems.push(
-                {
-                  label: t('reports.hours', 'Hours'),
-                  title: `${totalHours.toFixed(1)}h`,
-                  description: t('reports.totalHours', 'Total Hours'),
-                  value: Number(totalHours.toFixed(1)),
-                  suffix: 'h',
-                },
-                {
-                  label: t('reports.regular', 'Regular'),
-                  title: `${regularHours.toFixed(1)}h`,
-                  description: t('reports.regularHours', 'Regular Hours'),
-                  value: Number(regularHours.toFixed(1)),
-                  suffix: 'h',
-                },
-                {
-                  label: t('reports.overtime', 'Overtime'),
-                  title: `${overtimeHours.toFixed(1)}h`,
-                  description: t('reports.overtime', 'Overtime'),
-                  value: Number(overtimeHours.toFixed(1)),
-                  suffix: 'h',
-                },
-                {
-                  label: t('reports.wfh', 'WFH'),
-                  title: `${wfhHours.toFixed(1)}h`,
-                  description: t('reports.wfh', 'Working From Home'),
-                  value: Number(wfhHours.toFixed(1)),
-                  suffix: 'h',
-                },
-                {
-                  label: t('reports.leave', 'Leave'),
-                  title: String(leaveDays),
-                  description: t('reports.leaveDays', 'Leave Days'),
-                  value: Number(leaveDays) || 0,
-                },
-                {
-                  label: t('reports.days', 'Days'),
-                  title: String(daysWorked),
-                  description: t('reports.daysWorked', 'Days Worked'),
-                  value: Number(daysWorked) || 0,
-                }
-              );
-            }
-            if (activeTab === 'tasks' || activeTab === 'all') {
-              employeeBentoItems.push({
-                label: t('reports.tasks', 'Tasks'),
-                title: `${completedTasks}/${employeeTasks.length}`,
-                description: t('reports.tasksDone', 'Tasks Done'),
-                value: completedTasks,
-              });
-            }
-            if (activeTab === 'goals' || activeTab === 'all') {
-              employeeBentoItems.push(
-                {
-                  label: t('reports.completion', 'Completion'),
-                  title: `${activeTab === 'goals' ? goalCompletionRate : taskCompletionRate}%`,
-                  description: t('reports.completion', 'Completion'),
-                  value: Number(activeTab === 'goals' ? goalCompletionRate : taskCompletionRate) || 0,
-                  suffix: '%',
-                },
-                {
-                  label: t('reports.progress', 'Progress'),
-                  title: `${avgProgress}%`,
-                  description: t('reports.goalProgress', 'Goal Progress'),
-                  value: Number(avgProgress) || 0,
-                  suffix: '%',
-                }
-              );
-            }
-
-            return (
-              <Blueprint ind={ind} style={{ padding: '18px 20px 16px' }}>
-                <div className="flex flex-wrap items-end justify-between" style={{ gap: 12 }}>
-                  <div style={{ minWidth: 0 }}>
-                    <ColumnHeading ind={ind}>
-                      {`${getDemoEmployeeName(employee, t)} — ${t('reports.performanceSummary', 'Performance')}`}
-                    </ColumnHeading>
-                    <p style={{ ...caption, fontSize: 12, marginTop: 4 }}>
-                      {`${translateDepartment(employee.department)} · ${translatePosition(employee.position)}`}
-                    </p>
-                  </div>
-                  <p style={{ ...caption, fontSize: 11.5, flex: 'none' }}>
-                    {`${t('reports.reportPeriod', 'Report Period')}: ${rangeLabel}`}
-                  </p>
-                </div>
-
-                {employeeBentoItems.length > 0 && (
-                  <div
-                    className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6"
-                    style={{ gap: 8, marginTop: 14 }}
-                  >
-                    {employeeBentoItems.map((item, index) => (
-                      <FigureBlock key={`${item.label}-${index}`} item={item} size={22} />
-                    ))}
-                  </div>
-                )}
-
-                {/* Breakdown — three hairline boxes, one per data type. */}
-                <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 12, marginTop: 14 }}>
-                  {(activeTab === 'time-entries' || activeTab === 'all') && (
-                    <div style={{ border: `1px solid ${ind.hairline}`, padding: '12px 14px' }}>
-                      <div className="flex items-center" style={{ gap: 7, marginBottom: 9 }}>
-                        <Clock size={13} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted }} />
-                        <ColumnHeading ind={ind} style={{ fontSize: 12 }}>
-                          {`${t('reports.timeEntries', 'Time Entries')} (${employeeTimeEntries.length})`}
-                        </ColumnHeading>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                        <StatLine label={t('reports.approved', 'Approved')} value={approvedEntries} />
-                        <StatLine label={t('reports.pending', 'Pending')} value={pendingEntries} />
-                        <StatLine label={t('reports.regularHours', 'Regular Hours')} value={Number(regularHours.toFixed(1))} suffix="h" />
-                        <StatLine label={t('reports.overtime', 'Overtime')} value={Number(overtimeHours.toFixed(1))} suffix="h" />
-                        <StatLine label={t('reports.wfh', 'WFH')} value={Number(wfhHours.toFixed(1))} suffix="h" />
-                        <StatLine label={t('reports.leaveDays', 'Leave Days')} value={Number(leaveDays) || 0} />
-                      </div>
-                    </div>
-                  )}
-
-                  {(activeTab === 'tasks' || activeTab === 'all') && (
-                    <div style={{ border: `1px solid ${ind.hairline}`, padding: '12px 14px' }}>
-                      <div className="flex items-center" style={{ gap: 7, marginBottom: 9 }}>
-                        <CheckCircle size={13} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted }} />
-                        <ColumnHeading ind={ind} style={{ fontSize: 12 }}>
-                          {`${t('reports.tasks', 'Tasks')} (${employeeTasks.length})`}
-                        </ColumnHeading>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                        <StatLine label={t('reports.completed', 'Completed')} value={completedTasks} />
-                        <StatLine label={t('reports.inProgress', 'In Progress')} value={inProgressTasks} />
-                        <StatLine label={t('reports.pending', 'Pending')} value={pendingTasks} />
-                        <StatLine label={t('reports.completionRate', 'Completion Rate')} value={Number(taskCompletionRate) || 0} decimals={1} suffix="%" />
-                      </div>
-                      <div style={{ marginTop: 9 }}>
-                        <Bar ind={ind} value={(Number(taskCompletionRate) || 0) / 100} height={6} />
-                      </div>
-                    </div>
-                  )}
-
-                  {(activeTab === 'goals' || activeTab === 'all') && (
-                    <div style={{ border: `1px solid ${ind.hairline}`, padding: '12px 14px' }}>
-                      <div className="flex items-center" style={{ gap: 7, marginBottom: 9 }}>
-                        <Goal size={13} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted }} />
-                        <ColumnHeading ind={ind} style={{ fontSize: 12 }}>
-                          {`${t('reports.goals', 'Goals')} (${employeeGoals.length})`}
-                        </ColumnHeading>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                        <StatLine label={t('reports.completed', 'Completed')} value={completedGoals} />
-                        <StatLine label={t('reports.inProgress', 'In Progress')} value={inProgressGoals} />
-                        <StatLine label={t('reports.avgProgress', 'Avg Progress')} value={Number(avgProgress) || 0} decimals={1} suffix="%" />
-                        <StatLine label={t('reports.totalGoals', 'Total Goals')} value={employeeGoals.length} />
-                      </div>
-                      <div style={{ marginTop: 9 }}>
-                        <Bar ind={ind} value={(Number(avgProgress) || 0) / 100} height={6} />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </Blueprint>
-            );
-          })()}
-
-          {/* ── PREVIEW LEDGER ──────────────────────────────────────── */}
-          <Blueprint ind={ind} style={{ padding: '16px 16px 0' }}>
-            <div className="flex flex-wrap items-baseline justify-between" style={{ gap: 10, marginBottom: 12 }}>
-              <ColumnHeading ind={ind}>{t('reports.dataPreview', 'Data Preview')}</ColumnHeading>
-              <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, color: ind.inkMuted }}>
-                {activeTabLabel}
+            <div className="flex flex-wrap items-center" style={{ gap: 10, marginTop: 10 }}>
+              <span style={{ ...noteStyle }}>
+                {`${totals.workingDays} ${t('reports.workingDays', 'working days')}`}
               </span>
+              {[
+                { value: 'today', label: t('reports.today', 'Today') },
+                { value: 'this-week', label: t('reports.thisWeek', 'This Week') },
+                { value: 'this-year', label: t('reports.thisYear', 'This Year') },
+              ].map((preset) => (
+                <button
+                  key={preset.value}
+                  type="button"
+                  onClick={() => setDateRange(preset.value)}
+                  style={{
+                    ...figureStyle, fontSize: 10.5, letterSpacing: '.12em', textTransform: 'uppercase',
+                    background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                    color: dateRange === preset.value ? ind.accent : ind.inkFaint,
+                  }}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </Cell>
+        </Band>
+
+        {/* ── COMPOSITION ───────────────────────────────────────────── */}
+        <Band ind={ind} className="grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
+          <Cell ind={ind}>
+            <PanelHead
+              ind={ind}
+              title={t('reports.byType', 'By type')}
+              right={
+                <span style={{ ...noteStyle, flex: 'none' }}>
+                  {`${formatHours(totals.hours)} ${t('reports.hoursShort', 'h')}`}
+                </span>
+              }
+            />
+            {byType.length === 0 ? (
+              <p style={noteStyle}>{t('reports.noData', 'No data found')}</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                {byType.map((row) => (
+                  <div key={row.id} className="flex items-baseline" style={{ gap: 10 }}>
+                    <span
+                      style={{
+                        fontFamily: BODY, fontSize: 12.5, color: ind.ink, flex: 1, minWidth: 0,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {row.label}
+                    </span>
+                    {row.hours != null && (
+                      <span style={{ ...figureStyle, fontSize: 11.5, color: ind.inkFaint, flex: 'none' }}>
+                        {`${formatHours(row.hours)}h`}
+                      </span>
+                    )}
+                    <span style={{ ...figureStyle, fontSize: 13.5, color: ind.ink, flex: 'none', minWidth: 42, textAlign: 'right' }}>
+                      {row.count.toLocaleString()}
+                    </span>
+                    <span style={{ ...figureStyle, fontSize: 11.5, color: ind.inkFaint, flex: 'none', minWidth: 30, textAlign: 'right' }}>
+                      {`${Math.round(row.pct * 100)}%`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Cell>
+
+          <Cell ind={ind}>
+            <PanelHead
+              ind={ind}
+              title={t('reports.byStatus', 'By status')}
+              right={
+                <span style={{ ...noteStyle, flex: 'none' }}>
+                  {`${t('reports.timeAndLeave', 'time & leave')}, ${byStatus.total.toLocaleString()}`}
+                </span>
+              }
+            />
+            {byStatus.total === 0 ? (
+              <p style={noteStyle}>{t('reports.noApprovableRecords', 'No approvable records in scope')}</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {[
+                  { id: 'approved', label: translateStatus('approved'), value: byStatus.approved, rank: 0 },
+                  { id: 'pending', label: t('reports.pendingApproval', 'Pending approval'), value: byStatus.pending, rank: 1 },
+                  { id: 'rejected', label: translateStatus('rejected'), value: byStatus.rejected, rank: 3 },
+                ].map((row) => {
+                  const emphasised = row.id === 'pending' && row.value > 0;
+                  return (
+                    <div key={row.id}>
+                      <div className="flex items-baseline justify-between" style={{ gap: 10, marginBottom: 5 }}>
+                        <button
+                          type="button"
+                          onClick={() => setAttention(attention === row.id ? null : row.id)}
+                          style={{
+                            fontFamily: BODY, fontSize: 12.5, background: 'none', border: 'none', padding: 0,
+                            cursor: 'pointer', textAlign: 'left', minWidth: 0,
+                            color: emphasised ? ind.accentDeep : ind.ink,
+                            fontWeight: emphasised ? 600 : 400,
+                          }}
+                        >
+                          {row.label}
+                        </button>
+                        <span style={{ ...figureStyle, fontSize: 14, color: ind.ink, flex: 'none' }}>
+                          {row.value.toLocaleString()}
+                        </span>
+                      </div>
+                      <Bar
+                        ind={ind}
+                        value={byStatus.total > 0 ? row.value / byStatus.total : 0}
+                        fill={rampAt(ind, row.rank)}
+                        height={7}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Cell>
+
+          <Cell ind={ind}>
+            <PanelHead ind={ind} title={t('reports.byWeek', 'By week')} />
+            {byWeek.length === 0 ? (
+              <p style={noteStyle}>{t('reports.noData', 'No data found')}</p>
+            ) : (
+              <div className="flex items-end" style={{ gap: 6, height: 128, overflowX: 'auto' }}>
+                {byWeek.map((bucket) => (
+                  <div
+                    key={bucket.label + bucket.from.toISOString()}
+                    className="flex flex-col items-center justify-end"
+                    style={{ flex: '1 1 0', minWidth: 34, height: '100%' }}
+                    title={`${bucket.from.toISOString().slice(0, 10)} → ${bucket.to.toISOString().slice(0, 10)}`}
+                  >
+                    <span style={{ ...figureStyle, fontSize: 11, color: ind.inkMuted, marginBottom: 4 }}>
+                      {bucket.count.toLocaleString()}
+                    </span>
+                    {/* The bar is measured against what is left after the two
+                        labels, so a tall column can never push them out. */}
+                    <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'flex-end' }}>
+                      <div
+                        style={{
+                          width: '100%',
+                          height: `${Math.max(bucket.share * 100, bucket.count > 0 ? 4 : 1)}%`,
+                          border: `1px solid ${ind.hairline}`,
+                          // A week still accruing reads as an empty frame.
+                          background: bucket.partial ? 'transparent' : ind.accentFill,
+                        }}
+                      />
+                    </div>
+                    <span
+                      style={{
+                        ...figureStyle, fontSize: 10, letterSpacing: '.1em', color: ind.inkFaint,
+                        marginTop: 5, whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {bucket.label}{bucket.partial ? '*' : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Cell>
+
+          <Cell ind={ind}>
+            <PanelHead ind={ind} title={t('reports.beforeYouExport', 'Before you export')} />
+            {checks.length === 0 ? (
+              <div className="flex items-start" style={{ gap: 9 }}>
+                <CheckCircle size={14} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.accent }} />
+                <p style={{ ...caption, fontSize: 12.5 }}>
+                  {`${totals.rows.toLocaleString()} ${t('reports.rowsReady', 'rows ready — nothing needs attention.')}`}
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+                {checks.map((check) => {
+                  const CheckIcon = check.Icon;
+                  return (
+                    <div key={check.id} className="flex items-start" style={{ gap: 9 }}>
+                      <CheckIcon size={14} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.inkMuted }} />
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ ...caption, fontSize: 12.5, color: ind.ink }}>
+                          <strong style={{ fontWeight: 600 }}>{check.lead}</strong>
+                          {check.rest ? ` — ${check.rest}` : ''}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={check.onAction}
+                          className="inline-flex items-center"
+                          style={{
+                            ...figureStyle, fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase',
+                            color: ind.accent, background: 'none', border: 'none', padding: 0,
+                            cursor: 'pointer', gap: 5, marginTop: 4,
+                          }}
+                        >
+                          {check.actionLabel}
+                          <ArrowRight size={11} strokeWidth={2} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Cell>
+        </Band>
+
+        {/* ── ONE PERSON — only when the sheet is scoped to one ──────── */}
+        {selectedEmployee !== 'all' && cohort.length === 1 && (() => {
+          const employee = cohort[0];
+          const entries = scopedData.timeEntries;
+          const hoursOf = (predicate) => entries.filter(predicate).reduce((sum, entry) => sum + (Number(entry.hours) || 0), 0);
+          const regularHours = hoursOf((entry) => entry.hour_type === 'regular');
+          const overtimeHours = hoursOf((entry) => entry.hour_type === 'overtime' || entry.hour_type === 'bonus');
+          const wfhHours = hoursOf((entry) => entry.hour_type === 'wfh');
+          const daysWorked = new Set(entries.map((entry) => entry.date)).size;
+          const completedTasks = scopedData.tasks.filter((task) => task.status === 'completed').length;
+          const taskRate = scopedData.tasks.length > 0
+            ? Number(((completedTasks / scopedData.tasks.length) * 100).toFixed(1))
+            : 0;
+          const goalProgress = scopedData.goals.length > 0
+            ? Number((scopedData.goals.reduce((sum, goal) => sum + (goal.status === 'completed' ? 100 : (Number(goal.progress) || 0)), 0) / scopedData.goals.length).toFixed(1))
+            : 0;
+          const leaveDays = scopedData.leave
+            .filter((request) => request.status === 'approved')
+            .reduce((sum, request) => sum + (Number(request.days_count) || 0), 0);
+
+          return (
+            <Band ind={ind} className="grid-cols-1">
+              <Cell ind={ind}>
+                <PanelHead
+                  ind={ind}
+                  title={`${getDemoEmployeeName(employee, t)} — ${t('reports.performanceSummary', 'Performance Summary')}`}
+                  right={
+                    <span style={{ ...noteStyle, flex: 'none' }}>
+                      {`${translateDepartment(employee.department)} · ${translatePosition(employee.position)}`}
+                    </span>
+                  }
+                />
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6" style={{ gap: 8 }}>
+                  <FigureBlock
+                    ind={ind}
+                    label={t('reports.hours', 'Hours')}
+                    value={Number(formatHours(totals.hours))}
+                    suffix="h"
+                    description={t('reports.totalHours', 'Total Hours')}
+                  />
+                  <FigureBlock
+                    ind={ind}
+                    label={t('reports.regular', 'Regular')}
+                    value={Number(formatHours(regularHours))}
+                    suffix="h"
+                    description={t('reports.regularHours', 'Regular Hours')}
+                  />
+                  <FigureBlock
+                    ind={ind}
+                    label={t('reports.overtime', 'Overtime')}
+                    value={Number(formatHours(overtimeHours))}
+                    suffix="h"
+                    description={t('reports.overtime', 'Overtime')}
+                  />
+                  <FigureBlock
+                    ind={ind}
+                    label={t('reports.wfh', 'WFH')}
+                    value={Number(formatHours(wfhHours))}
+                    suffix="h"
+                    description={t('reports.wfh', 'Working From Home')}
+                  />
+                  <FigureBlock
+                    ind={ind}
+                    label={t('reports.days', 'Days')}
+                    value={daysWorked}
+                    description={t('reports.daysWorked', 'Days Worked')}
+                  />
+                  <FigureBlock
+                    ind={ind}
+                    label={t('reports.leave', 'Leave')}
+                    value={leaveDays}
+                    description={t('reports.leaveDays', 'Leave Days')}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 12, marginTop: 12 }}>
+                  <div style={{ border: `1px solid ${ind.hairline}`, padding: '12px 14px' }}>
+                    <div className="flex items-center" style={{ gap: 7, marginBottom: 9 }}>
+                      <CheckCircle size={13} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted }} />
+                      <ColumnHeading ind={ind} style={{ fontSize: 12 }}>
+                        {`${t('reports.tasks', 'Tasks')} (${scopedData.tasks.length})`}
+                      </ColumnHeading>
+                    </div>
+                    <StatLine ind={ind} label={t('reports.completed', 'Completed')} value={completedTasks} />
+                    <div style={{ marginTop: 6 }}>
+                      <StatLine ind={ind} label={t('reports.completionRate', 'Completion Rate')} value={taskRate} decimals={1} suffix="%" />
+                    </div>
+                    <div style={{ marginTop: 9 }}>
+                      <Bar ind={ind} value={taskRate / 100} height={6} />
+                    </div>
+                  </div>
+
+                  <div style={{ border: `1px solid ${ind.hairline}`, padding: '12px 14px' }}>
+                    <div className="flex items-center" style={{ gap: 7, marginBottom: 9 }}>
+                      <Goal size={13} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted }} />
+                      <ColumnHeading ind={ind} style={{ fontSize: 12 }}>
+                        {`${t('reports.goals', 'Goals')} (${scopedData.goals.length})`}
+                      </ColumnHeading>
+                    </div>
+                    <StatLine
+                      ind={ind}
+                      label={t('reports.completed', 'Completed')}
+                      value={scopedData.goals.filter((goal) => goal.status === 'completed').length}
+                    />
+                    <div style={{ marginTop: 6 }}>
+                      <StatLine ind={ind} label={t('reports.avgProgress', 'Avg Progress')} value={goalProgress} decimals={1} suffix="%" />
+                    </div>
+                    <div style={{ marginTop: 9 }}>
+                      <Bar ind={ind} value={goalProgress / 100} height={6} />
+                    </div>
+                  </div>
+                </div>
+              </Cell>
+            </Band>
+          );
+        })()}
+
+        {/* ── PREVIEW LEDGER ────────────────────────────────────────── */}
+        <div style={{ position: 'relative' }}>
+          <BandMarks ind={ind} />
+          <div style={{ border: `1px solid ${ind.hairline}`, padding: '16px 18px 0' }}>
+            <div className="flex flex-wrap items-baseline justify-between" style={{ gap: 12, marginBottom: 14 }}>
+              <div className="flex flex-wrap items-baseline" style={{ gap: 10 }}>
+                <span style={{ ...figureStyle, fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', color: ind.ink }}>
+                  {`${t('reports.preview', 'Preview')} · ${previewRows.length.toLocaleString()} ${t('reports.rows', 'rows')}`}
+                </span>
+                {attention && (
+                  <button
+                    type="button"
+                    onClick={() => setAttention(null)}
+                    className="inline-flex items-center"
+                    style={{
+                      ...figureStyle, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase',
+                      gap: 5, padding: '2px 6px', cursor: 'pointer',
+                      border: `1px solid ${ind.accent}`, background: ind.accentWash, color: ind.accentDeep,
+                    }}
+                  >
+                    {attentionLabel}
+                    <X size={10} strokeWidth={2} />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center" style={{ gap: 16 }}>
+                <span style={{ ...figureStyle, fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase', color: ind.inkFaint }}>
+                  {`${t('reports.sortedBy', 'Sorted by')} ${(previewColumns.find((column) => column.id === sortKey) || {}).label || sortKey} ${sortDirection === 'asc' ? '↑' : '↓'}`}
+                </span>
+
+                <div style={{ position: 'relative' }} ref={columnMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() => setColumnMenuOpen((open) => !open)}
+                    className="inline-flex items-center"
+                    style={{
+                      ...figureStyle, fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase',
+                      color: ind.accent, background: 'none', border: 'none', padding: 0, cursor: 'pointer', gap: 5,
+                    }}
+                  >
+                    {t('reports.chooseColumns', 'Choose columns')}
+                    <ArrowRight size={11} strokeWidth={2} />
+                  </button>
+
+                  {columnMenuOpen && (
+                    <div
+                      style={{
+                        position: 'absolute', right: 0, top: '100%', marginTop: 8, zIndex: 20, minWidth: 210,
+                        border: `1px solid ${ind.hairline}`, background: ind.chrome, padding: '10px 12px',
+                        boxShadow: '0 12px 28px rgba(0,0,0,.14)',
+                      }}
+                    >
+                      <Kicker ind={ind} style={{ marginBottom: 8 }}>
+                        {t('reports.previewColumns', 'Preview columns')}
+                      </Kicker>
+                      {previewColumns.map((column) => {
+                        const shown = !hiddenColumns.has(column.id);
+                        return (
+                          <button
+                            key={column.id}
+                            type="button"
+                            disabled={column.locked}
+                            onClick={() => toggleColumn(column.id)}
+                            className="flex items-center w-full"
+                            style={{
+                              gap: 8, padding: '5px 0', background: 'none', border: 'none',
+                              cursor: column.locked ? 'not-allowed' : 'pointer',
+                              opacity: column.locked ? 0.5 : 1, textAlign: 'left',
+                            }}
+                          >
+                            <span
+                              aria-hidden="true"
+                              style={{
+                                width: 11, height: 11, flex: 'none', display: 'inline-flex',
+                                alignItems: 'center', justifyContent: 'center',
+                                border: `1px solid ${shown ? ind.accent : ind.inkFaint}`,
+                                background: shown ? ind.accent : 'transparent',
+                              }}
+                            >
+                              {shown && <Check size={8} strokeWidth={3} style={{ color: ind.accentInk }} />}
+                            </span>
+                            <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink }}>{column.label}</span>
+                          </button>
+                        );
+                      })}
+                      <p style={{ ...noteStyle, marginTop: 8 }}>
+                        {t('reports.previewColumnsNote', 'Affects this preview. Exports always carry every field.')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
                 <thead>
                   <tr>
-                    {activeTab === 'all' && (
-                      <>
-                        <th style={thStyle}>{t('reports.type', 'Type')}</th>
-                        <th style={thStyle}>{t('reports.employees', 'Employee')}</th>
-                        <th style={thStyle}>{t('reports.details', 'Details')}</th>
-                        <th style={thStyle}>{t('reports.status', 'Status')}</th>
-                        <th style={thStyle}>{t('reports.date', 'Date')}</th>
-                      </>
-                    )}
-
-                    {activeTab === 'time-entries' && (
-                      <>
-                        <SortableTh sortId="employee">{t('reports.employees', 'Employee')}</SortableTh>
-                        <SortableTh sortId="date">{t('reports.date', 'Date')}</SortableTh>
-                        <SortableTh sortId="hours">{t('reports.hours', 'Hours')}</SortableTh>
-                        <SortableTh sortId="type">{t('reports.type', 'Type')}</SortableTh>
-                        <SortableTh sortId="status">{t('reports.status', 'Status')}</SortableTh>
-                      </>
-                    )}
-
-                    {activeTab === 'tasks' && (
-                      <>
-                        <SortableTh sortId="employee">{t('reports.employees', 'Employee')}</SortableTh>
-                        <th style={thStyle}>{t('reports.task', 'Task')}</th>
-                        <SortableTh sortId="priority">{t('reports.priority', 'Priority')}</SortableTh>
-                        <SortableTh sortId="status">{t('reports.status', 'Status')}</SortableTh>
-                        <SortableTh sortId="date">{t('reports.dueDate', 'Due Date')}</SortableTh>
-                      </>
-                    )}
-
-                    {activeTab === 'goals' && (
-                      <>
-                        <SortableTh sortId="employee">{t('reports.employees', 'Employee')}</SortableTh>
-                        <th style={thStyle}>{t('reports.goal', 'Goal')}</th>
-                        <th style={thStyle}>{t('reports.category', 'Category')}</th>
-                        <SortableTh sortId="status">{t('reports.status', 'Status')}</SortableTh>
-                        <SortableTh sortId="progress">{t('reports.progress', 'Progress')}</SortableTh>
-                      </>
-                    )}
-
-                    {activeTab === 'leave' && (
-                      <>
-                        <SortableTh sortId="employee">{t('reports.employees', 'Employee')}</SortableTh>
-                        <th style={thStyle}>{t('reports.leaveType', 'Type')}</th>
-                        <SortableTh sortId="date">{t('reports.dateRange', 'Date Range')}</SortableTh>
-                        <th style={thStyle}>{t('reports.days', 'Days')}</th>
-                        <SortableTh sortId="status">{t('reports.status', 'Status')}</SortableTh>
-                      </>
-                    )}
+                    {visibleColumns.map((column) => {
+                      const active = sortKey === column.id;
+                      return (
+                        <th key={column.id} style={{ ...thStyle, textAlign: column.align || 'left' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleSort(column.id)}
+                            style={{
+                              font: 'inherit', color: active ? ind.ink : 'inherit', letterSpacing: 'inherit',
+                              textTransform: 'inherit', background: 'none', border: 'none', padding: 0,
+                              cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
+                            }}
+                          >
+                            {column.label}
+                            <span aria-hidden="true" style={{ opacity: active ? 1 : 0.3 }}>
+                              {active && sortDirection === 'asc' ? '▲' : '▼'}
+                            </span>
+                          </button>
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
 
                 <tbody>
-                  {(activeTab === 'all'
-                    ? (getSortedData.timeEntries?.length + getSortedData.tasks?.length + getSortedData.goals?.length === 0)
-                    : getSortedData.length === 0) ? (
+                  {previewRows.length === 0 ? (
                     <tr>
-                      <td colSpan={5} style={{ ...tdStyle, padding: '44px 10px', textAlign: 'center' }}>
+                      <td colSpan={visibleColumns.length} style={{ ...tdStyle, padding: '44px 10px', textAlign: 'center' }}>
                         <FileText size={26} strokeWidth={1.25} style={{ color: ind.inkFaint, margin: '0 auto' }} />
                         <div style={{ marginTop: 10 }}>
                           <ColumnHeading ind={ind}>{t('reports.noData', 'No data found')}</ColumnHeading>
@@ -3362,179 +3984,22 @@ const Reports = () => {
                         </p>
                       </td>
                     </tr>
-                  ) : activeTab === 'all' ? (
-                    <>
-                      {(getSortedData.timeEntries || []).map((item, index) => (
-                        <tr key={`time-${index}`}>
-                          <td style={tdStyle}>
-                            <Tag ind={ind} variant="neutral">{translateDataType('timeEntry')}</Tag>
-                          </td>
-                          <td style={tdStyle}>
-                            <div>{employeeNameOf(item)}</div>
-                            <div style={subCellStyle}>{translateDepartment(item.employee?.department)}</div>
-                          </td>
-                          <td style={tdStyle}>
-                            {`${item.hours || 0}h · ${translateHourType(item.hour_type)}`}
-                          </td>
-                          <td style={tdStyle}>
-                            <Tag ind={ind} variant={statusVariant(item.status)}>{translateStatus(item.status)}</Tag>
-                          </td>
-                          <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{item.date}</td>
-                        </tr>
-                      ))}
-
-                      {(getSortedData.tasks || []).map((item, index) => (
-                        <tr key={`task-${index}`}>
-                          <td style={tdStyle}>
-                            <Tag ind={ind} variant="neutral">{translateDataType('task')}</Tag>
-                          </td>
-                          <td style={tdStyle}>
-                            <div>{employeeNameOf(item)}</div>
-                            <div style={subCellStyle}>{translateDepartment(item.employee?.department)}</div>
-                          </td>
-                          <td style={{ ...tdStyle, maxWidth: 280 }}>
-                            <div className="truncate">
-                              {isDemoMode() ? getDemoTaskTitle(item, t) : <TranslatedText text={item.title} />}
-                            </div>
-                            <div className="truncate" style={subCellStyle}>
-                              {isDemoMode() ? getDemoTaskDescription(item, t) : <TranslatedText text={item.description} />}
-                            </div>
-                          </td>
-                          <td style={tdStyle}>
-                            <Tag ind={ind} variant={statusVariant(item.status)}>{translateStatus(item.status)}</Tag>
-                          </td>
-                          <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{item.due_date || '—'}</td>
-                        </tr>
-                      ))}
-
-                      {(getSortedData.goals || []).map((item, index) => (
-                        <tr key={`goal-${index}`}>
-                          <td style={tdStyle}>
-                            <Tag ind={ind} variant="neutral">{translateDataType('goal')}</Tag>
-                          </td>
-                          <td style={tdStyle}>
-                            <div>{employeeNameOf(item)}</div>
-                            <div style={subCellStyle}>{translateDepartment(item.employee?.department)}</div>
-                          </td>
-                          <td style={{ ...tdStyle, maxWidth: 280 }}>
-                            <div className="truncate">
-                              {isDemoMode() ? getDemoGoalTitle(item, t) : <TranslatedText text={item.title} />}
-                            </div>
-                            <div className="truncate" style={subCellStyle}>
-                              {`${translateCategory(item.category)} · ${item.status === 'completed' ? 100 : (item.progress || 0)}%`}
-                            </div>
-                          </td>
-                          <td style={tdStyle}>
-                            <Tag ind={ind} variant={statusVariant(item.status)}>{translateStatus(item.status)}</Tag>
-                          </td>
-                          <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{item.target_date || '—'}</td>
-                        </tr>
-                      ))}
-                    </>
                   ) : (
-                    getSortedData.map((item, index) => (
-                      <tr key={index}>
-                        {activeTab === 'time-entries' && (
-                          <>
-                            <td style={tdStyle}>
-                              <div>{employeeNameOf(item)}</div>
-                              <div style={subCellStyle}>{translateDepartment(item.employee?.department)}</div>
-                            </td>
-                            <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{item.date}</td>
-                            <td style={{ ...tdStyle, fontFamily: DISPLAY, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-                              {`${item.hours || 0}h`}
-                            </td>
-                            <td style={tdStyle}>
-                              <Tag ind={ind} variant="neutral">{translateHourType(item.hour_type)}</Tag>
-                            </td>
-                            <td style={tdStyle}>
-                              <Tag ind={ind} variant={statusVariant(item.status)}>{translateStatus(item.status)}</Tag>
-                            </td>
-                          </>
-                        )}
-
-                        {activeTab === 'tasks' && (
-                          <>
-                            <td style={tdStyle}>
-                              <div>{employeeNameOf(item)}</div>
-                              <div style={subCellStyle}>{translateDepartment(item.employee?.department)}</div>
-                            </td>
-                            <td style={{ ...tdStyle, maxWidth: 320 }}>
-                              <div className="truncate">
-                                {isDemoMode() ? getDemoTaskTitle(item, t) : <TranslatedText text={item.title} />}
-                              </div>
-                              <div className="truncate" style={subCellStyle}>
-                                {isDemoMode() ? getDemoTaskDescription(item, t) : <TranslatedText text={item.description} />}
-                              </div>
-                            </td>
-                            <td style={tdStyle}>
-                              <Tag ind={ind} variant={priorityVariant(item.priority)}>{translatePriority(item.priority)}</Tag>
-                            </td>
-                            <td style={tdStyle}>
-                              <Tag ind={ind} variant={statusVariant(item.status)}>{translateStatus(item.status)}</Tag>
-                            </td>
-                            <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{item.due_date || '—'}</td>
-                          </>
-                        )}
-
-                        {activeTab === 'goals' && (
-                          <>
-                            <td style={tdStyle}>
-                              <div>{employeeNameOf(item)}</div>
-                              <div style={subCellStyle}>{translateDepartment(item.employee?.department)}</div>
-                            </td>
-                            <td style={{ ...tdStyle, maxWidth: 320 }}>
-                              <div className="truncate">
-                                {isDemoMode() ? getDemoGoalTitle(item, t) : <TranslatedText text={item.title} />}
-                              </div>
-                              <div className="truncate" style={subCellStyle}>
-                                {isDemoMode() ? getDemoGoalDescription(item, t) : <TranslatedText text={item.description} />}
-                              </div>
-                            </td>
-                            <td style={tdStyle}>{translateCategory(item.category)}</td>
-                            <td style={tdStyle}>
-                              <Tag ind={ind} variant={statusVariant(item.status)}>{translateStatus(item.status)}</Tag>
-                            </td>
-                            <td style={{ ...tdStyle, minWidth: 150 }}>
-                              <div className="flex items-center" style={{ gap: 8 }}>
-                                <div style={{ flex: 1, minWidth: 60 }}>
-                                  <Bar
-                                    ind={ind}
-                                    value={Math.min(item.status === 'completed' ? 100 : (item.progress || 0), 100) / 100}
-                                    fill={rampAt(ind, item.status === 'completed' ? 0 : 2)}
-                                    height={6}
-                                  />
-                                </div>
-                                <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, fontVariantNumeric: 'tabular-nums', flex: 'none' }}>
-                                  <NumberTicker value={item.status === 'completed' ? 100 : (item.progress || 0)} />%
-                                </span>
-                              </div>
-                            </td>
-                          </>
-                        )}
-
-                        {activeTab === 'leave' && (
-                          <>
-                            <td style={tdStyle}>
-                              <div>{employeeNameOf(item)}</div>
-                              <div style={subCellStyle}>{translateDepartment(item.employee?.department)}</div>
-                            </td>
-                            <td style={tdStyle}>
-                              <Tag ind={ind} variant="neutral">
-                                {t(`timeTracking.${item.leave_type === 'sick' ? 'sickLeave' : item.leave_type === 'personal' ? 'personal' : 'vacation'}`, item.leave_type)}
-                              </Tag>
-                            </td>
-                            <td style={{ ...tdStyle, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
-                              {`${(item.start_date || '').slice(0, 10)} → ${(item.end_date || item.start_date || '').slice(0, 10)}`}
-                            </td>
-                            <td style={{ ...tdStyle, fontFamily: DISPLAY, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-                              {item.days_count ?? '—'}
-                            </td>
-                            <td style={tdStyle}>
-                              <Tag ind={ind} variant={statusVariant(item.status)}>{translateStatus(item.status)}</Tag>
-                            </td>
-                          </>
-                        )}
+                    previewRows.map((row) => (
+                      <tr key={row.key}>
+                        {visibleColumns.map((column) => (
+                          <td
+                            key={column.id}
+                            style={{
+                              ...tdStyle,
+                              textAlign: column.align || 'left',
+                              whiteSpace: column.id === 'date' ? 'nowrap' : undefined,
+                              maxWidth: column.id === 'employee' ? 280 : undefined,
+                            }}
+                          >
+                            {renderCell(row, column)}
+                          </td>
+                        ))}
                       </tr>
                     ))
                   )}
@@ -3542,139 +4007,150 @@ const Reports = () => {
               </table>
             </div>
 
-            {/* Ledger foot — the preview is capped; the export is not. */}
+            {/* Ledger foot — the preview is paged; the export is not. */}
             <div
               className="flex flex-wrap items-center justify-between"
-              style={{ gap: 10, padding: '10px 0', marginTop: 4, borderTop: `1px solid ${ind.hairline}` }}
+              style={{ gap: 10, padding: '11px 0', marginTop: 4, borderTop: `1px solid ${ind.hairline}` }}
             >
               <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint }}>
-                {currentData.length > 50
-                  ? `${t('reports.showingFirst50of', 'Showing first 50 of')} ${currentData.length} ${t('reports.records', 'records')}`
-                  : `${stats.totalRecords} ${t('reports.recordsFound', 'records found')}`}
+                {`${t('reports.showing', 'Showing')} ${previewRows.length.toLocaleString()} ${t('reports.of', 'of')} ${sortedRows.length.toLocaleString()} ${t('reports.rows', 'rows')} · ${t('reports.exportCarriesEveryRow', 'the export carries every row in scope, not the preview')}`}
               </span>
-              {currentData.length > 50 && (
-                <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint }}>
-                  {t('reports.exportForAll', 'Export to CSV to get all records.')}
-                </span>
-              )}
-            </div>
-          </Blueprint>
-        </div>
-
-        {/* ── RIGHT — the figures and the export, 340px ─────────────── */}
-        <aside
-          className="w-full lg:w-[340px] lg:shrink-0 flex flex-col"
-          style={{ background: ind.chrome, overflow: 'hidden' }}
-        >
-          <div style={{ padding: '20px 20px 16px', borderBottom: `1px solid ${ind.hairline}` }}>
-            <Kicker ind={ind}>{overviewBentoItems[0]?.description || t('reports.totalRecords', 'Total Records')}</Kicker>
-            <div className="flex items-baseline" style={{ gap: 8, margin: '4px 0 0' }}>
-              <span style={{ ...figure(52, ind.ink), lineHeight: 0.92 }}>
-                <SlidingNumber value={Number(stats.totalRecords) || 0} />
-              </span>
-              <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>{activeTabLabel}</span>
-            </div>
-            <p style={columnNote}>{rangeLabel}</p>
-          </div>
-
-          {/* The rest of the same array the ticker renders. */}
-          {overviewBentoItems.slice(1).map((item, index) => (
-            <div
-              key={`${item.label}-${index}`}
-              className="flex items-baseline justify-between"
-              style={{ gap: 12, padding: '11px 20px', borderBottom: `1px solid ${ind.rule}` }}
-            >
-              <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, minWidth: 0 }}>
-                {item.description}
-              </span>
-              <span
-                style={{
-                  fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, color: ind.ink,
-                  fontVariantNumeric: 'tabular-nums', flex: 'none',
-                }}
-              >
-                {typeof item.value === 'number' ? <SlidingNumber value={item.value} /> : item.title}
-                {item.suffix}
-              </span>
-            </div>
-          ))}
-
-          {/* Export — the only place on the screen that writes a file. */}
-          <div style={{ padding: '18px 20px 12px', marginTop: 6, borderBottom: `1px solid ${ind.hairline}` }}>
-            <ColumnHeading ind={ind}>{t('reports.export', 'Export')}</ColumnHeading>
-            <p style={columnNote}>
-              {t('reports.exportScopeNote', 'Exports carry every filtered record, not just the 50 previewed.')}
-            </p>
-          </div>
-
-          <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[
-              {
-                key: 'csv',
-                onClick: exportAllToCSV,
-                label: t('reports.exportToCSV', 'Export to CSV'),
-                title: t('reports.exportingIncludes', 'Exporting will include all filtered data, not just previewed records'),
-                Icon: Download,
-                primary: true,
-              },
-              {
-                key: 'excel',
-                onClick: exportToExcel,
-                label: t('reports.exportToExcel', 'Export to Excel'),
-                title: t('reports.excelExportHint', 'Export all data types with summary, charts, and detailed sheets'),
-                Icon: FileText,
-                primary: false,
-              },
-              {
-                key: 'pdf',
-                onClick: exportToPDF,
-                label: t('reports.exportToPDF', 'Export to PDF'),
-                title: t('reports.pdfExportHint', 'Export PDF with visual charts, summary, and detailed tables for all data types'),
-                Icon: FileText,
-                primary: false,
-              },
-            ].map((action) => {
-              const ActionIcon = action.Icon;
-              return (
-                /* Kept as SpecularButtons — the sheen is what marks the three
-                   actions that leave the app. Re-skinned, not stripped. */
-                <SpecularButton
-                  key={action.key}
+              {previewRows.length < sortedRows.length && (
+                <button
                   type="button"
-                  onClick={action.onClick}
-                  disabled={exporting}
-                  shineOnHover
-                  title={action.title}
-                  className={cn('w-full rounded-none border px-3 py-1.5')}
+                  onClick={() => setVisibleRows((rows) => rows + PREVIEW_PAGE)}
+                  className="inline-flex items-center"
                   style={{
-                    borderRadius: 0,
-                    background: action.primary ? ind.accent : 'transparent',
-                    color: action.primary ? ind.accentInk : ind.ink,
-                    borderColor: action.primary ? ind.accent : ind.hairline,
-                    opacity: exporting ? 0.5 : 1,
-                    cursor: exporting ? 'not-allowed' : 'pointer',
+                    ...figureStyle, fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase',
+                    color: ind.accent, background: 'none', border: 'none', padding: 0, cursor: 'pointer', gap: 5,
                   }}
                 >
-                  {exporting
-                    ? <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />
-                    : <ActionIcon size={13} strokeWidth={1.5} style={{ opacity: 0.8 }} />}
-                  <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.04em', textTransform: 'uppercase' }}>
-                    {action.label}
-                  </span>
-                </SpecularButton>
-              );
-            })}
-          </div>
-
-          {selectedEmployee !== 'all' && (
-            <div style={{ padding: '0 20px 18px' }}>
-              <p style={{ ...columnNote, margin: 0 }}>
-                {t('reports.exportingIncludes', 'Exporting will include this employee\'s detailed performance report')}
-              </p>
+                  {`${t('reports.load', 'Load')} ${PREVIEW_PAGE}`}
+                  <ArrowRight size={11} strokeWidth={2} />
+                </button>
+              )}
             </div>
-          )}
-        </aside>
+          </div>
+        </div>
       </div>
+
+      {/* ── EXPORT DOCK — the only place on the sheet that writes a file ─ */}
+      <div
+        style={{
+          position: 'sticky', bottom: 0, zIndex: 10,
+          borderTop: `1px solid ${ind.hairline}`, background: ind.chrome,
+          padding: '12px 26px', display: 'flex', flexWrap: 'wrap',
+          alignItems: 'center', justifyContent: 'space-between', gap: 14,
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <Kicker ind={ind}>{t('reports.writes', 'Writes')}</Kicker>
+          <div
+            style={{
+              ...figureStyle, fontSize: 15, letterSpacing: '.02em', color: ind.ink,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2,
+            }}
+          >
+            {buildExportFilename(exportFormat)}
+          </div>
+          <p style={{ ...noteStyle, marginTop: 3 }}>
+            {[
+              `${totals.rows.toLocaleString()} ${t('reports.rows', 'rows')}`,
+              `${scopeCount} ${t('reports.recordTypes', 'record types')}`,
+              exportFormat === 'csv' && totals.rows > 0
+                ? `${t('reports.estimated', 'est.')} ${formatBytes(estimatedCsvBytes)}`
+                : null,
+            ].filter(Boolean).join(' · ')}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center" style={{ gap: 10 }}>
+          <Seg
+            ind={ind}
+            ariaLabel={t('reports.format', 'Format')}
+            value={exportFormat}
+            onChange={setExportFormat}
+            options={exportFormats}
+          />
+          {/* Kept as a SpecularButton — the sheen is what marks the one action
+              on the sheet that leaves the app. Re-skinned, not stripped. */}
+          <SpecularButton
+            type="button"
+            onClick={runExport}
+            disabled={exporting || totals.rows === 0}
+            shineOnHover
+            title={t('reports.exportingIncludes', 'Exporting will include all filtered data, not just previewed records')}
+            className={cn('rounded-none border px-4 py-2')}
+            style={{
+              borderRadius: 0,
+              background: ind.accent,
+              color: ind.accentInk,
+              borderColor: ind.accent,
+              opacity: exporting || totals.rows === 0 ? 0.5 : 1,
+              cursor: exporting || totals.rows === 0 ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {exporting
+              ? <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />
+              : <Download size={13} strokeWidth={1.5} style={{ opacity: 0.85 }} />}
+            <span style={{ ...figureStyle, fontSize: 12.5, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+              {`${t('reports.export', 'Export')} ${totals.rows.toLocaleString()} ${t('reports.records', 'records')}`}
+            </span>
+          </SpecularButton>
+        </div>
+      </div>
+
+      {/* ── People with nothing in range ─────────────────────────────── */}
+      {peopleListOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('reports.peopleWithoutRecords', 'People without records in range')}
+          onClick={() => setPeopleListOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,.45)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
+          }}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              background: ind.ground, border: `1px solid ${ind.hairline}`,
+              width: 'min(460px, 100%)', maxHeight: '70vh', overflowY: 'auto', padding: '18px 20px',
+            }}
+          >
+            <div className="flex items-start justify-between" style={{ gap: 12, marginBottom: 12 }}>
+              <div>
+                <ColumnHeading ind={ind}>{t('reports.peopleWithoutRecords', 'People without records in range')}</ColumnHeading>
+                <p style={{ ...noteStyle, marginTop: 4 }}>{rangeLabel}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPeopleListOpen(false)}
+                aria-label={t('common.close', 'Close')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0, flex: 'none' }}
+              >
+                <X size={16} strokeWidth={1.5} />
+              </button>
+            </div>
+
+            {peopleWithNoRecords.map((employee) => (
+              <div
+                key={employee.id}
+                className="flex items-baseline justify-between"
+                style={{ gap: 12, padding: '9px 0', borderTop: `1px solid ${ind.rule}` }}
+              >
+                <span style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, minWidth: 0 }}>
+                  {getDemoEmployeeName(employee, t)}
+                </span>
+                <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint, flex: 'none' }}>
+                  {translateDepartment(employee.department)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -103,6 +103,15 @@ export default {
     user: 'HR팀',
     logout: '로그아웃'
   },
+  // Session lifecycle: the idle countdown shown before an automatic sign-out.
+  session: {
+    idleWarningTitle: '아직 계신가요?',
+    idleWarningBody: '한동안 활동이 없었습니다. 보안을 위해 자동으로 로그아웃됩니다.',
+    idleWarningCountdown: '로그아웃까지',
+    idleWarningSeconds: '초',
+    staySignedIn: '로그인 유지',
+    signOutNow: '지금 로그아웃',
+  },
   // Login
   login: {
     idleLogoutMessage: '일정 시간 동안 비활성 상태가 되어 로그아웃되었습니다. 다시 로그인해주세요.',

@@ -103,6 +103,15 @@ export default {
     user: 'ทีม,',
     logout: 'ออกจากระบบ'
   },
+  // Session lifecycle: the idle countdown shown before an automatic sign-out.
+  session: {
+    idleWarningTitle: 'ยังอยู่ไหม?',
+    idleWarningBody: 'คุณไม่ได้ใช้งานมาสักพักแล้ว เพื่อความปลอดภัย ระบบจะออกจากระบบให้อัตโนมัติ',
+    idleWarningCountdown: 'ออกจากระบบใน',
+    idleWarningSeconds: 'วินาที',
+    staySignedIn: 'อยู่ต่อ',
+    signOutNow: 'ออกจากระบบเลย',
+  },
   // Login
   login: {
     idleLogoutMessage: 'คุณถูกออกจากระบบหลังจากช่วงเวลาที่ไม่ได้ใช้งาน กรุณาเข้าสู่ระบบใหม่',

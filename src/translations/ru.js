@@ -103,6 +103,15 @@ export default {
     user: 'HR команда',
     logout: 'Выход'
   },
+  // Session lifecycle: the idle countdown shown before an automatic sign-out.
+  session: {
+    idleWarningTitle: 'Вы ещё здесь?',
+    idleWarningBody: 'Вы некоторое время неактивны. В целях безопасности сеанс будет завершён автоматически.',
+    idleWarningCountdown: 'Выход через',
+    idleWarningSeconds: 'сек.',
+    staySignedIn: 'Остаться в системе',
+    signOutNow: 'Выйти сейчас',
+  },
   // Login
   login: {
     idleLogoutMessage: 'Вы были выведены из системы после периода бездействия. Пожалуйста, войдите снова.',

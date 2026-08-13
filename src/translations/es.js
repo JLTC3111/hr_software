@@ -102,6 +102,15 @@ export default {
     user: 'Equipo de RH',
     logout: 'Cerrar sesión'
   },
+  // Session lifecycle: the idle countdown shown before an automatic sign-out.
+  session: {
+    idleWarningTitle: '¿Sigues ahí?',
+    idleWarningBody: 'Has estado inactivo un tiempo. Por seguridad, cerraremos tu sesión automáticamente.',
+    idleWarningCountdown: 'Cerrando sesión en',
+    idleWarningSeconds: 'segundos',
+    staySignedIn: 'Seguir conectado',
+    signOutNow: 'Cerrar sesión ahora',
+  },
   // Login
   login: {
     idleLogoutMessage: 'Se cerró la sesión después de un período de inactividad. Por favor, inicie sesión nuevamente.',

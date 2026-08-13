@@ -5,34 +5,34 @@ export const formatHours = (value, decimals = 1) => {
   return (Math.round(num * factor) / factor).toFixed(decimals);
 };
 
-export const filterExportSnapshotByTab = (activeTab, snapshot = {}) => {
-  const empty = {
-    timeEntries: [],
-    tasks: [],
-    goals: [],
-    leave: [],
-    employees: snapshot.employees || [],
-  };
+/**
+ * The export carries exactly the record types the scope panel has ticked, so an
+ * unticked type is emptied rather than filtered — the file then contains no
+ * section for it at all.
+ */
+export const filterExportSnapshotByScope = (scope = {}, snapshot = {}) => ({
+  timeEntries: scope.timeEntries ? (snapshot.timeEntries || []) : [],
+  tasks: scope.tasks ? (snapshot.tasks || []) : [],
+  goals: scope.goals ? (snapshot.goals || []) : [],
+  leave: scope.leave ? (snapshot.leave || []) : [],
+  employees: snapshot.employees || [],
+});
 
-  switch (activeTab) {
-    case 'time-entries':
-      return { ...empty, timeEntries: snapshot.timeEntries || [] };
-    case 'tasks':
-      return { ...empty, tasks: snapshot.tasks || [] };
-    case 'goals':
-      return { ...empty, goals: snapshot.goals || [] };
-    case 'leave':
-      return { ...empty, leave: snapshot.leave || [] };
-    case 'all':
-    default:
-      return {
-        timeEntries: snapshot.timeEntries || [],
-        tasks: snapshot.tasks || [],
-        goals: snapshot.goals || [],
-        leave: snapshot.leave || [],
-        employees: snapshot.employees || [],
-      };
+/** Mon–Fri days in an inclusive YYYY-MM-DD range. */
+export const countWorkingDays = (startDate, endDate) => {
+  if (!startDate || !endDate) return 0;
+  const start = new Date(`${String(startDate).slice(0, 10)}T00:00:00`);
+  const end = new Date(`${String(endDate).slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return 0;
+
+  let count = 0;
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    const day = cursor.getDay();
+    if (day !== 0 && day !== 6) count += 1;
+    cursor.setDate(cursor.getDate() + 1);
   }
+  return count;
 };
 
 export const aggregateCounts = (items, field) => {
