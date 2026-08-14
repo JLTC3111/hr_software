@@ -5,6 +5,7 @@ import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { getIndustry, DISPLAY, BODY } from '../theme/industry.js';
 import { Blueprint, Btn, Kicker } from './ui/industry.jsx';
+import { isChunkLoadError, recoverStaleChunk } from '../utils/lazyWithRetry.js';
 
 /**
  * Error boundary for the routed page only.
@@ -68,7 +69,13 @@ class RouteErrorBoundaryInner extends React.Component {
             <Btn
               ind={ind}
               variant="primary"
-              onClick={() => globalThis.location.reload()}
+              onClick={() => {
+                if (isChunkLoadError(error)) {
+                  recoverStaleChunk(error, { force: true });
+                  return;
+                }
+                globalThis.location.reload();
+              }}
               style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
               <RefreshCw size={13} strokeWidth={1.5} />

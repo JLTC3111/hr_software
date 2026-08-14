@@ -11,8 +11,9 @@ import { lazy } from 'react';
  *      and Vercel only serves the current deployment's files, so the URLs this
  *      tab is holding no longer exist — they 404. index.html is served
  *      no-cache, so a reload fixes it permanently; nothing else does.
- *   2. The machine slept, or the network moved, and the fetch failed while
- *      connectivity was still coming back.
+ *   2. A request for a hashed file 404'd once (deploy race, blip). Browsers
+ *      cache that miss. A private window then works because it has no cache,
+ *      while this profile keeps failing until the miss is replaced.
  *
  * Either way the import rejects, and React.lazy *caches the rejection*: the
  * component throws on that render and on every render after it, so the route is
@@ -20,10 +21,10 @@ import { lazy } from 'react';
  * root, that error unmounted the entire application — the "logged in fine, then
  * the app crashed as soon as I opened another page" report.
  *
- * So: retry the import a couple of times for case 2, and for case 1 reload the
- * page once, since a reload is the only thing that can fix a stale chunk URL.
- * The reload is guarded by a timestamp in sessionStorage so a genuinely broken
- * build cannot put the tab in a loop.
+ * So: retry the import a couple of times for transient misses, revalidate the
+ * failed URL so a cached 404 can become a 200, then reload once. The reload is
+ * guarded by a timestamp in sessionStorage so a genuinely broken build cannot
+ * put the tab in a loop.
  */
 
 const RELOAD_STAMP_KEY = 'hr_app_chunk_reload_at';
@@ -49,6 +50,42 @@ export const isChunkLoadError = (error) => {
   );
 };
 
+/** Same-origin JS/CSS URL named in a chunk-load error, if any. */
+export const chunkAssetUrlFromError = (error, origin = globalThis.location?.origin) => {
+  const message = `${error?.message || error || ''}`;
+  const match = message.match(/https?:\/\/[^\s)'"]+/i);
+  if (!match || !origin) return null;
+
+  try {
+    const url = new URL(match[0].replace(/[.,;]+$/, ''));
+    if (url.origin !== origin) return null;
+    if (!/\.(?:m?js|css)$/i.test(url.pathname)) return null;
+    return url.href;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Replace a cached miss for the failed file. `location.reload()` will not do
+ * this on its own when the miss was stored as immutable.
+ */
+export const revalidateChunkCache = async (
+  error,
+  fetcher = globalThis.fetch,
+  origin = globalThis.location?.origin,
+) => {
+  const url = chunkAssetUrlFromError(error, origin);
+  if (!url || typeof fetcher !== 'function') return false;
+
+  try {
+    await fetcher(url, { cache: 'reload', credentials: 'same-origin', mode: 'cors' });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 /** One reload per cooldown window, across every route. */
 const tryReloadOnce = () => {
   if (typeof window === 'undefined') return false;
@@ -64,6 +101,21 @@ const tryReloadOnce = () => {
   }
   globalThis.location.reload();
   return true;
+};
+
+/** Revalidate a cached miss, then reload. `force` skips the cooldown (Reload button). */
+export const recoverStaleChunk = async (error, { force = false } = {}) => {
+  await revalidateChunkCache(error);
+  if (force) {
+    try {
+      sessionStorage.setItem(RELOAD_STAMP_KEY, String(Date.now()));
+    } catch {
+      // ignore
+    }
+    globalThis.location.reload();
+    return true;
+  }
+  return tryReloadOnce();
 };
 
 /**
@@ -92,7 +144,7 @@ export const lazyWithRetry = (factory, { retries = 2, retryDelayMs = 400 } = {})
 
     console.error('Route chunk failed to load; reloading to pick up the current build', lastError);
 
-    if (tryReloadOnce()) {
+    if (await recoverStaleChunk(lastError)) {
       // The reload is already in flight. Never settling keeps the route in its
       // Suspense fallback instead of flashing an error the user cannot act on.
       return new Promise(() => {});
