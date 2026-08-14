@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Eye, Car, EyeOff, Lock, Mail, Building2, AlertCircle, X, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -13,9 +13,10 @@ import { TextEffect, TextShimmer, Spotlight } from './motion-primitives';
 import { ShimmerButton } from './ui/shimmer-button';
 import { ShinyButton } from './ui/shiny-button';
 import { cn } from '@/lib/utils';
-import { LOGIN_LASER_THEME } from './LoginLaserBackground';
+import OptionalLazy from './OptionalLazy.jsx';
+import { LOGIN_LASER_THEME } from './loginLaserTheme.js';
 
-const LoginLaserBackground = lazy(() => import('./LoginLaserBackground'));
+const loadLoginLaserBackground = () => import('./LoginLaserBackground');
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
@@ -273,13 +274,13 @@ const Login = () => {
         : 'flex items-center justify-center'
     )}>
       {showLaserFlow ? (
-        <Suspense fallback={null}>
-          <LoginLaserBackground
-            {...laserTheme}
-            language={currentLanguage}
-            interactionMode={interactionMode}
-          />
-        </Suspense>
+        <OptionalLazy
+          load={loadLoginLaserBackground}
+          label="Login background"
+          {...laserTheme}
+          language={currentLanguage}
+          interactionMode={interactionMode}
+        />
       ) : (
         <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
           <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full opacity-10 ${isDarkMode ? 'bg-white' : 'bg-blue-300'} blur-3xl`}></div>

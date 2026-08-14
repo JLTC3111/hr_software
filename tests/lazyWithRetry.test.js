@@ -84,3 +84,28 @@ test('foreign URLs in an error message are not fetched', async () => {
   );
   assert.equal(fetched, false);
 });
+
+test('a missing chunk is not reported as recovered', async () => {
+  assert.equal(
+    await revalidateChunkCache(
+      new TypeError(`Failed to fetch dynamically imported module: ${CHUNK}`),
+      async () => ({ ok: false }),
+      ORIGIN
+    ),
+    false
+  );
+});
+
+test('an HTML SPA fallback is not reported as a recovered JS chunk', async () => {
+  assert.equal(
+    await revalidateChunkCache(
+      new TypeError(`Failed to fetch dynamically imported module: ${CHUNK}`),
+      async () => ({
+        ok: true,
+        headers: { get: () => 'text/html; charset=utf-8' },
+      }),
+      ORIGIN
+    ),
+    false
+  );
+});

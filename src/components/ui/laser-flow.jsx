@@ -1,7 +1,8 @@
-import { lazy, Suspense, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import OptionalLazy from '../OptionalLazy.jsx';
 
-const DotField = lazy(() => import('./dot-field'));
+const loadDotField = () => import('./dot-field');
 
 const VERT = `
 precision highp float;
@@ -669,9 +670,7 @@ export const LaserFlow = ({
             backgroundColor: surfaceBackground,
           }}
         >
-          <Suspense fallback={null}>
-            <DotField {...dotField} />
-          </Suspense>
+          <OptionalLazy load={loadDotField} label="Login dot field" {...dotField} />
         </div>
       )}
     </div>

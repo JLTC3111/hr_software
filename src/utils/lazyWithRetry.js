@@ -79,7 +79,25 @@ export const revalidateChunkCache = async (
   if (!url || typeof fetcher !== 'function') return false;
 
   try {
-    await fetcher(url, { cache: 'reload', credentials: 'same-origin', mode: 'cors' });
+    const response = await fetcher(url, {
+      cache: 'reload',
+      credentials: 'same-origin',
+      mode: 'cors',
+    });
+    if (response?.ok === false) return false;
+
+    // A SPA fallback can answer a missing .js URL with index.html and status
+    // 200. Treating that as a repair only repeats the same failed import.
+    const contentType = response?.headers?.get?.('content-type')?.toLowerCase();
+    if (contentType) {
+      if (/\.m?js$/i.test(url) && !/javascript|ecmascript/.test(contentType)) {
+        return false;
+      }
+      if (/\.css$/i.test(url) && !contentType.includes('text/css')) {
+        return false;
+      }
+    }
+
     return true;
   } catch {
     return false;

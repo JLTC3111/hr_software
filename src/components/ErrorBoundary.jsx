@@ -95,9 +95,9 @@ class ErrorBoundaryInner extends React.Component {
                 <button
                   type="button"
                   onClick={this.handleReload}
-                  className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
+                  className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-small transition-colors duration-200"
                 >
-                  <RefreshCw className="w-5 h-5 animate-spin" />
+                  <RefreshCw className="w-5 h-5" />
                   <span>{t('errorBoundary.reloadApplication', 'Reload Application')}</span>
                 </button>
 
@@ -108,7 +108,7 @@ class ErrorBoundaryInner extends React.Component {
                       this.handleReset();
                       this.props.onReset();
                     }}
-                    className="w-full px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors duration-200"
+                    className="w-full px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-small transition-colors duration-200"
                   >
                     {t('common.tryAgain', 'Try Again')}
                   </button>

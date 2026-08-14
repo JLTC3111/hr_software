@@ -250,17 +250,6 @@ const HRManagementApp = () => {
   );
 };
 
-/**
- * Send an unauthenticated visitor to the login screen, remembering where they
- * were.
- *
- * The bare <Navigate to="/login" replace> this replaces was silently
- * destructive. Auth resolves asynchronously, so this branch is reached not only
- * by people who are genuinely signed out but by anyone whose session is still
- * being restored — and `replace` overwrote the URL they had asked for. By the
- * time the profile landed there was nothing left to return to, so they were
- * dropped on the dashboard no matter which screen they had reloaded from.
- */
 const RedirectToLogin = () => {
   const location = useLocation();
   const from = `${location.pathname}${location.search}`;
@@ -273,16 +262,6 @@ const RedirectToLogin = () => {
   );
 };
 
-/**
- * The /login route.
- *
- * A component rather than an inline ternary because it has to read the location
- * state that RedirectToLogin left behind. It also has to *win* the race against
- * the login screen's own redirect effect: when `isAuthenticated` flips, this
- * element is re-evaluated in the same render that would unmount <Login />, so
- * Login's effect never gets to run. Whichever of the two fires, both now aim at
- * the same place.
- */
 const LoginRoute = ({ isAuthenticated }) => {
   const location = useLocation();
   if (!isAuthenticated) return <Login />;
@@ -300,19 +279,6 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
       logVisit();
     }
   }, [isAuthenticated]);
-
-  /*
-   * Wait for the auth bootstrap before routing.
-   *
-   * `isAuthenticated` is false while GoTrue is still restoring and verifying a
-   * persisted session, so routing on it alone sent every returning user to
-   * /login on a hard refresh and then bounced them back once the profile
-   * landed. "Not authenticated yet" and "not authenticated" are different
-   * answers and only one of them is a reason to show the login form.
-   *
-   * AuthProvider guarantees this resolves — every bootstrap path settles it,
-   * and a watchdog covers a client that never emits INITIAL_SESSION.
-   */
   if (authLoading) {
     return (
       <div className={`min-h-screen ${bg.primary} flex items-center justify-center`}>
