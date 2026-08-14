@@ -68,3 +68,27 @@ test('Policy Controls passes the translator to its toggle formatter', () => {
   assert.match(policyControls, /language=\{currentLanguage\}/);
   assert.doesNotMatch(policyControls, /fmtOnOff\(on,\s*t\)/);
 });
+
+test('segmented controls wrap instead of overflowing their panel', () => {
+  const industry = source('src/components/ui/industry.jsx');
+  assert.match(industry, /flexWrap:\s*['"]wrap['"]/);
+  assert.match(industry, /maxWidth:\s*['"]100%['"]/);
+});
+
+test('Reports period labels do not include romanization glosses', async () => {
+  for (const locale of ['ru', 'jp', 'kr']) {
+    const [{ default: additions }, { default: nested }] = await Promise.all([
+      import(`../src/translations/additions/${locale}.js`),
+      import(`../src/translations/${locale}.js`),
+    ]);
+    for (const value of [
+      additions['reports.lastMonth'],
+      nested.reports.lastMonth,
+      nested.reports.lastWeek,
+      nested.reports.lastQuarter,
+      nested.reports.lastYear,
+    ]) {
+      assert.doesNotMatch(value, /\([A-Za-z]/, `${locale} still has a romanization gloss: ${value}`);
+    }
+  }
+});

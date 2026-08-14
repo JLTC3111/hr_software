@@ -177,9 +177,19 @@ export function Seg({ ind, options, value, onChange, ariaLabel }) {
     <div
       role="group"
       aria-label={ariaLabel}
-      style={{ display: 'flex', border: `1px solid ${ind.hairline}`, borderRadius: 0, flex: 'none' }}
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        maxWidth: '100%',
+        minWidth: 0,
+        border: `1px solid ${ind.hairline}`,
+        borderRadius: 0,
+        flex: 'none',
+        boxSizing: 'border-box',
+        overflow: 'hidden',
+      }}
     >
-      {options.map((opt, i) => {
+      {options.map((opt) => {
         const active = opt.value === value;
         return (
           <button
@@ -197,8 +207,12 @@ export function Seg({ ind, options, value, onChange, ariaLabel }) {
               borderRadius: 0,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
+              flex: '1 1 auto',
+              minWidth: 0,
               border: 'none',
-              borderLeft: i === 0 ? 'none' : `1px solid ${ind.hairline}`,
+              borderRight: `1px solid ${ind.hairline}`,
+              borderBottom: `1px solid ${ind.hairline}`,
+              margin: '0 -1px -1px 0',
               background: active ? ind.accent : 'transparent',
               color: active ? ind.accentInk : ind.inkMuted,
               transition: 'background .15s ease, color .15s ease',
