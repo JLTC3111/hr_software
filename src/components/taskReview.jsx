@@ -393,7 +393,7 @@ const TaskReview = ({ employees, allEmployees }) => {
     } catch (error) {
       console.error('Error loading performance reviews:', error);
       if (handleSessionAuthError(error, { silent })) return;
-      setFetchError(error.message);
+      setFetchError(t('errors.loadFailed', 'Failed to load data'));
     } finally {
       if (!silent) setLoading(false);
     }
@@ -707,11 +707,11 @@ const TaskReview = ({ employees, allEmployees }) => {
     } catch (error) {
       console.error('Error updating review:', error);
       if (handleSessionAuthError(error)) return;
-      setNotice({ kind: 'error', text: error.message });
+      setNotice({ kind: 'error', text: t('errors.updateFailed', 'Failed to update status') });
     } finally {
       setBusyId(null);
     }
-  }, [handleSessionAuthError]);
+  }, [handleSessionAuthError, t]);
 
   const signOff = useCallback((row) => applyReviewUpdate(
     row,
@@ -764,7 +764,7 @@ const TaskReview = ({ employees, allEmployees }) => {
     } catch (error) {
       console.error('Error sending reminders:', error);
       if (handleSessionAuthError(error)) return;
-      setNotice({ kind: 'error', text: error.message });
+      setNotice({ kind: 'error', text: t('common.error', 'Error') });
     } finally {
       setBusyId(null);
     }
@@ -1413,7 +1413,7 @@ function ReviewModal({
               <p style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, marginTop: 5, lineHeight: 1.5 }}>
                 {isDemoMode()
                   ? text
-                  : <TranslatedText text={text} record={{ entityType: 'performance_review', entityId: review.id, field: key }} />}
+                  : <TranslatedText text={text} record={{ entityType: 'review', entityId: review.id, field: key }} />}
               </p>
             </div>
           ))}

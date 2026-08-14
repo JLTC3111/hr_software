@@ -184,7 +184,8 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
         }
         alert(t('employees.updateSuccess', 'Employee details have been successfully updated!'));
       } else {
-        alert(t('employees.updateError', 'Failed to update employee: ') + result.error);
+        console.error('Failed to update employee:', result.error);
+        alert(t('employees.updateError', 'Failed to update employee'));
       }
     } catch (error) {
       console.error('Error updating employee:', error);
@@ -324,7 +325,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                     >
                       <option value="Active">{t('employeeStatus.active', 'Active')}</option>
                       <option value="Inactive">{t('employeeStatus.inactive', 'Inactive')}</option>
-                      <option value="On Leave">{t('employeeStatus.onleave', 'On Leave')}</option>
+                      <option value="On Leave">{t('employeeStatus.onLeave', 'On Leave')}</option>
                     </select>
                   </div>
                 ) : (
@@ -400,7 +401,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                         value={formData.address}
                         onChange={handleChange}
                         className={`w-full px-3 py-2 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
-                        placeholder="City, Country"
+                        placeholder={t('addEmployee.addressPlaceholder', 'City, Country')}
                       />
                     ) : (
                       <span className={textPrimary}>{currentEmployee.address || currentEmployee.location || 'N/A'}</span>

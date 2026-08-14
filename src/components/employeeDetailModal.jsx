@@ -70,7 +70,8 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
           setPdfError(null);
         } else {
           console.error('❌ Failed to get PDF URL:', result.error);
-          setPdfError(result.error);
+          console.error('Failed to load PDF:', result.error);
+          setPdfError(t('errors.fileOpenFailed', 'Failed to open document'));
         }
       } catch (error) {
         console.error('❌ Error generating PDF URL:', error);
@@ -98,10 +99,12 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
       if (result.success) {
         setRequestDocs(result.data || []);
       } else {
-        setRequestDocsError(result.error || 'Failed to load documents');
+        console.error('Failed to load request documents:', result.error);
+        setRequestDocsError(t('errors.loadFailed', 'Failed to load data'));
       }
     } catch (err) {
-      setRequestDocsError(err?.message || 'Failed to load documents');
+      console.error('Failed to load request documents:', err);
+      setRequestDocsError(t('errors.loadFailed', 'Failed to load data'));
     } finally {
       setRequestDocsLoading(false);
     }
@@ -207,7 +210,8 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
         alert(t('success.pdfUploaded', 'PDF document uploaded successfully!'));
       } else {
         console.error('❌ Upload failed:', result.error);
-        alert(t('errors.uploadFailed', 'Failed to upload PDF: ') + result.error);
+        console.error('Failed to upload PDF:', result.error);
+        alert(t('errors.uploadFailed', 'Failed to upload PDF'));
       }
     });
 
@@ -237,8 +241,9 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
       await loadRequestDocs();
       alert(t('employeeDetailModal.requestDocUploaded', 'Document uploaded successfully!'));
     } catch (err) {
-      setRequestDocUpload({ status: 'error', progress: 0, error: err?.message || 'Upload failed' });
-      alert(t('errors.uploadFailed', 'Failed to upload: ') + (err?.message || 'Unknown error'));
+      console.error('Request document upload failed:', err);
+      setRequestDocUpload({ status: 'error', progress: 0, error: t('errors.uploadFailed', 'Failed to upload file') });
+      alert(t('errors.uploadFailed', 'Failed to upload file'));
     } finally {
       e.target.value = '';
       setTimeout(() => {
@@ -260,7 +265,8 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
       if (!result.success) throw new Error(result.error || 'Failed to open document');
       globalThis.open(result.url, '_blank');
     } catch (err) {
-      alert(t('errors.fileOpenFailed', 'Failed to open document: ') + (err?.message || 'Unknown error'));
+      console.error('Failed to open request document:', err);
+      alert(t('errors.fileOpenFailed', 'Failed to open document'));
     }
   };
 
@@ -282,7 +288,8 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
 
       setRequestDocPreview({ status: 'ready', doc, url: result.url, error: null });
     } catch (err) {
-      setRequestDocPreview({ status: 'error', doc, url: null, error: err?.message || 'Failed to preview' });
+      console.error('Failed to preview request document:', err);
+      setRequestDocPreview({ status: 'error', doc, url: null, error: t('errors.fileOpenFailed', 'Failed to open document') });
     }
   };
 
@@ -313,7 +320,8 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
       await loadRequestDocs();
       alert(t('employeeDetailModal.documentDeleted', 'Document deleted successfully'));
     } catch (err) {
-      alert(t('employeeDetailModal.documentDeleteError', 'Failed to delete document') + ': ' + (err?.message || ''));
+      console.error('Failed to delete request document:', err);
+      alert(t('employeeDetailModal.documentDeleteError', 'Failed to delete document'));
     }
   };
 
@@ -382,12 +390,13 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
         alert(t('success.pdfDeleted', 'PDF document deleted successfully!'));
       } else {
         console.error('❌ Delete failed:', result.error);
-        alert(t('errors.deleteFailed', 'Failed to delete PDF: ') + result.error);
+        console.error('Failed to delete PDF:', result.error);
+        alert(t('errors.deleteFailed', 'Failed to delete PDF'));
       }
     } catch (error) {
       console.error('❌ Error deleting PDF:', error);
       if (handleSessionAuthError(error)) return;
-      alert(t('errors.deleteFailed', 'Failed to delete PDF: ') + error.message);
+      alert(t('errors.deleteFailed', 'Failed to delete PDF'));
     }
   };
 
@@ -898,12 +907,12 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                             type="application/pdf"
                             className="border-0 rounded block mx-auto shrink-0"
                             style={{ width: pdfViewWidth, height: 600 }}
-                            title="PDF Viewer"
+                            title={t('employeeDetailModal.pdfViewerTitle', 'PDF Viewer')}
                             onLoad={() => console.log('✅ Iframe loaded successfully')}
                             onError={(e) => {
                               console.error('❌ Iframe error:', e);
                               console.error('PDF URL:', pdfUrl);
-                              setPdfError('Failed to load PDF in iframe. Check console for details.');
+                              setPdfError(t('errors.fileOpenFailed', 'Failed to open document'));
                             }}
                           />
                         ) : (
@@ -935,7 +944,9 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                                     style={{ width: pdfViewWidth, height: 600 }}
                                   >
                                     <Loader className="w-8 h-8 animate-spin text-blue-600" />
-                                    <p className={`mt-4 ${text.secondary}`}>Loading PDF...</p>
+                                    <p className={`mt-4 ${text.secondary}`}>
+                                      {t('employeeDetailModal.loadingPdf', 'Loading PDF...')}
+                                    </p>
                                   </div>
                                 }
                               >
@@ -963,7 +974,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                             ←
                           </button>
                           <span className={text.primary}>
-                            Page {pageNumber} of {numPages}
+                            {t('reports.page', 'Page')} {pageNumber} {t('reports.of', 'of')} {numPages}
                           </span>
                           <button
                             type ="button"
@@ -980,10 +991,10 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                     <div className="flex flex-col items-center justify-center h-64 text-gray-400">
                       <FileText className={`w-16 h-16 mb-4 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
                       <p className={`text-center ${text.secondary} font-semibold`}>
-                        {t('employees.noPdfDocument', 'Chưa có tài liệu')}
+                        {t('employees.noPdfDocument', 'No document yet')}
                       </p>
                       <p className={`text-sm text-center ${text.secondary} mt-2`}>
-                        {t('employees.uploadPdfPrompt', 'Tải lên tài liệu PDF để hiển thị ở đây')}
+                        {t('employees.uploadPdfPrompt', 'Upload a PDF document to display it here')}
                       </p>
                     </div>
                   )}

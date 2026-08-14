@@ -98,7 +98,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           // fact, punching in live on-site, and the leave calendar — under one
           // branch instead of three loose top-level rows.
           path: '/time-clock',
-          name: t('nav.attendanceHub', 'Trung Tâm'),
+          name: t('nav.attendanceHub', 'Attendance'),
           icon: AlarmClock,
           subItems: [
             { path: '/time-clock', name: t('nav.timeClock') },

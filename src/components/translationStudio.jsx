@@ -572,7 +572,8 @@ const TranslationStudio = () => {
       await reinstallActiveIndex();
       flash('ok', t('translationStudio.saved', 'Saved'));
     } else {
-      flash('error', result.error || t('translationStudio.saveError', 'Could not save'));
+      console.error('Translation save failed:', result.error);
+      flash('error', t('translationStudio.saveError', 'Could not save'));
     }
 
     setBusy(false);
@@ -606,7 +607,8 @@ const TranslationStudio = () => {
       await reinstallActiveIndex();
       flash('ok', t('translationStudio.removed', 'Removed'));
     } else {
-      flash('error', result.error || t('translationStudio.saveError', 'Could not save'));
+      console.error('Translation delete failed:', result.error);
+      flash('error', t('translationStudio.saveError', 'Could not save'));
     }
 
     setBusy(false);

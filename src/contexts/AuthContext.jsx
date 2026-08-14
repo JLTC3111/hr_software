@@ -16,6 +16,7 @@ import {
   resetActivity,
 } from '../utils/activityTracker.js';
 import { withTimeout } from '../utils/supabaseTimeout.js';
+import { isRepeatedSessionSignIn } from '../utils/authEvents.js';
 import { useSessionKeepAlive } from '../hooks/useSessionKeepAlive.js';
 import { useIdleLogout } from '../hooks/useIdleLogout.js';
 import IdleWarningModal from '../components/idleWarningModal.jsx';
@@ -85,6 +86,13 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
+  // The auth listener is mounted once, so React state in its closure is stale.
+  // Keep the current token in a ref to identify Supabase's tab-focus replay.
+  const activeAccessToken = useRef(null);
+  const setActiveSession = useCallback((nextSession) => {
+    activeAccessToken.current = nextSession?.access_token ?? null;
+    setSession(nextSession);
+  }, []);
   const isRefreshing = useRef(false);
   const lastVisibilityCheck = useRef(Date.now());
   // Timestamp of the most recent successful sign-in, plus a flag for sign-outs
@@ -106,11 +114,11 @@ export const AuthProvider = ({ children }) => {
   const initialSessionSeen = useRef(false);
   const replayedSession = useRef(null);
 
-  const clearAuthState = async () => {
+  const clearAuthState = useCallback(async () => {
     console.log('🧹 Clearing auth state and setting loading = false');
     setUser(null);
     setIsAuthenticated(false);
-    setSession(null);
+    setActiveSession(null);
     setLoading(false);
     resetSessionVerification();
 
@@ -125,7 +133,7 @@ export const AuthProvider = ({ children }) => {
     // leaving GoTrue half-signed-out with the token still persisted. Wiping
     // storage unconditionally is what makes the next load start clean.
     clearAuthStorage();
-  };
+  }, [setActiveSession]);
 
   /**
    * Two bootstrap paths can ask for the same profile at once — an OAuth or
@@ -276,7 +284,7 @@ export const AuthProvider = ({ children }) => {
       if (!mounted) return;
       setUser(null);
       setIsAuthenticated(false);
-      setSession(null);
+      setActiveSession(null);
     };
 
     const restoreSession = async (initialSession) => {
@@ -392,7 +400,7 @@ export const AuthProvider = ({ children }) => {
 
       disableDemoMode();
       console.log('✅ Restored session accepted, loading profile...');
-      setSession(initialSession);
+      setActiveSession(initialSession);
       try {
         await withTimeout(fetchProfileOnce(profileUserId), AUTH_PROFILE_TIMEOUT_MS);
       } catch (profileError) {
@@ -435,25 +443,28 @@ export const AuthProvider = ({ children }) => {
         /*
          * Not necessarily a sign-in.
          *
-         * GoTrue's `_recoverAndRefresh()` ends every startup with a valid stored
-         * token by emitting SIGNED_IN (auth-js GoTrueClient.js:1933) — it is
-         * replaying persisted state, not reporting a new authentication. Because
-         * `_notifyAllSubscribers` awaits each callback, handling it here ran the
-         * whole profile chain to completion *before* `initializePromise`
-         * resolved, and then INITIAL_SESSION arrived and ran it all over again
-         * with a getUser() round-trip in front. Two profile loads and an extra
-         * round-trip on every single refresh: the 5-7 second spinner.
+         * GoTrue's `_recoverAndRefresh()` emits SIGNED_IN for a valid stored
+         * token both at startup and whenever a hidden tab becomes visible. It is
+         * replaying persisted state, not necessarily reporting a new login.
          *
          * INITIAL_SESSION is guaranteed to follow (the emitter awaits the same
          * promise), so let it own the restore and just remember the session.
          *
-         * The discriminator is ordering, not content: nothing from a real
-         * sign-in can precede INITIAL_SESSION, because initialization has long
-         * since resolved by then.
+         * At startup the discriminator is ordering: nothing from a real sign-in
+         * can precede INITIAL_SESSION, because initialization has long since
+         * resolved by then.
          */
         if (!initialSessionSeen.current) {
           console.log('🔁 Startup session replay — deferring to INITIAL_SESSION');
           replayedSession.current = nextSession;
+          return;
+        }
+
+        // A foreground recovery with the token already in use must not raise
+        // the global auth spinner or reload the profile. Supabase can emit this
+        // after even a one-second tab switch.
+        if (isRepeatedSessionSignIn(activeAccessToken.current, nextSession)) {
+          console.log('🔁 Existing session re-confirmed — keeping current profile');
           return;
         }
 
@@ -467,7 +478,7 @@ export const AuthProvider = ({ children }) => {
         // had checked.)
         markSessionVerified();
 
-        setSession(nextSession);
+        setActiveSession(nextSession);
         beginBootstrap();
 
         try {
@@ -500,12 +511,12 @@ export const AuthProvider = ({ children }) => {
         resetSessionVerification();
         setUser(null);
         setIsAuthenticated(false);
-        setSession(null);
+        setActiveSession(null);
         bootstrapSettled.current = false;
         settle();
       } else if (event === 'TOKEN_REFRESHED' && nextSession) {
         console.log('🔄 Token refreshed');
-        setSession(nextSession);
+        setActiveSession(nextSession);
         // The refresh token survived a round-trip — that is a server-side proof
         // of validity, so the next fetch need not repeat it.
         markSessionVerified();
@@ -514,7 +525,7 @@ export const AuthProvider = ({ children }) => {
         // Emitted when detectSessionInUrl consumes a recovery link. The reset
         // screen drives the rest; all that is needed here is to stop waiting.
         console.log('🔑 Password recovery session detected');
-        if (nextSession) setSession(nextSession);
+        if (nextSession) setActiveSession(nextSession);
         settle();
       } else if (event === 'USER_UPDATED' && nextSession) {
         console.log('👤 User updated');
@@ -543,7 +554,7 @@ export const AuthProvider = ({ children }) => {
       // a bootstrap still in flight is how the guarantee got lost. `settle` is
       // idempotent and React drops a state write to an unmounted tree.
     };
-  }, []);
+  }, [setActiveSession]);
 
   // Handle visibility change (when user returns from power saving mode / idle)
   useEffect(() => {
@@ -616,11 +627,11 @@ export const AuthProvider = ({ children }) => {
               console.log('✅ Session refreshed successfully (helper)');
               // Update session from supabase client
               const { data: { session: updatedSession } } = await supabase.auth.getSession();
-              if (updatedSession) setSession(updatedSession);
+              if (updatedSession) setActiveSession(updatedSession);
             } else {
               // Session is still valid
               console.log('✅ Session is still valid');
-              setSession(currentSession);
+              setActiveSession(currentSession);
             }
             
             // Verify the user is still valid
@@ -656,7 +667,7 @@ export const AuthProvider = ({ children }) => {
             if (refreshResult.success) {
               const { data: { session: recovered } } = await supabase.auth.getSession();
               if (recovered) {
-                setSession(recovered);
+                setActiveSession(recovered);
                 console.log('✅ Session recovered after visibility change');
                 return;
               }
@@ -697,7 +708,7 @@ export const AuthProvider = ({ children }) => {
       globalThis.removeEventListener('online', handleOnline);
       globalThis.removeEventListener('focus', handleFocus);
     };
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, setActiveSession, clearAuthState]);
 
   // Fetch user profile with role from database
   const fetchUserProfile = async (userId) => {
@@ -819,7 +830,7 @@ export const AuthProvider = ({ children }) => {
           await supabase.auth.signOut();
           setUser(null);
           setIsAuthenticated(false);
-          setSession(null);
+          setActiveSession(null);
           setLoading(false);
           return;
         }
@@ -1215,7 +1226,7 @@ export const AuthProvider = ({ children }) => {
         disableDemoMode();
         setUser(null);
         setIsAuthenticated(false);
-        setSession(null);
+        setActiveSession(null);
         setLoading(false);
         console.log('✅ Demo mode disabled');
         return;
@@ -1235,7 +1246,7 @@ export const AuthProvider = ({ children }) => {
       // Clear state immediately so UI can move on even if signOut hangs
       setUser(null);
       setIsAuthenticated(false);
-      setSession(null);
+      setActiveSession(null);
       setLoading(false);
       // Whatever the server last confirmed no longer applies to anyone.
       resetSessionVerification();
@@ -1271,7 +1282,7 @@ export const AuthProvider = ({ children }) => {
       clearAuthStorage();
       setUser(null);
       setIsAuthenticated(false);
-      setSession(null);
+      setActiveSession(null);
       setLoading(false);
     }
   };

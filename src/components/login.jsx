@@ -190,12 +190,13 @@ const Login = () => {
       const result = await login(formData.email, formData.password, rememberMe);
       
       if (!result.success) {
-        setLoginError(result.error || t('login.invalidCredentials', 'Invalid email or password'));
+        console.error('Login failed:', result.error);
+        setLoginError(t('login.invalidCredentials', 'Invalid email or password'));
         setIsLoading(false);
       }
       // On success, spinner stays until redirect (or safety timeout below)
     } catch (err) {
-      setLoginError(err?.message || t('login.invalidCredentials', 'Invalid email or password'));
+      setLoginError(t('login.invalidCredentials', 'Invalid email or password'));
       setIsLoading(false);
     }
   };
@@ -249,7 +250,8 @@ const Login = () => {
         setForgotPasswordSuccess('');
       }, 3000);
     } else {
-      setForgotPasswordError(result.error || t('login.forgotPasswordModal.error', 'Failed to send reset email. Please try again.'));
+      console.error('Password reset request failed:', result.error);
+      setForgotPasswordError(t('login.forgotPasswordModal.error', 'Failed to send reset email. Please try again.'));
     }
   };
 
@@ -564,7 +566,7 @@ const Login = () => {
                 await new Promise((resolve) => setTimeout(resolve, 150));
                 await loginAsDemo();
               } catch (err) {
-                setLoginError(err?.message || t('login.invalidCredentials', 'Invalid email or password'));
+                setLoginError(t('login.invalidCredentials', 'Invalid email or password'));
                 setIsDemoLoading(false);
               }
             }}

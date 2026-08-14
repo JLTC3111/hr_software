@@ -612,7 +612,7 @@ const TimeClockEntry = () => {
       
       // Set user-visible error message for other errors
       if (!silent && isMounted.current) {
-        setFetchError(error.message || 'Failed to load time tracking data. Please try refreshing the page.');
+        setFetchError(t('errors.loadFailed', 'Failed to load data'));
       }
     } finally {
       if (loadSafetyTimer.current) {
@@ -998,7 +998,8 @@ const TimeClockEntry = () => {
         setSuccessMessage(t('timeClock.success'));
         setTimeout(() => setSuccessMessage(''), 3000);
       } else {
-        setErrors({ general: result.error || t('timeClock.errors.submitFailed') });
+        console.error('Failed to submit time entry:', result.error);
+        setErrors({ general: t('timeClock.errors.submitFailed') });
       }
     } catch (error) {
       console.error('Error submitting time entry:', error);
@@ -1076,7 +1077,7 @@ const TimeClockEntry = () => {
         } else {
           setUploadToast({
             show: true,
-            message: result.error || t('timeClock.proofDeleteError', 'Failed to delete proof file'),
+            message: t('timeClock.proofDeleteError', 'Failed to delete proof file'),
             type: 'error'
           });
           setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 5000);
@@ -1141,7 +1142,7 @@ const TimeClockEntry = () => {
         // Show error toast
         setUploadToast({
           show: true,
-          message: result.error || t('timeClock.proofUploadError', 'Failed to upload proof file'),
+          message: t('timeClock.proofUploadError', 'Failed to upload proof file'),
           type: 'error'
         });
         setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 5000);
@@ -1204,7 +1205,7 @@ const TimeClockEntry = () => {
       } else {
         setUploadToast({
           show: true,
-          message: result.error || t('timeClock.approvalError', 'Failed to approve entry'),
+          message: t('timeClock.approvalError', 'Failed to approve entry'),
           type: 'error'
         });
         setTimeout(() => setUploadToast({ show: false, message: '', type: '' }), 5000);
@@ -1559,7 +1560,8 @@ const TimeClockEntry = () => {
         hourType: editForm.hourType,
       });
       if (!result.success) {
-        setErrors({ general: result.error || t('timeClock.errors.updateFailed', 'Failed to update entry') });
+        console.error('Failed to update time entry:', result.error);
+        setErrors({ general: t('timeClock.errors.updateFailed', 'Failed to update entry') });
         return;
       }
 
@@ -1575,7 +1577,7 @@ const TimeClockEntry = () => {
       cancelEditEntry();
     } catch (error) {
       if (handleSessionAuthError(error)) return;
-      setErrors({ general: error.message || t('timeClock.errors.updateFailed', 'Failed to update entry') });
+      setErrors({ general: t('timeClock.errors.updateFailed', 'Failed to update entry') });
     } finally {
       setSavingEntryId(null);
     }

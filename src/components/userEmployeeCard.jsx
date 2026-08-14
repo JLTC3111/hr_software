@@ -50,7 +50,8 @@ const UserEmployeeCard = ({ style }) => {
           setEmployee(result.data);
           setError(null);
         } else {
-          setError(result.error || 'Failed to load employee data');
+          console.error('Failed to load employee data:', result.error);
+          setError(t('errors.loadFailed', 'Failed to load employee data'));
         }
       } catch (err) {
         console.error('Error fetching employee data:', err);

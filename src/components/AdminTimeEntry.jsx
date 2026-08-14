@@ -434,13 +434,13 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
         }
       } else {
         console.error('Service returned error:', result.error);
-        setErrorMessage(result.error || 'Failed to create time entries');
+        setErrorMessage(t('adminTimeEntry.error', 'Failed to create time entries'));
       }
     } catch (error) {
       console.error('Error submitting time entries:', error);
       if (handleSessionAuthError(error)) return;
       console.error('Error details:', error.message, error.stack);
-      setErrorMessage(`Failed to submit time entries: ${error.message || error.toString()}`);
+      setErrorMessage(t('adminTimeEntry.error', 'Failed to create time entries'));
     } finally {
       setLoading(false);
     }

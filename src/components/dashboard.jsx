@@ -293,7 +293,7 @@ const Dashboard = ({ employees, applications }) => {
       }
 
       // Set user-visible error message for other errors
-      setFetchError(error.message || 'Failed to load dashboard data. Please try refreshing the page.');
+      setFetchError(t('errors.loadFailed', 'Failed to load data'));
     } finally {
       if (!silent) setLoading(false);
     }
@@ -560,12 +560,13 @@ const Dashboard = ({ employees, applications }) => {
         // Pull fresh totals so the hours/overtime figures agree with the queue.
         fetchDashboardData({ silent: true });
       } else {
-        setFetchError(result.error || t('timeClock.approvalError', 'Failed to update entry'));
+        console.error('Failed to update dashboard time entry:', result.error);
+        setFetchError(t('timeClock.approvalError', 'Failed to update entry'));
       }
     } catch (error) {
       console.error('Error updating approval:', error);
       if (handleSessionAuthError(error, { setFetchError })) return;
-      setFetchError(error.message || t('timeClock.approvalError', 'Failed to update entry'));
+      setFetchError(t('timeClock.approvalError', 'Failed to update entry'));
     } finally {
       setDecidingId(null);
     }
@@ -837,7 +838,7 @@ const Dashboard = ({ employees, applications }) => {
             onDark
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            aria-label="Year"
+            aria-label={t('common.year', 'Year')}
           >
             {[2024, 2025, 2026].map((y) => (
               <option key={y} value={y} style={{ color: '#1d1f20' }}>{y}</option>

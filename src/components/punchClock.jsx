@@ -33,6 +33,7 @@ import * as punchClockService from '../services/punchClockService.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { isDemoMode, getDemoEmployeeName } from '../utils/demoHelper.js';
+import { formatDate } from '../utils/localeFormat.js';
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
 import {
   Blueprint, Bar, Tag, Btn, Seg, Kicker, TickerCell, ColumnHeading, LiveClock, FlatSelect,
@@ -371,7 +372,7 @@ const PunchClock = ({ employees = [], allEmployees = [], showNotes = false }) =>
 
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(null);
+  const [fetchError, setFetchError] = useState(false);
   const [notice, setNotice] = useState(null);
   const [busy, setBusy] = useState(false);
   const [scope, setScope] = useState('mine');
@@ -488,11 +489,11 @@ const PunchClock = ({ employees = [], allEmployees = [], showNotes = false }) =>
       });
       if (!result.success) throw new Error(result.error || 'Failed to load time entries');
       setEntries(result.data || []);
-      setFetchError(null);
+      setFetchError(false);
     } catch (error) {
       console.error('Error loading punch clock data:', error);
       if (handleSessionAuthError(error, { silent })) return;
-      setFetchError(error.message);
+      setFetchError(true);
     } finally {
       if (!silent) setLoading(false);
     }
@@ -756,7 +757,7 @@ const PunchClock = ({ employees = [], allEmployees = [], showNotes = false }) =>
       fetchAll({ silent: true });
     } catch (error) {
       console.error('Punch out failed:', error);
-      setNotice(error.message);
+      setNotice(t('timeClock.errors.submitFailed', 'Failed to submit time entry'));
     } finally {
       setBusy(false);
     }
@@ -765,7 +766,7 @@ const PunchClock = ({ employees = [], allEmployees = [], showNotes = false }) =>
   /* ---------------- presentation helpers ---------------- */
 
   const clockText = `${pad2(tick.getHours())}:${pad2(tick.getMinutes())}:${pad2(tick.getSeconds())}`;
-  const dateLabel = tick.toLocaleDateString(currentLanguage === 'vn' ? 'vi-VN' : undefined, {
+  const dateLabel = formatDate(tick, currentLanguage, {
     weekday: 'long', day: '2-digit', month: 'short', year: 'numeric',
   });
 
@@ -848,7 +849,9 @@ const PunchClock = ({ employees = [], allEmployees = [], showNotes = false }) =>
               <AlertCircle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <Kicker ind={ind} color={ind.ink}>{t('common.error', 'Error')}</Kicker>
-                <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 4 }}>{fetchError}</p>
+                <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 4 }}>
+                  {t('punchClock.errors.loadEntries', 'Failed to load time entries.')}
+                </p>
               </div>
             </div>
           )}

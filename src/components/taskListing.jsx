@@ -680,7 +680,8 @@ const TaskListing = ({ employees, allEmployees }) => {
         setTasks(result.data || []);
         setFetchError('');
       } else {
-        setFetchError(result.error || t('taskListing.loadFailed', 'Failed to load tasks'));
+        console.error('Failed to load tasks:', result.error);
+        setFetchError(t('taskListing.loadFailed', 'Failed to load tasks'));
       }
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -730,7 +731,8 @@ const TaskListing = ({ employees, allEmployees }) => {
       fetchTasks({ silent: true });
       return true;
     }
-    flash('err', result.error || t('taskListing.taskUpdateError', 'Failed to update task'));
+    console.error('Failed to update task:', result.error);
+    flash('err', t('taskListing.taskUpdateError', 'Failed to update task'));
     return false;
   }, [flash, fetchTasks, t]);
 
@@ -813,7 +815,8 @@ const TaskListing = ({ employees, allEmployees }) => {
       setModal(null);
       fetchTasks({ silent: true });
     } else {
-      flash('err', result.error || t('taskListing.taskCreateError', 'Failed to create task'));
+      console.error('Failed to create task:', result.error);
+      flash('err', t('taskListing.taskCreateError', 'Failed to create task'));
     }
   }, [form, modal, myEmployeeId, canAssign, saveUpdate, flash, fetchTasks, t, user]);
 
@@ -826,7 +829,8 @@ const TaskListing = ({ employees, allEmployees }) => {
       if (String(openTaskId) === String(task.id)) setOpenTaskId(null);
       fetchTasks({ silent: true });
     } else {
-      flash('err', result.error || t('taskListing.taskDeleteError', 'Failed to delete task'));
+      console.error('Failed to delete task:', result.error);
+      flash('err', t('taskListing.taskDeleteError', 'Failed to delete task'));
     }
   }, [flash, fetchTasks, openTaskId, t]);
 

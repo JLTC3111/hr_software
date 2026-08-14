@@ -24,13 +24,14 @@ import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { getIndustry, DISPLAY, BODY } from '../theme/industry.js';
+import { formatDate, localeTag } from '../utils/localeFormat.js';
 import { Blueprint, Tag, Btn, TickerCell, LiveClock, ColumnHeading, FlatSelect } from './ui/industry.jsx';
 
 /* ------------------------------------------------------------------ *
  * Constants — these agree with the Organization Overview figures.
  * ------------------------------------------------------------------ */
 
-const ORG_NAME = 'Company Group';
+const ORG_ID = 'company-group';
 const EMPLOYEE_COUNT = 248;
 const ROLE_COUNT = 6;
 const INITIAL_VERSION = '4.2';
@@ -68,22 +69,94 @@ const PUBLISHED = {
   anonymiseLeavers: true,
 };
 
-/** Seeded audit trail, newest first. */
+const message = (key, fallback, params) => ({ key, fallback, params });
+
+const fmtUnit = (value, unit, language, minimumIntegerDigits = 1) => new Intl.NumberFormat(
+  localeTag(language),
+  { style: 'unit', unit, unitDisplay: 'narrow', maximumFractionDigits: 0, minimumIntegerDigits }
+).format(value);
+const fmtHm = (minutes, language) => (
+  `${fmtUnit(Math.floor(minutes / 60), 'hour', language)} ${fmtUnit(minutes % 60, 'minute', language, 2)}`
+);
+const fmtHours = (h, language) => fmtUnit(h, 'hour', language);
+const fmtMinutes = (m, language) => fmtUnit(m, 'minute', language);
+const fmtDays = (d, language) => fmtUnit(d, 'day', language);
+const fmtMonths = (m, language) => fmtUnit(m, 'month', language);
+const fmtPlain = (v, language) => new Intl.NumberFormat(localeTag(language)).format(v);
+const fmtOnOff = (on, _language, t) => (on ? t('policyControls.on', 'On') : t('policyControls.off', 'Off'));
+
+/** Seeded audit trail, newest first. Text and dates are resolved at render time. */
 const SEED_AUDIT = [
-  { id: 'a1', date: '28 JUL', change: 'Overtime cap 16h → 20h', actor: 'Đặng Lê Minh', time: '14:02' },
-  { id: 'a2', date: '21 JUL', change: 'Late grace 5 → 7 min', actor: 'Đỗ Bảo Long', time: '09:41' },
-  { id: 'a3', date: '14 JUL', change: 'Role "Team lead" gained Approve leave', actor: 'Đặng Lê Minh', time: '16:20' },
-  { id: 'a4', date: '01 JUL', change: 'Review cycle H1 2026 opened', actor: 'System', time: '00:00' },
+  {
+    id: 'a1',
+    occurredAt: '2026-07-28T14:02:00',
+    change: message('policyControls.audit.overtimeCapChanged', 'Overtime cap {from} → {to}'),
+    from: 16,
+    to: 20,
+    format: fmtHours,
+    actor: 'Đặng Lê Minh',
+  },
+  {
+    id: 'a2',
+    occurredAt: '2026-07-21T09:41:00',
+    change: message('policyControls.audit.lateGraceChanged', 'Late grace {from} → {to}'),
+    from: 5,
+    to: 7,
+    format: fmtMinutes,
+    actor: 'Đỗ Bảo Long',
+  },
+  {
+    id: 'a3',
+    occurredAt: '2026-07-14T16:20:00',
+    change: message('policyControls.audit.teamLeadLeaveGranted', 'Role "Team lead" gained Approve leave'),
+    actor: 'Đặng Lê Minh',
+  },
+  {
+    id: 'a4',
+    occurredAt: '2026-07-01T00:00:00',
+    change: message('policyControls.audit.reviewCycleOpened', 'Review cycle {cycle} opened', { cycle: 'H1 2026' }),
+    actorMessage: message('notifications.system', 'System'),
+  },
 ];
 
-const pad = (n) => String(n).padStart(2, '0');
-const fmtHm = (minutes) => `${Math.floor(minutes / 60)}h ${pad(minutes % 60)}m`;
-const fmtHours = (h) => `${h}h`;
-const fmtMinutes = (m) => `${m} min`;
-const fmtDays = (d) => `${d} d`;
-const fmtMonths = (m) => `${m} mo`;
-const fmtPlain = (v) => String(v);
-const fmtOnOff = (on, t) => (on ? t('policyControls.on', 'On') : t('policyControls.off', 'Off'));
+const INITIAL_QUEUE = [
+  {
+    id: 'q-ot-cap',
+    key: 'otCap',
+    name: message('policyControls.item.otCap', 'Overtime cap'),
+    from: 20,
+    to: 24,
+    format: fmtHours,
+    value: 24,
+    tag: { ...message('policyControls.affects', 'Affects {n}', { n: EMPLOYEE_COUNT }), variant: 'outline' },
+    reason: message('policyControls.item.otCapReason', 'Requested by Trần Thị Lan Anh — the Sơn Trà line is running six-day weeks until the September order ships.'),
+    tinted: true,
+    state: 'open',
+  },
+  {
+    id: 'q-late-grace',
+    key: 'lateGrace',
+    name: message('policyControls.item.lateGrace', 'Late grace period'),
+    from: 7,
+    to: 10,
+    format: fmtMinutes,
+    value: 10,
+    tag: { ...message('policyControls.lowRisk', 'Low risk'), variant: 'accent' },
+    reason: message('policyControls.item.lateGraceReason', 'Requested by Đỗ Bảo Long — the 07:30 shuttle arrives late on rainy mornings.'),
+    tinted: false,
+    state: 'open',
+  },
+  {
+    id: 'q-team-lead',
+    key: 'teamLeadsApproveOvertime',
+    name: message('policyControls.item.teamLead', 'Role · Team lead'),
+    queuedText: message('policyControls.item.teamLeadGain', 'Gains "Approve overtime" · 9 people'),
+    value: true,
+    reason: null,
+    tinted: false,
+    state: 'queued',
+  },
+];
 
 /* ------------------------------------------------------------------ *
  * Controls — four forms, and only four.
@@ -213,7 +286,7 @@ function Plates({ ind, items }) {
 const PolicyControls = () => {
   const { isDarkMode } = useTheme();
   const ind = getIndustry(isDarkMode);
-  const { t } = useLanguage();
+  const { t, currentLanguage } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -229,42 +302,58 @@ const PolicyControls = () => {
    * other request. `state` is 'open' (awaiting a decision) or 'accepted'
    * (applied to the draft, still unpublished).
    */
-  const [queue, setQueue] = useState([
-    {
-      id: 'q-ot-cap',
-      key: 'otCap',
-      name: t('policyControls.item.otCap', 'Overtime cap'),
-      from: '20h',
-      to: '24h',
-      value: 24,
-      tag: { label: t('policyControls.affects', 'Affects {n}').replace('{n}', String(EMPLOYEE_COUNT)), variant: 'outline' },
-      reason: t('policyControls.item.otCapReason', 'Requested by Trần Thị Lan Anh — the Sơn Trà line is running six-day weeks until the September order ships.'),
-      tinted: true,
-      state: 'open',
-    },
-    {
-      id: 'q-late-grace',
-      key: 'lateGrace',
-      name: t('policyControls.item.lateGrace', 'Late grace period'),
-      from: '7 min',
-      to: '10 min',
-      value: 10,
-      tag: { label: t('policyControls.lowRisk', 'Low risk'), variant: 'accent' },
-      reason: t('policyControls.item.lateGraceReason', 'Requested by Đỗ Bảo Long — the 07:30 shuttle arrives late on rainy mornings.'),
-      tinted: false,
-      state: 'open',
-    },
-    {
-      id: 'q-team-lead',
-      key: 'teamLeadsApproveOvertime',
-      name: t('policyControls.item.teamLead', 'Role · Team lead'),
-      queuedText: t('policyControls.item.teamLeadGain', 'Gains "Approve overtime" · 9 people'),
-      value: true,
-      reason: null,
-      tinted: false,
-      state: 'queued',
-    },
-  ]);
+  const [queue, setQueue] = useState(() => INITIAL_QUEUE.map((item) => ({ ...item })));
+
+  const translateMessage = (descriptor, params = {}) => {
+    if (!descriptor) return '';
+    const values = { ...(descriptor.params || {}), ...params };
+    return Object.entries(values).reduce(
+      (text, [key, value]) => text.split(`{${key}}`).join(String(value)),
+      t(descriptor.key, descriptor.fallback)
+    );
+  };
+
+  const formatValue = (format, value) => (
+    format ? format(value, currentLanguage, t) : String(value ?? '')
+  );
+
+  const formatAuditDate = (entry) => formatDate(
+    entry?.occurredAt,
+    currentLanguage,
+    { day: '2-digit', month: 'short' }
+  ).toLocaleUpperCase(localeTag(currentLanguage));
+
+  const formatAuditTime = (entry) => {
+    const date = new Date(entry?.occurredAt);
+    if (Number.isNaN(date.getTime())) return '';
+    return new Intl.DateTimeFormat(localeTag(currentLanguage), {
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).format(date);
+  };
+
+  const formatAuditActor = (entry) => (
+    entry?.actor
+      || translateMessage(entry?.actorMessage)
+      || t('policyControls.you', 'You')
+  );
+
+  const formatAuditChange = (entry) => {
+    if (entry.change) {
+      const params = entry.format
+        ? {
+          from: formatValue(entry.format, entry.from),
+          to: formatValue(entry.format, entry.to),
+        }
+        : {};
+      return translateMessage(entry.change, params);
+    }
+
+    const name = translateMessage(entry.name);
+    if (entry.queuedText) return `${name} — ${translateMessage(entry.queuedText)}`;
+    return `${name} ${formatValue(entry.format, entry.from)} → ${formatValue(entry.format, entry.to)}`;
+  };
 
   const set = (key, value) => setDraft((d) => ({ ...d, [key]: value }));
 
@@ -285,8 +374,9 @@ const PolicyControls = () => {
         return q.map((item) => (item.key === key
           ? {
             ...item,
-            from: item.from ?? format(published[key]),
-            to: format(value),
+            from: item.from ?? published[key],
+            to: value,
+            format: item.format || format,
             value,
             queuedText: null,
             state: 'accepted',
@@ -300,11 +390,12 @@ const PolicyControls = () => {
           id: `edit-${key}`,
           key,
           name,
-          from: format(published[key]),
-          to: format(value),
+          from: published[key],
+          to: value,
+          format,
           value,
-          tag: { label: t('policyControls.yourEdit', 'Your edit'), variant: 'accent' },
-          reason: t('policyControls.yourEditReason', 'Edited on this screen — it takes effect when you publish.'),
+          tag: { ...message('policyControls.yourEdit', 'Your edit'), variant: 'accent' },
+          reason: message('policyControls.yourEditReason', 'Edited on this screen — it takes effect when you publish.'),
           tinted: false,
           state: 'accepted',
         },
@@ -312,7 +403,7 @@ const PolicyControls = () => {
     });
   };
 
-  const toggle = (key, name) => edit(key, !draft[key], name, (v) => fmtOnOff(v, t));
+  const toggle = (key, name) => edit(key, !draft[key], name, fmtOnOff);
 
   const approve = (item) => {
     set(item.key, item.value);
@@ -328,22 +419,20 @@ const PolicyControls = () => {
   const publish = () => {
     if (queue.length === 0) return;
     const now = new Date();
-    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-    const stamp = `${pad(now.getDate())} ${months[now.getMonth()]}`;
-    const time = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-    const actor = user?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || t('policyControls.you', 'You');
+    const actor = user?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || null;
 
     const next = { ...draft };
     queue.forEach((item) => { next[item.key] = item.value; });
 
     const entries = queue.map((item) => ({
       id: `${item.id}-${now.getTime()}`,
-      date: stamp,
-      change: item.queuedText
-        ? `${item.name} — ${item.queuedText}`
-        : `${item.name} ${item.from} → ${item.to}`,
+      occurredAt: now.toISOString(),
+      name: item.name,
+      from: item.from,
+      to: item.to,
+      format: item.format,
+      queuedText: item.queuedText,
       actor,
-      time,
     }));
 
     setDraft(next);
@@ -375,12 +464,12 @@ const PolicyControls = () => {
         {
           label: t('policyControls.row.standardDay', 'Standard working day'),
           consequence: t('policyControls.row.standardDayNote', 'Anything past it is overtime — 41 people crossed it yesterday'),
-          control: { type: 'stepper', key: 'workingDayMinutes', step: 15, min: 240, max: 720, format: fmtHm, name: t('policyControls.row.standardDay', 'Standard working day') },
+          control: { type: 'stepper', key: 'workingDayMinutes', step: 15, min: 240, max: 720, format: fmtHm, name: message('policyControls.row.standardDay', 'Standard working day') },
         },
         {
           label: t('policyControls.row.workingDays', 'Working days per month'),
           consequence: t('policyControls.row.workingDaysNote', 'Divides every monthly figure on the dashboard — July 2026 resolves to 26'),
-          control: { type: 'stepper', key: 'workingDaysMonth', step: 1, min: 18, max: 31, format: fmtPlain, name: t('policyControls.row.workingDays', 'Working days per month') },
+          control: { type: 'stepper', key: 'workingDaysMonth', step: 1, min: 18, max: 31, format: fmtPlain, name: message('policyControls.row.workingDays', 'Working days per month') },
         },
         {
           label: t('policyControls.row.coreHours', 'Core hours'),
@@ -390,17 +479,17 @@ const PolicyControls = () => {
         {
           label: t('policyControls.row.lateGrace', 'Late grace'),
           consequence: t('policyControls.row.lateGraceNote', '7 people used it this week'),
-          control: { type: 'stepper', key: 'lateGrace', step: 1, min: 0, max: 30, format: fmtMinutes, name: t('policyControls.item.lateGrace', 'Late grace period') },
+          control: { type: 'stepper', key: 'lateGrace', step: 1, min: 0, max: 30, format: fmtMinutes, name: message('policyControls.item.lateGrace', 'Late grace period') },
         },
         {
           label: t('policyControls.row.autoClose', 'Auto-close punches'),
           consequence: t('policyControls.row.autoCloseNote', 'Closed 14 forgotten punches at midnight last month'),
-          control: { type: 'toggle', key: 'autoClosePunches', name: t('policyControls.row.autoClose', 'Auto-close punches') },
+          control: { type: 'toggle', key: 'autoClosePunches', name: message('policyControls.row.autoClose', 'Auto-close punches') },
         },
         {
           label: t('policyControls.row.weekendWork', 'Weekend counts as work'),
           consequence: t('policyControls.row.weekendWorkNote', 'Turning it on moves the month from 26 to 30 working days'),
-          control: { type: 'toggle', key: 'weekendCountsAsWork', name: t('policyControls.row.weekendWork', 'Weekend counts as work') },
+          control: { type: 'toggle', key: 'weekendCountsAsWork', name: message('policyControls.row.weekendWork', 'Weekend counts as work') },
         },
       ],
     },
@@ -415,12 +504,12 @@ const PolicyControls = () => {
           consequence: t('policyControls.row.otCapNote', '3 people are over it this month'),
           linkLabel: t('policyControls.openCases', 'open the cases'),
           linkTo: '/time-tracking',
-          control: { type: 'stepper', key: 'otCap', step: 1, min: 0, max: 60, format: fmtHours, name: t('policyControls.item.otCap', 'Overtime cap') },
+          control: { type: 'stepper', key: 'otCap', step: 1, min: 0, max: 60, format: fmtHours, name: message('policyControls.item.otCap', 'Overtime cap') },
         },
         {
           label: t('policyControls.row.otApproval', 'Overtime requires approval'),
           consequence: t('policyControls.row.otApprovalNote', '23 managers hold the decision · 41 requests cleared this month'),
-          control: { type: 'toggle', key: 'otNeedsApproval', name: t('policyControls.row.otApproval', 'Overtime requires approval') },
+          control: { type: 'toggle', key: 'otNeedsApproval', name: message('policyControls.row.otApproval', 'Overtime requires approval') },
         },
         {
           label: t('policyControls.row.multipliers', 'Overtime multipliers'),
@@ -450,24 +539,24 @@ const PolicyControls = () => {
         {
           label: t('policyControls.row.annualLeave', 'Annual leave entitlement'),
           consequence: t('policyControls.row.annualLeaveNote', '9 people have already spent all of it this year'),
-          control: { type: 'stepper', key: 'annualLeaveDays', step: 1, min: 12, max: 30, format: fmtDays, name: t('policyControls.row.annualLeave', 'Annual leave entitlement') },
+          control: { type: 'stepper', key: 'annualLeaveDays', step: 1, min: 12, max: 30, format: fmtDays, name: message('policyControls.row.annualLeave', 'Annual leave entitlement') },
         },
         {
           label: t('policyControls.row.carryOver', 'Carry-over cap'),
           consequence: t('policyControls.row.carryOverNote', '12 people will lose days on 31 December at this cap'),
-          control: { type: 'stepper', key: 'carryOverCap', step: 1, min: 0, max: 15, format: fmtDays, name: t('policyControls.row.carryOver', 'Carry-over cap') },
+          control: { type: 'stepper', key: 'carryOverCap', step: 1, min: 0, max: 15, format: fmtDays, name: message('policyControls.row.carryOver', 'Carry-over cap') },
         },
         {
           label: t('policyControls.row.leaveNotice', 'Notice required'),
           consequence: t('policyControls.row.leaveNoticeNote', '4 requests bypassed it this quarter'),
           linkLabel: t('policyControls.openCases', 'open the cases'),
           linkTo: '/leave-management',
-          control: { type: 'stepper', key: 'leaveNoticeDays', step: 1, min: 0, max: 21, format: fmtDays, name: t('policyControls.row.leaveNotice', 'Notice required') },
+          control: { type: 'stepper', key: 'leaveNoticeDays', step: 1, min: 0, max: 21, format: fmtDays, name: message('policyControls.row.leaveNotice', 'Notice required') },
         },
         {
           label: t('policyControls.row.sickNote', 'Sick note required after'),
           consequence: t('policyControls.row.sickNoteNote', '17 notes were filed against this rule this year'),
-          control: { type: 'stepper', key: 'sickNoteAfterDays', step: 1, min: 1, max: 10, format: fmtDays, name: t('policyControls.row.sickNote', 'Sick note required after') },
+          control: { type: 'stepper', key: 'sickNoteAfterDays', step: 1, min: 1, max: 10, format: fmtDays, name: message('policyControls.row.sickNote', 'Sick note required after') },
         },
         {
           label: t('policyControls.row.holidays', 'Public holidays'),
@@ -490,22 +579,22 @@ const PolicyControls = () => {
         {
           label: t('policyControls.row.managersLeave', 'Managers can approve leave'),
           consequence: t('policyControls.row.managersLeaveNote', '23 managers hold it · 41 approvals this month'),
-          control: { type: 'toggle', key: 'managersApproveLeave', name: t('policyControls.row.managersLeave', 'Managers can approve leave') },
+          control: { type: 'toggle', key: 'managersApproveLeave', name: message('policyControls.row.managersLeave', 'Managers can approve leave') },
         },
         {
           label: t('policyControls.row.teamLeadOt', 'Team leads can approve overtime'),
           consequence: t('policyControls.row.teamLeadOtNote', '9 people would gain it — queued for publication'),
-          control: { type: 'toggle', key: 'teamLeadsApproveOvertime', name: t('policyControls.item.teamLead', 'Role · Team lead') },
+          control: { type: 'toggle', key: 'teamLeadsApproveOvertime', name: message('policyControls.item.teamLead', 'Role · Team lead') },
         },
         {
           label: t('policyControls.row.session', 'Session length'),
           consequence: t('policyControls.row.sessionNote', '148 sessions were cut short at this length last month'),
-          control: { type: 'stepper', key: 'sessionHours', step: 1, min: 1, max: 24, format: fmtHours, name: t('policyControls.row.session', 'Session length') },
+          control: { type: 'stepper', key: 'sessionHours', step: 1, min: 1, max: 24, format: fmtHours, name: message('policyControls.row.session', 'Session length') },
         },
         {
           label: t('policyControls.row.twoFactor', 'Two-factor for admins'),
           consequence: t('policyControls.row.twoFactorNote', '4 admin accounts are enrolled; turning it off unenrols them all'),
-          control: { type: 'toggle', key: 'adminTwoFactor', name: t('policyControls.row.twoFactor', 'Two-factor for admins') },
+          control: { type: 'toggle', key: 'adminTwoFactor', name: message('policyControls.row.twoFactor', 'Two-factor for admins') },
         },
       ],
     },
@@ -531,17 +620,17 @@ const PolicyControls = () => {
         {
           label: t('policyControls.row.punchReminder', 'Punch reminder after'),
           consequence: t('policyControls.row.punchReminderNote', 'Sent 34 times this week'),
-          control: { type: 'stepper', key: 'punchReminderMinutes', step: 5, min: 5, max: 60, format: fmtMinutes, name: t('policyControls.row.punchReminder', 'Punch reminder after') },
+          control: { type: 'stepper', key: 'punchReminderMinutes', step: 5, min: 5, max: 60, format: fmtMinutes, name: message('policyControls.row.punchReminder', 'Punch reminder after') },
         },
         {
           label: t('policyControls.row.escalate', 'Escalate unanswered requests after'),
           consequence: t('policyControls.row.escalateNote', '6 requests escalated to a department head this month'),
-          control: { type: 'stepper', key: 'escalateAfterDays', step: 1, min: 1, max: 14, format: fmtDays, name: t('policyControls.row.escalate', 'Escalate unanswered requests after') },
+          control: { type: 'stepper', key: 'escalateAfterDays', step: 1, min: 1, max: 14, format: fmtDays, name: message('policyControls.row.escalate', 'Escalate unanswered requests after') },
         },
         {
           label: t('policyControls.row.weekendNotify', 'Weekend notifications'),
           consequence: t('policyControls.row.weekendNotifyNote', 'Turning it on reaches 248 people on a rest day'),
-          control: { type: 'toggle', key: 'weekendNotifications', name: t('policyControls.row.weekendNotify', 'Weekend notifications') },
+          control: { type: 'toggle', key: 'weekendNotifications', name: message('policyControls.row.weekendNotify', 'Weekend notifications') },
         },
       ],
     },
@@ -554,22 +643,22 @@ const PolicyControls = () => {
         {
           label: t('policyControls.row.timeEntries', 'Time entries kept for'),
           consequence: t('policyControls.row.timeEntriesNote', 'The oldest entry on file is from March 2023 — shortening this deletes it'),
-          control: { type: 'stepper', key: 'timeEntryMonths', step: 6, min: 12, max: 120, format: fmtMonths, name: t('policyControls.row.timeEntries', 'Time entries kept for') },
+          control: { type: 'stepper', key: 'timeEntryMonths', step: 6, min: 12, max: 120, format: fmtMonths, name: message('policyControls.row.timeEntries', 'Time entries kept for') },
         },
         {
           label: t('policyControls.row.leaveRecords', 'Leave records kept for'),
           consequence: t('policyControls.row.leaveRecordsNote', 'Labour code requires 60 months — below that the export stops being audit-safe'),
-          control: { type: 'stepper', key: 'leaveRecordMonths', step: 6, min: 12, max: 120, format: fmtMonths, name: t('policyControls.row.leaveRecords', 'Leave records kept for') },
+          control: { type: 'stepper', key: 'leaveRecordMonths', step: 6, min: 12, max: 120, format: fmtMonths, name: message('policyControls.row.leaveRecords', 'Leave records kept for') },
         },
         {
           label: t('policyControls.row.auditLog', 'Audit log kept for'),
           consequence: t('policyControls.row.auditLogNote', '4,812 entries are stored under this window'),
-          control: { type: 'stepper', key: 'auditLogMonths', step: 6, min: 6, max: 120, format: fmtMonths, name: t('policyControls.row.auditLog', 'Audit log kept for') },
+          control: { type: 'stepper', key: 'auditLogMonths', step: 6, min: 6, max: 120, format: fmtMonths, name: message('policyControls.row.auditLog', 'Audit log kept for') },
         },
         {
           label: t('policyControls.row.anonymise', 'Anonymise leavers'),
           consequence: t('policyControls.row.anonymiseNote', '3 leavers fall due next month once this runs'),
-          control: { type: 'toggle', key: 'anonymiseLeavers', name: t('policyControls.row.anonymise', 'Anonymise leavers') },
+          control: { type: 'toggle', key: 'anonymiseLeavers', name: message('policyControls.row.anonymise', 'Anonymise leavers') },
         },
         {
           label: t('policyControls.row.exportFormat', 'Export format'),
@@ -598,7 +687,7 @@ const PolicyControls = () => {
         return (
           <Stepper
             ind={ind}
-            value={{ raw: draft[control.key], label: control.format(draft[control.key]) }}
+            value={{ raw: draft[control.key], label: formatValue(control.format, draft[control.key]) }}
             step={control.step}
             min={control.min}
             max={control.max}
@@ -657,7 +746,7 @@ const PolicyControls = () => {
           // The one figure on the strip that asks for an action.
           valueColor={queue.length > 0 ? ind.tickerUp : undefined}
         />
-        <TickerCell ind={ind} label={t('policyControls.lastEdit', 'Last edit')} value={newest.date} />
+        <TickerCell ind={ind} label={t('policyControls.lastEdit', 'Last edit')} value={formatAuditDate(newest)} />
 
         <div
           style={{
@@ -674,12 +763,12 @@ const PolicyControls = () => {
           <FlatSelect
             ind={ind}
             onDark
-            value={ORG_NAME}
+            value={ORG_ID}
             onChange={() => {}}
             aria-label={t('policyControls.organisation', 'Organisation')}
           >
-            <option value={ORG_NAME} style={{ color: '#1d1f20' }}>
-              {ORG_NAME}
+            <option value={ORG_ID} style={{ color: '#1d1f20' }}>
+              {t('policyControls.organisationName', 'Company Group')}
             </option>
           </FlatSelect>
         </div>
@@ -702,7 +791,7 @@ const PolicyControls = () => {
               <p style={{ ...caption, marginTop: 6 }}>
                 {[
                   `${t('policyControls.version', 'Policy version')} ${version}`,
-                  `${t('policyControls.lastEditedBy', 'last edited by')} ${newest.actor}, ${newest.date} ${newest.time}`,
+                  `${t('policyControls.lastEditedBy', 'last edited by')} ${formatAuditActor(newest)}, ${formatAuditDate(newest)} ${formatAuditTime(newest)}`,
                   t('policyControls.appliesTo', 'applies to {n} employees').replace('{n}', String(EMPLOYEE_COUNT)),
                 ].join(' · ')}
               </p>
@@ -877,9 +966,9 @@ const PolicyControls = () => {
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}
                 >
-                  {item.name}
+                  {translateMessage(item.name)}
                 </span>
-                {item.tag && <Tag ind={ind} variant={item.tag.variant}>{item.tag.label}</Tag>}
+                {item.tag && <Tag ind={ind} variant={item.tag.variant}>{translateMessage(item.tag)}</Tag>}
               </div>
 
               {/* Size and ink carry the direction of the change. No red, no green. */}
@@ -887,16 +976,16 @@ const PolicyControls = () => {
                 {item.queuedText ? (
                   <>
                     <ArrowRight size={14} strokeWidth={1.5} style={{ flex: 'none', color: ind.ink, opacity: 0.45 }} />
-                    <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink }}>{item.queuedText}</span>
+                    <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink }}>{translateMessage(item.queuedText)}</span>
                   </>
                 ) : (
                   <>
                     <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 17, color: ind.ink, opacity: 0.45, textDecoration: 'line-through', fontVariantNumeric: 'tabular-nums' }}>
-                      {item.from}
+                      {formatValue(item.format, item.from)}
                     </span>
                     <ArrowRight size={14} strokeWidth={1.5} style={{ flex: 'none', color: ind.ink, opacity: 0.45 }} />
                     <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 20, color: ind.ink, fontVariantNumeric: 'tabular-nums' }}>
-                      {item.to}
+                      {formatValue(item.format, item.to)}
                     </span>
                   </>
                 )}
@@ -904,7 +993,7 @@ const PolicyControls = () => {
 
               {item.reason && (
                 <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkGhost, margin: '0 0 9px', lineHeight: 1.45 }}>
-                  {item.reason}
+                  {translateMessage(item.reason)}
                 </p>
               )}
 
@@ -949,14 +1038,14 @@ const PolicyControls = () => {
                   color: ind.ink, opacity: 0.45, fontVariantNumeric: 'tabular-nums',
                 }}
               >
-                {entry.date}
+                {formatAuditDate(entry)}
               </span>
               <span style={{ minWidth: 0 }}>
                 <span className="block" style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink, lineHeight: 1.4 }}>
-                  {entry.change}
+                  {formatAuditChange(entry)}
                 </span>
                 <span className="block" style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, marginTop: 2 }}>
-                  {entry.actor} · {entry.time}
+                  {formatAuditActor(entry)} · {formatAuditTime(entry)}
                 </span>
               </span>
             </div>

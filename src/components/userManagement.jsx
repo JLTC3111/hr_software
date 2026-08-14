@@ -53,7 +53,8 @@ const UserManagement = () => {
     if (result.success) {
       setUsers(result.data);
     } else {
-      showMessage('error', result.error || 'Failed to load users');
+      console.error('Failed to load users:', result.error);
+      showMessage('error', t('userManagement.loadFailed', 'Failed to load users'));
     }
     
     setLoading(false);
@@ -65,7 +66,11 @@ const UserManagement = () => {
   };
 
   const handleDeactivateUser = async (userId, userName) => {
-    if (!window.confirm(t('userManagement.confirmDeactivate', `Are you sure you want to deactivate ${userName}? They will not be able to log in.`))) {
+    const confirmation = t(
+      'userManagement.confirmDeactivate',
+      'Are you sure you want to deactivate {name}? They will not be able to log in.'
+    ).replace('{name}', userName);
+    if (!window.confirm(confirmation)) {
       return;
     }
 
@@ -76,14 +81,19 @@ const UserManagement = () => {
       showMessage('success', t('userManagement.deactivateSuccess', 'User deactivated successfully'));
       loadUsers();
     } else {
-      showMessage('error', result.error || 'Failed to deactivate user');
+      console.error('Failed to deactivate user:', result.error);
+      showMessage('error', t('userManagement.deactivateFailed', 'Failed to deactivate user'));
     }
     
     setActionLoading(null);
   };
 
   const handleReactivateUser = async (userId, userName) => {
-    if (!window.confirm(t('userManagement.confirmReactivate', `Are you sure you want to reactivate ${userName}?`))) {
+    const confirmation = t(
+      'userManagement.confirmReactivate',
+      'Are you sure you want to reactivate {name}?'
+    ).replace('{name}', userName);
+    if (!window.confirm(confirmation)) {
       return;
     }
 
@@ -94,7 +104,8 @@ const UserManagement = () => {
       showMessage('success', t('userManagement.reactivateSuccess', 'User reactivated successfully'));
       loadUsers();
     } else {
-      showMessage('error', result.error || 'Failed to reactivate user');
+      console.error('Failed to reactivate user:', result.error);
+      showMessage('error', t('userManagement.reactivateFailed', 'Failed to reactivate user'));
     }
     
     setActionLoading(null);
@@ -104,7 +115,7 @@ const UserManagement = () => {
     // Multi-step confirmation for deletion
     const step1 = window.confirm(
       t('userManagement.confirmDelete1', 
-        `⚠️ WARNING: You are about to permanently delete ${userName} (${userEmail}).\n\n` +
+        '⚠️ WARNING: You are about to permanently delete {name} ({email}).\n\n' +
         'This will:\n' +
         '• Delete their account from the system\n' +
         '• Remove all their time entries\n' +
@@ -112,15 +123,15 @@ const UserManagement = () => {
         '• Remove performance data\n\n' +
         'This action CANNOT be undone!\n\n' +
         'Are you absolutely sure?'
-      )
+      ).replace('{name}', userName).replace('{email}', userEmail)
     );
 
     if (!step1) return;
 
     const step2 = window.prompt(
       t('userManagement.confirmDelete2', 
-        `To confirm deletion, please type: DELETE ${userName.toUpperCase()}`
-      )
+        'To confirm deletion, please type: DELETE {name}'
+      ).replace('{name}', userName.toUpperCase())
     );
 
     if (step2 !== `DELETE ${userName.toUpperCase()}`) {
@@ -135,7 +146,8 @@ const UserManagement = () => {
       showMessage('success', t('userManagement.deleteSuccess', 'User deleted successfully'));
       loadUsers();
     } else {
-      showMessage('error', result.error || 'Failed to delete user');
+      console.error('Failed to delete user:', result.error);
+      showMessage('error', t('userManagement.deleteFailed', 'Failed to delete user'));
     }
     
     setActionLoading(null);
@@ -317,7 +329,9 @@ const UserManagement = () => {
                           <p className={`font-medium ${text.primary}`}>
                             {user.full_name || user.first_name || 'N/A'}
                             {user.id === currentUser?.id && (
-                              <span className="ml-2 text-xs text-blue-600 font-normal">(You)</span>
+                              <span className="ml-2 text-xs text-blue-600 font-normal">
+                                ({t('common.you', 'You')})
+                              </span>
                             )}
                           </p>
                           <p className={`text-sm ${text.secondary}`}>{user.email}</p>

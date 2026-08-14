@@ -282,7 +282,8 @@ const AddNewEmployee = ({ employees = [], refetchEmployees }) => {
       });
 
       if (!result.success) {
-        setErrors({ submit: result.error || t('addEmployee.createFailed', 'Failed to create employee. Please try again.') });
+        console.error('Failed to create employee:', result.error);
+        setErrors({ submit: t('addEmployee.createFailed', 'Failed to create employee. Please try again.') });
         return;
       }
 
@@ -311,7 +312,7 @@ const AddNewEmployee = ({ employees = [], refetchEmployees }) => {
       navigate('/employees');
     } catch (error) {
       if (handleSessionAuthError(error)) return;
-      setErrors({ submit: error.message || t('addEmployee.unexpectedError', 'An unexpected error occurred.') });
+      setErrors({ submit: t('addEmployee.unexpectedError', 'An unexpected error occurred.') });
       console.error('Unexpected error:', error);
     } finally {
       setSaving(false);

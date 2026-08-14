@@ -28,6 +28,11 @@ import {
   getDemoNotificationActionLabel
 } from '../utils/demoHelper';
 import { resolveNotificationActionUrl } from '../utils/notificationNavigation';
+import {
+  localizeSystemNotificationActionLabel,
+  localizeSystemNotificationMessage,
+  localizeSystemNotificationTitle,
+} from '../utils/notificationTranslation';
 import { ShinyButton } from './ui/shiny-button';
 import { SlidingNumber } from './motion-primitives';
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
@@ -508,40 +513,6 @@ const Notifications = () => {
     }
   };
 
-  // Helper function to translate notification titles
-  const getTranslatedTitle = (title) => {
-    const titleMap = {
-      'Pending Approvals': t('notifications.pendingApprovals', 'Pending Approvals'),
-      'Time Entry Approved': t('notifications.timeEntryApproved', 'Time Entry Approved'),
-      'Time Entry Rejected': t('notifications.timeEntryRejected', 'Time Entry Rejected'),
-      'New Employee Added': t('notifications.newEmployeeAdded', 'New Employee Added'),
-      'Performance Review': t('notifications.performanceReview', 'Performance Review'),
-      'System Update': t('notifications.systemUpdate', 'System Update'),
-    };
-    return titleMap[title] || title;
-  };
-
-  // Helper function to translate notification messages
-  const getTranslatedMessage = (message) => {
-    // Handle dynamic messages with patterns
-    const timeEntriesMatch = message.match(
-      /You have (\d+) time (?:entry|entries) awaiting approval/
-    );
-    if (timeEntriesMatch) {
-      return t('notifications.timeEntriesAwaiting', '').replace('{0}', timeEntriesMatch[1]);
-    }
-    return message;
-  };
-
-  // Helper function to translate action labels
-  const getTranslatedActionLabel = (label) => {
-    const labelMap = {
-      'Review Now': t('notifications.reviewNow', 'Review Now'),
-      'View Details': t('notifications.viewDetails', 'View Details'),
-    };
-    return labelMap[label] || label;
-  };
-
   // Helper function to translate category names
   const getTranslatedCategory = (category) => {
     const categoryMap = {
@@ -570,7 +541,7 @@ const Notifications = () => {
     if (demoTitle && demoTitle !== notification.title) {
       return demoTitle;
     }
-    return getTranslatedTitle(notification.title || '');
+    return localizeSystemNotificationTitle(notification.title, t);
   };
 
   const getNotificationMessageText = (notification) => {
@@ -578,7 +549,7 @@ const Notifications = () => {
     if (demoMessage && demoMessage !== notification.message) {
       return demoMessage;
     }
-    return getTranslatedMessage(notification.message || '');
+    return localizeSystemNotificationMessage(notification.message, t);
   };
 
   const getNotificationActionLabelText = (notification) => {
@@ -586,7 +557,7 @@ const Notifications = () => {
     if (demoLabel && demoLabel !== notification.action_label) {
       return demoLabel;
     }
-    return getTranslatedActionLabel(notification.action_label || '');
+    return localizeSystemNotificationActionLabel(notification.action_label, t);
   };
 
   /**

@@ -329,7 +329,7 @@ function SearchBox({ ind, value, onChange, placeholder, style }) {
         <button
           type="button"
           onClick={() => onChange('')}
-          aria-label="clear"
+          aria-label={t('common.clear', 'Clear')}
           style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: ind.inkFaint, display: 'flex' }}
         >
           <X size={13} strokeWidth={1.5} />
@@ -968,10 +968,13 @@ const EmployeeDirectory = ({
       setTasks(taskResult?.success ? taskResult.data || [] : []);
 
       const failed = [entryResult, leaveResult, reviewResult, taskResult].find((r) => r && !r.success);
-      if (failed) setFetchError(failed.error || t('common.error', 'Error'));
+      if (failed) {
+        console.error('Failed to load employee directory data:', failed.error);
+        setFetchError(t('errors.loadFailed', 'Failed to load data'));
+      }
     } catch (error) {
       if (!handleSessionAuthError(error, { silent: true })) {
-        setFetchError(error?.message || t('common.error', 'Error'));
+        setFetchError(t('errors.loadFailed', 'Failed to load data'));
       }
     } finally {
       setFetching(false);
@@ -1434,7 +1437,7 @@ const EmployeeDirectory = ({
       t('employees.startDate', 'Start Date'),
       t('employeeDirectory.thisWeek', 'This week'),
       t('employees.performance', 'Performance'),
-      t('employees.status', 'Status'),
+      t('employees.statusLabel', 'Status'),
     ];
     const rows = searched.map((p) => [
       p.name, p.unitLabel, p.role, p.email, p.phone, p.start || '',
@@ -2202,7 +2205,7 @@ const EmployeeDirectory = ({
                       <span>{t('employeeDirectory.tenure', 'Tenure')}</span>
                       <span>{t('employeeDirectory.thisWeek', 'This week')}</span>
                       <span>{t('employees.performance', 'Performance')}</span>
-                      <span style={{ justifySelf: 'end' }}>{t('employees.status', 'Status')}</span>
+                      <span style={{ justifySelf: 'end' }}>{t('employees.statusLabel', 'Status')}</span>
                     </div>
                   )}
 

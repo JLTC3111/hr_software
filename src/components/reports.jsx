@@ -661,7 +661,7 @@ const Reports = () => {
       }
       
       // Set user-visible error message for other errors
-      setFetchError(error.message || 'Failed to load report data. Please try refreshing the page.');
+      setFetchError(t('errors.loadFailed', 'Failed to load data'));
     } finally {
       if (!silent) setLoading(false);
     }
@@ -1525,7 +1525,7 @@ const Reports = () => {
     } catch (error) {
       console.error('Error exporting combined CSV:', error);
       if (handleSessionAuthError(error)) return;
-      alert(t('reports.errorExporting', 'Error exporting data') + ': ' + error.message);
+      alert(t('reports.errorExporting', 'Error exporting data'));
     } finally {
       setExporting(false);
     }
@@ -2468,7 +2468,7 @@ const Reports = () => {
     } catch (error) {
       console.error('Error exporting Excel:', error);
       if (handleSessionAuthError(error)) return;
-      alert(t('reports.errorExporting', 'Error exporting Excel file') + ': ' + error.message);
+      alert(t('reports.errorExporting', 'Error exporting Excel file'));
     } finally {
       setExporting(false);
     }
@@ -3098,7 +3098,7 @@ const Reports = () => {
     } catch (error) {
       console.error('Error exporting PDF:', error);
       if (handleSessionAuthError(error)) return;
-      alert(t('reports.errorExporting', 'Error exporting PDF file') + ': ' + error.message);
+      alert(t('reports.errorExporting', 'Error exporting PDF file'));
     } finally {
       setExporting(false);
     }

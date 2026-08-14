@@ -13,6 +13,7 @@
  */
 import _React, { useState, useEffect } from 'react';
 import { DISPLAY, BODY, kicker as kickerStyle } from '../../theme/industry.js';
+import { useLanguage } from '../../contexts/LanguageContext.jsx';
 
 
 /* ------------------------------------------------------------------ *
@@ -330,6 +331,7 @@ export function TickerCell({ ind, label, value, valueColor, delta, deltaDirectio
  * dimmed paper when it is not.
  */
 export function LiveClock({ ind, live }) {
+  const { t } = useLanguage();
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -343,7 +345,7 @@ export function LiveClock({ ind, live }) {
         style={{ width: 6, height: 6, background: live ? ind.tickerUp : 'rgba(242,242,243,.45)', flex: 'none' }}
       />
       <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.14em', opacity: 0.65 }}>
-        LIVE
+        {t('common.live', 'Live')}
       </span>
       {/*
         Set to the size of the LIVE label next to it, not the 17px of a

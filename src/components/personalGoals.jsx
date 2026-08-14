@@ -413,7 +413,7 @@ const PersonalGoals = ({ employees }) => {
     } catch (error) {
       console.error('Error fetching performance data:', error);
       if (handleSessionAuthError(error, { silent, setFetchError })) return;
-      if (!silent) setFetchError(error.message || 'Failed to load performance data.');
+      if (!silent) setFetchError(t('errors.loadFailed', 'Failed to load data'));
     } finally {
       if (!silent) setLoading(false);
     }
@@ -790,7 +790,7 @@ const PersonalGoals = ({ employees }) => {
     } catch (error) {
       console.error('Error saving skill assessment:', error);
       if (handleSessionAuthError(error)) return;
-      alert(`${t('personalGoals.ratingUpdateError', 'Failed to save assessment')}: ${error.message}`);
+      alert(t('personalGoals.ratingUpdateError', 'Failed to save assessment'));
     } finally {
       setSavingAssessment(false);
     }
@@ -809,7 +809,7 @@ const PersonalGoals = ({ employees }) => {
     } catch (error) {
       console.error('Error saving employee comment:', error);
       if (handleSessionAuthError(error)) return;
-      alert(`${t('personalGoals.replyError', 'Could not save your response')}: ${error.message}`);
+      alert(t('personalGoals.replyError', 'Could not save your response'));
     } finally {
       setAckBusy(false);
     }
@@ -855,12 +855,13 @@ const PersonalGoals = ({ employees }) => {
         fetchGoalsAndReviews();
         alert(t('personalGoals.goalCreatedSuccess', 'Goal created successfully!'));
       } else {
-        alert(t('personalGoals.goalCreatedError', 'Failed to create goal: ') + result.error);
+        console.error('Failed to create goal:', result.error);
+        alert(t('personalGoals.goalCreatedError', 'Failed to create goal'));
       }
     } catch (error) {
       console.error('Error creating goal:', error);
       if (handleSessionAuthError(error)) return;
-      alert(t('personalGoals.goalCreatedError', 'Failed to create goal: ') + error.message);
+      alert(t('personalGoals.goalCreatedError', 'Failed to create goal'));
     }
     setLoading(false);
   };
@@ -897,12 +898,13 @@ const PersonalGoals = ({ employees }) => {
         fetchGoalsAndReviews();
         alert(t('personalGoals.goalUpdatedSuccess', 'Goal updated successfully!'));
       } else {
-        alert(t('personalGoals.goalUpdatedError', 'Failed to update goal: ') + result.error);
+        console.error('Failed to update goal:', result.error);
+        alert(t('personalGoals.goalUpdatedError', 'Failed to update goal'));
       }
     } catch (error) {
       console.error('Error updating goal:', error);
       if (handleSessionAuthError(error)) return;
-      alert(t('personalGoals.goalUpdatedError', 'Failed to update goal: ') + error.message);
+      alert(t('personalGoals.goalUpdatedError', 'Failed to update goal'));
     }
     setLoading(false);
   };
@@ -919,12 +921,13 @@ const PersonalGoals = ({ employees }) => {
         fetchGoalsAndReviews();
         alert(t('personalGoals.goalDeletedSuccess', 'Goal deleted successfully!'));
       } else {
-        alert(t('personalGoals.goalDeletedError', 'Failed to delete goal: ') + result.error);
+        console.error('Failed to delete goal:', result.error);
+        alert(t('personalGoals.goalDeletedError', 'Failed to delete goal'));
       }
     } catch (error) {
       console.error('Error deleting goal:', error);
       if (handleSessionAuthError(error)) return;
-      alert(t('personalGoals.goalDeletedError', 'Failed to delete goal: ') + error.message);
+      alert(t('personalGoals.goalDeletedError', 'Failed to delete goal'));
     }
     setLoading(false);
   };
@@ -980,6 +983,19 @@ const PersonalGoals = ({ employees }) => {
   const renderGoalRow = (goal, index) => {
     const atRisk = goal.state === 'atRisk';
     const fill = goal.complete ? ind.ramp[3] : atRisk ? heavyInk : ind.accent;
+    const meta = [
+      goal.targetDate
+        ? `${goal.complete ? t('personalGoals.closed', 'Closed') : t('personalGoals.due', 'Due')} ${formatDate(goal.targetDate, currentLanguage)}`
+        : null,
+      !goal.complete && goal.daysLeft != null
+        ? (goal.daysLeft < 0
+            ? t('personalGoals.overdueDays', '{n} days overdue').replace('{n}', String(Math.abs(goal.daysLeft)))
+            : t('personalGoals.daysLeft', '{n} days left').replace('{n}', String(goal.daysLeft)))
+        : null,
+      !goal.complete && goal.expected != null
+        ? t('personalGoals.expectedBy', 'timeline says {n}%').replace('{n}', String(Math.round(goal.expected)))
+        : null,
+    ].filter(Boolean).join(' · ');
 
     return (
       <button
@@ -1014,7 +1030,7 @@ const PersonalGoals = ({ employees }) => {
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}
           >
-            {goal.title}
+            <TranslatedText text={goal.title} record={{ entityType: 'goal', entityId: goal.id, field: 'title' }} />
           </span>
           <span
             style={{
@@ -1022,20 +1038,14 @@ const PersonalGoals = ({ employees }) => {
               marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}
           >
-            {[
-              goal.targetDate
-                ? `${goal.complete ? t('personalGoals.closed', 'Closed') : t('personalGoals.due', 'Due')} ${formatDate(goal.targetDate, currentLanguage)}`
-                : null,
-              !goal.complete && goal.daysLeft != null
-                ? (goal.daysLeft < 0
-                    ? t('personalGoals.overdueDays', '{n} days overdue').replace('{n}', String(Math.abs(goal.daysLeft)))
-                    : t('personalGoals.daysLeft', '{n} days left').replace('{n}', String(goal.daysLeft)))
-                : null,
-              !goal.complete && goal.expected != null
-                ? t('personalGoals.expectedBy', 'timeline says {n}%').replace('{n}', String(Math.round(goal.expected)))
-                : null,
-              goal.description || null,
-            ].filter(Boolean).join(' · ')}
+            {meta}
+            {meta && goal.description ? ' · ' : null}
+            {goal.description && (
+              <TranslatedText
+                text={goal.description}
+                record={{ entityType: 'goal', entityId: goal.id, field: 'description' }}
+              />
+            )}
           </span>
         </span>
 
@@ -1510,12 +1520,18 @@ const PersonalGoals = ({ employees }) => {
                 >
                   {managerNote.strengths && (
                     <p style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, lineHeight: 1.5 }}>
-                      {managerNote.strengths}
+                      <TranslatedText
+                        text={managerNote.strengths}
+                        record={{ entityType: 'review', entityId: managerNote.id, field: 'strengths' }}
+                      />
                     </p>
                   )}
                   {managerNote.areas && (
                     <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, lineHeight: 1.5, marginTop: 8 }}>
-                      {managerNote.areas}
+                      <TranslatedText
+                        text={managerNote.areas}
+                        record={{ entityType: 'review', entityId: managerNote.id, field: 'areas_for_improvement' }}
+                      />
                     </p>
                   )}
                 </blockquote>
@@ -1615,7 +1631,10 @@ const PersonalGoals = ({ employees }) => {
                   textTransform: 'uppercase', color: ind.ink, margin: 0,
                   textDecoration: viewingGoal.complete ? 'line-through' : 'none',
                 }}>
-                  {viewingGoal.title}
+                  <TranslatedText
+                    text={viewingGoal.title}
+                    record={{ entityType: 'goal', entityId: viewingGoal.id, field: 'title' }}
+                  />
                 </h3>
                 <div style={{ marginTop: 8 }}>
                   <Tag ind={ind} variant={viewingGoal.state === 'atRisk' ? 'outline' : viewingGoal.complete ? 'neutral' : 'accent'}>
@@ -1627,7 +1646,12 @@ const PersonalGoals = ({ employees }) => {
               <div>
                 <Kicker ind={ind} color={ind.inkMuted}>{t('personalGoals.goalDescription', 'Description')}</Kicker>
                 <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 6, whiteSpace: 'pre-wrap', lineHeight: 1.55 }}>
-                  {viewingGoal.description || t('common.noDescription', 'No description available')}
+                  {viewingGoal.description
+                    ? <TranslatedText
+                        text={viewingGoal.description}
+                        record={{ entityType: 'goal', entityId: viewingGoal.id, field: 'description' }}
+                      />
+                    : t('common.noDescription', 'No description available')}
                 </p>
               </div>
 
@@ -1635,7 +1659,10 @@ const PersonalGoals = ({ employees }) => {
                 <div>
                   <Kicker ind={ind} color={ind.inkMuted}>{t('personalGoals.category', 'Category')}</Kicker>
                   <p style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, marginTop: 5 }}>
-                    {t(`personalGoals.${viewingGoal.category}`, viewingGoal.category || '—')}
+                    {t(
+                      `personalGoals.${viewingGoal.category === 'professional_development' ? 'professionalDevelopment' : viewingGoal.category}`,
+                      viewingGoal.category || '—'
+                    )}
                   </p>
                 </div>
                 <div>

@@ -475,7 +475,7 @@ const TimeTracking = ({ employees: employeesProp }) => {
       }
 
       if (!silent) {
-        setFetchError(error.message || 'Failed to load time tracking data. Please try refreshing.');
+        setFetchError(t('errors.loadFailed', 'Failed to load data'));
       }
       setSuccessMessage('');
     } finally {
@@ -677,7 +677,8 @@ const TimeTracking = ({ employees: employeesProp }) => {
 
           setSuccessMessage(t('timeTracking.approveSuccess', 'Request approved'));
         } else {
-          setSuccessMessage(result.error || t('timeTracking.actionError', 'Error updating request'));
+          console.error('Failed to update leave request:', result.error);
+          setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
         }
       }
     } catch (error) {
@@ -740,7 +741,8 @@ const TimeTracking = ({ employees: employeesProp }) => {
 
           setSuccessMessage(t('timeTracking.rejectSuccess', 'Request rejected'));
         } else {
-          setSuccessMessage(result.error || t('timeTracking.actionError', 'Error updating request'));
+          console.error('Failed to update time request:', result.error);
+          setSuccessMessage(t('timeTracking.actionError', 'Error updating request'));
         }
       }
     } catch (error) {
@@ -1434,7 +1436,7 @@ const TimeTracking = ({ employees: employeesProp }) => {
             onDark
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            aria-label="Year"
+            aria-label={t('common.year', 'Year')}
           >
             {years.map((y) => (
               <option key={y} value={y} style={{ color: '#1d1f20' }}>{y}</option>

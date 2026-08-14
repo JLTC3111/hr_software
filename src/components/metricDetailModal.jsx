@@ -352,7 +352,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                     item.status === 'approved' ? isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800' :
                     isDarkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-800'
                   }`}>
-                    {t(`timeTracking.status.${item.status}`, item.status)}
+                    {t(`timeTracking.statuses.${item.status}`, item.status)}
                   </span>
                 </td>
               </tr>
@@ -442,7 +442,7 @@ const MetricDetailModal = ({ isOpen, onClose, metricType, data, title }) => {
                 </div>
               </th>
               <th className={`text-center p-3 ${text.primary} font-semibold`}>
-                <span>{t('recruitment.status', 'Status')}</span>
+                <span>{t('recruitment.statusLabel', 'Status')}</span>
               </th>
             </tr>
           </thead>

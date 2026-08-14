@@ -41,6 +41,7 @@ export const LanguageProvider = ({ children }) => {
   // so a Vietnamese session flashed English on every reload.
   const [currentLanguage, setCurrentLanguage] = useState(initialLanguage);
   const [translations, setTranslations] = useState({});
+  const [translationAdditions, setTranslationAdditions] = useState({});
   const [isChanging, setIsChanging] = useState(false);
   // Bumped by the Translation Studio after a save, so an edit is live app-wide
   // without a reload.
@@ -48,20 +49,36 @@ export const LanguageProvider = ({ children }) => {
 
   // Load translations dynamically
   useEffect(() => {
+    let cancelled = false;
+
     const loadTranslations = async () => {
       try {
-        const translationModule = await import(`../translations/${currentLanguage}.js`);
-        setTranslations(translationModule.default);
+        const [translationModule, additionsModule] = await Promise.all([
+          import(`../translations/${currentLanguage}.js`),
+          import(`../translations/additions/${currentLanguage}.js`),
+        ]);
+        if (!cancelled) {
+          setTranslations(translationModule.default);
+          setTranslationAdditions(additionsModule.default);
+        }
       } catch {
         console.warn(`Failed to load translations for ${currentLanguage}, falling back to English`);
         if (currentLanguage !== 'en') {
-          const englishModule = await import('../translations/en.js');
-          setTranslations(englishModule.default);
+          const [englishModule, additionsModule] = await Promise.all([
+            import('../translations/en.js'),
+            import('../translations/additions/en.js'),
+          ]);
+          if (!cancelled) {
+            setTranslations(englishModule.default);
+            setTranslationAdditions(additionsModule.default);
+          }
         }
       }
     };
 
     loadTranslations();
+
+    return () => { cancelled = true; };
   }, [currentLanguage]);
 
   // Install the hand-authored UGC overrides for this language.
@@ -112,6 +129,12 @@ export const LanguageProvider = ({ children }) => {
 
   // Memoize the translation function to prevent recreation
   const t = useCallback((key, fallback = key) => {
+    // The redesign catalog is intentionally stored as flat keys so it can add
+    // nested paths without inheriting old string/object shape collisions.
+    if (Object.prototype.hasOwnProperty.call(translationAdditions, key)) {
+      return translationAdditions[key] || fallback || key;
+    }
+
     const keys = key.split('.');
     let value = translations;
     
@@ -128,7 +151,7 @@ export const LanguageProvider = ({ children }) => {
     }
 
     return value || fallback || key;
-  }, [translations]);
+  }, [translationAdditions, translations]);
 
   const refreshManualTranslations = useCallback(() => {
     setOverridesVersion((v) => v + 1);

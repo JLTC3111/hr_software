@@ -144,13 +144,13 @@ const ResetPassword = () => {
         }, 2500);
       } else {
         console.error('❌ Password reset failed:', result?.error);
-        setError(result?.error || t('resetPassword.error', 'Failed to reset password. Please try again.'));
+        setError(t('resetPassword.error', 'Failed to reset password. Please try again.'));
         setLoading(false);
       }
     } catch (err) {
       console.error('❌ Exception during password reset:', err);
       localStorage.removeItem('changingPassword');
-      setError(err.message || t('resetPassword.error', 'Failed to reset password. Please try again.'));
+      setError(t('resetPassword.error', 'Failed to reset password. Please try again.'));
       setLoading(false);
     }
   };
@@ -179,7 +179,7 @@ const ResetPassword = () => {
               ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700'
               : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
           }`}
-          aria-label="Toggle theme"
+          aria-label={t('common.toggleTheme', 'Toggle theme')}
         >
           {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </button>
@@ -193,7 +193,7 @@ const ResetPassword = () => {
                 ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                 : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
             }`}
-            aria-label="Change language"
+            aria-label={t('common.changeLanguage', 'Change language')}
           >
             <Languages className="w-5 h-5" />
             {languages.find(l => l.code === language)?.flagPath && (

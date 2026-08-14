@@ -1,6 +1,6 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Play, Pause, Video } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -40,10 +40,8 @@ const VideoPlayer = ({ videos }) => {
     }
   };
 
-  const videoCountLabel = useMemo(() => `${currentVideoIndex + 1}/${videos.length}`, [currentVideoIndex, videos.length]);
-
   return (
-    <motion.div
+    <Motion.div
       className={`video-player-container rounded-2xl p-4 sm:p-5 shadow-2xl border transition-colors ${isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -54,11 +52,13 @@ const VideoPlayer = ({ videos }) => {
         <div className="flex items-center gap-2">
           <Video className={`h-5 w-5 ${isDarkMode ? 'text-indigo-300' : 'text-indigo-600'}`} aria-hidden="true" />
           <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`} data-i18n="videoPlayer.currentTitle" aria-live="polite">
-            {t('videoPlayer.currentTitle', currentVideo.name)}
+            {currentVideo.name}
           </h3>
         </div>
         <span className={`text-xs font-medium px-2 py-1 rounded-full ${isDarkMode ? 'bg-gray-800 text-gray-200' : 'bg-indigo-50 text-indigo-700'}`} data-i18n="videoPlayer.counter">
-          {t('videoPlayer.counter', videoCountLabel)}
+          {t('videoPlayer.counter', '{current}/{total}')
+            .replace('{current}', String(currentVideoIndex + 1))
+            .replace('{total}', String(videos.length))}
         </span>
       </div>
 
@@ -112,9 +112,9 @@ const VideoPlayer = ({ videos }) => {
 
       <div className="mt-3 text-sm flex items-center justify-between text-gray-600 dark:text-gray-300" aria-live="polite">
         <span data-i18n="videoPlayer.status">{isPlaying ? t('videoPlayer.status.playing', 'Playing') : t('videoPlayer.status.paused', 'Paused')}</span>
-        <span className="font-medium" data-i18n="videoPlayer.name">{t('videoPlayer.name', currentVideo.name)}</span>
+        <span className="font-medium" data-i18n="videoPlayer.name">{currentVideo.name}</span>
       </div>
-    </motion.div>
+    </Motion.div>
   );
 };
 

@@ -106,7 +106,7 @@ export const useNotifications = () => {
   return context;
 };
 
-const NotificationToast = ({ toast, onDismiss }) => {
+const NotificationToast = ({ toast, onDismiss, dismissLabel }) => {
   if (!toast.show) return null;
 
   const isError = toast.type === 'error';
@@ -130,7 +130,7 @@ const NotificationToast = ({ toast, onDismiss }) => {
         type="button"
         onClick={onDismiss}
         className="p-1 rounded hover:opacity-70 cursor-pointer"
-        aria-label="Dismiss"
+        aria-label={dismissLabel}
       >
         <X className="h-4 w-4" />
       </button>
@@ -918,7 +918,11 @@ export const NotificationProvider = ({ children }) => {
   return (
     <NotificationContext.Provider value={value}>
       {children}
-      <NotificationToast toast={toast} onDismiss={dismissToast} />
+      <NotificationToast
+        toast={toast}
+        onDismiss={dismissToast}
+        dismissLabel={t('notifications.dismiss', 'Dismiss')}
+      />
     </NotificationContext.Provider>
   );
 };

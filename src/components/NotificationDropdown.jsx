@@ -9,6 +9,10 @@ import {
   getDemoNotificationMessage
 } from '../utils/demoHelper';
 import { resolveNotificationActionUrl } from '../utils/notificationNavigation';
+import {
+  localizeSystemNotificationMessage,
+  localizeSystemNotificationTitle,
+} from '../utils/notificationTranslation';
 import { getIndustry, DISPLAY } from '../theme/industry.js';
 
 const PREVIEW_LIMIT = 5;
@@ -78,12 +82,16 @@ const NotificationDropdown = ({ variant = 'default' }) => {
 
   const getTitle = (notification) => {
     const demo = getDemoNotificationTitle(notification, t);
-    return demo && demo !== notification.title ? demo : notification.title;
+    return demo && demo !== notification.title
+      ? demo
+      : localizeSystemNotificationTitle(notification.title, t);
   };
 
   const getMessage = (notification) => {
     const demo = getDemoNotificationMessage(notification, t);
-    return demo && demo !== notification.message ? demo : notification.message;
+    return demo && demo !== notification.message
+      ? demo
+      : localizeSystemNotificationMessage(notification.message, t);
   };
 
   const handleItemClick = async (notification) => {

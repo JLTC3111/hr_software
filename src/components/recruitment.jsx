@@ -163,7 +163,7 @@ const Recruitment = () => {
     } catch (error) {
       console.error('Error fetching recruitment data:', error);
       if (!handleSessionAuthError(error, { silent })) {
-        setFetchError(error.message || t('errors.loadFailed', 'Failed to load data'));
+        setFetchError(t('errors.loadFailed', 'Failed to load data'));
       }
     } finally {
       if (!silent) setLoading(false);
@@ -309,12 +309,13 @@ const Recruitment = () => {
       if (result.success) {
         await fetchData({ silent: true });
       } else {
-        setFetchError(result.error || t('errors.updateFailed', 'Failed to update status'));
+        console.error('Failed to update application status:', result.error);
+        setFetchError(t('errors.updateFailed', 'Failed to update status'));
       }
     } catch (error) {
       console.error('Error updating status:', error);
       if (handleSessionAuthError(error)) return;
-      setFetchError(error.message || t('errors.updateFailed', 'Failed to update status'));
+      setFetchError(t('errors.updateFailed', 'Failed to update status'));
     }
   }, [fetchData, handleSessionAuthError, t]);
 
@@ -1061,7 +1062,7 @@ function CandidateTable({ ind, t, applications, stats, roleOf, shortDate, stageL
                         : <Tag ind={ind} variant="outline">
                             {isDemoMode()
                               ? getDemoApplicationStatus(app, t)
-                              : t(`recruitment.status.${String(app.status || '').toLowerCase().replace(/\s+/g, '')}`, app.status)}
+                              : t(`recruitment.statuses.${String(app.status || '').toLowerCase().replace(/\s+/g, '')}`, app.status)}
                           </Tag>}
                     </td>
                     <td style={{ ...td, fontVariantNumeric: 'tabular-nums' }}>
@@ -1249,11 +1250,14 @@ const PostJobModal = ({ ind, onClose, onSuccess }) => {
         salary_max: formData.salary_max ? parseInt(formData.salary_max, 10) : null,
       });
       if (result.success) onSuccess(result.droppedColumns);
-      else setError(result.error || t('errors.saveFailed', 'Failed to post job'));
+      else {
+        console.error('Failed to post job:', result.error);
+        setError(t('errors.saveFailed', 'Failed to post job'));
+      }
     } catch (err) {
       console.error('Error posting job:', err);
       if (handleSessionAuthError(err)) return;
-      setError(err.message || t('errors.saveFailed', 'Failed to post job'));
+      setError(t('errors.saveFailed', 'Failed to post job'));
     } finally {
       setLoading(false);
     }
@@ -1390,7 +1394,7 @@ const ApplicationDetailModal = ({ ind, application, focus, onClose, onUpdate, on
     } catch (err) {
       console.error('Error saving application:', err);
       if (handleSessionAuthError(err)) return;
-      setError(err.message || t('errors.saveFailed', 'Failed to save changes'));
+      setError(t('errors.saveFailed', 'Failed to save changes'));
     } finally {
       setSaving(false);
     }
@@ -1407,7 +1411,7 @@ const ApplicationDetailModal = ({ ind, application, focus, onClose, onUpdate, on
     [t('recruitment.statusLabel', 'Status'), application.status
       ? (isDemoMode()
         ? getDemoApplicationStatus(application, t)
-        : t(`recruitment.status.${String(application.status).toLowerCase().replace(/\s+/g, '')}`, application.status))
+        : t(`recruitment.statuses.${String(application.status).toLowerCase().replace(/\s+/g, '')}`, application.status))
       : null],
     [t('common.email', 'Email'), application.applicant?.email],
     [t('common.phone', 'Phone'), application.applicant?.phone],
@@ -1625,11 +1629,14 @@ const InterviewScheduleModal = ({ ind, application, onClose, onSuccess }) => {
       });
 
       if (result.success) onSuccess();
-      else setError(result.error || t('errors.saveFailed', 'Failed to schedule interview'));
+      else {
+        console.error('Failed to schedule interview:', result.error);
+        setError(t('errors.saveFailed', 'Failed to schedule interview'));
+      }
     } catch (err) {
       console.error('Error scheduling interview:', err);
       if (handleSessionAuthError(err)) return;
-      setError(err.message || t('errors.saveFailed', 'Failed to schedule interview'));
+      setError(t('errors.saveFailed', 'Failed to schedule interview'));
     } finally {
       setLoading(false);
     }

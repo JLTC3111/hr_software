@@ -1191,7 +1191,8 @@ const LeaveRequestModal = ({
         reason: buildReason(),
       });
       if (!result.success) {
-        onError(result.error || t('errors.saveFailed', 'Failed to submit request'));
+        console.error('Failed to submit leave request:', result.error);
+        onError(t('errors.saveFailed', 'Failed to submit request'));
         return;
       }
 

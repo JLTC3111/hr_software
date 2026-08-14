@@ -1,11 +1,12 @@
 import React from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
 
 /**
  * Error Boundary Component
  * Catches JavaScript errors anywhere in the component tree and displays fallback UI
  */
-class ErrorBoundary extends React.Component {
+class ErrorBoundaryInner extends React.Component {
   constructor(props) {
     super(props);
     this.state = { 
@@ -49,6 +50,7 @@ class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
+      const { t } = this.props;
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
           <div className="max-w-md w-full">
@@ -63,19 +65,19 @@ class ErrorBoundary extends React.Component {
 
               {/* Title */}
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-3">
-                Oops! Something went wrong
+                {t('errorBoundary.title', 'Oops! Something went wrong')}
               </h1>
 
               {/* Description */}
               <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
-                The application encountered an unexpected error. Don't worry, your data is safe.
+                {t('errorBoundary.description', "The application encountered an unexpected error. Don't worry, your data is safe.")}
               </p>
 
               {/* Error Details (in development) */}
               {import.meta.env.DEV && this.state.error && (
                 <details className="mb-6 p-4 bg-gray-100 dark:bg-gray-900 rounded-lg">
                   <summary className="cursor-pointer font-medium text-sm text-gray-700 dark:text-gray-300 mb-2">
-                    Error Details (Development Only)
+                    {t('errorBoundary.developmentDetails', 'Error Details (Development Only)')}
                   </summary>
                   <div className="mt-2 text-xs font-mono text-red-600 dark:text-red-400 overflow-auto max-h-40">
                     <p className="font-bold mb-1">{this.state.error.toString()}</p>
@@ -96,7 +98,7 @@ class ErrorBoundary extends React.Component {
                   className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 shadow-md hover:shadow-lg"
                 >
                   <RefreshCw className="w-5 h-5 animate-spin" />
-                  <span>Reload Application</span>
+                  <span>{t('errorBoundary.reloadApplication', 'Reload Application')}</span>
                 </button>
 
                 {this.props.onReset && (
@@ -108,7 +110,7 @@ class ErrorBoundary extends React.Component {
                     }}
                     className="w-full px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors duration-200"
                   >
-                    Try Again
+                    {t('common.tryAgain', 'Try Again')}
                   </button>
                 )}
               </div>
@@ -116,14 +118,14 @@ class ErrorBoundary extends React.Component {
               {/* Support Info */}
               <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                  If this problem persists, please contact support or refresh the page.
+                  {t('errorBoundary.support', 'If this problem persists, please contact support or refresh the page.')}
                 </p>
               </div>
             </div>
 
             {/* Additional Info */}
             <p className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center">
-              Error ID: {Date.now().toString(36).toUpperCase()}
+              {t('errorBoundary.errorId', 'Error ID: {id}').replace('{id}', Date.now().toString(36).toUpperCase())}
             </p>
           </div>
         </div>
@@ -133,5 +135,10 @@ class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+
+const ErrorBoundary = (props) => {
+  const { t } = useLanguage();
+  return <ErrorBoundaryInner {...props} t={t} />;
+};
 
 export default ErrorBoundary;

@@ -390,11 +390,12 @@ const ControlPanel = () => {
       if (result && result.success) {
         setVisitSummary(result.data);
       } else {
-        setVisitError((result && result.error) || 'Failed to load visit summary');
+        console.error('Failed to load visit summary:', result?.error);
+        setVisitError(t('errors.loadFailed', 'Failed to load data'));
       }
     } catch (err) {
       console.error('handleRefreshVisits error', err);
-      setVisitError('Failed to load visit summary');
+      setVisitError(t('errors.loadFailed', 'Failed to load data'));
     } finally {
       setLoadingVisits(false);
     }
@@ -613,7 +614,7 @@ const ControlPanel = () => {
     } catch (error) {
       console.error('❌ Password change error:', error);
       if (handleSessionAuthError(error)) return;
-      setPasswordError(error.message || t('controlPanel.passwordChangeError', 'Error changing password'));
+      setPasswordError(t('controlPanel.passwordChangeError', 'Error changing password'));
       isChangingPassword.current = false;
       localStorage.removeItem('changingPassword');
     }
@@ -730,7 +731,7 @@ const ControlPanel = () => {
     } catch (error) {
       console.error('Admin password reset error:', error);
       if (handleSessionAuthError(error)) return;
-      setAdminResetError(error.message || t('controlPanel.passwordResetError', 'Error resetting password. You may need admin service role access.'));
+      setAdminResetError(t('controlPanel.passwordResetError', 'Error resetting password. You may need admin service role access.'));
     }
   };
 
@@ -812,7 +813,7 @@ const ControlPanel = () => {
     } catch (error) {
       console.error('Employee password reset error:', error);
       if (handleSessionAuthError(error)) return;
-      setEmployeeResetError(error.message || t('controlPanel.passwordResetError', 'Error resetting password. You may need admin service role access.'));
+      setEmployeeResetError(t('controlPanel.passwordResetError', 'Error resetting password. You may need admin service role access.'));
     }
   };
 

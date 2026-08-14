@@ -1,5 +1,12 @@
 import { useEffect, useRef, useCallback } from 'react';
 
+export const isRefreshDue = (
+  lastRefreshTime,
+  staleTime,
+  now = Date.now(),
+  force = false
+) => force || now - lastRefreshTime >= staleTime;
+
 /**
  * 
  * @param {Function} refreshCallback - Function to call when data needs refreshing
@@ -20,12 +27,12 @@ export const useVisibilityRefresh = (refreshCallback, options = {}) => {
   const lastRefreshTime = useRef(Date.now());
   const isRefreshing = useRef(false);
 
-  const handleRefresh = useCallback(async () => {
+  const handleRefresh = useCallback(async ({ force = false } = {}) => {
     const now = Date.now();
     const timeSinceLastRefresh = now - lastRefreshTime.current;
 
     // Only refresh if data is stale
-    if (timeSinceLastRefresh < staleTime) {
+    if (!isRefreshDue(lastRefreshTime.current, staleTime, now, force)) {
       return;
     }
 
@@ -53,31 +60,20 @@ export const useVisibilityRefresh = (refreshCallback, options = {}) => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        // If using stale-time logout, don't force refresh; just evaluate staleness
-        if (!onStaleTimeout) {
-          // Force next refresh by resetting timer when user returns
-          lastRefreshTime.current = 0;
-        }
         handleRefresh();
       }
     };
 
     const handleFocus = () => {
       if (refreshOnFocus) {
-        if (!onStaleTimeout) {
-          lastRefreshTime.current = 0;
-        }
         handleRefresh();
       }
     };
 
     const handleOnline = () => {
       if (refreshOnOnline) {
-        if (!onStaleTimeout) {
-          // Reset stale time to force refresh when coming back online
-          lastRefreshTime.current = 0;
-        }
-        handleRefresh();
+        // Reconnecting is the one event that deliberately refreshes fresh data.
+        handleRefresh({ force: !onStaleTimeout });
       }
     };
 

@@ -6,6 +6,7 @@
  */
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { useLanguage } from '../../contexts/LanguageContext.jsx';
 import {
   createPunchClock,
   createPunchClockMaterials,
@@ -27,6 +28,7 @@ export function PunchClock({
   spin = true,
   time = null,
 }) {
+  const { t } = useLanguage();
   const hostRef = useRef(null);
   // Kept in refs so a prop change never forces the scene to be rebuilt.
   const settings = useRef({ live, spin, time });
@@ -170,7 +172,7 @@ export function PunchClock({
       className={className}
       style={style}
       role="img"
-      aria-label="Mechanical punch clock"
+      aria-label={t('common.mechanicalPunchClock', 'Mechanical punch clock')}
     />
   );
 }

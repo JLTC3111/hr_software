@@ -100,6 +100,7 @@ function BandCell({
 
 /** LIVE hh:mm:ss. The only thing in the band that moves. */
 function LiveCell({ ind }) {
+  const { t } = useLanguage();
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -115,7 +116,7 @@ function LiveCell({ ind }) {
           fontVariantNumeric: 'tabular-nums',
         }}
       >
-        LIVE {pad2(now.getHours())}:{pad2(now.getMinutes())}:{pad2(now.getSeconds())}
+        {t('common.live', 'Live')} {pad2(now.getHours())}:{pad2(now.getMinutes())}:{pad2(now.getSeconds())}
       </span>
     </BandCell>
   );
