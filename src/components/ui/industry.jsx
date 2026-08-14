@@ -11,7 +11,8 @@
  * Everything is styled inline against the token object from src/theme/industry.js
  * because these are exact hex values that do not exist in the Tailwind config.
  */
-import _React, { useState, useEffect } from 'react';
+import _React, { useState, useEffect, useRef } from 'react';
+import { MoreVertical } from 'lucide-react';
 import { DISPLAY, BODY, kicker as kickerStyle } from '../../theme/industry.js';
 import { useLanguage } from '../../contexts/LanguageContext.jsx';
 
@@ -156,6 +157,8 @@ export function Btn({ ind, variant = 'secondary', style, disabled, ...rest }) {
         textTransform: 'uppercase',
         padding: '4px 12px',
         borderRadius: 0,
+        boxSizing: 'border-box',
+        maxWidth: '100%',
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.5 : 1,
         transition: 'background .15s ease, color .15s ease',
@@ -165,6 +168,115 @@ export function Btn({ ind, variant = 'secondary', style, disabled, ...rest }) {
         ...style,
       }}
     />
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * MoreMenu — kebab for actions that do not fit a narrow band
+ * ------------------------------------------------------------------ */
+
+export function MoreMenu({ ind, label, items }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onPointer = (event) => {
+      if (ref.current && !ref.current.contains(event.target)) setOpen(false);
+    };
+    const onEsc = (event) => { if (event.key === 'Escape') setOpen(false); };
+    document.addEventListener('pointerdown', onPointer);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('pointerdown', onPointer);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: 'relative', flex: 'none' }}>
+      <button
+        type="button"
+        aria-label={label}
+        aria-expanded={open}
+        aria-haspopup="true"
+        onClick={() => setOpen((value) => !value)}
+        style={{
+          width: 32,
+          height: 32,
+          display: 'grid',
+          placeItems: 'center',
+          padding: 0,
+          background: 'transparent',
+          border: `1px solid ${ind.hairline}`,
+          borderRadius: 0,
+          color: ind.ink,
+          cursor: 'pointer',
+        }}
+      >
+        <MoreVertical size={16} strokeWidth={1.5} />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          style={{
+            position: 'absolute',
+            top: '100%',
+            right: 0,
+            zIndex: 40,
+            marginTop: 4,
+            minWidth: 220,
+            maxWidth: 'min(280px, 90vw)',
+            background: ind.chrome,
+            border: `1px solid ${ind.ink}`,
+            borderRadius: 0,
+            padding: 3,
+          }}
+        >
+          {items.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                role="menuitem"
+                disabled={item.disabled}
+                onClick={() => {
+                  if (item.disabled) return;
+                  setOpen(false);
+                  item.onClick?.();
+                }}
+                onMouseEnter={(event) => {
+                  if (!item.disabled) event.currentTarget.style.background = ind.hover;
+                }}
+                onMouseLeave={(event) => {
+                  event.currentTarget.style.background = 'transparent';
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 9,
+                  width: '100%',
+                  padding: '8px 10px',
+                  border: 'none',
+                  borderRadius: 0,
+                  cursor: item.disabled ? 'not-allowed' : 'pointer',
+                  opacity: item.disabled ? 0.5 : 1,
+                  background: 'transparent',
+                  color: ind.ink,
+                  fontFamily: BODY,
+                  fontSize: 13,
+                  textAlign: 'left',
+                }}
+              >
+                {Icon ? <Icon size={15} strokeWidth={1.5} style={{ flex: 'none' }} /> : null}
+                <span style={{ flex: 1, minWidth: 0 }}>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 

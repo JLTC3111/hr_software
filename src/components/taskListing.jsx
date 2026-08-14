@@ -59,7 +59,7 @@ import { TranslatedText } from './ui/translated-text.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
 import {
-  Blueprint, Bar, Tag, Btn, TickerCell, LiveClock, ColumnHeading, FlatSelect,
+  Blueprint, Bar, Tag, Btn, Seg, TickerCell, LiveClock, ColumnHeading, FlatSelect,
 } from './ui/industry.jsx';
 
 /* ------------------------------------------------------------------ *
@@ -2063,41 +2063,22 @@ const TaskListing = ({ employees, allEmployees }) => {
           <div
             className="flex flex-wrap items-center"
             style={{
-              gap: 10, padding: '9px 0',
+              gap: 10, padding: '9px 0', minWidth: 0,
               borderTop: `1px solid ${ind.hairline}`, borderBottom: `1px solid ${ind.hairline}`,
             }}
           >
-            <div style={{ display: 'flex', border: `1px solid ${ind.hairline}`, flex: 'none' }}>
-              {segments.map((option, index) => {
-                const active = option.value === segment;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => { setSegment(option.value); setSegmentTouched(true); setShowAll(false); }}
-                    aria-pressed={active}
-                    style={{
-                      padding: '5px 13px', borderRadius: 0, cursor: 'pointer', whiteSpace: 'nowrap',
-                      fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, letterSpacing: '.08em',
-                      textTransform: 'uppercase', border: 'none',
-                      borderLeft: index === 0 ? 'none' : `1px solid ${ind.hairline}`,
-                      background: active ? ind.accent : 'transparent',
-                      color: active ? ind.accentInk : ind.ink,
-                      transition: 'background .15s ease',
-                    }}
-                    onMouseEnter={(event) => { if (!active) event.currentTarget.style.background = ind.accentWash; }}
-                    onMouseLeave={(event) => { if (!active) event.currentTarget.style.background = 'transparent'; }}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
-            </div>
+            <Seg
+              ind={ind}
+              ariaLabel={t('taskListing.title', 'Task Listing')}
+              value={segment}
+              onChange={(value) => { setSegment(value); setSegmentTouched(true); setShowAll(false); }}
+              options={segments}
+            />
 
             <div
               className="flex-1"
               style={{
-                display: 'flex', alignItems: 'center', gap: 7, minWidth: 180,
+                display: 'flex', alignItems: 'center', gap: 7, minWidth: 0,
                 border: `1px solid ${ind.hairline}`, padding: '5px 11px',
               }}
             >

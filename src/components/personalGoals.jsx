@@ -35,6 +35,7 @@ import { DatePicker } from './ui/date-picker.jsx';
 import { TranslatedText } from './ui/translated-text.jsx';
 import { filterActiveEmployees } from '../utils/employeeStatus.js';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
+import { useMinWidth } from '../hooks/useMinWidth.js';
 import {
   PERFORMANCE_SKILLS,
   buildPerformanceAssessment,
@@ -43,7 +44,7 @@ import {
 } from '../utils/performanceAssessment.js';
 import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
 import {
-  Blueprint, Bar, Tag, Btn, Seg, Kicker, TickerCell, ColumnHeading,
+  Blueprint, Bar, Tag, Btn, Seg, Kicker, TickerCell, ColumnHeading, MoreMenu,
   LiveClock, FlatSelect,
 } from './ui/industry.jsx';
 
@@ -294,6 +295,8 @@ const PersonalGoals = ({ employees }) => {
   const ind = getIndustry(isDarkMode);
   /** The manager's tick has to be the heaviest mark on the track, either theme. */
   const heavyInk = isDarkMode ? ind.accentDeeper : ind.tickerBg;
+  const isDesktop = useMinWidth(1024);
+  const pagePad = isDesktop ? 24 : 14;
 
   // Match the review_period format already used by performance reviews, e.g. Q4-2025.
   const getCurrentQuarter = (date = new Date()) => {
@@ -1051,7 +1054,7 @@ const PersonalGoals = ({ employees }) => {
         </span>
 
         {/* Fixed status block so the column stays a straight edge */}
-        <span style={{ flex: 'none', width: 150 }}>
+        <span style={{ flex: 'none', width: isDesktop ? 150 : 96, minWidth: 0 }}>
           <span style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
             <span style={figure(14, ind.ink)}>
               {goal.complete ? '' : `${Math.round(goal.progress)}%`}
@@ -1170,7 +1173,7 @@ const PersonalGoals = ({ employees }) => {
         <div
           style={{
             flex: 1,
-            minWidth: 'max-content',
+            minWidth: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-end',
@@ -1218,7 +1221,7 @@ const PersonalGoals = ({ employees }) => {
         {/* ── MAIN ───────────────────────────────────────────────────── */}
         <div
           className="flex-1 min-w-0 flex flex-col"
-          style={{ padding: 24, gap: 18, borderRight: `1px solid ${ind.hairline}` }}
+          style={{ padding: pagePad, gap: 18, borderRight: `1px solid ${ind.hairline}` }}
         >
           {fetchError && (
             <div style={{ border: `1px solid ${ind.ink}`, padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
@@ -1286,7 +1289,7 @@ const PersonalGoals = ({ employees }) => {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3" style={{ minWidth: 0, maxWidth: '100%' }}>
               <Seg
                 ind={ind}
                 options={tabOptions}
@@ -1294,10 +1297,25 @@ const PersonalGoals = ({ employees }) => {
                 onChange={setActiveTab}
                 ariaLabel={t('personalGoals.view', 'View')}
               />
-              <Btn ind={ind} onClick={handleExportReview} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <Download size={13} strokeWidth={1.5} />
-                {t('personalGoals.exportReview', 'Export review')}
-              </Btn>
+              {isDesktop ? (
+                <Btn ind={ind} onClick={handleExportReview} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Download size={13} strokeWidth={1.5} />
+                  {t('personalGoals.exportReview', 'Export review')}
+                </Btn>
+              ) : (
+                <MoreMenu
+                  ind={ind}
+                  label={t('header.moreOptions', 'More options')}
+                  items={[
+                    {
+                      key: 'export',
+                      label: t('personalGoals.exportReview', 'Export review'),
+                      icon: Download,
+                      onClick: handleExportReview,
+                    },
+                  ]}
+                />
+              )}
             </div>
           </div>
 
@@ -1316,7 +1334,7 @@ const PersonalGoals = ({ employees }) => {
                     {t('personalGoals.assessmentLead', 'Self-rating as fill, manager as marker, company median dashed.')}
                   </p>
                 </div>
-                <div style={{ display: 'flex', gap: 14, flex: 'none', paddingTop: 2 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, flex: 'none', paddingTop: 2, maxWidth: '100%' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                     <span aria-hidden="true" style={{ width: 9, height: 9, background: ind.accent, flex: 'none' }} />
                     <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>{t('personalGoals.self', 'Self')}</span>
@@ -1367,26 +1385,48 @@ const PersonalGoals = ({ employees }) => {
               {/* The read, in words, beside the two actions */}
               <div
                 className="flex flex-wrap items-center justify-between"
-                style={{ gap: 12, margin: '18px 20px 0', padding: '14px 0 16px', borderTop: `1px solid ${ind.hairline}` }}
+                style={{ gap: 12, margin: isDesktop ? '18px 20px 0' : '18px 14px 0', padding: '14px 0 16px', borderTop: `1px solid ${ind.hairline}` }}
               >
-                <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, minWidth: 0, flex: 1 }}>
+                <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, minWidth: 0, flex: isDesktop ? 1 : '1 1 100%' }}>
                   {calibrationRead}
                 </p>
-                <div style={{ display: 'flex', gap: 8, flex: 'none' }}>
-                  <Btn ind={ind} onClick={() => setAdjusting(v => !v)}>
-                    {adjusting ? t('common.done', 'Done') : t('personalGoals.adjustRatings', 'Adjust ratings')}
-                  </Btn>
-                  <Btn
-                    ind={ind}
-                    variant="primary"
-                    disabled={!assessmentDirty || savingAssessment}
-                    onClick={handleSaveSkillAssessment}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                  >
-                    <Save size={13} strokeWidth={1.5} />
-                    {savingAssessment ? t('common.saving', 'Saving…') : t('personalGoals.saveAssessment', 'Save assessment')}
-                  </Btn>
-                </div>
+                {isDesktop ? (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, flex: 'none', maxWidth: '100%' }}>
+                    <Btn ind={ind} onClick={() => setAdjusting(v => !v)}>
+                      {adjusting ? t('common.done', 'Done') : t('personalGoals.adjustRatings', 'Adjust ratings')}
+                    </Btn>
+                    <Btn
+                      ind={ind}
+                      variant="primary"
+                      disabled={!assessmentDirty || savingAssessment}
+                      onClick={handleSaveSkillAssessment}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <Save size={13} strokeWidth={1.5} />
+                      {savingAssessment ? t('common.saving', 'Saving…') : t('personalGoals.saveAssessment', 'Save assessment')}
+                    </Btn>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', minWidth: 0 }}>
+                    <Btn
+                      ind={ind}
+                      onClick={() => setAdjusting((value) => !value)}
+                      style={{ width: '100%' }}
+                    >
+                      {adjusting ? t('common.done', 'Done') : t('personalGoals.adjustRatings', 'Adjust ratings')}
+                    </Btn>
+                    <Btn
+                      ind={ind}
+                      variant="primary"
+                      disabled={!assessmentDirty || savingAssessment}
+                      onClick={handleSaveSkillAssessment}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' }}
+                    >
+                      <Save size={13} strokeWidth={1.5} />
+                      {savingAssessment ? t('common.saving', 'Saving…') : t('personalGoals.saveAssessment', 'Save assessment')}
+                    </Btn>
+                  </div>
+                )}
               </div>
             </Blueprint>
           )}

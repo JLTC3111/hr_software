@@ -81,6 +81,26 @@ test('segmented controls wrap instead of overflowing their panel', () => {
   assert.match(industry, /maxWidth:\s*['"]100%['"]/);
 });
 
+test('header replaces band actions with a kebab below the desktop breakpoint', () => {
+  const header = source('src/components/header.jsx');
+  const menu = source('src/components/MobileHeaderMenu.jsx');
+  assert.match(header, /import MobileHeaderMenu/);
+  assert.match(header, /isDesktop \? \(/);
+  assert.match(menu, /MoreVertical/);
+  assert.doesNotMatch(menu, /className=.*lg:hidden/);
+});
+
+test('Personal Goals collapses overflow actions into a kebab below desktop', () => {
+  const personalGoals = source('src/components/personalGoals.jsx');
+  assert.match(personalGoals, /useMinWidth\(1024\)/);
+  assert.match(personalGoals, /<MoreMenu\b/);
+});
+
+test('Task Listing uses the wrapping Seg control for filter chips', () => {
+  const taskListing = source('src/components/taskListing.jsx');
+  assert.match(taskListing, /<Seg\b/);
+});
+
 test('Reports period labels do not include romanization glosses', async () => {
   for (const locale of ['ru', 'jp', 'kr']) {
     const [{ default: additions }, { default: nested }] = await Promise.all([

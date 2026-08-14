@@ -33,6 +33,7 @@ import { useLanguage } from '../contexts/LanguageContext.jsx'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { useNavigate } from 'react-router-dom'
 import NotificationDropdown from './NotificationDropdown.jsx'
+import MobileHeaderMenu from './MobileHeaderMenu.jsx'
 import { useMinWidth } from '../hooks/useMinWidth.js'
 import { getIndustry, DISPLAY, BODY } from '../theme/industry.js'
 
@@ -99,24 +100,25 @@ function BandCell({
 }
 
 /** LIVE hh:mm:ss. The only thing in the band that moves. */
-function LiveCell({ ind }) {
+function LiveCell({ ind, compact }) {
   const { t } = useLanguage();
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
+  const clock = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
   return (
-    <BandCell ind={ind} gap={8}>
+    <BandCell ind={ind} gap={8} padding={compact ? '0 10px' : undefined} title={compact ? t('common.live', 'Live') : undefined}>
       {/* A square, deliberately. There is no radius in this band. */}
       <span aria-hidden="true" style={{ width: 6, height: 6, flex: 'none', display: 'block', background: ind.tickerUp }} />
       <span
         style={{
-          fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.16em',
+          fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: compact ? '.08em' : '.16em',
           fontVariantNumeric: 'tabular-nums',
         }}
       >
-        {t('common.live', 'Live')} {pad2(now.getHours())}:{pad2(now.getMinutes())}:{pad2(now.getSeconds())}
+        {compact ? clock : `${t('common.live', 'Live')} ${clock}`}
       </span>
     </BandCell>
   );
@@ -304,7 +306,7 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
 
       {/* Brand — a 32px outlined square in accent-300, then the lockup. This is
           the only mark in the app; the rail carries none. */}
-      <BandCell ind={ind} padding="0 22px" gap={11}>
+      <BandCell ind={ind} padding={isDesktop ? '0 22px' : '0 12px'} gap={11}>
         <span
           aria-hidden="true"
           style={{
@@ -320,18 +322,20 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 21, letterSpacing: '.07em' }}>
             ICUE
           </span>
-          <span
-            style={{
-              fontFamily: DISPLAY, fontWeight: 600, fontSize: 9, letterSpacing: '.2em',
-              textTransform: 'uppercase', color: ind.tickerUp, marginTop: 2,
-            }}
-          >
-            {t('header.consoleTag', 'Workforce Console')}
-          </span>
+          {isDesktop && (
+            <span
+              style={{
+                fontFamily: DISPLAY, fontWeight: 600, fontSize: 9, letterSpacing: '.2em',
+                textTransform: 'uppercase', color: ind.tickerUp, marginTop: 2,
+              }}
+            >
+              {t('header.consoleTag', 'Workforce Console')}
+            </span>
+          )}
         </span>
       </BandCell>
 
-      <LiveCell ind={ind} />
+      <LiveCell ind={ind} compact={!isDesktop} />
 
       {/* Session — the label states the greeting, the value states who. It sits
           in the left group, where the org readout used to: the band names the
@@ -362,48 +366,58 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
       {/* The gap. Everything after it reads right-aligned. */}
       <div style={{ flex: 1, minWidth: 12 }} />
 
-      <LanguageCell ind={ind} showName={showLangName} />
+      {/* Below lg the four action cells become a kebab. Inline `display` on
+          BandCell beats Tailwind `lg:hidden`, so they have to drop out of
+          the tree — otherwise they keep the band wider than the viewport,
+          the page grows with them, and wrapping filters never wrap. */}
+      {isDesktop ? (
+        <>
+          <LanguageCell ind={ind} showName={showLangName} />
 
-      <BandCell
-        ind={ind}
-        side="right"
-        width={52}
-        onClick={toggleTheme}
-        title={isDarkMode ? t('theme.light', 'Light mode') : t('theme.dark', 'Dark mode')}
-        style={{ color: 'rgba(242,242,243,.8)' }}
-      >
-        {isDarkMode ? <Moon size={18} strokeWidth={1.5} /> : <Sun size={18} strokeWidth={1.5} />}
-      </BandCell>
-
-      {/* Its own cell rule, then the trigger fills it. The badge is the
-          brightest object in the band. */}
-      <div style={{ alignSelf: 'stretch', display: 'flex', flex: 'none', borderLeft: `1px solid ${ind.tickerRule}` }}>
-        <NotificationDropdown variant="band" />
-      </div>
-
-      {/* Logout. Not a button object — its hover fills the cell with base
-          accent instead, which is the only fill anywhere in the band. */}
-      <BandCell
-        ind={ind}
-        side="right"
-        padding="0 20px"
-        gap={8}
-        onClick={handleLogout}
-        title={t('header.logout', 'Logout')}
-        hoverFill={ind.accent}
-      >
-        <LogOut size={15} strokeWidth={1.5} style={{ flex: 'none' }} />
-        {showLogoutLabel && (
-          <span
-            style={{
-              fontFamily: DISPLAY, fontWeight: 600, fontSize: 12,
-              letterSpacing: '.1em', textTransform: 'uppercase',
-            }}
+          <BandCell
+            ind={ind}
+            side="right"
+            width={52}
+            onClick={toggleTheme}
+            title={isDarkMode ? t('theme.light', 'Light mode') : t('theme.dark', 'Dark mode')}
+            style={{ color: 'rgba(242,242,243,.8)' }}
           >
-            {t('header.logout', 'Logout')}
-          </span>
-        )}
-      </BandCell>
+            {isDarkMode ? <Moon size={18} strokeWidth={1.5} /> : <Sun size={18} strokeWidth={1.5} />}
+          </BandCell>
+
+          {/* Its own cell rule, then the trigger fills it. The badge is the
+              brightest object in the band. */}
+          <div style={{ alignSelf: 'stretch', display: 'flex', flex: 'none', borderLeft: `1px solid ${ind.tickerRule}` }}>
+            <NotificationDropdown variant="band" />
+          </div>
+
+          {/* Logout. Not a button object — its hover fills the cell with base
+              accent instead, which is the only fill anywhere in the band. */}
+          <BandCell
+            ind={ind}
+            side="right"
+            padding="0 20px"
+            gap={8}
+            onClick={handleLogout}
+            title={t('header.logout', 'Logout')}
+            hoverFill={ind.accent}
+          >
+            <LogOut size={15} strokeWidth={1.5} style={{ flex: 'none' }} />
+            {showLogoutLabel && (
+              <span
+                style={{
+                  fontFamily: DISPLAY, fontWeight: 600, fontSize: 12,
+                  letterSpacing: '.1em', textTransform: 'uppercase',
+                }}
+              >
+                {t('header.logout', 'Logout')}
+              </span>
+            )}
+          </BandCell>
+        </>
+      ) : (
+        <MobileHeaderMenu ind={ind} onLogout={handleLogout} />
+      )}
     </header>
   );
 };
