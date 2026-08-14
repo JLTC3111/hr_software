@@ -491,6 +491,7 @@ export default {
 
   // Policy controls
   'policyControls.accepted': 'Angenommen',
+  'policyControls.affects': 'Betrifft {n}',
   'policyControls.appliesTo': 'gilt für {n} Mitarbeiter',
   'policyControls.approve': 'Genehmigen',
   'policyControls.audit.lateGraceChanged': 'Karenzzeit für Verspätungen von {from} auf {to} geändert',
@@ -503,8 +504,15 @@ export default {
   'policyControls.encoding': 'Zeichencodierung',
   'policyControls.file': 'Datei',
   'policyControls.holiday': 'Feiertag',
+  'policyControls.item.lateGrace': 'Karenzzeit für Verspätungen',
+  'policyControls.item.lateGraceReason': 'Angefragt von Đỗ Bảo Long — der Shuttle um 07:30 kommt an verregneten Morgen zu spät.',
+  'policyControls.item.otCap': 'Überstundengrenze',
+  'policyControls.item.otCapReason': 'Angefragt von Trần Thị Lan Anh — die Linie Sơn Trà fährt Sechs-Tage-Wochen, bis der Septemberauftrag ausgeliefert ist.',
+  'policyControls.item.teamLead': 'Rolle · Teamleitung',
+  'policyControls.item.teamLeadGain': 'Erhält „Überstunden genehmigen“ · 9 Personen',
   'policyControls.lastEdit': 'Letzte Bearbeitung',
   'policyControls.lastEditedBy': 'zuletzt bearbeitet von',
+  'policyControls.lowRisk': 'Geringes Risiko',
   'policyControls.nItems': '{n} Einträge',
   'policyControls.nothingToPublish': 'Nichts zu veröffentlichen',
   'policyControls.nothingUntilPublished': 'Bis zur Veröffentlichung wird nichts wirksam',
@@ -601,6 +609,8 @@ export default {
   'policyControls.weekday': 'Wochentag',
   'policyControls.weekend': 'Wochenende',
   'policyControls.you': 'Sie',
+  'policyControls.yourEdit': 'Ihre Bearbeitung',
+  'policyControls.yourEditReason': 'Auf diesem Bildschirm bearbeitet — wird wirksam, wenn Sie veröffentlichen.',
 
   // Punch clock
   'punchClock.allClean': 'Im Betrieb ist keine Entscheidung erforderlich.',

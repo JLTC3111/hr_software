@@ -480,6 +480,7 @@ export default {
 
   // Policy controls
   'policyControls.accepted': 'ยอมรับแล้ว',
+  'policyControls.affects': 'มีผล {n}',
   'policyControls.appliesTo': 'ใช้กับพนักงาน {n} คน',
   'policyControls.approve': 'อนุมัติ',
   'policyControls.audit.lateGraceChanged': 'เปลี่ยนเวลาผ่อนผันมาสายจาก {from} เป็น {to}',
@@ -492,8 +493,15 @@ export default {
   'policyControls.encoding': 'การเข้ารหัส',
   'policyControls.file': 'ไฟล์',
   'policyControls.holiday': 'วันหยุด',
+  'policyControls.item.lateGrace': 'เวลาผ่อนผันมาสาย',
+  'policyControls.item.lateGraceReason': 'ขอโดย Đỗ Bảo Long — รถรับส่ง 07:30 มาสายในเช้าวันที่ฝนตก',
+  'policyControls.item.otCap': 'เพดานชั่วโมงล่วงเวลา',
+  'policyControls.item.otCapReason': 'ขอโดย Trần Thị Lan Anh — สายการผลิต Sơn Trà ทำงานหกวันต่อสัปดาห์จนกว่าคำสั่งซื้อเดือนกันยายนจะจัดส่ง',
+  'policyControls.item.teamLead': 'บทบาท · หัวหน้าทีม',
+  'policyControls.item.teamLeadGain': 'ได้รับสิทธิ์ "อนุมัติชั่วโมงล่วงเวลา" · 9 คน',
   'policyControls.lastEdit': 'แก้ไขล่าสุด',
   'policyControls.lastEditedBy': 'แก้ไขล่าสุดโดย',
+  'policyControls.lowRisk': 'ความเสี่ยงต่ำ',
   'policyControls.nItems': '{n} รายการ',
   'policyControls.nothingToPublish': 'ไม่มีรายการที่จะเผยแพร่',
   'policyControls.nothingUntilPublished': 'ยังไม่มีผลจนกว่าจะเผยแพร่',
@@ -590,6 +598,8 @@ export default {
   'policyControls.weekday': 'วันธรรมดา',
   'policyControls.weekend': 'วันหยุดสุดสัปดาห์',
   'policyControls.you': 'คุณ',
+  'policyControls.yourEdit': 'การแก้ไขของคุณ',
+  'policyControls.yourEditReason': 'แก้ไขในหน้านี้ — มีผลเมื่อคุณเผยแพร่',
 
   // Production help
   'prodHelp.checklistList': 'รายการตรวจสอบสำหรับผู้ดูแลระบบ',

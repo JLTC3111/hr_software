@@ -1,22 +1,3 @@
-/**
- * Policy Controls — settings rendered as an engineering spec sheet.
- *
- * The rule the whole screen is built on: every setting shows its value, its
- * scope and its consequence, and nothing commits until you publish. There are
- * no per-row save buttons; the single primary button in the title row is the
- * only commit on the board.
- *
- * Two-level navigation is what makes this screen different from the others: a
- * 184px section index sits beside the panel stack, so a new policy area arrives
- * as another numbered panel plus an index row — never a tab bar, never a
- * collapsible accordion.
- *
- * Counts are derived, never typed twice. The ticker's PENDING CHANGES figure,
- * the label on the publish button and the number of items in the decision
- * column all read the same `queue` array, so they cannot drift apart. The
- * provenance line under the <h1> and the ticker's LAST EDIT both read the newest
- * audit entry for the same reason.
- */
 import _React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, FileClock } from 'lucide-react';
@@ -356,13 +337,6 @@ const PolicyControls = () => {
   };
 
   const set = (key, value) => setDraft((d) => ({ ...d, [key]: value }));
-
-  /**
-   * Your own edits join the queue. One rule can only carry one pending change,
-   * so editing a rule someone else has already asked about takes that item over
-   * rather than opening a second one — otherwise the count would say two
-   * changes where the spec sheet only has one.
-   */
   const edit = (key, value, name, format) => {
     set(key, value);
     setQueue((q) => {

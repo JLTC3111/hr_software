@@ -40,7 +40,7 @@ const sourceFiles = () => {
 
 const staticTranslationCalls = () => {
   const calls = new Map();
-  const pattern = /\bt\(\s*(['"`])([^'"`$]+)\1/g;
+  const pattern = /\b(?:t|message)\(\s*(['"`])([^'"`$]+)\1/g;
   for (const filename of sourceFiles()) {
     const source = fs.readFileSync(filename, 'utf8');
     for (const match of source.matchAll(pattern)) {

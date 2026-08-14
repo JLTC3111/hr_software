@@ -480,6 +480,7 @@ export default {
 
   // Policy controls
   'policyControls.accepted': 'Принято',
+  'policyControls.affects': 'Затрагивает {n}',
   'policyControls.appliesTo': 'действует для {n} сотрудников',
   'policyControls.approve': 'Одобрить',
   'policyControls.audit.lateGraceChanged': 'Льготный период опоздания изменён с {from} на {to}',
@@ -492,8 +493,15 @@ export default {
   'policyControls.encoding': 'Кодировка',
   'policyControls.file': 'Файл',
   'policyControls.holiday': 'Праздник',
+  'policyControls.item.lateGrace': 'Льготный период опоздания',
+  'policyControls.item.lateGraceReason': 'Запрос от Đỗ Bảo Long — шаттл в 07:30 опаздывает в дождливые утра.',
+  'policyControls.item.otCap': 'Лимит сверхурочных',
+  'policyControls.item.otCapReason': 'Запрос от Trần Thị Lan Anh — линия Sơn Trà работает шесть дней в неделю, пока не отгрузят сентябрьский заказ.',
+  'policyControls.item.teamLead': 'Роль · Тимлид',
+  'policyControls.item.teamLeadGain': 'Получает «Согласование сверхурочных» · 9 человек',
   'policyControls.lastEdit': 'Последнее изменение',
   'policyControls.lastEditedBy': 'последнее изменение',
+  'policyControls.lowRisk': 'Низкий риск',
   'policyControls.nItems': '{n} элементов',
   'policyControls.nothingToPublish': 'Нечего публиковать',
   'policyControls.nothingUntilPublished': 'Ничего не вступит в силу до публикации',
@@ -590,6 +598,8 @@ export default {
   'policyControls.weekday': 'Будни',
   'policyControls.weekend': 'Выходные',
   'policyControls.you': 'Вы',
+  'policyControls.yourEdit': 'Ваше изменение',
+  'policyControls.yourEditReason': 'Изменено на этом экране — вступит в силу после публикации.',
 
   'prodHelp.checklistList': 'Пункты чек-листа оператора',
   'prodHelp.containerLabel': 'Контейнер производственной справки',
