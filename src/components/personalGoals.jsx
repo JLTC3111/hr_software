@@ -27,7 +27,7 @@ import {
   isDemoMode, getDemoGoalTitle, getDemoGoalDescription, getDemoSkills,
   getDemoReviewStrengths, getDemoReviewAreasForImprovement, getDemoEmployeeName,
 } from '../utils/demoHelper';
-import { formatDate } from '../utils/localeFormat.js';
+import { formatDate, localeTag } from '../utils/localeFormat.js';
 import * as performanceService from '../services/performanceService';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
@@ -615,7 +615,8 @@ const PersonalGoals = ({ employees }) => {
 
   const closeDate = useMemo(() => reviewCloseDate(selectedPeriod), [selectedPeriod]);
   const closeLabel = closeDate
-    ? closeDate.toLocaleDateString(undefined, { day: '2-digit', month: 'short' }).toUpperCase()
+    ? formatDate(closeDate, currentLanguage, { day: '2-digit', month: 'short' })
+      .toLocaleUpperCase(localeTag(currentLanguage))
     : '—';
   const daysToClose = closeDate ? daysBetween(new Date(), closeDate) : null;
 

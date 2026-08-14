@@ -69,6 +69,12 @@ test('Policy Controls passes the translator to its toggle formatter', () => {
   assert.doesNotMatch(policyControls, /fmtOnOff\(on,\s*t\)/);
 });
 
+test('Personal Goals review-due ticker formats the close date in the UI language', () => {
+  const personalGoals = source('src/components/personalGoals.jsx');
+  assert.match(personalGoals, /formatDate\(closeDate,\s*currentLanguage/);
+  assert.doesNotMatch(personalGoals, /toLocaleDateString\(undefined/);
+});
+
 test('segmented controls wrap instead of overflowing their panel', () => {
   const industry = source('src/components/ui/industry.jsx');
   assert.match(industry, /flexWrap:\s*['"]wrap['"]/);
