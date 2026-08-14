@@ -213,7 +213,7 @@ function RangePair({ ind, from, to }) {
 }
 
 /** State word + a square box holding a square knob. Never a pill, never a circle. */
-function Toggle({ ind, on, onChange, t }) {
+function Toggle({ ind, on, onChange, t, language }) {
   return (
     <button
       type="button"
@@ -230,7 +230,7 @@ function Toggle({ ind, on, onChange, t }) {
           textTransform: 'uppercase', color: on ? ind.accent : ind.ink, opacity: on ? 1 : 0.45,
         }}
       >
-        {fmtOnOff(on, t)}
+        {fmtOnOff(on, language, t)}
       </span>
       <span
         style={{
@@ -697,7 +697,15 @@ const PolicyControls = () => {
       case 'range':
         return <RangePair ind={ind} from={control.from} to={control.to} />;
       case 'toggle':
-        return <Toggle ind={ind} t={t} on={draft[control.key]} onChange={() => toggle(control.key, control.name)} />;
+        return (
+          <Toggle
+            ind={ind}
+            t={t}
+            language={currentLanguage}
+            on={draft[control.key]}
+            onChange={() => toggle(control.key, control.name)}
+          />
+        );
       case 'plates':
         return <Plates ind={ind} items={control.items} />;
       default:

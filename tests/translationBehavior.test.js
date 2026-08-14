@@ -61,3 +61,10 @@ test('Policy Controls keeps translatable queue copy out of state snapshots', () 
   assert.match(policyControls, /name:\s*message\(['"]policyControls\./);
   assert.doesNotMatch(policyControls, /useState\(\[[\s\S]*?name:\s*t\(['"]policyControls\./);
 });
+
+test('Policy Controls passes the translator to its toggle formatter', () => {
+  const policyControls = source('src/components/policyControls.jsx');
+  assert.match(policyControls, /fmtOnOff\(on,\s*language,\s*t\)/);
+  assert.match(policyControls, /language=\{currentLanguage\}/);
+  assert.doesNotMatch(policyControls, /fmtOnOff\(on,\s*t\)/);
+});
