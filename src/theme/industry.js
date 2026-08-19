@@ -83,6 +83,18 @@ const DARK = {
 
 export const getIndustry = (isDarkMode) => (isDarkMode ? DARK : LIGHT);
 
+/**
+ * Fill for a solid button — the one filled object the system allows on a board.
+ *
+ * `accent` is tuned to read as a tint against the ground: as a chart fill, a
+ * rule or a border it is correct, but carrying `accentInk` on top it only
+ * reaches 3.7:1 in the light set, under the 4.5:1 AA needs for the button's
+ * label. `accentDeep` reaches 5.8:1 and is the same hue. The dark set already
+ * clears it at 6.3:1, so there it keeps the standard accent and the button
+ * stays consistent with every other accent surface on the screen.
+ */
+export const solidButtonFill = (ind) => (ind.dark ? ind.accent : ind.accentDeep);
+
 /** Barlow Condensed 600, uppercase — every number and every label on this screen. */
 export const DISPLAY = "'Barlow Condensed', 'Barlow', system-ui, sans-serif";
 /** Barlow 400 — body copy. */

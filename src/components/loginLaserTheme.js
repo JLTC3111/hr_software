@@ -1,3 +1,22 @@
+/**
+ * Login background palette, derived from the Industry tokens.
+ *
+ * The login screen was re-skinned onto the Industry system (flat, zero radius,
+ * hairline rules, blue accent). The decorative background is kept — it is the
+ * one place in the app that gets an atmospheric layer — but it is tuned to the
+ * same token set as the card in front of it rather than carrying its own
+ * unrelated palette. Concretely:
+ *
+ *   - `clearColor` / `surfaceBackground` are the page ground, so the canvas is
+ *     invisible until the beam and dot field draw on it. If the decoration
+ *     never loads, the page looks the same minus the motion.
+ *   - The beam and dots use the accent ramp, so the background reads as the
+ *     same drawing as the blueprint grid rather than a second design.
+ *   - The light set carries no beam at all. On a near-white ground a volumetric
+ *     beam is either invisible or dirt; the dot field alone is the restrained
+ *     reading the system asks for.
+ */
+
 const DOT_FIELD_INTENSITY = {
   dotRadius: 2,
   dotSpacing: 13,
@@ -10,49 +29,65 @@ const DOT_FIELD_INTENSITY = {
   waveFrequency: 0.03,
 };
 
+/** Pointer-less devices get a slow drift instead of a cursor-driven bulge. */
 export const DOT_FIELD_AUTO = {
   waveAmplitude: 2.8,
   waveSpeed: 0.055,
   waveFrequency: 0.048,
 };
 
-export const LOGIN_LASER_THEME = {
-  dark: {
-    horizontalBeamOffset: 0.1,
-    verticalBeamOffset: -0.2,
-    color: '#CF9EFF',
-    clearColor: '#000000',
-    fogIntensity: 0.45,
-    beamIntensity: 1,
-    revealOpacity: 0.48,
-    revealBlendMode: 'lighten',
-    showSurfacePanel: true,
-    surfaceBackground: '#000000',
-    dotField: {
-      ...DOT_FIELD_INTENSITY,
-      gradientFrom: 'rgba(255, 255, 255, 0.58)',
-      gradientTo: 'rgba(207, 158, 255, 0.45)',
-      glowColor: '#000000',
-      glowCenterOpacity: 0.35,
-    },
-  },
-  light: {
-    horizontalBeamOffset: 0.1,
-    verticalBeamOffset: -0.2,
-    color: '#2563EB',
-    clearColor: '#F1F5F9',
-    fogIntensity: 0,
-    beamIntensity: 0,
-    revealOpacity: 0,
-    revealBlendMode: 'multiply',
-    showSurfacePanel: true,
-    surfaceBackground: '#F1F5F9',
-    dotField: {
-      ...DOT_FIELD_INTENSITY,
-      gradientFrom: 'rgba(37, 99, 235, 0.55)',
-      gradientTo: 'rgba(51, 65, 85, 0.38)',
-      glowColor: 'rgb(241, 245, 249)',
-      glowCenterOpacity: 0.45,
-    },
-  },
+/** `#rrggbb` -> `rgba(r, g, b, alpha)`, so one accent token can carry several weights. */
+const withAlpha = (hex, alpha) => {
+  const value = hex.replace('#', '');
+  const int = parseInt(
+    value.length === 3 ? value.replace(/(.)/g, '$1$1') : value,
+    16,
+  );
+  return `rgba(${(int >> 16) & 255}, ${(int >> 8) & 255}, ${int & 255}, ${alpha})`;
 };
+
+/**
+ * Background props for the current theme.
+ *
+ * @param {ReturnType<import('../theme/industry.js').getIndustry>} ind
+ */
+export const getLoginLaserTheme = (ind) =>
+  ind.dark
+    ? {
+      horizontalBeamOffset: 0.1,
+      verticalBeamOffset: -0.2,
+      color: ind.accentDeep,
+      clearColor: ind.ground,
+      fogIntensity: 0.4,
+      beamIntensity: 0.85,
+      revealOpacity: 0.4,
+      revealBlendMode: 'lighten',
+      showSurfacePanel: true,
+      surfaceBackground: ind.ground,
+      dotField: {
+        ...DOT_FIELD_INTENSITY,
+        gradientFrom: withAlpha(ind.accentDeeper, 0.52),
+        gradientTo: withAlpha(ind.accent, 0.4),
+        glowColor: ind.ground,
+        glowCenterOpacity: 0.35,
+      },
+    }
+    : {
+      horizontalBeamOffset: 0.1,
+      verticalBeamOffset: -0.2,
+      color: ind.accent,
+      clearColor: ind.ground,
+      fogIntensity: 0,
+      beamIntensity: 0,
+      revealOpacity: 0,
+      revealBlendMode: 'multiply',
+      showSurfacePanel: true,
+      surfaceBackground: ind.ground,
+      dotField: {
+        ...DOT_FIELD_INTENSITY,
+        gradientFrom: withAlpha(ind.accent, 0.55),
+        gradientTo: withAlpha(ind.accentDeeper, 0.34),
+        glowColor: ind.ground,
+        glowCenterOpacity: 0.45,
+      },
+    };

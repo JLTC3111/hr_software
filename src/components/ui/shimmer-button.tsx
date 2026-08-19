@@ -25,6 +25,7 @@ export const ShimmerButton = React.forwardRef<
       background = "rgba(0, 0, 0, 1)",
       className,
       children,
+      style,
       ...props
     },
     ref
@@ -39,6 +40,11 @@ export const ShimmerButton = React.forwardRef<
             "--speed": shimmerDuration,
             "--cut": shimmerSize,
             "--bg": background,
+            // Caller styles are merged, never spread over the block above: a
+            // plain `style={{ color }}` from a call site used to replace this
+            // object wholesale and leave --bg/--radius undefined, which renders
+            // the button with no background at all.
+            ...style,
           } as CSSProperties
         }
         className={cn(

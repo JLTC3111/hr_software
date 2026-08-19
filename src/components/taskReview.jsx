@@ -47,6 +47,7 @@ import { formatDate } from '../utils/localeFormat.js';
 import { TranslatedText } from './ui/translated-text.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
+import { useScreenNavigation } from '../hooks/useScreenNavigation.js';
 import {
   Blueprint, Bar, Tag, Btn, Seg, Kicker, TickerCell, ColumnHeading,
   LiveClock, FlatSelect,
@@ -109,6 +110,31 @@ const previousPeriodKey = (period) => {
   if (!parsed) return null;
   const { quarter, year } = parsed;
   return quarter === 1 ? formatPeriodKey(4, year - 1) : formatPeriodKey(quarter - 1, year);
+};
+
+/* ------------------------------------------------------------------ *
+ * Navigation
+ * ------------------------------------------------------------------ */
+
+/** The scope the board shows when the URL does not name a department. */
+const DEFAULT_SCOPE = 'all';
+
+/**
+ * Declared at module scope so its identity is stable — see useScreenNavigation.
+ *
+ *   /task-review                            the board, resolved cycle, company
+ *   /task-review?cycle=Q3-2026              a named cycle
+ *   /task-review?scope=Engineering          one department
+ *   /task-review?cycle=Q3-2026&review=17    that person's review sheet
+ *
+ * `scope` carries no validator because the departments come from the directory
+ * rather than from a fixed list; an unreachable one is corrected once there is
+ * a directory to check it against.
+ */
+const TASK_REVIEW_NAV = {
+  cycle: { key: 'cycle', fallback: null, isValid: (value) => parsePeriod(value) !== null },
+  scope: { key: 'scope', fallback: null },
+  review: { key: 'review', fallback: null },
 };
 
 /** Newest first — the cycle selector and the "which cycle is current" default. */
@@ -346,10 +372,29 @@ const TaskReview = ({ employees, allEmployees }) => {
   const [fetchError, setFetchError] = useState(null);
   const [notice, setNotice] = useState(null);
   const [busyId, setBusyId] = useState(null);
-  const [selectedPeriod, setSelectedPeriod] = useState(() => periodOf(new Date()));
-  const [periodTouched, setPeriodTouched] = useState(false);
-  const [segment, setSegment] = useState('all');
-  const [openReview, setOpenReview] = useState(null);
+
+  /* ---------------- navigation ----------------
+     The cycle, the scope and the opened review sheet are addresses, not
+     component state. Held in useState, Back walked out of the screen instead of
+     closing the sheet, a reload dropped the viewer back on the live quarter,
+     and neither a cycle nor a person's review could be linked to. */
+  const [nav, go] = useScreenNavigation(TASK_REVIEW_NAV);
+
+  /* The live quarter stands in until the URL names a cycle or the effect below
+     resolves the newest one the data actually has. */
+  const liveCycle = useMemo(() => periodOf(new Date()), []);
+  const selectedPeriod = nav.cycle ?? liveCycle;
+  /* An explicit `?cycle=` is exactly "the viewer picked a cycle themselves". */
+  const periodTouched = nav.cycle !== null;
+  const segment = nav.scope ?? DEFAULT_SCOPE;
+
+  const selectPeriod = useCallback((value) => { go({ cycle: value }); }, [go]);
+  const selectSegment = useCallback((value) => { go({ scope: value }); }, [go]);
+  const openRow = useCallback((row) => { go({ review: row.id }); }, [go]);
+  const closeReview = useCallback(
+    (options) => { go({ review: null }, options); },
+    [go],
+  );
 
   const canViewAll = checkPermission('canViewReports');
   const canSignOff = checkPermission('canManagePerformance');
@@ -417,10 +462,17 @@ const TaskReview = ({ employees, allEmployees }) => {
 
   // Land on the newest cycle the data actually has, unless the user picked one.
   useEffect(() => {
-    if (periodTouched || periodOptions.length === 0) return;
+    // `periodOptions` is just the live quarter until the fetch lands, so
+    // resolving before then would stamp the wrong cycle into the URL and, being
+    // an explicit `?cycle=`, stop this from ever correcting it.
+    if (periodTouched || loading || fetchError || periodOptions.length === 0) return;
     const withReviews = periodOptions.find((key) => reviews.some((r) => r.review_period === key));
-    setSelectedPeriod(withReviews || periodOptions[0]);
-  }, [periodOptions, reviews, periodTouched]);
+    const resolved = withReviews || periodOptions[0];
+    // Nothing to say when the fallback is already right — keep the bare URL.
+    if (resolved === selectedPeriod) return;
+    // The screen chose this, not the viewer, so it replaces rather than pushes.
+    go({ cycle: resolved }, { replace: true });
+  }, [periodOptions, reviews, periodTouched, loading, fetchError, selectedPeriod, go]);
 
   const calibration = useMemo(() => calibrationDate(selectedPeriod), [selectedPeriod]);
   const daysToCalibration = calibration ? daysBetween(new Date(), calibration) : null;
@@ -447,8 +499,15 @@ const TaskReview = ({ employees, allEmployees }) => {
   }, [activeEmployees, t, departmentLabel]);
 
   useEffect(() => {
-    if (segment !== 'all' && !segmentOptions.some((o) => o.value === segment)) setSegment('all');
-  }, [segmentOptions, segment]);
+    // Without a directory there is nothing to judge the scope against, and
+    // wiping a valid `?scope=` while the employee list is still arriving would
+    // silently drop the department a shared link asked for.
+    if (segment === DEFAULT_SCOPE || activeEmployees.length === 0) return;
+    if (!segmentOptions.some((o) => o.value === segment)) {
+      // A correction, not a place: it must not become a Back step.
+      go({ scope: null }, { replace: true });
+    }
+  }, [segmentOptions, segment, activeEmployees, go]);
 
   const scopeEmployees = useMemo(() => {
     if (!canViewAll) {
@@ -539,6 +598,25 @@ const TaskReview = ({ employees, allEmployees }) => {
   }, [reviews, skills, scopeEmployees, selectedPeriod, calibration]);
 
   const inScope = cycleRows.length;
+
+  /* The sheet reads from the live row rather than a snapshot taken when it was
+     opened, so signing off or sending back updates what is on screen instead of
+     leaving stale figures behind it. A row that will not resolve — a deleted
+     person, a cycle they have no row in, someone outside this viewer's scope —
+     simply does not open the sheet. */
+  const openReview = useMemo(
+    () => (nav.review ? cycleRows.find((row) => row.id === String(nav.review)) ?? null : null),
+    [cycleRows, nav.review],
+  );
+
+  /* Drop a parameter that cannot resolve, so a reload does not keep re-asking
+     for it and the address bar matches what is on screen. Guarded on the fetch
+     because `cycleRows` is empty until it lands, which is not the same as the
+     review being gone. */
+  useEffect(() => {
+    if (loading || fetchError || !nav.review || openReview) return;
+    go({ review: null }, { replace: true });
+  }, [loading, fetchError, nav.review, openReview, go]);
 
   const stages = useMemo(() => {
     const count = (predicate) => cycleRows.filter(predicate).length;
@@ -702,7 +780,8 @@ const TaskReview = ({ employees, allEmployees }) => {
           ? { ...review, ...(result.data || {}), status: updates.status ?? review.status }
           : review
       )));
-      setOpenReview(null);
+      // Replaced, not pushed: Back must not resurrect a sheet just resolved.
+      closeReview({ replace: true });
       setNotice({ kind: 'ok', text: message });
     } catch (error) {
       console.error('Error updating review:', error);
@@ -711,7 +790,7 @@ const TaskReview = ({ employees, allEmployees }) => {
     } finally {
       setBusyId(null);
     }
-  }, [handleSessionAuthError, t]);
+  }, [closeReview, handleSessionAuthError, t]);
 
   const signOff = useCallback((row) => applyReviewUpdate(
     row,
@@ -778,10 +857,10 @@ const TaskReview = ({ employees, allEmployees }) => {
 
   useEffect(() => {
     if (!openReview) return undefined;
-    const onKey = (e) => { if (e.key === 'Escape') setOpenReview(null); };
+    const onKey = (e) => { if (e.key === 'Escape') closeReview(); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [openReview]);
+  }, [openReview, closeReview]);
 
   /* ---------------- copy ---------------- */
 
@@ -882,7 +961,7 @@ const TaskReview = ({ employees, allEmployees }) => {
             ind={ind}
             onDark
             value={selectedPeriod}
-            onChange={(e) => { setPeriodTouched(true); setSelectedPeriod(e.target.value); }}
+            onChange={(e) => selectPeriod(e.target.value)}
             aria-label={t('taskReview.cycle', 'Cycle')}
           >
             {periodOptions.map((key) => (
@@ -953,7 +1032,7 @@ const TaskReview = ({ employees, allEmployees }) => {
                 ind={ind}
                 options={segmentOptions}
                 value={segment}
-                onChange={setSegment}
+                onChange={selectSegment}
                 ariaLabel={t('taskReview.scope', 'Scope')}
               />
             )}
@@ -1150,7 +1229,7 @@ const TaskReview = ({ employees, allEmployees }) => {
               <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
                 <button
                   type="button"
-                  onClick={() => setOpenReview(row)}
+                  onClick={() => openRow(row)}
                   style={{
                     fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, letterSpacing: '.04em',
                     textTransform: 'uppercase', color: ind.ink, background: 'none', border: 'none',
@@ -1201,7 +1280,7 @@ const TaskReview = ({ employees, allEmployees }) => {
             <button
               key={row.id}
               type="button"
-              onClick={() => setOpenReview(row)}
+              onClick={() => openRow(row)}
               className="flex items-center justify-between w-full"
               style={{
                 padding: '12px 20px',
@@ -1303,7 +1382,7 @@ const TaskReview = ({ employees, allEmployees }) => {
           busy={busyId === openReview.review?.id}
           onSignOff={() => signOff(openReview)}
           onSendBack={() => sendBack(openReview)}
-          onClose={() => setOpenReview(null)}
+          onClose={() => closeReview()}
         />
       )}
     </div>

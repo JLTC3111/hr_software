@@ -58,6 +58,7 @@ import { DatePicker } from './ui/date-picker.jsx';
 import { TranslatedText } from './ui/translated-text.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
+import { useScreenNavigation } from '../hooks/useScreenNavigation.js';
 import {
   Blueprint, Bar, Tag, Btn, Seg, TickerCell, LiveClock, ColumnHeading, FlatSelect,
 } from './ui/industry.jsx';
@@ -83,6 +84,29 @@ const NEAR_DAYS = 6;
 
 const CLOSED_STATUS = 'completed';
 const CANCELLED_STATUS = 'cancelled';
+
+/* ------------------------------------------------------------------ *
+ * Navigation
+ * ------------------------------------------------------------------ */
+
+/** The tab the ledger lands on when the URL does not name one. */
+const DEFAULT_SEGMENT = 'open';
+
+/** Every tab the chips can select. Anything else in `?tab=` is not a place. */
+const SEGMENT_VALUES = new Set([DEFAULT_SEGMENT, 'mine', 'overdue', 'closed']);
+
+/**
+ * Declared at module scope so its identity is stable — see useScreenNavigation.
+ *
+ *   /task-listing                      the ledger, default tab
+ *   /task-listing?tab=overdue          the ledger, a named tab
+ *   /task-listing?tab=overdue&task=42  that task's detail sheet, Back returns
+ *                                      to the tab it was opened from
+ */
+const TASK_LISTING_NAV = {
+  tab: { key: 'tab', fallback: null, isValid: (value) => SEGMENT_VALUES.has(value) },
+  task: { key: 'task', fallback: null },
+};
 
 /* ------------------------------------------------------------------ *
  * Helpers
@@ -567,16 +591,10 @@ const TaskListing = ({ employees, allEmployees }) => {
   const [fetchError, setFetchError] = useState('');
   const [notice, setNotice] = useState(null);
 
-  const [segment, setSegment] = useState('open');
-  /* Until the viewer picks a segment themselves, the screen is allowed to open
-     on whichever one actually has rows — a ledger whose tasks are all closed
-     must not open on a view that hides every one of them. */
-  const [segmentTouched, setSegmentTouched] = useState(false);
   const [query, setQuery] = useState('');
   const [groupMode, setGroupMode] = useState('record');
   const [showAll, setShowAll] = useState(false);
 
-  const [openTaskId, setOpenTaskId] = useState(null);
   const [focusTaskId, setFocusTaskId] = useState(null);
   const [note, setNote] = useState('');
 
@@ -585,6 +603,38 @@ const TaskListing = ({ employees, allEmployees }) => {
 
   const canViewAll = checkPermission('canViewReports');
   const canAssign = user?.role === 'admin' || user?.role === 'manager';
+
+  /* ---------------- navigation ----------------
+     The tab and the opened task are addresses, not component state. Held in
+     useState, Back walked out of the screen instead of closing the detail
+     sheet, a reload dropped the viewer back on the landing view, and a task
+     could not be linked to. Both now live in the query string. */
+  const [nav, go] = useScreenNavigation(TASK_LISTING_NAV);
+
+  const openTaskId = nav.task;
+  /* `mine` is only offered to viewers who can see everyone, so a URL must not
+     be able to hand out a filter the control itself would refuse. */
+  const segment = nav.tab === 'mine' && !canViewAll ? DEFAULT_SEGMENT : (nav.tab ?? DEFAULT_SEGMENT);
+  /* An explicit `?tab=` is exactly "the viewer picked a tab themselves": until
+     one is set the screen may still open on whichever tab has rows, because a
+     ledger whose tasks are all closed must not open on a view that hides every
+     one of them. */
+  const segmentTouched = nav.tab !== null;
+
+  const openTask = useCallback((id) => {
+    setFocusTaskId(id);
+    /* Pushed, so Back returns to the ledger the row was opened from. */
+    go({ task: id });
+  }, [go]);
+
+  const closeTask = useCallback(() => { go({ task: null }); }, [go]);
+
+  /* Chips are this screen's tabs, so a click is a navigation and Back undoes
+     it. `showAll` is a per-tab disclosure and resets with the tab. */
+  const selectSegment = useCallback((value) => {
+    setShowAll(false);
+    go({ tab: value });
+  }, [go]);
 
   const directory = useMemo(
     () => (allEmployees?.length ? allEmployees : employees) || [],
@@ -821,13 +871,13 @@ const TaskListing = ({ employees, allEmployees }) => {
     if (result.success) {
       flash('ok', t('taskListing.taskDeleted', 'Task deleted'));
       setModal(null);
-      if (String(openTaskId) === String(task.id)) setOpenTaskId(null);
+      if (String(openTaskId) === String(task.id)) closeTask();
       fetchTasks({ silent: true });
     } else {
       console.error('Failed to delete task:', result.error);
       flash('err', t('taskListing.taskDeleteError', 'Failed to delete task'));
     }
-  }, [flash, fetchTasks, openTaskId, t]);
+  }, [closeTask, flash, fetchTasks, openTaskId, t]);
 
   /* ---------------- derivation ---------------- */
 
@@ -1013,8 +1063,9 @@ const TaskListing = ({ employees, allEmployees }) => {
 
   useEffect(() => {
     if (segmentTouched || loading || totals.total === 0) return;
-    if (totals.open === 0 && totals.closed > 0) setSegment('closed');
-  }, [segmentTouched, loading, totals.open, totals.closed, totals.total]);
+    // The screen chose this, not the viewer, so it replaces rather than pushes.
+    if (totals.open === 0 && totals.closed > 0) go({ tab: 'closed' }, { replace: true });
+  }, [segmentTouched, loading, totals.open, totals.closed, totals.total, go]);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -1190,8 +1241,15 @@ const TaskListing = ({ employees, allEmployees }) => {
 
   useEffect(() => {
     if (focusTaskId && byId.has(String(focusTaskId))) return;
+    /* A link opens a task without anyone having clicked its row, so seed the
+       highlight from the URL. Closing the sheet then lands on the same row a
+       click would have left behind, instead of jumping to the top decision. */
+    if (openTaskId && byId.has(String(openTaskId))) {
+      setFocusTaskId(openTaskId);
+      return;
+    }
     setFocusTaskId(decisions[0]?.id ?? null);
-  }, [decisions, focusTaskId, byId]);
+  }, [decisions, focusTaskId, byId, openTaskId]);
 
   const myRows = useMemo(() => rows.filter((row) => row.mine), [rows]);
   const yourDay = useMemo(() => {
@@ -1242,6 +1300,19 @@ const TaskListing = ({ employees, allEmployees }) => {
   /* ---------------- the opened task (4b) ---------------- */
 
   const opened = openTaskId ? byId.get(String(openTaskId)) : null;
+
+  /* A link to a task that has since been deleted, or that this viewer is not
+     allowed to see, already falls through to the ledger. Drop the dead
+     parameter too, so a reload does not keep re-asking for it and the address
+     bar matches what is actually on screen. Replaced, never pushed: a
+     correction is not somewhere Back should return to.
+
+     Guarded on `loading` and `fetchError` because `byId` is empty during the
+     first fetch and after a failed one — neither means the task is gone. */
+  useEffect(() => {
+    if (loading || fetchError || !openTaskId) return;
+    if (!byId.has(String(openTaskId))) go({ task: null }, { replace: true });
+  }, [loading, fetchError, openTaskId, byId, go]);
 
   useEffect(() => { setNote(''); }, [openTaskId]);
 
@@ -1518,7 +1589,7 @@ const TaskListing = ({ employees, allEmployees }) => {
                 >
                   <button
                     type="button"
-                    onClick={() => setOpenTaskId(null)}
+                    onClick={closeTask}
                     style={{
                       background: 'none', border: 'none', padding: 0, cursor: 'pointer',
                       fontFamily: DISPLAY, fontWeight: 600, fontSize: 11, letterSpacing: '.14em',
@@ -1698,11 +1769,11 @@ const TaskListing = ({ employees, allEmployees }) => {
                         .replace('{n}', String(detail.siblingsLate))
                       : t('taskListing.noneOverdue', 'none of them overdue — open the record')}
                     onClick={() => {
-                      setOpenTaskId(null);
                       setGroupMode('record');
                       setQuery(opened.ownerName);
-                      setSegment('open');
-                      setSegmentTouched(true);
+                      // One call: setSearchParams does not queue, so a second
+                      // call in this tick would overwrite the first.
+                      go({ task: null, tab: DEFAULT_SEGMENT });
                     }}
                   />
                 </Blueprint>
@@ -1789,9 +1860,9 @@ const TaskListing = ({ employees, allEmployees }) => {
                 ind={ind}
                 size={12.5}
                 onClick={() => {
-                  setOpenTaskId(null);
                   setGroupMode('record');
                   setQuery(opened.ownerName);
+                  closeTask();
                 }}
               >
                 {`${opened.ownerName}${opened.ownerDept ? ` · ${opened.ownerDept}` : ''}`}
@@ -2066,7 +2137,7 @@ const TaskListing = ({ employees, allEmployees }) => {
               ind={ind}
               ariaLabel={t('taskListing.title', 'Task Listing')}
               value={segment}
-              onChange={(value) => { setSegment(value); setSegmentTouched(true); setShowAll(false); }}
+              onChange={selectSegment}
               options={segments}
             />
 
@@ -2172,7 +2243,7 @@ const TaskListing = ({ employees, allEmployees }) => {
                   <span className="block" style={{ marginTop: 10 }}>
                     <ActionLink
                       ind={ind}
-                      onClick={() => { setSegment('closed'); setSegmentTouched(true); setShowAll(false); }}
+                      onClick={() => selectSegment('closed')}
                     >
                       {t('taskListing.showClosedN', 'Show the {n} closed').replace('{n}', String(totals.closed))}
                     </ActionLink>
@@ -2253,7 +2324,7 @@ const TaskListing = ({ employees, allEmployees }) => {
                         <div style={{ minWidth: 0 }}>
                           <button
                             type="button"
-                            onClick={() => { setFocusTaskId(row.id); setOpenTaskId(row.id); }}
+                            onClick={() => openTask(row.id)}
                             style={{
                               background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left',
                               fontFamily: BODY, fontSize: 13.5, color: ind.ink,
@@ -2412,7 +2483,7 @@ const TaskListing = ({ employees, allEmployees }) => {
                   >
                     {t('taskListing.markComplete', 'Mark complete')}
                   </Btn>
-                  <Btn ind={ind} onClick={() => { setFocusTaskId(row.id); setOpenTaskId(row.id); }}>
+                  <Btn ind={ind} onClick={() => openTask(row.id)}>
                     {t('taskListing.openTask', 'Open')}
                   </Btn>
                 </div>
@@ -2442,7 +2513,7 @@ const TaskListing = ({ employees, allEmployees }) => {
               </div>
               <button
                 type="button"
-                onClick={() => { setFocusTaskId(row.id); setOpenTaskId(row.id); }}
+                onClick={() => openTask(row.id)}
                 aria-label={t('taskListing.openTask', 'Open')}
                 style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: ind.inkFaint, flex: 'none' }}
               >
@@ -2485,7 +2556,7 @@ const TaskListing = ({ employees, allEmployees }) => {
               />
               <button
                 type="button"
-                onClick={() => { setFocusTaskId(row.id); setOpenTaskId(row.id); }}
+                onClick={() => openTask(row.id)}
                 style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
               >
                 <span

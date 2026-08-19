@@ -14,7 +14,31 @@ import { ShimmerButton } from './ui/shimmer-button';
 import { ShinyButton } from './ui/shiny-button';
 import { cn } from '@/lib/utils';
 import { Blueprint } from './ui/industry.jsx';
-import { getIndustry, DISPLAY, BODY } from '../theme/industry.js';
+import { getIndustry, solidButtonFill, DISPLAY, BODY } from '../theme/industry.js';
+import OptionalLazy from './OptionalLazy.jsx';
+import { getLoginLaserTheme } from './loginLaserTheme.js';
+
+/**
+ * The background is decoration, and it is the heaviest thing on this page: a
+ * WebGL beam plus a dot field, both code-split. It is deliberately *not* loaded
+ * with React.lazy.
+ *
+ * React.lazy caches a rejected import forever, so once the chunk fails the
+ * component throws on every subsequent render and the failure escalates to the
+ * nearest error boundary — which, on the login route, would take the sign-in
+ * form down with it. That is the "left the tab open, came back, could not log
+ * in" failure: a deploy replaced the fingerprinted chunk this tab was holding,
+ * the decoration 404'd, and the whole screen went with it.
+ *
+ * OptionalLazy owns that contract instead (see OptionalLazy.jsx): it makes no
+ * request while offline, tries once, and only retries after a cache
+ * revalidation proves the asset actually came back. Whatever it does, the form
+ * behind it stays mounted and usable.
+ */
+const loadLoginLaserBackground = () => import('./LoginLaserBackground');
+
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
 
 /**
  * Demo mode is closed until further notice. The button stays on the page as
@@ -45,7 +69,24 @@ const Login = () => {
   const [loginError, setLoginError] = useState('');
   const [showIdleLogoutNotice, setShowIdleLogoutNotice] = useState(false);
   const [titleReady, setTitleReady] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(REDUCED_MOTION_QUERY).matches
+  );
+  const [hasFinePointer, setHasFinePointer] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(FINE_POINTER_QUERY).matches
+  );
   const isFormBusy = isLoading || isDemoLoading;
+
+  /* Reduced motion drops the animated layer entirely; the blueprint grid below
+     is static and carries the screen on its own. A coarse pointer keeps the
+     layer but drives it from a slow drift instead of the cursor, and caps DPR. */
+  const showLaserFlow = !prefersReducedMotion;
+  const interactionMode = hasFinePointer ? 'hover' : 'auto';
+  const laserTheme = useMemo(() => getLoginLaserTheme(ind), [ind]);
+
+  /* The filled button is the only solid object on the card, so its fill has to
+     clear AA against `accentInk` on its own — see solidButtonFill. */
+  const buttonFill = solidButtonFill(ind);
 
   // Wait until auth bootstrap finishes so the title animation isn't skipped on first paint
   useEffect(() => {
@@ -85,6 +126,29 @@ const Login = () => {
     noticeLanguageRef.current = currentLanguage;
     setShowIdleLogoutNotice(false);
   }, [currentLanguage]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const motionMq = window.matchMedia(REDUCED_MOTION_QUERY);
+    const pointerMq = window.matchMedia(FINE_POINTER_QUERY);
+
+    const onMotionChange = (event) => setPrefersReducedMotion(event.matches);
+    const onPointerChange = (event) => setHasFinePointer(event.matches);
+
+    // Re-read on mount: the queries can have flipped between the lazy initial
+    // state and this effect (an OS motion toggle, or a tablet gaining a mouse).
+    setPrefersReducedMotion(motionMq.matches);
+    setHasFinePointer(pointerMq.matches);
+
+    motionMq.addEventListener('change', onMotionChange);
+    pointerMq.addEventListener('change', onPointerChange);
+
+    return () => {
+      motionMq.removeEventListener('change', onMotionChange);
+      pointerMq.removeEventListener('change', onPointerChange);
+    };
+  }, []);
 
   // Forgot password states
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
@@ -244,6 +308,19 @@ const Login = () => {
         fontFamily: BODY,
       }}
     >
+      {/* Decorative layer. It sits under the blueprint grid and the card, and
+          both of those render whether or not it ever arrives, so a chunk that
+          fails to load costs the page some atmosphere and nothing else. */}
+      {showLaserFlow && (
+        <OptionalLazy
+          load={loadLoginLaserBackground}
+          label="Login background"
+          {...laserTheme}
+          language={currentLanguage}
+          interactionMode={interactionMode}
+        />
+      )}
+
       <div
         className="fixed inset-0 z-0 pointer-events-none"
         aria-hidden="true"
@@ -508,7 +585,7 @@ const Login = () => {
               disabled={isLoading || isDemoLoading}
               borderRadius="0"
               shimmerColor="#ffffff"
-              background={ind.accent}
+              background={buttonFill}
               className={cn(
                 'w-full rounded-none py-3 px-4 font-semibold uppercase disabled:opacity-60 disabled:cursor-not-allowed',
                 isLoading && 'cursor-not-allowed'
@@ -723,7 +800,7 @@ const Login = () => {
                   <ShimmerButton
                     type="submit"
                     borderRadius="0"
-                    background={ind.accent}
+                    background={buttonFill}
                     className={cn(
                       'flex-1 rounded-none py-3 px-4 font-semibold uppercase',
                       isSendingReset && 'cursor-not-allowed opacity-70'
