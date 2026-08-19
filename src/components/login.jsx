@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Eye, Car, EyeOff, Lock, Mail, Building2, AlertCircle, X, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -9,17 +9,12 @@ import LanguageSelector from './LanguageSelector';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { resolvePostLoginRoute } from '../config/routes.js';
 import { LOGOUT_REASON_KEY, DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts.js';
-import { TextEffect, TextShimmer, Spotlight } from './motion-primitives';
+import { TextEffect } from './motion-primitives';
 import { ShimmerButton } from './ui/shimmer-button';
 import { ShinyButton } from './ui/shiny-button';
 import { cn } from '@/lib/utils';
-import OptionalLazy from './OptionalLazy.jsx';
-import { LOGIN_LASER_THEME } from './loginLaserTheme.js';
-
-const loadLoginLaserBackground = () => import('./LoginLaserBackground');
-
-const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
-const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
+import { Blueprint } from './ui/industry.jsx';
+import { getIndustry, DISPLAY, BODY } from '../theme/industry.js';
 
 /**
  * Demo mode is closed until further notice. The button stays on the page as
@@ -31,7 +26,8 @@ const DEMO_REQUEST_EMAIL = 'support@icue.vn';
 
 const Login = () => {
   const { login, loginAsDemo, forgotPassword, isAuthenticated, user, loading } = useAuth();
-  const { isDarkMode, text } = useTheme();
+  const { isDarkMode } = useTheme();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
   const { t, currentLanguage } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
@@ -49,16 +45,7 @@ const Login = () => {
   const [loginError, setLoginError] = useState('');
   const [showIdleLogoutNotice, setShowIdleLogoutNotice] = useState(false);
   const [titleReady, setTitleReady] = useState(false);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia(REDUCED_MOTION_QUERY).matches
-  );
-  const [hasFinePointer, setHasFinePointer] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia(FINE_POINTER_QUERY).matches
-  );
   const isFormBusy = isLoading || isDemoLoading;
-  const showLaserFlow = !prefersReducedMotion;
-  const interactionMode = hasFinePointer ? 'hover' : 'auto';
-  const laserTheme = LOGIN_LASER_THEME[isDarkMode ? 'dark' : 'light'];
 
   // Wait until auth bootstrap finishes so the title animation isn't skipped on first paint
   useEffect(() => {
@@ -99,22 +86,6 @@ const Login = () => {
     setShowIdleLogoutNotice(false);
   }, [currentLanguage]);
 
-  useEffect(() => {
-    const motionMq = window.matchMedia(REDUCED_MOTION_QUERY);
-    const pointerMq = window.matchMedia(FINE_POINTER_QUERY);
-
-    const onMotionChange = (event) => setPrefersReducedMotion(event.matches);
-    const onPointerChange = (event) => setHasFinePointer(event.matches);
-
-    motionMq.addEventListener('change', onMotionChange);
-    pointerMq.addEventListener('change', onPointerChange);
-
-    return () => {
-      motionMq.removeEventListener('change', onMotionChange);
-      pointerMq.removeEventListener('change', onPointerChange);
-    };
-  }, []);
-  
   // Forgot password states
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
@@ -196,7 +167,7 @@ const Login = () => {
         setIsLoading(false);
       }
       // On success, spinner stays until redirect (or safety timeout below)
-    } catch (err) {
+    } catch {
       setLoginError(t('login.invalidCredentials', 'Invalid email or password'));
       setIsLoading(false);
     }
@@ -264,31 +235,30 @@ const Login = () => {
   };
 
   return (
-    <div className={cn(
-      'relative min-h-screen overflow-hidden transition-colors duration-200',
-      showLaserFlow
-        ? cn(
-          'flex items-center justify-center',
-          isDarkMode ? 'bg-black' : 'bg-[#F1F5F9]'
-        )
-        : 'flex items-center justify-center'
-    )}>
-      {showLaserFlow ? (
-        <OptionalLazy
-          load={loadLoginLaserBackground}
-          label="Login background"
-          {...laserTheme}
-          language={currentLanguage}
-          interactionMode={interactionMode}
-        />
-      ) : (
-        <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-          <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full opacity-10 ${isDarkMode ? 'bg-white' : 'bg-blue-300'} blur-3xl`}></div>
-          <div className={`absolute -bottom-40 -left-40 w-80 h-80 rounded-full opacity-10 ${isDarkMode ? 'bg-white' : 'bg-purple-300'} blur-3xl`}></div>
-        </div>
-      )}
+    <div
+      className="relative flex min-h-screen items-center justify-center overflow-hidden transition-colors duration-200"
+      style={{
+        '--login-accent': ind.accent,
+        background: ind.ground,
+        color: ind.ink,
+        fontFamily: BODY,
+      }}
+    >
+      <div
+        className="fixed inset-0 z-0 pointer-events-none"
+        aria-hidden="true"
+        style={{
+          backgroundImage: `
+            linear-gradient(${ind.rule} 1px, transparent 1px),
+            linear-gradient(90deg, ${ind.rule} 1px, transparent 1px)
+          `,
+          backgroundSize: '36px 36px',
+          maskImage: 'linear-gradient(to bottom, black, transparent 78%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black, transparent 78%)',
+        }}
+      />
 
-      <div className="absolute top-6 right-6 z-20">
+      <div className="absolute top-4 right-4 z-20">
         {/* Desktop: theme toggle left of language bar */}
         <div className="hidden xl:flex items-center gap-2">
           <ThemeToggle />
@@ -297,16 +267,17 @@ const Login = () => {
 
         {/* Mobile / tablet: theme toggle inside language bar */}
         <div
-          className="flex xl:hidden items-stretch rounded-lg border overflow-hidden"
+          className="flex xl:hidden items-stretch border overflow-hidden"
           style={{
-            backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
-            borderColor: isDarkMode ? '#4b5563' : '#d1d5db',
+            backgroundColor: ind.chrome,
+            borderColor: ind.hairline,
+            borderRadius: 0,
           }}
         >
           <ThemeToggle variant="integrated" />
           <div
             className="w-px self-stretch shrink-0"
-            style={{ backgroundColor: isDarkMode ? '#4b5563' : '#d1d5db' }}
+            style={{ backgroundColor: ind.hairline }}
             aria-hidden
           />
           <LanguageSelector variant="integrated" />
@@ -314,57 +285,56 @@ const Login = () => {
       </div>
 
       {/* Login Card */}
-      <div className="relative z-10 w-full max-w-md px-6">
-        <div className={cn(
-          'relative overflow-hidden rounded-2xl shadow-2xl p-8 transition-colors duration-200',
-          showLaserFlow
-            ? isDarkMode
-              ? 'border border-blue-500/40 bg-[#120F17]/45 backdrop-blur-md shadow-2xl shadow-blue-500/10'
-              : 'border-none bg-white/75 backdrop-blur-md shadow-none'
-            : isDarkMode
-              ? 'bg-gray-800'
-              : 'bg-white'
-        )}>
-          {!showLaserFlow && (
-          <Spotlight
-            className={isDarkMode
-              ? 'from-blue-400/40 via-blue-300/20 to-transparent'
-              : 'from-blue-200/50 via-indigo-100/40 to-transparent'}
-            size={280}
-          />
-          )}
+      <div className="relative z-10 w-full max-w-md px-5 py-20 sm:px-6">
+        <Blueprint
+          ind={ind}
+          className="relative overflow-hidden p-6 transition-colors duration-200 sm:p-8"
+          style={{ background: ind.ground }}
+        >
           {/* Logo and Title */}
           <div className="relative text-center mb-8">
-            <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${isDarkMode ? 'bg-transparent' : 'bg-blue-500'}`}>
-              <Building2 className="w-8 h-8 text-white" />
+            <div
+              className="inline-flex h-14 w-14 items-center justify-center mb-4"
+              style={{
+                background: ind.tickerBg,
+                border: `1px solid ${ind.tickerRule}`,
+                color: ind.tickerInk,
+              }}
+            >
+              <Building2 className="w-7 h-7" strokeWidth={1.5} />
             </div>
             <TextEffect
               key={`login-title-${t('login.title', 'HR Manager')}`}
               as="h1"
               per="char"
               preset="fade-in-blur"
-              className={`text-3xl font-bold ${text.primary} mb-2`}
+              className="mb-2 text-3xl"
+              style={{
+                color: ind.ink,
+                fontFamily: BODY,
+                fontWeight: 400,
+                letterSpacing: '-0.02em',
+              }}
               speedReveal={1.2}
               trigger={titleReady}
             >
               {t('login.title', 'HR Manager')}
             </TextEffect>
-            <TextShimmer
-              as="p"
-              className={
-                isDarkMode
-                  ? 'text-sm [--base-color:#9ca3af] [--base-gradient-color:#93c5fd]'
-                  : 'text-sm [--base-color:#6b7280] [--base-gradient-color:#3b82f6]'
-              }
-              duration={2.4}
+            <p
+              className="text-sm"
+              style={{ color: ind.inkMuted, fontFamily: BODY }}
             >
               {t('login.subtitle', 'Sign in to access your dashboard')}
-            </TextShimmer>
+            </p>
           </div>
 
           {showIdleLogoutNotice && (
-            <div className={`relative mb-6 p-3 ${isDarkMode ? 'bg-amber-900/30 border-amber-700 text-amber-200' : 'bg-amber-50 border-amber-300 text-amber-900'} border rounded-lg flex items-center space-x-2`} role="status">
-              <AlertCircle className="w-5 h-5 shrink-0" />
+            <div
+              className="relative mb-6 flex items-center space-x-2 border p-3"
+              style={{ background: ind.accentWash, borderColor: ind.hairline, color: ind.ink }}
+              role="status"
+            >
+              <AlertCircle className="w-5 h-5 shrink-0" strokeWidth={1.5} />
               <span className="text-sm">
                 {t(
                   'login.idleLogoutMessage',
@@ -376,8 +346,12 @@ const Login = () => {
 
           {/* Login Error */}
           {loginError && (
-            <div className={`relative mb-6 p-3 ${isDarkMode ? 'bg-red-900/30 border-red-700 text-red-400' : 'bg-red-100 border-red-400 text-red-700'} border rounded-lg flex items-center space-x-2`}>
-              <AlertCircle className="w-5 h-5 shrink-0" />
+            <div
+              className="relative mb-6 flex items-center space-x-2 border p-3"
+              style={{ borderColor: ind.ink, color: ind.ink }}
+              role="alert"
+            >
+              <AlertCircle className="w-5 h-5 shrink-0" strokeWidth={1.5} />
               <span className="text-sm">{loginError}</span>
             </div>
           )}
@@ -386,31 +360,38 @@ const Login = () => {
           <form onSubmit={handleSubmit} className="relative space-y-5">
             {/* Email Field */}
             <div>
-              <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+              <label
+                className="mb-2 block text-xs font-semibold uppercase"
+                style={{ color: ind.inkMuted, fontFamily: DISPLAY, letterSpacing: '.14em' }}
+              >
                 {t('login.email', 'Email Address')}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`} />
+                  <Mail className="h-5 w-5" style={{ color: ind.inkFaint }} strokeWidth={1.5} />
                 </div>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors ${
-                    isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white caret-white placeholder-gray-400' 
-                      : 'bg-white border-gray-300 text-gray-900 caret-gray-900 placeholder-gray-500'
-                  } ${errors.email ? 'border-red-500 focus:ring-red-500' : ''}`}
+                  className="industry-login-input w-full border py-3 pl-10 pr-4 outline-none transition-colors placeholder:opacity-60 focus:border-[var(--login-accent)]"
+                  style={{
+                    background: 'transparent',
+                    borderColor: errors.email ? ind.ink : ind.hairline,
+                    borderRadius: 0,
+                    caretColor: ind.ink,
+                    color: ind.ink,
+                    fontFamily: BODY,
+                  }}
                   placeholder={t('login.emailPlaceholder', 'you@example.com')}
                   autoComplete="email"
                   disabled={isFormBusy}
                 />
               </div>
               {errors.email && (
-                <p className="mt-1 text-sm text-red-500 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
+                <p className="mt-1 flex items-center text-sm" style={{ color: ind.ink }}>
+                  <AlertCircle className="w-4 h-4 mr-1" strokeWidth={1.5} />
                   {errors.email}
                 </p>
               )}
@@ -418,23 +399,30 @@ const Login = () => {
 
             {/* Password Field */}
             <div>
-              <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+              <label
+                className="mb-2 block text-xs font-semibold uppercase"
+                style={{ color: ind.inkMuted, fontFamily: DISPLAY, letterSpacing: '.14em' }}
+              >
                 {t('login.password', 'Password')}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`} />
+                  <Lock className="h-5 w-5" style={{ color: ind.inkFaint }} strokeWidth={1.5} />
                 </div>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors ${
-                    isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white caret-white placeholder-gray-400' 
-                      : 'bg-white border-gray-300 text-gray-900 caret-gray-900 placeholder-gray-500'
-                  } ${errors.password ? 'border-red-500 focus:ring-red-500' : ''}`}
+                  className="industry-login-input w-full border py-3 pl-10 pr-12 outline-none transition-colors placeholder:opacity-60 focus:border-[var(--login-accent)]"
+                  style={{
+                    background: 'transparent',
+                    borderColor: errors.password ? ind.ink : ind.hairline,
+                    borderRadius: 0,
+                    caretColor: ind.ink,
+                    color: ind.ink,
+                    fontFamily: BODY,
+                  }}
                   placeholder={t('login.passwordPlaceholder', '••••••••')}
                   autoComplete="current-password"
                   disabled={isFormBusy}
@@ -442,7 +430,8 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className={`absolute inset-y-0 right-0 pr-3 flex items-center ${isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3"
+                  style={{ color: ind.inkMuted }}
                   disabled={isLoading}
                 >
                   {showPassword ? (
@@ -453,8 +442,8 @@ const Login = () => {
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-500 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
+                <p className="mt-1 flex items-center text-sm" style={{ color: ind.ink }}>
+                  <AlertCircle className="w-4 h-4 mr-1" strokeWidth={1.5} />
                   {errors.password}
                 </p>
               )}
@@ -467,18 +456,26 @@ const Login = () => {
                     -webkit-appearance: none;
                     -moz-appearance: none;
                     appearance: none;
-                    border-color: ${isDarkMode ? '#525252' : '#9CA3AF'};
-                    border-width: 2px;
-                    border-radius: 0.25rem;
+                    border: 1px solid ${ind.hairline};
+                    border-radius: 0;
                 }
 
                 #custom-checkbox:checked {
-                    border-color: ${isDarkMode ? '#FFF' : '#000'};
+                    border-color: ${ind.accent};
                     background-size: 100%;
-                    background-color: ${isDarkMode ? '#transparent' : '#000'};
+                    background-color: ${ind.accent};
                     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L6.5 9.086l4.293-4.293a1 1 0 0 1 1.414 0z'/%3e%3c/svg%3e");
                     background-repeat: no-repeat;
                     background-position: center;
+                }
+
+                .industry-login-input:-webkit-autofill,
+                .industry-login-input:-webkit-autofill:hover,
+                .industry-login-input:-webkit-autofill:focus {
+                    -webkit-box-shadow: 0 0 0 1000px ${ind.ground} inset !important;
+                    box-shadow: 0 0 0 1000px ${ind.ground} inset !important;
+                    -webkit-text-fill-color: ${ind.ink} !important;
+                    caret-color: ${ind.ink} !important;
                 }
             `}</style>
               <label className="flex items-center">
@@ -487,17 +484,18 @@ const Login = () => {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 accent-blue-600 border-gray-900 rounded focus:ring-blue-500 cursor-pointer"
+                className="w-4 h-4 cursor-pointer"
                 disabled={isFormBusy}
               />
-                <span className={`ml-2 text-sm ${text.secondary} cursor-pointer`}>
+                <span className="ml-2 cursor-pointer text-sm" style={{ color: ind.inkMuted }}>
                   {t('login.rememberMe')}
                 </span>
               </label>
               <button
                 type="button"
                 onClick={handleForgotPasswordClick}
-                className={`text-sm ${isDarkMode ? 'text-indigo-300 hover:text-indigo-200' : 'text-blue-600 hover:text-amber-900'}  font-medium cursor-pointer transition-color duration-500 focus:ring-blue-500`}
+                className="cursor-pointer text-sm font-semibold uppercase"
+                style={{ color: ind.accentDeep, fontFamily: DISPLAY, letterSpacing: '.06em' }}
                 disabled={isFormBusy}
               >
                 {t('login.forgotPassword')}
@@ -508,13 +506,14 @@ const Login = () => {
             <ShimmerButton
               type="submit"
               disabled={isLoading || isDemoLoading}
-              borderRadius="0.5rem"
+              borderRadius="0"
               shimmerColor="#ffffff"
-              background={isDarkMode ? 'rgb(37, 99, 235)' : 'rgb(37, 99, 235)'}
+              background={ind.accent}
               className={cn(
-                'w-full py-3 px-4 font-medium text-white disabled:opacity-60 disabled:cursor-not-allowed',
+                'w-full rounded-none py-3 px-4 font-semibold uppercase disabled:opacity-60 disabled:cursor-not-allowed',
                 isLoading && 'cursor-not-allowed'
               )}
+              style={{ color: ind.accentInk, fontFamily: DISPLAY, letterSpacing: '.08em' }}
             >
               {isLoading ? (
                 <div className="relative z-10 flex items-center justify-center">
@@ -533,19 +532,10 @@ const Login = () => {
           {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className={`w-full border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`}></div>
+              <div className="w-full border-t" style={{ borderColor: ind.rule }}></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className={cn(
-                'px-2',
-                showLaserFlow
-                  ? isDarkMode
-                    ? 'bg-[#120F17]/45 text-gray-400'
-                    : 'bg-white/75 text-gray-500'
-                  : isDarkMode
-                    ? 'bg-gray-800 text-gray-400'
-                    : 'bg-white text-gray-500'
-              )}>
+              <span className="px-2" style={{ background: ind.ground, color: ind.inkFaint }}>
                 {t('login.orContinueWith', 'Or continue with')}
               </span>
             </div>
@@ -566,19 +556,24 @@ const Login = () => {
                 // Brief delay to ensure the spinner is visible even on fast responses
                 await new Promise((resolve) => setTimeout(resolve, 150));
                 await loginAsDemo();
-              } catch (err) {
+              } catch {
                 setLoginError(t('login.invalidCredentials', 'Invalid email or password'));
                 setIsDemoLoading(false);
               }
             }}
             className={cn(
-              'w-full mt-3 py-3 px-4 font-medium transition-all duration-200 shadow-sm hover:shadow-md',
-              isDarkMode
-                ? 'border-white bg-linear-to-r from-gray-600 to-gray-900 text-white'
-                : 'border-indigo-200 bg-linear-to-r from-indigo-50 to-gray-50 text-gray-700',
+              'mt-3 w-full rounded-none border bg-transparent py-3 px-4 font-semibold uppercase transition-colors duration-200 shadow-none',
               isDemoLoading && 'opacity-80',
               isFormBusy && 'disabled:opacity-50'
             )}
+            style={{
+              background: 'transparent',
+              borderColor: ind.hairline,
+              borderRadius: 0,
+              color: ind.ink,
+              fontFamily: DISPLAY,
+              letterSpacing: '.08em',
+            }}
             disabled={isFormBusy}
             title={DEMO_LOCKED ? t('login.requestDemoNote', `Email ${DEMO_REQUEST_EMAIL} to request a demo`) : undefined}
           >
@@ -591,10 +586,11 @@ const Login = () => {
                 {t('login.tryDemoLoading', 'Loading demo...')}
               </span>
             ) : (
-              <span className="flex items-center justify-center gap-2 normal-case tracking-normal">
+              <span className="flex items-center justify-center gap-2">
                 <Car
-                  className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gray-600'}`}
-                  style={{ transform: 'scaleX(-1)' }}
+                  className="w-5 h-5"
+                  style={{ color: ind.inkMuted, transform: 'scaleX(-1)' }}
+                  strokeWidth={1.5}
                 />
                 {DEMO_LOCKED
                   ? t('login.requestDemo', 'Request Demo')
@@ -602,50 +598,69 @@ const Login = () => {
               </span>
             )}
           </ShinyButton>
-        </div>
+        </Blueprint>
 
         {/* Footer */}
-        <p className={`mt-8 text-center text-xs ${text.secondary}`}>
+        <p className="mt-8 text-center text-xs" style={{ color: ind.inkFaint, fontFamily: BODY }}>
           {t('login.footer', '© 2024 HR Manager. All rights reserved.')}
         </p>
       </div>
 
       {/* Forgot Password Modal */}
       {showForgotPasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-2xl p-8 max-w-md w-full relative`}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(29,45,61,.72)' }}
+        >
+          <Blueprint
+            ind={ind}
+            className="relative w-full max-w-md p-8"
+            style={{ background: ind.ground }}
+          >
             {/* Close Button */}
             <button
               onClick={closeForgotPasswordModal}
-              className={`absolute top-4 right-4 ${text.secondary} hover:${text.primary}`}
+              className="absolute top-4 right-4"
+              style={{ color: ind.inkMuted }}
               disabled={isSendingReset}
+              aria-label={t('common.close', 'Close')}
             >
-              <X className="w-6 h-6" />
+              <X className="w-6 h-6" strokeWidth={1.5} />
             </button>
 
             {/* Title */}
             <div className="mb-6">
-              <h2 className={`text-2xl cursor-pointer font-bold ${text.primary} mb-2`}>
+              <h2
+                className="mb-2 text-2xl"
+                style={{ color: ind.ink, fontFamily: BODY, fontWeight: 400 }}
+              >
                 {t('login.forgotPasswordModal.title', 'Reset Password')}
               </h2>
-              <p className={`text-sm cursor-pointer ${text.secondary}`}>
+              <p className="text-sm" style={{ color: ind.inkMuted }}>
                 {t('login.forgotPasswordModal.description', 'Enter your email address and we\'ll send you a link to reset your password.')}
               </p>
             </div>
 
             {/* Success Message */}
             {forgotPasswordSuccess && (
-              <div className={`mb-4 p-4 ${isDarkMode ? 'bg-green-900/30 border-green-700' : 'bg-green-100 border-green-400'} border rounded-lg flex items-start space-x-2`}>
-                <CheckCircle className={`w-5 h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'} shrink-0 mt-0.5`} />
-                <span className={`text-sm ${isDarkMode ? 'text-green-400' : 'text-green-700'}`}>{forgotPasswordSuccess}</span>
+              <div
+                className="mb-4 flex items-start space-x-2 border p-4"
+                style={{ background: ind.accentWash, borderColor: ind.hairline, color: ind.ink }}
+              >
+                <CheckCircle className="mt-0.5 w-5 h-5 shrink-0" style={{ color: ind.accentDeep }} strokeWidth={1.5} />
+                <span className="text-sm">{forgotPasswordSuccess}</span>
               </div>
             )}
 
             {/* Error Message */}
             {forgotPasswordError && (
-              <div className={`mb-4 p-4 ${isDarkMode ? 'bg-red-900/30 border-red-700' : 'bg-red-100 border-red-400'} border rounded-lg flex items-start space-x-2`}>
-                <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'} shrink-0 mt-0.5`} />
-                <span className={`text-sm ${isDarkMode ? 'text-red-400' : 'text-red-700'}`}>{forgotPasswordError}</span>
+              <div
+                className="mb-4 flex items-start space-x-2 border p-4"
+                style={{ borderColor: ind.ink, color: ind.ink }}
+                role="alert"
+              >
+                <AlertCircle className="mt-0.5 w-5 h-5 shrink-0" strokeWidth={1.5} />
+                <span className="text-sm">{forgotPasswordError}</span>
               </div>
             )}
 
@@ -653,12 +668,15 @@ const Login = () => {
             {!forgotPasswordSuccess && (
               <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
                 <div>
-                  <label className={`block text-sm font-medium ${text.primary} mb-2`}>
+                  <label
+                    className="mb-2 block text-xs font-semibold uppercase"
+                    style={{ color: ind.inkMuted, fontFamily: DISPLAY, letterSpacing: '.14em' }}
+                  >
                     {t('login.forgotPasswordModal.emailLabel', 'Email Address')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`} />
+                      <Mail className="h-5 w-5" style={{ color: ind.inkFaint }} strokeWidth={1.5} />
                     </div>
                     <input
                       type="email"
@@ -667,11 +685,15 @@ const Login = () => {
                         setForgotPasswordEmail(e.target.value);
                         setForgotPasswordError('');
                       }}
-                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors ${
-                        isDarkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white caret-white placeholder-gray-400' 
-                          : 'bg-white border-gray-300 text-gray-900 caret-gray-900 placeholder-gray-500'
-                      }`}
+                      className="industry-login-input w-full border py-3 pl-10 pr-4 outline-none transition-colors placeholder:opacity-60 focus:border-[var(--login-accent)]"
+                      style={{
+                        background: 'transparent',
+                        borderColor: forgotPasswordError ? ind.ink : ind.hairline,
+                        borderRadius: 0,
+                        caretColor: ind.ink,
+                        color: ind.ink,
+                        fontFamily: BODY,
+                      }}
                       placeholder={t('login.forgotPasswordModal.emailPlaceholder', 'you@example.com')}
                       autoComplete="email"
                       disabled={isSendingReset}
@@ -685,24 +707,28 @@ const Login = () => {
                   <ShinyButton
                     type="button"
                     onClick={closeForgotPasswordModal}
-                    className={cn(
-                      'flex-1 py-3 px-4 font-medium normal-case tracking-normal',
-                      isDarkMode
-                        ? 'border-gray-600 bg-gray-700 text-white'
-                        : 'border-gray-300 bg-white text-gray-700'
-                    )}
+                    className="flex-1 rounded-none border bg-transparent py-3 px-4 font-semibold uppercase"
+                    style={{
+                      background: 'transparent',
+                      borderColor: ind.hairline,
+                      borderRadius: 0,
+                      color: ind.ink,
+                      fontFamily: DISPLAY,
+                      letterSpacing: '.08em',
+                    }}
                     disabled={isSendingReset}
                   >
                     {t('login.forgotPasswordModal.cancel', 'Cancel')}
                   </ShinyButton>
                   <ShimmerButton
                     type="submit"
-                    borderRadius="0.5rem"
-                    background="rgb(37, 99, 235)"
+                    borderRadius="0"
+                    background={ind.accent}
                     className={cn(
-                      'flex-1 py-3 px-4 font-medium text-white',
+                      'flex-1 rounded-none py-3 px-4 font-semibold uppercase',
                       isSendingReset && 'cursor-not-allowed opacity-70'
                     )}
+                    style={{ color: ind.accentInk, fontFamily: DISPLAY, letterSpacing: '.08em' }}
                     disabled={isSendingReset}
                   >
                     {isSendingReset ? (
@@ -721,7 +747,7 @@ const Login = () => {
                 </div>
               </form>
             )}
-          </div>
+          </Blueprint>
         </div>
       )}
     </div>

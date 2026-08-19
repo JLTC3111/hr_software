@@ -38,7 +38,7 @@
  * cards are outlines with four registration corners, urgency reads through
  * words and ink weight rather than red and green.
  */
-import _React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import _React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle, ArrowRight, Check, ChevronDown, Download, Plus, Search, Trash2, X,
 } from 'lucide-react';
@@ -374,18 +374,11 @@ const EMPTY_FORM = {
 function TaskFormModal({
   ind, t, form, setForm, mode, canAssign, assignable, onClose, onSave, onDelete, employeeLabel,
 }) {
-  const panelRef = useRef(null);
-
   useEffect(() => {
     const onKey = (event) => { if (event.key === 'Escape') onClose(); };
-    const onDown = (event) => {
-      if (panelRef.current && !panelRef.current.contains(event.target)) onClose();
-    };
     document.addEventListener('keydown', onKey);
-    document.addEventListener('mousedown', onDown);
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.removeEventListener('mousedown', onDown);
     };
   }, [onClose]);
 
@@ -407,9 +400,11 @@ function TaskFormModal({
       }}
       role="dialog"
       aria-modal="true"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
     >
       <div
-        ref={panelRef}
         className="w-full max-w-[560px] max-h-[88vh] overflow-y-auto"
         style={{ background: ind.ground, border: `1px solid ${ind.ink}`, borderRadius: 0, padding: '20px 22px 22px' }}
       >
