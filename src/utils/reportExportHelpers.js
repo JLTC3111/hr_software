@@ -154,7 +154,52 @@ export const PDF_TOKENS = {
   contentTop: 23, // first content row on continuation pages
   footerReserve: 20, // kept free at the bottom of every page (rule + footer text)
   footerRule: 14, // measured up from the bottom edge
-  footerBaseline: 9.5
+  footerBaseline: 9.5,
+  titleSize: 18, // masthead headline, in points — the logo is sized off this
+  logoTitleRatio: 1.75, // logo box height as a multiple of the headline size
+  logoGap: 5 // clear space between the logo and the masthead text column
+};
+
+const PDF_LOGO_SRC = '/logoIcons/logo.png';
+let pdfLogoPromise = null;
+
+/**
+ * Company logo for the PDF masthead, as a jsPDF-ready data URL plus its natural
+ * pixel size (the caller scales by ratio, so the mark never stretches).
+ *
+ * Resolves to `null` rather than throwing: a missing logo must not take the
+ * export down with it. A failure clears the cache so the next export retries.
+ */
+export const loadPdfLogo = () => {
+  if (pdfLogoPromise) return pdfLogoPromise;
+
+  pdfLogoPromise = (async () => {
+    const response = await fetch(PDF_LOGO_SRC, { cache: 'force-cache' });
+    if (!response.ok) throw new Error(`Logo fetch failed (${response.status})`);
+
+    const blob = await response.blob();
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error || new Error('Logo read failed'));
+      reader.readAsDataURL(blob);
+    });
+
+    const size = await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
+      image.onerror = () => reject(new Error('Logo decode failed'));
+      image.src = dataUrl;
+    });
+
+    return { dataUrl, ...size };
+  })().catch((error) => {
+    console.warn('PDF logo unavailable — masthead falls back to text only:', error?.message || error);
+    pdfLogoPromise = null;
+    return null;
+  });
+
+  return pdfLogoPromise;
 };
 
 /** Bar fill widths are percentages of the group maximum, resolved up-front. */
@@ -234,20 +279,50 @@ export const createPdfReportLayout = ({
     newPage,
     ensure,
 
-    /** Page-1 masthead: left-aligned bold title over muted meta lines. */
-    titleBlock({ title, metaLines = [] }) {
-      y = 18;
-      doc.setFontSize(18);
+    /**
+     * Page-1 masthead: company logo flush to the left margin, with the bold
+     * title and its muted meta lines set in a column beside it.
+     *
+     * The logo box is a multiple of the headline point size, not a fixed
+     * millimetre height, so the lockup keeps its proportions if the title size
+     * is ever retuned. Text is measured against the narrower column the logo
+     * leaves, so a long title truncates instead of colliding with the mark.
+     */
+    titleBlock({ title, metaLines = [], logo = null }) {
+      const top = 18;
+      const titleSize = T.titleSize;
+      y = top;
+
+      let textLeft = left;
+      let textWidth = contentWidth;
+      let logoBottom = top;
+      if (logo?.dataUrl) {
+        const logoH = ptToMm(titleSize) * T.logoTitleRatio;
+        const logoW = logo.height > 0 ? (logo.width / logo.height) * logoH : logoH;
+        try {
+          doc.addImage(logo.dataUrl, 'PNG', left, top, logoW, logoH, 'reportLogo', 'FAST');
+          textLeft = left + logoW + T.logoGap;
+          textWidth = contentWidth - logoW - T.logoGap;
+          logoBottom = top + logoH;
+        } catch (error) {
+          console.warn('PDF logo could not be drawn:', error?.message || error);
+        }
+      }
+
+      doc.setFontSize(titleSize);
       doc.setTextColor(...T.ink);
-      drawText(fitText(title, contentWidth, 18), left, baselineOf(y, 18), { bold: true });
-      y += lineHeight(18, 1.25);
+      drawText(fitText(title, textWidth, titleSize), textLeft, baselineOf(y, titleSize), { bold: true });
+      y += lineHeight(titleSize, 1.25);
 
       doc.setFontSize(8.5);
       doc.setTextColor(...T.muted);
       metaLines.filter(Boolean).forEach((metaLine) => {
-        drawText(fitText(metaLine, contentWidth, 8.5), left, baselineOf(y, 8.5));
+        drawText(fitText(metaLine, textWidth, 8.5), textLeft, baselineOf(y, 8.5));
         y += lineHeight(8.5, 1.45);
       });
+
+      // Short mastheads must still clear the logo before the first section rule.
+      y = Math.max(y, logoBottom);
     },
 
     /** 2px section divider. */

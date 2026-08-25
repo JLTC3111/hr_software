@@ -36,6 +36,7 @@ import {
   createPdfReportLayout,
   filterExportSnapshotByScope,
   formatHours,
+  loadPdfLogo,
   meterFilledBlocks,
   PDF_TOKENS,
   withBarPercents
@@ -2617,7 +2618,10 @@ const Reports = () => {
         collectExportUgcStrings(timeEntries, tasks, goals, leave)
       );
 
-      const { jsPDF, autoTable } = await loadPdfLibs();
+      const [{ jsPDF, autoTable }, companyLogo] = await Promise.all([
+        loadPdfLibs(),
+        loadPdfLogo()
+      ]);
       const doc = new jsPDF('p', 'mm', 'a4');
       const loadedFonts = await loadPdfFonts(doc, currentLanguage);
       const unicodeFontLoaded = loadedFonts.unicodeReady;
@@ -2766,9 +2770,10 @@ const Reports = () => {
         onNewPage: drawRunningHeader
       });
 
-      // ── Masthead: bold title left-aligned over meta lines ─────────────────
+      // ── Masthead: bold title left-aligned over meta lines, logo top-right ──
       layout.titleBlock({
         title: reportTitle.toUpperCase(),
+        logo: companyLogo,
         metaLines: [
           `${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}`,
           `${t('reports.period', 'Period')}: ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}`,
@@ -2786,13 +2791,13 @@ const Reports = () => {
         timeEntries.length > 0
           ? summaryCell(t('reports.totalHours', 'Total Hours'), `${exportStats.totalHours}h`)
           : null,
-        ...(timeEntries.length > 0 ? [
-          summaryCell(t('reports.timeEntries', 'Time Entries'), exportStats.timeEntriesCount),
-          summaryCell(t('reports.approved', 'Approved'), exportStats.approvedTime)
-        ] : []),
         ...(tasks.length > 0 ? [
           summaryCell(t('reports.tasks', 'Tasks'), exportStats.tasksCount),
           summaryCell(t('reports.completedTasks', 'Completed Tasks'), exportStats.completedTasks)
+        ] : []),
+        ...(timeEntries.length > 0 ? [
+          summaryCell(t('reports.timeEntries', 'Time Entries'), exportStats.timeEntriesCount),
+          summaryCell(t('reports.approved', 'Approved'), exportStats.approvedTime)
         ] : []),
         ...(goals.length > 0 ? [
           summaryCell(t('reports.goals', 'Goals'), exportStats.goalsCount),
@@ -2841,16 +2846,6 @@ const Reports = () => {
         }));
 
       const pdfCharts = [];
-      if (timeEntries.length > 0) {
-        pdfCharts.push({
-          title: t('reports.pdf.charts.hoursByType', 'Hours by Type'),
-          items: toChartItems(aggregateHoursByType(timeEntries), translateHourType)
-        });
-        pdfCharts.push({
-          title: t('reports.pdf.charts.statusDistribution', 'Time Entry Status Distribution'),
-          items: toChartItems(aggregateCounts(timeEntries, 'status'), translateStatus)
-        });
-      }
       if (tasks.length > 0) {
         pdfCharts.push({
           title: t('reports.pdf.charts.taskStatusDistribution', 'Task Status Distribution'),
@@ -2859,6 +2854,16 @@ const Reports = () => {
         pdfCharts.push({
           title: t('reports.pdf.charts.taskPriorityDistribution', 'Task Priority Distribution'),
           items: toChartItems(aggregateCounts(tasks, 'priority'), translatePriority)
+        });
+      }
+      if (timeEntries.length > 0) {
+        pdfCharts.push({
+          title: t('reports.pdf.charts.hoursByType', 'Hours by Type'),
+          items: toChartItems(aggregateHoursByType(timeEntries), translateHourType)
+        });
+        pdfCharts.push({
+          title: t('reports.pdf.charts.statusDistribution', 'Time Entry Status Distribution'),
+          items: toChartItems(aggregateCounts(timeEntries, 'status'), translateStatus)
         });
       }
       if (goals.length > 0) {
@@ -2936,32 +2941,6 @@ const Reports = () => {
 
       const pdfHead = (key, fallback) => cleanTextForPDF(t(key, fallback), unicodeFontLoaded);
 
-      if (timeEntries.length > 0) {
-        addPdfTable(
-          t('reports.timeEntries', 'TIME ENTRIES').toUpperCase(),
-          [
-            pdfHead('reports.pdf.headers.employee', 'Employee'),
-            pdfHead('reports.pdf.headers.department', 'Department'),
-            pdfHead('reports.pdf.headers.date', 'Date'),
-            pdfHead('reports.pdf.headers.clockIn', 'Clock In'),
-            pdfHead('reports.pdf.headers.clockOut', 'Clock Out'),
-            pdfHead('reports.pdf.headers.hours', 'Hours'),
-            pdfHead('reports.pdf.headers.hourType', 'Type'),
-            pdfHead('reports.pdf.headers.status', 'Status')
-          ],
-          timeEntries.map((entry) => [
-            cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(entry.employee, t) : (entry.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
-            cleanTextForPDF(translateDepartment(entry.employee?.department) || '', unicodeFontLoaded),
-            entry.date,
-            entry.clock_in || '-',
-            entry.clock_out || '-',
-            `${formatHours(entry.hours || 0)}h`,
-            cleanTextForPDF(translateHourType(entry.hour_type), unicodeFontLoaded),
-            cleanTextForPDF(translateStatus(entry.status), unicodeFontLoaded)
-          ])
-        );
-      }
-
       if (tasks.length > 0) {
         addPdfTable(
           t('reports.tasks', 'TASKS').toUpperCase(),
@@ -2984,6 +2963,32 @@ const Reports = () => {
             task.due_date || '-',
             `${formatHours(task.estimated_hours || 0)}h`,
             `${formatHours(task.actual_hours || 0)}h`
+          ])
+        );
+      }
+
+      if (timeEntries.length > 0) {
+        addPdfTable(
+          t('reports.timeEntries', 'TIME ENTRIES').toUpperCase(),
+          [
+            pdfHead('reports.pdf.headers.employee', 'Employee'),
+            pdfHead('reports.pdf.headers.department', 'Department'),
+            pdfHead('reports.pdf.headers.date', 'Date'),
+            pdfHead('reports.pdf.headers.clockIn', 'Clock In'),
+            pdfHead('reports.pdf.headers.clockOut', 'Clock Out'),
+            pdfHead('reports.pdf.headers.hours', 'Hours'),
+            pdfHead('reports.pdf.headers.hourType', 'Type'),
+            pdfHead('reports.pdf.headers.status', 'Status')
+          ],
+          timeEntries.map((entry) => [
+            cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(entry.employee, t) : (entry.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
+            cleanTextForPDF(translateDepartment(entry.employee?.department) || '', unicodeFontLoaded),
+            entry.date,
+            entry.clock_in || '-',
+            entry.clock_out || '-',
+            `${formatHours(entry.hours || 0)}h`,
+            cleanTextForPDF(translateHourType(entry.hour_type), unicodeFontLoaded),
+            cleanTextForPDF(translateStatus(entry.status), unicodeFontLoaded)
           ])
         );
       }
