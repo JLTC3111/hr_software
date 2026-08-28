@@ -63,6 +63,7 @@ import {
 import {
   filterActiveEmployees,
 } from '../utils/employeeStatus.js';
+import { getEmployeePositionI18nKey } from '../utils/employeePositionKey.js';
 
 // exceljs/jspdf are ~1.2 MB and are only needed once the user actually exports —
 // loaded on demand so opening the Reports page stays cheap.
@@ -268,7 +269,8 @@ const Reports = () => {
   // Helper function to translate position values
   const translatePosition = (position) => {
     if (!position) return '';
-    return t(`employeePosition.${position}`, position);
+    const key = getEmployeePositionI18nKey(position);
+    return key ? t(`employeePosition.${key}`, position) : position;
   };
   
   // Helper function to translate category labels
@@ -1174,6 +1176,16 @@ const Reports = () => {
     return t('reports.allEmployees', 'All Employees');
   }, [selectedEmployee, selectedUnit, employeeById, t]);
 
+  /** One-person reports: "Name · Position". Roster/unit reports stay a group label. */
+  const describeExportSubject = useCallback((employees, separator = '·') => {
+    if (selectedEmployee === 'all') return exportScopeName;
+    const employee = (employees || []).find((emp) => String(emp.id) === String(selectedEmployee));
+    if (!employee) return exportScopeName;
+    const name = isDemoMode() ? getDemoEmployeeName(employee, t) : (employee.name || exportScopeName);
+    const position = translatePosition(employee.position);
+    return position ? `${name} ${separator} ${position}` : name;
+  }, [selectedEmployee, exportScopeName, t]);
+
   /**
    * The one filename builder. The dock prints what the export writes because
    * both call this — the three writers no longer each spell it out.
@@ -1271,7 +1283,7 @@ const Reports = () => {
   const buildTimeEntryCsvRows = (timeEntries, ugcMap = null) => {
     const headers = [
       t('reports.excel.headers.dataType', 'Data Type'),
-      t('employees.name', 'Employee Name'),
+      t('employees.name', 'Name'),
       t('employees.department', 'Department'),
       t('employees.position', 'Position'),
       t('timeTracking.date', 'Date'),
@@ -1305,7 +1317,7 @@ const Reports = () => {
   const buildTaskCsvRows = (tasks, ugcMap = null) => {
     const headers = [
       t('reports.excel.headers.dataType', 'Data Type'),
-      t('employees.name', 'Employee Name'),
+      t('employees.name', 'Name'),
       t('employees.department', 'Department'),
       t('reports.excel.headers.taskTitle', 'Task Title'),
       t('reports.excel.headers.description', 'Description'),
@@ -1348,7 +1360,7 @@ const Reports = () => {
   const buildGoalCsvRows = (goals, ugcMap = null) => {
     const headers = [
       t('reports.excel.headers.dataType', 'Data Type'),
-      t('employees.name', 'Employee Name'),
+      t('employees.name', 'Name'),
       t('employees.department', 'Department'),
       t('reports.excel.headers.goalTitle', 'Goal Title'),
       t('reports.excel.headers.description', 'Description'),
@@ -1382,7 +1394,7 @@ const Reports = () => {
   const buildLeaveCsvRows = (leaveRequests, ugcMap = null) => {
     const headers = [
       t('reports.excel.headers.dataType', 'Data Type'),
-      t('employees.name', 'Employee Name'),
+      t('employees.name', 'Name'),
       t('employees.department', 'Department'),
       t('reports.leaveType', 'Leave Type'),
       t('reports.dateRange', 'Date Range'),
@@ -1432,7 +1444,7 @@ const Reports = () => {
         `"${t('reports.language', 'Report Language')}: ${languageName}"`,
         `"${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}"`,
         `"${t('reports.period', 'Period')}: ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}"`,
-        `"${t('reports.employee', 'Employee')}: ${selectedEmployee === 'all' ? exportScopeName : (employees.find((emp) => String(emp.id) === String(selectedEmployee))?.name || exportScopeName)}"`
+        `"${t('employees.name', 'Name')}:- ${describeExportSubject(employees)}"`
       ];
 
       const sections = [{
@@ -1589,9 +1601,7 @@ const Reports = () => {
       };
       
       // Who the workbook is about: a person, a unit, or the whole roster.
-      const employeeName = selectedEmployee !== 'all'
-        ? (employees.find(emp => String(emp.id) === String(selectedEmployee))?.name || exportScopeName)
-        : exportScopeName;
+      const employeeName = describeExportSubject(employees);
 
       // ==================== SUMMARY/METRICS SHEET WITH STYLING ====================
       const summarySheet = workbook.addWorksheet(sheetNames.summary, {
@@ -1618,7 +1628,7 @@ const Reports = () => {
       summarySheet.getCell(`A${currentRow}`).font = { bold: true };
       currentRow++;
       
-      summarySheet.getCell(`A${currentRow}`).value = tr('reports.excel.employee', 'Employee');
+      summarySheet.getCell(`A${currentRow}`).value = `${tr('employees.name', 'Name')}:-`;
       summarySheet.getCell(`B${currentRow}`).value = employeeName;
       summarySheet.getCell(`A${currentRow}`).font = { bold: true };
       currentRow++;
@@ -2739,9 +2749,7 @@ const Reports = () => {
 
       // Who the report is about, as the running header says it: a person, a unit
       // or the whole roster.
-      const rawEmployeeName = selectedEmployee !== 'all' ?
-        employees.find(emp => String(emp.id) === String(selectedEmployee))?.name :
-        exportScopeName;
+      const rawEmployeeName = describeExportSubject(employees, dotSeparator);
 
       const displayEmployeeName = unicodeFontLoaded
         ? rawEmployeeName
@@ -2792,7 +2800,7 @@ const Reports = () => {
         metaLines: [
           `${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}`,
           `${t('reports.period', 'Period')}: ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}`,
-          `${t('reports.employee', 'Employee')}: ${displayEmployeeName}`
+          `${t('employees.name', 'Name')}:- ${displayEmployeeName}`
         ]
       });
 
