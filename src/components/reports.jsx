@@ -36,6 +36,7 @@ import {
   createPdfReportLayout,
   filterExportSnapshotByScope,
   formatHours,
+  getTaskDurationDays,
   loadPdfLogo,
   meterFilledBlocks,
   PDF_TOKENS,
@@ -47,9 +48,10 @@ import { SpecularButton } from './ui/specular-button';
 import { SlidingNumber } from './motion-primitives';
 import { NumberTicker } from './ui/number-ticker';
 import { DatePicker } from './ui/date-picker.jsx';
+import { formatDate } from '../utils/localeFormat.js';
 import { cn } from '@/lib/utils';
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
-import { Bar, Tag, Btn, Seg, Kicker, ColumnHeading, TickerCell, LiveClock, FlatSelect } from './ui/industry.jsx';
+import { Bar, Tag, Btn, Seg, Kicker, ColumnHeading, TickerCell, LiveClock, FlatSelect, FlatListbox } from './ui/industry.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import {
   choosePdfFont,
@@ -1309,31 +1311,36 @@ const Reports = () => {
       t('reports.excel.headers.description', 'Description'),
       t('reports.excel.headers.priority', 'Priority'),
       t('reports.excel.headers.status', 'Status'),
+      t('taskListing.startDate', 'Start Date'),
       t('reports.excel.headers.dueDate', 'Due Date'),
       t('taskListing.completionDate', 'Completion Date'),
-      t('reports.excel.headers.estimatedHours', 'Estimated Hours'),
-      t('reports.excel.headers.actualHours', 'Actual Hours'),
+      t('reports.excel.headers.estimatedHours', 'Estimated Days'),
+      t('reports.excel.headers.actualHours', 'Actual Days'),
       t('reports.excel.headers.variance', 'Variance'),
       t('reports.excel.headers.createdAt', 'Created At'),
       t('reports.excel.headers.updatedAt', 'Updated At')
     ];
 
-    const rows = tasks.map((task) => [
-      t('reports.tasks', 'Tasks'),
-      isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || 'Unknown'),
-      translateDepartment(task.employee?.department) || '',
-      isDemoMode() ? getDemoTaskTitle(task, t) : mapUgc(ugcMap, task.title || ''),
-      isDemoMode() ? getDemoTaskDescription(task, t) : mapUgc(ugcMap, task.description || ''),
-      translatePriority(task.priority) || '',
-      translateStatus(task.status) || '',
-      task.due_date || '',
-      task.completion_date || '',
-      task.estimated_hours || 0,
-      task.actual_hours || 0,
-      (task.actual_hours || 0) - (task.estimated_hours || 0),
-      new Date(task.created_at).toLocaleString(),
-      new Date(task.updated_at).toLocaleString()
-    ]);
+    const rows = tasks.map((task) => {
+      const duration = getTaskDurationDays(task);
+      return [
+        t('reports.tasks', 'Tasks'),
+        isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || 'Unknown'),
+        translateDepartment(task.employee?.department) || '',
+        isDemoMode() ? getDemoTaskTitle(task, t) : mapUgc(ugcMap, task.title || ''),
+        isDemoMode() ? getDemoTaskDescription(task, t) : mapUgc(ugcMap, task.description || ''),
+        translatePriority(task.priority) || '',
+        translateStatus(task.status) || '',
+        task.start_date || '',
+        task.due_date || '',
+        task.completion_date || '',
+        duration.estimated ?? '',
+        duration.actual ?? '',
+        duration.variance ?? '',
+        new Date(task.created_at).toLocaleString(),
+        new Date(task.updated_at).toLocaleString()
+      ];
+    });
 
     return { headers, rows };
   };
@@ -1681,8 +1688,13 @@ const Reports = () => {
         const completedTasks = tasks.filter(t => t.status === 'completed').length;
         const inProgressTasks = tasks.filter(t => t.status === 'in_progress').length;
         const highPriority = tasks.filter(t => t.priority === 'high').length;
-        const totalEstimated = tasks.reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
-        const totalActual = tasks.reduce((sum, t) => sum + (t.actual_hours || 0), 0);
+        const { totalEstimated, totalActual } = tasks.reduce((sum, task) => {
+          const duration = getTaskDurationDays(task);
+          return {
+            totalEstimated: sum.totalEstimated + (duration.estimated || 0),
+            totalActual: sum.totalActual + (duration.actual || 0)
+          };
+        }, { totalEstimated: 0, totalActual: 0 });
         
         // Section Header
         summarySheet.getCell(`A${currentRow}`).value = tr('reports.excel.workload', 'Workload Summary');
@@ -1710,8 +1722,8 @@ const Reports = () => {
         addMetric(tr('reports.excel.metrics.completedTasks', 'Completed Tasks'), completedTasks, true, true);
         addMetric(tr('reports.excel.metrics.inProgress', 'In Progress'), inProgressTasks, true, true);
         addMetric(tr('reports.excel.metrics.highPriorityTasks', 'High Priority Tasks'), highPriority, true, true);
-        addMetric(tr('reports.excel.metrics.estimatedHours', 'Estimated Hours'), totalEstimated, true, true);
-        addMetric(tr('reports.excel.metrics.actualHours', 'Actual Hours'), totalActual, true, true);
+        addMetric(tr('reports.excel.metrics.estimatedHours', 'Estimated Days'), totalEstimated, true, true);
+        addMetric(tr('reports.excel.metrics.actualHours', 'Actual Days'), totalActual, true, true);
         addMetric(tr('reports.excel.metrics.variance', 'Variance'), totalActual - totalEstimated, true, true);
         if (taskBarRows.length) {
           const start = Math.min(...taskBarRows);
@@ -2295,10 +2307,11 @@ const Reports = () => {
           tr('reports.excel.headers.description', 'Description'),
           tr('reports.excel.headers.priority', 'Priority'),
           tr('reports.excel.headers.status', 'Status'),
+          tr('taskListing.startDate', 'Start Date'),
           tr('reports.excel.headers.dueDate', 'Due Date'),
           tr('taskListing.completionDate', 'Completion Date'),
-          tr('reports.excel.headers.estimatedHours', 'Estimated Hours'),
-          tr('reports.excel.headers.actualHours', 'Actual Hours'),
+          tr('reports.excel.headers.estimatedHours', 'Estimated Days'),
+          tr('reports.excel.headers.actualHours', 'Actual Days'),
           tr('reports.excel.headers.variance', 'Variance'),
           tr('reports.excel.headers.createdAt', 'Created At'),
           tr('reports.excel.headers.updatedAt', 'Updated At')
@@ -2314,7 +2327,8 @@ const Reports = () => {
         // Data rows with conditional formatting
         tasks.forEach((task, idx) => {
           const rowNum = idx + 2;
-          const variance = (task.actual_hours || 0) - (task.estimated_hours || 0);
+          const duration = getTaskDurationDays(task);
+          const variance = duration.variance;
           const rowData = [
             isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || 'Unknown'),
             translateDepartment(task.employee?.department) || '',
@@ -2322,11 +2336,12 @@ const Reports = () => {
             isDemoMode() ? getDemoTaskDescription(task, t) : mapUgc(ugcMap, task.description || ''),
             translatePriority(task.priority) || '',
             translateStatus(task.status) || '',
+            task.start_date || '',
             task.due_date || '',
             task.completion_date || '',
-            task.estimated_hours || 0,
-            task.actual_hours || 0,
-            variance,
+            duration.estimated ?? '',
+            duration.actual ?? '',
+            variance ?? '',
             new Date(task.created_at).toLocaleString(),
             new Date(task.updated_at).toLocaleString()
           ];
@@ -2335,7 +2350,7 @@ const Reports = () => {
             const cell = tasksSheet.getCell(rowNum, colIdx + 1);
             cell.value = value;
             
-            if ([4, 5, 6, 7, 8, 9, 10, 11].includes(colIdx)) {
+            if ([4, 5, 6, 7, 8, 9, 10, 11, 12].includes(colIdx)) {
               cell.alignment = { horizontal: 'center', vertical: 'middle' };
             }
             
@@ -2343,7 +2358,7 @@ const Reports = () => {
               cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFF0' } };
             }
             
-            if (colIdx === 10) {
+            if (colIdx === 11 && variance != null) {
               if (variance > 0) {
                 cell.font = { color: { argb: 'FFFF0000' } }; // Red for over
               } else if (variance < 0) {
@@ -2357,7 +2372,7 @@ const Reports = () => {
         tasksSheet.columns = [
           { width: 20 }, { width: 15 }, { width: 25 }, { width: 35 },
           { width: 12 }, { width: 12 }, { width: 12 }, { width: 14 },
-          { width: 12 }, { width: 12 }, { width: 12 }, { width: 20 }, { width: 20 }
+          { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 20 }, { width: 20 }
         ];
         
         // Freeze header row
@@ -2886,7 +2901,7 @@ const Reports = () => {
       }
 
       // ── Data tables: header row + data rows, thead repeats across pages ────
-      const addPdfTable = (title, head, body, fontSize = 7) => {
+      const addPdfTable = (title, head, body, fontSize = 7, columnStyles = {}) => {
         if (body.length === 0) return;
         // Don't leave a heading (or a two-row stub) stranded at the foot of a page.
         const estimatedHeight = 24 + body.length * 5.8;
@@ -2900,6 +2915,7 @@ const Reports = () => {
           body,
           theme: 'plain',
           showHead: 'everyPage',
+          columnStyles,
           headStyles: {
             textColor: PDF_TOKENS.ink,
             fillColor: false,
@@ -2940,6 +2956,8 @@ const Reports = () => {
       };
 
       const pdfHead = (key, fallback) => cleanTextForPDF(t(key, fallback), unicodeFontLoaded);
+      const daysUnit = t('reports.daysShort', 'd');
+      const daysCell = (days) => (days == null ? '-' : `${days} ${daysUnit}`);
 
       if (tasks.length > 0) {
         addPdfTable(
@@ -2951,19 +2969,27 @@ const Reports = () => {
             pdfHead('reports.pdf.headers.priority', 'Priority'),
             pdfHead('reports.pdf.headers.status', 'Status'),
             pdfHead('reports.pdf.headers.dueDate', 'Due Date'),
-            pdfHead('reports.pdf.headers.estimatedHours', 'Est.'),
-            pdfHead('reports.pdf.headers.actualHours', 'Actual')
+            pdfHead('reports.pdf.headers.estimatedHours', 'Est. days'),
+            pdfHead('reports.pdf.headers.actualHours', 'Actual days')
           ],
-          tasks.map((task) => [
-            cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
-            cleanTextForPDF(translateDepartment(task.employee?.department) || '', unicodeFontLoaded),
-            cleanTextForPDF((isDemoMode() ? getDemoTaskTitle(task, t) : mapUgc(ugcMap, task.title || '')).substring(0, 40), unicodeFontLoaded),
-            cleanTextForPDF(translatePriority(task.priority), unicodeFontLoaded),
-            cleanTextForPDF(translateStatus(task.status), unicodeFontLoaded),
-            task.due_date || '-',
-            `${formatHours(task.estimated_hours || 0)}h`,
-            `${formatHours(task.actual_hours || 0)}h`
-          ])
+          tasks.map((task) => {
+            const duration = getTaskDurationDays(task);
+            return [
+              cleanTextForPDF(isDemoMode() ? getDemoEmployeeName(task.employee, t) : (task.employee?.name || t('reports.unknown', 'Unknown')), unicodeFontLoaded),
+              cleanTextForPDF(translateDepartment(task.employee?.department) || '', unicodeFontLoaded),
+              cleanTextForPDF((isDemoMode() ? getDemoTaskTitle(task, t) : mapUgc(ugcMap, task.title || '')).substring(0, 40), unicodeFontLoaded),
+              cleanTextForPDF(translatePriority(task.priority), unicodeFontLoaded),
+              cleanTextForPDF(translateStatus(task.status), unicodeFontLoaded),
+              cleanTextForPDF(formatDate(task.due_date, currentLanguage, { day: '2-digit', month: 'short', year: 'numeric' }) || '-', unicodeFontLoaded),
+              daysCell(duration.estimated),
+              daysCell(duration.actual)
+            ];
+          }),
+          7,
+          {
+            6: { halign: 'center' },
+            7: { halign: 'center' }
+          }
         );
       }
 
@@ -3425,7 +3451,7 @@ const Reports = () => {
 
           <Cell ind={ind}>
             <PanelHead ind={ind} num="02" title={t('reports.people', 'People')} />
-            <FlatSelect
+            <FlatListbox
               ind={ind}
               id="report-employee"
               value={selectedEmployee}
@@ -3443,7 +3469,7 @@ const Reports = () => {
                     {`${getDemoEmployeeName(emp, t)} · ${translateDepartment(emp.department)}`}
                   </option>
                 ))}
-            </FlatSelect>
+            </FlatListbox>
 
             <div className="flex flex-wrap items-center" style={{ gap: 8, marginTop: 10 }}>
               <FlatSelect

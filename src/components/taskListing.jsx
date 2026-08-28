@@ -14,21 +14,21 @@
  *   unscheduled    open and it has no due date at all — it cannot be chased,
  *                  which is this schema's version of "blocked on something else"
  *   closed on time closed, had a due date, and its close stamp lands on or
- *                  before the end of that day (close stamp = completed_at when
- *                  the row carries one, otherwise updated_at)
+ *                  before the end of that day (close stamp = completion_date
+ *                  when the row carries one, otherwise updated_at)
  *   record N/M     every task on that record, closed ones included, so the
  *                  fraction stays the record's true state while the rows below
  *                  it obey the segment filter
- *   elapsed        opened → closed (or → today), measured against the window
- *                  the due date allows, so the bar percentage is real
+ *   elapsed        start_date → completion_date (or → today), measured against
+ *                  the window start_date → due_date. created_at is entry time,
+ *                  not when the work ran, so it is not the start.
  *
- * Deliberate substitutions from the design spec, because the schema has no
- * column for them: there are no task lists, dependencies, sub-steps or booked
- * hours, so `01 Steps` is the task's own lifecycle in dependency order, `02
- * Chain` is the record chain (who opened it, what it belongs to, what sits
- * beside it) and `03 Elapsed` replaces booked hours. Nothing on either screen
- * is seeded — an empty field says what would fill it rather than inventing a
- * value.
+ * Deliberate substitutions from the design spec: there are no task lists,
+ * dependencies or sub-steps, so `01 Steps` is the task's own lifecycle, `02
+ * Chain` is the record chain, and `03 Elapsed` is start → close against the
+ * due-date window. Start and completion are backdatable calendar dates because
+ * work is often logged after it finished; created_at is only when the row was
+ * typed in.
  *
  * A viewer without canViewReports only ever fetches their own tasks, so the
  * same layout degrades to a one-person ledger rather than leaking the org's
@@ -52,7 +52,7 @@ import { isRealtimeMutation } from '../utils/realtimeHelpers.js';
 import { isDemoMode, getDemoEmployeeName, getDemoTaskTitle, getDemoTaskDescription } from '../utils/demoHelper.js';
 import { filterActiveEmployees } from '../utils/employeeStatus.js';
 import { getEmployeePositionI18nKey } from '../utils/employeePositionKey.js';
-import { escapeCsvCell } from '../utils/reportExportHelpers.js';
+import { escapeCsvCell, getTaskDurationDays } from '../utils/reportExportHelpers.js';
 import { formatDate } from '../utils/localeFormat.js';
 import { DatePicker } from './ui/date-picker.jsx';
 import { TranslatedText } from './ui/translated-text.jsx';
@@ -126,9 +126,16 @@ const daysBetween = (from, to) => Math.round((startOfDay(to) - startOfDay(from))
 const isClosed = (task) => norm(task.status) === CLOSED_STATUS;
 const isCancelled = (task) => norm(task.status) === CANCELLED_STATUS;
 
-/** The stamp we treat as "when this closed". The table stores no completed_at
- *  on every deployment, so updated_at stands in where it is missing. */
-const closeStampOf = (task) => task.completed_at || task.updated_at || null;
+/** The stamp we treat as "when this closed". completion_date is the backdated
+ *  calendar day; updated_at stands in only when that field was never filled. */
+const closeStampOf = (task) => task.completion_date || task.completed_at || task.updated_at || null;
+
+const localIsoDate = (date = new Date()) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
 
 /** ĐẶNG LÊ MINH → "ĐM". Two letters, condensed, in a hairline square. */
 const initialsOf = (name) => {
@@ -391,7 +398,8 @@ function ActionLink({ ind, onClick, children, icon = ArrowRight }) {
  * ------------------------------------------------------------------ */
 
 const EMPTY_FORM = {
-  title: '', description: '', dueDate: '', priority: 'medium', status: 'pending',
+  title: '', description: '', startDate: '', dueDate: '', completionDate: '',
+  priority: 'medium', status: 'pending',
   selfAssessment: '', qualityRating: 0, assignedTo: '',
 };
 
@@ -487,6 +495,15 @@ function TaskFormModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: 14 }}>
             <div>
+              <span style={label}>{t('taskListing.startDate', 'Start Date')}</span>
+              <DatePicker
+                flat
+                value={form.startDate || ''}
+                onChange={(event) => setForm({ ...form, startDate: event.target.value })}
+                aria-label={t('taskListing.startDate', 'Start Date')}
+              />
+            </div>
+            <div>
               <span style={label}>{t('taskListing.dueDate', 'Due Date')}</span>
               <DatePicker
                 flat
@@ -495,6 +512,19 @@ function TaskFormModal({
                 aria-label={t('taskListing.dueDate', 'Due Date')}
               />
             </div>
+            <div>
+              <span style={label}>{t('taskListing.completionDate', 'Completion Date')}</span>
+              <DatePicker
+                flat
+                value={form.completionDate || ''}
+                onChange={(event) => setForm({ ...form, completionDate: event.target.value })}
+                min={form.startDate || undefined}
+                aria-label={t('taskListing.completionDate', 'Completion Date')}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 14 }}>
             <div>
               <span style={label}>{t('taskListing.priority', 'Priority')}</span>
               <select
@@ -787,9 +817,13 @@ const TaskListing = ({ employees, allEmployees }) => {
       return;
     }
     const done = isClosed(task);
+    const today = localIsoDate();
     await saveUpdate(
       task.id,
-      { status: done ? 'pending' : 'completed' },
+      {
+        status: done ? 'pending' : 'completed',
+        completionDate: done ? null : (task.completion_date || today),
+      },
       done
         ? t('taskListing.reopened', 'Task reopened')
         : t('taskListing.markedComplete', 'Task marked complete'),
@@ -806,6 +840,8 @@ const TaskListing = ({ employees, allEmployees }) => {
       title: isDemoMode() ? getDemoTaskTitle(task, t) : (task.title || ''),
       description: isDemoMode() ? getDemoTaskDescription(task, t) : (task.description || ''),
       dueDate: task.due_date || '',
+      startDate: task.start_date || '',
+      completionDate: task.completion_date || '',
       priority: task.priority || 'medium',
       status: norm(task.status) || 'pending',
       selfAssessment: task.self_assessment || '',
@@ -826,11 +862,18 @@ const TaskListing = ({ employees, allEmployees }) => {
       return;
     }
 
+    if (form.startDate && form.completionDate && form.completionDate < form.startDate) {
+      flash('err', t('taskListing.completionBeforeStart', 'Completion date cannot be before start date'));
+      return;
+    }
+
     if (modal?.mode === 'edit') {
       const updates = {
         title: form.title,
         description: form.description,
+        startDate: form.startDate || null,
         dueDate: form.dueDate || null,
+        completionDate: form.completionDate || null,
         priority: form.priority,
         status: form.status,
         selfAssessment: form.selfAssessment,
@@ -849,6 +892,8 @@ const TaskListing = ({ employees, allEmployees }) => {
       title: form.title,
       description: form.description || null,
       dueDate: form.dueDate || null,
+      startDate: form.startDate || null,
+      completionDate: form.completionDate || null,
       priority: form.priority,
       status: form.status,
       selfAssessment: form.selfAssessment || null,
@@ -1271,14 +1316,17 @@ const TaskListing = ({ employees, allEmployees }) => {
     const header = [
       t('taskListing.taskTitle', 'Task Title'),
       t('taskListing.status', 'Status'),
+      t('taskListing.startDate', 'Start Date'),
       t('taskListing.dueDate', 'Due Date'),
+      t('taskListing.completionDate', 'Completion Date'),
       t('taskListing.assignedTo', 'Assigned To'),
       t('taskListing.assignedBy', 'Assigned By'),
       t('taskListing.priority', 'Priority'),
       t('taskListing.qualityRating', 'Quality Rating'),
     ];
     const body = filtered.map((row) => [
-      row.title, row.stateLabel, row.task.due_date || '', row.ownerName,
+      row.title, row.stateLabel, row.task.start_date || '', row.task.due_date || '',
+      row.task.completion_date || '', row.ownerName,
       row.selfSet ? row.ownerName : row.creatorName, row.priority,
       row.rating || '',
     ]);
@@ -1320,7 +1368,7 @@ const TaskListing = ({ employees, allEmployees }) => {
     if (!opened) return null;
     const { task } = opened;
 
-    const started = norm(task.status) === 'in-progress' || opened.closed;
+    const started = Boolean(task.start_date) || norm(task.status) === 'in-progress' || opened.closed;
     const assessed = Boolean(task.self_assessment) || opened.rating > 0;
 
     /* `01` — the lifecycle in dependency order. Each step after the stalled one
@@ -1384,12 +1432,11 @@ const TaskListing = ({ employees, allEmployees }) => {
     const siblings = rows.filter((row) => row.ownerId === opened.ownerId && row.open && String(row.id) !== String(opened.id));
     const siblingsLate = siblings.filter((row) => row.late > 0).length;
 
-    /* `03` — days open against the window the due date allows, so the bar is a
-       real percentage rather than a decoration. */
-    const openedAt = task.created_at ? new Date(task.created_at) : null;
-    const endAt = opened.closed && opened.closedAt ? new Date(opened.closedAt) : new Date();
-    const elapsed = openedAt ? Math.max(0, daysBetween(openedAt, endAt)) : null;
-    const window = openedAt && opened.due ? Math.max(1, daysBetween(openedAt, opened.due)) : null;
+    /* `03` — start → close against the window start → due. created_at is
+       when the row was typed in, which is often after the work finished. */
+    const duration = getTaskDurationDays(task);
+    const elapsed = duration.actual;
+    const window = duration.estimated;
     const withinWindow = window != null && elapsed != null ? Math.min(elapsed, window) : null;
     const overrun = window != null && elapsed != null ? Math.max(0, elapsed - window) : null;
 
@@ -1788,7 +1835,7 @@ const TaskListing = ({ employees, allEmployees }) => {
                       {detail.window
                         ? t('taskListing.againstWindow', 'against the {n} day window the due date allows')
                           .replace('{n}', String(detail.window))
-                        : t('taskListing.noWindow', 'no due date — there is no window to measure against')}
+                        : t('taskListing.noWindow', 'no start date — there is no window to measure against')}
                       <br />
                       {opened.closed
                         ? t('taskListing.measuredToClose', 'measured to the close stamp')

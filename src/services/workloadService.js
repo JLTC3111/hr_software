@@ -131,6 +131,8 @@ export const createTask = async (taskData) => {
         title: taskData.title,
         description: taskData.description,
         due_date: taskData.dueDate,
+        start_date: taskData.startDate || taskData.start_date || null,
+        completion_date: taskData.completionDate || taskData.completion_date || null,
         priority: taskData.priority || 'medium',
         status: taskData.status || 'pending',
         self_assessment: taskData.selfAssessment || null,
@@ -157,6 +159,8 @@ export const createTask = async (taskData) => {
         title: taskData.title,
         description: taskData.description,
         due_date: taskData.dueDate,
+        start_date: taskData.startDate || taskData.start_date || null,
+        completion_date: taskData.completionDate || taskData.completion_date || null,
         priority: taskData.priority || 'medium',
         status: taskData.status || 'pending',
         self_assessment: taskData.selfAssessment || null,
@@ -199,6 +203,14 @@ export const updateTask = async (taskId, updates) => {
     if (updates.description !== undefined) updateData.description = updates.description;
     if (updates.dueDate !== undefined || updates.due_date !== undefined) {
       updateData.due_date = updates.dueDate ?? updates.due_date;
+    }
+    if (updates.startDate !== undefined || updates.start_date !== undefined) {
+      const start = updates.startDate ?? updates.start_date;
+      updateData.start_date = start || null;
+    }
+    if (updates.completionDate !== undefined || updates.completion_date !== undefined) {
+      const completion = updates.completionDate ?? updates.completion_date;
+      updateData.completion_date = completion || null;
     }
     if (updates.priority !== undefined) updateData.priority = updates.priority;
     if (updates.status !== undefined) updateData.status = updates.status;

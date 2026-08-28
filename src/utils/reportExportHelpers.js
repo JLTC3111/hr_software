@@ -5,6 +5,55 @@ export const formatHours = (value, decimals = 1) => {
   return (Math.round(num * factor) / factor).toFixed(decimals);
 };
 
+const DAY_MS = 86400000;
+
+const startOfLocalDay = (date) => {
+  const copy = new Date(date);
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+};
+
+const parseStamp = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  const dateOnly = raw.match(/^(\d{4}-\d{2}-\d{2})$/);
+  const date = dateOnly
+    ? new Date(`${dateOnly[1]}T00:00:00`)
+    : new Date(raw);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const daysBetween = (from, to) =>
+  Math.round((startOfLocalDay(to) - startOfLocalDay(from)) / DAY_MS);
+
+const isTaskClosed = (task) =>
+  String(task?.status ?? '').toLowerCase().replace(/_/g, '-') === 'completed';
+
+/**
+ * Calendar days a task was given (start → due) vs days it actually took
+ * (start → completion, or → today if still open). created_at is when the row
+ * was typed in — often after the work was already done — so it is not a start.
+ */
+export const getTaskDurationDays = (task, now = new Date()) => {
+  const startedAt = parseStamp(task?.start_date);
+  const dueAt = parseStamp(task?.due_date);
+  const completedAt = parseStamp(task?.completion_date || task?.completed_at);
+
+  const estimated = startedAt && dueAt ? Math.max(1, daysBetween(startedAt, dueAt)) : null;
+
+  let actual = null;
+  if (startedAt && completedAt) {
+    actual = Math.max(0, daysBetween(startedAt, completedAt));
+  } else if (startedAt && !isTaskClosed(task)) {
+    actual = Math.max(0, daysBetween(startedAt, now));
+  }
+
+  const variance = estimated != null && actual != null ? actual - estimated : null;
+  return { estimated, actual, variance };
+};
+
 /**
  * The export carries exactly the record types the scope panel has ticked, so an
  * unticked type is emptied rather than filtered — the file then contains no

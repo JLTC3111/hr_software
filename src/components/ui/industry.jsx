@@ -11,8 +11,17 @@
  * Everything is styled inline against the token object from src/theme/industry.js
  * because these are exact hex values that do not exist in the Tailwind config.
  */
-import _React, { useState, useEffect, useRef } from 'react';
-import { MoreVertical } from 'lucide-react';
+import _React, {
+  Children,
+  isValidElement,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { ChevronDown, MoreVertical } from 'lucide-react';
 import { DISPLAY, BODY, kicker as kickerStyle } from '../../theme/industry.js';
 import { useLanguage } from '../../contexts/LanguageContext.jsx';
 
@@ -507,6 +516,291 @@ export function FlatSelect({ ind, onDark = false, style, ...rest }) {
         ...style,
       }}
     />
+  );
+}
+
+function optionLabelText(node) {
+  if (node == null || typeof node === 'boolean') return '';
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(optionLabelText).join('');
+  if (isValidElement(node)) return optionLabelText(node.props?.children);
+  return '';
+}
+
+function optionsFromChildren(children) {
+  return Children.toArray(children).flatMap((child) => {
+    if (!isValidElement(child)) return [];
+    if (child.type === 'option') {
+      return [{
+        value: child.props.value == null ? '' : String(child.props.value),
+        label: child.props.children,
+        disabled: Boolean(child.props.disabled),
+      }];
+    }
+    if (child.props?.children) return optionsFromChildren(child.props.children);
+    return [];
+  });
+}
+
+/**
+ * Closed control matches FlatSelect; the open list is drawn in-app so it can
+ * follow Industry tokens. Accepts the same `<option>` children as a `<select>`.
+ */
+export function FlatListbox({
+  ind,
+  onDark = false,
+  style,
+  value,
+  onChange,
+  id,
+  disabled = false,
+  children,
+  options: optionsProp,
+  'aria-label': ariaLabel,
+  ...rest
+}) {
+  const inkColor = onDark ? ind.tickerInk : ind.ink;
+  const autoId = useId();
+  const listId = `${id || autoId}-list`;
+  const rootRef = useRef(null);
+  const buttonRef = useRef(null);
+  const listRef = useRef(null);
+  const searchRef = useRef('');
+  const searchTimerRef = useRef(0);
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const options = useMemo(
+    () => (Array.isArray(optionsProp) ? optionsProp : optionsFromChildren(children)),
+    [optionsProp, children],
+  );
+
+  const selectedIndex = options.findIndex((opt) => String(opt.value) === String(value));
+  const selected = selectedIndex >= 0 ? options[selectedIndex] : options[0];
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onPointer = (event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target)) setOpen(false);
+    };
+    const onEsc = (event) => {
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+      buttonRef.current?.focus();
+    };
+    document.addEventListener('pointerdown', onPointer);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('pointerdown', onPointer);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
+    listRef.current?.focus();
+  }, [open, selectedIndex]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const el = listRef.current?.querySelector('[data-active="true"]');
+    el?.scrollIntoView({ block: 'nearest' });
+  }, [open, activeIndex]);
+
+  useEffect(() => () => window.clearTimeout(searchTimerRef.current), []);
+
+  const emit = (nextValue) => {
+    onChange?.({ target: { value: nextValue } });
+  };
+
+  const moveActive = (direction) => {
+    if (!options.length) return;
+    let index = activeIndex;
+    for (let step = 0; step < options.length; step += 1) {
+      index = (index + direction + options.length) % options.length;
+      if (!options[index]?.disabled) {
+        setActiveIndex(index);
+        return;
+      }
+    }
+  };
+
+  const choose = (index) => {
+    const opt = options[index];
+    if (!opt || opt.disabled) return;
+    emit(opt.value);
+    setOpen(false);
+    buttonRef.current?.focus();
+  };
+
+  const onTypeahead = (key) => {
+    searchRef.current += key.toLowerCase();
+    window.clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = window.setTimeout(() => {
+      searchRef.current = '';
+    }, 500);
+    const query = searchRef.current;
+    const match = options.findIndex((opt) => (
+      !opt.disabled && optionLabelText(opt.label).toLowerCase().startsWith(query)
+    ));
+    if (match >= 0) setActiveIndex(match);
+  };
+
+  const onKeyDown = (event) => {
+    if (disabled) return;
+    if (!open) {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        setOpen(true);
+      }
+      return;
+    }
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      moveActive(1);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      moveActive(-1);
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      const first = options.findIndex((opt) => !opt.disabled);
+      if (first >= 0) setActiveIndex(first);
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      for (let i = options.length - 1; i >= 0; i -= 1) {
+        if (!options[i].disabled) {
+          setActiveIndex(i);
+          break;
+        }
+      }
+    } else if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      choose(activeIndex);
+    } else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      onTypeahead(event.key);
+    }
+  };
+
+  return (
+    <div
+      ref={rootRef}
+      style={{
+        position: 'relative',
+        width: style?.width,
+        zIndex: open ? 50 : undefined,
+      }}
+    >
+      <button
+        {...rest}
+        ref={buttonRef}
+        type="button"
+        id={id}
+        disabled={disabled}
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={listId}
+        onClick={() => { if (!disabled) setOpen((current) => !current); }}
+        onKeyDown={onKeyDown}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 8,
+          width: '100%',
+          boxSizing: 'border-box',
+          fontFamily: DISPLAY,
+          fontWeight: 600,
+          fontSize: 12.5,
+          letterSpacing: '.06em',
+          textTransform: 'uppercase',
+          textAlign: 'left',
+          color: inkColor,
+          background: 'transparent',
+          border: `1px solid ${onDark ? ind.tickerRule : ind.hairline}`,
+          borderRadius: 0,
+          padding: '3px 6px',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.5 : 1,
+          ...style,
+        }}
+      >
+        <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {selected?.label ?? ''}
+        </span>
+        <ChevronDown
+          size={13}
+          strokeWidth={1.5}
+          aria-hidden="true"
+          style={{ flex: 'none', opacity: 0.6 }}
+        />
+      </button>
+      {open ? (
+        <div
+          ref={listRef}
+          id={listId}
+          role="listbox"
+          tabIndex={-1}
+          aria-activedescendant={options[activeIndex] ? `${listId}-opt-${activeIndex}` : undefined}
+          aria-label={ariaLabel}
+          onKeyDown={onKeyDown}
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            zIndex: 60,
+            marginTop: 4,
+            maxHeight: 280,
+            overflowY: 'auto',
+            background: ind.chrome,
+            border: `1px solid ${ind.ink}`,
+            borderRadius: 0,
+            padding: 3,
+            outline: 'none',
+          }}
+        >
+          {options.map((opt, index) => {
+            const isSelected = String(opt.value) === String(value);
+            const isActive = index === activeIndex;
+            return (
+              <button
+                key={`${opt.value}-${index}`}
+                type="button"
+                id={`${listId}-opt-${index}`}
+                role="option"
+                tabIndex={-1}
+                data-active={isActive ? 'true' : undefined}
+                aria-selected={isSelected}
+                disabled={opt.disabled}
+                onMouseEnter={() => { if (!opt.disabled) setActiveIndex(index); }}
+                onClick={() => choose(index)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '6px 9px',
+                  border: 'none',
+                  borderRadius: 0,
+                  cursor: opt.disabled ? 'not-allowed' : 'pointer',
+                  opacity: opt.disabled ? 0.5 : 1,
+                  background: isSelected ? ind.accent : isActive ? ind.hover : 'transparent',
+                  color: isSelected ? ind.accentInk : ind.ink,
+                  fontFamily: isSelected ? DISPLAY : BODY,
+                  fontWeight: isSelected ? 600 : 400,
+                  fontSize: 13,
+                  letterSpacing: isSelected ? '.04em' : 0,
+                  textTransform: 'none',
+                  textAlign: 'left',
+                }}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

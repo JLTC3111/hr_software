@@ -1215,6 +1215,12 @@ export const deleteDemoTimeEntry = (entryId) => {
   return { success: true };
 };
 
+const isoDayOffset = (days) => {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 export const MOCK_TASKS = [
   {
     id: 'task-1',
@@ -1224,7 +1230,9 @@ export const MOCK_TASKS = [
     descriptionKey: 'demoTasks.task-1.description',
     status: 'in-progress',
     priority: 'high',
-    due_date: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString().split('T')[0],
+    start_date: isoDayOffset(-3),
+    due_date: isoDayOffset(5),
+    created_at: new Date().toISOString(),
     employee_id: 'demo-emp-1',
     employee: MOCK_EMPLOYEES[0]
   },
@@ -1236,7 +1244,8 @@ export const MOCK_TASKS = [
     descriptionKey: 'demoTasks.task-2.description',
     status: 'pending',
     priority: 'medium',
-    due_date: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString().split('T')[0],
+    due_date: isoDayOffset(10),
+    created_at: new Date().toISOString(),
     employee_id: 'demo-emp-1',
     employee: MOCK_EMPLOYEES[0]
   },
@@ -1248,7 +1257,11 @@ export const MOCK_TASKS = [
     descriptionKey: 'demoTasks.task-3.description',
     status: 'completed',
     priority: 'high',
-    due_date: new Date(new Date().setDate(new Date().getDate() - 2)).toISOString().split('T')[0],
+    start_date: isoDayOffset(-9),
+    due_date: isoDayOffset(-2),
+    completion_date: isoDayOffset(-3),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
     employee_id: 'demo-emp-2',
     employee: MOCK_EMPLOYEES[1]
   },
@@ -1260,7 +1273,9 @@ export const MOCK_TASKS = [
     descriptionKey: 'demoTasks.task-4.description',
     status: 'in-progress',
     priority: 'high',
-    due_date: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0],
+    start_date: isoDayOffset(-2),
+    due_date: isoDayOffset(7),
+    created_at: new Date().toISOString(),
     employee_id: 'demo-emp-3',
     employee: MOCK_EMPLOYEES[2]
   },
@@ -1272,7 +1287,8 @@ export const MOCK_TASKS = [
     descriptionKey: 'demoTasks.task-5.description',
     status: 'pending',
     priority: 'medium',
-    due_date: new Date(new Date().setDate(new Date().getDate() + 14)).toISOString().split('T')[0],
+    due_date: isoDayOffset(14),
+    created_at: new Date().toISOString(),
     employee_id: 'demo-emp-4',
     employee: MOCK_EMPLOYEES[3]
   },
@@ -1284,7 +1300,9 @@ export const MOCK_TASKS = [
     descriptionKey: 'demoTasks.task-6.description',
     status: 'in-progress',
     priority: 'high',
-    due_date: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString().split('T')[0],
+    start_date: isoDayOffset(-5),
+    due_date: isoDayOffset(3),
+    created_at: new Date().toISOString(),
     employee_id: 'demo-emp-5',
     employee: MOCK_EMPLOYEES[4]
   },
@@ -1296,7 +1314,11 @@ export const MOCK_TASKS = [
     descriptionKey: 'demoTasks.task-7.description',
     status: 'completed',
     priority: 'medium',
-    due_date: new Date(new Date().setDate(new Date().getDate() - 5)).toISOString().split('T')[0],
+    start_date: isoDayOffset(-12),
+    due_date: isoDayOffset(-5),
+    completion_date: isoDayOffset(-6),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
     employee_id: 'demo-emp-2',
     employee: MOCK_EMPLOYEES[1]
   }
@@ -2148,8 +2170,16 @@ export const updateDemoTask = (taskId, updates) => {
     delete normalized.selfAssessment;
   }
   if (normalized.dueDate !== undefined && normalized.due_date === undefined) {
-    normalized.due_date = normalized.dueDate;
+    normalized.due_date = normalized.dueDate || null;
     delete normalized.dueDate;
+  }
+  if (normalized.startDate !== undefined && normalized.start_date === undefined) {
+    normalized.start_date = normalized.startDate || null;
+    delete normalized.startDate;
+  }
+  if (normalized.completionDate !== undefined && normalized.completion_date === undefined) {
+    normalized.completion_date = normalized.completionDate || null;
+    delete normalized.completionDate;
   }
   
   // Check if it's already in storage
