@@ -38,6 +38,7 @@ import {
   formatHours,
   getTaskDurationDays,
   loadPdfLogo,
+  loadPdfProfileImage,
   meterFilledBlocks,
   PDF_TOKENS,
   withBarPercents
@@ -2643,9 +2644,10 @@ const Reports = () => {
         collectExportUgcStrings(timeEntries, tasks, goals, leave)
       );
 
-      const [{ jsPDF, autoTable }, companyLogo] = await Promise.all([
+      const [{ jsPDF, autoTable }, companyLogo, profileImage] = await Promise.all([
         loadPdfLibs(),
-        loadPdfLogo()
+        loadPdfLogo(),
+        loadPdfProfileImage(employees)
       ]);
       const doc = new jsPDF('p', 'mm', 'a4');
       const loadedFonts = await loadPdfFonts(doc, currentLanguage);
@@ -2797,6 +2799,7 @@ const Reports = () => {
       layout.titleBlock({
         title: reportTitle.toUpperCase(),
         logo: companyLogo,
+        profileImage,
         metaLines: [
           `${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}`,
           `${t('reports.period', 'Period')}: ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}`,

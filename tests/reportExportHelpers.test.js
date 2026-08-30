@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getTaskDurationDays } from '../src/utils/reportExportHelpers.js';
+import {
+  createPdfReportLayout,
+  getPdfProfileImageSource,
+  getTaskDurationDays,
+  PDF_TOKENS,
+} from '../src/utils/reportExportHelpers.js';
 
 const now = new Date(2026, 7, 28); // 28 Aug 2026, local
 
@@ -59,4 +64,72 @@ test('pending task with no start date cannot be measured', () => {
   }, now);
 
   assert.deepEqual(duration, { estimated: null, actual: null, variance: null });
+});
+
+test('single-employee PDF uses the current profile photo', () => {
+  const photo = 'data:image/png;base64,current-photo';
+  assert.equal(getPdfProfileImageSource([{ id: 7, photo }]), photo);
+});
+
+test('single-employee PDF can use the linked user avatar', () => {
+  const avatar = 'data:image/jpeg;base64,linked-avatar';
+  assert.equal(
+    getPdfProfileImageSource([{ id: 7, hr_user: { avatar_url: avatar } }]),
+    avatar
+  );
+});
+
+test('multi-employee PDF always uses the generic employee SVG', () => {
+  const source = getPdfProfileImageSource([
+    { id: 7, photo: 'data:image/png;base64,first-photo' },
+    { id: 8, photo: 'data:image/png;base64,second-photo' },
+  ]);
+
+  assert.match(source, /generic-employee\.svg$/);
+});
+
+test('employee without a photo falls back to the generic employee SVG', () => {
+  assert.match(getPdfProfileImageSource([{ id: 7, photo: null }]), /generic-employee\.svg$/);
+});
+
+test('PDF masthead reserves a right-aligned square for the profile image', () => {
+  const images = [];
+  const rectangles = [];
+  const fittedWidths = [];
+  const doc = {
+    addImage: (...args) => images.push(args),
+    rect: (...args) => rectangles.push(args),
+    setDrawColor: () => {},
+    setFontSize: () => {},
+    setLineWidth: () => {},
+    setTextColor: () => {},
+  };
+
+  const layout = createPdfReportLayout({
+    doc,
+    pageWidth: 210,
+    pageHeight: 297,
+    drawText: () => {},
+    measureText: () => 0,
+    fitText: (text, maxWidth) => {
+      fittedWidths.push(maxWidth);
+      return text;
+    },
+  });
+
+  layout.titleBlock({
+    title: 'HR PERFORMANCE REPORT',
+    metaLines: ['Generated: now'],
+    profileImage: { dataUrl: 'data:image/png;base64,profile', width: 384, height: 384 },
+  });
+
+  const expectedLeft = 210 - PDF_TOKENS.margin - PDF_TOKENS.profileSize;
+  assert.equal(images.length, 1);
+  assert.deepEqual(images[0].slice(2, 6), [expectedLeft, 18, PDF_TOKENS.profileSize, PDF_TOKENS.profileSize]);
+  assert.deepEqual(rectangles[0], [expectedLeft, 18, PDF_TOKENS.profileSize, PDF_TOKENS.profileSize]);
+  assert.equal(
+    fittedWidths[0],
+    210 - (PDF_TOKENS.margin * 2) - PDF_TOKENS.profileSize - PDF_TOKENS.profileGap
+  );
+  assert.ok(layout.y >= 18 + PDF_TOKENS.profileSize);
 });

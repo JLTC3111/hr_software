@@ -206,10 +206,13 @@ export const PDF_TOKENS = {
   footerBaseline: 9.5,
   titleSize: 18, // masthead headline, in points — the logo is sized off this
   logoTitleRatio: 1.75, // logo box height as a multiple of the headline size
-  logoGap: 5 // clear space between the logo and the masthead text column
+  logoGap: 5, // clear space between the logo and the masthead text column
+  profileSize: 25, // square employee portrait at the masthead's right edge
+  profileGap: 7 // clear space between the masthead text and portrait
 };
 
 const PDF_LOGO_SRC = '/logoIcons/logo.png';
+const PDF_GENERIC_EMPLOYEE_SRC = '/employeeProfilePhotos/generic-employee.svg';
 let pdfLogoPromise = null;
 
 /**
@@ -249,6 +252,95 @@ export const loadPdfLogo = () => {
   });
 
   return pdfLogoPromise;
+};
+
+/**
+ * A single-person export uses the same image shown on that employee's profile.
+ * Group exports — and employees without a profile photo — use the neutral SVG.
+ */
+export const getPdfProfileImageSource = (employees = []) => {
+  const roster = Array.isArray(employees) ? employees.filter(Boolean) : [];
+  if (roster.length !== 1) return PDF_GENERIC_EMPLOYEE_SRC;
+
+  const employee = roster[0];
+  return employee.photo
+    || employee.avatar_url
+    || employee.hr_user?.avatar_url
+    || PDF_GENERIC_EMPLOYEE_SRC;
+};
+
+const loadImageElement = (src) => new Promise((resolve, reject) => {
+  const image = new Image();
+  image.onload = () => resolve(image);
+  image.onerror = () => reject(new Error('Profile image decode failed'));
+  image.src = src;
+});
+
+/**
+ * Rasterize any supported profile source (data URL, Supabase URL, blob URL, or
+ * the generic SVG) to a square PNG. jsPDF can then draw every source through
+ * the same path and the portrait keeps object-fit: cover semantics.
+ */
+const rasterizePdfProfileImage = async (src) => {
+  const response = await fetch(src, { cache: 'force-cache' });
+  if (!response.ok) throw new Error(`Profile image fetch failed (${response.status})`);
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+
+  try {
+    const image = await loadImageElement(objectUrl);
+    const sourceWidth = image.naturalWidth || image.width;
+    const sourceHeight = image.naturalHeight || image.height;
+    if (!sourceWidth || !sourceHeight) throw new Error('Profile image has no dimensions');
+
+    const size = 384;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Profile image canvas unavailable');
+
+    const scale = Math.max(size / sourceWidth, size / sourceHeight);
+    const drawWidth = sourceWidth * scale;
+    const drawHeight = sourceHeight * scale;
+    const offsetX = (size - drawWidth) / 2;
+    const offsetY = (size - drawHeight) / 2;
+
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, size, size);
+    context.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+
+    return {
+      dataUrl: canvas.toDataURL('image/png'),
+      width: size,
+      height: size
+    };
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+};
+
+/**
+ * Resolves to null rather than failing the export. If a person's current photo
+ * cannot be loaded, the generic employee SVG gets one final attempt.
+ */
+export const loadPdfProfileImage = async (employees = []) => {
+  const preferredSource = getPdfProfileImageSource(employees);
+  const sources = preferredSource === PDF_GENERIC_EMPLOYEE_SRC
+    ? [PDF_GENERIC_EMPLOYEE_SRC]
+    : [preferredSource, PDF_GENERIC_EMPLOYEE_SRC];
+
+  for (const src of sources) {
+    try {
+      return await rasterizePdfProfileImage(src);
+    } catch (error) {
+      console.warn('PDF profile image unavailable:', error?.message || error);
+    }
+  }
+
+  return null;
 };
 
 /** Bar fill widths are percentages of the group maximum, resolved up-front. */
@@ -329,34 +421,60 @@ export const createPdfReportLayout = ({
     ensure,
 
     /**
-     * Page-1 masthead: company logo flush to the left margin, with the bold
-     * title and its muted meta lines set in a column beside it.
+     * Page-1 masthead: company logo flush to the left margin, the employee or
+     * group portrait flush right, and the title/meta column between them.
      *
      * The logo box is a multiple of the headline point size, not a fixed
      * millimetre height, so the lockup keeps its proportions if the title size
      * is ever retuned. Text is measured against the narrower column the logo
      * leaves, so a long title truncates instead of colliding with the mark.
      */
-    titleBlock({ title, metaLines = [], logo = null }) {
+    titleBlock({ title, metaLines = [], logo = null, profileImage = null }) {
       const top = 18;
       const titleSize = T.titleSize;
       y = top;
 
       let textLeft = left;
-      let textWidth = contentWidth;
+      let textRight = right;
       let logoBottom = top;
+      let profileBottom = top;
+
+      if (profileImage?.dataUrl) {
+        const profileLeft = right - T.profileSize;
+        try {
+          doc.addImage(
+            profileImage.dataUrl,
+            'PNG',
+            profileLeft,
+            top,
+            T.profileSize,
+            T.profileSize,
+            'reportProfile',
+            'FAST'
+          );
+          doc.setDrawColor(...T.ink);
+          doc.setLineWidth(T.ruleHeavy);
+          doc.rect(profileLeft, top, T.profileSize, T.profileSize);
+          textRight = profileLeft - T.profileGap;
+          profileBottom = top + T.profileSize;
+        } catch (error) {
+          console.warn('PDF profile image could not be drawn:', error?.message || error);
+        }
+      }
+
       if (logo?.dataUrl) {
         const logoH = ptToMm(titleSize) * T.logoTitleRatio;
         const logoW = logo.height > 0 ? (logo.width / logo.height) * logoH : logoH;
         try {
           doc.addImage(logo.dataUrl, 'PNG', left, top, logoW, logoH, 'reportLogo', 'FAST');
           textLeft = left + logoW + T.logoGap;
-          textWidth = contentWidth - logoW - T.logoGap;
           logoBottom = top + logoH;
         } catch (error) {
           console.warn('PDF logo could not be drawn:', error?.message || error);
         }
       }
+
+      const textWidth = Math.max(textRight - textLeft, 10);
 
       doc.setFontSize(titleSize);
       doc.setTextColor(...T.ink);
@@ -370,8 +488,8 @@ export const createPdfReportLayout = ({
         y += lineHeight(8.5, 1.45);
       });
 
-      // Short mastheads must still clear the logo before the first section rule.
-      y = Math.max(y, logoBottom);
+      // Short mastheads must still clear both images before the first section rule.
+      y = Math.max(y, logoBottom, profileBottom);
     },
 
     /** 2px section divider. */
