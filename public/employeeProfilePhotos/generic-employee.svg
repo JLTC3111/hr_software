@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
-  <title id="title">Generic employee</title>
-  <desc id="desc">Neutral employee silhouette used for reports covering multiple people.</desc>
-  <rect width="256" height="256" fill="#f4f4f5"/>
-  <path d="M0 0h12v256H0z" fill="#c72027"/>
-  <circle cx="134" cy="88" r="42" fill="#ffffff" stroke="#18181b" stroke-width="10"/>
-  <path d="M55 222c4-45 37-76 79-76s75 31 79 76" fill="#ffffff" stroke="#18181b" stroke-width="10" stroke-linecap="square"/>
-  <path d="M55 222h158" fill="none" stroke="#18181b" stroke-width="10"/>
-</svg>

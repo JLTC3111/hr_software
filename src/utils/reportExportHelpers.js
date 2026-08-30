@@ -198,6 +198,7 @@ export const PDF_TOKENS = {
   accent: [199, 32, 39], // section headings, bars, meter fill
   accentDark: [124, 20, 25], // overall performance score
   track: [230, 231, 235],
+  leaveHighlight: [255, 239, 242], // restrained pale-pink leave section card
   headerBaseline: 13, // running header text baseline on continuation pages
   headerRule: 16,
   contentTop: 23, // first content row on continuation pages
@@ -211,8 +212,7 @@ export const PDF_TOKENS = {
   profileGap: 7 // clear space between the masthead text and portrait
 };
 
-const PDF_LOGO_SRC = '/logoIcons/logo.png';
-const PDF_GENERIC_EMPLOYEE_SRC = '/employeeProfilePhotos/generic-employee.svg';
+const PDF_LOGO_SRC = '/logoIcons/pdf-report-logo.png';
 let pdfLogoPromise = null;
 
 /**
@@ -256,17 +256,17 @@ export const loadPdfLogo = () => {
 
 /**
  * A single-person export uses the same image shown on that employee's profile.
- * Group exports — and employees without a profile photo — use the neutral SVG.
+ * Group exports and employees without a profile photo omit the portrait.
  */
 export const getPdfProfileImageSource = (employees = []) => {
   const roster = Array.isArray(employees) ? employees.filter(Boolean) : [];
-  if (roster.length !== 1) return PDF_GENERIC_EMPLOYEE_SRC;
+  if (roster.length !== 1) return null;
 
   const employee = roster[0];
   return employee.photo
     || employee.avatar_url
     || employee.hr_user?.avatar_url
-    || PDF_GENERIC_EMPLOYEE_SRC;
+    || null;
 };
 
 const loadImageElement = (src) => new Promise((resolve, reject) => {
@@ -277,9 +277,9 @@ const loadImageElement = (src) => new Promise((resolve, reject) => {
 });
 
 /**
- * Rasterize any supported profile source (data URL, Supabase URL, blob URL, or
- * the generic SVG) to a square PNG. jsPDF can then draw every source through
- * the same path and the portrait keeps object-fit: cover semantics.
+ * Rasterize any supported profile source (data URL, Supabase URL, or blob URL)
+ * to a square PNG. jsPDF can then draw every source through the same path and
+ * the portrait keeps object-fit: cover semantics.
  */
 const rasterizePdfProfileImage = async (src) => {
   const response = await fetch(src, { cache: 'force-cache' });
@@ -323,24 +323,19 @@ const rasterizePdfProfileImage = async (src) => {
 };
 
 /**
- * Resolves to null rather than failing the export. If a person's current photo
- * cannot be loaded, the generic employee SVG gets one final attempt.
+ * Resolves to null rather than failing the export when there is no individual
+ * photo or the current profile photo cannot be loaded.
  */
 export const loadPdfProfileImage = async (employees = []) => {
-  const preferredSource = getPdfProfileImageSource(employees);
-  const sources = preferredSource === PDF_GENERIC_EMPLOYEE_SRC
-    ? [PDF_GENERIC_EMPLOYEE_SRC]
-    : [preferredSource, PDF_GENERIC_EMPLOYEE_SRC];
+  const source = getPdfProfileImageSource(employees);
+  if (!source) return null;
 
-  for (const src of sources) {
-    try {
-      return await rasterizePdfProfileImage(src);
-    } catch (error) {
-      console.warn('PDF profile image unavailable:', error?.message || error);
-    }
+  try {
+    return await rasterizePdfProfileImage(source);
+  } catch (error) {
+    console.warn('PDF profile image unavailable:', error?.message || error);
+    return null;
   }
-
-  return null;
 };
 
 /** Bar fill widths are percentages of the group maximum, resolved up-front. */
@@ -452,9 +447,6 @@ export const createPdfReportLayout = ({
             'reportProfile',
             'FAST'
           );
-          doc.setDrawColor(...T.ink);
-          doc.setLineWidth(T.ruleHeavy);
-          doc.rect(profileLeft, top, T.profileSize, T.profileSize);
           textRight = profileLeft - T.profileGap;
           profileBottom = top + T.profileSize;
         } catch (error) {
@@ -500,13 +492,33 @@ export const createPdfReportLayout = ({
       y += gapAfter;
     },
 
-    /** Section headers are bold and accent-coloured. */
-    sectionHeading(text) {
-      ensure(lineHeight(11, 1.7));
+    /** Section headers are bold and accent-coloured; highlighted sections get a filled title band. */
+    sectionHeading(text, { fillColor = null } = {}) {
+      const textHeight = lineHeight(11, 1.7);
+      const padTop = fillColor ? 3 : 0;
+      const padBottom = fillColor ? 2 : 0;
+      const blockHeight = textHeight + padTop + padBottom;
+      const top = y;
+      ensure(blockHeight);
+
+      if (fillColor) {
+        doc.setFillColor(...fillColor);
+        doc.roundedRect(left, top, contentWidth, blockHeight, 3, 3, 'F');
+        // Square the lower corners so the title band joins the filled table cleanly.
+        doc.rect(left, top + 3, contentWidth, blockHeight - 3, 'F');
+        y += padTop;
+      }
+
       doc.setFontSize(11);
       doc.setTextColor(...T.accent);
-      drawText(fitText(text, contentWidth, 11), left, baselineOf(y, 11), { bold: true });
-      y += lineHeight(11, 1.7);
+      const inset = fillColor ? 4 : 0;
+      drawText(
+        fitText(text, contentWidth - inset * 2, 11),
+        left + inset,
+        baselineOf(y, 11),
+        { bold: true }
+      );
+      y = top + blockHeight;
     },
 
     /**

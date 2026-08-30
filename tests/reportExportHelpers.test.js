@@ -79,29 +79,25 @@ test('single-employee PDF can use the linked user avatar', () => {
   );
 });
 
-test('multi-employee PDF always uses the generic employee SVG', () => {
+test('multi-employee PDF omits the profile image', () => {
   const source = getPdfProfileImageSource([
     { id: 7, photo: 'data:image/png;base64,first-photo' },
     { id: 8, photo: 'data:image/png;base64,second-photo' },
   ]);
 
-  assert.match(source, /generic-employee\.svg$/);
+  assert.equal(source, null);
 });
 
-test('employee without a photo falls back to the generic employee SVG', () => {
-  assert.match(getPdfProfileImageSource([{ id: 7, photo: null }]), /generic-employee\.svg$/);
+test('employee without a photo omits the profile image', () => {
+  assert.equal(getPdfProfileImageSource([{ id: 7, photo: null }]), null);
 });
 
-test('PDF masthead reserves a right-aligned square for the profile image', () => {
+test('PDF masthead draws a borderless right-aligned profile image', () => {
   const images = [];
-  const rectangles = [];
   const fittedWidths = [];
   const doc = {
     addImage: (...args) => images.push(args),
-    rect: (...args) => rectangles.push(args),
-    setDrawColor: () => {},
     setFontSize: () => {},
-    setLineWidth: () => {},
     setTextColor: () => {},
   };
 
@@ -126,10 +122,44 @@ test('PDF masthead reserves a right-aligned square for the profile image', () =>
   const expectedLeft = 210 - PDF_TOKENS.margin - PDF_TOKENS.profileSize;
   assert.equal(images.length, 1);
   assert.deepEqual(images[0].slice(2, 6), [expectedLeft, 18, PDF_TOKENS.profileSize, PDF_TOKENS.profileSize]);
-  assert.deepEqual(rectangles[0], [expectedLeft, 18, PDF_TOKENS.profileSize, PDF_TOKENS.profileSize]);
   assert.equal(
     fittedWidths[0],
     210 - (PDF_TOKENS.margin * 2) - PDF_TOKENS.profileSize - PDF_TOKENS.profileGap
   );
   assert.ok(layout.y >= 18 + PDF_TOKENS.profileSize);
+});
+
+test('highlighted PDF section heading draws a pale card band with inset text', () => {
+  const fills = [];
+  const roundedRectangles = [];
+  const rectangles = [];
+  const fittedWidths = [];
+  const drawnText = [];
+  const doc = {
+    rect: (...args) => rectangles.push(args),
+    roundedRect: (...args) => roundedRectangles.push(args),
+    setFillColor: (...args) => fills.push(args),
+    setFontSize: () => {},
+    setTextColor: () => {},
+  };
+
+  const layout = createPdfReportLayout({
+    doc,
+    pageWidth: 210,
+    pageHeight: 297,
+    drawText: (...args) => drawnText.push(args),
+    measureText: () => 0,
+    fitText: (text, maxWidth) => {
+      fittedWidths.push(maxWidth);
+      return text;
+    },
+  });
+
+  layout.sectionHeading('LEAVE REQUESTS', { fillColor: PDF_TOKENS.leaveHighlight });
+
+  assert.deepEqual(fills, [PDF_TOKENS.leaveHighlight]);
+  assert.equal(roundedRectangles.length, 1);
+  assert.equal(rectangles.length, 1);
+  assert.equal(drawnText[0][1], PDF_TOKENS.margin + 4);
+  assert.equal(fittedWidths[0], 210 - (PDF_TOKENS.margin * 2) - 8);
 });
