@@ -38,6 +38,7 @@ import {
   formatHours,
   getTaskDurationDays,
   loadPdfLogo,
+  loadPdfProfileImage,
   meterFilledBlocks,
   PDF_TOKENS,
   withBarPercents
@@ -2643,9 +2644,10 @@ const Reports = () => {
         collectExportUgcStrings(timeEntries, tasks, goals, leave)
       );
 
-      const [{ jsPDF, autoTable }, companyLogo] = await Promise.all([
+      const [{ jsPDF, autoTable }, companyLogo, profileImage] = await Promise.all([
         loadPdfLibs(),
-        loadPdfLogo()
+        loadPdfLogo(),
+        loadPdfProfileImage(employees)
       ]);
       const doc = new jsPDF('p', 'mm', 'a4');
       const loadedFonts = await loadPdfFonts(doc, currentLanguage);
@@ -2797,6 +2799,7 @@ const Reports = () => {
       layout.titleBlock({
         title: reportTitle.toUpperCase(),
         logo: companyLogo,
+        profileImage,
         metaLines: [
           `${t('reports.generated', 'Generated')}: ${new Date().toLocaleString()}`,
           `${t('reports.period', 'Period')}: ${filters.startDate} ${t('reports.to', 'to')} ${filters.endDate}`,
@@ -2909,13 +2912,20 @@ const Reports = () => {
       }
 
       // ── Data tables: header row + data rows, thead repeats across pages ────
-      const addPdfTable = (title, head, body, fontSize = 7, columnStyles = {}) => {
+      const addPdfTable = (
+        title,
+        head,
+        body,
+        fontSize = 7,
+        columnStyles = {},
+        { highlightFill = null } = {}
+      ) => {
         if (body.length === 0) return;
         // Don't leave a heading (or a two-row stub) stranded at the foot of a page.
         const estimatedHeight = 24 + body.length * 5.8;
         layout.ensure(Math.min(estimatedHeight, 54));
         layout.sectionRule();
-        layout.sectionHeading(title);
+        layout.sectionHeading(title, { fillColor: highlightFill });
 
         autoTable(doc, {
           startY: layout.y,
@@ -2926,7 +2936,7 @@ const Reports = () => {
           columnStyles,
           headStyles: {
             textColor: PDF_TOKENS.ink,
-            fillColor: false,
+            fillColor: highlightFill || false,
             lineColor: PDF_TOKENS.ink,
             lineWidth: { bottom: PDF_TOKENS.ruleHeavy },
             fontStyle: 'normal',
@@ -2934,6 +2944,7 @@ const Reports = () => {
           },
           bodyStyles: {
             textColor: PDF_TOKENS.inkSoft,
+            fillColor: highlightFill || false,
             lineColor: PDF_TOKENS.track,
             lineWidth: { bottom: PDF_TOKENS.ruleThin }
           },
@@ -2960,7 +2971,29 @@ const Reports = () => {
           }
         });
 
-        layout.y = doc.lastAutoTable.finalY + 4;
+        if (highlightFill) {
+          // Close the card with a small rounded footer, without covering the last row.
+          const footerTop = doc.lastAutoTable.finalY;
+          doc.setFillColor(...highlightFill);
+          doc.roundedRect(
+            PDF_TOKENS.margin,
+            footerTop,
+            pageWidth - PDF_TOKENS.margin * 2,
+            4,
+            3,
+            3,
+            'F'
+          );
+          doc.rect(
+            PDF_TOKENS.margin,
+            footerTop,
+            pageWidth - PDF_TOKENS.margin * 2,
+            2,
+            'F'
+          );
+        }
+
+        layout.y = doc.lastAutoTable.finalY + (highlightFill ? 8 : 4);
       };
 
       const pdfHead = (key, fallback) => cleanTextForPDF(t(key, fallback), unicodeFontLoaded);
@@ -3069,7 +3102,10 @@ const Reports = () => {
             `${(req.start_date || '').slice(0, 10)} ${arrowSeparator} ${(req.end_date || req.start_date || '').slice(0, 10)}`,
             String(req.days_count ?? '-'),
             cleanTextForPDF(translateStatus(req.status), unicodeFontLoaded)
-          ])
+          ]),
+          7,
+          {},
+          { highlightFill: PDF_TOKENS.leaveHighlight }
         );
       }
 
