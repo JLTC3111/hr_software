@@ -67,22 +67,29 @@ export const filterExportSnapshotByScope = (scope = {}, snapshot = {}) => ({
   employees: snapshot.employees || [],
 });
 
-/** Mon–Fri days in an inclusive YYYY-MM-DD range. */
-export const countWorkingDays = (startDate, endDate) => {
-  if (!startDate || !endDate) return 0;
+/** Local YYYY-MM-DD keys for Mon–Fri in an inclusive range. */
+export const workingDateKeys = (startDate, endDate) => {
+  if (!startDate || !endDate) return [];
   const start = new Date(`${String(startDate).slice(0, 10)}T00:00:00`);
   const end = new Date(`${String(endDate).slice(0, 10)}T00:00:00`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return 0;
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return [];
 
-  let count = 0;
+  const keys = [];
   const cursor = new Date(start);
   while (cursor <= end) {
     const day = cursor.getDay();
-    if (day !== 0 && day !== 6) count += 1;
+    if (day !== 0 && day !== 6) {
+      keys.push(
+        `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`
+      );
+    }
     cursor.setDate(cursor.getDate() + 1);
   }
-  return count;
+  return keys;
 };
+
+/** Mon–Fri days in an inclusive YYYY-MM-DD range. */
+export const countWorkingDays = (startDate, endDate) => workingDateKeys(startDate, endDate).length;
 
 export const aggregateCounts = (items, field) => {
   const counts = {};

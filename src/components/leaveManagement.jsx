@@ -52,6 +52,7 @@ import { SlidingNumber } from './motion-primitives';
 import { DatePicker } from './ui/date-picker.jsx';
 import { TimePicker } from './ui/time-picker.jsx';
 import { filterActiveEmployees } from '../utils/employeeStatus.js';
+import { countWorkingDays } from '../utils/reportExportHelpers.js';
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
 import { Blueprint, Bar, Tag, Btn, Seg, Kicker, ColumnHeading, TickerCell, LiveClock, FlatSelect } from './ui/industry.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
@@ -258,10 +259,7 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
 
   const selectionDayCount = useMemo(() => {
     if (!selStart) return 0;
-    const end = selEnd || selStart;
-    const start = fromKey(selStart);
-    const finish = fromKey(end);
-    return Math.max(1, Math.round((finish - start) / (1000 * 60 * 60 * 24)) + 1);
+    return countWorkingDays(selStart, selEnd || selStart);
   }, [selStart, selEnd]);
 
   const handleDayClick = (key) => {
@@ -1148,12 +1146,10 @@ const LeaveRequestModal = ({
 
   const dayCount = useMemo(() => {
     if (!form.startDate || !form.endDate) return 0;
-    const start = fromKey(form.startDate);
-    const end = fromKey(form.endDate);
-    const diff = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
-    if (diff <= 0) return 0;
+    const weekdays = countWorkingDays(form.startDate, form.endDate);
+    if (weekdays <= 0) return 0;
     if (form.halfDay && form.startDate === form.endDate) return 0.5;
-    return diff;
+    return weekdays;
   }, [form.startDate, form.endDate, form.halfDay]);
 
   const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));

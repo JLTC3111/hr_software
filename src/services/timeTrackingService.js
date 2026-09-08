@@ -2,6 +2,7 @@ import { supabase } from '../config/supabaseClient';
 import { isDemoMode, MOCK_EMPLOYEES, MOCK_TIME_ENTRIES, getDemoLeaveRequests, addDemoLeaveRequest, calculateDaysBetween, getDemoTimeEntries, addDemoTimeEntry, getDemoEmployeeById } from '../utils/demoHelper';
 import { saveDemoBlob } from '../utils/demoStorage';
 import { toExtendedInterval, extendedIntervalsOverlap } from '../utils/timeEntryHelpers.js';
+import { workingDateKeys } from '../utils/reportExportHelpers.js';
 
 const toEmployeeId = (id) => {
   return id ? String(id) : null;
@@ -1485,18 +1486,11 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
     
     const daysWorked = uniqueDays.size;
     
-    // Calculate leave days (from requests, merging with entry-based leave)
-    (leaveRequests || []).forEach(req => {
-      const start = new Date(req.start_date);
-      const end = new Date(req.end_date);
-      
-      // Iterate days in the request
-      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        // Only count if within the requested month
-        if (d >= new Date(startDate) && d <= new Date(endDate)) {
-          leaveDates.add(d.toISOString().split('T')[0]);
-        }
-      }
+    // Leave requests bill weekdays only — same rule as days_count / calculate_working_days.
+    (leaveRequests || []).forEach((req) => {
+      workingDateKeys(req.start_date, req.end_date || req.start_date).forEach((key) => {
+        if (key >= startDate && key <= endDate) leaveDates.add(key);
+      });
     });
     
     const leaveDays = leaveDates.size;
@@ -1773,13 +1767,9 @@ const aggregateEmployeeSummary = (employeeId, month, year, timeEntries = [], lea
   });
 
   leaveRequests.forEach((req) => {
-    const start = new Date(req.start_date);
-    const end = new Date(req.end_date);
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      if (d >= new Date(startDate) && d <= new Date(endDate)) {
-        leaveDates.add(d.toISOString().split('T')[0]);
-      }
-    }
+    workingDateKeys(req.start_date, req.end_date || req.start_date).forEach((key) => {
+      if (key >= startDate && key <= endDate) leaveDates.add(key);
+    });
   });
 
   let overtimeRegular = overtimeFromEntries;

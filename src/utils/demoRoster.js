@@ -13,6 +13,7 @@
  *
  * NOT used outside demo mode. Nothing in this file reaches Supabase.
  */
+import { countWorkingDays } from './reportExportHelpers.js';
 
 /** mulberry32 — small, fast, and stable across engines. */
 const seeded = (seed) => {
@@ -485,6 +486,8 @@ export const buildRosterLeaveRequests = (roster) => {
     start.setDate(start.getDate() + between(rng, -45, 45));
     const end = new Date(start);
     end.setDate(end.getDate() + days - 1);
+    const startKey = iso(start);
+    const endKey = iso(end);
 
     const roll = rng();
     const status = roll < 0.34 ? 'pending' : roll < 0.85 ? 'approved' : 'rejected';
@@ -494,9 +497,9 @@ export const buildRosterLeaveRequests = (roster) => {
       employee_id: emp.id,
       employee_name: emp.name,
       leave_type: LEAVE_TYPES[sequence % LEAVE_TYPES.length],
-      start_date: iso(start),
-      end_date: iso(end),
-      days_count: days,
+      start_date: startKey,
+      end_date: endKey,
+      days_count: countWorkingDays(startKey, endKey),
       reason: LEAVE_REASONS[sequence % LEAVE_REASONS.length],
       status,
       submitted_at: new Date(start.getTime() - 86400000 * 7).toISOString(),

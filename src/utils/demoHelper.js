@@ -1,6 +1,7 @@
 // Demo Mode Helper Utilities
 
 import { isEmployeeActive } from './employeeStatus.js';
+import { countWorkingDays } from './reportExportHelpers.js';
 import {
   buildDemoRoster,
   buildRosterReviews,
@@ -2365,15 +2366,8 @@ export const deleteDemoLeaveRequest = (requestId) => {
 };
 
 /**
- * Calculate days between two dates (inclusive)
- * @param {string} startDate - Start date string
- * @param {string} endDate - End date string
- * @returns {number} - Number of days
+ * Inclusive leave-day count. Saturday and Sunday are omitted so demo
+ * inserts match `calculate_working_days` in Postgres (Thu–Mon = 3).
  */
-export const calculateDaysBetween = (startDate, endDate) => {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const diffTime = Math.abs(end - start);
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end
-  return diffDays;
-};
+export const calculateDaysBetween = (startDate, endDate) =>
+  countWorkingDays(startDate, endDate);

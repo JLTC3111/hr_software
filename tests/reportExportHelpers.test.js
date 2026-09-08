@@ -4,10 +4,24 @@ import {
   createPdfReportLayout,
   getPdfProfileImageSource,
   getTaskDurationDays,
+  countWorkingDays,
+  workingDateKeys,
   PDF_TOKENS,
 } from '../src/utils/reportExportHelpers.js';
 
 const now = new Date(2026, 7, 28); // 28 Aug 2026, local
+
+test('countWorkingDays skips Saturday and Sunday', () => {
+  assert.equal(countWorkingDays('2026-09-10', '2026-09-14'), 3); // Thu–Mon
+  assert.equal(countWorkingDays('2026-09-11', '2026-09-14'), 2); // Fri–Mon
+  assert.equal(countWorkingDays('2026-09-12', '2026-09-13'), 0); // Sat–Sun
+  assert.equal(countWorkingDays('2026-09-07', '2026-09-11'), 5); // Mon–Fri
+  assert.deepEqual(workingDateKeys('2026-09-10', '2026-09-14'), [
+    '2026-09-10',
+    '2026-09-11',
+    '2026-09-14',
+  ]);
+});
 
 test('logged-after-the-fact completed task uses start→due and start→completion', () => {
   const duration = getTaskDurationDays({
