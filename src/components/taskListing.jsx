@@ -60,7 +60,7 @@ import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
 import { useScreenNavigation } from '../hooks/useScreenNavigation.js';
 import {
-  Blueprint, Bar, Tag, Btn, Seg, TickerCell, LiveClock, ColumnHeading, FlatSelect,
+  Blueprint, Bar, Tag, Btn, Seg, TickerCell, LiveClock, ColumnHeading, FlatListbox,
 } from './ui/industry.jsx';
 
 /* ------------------------------------------------------------------ *
@@ -458,10 +458,12 @@ function TaskFormModal({
           {canAssign && (
             <div>
               <span style={label}>{t('taskListing.assignTo', 'Assign To')}</span>
-              <select
+              <FlatListbox
+                ind={ind}
                 value={form.assignedTo || ''}
                 onChange={(event) => setForm({ ...form, assignedTo: event.target.value })}
-                style={field}
+                aria-label={t('taskListing.assignTo', 'Assign To')}
+                style={{ ...field, textTransform: 'none', letterSpacing: '.02em' }}
               >
                 <option value="">{t('taskListing.selectEmployee', 'Select Employee')}</option>
                 {assignable.map((employee) => (
@@ -469,7 +471,7 @@ function TaskFormModal({
                     {employeeLabel(employee)}
                   </option>
                 ))}
-              </select>
+              </FlatListbox>
             </div>
           )}
 
@@ -527,27 +529,31 @@ function TaskFormModal({
           <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 14 }}>
             <div>
               <span style={label}>{t('taskListing.priority', 'Priority')}</span>
-              <select
+              <FlatListbox
+                ind={ind}
                 value={form.priority}
                 onChange={(event) => setForm({ ...form, priority: event.target.value })}
-                style={field}
+                aria-label={t('taskListing.priority', 'Priority')}
+                style={{ ...field, textTransform: 'none', letterSpacing: '.02em' }}
               >
                 <option value="low">{t('taskListing.priorityLow', 'Low')}</option>
                 <option value="medium">{t('taskListing.priorityMedium', 'Medium')}</option>
                 <option value="high">{t('taskListing.priorityHigh', 'High')}</option>
-              </select>
+              </FlatListbox>
             </div>
             <div>
               <span style={label}>{t('taskListing.status', 'Status')}</span>
-              <select
+              <FlatListbox
+                ind={ind}
                 value={form.status}
                 onChange={(event) => setForm({ ...form, status: event.target.value })}
-                style={field}
+                aria-label={t('taskListing.status', 'Status')}
+                style={{ ...field, textTransform: 'none', letterSpacing: '.02em' }}
               >
                 <option value="pending">{t('taskListing.statusPending', 'Pending')}</option>
                 <option value="in-progress">{t('taskListing.statusInProgress', 'In Progress')}</option>
                 <option value="completed">{t('taskListing.statusCompleted', 'Completed')}</option>
-              </select>
+              </FlatListbox>
             </div>
           </div>
 
@@ -1494,7 +1500,7 @@ const TaskListing = ({ employees, allEmployees }) => {
         }}
       >
         <FetchElapsedPill active={loading} isDarkMode label={t('common.fetching', 'Fetching')} />
-        <FlatSelect
+        <FlatListbox
           ind={ind}
           onDark
           value={groupMode}
@@ -1504,7 +1510,7 @@ const TaskListing = ({ employees, allEmployees }) => {
           <option value="record" style={{ color: '#1d1f20' }}>{t('taskListing.byRecord', 'By record')}</option>
           <option value="due" style={{ color: '#1d1f20' }}>{t('taskListing.byDue', 'By due window')}</option>
           <option value="priority" style={{ color: '#1d1f20' }}>{t('taskListing.byPriority', 'By priority')}</option>
-        </FlatSelect>
+        </FlatListbox>
       </div>
     </div>
   );

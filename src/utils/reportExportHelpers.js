@@ -91,6 +91,32 @@ export const workingDateKeys = (startDate, endDate) => {
 /** Mon–Fri days in an inclusive YYYY-MM-DD range. */
 export const countWorkingDays = (startDate, endDate) => workingDateKeys(startDate, endDate).length;
 
+/**
+ * Group working-day keys into contiguous runs. Adjacent weekdays stay in one
+ * run (Fri then Mon is one run — the weekend is not a gap). A skipped Thursday
+ * between Wednesday and Friday splits into two.
+ */
+export const workingDaySegments = (keys) => {
+  const sorted = [...new Set((keys || []).filter(Boolean).map((key) => String(key).slice(0, 10)))].sort();
+  if (!sorted.length) return [];
+
+  const segments = [];
+  let start = sorted[0];
+  let end = sorted[0];
+  for (let i = 1; i < sorted.length; i += 1) {
+    const current = sorted[i];
+    if (workingDateKeys(end, current).length === 2) {
+      end = current;
+    } else {
+      segments.push({ start, end });
+      start = current;
+      end = current;
+    }
+  }
+  segments.push({ start, end });
+  return segments;
+};
+
 export const aggregateCounts = (items, field) => {
   const counts = {};
   (items || []).forEach((item) => {

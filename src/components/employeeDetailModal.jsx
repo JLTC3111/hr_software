@@ -1,5 +1,5 @@
 import _React, { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Phone, Mail, MapPin, Award, Cake, Network, Calendar, DollarSign, User, ClipboardList, FileText, Download, Upload, Loader, Edit2, Briefcase, Trash2, RefreshCw, Eye, ExternalLink, Files, ListFilter } from 'lucide-react';
+import { X, Phone, Mail, MapPin, Award, Cake, Network, Calendar, DollarSign, ClipboardList, FileText, Download, Upload, Edit2, Trash2, RefreshCw, Eye, ExternalLink, Zap } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
@@ -10,13 +10,15 @@ import { getEmployeePositionI18nKey } from '../utils/employeePositionKey.js';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { ShinyButton } from './ui/shiny-button';
-import { cn } from '@/lib/utils';
+import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
+import { Blueprint, Btn, Tag, Seg, Kicker, Bar, ColumnHeading, FlatListbox } from './ui/industry.jsx';
+import { Spinner } from './ui/Spinner.jsx';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
-  const { bg, text, border, isDarkMode } = useTheme();
+  const { isDarkMode } = useTheme();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
   const { t } = useLanguage();
   const { user, handleSessionAuthError } = useAuth();
   const { startPdfUpload, getUploadStatus } = useUpload();
@@ -449,114 +451,112 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
 
   if (!employee) return null;
 
+  const displayName = getDemoEmployeeName(employee, t);
+  const statusKey = String(employee.status || 'Active').toLowerCase().replace(/\s+/g, '');
+  const statusVariant = statusKey === 'inactive' ? 'outline' : statusKey === 'onleave' ? 'neutral' : 'accent';
+  const iconBtn = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 32,
+    height: 32,
+    padding: 0,
+    background: 'transparent',
+    border: `1px solid ${ind.hairline}`,
+    borderRadius: 0,
+    color: ind.ink,
+    cursor: 'pointer',
+  };
+  const labelBtn = (solid) => ({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    fontFamily: DISPLAY,
+    fontWeight: 600,
+    fontSize: 12.5,
+    letterSpacing: '.04em',
+    textTransform: 'uppercase',
+    padding: '4px 12px',
+    borderRadius: 0,
+    cursor: 'pointer',
+    background: solid ? ind.accent : 'transparent',
+    color: solid ? ind.accentInk : ind.ink,
+    border: `1px solid ${solid ? ind.accent : ind.hairline}`,
+  });
+  const note = { fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, margin: 0, lineHeight: 1.5 };
+  const alertNote = {
+    fontFamily: BODY, fontSize: 12.5, color: ind.ink, margin: '0 0 10px',
+    borderLeft: `2px solid ${ind.ink}`, paddingLeft: 8, lineHeight: 1.5,
+  };
+
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(29,31,32,.55)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+      }}
       onClick={(e) => {
-        if (!isResizing && e.target === e.currentTarget) {
-          onClose();
-        }
+        if (!isResizing && e.target === e.currentTarget) onClose();
       }}
     >
-      <div 
+      <div
         ref={modalRef}
-        className={`${bg.secondary} rounded-lg shadow-2xl max-h-[90vh] overflow-hidden flex flex-col relative`}
-        style={{ width: `${modalWidth}px` }}
+        style={{ width: `${modalWidth}px`, maxWidth: '100%', maxHeight: '90vh', position: 'relative' }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Resize Handle */}
+      <Blueprint
+        ind={ind}
+        style={{
+          background: ind.ground, height: '100%', maxHeight: '90vh',
+          display: 'flex', flexDirection: 'column',
+          color: ind.ink, fontFamily: BODY, overflow: 'hidden',
+        }}
+      >
         <div
           ref={resizeRef}
-          className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-blue-500 transition-colors z-50"
+          style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 8, cursor: 'ew-resize', zIndex: 50 }}
           onMouseDown={(e) => {
             e.preventDefault();
             e.stopPropagation();
             setIsResizing(true);
           }}
           onClick={(e) => e.stopPropagation()}
+          onMouseEnter={(e) => { e.currentTarget.style.background = ind.accent; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
         />
 
-        {/* Close Button */}
-        <button
-          type ="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2 rounded-lg hover:bg-transparent transition-colors"
+        <div
+          className="flex items-start justify-between"
+          style={{ gap: 16, padding: '18px 20px 16px', borderBottom: `1px solid ${ind.hairline}` }}
         >
-          <X className="w-5 h-5 cursor-pointer " style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
-        </button>
-
-        {/* Header Section */}
-        <div className={`${bg.primary} p-8 text-center`}>
-          {/* Profile Photo */}
-          <div className="flex justify-center mb-4">
-            <div className="relative">
-              <div className={`w-24 h-24 rounded-full overflow-hidden flex items-center justify-center border-4 shadow-lg ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-200 border-white'}`}>
-                {employee.photo ? (
-                  <img src={employee.photo} alt={employee.name} className="w-full h-full object-cover" />
-                ) : (
-                  <User className="w-12 h-12 text-gray-400" />
-                )}
+          <div className="flex items-start" style={{ gap: 14, minWidth: 0 }}>
+            <Portrait ind={ind} employee={employee} name={displayName} />
+            <div style={{ minWidth: 0 }}>
+              <ColumnHeading ind={ind} style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {displayName}
+              </ColumnHeading>
+              <p style={{ ...note, marginTop: 4 }}>
+                {t(`employeePosition.${getEmployeePositionI18nKey(employee.position)}`, employee.position)}
+              </p>
+              <div style={{ marginTop: 8 }}>
+                <Tag ind={ind} variant={statusVariant}>
+                  {t(`employeeStatus.${statusKey}`, employee.status)}
+                </Tag>
               </div>
-              {/* Online Status Indicator */}
-              <div className={`absolute bottom-1 right-1 w-5 h-5 bg-green-500 rounded-full border-2 ${isDarkMode ? 'border-gray-600' : 'border-white'}`}></div>
             </div>
           </div>
-
-          {/* Name & Position */}
-          <h2 className={`text-2xl font-bold ${text.primary} mb-1`}>
-            {getDemoEmployeeName(employee, t)}
-          </h2>
-          <p className={`${text.secondary} mb-4`}>
-            {t(`employeePosition.${getEmployeePositionI18nKey(employee.position)}`, employee.position)}
-          </p>
-
-          {/* Action Buttons */}
-          <div className="flex justify-center space-x-3">
-            <a
-              href={`mailto:${employee.email}`}
-              style={{
-                padding: '12px',
-                backgroundColor: isDarkMode ? '#transparent' : '#eff6ff',
-                color: isDarkMode ? '#93c5fd' : '#2563eb',
-                borderRadius: '8px',
-                transition: 'all 0.3s',
-                display: 'inline-flex',
-                cursor: 'pointer'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = isDarkMode ? '#4b5563' : '#dbeafe';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = isDarkMode ? 'transparent' : '#eff6ff';
-              }}
-              title={t('employees.sendEmail', 'Send Email')}
-            >
-              <Mail className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
+          <div className="flex items-center" style={{ gap: 8, flex: 'none' }}>
+            <a href={`mailto:${employee.email}`} title={t('employees.sendEmail', 'Send Email')} style={iconBtn}>
+              <Mail size={15} strokeWidth={1.5} />
             </a>
-            <a
-              href={`tel:${employee.phone}`}
-              style={{
-                padding: '12px',
-                backgroundColor: isDarkMode ? '#transparent' : '#eff6ff',
-                color: isDarkMode ? '#93c5fd' : '#2563eb',
-                borderRadius: '8px',
-                transition: 'all 0.3s',
-                display: 'inline-flex',
-                cursor: 'pointer'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = isDarkMode ? '#4b5563' : '#dbeafe';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = isDarkMode ? 'transparent' : '#eff6ff';
-              }}
-              title={t('employees.call', 'Call')}
-            >
-              <Phone className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
+            <a href={`tel:${employee.phone}`} title={t('employees.call', 'Call')} style={iconBtn}>
+              <Phone size={15} strokeWidth={1.5} />
             </a>
             {canEdit && (
               <button
-              type ="button"
+                type="button"
+                title={t('employees.edit', 'Edit')}
+                style={iconBtn}
                 onClick={(e) => {
                   e.stopPropagation();
                   if (onEdit) {
@@ -564,522 +564,306 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                     onClose();
                   }
                 }}
-                style={{
-                  padding: '12px',
-                  backgroundColor: isDarkMode ? '#transparent' : '#eff6ff',
-                  color: isDarkMode ? '#93c5fd' : '#2563eb',
-                  borderRadius: '8px',
-                  transition: 'all 0.3s',
-                  display: 'inline-flex',
-                  cursor: 'pointer'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? '#4b5563' : '#dbeafe';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = isDarkMode ? 'transparent' : '#eff6ff';
-                }}
-                title={t('employees.edit', 'Edit')}
               >
-                <Edit2 className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
+                <Edit2 size={15} strokeWidth={1.5} />
               </button>
             )}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t('common.close', 'Close')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0 }}
+            >
+              <X size={16} strokeWidth={1.5} />
+            </button>
           </div>
         </div>
 
-        {/* Quick Stats Card */}
-        <div className={`mx-6 -mt-6 mb-4 ${bg.secondary} border ${border.primary} rounded-lg p-4 shadow-lg`}>
-          <div className="flex items-center space-x-2 mb-3">
-            <Briefcase className={`w-5 h-5 ${isDarkMode ? 'text-white' : 'text-gray-600'}`} />
-            <h3 className={`font-semibold ${text.primary}`}>
-              {t('employeeDetailModal.quickStats', 'Quick Stats')}
-            </h3>
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className={`text-sm ${text.secondary}`}>
-                {t('employeeDetailModal.status', 'Status')}
-              </span>
-              <span className={`px-3 py-1 text-xs font-semibold rounded-full ${isDarkMode ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-700'}`}>
-                {t(`employeeStatus.${employee.status.toLowerCase().replace(' ', '')}`, employee.status)}
-              </span>
+        <div
+          className="grid grid-cols-3"
+          style={{ gap: 0, borderBottom: `1px solid ${ind.hairline}` }}
+        >
+          {[
+            [t('employeeDetailModal.status', 'Status'), (
+              <Tag ind={ind} variant={statusVariant}>
+                {t(`employeeStatus.${statusKey}`, employee.status)}
+              </Tag>
+            )],
+            [t('employeeDetailModal.workDuration', 'Work Duration'), (
+              <span style={figure(16, ind.ink)}>{calculateWorkDuration()}</span>
+            )],
+            [t('employeeDetailModal.performance', 'Performance'), (
+              <span style={figure(16, ind.ink)}>{employee.performance != null ? `${employee.performance}/5.0` : '—'}</span>
+            )],
+          ].map(([label, value], i) => (
+            <div
+              key={label}
+              style={{
+                padding: '12px 20px',
+                borderRight: i < 2 ? `1px solid ${ind.rule}` : 'none',
+              }}
+            >
+              <Kicker ind={ind} color={ind.inkMuted}>{label}</Kicker>
+              <div style={{ marginTop: 6 }}>{value}</div>
             </div>
-            <div className="flex justify-between items-center">
-              <span className={`text-sm ${text.secondary}`}>
-                {t('employeeDetailModal.workDuration', 'Work Duration')}
-              </span>
-              <span className={`text-sm font-semibold ${text.primary}`}>
-                {calculateWorkDuration()}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className={`text-sm ${text.secondary}`}>
-                {t('employeeDetailModal.performance', 'Performance')}
-              </span>
-              <span className="text-sm font-semibold text-yellow-600 flex items-center">
-                {employee.performance}/5.0 ⭐
-              </span>
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* Basic Information */}
-        <div className={`flex border-b ${border.primary} px-6 gap-1`}>
-          <ShinyButton
-            type="button"
-            onClick={() => setActiveTab('info')}
-            className={cn(
-              'rounded-none border-0 border-b-2 px-4 py-3 shadow-none hover:shadow-none bg-transparent',
-              activeTab === 'info'
-                ? cn(text.primary, 'border-blue-600')
-                : cn(text.secondary, 'border-transparent')
-            )}
-          >
-            <User className="w-4 h-4" />
-            <span>{t('employeeDetailModal.basicInfo', '')}</span>
-          </ShinyButton>
-          <ShinyButton
-            type="button"
-            onClick={() => setActiveTab('contact')}
-            className={cn(
-              'rounded-none border-0 border-b-2 px-4 py-3 shadow-none hover:shadow-none bg-transparent',
-              activeTab === 'contact'
-                ? cn(text.primary, 'border-blue-600')
-                : cn(text.secondary, 'border-transparent')
-            )}
-          >
-            <Phone className="w-4 h-4" />
-            <span>{t('employeeDetailModal.contact', '')}</span>
-          </ShinyButton>
-          <ShinyButton
-            type="button"
-            onClick={() => setActiveTab('documents')}
-            className={cn(
-              'rounded-none border-0 border-b-2 px-4 py-3 shadow-none hover:shadow-none bg-transparent',
-              activeTab === 'documents'
-                ? cn(text.primary, 'border-blue-600')
-                : cn(text.secondary, 'border-transparent')
-            )}
-          >
-            <FileText className={cn('w-4 h-4', isDarkMode ? 'text-white' : 'text-gray-600')} />
-            <span>{t('employeeDetailModal.documents', '')}</span>
-          </ShinyButton>
+        <div style={{ padding: '12px 20px 0' }}>
+          <Seg
+            ind={ind}
+            value={activeTab}
+            onChange={setActiveTab}
+            ariaLabel={t('employeeDetailModal.basicInfo', 'Basic Information')}
+            options={[
+              { value: 'info', label: t('employeeDetailModal.basicInfo', 'Basic Information') },
+              { value: 'contact', label: t('employeeDetailModal.contact', 'Contact') },
+              { value: 'documents', label: t('employeeDetailModal.documents', 'Documents') },
+            ]}
+          />
         </div>
-        <div className="flex-1 overflow-y-auto p-6">
-          {/* Basic Info Tab */}
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 20px 20px' }}>
           {activeTab === 'info' && (
-            <div className="space-y-4">
-              <InfoItem icon={ClipboardList} label={t('employeeDetailModal.fullName', 'Full Name')} value={getDemoEmployeeName(employee, t)} />
-              <InfoItem icon={Network} label={t('employeeDetailModal.department', 'Department')} 
-                value={t(`employeeDepartment.${employee.department?.toLowerCase().replace(' ', '')}`, employee.department)} />
-              <InfoItem icon={Award} label={t('employeeDetailModal.position', 'Position')} 
-                value={t(`employeePosition.${getEmployeePositionI18nKey(employee.position)}`, employee.position)} />
-              <InfoItem icon={Cake} label={t('employeeDetailModal.dateOfBirth', 'Date of Birth')} value={employee.dob} />
-              <InfoItem icon={Calendar} label={t('employeeDetailModal.startDate', 'Start Date')} 
-                value={employee.start_date || employee.startDate || 'N/A'} />
-              <InfoItem icon={DollarSign} label={t('employeeDetailModal.salary', 'Salary')} 
-                value={`$${employee.salary?.toLocaleString() || 'N/A'}`} />
+            <div>
+              <InfoItem ind={ind} icon={ClipboardList} label={t('employeeDetailModal.fullName', 'Full Name')} value={displayName} />
+              <InfoItem
+                ind={ind}
+                icon={Network}
+                label={t('employeeDetailModal.department', 'Department')}
+                value={t(`employeeDepartment.${employee.department?.toLowerCase().replace(' ', '')}`, employee.department)}
+              />
+              <InfoItem
+                ind={ind}
+                icon={Award}
+                label={t('employeeDetailModal.position', 'Position')}
+                value={t(`employeePosition.${getEmployeePositionI18nKey(employee.position)}`, employee.position)}
+              />
+              <InfoItem ind={ind} icon={Cake} label={t('employeeDetailModal.dateOfBirth', 'Date of Birth')} value={employee.dob} />
+              <InfoItem ind={ind} icon={Calendar} label={t('employeeDetailModal.startDate', 'Start Date')} value={employee.start_date || employee.startDate || 'N/A'} />
+              <InfoItem ind={ind} icon={DollarSign} label={t('employeeDetailModal.salary', 'Salary')} value={employee.salary != null ? `$${employee.salary.toLocaleString()}` : 'N/A'} />
             </div>
           )}
 
-          {/* Contact Tab */}
           {activeTab === 'contact' && (
-            <div className="space-y-4">
-              <InfoItem icon={Mail} label={t('employeeDetailModal.email', 'Email')} value={employee.email} />
-              <InfoItem icon={Phone} label={t('employeeDetailModal.phone', 'Phone Number')} value={employee.phone} />
-              <InfoItem icon={MapPin} label={t('employeeDetailModal.address', 'Address')} value={employee.address || 'N/A'} />
+            <div>
+              <InfoItem ind={ind} icon={Mail} label={t('employeeDetailModal.email', 'Email')} value={employee.email} />
+              <InfoItem ind={ind} icon={Phone} label={t('employeeDetailModal.phone', 'Phone Number')} value={employee.phone} />
+              <InfoItem ind={ind} icon={MapPin} label={t('employeeDetailModal.address', 'Address')} value={employee.address || 'N/A'} />
             </div>
           )}
 
-          {/* Documents Tab */}
           {activeTab === 'documents' && (
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className={`inline-flex rounded-lg border overflow-hidden ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
-                    <ShinyButton
-                      type="button"
-                      onClick={() => setDocumentsSubTab('pdf')}
-                      className={cn(
-                        'rounded-none px-3 py-2 text-sm font-medium border-0 shadow-none hover:shadow-none',
-                        documentsSubTab === 'pdf'
-                          ? isDarkMode
-                            ? 'bg-gray-700 text-white'
-                            : 'bg-gray-900 text-white'
-                          : isDarkMode
-                            ? 'bg-gray-800 text-gray-200 hover:bg-gray-700'
-                            : 'bg-white text-gray-700 hover:bg-gray-50'
-                      )}
-                      title={t('employeeDetailModal.pdfTab', 'PDF')}
-                      aria-label={t('employeeDetailModal.pdfTab', 'PDF')}
-                    >
-                      <FileText className="h-4 w-4" />
-                      <span className="hidden sm:inline">{t('employeeDetailModal.pdfTab', 'PDF')}</span>
-                    </ShinyButton>
-                    <ShinyButton
-                      type="button"
-                      onClick={() => setDocumentsSubTab('requests')}
-                      className={cn(
-                        'rounded-none px-3 py-2 text-sm font-medium border-0 shadow-none hover:shadow-none',
-                        documentsSubTab === 'requests'
-                          ? isDarkMode
-                            ? 'bg-gray-700 text-white'
-                            : 'bg-gray-900 text-white'
-                          : isDarkMode
-                            ? 'bg-gray-800 text-gray-200 hover:bg-gray-700'
-                            : 'bg-white text-gray-700 hover:bg-gray-50'
-                      )}
-                      title={t('employeeDetailModal.requestDocsTab', 'Requests')}
-                      aria-label={t('employeeDetailModal.requestDocsTab', 'Requests')}
-                    >
-                      <Files className="h-4 w-4" />
-                      <span className="hidden sm:inline">{t('employeeDetailModal.requestDocsTab', 'Requests')}</span>
-                    </ShinyButton>
-                  </div>
-                </div>
+              <div className="flex flex-wrap items-center justify-between" style={{ gap: 10, margin: '12px 0' }}>
+                <Seg
+                  ind={ind}
+                  value={documentsSubTab}
+                  onChange={setDocumentsSubTab}
+                  ariaLabel={t('employeeDetailModal.pdfTab', 'PDF')}
+                  options={[
+                    { value: 'pdf', label: t('employeeDetailModal.pdfTab', 'PDF') },
+                    { value: 'requests', label: t('employeeDetailModal.requestDocsTab', 'Requests') },
+                  ]}
+                />
 
-                {/* Right side actions vary per sub-tab */}
                 {documentsSubTab === 'pdf' ? (
-                  <div className="flex space-x-2">
+                  <div className="flex flex-wrap items-center" style={{ gap: 8 }}>
                     {pdfUrl && (
                       <>
-                        <ShinyButton
-                          type="button"
-                          onClick={handlePdfDownload}
-                          className={cn(
-                            'px-4 py-2 text-white text-sm shadow-md hover:shadow-lg border-blue-500',
-                            isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'
-                          )}
-                        >
-                          <Download className="w-4 h-4" />
-                          <span>{t('employeeDetailModal.download', 'Download')}</span>
-                        </ShinyButton>
+                        <Btn ind={ind} onClick={handlePdfDownload} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          <Download size={13} strokeWidth={1.5} />
+                          {t('employeeDetailModal.download', 'Download')}
+                        </Btn>
                         {canEdit && (
-                          <ShinyButton
-                            type="button"
-                            onClick={handlePdfDelete}
-                            className={cn(
-                              'px-4 py-2 text-white text-sm shadow-md hover:shadow-lg border-red-500',
-                              isDarkMode ? 'bg-red-700 hover:bg-red-600' : 'bg-red-600 hover:bg-red-700'
-                            )}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            <span>{t('employeeDetailModal.delete', 'Delete')}</span>
-                          </ShinyButton>
+                          <Btn ind={ind} onClick={handlePdfDelete} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderColor: ind.ink }}>
+                            <Trash2 size={13} strokeWidth={1.5} />
+                            {t('employeeDetailModal.delete', 'Delete')}
+                          </Btn>
                         )}
                       </>
                     )}
                     {canEdit && (
                       <>
-                        <input
-                          type="file"
-                          accept="application/pdf"
-                          onChange={handlePdfUpload}
-                          disabled={uploadStatus?.status === 'uploading'}
-                          className="hidden"
-                          id="pdf-upload"
-                        />
-                        <label
-                          htmlFor="pdf-upload"
-                          className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${border.primary} ${bg.primary} cursor-pointer hover:bg-transparent transition-all shadow-sm hover:shadow-md ${
-                            uploadStatus?.status === 'uploading' ? 'opacity-50 cursor-not-allowed' : ''
-                          }`}
-                        >
-                          {uploadStatus?.status === 'uploading' ? (
-                            <>
-                              <Loader className="w-5 h-5 animate-spin" />
-                              <span className={text.primary}>
-                                {t('employeeDetailModal.uploading', 'Uploading...')}{' '}
-                                <span className={text.secondary}>
-                                  ({Math.max(0, Math.min(100, Number(uploadStatus?.progress ?? 0)))}%)
-                                </span>
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <Upload className={`w-5 h-5 ${text.primary}`} />
-                              <span className={text.primary}>{t('employeeDetailModal.uploadPdf', 'Upload PDF')}</span>
-                            </>
-                          )}
+                        <input type="file" accept="application/pdf" onChange={handlePdfUpload} disabled={uploadStatus?.status === 'uploading'} className="hidden" id="pdf-upload" />
+                        <label htmlFor="pdf-upload" style={{ ...labelBtn(false), opacity: uploadStatus?.status === 'uploading' ? 0.5 : 1 }}>
+                          <Upload size={13} strokeWidth={1.5} />
+                          {uploadStatus?.status === 'uploading'
+                            ? `${t('employeeDetailModal.uploading', 'Uploading...')} (${Math.max(0, Math.min(100, Number(uploadStatus?.progress ?? 0)))}%)`
+                            : t('employeeDetailModal.uploadPdf', 'Upload PDF')}
                         </label>
                       </>
                     )}
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <ShinyButton
-                      type="button"
+                  <div className="flex flex-wrap items-center" style={{ gap: 8 }}>
+                    <Btn
+                      ind={ind}
                       onClick={loadRequestDocs}
-                      className={cn(
-                        'px-4 py-2 text-white text-sm shadow-md hover:shadow-lg border-sky-500',
-                        isDarkMode ? 'bg-sky-700 hover:bg-sky-600' : 'bg-sky-600 hover:bg-sky-700',
-                        requestDocsLoading && 'opacity-60 cursor-not-allowed'
-                      )}
                       disabled={requestDocsLoading}
                       title={t('employeeDetailModal.requestDocsRefresh', 'Refresh')}
-                      aria-label={t('employeeDetailModal.requestDocsRefresh', 'Refresh')}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
-                      {requestDocsLoading ? <Loader className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                      <span>{t('employeeDetailModal.requestDocsRefresh', 'Refresh')}</span>
-                    </ShinyButton>
-
+                      <RefreshCw size={13} strokeWidth={1.5} />
+                      {t('employeeDetailModal.requestDocsRefresh', 'Refresh')}
+                    </Btn>
                     {canUploadRequestDocs && (
                       <>
-                        <div
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-white shadow-md ${isDarkMode ? 'bg-violet-700' : 'bg-violet-600'} border border-transparent focus-within:outline-none focus-within:ring-2 focus-within:ring-violet-400`}
-                          title={t('employeeDetailModal.docCategory', 'Category')}
+                        <FlatListbox
+                          ind={ind}
+                          value={requestDocCategory}
+                          onChange={(e) => setRequestDocCategory(e.target.value)}
                           aria-label={t('employeeDetailModal.docCategory', 'Category')}
+                          style={{ width: 180, padding: '4px 8px', textTransform: 'none', letterSpacing: '.02em' }}
                         >
-                          <ListFilter className="w-4 h-4" />
-                          <select
-                            value={requestDocCategory}
-                            onChange={(e) => setRequestDocCategory(e.target.value)}
-                            className="bg-transparent outline-none border-none pr-1 cursor-pointer"
-                          >
-                            <option value="leave">{t('employeeDetailModal.categoryLeave', 'Leave request')}</option>
-                            <option value="other">{t('employeeDetailModal.categoryOther', 'Other')}</option>
-                          </select>
-                        </div>
-
-                        <input
-                          type="file"
-                          onChange={handleRequestDocUpload}
-                          disabled={requestDocUpload.status === 'uploading'}
-                          className="hidden"
-                          id="request-doc-upload"
-                        />
-                        <label
-                          htmlFor="request-doc-upload"
-                          className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-white cursor-pointer transition-all shadow-md hover:shadow-lg ${
-                            requestDocUpload.status === 'uploading' ? 'opacity-60 cursor-not-allowed' : ''
-                          } ${isDarkMode ? 'bg-emerald-700 hover:bg-emerald-600' : 'bg-emerald-600 hover:bg-emerald-700'}`}
-                        >
-                          {requestDocUpload.status === 'uploading' ? (
-                            <>
-                              <Loader className="w-5 h-5 animate-spin" />
-                              <span>
-                                {t('employeeDetailModal.uploading', 'Uploading...')}{' '}
-                                <span className={isDarkMode ? 'text-emerald-100' : 'text-emerald-100'}>({Math.max(0, Math.min(100, Number(requestDocUpload.progress ?? 0)))}%)</span>
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="w-4 h-4" />
-                              <span>{t('employeeDetailModal.uploadRequestDoc', 'Upload Document')}</span>
-                            </>
-                          )}
+                          <option value="leave">{t('employeeDetailModal.categoryLeave', 'Leave request')}</option>
+                          <option value="other">{t('employeeDetailModal.categoryOther', 'Other')}</option>
+                        </FlatListbox>
+                        <input type="file" onChange={handleRequestDocUpload} disabled={requestDocUpload.status === 'uploading'} className="hidden" id="request-doc-upload" />
+                        <label htmlFor="request-doc-upload" style={{ ...labelBtn(true), opacity: requestDocUpload.status === 'uploading' ? 0.6 : 1 }}>
+                          <Upload size={13} strokeWidth={1.5} />
+                          {requestDocUpload.status === 'uploading'
+                            ? `${t('employeeDetailModal.uploading', 'Uploading...')} (${Math.max(0, Math.min(100, Number(requestDocUpload.progress ?? 0)))}%)`
+                            : t('employeeDetailModal.uploadRequestDoc', 'Upload Document')}
                         </label>
                       </>
                     )}
                   </div>
                 )}
               </div>
-              
-              {/* Background Upload Indicator */}
-              {documentsSubTab === 'pdf' && uploadStatus?.status === 'uploading' && (
-                <div className={`mt-2 p-3 border rounded-lg ${isDarkMode ? 'bg-blue-900/30 border-blue-700' : 'bg-blue-50 border-blue-200'}`}>
-                  <div className={`flex items-center space-x-2 text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
-                    <Loader className="w-4 h-4 animate-spin" />
-                    <span>{t('employeeDetailModal.uploadBackground', '⚡ Upload continues in background - you can close this window safely')}</span>
-                  </div>
 
-                  <div className={`mt-2 h-2 rounded-full overflow-hidden ${isDarkMode ? 'bg-blue-950/60' : 'bg-blue-100'}`}>
-                    <div
-                      className={`${isDarkMode ? 'bg-blue-400/70' : 'bg-blue-600'} h-full transition-all`}
-                      style={{ width: `${Math.max(0, Math.min(100, Number(uploadStatus?.progress ?? 0)))}%` }}
-                    />
+              {documentsSubTab === 'pdf' && uploadStatus?.status === 'uploading' && (
+                <div style={{ border: `1px solid ${ind.hairline}`, padding: 12, marginBottom: 12 }}>
+                  <p style={{ ...note, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <Zap size={14} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.inkMuted }} aria-hidden="true" />
+                    {t('employeeDetailModal.uploadBackground', 'Upload continues in background - you can close this window safely')}
+                  </p>
+                  <div style={{ marginTop: 8 }}>
+                    <Bar ind={ind} value={Math.max(0, Math.min(100, Number(uploadStatus?.progress ?? 0))) / 100} fill={ind.accent} height={7} />
                   </div>
                 </div>
               )}
 
-              {/* PDF Viewer / Request Docs */}
               {documentsSubTab === 'pdf' ? (
-                <div className={`border-2 border-dashed ${border.primary} rounded-lg p-4 min-h-100 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                <div style={{ border: `1px solid ${ind.hairline}`, padding: 12, minHeight: 240 }}>
                   {pdfUrl ? (
                     <div className="flex flex-col items-center w-full">
-                      <div
-                        className="pdf-viewer-frame w-full flex justify-center overflow-x-hidden"
-                        style={{ maxWidth: pdfViewWidth }}
-                      >
+                      <div className="pdf-viewer-frame w-full flex justify-center overflow-x-hidden" style={{ maxWidth: pdfViewWidth }}>
                         {useIframe ? (
                           <iframe
                             src={`${pdfUrl}#view=FitH&toolbar=0&navpanes=0`}
                             type="application/pdf"
-                            className="border-0 rounded block mx-auto shrink-0"
-                            style={{ width: pdfViewWidth, height: 600 }}
+                            className="border-0 block mx-auto shrink-0"
+                            style={{ width: pdfViewWidth, height: 600, borderRadius: 0 }}
                             title={t('employeeDetailModal.pdfViewerTitle', 'PDF Viewer')}
                             onLoad={() => console.log('✅ Iframe loaded successfully')}
                             onError={(e) => {
                               console.error('❌ Iframe error:', e);
-                              console.error('PDF URL:', pdfUrl);
                               setPdfError(t('errors.fileOpenFailed', 'Failed to open document'));
                             }}
                           />
+                        ) : pdfError ? (
+                          <div className="flex flex-col items-center justify-center" style={{ height: 256, gap: 10 }}>
+                            <FileText size={28} strokeWidth={1.5} style={{ color: ind.inkMuted }} />
+                            <p style={{ ...note, textAlign: 'center' }}>{pdfError}</p>
+                            <Btn ind={ind} variant="primary" onClick={() => setUseIframe(true)}>
+                              {t('employeeDetailModal.switchToIframe', 'Switch to Iframe Viewer')}
+                            </Btn>
+                          </div>
                         ) : (
-                          pdfError ? (
-                            <div className="flex flex-col items-center justify-center h-64 text-red-500">
-                              <FileText className={`w-16 h-16 mb-4 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
-                              <p className={`text-center ${text.secondary} font-semibold`}>{pdfError}</p>
-                              <button
-                                type ="button"
-                                onClick={() => setUseIframe(true)}
-                                className={`mt-4 px-4 py-2 text-white rounded-lg transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
-                              >
-                                {t('employeeDetailModal.switchToIframe', 'Switch to Iframe Viewer')}
-                              </button>
-                            </div>
-                          ) : (
-                            <div
-                              className="pdf-viewer-canvas flex justify-center overflow-x-hidden overflow-y-auto"
-                              style={{ width: pdfViewWidth, minHeight: 600 }}
+                          <div className="pdf-viewer-canvas flex justify-center overflow-x-hidden overflow-y-auto" style={{ width: pdfViewWidth, minHeight: 600 }}>
+                            <Document
+                              key={pdfUrl}
+                              file={pdfUrl}
+                              onLoadSuccess={onDocumentLoadSuccess}
+                              onLoadError={onDocumentLoadError}
+                              loading={
+                                <div className="flex flex-col items-center justify-center" style={{ width: pdfViewWidth, height: 600 }}>
+                                  <Spinner ind={ind} size="block" label={t('employeeDetailModal.loadingPdf', 'Loading PDF...')} />
+                                </div>
+                              }
                             >
-                              <Document
-                                key={pdfUrl}
-                                file={pdfUrl}
-                                onLoadSuccess={onDocumentLoadSuccess}
-                                onLoadError={onDocumentLoadError}
-                                loading={
-                                  <div
-                                    className="flex flex-col items-center justify-center"
-                                    style={{ width: pdfViewWidth, height: 600 }}
-                                  >
-                                    <Loader className="w-8 h-8 animate-spin text-blue-600" />
-                                    <p className={`mt-4 ${text.secondary}`}>
-                                      {t('employeeDetailModal.loadingPdf', 'Loading PDF...')}
-                                    </p>
-                                  </div>
-                                }
-                              >
-                                <Page
-                                  pageNumber={pageNumber}
-                                  width={pdfViewWidth}
-                                  renderTextLayer={false}
-                                  renderAnnotationLayer={false}
-                                  className="mx-auto"
-                                />
-                              </Document>
-                            </div>
-                          )
+                              <Page
+                                pageNumber={pageNumber}
+                                width={pdfViewWidth}
+                                renderTextLayer={false}
+                                renderAnnotationLayer={false}
+                                className="mx-auto"
+                              />
+                            </Document>
+                          </div>
                         )}
                       </div>
 
                       {!useIframe && !pdfError && numPages && numPages > 1 && (
-                        <div className="flex items-center space-x-4 mt-4">
-                          <button
-                            type ="button"
-                            onClick={() => setPageNumber(Math.max(1, pageNumber - 1))}
-                            disabled={pageNumber <= 1}
-                            className="px-3 py-1 bg-blue-600 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
-                          >
-                            ←
-                          </button>
-                          <span className={text.primary}>
+                        <div className="flex items-center" style={{ gap: 12, marginTop: 12 }}>
+                          <Btn ind={ind} onClick={() => setPageNumber(Math.max(1, pageNumber - 1))} disabled={pageNumber <= 1}>←</Btn>
+                          <span style={{ fontFamily: BODY, fontSize: 13, color: ind.ink }}>
                             {t('reports.page', 'Page')} {pageNumber} {t('reports.of', 'of')} {numPages}
                           </span>
-                          <button
-                            type ="button"
-                            onClick={() => setPageNumber(Math.min(numPages, pageNumber + 1))}
-                            disabled={pageNumber >= numPages}
-                            className="px-3 py-1 bg-blue-600 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
-                          >
-                            →
-                          </button>
+                          <Btn ind={ind} onClick={() => setPageNumber(Math.min(numPages, pageNumber + 1))} disabled={pageNumber >= numPages}>→</Btn>
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                      <FileText className={`w-16 h-16 mb-4 ${isDarkMode ? 'text-white' : 'text-blue-600'}`} />
-                      <p className={`text-center ${text.secondary} font-semibold`}>
-                        {t('employees.noPdfDocument', 'No document yet')}
-                      </p>
-                      <p className={`text-sm text-center ${text.secondary} mt-2`}>
-                        {t('employees.uploadPdfPrompt', 'Upload a PDF document to display it here')}
-                      </p>
+                    <div className="flex flex-col items-center justify-center" style={{ height: 256, gap: 8 }}>
+                      <FileText size={28} strokeWidth={1.5} style={{ color: ind.inkMuted }} />
+                      <p style={{ ...note, textAlign: 'center', color: ind.ink }}>{t('employees.noPdfDocument', 'No document yet')}</p>
+                      <p style={{ ...note, textAlign: 'center' }}>{t('employees.uploadPdfPrompt', 'Upload a PDF document to display it here')}</p>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className={`border ${border.primary} rounded-lg p-4 ${isDarkMode ? 'bg-gray-800/50' : 'bg-white'}`}>
+                <div style={{ border: `1px solid ${ind.hairline}`, padding: 12 }}>
                   {!canUploadRequestDocs && (
-                    <div className={`mb-3 text-sm ${text.secondary}`}>
-                      {t('employeeDetailModal.requestDocsRestricted', 'Only Admin/HR/Manager can upload request documents.')}
-                    </div>
+                    <p style={{ ...note, marginBottom: 10 }}>{t('employeeDetailModal.requestDocsRestricted', 'Only Admin/HR/Manager can upload request documents.')}</p>
                   )}
-
-                  {requestDocsError && (
-                    <div className={`mb-3 text-sm ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>
-                      {requestDocsError}
-                    </div>
-                  )}
-
-                  {requestDocUpload.status === 'error' && requestDocUpload.error && (
-                    <div className={`mb-3 text-sm ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>
-                      {requestDocUpload.error}
-                    </div>
-                  )}
+                  {requestDocsError && <p style={alertNote}>{requestDocsError}</p>}
+                  {requestDocUpload.status === 'error' && requestDocUpload.error && <p style={alertNote}>{requestDocUpload.error}</p>}
 
                   {requestDocPreview.status !== 'idle' && (
-                    <div className={`mb-3 rounded-lg border ${border.primary} p-3 ${isDarkMode ? 'bg-gray-900/30' : 'bg-gray-50'}`}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className={`font-semibold truncate ${text.primary}`} title={requestDocPreview.doc?.name}>
+                    <div style={{ border: `1px solid ${ind.hairline}`, padding: 12, marginBottom: 12 }}>
+                      <div className="flex items-start justify-between" style={{ gap: 12 }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={requestDocPreview.doc?.name}>
                             {requestDocPreview.doc?.name}
                           </div>
-                          <div className={`text-xs ${text.secondary}`}>
+                          <div style={{ ...note, marginTop: 4 }}>
                             {requestDocPreview.doc?.category === 'leave'
                               ? t('employeeDetailModal.categoryLeave', 'Leave request')
                               : t('employeeDetailModal.categoryOther', 'Other')}
-                            {requestDocPreview.doc?.sizeLabel ? ` • ${requestDocPreview.doc.sizeLabel}` : ''}
-                            {requestDocPreview.doc?.dateLabel ? ` • ${requestDocPreview.doc.dateLabel}` : ''}
+                            {requestDocPreview.doc?.sizeLabel ? ` · ${requestDocPreview.doc.sizeLabel}` : ''}
+                            {requestDocPreview.doc?.dateLabel ? ` · ${requestDocPreview.doc.dateLabel}` : ''}
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center" style={{ gap: 8, flex: 'none' }}>
                           {requestDocPreview.url && (
-                            <button
-                              type="button"
+                            <Btn
+                              ind={ind}
                               onClick={() => globalThis.open(requestDocPreview.url, '_blank')}
-                              className={`px-4 py-2 text-white rounded-lg flex items-center gap-2 text-sm transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
-                              title={t('employeeDetailModal.requestDocsOpenInNewTab', 'Open in new tab')}
-                              aria-label={t('employeeDetailModal.requestDocsOpenInNewTab', 'Open in new tab')}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                             >
-                              <ExternalLink className="w-4 h-4" />
-                              <span>{t('employeeDetailModal.requestDocsOpenInNewTab', 'Open in new tab')}</span>
-                            </button>
+                              <ExternalLink size={13} strokeWidth={1.5} />
+                              {t('employeeDetailModal.requestDocsOpenInNewTab', 'Open in new tab')}
+                            </Btn>
                           )}
-
-                          <button
-                            type="button"
-                            onClick={clearRequestDocPreview}
-                            className={`p-2 text-white rounded-lg transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-600 hover:bg-gray-700'}`}
-                            title={t('employeeDetailModal.requestDocsClosePreview', 'Close preview')}
-                            aria-label={t('employeeDetailModal.requestDocsClosePreview', 'Close preview')}
-                          >
-                            <X className="w-4 h-4" />
+                          <button type="button" onClick={clearRequestDocPreview} aria-label={t('employeeDetailModal.requestDocsClosePreview', 'Close preview')} style={iconBtn}>
+                            <X size={15} strokeWidth={1.5} />
                           </button>
                         </div>
                       </div>
-
-                      <div className="mt-3 flex justify-center">
+                      <div className="flex justify-center" style={{ marginTop: 12 }}>
                         {requestDocPreview.status === 'loading' && (
-                          <div className={`flex items-center gap-2 text-sm ${text.secondary}`}>
-                            <Loader className="w-4 h-4 animate-spin" />
-                            <span>{t('employeeDetailModal.requestDocsLoading', 'Loading...')}</span>
-                          </div>
+                          <Spinner ind={ind} size="inline" label={t('employeeDetailModal.requestDocsLoading', 'Loading...')} />
                         )}
-
                         {requestDocPreview.status === 'error' && (
-                          <div className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>
-                            {requestDocPreview.error || t('errors.fileOpenFailed', 'Failed to open document')}
-                          </div>
+                          <p style={alertNote}>{requestDocPreview.error || t('errors.fileOpenFailed', 'Failed to open document')}</p>
                         )}
-
                         {requestDocPreview.status === 'ready' && requestDocPreview.url && (
                           <img
                             src={requestDocPreview.url}
                             alt={requestDocPreview.doc?.name || t('employeeDetailModal.requestDocsPreview', 'Preview')}
-                            className={`max-h-[60vh] w-auto rounded-md border ${border.primary} ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}
+                            style={{ maxHeight: '60vh', width: 'auto', border: `1px solid ${ind.hairline}`, borderRadius: 0, background: ind.ground }}
                           />
                         )}
                       </div>
@@ -1087,86 +871,81 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
                   )}
 
                   {formattedRequestDocs.length === 0 && !requestDocsLoading ? (
-                    <div className={`flex flex-col items-center justify-center h-40 ${text.secondary}`}>
-                      <FileText className={`w-10 h-10 mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-500'}`} />
-                      <div className="font-semibold">{t('employeeDetailModal.noRequestDocs', 'No documents uploaded')}</div>
-                      <div className="text-sm">{t('employeeDetailModal.requestDocsHint', 'Upload leave-request evidence, certificates, or other supporting files.')}</div>
+                    <div className="flex flex-col items-center justify-center" style={{ height: 160, gap: 6 }}>
+                      <FileText size={22} strokeWidth={1.5} style={{ color: ind.inkMuted }} />
+                      <div style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, letterSpacing: '.06em', textTransform: 'uppercase', color: ind.ink }}>
+                        {t('employeeDetailModal.noRequestDocs', 'No documents uploaded')}
+                      </div>
+                      <div style={{ ...note, textAlign: 'center' }}>{t('employeeDetailModal.requestDocsHint', 'Upload leave-request evidence, certificates, or other supporting files.')}</div>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      {formattedRequestDocs.map((doc) => (
-                        <div
-                          key={doc.path}
-                          className={`flex items-center justify-between gap-3 rounded-lg border ${border.primary} px-3 py-2 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}
-                        >
-                          <div className="min-w-0">
-                            <div className={`font-semibold truncate ${text.primary}`} title={doc.name}>{doc.name}</div>
-                            <div className={`text-xs ${text.secondary} flex flex-wrap gap-2`}>
-                              <span className={`px-2 py-0.5 rounded-full ${isDarkMode ? 'bg-gray-700 text-gray-100' : 'bg-white text-gray-700'} border ${border.primary}`}>
-                                {doc.category === 'leave'
-                                  ? t('employeeDetailModal.categoryLeave', 'Leave request')
-                                  : t('employeeDetailModal.categoryOther', 'Other')}
-                              </span>
-                              {doc.sizeLabel && <span>{doc.sizeLabel}</span>}
-                              {doc.dateLabel && <span>{doc.dateLabel}</span>}
+                    <div>
+                      {formattedRequestDocs.map((doc) => {
+                        const name = doc?.originalName || doc?.name;
+                        const previewable = isPreviewableImageName(name);
+                        const isSameDoc = requestDocPreview?.doc?.path && requestDocPreview.doc.path === doc.path;
+                        return (
+                          <div
+                            key={doc.path}
+                            className="flex items-center justify-between"
+                            style={{ gap: 12, padding: '10px 0', borderTop: `1px solid ${ind.rule}` }}
+                          >
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={doc.name}>
+                                {doc.name}
+                              </div>
+                              <div className="flex flex-wrap items-center" style={{ gap: 8, marginTop: 4 }}>
+                                <Tag ind={ind} variant={doc.category === 'leave' ? 'accent' : 'neutral'}>
+                                  {doc.category === 'leave'
+                                    ? t('employeeDetailModal.categoryLeave', 'Leave request')
+                                    : t('employeeDetailModal.categoryOther', 'Other')}
+                                </Tag>
+                                {doc.sizeLabel && <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint }}>{doc.sizeLabel}</span>}
+                                {doc.dateLabel && <span style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint }}>{doc.dateLabel}</span>}
+                              </div>
                             </div>
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const name = doc?.originalName || doc?.name;
-                                if (isPreviewableImageName(name)) {
-                                  const isSameDoc = requestDocPreview?.doc?.path && requestDocPreview.doc.path === doc.path;
-                                  if (requestDocPreview.status !== 'idle' && isSameDoc) {
-                                    clearRequestDocPreview();
-                                    return;
-                                  }
-                                  setRequestDocsAutoPreviewArmed(false);
-                                  handleRequestDocPreview(doc);
-                                  return;
-                                }
-                                handleRequestDocOpen(doc);
-                              }}
-                              className={`p-2 text-white rounded-lg transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-indigo-700 hover:bg-indigo-600' : 'bg-indigo-600 hover:bg-indigo-700'}`}
-                              title={(() => {
-                                const name = doc?.originalName || doc?.name;
-                                return isPreviewableImageName(name)
-                                  ? t('employeeDetailModal.requestDocsPreview', 'Preview')
-                                  : t('employeeDetailModal.requestDocsOpen', 'Open');
-                              })()}
-                              aria-label={(() => {
-                                const name = doc?.originalName || doc?.name;
-                                return isPreviewableImageName(name)
-                                  ? t('employeeDetailModal.requestDocsPreview', 'Preview')
-                                  : t('employeeDetailModal.requestDocsOpen', 'Open');
-                              })()}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-
-                            {canUploadRequestDocs && (
+                            <div className="flex items-center" style={{ gap: 6, flex: 'none' }}>
                               <button
                                 type="button"
-                                onClick={() => handleRequestDocDelete(doc)}
-                                className={`p-2 text-white rounded-lg transition-all shadow-md hover:shadow-lg ${isDarkMode ? 'bg-red-700 hover:bg-red-600' : 'bg-red-600 hover:bg-red-700'}`}
-                                title={t('employeeDetailModal.requestDocsDelete', 'Delete')}
-                                aria-label={t('employeeDetailModal.requestDocsDelete', 'Delete')}
+                                style={iconBtn}
+                                title={previewable ? t('employeeDetailModal.requestDocsPreview', 'Preview') : t('employeeDetailModal.requestDocsOpen', 'Open')}
+                                aria-label={previewable ? t('employeeDetailModal.requestDocsPreview', 'Preview') : t('employeeDetailModal.requestDocsOpen', 'Open')}
+                                onClick={() => {
+                                  if (previewable) {
+                                    if (requestDocPreview.status !== 'idle' && isSameDoc) {
+                                      clearRequestDocPreview();
+                                      return;
+                                    }
+                                    setRequestDocsAutoPreviewArmed(false);
+                                    handleRequestDocPreview(doc);
+                                    return;
+                                  }
+                                  handleRequestDocOpen(doc);
+                                }}
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Eye size={15} strokeWidth={1.5} />
                               </button>
-                            )}
+                              {canUploadRequestDocs && (
+                                <button
+                                  type="button"
+                                  style={iconBtn}
+                                  title={t('employeeDetailModal.requestDocsDelete', 'Delete')}
+                                  aria-label={t('employeeDetailModal.requestDocsDelete', 'Delete')}
+                                  onClick={() => handleRequestDocDelete(doc)}
+                                >
+                                  <Trash2 size={15} strokeWidth={1.5} />
+                                </button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
 
                   {requestDocsLoading && (
-                    <div className={`mt-3 flex items-center gap-2 text-sm ${text.secondary}`}>
-                      <Loader className="w-4 h-4 animate-spin" />
-                      <span>{t('employeeDetailModal.requestDocsLoading', 'Loading...')}</span>
+                    <div style={{ marginTop: 12 }}>
+                      <Spinner ind={ind} size="inline" label={t('employeeDetailModal.requestDocsLoading', 'Loading...')} />
                     </div>
                   )}
                 </div>
@@ -1174,26 +953,52 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
             </div>
           )}
         </div>
+      </Blueprint>
       </div>
     </div>
   );
 };
 
-// Info Item Component
-const InfoItem = ({ icon, label, value }) => {
-  const { text, border, isDarkMode } = useTheme();
-  
+function initialsOf(name) {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '·';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
+function Portrait({ ind, employee, name }) {
+  const [failed, setFailed] = useState(false);
+  const photo = !failed ? employee?.photo : null;
   return (
-    <div className={`flex items-start space-x-3 p-3 rounded-lg border ${border.primary} hover:bg-transparent transition-colors`}>
-      {_React.createElement(icon, {
-        className: `w-5 h-5 mt-0.5 ${isDarkMode ? text.primary : 'text-gray-600'}`,
-      })}
-      <div className="flex-1">
-        <p className={`text-sm ${text.secondary} mb-1`}>{label}</p>
-        <p className={`font-medium ${text.primary}`}>{value}</p>
+    <div
+      style={{
+        width: 72, height: 72, flex: 'none',
+        border: `1px solid ${ind.hairline}`,
+        background: photo ? 'transparent' : ind.accentWash,
+        display: 'grid', placeItems: 'center', overflow: 'hidden',
+      }}
+    >
+      {photo ? (
+        <img src={photo} alt={name} onError={() => setFailed(true)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      ) : (
+        <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 22, letterSpacing: '.04em', color: ind.accentDeep }}>
+          {initialsOf(name)}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function InfoItem({ ind, icon, label, value }) {
+  return (
+    <div className="flex items-start" style={{ gap: 10, padding: '10px 0', borderBottom: `1px solid ${ind.rule}` }}>
+      {_React.createElement(icon, { size: 15, strokeWidth: 1.5, style: { color: ind.inkMuted, marginTop: 2, flex: 'none' } })}
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <Kicker ind={ind} color={ind.inkMuted}>{label}</Kicker>
+        <div style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, marginTop: 4 }}>{value || 'N/A'}</div>
       </div>
     </div>
   );
-};
+}
 
 export default EmployeeDetailModal;

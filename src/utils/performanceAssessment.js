@@ -50,8 +50,8 @@ export const mergeReviewRatingsIntoSkills = (skills, review, employeeId) =>
   PERFORMANCE_SKILLS.map(definition => {
     const existingSkill = skills.find(skill => skill.skill_name === definition.skillName);
     const reviewRating = review?.[definition.reviewColumn];
-    const managerRating = reviewRating == null ? null : Number(reviewRating);
     const selfRating = Number(existingSkill?.rating || 0);
+    const managerRating = reviewRating == null ? null : Number(reviewRating);
 
     return {
       ...existingSkill,
@@ -60,6 +60,7 @@ export const mergeReviewRatingsIntoSkills = (skills, review, employeeId) =>
       skill_name: definition.skillName,
       skill_category: definition.category,
       rating: selfRating || managerRating || 0,
+      selfRating,
       managerRating,
       proficiency_level: existingSkill?.proficiency_level || null
     };

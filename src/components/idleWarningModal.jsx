@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { ShieldAlert, LogOut } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { SlidingNumber } from './motion-primitives';
-import { BorderBeam } from './ui/border-beam';
 import { getIdleDurationMs } from '../utils/activityTracker.js';
+import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
+import { Blueprint, Btn, Kicker, ColumnHeading } from './ui/industry.jsx';
 
 /**
  * The last 60 seconds of an idle session.
@@ -24,9 +25,9 @@ import { getIdleDurationMs } from '../utils/activityTracker.js';
  * that, and "stay" additionally renews the token (see AuthContext).
  */
 const IdleWarningModal = ({ open, timeoutMs, onStay, onSignOut }) => {
-  const { isDarkMode, text } = useTheme();
+  const { isDarkMode } = useTheme();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
   const { t } = useLanguage();
-  const stayButtonRef = useRef(null);
 
   const [remainingMs, setRemainingMs] = useState(() =>
     Math.max(0, timeoutMs - getIdleDurationMs())
@@ -37,14 +38,10 @@ const IdleWarningModal = ({ open, timeoutMs, onStay, onSignOut }) => {
 
     const read = () => setRemainingMs(Math.max(0, timeoutMs - getIdleDurationMs()));
     read();
-    // Faster than the second it displays, so the number is never a stale tick
-    // behind the sign-out it is counting towards.
     const id = globalThis.setInterval(read, 250);
     return () => globalThis.clearInterval(id);
   }, [open, timeoutMs]);
 
-  // Escape is the keyboard form of "I'm still here" — and, being a keydown, it
-  // registers as activity on its own anyway.
   useEffect(() => {
     if (!open) return undefined;
 
@@ -58,12 +55,6 @@ const IdleWarningModal = ({ open, timeoutMs, onStay, onSignOut }) => {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [open, onStay]);
 
-  useEffect(() => {
-    if (!open) return;
-    // Focus the safe action, not the destructive one.
-    stayButtonRef.current?.focus();
-  }, [open]);
-
   if (!open || typeof document === 'undefined') return null;
 
   const totalSeconds = Math.ceil(remainingMs / 1000);
@@ -73,69 +64,57 @@ const IdleWarningModal = ({ open, timeoutMs, onStay, onSignOut }) => {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      style={{
+        position: 'fixed', inset: 0, zIndex: 100,
+        background: 'rgba(29,31,32,.72)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+      }}
       onClick={onStay}
     >
-      <div
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="idle-warning-title"
-        aria-describedby="idle-warning-body"
-        onClick={(event) => event.stopPropagation()}
-        className={`relative w-full max-w-md overflow-hidden rounded-2xl p-8 shadow-2xl ${
-          isDarkMode ? 'bg-gray-800' : 'bg-white'
-        }`}
-      >
-        <BorderBeam
-          size={70}
-          duration={urgent ? 3 : 6}
-          borderWidth={1.5}
-          colorFrom={urgent ? '#f87171' : '#fbbf24'}
-          colorTo={urgent ? '#dc2626' : '#f59e0b'}
-        />
-
-        <div className="flex flex-col items-center text-center">
+      <div onClick={(event) => event.stopPropagation()} style={{ width: '100%', maxWidth: 420 }}>
+        <Blueprint
+          ind={ind}
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="idle-warning-title"
+          aria-describedby="idle-warning-body"
+          style={{
+            background: ind.ground,
+            padding: '22px 22px 18px',
+            border: urgent ? `1px solid ${ind.ink}` : undefined,
+            textAlign: 'center',
+            color: ind.ink,
+            fontFamily: BODY,
+          }}
+        >
           <div
-            className={`mb-5 flex h-14 w-14 items-center justify-center rounded-full ${
-              urgent
-                ? isDarkMode ? 'bg-red-900/40' : 'bg-red-100'
-                : isDarkMode ? 'bg-amber-900/40' : 'bg-amber-100'
-            }`}
+            style={{
+              width: 40, height: 40, margin: '0 auto 14px',
+              display: 'grid', placeItems: 'center',
+              border: `1px solid ${urgent ? ind.ink : ind.hairline}`,
+              color: urgent ? ind.ink : ind.inkMuted,
+            }}
           >
-            <ShieldAlert
-              className={`h-7 w-7 ${
-                urgent
-                  ? isDarkMode ? 'text-red-400' : 'text-red-600'
-                  : isDarkMode ? 'text-amber-400' : 'text-amber-600'
-              }`}
-            />
+            <ShieldAlert size={18} strokeWidth={1.5} />
           </div>
 
-          <h2 id="idle-warning-title" className={`mb-2 text-2xl font-bold ${text.primary}`}>
-            {t('session.idleWarningTitle', 'Still there?')}
-          </h2>
+          <ColumnHeading ind={ind}>
+            <span id="idle-warning-title">{t('session.idleWarningTitle', 'Still there?')}</span>
+          </ColumnHeading>
 
-          <p id="idle-warning-body" className={`mb-6 text-sm leading-relaxed ${text.secondary}`}>
+          <p id="idle-warning-body" style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, margin: '10px 0 18px', lineHeight: 1.55 }}>
             {t(
               'session.idleWarningBody',
               "You've been inactive for a while. For security, we'll sign you out automatically."
             )}
           </p>
 
-          {/*
-            aria-live on a wrapper that carries the plain number: SlidingNumber
-            renders ten stacked digits per place, so a screen reader following
-            the visual markup would read the whole wheel.
-          */}
-          <p className={`mb-1 text-xs uppercase tracking-wider ${text.secondary}`}>
+          <Kicker ind={ind} color={ind.inkMuted}>
             {t('session.idleWarningCountdown', 'Signing out in')}
-          </p>
+          </Kicker>
           <div
-            className={`mb-7 flex items-baseline gap-2 text-5xl font-bold tabular-nums ${
-              urgent
-                ? isDarkMode ? 'text-red-400' : 'text-red-600'
-                : text.primary
-            }`}
+            className="flex items-baseline justify-center"
+            style={{ gap: 8, margin: '8px 0 22px', ...figure(44, urgent ? ind.ink : ind.inkMuted) }}
           >
             <span aria-hidden="true" className="flex items-baseline">
               {minutes > 0 && (
@@ -148,7 +127,7 @@ const IdleWarningModal = ({ open, timeoutMs, onStay, onSignOut }) => {
               {minutes === 0 && <SlidingNumber value={seconds} replayOnHover={false} />}
             </span>
             {minutes === 0 && (
-              <span aria-hidden="true" className={`text-base font-medium ${text.secondary}`}>
+              <span aria-hidden="true" style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, letterSpacing: '.1em', textTransform: 'uppercase', color: ind.inkMuted }}>
                 {t('session.idleWarningSeconds', 'seconds')}
               </span>
             )}
@@ -157,29 +136,26 @@ const IdleWarningModal = ({ open, timeoutMs, onStay, onSignOut }) => {
             </span>
           </div>
 
-          <div className="flex w-full flex-col gap-3 sm:flex-row-reverse">
-            <button
-              ref={stayButtonRef}
-              type="button"
+          <div className="flex flex-col-reverse sm:flex-row" style={{ gap: 8 }}>
+            <Btn
+              ind={ind}
+              onClick={onSignOut}
+              style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, borderColor: ind.ink }}
+            >
+              <LogOut size={13} strokeWidth={1.5} />
+              {t('session.signOutNow', 'Sign out now')}
+            </Btn>
+            <Btn
+              ind={ind}
+              variant="primary"
+              autoFocus
               onClick={onStay}
-              className="flex-1 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              style={{ flex: 1 }}
             >
               {t('session.staySignedIn', 'Stay signed in')}
-            </button>
-            <button
-              type="button"
-              onClick={onSignOut}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-lg border px-4 py-3 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 ${
-                isDarkMode
-                  ? 'border-gray-600 text-gray-200 hover:bg-gray-700'
-                  : 'border-gray-300 text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <LogOut className="h-4 w-4" />
-              {t('session.signOutNow', 'Sign out now')}
-            </button>
+            </Btn>
           </div>
-        </div>
+        </Blueprint>
       </div>
     </div>,
     document.body

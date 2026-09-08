@@ -6,6 +6,7 @@ import {
   getTaskDurationDays,
   countWorkingDays,
   workingDateKeys,
+  workingDaySegments,
   PDF_TOKENS,
 } from '../src/utils/reportExportHelpers.js';
 
@@ -21,6 +22,25 @@ test('countWorkingDays skips Saturday and Sunday', () => {
     '2026-09-11',
     '2026-09-14',
   ]);
+  assert.deepEqual(workingDateKeys('2026-09-03', '2026-09-07'), [
+    '2026-09-03',
+    '2026-09-04',
+    '2026-09-07',
+  ]);
+});
+
+test('workingDaySegments splits on skipped weekdays, not weekends', () => {
+  assert.deepEqual(
+    workingDaySegments(['2026-09-07', '2026-09-08', '2026-09-09', '2026-09-11']),
+    [
+      { start: '2026-09-07', end: '2026-09-09' },
+      { start: '2026-09-11', end: '2026-09-11' },
+    ]
+  );
+  assert.deepEqual(workingDaySegments(['2026-09-11', '2026-09-14']), [
+    { start: '2026-09-11', end: '2026-09-14' },
+  ]);
+  assert.deepEqual(workingDaySegments([]), []);
 });
 
 test('logged-after-the-fact completed task uses start→due and start→completion', () => {

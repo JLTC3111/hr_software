@@ -9,14 +9,14 @@ export const HELP_FEATURES = [
   {
     id: 'feature_1',
     title: "Hidden Feature: Batch Edit",
-    description: "Did you know you can edit up to 50 records at once? Select the checkboxes next to the items and click the ✏️ icon that appears at the top of the table. This is disabled in the current demo.",
+    description: "Did you know you can edit up to 50 records at once? Select the checkboxes next to the items and click the edit icon that appears at the top of the table. This is disabled in the current demo.",
     tags: ["Advanced", "Hidden", "Demo Restricted"],
     icon: "SquarePen",
   },
   {
     id: 'feature_2',
     title: "Contextual Tip: Quick Filter",
-    description: "Use the magnifying glass icon (🔍) next to any column header to instantly filter by that column's unique values. No need to open the full filter panel!",
+    description: "Use the magnifying glass icon next to any column header to instantly filter by that column's unique values. No need to open the full filter panel!",
     tags: ["Contextual", "Quick Access"],
     icon: "Filter",
   },

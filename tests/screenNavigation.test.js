@@ -117,14 +117,15 @@ test('opening a task pushes and the screen correcting itself replaces', () => {
  * Task Review wiring
  * ------------------------------------------------------------------ */
 
-test('Task Review holds its cycle, scope and opened sheet in the URL', () => {
+test('Task Review holds its cycle, scope, stage and opened sheet in the URL', () => {
   const taskReview = source('src/components/taskReview.jsx');
 
   assert.match(taskReview, /useScreenNavigation\(TASK_REVIEW_NAV\)/);
   assert.match(taskReview, /const selectedPeriod = nav\.cycle \?\? liveCycle/);
   assert.match(taskReview, /const segment = nav\.scope \?\? DEFAULT_SCOPE/);
+  assert.match(taskReview, /const stageFilter = nav\.stage/);
 
-  for (const setter of ['setOpenReview', 'setSelectedPeriod', 'setPeriodTouched', 'setSegment']) {
+  for (const setter of ['setOpenReview', 'setSelectedPeriod', 'setPeriodTouched', 'setSegment', 'setStage']) {
     assert.doesNotMatch(taskReview, new RegExp(`\\b${setter}\\b`), setter);
   }
 });
@@ -141,9 +142,10 @@ test('the review sheet reads the live row, not a snapshot from when it opened', 
 test('Task Review pushes what the viewer chose and replaces what it corrected', () => {
   const taskReview = source('src/components/taskReview.jsx');
 
-  // Picking a cycle, a scope or a person is a place.
+  // Picking a cycle, a scope, a stage or a person is a place.
   assert.match(taskReview, /const selectPeriod = useCallback\(\(value\) => \{ go\(\{ cycle: value \}\); \}/);
   assert.match(taskReview, /const selectSegment = useCallback\(\(value\) => \{ go\(\{ scope: value \}\); \}/);
+  assert.match(taskReview, /const selectStage = useCallback\(\(value, \{ toggle = true \} = \{\}\) => \{/);
 
   // Resolving the cycle, dropping an unreachable scope, clearing a dead link
   // and closing a sheet the viewer just signed off are all corrections.
@@ -173,5 +175,117 @@ test('a cycle key that is not a quarter is refused', () => {
   assert.equal(resolveScreenValues(spec, new URLSearchParams('?cycle=Q3-2026')).cycle, 'Q3-2026');
   for (const bad of ['?cycle=Q5-2026', '?cycle=2026-Q3', '?cycle=lastyear', '?cycle=']) {
     assert.equal(resolveScreenValues(spec, new URLSearchParams(bad)).cycle, null, bad);
+  }
+});
+
+test('a stage the review board cannot render reads as absent', () => {
+  const spec = {
+    stage: {
+      key: 'stage',
+      fallback: null,
+      isValid: (value) => ['self', 'manager', 'calibration', 'signed', 'overdue', 'pending'].includes(value),
+    },
+  };
+
+  assert.equal(resolveScreenValues(spec, new URLSearchParams('?stage=pending')).stage, 'pending');
+  for (const bad of ['?stage=all', '?stage=', '?stage=SELF']) {
+    assert.equal(resolveScreenValues(spec, new URLSearchParams(bad)).stage, null, bad);
+  }
+});
+
+test('Task Review surfaces pending people when nothing is waiting on a signature', () => {
+  const taskReview = source('src/components/taskReview.jsx');
+
+  assert.match(taskReview, /taskReview\.viewPending/);
+  assert.match(taskReview, /if \(awaitingRows\.length > 0\) return \{ key: 'signed', rows: awaitingRows \}/);
+  assert.match(taskReview, /return \{ key: 'pending', rows: pendingRows \}/);
+  assert.match(taskReview, /onSelect=\{\(\) => selectStage\('self'\)\}/);
+  assert.match(taskReview, /go\(\{ stage: stages\.overdue > 0 \? 'overdue' : 'pending' \}\)/);
+  assert.match(taskReview, /function PendingRosterModal/);
+  assert.match(taskReview, /\{stageFilter && \(/);
+});
+
+test('Task Review can remind employees and continue without a self-assessment', () => {
+  const taskReview = source('src/components/taskReview.jsx');
+  const performanceService = source('src/services/performanceService.js');
+
+  assert.match(taskReview, /self_assessment_skipped/);
+  assert.match(taskReview, /const skipSelfAssessment = useCallback/);
+  assert.match(taskReview, /if \(!row \|\| row\.selfDone \|\| row\.selfSkipped\) return;/);
+  assert.match(taskReview, /selfAssessmentSkipped: true/);
+  assert.match(taskReview, /const remindEmployees = useCallback/);
+  assert.match(taskReview, /taskReview\.continueWithoutSelf/);
+  assert.match(taskReview, /taskReview\.remindSelfAll/);
+  assert.match(taskReview, /if \(!row\.selfDone && !row\.selfSkipped\) return 1;/);
+  assert.match(taskReview, /self: count\(\(r\) => r\.selfDone \|\| r\.selfSkipped\)/);
+  assert.doesNotMatch(taskReview, /upsertPerformanceReviewByPeriod/);
+  assert.match(performanceService, /self_assessment_skipped: Boolean\(reviewData\.selfAssessmentSkipped\)/);
+  assert.match(performanceService, /if \(updates\.selfAssessmentSkipped !== undefined\)/);
+});
+
+test('Personal Goals holds the person and cycle in the URL', () => {
+  const personalGoals = source('src/components/personalGoals.jsx');
+
+  assert.match(personalGoals, /useScreenNavigation\(PERSONAL_GOALS_NAV\)/);
+  assert.match(personalGoals, /edit: \{ key: 'edit', fallback: null, isValid: \(value\) => value === 'manager' \}/);
+  assert.match(personalGoals, /const selectedPeriod = nav\.cycle \?\? getCurrentQuarter\(\)/);
+  assert.match(personalGoals, /go\(\{ employee: String\(e\.target\.value\) \}\)/);
+  assert.match(personalGoals, /go\(\{ cycle: e\.target\.value \}\)/);
+  assert.match(personalGoals, /if \(availableEmployees\.length === 0\) return;/);
+  assert.match(personalGoals, /go\(\{ employee: null \}, \{ replace: true \}\)/);
+  assert.doesNotMatch(personalGoals, /\bsetSelectedEmployee\b/);
+  assert.doesNotMatch(personalGoals, /\bsetSelectedPeriod\b/);
+});
+
+test('Task Review opens Personal Goals on the person in the sheet', () => {
+  const taskReview = source('src/components/taskReview.jsx');
+
+  assert.match(taskReview, /params\.set\('employee', String\(row\.id\)\)/);
+  assert.match(taskReview, /params\.set\('cycle', selectedPeriod\)/);
+  assert.match(taskReview, /params\.set\('edit', 'manager'\)/);
+  assert.match(taskReview, /onOpenGoals=\{\(\) => openPersonalGoals\(openReview\)\}/);
+  // Reminders are for the recipient, so they keep the bare address.
+  assert.match(taskReview, /actionUrl: '\/personal-goals'/);
+});
+
+test('a filed manager review is submitted for calibration before sign-off', () => {
+  const taskReview = source('src/components/taskReview.jsx');
+  const personalGoals = source('src/components/personalGoals.jsx');
+  const performanceService = source('src/services/performanceService.js');
+
+  assert.match(taskReview, /const submitForCalibration = useCallback/);
+  assert.match(taskReview, /\{ status: 'submitted' \}/);
+  assert.match(taskReview, /taskReview\.submitForCalibration/);
+  assert.match(taskReview, /showCalibrationCards = queue\.key === 'calibration'/);
+  assert.match(personalGoals, /updatePerformanceReview\(periodReview\.id, \{\s*status: 'submitted'/);
+  assert.match(personalGoals, /personalGoals\.submitForCalibration/);
+  assert.match(personalGoals, /performanceReviewsHref/);
+  assert.match(personalGoals, /params\.set\('review', String\(employee\)\)/);
+  assert.match(personalGoals, /stage: awaitingSignOff \? 'signed' : null/);
+  assert.match(personalGoals, /personalGoals\.signOffOnReviews/);
+  assert.match(personalGoals, /personalGoals\.openPerformanceReviews/);
+  assert.match(performanceService, /if \(updates\.status === 'submitted' && !updates\.submittedAt\)/);
+});
+
+test('the demo and production manuals send Back to the Control Panel', () => {
+  const demoManual = source('src/components/AdvancedHelpCenter.jsx');
+  const productionManual = source('src/components/ProductionHelpCenter.jsx');
+
+  for (const [label, file] of [['demo', demoManual], ['production', productionManual]]) {
+    assert.match(file, /navigate\('\/control-panel'\)/, label);
+    assert.match(file, /help\.backToControlPanel/, label);
+    assert.match(file, /<ArrowLeft /, label);
+  }
+});
+
+test('the manuals draw from the Industry token set rather than the old rounded indigo cards', () => {
+  const demoManual = source('src/components/AdvancedHelpCenter.jsx');
+  const productionManual = source('src/components/ProductionHelpCenter.jsx');
+  const showcase = source('src/components/FeatureShowcase.jsx');
+
+  for (const [label, file] of [['demo', demoManual], ['production', productionManual], ['showcase', showcase]]) {
+    assert.match(file, /getIndustry/, label);
+    assert.match(file, /<Blueprint/, label);
+    assert.doesNotMatch(file, /rounded-2xl/, label);
   }
 });

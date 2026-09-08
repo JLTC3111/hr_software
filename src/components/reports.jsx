@@ -52,7 +52,7 @@ import { DatePicker } from './ui/date-picker.jsx';
 import { formatDate } from '../utils/localeFormat.js';
 import { cn } from '@/lib/utils';
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
-import { Bar, Tag, Btn, Seg, Kicker, ColumnHeading, TickerCell, LiveClock, FlatSelect, FlatListbox } from './ui/industry.jsx';
+import { Bar, Tag, Btn, Seg, Kicker, ColumnHeading, TickerCell, LiveClock, FlatListbox } from './ui/industry.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import {
   choosePdfFont,
@@ -1917,31 +1917,31 @@ const Reports = () => {
           addMetric(
             perfLabels.totalHours,
             totalHours.toFixed(1),
-            totalHours > 160 ? `⚠️ ${statusLabels.high}` : `✅ ${statusLabels.normal}`,
+            totalHours > 160 ? statusLabels.high : statusLabels.normal,
             entriesCountLabel
           );
           addMetric(
             perfLabels.regularHours,
             regularHours.toFixed(1),
-            `✅ ${statusLabels.tracked}`,
+            statusLabels.tracked,
             `${((regularHours / totalHoursDenominator) * 100).toFixed(0)}% ${perfLabels.ofTotal}`
           );
           addMetric(
             perfLabels.overtimeHours,
             overtimeHours.toFixed(1),
-            overtimeHours > 20 ? `⚠️ ${statusLabels.high}` : `✅ ${statusLabels.normal}`,
+            overtimeHours > 20 ? statusLabels.high : statusLabels.normal,
             `${((overtimeHours / totalHoursDenominator) * 100).toFixed(0)}% ${perfLabels.ofTotal}`
           );
           addMetric(
             perfLabels.wfhHours,
             wfhHours.toFixed(1),
-            `✅ ${statusLabels.tracked}`,
+            statusLabels.tracked,
             `${totalHours > 0 ? (wfhHours / totalHours * 100).toFixed(0) : 0}% ${perfLabels.ofTotal}`
           );
           addMetric(
             perfLabels.approvalRate,
             `${approvedEntries}/${employeeTimeEntries.length}`,
-            approvedEntries === employeeTimeEntries.length ? `✅ ${statusLabels.allApproved}` : `⏳ ${statusLabels.pending}`,
+            approvedEntries === employeeTimeEntries.length ? statusLabels.allApproved : statusLabels.pending,
             `${approvalPercent}%`
           );
           perfRow++;
@@ -1953,13 +1953,13 @@ const Reports = () => {
           addMetric(
             perfLabels.totalTasks,
             employeeTasks.length,
-            employeeTasks.length > 0 ? `✅ ${statusLabels.active}` : `⚠️ ${statusLabels.noTasks}`,
+            employeeTasks.length > 0 ? statusLabels.active : statusLabels.noTasks,
             `${completedTasks} ${perfLabels.completed}`
           );
           addMetric(
             perfLabels.taskCompletionRate,
             `${taskCompletionRate}%`,
-            taskCompletionRate >= 80 ? `✅ ${statusLabels.excellent}` : taskCompletionRate >= 60 ? `⚠️ ${statusLabels.good}` : `❌ ${statusLabels.needsImprovement}`,
+            taskCompletionRate >= 80 ? statusLabels.excellent : taskCompletionRate >= 60 ? statusLabels.good : statusLabels.needsImprovement,
             `${completedTasks}/${employeeTasks.length} ${perfLabels.completed}`
           );
           perfRow++;
@@ -1971,13 +1971,13 @@ const Reports = () => {
           addMetric(
             perfLabels.totalGoals,
             employeeGoals.length,
-            employeeGoals.length > 0 ? `✅ ${statusLabels.set}` : `⚠️ ${statusLabels.noTasks}`,
+            employeeGoals.length > 0 ? statusLabels.set : statusLabels.noTasks,
             `${completedGoals} ${perfLabels.completed}`
           );
           addMetric(
             perfLabels.avgGoalProgress,
             `${avgProgress}%`,
-            avgProgress >= 75 ? `✅ ${statusLabels.onTrack}` : avgProgress >= 50 ? `⚠️ ${statusLabels.progressing}` : `❌ ${statusLabels.behind}`,
+            avgProgress >= 75 ? statusLabels.onTrack : avgProgress >= 50 ? statusLabels.progressing : statusLabels.behind,
             `${employeeGoals.length} ${tr('reports.goals', 'Goals')} ${statusLabels.tracked}`
           );
           perfRow += 2;
@@ -2005,14 +2005,14 @@ const Reports = () => {
           
           perfSheet.getCell(`A${perfRow}`).value = tr('reports.excel.performance.ratingLabel', 'Rating:');
           const rating = overallScore >= 90
-            ? `⭐⭐⭐⭐⭐ ${tr('reports.excel.rating.outstanding', 'Outstanding')}`
+            ? tr('reports.excel.rating.outstanding', 'Outstanding')
             : overallScore >= 80
-            ? `⭐⭐⭐⭐ ${tr('reports.excel.rating.excellent', 'Excellent')}`
+            ? tr('reports.excel.rating.excellent', 'Excellent')
             : overallScore >= 70
-            ? `⭐⭐⭐ ${tr('reports.excel.rating.good', 'Good')}`
+            ? tr('reports.excel.rating.good', 'Good')
             : overallScore >= 60
-            ? `⭐⭐ ${tr('reports.excel.rating.satisfactory', 'Satisfactory')}`
-            : `⭐ ${tr('reports.excel.rating.needsImprovement', 'Needs Improvement')}`;
+            ? tr('reports.excel.rating.satisfactory', 'Satisfactory')
+            : tr('reports.excel.rating.needsImprovement', 'Needs Improvement');
           perfSheet.getCell(`B${perfRow}`).value = rating;
           perfSheet.getCell(`A${perfRow}`).font = { bold: true };
           perfSheet.getCell(`B${perfRow}`).font = { bold: true, size: 12 };
@@ -3516,7 +3516,7 @@ const Reports = () => {
             </FlatListbox>
 
             <div className="flex flex-wrap items-center" style={{ gap: 8, marginTop: 10 }}>
-              <FlatSelect
+              <FlatListbox
                 ind={ind}
                 value={selectedUnit}
                 onChange={(e) => setSelectedUnit(e.target.value)}
@@ -3532,7 +3532,7 @@ const Reports = () => {
                 {units.map((unit) => (
                   <option key={unit} value={unit}>{translateDepartment(unit)}</option>
                 ))}
-              </FlatSelect>
+              </FlatListbox>
 
               <Btn
                 ind={ind}

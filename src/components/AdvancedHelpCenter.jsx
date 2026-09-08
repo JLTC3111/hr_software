@@ -1,20 +1,30 @@
+/**
+ * Demo manual — the advanced feature guide, in the industry system.
+ *
+ * Same chrome as the other screens: a 44px ticker, then a sheet of blueprint
+ * plates. Cards are outlines with registration corners. Restriction reads
+ * through a heavier rule and an outline Tag, never through a red banner.
+ *
+ * Design system: "Industry" (src/theme/industry.js).
+ */
 import _React, { useMemo } from 'react';
 import {
   AlertTriangle,
+  ArrowLeft,
   BookOpenText,
   Filter,
-  Hash,
-  Lightbulb,
   Lock,
-  Sparkles,
   SquarePen,
   UserCog,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import FeatureShowcase from './FeatureShowcase.jsx';
 import { HELP_FEATURES } from '../services/helpData.js';
+import { getIndustry, DISPLAY, BODY } from '../theme/industry.js';
+import { Blueprint, Tag, Btn, Kicker, TickerCell, LiveClock, ColumnHeading } from './ui/industry.jsx';
 
 // Icons referenced by name from HELP_FEATURES. Named imports keep tree-shaking
 // working — `import * as LucideIcons` pulled the whole icon set into the bundle.
@@ -31,45 +41,108 @@ const Icon = ({ name, ...props }) => {
   return LucideIcon ? <LucideIcon {...props} /> : null;
 };
 
+const tagVariant = (tag) => (/restrict/i.test(tag) ? 'outline' : 'neutral');
+
 const AdvancedHelpCenter = ({ contextHint = null }) => {
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
+  const navigate = useNavigate();
+  const backLabel = t('help.backToControlPanel', 'Back to Control Panel');
 
-  // 1. Contextual Help Filtering
   const filteredFeatures = useMemo(() => (
     contextHint
       ? HELP_FEATURES.filter(feature => feature.tags.includes(contextHint))
       : HELP_FEATURES
   ), [contextHint]);
 
+  const caption = { fontFamily: BODY, fontSize: 13, color: ind.inkMuted, lineHeight: 1.55, margin: 0 };
+
   return (
     <div
-      className={`relative overflow-hidden p-6 md:p-8 rounded-2xl shadow-2xl space-y-8 ${isDarkMode ? 'bg-linear-br from bg-slate-950 via-slate-850 to-slate-700' : 'bg-linear-to-br from-indigo-50 via-white to-blue-50'} transition-colors duration-500`}
+      data-screen-label="Help Center"
       aria-label={t('help.containerLabel', 'Help Center Container')}
+      style={{
+        border: `1px solid ${ind.hairline}`,
+        background: ind.ground,
+        color: ind.ink,
+        fontFamily: BODY,
+        fontSize: 14,
+        borderRadius: 0,
+      }}
     >
-      <div className={`absolute inset-0 pointer-events-none opacity-30 ${isDarkMode ? 'opacity-20' : ''} bg-[radial-gradient(circle_at_20%_20%,rgba(99,102,241,0.22),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(34,197,94,0.2),transparent_30%)]`} />
-      <div className="relative z-10 space-y-6">
-        <div className={`flex items-center gap-3 border-b pb-3 ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <BookOpenText className={`h-8 w-8 ${isDarkMode ? 'text-indigo-300' : 'text-indigo-600'}`} aria-hidden="true" />
-          <div>
-            <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`} data-i18n="help.title">
-              {t('help.title', 'Advanced Feature Guide')}
-            </h1>
-            <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} data-i18n="help.subtitle">
-              {t('help.subtitle', 'Walk-through of key capabilities and pro tips')}
-            </p>
+      <div
+        style={{
+          height: 44,
+          background: ind.tickerBg,
+          color: ind.tickerInk,
+          borderBottom: `1px solid ${ind.hairline}`,
+          display: 'flex',
+          alignItems: 'stretch',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+        }}
+      >
+        <TickerCell ind={ind} title={t('controlPanel.demoSession', 'Demo session — actions are simulated')}>
+          <LiveClock ind={ind} live={false} />
+        </TickerCell>
+        <TickerCell
+          ind={ind}
+          label={t('controlPanel.mode', 'Mode')}
+          value={t('controlPanel.modeDemo', 'Demo').toUpperCase()}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('help.ticker.features', 'Features')}
+          value={filteredFeatures.length}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('help.ticker.walkthrough', 'Walkthrough')}
+          value={5}
+        />
+      </div>
+
+      <div style={{ padding: '22px 24px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <Btn
+          ind={ind}
+          onClick={() => navigate('/control-panel')}
+          aria-label={backLabel}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 7, alignSelf: 'flex-start' }}
+        >
+          <ArrowLeft size={13} strokeWidth={1.5} />
+          {backLabel}
+        </Btn>
+
+        <div className="flex items-end justify-between" style={{ gap: 14, flexWrap: 'wrap' }}>
+          <div className="flex items-center" style={{ gap: 12, minWidth: 0 }}>
+            <div
+              style={{
+                width: 40, height: 40, flex: 'none',
+                display: 'grid', placeItems: 'center',
+                border: `1px solid ${ind.hairline}`,
+                color: ind.inkMuted,
+              }}
+            >
+              <BookOpenText size={18} strokeWidth={1.5} aria-hidden="true" />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <h1
+                data-i18n="help.title"
+                style={{ fontFamily: BODY, fontSize: 32, fontWeight: 400, margin: 0, color: ind.ink, lineHeight: 1.1 }}
+              >
+                {t('help.title', 'Advanced Feature Guide')}
+              </h1>
+              <p data-i18n="help.subtitle" style={{ ...caption, marginTop: 6 }}>
+                {t('help.subtitle', 'Walk-through of key capabilities and pro tips')}
+              </p>
+            </div>
           </div>
         </div>
 
-      {/* 2. Animated Feature Showcase */}
-        <section aria-label={t('help.showcase.section', 'Animated product walkthrough')} className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className={`h-6 w-6 ${isDarkMode ? 'text-green-300' : 'text-green-600'}`} aria-hidden="true" />
-            <h2 className={`text-2xl font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`} data-i18n="help.showcase.title">
-              {t('help.showcase.title', 'See the platform in motion')}
-            </h2>
-          </div>
-          <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} data-i18n="help.showcase.subtitle">
+        <section aria-label={t('help.showcase.section', 'Animated product walkthrough')} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <Kicker ind={ind}>{t('help.showcase.title', 'See the platform in motion')}</Kicker>
+          <p data-i18n="help.showcase.subtitle" style={caption}>
             {t('help.showcase.subtitle', 'Animated path across time, files, dashboards, goals, and reporting.')}
           </p>
           <motion.div
@@ -81,78 +154,89 @@ const AdvancedHelpCenter = ({ contextHint = null }) => {
           </motion.div>
         </section>
 
-      {/* 3. Demo Restrictions */}
-        <section
-          className={`p-4 ${isDarkMode ? 'bg-red-900/60' : 'bg-red-100/90'} border-l-4 border-red-500 rounded-lg shadow-md backdrop-blur`}
-          aria-label={t('help.demoRestrictions', 'Demo Restrictions')}
-        >
-          <div className="flex items-start">
-            <AlertTriangle className={`h-6 w-6 ${isDarkMode ? 'text-red-300' : 'text-red-600'} mr-3 mt-1 shrink-0`} aria-hidden="true" />
-            <div>
-              <h3 className={`text-xl font-bold ${isDarkMode ? 'text-red-300' : 'text-red-800'}`} data-i18n="help.demo.title">
-                {t('help.demo.title', 'IMPORTANT: Demo Restrictions!')}
-              </h3>
-              <p className={`mt-1 text-sm ${isDarkMode ? 'text-red-400' : 'text-red-700'}`} data-i18n="help.demo.body">
-                {t('help.demo.body',
-                  'DATA IS NOT PERSISTENT. All created records, edits, and deletions will be wiped upon page refresh or closing the browser. Batch Edit and Export to CSV features are disabled in this environment.'
-                )}
-              </p>
+        <section aria-label={t('help.demoRestrictions', 'Demo Restrictions')}>
+          <Blueprint
+            ind={ind}
+            style={{
+              padding: '16px 18px',
+              border: `1px solid ${ind.ink}`,
+            }}
+          >
+            <div className="flex items-start" style={{ gap: 12 }}>
+              <AlertTriangle size={16} strokeWidth={1.5} style={{ color: ind.ink, marginTop: 2, flex: 'none' }} aria-hidden="true" />
+              <div style={{ minWidth: 0 }}>
+                <div className="flex items-center" style={{ gap: 8, flexWrap: 'wrap' }}>
+                  <ColumnHeading ind={ind}>
+                    <span data-i18n="help.demo.title">
+                      {t('help.demo.title', 'IMPORTANT: Demo Restrictions!')}
+                    </span>
+                  </ColumnHeading>
+                  <Tag ind={ind} variant="outline">{t('help.features.restricted', 'RESTRICTED')}</Tag>
+                </div>
+                <p data-i18n="help.demo.body" style={{ ...caption, marginTop: 8, color: ind.ink }}>
+                  {t('help.demo.body',
+                    'DATA IS NOT PERSISTENT. All created records, edits, and deletions will be wiped upon page refresh or closing the browser. Batch Edit and Export to CSV features are disabled in this environment.'
+                  )}
+                </p>
+              </div>
             </div>
-          </div>
+          </Blueprint>
         </section>
 
-      {/* 4. Advanced & Contextual Features List */}
-        <section aria-label={t('help.features.section', 'Advanced & Contextual Features')} className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Lightbulb className={`h-6 w-6 ${isDarkMode ? 'text-yellow-300' : 'text-yellow-500'} fill-yellow-500`} aria-hidden="true" />
-            <h2 className={`text-2xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`} data-i18n="help.features.title">
-              {contextHint
-                ? t('help.features.contextTitle', 'Contextual Tips for {context}', { context: contextHint })
-                : t('help.features.defaultTitle', 'Hidden Features & Pro Tips')}
-            </h2>
-          </div>
+        <section aria-label={t('help.features.section', 'Advanced & Contextual Features')} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Kicker ind={ind}>
+            {contextHint
+              ? t('help.features.contextTitle', 'Contextual Tips for {context}', { context: contextHint })
+              : t('help.features.defaultTitle', 'Hidden Features & Pro Tips')}
+          </Kicker>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-2">
             {filteredFeatures.map((feature, idx) => (
               <motion.div
                 key={feature.id}
-                initial={{ opacity: 0, y: 8, scale: 0.99 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.04, duration: 0.25 }}
-                className={`p-4 border ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} transition-all hover:shadow-xl hover:-translate-y-0.5`}
-                aria-label={feature.title}
               >
-                <div className="flex items-center mb-2">
-                  <Icon name={feature.icon} className={`h-6 w-6 mr-3 ${isDarkMode ? 'text-indigo-300' : 'text-indigo-600'}`} aria-hidden="true" />
-                  <h4 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`} data-i18n="help.features.itemTitle"> 
-                    {t(`help.features.${feature.id}.title`, feature.title)}
-                  </h4>
-                  {feature.tags.includes('Restriction') && (
-                    <span className={`ml-3 px-2 py-0.5 text-xs font-medium ${isDarkMode ? 'text-red-200 bg-red-800' : 'text-red-700 bg-red-200'} rounded-full`} data-i18n="help.features.restricted">
-                      {t('help.features.restricted', 'RESTRICTED')}
-                    </span>
-                  )}
-                </div>
-                <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} data-i18n="help.features.itemDescription">
-                  {t(`help.features.${feature.id}.description`, feature.description)}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {feature.tags.map((tag) => (
+                <Blueprint
+                  ind={ind}
+                  aria-label={feature.title}
+                  style={{ padding: '16px 18px', height: '100%' }}
+                >
+                  <div className="flex items-center" style={{ gap: 10, marginBottom: 8 }}>
+                    <Icon name={feature.icon} size={15} strokeWidth={1.5} style={{ color: ind.inkMuted, flex: 'none' }} aria-hidden="true" />
                     <span
-                      key={tag}
-                      className={`inline-flex items-center gap-1 ${isDarkMode ? 'bg-indigo-900 text-indigo-300' : 'bg-indigo-100 text-indigo-800'} text-xs font-semibold px-2.5 py-0.5 rounded-full shadow-sm`}
-                      data-i18n="help.features.tag"
+                      data-i18n="help.features.itemTitle"
+                      style={{
+                        fontFamily: DISPLAY, fontWeight: 600, fontSize: 14,
+                        letterSpacing: '.04em', textTransform: 'uppercase', color: ind.ink,
+                        minWidth: 0,
+                      }}
                     >
-                      <Hash className="h-3 w-3" aria-hidden="true" />
-                      {t(`help.tags.${tag.replace(/\s+/g, '').toLowerCase()}`, tag)}
+                      {t(`help.features.${feature.id}.title`, feature.title)}
                     </span>
-                  ))}
-                </div>
+                    {feature.tags.includes('Restriction') && (
+                      <Tag ind={ind} variant="outline">
+                        {t('help.features.restricted', 'RESTRICTED')}
+                      </Tag>
+                    )}
+                  </div>
+                  <p data-i18n="help.features.itemDescription" style={caption}>
+                    {t(`help.features.${feature.id}.description`, feature.description)}
+                  </p>
+                  <div className="flex flex-wrap" style={{ gap: 6, marginTop: 12 }}>
+                    {feature.tags.map((tag) => (
+                      <Tag key={tag} ind={ind} variant={tagVariant(tag)}>
+                        {t(`help.tags.${tag.replace(/\s+/g, '').toLowerCase()}`, tag)}
+                      </Tag>
+                    ))}
+                  </div>
+                </Blueprint>
               </motion.div>
             ))}
 
             {filteredFeatures.length === 0 && (
-              <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} italic`} data-i18n="help.features.empty">
+              <p data-i18n="help.features.empty" style={{ ...caption, fontStyle: 'italic' }}>
                 {t('help.features.empty', `No specific advanced tips found for the context: "${contextHint}". Showing all features below.`)}
               </p>
             )}

@@ -26,6 +26,7 @@ test('self ratings are kept, and the period review only fills skills never self-
   // The reviewer's number stays addressable on every skill, including where it
   // lost to a self-rating and where the reviewer entered a literal 0.
   assert.deepEqual(merged.map(skill => skill.managerRating), [3.5, 0, 4, 4.5, 3]);
+  assert.deepEqual(merged.map(skill => skill.selfRating), [5, 4, 0, 0, 0]);
   assert.equal(merged[0].id, 1);
   assert.equal(merged[2].employee_id, 'employee-1');
 });

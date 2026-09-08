@@ -6,7 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { getIndustry, DISPLAY, BODY } from '../theme/industry.js';
 import { formatDate, localeTag } from '../utils/localeFormat.js';
-import { Blueprint, Tag, Btn, TickerCell, LiveClock, ColumnHeading, FlatSelect } from './ui/industry.jsx';
+import { Blueprint, Tag, Btn, TickerCell, LiveClock, ColumnHeading, FlatListbox } from './ui/industry.jsx';
 
 /* ------------------------------------------------------------------ *
  * Constants — these agree with the Organization Overview figures.
@@ -742,7 +742,7 @@ const PolicyControls = () => {
             borderLeft: `1px solid ${ind.tickerRule}`,
           }}
         >
-          <FlatSelect
+          <FlatListbox
             ind={ind}
             onDark
             value={ORG_ID}
@@ -752,7 +752,7 @@ const PolicyControls = () => {
             <option value={ORG_ID} style={{ color: '#1d1f20' }}>
               {t('policyControls.organisationName', 'Company Group')}
             </option>
-          </FlatSelect>
+          </FlatListbox>
         </div>
       </div>
 

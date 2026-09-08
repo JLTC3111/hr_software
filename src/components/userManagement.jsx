@@ -1,19 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Users, 
   Trash2, 
   UserX, 
   UserCheck, 
   Search, 
-  Filter,
   AlertTriangle,
   CheckCircle,
-  Loader,
   Shield,
-  Mail,
-  Phone,
-  Briefcase,
-  Calendar
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -21,9 +15,13 @@ import { useAuth } from '../contexts/AuthContext';
 import * as userService from '../services/userService';
 import { SlidingNumber } from './motion-primitives';
 import { PageLiveClock } from './ui/page-live-clock';
+import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
+import { Blueprint, Tag, Kicker, ColumnHeading, FlatListbox } from './ui/industry.jsx';
+import { Spinner } from './ui/Spinner.jsx';
 
 const UserManagement = () => {
-  const { isDarkMode, bg, text, border, hover } = useTheme();
+  const { isDarkMode } = useTheme();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
   const { t } = useLanguage();
   const { user: currentUser } = useAuth();
   
@@ -115,7 +113,7 @@ const UserManagement = () => {
     // Multi-step confirmation for deletion
     const step1 = window.confirm(
       t('userManagement.confirmDelete1', 
-        '⚠️ WARNING: You are about to permanently delete {name} ({email}).\n\n' +
+        'WARNING: You are about to permanently delete {name} ({email}).\n\n' +
         'This will:\n' +
         '• Delete their account from the system\n' +
         '• Remove all their time entries\n' +
@@ -169,37 +167,56 @@ const UserManagement = () => {
 
   if (!isAdmin) {
     return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center space-x-2">
-            <AlertTriangle className="w-5 h-5 text-red-600" />
-            <span className="text-red-800 font-medium">
+      <div style={{ padding: 24 }}>
+        <Blueprint ind={ind} style={{ background: ind.ground, padding: 24, color: ind.ink }}>
+          <div className="flex items-center" style={{ gap: 10 }}>
+            <AlertTriangle size={16} strokeWidth={1.5} style={{ color: ind.ink, flex: 'none' }} />
+            <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, letterSpacing: '.06em', textTransform: 'uppercase' }}>
               {t('userManagement.accessDenied', 'Access Denied: Admin privileges required')}
             </span>
           </div>
-        </div>
+        </Blueprint>
       </div>
     );
   }
 
+  const thStyle = {
+    textAlign: 'left',
+    padding: '0 12px 8px',
+    borderBottom: `1px solid ${ind.hairline}`,
+    fontFamily: DISPLAY,
+    fontWeight: 600,
+    fontSize: 10,
+    letterSpacing: '.12em',
+    textTransform: 'uppercase',
+    color: ind.inkMuted,
+    whiteSpace: 'nowrap',
+  };
+
+  const iconBtn = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 32,
+    height: 32,
+    padding: 0,
+    background: 'transparent',
+    border: `1px solid ${ind.hairline}`,
+    borderRadius: 0,
+    color: ind.ink,
+    cursor: 'pointer',
+  };
+
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center space-x-3">
-          <Users className={`w-8 h-8 ${text.primary}`} />
-          <div>
-            <h1 className={`text-2xl font-bold ${text.primary}`}>
-              {t('userManagement.title', 'User Management')}
-            </h1>
-            <p className={`text-sm ${text.secondary}`}>
-              {t('userManagement.subtitle', 'Manage user accounts and permissions')}
-            </p>
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: 24, color: ind.ink, fontFamily: BODY }}>
+      <div className="flex items-center justify-between" style={{ gap: 12, flexWrap: 'wrap' }}>
+        <div>
+          <ColumnHeading ind={ind}>{t('userManagement.title', 'User Management')}</ColumnHeading>
+          <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 4 }}>
+            {t('userManagement.subtitle', 'Manage user accounts and permissions')}
+          </p>
         </div>
         <PageLiveClock
-          textClassName={text.primary}
-          separatorClassName={text.secondary}
           showSeparator={false}
           loading={loading}
           isDarkMode={isDarkMode}
@@ -207,213 +224,162 @@ const UserManagement = () => {
         />
       </div>
 
-      {/* Message Banner */}
       {message && (
-        <div 
-          className={`p-4 rounded-lg border flex items-center space-x-3 ${
-            message.type === 'success' 
-              ? 'bg-green-50 border-green-200 text-green-800' 
-              : 'bg-red-50 border-red-200 text-red-800'
-          }`}
+        <div
+          className="flex items-center"
+          style={{
+            gap: 10, padding: '10px 12px',
+            border: `1px solid ${message.type === 'success' ? ind.hairline : ind.ink}`,
+            background: message.type === 'success' ? ind.accentWash : 'transparent',
+            color: ind.ink,
+          }}
         >
-          {message.type === 'success' ? (
-            <CheckCircle className="w-5 h-5" />
-          ) : (
-            <AlertTriangle className="w-5 h-5" />
-          )}
-          <span>{message.text}</span>
+          {message.type === 'success' ? <CheckCircle size={15} strokeWidth={1.5} /> : <AlertTriangle size={15} strokeWidth={1.5} />}
+          <span style={{ fontFamily: BODY, fontSize: 13 }}>{message.text}</span>
         </div>
       )}
 
-      {/* Search and Filters */}
-      <div 
-        className={`${bg.secondary} rounded-lg border ${border.primary} p-4`}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${text.secondary}`} />
+      <Blueprint ind={ind} style={{ background: ind.ground, padding: 16 }}>
+        <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 12 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, border: `1px solid ${ind.hairline}`, padding: '6px 10px' }}>
+            <Search size={14} strokeWidth={1.5} style={{ color: ind.inkMuted, flex: 'none' }} />
             <input
               type="text"
               placeholder={t('userManagement.search', 'Search users...')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary}`}
+              style={{ border: 'none', outline: 'none', background: 'transparent', color: ind.ink, fontFamily: BODY, fontSize: 13, width: '100%', padding: 0 }}
             />
-          </div>
-
-          {/* Role Filter */}
-          <select
+          </label>
+          <FlatListbox
+            ind={ind}
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
-            className={`px-4 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary}`}
+            aria-label={t('userManagement.allRoles', 'All Roles')}
+            style={{ width: '100%', padding: '8px 12px', textTransform: 'none', letterSpacing: '.02em' }}
           >
             <option value="all">{t('userManagement.allRoles', 'All Roles')}</option>
             <option value="admin">{t('userManagement.admin', 'Admin')}</option>
-            <option value="manager">{t('userManagement.hrManager', 'Manager')}</option>
             <option value="manager">{t('userManagement.manager', 'Manager')}</option>
             <option value="employee">{t('userManagement.employee', 'Employee')}</option>
-          </select>
-
-          {/* Status Filter */}
-          <select
+          </FlatListbox>
+          <FlatListbox
+            ind={ind}
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className={`px-4 py-2 rounded-lg border ${border.primary} ${bg.primary} ${text.primary}`}
+            aria-label={t('userManagement.allStatus', 'All Status')}
+            style={{ width: '100%', padding: '8px 12px', textTransform: 'none', letterSpacing: '.02em' }}
           >
             <option value="all">{t('userManagement.allStatus', 'All Status')}</option>
             <option value="active">{t('userManagement.active', 'Active')}</option>
             <option value="inactive">{t('userManagement.inactive', 'Inactive')}</option>
-          </select>
+          </FlatListbox>
         </div>
-      </div>
+      </Blueprint>
 
-      {/* Users Table */}
-      <div 
-        className={`${bg.secondary} rounded-lg border ${border.primary} overflow-hidden`}
-      >
+      <Blueprint ind={ind} style={{ background: ind.ground, overflow: 'hidden' }}>
         {loading ? (
-          <div className="flex items-center justify-center p-12">
-            <Loader className="w-8 h-8 animate-spin text-blue-600" />
-            <span className={`ml-3 ${text.primary}`}>
-              {t('common.loading', 'Loading...')}
-            </span>
-          </div>
+          <Spinner ind={ind} size="block" />
         ) : filteredUsers.length === 0 ? (
-          <div className="text-center p-12">
-            <Users className={`w-12 h-12 mx-auto mb-3 ${text.secondary}`} />
-            <p className={`${text.secondary}`}>
-              {t('userManagement.noUsers', 'No users found')}
-            </p>
+          <div style={{ textAlign: 'center', padding: 48 }}>
+            <Users size={22} strokeWidth={1.5} style={{ color: ind.inkMuted, margin: '0 auto 10px' }} />
+            <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted }}>{t('userManagement.noUsers', 'No users found')}</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className={`${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+          <div style={{ overflowX: 'auto', padding: '16px 20px 18px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: BODY, fontSize: 13 }}>
+              <thead>
                 <tr>
-                  <th className={`text-left px-6 py-3 text-xs font-medium ${text.secondary} uppercase tracking-wider`}>
-                    {t('userManagement.user', 'User')}
-                  </th>
-                  <th className={`text-left px-6 py-3 text-xs font-medium ${text.secondary} uppercase tracking-wider`}>
-                    {t('userManagement.role', 'Role')}
-                  </th>
-                  <th className={`text-left px-6 py-3 text-xs font-medium ${text.secondary} uppercase tracking-wider`}>
-                    {t('userManagement.status', 'Status')}
-                  </th>
-                  <th className={`text-left px-6 py-3 text-xs font-medium ${text.secondary} uppercase tracking-wider`}>
-                    {t('userManagement.lastLogin', 'Last Login')}
-                  </th>
-                  <th className={`text-right px-6 py-3 text-xs font-medium ${text.secondary} uppercase tracking-wider`}>
-                    {t('userManagement.actions', 'Actions')}
-                  </th>
+                  <th style={thStyle}>{t('userManagement.user', 'User')}</th>
+                  <th style={thStyle}>{t('userManagement.role', 'Role')}</th>
+                  <th style={thStyle}>{t('userManagement.status', 'Status')}</th>
+                  <th style={thStyle}>{t('userManagement.lastLogin', 'Last Login')}</th>
+                  <th style={{ ...thStyle, textAlign: 'right' }}>{t('userManagement.actions', 'Actions')}</th>
                 </tr>
               </thead>
-              <tbody className={`divide-y ${isDarkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+              <tbody>
                 {filteredUsers.map((user) => (
-                  <tr key={user.id} className={`${hover.bg}`}>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <div 
-                          className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
+                  <tr key={user.id} style={{ borderBottom: `1px solid ${ind.rule}` }}>
+                    <td style={{ padding: '12px' }}>
+                      <div className="flex items-center" style={{ gap: 10 }}>
+                        <div
                           style={{
-                            backgroundColor: isDarkMode ? '#4b5563' : '#e5e7eb'
+                            width: 36, height: 36, flex: 'none', overflow: 'hidden',
+                            border: `1px solid ${ind.hairline}`,
+                            background: user.avatar_url ? 'transparent' : ind.accentWash,
+                            display: 'grid', placeItems: 'center',
                           }}
                         >
                           {user.avatar_url ? (
-                            <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
+                            <img src={user.avatar_url} alt={user.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           ) : (
-                            <Users className="w-5 h-5 text-gray-400" />
+                            <Users size={14} strokeWidth={1.5} style={{ color: ind.inkMuted }} />
                           )}
                         </div>
-                        <div className="ml-3">
-                          <p className={`font-medium ${text.primary}`}>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, margin: 0 }}>
                             {user.full_name || user.first_name || 'N/A'}
                             {user.id === currentUser?.id && (
-                              <span className="ml-2 text-xs text-blue-600 font-normal">
-                                ({t('common.you', 'You')})
+                              <span style={{ marginLeft: 8, fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', color: ind.inkMuted }}>
+                                {t('common.you', 'You')}
                               </span>
                             )}
                           </p>
-                          <p className={`text-sm ${text.secondary}`}>{user.email}</p>
+                          <p style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted, margin: 0 }}>{user.email}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <Shield className="w-4 h-4 text-blue-600" />
-                        <span className={`text-sm ${text.primary} capitalize`}>
-                          {user.role?.replace('_', ' ')}
-                        </span>
+                    <td style={{ padding: '12px' }}>
+                      <div className="flex items-center" style={{ gap: 6 }}>
+                        <Shield size={13} strokeWidth={1.5} style={{ color: ind.inkMuted }} />
+                        <span style={{ textTransform: 'capitalize' }}>{user.role?.replace('_', ' ')}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span 
-                        className={`px-3 py-1 text-xs font-medium rounded-full ${
-                          user.is_active 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}
-                      >
-                        {user.is_active 
-                          ? t('userManagement.active', 'Active')
-                          : t('userManagement.inactive', 'Inactive')
-                        }
-                      </span>
+                    <td style={{ padding: '12px' }}>
+                      <Tag ind={ind} variant={user.is_active ? 'accent' : 'outline'}>
+                        {user.is_active ? t('userManagement.active', 'Active') : t('userManagement.inactive', 'Inactive')}
+                      </Tag>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`text-sm ${text.secondary}`}>
-                        {user.last_login 
-                          ? new Date(user.last_login).toLocaleDateString()
-                          : t('userManagement.never', 'Never')
-                        }
-                      </span>
+                    <td style={{ padding: '12px', color: ind.inkMuted }}>
+                      {user.last_login
+                        ? new Date(user.last_login).toLocaleDateString()
+                        : t('userManagement.never', 'Never')}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        {user.id !== currentUser?.id && (
-                          <>
-                            {user.is_active ? (
-                              <button
-                                onClick={() => handleDeactivateUser(user.id, user.full_name)}
-                                disabled={actionLoading === user.id}
-                                className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors disabled:opacity-50"
-                                title={t('userManagement.deactivate', 'Deactivate')}
-                              >
-                                {actionLoading === user.id ? (
-                                  <Loader className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <UserX className="w-4 h-4" />
-                                )}
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleReactivateUser(user.id, user.full_name)}
-                                disabled={actionLoading === user.id}
-                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
-                                title={t('userManagement.reactivate', 'Reactivate')}
-                              >
-                                {actionLoading === user.id ? (
-                                  <Loader className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <UserCheck className="w-4 h-4" />
-                                )}
-                              </button>
-                            )}
+                    <td style={{ padding: '12px', textAlign: 'right' }}>
+                      {user.id !== currentUser?.id && (
+                        <div className="inline-flex items-center" style={{ gap: 6 }}>
+                          {user.is_active ? (
                             <button
-                              onClick={() => handleDeleteUser(user.id, user.full_name, user.email)}
+                              type="button"
+                              onClick={() => handleDeactivateUser(user.id, user.full_name)}
                               disabled={actionLoading === user.id}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                              title={t('userManagement.delete', 'Delete')}
+                              style={{ ...iconBtn, opacity: actionLoading === user.id ? 0.5 : 1 }}
+                              title={t('userManagement.deactivate', 'Deactivate')}
                             >
-                              {actionLoading === user.id ? (
-                                <Loader className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="w-4 h-4" />
-                              )}
+                              {actionLoading === user.id ? <Spinner ind={ind} size="inline" /> : <UserX size={14} strokeWidth={1.5} />}
                             </button>
-                          </>
-                        )}
-                      </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleReactivateUser(user.id, user.full_name)}
+                              disabled={actionLoading === user.id}
+                              style={{ ...iconBtn, opacity: actionLoading === user.id ? 0.5 : 1 }}
+                              title={t('userManagement.reactivate', 'Reactivate')}
+                            >
+                              {actionLoading === user.id ? <Spinner ind={ind} size="inline" /> : <UserCheck size={14} strokeWidth={1.5} />}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteUser(user.id, user.full_name, user.email)}
+                            disabled={actionLoading === user.id}
+                            style={{ ...iconBtn, opacity: actionLoading === user.id ? 0.5 : 1 }}
+                            title={t('userManagement.delete', 'Delete')}
+                          >
+                            {actionLoading === user.id ? <Spinner ind={ind} size="inline" /> : <Trash2 size={14} strokeWidth={1.5} />}
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -421,54 +387,25 @@ const UserManagement = () => {
             </table>
           </div>
         )}
-      </div>
+      </Blueprint>
 
-      {/* Stats Footer */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className={`${bg.secondary} rounded-lg border ${border.primary} p-4`}>
-          <div className="flex items-center justify-between">
-            <span className={`text-sm ${text.secondary}`}>
-              {t('userManagement.totalUsers', 'Total Users')}
-            </span>
-            <Users className="w-5 h-5 text-blue-600" />
-          </div>
-          <div className={`text-2xl font-bold ${text.primary} mt-2`}>
-            <SlidingNumber value={users.length} />
-          </div>
-        </div>
-        <div className={`${bg.secondary} rounded-lg border ${border.primary} p-4`}>
-          <div className="flex items-center justify-between">
-            <span className={`text-sm ${text.secondary}`}>
-              {t('userManagement.activeUsers', 'Active')}
-            </span>
-            <UserCheck className="w-5 h-5 text-green-600" />
-          </div>
-          <div className={`text-2xl font-bold ${text.primary} mt-2`}>
-            <SlidingNumber value={users.filter(u => u.is_active).length} />
-          </div>
-        </div>
-        <div className={`${bg.secondary} rounded-lg border ${border.primary} p-4`}>
-          <div className="flex items-center justify-between">
-            <span className={`text-sm ${text.secondary}`}>
-              {t('userManagement.inactiveUsers', 'Inactive')}
-            </span>
-            <UserX className="w-5 h-5 text-red-600" />
-          </div>
-          <div className={`text-2xl font-bold ${text.primary} mt-2`}>
-            <SlidingNumber value={users.filter(u => !u.is_active).length} />
-          </div>
-        </div>
-        <div className={`${bg.secondary} rounded-lg border ${border.primary} p-4`}>
-          <div className="flex items-center justify-between">
-            <span className={`text-sm ${text.secondary}`}>
-              {t('userManagement.admins', 'Admins')}
-            </span>
-            <Shield className="w-5 h-5 text-purple-600" />
-          </div>
-          <div className={`text-2xl font-bold ${text.primary} mt-2`}>
-            <SlidingNumber value={users.filter(u => u.role === 'admin').length} />
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-4" style={{ gap: 12 }}>
+        {[
+          [t('userManagement.totalUsers', 'Total Users'), users.length, Users],
+          [t('userManagement.activeUsers', 'Active'), users.filter((u) => u.is_active).length, UserCheck],
+          [t('userManagement.inactiveUsers', 'Inactive'), users.filter((u) => !u.is_active).length, UserX],
+          [t('userManagement.admins', 'Admins'), users.filter((u) => u.role === 'admin').length, Shield],
+        ].map(([label, value, icon]) => (
+          <Blueprint key={label} ind={ind} style={{ background: ind.ground, padding: 14 }}>
+            <div className="flex items-center justify-between">
+              <Kicker ind={ind} color={ind.inkMuted}>{label}</Kicker>
+              {React.createElement(icon, { size: 14, strokeWidth: 1.5, style: { color: ind.inkMuted } })}
+            </div>
+            <div style={{ ...figure(28, ind.ink), marginTop: 8 }}>
+              <SlidingNumber value={value} />
+            </div>
+          </Blueprint>
+        ))}
       </div>
     </div>
   );

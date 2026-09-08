@@ -1008,7 +1008,7 @@ export const createLeaveRequest = async (leaveData) => {
   if (isDemoMode()) {
     const daysCount = calculateDaysBetween(leaveData.startDate, leaveData.endDate);
     const newLeaveRequest = {
-      id: `demo-leave-${Date.now()}`,
+      id: `demo-leave-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       employee_id: leaveData.employeeId,
       leave_type: leaveData.type,
       type: leaveData.type,

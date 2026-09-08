@@ -34,6 +34,7 @@ export default {
     mine: 'Mes congés',
     today: "Aujourd'hui",
     clearSelection: 'Effacer la sélection',
+    cmdClickHint: '{mod} ou Shift-clic sur un autre jour pour l’ajouter, ou sur un jour sélectionné pour le retirer.',
     selectStartHint: 'Astuce : cliquez sur un jour pour démarrer une demande de congé, puis cliquez sur le dernier jour.',
     selectEndHint: 'Cliquez maintenant sur la date de fin (ou le même jour pour une seule journée).',
     selectionRange: 'Sélectionné',
@@ -1388,6 +1389,13 @@ export default {
     pushNotificationsDesc: 'Recevoir des notifications push dans l\'application',
     desktopNotifications: 'Notifications de bureau',
     desktopNotificationsDesc: 'Afficher les notifications du navigateur sur le bureau',
+    desktopDenied: 'Les notifications sont bloquées pour {origin}. Dans la barre d’adresse, définissez Notifications sur Autoriser, puis réactivez cette option.',
+    desktopEmbedded: 'Cette fenêtre ne peut pas afficher de notifications de bureau. Ouvrez {origin} dans Chrome ou Safari, puis autorisez les notifications.',
+    desktopInsecure: 'Les notifications de bureau nécessitent http://localhost ou https. Cette page est {origin}.',
+    desktopUnsupported: 'Ce navigateur ne peut pas afficher les notifications de bureau.',
+    desktopTestTitle: 'Les notifications de bureau sont activées',
+    desktopTestBody: 'Vous verrez des alertes de ce type lorsque de nouvelles notifications arriveront.',
+    desktopPermissionRequired: 'L’autorisation des notifications n’a pas été accordée pour {origin}. Autorisez-les dans les paramètres du site de ce navigateur, puis réessayez.',
     notificationFrequency: 'Fréquence des notifications',
     realtime: 'Temps réel',
     daily: 'Résumé quotidien',
@@ -1807,11 +1815,11 @@ export default {
       empty: 'Aucune astuce avancée trouvée pour le contexte : "{context}". Affichage de toutes les fonctionnalités ci-dessous.',
       feature_1: {
         title: 'Fonctionnalité cachée : Édition par lot',
-        description: 'Saviez-vous que vous pouvez modifier jusqu\'à 50 enregistrements à la fois ? Sélectionnez les cases à cocher à côté des éléments et cliquez sur l\'icône ✏️ en haut du tableau. Ceci est désactivé dans la démo actuelle.'
+        description: 'Saviez-vous que vous pouvez modifier jusqu\'à 50 enregistrements à la fois ? Sélectionnez les cases à cocher à côté des éléments et cliquez sur l\'icône de modification en haut du tableau. Ceci est désactivé dans la démo actuelle.'
       },
       feature_2: {
         title: 'Astuce contextuelle : Filtre rapide',
-        description: 'Utilisez l\'icône loupe (🔍) à côté d\'un en-tête de colonne pour filtrer instantanément par les valeurs uniques de cette colonne. Pas besoin d\'ouvrir le panneau de filtre complet !'
+        description: 'Utilisez l\'icône loupe à côté d\'un en-tête de colonne pour filtrer instantanément par les valeurs uniques de cette colonne. Pas besoin d\'ouvrir le panneau de filtre complet !'
       },
       feature_3: {
         title: 'Restriction Démo : Persistance des Données',

@@ -389,7 +389,7 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
             style={avatarStyle}
           >
             {uploading ? (
-              <Loader className="w-8 h-8 text-blue-600 animate-spin" />
+              <Loader className={`w-8 h-8 animate-spin ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
             ) : employee.photo && !photoError ? (
               <img 
                 src={employee.photo} 
@@ -488,20 +488,14 @@ const EmployeeCard = ({ employee, onViewDetails, onEdit, onDelete, onPhotoUpdate
           </div>
         </div>
 
-        {/* Secondary chips */}
-        <div className="mt-4 flex flex-wrap gap-2">
-          {employeeDepartment && (
+        {employeeDepartment && (
+          <div className="mt-4 flex flex-wrap gap-2">
             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${isDarkMode ? 'bg-gray-700/50 text-gray-200' : 'bg-gray-100 text-gray-800'}`}>
               <Network className="h-3.5 w-3.5" />
               {t(`employeeDepartment.${employeeDepartmentKey}`, toTitleCase(employeeDepartment) || employeeDepartment)}
             </span>
-          )}
-          {!!employee?.id && (
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${isDarkMode ? 'bg-gray-700/30 text-gray-300' : 'bg-gray-50 text-gray-600'}`}>
-              {t('employees.id', 'ID')}: {String(employee.id).slice(0, 8)}
-            </span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Footer Actions */}

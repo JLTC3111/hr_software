@@ -36,7 +36,7 @@ import { isDemoMode, getDemoEmployeeName } from '../utils/demoHelper.js';
 import { formatDate } from '../utils/localeFormat.js';
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
 import {
-  Blueprint, Bar, Tag, Btn, Seg, Kicker, TickerCell, ColumnHeading, LiveClock, FlatSelect,
+  Blueprint, Bar, Tag, Btn, Seg, Kicker, TickerCell, ColumnHeading, LiveClock,
 } from './ui/industry.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 

@@ -1,10 +1,14 @@
-import _React, { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react'
+import _React, { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import { Search, Filter } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext.jsx'
+import { useTheme } from '../contexts/ThemeContext.jsx'
+import { getIndustry } from '../theme/industry.js'
+import { FlatListbox } from './ui/industry.jsx'
 
 const SearchAndFilter = memo(({ searchTerm, setSearchTerm, filterDepartment, setFilterDepartment, departments, employeeDepartment, style }) => {
   const { t } = useLanguage();
-  const filterSelectRef = useRef(null);
+  const { isDarkMode } = useTheme();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
   
   // Local state for immediate input feedback
   const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
@@ -70,10 +74,6 @@ const SearchAndFilter = memo(({ searchTerm, setSearchTerm, filterDepartment, set
     return Array.from(map.values());
   }, [departments, employeeDepartment]);
 
-  const handleFilterIconClick = useCallback(() => {
-    filterSelectRef.current?.focus();
-  }, []);
-  
   return (
     <div className="p-4 rounded-lg shadow-sm border" style={style}>
       <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
@@ -89,26 +89,29 @@ const SearchAndFilter = memo(({ searchTerm, setSearchTerm, filterDepartment, set
           />
         </div>
         <div className="relative">
-          <button
-            type="button"
-            onClick={handleFilterIconClick}
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-md hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            aria-label={t('search.filter', 'Filter')}
-            title={t('search.filter', 'Filter')}
+          <span
+            className="pointer-events-none absolute left-2.5 top-1/2 z-10 -translate-y-1/2 p-1.5"
+            aria-hidden="true"
           >
             <Filter className="h-5 w-5" style={iconColor} />
-          </button>
-          <select
-            ref={filterSelectRef}
+          </span>
+          <FlatListbox
+            ind={ind}
             value={filterDepartment}
             onChange={handleFilterChange}
-            className="pl-10 pr-8 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 cursor-pointer focus:border-blue-500 appearance-none"
-            style={inputStyle}
+            aria-label={t('search.filter', 'Filter')}
+            style={{
+              width: '100%',
+              minWidth: 180,
+              padding: '8px 12px 8px 40px',
+              textTransform: 'none',
+              letterSpacing: '.02em',
+            }}
           >
             {departmentOptions.map((dept) => (
               <option key={dept.value} value={dept.value}>{dept.label}</option>
             ))}
-          </select>
+          </FlatListbox>
         </div>
       </div>
     </div>

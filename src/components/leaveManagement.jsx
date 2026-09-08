@@ -52,9 +52,9 @@ import { SlidingNumber } from './motion-primitives';
 import { DatePicker } from './ui/date-picker.jsx';
 import { TimePicker } from './ui/time-picker.jsx';
 import { filterActiveEmployees } from '../utils/employeeStatus.js';
-import { countWorkingDays } from '../utils/reportExportHelpers.js';
+import { countWorkingDays, workingDateKeys, workingDaySegments } from '../utils/reportExportHelpers.js';
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
-import { Blueprint, Bar, Tag, Btn, Seg, Kicker, ColumnHeading, TickerCell, LiveClock, FlatSelect } from './ui/industry.jsx';
+import { Blueprint, Bar, Tag, Btn, Seg, Kicker, ColumnHeading, TickerCell, LiveClock, FlatListbox } from './ui/industry.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 
 /* @refresh reset */
@@ -71,10 +71,6 @@ const STATUS_VARIANT = { pending: 'outline', approved: 'accent', rejected: 'neut
 
 // Local-safe date key (avoids UTC off-by-one)
 const toKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const fromKey = (key) => {
-  const [y, m, d] = key.split('-').map(Number);
-  return new Date(y, m - 1, d);
-};
 const normalize = (value) => (value || '').toString().slice(0, 10);
 
 const LeaveManagement = ({ employees = [], allEmployees }) => {
@@ -111,6 +107,8 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
 
   const [selStart, setSelStart] = useState(null);
   const [selEnd, setSelEnd] = useState(null);
+  const [extraKeys, setExtraKeys] = useState([]);
+  const [skippedKeys, setSkippedKeys] = useState([]);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestModalMode, setRequestModalMode] = useState('calendar'); // 'calendar' | 'admin'
   const [rejectTarget, setRejectTarget] = useState(null);
@@ -197,27 +195,19 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
     });
   }, [leaveRequests, typeFilter, statusFilter, employeeFilter, canManageLeave, scope]);
 
-  const requestsForDay = useCallback((key) => {
-    return visibleRequests.filter(req => {
-      const s = normalize(req.start_date);
-      const e = normalize(req.end_date || req.start_date);
-      return key >= s && key <= e;
-    });
-  }, [visibleRequests]);
-
+  // Chips follow working days only, matching days_count (weekends stay in the stored range).
   const leaveByDay = useMemo(() => {
     const map = new Map();
     visibleRequests.forEach((req) => {
-      const start = fromKey(normalize(req.start_date));
-      const end = fromKey(normalize(req.end_date || req.start_date));
-      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const key = toKey(d);
+      workingDateKeys(normalize(req.start_date), normalize(req.end_date || req.start_date)).forEach((key) => {
         if (!map.has(key)) map.set(key, []);
         map.get(key).push(req);
-      }
+      });
     });
     return map;
   }, [visibleRequests]);
+
+  const requestsForDay = useCallback((key) => leaveByDay.get(key) || [], [leaveByDay]);
 
   // ---- Calendar grid (6 weeks) ----
   const weeks = useMemo(() => {
@@ -248,25 +238,67 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
     return result;
   }, [currentMonth]);
 
-  const inSelection = useCallback((key) => {
-    if (!selStart) return false;
-    if (!selEnd) return key === selStart;
-    return key >= selStart && key <= selEnd;
-  }, [selStart, selEnd]);
+  // Selection wash skips weekends. After a range is set, ⌘/Ctrl/Shift-click
+  // toggles extra weekdays on or skipped weekdays off — gaps stay unhighlighted.
+  const selectionKeys = useMemo(() => {
+    if (!selStart) return [];
+    const keys = new Set(workingDateKeys(selStart, selEnd || selStart));
+    skippedKeys.forEach((key) => keys.delete(key));
+    extraKeys.forEach((key) => {
+      if (workingDateKeys(key, key).length) keys.add(key);
+    });
+    return [...keys].sort();
+  }, [selStart, selEnd, extraKeys, skippedKeys]);
+  const selectionKeySet = useMemo(() => new Set(selectionKeys), [selectionKeys]);
+  const rangeStartKey = selectionKeys[0] || null;
+  const rangeEndKey = selEnd && selectionKeys.length ? selectionKeys[selectionKeys.length - 1] : null;
+  const selectionSummary = useMemo(
+    () => workingDaySegments(selectionKeys)
+      .map((seg) => (seg.start === seg.end ? seg.start : `${seg.start} → ${seg.end}`))
+      .join(', '),
+    [selectionKeys]
+  );
 
   const selectionComplete = Boolean(selStart && selEnd);
   const selectionPhase = !selStart ? 'pickStart' : !selEnd ? 'pickEnd' : 'ready';
+  const selectionDayCount = selectionKeys.length;
+  const additiveMod = typeof navigator !== 'undefined'
+    && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '')
+    ? '⌘'
+    : 'Ctrl';
 
-  const selectionDayCount = useMemo(() => {
-    if (!selStart) return 0;
-    return countWorkingDays(selStart, selEnd || selStart);
-  }, [selStart, selEnd]);
+  const clearSelection = () => {
+    setSelStart(null);
+    setSelEnd(null);
+    setExtraKeys([]);
+    setSkippedKeys([]);
+  };
 
-  const handleDayClick = (key) => {
+  const handleDayClick = (key, event) => {
+    const additive = Boolean(event?.metaKey || event?.ctrlKey || event?.shiftKey);
+    if (additive) event?.preventDefault();
+    if (!workingDateKeys(key, key).length) return;
+
+    if (additive && selStart && selEnd) {
+      if (selectionKeySet.has(key)) {
+        if (extraKeys.includes(key)) {
+          setExtraKeys((prev) => prev.filter((item) => item !== key));
+        } else {
+          setSkippedKeys((prev) => (prev.includes(key) ? prev : [...prev, key]));
+        }
+      } else if (skippedKeys.includes(key)) {
+        setSkippedKeys((prev) => prev.filter((item) => item !== key));
+      } else {
+        setExtraKeys((prev) => (prev.includes(key) ? prev : [...prev, key]));
+      }
+      return;
+    }
+
     if (!selStart || (selStart && selEnd)) {
-      // start a new selection
       setSelStart(key);
       setSelEnd(null);
+      setExtraKeys([]);
+      setSkippedKeys([]);
     } else if (key < selStart) {
       setSelStart(key);
     } else {
@@ -275,7 +307,7 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
   };
 
   const openRequestForSelection = () => {
-    if (!selStart) {
+    if (!selStart || !selectionDayCount) {
       flash(setErrorMessage, t('leave.selectDatesFirst', 'Click a start and end date on the calendar first.'));
       return;
     }
@@ -439,7 +471,7 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
         >
           <FetchElapsedPill active={loading} isDarkMode label={t('common.fetching', 'Fetching')} />
           {isAdmin && scope === 'all' ? (
-            <FlatSelect
+            <FlatListbox
               ind={ind}
               onDark
               value={employeeFilter || 'all'}
@@ -453,7 +485,7 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
                   {getDemoEmployeeName(emp, t)}
                 </option>
               ))}
-            </FlatSelect>
+            </FlatListbox>
           ) : (
             <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.06em', textTransform: 'uppercase' }}>
               {t('leave.mine', 'My Leave')}
@@ -566,7 +598,7 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
 
               <div className="flex flex-wrap items-center" style={{ gap: 8 }}>
                 {(selStart || selEnd) && (
-                  <Btn ind={ind} onClick={() => { setSelStart(null); setSelEnd(null); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Btn ind={ind} onClick={clearSelection} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                     <X size={12} strokeWidth={1.5} />
                     {t('leave.clearSelection', 'Clear selection')}
                   </Btn>
@@ -623,7 +655,7 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
                 {selectionPhase === 'ready' ? (
                   <>
                     <Check size={13} strokeWidth={1.5} style={{ flex: 'none', color: ind.accentDeep }} />
-                    {`${t('leave.selectionRange', 'Selected')}: ${selStart} → ${selEnd} · ${selectionDayCount} ${t('leave.days', 'days')}`}
+                    {`${t('leave.selectionRange', 'Selected')}: ${selectionSummary} · ${selectionDayCount} ${t('leave.days', 'days')}. ${t('leave.cmdClickHint', '{mod} or Shift-click another day to add it, or a selected day to skip it.').replace('{mod}', additiveMod)}`}
                   </>
                 ) : (
                   <>
@@ -686,9 +718,9 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
               <div className="grid grid-cols-7">
                 {weeks.flat().map((cell, idx) => {
                   const dayRequests = leaveByDay.get(cell.key) || [];
-                  const selected = inSelection(cell.key);
-                  const isRangeStart = selStart === cell.key;
-                  const isRangeEnd = selEnd === cell.key;
+                  const selected = selectionKeySet.has(cell.key);
+                  const isRangeStart = rangeStartKey === cell.key;
+                  const isRangeEnd = rangeEndKey === cell.key;
                   const isInRange = selected && Boolean(selEnd);
                   const isEdge = isRangeStart || isRangeEnd || (selected && !selEnd);
 
@@ -696,11 +728,16 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
                     <button
                       type="button"
                       key={cell.key + idx}
-                      onClick={() => handleDayClick(cell.key)}
+                      onClick={(event) => handleDayClick(cell.key, event)}
+                      onMouseDown={(event) => {
+                        if (event.metaKey || event.ctrlKey || event.shiftKey) event.preventDefault();
+                      }}
                       title={cell.inMonth && selectionPhase !== 'ready'
                         ? t('leave.clickToSelect', 'Click to select this day')
-                        : undefined}
-                      className="relative text-left min-h-[96px] md:min-h-[120px] group"
+                        : cell.inMonth && selectionPhase === 'ready'
+                          ? t('leave.cmdClickHint', '{mod} or Shift-click another day to add it, or a selected day to skip it.').replace('{mod}', additiveMod)
+                          : undefined}
+                      className="relative text-left min-h-[96px] md:min-h-[120px] group select-none"
                       style={{
                         padding: 7,
                         borderBottom: `1px solid ${ind.rule}`,
@@ -806,7 +843,7 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
                     {t('leave.rangeReady', 'Dates selected — ready to request leave')}
                   </ColumnHeading>
                   <p style={{ ...caption, fontSize: 11.5, marginTop: 4 }}>
-                    {`${selStart} → ${selEnd} · ${selectionDayCount} ${t('leave.days', 'days')}`}
+                    {`${selectionSummary} · ${selectionDayCount} ${t('leave.days', 'days')}`}
                   </p>
                 </div>
                 <Btn
@@ -1076,12 +1113,12 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
           myEmployeeId={myEmployeeId}
           initialStart={selStart}
           initialEnd={selEnd || selStart}
+          initialDates={selectionKeys}
           leaveTypeMeta={leaveTypeMeta}
           onClose={() => setShowRequestModal(false)}
           onSuccess={(message) => {
             setShowRequestModal(false);
-            setSelStart(null);
-            setSelEnd(null);
+            clearSelection();
             flash(setSuccessMessage, message);
             leaveCacheRef.current = { key: '', data: [] };
             fetchData({ silent: true });
@@ -1122,6 +1159,7 @@ const LeaveRequestModal = ({
   myEmployeeId,
   initialStart,
   initialEnd,
+  initialDates,
   leaveTypeMeta,
   onClose,
   onSuccess,
@@ -1131,6 +1169,21 @@ const LeaveRequestModal = ({
   const [loading, setLoading] = useState(false);
   const isAdminMode = mode === 'admin';
   const allowManualDates = isAdminMode;
+
+  const calendarDates = useMemo(() => {
+    if (Array.isArray(initialDates) && initialDates.length) {
+      return [...initialDates].sort();
+    }
+    if (initialStart) return workingDateKeys(initialStart, initialEnd || initialStart);
+    return [];
+  }, [initialDates, initialStart, initialEnd]);
+  const calendarSegments = useMemo(() => workingDaySegments(calendarDates), [calendarDates]);
+  const calendarSummary = useMemo(
+    () => calendarSegments
+      .map((seg) => (seg.start === seg.end ? seg.start : `${seg.start} → ${seg.end}`))
+      .join(', '),
+    [calendarSegments]
+  );
 
   const [form, setForm] = useState({
     employeeId: defaultEmployeeId || myEmployeeId || (employees[0]?.id ? String(employees[0].id) : ''),
@@ -1145,12 +1198,17 @@ const LeaveRequestModal = ({
   });
 
   const dayCount = useMemo(() => {
+    if (!allowManualDates) {
+      if (!calendarDates.length) return 0;
+      if (form.halfDay && calendarDates.length === 1) return 0.5;
+      return calendarDates.length;
+    }
     if (!form.startDate || !form.endDate) return 0;
     const weekdays = countWorkingDays(form.startDate, form.endDate);
     if (weekdays <= 0) return 0;
     if (form.halfDay && form.startDate === form.endDate) return 0.5;
     return weekdays;
-  }, [form.startDate, form.endDate, form.halfDay]);
+  }, [allowManualDates, calendarDates, form.startDate, form.endDate, form.halfDay]);
 
   const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -1165,11 +1223,14 @@ const LeaveRequestModal = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.startDate || !form.endDate) {
+    const ranges = allowManualDates
+      ? (form.startDate && form.endDate ? [{ start: form.startDate, end: form.endDate }] : [])
+      : calendarSegments;
+    if (!ranges.length) {
       onError(t('leave.selectDatesFirst', 'Click a start and end date on the calendar first.'));
       return;
     }
-    if (form.endDate < form.startDate) {
+    if (allowManualDates && form.endDate < form.startDate) {
       onError(t('leave.invalidRange', 'End date cannot be before start date.'));
       return;
     }
@@ -1179,29 +1240,44 @@ const LeaveRequestModal = ({
     }
     setLoading(true);
     try {
-      const result = await timeTrackingService.createLeaveRequest({
-        employeeId: form.employeeId,
-        type: form.type,
-        startDate: form.startDate,
-        endDate: form.endDate,
-        reason: buildReason(),
-      });
-      if (!result.success) {
-        console.error('Failed to submit leave request:', result.error);
-        onError(t('errors.saveFailed', 'Failed to submit request'));
-        return;
+      const created = [];
+      for (const range of ranges) {
+        const result = await timeTrackingService.createLeaveRequest({
+          employeeId: form.employeeId,
+          type: form.type,
+          startDate: range.start,
+          endDate: range.end,
+          reason: buildReason(),
+        });
+        if (!result.success) {
+          console.error('Failed to submit leave request:', result.error);
+          onError(t('errors.saveFailed', 'Failed to submit request'));
+          return;
+        }
+        created.push(result.data);
       }
 
-      if (form.autoApprove && canManageLeave && result.data?.id) {
-        if (isDemoMode()) {
-          updateDemoLeaveRequest(result.data.id, { status: 'approved', approved_by: myEmployeeId });
-        } else {
-          const approveResult = await timeTrackingService.updateLeaveRequestStatus(result.data.id, 'approved', myEmployeeId);
-          if (!approveResult.success) throw new Error(approveResult.error);
+      if (form.autoApprove && canManageLeave) {
+        for (const row of created) {
+          if (!row?.id) continue;
+          if (isDemoMode()) {
+            updateDemoLeaveRequest(row.id, { status: 'approved', approved_by: myEmployeeId });
+          } else {
+            const approveResult = await timeTrackingService.updateLeaveRequestStatus(row.id, 'approved', myEmployeeId);
+            if (!approveResult.success) throw new Error(approveResult.error);
+          }
         }
-        onSuccess(t('leave.submitAndApproved', 'Leave added and approved.'));
+        onSuccess(
+          created.length > 1
+            ? t('leave.requestsSubmitAndApproved', '{n} leave requests added and approved.').replace('{n}', String(created.length))
+            : t('leave.submitAndApproved', 'Leave added and approved.')
+        );
       } else {
-        onSuccess(t('leave.requestSubmitted', 'Leave request submitted successfully!'));
+        onSuccess(
+          created.length > 1
+            ? t('leave.requestsSubmitted', '{n} leave requests submitted successfully!').replace('{n}', String(created.length))
+            : t('leave.requestSubmitted', 'Leave request submitted successfully!')
+        );
       }
     } catch (error) {
       console.error('Error submitting leave request:', error);
@@ -1246,7 +1322,7 @@ const LeaveRequestModal = ({
           {canManageLeave && (
             <div>
               <label htmlFor="leave-employee" style={labelStyle}>{t('leave.employee', 'Employee')}</label>
-              <FlatSelect
+              <FlatListbox
                 ind={ind}
                 id="leave-employee"
                 value={form.employeeId || ''}
@@ -1256,7 +1332,7 @@ const LeaveRequestModal = ({
                 {employees.map(emp => (
                   <option key={emp.id} value={String(emp.id)}>{getDemoEmployeeName(emp, t)}</option>
                 ))}
-              </FlatSelect>
+              </FlatListbox>
               {isAdminMode && (
                 <p className="inline-flex items-center" style={{ ...noteStyle, gap: 5 }}>
                   <ShieldCheck size={12} strokeWidth={1.5} />
@@ -1332,7 +1408,7 @@ const LeaveRequestModal = ({
                     className="block"
                     style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 15, color: ind.ink, marginTop: 3, fontVariantNumeric: 'tabular-nums' }}
                   >
-                    {form.startDate || '—'} {form.endDate && form.endDate !== form.startDate ? `→ ${form.endDate}` : ''}
+                    {calendarSummary || '—'}
                   </span>
                 </span>
                 <span style={{ ...figure(20, ind.ink) }}>
@@ -1345,6 +1421,7 @@ const LeaveRequestModal = ({
           )}
 
           {/* Square check, never a rounded box. */}
+          {(allowManualDates || calendarDates.length <= 1) && (
           <button
             type="button"
             onClick={() => handleChange('halfDay', !form.halfDay)}
@@ -1366,6 +1443,7 @@ const LeaveRequestModal = ({
             </span>
             <span style={{ fontFamily: BODY, fontSize: 13 }}>{t('leave.halfDay', 'Half day')}</span>
           </button>
+          )}
 
           {!form.halfDay && (
             <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 12 }}>

@@ -33,6 +33,7 @@ export default {
     mine: 'Mis ausencias',
     today: 'Hoy',
     clearSelection: 'Borrar selección',
+    cmdClickHint: '{mod} o Shift-clic en otro día para añadirlo, o en un día seleccionado para omitirlo.',
     selectStartHint: 'Consejo: haz clic en un día para iniciar una solicitud de ausencia y luego en el día final.',
     selectEndHint: 'Ahora haz clic en la fecha de fin (o el mismo día para un solo día).',
     selectionRange: 'Seleccionado',
@@ -1502,6 +1503,13 @@ export default {
     pushNotificationsDesc: 'Recibir notificaciones push en la aplicación',
     desktopNotifications: 'Notificaciones de Escritorio',
     desktopNotificationsDesc: 'Mostrar notificaciones del navegador en el escritorio',
+    desktopDenied: 'Las notificaciones están bloqueadas para {origin}. En la barra de direcciones, establezca Notificaciones en Permitir y vuelva a activar esta opción.',
+    desktopEmbedded: 'Esta ventana no puede mostrar notificaciones de escritorio. Abra {origin} en Chrome o Safari y permita las notificaciones.',
+    desktopInsecure: 'Las notificaciones de escritorio requieren http://localhost o https. Esta página es {origin}.',
+    desktopUnsupported: 'Este navegador no puede mostrar notificaciones de escritorio.',
+    desktopTestTitle: 'Las notificaciones de escritorio están activadas',
+    desktopTestBody: 'Verá avisos como este cuando lleguen notificaciones nuevas.',
+    desktopPermissionRequired: 'No se concedió el permiso de notificaciones para {origin}. Permítalas en la configuración del sitio de este navegador e inténtelo de nuevo.',
     notificationFrequency: 'Frecuencia de Notificación',
     realtime: 'Tiempo Real',
     daily: 'Resumen Diario',
@@ -1847,11 +1855,11 @@ export default {
       empty: 'No se encontraron consejos avanzados para el contexto: "{context}". Mostrando todas las funciones a continuación.',
       feature_1: {
         title: 'Función Oculta: Edición por Lotes',
-        description: '¿Sabía que puede editar hasta 50 registros a la vez? Seleccione las casillas junto a los elementos y haga clic en el ícono ✏️ que aparece en la parte superior de la tabla. Esto está deshabilitado en la demo actual.'
+        description: '¿Sabía que puede editar hasta 50 registros a la vez? Seleccione las casillas junto a los elementos y haga clic en el ícono de edición que aparece en la parte superior de la tabla. Esto está deshabilitado en la demo actual.'
       },
       feature_2: {
         title: 'Consejo contextual: Filtro Rápido',
-        description: 'Use el icono de lupa (🔍) junto al encabezado de una columna para filtrar instantáneamente por los valores únicos de esa columna. ¡No es necesario abrir el panel de filtros completo!'
+        description: 'Use el icono de lupa junto al encabezado de una columna para filtrar instantáneamente por los valores únicos de esa columna. ¡No es necesario abrir el panel de filtros completo!'
       },
       feature_3: {
         title: 'Restricción Demo: Persistencia de Datos',

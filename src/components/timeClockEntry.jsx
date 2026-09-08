@@ -52,7 +52,7 @@ import { cn } from '@/lib/utils';
 import { useNotifications } from '../contexts/NotificationContext';
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
 import {
-  Blueprint, Bar, Tag, Btn, Seg, Kicker, ColumnHeading, TickerCell, LiveClock, FlatSelect,
+  Blueprint, Bar, Tag, Btn, Seg, Kicker, ColumnHeading, TickerCell, LiveClock, FlatListbox,
 } from './ui/industry.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import { formatDate } from '../utils/localeFormat.js';
@@ -1831,7 +1831,7 @@ const TimeClockEntry = () => {
         >
           <FetchElapsedPill active={loading} isDarkMode label={t('common.fetching', 'Fetching')} />
           {canManageTimeTracking ? (
-            <FlatSelect
+            <FlatListbox
               ind={ind}
               onDark
               value={selectedEmployeeFilter}
@@ -1854,7 +1854,7 @@ const TimeClockEntry = () => {
                   ))}
                 </optgroup>
               )}
-            </FlatSelect>
+            </FlatListbox>
           ) : (
             <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.06em', textTransform: 'uppercase' }}>
               {meName}
@@ -2204,7 +2204,7 @@ const TimeClockEntry = () => {
                     </div>
 
                     <div className="flex flex-wrap items-center" style={{ gap: 8 }}>
-                      <FlatSelect
+                      <FlatListbox
                         ind={ind}
                         value={statusFilter}
                         onChange={(e) => {
@@ -2217,7 +2217,7 @@ const TimeClockEntry = () => {
                         <option value="pending">{t('status.pending', 'Pending')}</option>
                         <option value="approved">{t('status.approved', 'Approved')}</option>
                         <option value="rejected">{t('status.rejected', 'Rejected')}</option>
-                      </FlatSelect>
+                      </FlatListbox>
                     </div>
                   </div>
 
@@ -2333,16 +2333,24 @@ const TimeClockEntry = () => {
 
                                 <td className={colTypeClass} style={tdStyle}>
                                   {isEditing ? (
-                                    <select
+                                    <FlatListbox
+                                      ind={ind}
                                       value={editForm.hourType}
                                       onChange={(e) => handleEditTypeChange(e.target.value)}
-                                      className={editInputClass}
-                                      style={editInputStyle}
+                                      aria-label={t('timeClock.type', 'Type')}
+                                      style={{
+                                        ...editInputStyle,
+                                        width: '100%',
+                                        minWidth: '7rem',
+                                        padding: '4px 8px',
+                                        textTransform: 'none',
+                                        letterSpacing: '.02em',
+                                      }}
                                     >
                                       {hourTypes.map((type) => (
                                         <option key={type.value} value={type.value}>{type.label}</option>
                                       ))}
-                                    </select>
+                                    </FlatListbox>
                                   ) : (
                                     <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkGhost }}>{typeLabel}</span>
                                   )}
@@ -2685,7 +2693,7 @@ const TimeClockEntry = () => {
 
               <div>
                 <span style={fieldLabelStyle}>{t('timeTracking.leaveType', 'Leave Type')}</span>
-                <FlatSelect
+                <FlatListbox
                   ind={ind}
                   value={leaveForm.type}
                   onChange={(e) => setLeaveForm({ ...leaveForm, type: e.target.value })}
@@ -2695,7 +2703,7 @@ const TimeClockEntry = () => {
                   <option value="sick">{t('timeTracking.sickLeave', 'Sick Leave')}</option>
                   <option value="personal">{t('timeTracking.personal', 'Personal Leave')}</option>
                   <option value="unpaid">{t('timeTracking.unpaid', 'Unpaid Leave')}</option>
-                </FlatSelect>
+                </FlatListbox>
               </div>
 
               <div className="grid grid-cols-2" style={{ gap: 12 }}>

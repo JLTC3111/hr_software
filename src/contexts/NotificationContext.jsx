@@ -7,6 +7,11 @@ import { supabase } from '../config/supabaseClient.js';
 import { isDemoMode } from '../utils/demoHelper.js';
 import { getRealtimeEventType } from '../utils/realtimeHelpers.js';
 import { playNotificationSound } from '../utils/notificationSound.js';
+import {
+  requestDesktopNotificationPermission,
+  shouldDeliverDesktopNotification,
+  showDesktopNotification,
+} from '../utils/desktopNotifications.js';
 import * as notificationService from '../services/notificationService.js';
 import * as settingsService from '../services/settingsService.js';
 
@@ -78,15 +83,6 @@ const CATEGORY_PREF_KEYS = {
 const isCategoryEnabled = (prefs, category) => {
   const key = CATEGORY_PREF_KEYS[category] || 'notify_system';
   return prefs[key] !== false;
-};
-
-const shouldDeliverBrowserNotification = (prefs, notification) => {
-  if (!notification || notification.is_read) return false;
-  if (prefs.notification_frequency && prefs.notification_frequency !== 'realtime') {
-    return false;
-  }
-  if (!isCategoryEnabled(prefs, notification.category)) return false;
-  return Boolean(prefs.push_notifications || prefs.desktop_notifications);
 };
 
 const shouldPlayNotificationSound = (prefs, notification) => {
@@ -322,26 +318,18 @@ export const NotificationProvider = ({ children }) => {
   }, [fetchNotifications, fetchUnreadCount, fetchStats]);
 
   const showBrowserNotification = useCallback((title, options = {}) => {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, {
-        icon: '/favicon.ico',
-        badge: '/favicon.ico',
-        ...options
-      });
-    }
+    return showDesktopNotification(title, options);
   }, []);
 
   const deliverNotificationAlert = useCallback(
     (notification) => {
       const prefs = notificationPrefsRef.current;
 
-      if (shouldDeliverBrowserNotification(prefs, notification)) {
-        if ('Notification' in window && Notification.permission === 'granted') {
-          showBrowserNotification(notification.title, {
-            body: notification.message,
-            tag: notification.id
-          });
-        }
+      if (shouldDeliverDesktopNotification(prefs, notification)) {
+        showBrowserNotification(notification.title, {
+          body: notification.message,
+          tag: notification.id
+        });
       }
 
       if (shouldPlayNotificationSound(prefs, notification)) {
@@ -857,11 +845,8 @@ export const NotificationProvider = ({ children }) => {
   }, [notifications]);
 
   const requestNotificationPermission = useCallback(async () => {
-    if ('Notification' in window) {
-      const permission = await Notification.requestPermission();
-      return permission === 'granted';
-    }
-    return false;
+    const result = await requestDesktopNotificationPermission();
+    return result.granted;
   }, []);
 
   const value = useMemo(

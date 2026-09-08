@@ -87,6 +87,16 @@ const Login = () => {
   /* The filled button is the only solid object on the card, so its fill has to
      clear AA against `accentInk` on its own — see solidButtonFill. */
   const buttonFill = solidButtonFill(ind);
+  const loginFieldFill = isDarkMode ? '#374151' : '#ffffff';
+  const loginFilledCss = `
+                    transition: background-color 0s !important;
+                    background-color: ${loginFieldFill} !important;
+                    background-image: none !important;
+                    -webkit-box-shadow: 0 0 0 1000px ${loginFieldFill} inset !important;
+                    box-shadow: 0 0 0 1000px ${loginFieldFill} inset !important;
+                    -webkit-text-fill-color: ${ind.ink} !important;
+                    caret-color: ${ind.ink} !important;
+  `;
 
   // Wait until auth bootstrap finishes so the title animation isn't skipped on first paint
   useEffect(() => {
@@ -452,7 +462,10 @@ const Login = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="industry-login-input w-full border py-3 pl-10 pr-4 outline-none transition-colors placeholder:opacity-60 focus:border-[var(--login-accent)]"
+                  className={cn(
+                    'industry-login-input w-full border py-3 pl-10 pr-4 outline-none transition-colors placeholder:opacity-60 focus:border-[var(--login-accent)]',
+                    formData.email && 'industry-login-input--filled',
+                  )}
                   style={{
                     background: 'transparent',
                     borderColor: errors.email ? ind.ink : ind.hairline,
@@ -491,7 +504,10 @@ const Login = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="industry-login-input w-full border py-3 pl-10 pr-12 outline-none transition-colors placeholder:opacity-60 focus:border-[var(--login-accent)]"
+                  className={cn(
+                    'industry-login-input w-full border py-3 pl-10 pr-12 outline-none transition-colors placeholder:opacity-60 focus:border-[var(--login-accent)]',
+                    formData.password && 'industry-login-input--filled',
+                  )}
                   style={{
                     background: 'transparent',
                     borderColor: errors.password ? ind.ink : ind.hairline,
@@ -546,13 +562,50 @@ const Login = () => {
                     background-position: center;
                 }
 
+                .industry-login-input {
+                    -webkit-appearance: none;
+                    -moz-appearance: none;
+                    appearance: none;
+                    background-image: none;
+                    color-scheme: ${isDarkMode ? 'dark' : 'light'};
+                }
+
+                /* Edge: native reveal + Windows password chrome */
+                .industry-login-input::-ms-reveal,
+                .industry-login-input::-ms-clear {
+                    display: none;
+                }
+
+                /* Safari / Chrome: keychain and contacts chips in the field */
+                .industry-login-input::-webkit-credentials-auto-fill-button,
+                .industry-login-input::-webkit-contacts-auto-fill-button,
+                .industry-login-input::-webkit-caps-lock-indicator {
+                    visibility: hidden;
+                    display: none;
+                    pointer-events: none;
+                    width: 0;
+                    height: 0;
+                    margin: 0;
+                }
+
+                /* Filled look — same white (or grey-700 in dark) on every engine.
+                   Vendor selectors stay in their own rules: one unknown selector
+                   in a comma-list drops the whole rule in that browser. */
+                .industry-login-input--filled,
+                .industry-login-input:not(:placeholder-shown) {
+                    ${loginFilledCss}
+                }
                 .industry-login-input:-webkit-autofill,
                 .industry-login-input:-webkit-autofill:hover,
-                .industry-login-input:-webkit-autofill:focus {
-                    -webkit-box-shadow: 0 0 0 1000px ${ind.ground} inset !important;
-                    box-shadow: 0 0 0 1000px ${ind.ground} inset !important;
-                    -webkit-text-fill-color: ${ind.ink} !important;
-                    caret-color: ${ind.ink} !important;
+                .industry-login-input:-webkit-autofill:focus,
+                .industry-login-input:-webkit-autofill:active {
+                    ${loginFilledCss}
+                }
+                .industry-login-input:autofill {
+                    ${loginFilledCss}
+                }
+                .industry-login-input:-moz-autofill {
+                    ${loginFilledCss}
                 }
             `}</style>
               <label className="flex items-center">
@@ -762,7 +815,10 @@ const Login = () => {
                         setForgotPasswordEmail(e.target.value);
                         setForgotPasswordError('');
                       }}
-                      className="industry-login-input w-full border py-3 pl-10 pr-4 outline-none transition-colors placeholder:opacity-60 focus:border-[var(--login-accent)]"
+                      className={cn(
+                        'industry-login-input w-full border py-3 pl-10 pr-4 outline-none transition-colors placeholder:opacity-60 focus:border-[var(--login-accent)]',
+                        forgotPasswordEmail && 'industry-login-input--filled',
+                      )}
                       style={{
                         background: 'transparent',
                         borderColor: forgotPasswordError ? ind.ink : ind.hairline,

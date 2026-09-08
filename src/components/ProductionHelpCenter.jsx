@@ -1,17 +1,29 @@
-import React from 'react';
+/**
+ * Production manual — operator playbooks, in the industry system.
+ *
+ * Same chrome as the demo guide: ticker, then blueprint plates. Status reads
+ * through weight and rule. The falling title is the one flourish this screen
+ * keeps; its ink and accent come from the same token set as the rest of the board.
+ *
+ * Design system: "Industry" (src/theme/industry.js).
+ */
+import _React, { useMemo } from 'react';
 import {
   Activity,
+  ArrowLeft,
   DatabaseBackup,
   Flag,
   Gauge,
-  Hash,
   ShieldCheck,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import FallingText from './FallingText';
 import './FallingText.css';
+import { getIndustry, DISPLAY, BODY } from '../theme/industry.js';
+import { Blueprint, Tag, Btn, Kicker, TickerCell, LiveClock } from './ui/industry.jsx';
 
 // Icons referenced by name from PRODUCTION_TIPS. Named imports keep tree-shaking
 // working — `import * as LucideIcons` pulled the whole icon set into the bundle.
@@ -77,118 +89,181 @@ const PRODUCTION_TIPS = [
   },
 ];
 
+const CHECKLIST = [
+  { key: 'observability', fallback: 'Dashboards & alerts active' },
+  { key: 'rollbacks', fallback: 'Rollback plan tested' },
+  { key: 'backups', fallback: 'Backups verified' },
+];
+
 const ProductionHelpCenter = ({ isDarkMode: isDarkModeProp = null }) => {
   const { t } = useLanguage();
   const { isDarkMode: themeIsDarkMode } = useTheme();
   const isDarkMode = isDarkModeProp !== null ? isDarkModeProp : themeIsDarkMode;
-
-  const palette = {
-    container: isDarkMode
-      ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950'
-      : 'bg-gradient-to-br from-slate-50 via-white to-sky-50',
-    overlay: isDarkMode
-      ? 'opacity-25 bg-[radial-gradient(circle_at_12%_22%,rgba(56,189,248,0.12),transparent_35%),radial-gradient(circle_at_82%_8%,rgba(168,85,247,0.12),transparent_30%)]'
-      : 'opacity-40 bg-[radial-gradient(circle_at_10%_20%,rgba(56,189,248,0.16),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(168,85,247,0.18),transparent_30%)]',
-    textPrimary: isDarkMode ? '#e2e8f0' : '#0f172a',
-    textSecondary: isDarkMode ? '#cbd5e1' : '#475569',
-    chipBg: isDarkMode ? '#0f172a' : '#e0f2fe',
-    chipText: isDarkMode ? '#bae6fd' : '#0ea5e9',
-    cardBg: isDarkMode ? 'bg-slate-800/80' : 'bg-white/80',
-    cardBorder: isDarkMode ? 'border-slate-700' : 'border-slate-200',
-    checklistBg: isDarkMode ? '#0f172a' : '#ffffff',
-    checklistBorder: isDarkMode ? '#1f2937' : '#e2e8f0',
-    checklistText: isDarkMode ? '#e2e8f0' : '#0f172a',
-    icon: isDarkMode ? '#7dd3fc' : '#0284c7',
-  };
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
+  const navigate = useNavigate();
+  const backLabel = t('help.backToControlPanel', 'Back to Control Panel');
+  const caption = { fontFamily: BODY, fontSize: 13, color: ind.inkMuted, lineHeight: 1.55, margin: 0 };
 
   return (
     <div
+      data-screen-label="Production Help"
       aria-label={t('prodHelp.containerLabel', 'Production Help Container')}
-      className={`relative p-6 md:p-8 rounded-2xl shadow-2xl space-y-8 transition-colors ${palette.container}`}
+      style={{
+        border: `1px solid ${ind.hairline}`,
+        background: ind.ground,
+        color: ind.ink,
+        fontFamily: BODY,
+        fontSize: 14,
+        borderRadius: 0,
+      }}
     >
-      <div className={`absolute inset-0 pointer-events-none ${palette.overlay}`} />
-      <div className="relative z-10 space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex-1">
-            <p className="text-sm uppercase tracking-[0.18em] mb-2" style={{ color: palette.textSecondary }}>
-              {t('prodHelp.subtitle', 'Production tips & playbooks')}
-            </p>
+      <div
+        style={{
+          height: 44,
+          background: ind.tickerBg,
+          color: ind.tickerInk,
+          borderBottom: `1px solid ${ind.hairline}`,
+          display: 'flex',
+          alignItems: 'stretch',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+        }}
+      >
+        <TickerCell ind={ind} title={t('controlPanel.liveSession', 'Live session')}>
+          <LiveClock ind={ind} live />
+        </TickerCell>
+        <TickerCell
+          ind={ind}
+          label={t('controlPanel.mode', 'Mode')}
+          value={t('prodHelp.highlight', 'Production').toUpperCase()}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('prodHelp.cards', 'Production guidance')}
+          value={PRODUCTION_TIPS.length}
+        />
+        <TickerCell
+          ind={ind}
+          label={t('prodHelp.checklist', 'Operator checklist')}
+          value={CHECKLIST.length}
+        />
+      </div>
+
+      <div style={{ padding: '22px 24px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div className="flex flex-col lg:flex-row" style={{ gap: 18, alignItems: 'stretch' }}>
+          <div className="flex-1 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <Btn
+              ind={ind}
+              onClick={() => navigate('/control-panel')}
+              aria-label={backLabel}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 7, alignSelf: 'flex-start' }}
+            >
+              <ArrowLeft size={13} strokeWidth={1.5} />
+              {backLabel}
+            </Btn>
+            <Kicker ind={ind}>{t('prodHelp.subtitle', 'Production tips & playbooks')}</Kicker>
             <FallingText
               text={t('prodHelp.title', 'Production Help Center')}
               highlightWords={[t('prodHelp.highlight', 'Production')]}
               backgroundColor="transparent"
               gravity={0.45}
-              fontSize="2.4rem"
-              className="h-full w-full font-extrabold leading-tight"
+              fontSize="32px"
               trigger="hover"
               resetDuration={5000}
+              style={{
+                '--falling-ink': ind.ink,
+                '--falling-accent': ind.accent,
+                '--falling-font': DISPLAY,
+                textAlign: 'left',
+                height: 72,
+                paddingTop: 4,
+              }}
             />
-            <p className="text-sm mt-2 max-w-3xl" style={{ color: palette.textSecondary }}>
+            <p style={{ ...caption, maxWidth: 640 }}>
               {t('prodHelp.lede', 'A concise set of production-only tips: shipping safely, keeping the lights on, and reacting fast when things go sideways.')}
             </p>
           </div>
-          <div className="flex flex-col gap-2 min-w-[220px]">
-            <div
-              className="px-4 py-3 rounded-xl shadow-sm"
-              style={{
-                backgroundColor: palette.checklistBg,
-                border: `1px solid ${palette.checklistBorder}`,
-                color: palette.checklistText,
-              }}
+
+          <Blueprint
+            ind={ind}
+            tint
+            style={{ padding: '16px 18px', minWidth: 220, flex: 'none' }}
+            className="w-full lg:w-[280px]"
+          >
+            <Kicker ind={ind} color={ind.inkMuted}>{t('prodHelp.checklist', 'Operator checklist')}</Kicker>
+            <ul
+              aria-label={t('prodHelp.checklistList', 'Operator checklist items')}
+              style={{ listStyle: 'none', margin: '10px 0 0', padding: 0 }}
             >
-              <p className="text-xs" style={{ color: palette.textSecondary }}>
-                {t('prodHelp.checklist', 'Operator checklist')}
-              </p>
-              <ul
-                aria-label={t('prodHelp.checklistList', 'Operator checklist items')}
-                className="mt-1 text-sm space-y-1"
-                style={{ color: palette.checklistText }}
-              >
-                <li>• {t('prodHelp.item.observability', 'Dashboards & alerts active')}</li>
-                <li>• {t('prodHelp.item.rollbacks', 'Rollback plan tested')}</li>
-                <li>• {t('prodHelp.item.backups', 'Backups verified')}</li>
-              </ul>
-            </div>
-          </div>
+              {CHECKLIST.map((item, idx) => (
+                <li
+                  key={item.key}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    gap: 10,
+                    padding: '8px 0',
+                    borderTop: idx === 0 ? 'none' : `1px solid ${ind.rule}`,
+                    fontFamily: BODY,
+                    fontSize: 13,
+                    color: ind.ink,
+                  }}
+                >
+                  <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 11, letterSpacing: '.08em', color: ind.inkMuted, flex: 'none' }}>
+                    {String(idx + 1).padStart(2, '0')}
+                  </span>
+                  {t(`prodHelp.item.${item.key}`, item.fallback)}
+                </li>
+              ))}
+            </ul>
+          </Blueprint>
         </div>
 
-        <section aria-label={t('prodHelp.cards', 'Production guidance')} className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+        <section aria-label={t('prodHelp.cards', 'Production guidance')}>
+          <div className="grid gap-3 md:grid-cols-2">
             {PRODUCTION_TIPS.map((tip, idx) => (
               <motion.div
                 key={tip.id}
-                initial={{ opacity: 0, y: 8, scale: 0.99 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.05, duration: 0.25 }}
-                aria-label={t(`prodHelp.${tip.id}.cardLabel`, tip.titleDefault)}
-                className={`p-4 border rounded-lg backdrop-blur-sm transition-all hover:shadow-lg hover:-translate-y-0.5 ${palette.cardBg} ${palette.cardBorder}`}
               >
-                <div className="flex items-center mb-2 space-x-3">
-                  <Icon name={tip.icon} className="h-6 w-6" aria-hidden="true" title={t(`prodHelp.${tip.id}.iconTitle`, tip.titleDefault)} style={{ color: palette.icon }} />
-                  <h3 className="text-lg font-bold" style={{ color: palette.textPrimary }}>
-                    {t(tip.titleKey, tip.titleDefault)}
-                  </h3>
-                </div>
-                <p className="text-sm" style={{ color: palette.textSecondary }}>
-                  {t(tip.descriptionKey, tip.descriptionDefault)}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2" aria-label={t(`prodHelp.${tip.id}.tagsLabel`, 'Tags')}>
-                  {tip.tags.map((tag) => (
+                <Blueprint
+                  ind={ind}
+                  aria-label={t(`prodHelp.${tip.id}.cardLabel`, tip.titleDefault)}
+                  style={{ padding: '16px 18px', height: '100%' }}
+                >
+                  <div className="flex items-center" style={{ gap: 10, marginBottom: 8 }}>
+                    <Icon
+                      name={tip.icon}
+                      size={15}
+                      strokeWidth={1.5}
+                      aria-hidden="true"
+                      title={t(`prodHelp.${tip.id}.iconTitle`, tip.titleDefault)}
+                      style={{ color: ind.inkMuted, flex: 'none' }}
+                    />
                     <span
-                      key={tag}
-                      className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full"
                       style={{
-                        backgroundColor: palette.chipBg,
-                        color: palette.chipText,
-                        border: isDarkMode ? '1px solid #0ea5e9' : '1px solid #7dd3fc'
+                        fontFamily: DISPLAY, fontWeight: 600, fontSize: 14,
+                        letterSpacing: '.04em', textTransform: 'uppercase', color: ind.ink,
                       }}
-                      aria-label={t(`prodHelp.tags.${tag}`, tag)}
                     >
-                      <Hash className="h-3 w-3" aria-hidden="true" />
-                      {t(`prodHelp.tags.${tag}`, tag)}
+                      {t(tip.titleKey, tip.titleDefault)}
                     </span>
-                  ))}
-                </div>
+                  </div>
+                  <p style={caption}>{t(tip.descriptionKey, tip.descriptionDefault)}</p>
+                  <div
+                    className="flex flex-wrap"
+                    style={{ gap: 6, marginTop: 12 }}
+                    aria-label={t(`prodHelp.${tip.id}.tagsLabel`, 'Tags')}
+                  >
+                    {tip.tags.map((tag) => (
+                      <Tag key={tag} ind={ind} variant="neutral">
+                        {t(`prodHelp.tags.${tag}`, tag)}
+                      </Tag>
+                    ))}
+                  </div>
+                </Blueprint>
               </motion.div>
             ))}
           </div>

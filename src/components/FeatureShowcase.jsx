@@ -1,14 +1,23 @@
+/**
+ * Walkthrough figure on the demo manual.
+ *
+ * The old plate was a rounded indigo collage. It is now a <Blueprint>: hairline
+ * frame, four registration corners, steel tokens, no rainbow fills. Motion stays;
+ * colour does not carry meaning.
+ */
 import _React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Clock3, UploadCloud, BarChart3, CheckCircle2, FileBarChart } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useTheme } from '../contexts/ThemeContext.jsx';
-import { AnimatedGroup, InView, Spotlight, TextEffect, TextShimmer } from './motion-primitives';
-import { cn } from '@/lib/utils';
+import { AnimatedGroup, InView, Spotlight, TextEffect } from './motion-primitives';
+import { getIndustry, DISPLAY, BODY } from '../theme/industry.js';
+import { Blueprint, Tag, Kicker } from './ui/industry.jsx';
 
 const FeatureShowcase = () => {
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
 
   const features = useMemo(() => ([
     {
@@ -16,8 +25,6 @@ const FeatureShowcase = () => {
       title: t('help.showcase.time.title', 'Time management'),
       description: t('help.showcase.time.desc', 'Track time entries, approvals, overtime, and worklogs in one lane.'),
       Icon: Clock3,
-      accent: 'from-indigo-500 to-blue-600',
-      ring: 'ring-indigo-200 dark:ring-indigo-800',
       position: 'md:top-4 md:left-2',
       delay: 0,
     },
@@ -26,8 +33,6 @@ const FeatureShowcase = () => {
       title: t('help.showcase.upload.title', 'Upload files'),
       description: t('help.showcase.upload.desc', 'Securely store contracts, IDs, and evidence with audit-ready history.'),
       Icon: UploadCloud,
-      accent: 'from-emerald-500 to-green-600',
-      ring: 'ring-emerald-200 dark:ring-emerald-800',
       position: 'md:top-2 md:right-4',
       delay: 0.15,
     },
@@ -36,8 +41,6 @@ const FeatureShowcase = () => {
       title: t('help.showcase.dashboard.title', 'Dashboard & charts'),
       description: t('help.showcase.dashboard.desc', 'Visualize utilization, attendance, and health scores in real time.'),
       Icon: BarChart3,
-      accent: 'from-amber-500 to-orange-600',
-      ring: 'ring-amber-200 dark:ring-amber-800',
       position: 'md:bottom-14 md:left-0',
       delay: 0.3,
     },
@@ -46,8 +49,6 @@ const FeatureShowcase = () => {
       title: t('help.showcase.tasks.title', 'Tasks & goals'),
       description: t('help.showcase.tasks.desc', 'Assign owners, due dates, and checklists that sync with people data.'),
       Icon: CheckCircle2,
-      accent: 'from-fuchsia-500 to-purple-600',
-      ring: 'ring-fuchsia-200 dark:ring-fuchsia-800',
       position: 'md:bottom-6 md:right-6',
       delay: 0.45,
     },
@@ -56,16 +57,12 @@ const FeatureShowcase = () => {
       title: t('help.showcase.reporting.title', 'Reporting'),
       description: t('help.showcase.reporting.desc', 'Export PDFs/CSV and schedule recurring digests for managers.'),
       Icon: FileBarChart,
-      accent: 'from-cyan-500 to-blue-500',
-      ring: 'ring-cyan-200 dark:ring-cyan-800',
       position: 'md:top-32 md:left-1/2 md:-translate-x-1/2',
       delay: 0.6,
     },
   ]), [t]);
 
-  const surfaceClasses = isDarkMode
-    ? 'bg-slate-900 border-slate-800'
-    : 'bg-white border-gray-100';
+  const caption = { fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, lineHeight: 1.5, margin: 0 };
 
   return (
     <InView
@@ -77,113 +74,139 @@ const FeatureShowcase = () => {
       transition={{ duration: 0.5, ease: 'easeOut' }}
       viewOptions={{ margin: '-80px' }}
     >
-    <div
-      className={cn('relative overflow-hidden rounded-2xl border p-5 sm:p-6 shadow-2xl', surfaceClasses)}
-      aria-label={t('help.showcase.label', 'Animated product walkthrough')}
-    >
-      <Spotlight
-        className={isDarkMode
-          ? 'from-indigo-400/30 via-indigo-300/15 to-transparent'
-          : 'from-indigo-200/60 via-blue-100/40 to-transparent'}
-        size={320}
-      />
-      <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_20%_20%,rgba(99,102,241,0.18),transparent_30%),radial-gradient(circle_at_80%_10%,rgba(16,185,129,0.16),transparent_28%)]" />
+      <Blueprint
+        ind={ind}
+        aria-label={t('help.showcase.label', 'Animated product walkthrough')}
+        style={{ padding: 20, background: ind.ground }}
+      >
+        <div style={{ position: 'relative' }}>
+          <Spotlight
+            className={isDarkMode
+              ? 'from-[#94bce3]/30 via-[#749dc4]/12 to-transparent'
+              : 'from-[#5980a6]/25 via-[#5980a6]/10 to-transparent'}
+            size={320}
+          />
 
-      <div className="relative grid gap-6 lg:grid-cols-[1.1fr_1fr] items-center">
-        <div className="space-y-4">
-          <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800">
-            <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" aria-hidden="true" />
-            <TextShimmer
-              as="span"
-              className="[--base-color:theme(colors.indigo.700)] [--base-gradient-color:theme(colors.indigo.400)] dark:[--base-color:theme(colors.indigo.300)] dark:[--base-gradient-color:theme(colors.white)]"
-              duration={2.5}
-            >
-              {t('help.showcase.badge', 'Live app walkthrough')}
-            </TextShimmer>
+        <div className="relative grid gap-6 lg:grid-cols-[1.1fr_1fr] items-center">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div className="inline-flex items-center" style={{ gap: 8, alignSelf: 'flex-start' }}>
+              <span
+                aria-hidden="true"
+                style={{ width: 6, height: 6, background: ind.accent, flex: 'none' }}
+              />
+              <Tag ind={ind} variant="accent">
+                {t('help.showcase.badge', 'Live app walkthrough')}
+              </Tag>
+            </div>
+
+            <div>
+              <TextEffect
+                as="h2"
+                per="word"
+                preset="fade-in-blur"
+                style={{ fontFamily: BODY, fontSize: 28, fontWeight: 400, margin: 0, color: ind.ink, lineHeight: 1.15 }}
+              >
+                {t('help.showcase.title', 'See the 4 pillars in motion')}
+              </TextEffect>
+              <p style={{ ...caption, marginTop: 8 }}>
+                {t('help.showcase.subtitle', 'Follow the flow from time capture to reporting, with data moving across modules in real time.')}
+              </p>
+            </div>
+
+            <AnimatedGroup className="grid gap-2 sm:grid-cols-2" preset="slide">
+              {features.slice(0, 4).map((feature) => (
+                <div
+                  key={feature.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                    padding: '10px 12px',
+                    border: `1px solid ${ind.hairline}`,
+                    borderRadius: 0,
+                    background: 'transparent',
+                  }}
+                >
+                  <feature.Icon size={15} strokeWidth={1.5} style={{ color: ind.inkMuted, flex: 'none', marginTop: 2 }} aria-hidden="true" />
+                  <div>
+                    <p style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, letterSpacing: '.06em', textTransform: 'uppercase', color: ind.ink, margin: 0 }}>
+                      {feature.title}
+                    </p>
+                    <p style={{ ...caption, marginTop: 4 }}>{feature.description}</p>
+                  </div>
+                </div>
+              ))}
+            </AnimatedGroup>
           </div>
 
-          <div className="space-y-2">
-            <TextEffect
-              as="h2"
-              per="word"
-              preset="fade-in-blur"
-              className={`text-2xl sm:text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+          <div className="relative h-[360px] sm:h-[380px]">
+            <div
+              style={{
+                position: 'absolute',
+                inset: 24,
+                border: `1px solid ${ind.hairline}`,
+                background: ind.chrome,
+                borderRadius: 0,
+              }}
+            />
+            <motion.div
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+              animate={{ scale: [1, 1.02, 1] }}
+              transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+              style={{ zIndex: 2, width: 'min(260px, 80%)' }}
             >
-              {t('help.showcase.title', 'See the 4 pillars in motion')}
-            </TextEffect>
-            <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-              {t('help.showcase.subtitle', 'Follow the flow from time capture to reporting, with data moving across modules in real time.')}
-            </p>
-          </div>
+              <Blueprint ind={ind} tint style={{ padding: '12px 14px' }}>
+                <Kicker ind={ind} color={ind.inkMuted}>
+                  {t('help.showcase.control', 'Control panel')}
+                </Kicker>
+                <p style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 16, letterSpacing: '.04em', textTransform: 'uppercase', color: ind.ink, margin: '6px 0 4px' }}>
+                  {t('help.showcase.sync', 'Everything stays in sync')}
+                </p>
+                <p style={caption}>
+                  {t('help.showcase.syncDesc', 'Entries, files, and goals update dashboards and reports instantly.')}
+                </p>
+              </Blueprint>
+            </motion.div>
 
-          <AnimatedGroup className="grid gap-3 sm:grid-cols-2" preset="slide">
-            {features.slice(0, 4).map((feature) => (
+            {features.map((feature) => (
               <motion.div
                 key={feature.id}
-                whileHover={{ y: -4 }}
-                className={`flex items-start gap-3 rounded-xl border p-3 transition ${isDarkMode ? 'border-gray-700 bg-gray-800/60' : 'border-gray-200 bg-gray-50'}`}
+                className={`absolute ${feature.position} max-w-[250px]`}
+                initial={{ opacity: 0, y: 14, scale: 0.96 }}
+                animate={{ opacity: 1, y: [14, 0, 6, 0], scale: [0.96, 1, 1.01, 1] }}
+                transition={{ delay: feature.delay, duration: 1.2, repeat: Infinity, repeatType: 'mirror', ease: 'easeInOut' }}
+                style={{ zIndex: 3 }}
               >
-                <feature.Icon className={`h-5 w-5 ${isDarkMode ? 'text-white' : 'text-gray-800'}`} aria-hidden="true" />
-                <div>
-                  <p className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{feature.title}</p>
-                  <p className={`text-xs leading-snug ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{feature.description}</p>
-                </div>
+                <Blueprint ind={ind} style={{ padding: 12, background: ind.ground }}>
+                  <div className="flex items-center justify-between" style={{ gap: 8 }}>
+                    <div className="flex items-center" style={{ gap: 8, minWidth: 0 }}>
+                      <feature.Icon size={14} strokeWidth={1.5} style={{ color: ind.inkMuted, flex: 'none' }} aria-hidden="true" />
+                      <p style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, letterSpacing: '.06em', textTransform: 'uppercase', color: ind.ink, margin: 0 }}>
+                        {feature.title}
+                      </p>
+                    </div>
+                    <Tag ind={ind} variant="neutral">{t('help.showcase.live', 'Live')}</Tag>
+                  </div>
+                  <p style={{ ...caption, marginTop: 8 }}>{feature.description}</p>
+                </Blueprint>
               </motion.div>
             ))}
-          </AnimatedGroup>
-        </div>
 
-        <div className="relative h-[360px] sm:h-[380px]">
-          <div className={`absolute inset-6 rounded-3xl border ${isDarkMode ? 'border-gray-800 bg-slate-950/70' : 'border-indigo-100 bg-white/60'} backdrop-blur shadow-inner`} />
-          <motion.div
-            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl px-5 py-4 shadow-xl border ${isDarkMode ? 'bg-gray-900/90 border-gray-800 text-white' : 'bg-white/95 border-gray-100 text-gray-900'}`}
-            animate={{ scale: [1, 1.02, 1] }}
-            transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
-          >
-            <p className="text-xs uppercase tracking-wide text-indigo-400 font-semibold" data-i18n="help.showcase.control">
-              {t('help.showcase.control', 'Control panel')}
-            </p>
-            <p className="text-lg font-bold">{t('help.showcase.sync', 'Everything stays in sync')}</p>
-            <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-              {t('help.showcase.syncDesc', 'Entries, files, and goals update dashboards and reports instantly.')}
-            </p>
-          </motion.div>
-
-          {features.map((feature) => (
             <motion.div
-              key={feature.id}
-              className={`absolute ${feature.position} max-w-[250px] rounded-2xl border ring-4 ${feature.ring} shadow-lg p-4 bg-gradient-to-br ${feature.accent} text-white`}
-              initial={{ opacity: 0, y: 14, scale: 0.96 }}
-              animate={{ opacity: 1, y: [14, 0, 6, 0], scale: [0.96, 1, 1.01, 1] }}
-              transition={{ delay: feature.delay, duration: 1.2, repeat: Infinity, repeatType: 'mirror', ease: 'easeInOut' }}
+              className="absolute inset-0"
+              animate={{ opacity: [0.35, 0.8, 0.35] }}
+              transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
+              aria-hidden="true"
             >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <feature.Icon className="h-5 w-5" aria-hidden="true" />
-                  <p className="font-semibold text-sm">{feature.title}</p>
-                </div>
-                <span className="text-[11px] rounded-full bg-white/20 px-2 py-0.5 font-semibold uppercase tracking-wide">
-                  {t('help.showcase.live', 'Live')}
-                </span>
-              </div>
-              <p className="mt-2 text-xs leading-snug text-white/90">{feature.description}</p>
+              <div style={{ position: 'absolute', left: '50%', top: 32, height: 40, width: 1, transform: 'translateX(-50%)', background: ind.hairline }} />
+              <div style={{ position: 'absolute', right: 40, top: 80, width: 64, height: 1, background: ind.hairline }} />
+              <div style={{ position: 'absolute', left: 32, bottom: 64, width: 56, height: 1, background: ind.hairline }} />
+              <div style={{ position: 'absolute', right: 24, bottom: 48, height: 40, width: 1, background: ind.hairline }} />
             </motion.div>
-          ))}
-
-          <motion.div
-            className="absolute inset-0"
-            animate={{ opacity: [0.35, 0.8, 0.35] }}
-            transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
-            aria-hidden="true"
-          >
-            <div className="absolute left-1/2 top-8 h-10 w-0.5 -translate-x-1/2 bg-gradient-to-b from-indigo-400 to-transparent" />
-            <div className="absolute right-10 top-20 w-16 h-0.5 bg-gradient-to-r from-green-400 to-transparent" />
-            <div className="absolute left-8 bottom-16 w-14 h-0.5 bg-gradient-to-r from-orange-400 to-transparent" />
-            <div className="absolute right-6 bottom-12 h-10 w-0.5 bg-gradient-to-b from-purple-400 to-transparent" />
-          </motion.div>
+          </div>
         </div>
-      </div>
-    </div>
+        </div>
+      </Blueprint>
     </InView>
   );
 };

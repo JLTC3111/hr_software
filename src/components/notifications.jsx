@@ -36,7 +36,8 @@ import {
 import { ShinyButton } from './ui/shiny-button';
 import { SlidingNumber } from './motion-primitives';
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
-import { Blueprint, Bar, Tag, Btn, Seg, Kicker, ColumnHeading, TickerCell, LiveClock, FlatSelect } from './ui/industry.jsx';
+import { Blueprint, Bar, Tag, Btn, Seg, Kicker, ColumnHeading, TickerCell, LiveClock, FlatListbox } from './ui/industry.jsx';
+import { Spinner } from './ui/Spinner.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 
 export const MiniFlubberAutoMorphDelete = ({
@@ -622,7 +623,7 @@ const Notifications = () => {
         }}
       >
         <FetchElapsedPill active={loading || isRefreshing || loadingMore} isDarkMode label={t('common.fetching', 'Fetching')} />
-        <FlatSelect
+        <FlatListbox
           ind={ind}
           onDark
           value={categoryFilter}
@@ -637,7 +638,7 @@ const Notifications = () => {
           <option value="employee" style={{ color: '#1d1f20' }}>{t('notifications.employee', 'Employee')}</option>
           <option value="recruitment" style={{ color: '#1d1f20' }}>{t('notifications.recruitment', 'Recruitment')}</option>
           <option value="system" style={{ color: '#1d1f20' }}>{t('notifications.system', 'System')}</option>
-        </FlatSelect>
+        </FlatListbox>
       </div>
     </div>
   );
@@ -646,12 +647,7 @@ const Notifications = () => {
     return (
       <div data-screen-label="Notifications" style={frameStyle}>
         {ticker}
-        <div style={{ padding: '64px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-          <Loader2 size={18} strokeWidth={1.5} className="animate-spin" style={{ color: ind.inkMuted }} />
-          <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.12em', textTransform: 'uppercase', color: ind.inkMuted }}>
-            {t('common.loading', 'Loading')}
-          </span>
-        </div>
+        <Spinner ind={ind} size="block" />
       </div>
     );
   }
@@ -778,7 +774,7 @@ const Notifications = () => {
                 <label htmlFor="notif-type-filter" style={fieldLabelStyle}>
                   {t('notifications.type', 'Type')}
                 </label>
-                <FlatSelect
+                <FlatListbox
                   ind={ind}
                   id="notif-type-filter"
                   value={typeFilter}
@@ -790,14 +786,14 @@ const Notifications = () => {
                   <option value="success">{t('notifications.success', 'Success')}</option>
                   <option value="warning">{t('notifications.warning', 'Warning')}</option>
                   <option value="error">{t('notifications.error', 'Error')}</option>
-                </FlatSelect>
+                </FlatListbox>
               </div>
 
               <div style={{ minWidth: 180 }}>
                 <label htmlFor="notif-category-filter" style={fieldLabelStyle}>
                   {t('notifications.category', 'Category')}
                 </label>
-                <FlatSelect
+                <FlatListbox
                   ind={ind}
                   id="notif-category-filter"
                   value={categoryFilter}
@@ -811,7 +807,7 @@ const Notifications = () => {
                   <option value="employee">{t('notifications.employee', 'Employee')}</option>
                   <option value="recruitment">{t('notifications.recruitment', 'Recruitment')}</option>
                   <option value="system">{t('notifications.system', 'System')}</option>
-                </FlatSelect>
+                </FlatListbox>
               </div>
 
               <div style={{ flex: 1 }} />

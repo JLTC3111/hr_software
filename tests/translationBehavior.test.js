@@ -96,6 +96,22 @@ test('Personal Goals collapses overflow actions into a kebab below desktop', () 
   assert.match(personalGoals, /<MoreMenu\b/);
 });
 
+test('Personal Goals rating adjustment is the skill meter, not a round slider thumb', () => {
+  const personalGoals = source('src/components/personalGoals.jsx');
+  assert.match(personalGoals, /editable=\{adjusting\}/);
+  assert.match(personalGoals, /When `editable`, the track \*is\* the control/);
+  assert.doesNotMatch(personalGoals, /accentColor:\s*ind\.accent/);
+});
+
+test('Personal Goals files manager ratings on the review row, not as a self-assessment', () => {
+  const personalGoals = source('src/components/personalGoals.jsx');
+  assert.match(personalGoals, /const canFileManagerReview = canManagePerformance && Boolean\(selectedEmployee\) && !viewingSelf/);
+  assert.match(personalGoals, /const handleSaveManagerReview = async/);
+  assert.match(personalGoals, /reviewType: 'quarterly'/);
+  assert.match(personalGoals, /target === 'manager'/);
+  assert.doesNotMatch(personalGoals, /handleSaveSkillAssessment\(\);\s*$/);
+});
+
 test('Task Listing uses the wrapping Seg control for filter chips', () => {
   const taskListing = source('src/components/taskListing.jsx');
   assert.match(taskListing, /<Seg\b/);

@@ -37,7 +37,7 @@ import { FetchElapsedPill } from './ui/fetch-elapsed-pill'
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js'
 import {
   Blueprint, Bar, Tag, Btn, Seg, Kicker, Delta, TickerCell, ColumnHeading,
-  LiveClock, FlatSelect,
+  LiveClock, FlatListbox,
 } from './ui/industry.jsx'
 
 /* ------------------------------------------------------------------ *
@@ -432,7 +432,7 @@ const Dashboard = ({ employees, applications }) => {
   const getUniqueDisplayName = useCallback((employee) => {
     const translatedName = getDemoEmployeeName(employee, t);
     const nameParts = translatedName.trim().split(/\s+/).filter(part => part.length > 0);
-    if (nameParts.length === 0) return `Employee #${employee.id}`;
+    if (nameParts.length === 0) return t('employees.employee', 'Employee');
 
     // Always use last name for cleaner, more compact display
     return nameParts[nameParts.length - 1];
@@ -820,7 +820,7 @@ const Dashboard = ({ employees, applications }) => {
           }}
         >
           <FetchElapsedPill active={loading} isDarkMode label={t('common.fetching', 'Fetching')} />
-          <FlatSelect
+          <FlatListbox
             ind={ind}
             onDark
             value={selectedMonth}
@@ -832,8 +832,8 @@ const Dashboard = ({ employees, applications }) => {
                 {t(`months.${key}`, fallback)}
               </option>
             ))}
-          </FlatSelect>
-          <FlatSelect
+          </FlatListbox>
+          <FlatListbox
             ind={ind}
             onDark
             value={selectedYear}
@@ -843,7 +843,7 @@ const Dashboard = ({ employees, applications }) => {
             {[2024, 2025, 2026].map((y) => (
               <option key={y} value={y} style={{ color: '#1d1f20' }}>{y}</option>
             ))}
-          </FlatSelect>
+          </FlatListbox>
           <button
             type="button"
             onClick={() => fetchDashboardData()}

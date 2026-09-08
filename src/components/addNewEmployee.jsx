@@ -3,8 +3,8 @@
  *
  * Everything here follows from that one framing. This screen is not a monitor, so
  * it does not get the live ticker the dashboards use; it gets a *draft bar* that
- * says what the document is, that it is saving, and what id has been reserved for
- * it — the three things that make a long form feel non-lossy.
+ * says what the document is and that it is saving — the two things that make a
+ * long form feel non-lossy.
  *
  * The sheet head and footer are bounded by 2px black rules rather than a card
  * border, which is the drawing-sheet convention: the page is the object.
@@ -32,7 +32,8 @@ import { DatePicker } from './ui/date-picker.jsx';
 import { formatDate as formatLocaleDate, formatNumber, groupNumberInput, parseNumberInput } from '../utils/localeFormat.js';
 import { DEPARTMENT_KEYS } from '../utils/departments.js';
 import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
-import { Blueprint, Btn, Kicker } from './ui/industry.jsx';
+import { Blueprint, Btn, Kicker, FlatListbox } from './ui/industry.jsx';
+import { AutofillOffInput, AutofillOffTextarea, cloakAutofillLabel, AUTOFILL_OFF_FORM_ATTRS } from '../hooks/useSuppressAutofill.jsx';
 
 /* ------------------------------------------------------------------ *
  * Screen constants
@@ -48,8 +49,6 @@ const STANDARD_MONTH_HOURS = 208;
 const MANAGER_POSITIONS = ['general_manager', 'managing_director', 'hr_specialist', 'contract_manager'];
 /** Departments whose staff are part time, for the contract line. */
 const PART_TIME_DEPARTMENTS = ['part_time_employee'];
-
-const MONO = "'Barlow Condensed', ui-monospace, SFMono-Regular, monospace";
 
 const EMPTY_FORM = {
   name: '', email: '', phone: '', dob: '', nationalId: '', address: '',
@@ -153,9 +152,6 @@ const AddNewEmployee = ({ employees = [], refetchEmployees }) => {
     'general_manager', 'senior_developer', 'hr_specialist', 'accountant',
     'contract_manager', 'managing_director', 'support_staff', 'expertGroup', 'employee',
   ].map(value => ({ value, label: t(`employeePosition.${value}`, value) })), [t]);
-
-  /** Reserved, not allocated: the id the next record will take if nothing else lands first. */
-  const reservedId = `EMP-${String(employees.length + 1).padStart(4, '0')}`;
 
   /** Who this person will report to — the head of the department they are joining. */
   const reportsTo = useMemo(() => {
@@ -390,7 +386,9 @@ const AddNewEmployee = ({ employees = [], refetchEmployees }) => {
   const fieldProps = { ind, formData, errors, touched, onChange: handleChange, t };
 
   return (
-    <div
+    <form
+      {...AUTOFILL_OFF_FORM_ATTRS}
+      onSubmit={(event) => event.preventDefault()}
       style={{
         border: `1px solid ${ind.hairline}`,
         background: ind.ground,
@@ -452,12 +450,6 @@ const AddNewEmployee = ({ employees = [], refetchEmployees }) => {
             {autosavedAt
               ? `${t('addEmployee.autosaved', 'Autosaved')} ${clockOf(autosavedAt)}`
               : t('addEmployee.notSavedYet', 'Not saved yet')}
-          </span>
-          <span
-            title={t('addEmployee.reservedId', 'Reserved record id')}
-            style={{ fontFamily: MONO, fontWeight: 600, fontSize: 14, letterSpacing: '.08em', fontVariantNumeric: 'tabular-nums' }}
-          >
-            {reservedId}
           </span>
         </div>
       </div>
@@ -570,8 +562,8 @@ const AddNewEmployee = ({ employees = [], refetchEmployees }) => {
                         stamp={fromApplication ? t('addEmployee.fromOffer', 'From offer') : null}
                       />
                     </div>
-                    <TextField {...fieldProps} name="email" type="email" label={t('employees.email', 'Email')} required />
-                    <TextField {...fieldProps} name="phone" type="tel" label={t('employees.phone', 'Phone')} required />
+                    <TextField {...fieldProps} name="email" label={t('employees.email', 'Email')} required />
+                    <TextField {...fieldProps} name="phone" label={t('employees.phone', 'Phone')} required />
                     <div>
                       <FieldLabel ind={ind} required>{t('addEmployee.dob', 'Date of birth')}</FieldLabel>
                       <DatePicker
@@ -703,9 +695,6 @@ const AddNewEmployee = ({ employees = [], refetchEmployees }) => {
                     formData.department ? t(`employeeDepartment.${formData.department}`, formData.department) : null,
                   ].filter(Boolean).join(' · ') || '—'}
                 </div>
-                <div style={{ fontFamily: MONO, fontSize: 12, color: ind.inkFaint, letterSpacing: '.08em', marginTop: 3 }}>
-                  {reservedId}
-                </div>
               </div>
             </div>
 
@@ -826,7 +815,7 @@ const AddNewEmployee = ({ employees = [], refetchEmployees }) => {
           </Btn>
         </div>
       </div>
-    </div>
+    </form>
   );
 };
 
@@ -851,9 +840,10 @@ function SectionHead({ ind, number, title, counter, counterNote }) {
 }
 
 function FieldLabel({ ind, required, children }) {
+  const visible = typeof children === 'string' ? cloakAutofillLabel(children) : children;
   return (
     <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 5 }}>
-      <Kicker ind={ind} color={ind.inkMuted}>{children}</Kicker>
+      <Kicker ind={ind} color={ind.inkMuted}>{visible}</Kicker>
       {required && <span style={{ color: ind.accent, fontFamily: DISPLAY, fontWeight: 600, fontSize: 11 }}>*</span>}
     </div>
   );
@@ -880,8 +870,17 @@ const inputStyle = (ind, invalid) => ({
   outline: 'none',
 });
 
-function TextField({ ind, formData, errors, touched, onChange, name, label, type = 'text', required, multiline, stamp }) {
+function TextField({ ind, formData, errors, touched, onChange, name, label, type = 'text', inputMode, required, multiline, stamp }) {
   const invalid = !!(errors[name] && touched[name]);
+  const shared = {
+    name,
+    value: formData[name] || '',
+    onChange,
+    'aria-label': label,
+    style: multiline
+      ? { ...inputStyle(ind, invalid), height: 66, resize: 'vertical' }
+      : inputStyle(ind, invalid),
+  };
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
@@ -900,21 +899,9 @@ function TextField({ ind, formData, errors, touched, onChange, name, label, type
         )}
       </div>
       {multiline ? (
-        <textarea
-          name={name}
-          value={formData[name] || ''}
-          onChange={onChange}
-          rows={3}
-          style={{ ...inputStyle(ind, invalid), height: 66, resize: 'vertical' }}
-        />
+        <AutofillOffTextarea {...shared} rows={3} />
       ) : (
-        <input
-          type={type}
-          name={name}
-          value={formData[name] || ''}
-          onChange={onChange}
-          style={inputStyle(ind, invalid)}
-        />
+        <AutofillOffInput type={type} inputMode={inputMode} {...shared} />
       )}
       <FieldError ind={ind} message={touched[name] ? errors[name] : null} />
     </div>
@@ -925,10 +912,17 @@ function SelectField({ ind, formData, errors, onChange, name, label, options, re
   return (
     <div>
       <FieldLabel ind={ind} required={required}>{label}</FieldLabel>
-      <select name={name} value={formData[name] || ''} onChange={onChange} style={inputStyle(ind, !!errors[name])}>
+      <FlatListbox
+        ind={ind}
+        name={name}
+        value={formData[name] || ''}
+        onChange={onChange}
+        aria-label={label}
+        style={{ ...inputStyle(ind, !!errors[name]), textTransform: 'none', letterSpacing: '.02em' }}
+      >
         <option value="">{t('common.select', 'Select')}</option>
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
+      </FlatListbox>
       <FieldError ind={ind} message={errors[name]} />
     </div>
   );
@@ -940,12 +934,13 @@ function NumberField({ ind, formData, errors, onChange, name, label, required })
   return (
     <div>
       <FieldLabel ind={ind} required={required}>{label}</FieldLabel>
-      <input
+      <AutofillOffInput
         type="text"
         inputMode="numeric"
         name={name}
         value={groupNumberInput(formData[name], currentLanguage)}
         onChange={(e) => onChange({ target: { name, value: String(e.target.value).replace(/[^\d.]/g, '') } })}
+        aria-label={label}
         placeholder="0"
         style={{ ...inputStyle(ind, !!errors[name]), fontVariantNumeric: 'tabular-nums' }}
       />

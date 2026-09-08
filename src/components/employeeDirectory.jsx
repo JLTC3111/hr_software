@@ -747,13 +747,8 @@ function Plate({ ind, person, focused, onOpen, onPickPhoto, uploadLabel, t, navi
         <BorderBeam size={90} duration={7} borderWidth={1.5} colorFrom={ind.accent} colorTo={ind.accentDeep} />
       )}
 
-      {/* Code line — an identifier and a state, where the gradient band used to be */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-        <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.16em', textTransform: 'uppercase', color: ind.accent, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {t('employeeDirectory.code', 'ID')} {person.code}
-        </span>
-        <StateWord ind={ind} state={person.state} />
-      </div>
+      {/* Status line — where the gradient band used to be */}
+      <StateWord ind={ind} state={person.state} />
 
       {/* Identity — the unit is named here, once */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, margin: '13px 0 0' }}>
@@ -1131,7 +1126,6 @@ const EmployeeDirectory = ({
       id,
       employee,
       name,
-      code: employee?.id ?? '—',
       role: employee?.position
         ? t(`employeePosition.${positionKey}`, employee.position)
         : t('common.notAvailable', 'N/A'),
@@ -1242,7 +1236,6 @@ const EmployeeDirectory = ({
     return scoped.filter((p) =>
       p.name.toLowerCase().includes(q)
       || p.email.toLowerCase().includes(q)
-      || String(p.code).toLowerCase().includes(q)
       || p.unitLabel.toLowerCase().includes(q)
       || p.role.toLowerCase().includes(q));
   }, [scoped, query]);
@@ -1485,7 +1478,7 @@ const EmployeeDirectory = ({
 
   const tickerCells = view === 'record' && record
     ? [
-      { label: t('employeeDirectory.tickerCode', 'ID'), value: String(record.code) },
+      { label: t('employeeDirectory.tenure', 'Tenure'), value: record.tenureLabel },
       { label: t('employeeDirectory.tickerUnit', 'Unit'), value: record.unitLabel.toUpperCase() },
       { label: t('employees.performance', 'Performance'), value: record.rating == null ? '—' : fmt1(record.rating), highlight: true },
       { label: t('employeeDirectory.thisWeek', 'This week'), value: record.hours == null ? '—' : fmtHours(record.hours) },
@@ -1676,8 +1669,6 @@ const EmployeeDirectory = ({
                     </button>
                     <span>/</span>
                     <span>{record.unitLabel}</span>
-                    <span>/</span>
-                    <span>{record.code}</span>
                   </div>
                   <h1 style={{ fontFamily: BODY, fontSize: 32, fontWeight: 400, margin: '2px 0 0', color: ind.ink, lineHeight: 1.1 }}>
                     {record.name}
@@ -1940,7 +1931,13 @@ const EmployeeDirectory = ({
                     <Btn ind={ind} variant="primary" onClick={() => navigate('/task-review')} style={{ padding: '4px 12px', fontSize: 12.5 }}>
                       {t('employeeDirectory.openReview', 'Open review')}
                     </Btn>
-                    <Btn ind={ind} onClick={() => navigate('/personal-goals')} style={{ padding: '4px 12px', fontSize: 12.5 }}>
+                    <Btn
+                      ind={ind}
+                      onClick={() => navigate(record.id
+                        ? `/personal-goals?employee=${encodeURIComponent(record.id)}`
+                        : '/personal-goals')}
+                      style={{ padding: '4px 12px', fontSize: 12.5 }}
+                    >
                       {t('employeeDirectory.openGoals', 'Goals')}
                     </Btn>
                   </div>
@@ -2156,7 +2153,7 @@ const EmployeeDirectory = ({
                   ind={ind}
                   value={query}
                   onChange={(value) => { setQuery(value); setPlatePage(0); }}
-                  placeholder={t('employeeDirectory.searchPlaceholder', 'Search by name, ID or unit')}
+                  placeholder={t('employeeDirectory.searchPlaceholder', 'Search by name, email or unit')}
                   style={{ flex: 1, minWidth: 180 }}
                 />
 

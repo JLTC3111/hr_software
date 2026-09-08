@@ -39,10 +39,16 @@ import {
 import { useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { ensureValidSession } from '../hooks/useSessionGuard.js';
 import * as settingsService from '../services/settingsService';
+import {
+  getDesktopNotificationEnvironment,
+  requestDesktopNotificationPermission,
+  showDesktopNotification,
+} from '../utils/desktopNotifications';
 import { ShinyButton } from './ui/shiny-button';
 import { TimePicker } from './ui/time-picker.jsx';
 import { getIndustry, DISPLAY, BODY } from '../theme/industry.js';
-import { Blueprint, Btn, Kicker, ColumnHeading, TickerCell, LiveClock, FlatSelect } from './ui/industry.jsx';
+import { Blueprint, Btn, Kicker, ColumnHeading, TickerCell, LiveClock, FlatListbox } from './ui/industry.jsx';
+import { Spinner } from './ui/Spinner.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 
 /* ------------------------------------------------------------------ *
@@ -161,7 +167,7 @@ const Settings = () => {
   const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
   const { t, changeLanguage, currentLanguage } = useLanguage();
   const { user, handleSessionAuthError } = useAuth();
-  const { requestNotificationPermission, updateNotificationPrefs } = useNotifications();
+  const { updateNotificationPrefs } = useNotifications();
 
   const [activeSection, setActiveSection] = useState('01');
   const [settings, setSettings] = useState(null);
@@ -171,6 +177,32 @@ const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [importError, setImportError] = useState('');
+  const [desktopEnv, setDesktopEnv] = useState(() => getDesktopNotificationEnvironment());
+  const pageOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+
+  useEffect(() => {
+    const syncDesktopPermission = () => {
+      setDesktopEnv(getDesktopNotificationEnvironment());
+    };
+    const syncDesktopPermissionWhenVisible = () => {
+      if (document.visibilityState === 'visible') syncDesktopPermission();
+    };
+
+    window.addEventListener('focus', syncDesktopPermission);
+    document.addEventListener('visibilitychange', syncDesktopPermissionWhenVisible);
+
+    let permissionStatus;
+    navigator.permissions?.query({ name: 'notifications' }).then((status) => {
+      permissionStatus = status;
+      status.onchange = syncDesktopPermission;
+    }).catch(() => {});
+
+    return () => {
+      window.removeEventListener('focus', syncDesktopPermission);
+      document.removeEventListener('visibilitychange', syncDesktopPermissionWhenVisible);
+      if (permissionStatus) permissionStatus.onchange = null;
+    };
+  }, []);
 
   // Load settings on mount
   useEffect(() => {
@@ -333,7 +365,25 @@ const Settings = () => {
         {
           key: 'desktop_notifications',
           label: t('settings.desktopNotifications', 'Desktop Notifications'),
-          note: t('settings.note.desktop', 'The browser asks for permission the first time this is turned on'),
+          note:
+            desktopEnv.embedded
+              ? t(
+                'settings.desktopEmbedded',
+                'This window cannot show desktop notifications. Open {origin} in Chrome or Safari, then allow notifications.'
+              ).replace('{origin}', pageOrigin)
+              : !desktopEnv.secure
+                ? t(
+                  'settings.desktopInsecure',
+                  'Desktop notifications need http://localhost or https. This page is {origin}.'
+                ).replace('{origin}', pageOrigin)
+                : desktopEnv.permission === 'denied'
+                  ? t(
+                    'settings.desktopDenied',
+                    'Notifications are blocked for {origin}. In the address bar, set Notifications to Allow, then turn this on again.'
+                  ).replace('{origin}', pageOrigin)
+                  : desktopEnv.permission === 'unsupported'
+                    ? t('settings.desktopUnsupported', 'This browser cannot show desktop notifications.')
+                    : t('settings.note.desktop', 'The browser asks for permission the first time this is turned on'),
           control: { type: 'toggle', permission: true },
         },
         {
@@ -511,7 +561,7 @@ const Settings = () => {
         },
       ],
     },
-  ], [t, user?.email]);
+  ], [t, user?.email, desktopEnv, pageOrigin]);
 
   /** Flat index of every row, in section order. */
   const rowsByKey = useMemo(() => {
@@ -626,15 +676,10 @@ const Settings = () => {
     return (
       <div data-screen-label="Settings" style={frameStyle}>
         {ticker}
-        <div style={{ padding: '64px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-          {loading ? (
-            <>
-              <Loader size={18} strokeWidth={1.5} className="animate-spin" style={{ color: ind.inkMuted }} />
-              <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12.5, letterSpacing: '.12em', textTransform: 'uppercase', color: ind.inkMuted }}>
-                {t('common.loading', 'Loading')}
-              </span>
-            </>
-          ) : (
+        {loading ? (
+          <Spinner ind={ind} size="block" />
+        ) : (
+          <div style={{ padding: '64px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', maxWidth: 420 }}>
               <AlertCircle size={16} strokeWidth={1.5} style={{ flex: 'none', marginTop: 2, color: ind.ink }} />
               <div>
@@ -647,8 +692,8 @@ const Settings = () => {
                 </Btn>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -664,10 +709,19 @@ const Settings = () => {
             label={row.label}
             on={!!value}
             onChange={async (next) => {
-              // The browser only grants the permission inside the click.
+              // Ask inside the click so Chromium still treats it as a gesture.
               if (row.control.permission && next) {
-                const granted = await requestNotificationPermission();
-                if (!granted) return;
+                const result = await requestDesktopNotificationPermission();
+                setDesktopEnv(getDesktopNotificationEnvironment());
+                if (result.granted) {
+                  showDesktopNotification(
+                    t('settings.desktopTestTitle', 'Desktop notifications are on'),
+                    {
+                      body: t('settings.desktopTestBody', 'You will see alerts like this when new notifications arrive.'),
+                      tag: 'hr-desktop-test',
+                    }
+                  );
+                }
               }
               handleSettingChange(row.key, next);
             }}
@@ -685,19 +739,19 @@ const Settings = () => {
         );
       case 'select':
         return (
-          <FlatSelect
+          <FlatListbox
             ind={ind}
             aria-label={row.label}
             value={value ?? ''}
             onChange={(e) => handleSettingChange(row.key, e.target.value)}
-            style={{ flex: 'none', maxWidth: 260, textTransform: 'none', letterSpacing: '.02em' }}
+            style={{ flex: 'none', width: 260, maxWidth: '100%', textTransform: 'none', letterSpacing: '.02em' }}
           >
             {row.control.options.map((opt) => (
-              <option key={opt.value} value={opt.value} style={{ color: '#1d1f20' }}>
+              <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
             ))}
-          </FlatSelect>
+          </FlatListbox>
         );
       case 'stepper':
         return (

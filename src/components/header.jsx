@@ -353,7 +353,7 @@ const Header = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
             </span>
             <span
               style={{
-                fontFamily: BODY, fontSize: 13, lineHeight: 1,
+                fontFamily: BODY, fontSize: 13, lineHeight: 1.3, padding: '1px 0',
                 maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis',
               }}
             >

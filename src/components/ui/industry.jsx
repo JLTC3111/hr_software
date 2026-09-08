@@ -21,6 +21,7 @@ import _React, {
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, MoreVertical } from 'lucide-react';
 import { DISPLAY, BODY, kicker as kickerStyle } from '../../theme/industry.js';
 import { useLanguage } from '../../contexts/LanguageContext.jsx';
@@ -495,28 +496,9 @@ export function LiveClock({ ind, live }) {
   );
 }
 
-/** Flat select styled to the system. `onDark` puts it on the ticker. */
-export function FlatSelect({ ind, onDark = false, style, ...rest }) {
-  const inkColor = onDark ? ind.tickerInk : ind.ink;
-  return (
-    <select
-      {...rest}
-      style={{
-        fontFamily: DISPLAY,
-        fontWeight: 600,
-        fontSize: 12.5,
-        letterSpacing: '.06em',
-        textTransform: 'uppercase',
-        color: inkColor,
-        background: 'transparent',
-        border: `1px solid ${onDark ? ind.tickerRule : ind.hairline}`,
-        borderRadius: 0,
-        padding: '3px 6px',
-        cursor: 'pointer',
-        ...style,
-      }}
-    />
-  );
+/** Alias kept so any remaining call site gets the in-app list. */
+export function FlatSelect(props) {
+  return <FlatListbox {...props} />;
 }
 
 function optionLabelText(node) {
@@ -553,6 +535,7 @@ export function FlatListbox({
   value,
   onChange,
   id,
+  name,
   disabled = false,
   children,
   options: optionsProp,
@@ -569,6 +552,7 @@ export function FlatListbox({
   const searchTimerRef = useRef(0);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [panelStyle, setPanelStyle] = useState(null);
 
   const options = useMemo(
     () => (Array.isArray(optionsProp) ? optionsProp : optionsFromChildren(children)),
@@ -577,11 +561,17 @@ export function FlatListbox({
 
   const selectedIndex = options.findIndex((opt) => String(opt.value) === String(value));
   const selected = selectedIndex >= 0 ? options[selectedIndex] : options[0];
+  const isPlaceholder = value == null || String(value) === '';
+  const closedColor = isPlaceholder
+    ? (onDark ? 'rgba(242,242,243,.45)' : ind.inkMuted)
+    : (style?.color ?? inkColor);
 
   useEffect(() => {
     if (!open) return undefined;
     const onPointer = (event) => {
-      if (rootRef.current && !rootRef.current.contains(event.target)) setOpen(false);
+      const target = event.target;
+      if (rootRef.current?.contains(target) || listRef.current?.contains(target)) return;
+      setOpen(false);
     };
     const onEsc = (event) => {
       if (event.key !== 'Escape') return;
@@ -597,10 +587,48 @@ export function FlatListbox({
   }, [open]);
 
   useLayoutEffect(() => {
+    if (!open) {
+      setPanelStyle(null);
+      return undefined;
+    }
+    const update = () => {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const pad = 8;
+      const gap = 4;
+      const maxH = 280;
+      const spaceBelow = window.innerHeight - rect.bottom - pad;
+      const spaceAbove = rect.top - pad;
+      const openUp = spaceBelow < 140 && spaceAbove > spaceBelow;
+      const maxHeight = Math.max(80, Math.min(maxH, (openUp ? spaceAbove : spaceBelow) - gap));
+      const width = Math.max(rect.width, 160);
+      let left = rect.left;
+      if (left + width > window.innerWidth - pad) left = window.innerWidth - pad - width;
+      if (left < pad) left = pad;
+      setPanelStyle({
+        position: 'fixed',
+        zIndex: 9999,
+        left,
+        width,
+        maxHeight,
+        top: openUp ? undefined : rect.bottom + gap,
+        bottom: openUp ? window.innerHeight - rect.top + gap : undefined,
+      });
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [open]);
+
+  useLayoutEffect(() => {
     if (!open) return;
     setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
     listRef.current?.focus();
-  }, [open, selectedIndex]);
+  }, [open, selectedIndex, panelStyle]);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -611,7 +639,7 @@ export function FlatListbox({
   useEffect(() => () => window.clearTimeout(searchTimerRef.current), []);
 
   const emit = (nextValue) => {
-    onChange?.({ target: { value: nextValue } });
+    onChange?.({ target: { name, value: nextValue } });
   };
 
   const moveActive = (direction) => {
@@ -710,13 +738,11 @@ export function FlatListbox({
           gap: 8,
           width: '100%',
           boxSizing: 'border-box',
-          fontFamily: DISPLAY,
-          fontWeight: 600,
-          fontSize: 12.5,
-          letterSpacing: '.06em',
-          textTransform: 'uppercase',
+          fontFamily: onDark ? DISPLAY : BODY,
+          fontSize: onDark ? 12.5 : 13,
+          letterSpacing: onDark ? '.06em' : 0,
+          textTransform: onDark ? 'uppercase' : 'none',
           textAlign: 'left',
-          color: inkColor,
           background: 'transparent',
           border: `1px solid ${onDark ? ind.tickerRule : ind.hairline}`,
           borderRadius: 0,
@@ -724,6 +750,8 @@ export function FlatListbox({
           cursor: disabled ? 'not-allowed' : 'pointer',
           opacity: disabled ? 0.5 : 1,
           ...style,
+          fontWeight: style?.fontWeight ?? (onDark ? 600 : 400),
+          color: closedColor,
         }}
       >
         <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -736,7 +764,7 @@ export function FlatListbox({
           style={{ flex: 'none', opacity: 0.6 }}
         />
       </button>
-      {open ? (
+      {open && panelStyle && typeof document !== 'undefined' ? createPortal(
         <div
           ref={listRef}
           id={listId}
@@ -746,19 +774,15 @@ export function FlatListbox({
           aria-label={ariaLabel}
           onKeyDown={onKeyDown}
           style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            right: 0,
-            zIndex: 60,
-            marginTop: 4,
-            maxHeight: 280,
+            ...panelStyle,
+            boxSizing: 'border-box',
             overflowY: 'auto',
-            background: ind.chrome,
+            background: ind.ground,
             border: `1px solid ${ind.ink}`,
             borderRadius: 0,
             padding: 3,
             outline: 'none',
+            color: ind.ink,
           }}
         >
           {options.map((opt, index) => {
@@ -798,7 +822,8 @@ export function FlatListbox({
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body,
       ) : null}
     </div>
   );

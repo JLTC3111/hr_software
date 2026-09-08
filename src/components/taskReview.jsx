@@ -8,8 +8,10 @@
  *                   says nothing until you can see the shape underneath it.
  *   dept chart    — every team against the org line, so calibration starts from
  *                   evidence rather than from whoever argues hardest.
- *   right column  — the only place with buttons: the sign-offs this manager
- *                   personally owes, and the manager reviews that are late.
+ *   right column  — the decision queue: sign-offs this manager owes, or the
+ *                   people still outstanding in the selected stage. Stage bars
+ *                   and "View pending" open a roster of those people; names
+ *                   open the sheet.
  *
  * No element repeats a number another element already carries, except the org
  * average, which appears in the ticker, in the histogram caption and as the
@@ -18,7 +20,9 @@
  * Where the numbers come from — everything is derived, nothing is stored twice:
  *   in scope        active employees, narrowed by the segment control
  *   self-assessment a skills assessment logged inside the cycle quarter, an
- *                   employee comment on the review, or a self-logged review row
+ *                   employee comment on the review, or a self-logged review row.
+ *                   Skipping it (self_assessment_skipped) clears the queue
+ *                   without pretending the employee assessed themselves.
  *   manager review  a review row with an overall rating that is not self-logged
  *   calibration     that review submitted (status submitted/approved/acknowledged)
  *   signed off      status approved or acknowledged
@@ -32,6 +36,7 @@
  * weight and rule rather than colour.
  */
 import _React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight, AlertCircle, X } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
@@ -50,7 +55,7 @@ import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js
 import { useScreenNavigation } from '../hooks/useScreenNavigation.js';
 import {
   Blueprint, Bar, Tag, Btn, Seg, Kicker, TickerCell, ColumnHeading,
-  LiveClock, FlatSelect,
+  LiveClock, FlatListbox,
 } from './ui/industry.jsx';
 
 /* ------------------------------------------------------------------ *
@@ -73,9 +78,8 @@ const SCORE_STEP = 0.5;
 const DEPT_SCALE_FLOOR = 3.5;
 /** At or above this a review is worth flagging in the sign-off queue. */
 const PROMOTION_SCORE = 4.5;
-/** Sign-off queue: two rows carry buttons, three more are named, the rest is a count. */
+/** Sign-off queue: the first two rows carry the decision buttons. */
 const EXPANDED_ROWS = 2;
-const COMPACT_ROWS = 3;
 /** Departments listed in the overdue block before it stops naming them. */
 const OVERDUE_ROWS = 3;
 
@@ -125,16 +129,20 @@ const DEFAULT_SCOPE = 'all';
  *   /task-review                            the board, resolved cycle, company
  *   /task-review?cycle=Q3-2026              a named cycle
  *   /task-review?scope=Engineering          one department
+ *   /task-review?stage=pending              the outstanding-people queue
  *   /task-review?cycle=Q3-2026&review=17    that person's review sheet
  *
  * `scope` carries no validator because the departments come from the directory
  * rather than from a fixed list; an unreachable one is corrected once there is
  * a directory to check it against.
  */
+const STAGE_KEYS = new Set(['self', 'manager', 'calibration', 'signed', 'overdue', 'pending']);
+
 const TASK_REVIEW_NAV = {
   cycle: { key: 'cycle', fallback: null, isValid: (value) => parsePeriod(value) !== null },
   scope: { key: 'scope', fallback: null },
   review: { key: 'review', fallback: null },
+  stage: { key: 'stage', fallback: null, isValid: (value) => STAGE_KEYS.has(value) },
 };
 
 /** Newest first — the cycle selector and the "which cycle is current" default. */
@@ -211,9 +219,9 @@ const managerReviewDeadline = (review, calibration) => {
  * ------------------------------------------------------------------ */
 
 /** One stage of the pipeline: tracked label, absolute count, hairline track. */
-function StageBar({ ind, label, count, total, note, fill }) {
-  return (
-    <div>
+function StageBar({ ind, label, count, total, note, fill, active, onSelect }) {
+  const inner = (
+    <>
       <div className="flex items-baseline justify-between" style={{ gap: 10, marginBottom: 4 }}>
         <span
           style={{
@@ -235,7 +243,30 @@ function StageBar({ ind, label, count, total, note, fill }) {
         </span>
       </div>
       <Bar ind={ind} value={total > 0 ? count / total : 0} fill={fill} height={12} />
-    </div>
+    </>
+  );
+
+  if (!onSelect) return <div>{inner}</div>;
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={active}
+      style={{
+        display: 'block',
+        width: '100%',
+        textAlign: 'left',
+        background: active ? ind.accentWash : 'transparent',
+        border: 'none',
+        padding: '6px 8px',
+        margin: '0 -8px',
+        cursor: 'pointer',
+        borderRadius: 0,
+      }}
+    >
+      {inner}
+    </button>
   );
 }
 
@@ -335,6 +366,134 @@ function DepartmentChart({ ind, rows, orgAvg, floor, emptyLabel }) {
   );
 }
 
+/** Where this person sits in the cycle — the compact-row subtitle. */
+const statusOf = (row, t) => {
+  if (row.selfSkipped && !row.selfDone) return t('taskReview.statusSelfSkipped', 'Self-assessment not submitted');
+  if (row.overdue && !row.managerDone) return t('taskReview.overdue', 'Overdue');
+  if (!row.selfDone) return t('taskReview.statusSelfOutstanding', 'Self-assessment outstanding');
+  if (!row.managerDone) return t('taskReview.statusManagerToFile', 'Manager review to file');
+  if (row.awaiting) return t('taskReview.awaitingSignOff', 'Awaiting your sign-off');
+  if (!row.calibrated) return t('taskReview.statusAwaitingCalibration', 'Awaiting calibration');
+  return t('taskReview.signedOff', 'Signed off');
+};
+
+const pendingRank = (row) => {
+  if (row.overdue) return 0;
+  if (!row.selfDone && !row.selfSkipped) return 1;
+  if (!row.managerDone) return 2;
+  if (row.awaiting) return 3;
+  if (!row.calibrated) return 4;
+  return 5;
+};
+
+/** Compact name in the decision column. */
+function QueuePersonButton({ ind, name, meta, onClick, trailing }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center justify-between w-full"
+      style={{
+        padding: '12px 20px',
+        gap: 10,
+        background: 'transparent',
+        border: 'none',
+        borderBottomWidth: 1,
+        borderBottomStyle: 'solid',
+        borderBottomColor: ind.rule,
+        borderRadius: 0,
+        cursor: 'pointer',
+        textAlign: 'left',
+      }}
+    >
+      <span style={{ minWidth: 0 }}>
+        <span
+          className="block"
+          style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+        >
+          {name}
+        </span>
+        <span className="block" style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint, marginTop: 2 }}>
+          {meta}
+        </span>
+      </span>
+      {trailing ?? <ArrowRight size={15} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkFaint }} />}
+    </button>
+  );
+}
+
+/** Named list of people still outstanding — opened by View pending and the stage bars. */
+function PendingRosterModal({
+  ind, t, title, caption, emptyLabel, rows, nameOf, departmentLabel, onOpen, onClose,
+  remindLabel, onRemind, remindBusy,
+}) {
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center z-40 p-4 overflow-y-auto"
+      style={{ background: 'rgba(29,31,32,.55)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="task-review-roster-title"
+    >
+      <div style={{ background: ind.ground, border: `1px solid ${ind.ink}`, borderRadius: 0, width: '100%', maxWidth: 520 }}>
+        <div
+          className="flex items-start justify-between"
+          style={{ gap: 12, padding: '18px 20px', borderBottom: `1px solid ${ind.hairline}` }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <ColumnHeading ind={ind}>
+              <span id="task-review-roster-title">{title}</span>
+            </ColumnHeading>
+            <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 4 }}>
+              {caption}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('common.close', 'Close')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0 }}
+          >
+            <X size={16} strokeWidth={1.5} />
+          </button>
+        </div>
+
+        <div style={{ maxHeight: 'min(60vh, 480px)', overflowY: 'auto' }}>
+          {rows.length === 0 && (
+            <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, padding: '16px 20px', lineHeight: 1.5 }}>
+              {emptyLabel}
+            </p>
+          )}
+          {rows.map((row) => (
+            <QueuePersonButton
+              key={row.id}
+              ind={ind}
+              name={nameOf(row.employee)}
+              meta={[
+                departmentLabel(row.employee.department),
+                statusOf(row, t),
+                row.score != null ? fmt1(row.score) : null,
+              ].filter(Boolean).join(' · ')}
+              onClick={() => onOpen(row)}
+            />
+          ))}
+        </div>
+        {onRemind && (
+          <div
+            className="flex items-center justify-end"
+            style={{ gap: 8, padding: '14px 20px', borderTop: `1px solid ${ind.hairline}` }}
+          >
+            <Btn ind={ind} onClick={onRemind} disabled={remindBusy}>
+              {remindLabel}
+            </Btn>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /** Five segments, one per whole point of the score. */
 function ScoreMeter({ ind, score, fill }) {
   const filled = Math.max(0, Math.min(5, Math.floor(Number(score) || 0)));
@@ -364,6 +523,7 @@ const TaskReview = ({ employees, allEmployees }) => {
   const { handleSessionAuthError } = useSessionGuard();
   const { isDarkMode } = useTheme();
   const { t, currentLanguage } = useLanguage();
+  const navigate = useNavigate();
   const ind = getIndustry(isDarkMode);
 
   const [reviews, setReviews] = useState([]);
@@ -374,10 +534,10 @@ const TaskReview = ({ employees, allEmployees }) => {
   const [busyId, setBusyId] = useState(null);
 
   /* ---------------- navigation ----------------
-     The cycle, the scope and the opened review sheet are addresses, not
-     component state. Held in useState, Back walked out of the screen instead of
-     closing the sheet, a reload dropped the viewer back on the live quarter,
-     and neither a cycle nor a person's review could be linked to. */
+     The cycle, the scope, the stage queue and the opened review sheet are
+     addresses, not component state. Held in useState, Back walked out of the
+     screen instead of closing the sheet, a reload dropped the viewer back on
+     the live quarter, and neither a cycle nor a person's review could be linked to. */
   const [nav, go] = useScreenNavigation(TASK_REVIEW_NAV);
 
   /* The live quarter stands in until the URL names a cycle or the effect below
@@ -387,18 +547,34 @@ const TaskReview = ({ employees, allEmployees }) => {
   /* An explicit `?cycle=` is exactly "the viewer picked a cycle themselves". */
   const periodTouched = nav.cycle !== null;
   const segment = nav.scope ?? DEFAULT_SCOPE;
+  const stageFilter = nav.stage;
 
   const selectPeriod = useCallback((value) => { go({ cycle: value }); }, [go]);
   const selectSegment = useCallback((value) => { go({ scope: value }); }, [go]);
+  const selectStage = useCallback((value, { toggle = true } = {}) => {
+    go({ stage: toggle && nav.stage === value ? null : value });
+  }, [go, nav.stage]);
+  const closeStage = useCallback(
+    (options) => { go({ stage: null }, options); },
+    [go],
+  );
   const openRow = useCallback((row) => { go({ review: row.id }); }, [go]);
   const closeReview = useCallback(
     (options) => { go({ review: null }, options); },
     [go],
   );
-
   const canViewAll = checkPermission('canViewReports');
   const canSignOff = checkPermission('canManagePerformance');
   const viewerEmployeeId = String(user?.employeeId || user?.id || '');
+
+  const openPersonalGoals = useCallback((row) => {
+    const params = new URLSearchParams();
+    if (row?.id) params.set('employee', String(row.id));
+    if (selectedPeriod) params.set('cycle', selectedPeriod);
+    if (row && !row.managerDone && canSignOff) params.set('edit', 'manager');
+    const query = params.toString();
+    navigate(query ? `/personal-goals?${query}` : '/personal-goals');
+  }, [navigate, selectedPeriod, canSignOff]);
 
   const directory = useMemo(
     () => (allEmployees?.length ? allEmployees : employees) || [],
@@ -560,11 +736,8 @@ const TaskReview = ({ employees, allEmployees }) => {
       const deadline = managerReviewDeadline(review, calibration);
 
       const managerDone = score != null;
-      // The pipeline is cumulative, so a filed manager review is itself proof
-      // the self-assessment stage was passed. Without this a closed cycle reads
-      // 0/78 self-assessed and 78/78 signed off, which is not a pipeline.
-      const selfDone = managerDone
-        || selfAssessed.has(id)
+      const selfSkipped = Boolean(review?.self_assessment_skipped);
+      const selfDone = selfAssessed.has(id)
         || Boolean(review?.employee_comments)
         || (review != null && isSelfLogged(review));
       const calibrated = managerDone && REACHED_CALIBRATION.has(status);
@@ -579,6 +752,7 @@ const TaskReview = ({ employees, allEmployees }) => {
         delta: score != null && previousScore != null ? round1(score - previousScore) : null,
         status,
         selfDone,
+        selfSkipped,
         managerDone,
         calibrated,
         signedOff,
@@ -621,7 +795,8 @@ const TaskReview = ({ employees, allEmployees }) => {
   const stages = useMemo(() => {
     const count = (predicate) => cycleRows.filter(predicate).length;
     return {
-      self: count((r) => r.selfDone),
+      self: count((r) => r.selfDone || r.selfSkipped),
+      selfSkipped: count((r) => r.selfSkipped && !r.selfDone),
       manager: count((r) => r.managerDone),
       calibrated: count((r) => r.calibrated),
       signedOff: count((r) => r.signedOff),
@@ -707,6 +882,50 @@ const TaskReview = ({ employees, allEmployees }) => {
   }, [cycleRows, canSignOff, viewerEmployeeId]);
 
   const oldestWait = awaitingRows.length ? (awaitingRows[0].waitedDays ?? null) : null;
+
+  /** Everyone still short of sign-off, bottleneck first so 0% is a list not a blank. */
+  const pendingRows = useMemo(() => (
+    cycleRows
+      .filter((row) => !row.signedOff)
+      .sort((a, b) => pendingRank(a) - pendingRank(b) || nameOf(a.employee).localeCompare(nameOf(b.employee)))
+  ), [cycleRows, nameOf]);
+
+  const selfOutstanding = useMemo(
+    () => cycleRows.filter((row) => !row.selfDone && !row.selfSkipped),
+    [cycleRows],
+  );
+
+  const rowsForStage = useCallback((key) => {
+    if (key === 'self') return cycleRows.filter((row) => !row.selfDone && !row.selfSkipped);
+    if (key === 'manager') return cycleRows.filter((row) => !row.managerDone);
+    if (key === 'calibration') return cycleRows.filter((row) => row.managerDone && !row.calibrated);
+    if (key === 'signed') return awaitingRows;
+    if (key === 'overdue') {
+      return cycleRows
+        .filter((row) => row.overdue)
+        .sort((a, b) => nameOf(a.employee).localeCompare(nameOf(b.employee)));
+    }
+    return pendingRows;
+  }, [cycleRows, awaitingRows, pendingRows, nameOf]);
+
+  /**
+   * An explicit `?stage=` is the viewer's filter. Without one the column shows
+   * signatures this manager owes, and if that queue is empty — the 0% cycle —
+   * it falls through to the people still outstanding so the board is never a
+   * percentage with nowhere to click.
+   */
+  const queue = useMemo(() => {
+    if (stageFilter) return { key: stageFilter, rows: rowsForStage(stageFilter) };
+    if (awaitingRows.length > 0) return { key: 'signed', rows: awaitingRows };
+    return { key: 'pending', rows: pendingRows };
+  }, [stageFilter, rowsForStage, awaitingRows, pendingRows]);
+
+  const queueActive = stageFilter || queue.key;
+  const remaining = inScope - stages.signedOff;
+
+  const viewPending = useCallback(() => {
+    go({ stage: stages.overdue > 0 ? 'overdue' : 'pending' });
+  }, [go, stages.overdue]);
 
   /** Sign-off rights: the performance permission, or being the named reviewer. */
   const mayDecide = useCallback(
@@ -804,6 +1023,64 @@ const TaskReview = ({ employees, allEmployees }) => {
     t('taskReview.sentBackMessage', '{name} sent back for revision.').replace('{name}', nameOf(row.employee))
   ), [applyReviewUpdate, t, nameOf]);
 
+  const submitForCalibration = useCallback((row) => {
+    if (!row?.managerDone || row.calibrated || !row.review?.id) return;
+    return applyReviewUpdate(
+      row,
+      { status: 'submitted' },
+      t('taskReview.submittedForCalibrationMessage', '{name} submitted for calibration.')
+        .replace('{name}', nameOf(row.employee))
+    );
+  }, [applyReviewUpdate, t, nameOf]);
+
+  const skipSelfAssessment = useCallback(async (row) => {
+    if (!row || row.selfDone || row.selfSkipped) return;
+    const busyKey = row.review?.id || `skip-${row.id}`;
+    setBusyId(busyKey);
+    try {
+      let result;
+      if (row.review?.id) {
+        result = await performanceService.updatePerformanceReview(row.review.id, {
+          selfAssessmentSkipped: true,
+        });
+      } else {
+        result = await performanceService.createPerformanceReview({
+          employeeId: row.id,
+          reviewerId: viewerEmployeeId || row.id,
+          reviewPeriod: selectedPeriod,
+          selfAssessmentSkipped: true,
+          status: 'draft',
+        });
+      }
+      if (!result.success) throw new Error(result.error || 'Update failed');
+      const saved = result.data;
+      setReviews((prev) => {
+        if (!saved?.id) return prev;
+        const exists = prev.some((review) => String(review.id) === String(saved.id));
+        if (exists) {
+          return prev.map((review) => (
+            String(review.id) === String(saved.id)
+              ? { ...review, ...saved, self_assessment_skipped: true }
+              : review
+          ));
+        }
+        return [{ ...saved, self_assessment_skipped: true }, ...prev];
+      });
+      closeReview({ replace: true });
+      setNotice({
+        kind: 'ok',
+        text: t('taskReview.skippedSelfMessage', '{name}: continued without a self-assessment.')
+          .replace('{name}', nameOf(row.employee)),
+      });
+    } catch (error) {
+      console.error('Error skipping self-assessment:', error);
+      if (handleSessionAuthError(error)) return;
+      setNotice({ kind: 'error', text: t('errors.updateFailed', 'Failed to update status') });
+    } finally {
+      setBusyId(null);
+    }
+  }, [viewerEmployeeId, selectedPeriod, closeReview, handleSessionAuthError, t, nameOf]);
+
   const remindManagers = useCallback(async () => {
     if (remindable.length === 0) return;
     setBusyId('remind');
@@ -849,6 +1126,53 @@ const TaskReview = ({ employees, allEmployees }) => {
     }
   }, [remindable, t, selectedPeriod, handleSessionAuthError]);
 
+  const remindEmployees = useCallback(async (rows) => {
+    const targets = (rows || []).filter((row) => !row.selfDone && !row.selfSkipped);
+    if (targets.length === 0) return;
+    setBusyId('remind-self');
+    try {
+      const userResult = await getAllUsers();
+      const accountFor = new Map(
+        (userResult.success ? userResult.data || [] : [])
+          .filter((account) => account.employee_id != null)
+          .map((account) => [String(account.employee_id), account.id])
+      );
+
+      const sent = targets
+        .map((row) => ({ row, userId: accountFor.get(String(row.id)) }))
+        .filter(({ userId }) => Boolean(userId));
+
+      await Promise.all(sent.map(({ row, userId }) => notifyUser(
+        userId,
+        t('taskReview.selfReminderTitle', 'Self-assessment outstanding'),
+        t('taskReview.selfReminderBody', 'Please submit your self-assessment for {cycle}.')
+          .replace('{cycle}', selectedPeriod.replace('-', ' ')),
+        {
+          type: 'warning',
+          category: 'performance',
+          actionUrl: '/personal-goals',
+          actionLabel: t('taskReview.openPersonalGoals', 'Open Personal Goals'),
+        }
+      )));
+
+      setNotice(sent.length > 0
+        ? {
+          kind: 'ok',
+          text: t('taskReview.remindedEmployeesMessage', 'Reminded {n} employee(s).').replace('{n}', String(sent.length)),
+        }
+        : {
+          kind: 'error',
+          text: t('taskReview.remindNoEmployeeAccounts', 'None of those employees has an account to notify.'),
+        });
+    } catch (error) {
+      console.error('Error sending self-assessment reminders:', error);
+      if (handleSessionAuthError(error)) return;
+      setNotice({ kind: 'error', text: t('common.error', 'Error') });
+    } finally {
+      setBusyId(null);
+    }
+  }, [t, selectedPeriod, handleSessionAuthError]);
+
   useEffect(() => {
     if (!notice) return undefined;
     const id = setTimeout(() => setNotice(null), 4000);
@@ -861,6 +1185,13 @@ const TaskReview = ({ employees, allEmployees }) => {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [openReview, closeReview]);
+
+  useEffect(() => {
+    if (!stageFilter || openReview) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') closeStage(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [stageFilter, openReview, closeStage]);
 
   /* ---------------- copy ---------------- */
 
@@ -885,6 +1216,34 @@ const TaskReview = ({ employees, allEmployees }) => {
     fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, letterSpacing: '.06em',
     textTransform: 'uppercase', color: ind.ink,
   };
+
+  const queueTitle = {
+    pending: t('taskReview.pendingReviews', 'Pending reviews'),
+    self: t('taskReview.stageSelf', 'Self-assessment'),
+    manager: t('taskReview.stageManager', 'Manager review'),
+    calibration: t('taskReview.stageCalibration', 'Calibration'),
+    signed: t('taskReview.awaitingSignOff', 'Awaiting your sign-off'),
+    overdue: t('taskReview.overdueManagerReviews', 'Overdue manager reviews'),
+  }[queue.key] || t('taskReview.pendingReviews', 'Pending reviews');
+
+  const queueEmpty = {
+    pending: t('taskReview.nothingPending', 'Every review in this cycle is signed off.'),
+    self: t('taskReview.selfOutstandingEmpty', 'Every self-assessment in this cycle is in.'),
+    manager: t('taskReview.managerToFileEmpty', 'Every manager review in this cycle is filed.'),
+    calibration: t('taskReview.calibrationEmpty', 'Every scored review has reached calibration.'),
+    signed: t('taskReview.nothingAwaiting', 'Nothing is waiting on your signature for this cycle.'),
+    overdue: t('taskReview.noOverdueReviews', 'Every manager review is still inside its deadline.'),
+  }[queue.key] || t('taskReview.nothingPending', 'Every review in this cycle is signed off.');
+
+  const showSignOffCards = queue.key === 'signed';
+  const showCalibrationCards = queue.key === 'calibration';
+  const expandedQueue = (showSignOffCards || showCalibrationCards)
+    ? queue.rows.slice(0, EXPANDED_ROWS)
+    : [];
+  const compactQueue = (showSignOffCards || showCalibrationCards)
+    ? queue.rows.slice(EXPANDED_ROWS)
+    : queue.rows;
+  const rosterSelfOutstanding = queue.rows.filter((row) => !row.selfDone && !row.selfSkipped);
 
   /* ---------------- render ---------------- */
 
@@ -923,6 +1282,7 @@ const TaskReview = ({ employees, allEmployees }) => {
           value={stages.signedOff}
           delta={stages.recent > 0 ? stages.recent : null}
           title={t('taskReview.signedOffThisWeek', 'Signed off in the last 7 days')}
+          onClick={() => selectStage('signed')}
         />
         <TickerCell
           ind={ind}
@@ -937,6 +1297,7 @@ const TaskReview = ({ employees, allEmployees }) => {
           value={stages.overdue}
           // The one figure on the strip that asks for action.
           valueColor={stages.overdue > 0 ? ind.tickerUp : undefined}
+          onClick={() => selectStage('overdue')}
         />
         <TickerCell
           ind={ind}
@@ -957,7 +1318,7 @@ const TaskReview = ({ employees, allEmployees }) => {
           }}
         >
           <FetchElapsedPill active={loading} isDarkMode label={t('common.fetching', 'Fetching')} />
-          <FlatSelect
+          <FlatListbox
             ind={ind}
             onDark
             value={selectedPeriod}
@@ -969,7 +1330,7 @@ const TaskReview = ({ employees, allEmployees }) => {
                 {`${t('taskReview.cycle', 'Cycle')} ${key.replace('-', ' ')}`}
               </option>
             ))}
-          </FlatSelect>
+          </FlatListbox>
         </div>
       </div>
 
@@ -1081,6 +1442,18 @@ const TaskReview = ({ employees, allEmployees }) => {
                     </>
                   )}
                 </p>
+                {remaining > 0 && (
+                  <Btn
+                    ind={ind}
+                    variant="primary"
+                    aria-haspopup="dialog"
+                    aria-pressed={Boolean(stageFilter)}
+                    onClick={viewPending}
+                    style={{ marginTop: 12 }}
+                  >
+                    {t('taskReview.viewPending', 'View pending')}
+                  </Btn>
+                )}
               </div>
 
               {/* The pipeline. Ramp descends with depth: the deepest accent is
@@ -1094,10 +1467,14 @@ const TaskReview = ({ employees, allEmployees }) => {
                   label={t('taskReview.stageSelf', 'Self-assessment')}
                   count={stages.self}
                   total={inScope}
-                  note={stages.self >= inScope
-                    ? t('taskReview.complete', 'complete')
+                  note={inScope - stages.self <= 0
+                    ? (stages.selfSkipped > 0
+                      ? t('taskReview.nNotSubmitted', '{n} not submitted').replace('{n}', String(stages.selfSkipped))
+                      : t('taskReview.complete', 'complete'))
                     : t('taskReview.nOutstanding', '{n} outstanding').replace('{n}', String(inScope - stages.self))}
                   fill={rampAt(ind, 0)}
+                  active={queueActive === 'self'}
+                  onSelect={() => selectStage('self')}
                 />
                 <StageBar
                   ind={ind}
@@ -1108,6 +1485,8 @@ const TaskReview = ({ employees, allEmployees }) => {
                     ? t('taskReview.nOverdue', '{n} overdue').replace('{n}', String(stages.overdue))
                     : t('taskReview.nToFile', '{n} to file').replace('{n}', String(inScope - stages.manager))}
                   fill={rampAt(ind, 1)}
+                  active={queueActive === 'manager'}
+                  onSelect={() => selectStage('manager')}
                 />
                 <StageBar
                   ind={ind}
@@ -1116,6 +1495,8 @@ const TaskReview = ({ employees, allEmployees }) => {
                   total={inScope}
                   note={`${t('taskReview.session', 'session')} ${calibrationLabel}`}
                   fill={rampAt(ind, 2)}
+                  active={queueActive === 'calibration'}
+                  onSelect={() => selectStage('calibration')}
                 />
                 <StageBar
                   ind={ind}
@@ -1126,6 +1507,8 @@ const TaskReview = ({ employees, allEmployees }) => {
                     ? t('taskReview.nWaitOnYou', '{n} wait on you').replace('{n}', String(awaitingRows.length))
                     : t('taskReview.noneWaitOnYou', 'none wait on you')}
                   fill={rampAt(ind, 3)}
+                  active={queueActive === 'signed'}
+                  onSelect={() => selectStage('signed')}
                 />
               </div>
             </div>
@@ -1191,33 +1574,34 @@ const TaskReview = ({ employees, allEmployees }) => {
         {/* ── RIGHT — the decision column, 372px ───────────────────── */}
         <aside
           className="w-full lg:w-[372px] lg:shrink-0 flex flex-col"
-          style={{ background: ind.chrome, overflow: 'hidden' }}
+          style={{ background: ind.chrome, overflowY: 'auto' }}
         >
-          {/* Awaiting your sign-off */}
           <div style={{ padding: '20px 20px 12px', borderBottom: `1px solid ${ind.hairline}` }}>
             <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
-              <ColumnHeading ind={ind}>{t('taskReview.awaitingSignOff', 'Awaiting your sign-off')}</ColumnHeading>
+              <ColumnHeading ind={ind}>{queueTitle}</ColumnHeading>
               <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, color: ind.accent, whiteSpace: 'nowrap' }}>
-                {t('taskReview.nReviews', '{n} reviews').replace('{n}', String(awaitingRows.length))}
+                {t('taskReview.nPeople', '{n} people').replace('{n}', String(queue.rows.length))}
               </span>
             </div>
             <p style={captionStyle}>
-              {awaitingRows.length > 0 && oldestWait != null
+              {showSignOffCards && queue.rows.length > 0 && oldestWait != null
                 ? `${t('taskReview.oldestWaited', 'Oldest has waited {n} day(s)').replace('{n}', String(oldestWait))} · ${t('taskReview.calibrationCloses', 'calibration closes {date}').replace('{date}', calibrationLabel)}`
-                : t('taskReview.calibrationCloses', 'calibration closes {date}').replace('{date}', calibrationLabel)}
+                : queue.rows.length > 0
+                  ? t('taskReview.pendingCaption', '{n} still to complete this cycle')
+                    .replace('{n}', String(queue.rows.length))
+                  : t('taskReview.calibrationCloses', 'calibration closes {date}').replace('{date}', calibrationLabel)}
             </p>
           </div>
 
-          {awaitingRows.length === 0 && (
+          {queue.rows.length === 0 && (
             <div style={{ padding: '16px 20px', borderBottom: `1px solid ${ind.rule}` }}>
               <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, lineHeight: 1.5 }}>
-                {t('taskReview.nothingAwaiting', 'Nothing is waiting on your signature for this cycle.')}
+                {queueEmpty}
               </p>
             </div>
           )}
 
-          {/* Two expanded rows — the focused one carries the tint */}
-          {awaitingRows.slice(0, EXPANDED_ROWS).map((row, index) => (
+          {expandedQueue.map((row, index) => (
             <div
               key={row.id}
               style={{
@@ -1256,68 +1640,65 @@ const TaskReview = ({ employees, allEmployees }) => {
               <ScoreMeter ind={ind} score={row.score} fill={rampAt(ind, index)} />
 
               <div className="flex" style={{ gap: 7 }}>
-                <Btn
-                  ind={ind}
-                  variant="primary"
-                  disabled={!mayDecide(row) || busyId === row.review?.id}
-                  onClick={() => signOff(row)}
-                >
-                  {t('taskReview.signOff', 'Sign off')}
-                </Btn>
-                <Btn
-                  ind={ind}
-                  disabled={!mayDecide(row) || busyId === row.review?.id}
-                  onClick={() => sendBack(row)}
-                >
-                  {t('taskReview.sendBack', 'Send back')}
-                </Btn>
+                {showCalibrationCards ? (
+                  <Btn
+                    ind={ind}
+                    variant="primary"
+                    disabled={!mayDecide(row) || busyId === row.review?.id}
+                    onClick={() => submitForCalibration(row)}
+                  >
+                    {t('taskReview.submitForCalibration', 'Submit for calibration')}
+                  </Btn>
+                ) : (
+                  <>
+                    <Btn
+                      ind={ind}
+                      variant="primary"
+                      disabled={!mayDecide(row) || busyId === row.review?.id}
+                      onClick={() => signOff(row)}
+                    >
+                      {t('taskReview.signOff', 'Sign off')}
+                    </Btn>
+                    <Btn
+                      ind={ind}
+                      disabled={!mayDecide(row) || busyId === row.review?.id}
+                      onClick={() => sendBack(row)}
+                    >
+                      {t('taskReview.sendBack', 'Send back')}
+                    </Btn>
+                  </>
+                )}
               </div>
             </div>
           ))}
 
-          {/* Three compact rows */}
-          {awaitingRows.slice(EXPANDED_ROWS, EXPANDED_ROWS + COMPACT_ROWS).map((row) => (
-            <button
+          {compactQueue.map((row) => (
+            <QueuePersonButton
               key={row.id}
-              type="button"
+              ind={ind}
+              name={nameOf(row.employee)}
+              meta={[
+                departmentLabel(row.employee.department),
+                statusOf(row, t),
+                row.score != null ? fmt1(row.score) : null,
+              ].filter(Boolean).join(' · ')}
               onClick={() => openRow(row)}
-              className="flex items-center justify-between w-full"
-              style={{
-                padding: '12px 20px',
-                borderBottom: `1px solid ${ind.rule}`,
-                gap: 10,
-                background: 'transparent',
-                border: 'none',
-                borderBottomWidth: 1,
-                borderBottomStyle: 'solid',
-                borderBottomColor: ind.rule,
-                borderRadius: 0,
-                cursor: 'pointer',
-                textAlign: 'left',
-              }}
-            >
-              <span style={{ minWidth: 0 }}>
-                <span
-                  className="block"
-                  style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                >
-                  {nameOf(row.employee)}
-                </span>
-                <span className="block" style={{ ...metaStyle, marginTop: 2 }}>
-                  {`${departmentLabel(row.employee.department)} · ${fmt1(row.score)}`}
-                  {row.waitedDays != null
-                    ? ` · ${t('taskReview.waitedDays', 'waited {n} day(s)').replace('{n}', String(row.waitedDays))}`
-                    : ''}
-                </span>
-              </span>
-              <ArrowRight size={15} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkFaint }} />
-            </button>
+            />
           ))}
 
           {/* Overdue manager reviews */}
           <div style={{ padding: '18px 20px 12px', borderBottom: `1px solid ${ind.hairline}`, marginTop: 6 }}>
             <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
-              <ColumnHeading ind={ind}>{t('taskReview.overdueManagerReviews', 'Overdue manager reviews')}</ColumnHeading>
+              <button
+                type="button"
+                onClick={() => selectStage('overdue')}
+                style={{
+                  background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                  textAlign: 'left', minWidth: 0,
+                }}
+              >
+                <ColumnHeading ind={ind}>{t('taskReview.overdueManagerReviews', 'Overdue manager reviews')}</ColumnHeading>
+              </button>
               <Tag ind={ind} variant="outline">{stages.overdue}</Tag>
             </div>
           </div>
@@ -1330,7 +1711,15 @@ const TaskReview = ({ employees, allEmployees }) => {
             )}
 
             {namedOverdue.map((row, index) => (
-              <div key={row.key}>
+              <button
+                key={row.key}
+                type="button"
+                onClick={() => selectStage('overdue', { toggle: false })}
+                style={{
+                  background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                  textAlign: 'left', width: '100%',
+                }}
+              >
                 <div className="flex items-baseline justify-between" style={{ gap: 10, marginBottom: 4 }}>
                   <span
                     style={{
@@ -1351,7 +1740,7 @@ const TaskReview = ({ employees, allEmployees }) => {
                   fill={rampAt(ind, index)}
                   height={8}
                 />
-              </div>
+              </button>
             ))}
 
             {remindable.length > 0 && canSignOff && (
@@ -1364,9 +1753,41 @@ const TaskReview = ({ employees, allEmployees }) => {
                 {t('taskReview.remindAll', 'Remind all {n}').replace('{n}', String(remindable.length))}
               </Btn>
             )}
+            {selfOutstanding.length > 0 && canSignOff && (
+              <Btn
+                ind={ind}
+                onClick={() => remindEmployees(selfOutstanding)}
+                disabled={busyId === 'remind-self'}
+                style={{ alignSelf: 'flex-start', marginTop: 2 }}
+              >
+                {t('taskReview.remindSelfAll', 'Remind {n} to self-assess').replace('{n}', String(selfOutstanding.length))}
+              </Btn>
+            )}
           </div>
         </aside>
       </div>
+
+      {stageFilter && (
+        <PendingRosterModal
+          ind={ind}
+          t={t}
+          title={queueTitle}
+          caption={t('taskReview.nPeople', '{n} people').replace('{n}', String(queue.rows.length))}
+          emptyLabel={queueEmpty}
+          rows={queue.rows}
+          nameOf={nameOf}
+          departmentLabel={departmentLabel}
+          onOpen={openRow}
+          onClose={() => closeStage()}
+          remindLabel={canSignOff && rosterSelfOutstanding.length > 0
+            ? t('taskReview.remindSelfAll', 'Remind {n} to self-assess').replace('{n}', String(rosterSelfOutstanding.length))
+            : undefined}
+          onRemind={canSignOff && rosterSelfOutstanding.length > 0
+            ? () => remindEmployees(rosterSelfOutstanding)
+            : undefined}
+          remindBusy={busyId === 'remind-self'}
+        />
+      )}
 
       {/* ── Review detail ────────────────────────────────────────────── */}
       {openReview && (
@@ -1379,9 +1800,13 @@ const TaskReview = ({ employees, allEmployees }) => {
           departmentLabel={departmentLabel}
           period={selectedPeriod}
           canSignOff={mayDecide(openReview)}
-          busy={busyId === openReview.review?.id}
+          canSkipSelf={canSignOff && !openReview.selfDone && !openReview.selfSkipped}
+          busy={busyId === openReview.review?.id || busyId === `skip-${openReview.id}`}
           onSignOff={() => signOff(openReview)}
           onSendBack={() => sendBack(openReview)}
+          onSubmitCalibration={() => submitForCalibration(openReview)}
+          onSkipSelf={() => skipSelfAssessment(openReview)}
+          onOpenGoals={() => openPersonalGoals(openReview)}
           onClose={() => closeReview()}
         />
       )}
@@ -1403,7 +1828,8 @@ const COMPETENCIES = [
 
 function ReviewModal({
   ind, t, currentLanguage, row, name, departmentLabel, period,
-  canSignOff, busy, onSignOff, onSendBack, onClose,
+  canSignOff, canSkipSelf, busy, onSignOff, onSendBack, onSubmitCalibration,
+  onSkipSelf, onOpenGoals, onClose,
 }) {
   const review = row.review || {};
   const passages = [
@@ -1413,6 +1839,9 @@ function ReviewModal({
     ['comments', t('taskReview.managerComments', 'Manager comments'), review.comments],
     ['employee', t('taskReview.employeeSelfAssessment', 'Employee self-assessment'), review.employee_comments],
   ].filter(([, , text]) => Boolean(text));
+  const pending = !row.managerDone;
+  const canSubmitCalibration = canSignOff && row.managerDone && !row.calibrated && Boolean(row.review?.id);
+  const statusLabel = statusOf(row, t);
 
   return (
     <div
@@ -1431,6 +1860,7 @@ function ReviewModal({
               {[
                 departmentLabel(row.employee.department),
                 `${t('taskReview.cycle', 'Cycle')} ${period.replace('-', ' ')}`,
+                statusLabel,
                 review.review_date ? formatDate(review.review_date, currentLanguage) : null,
               ].filter(Boolean).join(' · ')}
             </p>
@@ -1449,7 +1879,9 @@ function ReviewModal({
           <div className="flex items-end justify-between" style={{ gap: 14 }}>
             <div>
               <Kicker ind={ind}>{t('taskReview.overallRating', 'Overall')}</Kicker>
-              <div style={{ ...figure(38, ind.ink), marginTop: 4 }}>{fmt1(row.score)}</div>
+              <div style={{ ...figure(38, ind.ink), marginTop: 4 }}>
+                {row.score != null ? fmt1(row.score) : '—'}
+              </div>
             </div>
             {row.delta != null && (
               <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted }}>
@@ -1459,6 +1891,24 @@ function ReviewModal({
               </span>
             )}
           </div>
+
+          {row.selfSkipped && !row.selfDone && (
+            <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, lineHeight: 1.5 }}>
+              {t('taskReview.skippedSelfNote', 'This cycle is continuing without a self-assessment.')}
+            </p>
+          )}
+
+          {pending && (
+            <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, lineHeight: 1.5 }}>
+              {t('taskReview.reviewNotFiled', 'This review has not been filed yet.')}
+            </p>
+          )}
+
+          {canSubmitCalibration && (
+            <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, lineHeight: 1.5 }}>
+              {t('taskReview.readyForCalibration', 'This review is ready to send to calibration.')}
+            </p>
+          )}
 
           {COMPETENCIES.some(([key]) => Number(review[key]) > 0) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1480,7 +1930,7 @@ function ReviewModal({
             </div>
           )}
 
-          {passages.length === 0 && (
+          {passages.length === 0 && !pending && (
             <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted }}>
               {t('taskReview.noWrittenReview', 'No written feedback was recorded on this review.')}
             </p>
@@ -1500,15 +1950,37 @@ function ReviewModal({
 
         <div
           className="flex items-center justify-end"
-          style={{ gap: 8, padding: '14px 20px', borderTop: `1px solid ${ind.hairline}` }}
+          style={{ gap: 8, padding: '14px 20px', borderTop: `1px solid ${ind.hairline}`, flexWrap: 'wrap' }}
         >
           <Btn ind={ind} onClick={onClose}>{t('taskReview.cancel', 'Cancel')}</Btn>
-          <Btn ind={ind} disabled={!canSignOff || busy} onClick={onSendBack}>
-            {t('taskReview.sendBack', 'Send back')}
-          </Btn>
-          <Btn ind={ind} variant="primary" disabled={!canSignOff || busy} onClick={onSignOff}>
-            {t('taskReview.signOff', 'Sign off')}
-          </Btn>
+          {canSkipSelf && (
+            <Btn ind={ind} disabled={busy} onClick={onSkipSelf}>
+              {t('taskReview.continueWithoutSelf', 'Continue without self-assessment')}
+            </Btn>
+          )}
+          {row.awaiting ? (
+            <>
+              <Btn ind={ind} disabled={!canSignOff || busy} onClick={onSendBack}>
+                {t('taskReview.sendBack', 'Send back')}
+              </Btn>
+              <Btn ind={ind} variant="primary" disabled={!canSignOff || busy} onClick={onSignOff}>
+                {t('taskReview.signOff', 'Sign off')}
+              </Btn>
+            </>
+          ) : (
+            <>
+              {canSubmitCalibration && (
+                <Btn ind={ind} variant="primary" disabled={busy} onClick={onSubmitCalibration}>
+                  {t('taskReview.submitForCalibration', 'Submit for calibration')}
+                </Btn>
+              )}
+              <Btn ind={ind} variant={canSubmitCalibration ? undefined : 'primary'} onClick={onOpenGoals}>
+                {pending && canSignOff
+                  ? t('taskReview.enterManagerRatings', 'Enter manager ratings')
+                  : t('taskReview.openPersonalGoals', 'Open Personal Goals')}
+              </Btn>
+            </>
+          )}
         </div>
       </div>
     </div>

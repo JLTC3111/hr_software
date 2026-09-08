@@ -34,6 +34,7 @@ export default {
     mine: '내 휴가',
     today: '오늘',
     clearSelection: '선택 지우기',
+    cmdClickHint: '{mod} 또는 Shift+클릭으로 다른 날짜를 추가하거나, 선택된 날짜를 클릭하면 건너뜁니다.',
     selectStartHint: '팁: 날짜를 클릭하여 휴가 신청을 시작한 다음 마지막 날짜를 클릭하세요.',
     selectEndHint: '이제 종료 날짜를 클릭하세요(하루만 사용하려면 같은 날짜).',
     selectionRange: '선택됨',
@@ -1338,6 +1339,13 @@ export default {
     pushNotificationsDesc: '앱 내에서 푸시 알림 받기',
     desktopNotifications: '데스크톱 알림',
     desktopNotificationsDesc: '데스크톱에서 브라우저 알림 표시',
+    desktopDenied: '{origin}의 알림이 차단되어 있습니다. 주소 표시줄에서 알림을 허용한 다음 다시 켜세요.',
+    desktopEmbedded: '이 창에서는 데스크톱 알림을 표시할 수 없습니다. Chrome 또는 Safari에서 {origin}을(를) 연 다음 알림을 허용하세요.',
+    desktopInsecure: '데스크톱 알림은 http://localhost 또는 https가 필요합니다. 이 페이지는 {origin}입니다.',
+    desktopUnsupported: '이 브라우저는 데스크톱 알림을 표시할 수 없습니다.',
+    desktopTestTitle: '데스크톱 알림이 켜져 있습니다',
+    desktopTestBody: '새 알림이 오면 이와 같은 알림이 표시됩니다.',
+    desktopPermissionRequired: '{origin}의 알림 권한이 허용되지 않았습니다. 이 브라우저의 사이트 설정에서 알림을 허용한 뒤 다시 시도하세요.',
     notificationFrequency: '알림 빈도',
     realtime: '실시간',
     daily: '일일 요약',
@@ -1777,11 +1785,11 @@ export default {
       empty: '{context}에 대한 특정 고급 팁을 찾을 수 없습니다. 아래에 모든 기능을 표시합니다.',
       feature_1: {
         title: '숨겨진 기능: 일괄 편집',
-        description: '한 번에 최대 50개의 레코드를 편집할 수 있습니다. 항목 옆의 체크박스를 선택하고 테이블 상단의 ✏️ 아이콘을 클릭하세요. 현재 데모에서는 비활성화되어 있습니다.'
+        description: '한 번에 최대 50개의 레코드를 편집할 수 있습니다. 항목 옆의 체크박스를 선택하고 테이블 상단의 편집 아이콘을 클릭하세요. 현재 데모에서는 비활성화되어 있습니다.'
       },
       feature_2: {
         title: '컨텍스트 팁: 빠른 필터',
-        description: '열 헤더 옆의 돋보기 아이콘(🔍)을 사용하여 해당 열의 고유 값으로 즉시 필터링하세요. 전체 필터 패널을 열 필요가 없습니다.'
+        description: '열 헤더 옆의 돋보기 아이콘을 사용하여 해당 열의 고유 값으로 즉시 필터링하세요. 전체 필터 패널을 열 필요가 없습니다.'
       },
       feature_3: {
         title: '데모 제한: 데이터 지속성',

@@ -21,7 +21,7 @@ import { isDemoMode, getDemoEmployeeName, resetAllDemoData, resetDemoTimeEntries
 import { fetchVisitSummary } from '../services/visitService.js';
 import * as flubber from 'flubber';
 import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
-import { Blueprint, Tag, Btn, Kicker, TickerCell, LiveClock, ColumnHeading } from './ui/industry.jsx';
+import { Blueprint, Tag, Btn, Kicker, TickerCell, LiveClock, ColumnHeading, FlatListbox } from './ui/industry.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import { PunchClock as PunchClock3D } from './ui/punch-clock.jsx';
 
@@ -339,7 +339,6 @@ const ControlPanel = () => {
   const userName = user?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
   const userEmail = user?.email || '';
   const userId = user?.id || '';
-  const employeeId = user?.employee_id || user?.employeeId || null;
   const isAdmin = userRole === 'admin' || userRole === 'Admin';
   const canViewVisitAnalytics = checkPermission('canViewAuditLogs');
 
@@ -1146,7 +1145,6 @@ const ControlPanel = () => {
 
                 <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
                   <Plate label={t('controlPanel.userUuid', 'User UUID')} value={`${userId.substring(0, 8)}…`} title={userId} mono />
-                  {employeeId && <Plate label={t('controlPanel.employeeId', 'Employee ID')} value={employeeId} mono />}
                 </div>
               </div>
             </div>
@@ -1285,18 +1283,20 @@ const ControlPanel = () => {
                           <span>{t('common.loading', 'Loading...')}</span>
                         </div>
                       ) : (
-                        <select
+                        <FlatListbox
+                          ind={ind}
                           value={selectedUserId}
                           onChange={(e) => setSelectedUserId(e.target.value)}
-                          style={{ ...fieldBox, padding: '7px 10px' }}
+                          aria-label={t('controlPanel.selectUser', 'Select User')}
+                          style={{ ...fieldBox, padding: '7px 10px', textTransform: 'none', letterSpacing: '.02em' }}
                         >
                           <option value="">{t('controlPanel.chooseUser', '-- Choose a user --')}</option>
                           {allUsers.map((u) => (
-                            <option key={u.id} value={u.id} style={{ color: '#1d1f20' }}>
+                            <option key={u.id} value={u.id}>
                               {u.full_name || u.email} ({u.email}) — {getTranslatedRole(u.role)}
                             </option>
                           ))}
-                        </select>
+                        </FlatListbox>
                       )}
                     </div>
 
@@ -1309,6 +1309,7 @@ const ControlPanel = () => {
                             value={adminResetPassword}
                             onChange={(e) => setAdminResetPassword(e.target.value)}
                             placeholder={t('controlPanel.enterNewPassword', 'Enter new password')}
+                            autoComplete="new-password"
                             style={fieldBox}
                           />
                           <button type="button" onClick={() => setShowAdminPassword(!showAdminPassword)} style={revealBtn} aria-label={t('controlPanel.togglePassword', 'Show or hide password')}>
@@ -1324,6 +1325,7 @@ const ControlPanel = () => {
                             value={adminResetConfirm}
                             onChange={(e) => setAdminResetConfirm(e.target.value)}
                             placeholder={t('controlPanel.confirmNewPassword', 'Confirm new password')}
+                            autoComplete="new-password"
                             style={fieldBox}
                           />
                           <button type="button" onClick={() => setShowAdminConfirm(!showAdminConfirm)} style={revealBtn} aria-label={t('controlPanel.togglePassword', 'Show or hide password')}>
@@ -1396,18 +1398,20 @@ const ControlPanel = () => {
                           <span>{t('common.loading', 'Loading...')}</span>
                         </div>
                       ) : (
-                        <select
+                        <FlatListbox
+                          ind={ind}
                           value={selectedEmployeeId}
                           onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                          style={{ ...fieldBox, padding: '7px 10px' }}
+                          aria-label={t('controlPanel.selectEmployee', 'Select Employee')}
+                          style={{ ...fieldBox, padding: '7px 10px', textTransform: 'none', letterSpacing: '.02em' }}
                         >
                           <option value="">{t('controlPanel.chooseEmployee', '-- Choose an employee --')}</option>
                           {allEmployees.map((emp) => (
-                            <option key={emp.id} value={emp.id} style={{ color: '#1d1f20' }}>
+                            <option key={emp.id} value={emp.id}>
                               {getDemoEmployeeName(emp, t)} ({emp.email})
                             </option>
                           ))}
-                        </select>
+                        </FlatListbox>
                       )}
                     </div>
 
@@ -1420,6 +1424,7 @@ const ControlPanel = () => {
                             value={employeeResetPassword}
                             onChange={(e) => setEmployeeResetPassword(e.target.value)}
                             placeholder={t('controlPanel.enterNewPassword', 'Enter new password')}
+                            autoComplete="new-password"
                             style={fieldBox}
                           />
                           <button type="button" onClick={() => setShowEmployeePassword(!showEmployeePassword)} style={revealBtn} aria-label={t('controlPanel.togglePassword', 'Show or hide password')}>
@@ -1435,6 +1440,7 @@ const ControlPanel = () => {
                             value={employeeResetConfirm}
                             onChange={(e) => setEmployeeResetConfirm(e.target.value)}
                             placeholder={t('controlPanel.confirmNewPassword', 'Confirm new password')}
+                            autoComplete="new-password"
                             style={fieldBox}
                           />
                           <button type="button" onClick={() => setShowEmployeeConfirm(!showEmployeeConfirm)} style={revealBtn} aria-label={t('controlPanel.togglePassword', 'Show or hide password')}>

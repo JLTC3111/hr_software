@@ -40,7 +40,7 @@ import { BarChart, Bar as RBar, XAxis, YAxis, Tooltip, ResponsiveContainer, Refe
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js'
 import {
   Blueprint, Bar, Tag, Btn, Seg, Kicker, TickerCell, ColumnHeading,
-  LiveClock, FlatSelect,
+  LiveClock, FlatListbox,
 } from './ui/industry.jsx'
 
 /* ------------------------------------------------------------------ *
@@ -316,7 +316,7 @@ const TimeTracking = ({ employees: employeesProp }) => {
   const employees = useMemo(() => filterActiveEmployees(employeesProp), [employeesProp]);
   const { user, checkPermission } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
-  const { isDarkMode, input } = useTheme();
+  const { isDarkMode } = useTheme();
   const { t } = useLanguage();
 
   const ind = getIndustry(isDarkMode);
@@ -1420,7 +1420,7 @@ const TimeTracking = ({ employees: employeesProp }) => {
           }}
         >
           <FetchElapsedPill active={loading || overviewLoading} isDarkMode label={t('common.fetching', 'Fetching')} />
-          <FlatSelect
+          <FlatListbox
             ind={ind}
             onDark
             value={selectedMonth}
@@ -1430,8 +1430,8 @@ const TimeTracking = ({ employees: employeesProp }) => {
             {monthNames.map((month, i) => (
               <option key={month} value={i + 1} style={{ color: '#1d1f20' }}>{month}</option>
             ))}
-          </FlatSelect>
-          <FlatSelect
+          </FlatListbox>
+          <FlatListbox
             ind={ind}
             onDark
             value={selectedYear}
@@ -1441,7 +1441,7 @@ const TimeTracking = ({ employees: employeesProp }) => {
             {years.map((y) => (
               <option key={y} value={y} style={{ color: '#1d1f20' }}>{y}</option>
             ))}
-          </FlatSelect>
+          </FlatListbox>
           <button
             type="button"
             onClick={() => { overviewCacheRef.current = { key: '', data: [] }; fetchTimeTrackingData(); fetchOrgSummaries(); fetchOrgEntries(); }}
@@ -1773,7 +1773,7 @@ const TimeTracking = ({ employees: employeesProp }) => {
                 <div className="flex flex-wrap items-center justify-between" style={{ gap: 12 }}>
                   <Kicker ind={ind}>{`${t('timeTracking.summary', 'Summary')} · ${periodLabel}`}</Kicker>
                   <div className="flex items-center" style={{ gap: 10 }}>
-                    <FlatSelect
+                    <FlatListbox
                       ind={ind}
                       value={selectedEmployee || ''}
                       onChange={(e) => setSelectedEmployee(String(e.target.value))}
@@ -1784,7 +1784,7 @@ const TimeTracking = ({ employees: employeesProp }) => {
                           {getDemoEmployeeName(employee, t)}
                         </option>
                       ))}
-                    </FlatSelect>
+                    </FlatListbox>
                     <Btn ind={ind} variant="primary" onClick={() => setShowLeaveModal(true)}>
                       {t('timeTracking.requestLeave', 'Request Leave')}
                     </Btn>
@@ -2162,7 +2162,7 @@ const TimeTracking = ({ employees: employeesProp }) => {
             <form onSubmit={handleLeaveSubmit} style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
                 <Kicker ind={ind} color={ind.inkMuted}>{t('timeTracking.leaveType', 'Leave Type')}</Kicker>
-                <FlatSelect
+                <FlatListbox
                   ind={ind}
                   value={leaveForm.type}
                   onChange={(e) => setLeaveForm({ ...leaveForm, type: e.target.value })}
@@ -2172,26 +2172,28 @@ const TimeTracking = ({ employees: employeesProp }) => {
                   <option value="sick">{t('timeTracking.sickLeave', 'Sick Leave')}</option>
                   <option value="personal">{t('timeTracking.personal', 'Personal Leave')}</option>
                   <option value="unpaid">{t('timeTracking.unpaid', 'Unpaid Leave')}</option>
-                </FlatSelect>
+                </FlatListbox>
               </div>
 
               <div className="grid grid-cols-2" style={{ gap: 14 }}>
                 <div>
                   <Kicker ind={ind} color={ind.inkMuted}>{t('timeTracking.startDate', 'Start Date')}</Kicker>
                   <DatePicker
+                    flat
                     value={leaveForm.startDate}
                     onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
                     required
-                    inputClassName={`w-full px-3 py-2 border ${input.className}`}
+                    aria-label={t('timeTracking.startDate', 'Start Date')}
                   />
                 </div>
                 <div>
                   <Kicker ind={ind} color={ind.inkMuted}>{t('timeTracking.endDate', 'End Date')}</Kicker>
                   <DatePicker
+                    flat
                     value={leaveForm.endDate}
                     onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
                     required
-                    inputClassName={`w-full px-3 py-2 border ${input.className}`}
+                    aria-label={t('timeTracking.endDate', 'End Date')}
                   />
                 </div>
               </div>

@@ -34,6 +34,7 @@ export default {
     mine: 'Mein Urlaub',
     today: 'Heute',
     clearSelection: 'Auswahl aufheben',
+    cmdClickHint: '{mod} oder Shift-Klick auf einen weiteren Tag, um ihn hinzuzufügen, oder auf einen ausgewählten Tag, um ihn zu überspringen.',
     selectStartHint: 'Tipp: Klicken Sie auf einen Tag, um einen Urlaubsantrag zu beginnen, und dann auf den letzten Tag.',
     selectEndHint: 'Klicken Sie nun auf das Enddatum (oder denselben Tag für einen einzelnen Tag).',
     selectionRange: 'Ausgewählt',
@@ -1457,6 +1458,13 @@ export default {
     pushNotificationsDesc: 'Push-Benachrichtigungen in der App erhalten',
     desktopNotifications: 'Desktop-Benachrichtigungen',
     desktopNotificationsDesc: 'Browser-Benachrichtigungen auf dem Desktop anzeigen',
+    desktopDenied: 'Benachrichtigungen sind für {origin} blockiert. Stellen Sie in der Adressleiste Benachrichtigungen auf Zulassen und schalten Sie dies dann erneut ein.',
+    desktopEmbedded: 'Dieses Fenster kann keine Desktop-Benachrichtigungen anzeigen. Öffnen Sie {origin} in Chrome oder Safari und erlauben Sie dann Benachrichtigungen.',
+    desktopInsecure: 'Desktop-Benachrichtigungen benötigen http://localhost oder https. Diese Seite ist {origin}.',
+    desktopUnsupported: 'Dieser Browser kann keine Desktop-Benachrichtigungen anzeigen.',
+    desktopTestTitle: 'Desktop-Benachrichtigungen sind aktiv',
+    desktopTestBody: 'Bei neuen Benachrichtigungen sehen Sie Hinweise wie diesen.',
+    desktopPermissionRequired: 'Die Benachrichtigungsberechtigung wurde für {origin} nicht erteilt. Erlauben Sie sie in den Website-Einstellungen dieses Browsers und versuchen Sie es erneut.',
     notificationFrequency: 'Benachrichtigungshäufigkeit',
     realtime: 'Echtzeit',
     daily: 'Tägliche Zusammenfassung',
@@ -1805,11 +1813,11 @@ export default {
       empty: 'Keine spezifischen Tipps für den Kontext: "{context}" gefunden. Es werden alle Funktionen unten angezeigt.',
       feature_1: {
         title: 'Versteckte Funktion: Massenbearbeitung',
-        description: 'Wussten Sie, dass Sie bis zu 50 Datensätze gleichzeitig bearbeiten können? Wählen Sie die Kontrollkästchen neben den Einträgen und klicken Sie auf das ✏️-Symbol oben in der Tabelle. Dies ist in der aktuellen Demo deaktiviert.'
+        description: 'Wussten Sie, dass Sie bis zu 50 Datensätze gleichzeitig bearbeiten können? Wählen Sie die Kontrollkästchen neben den Einträgen und klicken Sie auf das Bearbeitungssymbol oben in der Tabelle. Dies ist in der aktuellen Demo deaktiviert.'
       },
       feature_2: {
         title: 'Kontext-Tipp: Schneller Filter',
-        description: 'Verwenden Sie das Lupen-Symbol (🔍) neben einer Spaltenüberschrift, um sofort nach den eindeutigen Werten dieser Spalte zu filtern. Kein Öffnen des vollständigen Filterbereichs erforderlich!'
+        description: 'Verwenden Sie das Lupen-Symbol neben einer Spaltenüberschrift, um sofort nach den eindeutigen Werten dieser Spalte zu filtern. Kein Öffnen des vollständigen Filterbereichs erforderlich!'
       },
       feature_3: {
         title: 'Demo-Einschränkung: Datenpersistenz',

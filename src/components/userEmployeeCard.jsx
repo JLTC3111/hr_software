@@ -136,7 +136,7 @@ const UserEmployeeCard = ({ style }) => {
         className="rounded-lg shadow-sm border p-6 flex items-center justify-center"
         style={style}
       >
-        <Loader className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader className={`w-8 h-8 animate-spin ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
         <span className="ml-3">{t('common.loading', 'Loading...')}</span>
       </div>
     );
@@ -182,7 +182,7 @@ const UserEmployeeCard = ({ style }) => {
                 }}
               >
                 {uploading ? (
-                  <Loader className="w-6 h-6 text-blue-600 animate-spin" />
+                  <Loader className={`w-6 h-6 animate-spin ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                 ) : employee.photo && !photoError ? (
                   <img 
                     src={employee.photo} 

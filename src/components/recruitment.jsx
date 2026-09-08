@@ -13,6 +13,9 @@
  *                 one card in Interview and one in Offer is promoted to the accent
  *                 tint and given a live line + two inline buttons, so the eye lands
  *                 on today's work without reading a single name.
+ *   jobs        — the requisition list. Board and table are candidate views; a
+ *                 posting has no row there until someone applies, so this is where
+ *                 "Post new job" lands.
  *
  * Column heights stay equal because a flex spacer pushes the "N more →" foot to
  * the bottom of every column. Hired ends with a YTD plate instead, and its cards
@@ -36,19 +39,23 @@ import {
   createInterviewSchedule,
   getRecruitmentStats,
   createJobPosting,
+  updateJobPosting,
+  deleteJobPosting,
 } from '../services/recruitmentService';
 import { isDemoMode, getDemoApplicationStatus, getDemoJobTitle, getDemoJobDescription, getDemoApplicationNotes } from '../utils/demoHelper';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
-import { formatDate as formatLocaleDate, groupNumberInput } from '../utils/localeFormat.js';
+import { formatDate as formatLocaleDate, groupNumberInput, parseSalaryRange, formatStoredSalaryRange, currencyAffix, currencyForJob } from '../utils/localeFormat.js';
 import { DatePicker } from './ui/date-picker.jsx';
 import { TimePicker } from './ui/time-picker.jsx';
 import { TranslatedText } from './ui/translated-text.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
 import {
-  Blueprint, Tag, Btn, Seg, Kicker, TickerCell, LiveClock, FlatSelect,
+  Blueprint, Tag, Btn, Seg, Kicker, TickerCell, LiveClock, FlatListbox,
 } from './ui/industry.jsx';
+import { AutofillOffInput, AUTOFILL_OFF_FORM_ATTRS, cloakAutofillLabel } from '../hooks/useSuppressAutofill.jsx';
 
 /* ------------------------------------------------------------------ *
  * Screen constants — the policy this board reads against
@@ -109,6 +116,82 @@ const stageKeyOf = (app) => {
 
 const departmentOf = (app) => app?.job_posting?.department || app?.department || null;
 
+const OPEN_JOB_STATUSES = ['open', 'active', 'published'];
+
+const JOB_DEPARTMENTS = [
+  'engineering', 'marketing', 'sales', 'finance', 'human_resources',
+  'operations', 'customer_support', 'product', 'design', 'it',
+];
+
+const JOB_EMPLOYMENT_TYPES = ['full_time', 'part_time', 'contract', 'internship'];
+
+const JOB_STATUS_VALUES = ['open', 'active', 'published', 'closed', 'draft'];
+
+const jobStatusLabel = (status, t) => {
+  const s = String(status || '').toLowerCase();
+  if (s === 'open') return t('recruitment.jobStatuses.open', 'Open');
+  if (s === 'active') return t('recruitment.jobStatuses.active', 'Active');
+  if (s === 'published') return t('recruitment.jobStatuses.published', 'Published');
+  if (s === 'closed') return t('recruitment.jobStatuses.closed', 'Closed');
+  if (s === 'draft') return t('recruitment.jobStatuses.draft', 'Draft');
+  return status || '—';
+};
+
+const employmentLabel = (type, t) => {
+  const s = String(type || '').toLowerCase().replace(/[-\s]+/g, '_');
+  if (s === 'full_time') return t('recruitment.fullTime', 'Full Time');
+  if (s === 'part_time') return t('recruitment.partTime', 'Part Time');
+  if (s === 'contract') return t('recruitment.contract', 'Contract');
+  if (s === 'internship') return t('recruitment.internship', 'Internship');
+  return '—';
+};
+
+const departmentFormValue = (value) => {
+  if (!value) return '';
+  const key = String(value).toLowerCase().replace(/[\s-]+/g, '_');
+  return JOB_DEPARTMENTS.includes(key) ? key : String(value);
+};
+
+const employmentFormValue = (value) => {
+  if (!value) return '';
+  const key = String(value).toLowerCase().replace(/[-\s]+/g, '_');
+  return JOB_EMPLOYMENT_TYPES.includes(key) ? key : 'full_time';
+};
+
+const requirementsToText = (value) => {
+  if (Array.isArray(value)) return value.filter(Boolean).join('\n');
+  return value || '';
+};
+
+const emptyJobForm = () => ({
+  title: '', department: '', location: '', employment_type: '',
+  experience_level: '', salary_min: '', salary_max: '',
+  description: '', requirements: '', status: '',
+});
+
+const jobToForm = (job) => {
+  if (!job) return emptyJobForm();
+  const salary = parseSalaryRange(job.salary_range);
+  return {
+    title: job.title || '',
+    department: departmentFormValue(job.department),
+    location: job.location || '',
+    employment_type: employmentFormValue(job.position_type || job.employment_type),
+    experience_level: job.experience_level || '',
+    salary_min: salary.salary_min,
+    salary_max: salary.salary_max,
+    description: job.description || '',
+    requirements: requirementsToText(job.requirements),
+    status: job.status || 'open',
+  };
+};
+
+const toSalaryNumber = (value) => {
+  if (value === '' || value == null) return null;
+  const n = parseInt(String(value).replace(/\D/g, ''), 10);
+  return Number.isFinite(n) ? n : null;
+};
+
 const pct = (n, d) => (d > 0 ? Math.round((n / d) * 100) : 0);
 
 /* ------------------------------------------------------------------ *
@@ -120,7 +203,9 @@ const Recruitment = () => {
   const { isDarkMode } = useTheme();
   const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
   const navigate = useNavigate();
+  const { checkPermission } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
+  const canManageJobs = checkPermission('canManageRecruitment');
 
   const [applications, setApplications] = useState([]);
   const [jobPostings, setJobPostings] = useState([]);
@@ -129,7 +214,7 @@ const Recruitment = () => {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
 
-  const [viewMode, setViewMode] = useState('board');   // 'board' | 'table'
+  const [viewMode, setViewMode] = useState('jobs');   // 'board' | 'table' | 'jobs'
   const [searchQuery, setSearchQuery] = useState('');
   const [department, setDepartment] = useState('all');
   const [expandedColumns, setExpandedColumns] = useState([]);
@@ -137,7 +222,8 @@ const Recruitment = () => {
   const [detailApplication, setDetailApplication] = useState(null);
   const [detailFocus, setDetailFocus] = useState(null);   // 'rating' | 'notes' | null
   const [interviewApplication, setInterviewApplication] = useState(null);
-  const [showPostJobModal, setShowPostJobModal] = useState(false);
+  const [jobModal, setJobModal] = useState(null);
+  const [deletingJobId, setDeletingJobId] = useState(null);
 
   const fetchData = useCallback(async (options = {}) => {
     const { silent = false } = options;
@@ -192,6 +278,19 @@ const Recruitment = () => {
       return true;
     });
   }, [applications, searchQuery, department, searchableText]);
+
+  const scopedJobPostings = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return jobPostings.filter(job => {
+      if (department !== 'all' && job.department !== department) return false;
+      if (!q) return true;
+      const hay = [
+        job.title, job.department, job.location, job.status,
+        job.position_type, job.employment_type, job.salary_range, job.description,
+      ].join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+  }, [jobPostings, searchQuery, department]);
 
   const departmentOptions = useMemo(() => {
     const seen = new Set();
@@ -282,7 +381,7 @@ const Recruitment = () => {
       : null;
 
     const offersOut = applications.filter(a => stageKeyOf(a) === 'offer').length;
-    const openReqs = jobPostings.filter(j => ['open', 'active', 'published'].includes(String(j.status || '').toLowerCase())).length;
+    const openReqs = jobPostings.filter(j => OPEN_JOB_STATUSES.includes(String(j.status || '').toLowerCase())).length;
     const acceptedThisWeek = hired.filter(a => (daysSince(a.reviewed_date) ?? 999) < WEEK_DAYS).length;
 
     const now = new Date();
@@ -318,6 +417,34 @@ const Recruitment = () => {
       setFetchError(t('errors.updateFailed', 'Failed to update status'));
     }
   }, [fetchData, handleSessionAuthError, t]);
+
+  const handleDeleteJob = useCallback(async (job) => {
+    if (!canManageJobs) return;
+    const title = job?.title || t('recruitment.jobsView', 'Jobs');
+    const confirmed = globalThis.confirm(
+      t('recruitment.confirmDeleteJob', 'Delete "{title}"? Applications for this job will also be removed.')
+        .replace('{title}', title)
+    );
+    if (!confirmed) return;
+
+    setDeletingJobId(job.id);
+    try {
+      const result = await deleteJobPosting(job.id);
+      if (result.success) {
+        setFetchError(null);
+        await fetchData({ silent: true });
+      } else {
+        console.error('Failed to delete job posting:', result.error);
+        setFetchError(t('recruitment.deleteFailed', 'Failed to delete job posting'));
+      }
+    } catch (error) {
+      console.error('Error deleting job posting:', error);
+      if (handleSessionAuthError(error)) return;
+      setFetchError(t('recruitment.deleteFailed', 'Failed to delete job posting'));
+    } finally {
+      setDeletingJobId(null);
+    }
+  }, [canManageJobs, fetchData, handleSessionAuthError, t]);
 
   const openDetail = useCallback((app, focus = null) => {
     setDetailApplication(app);
@@ -424,7 +551,13 @@ const Recruitment = () => {
           // The one figure on the strip that decays: every day it sits, it costs you.
           valueColor={ind.tickerUp}
         />
-        <TickerCell ind={ind} label={t('recruitment.metrics.openReqs', 'Open reqs')} value={metrics.openReqs} />
+        <TickerCell
+          ind={ind}
+          label={t('recruitment.metrics.openReqs', 'Open reqs')}
+          value={metrics.openReqs}
+          onClick={() => setViewMode('jobs')}
+          title={t('recruitment.jobsView', 'Jobs')}
+        />
 
         <div
           style={{
@@ -439,7 +572,7 @@ const Recruitment = () => {
           }}
         >
           <FetchElapsedPill active={loading} isDarkMode label={t('common.fetching', 'Fetching')} />
-          <FlatSelect
+          <FlatListbox
             ind={ind}
             onDark
             value={department}
@@ -455,7 +588,7 @@ const Recruitment = () => {
                 {t(`employeeDepartment.${dept}`, dept)}
               </option>
             ))}
-          </FlatSelect>
+          </FlatListbox>
         </div>
       </div>
 
@@ -506,7 +639,15 @@ const Recruitment = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <SearchField ind={ind} value={searchQuery} onChange={setSearchQuery} t={t} />
+            <SearchField
+              ind={ind}
+              value={searchQuery}
+              onChange={setSearchQuery}
+              t={t}
+              placeholder={viewMode === 'jobs'
+                ? t('recruitment.searchJobsPlaceholder', 'Search jobs')
+                : t('recruitment.searchPlaceholder', 'Search candidates')}
+            />
             <Seg
               ind={ind}
               ariaLabel={t('recruitment.viewMode', 'View')}
@@ -515,15 +656,19 @@ const Recruitment = () => {
               options={[
                 { value: 'board', label: t('recruitment.boardView', 'Board') },
                 { value: 'table', label: t('recruitment.tableView', 'Table') },
+                { value: 'jobs', label: t('recruitment.jobsView', 'Jobs') },
               ]}
             />
-            <Btn ind={ind} variant="primary" onClick={() => setShowPostJobModal(true)}>
-              + {t('recruitment.postNewJob', 'Post new job')}
-            </Btn>
+            {canManageJobs && (
+              <Btn ind={ind} variant="primary" onClick={() => setJobModal('new')}>
+                + {t('recruitment.postNewJob', 'Post new job')}
+              </Btn>
+            )}
           </div>
         </div>
 
         {/* ── STAGE STRIP — the underbar taper is the funnel ────────── */}
+        {viewMode !== 'jobs' && (
         <div style={{ overflowX: 'auto' }}>
           <div
             style={{
@@ -574,8 +719,9 @@ const Recruitment = () => {
             })}
           </div>
         </div>
+        )}
 
-        {/* ── BOARD / TABLE ────────────────────────────────────────── */}
+        {/* ── BOARD / TABLE / JOBS ─────────────────────────────────── */}
         {viewMode === 'board' ? (
           <div style={{ overflowX: 'auto' }}>
             <div
@@ -624,7 +770,7 @@ const Recruitment = () => {
               ))}
             </div>
           </div>
-        ) : (
+        ) : viewMode === 'table' ? (
           <CandidateTable
             ind={ind}
             t={t}
@@ -635,6 +781,18 @@ const Recruitment = () => {
             stageLabel={stageLabel}
             onOpen={openDetail}
             onSchedule={setInterviewApplication}
+          />
+        ) : (
+          <JobPostingsTable
+            ind={ind}
+            t={t}
+            jobs={scopedJobPostings}
+            openCount={metrics.openReqs}
+            shortDate={shortDate}
+            canManageJobs={canManageJobs}
+            onEdit={setJobModal}
+            onDelete={handleDeleteJob}
+            deletingJobId={deletingJobId}
           />
         )}
       </div>
@@ -665,12 +823,16 @@ const Recruitment = () => {
         />
       )}
 
-      {showPostJobModal && (
+      {jobModal && canManageJobs && (
         <PostJobModal
           ind={ind}
-          onClose={() => setShowPostJobModal(false)}
+          job={jobModal === 'new' ? null : jobModal}
+          onClose={() => setJobModal(null)}
           onSuccess={(droppedColumns) => {
-            setShowPostJobModal(false);
+            setJobModal(null);
+            setSearchQuery('');
+            setDepartment('all');
+            setViewMode('jobs');
             // The posting saved, but this deployment's table had no home for these.
             if (droppedColumns?.length) {
               setFetchError(
@@ -690,7 +852,8 @@ const Recruitment = () => {
  * Search field — a hairline box, not a pill
  * ------------------------------------------------------------------ */
 
-function SearchField({ ind, value, onChange, t }) {
+function SearchField({ ind, value, onChange, t, placeholder }) {
+  const label = placeholder || t('recruitment.searchPlaceholder', 'Search candidates');
   return (
     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
       <span
@@ -703,8 +866,8 @@ function SearchField({ ind, value, onChange, t }) {
         type="search"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={t('recruitment.searchPlaceholder', 'Search candidates')}
-        aria-label={t('recruitment.searchPlaceholder', 'Search candidates')}
+        placeholder={label}
+        aria-label={label}
         style={{
           fontFamily: BODY,
           fontSize: 13,
@@ -1093,6 +1256,130 @@ function CandidateTable({ ind, t, applications, stats, roleOf, shortDate, stageL
 }
 
 /* ------------------------------------------------------------------ *
+ * Jobs list — postings have nowhere else to land on this screen
+ * ------------------------------------------------------------------ */
+
+function JobPostingsTable({ ind, t, jobs, openCount, shortDate, canManageJobs, onEdit, onDelete, deletingJobId }) {
+  const { currentLanguage } = useLanguage();
+  const th = {
+    fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.14em',
+    textTransform: 'uppercase', color: ind.inkMuted, textAlign: 'left',
+    padding: '8px 12px', borderBottom: `1px solid ${ind.hairline}`, whiteSpace: 'nowrap',
+  };
+  const td = {
+    fontFamily: BODY, fontSize: 13, color: ind.ink,
+    padding: '9px 12px', borderBottom: `1px solid ${ind.rule}`, verticalAlign: 'top',
+  };
+
+  return (
+    <div style={{ border: `1px solid ${ind.hairline}` }}>
+      <div
+        style={{
+          display: 'flex', flexWrap: 'wrap', gap: 18, padding: '10px 12px',
+          borderBottom: `1px solid ${ind.hairline}`,
+        }}
+      >
+        {[
+          [t('recruitment.jobsView', 'Jobs'), jobs.length],
+          [t('recruitment.metrics.openReqs', 'Open reqs'), openCount],
+        ].map(([label, value]) => (
+          <div key={label} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <Kicker ind={ind} color={ind.inkMuted}>{label}</Kicker>
+            <span style={figure(15, ind.ink)}>{value ?? 0}</span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}>
+          <thead>
+            <tr>
+              <th style={th}>{t('recruitment.jobTitle', 'Job title')}</th>
+              <th style={th}>{t('recruitment.department', 'Department')}</th>
+              <th style={th}>{t('recruitment.employmentType', 'Employment type')}</th>
+              <th style={th}>{t('recruitment.statusLabel', 'Status')}</th>
+              <th style={th}>{t('recruitment.postedDate', 'Posted')}</th>
+              <th style={th}>{t('recruitment.salaryRange', 'Salary')}</th>
+              {canManageJobs && (
+                <th style={{ ...th, textAlign: 'right' }}>{t('recruitment.actions', 'Actions')}</th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {jobs.length === 0 ? (
+              <tr>
+                <td colSpan={canManageJobs ? 7 : 6} style={{ ...td, textAlign: 'center', color: ind.inkFaint, padding: '32px 12px' }}>
+                  {t('recruitment.noJobPostings', 'No job postings found')}
+                </td>
+              </tr>
+            ) : (
+              jobs.map(job => {
+                const status = String(job.status || '').toLowerCase();
+                const open = OPEN_JOB_STATUSES.includes(status);
+                const snippet = String(job.description || '').replace(/\s+/g, ' ').trim();
+                const clipped = snippet.length > 72 ? `${snippet.slice(0, 72).trim()}…` : snippet;
+                const sub = [job.location, clipped].filter(Boolean).join(' · ');
+                return (
+                  <tr key={job.id}>
+                    <td style={td}>
+                      <div style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 13, letterSpacing: '.04em', textTransform: 'uppercase' }}>
+                        {isDemoMode()
+                          ? getDemoJobTitle(job, t)
+                          : (job.title ? <TranslatedText text={job.title} /> : t('common.notAvailable', 'N/A'))}
+                      </div>
+                      <div style={{ fontSize: 11.5, color: ind.inkMuted }}>
+                        {sub || t('common.notAvailable', 'N/A')}
+                      </div>
+                    </td>
+                    <td style={td}>
+                      {job.department
+                        ? t(`employeeDepartment.${job.department}`, job.department)
+                        : t('common.notAvailable', 'N/A')}
+                    </td>
+                    <td style={td}>{employmentLabel(job.position_type || job.employment_type, t)}</td>
+                    <td style={td}>
+                      <Tag ind={ind} variant={open ? 'accent' : 'neutral'}>
+                        {jobStatusLabel(job.status, t)}
+                      </Tag>
+                    </td>
+                    <td style={td}>{shortDate(job.posted_date || job.created_at)}</td>
+                    <td style={{ ...td, fontVariantNumeric: 'tabular-nums' }}>
+                      {formatStoredSalaryRange(job.salary_range, currentLanguage) || '—'}
+                    </td>
+                    {canManageJobs && (
+                    <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'inline-flex', gap: 6 }}>
+                        <Btn
+                          ind={ind}
+                          onClick={() => onEdit(job)}
+                          disabled={deletingJobId === job.id}
+                          style={{ fontSize: 11, padding: '3px 8px' }}
+                        >
+                          {t('common.edit', 'Edit')}
+                        </Btn>
+                        <Btn
+                          ind={ind}
+                          onClick={() => onDelete(job)}
+                          disabled={deletingJobId === job.id}
+                          style={{ fontSize: 11, padding: '3px 8px' }}
+                        >
+                          {t('common.delete', 'Delete')}
+                        </Btn>
+                      </div>
+                    </td>
+                    )}
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
  * Modal shell
  * ------------------------------------------------------------------ */
 
@@ -1173,33 +1460,55 @@ const fieldStyle = (ind) => ({
 
 /**
  * Grouped numeric field. Salaries run to seven figures here, so the value is
- * displayed with thousands separators and the raw digits are handed back to the
- * form — `type="number"` would reject the commas outright.
+ * displayed with the active language's thousands separators and the raw digits
+ * are handed back to the form. The currency mark follows the job location when
+ * that place names a country, otherwise the UI language.
  */
-function NumberField({ ind, name, value, onChange }) {
+function NumberField({ ind, name, value, onChange, currency }) {
   const { currentLanguage } = useLanguage();
+  const affix = currencyAffix(currentLanguage, currency);
+  const mark = {
+    fontFamily: BODY,
+    fontSize: 13,
+    color: ind.inkMuted,
+    flex: 'none',
+    padding: affix.prefix ? '0 0 0 8px' : '0 8px 0 0',
+  };
   return (
-    <input
-      type="text"
-      inputMode="numeric"
-      name={name}
-      value={groupNumberInput(value, currentLanguage)}
-      onChange={(e) => {
-        const raw = String(e.target.value).replace(/[^\d.-]/g, '');
-        onChange({ target: { name, value: raw } });
-      }}
-      placeholder="0"
-      style={{ ...fieldStyle(ind), fontVariantNumeric: 'tabular-nums' }}
-    />
+    <div style={{ ...fieldStyle(ind), display: 'flex', alignItems: 'center', padding: 0 }}>
+      {affix.prefix ? <span style={mark}>{affix.symbol}</span> : null}
+      <input
+        type="text"
+        inputMode="numeric"
+        name={name}
+        value={groupNumberInput(value, currentLanguage)}
+        onChange={(e) => {
+          const raw = String(e.target.value).replace(/\D/g, '');
+          onChange({ target: { name, value: raw } });
+        }}
+        placeholder="0"
+        style={{
+          ...fieldStyle(ind),
+          border: 'none',
+          width: 'auto',
+          flex: 1,
+          minWidth: 0,
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      />
+      {affix.prefix ? null : <span style={mark}>{affix.symbol}</span>}
+    </div>
   );
 }
 
-function Field({ ind, label, children }) {
+function Field({ ind, label, children, as: Tag = 'label' }) {
   return (
-    <label style={{ display: 'block' }}>
-      <Kicker ind={ind} color={ind.inkMuted} style={{ marginBottom: 5 }}>{label}</Kicker>
+    <Tag style={{ display: 'block' }}>
+      <Kicker ind={ind} color={ind.inkMuted} style={{ marginBottom: 5 }}>
+        {typeof label === 'string' ? cloakAutofillLabel(label) : label}
+      </Kicker>
       {children}
-    </label>
+    </Tag>
   );
 }
 
@@ -1207,21 +1516,26 @@ function Field({ ind, label, children }) {
  * Post job
  * ------------------------------------------------------------------ */
 
-const PostJobModal = ({ ind, onClose, onSuccess }) => {
-  const { t } = useLanguage();
+const PostJobModal = ({ ind, job = null, onClose, onSuccess }) => {
+  const { t, currentLanguage } = useLanguage();
+  const { checkPermission } = useAuth();
   const { handleSessionAuthError } = useSessionGuard();
+  const canManageJobs = checkPermission('canManageRecruitment');
+  const editing = Boolean(job);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [formData, setFormData] = useState({
-    title: '', department: '', location: '', employment_type: 'full_time',
-    experience_level: '', salary_min: '', salary_max: '', description: '',
-    requirements: '', status: 'open',
+  const [formData, setFormData] = useState(() => jobToForm(job));
+  const salaryCurrency = currencyForJob({
+    location: formData.location,
+    language: currentLanguage,
   });
 
-  const departments = [
-    'engineering', 'marketing', 'sales', 'finance', 'human_resources',
-    'operations', 'customer_support', 'product', 'design', 'it',
-  ];
+  const departments = useMemo(() => {
+    const extra = formData.department && !JOB_DEPARTMENTS.includes(formData.department)
+      ? [formData.department]
+      : [];
+    return [...JOB_DEPARTMENTS, ...extra];
+  }, [formData.department]);
 
   const employmentTypes = [
     { value: 'full_time', label: t('recruitment.fullTime', 'Full Time') },
@@ -1229,6 +1543,17 @@ const PostJobModal = ({ ind, onClose, onSuccess }) => {
     { value: 'contract', label: t('recruitment.contract', 'Contract') },
     { value: 'internship', label: t('recruitment.internship', 'Internship') },
   ];
+  if (formData.employment_type && !JOB_EMPLOYMENT_TYPES.includes(formData.employment_type)) {
+    employmentTypes.push({ value: formData.employment_type, label: formData.employment_type });
+  }
+
+  const statusOptions = JOB_STATUS_VALUES.map((value) => ({
+    value,
+    label: jobStatusLabel(value, t),
+  }));
+  if (formData.status && !JOB_STATUS_VALUES.includes(String(formData.status).toLowerCase())) {
+    statusOptions.push({ value: formData.status, label: formData.status });
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -1237,27 +1562,36 @@ const PostJobModal = ({ ind, onClose, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.title.trim() || !formData.department) {
+    if (!canManageJobs) {
+      setError(t('common.noPermission', 'You do not have permission to access this page.'));
+      return;
+    }
+    if (!formData.title.trim() || !formData.department || !formData.employment_type || !formData.status) {
       setError(t('validation.required', 'Please fill in required fields'));
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const result = await createJobPosting({
+      const payload = {
         ...formData,
-        salary_min: formData.salary_min ? parseInt(formData.salary_min, 10) : null,
-        salary_max: formData.salary_max ? parseInt(formData.salary_max, 10) : null,
-      });
+        salary_min: toSalaryNumber(formData.salary_min),
+        salary_max: toSalaryNumber(formData.salary_max),
+        salary_language: currentLanguage,
+        salary_currency: salaryCurrency,
+      };
+      const result = editing
+        ? await updateJobPosting(job.id, payload)
+        : await createJobPosting(payload);
       if (result.success) onSuccess(result.droppedColumns);
       else {
-        console.error('Failed to post job:', result.error);
-        setError(t('errors.saveFailed', 'Failed to post job'));
+        console.error(editing ? 'Failed to update job:' : 'Failed to post job:', result.error);
+        setError(t('errors.saveFailed', editing ? 'Failed to save job' : 'Failed to post job'));
       }
     } catch (err) {
-      console.error('Error posting job:', err);
+      console.error(editing ? 'Error updating job:' : 'Error posting job:', err);
       if (handleSessionAuthError(err)) return;
-      setError(t('errors.saveFailed', 'Failed to post job'));
+      setError(t('errors.saveFailed', editing ? 'Failed to save job' : 'Failed to post job'));
     } finally {
       setLoading(false);
     }
@@ -1266,19 +1600,23 @@ const PostJobModal = ({ ind, onClose, onSuccess }) => {
   return (
     <ModalShell
       ind={ind}
-      title={t('recruitment.postNewJob', 'Post new job')}
+      title={editing
+        ? t('recruitment.editJob', 'Edit job')
+        : t('recruitment.postNewJob', 'Post new job')}
       onClose={onClose}
       maxWidth={680}
       footer={(
         <>
           <Btn ind={ind} onClick={onClose}>{t('common.cancel', 'Cancel')}</Btn>
-          <Btn ind={ind} variant="primary" disabled={loading} onClick={handleSubmit}>
-            {loading ? t('common.saving', 'Saving...') : t('recruitment.postJob', 'Post job')}
+          <Btn ind={ind} variant="primary" disabled={loading || !canManageJobs} onClick={handleSubmit}>
+            {loading
+              ? t('common.saving', 'Saving...')
+              : (editing ? t('common.save', 'Save') : t('recruitment.postJob', 'Post job'))}
           </Btn>
         </>
       )}
     >
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 14 }}>
+      <form {...AUTOFILL_OFF_FORM_ATTRS} onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 14 }}>
         {error && (
           <p className="md:col-span-2" style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink, border: `1px solid ${ind.ink}`, padding: '8px 10px' }}>
             {error}
@@ -1295,28 +1633,56 @@ const PostJobModal = ({ ind, onClose, onSuccess }) => {
           </Field>
         </div>
 
-        <Field ind={ind} label={`${t('recruitment.department', 'Department')} *`}>
-          <select name="department" value={formData.department} onChange={handleChange} style={fieldStyle(ind)} required>
+        <Field ind={ind} as="div" label={`${t('recruitment.department', 'Department')} *`}>
+          <FlatListbox
+            ind={ind}
+            value={formData.department}
+            onChange={(e) => handleChange({ target: { name: 'department', value: e.target.value } })}
+            aria-label={t('recruitment.department', 'Department')}
+            style={{ ...fieldStyle(ind), textTransform: 'none', letterSpacing: '.02em' }}
+          >
             <option value="">{t('common.select', 'Select')}</option>
             {departments.map(dept => (
               <option key={dept} value={dept}>{t(`employeeDepartment.${dept}`, dept)}</option>
             ))}
-          </select>
+          </FlatListbox>
         </Field>
 
         <Field ind={ind} label={t('recruitment.location', 'Location')}>
-          <input
+          <AutofillOffInput
             type="text" name="location" value={formData.location} onChange={handleChange}
             placeholder={t('recruitment.enterLocation', 'Enter location')} style={fieldStyle(ind)}
           />
         </Field>
 
-        <Field ind={ind} label={t('recruitment.employmentType', 'Employment type')}>
-          <select name="employment_type" value={formData.employment_type} onChange={handleChange} style={fieldStyle(ind)}>
+        <Field ind={ind} as="div" label={`${t('recruitment.employmentType', 'Employment type')} *`}>
+          <FlatListbox
+            ind={ind}
+            value={formData.employment_type}
+            onChange={(e) => handleChange({ target: { name: 'employment_type', value: e.target.value } })}
+            aria-label={t('recruitment.employmentType', 'Employment type')}
+            style={{ ...fieldStyle(ind), textTransform: 'none', letterSpacing: '.02em' }}
+          >
+            <option value="">{t('common.select', 'Select')}</option>
             {employmentTypes.map(type => (
               <option key={type.value} value={type.value}>{type.label}</option>
             ))}
-          </select>
+          </FlatListbox>
+        </Field>
+
+        <Field ind={ind} as="div" label={`${t('recruitment.statusLabel', 'Status')} *`}>
+          <FlatListbox
+            ind={ind}
+            value={formData.status}
+            onChange={(e) => handleChange({ target: { name: 'status', value: e.target.value } })}
+            aria-label={t('recruitment.statusLabel', 'Status')}
+            style={{ ...fieldStyle(ind), textTransform: 'none', letterSpacing: '.02em' }}
+          >
+            <option value="">{t('common.select', 'Select')}</option>
+            {statusOptions.map(option => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </FlatListbox>
         </Field>
 
         <Field ind={ind} label={t('recruitment.experienceLevel', 'Experience level')}>
@@ -1327,11 +1693,23 @@ const PostJobModal = ({ ind, onClose, onSuccess }) => {
         </Field>
 
         <Field ind={ind} label={t('recruitment.salaryMin', 'Minimum salary')}>
-          <NumberField ind={ind} name="salary_min" value={formData.salary_min} onChange={handleChange} />
+          <NumberField
+            ind={ind}
+            name="salary_min"
+            value={formData.salary_min}
+            currency={salaryCurrency}
+            onChange={handleChange}
+          />
         </Field>
 
         <Field ind={ind} label={t('recruitment.salaryMax', 'Maximum salary')}>
-          <NumberField ind={ind} name="salary_max" value={formData.salary_max} onChange={handleChange} />
+          <NumberField
+            ind={ind}
+            name="salary_max"
+            value={formData.salary_max}
+            currency={salaryCurrency}
+            onChange={handleChange}
+          />
         </Field>
 
         <div className="md:col-span-2">
@@ -1551,12 +1929,18 @@ const ApplicationDetailModal = ({ ind, application, focus, onClose, onUpdate, on
             </div>
           </div>
 
-          <Field ind={ind} label={t('recruitment.statusLabel', 'Status')}>
-            <select value={status} onChange={(e) => setStatus(e.target.value)} style={fieldStyle(ind)}>
+          <Field ind={ind} as="div" label={t('recruitment.statusLabel', 'Status')}>
+            <FlatListbox
+              ind={ind}
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              aria-label={t('recruitment.statusLabel', 'Status')}
+              style={{ ...fieldStyle(ind), textTransform: 'none', letterSpacing: '.02em' }}
+            >
               {STATUS_OPTIONS.map(([value, key, fallback]) => (
                 <option key={value} value={value}>{t(key, fallback)}</option>
               ))}
-            </select>
+            </FlatListbox>
           </Field>
 
           <Field ind={ind} label={t('recruitment.notes', 'Notes')}>
@@ -1658,7 +2042,7 @@ const InterviewScheduleModal = ({ ind, application, onClose, onSuccess }) => {
         </>
       )}
     >
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <form {...AUTOFILL_OFF_FORM_ATTRS} onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {error && (
           <p style={{ fontFamily: BODY, fontSize: 12.5, border: `1px solid ${ind.ink}`, padding: '8px 10px' }}>{error}</p>
         )}
@@ -1670,12 +2054,19 @@ const InterviewScheduleModal = ({ ind, application, onClose, onSuccess }) => {
           <Field ind={ind} label={t('recruitment.interviewTime', 'Time')}>
             <TimePicker flat name="time" value={form.time} onChange={handleChange} />
           </Field>
-          <Field ind={ind} label={t('recruitment.interviewTypeLabel', 'Interview type')}>
-            <select name="interview_type" value={form.interview_type} onChange={handleChange} style={fieldStyle(ind)}>
+          <Field ind={ind} as="div" label={t('recruitment.interviewTypeLabel', 'Interview type')}>
+            <FlatListbox
+              ind={ind}
+              name="interview_type"
+              value={form.interview_type}
+              onChange={handleChange}
+              aria-label={t('recruitment.interviewTypeLabel', 'Interview type')}
+              style={{ ...fieldStyle(ind), textTransform: 'none', letterSpacing: '.02em' }}
+            >
               {interviewTypes.map(type => (
                 <option key={type.value} value={type.value}>{type.label}</option>
               ))}
-            </select>
+            </FlatListbox>
           </Field>
           <Field ind={ind} label={t('recruitment.duration', 'Duration (min)')}>
             <input type="number" name="duration_minutes" min="15" step="15" value={form.duration_minutes} onChange={handleChange} style={fieldStyle(ind)} />
@@ -1692,7 +2083,7 @@ const InterviewScheduleModal = ({ ind, application, onClose, onSuccess }) => {
             {form.interview_type === 'video'
               ? <Video size={14} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted }} />
               : <MapPin size={14} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted }} />}
-            <input
+            <AutofillOffInput
               type="text" name="location" value={form.location} onChange={handleChange}
               placeholder={form.interview_type === 'video' ? 'https://...' : t('recruitment.enterLocation', 'Enter location')}
               style={fieldStyle(ind)}

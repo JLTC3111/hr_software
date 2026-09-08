@@ -34,6 +34,7 @@ export default {
     mine: '自分の休暇',
     today: '今日',
     clearSelection: '選択をクリア',
+    cmdClickHint: '{mod} または Shift+クリックで別の日を追加し、選択済みの日をクリックすると除外します。',
     selectStartHint: 'ヒント：開始する日をクリックして休暇申請を始め、次に終了日をクリックします。',
     selectEndHint: '次に終了日をクリックしてください（1日のみの場合は同じ日を）。',
     selectionRange: '選択中',
@@ -1366,6 +1367,13 @@ export default {
     pushNotificationsDesc: 'アプリ内でプッシュ通知を受け取る',
     desktopNotifications: 'デスクトップ通知',
     desktopNotificationsDesc: 'デスクトップにブラウザ通知を表示',
+    desktopDenied: '{origin} の通知はブロックされています。アドレスバーで通知を許可してから、もう一度オンにしてください。',
+    desktopEmbedded: 'このウィンドウではデスクトップ通知を表示できません。Chrome または Safari で {origin} を開き、通知を許可してください。',
+    desktopInsecure: 'デスクトップ通知には http://localhost または https が必要です。このページは {origin} です。',
+    desktopUnsupported: 'このブラウザではデスクトップ通知を表示できません。',
+    desktopTestTitle: 'デスクトップ通知はオンです',
+    desktopTestBody: '新しい通知が届くと、このようなアラートが表示されます。',
+    desktopPermissionRequired: '{origin} の通知が許可されませんでした。このブラウザのサイト設定で通知を許可してから、もう一度お試しください。',
     notificationFrequency: '通知頻度',
     realtime: 'リアルタイム',
     daily: '日次まとめ',
@@ -1789,11 +1797,11 @@ export default {
       empty: '{context} に対する特定のヒントは見つかりませんでした。以下にすべての機能を表示しています。',
       feature_1: {
         title: '隠れた機能：一括編集',
-        description: '最大50件のレコードを一度に編集できます。項目の横のチェックボックスを選択し、テーブル上部の✏️アイコンをクリックしてください。現在のデモでは無効になっています。'
+        description: '最大50件のレコードを一度に編集できます。項目の横のチェックボックスを選択し、テーブル上部の編集アイコンをクリックしてください。現在のデモでは無効になっています。'
       },
       feature_2: {
         title: 'コンテキストヒント：クイックフィルター',
-        description: '列ヘッダーの横にある虫眼鏡アイコン（🔍）を使用して、その列のユニークな値で即座にフィルタリングします。フィルターパネルを開く必要はありません。'
+        description: '列ヘッダーの横にある虫眼鏡アイコンを使用して、その列のユニークな値で即座にフィルタリングします。フィルターパネルを開く必要はありません。'
       },
       feature_3: {
         title: 'デモ制限：データ永続性',

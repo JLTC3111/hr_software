@@ -17,7 +17,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
     errorDiv.innerHTML = `
       <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 999999; display: flex; align-items: center; justify-content: center; font-family: system-ui;">
         <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
-          <h2 style="color: #dc2626; margin: 0 0 1rem 0; font-size: 1.5rem;">⚠️ Configuration Error</h2>
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin: 0 0 1rem 0;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/>
+              <path d="M12 9v4"/>
+              <path d="M12 17h.01"/>
+            </svg>
+            <h2 style="color: #dc2626; margin: 0; font-size: 1.5rem;">Configuration Error</h2>
+          </div>
           <p style="color: #374151; margin: 0 0 1rem 0; line-height: 1.6;">
             Missing Supabase configuration. Please add the following to your <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px;">.env</code> file:
           </p>

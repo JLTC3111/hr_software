@@ -41,6 +41,7 @@ export default {
     mine: 'Nghỉ Phép Của Tôi',
     today: 'Hôm Nay',
     clearSelection: 'Xóa lựa chọn',
+    cmdClickHint: '{mod} hoặc Shift-nhấp ngày khác để thêm, hoặc ngày đã chọn để bỏ.',
     selectStartHint: 'Mẹo: nhấp vào một ngày để bắt đầu yêu cầu nghỉ phép, sau đó nhấp vào ngày cuối.',
     selectEndHint: 'Bây giờ nhấp vào ngày kết thúc (hoặc cùng ngày nếu chỉ nghỉ một ngày).',
     selectionRange: 'Đã chọn',
@@ -62,6 +63,7 @@ export default {
     reasonPlaceholder: 'Thêm ghi chú tùy chọn cho quản lý của bạn...',
     submitRequest: 'Gửi Yêu Cầu',
     requestSubmitted: 'Đã gửi yêu cầu nghỉ phép thành công!',
+    requestsSubmitted: 'Đã gửi {n} yêu cầu nghỉ phép thành công!',
     requestApproved: 'Đã phê duyệt yêu cầu nghỉ phép.',
     requestRejected: 'Đã từ chối yêu cầu nghỉ phép.',
     rejectReasonPrompt: 'Lý do từ chối yêu cầu này (tùy chọn):',
@@ -89,6 +91,7 @@ export default {
     autoApproveHint: 'Bỏ qua hàng chờ và đánh dấu đã phê duyệt.',
     submitAndApprove: 'Gửi & phê duyệt',
     submitAndApproved: 'Đã thêm và phê duyệt nghỉ phép.',
+    requestsSubmitAndApproved: 'Đã thêm và phê duyệt {n} yêu cầu nghỉ phép.',
     manualDates: 'Nhập ngày bắt đầu và kết thúc.',
     onBehalfNote: 'Bạn đang gửi nghỉ phép thay cho nhân viên này.',
     rejectTitle: 'Từ chối yêu cầu nghỉ phép',
@@ -646,7 +649,7 @@ export default {
     scopeAll: 'Tất cả',
     scopeStarting: 'Sắp vào làm',
     scopeLeft: 'Đã nghỉ việc',
-    searchPlaceholder: 'Tìm theo tên, mã nhân viên hoặc đơn vị',
+    searchPlaceholder: 'Tìm theo tên, email hoặc đơn vị',
     groupedByUnit: 'Nhóm theo đơn vị',
     sortedByRating: 'Sắp theo hiệu suất',
     viewMode: 'Chế độ xem',
@@ -1016,6 +1019,9 @@ export default {
     links: 'Liên Kết',
     department: 'Phòng Ban',
     postNewJob: 'Đăng Tuyển Công Việc Mới',
+    editJob: 'Sửa tin tuyển dụng',
+    confirmDeleteJob: 'Xóa "{title}"? Hồ sơ ứng tuyển cho tin này cũng sẽ bị xóa.',
+    deleteFailed: 'Không xóa được tin tuyển dụng',
     viewResume: 'Xem CV',
     linkedinProfile: 'Hồ sơ LinkedIn',
     notes: 'Ghi chú',
@@ -1033,6 +1039,18 @@ export default {
     subtitle: 'Quản lý quy trình tuyển dụng và theo dõi ứng viên',
     pipelineView: 'Quy trình',
     tableView: 'Bảng',
+    jobsView: 'Việc làm',
+    noJobPostings: 'Không tìm thấy tin tuyển dụng',
+    postedDate: 'Ngày đăng',
+    salaryRange: 'Lương',
+    searchJobsPlaceholder: 'Tìm việc làm',
+    jobStatuses: {
+      open: 'Đang mở',
+      active: 'Đang tuyển',
+      published: 'Đã đăng',
+      closed: 'Đã đóng',
+      draft: 'Bản nháp',
+    },
     candidates: 'ứng viên',
     moveTo: 'Chuyển đến',
     reject: 'Từ chối',
@@ -1064,7 +1082,7 @@ export default {
       openReqs: 'Vị trí đang mở'
     },
     // Board (2b)
-    boardView: 'Bảng',
+    boardView: 'Cột',
     viewMode: 'Chế độ xem',
     noApplications: 'Không tìm thấy hồ sơ nào',
     fieldsNotStored: 'Đã đăng tin, nhưng các trường sau không có trong bảng job_postings nên chưa được lưu: {fields}',
@@ -1984,6 +2002,13 @@ export default {
     pushNotificationsDesc: 'Nhận thông báo đẩy trong ứng dụng',
     desktopNotifications: 'Thông Báo Trên Desktop',
     desktopNotificationsDesc: 'Hiển thị thông báo trình duyệt trên desktop',
+    desktopDenied: 'Trình duyệt đang chặn thông báo cho {origin}. Ở thanh địa chỉ, hãy đặt Thông báo thành Cho phép, rồi bật lại.',
+    desktopEmbedded: 'Cửa sổ này không thể hiện thông báo trên máy tính. Hãy mở {origin} trong Chrome hoặc Safari, rồi cho phép thông báo.',
+    desktopInsecure: 'Thông báo trên máy tính cần http://localhost hoặc https. Trang hiện tại là {origin}.',
+    desktopUnsupported: 'Trình duyệt này không thể hiện thông báo trên máy tính.',
+    desktopTestTitle: 'Đã bật thông báo trên máy tính',
+    desktopTestBody: 'Bạn sẽ thấy cảnh báo như thế này khi có thông báo mới.',
+    desktopPermissionRequired: 'Quyền thông báo chưa được cấp cho {origin}. Hãy cho phép trong phần cài đặt trang web của trình duyệt này, rồi thử lại.',
     notificationFrequency: 'Tần Suất Thông Báo',
     realtime: 'Thời gian thực',
     daily: 'Tổng hợp hàng ngày',
@@ -2460,6 +2485,7 @@ export default {
     stageSignedOff: 'Đã phê duyệt',
     complete: 'hoàn tất',
     nOutstanding: 'còn {n} chưa xong',
+    nNotSubmitted: '{n} không nộp',
     nOverdue: '{n} quá hạn',
     nToFile: 'còn {n} cần nộp',
     session: 'buổi',
@@ -2489,10 +2515,18 @@ export default {
     noOverdueReviews: 'Mọi đánh giá của quản lý đều còn trong hạn.',
     nLate: '{n} trễ hạn',
     remindAll: 'Nhắc cả {n} người',
+    remindSelfAll: 'Nhắc {n} người tự đánh giá',
     remindNoAccounts: 'Không quản lý nào trong số đó có tài khoản để nhận thông báo.',
+    remindNoEmployeeAccounts: 'Không nhân viên nào trong số đó có tài khoản để nhận thông báo.',
     reminderTitle: 'Đánh giá của quản lý còn tồn đọng',
     reminderBody: '{n} đánh giá của {dept} đã quá hạn cho chu kỳ {cycle}.',
     remindedMessage: 'Đã nhắc {n} quản lý.',
+    selfReminderTitle: 'Chưa nộp tự đánh giá',
+    selfReminderBody: 'Vui lòng nộp tự đánh giá cho chu kỳ {cycle}.',
+    remindedEmployeesMessage: 'Đã nhắc {n} nhân viên.',
+    skippedSelfMessage: '{name}: tiếp tục mà không có tự đánh giá.',
+    skippedSelfNote: 'Chu kỳ này đang tiếp tục mà không có tự đánh giá.',
+    continueWithoutSelf: 'Tiếp tục không cần tự đánh giá',
     signedOffMessage: 'Đã phê duyệt {name}.',
     sentBackMessage: 'Đã trả lại {name} để chỉnh sửa.',
     overallRating: 'Tổng thể',
@@ -2500,6 +2534,24 @@ export default {
     areasForImprovement: 'Cần cải thiện',
     achievements: 'Thành tích',
     noWrittenReview: 'Không có nhận xét bằng văn bản nào được ghi lại cho đánh giá này.',
+    viewPending: 'Xem mục còn lại',
+    pendingReviews: 'Đánh giá còn lại',
+    pendingCaption: 'Còn {n} mục cần hoàn thành trong chu kỳ này',
+    nothingPending: 'Mọi đánh giá trong chu kỳ này đều đã được phê duyệt.',
+    nPeople: '{n} người',
+    statusSelfOutstanding: 'Chưa nộp tự đánh giá',
+    statusSelfSkipped: 'Không nộp tự đánh giá',
+    statusManagerToFile: 'Chưa nộp đánh giá của quản lý',
+    statusAwaitingCalibration: 'Đang chờ hiệu chỉnh',
+    selfOutstandingEmpty: 'Mọi tự đánh giá trong chu kỳ này đều đã nộp.',
+    managerToFileEmpty: 'Mọi đánh giá của quản lý trong chu kỳ này đều đã nộp.',
+    calibrationEmpty: 'Mọi đánh giá đã chấm điểm đều đã tới bước hiệu chỉnh.',
+    reviewNotFiled: 'Đánh giá này chưa được nộp.',
+    openPersonalGoals: 'Mở Mục tiêu cá nhân',
+    enterManagerRatings: 'Nhập điểm quản lý',
+    submitForCalibration: 'Gửi để hiệu chỉnh',
+    submittedForCalibrationMessage: 'Đã gửi {name} để hiệu chỉnh.',
+    readyForCalibration: 'Đánh giá này đã sẵn sàng gửi tới bước hiệu chỉnh.',
     competency: {
       technical_skills_rating: 'Chuyên môn',
       communication_rating: 'Giao tiếp',
@@ -2989,11 +3041,11 @@ export default {
       // Per-feature entries (match HELP_FEATURES ids used by components)
       feature_1: {
         title: 'Tính năng ẩn: Chỉnh Sửa Hàng Loạt',
-        description: 'Bạn có thể chỉnh sửa tới 50 bản ghi cùng lúc. Chọn hộp kiểm bên cạnh mục và nhấp vào biểu tượng ✏️ ở đầu bảng. Tính năng này bị vô hiệu hóa trong bản demo hiện tại.'
+        description: 'Bạn có thể chỉnh sửa tới 50 bản ghi cùng lúc. Chọn hộp kiểm bên cạnh mục và nhấp vào biểu tượng chỉnh sửa ở đầu bảng. Tính năng này bị vô hiệu hóa trong bản demo hiện tại.'
       },
       feature_2: {
         title: 'Mẹo theo ngữ cảnh: Bộ Lọc Nhanh',
-        description: 'Sử dụng biểu tượng kính lúp (🔍) bên cạnh tiêu đề cột để lọc ngay theo các giá trị duy nhất của cột đó. Không cần mở bảng lọc đầy đủ.'
+        description: 'Sử dụng biểu tượng kính lúp bên cạnh tiêu đề cột để lọc ngay theo các giá trị duy nhất của cột đó. Không cần mở bảng lọc đầy đủ.'
       },
       feature_3: {
         title: 'Hạn Chế Demo: Tính Bền Dữ Liệu',
@@ -3008,11 +3060,11 @@ export default {
     features_map: {
       feature_1: {
         title: 'Tính năng ẩn: Chỉnh Sửa Hàng Loạt',
-        description: 'Bạn có thể chỉnh sửa tới 50 bản ghi cùng lúc. Chọn hộp kiểm bên cạnh mục và nhấp vào biểu tượng ✏️ ở đầu bảng. Tính năng này bị vô hiệu hóa trong bản demo hiện tại.'
+        description: 'Bạn có thể chỉnh sửa tới 50 bản ghi cùng lúc. Chọn hộp kiểm bên cạnh mục và nhấp vào biểu tượng chỉnh sửa ở đầu bảng. Tính năng này bị vô hiệu hóa trong bản demo hiện tại.'
       },
       feature_2: {
         title: 'Mẹo theo ngữ cảnh: Bộ Lọc Nhanh',
-        description: 'Sử dụng biểu tượng kính lúp (🔍) bên cạnh tiêu đề cột để lọc ngay theo các giá trị duy nhất của cột đó. Không cần mở bảng lọc đầy đủ.'
+        description: 'Sử dụng biểu tượng kính lúp bên cạnh tiêu đề cột để lọc ngay theo các giá trị duy nhất của cột đó. Không cần mở bảng lọc đầy đủ.'
       },
       feature_3: {
         title: 'Hạn Chế Demo: Tính Bền Dữ Liệu',
@@ -3293,6 +3345,18 @@ export default {
     ratedBelowSelf: 'thấp hơn',
     noGaps: 'Tự đánh giá và quản lý chênh nhau dưới nửa điểm ở mọi kỹ năng.',
     noManagerRatings: 'Kỳ này chưa có điểm của quản lý.',
+    enterManagerRatings: 'Nhập điểm quản lý',
+    saveManagerReview: 'Lưu đánh giá của quản lý',
+    managerReviewSaved: 'Đã lưu đánh giá của quản lý.',
+    managerReviewSaveError: 'Không thể lưu đánh giá của quản lý',
+    needManagerRating: 'Chấm ít nhất một kỹ năng trước khi lưu.',
+    managerAssessmentLead: 'Phần tô là tự đánh giá của họ. Đặt vạch của bạn trên cùng thanh đó.',
+    submitForCalibration: 'Gửi để hiệu chỉnh',
+    submittedForCalibration: 'Đã gửi để hiệu chỉnh.',
+    submitCalibrationError: 'Không thể gửi để hiệu chỉnh',
+    readyToSubmitCalibration: 'Sẵn sàng gửi',
+    openPerformanceReviews: 'Mở Đánh giá hiệu suất',
+    signOffOnReviews: 'Phê duyệt trên Đánh giá hiệu suất',
 
     // Mục tiêu
     onTrack: 'Đúng tiến độ',

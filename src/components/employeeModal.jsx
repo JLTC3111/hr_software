@@ -1,27 +1,18 @@
-import _React, { useState, useCallback, useEffect } from 'react'
+import _React, { useState, useCallback, useEffect, useMemo } from 'react'
 import { Mail, Phone, MapPin, Briefcase, Calendar, Award, Edit2, Save, X, User } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext.jsx'
 import { useTheme } from '../contexts/ThemeContext.jsx'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import * as employeeService from '../services/employeeService.js'
 import { DatePicker } from './ui/date-picker.jsx'
-
-const getStatusColor = (status) => {
-  switch (status) {
-    case 'Active':
-      return 'bg-green-100 text-green-800'
-    case 'Inactive':
-      return 'bg-red-100 text-red-800'
-    case 'On Leave':
-      return 'bg-yellow-100 text-yellow-800'
-    default:
-      return 'bg-gray-100 text-gray-800'
-  }
-}
+import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js'
+import { Blueprint, Btn, Tag, Kicker, ColumnHeading, FlatListbox } from './ui/industry.jsx'
+import { AutofillOffInput, AUTOFILL_OFF_FORM_ATTRS, cloakAutofillLabel } from '../hooks/useSuppressAutofill.jsx'
 
 const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false }) => {
   const { t } = useLanguage();
   const { isDarkMode } = useTheme();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
   const { user, handleSessionAuthError } = useAuth();
   
   // Check if user has permission to edit (not employee role)
@@ -217,348 +208,263 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
     setIsEditing(false);
   };
 
-  if (!employee) return null;
+  if (!employee || !currentEmployee) return null;
 
-  const bgColor = isDarkMode ? 'bg-gray-800' : 'bg-white';
-  const textPrimary = isDarkMode ? 'text-white' : 'text-gray-900';
-  const textSecondary = isDarkMode ? 'text-gray-300' : 'text-gray-600';
-  const borderColor = isDarkMode ? 'border-gray-700' : 'border-gray-200';
-  const inputBg = isDarkMode ? 'bg-gray-700' : 'bg-white';
-  const inputBorder = isDarkMode ? 'border-gray-600' : 'border-gray-300';
-
-  // Guard clause: Don't render if no employee
-  if (!employee || !currentEmployee) {
-    return null;
-  }
+  const statusKey = String(currentEmployee.status || formData.status || 'Active').toLowerCase().replace(/\s+/g, '');
+  const statusVariant = statusKey === 'inactive' ? 'outline' : statusKey === 'onleave' ? 'neutral' : 'accent';
+  const field = (invalid) => ({
+    width: '100%',
+    fontFamily: BODY,
+    fontSize: 13,
+    color: ind.ink,
+    background: 'transparent',
+    border: `1px solid ${invalid ? ind.ink : ind.hairline}`,
+    borderRadius: 0,
+    padding: '7px 10px',
+    outline: 'none',
+  });
+  const fieldError = {
+    fontFamily: BODY, fontSize: 11.5, color: ind.ink, marginTop: 4,
+    borderLeft: `2px solid ${ind.ink}`, paddingLeft: 6,
+  };
+  const label = {
+    fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.14em',
+    textTransform: 'uppercase', color: ind.inkMuted, display: 'block', marginBottom: 5,
+  };
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(29,31,32,.55)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget && !isSaving) {
-          onClose();
-        }
+        if (e.target === e.currentTarget && !isSaving) onClose();
       }}
     >
-      <div className={`${bgColor} rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto ${textPrimary}`}>
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex justify-between items-start mb-6">
-            <h3 className={`text-xl font-bold ${textPrimary}`}>
+      <Blueprint
+        ind={ind}
+        style={{
+          background: ind.ground, width: '100%', maxWidth: 672, maxHeight: '90vh',
+          overflowY: 'auto', color: ind.ink, fontFamily: BODY,
+        }}
+      >
+        <form
+          {...AUTOFILL_OFF_FORM_ATTRS}
+          onSubmit={(event) => event.preventDefault()}
+          style={{ padding: '18px 20px 16px' }}
+        >
+          <div className="flex items-start justify-between" style={{ gap: 12, marginBottom: 18 }}>
+            <ColumnHeading ind={ind}>
               {isEditing ? t('employees.editEmployee', 'Edit Employee') : t('employees.employeeDetails', 'Employee Details')}
-            </h3>
+            </ColumnHeading>
             <button
-              type = "button"
+              type="button"
               onClick={onClose}
-              className={`${textSecondary} hover:${textPrimary} cursor-pointer`}
+              aria-label={t('common.close', 'Close')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0 }}
             >
-              <X className="h-6 w-6" />
+              <X size={16} strokeWidth={1.5} />
             </button>
           </div>
-          
-          <div className="space-y-6">
-            {/* Profile Section */}
-            <div className="flex items-center space-x-4">
-              <div className={`w-16 h-16 ${isDarkMode ? 'bg-gray-700' : 'bg-blue-100'} rounded-full flex items-center justify-center overflow-hidden border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-                {currentEmployee?.photo ? (
-                  <img 
-                    src={currentEmployee.photo} 
-                    alt={currentEmployee.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                <div className={currentEmployee?.photo ? 'hidden' : 'flex'} style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
-                  <User className="w-8 h-8" style={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
+
+          <div className="flex items-center" style={{ gap: 14, marginBottom: 20 }}>
+            <div
+              style={{
+                width: 64, height: 64, flex: 'none', overflow: 'hidden',
+                border: `1px solid ${ind.hairline}`,
+                background: currentEmployee?.photo ? 'transparent' : ind.accentWash,
+                display: 'grid', placeItems: 'center',
+              }}
+            >
+              {currentEmployee?.photo ? (
+                <img src={currentEmployee.photo} alt={currentEmployee.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <User size={22} strokeWidth={1.5} style={{ color: ind.inkMuted }} />
+              )}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {isEditing ? (
+                <div>
+                  <AutofillOffInput type="text" name="name" value={formData.name} onChange={handleChange} aria-label={t('employees.name', 'Name')} style={field(errors.name)} />
+                  {errors.name && <p style={fieldError}>{errors.name}</p>}
                 </div>
-              </div>
-              <div className="flex-1">
-                {isEditing ? (
-                  <div>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      className={`w-full px-3 py-2 ${inputBg} border ${errors.name ? 'border-red-500' : inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
-                      placeholder={t('employees.name', 'Name')}
-                    />
-                    {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-                  </div>
-                ) : (
-                  <h4 className={`text-lg font-semibold ${textPrimary}`}>{currentEmployee?.name || 'N/A'}</h4>
-                )}
-                
-                {isEditing ? (
-                  <div className="mt-2">
-                    <select
-                      name="position"
-                      value={formData.position}
-                      onChange={handleChange}
-                      className={`w-full px-3 py-2 ${inputBg} border ${errors.position ? 'border-red-500' : inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
-                    >
-                      <option value="">{t('addEmployee.selectPosition', 'Select Position')}</option>
-                      {positions.map(pos => (
-                        <option key={pos.value} value={pos.value}>
-                          {pos.label}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.position && <p className="text-red-500 text-sm mt-1">{errors.position}</p>}
-                  </div>
-                ) : (
-                  <p className={textSecondary}>
-                    {formData.position ? t(`employeePosition.${formData.position}`, currentEmployee?.position) : 'N/A'}
-                  </p>
-                )}
-                
-                {isEditing ? (
-                  <div className="mt-2">
-                    <select
-                      name="status"
-                      value={formData.status}
-                      onChange={handleChange}
-                      className={`px-3 py-1 text-sm ${inputBg} border ${inputBorder} rounded-full focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
-                    >
-                      <option value="Active">{t('employeeStatus.active', 'Active')}</option>
-                      <option value="Inactive">{t('employeeStatus.inactive', 'Inactive')}</option>
-                      <option value="On Leave">{t('employeeStatus.onLeave', 'On Leave')}</option>
-                    </select>
-                  </div>
-                ) : (
-                  <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full mt-1 ${getStatusColor(currentEmployee?.status || 'Active')}`}>
-                    {t(`employeeStatus.${(currentEmployee?.status || 'Active').toLowerCase().replace(' ', '')}`, currentEmployee?.status || 'Active')}
-                  </span>
-                )}
+              ) : (
+                <div style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 18, letterSpacing: '.04em', textTransform: 'uppercase' }}>
+                  {currentEmployee?.name || 'N/A'}
+                </div>
+              )}
+
+              {isEditing ? (
+                <div style={{ marginTop: 8 }}>
+                  <FlatListbox
+                    ind={ind}
+                    name="position"
+                    value={formData.position}
+                    onChange={handleChange}
+                    aria-label={t('employees.position', 'Position')}
+                    style={{ width: '100%', padding: '8px 10px', textTransform: 'none', letterSpacing: '.02em', border: `1px solid ${errors.position ? ind.ink : ind.hairline}` }}
+                  >
+                    <option value="">{t('addEmployee.selectPosition', 'Select Position')}</option>
+                    {positions.map((pos) => (
+                      <option key={pos.value} value={pos.value}>{pos.label}</option>
+                    ))}
+                  </FlatListbox>
+                  {errors.position && <p style={fieldError}>{errors.position}</p>}
+                </div>
+              ) : (
+                <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 4 }}>
+                  {formData.position ? t(`employeePosition.${formData.position}`, currentEmployee?.position) : 'N/A'}
+                </p>
+              )}
+
+              {isEditing ? (
+                <div style={{ marginTop: 8 }}>
+                  <FlatListbox
+                    ind={ind}
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                    aria-label={t('employees.status', 'Status')}
+                    style={{ width: '100%', padding: '6px 10px', textTransform: 'none', letterSpacing: '.02em' }}
+                  >
+                    <option value="Active">{t('employeeStatus.active', 'Active')}</option>
+                    <option value="Inactive">{t('employeeStatus.inactive', 'Inactive')}</option>
+                    <option value="On Leave">{t('employeeStatus.onLeave', 'On Leave')}</option>
+                  </FlatListbox>
+                </div>
+              ) : (
+                <div style={{ marginTop: 8 }}>
+                  <Tag ind={ind} variant={statusVariant}>
+                    {t(`employeeStatus.${statusKey}`, currentEmployee?.status || 'Active')}
+                  </Tag>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 24 }}>
+            <div>
+              <Kicker ind={ind} color={ind.ink} style={{ marginBottom: 12 }}>{t('employees.contactInformation', 'Contact Information')}</Kicker>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <span style={label}><Mail size={12} strokeWidth={1.5} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />{cloakAutofillLabel(t('employees.email', 'Email'))}</span>
+                  {isEditing ? (
+                    <div>
+                      <AutofillOffInput type="text" name="email" value={formData.email} onChange={handleChange} aria-label={t('employees.email', 'Email')} style={field(errors.email)} />
+                      {errors.email && <p style={fieldError}>{errors.email}</p>}
+                    </div>
+                  ) : (
+                    <span style={{ fontFamily: BODY, fontSize: 13 }}>{currentEmployee?.email || 'N/A'}</span>
+                  )}
+                </div>
+                <div>
+                  <span style={label}><Phone size={12} strokeWidth={1.5} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />{cloakAutofillLabel(t('employees.phone', 'Phone'))}</span>
+                  {isEditing ? (
+                    <div>
+                      <AutofillOffInput type="text" name="phone" value={formData.phone} onChange={handleChange} aria-label={t('employees.phone', 'Phone')} style={field(errors.phone)} />
+                      {errors.phone && <p style={fieldError}>{errors.phone}</p>}
+                    </div>
+                  ) : (
+                    <span style={{ fontFamily: BODY, fontSize: 13 }}>{currentEmployee?.phone || 'N/A'}</span>
+                  )}
+                </div>
+                <div>
+                  <span style={label}><MapPin size={12} strokeWidth={1.5} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />{cloakAutofillLabel(t('addEmployee.address', 'Address'))}</span>
+                  {isEditing ? (
+                    <AutofillOffInput type="text" name="address" value={formData.address} onChange={handleChange} aria-label={t('addEmployee.address', 'Address')} style={field(false)} />
+                  ) : (
+                    <span style={{ fontFamily: BODY, fontSize: 13 }}>{currentEmployee.address || currentEmployee.location || 'N/A'}</span>
+                  )}
+                </div>
               </div>
             </div>
-            
-            {/* Details Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Contact Information */}
-              <div className="space-y-4">
-                <h5 className={`font-medium ${textPrimary}`}>{t('employees.contactInformation', 'Contact Information')}</h5>
-                <div className="space-y-3 text-sm">
-                  {/* Email */}
-                  <div>
-                    <div className="flex items-center space-x-2 mb-1">
-                      <Mail className={`h-4 w-4 ${textSecondary}`} />
-                      <span className={`text-xs ${textSecondary}`}>{t('employees.email', 'Email')}</span>
-                    </div>
-                    {isEditing ? (
-                      <div>
-                        <input
-                          type="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleChange}
-                          className={`w-full px-3 py-2 ${inputBg} border ${errors.email ? 'border-red-500' : inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
-                          placeholder="email@example.com"
-                        />
-                        {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-                      </div>
-                    ) : (
-                      <span className={textPrimary}>{currentEmployee?.email || 'N/A'}</span>
-                    )}
-                  </div>
-                  
-                  {/* Phone */}
-                  <div>
-                    <div className="flex items-center space-x-2 mb-1">
-                      <Phone className={`h-4 w-4 ${textSecondary}`} />
-                      <span className={`text-xs ${textSecondary}`}>{t('employees.phone', 'Phone')}</span>
-                    </div>
-                    {isEditing ? (
-                      <div>
-                        <input
-                          type="tel"
-                          name="phone"
-                          value={formData.phone}
-                          onChange={handleChange}
-                          className={`w-full px-3 py-2 ${inputBg} border ${errors.phone ? 'border-red-500' : inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
-                          placeholder="+1 234 567 8900"
-                        />
-                        {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
-                      </div>
-                    ) : (
-                      <span className={textPrimary}>{currentEmployee?.phone || 'N/A'}</span>
-                    )}
-                  </div>
-                  
-                  {/* Address */}
-                  <div>
-                    <div className="flex items-center space-x-2 mb-1">
-                      <MapPin className={`h-4 w-4 ${textSecondary}`} />
-                      <span className={`text-xs ${textSecondary}`}>{t('addEmployee.address', 'Address')}</span>
-                    </div>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        name="address"
-                        value={formData.address}
+
+            <div>
+              <Kicker ind={ind} color={ind.ink} style={{ marginBottom: 12 }}>{t('employees.employmentDetails', 'Employment Details')}</Kicker>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <span style={label}><Briefcase size={12} strokeWidth={1.5} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />{t('employees.department', 'Department')}</span>
+                  {isEditing ? (
+                    <div>
+                      <FlatListbox
+                        ind={ind}
+                        name="department"
+                        value={formData.department}
                         onChange={handleChange}
-                        className={`w-full px-3 py-2 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
-                        placeholder={t('addEmployee.addressPlaceholder', 'City, Country')}
-                      />
-                    ) : (
-                      <span className={textPrimary}>{currentEmployee.address || currentEmployee.location || 'N/A'}</span>
-                    )}
-                  </div>
+                        aria-label={t('employees.department', 'Department')}
+                        style={{ width: '100%', padding: '8px 10px', textTransform: 'none', letterSpacing: '.02em', border: `1px solid ${errors.department ? ind.ink : ind.hairline}` }}
+                      >
+                        <option value="">{t('addEmployee.selectDepartment', 'Select Department')}</option>
+                        {departments.map((dept) => (
+                          <option key={dept.value} value={dept.value}>{dept.label}</option>
+                        ))}
+                      </FlatListbox>
+                      {errors.department && <p style={fieldError}>{errors.department}</p>}
+                    </div>
+                  ) : (
+                    <span style={{ fontFamily: BODY, fontSize: 13 }}>
+                      {formData.department ? t(`departments.${formData.department}`, currentEmployee?.department) : 'N/A'}
+                    </span>
+                  )}
                 </div>
-              </div>
-              
-              {/* Employment Details */}
-              <div className="space-y-4">
-                <h5 className={`font-medium ${textPrimary}`}>{t('employees.employmentDetails', 'Employment Details')}</h5>
-                <div className="space-y-3 text-sm">
-                  {/* Department */}
-                  <div>
-                    <div className="flex items-center space-x-2 mb-1">
-                      <Briefcase className={`h-4 w-4 ${textSecondary}`} />
-                      <span className={`text-xs ${textSecondary}`}>{t('employees.department', 'Department')}</span>
+                <div>
+                  <span style={label}><Calendar size={12} strokeWidth={1.5} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />{t('employees.startDate', 'Start Date')}</span>
+                  {isEditing ? (
+                    <DatePicker flat name="startDate" value={formData.startDate} onChange={handleChange} icon={Calendar} />
+                  ) : (
+                    <span style={{ fontFamily: BODY, fontSize: 13 }}>{currentEmployee.startDate || currentEmployee.start_date || 'N/A'}</span>
+                  )}
+                </div>
+                <div>
+                  <span style={label}><Calendar size={12} strokeWidth={1.5} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />{t('addEmployee.dob', 'Date of Birth')}</span>
+                  {isEditing ? (
+                    <DatePicker flat name="dob" value={formData.dob} onChange={handleChange} icon={Calendar} />
+                  ) : (
+                    <span style={{ fontFamily: BODY, fontSize: 13 }}>{currentEmployee?.dob || 'N/A'}</span>
+                  )}
+                </div>
+                <div>
+                  <span style={label}><Award size={12} strokeWidth={1.5} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />{t('employees.performance', 'Performance')}</span>
+                  {isEditing ? (
+                    <div>
+                      <input type="number" name="performance" value={formData.performance} onChange={handleChange} min="0" max="5" step="0.1" placeholder="3.5" style={field(errors.performance)} />
+                      {errors.performance && <p style={fieldError}>{errors.performance}</p>}
                     </div>
-                    {isEditing ? (
-                      <div>
-                        <select
-                          name="department"
-                          value={formData.department}
-                          onChange={handleChange}
-                          className={`w-full px-3 py-2 ${inputBg} border ${errors.department ? 'border-red-500' : inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
-                        >
-                          <option value="">{t('addEmployee.selectDepartment', 'Select Department')}</option>
-                          {departments.map(dept => (
-                            <option key={dept.value} value={dept.value}>
-                              {dept.label}
-                            </option>
-                          ))}
-                        </select>
-                        {errors.department && <p className="text-red-500 text-xs mt-1">{errors.department}</p>}
-                      </div>
-                    ) : (
-                      <span className={textPrimary}>
-                        {formData.department ? t(`departments.${formData.department}`, currentEmployee?.department) : 'N/A'}
-                      </span>
-                    )}
-                  </div>
-                  
-                  {/* Start Date */}
-                  <div>
-                    <div className="flex items-center space-x-2 mb-1">
-                      <Calendar className={`h-4 w-4 ${textSecondary}`} />
-                      <span className={`text-xs ${textSecondary}`}>{t('employees.startDate', 'Start Date')}</span>
-                    </div>
-                    {isEditing ? (
-                      <DatePicker
-                        name="startDate"
-                        value={formData.startDate}
-                        onChange={handleChange}
-                        icon={Calendar}
-                        inputClassName={`w-full px-3 py-2 pr-10 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
-                      />
-                    ) : (
-                      <span className={textPrimary}>{currentEmployee.startDate || currentEmployee.start_date || 'N/A'}</span>
-                    )}
-                  </div>
-                  
-                  {/* Date of Birth */}
-                  <div>
-                    <div className="flex items-center space-x-2 mb-1">
-                      <Calendar className={`h-4 w-4 ${textSecondary}`} />
-                      <span className={`text-xs ${textSecondary}`}>{t('addEmployee.dob', 'Date of Birth')}</span>
-                    </div>
-                    {isEditing ? (
-                      <DatePicker
-                        name="dob"
-                        value={formData.dob}
-                        onChange={handleChange}
-                        icon={Calendar}
-                        inputClassName={`w-full px-3 py-2 pr-10 ${inputBg} border ${inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
-                      />
-                    ) : (
-                      <span className={textPrimary}>{currentEmployee?.dob || 'N/A'}</span>
-                    )}
-                  </div>
-                  
-                  {/* Performance */}
-                  <div>
-                    <div className="flex items-center space-x-2 mb-1">
-                      <Award className={`h-4 w-4 ${textSecondary}`} />
-                      <span className={`text-xs ${textSecondary}`}>{t('employees.performance', 'Performance')}</span>
-                    </div>
-                    {isEditing ? (
-                      <div>
-                        <input
-                          type="number"
-                          name="performance"
-                          value={formData.performance}
-                          onChange={handleChange}
-                          min="0"
-                          max="5"
-                          step="0.1"
-                          className={`w-full px-3 py-2 ${inputBg} border ${errors.performance ? 'border-red-500' : inputBorder} rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${textPrimary}`}
-                          placeholder="3.5"
-                        />
-                        {errors.performance && <p className="text-red-500 text-xs mt-1">{errors.performance}</p>}
-                      </div>
-                    ) : (
-                      <span className={textPrimary}>{currentEmployee?.performance || 'N/A'}/5.0</span>
-                    )}
-                  </div>
+                  ) : (
+                    <span style={figure(14, ind.ink)}>{currentEmployee?.performance || 'N/A'}/5.0</span>
+                  )}
                 </div>
               </div>
             </div>
           </div>
-          
-          {/* Action Buttons */}
-          <div className={`flex justify-end space-x-3 mt-8 pt-6 border-t ${borderColor}`}>
+
+          <div className="flex justify-end" style={{ gap: 10, marginTop: 24, paddingTop: 16, borderTop: `1px solid ${ind.hairline}` }}>
             {isEditing ? (
               <>
-                <button
-                  type = "button"
-                  onClick={handleCancel}
-                  disabled={isSaving}
-                  className={`px-4 py-2 ${textSecondary} hover:${textPrimary} disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed`}
-                >
-                  <X className="h-4 w-4 inline mr-2" />
+                <Btn ind={ind} onClick={handleCancel} disabled={isSaving} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <X size={13} strokeWidth={1.5} />
                   {t('common.cancel', 'Cancel')}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg disabled:opacity-50 flex items-center cursor-pointer disabled:cursor-not-allowed"
-                >
-                  <Save className="h-4 w-4 mr-2" />
+                </Btn>
+                <Btn ind={ind} variant="primary" onClick={handleSave} disabled={isSaving} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Save size={13} strokeWidth={1.5} />
                   {isSaving ? t('common.saving', 'Saving...') : t('common.save', 'Save')}
-                </button>
+                </Btn>
               </>
             ) : (
               <>
-                <button
-                  type = "button"
-                  onClick={onClose}
-                  className={`px-4 py-2 ${textSecondary} hover:${textPrimary} cursor-pointer`}
-                >
-                  {t('common.close', 'Close')}
-                </button>
+                <Btn ind={ind} onClick={onClose}>{t('common.close', 'Close')}</Btn>
                 {canEdit && (
-                  <button
-                    type="button"
-                    onClick={() => setIsEditing(true)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center cursor-pointer"
-                  >
-                    <Edit2 className="h-4 w-4 mr-2" />
+                  <Btn ind={ind} variant="primary" onClick={() => setIsEditing(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <Edit2 size={13} strokeWidth={1.5} />
                     {t('employees.editEmployee', 'Edit Employee')}
-                  </button>
+                  </Btn>
                 )}
               </>
             )}
           </div>
-        </div>
-      </div>
+        </form>
+      </Blueprint>
     </div>
   );
 };

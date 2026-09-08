@@ -16,6 +16,10 @@ export default defineConfig(({ mode }) => ({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    port: 5173,
+    strictPort: true,
+  },
   // Libraries (e.g. Recharts) may read process.env.NODE_ENV at runtime
   define: {
     'process.env.NODE_ENV': JSON.stringify(mode),

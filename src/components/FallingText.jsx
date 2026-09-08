@@ -15,6 +15,7 @@ const FallingText = ({
   fontSize = "1rem",
   antiGravityDelay = 3500,
   preFallDelay = 120,
+  style,
 }) => {
   const containerRef = useRef(null);
   const textRef = useRef(null);
@@ -269,6 +270,7 @@ const FallingText = ({
       style={{
         position: "relative",
         overflow: "hidden",
+        ...style,
       }}
     >
       <div

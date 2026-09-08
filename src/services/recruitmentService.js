@@ -6,6 +6,7 @@ import {
   MOCK_APPLICATIONS, 
   MOCK_INTERVIEWS 
 } from '../utils/demoHelper';
+import { composeSalaryRange } from '../utils/localeFormat';
 
 /**
  * Recruitment Service
@@ -77,20 +78,62 @@ const unknownColumnFrom = (error) => {
  * single `salary_range` string the table actually has, and drop empty values so
  * we never send a column just to write '' into it.
  */
-const normalizeJobPosting = (jobData) => {
-  const { salary_min: min, salary_max: max, ...rest } = jobData;
+const CLEARABLE_JOB_COLUMNS = new Set([
+  'location', 'description', 'requirements', 'salary_range', 'status', 'responsibilities',
+]);
+
+const normalizeJobPosting = (jobData, { keepEmpty = false } = {}) => {
+  const {
+    salary_min: min,
+    salary_max: max,
+    salary_language: language,
+    salary_currency: currency,
+    id: _id,
+    ...rest
+  } = jobData;
 
   const out = {};
   Object.entries(rest).forEach(([key, value]) => {
-    if (value === '' || value === null || value === undefined) return;
-    out[JOB_POSTING_ALIASES[key] || key] = value;
+    if (value === undefined) return;
+    const mapped = JOB_POSTING_ALIASES[key] || key;
+    const empty = value === '' || value === null;
+    if (empty) {
+      if (keepEmpty && CLEARABLE_JOB_COLUMNS.has(mapped)) out[mapped] = null;
+      return;
+    }
+    out[mapped] = value;
   });
 
-  if (min != null && max != null) out.salary_range = `${min} - ${max}`;
-  else if (min != null) out.salary_range = `${min}+`;
-  else if (max != null) out.salary_range = `up to ${max}`;
+  if (min != null && max != null) out.salary_range = composeSalaryRange(min, max, language, currency);
+  else if (min != null) out.salary_range = composeSalaryRange(min, null, language, currency);
+  else if (max != null) out.salary_range = composeSalaryRange(null, max, language, currency);
+  else if (keepEmpty) out.salary_range = null;
+
+  // These columns are NOT NULL on live job_postings — never write a null into them.
+  if (out.title == null) delete out.title;
+  if (out.department == null) delete out.department;
+  if (out.position_type == null) delete out.position_type;
 
   return out;
+};
+
+const writeJobPostingRow = async (payload, droppedColumns, jobId = null) => {
+  for (let attempt = 0; attempt <= Object.keys(payload).length; attempt += 1) {
+    const query = jobId
+      ? supabase.from('job_postings').update(payload).eq('id', jobId)
+      : supabase.from('job_postings').insert([payload]);
+    const { data, error } = await query.select().single();
+    if (!error) return { success: true, data, droppedColumns };
+
+    const unknown = unknownColumnFrom(error);
+    if (!unknown || !(unknown in payload)) throw error;
+
+    console.warn(`job_postings has no '${unknown}' column — retrying without it`);
+    droppedColumns.push(unknown);
+    const { [unknown]: _removed, ...remaining } = payload;
+    payload = remaining;
+  }
+  throw new Error('Could not match the job posting to the job_postings table');
 };
 
 /**
@@ -105,28 +148,72 @@ export const createJobPosting = async (jobData) => {
   let payload = normalizeJobPosting(jobData);
   const droppedColumns = [];
 
+  if (isDemoMode()) {
+    const row = {
+      id: `demo-job-${Date.now()}`,
+      status: 'open',
+      posted_date: new Date().toISOString().slice(0, 10),
+      created_at: new Date().toISOString(),
+      ...payload,
+    };
+    MOCK_JOB_POSTINGS.unshift(row);
+    return { success: true, data: row, droppedColumns };
+  }
+
   try {
-    // Bounded by the field count: every retry removes exactly one column.
-    for (let attempt = 0; attempt <= Object.keys(payload).length; attempt += 1) {
-      const { data, error } = await supabase
-        .from('job_postings')
-        .insert([payload])
-        .select()
-        .single();
-
-      if (!error) return { success: true, data, droppedColumns };
-
-      const unknown = unknownColumnFrom(error);
-      if (!unknown || !(unknown in payload)) throw error;
-
-      console.warn(`job_postings has no '${unknown}' column — retrying without it`);
-      droppedColumns.push(unknown);
-      const { [unknown]: _removed, ...remaining } = payload;
-      payload = remaining;
-    }
-    throw new Error('Could not match the job posting to the job_postings table');
+    return await writeJobPostingRow(payload, droppedColumns);
   } catch (error) {
     console.error('Error creating job posting:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Update an existing job posting. Same column-retry as create, so a drifted
+ * schema drops unknown fields instead of refusing the whole save.
+ */
+export const updateJobPosting = async (jobId, jobData) => {
+  const payload = normalizeJobPosting(jobData, { keepEmpty: true });
+  payload.updated_at = new Date().toISOString();
+  const droppedColumns = [];
+
+  if (isDemoMode()) {
+    const idx = MOCK_JOB_POSTINGS.findIndex((job) => String(job.id) === String(jobId));
+    if (idx < 0) return { success: false, error: 'Job posting not found' };
+    MOCK_JOB_POSTINGS[idx] = { ...MOCK_JOB_POSTINGS[idx], ...payload };
+    return { success: true, data: MOCK_JOB_POSTINGS[idx], droppedColumns };
+  }
+
+  try {
+    return await writeJobPostingRow(payload, droppedColumns, jobId);
+  } catch (error) {
+    console.error('Error updating job posting:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Remove a job posting. Related applications and metrics cascade in the table.
+ */
+export const deleteJobPosting = async (jobId) => {
+  if (isDemoMode()) {
+    const idx = MOCK_JOB_POSTINGS.findIndex((job) => String(job.id) === String(jobId));
+    if (idx < 0) return { success: false, error: 'Job posting not found' };
+    MOCK_JOB_POSTINGS.splice(idx, 1);
+    return { success: true };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('job_postings')
+      .delete()
+      .eq('id', jobId)
+      .select('id');
+    if (error) throw error;
+    if (!data?.length) return { success: false, error: 'Job posting not found' };
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting job posting:', error);
     return { success: false, error: error.message };
   }
 };
@@ -548,6 +635,8 @@ export default {
   // Job Postings
   getAllJobPostings,
   createJobPosting,
+  updateJobPosting,
+  deleteJobPosting,
   
   // Applicants
   getAllApplicants,

@@ -1,46 +1,52 @@
 import React from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
+import { useTheme } from '../contexts/ThemeContext.jsx';
+import { getIndustry, DISPLAY, BODY } from '../theme/industry.js';
+import { Blueprint, Btn, Kicker } from './ui/industry.jsx';
 
 /**
- * Error Boundary Component
- * Catches JavaScript errors anywhere in the component tree and displays fallback UI
+ * Root error boundary.
+ *
+ * Design system: "Industry" (src/theme/industry.js). Radius is 0 everywhere,
+ * cards are outlines with four registration corners, status reads through
+ * weight and rule rather than colour.
+ *
+ * Catches JavaScript errors anywhere in the component tree and displays
+ * fallback UI. The routed-page boundary lives in RouteErrorBoundary.jsx.
  */
 class ErrorBoundaryInner extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { 
-      hasError: false, 
+    this.state = {
+      hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
+      errorId: null,
     };
   }
 
   static getDerivedStateFromError() {
-    // Update state so the next render will show the fallback UI
     return { hasError: true };
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log error details for debugging
     console.error('Error caught by ErrorBoundary:', error);
     console.error('Error Info:', errorInfo);
-    
-    // Update state with error details
+
     this.setState({
       error,
-      errorInfo
+      errorInfo,
+      errorId: Date.now().toString(36).toUpperCase(),
     });
-
-    // You can also log the error to an error reporting service here
-    // e.g., Sentry, LogRocket, etc.
   }
 
   handleReset = () => {
-    this.setState({ 
-      hasError: false, 
+    this.setState({
+      hasError: false,
       error: null,
-      errorInfo: null 
+      errorInfo: null,
+      errorId: null,
     });
   };
 
@@ -50,82 +56,171 @@ class ErrorBoundaryInner extends React.Component {
 
   render() {
     if (this.state.hasError) {
-      const { t } = this.props;
+      const { t, ind } = this.props;
+      const errorId = this.state.errorId || Date.now().toString(36).toUpperCase();
+
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-          <div className="max-w-md w-full">
-            {/* Error Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-red-200 dark:border-red-800">
-              {/* Icon */}
-              <div className="flex justify-center mb-6">
-                <div className="p-4 bg-red-100 dark:bg-red-900/30 rounded-full">
-                  <AlertCircle className="w-12 h-12 text-red-600 dark:text-red-400" />
-                </div>
-              </div>
+        <div
+          style={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: ind.ground,
+            padding: 16,
+            fontFamily: BODY,
+            color: ind.ink,
+          }}
+        >
+          <div style={{ maxWidth: 480, width: '100%' }}>
+            <Blueprint ind={ind} style={{ background: ind.ground, padding: '28px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <AlertCircle
+                  size={18}
+                  strokeWidth={1.5}
+                  style={{ flex: 'none', marginTop: 2, color: ind.ink }}
+                />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <Kicker ind={ind} color={ind.ink}>
+                    {t('common.error', 'Error')}
+                  </Kicker>
+                  <h1
+                    style={{
+                      fontFamily: BODY,
+                      fontSize: 22,
+                      fontWeight: 400,
+                      color: ind.ink,
+                      margin: '8px 0 0',
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {t('errorBoundary.title', 'Oops! Something went wrong')}
+                  </h1>
+                  <p
+                    style={{
+                      fontFamily: BODY,
+                      fontSize: 14,
+                      color: ind.inkMuted,
+                      margin: '8px 0 0',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {t(
+                      'errorBoundary.description',
+                      "The application encountered an unexpected error. Don't worry, your data is safe."
+                    )}
+                  </p>
 
-              {/* Title */}
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-3">
-                {t('errorBoundary.title', 'Oops! Something went wrong')}
-              </h1>
+                  {import.meta.env.DEV && this.state.error && (
+                    <details
+                      style={{
+                        marginTop: 16,
+                        padding: '10px 12px',
+                        border: `1px solid ${ind.hairline}`,
+                      }}
+                    >
+                      <summary
+                        style={{
+                          cursor: 'pointer',
+                          fontFamily: DISPLAY,
+                          fontWeight: 600,
+                          fontSize: 11,
+                          letterSpacing: '.08em',
+                          textTransform: 'uppercase',
+                          color: ind.ink,
+                        }}
+                      >
+                        {t('errorBoundary.developmentDetails', 'Error Details (Development Only)')}
+                      </summary>
+                      <div
+                        style={{
+                          marginTop: 10,
+                          fontFamily: DISPLAY,
+                          fontSize: 12,
+                          letterSpacing: '.02em',
+                          color: ind.inkMuted,
+                          overflow: 'auto',
+                          maxHeight: 160,
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        <p style={{ fontWeight: 600, margin: '0 0 6px', color: ind.ink }}>
+                          {this.state.error.toString()}
+                        </p>
+                        {this.state.errorInfo && (
+                          <pre
+                            style={{
+                              whiteSpace: 'pre-wrap',
+                              margin: 0,
+                              fontFamily: BODY,
+                              fontSize: 12,
+                              color: ind.inkFaint,
+                            }}
+                          >
+                            {this.state.errorInfo.componentStack}
+                          </pre>
+                        )}
+                      </div>
+                    </details>
+                  )}
 
-              {/* Description */}
-              <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
-                {t('errorBoundary.description', "The application encountered an unexpected error. Don't worry, your data is safe.")}
-              </p>
+                  <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    <Btn
+                      ind={ind}
+                      variant="primary"
+                      onClick={this.handleReload}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <RefreshCw size={13} strokeWidth={1.5} />
+                      {t('errorBoundary.reloadApplication', 'Reload Application')}
+                    </Btn>
 
-              {/* Error Details (in development) */}
-              {import.meta.env.DEV && this.state.error && (
-                <details className="mb-6 p-4 bg-gray-100 dark:bg-gray-900 rounded-lg">
-                  <summary className="cursor-pointer font-medium text-sm text-gray-700 dark:text-gray-300 mb-2">
-                    {t('errorBoundary.developmentDetails', 'Error Details (Development Only)')}
-                  </summary>
-                  <div className="mt-2 text-xs font-mono text-red-600 dark:text-red-400 overflow-auto max-h-40">
-                    <p className="font-bold mb-1">{this.state.error.toString()}</p>
-                    {this.state.errorInfo && (
-                      <pre className="whitespace-pre-wrap text-gray-600 dark:text-gray-400">
-                        {this.state.errorInfo.componentStack}
-                      </pre>
+                    {this.props.onReset && (
+                      <Btn
+                        ind={ind}
+                        onClick={() => {
+                          this.handleReset();
+                          this.props.onReset();
+                        }}
+                      >
+                        {t('common.tryAgain', 'Try Again')}
+                      </Btn>
                     )}
                   </div>
-                </details>
-              )}
 
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                <button
-                  type="button"
-                  onClick={this.handleReload}
-                  className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-small transition-colors duration-200"
-                >
-                  <RefreshCw className="w-5 h-5" />
-                  <span>{t('errorBoundary.reloadApplication', 'Reload Application')}</span>
-                </button>
-
-                {this.props.onReset && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      this.handleReset();
-                      this.props.onReset();
+                  <p
+                    style={{
+                      fontFamily: BODY,
+                      fontSize: 12,
+                      color: ind.inkFaint,
+                      margin: '18px 0 0',
+                      paddingTop: 14,
+                      borderTop: `1px solid ${ind.rule}`,
+                      lineHeight: 1.45,
                     }}
-                    className="w-full px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-small transition-colors duration-200"
                   >
-                    {t('common.tryAgain', 'Try Again')}
-                  </button>
-                )}
+                    {t(
+                      'errorBoundary.support',
+                      'If this problem persists, please contact support or refresh the page.'
+                    )}
+                  </p>
+                </div>
               </div>
+            </Blueprint>
 
-              {/* Support Info */}
-              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                  {t('errorBoundary.support', 'If this problem persists, please contact support or refresh the page.')}
-                </p>
-              </div>
-            </div>
-
-            {/* Additional Info */}
-            <p className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center">
-              {t('errorBoundary.errorId', 'Error ID: {id}').replace('{id}', Date.now().toString(36).toUpperCase())}
+            <p
+              style={{
+                marginTop: 12,
+                fontFamily: DISPLAY,
+                fontWeight: 600,
+                fontSize: 11,
+                letterSpacing: '.1em',
+                textTransform: 'uppercase',
+                color: ind.inkFaint,
+                textAlign: 'center',
+              }}
+            >
+              {t('errorBoundary.errorId', 'Error ID: {id}').replace('{id}', errorId)}
             </p>
           </div>
         </div>
@@ -138,7 +233,9 @@ class ErrorBoundaryInner extends React.Component {
 
 const ErrorBoundary = (props) => {
   const { t } = useLanguage();
-  return <ErrorBoundaryInner {...props} t={t} />;
+  const { isDarkMode } = useTheme();
+  const ind = getIndustry(isDarkMode);
+  return <ErrorBoundaryInner {...props} t={t} ind={ind} />;
 };
 
 export default ErrorBoundary;

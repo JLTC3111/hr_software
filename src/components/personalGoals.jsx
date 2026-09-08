@@ -20,6 +20,7 @@ import _React, { useState, useEffect, useMemo, useCallback, useRef } from 'react
 import {
   Plus, X, Save, ChevronRight, Download, AlertCircle, Trash2, Edit,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -43,9 +44,10 @@ import {
   medianOf,
 } from '../utils/performanceAssessment.js';
 import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
+import { useScreenNavigation } from '../hooks/useScreenNavigation.js';
 import {
   Blueprint, Bar, Tag, Btn, Seg, Kicker, TickerCell, ColumnHeading, MoreMenu,
-  LiveClock, FlatSelect,
+  LiveClock, FlatListbox,
 } from './ui/industry.jsx';
 
 /* ------------------------------------------------------------------ *
@@ -59,6 +61,8 @@ import {
 const REVIEW_CLOSE_DAY = 15;
 /** Below this the fill drops to light steel — the score that needs a sentence. */
 const STRONG_RATING = 4;
+/** One click, one key, one notch on the track. */
+const RATING_STEP = 0.1;
 /** Self and manager have to differ by this much before it is worth discussing. */
 const GAP_THRESHOLD = 0.4;
 /** How far behind its own timeline a goal falls before it reads AT RISK. */
@@ -79,6 +83,25 @@ const parsePeriod = (period) => {
   const match = /^Q([1-4])-(\d{4})$/.exec(String(period || ''));
   if (!match) return null;
   return { quarter: Number(match[1]), year: Number(match[2]) };
+};
+
+/* Which person and which quarter are places, not component state — Back, a
+   reload, and a link from Performance Reviews all have to land on the same
+   record. An unreadable `?employee=` or `?cycle=` reads as absent. */
+const PERSONAL_GOALS_NAV = {
+  employee: { key: 'employee', fallback: null },
+  cycle: { key: 'cycle', fallback: null, isValid: (value) => parsePeriod(value) !== null },
+  edit: { key: 'edit', fallback: null, isValid: (value) => value === 'manager' },
+};
+
+/** Sign-off lives on the review board, so a manager who just filed ratings has to be sent there. */
+const performanceReviewsHref = ({ cycle, employee, stage } = {}) => {
+  const params = new URLSearchParams();
+  if (cycle) params.set('cycle', cycle);
+  if (employee) params.set('review', String(employee));
+  if (stage) params.set('stage', stage);
+  const query = params.toString();
+  return query ? `/task-review?${query}` : '/task-review';
 };
 
 const formatPeriod = (quarter, year) => `Q${quarter}-${year}`;
@@ -134,35 +157,91 @@ const csvCell = (value) => {
  *   - a faint interior hairline for the company median
  * Manager left of the fill means the person over-rated themselves; right of it,
  * under-rated.
+ *
+ * When `editable`, the track *is* the control — click, drag, or arrow keys —
+ * so a second native slider (and its round thumb) never appears under the figure.
+ * `edit` chooses which mark moves: the fill (self) or the overshooting tick (manager).
  */
-function SkillMeter({ ind, heavyInk, self, manager, median }) {
+function SkillMeter({
+  ind, heavyInk, self, manager, median,
+  editable = false, edit = 'self', onChange, ariaLabel,
+}) {
+  const selfValue = Math.max(0, Math.min(5, Number(self) || 0));
+  const editValue = edit === 'manager'
+    ? Math.max(0, Math.min(5, manager == null ? 0 : Number(manager) || 0))
+    : selfValue;
   const pct = (value) => `${Math.max(0, Math.min(5, Number(value) || 0)) / 5 * 100}%`;
-  const strong = self >= STRONG_RATING;
+  const strong = selfValue >= STRONG_RATING;
+  const showManagerTick = manager != null || (editable && edit === 'manager');
+  const managerMark = manager == null && editable && edit === 'manager' ? editValue : manager;
   return (
-    <div style={{ position: 'relative', height: 10, border: `1px solid ${ind.hairline}`, borderRadius: 0 }}>
+    <div style={{ position: 'relative', minHeight: 10 }}>
       <div
         style={{
-          width: pct(self),
-          height: '100%',
-          background: strong ? ind.accent : ind.ramp[1],
-          transition: 'width .35s ease',
+          position: 'relative',
+          height: 10,
+          border: `1px solid ${editable ? ind.ink : ind.hairline}`,
+          borderRadius: 0,
         }}
-      />
-      {median != null && (
-        <span
-          aria-hidden="true"
+      >
+        <div
           style={{
-            position: 'absolute', top: 2, bottom: 2, left: pct(median),
-            width: 1, background: ind.inkFaint,
+            width: pct(selfValue),
+            height: '100%',
+            background: strong ? ind.accent : ind.ramp[1],
+            transition: editable ? 'none' : 'width .35s ease',
           }}
         />
-      )}
-      {manager != null && (
-        <span
-          aria-hidden="true"
+        {median != null && (
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute', top: 2, bottom: 2, left: pct(median),
+              width: 1, background: ind.inkFaint, pointerEvents: 'none',
+            }}
+          />
+        )}
+        {showManagerTick && managerMark != null && (
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute', top: -4, bottom: -4, left: pct(managerMark),
+              width: 2, marginLeft: -1, background: heavyInk, pointerEvents: 'none',
+            }}
+          />
+        )}
+        {editable && edit === 'self' && (
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute', top: -3, bottom: -3, left: pct(selfValue),
+              width: 2, marginLeft: -1, background: ind.ink, pointerEvents: 'none',
+            }}
+          />
+        )}
+      </div>
+      {editable && onChange && (
+        <input
+          type="range"
+          min="0"
+          max="5"
+          step={RATING_STEP}
+          value={editValue}
+          aria-label={ariaLabel}
+          onChange={(e) => onChange(Number(e.target.value))}
           style={{
-            position: 'absolute', top: -4, bottom: -4, left: pct(manager),
-            width: 2, marginLeft: -1, background: heavyInk,
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: -8,
+            bottom: -8,
+            width: '100%',
+            height: 'auto',
+            margin: 0,
+            opacity: 0,
+            cursor: 'pointer',
+            appearance: 'none',
+            WebkitAppearance: 'none',
           }}
         />
       )}
@@ -290,6 +369,7 @@ const PersonalGoals = ({ employees }) => {
   const { t, currentLanguage } = useLanguage();
   const { isDarkMode } = useTheme();
   const { user, checkPermission } = useAuth();
+  const navigate = useNavigate();
   const { handleSessionAuthError } = useSessionGuard();
 
   const ind = getIndustry(isDarkMode);
@@ -307,6 +387,7 @@ const PersonalGoals = ({ employees }) => {
 
   // Check if user can view other employees' performance
   const canViewAllEmployees = checkPermission('canViewReports');
+  const canManagePerformance = checkPermission('canManagePerformance');
 
   // Memoized: availableEmployees feeds an effect dependency array below, and a
   // fresh identity every render makes that effect re-run on every render.
@@ -317,6 +398,8 @@ const PersonalGoals = ({ employees }) => {
       : operational.filter(emp => String(emp.id) === String(user?.employeeId || user?.id));
   }, [employees, canViewAllEmployees, user?.employeeId, user?.id]);
 
+  const [nav, go] = useScreenNavigation(PERSONAL_GOALS_NAV);
+
   // Default the selected employee to the logged-in user's employee id (or user id)
   const defaultEmployeeId = user?.employeeId
     ? String(user.employeeId)
@@ -324,21 +407,37 @@ const PersonalGoals = ({ employees }) => {
     ? String(user.id)
     : (availableEmployees[0]?.id ? String(availableEmployees[0].id) : null);
 
-  const [selectedEmployee, setSelectedEmployee] = useState(defaultEmployeeId);
-
-  // If `user` or `availableEmployees` arrive after mount, ensure we pick the logged-in user
-  useEffect(() => {
-    if (!selectedEmployee) {
-      const fallback = user?.employeeId
-        ? String(user.employeeId)
-        : user?.id
-        ? String(user.id)
-        : (availableEmployees[0]?.id ? String(availableEmployees[0].id) : null);
-      if (fallback) setSelectedEmployee(fallback);
+  const selfId = String(user?.employeeId || user?.id || '');
+  const selectedEmployee = useMemo(() => {
+    const requested = nav.employee ? String(nav.employee) : null;
+    if (!requested) return defaultEmployeeId;
+    if (!canViewAllEmployees) {
+      return selfId && requested === selfId ? requested : defaultEmployeeId;
     }
-  }, [user, availableEmployees, selectedEmployee]);
+    // Roster still empty is "not loaded yet", not "that person is gone" —
+    // clearing here would drop the Performance Reviews deep link.
+    if (availableEmployees.length === 0) return requested;
+    return availableEmployees.some((emp) => String(emp.id) === requested)
+      ? requested
+      : defaultEmployeeId;
+  }, [nav.employee, canViewAllEmployees, selfId, availableEmployees, defaultEmployeeId]);
 
-  const [selectedPeriod, setSelectedPeriod] = useState(() => getCurrentQuarter());
+  const selectedPeriod = nav.cycle ?? getCurrentQuarter();
+
+  useEffect(() => {
+    if (!nav.employee) return;
+    if (availableEmployees.length === 0) return;
+    const requested = String(nav.employee);
+    const allowed = canViewAllEmployees
+      ? availableEmployees.some((emp) => String(emp.id) === requested)
+      : Boolean(selfId) && requested === selfId;
+    if (!allowed) go({ employee: null }, { replace: true });
+  }, [nav.employee, availableEmployees, canViewAllEmployees, selfId, go]);
+
+  const viewingSelf = Boolean(selfId) && String(selectedEmployee) === selfId;
+  const canFileManagerReview = canManagePerformance && Boolean(selectedEmployee) && !viewingSelf;
+  const canAdjustRatings = viewingSelf || canFileManagerReview;
+
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
   const [showEditGoalModal, setShowEditGoalModal] = useState(false);
@@ -358,6 +457,15 @@ const PersonalGoals = ({ employees }) => {
   const [adjusting, setAdjusting] = useState(false);
   const [ackBusy, setAckBusy] = useState(false);
   const fetchRequestIdRef = useRef(0);
+
+  useEffect(() => {
+    if (nav.edit !== 'manager') return;
+    if (canFileManagerReview) {
+      setAdjusting(true);
+      return;
+    }
+    go({ edit: null }, { replace: true });
+  }, [nav.edit, canFileManagerReview, go]);
 
   // Form state for new goal
   const [goalForm, setGoalForm] = useState({
@@ -424,7 +532,7 @@ const PersonalGoals = ({ employees }) => {
 
   useEffect(() => {
     setAssessmentDirty(false);
-    setAdjusting(false);
+    setAdjusting(nav.edit === 'manager' && canFileManagerReview);
     fetchGoalsAndReviews();
   }, [fetchGoalsAndReviews]);
 
@@ -506,7 +614,7 @@ const PersonalGoals = ({ employees }) => {
       skillName: definition.skillName,
       category: definition.category,
       label: t(`personalGoals.${definition.key}`, definition.skillName),
-      self: Number(skill?.rating || 0),
+      self: Number(skill?.selfRating ?? 0),
       manager: skill?.managerRating ?? null,
       median: companyMedians[definition.skillName] ?? null,
     };
@@ -522,6 +630,12 @@ const PersonalGoals = ({ employees }) => {
   [skillRows]);
 
   const hasManagerRatings = skillRows.some(r => r.manager != null);
+  const canSubmitCalibration = canFileManagerReview
+    && Boolean(periodReview?.id)
+    && hasManagerRatings
+    && !['submitted', 'approved', 'acknowledged', 'completed'].includes(String(periodReview?.status || ''));
+  const awaitingSignOff = String(periodReview?.status || '') === 'submitted';
+  const canOpenSignOff = canManagePerformance && awaitingSignOff && Boolean(selectedEmployee);
 
   const calibrationRead = useMemo(() => {
     if (!hasManagerRatings) {
@@ -658,7 +772,11 @@ const PersonalGoals = ({ employees }) => {
       {
         key: 'calibration',
         title: t('personalGoals.stepCalibration', 'Calibration meeting'),
-        meta: periodReview?.reviewer?.name || t('personalGoals.awaitingSchedule', 'Not scheduled'),
+        meta: calibrated
+          ? (periodReview?.reviewer?.name || t('personalGoals.submittedForCalibration', 'Submitted for calibration.'))
+          : (managerDone
+            ? t('personalGoals.readyToSubmitCalibration', 'Ready to submit')
+            : t('personalGoals.awaitingSchedule', 'Not scheduled')),
         state: calibrated ? 'done' : 'todo',
       },
       {
@@ -708,35 +826,40 @@ const PersonalGoals = ({ employees }) => {
         out.push({ value: `Q${q}-${year}`, label: `Q${q} ${year}` });
       }
     }
+    if (selectedPeriod && !out.some((period) => period.value === selectedPeriod)) {
+      const parsed = parsePeriod(selectedPeriod);
+      if (parsed) out.unshift({ value: selectedPeriod, label: `Q${parsed.quarter} ${parsed.year}` });
+    }
     return out;
-  }, [currentYear]);
+  }, [currentYear, selectedPeriod]);
 
   // ---------------------------------------------------------------- actions
 
   /** Slider movement stays local; the whole assessment saves as one action. */
-  const handleUpdateSkillRating = (skillName, category, newRating) => {
+  const handleUpdateSkillRating = (skillName, category, newRating, target = 'self') => {
     if (!selectedEmployee) return;
-    const rounded = Math.round(newRating * 10) / 10;
-    setSkills(prev => prev.map(skill =>
-      skill.skill_name === skillName
-        ? {
-            ...skill,
-            skill_category: category,
-            rating: rounded,
-            proficiency_level: rounded >= 4 ? 'advanced' : rounded >= 3 ? 'intermediate' : 'beginner',
-          }
-        : skill
-    ));
+    const rounded = Math.max(0, Math.min(5, Math.round(newRating * 10) / 10));
+    setSkills(prev => prev.map(skill => {
+      if (skill.skill_name !== skillName) return skill;
+      if (target === 'manager') return { ...skill, managerRating: rounded };
+      return {
+        ...skill,
+        rating: rounded,
+        selfRating: rounded,
+        skill_category: category,
+        proficiency_level: rounded >= 4 ? 'advanced' : rounded >= 3 ? 'intermediate' : 'beginner',
+      };
+    }));
     setAssessmentDirty(true);
   };
 
   /**
    * Saves the employee's own numbers to skills_assessments — the table that
-   * holds self-ratings. The manager's ratings live on the review row and are
-   * read-only here; they are entered on the Performance Review screen.
+   * holds self-ratings. Manager scores for someone else are a different write
+   * (handleSaveManagerReview) onto the period's performance_reviews row.
    */
   const handleSaveSkillAssessment = async () => {
-    if (!selectedEmployee || !assessmentDirty || savingAssessment) return;
+    if (!viewingSelf || !selectedEmployee || !assessmentDirty || savingAssessment) return;
 
     setSavingAssessment(true);
     try {
@@ -799,6 +922,97 @@ const PersonalGoals = ({ employees }) => {
       setSavingAssessment(false);
     }
   };
+
+  const handleSaveManagerReview = async () => {
+    if (!canFileManagerReview || !selectedEmployee || !assessmentDirty || savingAssessment) return;
+
+    const ratingOf = (definition) => {
+      const skill = skills.find((row) => row.skill_name === definition.skillName);
+      const value = Number(skill?.managerRating);
+    return Number.isFinite(value) && value > 0 ? value : null;
+    };
+    const rated = PERFORMANCE_SKILLS.map(ratingOf).filter((value) => value != null);
+    if (rated.length === 0) {
+      alert(t('personalGoals.needManagerRating', 'Rate at least one skill before saving.'));
+      return;
+    }
+
+    const overallRating = Math.round((rated.reduce((sum, value) => sum + value, 0) / rated.length) * 10) / 10;
+    const status = String(periodReview?.status || 'draft');
+    const payload = {
+      reviewType: 'quarterly',
+      reviewerId: selfId || user?.id,
+      overallRating,
+      status: ['submitted', 'approved', 'acknowledged'].includes(status) ? status : 'draft',
+    };
+    PERFORMANCE_SKILLS.forEach((definition) => {
+      payload[definition.serviceField] = ratingOf(definition);
+    });
+
+    setSavingAssessment(true);
+    try {
+      const result = periodReview?.id
+        ? await performanceService.updatePerformanceReview(periodReview.id, payload)
+        : await performanceService.createPerformanceReview({
+          employeeId: selectedEmployee,
+          reviewPeriod: selectedPeriod,
+          ...payload,
+        });
+      if (!result.success) throw new Error(result.error || 'Failed to save manager review');
+      setAssessmentDirty(false);
+      setAdjusting(false);
+      if (nav.edit === 'manager') go({ edit: null });
+      await fetchGoalsAndReviews({ silent: true });
+      alert(t('personalGoals.managerReviewSaved', 'Manager review saved.'));
+    } catch (error) {
+      console.error('Error saving manager review:', error);
+      if (handleSessionAuthError(error)) return;
+      alert(t('personalGoals.managerReviewSaveError', 'Failed to save manager review'));
+    } finally {
+      setSavingAssessment(false);
+    }
+  };
+
+  const openPerformanceReviews = useCallback(() => {
+    navigate(performanceReviewsHref({
+      cycle: selectedPeriod,
+      employee: selectedEmployee,
+      stage: awaitingSignOff ? 'signed' : null,
+    }));
+  }, [navigate, selectedPeriod, selectedEmployee, awaitingSignOff]);
+
+  const handleSubmitCalibration = async () => {
+    if (!canSubmitCalibration || assessmentDirty || savingAssessment) return;
+    setSavingAssessment(true);
+    try {
+      const result = await performanceService.updatePerformanceReview(periodReview.id, {
+        status: 'submitted',
+      });
+      if (!result.success) throw new Error(result.error || 'Failed to submit for calibration');
+      await fetchGoalsAndReviews({ silent: true });
+      alert(t('personalGoals.submittedForCalibration', 'Submitted for calibration.'));
+    } catch (error) {
+      console.error('Error submitting for calibration:', error);
+      if (handleSessionAuthError(error)) return;
+      alert(t('personalGoals.submitCalibrationError', 'Failed to submit for calibration'));
+    } finally {
+      setSavingAssessment(false);
+    }
+  };
+
+  const toggleAdjusting = () => {
+    if (adjusting) {
+      if (nav.edit === 'manager') go({ edit: null });
+      setAdjusting(false);
+      if (assessmentDirty) fetchGoalsAndReviews({ silent: true });
+      setAssessmentDirty(false);
+      return;
+    }
+    if (canFileManagerReview) go({ edit: 'manager' });
+    setAdjusting(true);
+  };
+
+  const editingManager = adjusting && canFileManagerReview;
 
   /** Acknowledge and Reply both write the employee's side of the review record. */
   const writeEmployeeComment = async (text) => {
@@ -1184,11 +1398,11 @@ const PersonalGoals = ({ employees }) => {
         >
           <FetchElapsedPill active={loading} isDarkMode label={t('common.fetching', 'Fetching')} />
           {canViewAllEmployees && availableEmployees.length > 1 && (
-            <FlatSelect
+            <FlatListbox
               ind={ind}
               onDark
               value={selectedEmployee || ''}
-              onChange={(e) => setSelectedEmployee(String(e.target.value))}
+              onChange={(e) => go({ employee: String(e.target.value) })}
               aria-label={t('personalGoals.employee', 'Employee')}
               style={{ maxWidth: 190 }}
             >
@@ -1197,13 +1411,13 @@ const PersonalGoals = ({ employees }) => {
                   {getDemoEmployeeName(employee, t) || employee.name}
                 </option>
               ))}
-            </FlatSelect>
+            </FlatListbox>
           )}
-          <FlatSelect
+          <FlatListbox
             ind={ind}
             onDark
             value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value)}
+            onChange={(e) => go({ cycle: e.target.value })}
             aria-label={t('personalGoals.period', 'Period')}
           >
             {periodOptions.map(period => (
@@ -1211,7 +1425,7 @@ const PersonalGoals = ({ employees }) => {
                 {period.label}
               </option>
             ))}
-          </FlatSelect>
+          </FlatListbox>
         </div>
       </div>
 
@@ -1331,7 +1545,12 @@ const PersonalGoals = ({ employees }) => {
                     {`${t('personalGoals.skillsAssessment', 'Skills assessment')} · ${selectedPeriod.replace('-', ' ')}`}
                   </Kicker>
                   <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 6 }}>
-                    {t('personalGoals.assessmentLead', 'Self-rating as fill, manager as marker, company median dashed.')}
+                    {t(
+                      canFileManagerReview ? 'personalGoals.managerAssessmentLead' : 'personalGoals.assessmentLead',
+                      canFileManagerReview
+                        ? 'The fill is their self-rating. Place your mark on the same track.'
+                        : 'Self-rating as fill, manager as marker, company median dashed.',
+                    )}
                   </p>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, flex: 'none', paddingTop: 2, maxWidth: '100%' }}>
@@ -1351,35 +1570,71 @@ const PersonalGoals = ({ employees }) => {
               </div>
 
               <div style={{ padding: '16px 20px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {skillRows.map((row) => (
+                {skillRows.map((row) => {
+                  const editTarget = editingManager ? 'manager' : 'self';
+                  const editValue = editingManager ? (row.manager ?? 0) : row.self;
+                  return (
                   <div key={row.key}>
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
                       <span style={{ fontFamily: BODY, fontSize: 13, color: ind.ink }}>{row.label}</span>
-                      <span style={{ whiteSpace: 'nowrap' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
+                        {adjusting && (
+                          <span style={{ display: 'inline-flex', gap: 4 }}>
+                            <button
+                              type="button"
+                              aria-label={`${row.label} − ${RATING_STEP}`}
+                              disabled={editValue <= 0}
+                              onClick={() => handleUpdateSkillRating(row.skillName, row.category, editValue - RATING_STEP, editTarget)}
+                              style={{
+                                width: 22, height: 22, padding: 0, borderRadius: 0,
+                                border: `1px solid ${ind.ink}`, background: 'transparent',
+                                color: ind.ink, fontFamily: DISPLAY, fontSize: 14, lineHeight: 1,
+                                cursor: editValue <= 0 ? 'default' : 'pointer',
+                                opacity: editValue <= 0 ? 0.35 : 1,
+                              }}
+                            >
+                              −
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`${row.label} + ${RATING_STEP}`}
+                              disabled={editValue >= 5}
+                              onClick={() => handleUpdateSkillRating(row.skillName, row.category, editValue + RATING_STEP, editTarget)}
+                              style={{
+                                width: 22, height: 22, padding: 0, borderRadius: 0,
+                                border: `1px solid ${ind.ink}`, background: 'transparent',
+                                color: ind.ink, fontFamily: DISPLAY, fontSize: 14, lineHeight: 1,
+                                cursor: editValue >= 5 ? 'default' : 'pointer',
+                                opacity: editValue >= 5 ? 0.35 : 1,
+                              }}
+                            >
+                              +
+                            </button>
+                          </span>
+                        )}
                         <span style={figure(15, ind.ink)}>{fmt1(row.self)}</span>
                         <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>
                           {row.manager == null
                             ? ` / ${t('personalGoals.noManagerShort', 'no mgr rating')}`
                             : ` / ${t('personalGoals.mgrShort', 'mgr')} `}
                         </span>
-                        {row.manager != null && <span style={figure(15, ind.inkGhost)}>{fmt1(row.manager)}</span>}
+                        {row.manager != null && <span style={figure(15, editingManager ? ind.ink : ind.inkGhost)}>{fmt1(row.manager)}</span>}
                       </span>
                     </div>
-                    <SkillMeter ind={ind} heavyInk={heavyInk} self={row.self} manager={row.manager} median={row.median} />
-                    {adjusting && (
-                      <input
-                        type="range"
-                        min="0"
-                        max="5"
-                        step="0.5"
-                        value={row.self}
-                        onChange={(e) => handleUpdateSkillRating(row.skillName, row.category, parseFloat(e.target.value))}
-                        aria-label={row.label}
-                        style={{ width: '100%', marginTop: 8, accentColor: ind.accent, cursor: 'pointer' }}
-                      />
-                    )}
+                    <SkillMeter
+                      ind={ind}
+                      heavyInk={heavyInk}
+                      self={row.self}
+                      manager={row.manager}
+                      median={row.median}
+                      editable={adjusting}
+                      edit={editTarget}
+                      ariaLabel={row.label}
+                      onChange={(value) => handleUpdateSkillRating(row.skillName, row.category, value, editTarget)}
+                    />
                   </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* The read, in words, beside the two actions */}
@@ -1390,43 +1645,102 @@ const PersonalGoals = ({ employees }) => {
                 <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, minWidth: 0, flex: isDesktop ? 1 : '1 1 100%' }}>
                   {calibrationRead}
                 </p>
-                {isDesktop ? (
+                {canAdjustRatings && (isDesktop ? (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, flex: 'none', maxWidth: '100%' }}>
-                    <Btn ind={ind} onClick={() => setAdjusting(v => !v)}>
-                      {adjusting ? t('common.done', 'Done') : t('personalGoals.adjustRatings', 'Adjust ratings')}
+                    <Btn ind={ind} onClick={toggleAdjusting}>
+                      {adjusting
+                        ? t('common.done', 'Done')
+                        : (canFileManagerReview
+                          ? t('personalGoals.enterManagerRatings', 'Enter manager ratings')
+                          : t('personalGoals.adjustRatings', 'Adjust ratings'))}
                     </Btn>
                     <Btn
                       ind={ind}
-                      variant="primary"
+                      variant={canSubmitCalibration && !assessmentDirty ? undefined : 'primary'}
                       disabled={!assessmentDirty || savingAssessment}
-                      onClick={handleSaveSkillAssessment}
+                      onClick={canFileManagerReview ? handleSaveManagerReview : handleSaveSkillAssessment}
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
                       <Save size={13} strokeWidth={1.5} />
-                      {savingAssessment ? t('common.saving', 'Saving…') : t('personalGoals.saveAssessment', 'Save assessment')}
+                      {savingAssessment
+                        ? t('common.saving', 'Saving…')
+                        : (canFileManagerReview
+                          ? t('personalGoals.saveManagerReview', 'Save manager review')
+                          : t('personalGoals.saveAssessment', 'Save assessment'))}
                     </Btn>
+                    {canSubmitCalibration && (
+                      <Btn
+                        ind={ind}
+                        variant={assessmentDirty ? undefined : 'primary'}
+                        disabled={assessmentDirty || savingAssessment}
+                        onClick={handleSubmitCalibration}
+                      >
+                        {t('personalGoals.submitForCalibration', 'Submit for calibration')}
+                      </Btn>
+                    )}
+                    {canOpenSignOff && (
+                      <Btn
+                        ind={ind}
+                        variant="primary"
+                        onClick={openPerformanceReviews}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      >
+                        {t('personalGoals.signOffOnReviews', 'Sign off on Performance Reviews')}
+                        <ChevronRight size={13} strokeWidth={1.5} />
+                      </Btn>
+                    )}
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', minWidth: 0 }}>
                     <Btn
                       ind={ind}
-                      onClick={() => setAdjusting((value) => !value)}
+                      onClick={toggleAdjusting}
                       style={{ width: '100%' }}
                     >
-                      {adjusting ? t('common.done', 'Done') : t('personalGoals.adjustRatings', 'Adjust ratings')}
+                      {adjusting
+                        ? t('common.done', 'Done')
+                        : (canFileManagerReview
+                          ? t('personalGoals.enterManagerRatings', 'Enter manager ratings')
+                          : t('personalGoals.adjustRatings', 'Adjust ratings'))}
                     </Btn>
                     <Btn
                       ind={ind}
-                      variant="primary"
+                      variant={canSubmitCalibration && !assessmentDirty ? undefined : 'primary'}
                       disabled={!assessmentDirty || savingAssessment}
-                      onClick={handleSaveSkillAssessment}
+                      onClick={canFileManagerReview ? handleSaveManagerReview : handleSaveSkillAssessment}
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' }}
                     >
                       <Save size={13} strokeWidth={1.5} />
-                      {savingAssessment ? t('common.saving', 'Saving…') : t('personalGoals.saveAssessment', 'Save assessment')}
+                      {savingAssessment
+                        ? t('common.saving', 'Saving…')
+                        : (canFileManagerReview
+                          ? t('personalGoals.saveManagerReview', 'Save manager review')
+                          : t('personalGoals.saveAssessment', 'Save assessment'))}
                     </Btn>
+                    {canSubmitCalibration && (
+                      <Btn
+                        ind={ind}
+                        variant={assessmentDirty ? undefined : 'primary'}
+                        disabled={assessmentDirty || savingAssessment}
+                        onClick={handleSubmitCalibration}
+                        style={{ width: '100%' }}
+                      >
+                        {t('personalGoals.submitForCalibration', 'Submit for calibration')}
+                      </Btn>
+                    )}
+                    {canOpenSignOff && (
+                      <Btn
+                        ind={ind}
+                        variant="primary"
+                        onClick={openPerformanceReviews}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' }}
+                      >
+                        {t('personalGoals.signOffOnReviews', 'Sign off on Performance Reviews')}
+                        <ChevronRight size={13} strokeWidth={1.5} />
+                      </Btn>
+                    )}
                   </div>
-                )}
+                ))}
               </div>
             </Blueprint>
           )}
@@ -1521,6 +1835,19 @@ const PersonalGoals = ({ employees }) => {
                 last={i === cycleSteps.length - 1}
               />
             ))}
+            {canManagePerformance && (
+              <Btn
+                ind={ind}
+                variant={canOpenSignOff ? 'primary' : undefined}
+                onClick={openPerformanceReviews}
+                style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              >
+                {canOpenSignOff
+                  ? t('personalGoals.signOffOnReviews', 'Sign off on Performance Reviews')
+                  : t('personalGoals.openPerformanceReviews', 'Open Performance Reviews')}
+                <ChevronRight size={13} strokeWidth={1.5} />
+              </Btn>
+            )}
           </div>
 
           {/* Rating history */}
@@ -1828,31 +2155,35 @@ function GoalFormModal({ ind, t, title, form, setForm, loading, onSubmit, onClos
             <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 14 }}>
               <div>
                 <Kicker ind={ind} color={ind.inkMuted}>{t('personalGoals.category', 'Category')}</Kicker>
-                <select
+                <FlatListbox
+                  ind={ind}
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  style={{ ...fieldStyle, marginTop: 6, cursor: 'pointer' }}
+                  aria-label={t('personalGoals.category', 'Category')}
+                  style={{ ...fieldStyle, marginTop: 6, cursor: 'pointer', textTransform: 'none', letterSpacing: '.02em' }}
                 >
                   <option value="general">{t('personalGoals.general', 'General')}</option>
                   <option value="technical">{t('personalGoals.technical', 'Technical')}</option>
                   <option value="leadership">{t('personalGoals.leadership', 'Leadership')}</option>
                   <option value="project">{t('personalGoals.project', 'Project')}</option>
                   <option value="professional_development">{t('personalGoals.professionalDevelopment', 'Professional Development')}</option>
-                </select>
+                </FlatListbox>
               </div>
 
               <div>
                 <Kicker ind={ind} color={ind.inkMuted}>{t('personalGoals.priority', 'Priority')}</Kicker>
-                <select
+                <FlatListbox
+                  ind={ind}
                   value={form.priority}
                   onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                  style={{ ...fieldStyle, marginTop: 6, cursor: 'pointer' }}
+                  aria-label={t('personalGoals.priority', 'Priority')}
+                  style={{ ...fieldStyle, marginTop: 6, cursor: 'pointer', textTransform: 'none', letterSpacing: '.02em' }}
                 >
                   <option value="low">{t('personalGoals.low', 'Low')}</option>
                   <option value="medium">{t('personalGoals.medium', 'Medium')}</option>
                   <option value="high">{t('personalGoals.high', 'High')}</option>
                   <option value="critical">{t('personalGoals.critical', 'Critical')}</option>
-                </select>
+                </FlatListbox>
               </div>
 
               <div>
@@ -1866,17 +2197,19 @@ function GoalFormModal({ ind, t, title, form, setForm, loading, onSubmit, onClos
 
               <div>
                 <Kicker ind={ind} color={ind.inkMuted}>{t('personalGoals.status', 'Status')}</Kicker>
-                <select
+                <FlatListbox
+                  ind={ind}
                   value={form.status}
                   onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  style={{ ...fieldStyle, marginTop: 6, cursor: 'pointer' }}
+                  aria-label={t('personalGoals.status', 'Status')}
+                  style={{ ...fieldStyle, marginTop: 6, cursor: 'pointer', textTransform: 'none', letterSpacing: '.02em' }}
                 >
                   <option value="pending">{t('personalGoals.pending', 'Pending')}</option>
                   <option value="in_progress">{t('personalGoals.inProgress', 'In Progress')}</option>
                   <option value="completed">{t('personalGoals.completed', 'Completed')}</option>
                   <option value="cancelled">{t('personalGoals.cancelled', 'Cancelled')}</option>
                   <option value="on_hold">{t('personalGoals.onHold', 'On Hold')}</option>
-                </select>
+                </FlatListbox>
               </div>
             </div>
 

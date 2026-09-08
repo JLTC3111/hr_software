@@ -39,6 +39,7 @@ export const createPerformanceReview = async (reviewData) => {
       comments: reviewData.comments || null,
       status: reviewData.status || 'draft',
       review_date: reviewData.reviewDate || new Date().toISOString().split('T')[0],
+      self_assessment_skipped: Boolean(reviewData.selfAssessmentSkipped),
       created_at: new Date().toISOString()
     };
     // Persist to localStorage
@@ -69,7 +70,8 @@ export const createPerformanceReview = async (reviewData) => {
         goals_total: reviewData.goalsTotal || 0,
         status: reviewData.status || 'draft',
         review_date: reviewData.reviewDate || new Date().toISOString().split('T')[0],
-        due_date: reviewData.dueDate || null
+        due_date: reviewData.dueDate || null,
+        self_assessment_skipped: Boolean(reviewData.selfAssessmentSkipped)
       }])
       .select()
       .single();
@@ -230,7 +232,22 @@ export const getPerformanceReviewById = async (reviewId) => {
  */
 export const updatePerformanceReview = async (reviewId, updates) => {
   if (isDemoMode()) {
-    const updatedReview = updateDemoReview(reviewId, updates);
+    const patch = { ...updates };
+    if (updates.selfAssessmentSkipped !== undefined) {
+      patch.self_assessment_skipped = Boolean(updates.selfAssessmentSkipped);
+    }
+    if (updates.reviewerId !== undefined) patch.reviewer_id = updates.reviewerId;
+    if (updates.reviewType !== undefined) patch.review_type = updates.reviewType;
+    if (updates.status === 'submitted' && !updates.submittedAt) {
+      patch.submitted_at = new Date().toISOString();
+    }
+    if (updates.overallRating !== undefined) patch.overall_rating = updates.overallRating;
+    if (updates.technicalSkillsRating !== undefined) patch.technical_skills_rating = updates.technicalSkillsRating;
+    if (updates.communicationRating !== undefined) patch.communication_rating = updates.communicationRating;
+    if (updates.leadershipRating !== undefined) patch.leadership_rating = updates.leadershipRating;
+    if (updates.teamworkRating !== undefined) patch.teamwork_rating = updates.teamworkRating;
+    if (updates.problemSolvingRating !== undefined) patch.problem_solving_rating = updates.problemSolvingRating;
+    const updatedReview = updateDemoReview(reviewId, patch);
     if (updatedReview) {
       return { success: true, data: updatedReview };
     }
@@ -242,6 +259,7 @@ export const updatePerformanceReview = async (reviewId, updates) => {
     
     if (updates.reviewPeriod !== undefined) updateData.review_period = updates.reviewPeriod;
     if (updates.reviewType !== undefined) updateData.review_type = updates.reviewType;
+    if (updates.reviewerId !== undefined) updateData.reviewer_id = toEmployeeId(updates.reviewerId);
     if (updates.overallRating !== undefined) updateData.overall_rating = updates.overallRating;
     if (updates.technicalSkillsRating !== undefined) updateData.technical_skills_rating = updates.technicalSkillsRating;
     if (updates.communicationRating !== undefined) updateData.communication_rating = updates.communicationRating;
@@ -258,6 +276,12 @@ export const updatePerformanceReview = async (reviewId, updates) => {
     if (updates.status !== undefined) updateData.status = updates.status;
     if (updates.reviewDate !== undefined) updateData.review_date = updates.reviewDate;
     if (updates.dueDate !== undefined) updateData.due_date = updates.dueDate;
+    if (updates.selfAssessmentSkipped !== undefined) {
+      updateData.self_assessment_skipped = Boolean(updates.selfAssessmentSkipped);
+    }
+    if (updates.self_assessment_skipped !== undefined) {
+      updateData.self_assessment_skipped = Boolean(updates.self_assessment_skipped);
+    }
     
     // Set timestamps based on status
     if (updates.status === 'submitted' && !updates.submittedAt) {

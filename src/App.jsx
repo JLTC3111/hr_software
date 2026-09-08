@@ -1,13 +1,14 @@
 import { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { Loader } from 'lucide-react'
 import { useTheme } from './contexts/ThemeContext'
 import { useLanguage } from './contexts/LanguageContext'
 import { useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { UploadProvider } from './contexts/UploadContext'
 import { SheetProvider } from './contexts/SheetContext'
+import { Spinner } from './components/ui/Spinner.jsx'
+import { getIndustry } from './theme/industry.js'
 // Eagerly loaded components (needed immediately)
 import Header from './components/header.jsx';
 import Sidebar from './components/sidebar.jsx';
@@ -47,17 +48,17 @@ const ProductionHelpCenter = lazyWithRetry(() => import('./components/Production
 const FlubberIconTest = lazyWithRetry(() => import('./components/FlubberIconTest.jsx'));
 const ResetPassword = lazyWithRetry(() => import('./components/ResetPassword.jsx'));
 
-// Loading fallback component
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-100">
-    <Loader className="w-8 h-8 animate-spin text-blue-500" />
-  </div>
-);
 import * as employeeService from './services/employeeService';
 import * as recruitmentService from './services/recruitmentService';
 import { logVisit } from './services/visitService';
 import { resolvePostLoginRoute } from './config/routes.js';
 import { isDemoMode } from './utils/demoHelper';
+
+function PageLoader() {
+  const { isDarkMode } = useTheme();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
+  return <Spinner ind={ind} size="page" />;
+}
 
 const HRManagementApp = () => {
   const { isAuthenticated, user } = useAuth();
@@ -181,7 +182,7 @@ const HRManagementApp = () => {
   }, []);
 
   const handleDeleteEmployee = useCallback(async (employee) => {
-    const confirmMessage = `⚠️ WARNING: This will PERMANENTLY delete ${employee.name} and ALL their data including:\n\n` +
+    const confirmMessage = `WARNING: This will PERMANENTLY delete ${employee.name} and ALL their data including:\n\n` +
                           `• Time entries\n` +
                           `• Leave requests\n` +
                           `• Overtime logs\n` +
@@ -269,7 +270,8 @@ const LoginRoute = ({ isAuthenticated }) => {
 };
 
 const AppContent = ({ employees, activeEmployees, applications, selectedEmployee, isEditMode, onViewEmployee, onEditEmployee, onDeleteEmployee, onCloseModal, onPhotoUpdate, refetchEmployees, loading, error, isMobileMenuOpen, setIsMobileMenuOpen }) => {
-  const { bg, text } = useTheme();
+  const { isDarkMode, bg, text } = useTheme();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { currentLanguage } = useLanguage();
 
@@ -279,9 +281,14 @@ const AppContent = ({ employees, activeEmployees, applications, selectedEmployee
       logVisit();
     }
   }, [isAuthenticated]);
+  // Auth bootstrap has no chrome yet — we do not know if the user is signed in.
+  // Route chunks keep Header + Sidebar; only this pane uses PageLoader.
   if (authLoading) {
     return (
-      <div className={`min-h-screen ${bg.primary} flex items-center justify-center`}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: ind.ground }}
+      >
         <PageLoader />
       </div>
     );
