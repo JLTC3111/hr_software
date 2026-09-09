@@ -78,6 +78,8 @@ export default {
   'errorBoundary.title': 'Oops! Something went wrong',
   'header.moreOptions': 'More options',
   'help.backToControlPanel': 'Back to Control Panel',
+  'help.ticker.features': 'Features',
+  'help.ticker.walkthrough': 'Walkthrough',
   'login.footer': '© 2024 HR Manager. All rights reserved.',
   'notifications.dismiss': 'Dismiss',
   'personalGoals.confirmDeleteGoal': 'Are you sure you want to delete this goal?',

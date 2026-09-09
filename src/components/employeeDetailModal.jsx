@@ -7,6 +7,7 @@ import { useUpload } from '../contexts/UploadContext.jsx';
 import { getEmployeePdfUrl, deleteEmployeePdf, uploadEmployeeRequestDocument, listEmployeeRequestDocuments, deleteEmployeeRequestDocument, getEmployeeRequestDocumentUrl } from '../services/employeeService.js';
 import { getDemoEmployeeName } from '../utils/demoHelper.js';
 import { getEmployeePositionI18nKey } from '../utils/employeePositionKey.js';
+import { releasePdfPreviewUrl } from '../utils/pdfPreviewUrl.js';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -14,7 +15,10 @@ import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
 import { Blueprint, Btn, Tag, Seg, Kicker, Bar, ColumnHeading, FlatListbox } from './ui/industry.jsx';
 import { Spinner } from './ui/Spinner.jsx';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
   const { isDarkMode } = useTheme();
@@ -30,6 +34,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
   const [documentsSubTab, setDocumentsSubTab] = useState('pdf'); // 'pdf' | 'requests'
   const [pdfPath, setPdfPath] = useState(employee?.pdf_document_url || null);
   const [pdfUrl, setPdfUrl] = useState(null);
+  const [pdfRevision, setPdfRevision] = useState(0);
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [modalWidth, setModalWidth] = useState(900);
@@ -38,6 +43,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
   const [useIframe, setUseIframe] = useState(true); // Use iframe by default
   const modalRef = useRef(null);
   const resizeRef = useRef(null);
+  const pdfPreviewWindows = useRef(new Map());
 
   // Request docs state
   const [requestDocs, setRequestDocs] = useState([]);
@@ -57,6 +63,10 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
 
   // Generate URL from file path on mount with fallback
   useEffect(() => {
+    let active = true;
+    let generatedUrl = null;
+    const previewWindows = pdfPreviewWindows.current;
+    setPdfUrl(null);
     const generatePdfUrl = async () => {
       if (!pdfPath) return;
 
@@ -65,9 +75,14 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
       try {
         // Use service function to get URL
         const result = await getEmployeePdfUrl(pdfPath);
+        if (!active) {
+          releasePdfPreviewUrl(result.url);
+          return;
+        }
         
         if (result.success) {
           console.log('✅ PDF URL generated:', result.url, 'Type:', result.type);
+          generatedUrl = result.url;
           setPdfUrl(result.url);
           setPdfError(null);
         } else {
@@ -76,6 +91,7 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
           setPdfError(t('errors.fileOpenFailed', 'Failed to open document'));
         }
       } catch (error) {
+        if (!active) return;
         console.error('❌ Error generating PDF URL:', error);
         handleSessionAuthError(error, { silent: true });
         setPdfError('Failed to load PDF document');
@@ -83,7 +99,12 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
     };
 
     generatePdfUrl();
-  }, [pdfPath]);
+    return () => {
+      active = false;
+      releasePdfPreviewUrl(generatedUrl, previewWindows.get(generatedUrl));
+      previewWindows.delete(generatedUrl);
+    };
+  }, [pdfPath, pdfRevision]);
 
   // Update pdfPath when employee prop changes (persisted demo updates)
   useEffect(() => {
@@ -140,7 +161,8 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
     if (uploadStatus?.status === 'completed' && uploadStatus.result) {
       console.log('✅ Upload completed, updating PDF view');
       setPdfPath(uploadStatus.result.path);
-      setPdfUrl(uploadStatus.result.url);
+      // Demo uploads replace the file at the same key; refresh its preview too.
+      setPdfRevision((revision) => revision + 1);
       setPageNumber(1);
       setNumPages(null);
       setPdfError(null);
@@ -362,7 +384,12 @@ const EmployeeDetailModal = ({ employee, onClose, onUpdate, onEdit }) => {
 
   const handlePdfDownload = () => {
     if (pdfUrl) {
-      globalThis.open(pdfUrl, '_blank');
+      const preview = globalThis.open(pdfUrl, '_blank');
+      if (preview && pdfUrl.startsWith('blob:')) {
+        const windows = pdfPreviewWindows.current.get(pdfUrl) || [];
+        windows.push(preview);
+        pdfPreviewWindows.current.set(pdfUrl, windows);
+      }
     }
   };
 

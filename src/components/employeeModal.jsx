@@ -325,7 +325,7 @@ const EmployeeModal = ({ employee, onClose, onUpdate, initialEditMode = false })
                     name="status"
                     value={formData.status}
                     onChange={handleChange}
-                    aria-label={t('employees.status', 'Status')}
+                    aria-label={t('employees.statusLabel', 'Status')}
                     style={{ width: '100%', padding: '6px 10px', textTransform: 'none', letterSpacing: '.02em' }}
                   >
                     <option value="Active">{t('employeeStatus.active', 'Active')}</option>

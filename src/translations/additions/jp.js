@@ -377,12 +377,16 @@ export default {
   'header.notifications': '通知',
   'header.welcomeBack': 'おかえりなさい',
   'help.backToControlPanel': 'コントロールパネルに戻る',
+  'help.ticker.features': '機能',
+  'help.ticker.walkthrough': '操作ガイド',
 
   'leave.byType': '種類別',
   'leave.month': '月',
   'leave.nothingPending': '判断待ちの申請はありません。',
   'leave.ofNRequests': '{n} 件中',
   'leave.pendingNote': '台帳の各行で承認または却下してください。',
+  'leave.requestsSubmitAndApproved': '{n} 件の休暇申請を追加し、承認しました。',
+  'leave.requestsSubmitted': '{n} 件の休暇申請を送信しました！',
 
   'login.footer': '© 2024 HRマネージャー. All rights reserved.',
   'login.requestDemoNote': 'デモのご依頼は support@icue.vn までメールしてください',

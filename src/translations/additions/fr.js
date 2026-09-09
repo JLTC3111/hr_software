@@ -114,12 +114,16 @@ export default {
   'header.notifications': 'Notifications',
   'header.welcomeBack': 'Bon retour',
   'help.backToControlPanel': 'Retour au panneau de configuration',
+  'help.ticker.features': 'Fonctionnalités',
+  'help.ticker.walkthrough': 'Guide pas à pas',
 
   'leave.byType': 'Par type',
   'leave.month': 'Mois',
   'leave.nothingPending': 'Aucune demande n’attend de décision.',
   'leave.ofNRequests': 'sur {n} demandes',
   'leave.pendingNote': 'Approuvez-les ou refusez-les directement sur leur ligne dans le registre.',
+  'leave.requestsSubmitAndApproved': '{n} demandes de congé ajoutées et approuvées.',
+  'leave.requestsSubmitted': '{n} demandes de congé envoyées avec succès !',
 
   'login.footer': '© 2024 HR Manager. Tous droits réservés.',
   'login.requestDemoNote': 'Envoyez un e-mail à support@icue.vn pour demander une démonstration',

@@ -87,6 +87,8 @@ export default {
   'errorBoundary.title': 'Rất tiếc! Đã xảy ra lỗi',
   'header.moreOptions': 'Thêm tùy chọn',
   'help.backToControlPanel': 'Quay lại Bảng Điều Khiển',
+  'help.ticker.features': 'Tính năng',
+  'help.ticker.walkthrough': 'Hướng dẫn từng bước',
   'notifications.actionFailedDelete': 'Không thể xóa thông báo. Vui lòng thử lại.',
   'notifications.actionFailedDeleteAll': 'Không thể xóa tất cả thông báo. Vui lòng thử lại.',
   'notifications.actionFailedMarkAllRead': 'Không thể đánh dấu tất cả thông báo là đã đọc. Vui lòng thử lại.',

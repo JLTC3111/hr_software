@@ -388,11 +388,15 @@ export default {
   'header.notifications': 'Уведомления',
   'header.welcomeBack': 'С возвращением',
   'help.backToControlPanel': 'Назад к панели управления',
+  'help.ticker.features': 'Возможности',
+  'help.ticker.walkthrough': 'Пошаговое руководство',
   'leave.byType': 'По типу',
   'leave.month': 'Месяц',
   'leave.nothingPending': 'Решений не ожидается.',
   'leave.ofNRequests': 'из {n} заявок',
   'leave.pendingNote': 'Одобрите или отклоните их в соответствующей строке журнала.',
+  'leave.requestsSubmitAndApproved': 'Заявки на отпуск добавлены и одобрены: {n}.',
+  'leave.requestsSubmitted': 'Заявки на отпуск успешно отправлены: {n}!',
   'login.footer': '© 2024 HR Менеджер. Все права защищены.',
   'login.requestDemoNote': 'Напишите на support@icue.vn, чтобы запросить демо',
   'nav.policyControls': 'Управление политиками',
@@ -1346,4 +1350,3 @@ export default {
   'routeError.message': 'Этот экран не удалось открыть. Остальное приложение работает — выберите другую страницу в меню или обновите.',
   'search.filter': 'Фильтр',
 };
-

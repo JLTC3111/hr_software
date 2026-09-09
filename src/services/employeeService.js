@@ -3,6 +3,7 @@ import { withTimeout } from '../utils/supabaseTimeout.js';
 import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts.js';
 import { isDemoMode, MOCK_EMPLOYEES, getDemoEmployees, addDemoEmployee, updateDemoEmployee, deleteDemoEmployee, getDemoEmployeeById } from '../utils/demoHelper.js';
 import { saveDemoPdf, getDemoPdf, deleteDemoPdf, saveDemoBlob, getDemoBlob, deleteDemoBlob } from '../utils/demoStorage.js';
+import { createPdfPreviewUrl } from '../utils/pdfPreviewUrl.js';
 
 /* Ensure employee ID is a string (supports both integers and UUIDs) */
 const toEmployeeId = (id) => {
@@ -1137,13 +1138,13 @@ export const getEmployeePdfUrl = async (pdfPath) => {
       return { success: false, error: 'No PDF path provided' };
     }
 
-    // Demo mode: return data URL from localStorage or blob from IndexedDB
+    // Demo mode: expose both storage formats as app-origin Blob URLs.
     if (isDemoMode()) {
       try {
         const localKey = pdfPath;
         const stored = localStorage.getItem(localKey) || localStorage.getItem(`demo_employee_pdf_${pdfPath}`) || localStorage.getItem(`demo_employee_pdf_${toEmployeeId(pdfPath)}`);
         if (stored) {
-          return { success: true, url: stored, type: 'demo' };
+          return { success: true, url: await createPdfPreviewUrl(stored), type: 'demo' };
         }
       } catch (err) {
         console.warn('⚠️ Error reading demo PDF from localStorage:', err);

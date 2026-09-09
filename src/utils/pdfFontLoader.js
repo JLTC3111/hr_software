@@ -9,11 +9,10 @@ const CDN = 'https://cdn.jsdelivr.net/gh';
 const FONT_FETCH_TIMEOUT_MS = 180_000;
 
 /**
- * Local copies under public/fonts/*.ttf are gitignored (large). They exist on
- * developer machines, so Vite serves them in DEV — but production deploys have
- * an empty fonts folder, which caused console 404s before the CDN fallback.
+ * The build downloads these gitignored fonts into public/fonts, so local copies
+ * are available in development and production, including packaged desktop apps.
  */
-const localFont = (path) => (import.meta.env.DEV ? [path] : []);
+const localFont = (path) => [path];
 
 /**
  * Report display face. Archivo covers Latin, Latin-Ext and Vietnamese, and ships

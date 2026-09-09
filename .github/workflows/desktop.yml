@@ -1,0 +1,59 @@
+name: Desktop preview installers
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            command: build:mac
+          - os: windows-latest
+            command: build:win
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      VITE_APP_URL: https://hr.icue.vn
+      # These are internal preview installers. Set up release signing before
+      # distributing to employees; this workflow never publishes a release.
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run ${{ matrix.command }}
+      - name: Verify packaged Windows app
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $smokeProcess = Start-Process -FilePath 'artifacts/desktop/win-unpacked/ICUE HR Manager.exe' -ArgumentList '--desktop-smoke' -Wait -PassThru
+          if ($smokeProcess.ExitCode -ne 0) { exit $smokeProcess.ExitCode }
+      - name: Verify packaged Mac app
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          if [ "$(uname -m)" = 'arm64' ]; then
+            'artifacts/desktop/mac-arm64/ICUE HR Manager.app/Contents/MacOS/ICUE HR Manager' --desktop-smoke
+          else
+            'artifacts/desktop/mac/ICUE HR Manager.app/Contents/MacOS/ICUE HR Manager' --desktop-smoke
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hr-desktop-${{ matrix.os }}
+          if-no-files-found: error
+          path: |
+            artifacts/desktop/*.dmg
+            artifacts/desktop/*.zip
+            artifacts/desktop/*.exe
+            artifacts/desktop-smoke.png

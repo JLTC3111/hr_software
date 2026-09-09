@@ -375,12 +375,16 @@ export default {
   'header.notifications': '알림',
   'header.welcomeBack': '다시 오신 것을 환영합니다',
   'help.backToControlPanel': '제어판으로 돌아가기',
+  'help.ticker.features': '기능',
+  'help.ticker.walkthrough': '단계별 안내',
 
   'leave.byType': '유형별',
   'leave.month': '월',
   'leave.nothingPending': '결정할 항목이 없습니다.',
   'leave.ofNRequests': '{n}건 중',
   'leave.pendingNote': '목록의 해당 행에서 승인하거나 거부하세요.',
+  'leave.requestsSubmitAndApproved': '휴가 신청 {n}건이 추가되고 승인되었습니다.',
+  'leave.requestsSubmitted': '휴가 신청 {n}건이 성공적으로 제출되었습니다!',
 
   'login.footer': '© 2024 HR 매니저. All rights reserved.',
   'login.requestDemoNote': '데모를 요청하려면 support@icue.vn으로 이메일을 보내 주세요',
