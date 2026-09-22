@@ -92,6 +92,7 @@ export default {
   'personalGoals.managerReviewSaveError': 'Failed to save manager review',
   'personalGoals.needManagerRating': 'Rate at least one skill before saving.',
   'personalGoals.managerAssessmentLead': 'The fill is their self-rating. Place your mark on the same track.',
+  'personalGoals.lastAdjustedBy': 'Last adjusted by {name} · {date}',
   'personalGoals.submitForCalibration': 'Submit for calibration',
   'personalGoals.submittedForCalibration': 'Submitted for calibration.',
   'personalGoals.submitCalibrationError': 'Failed to submit for calibration',

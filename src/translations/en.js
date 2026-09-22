@@ -3109,6 +3109,7 @@ export default {
     overdueManagerReviews: 'Overdue manager reviews',
     noOverdueReviews: 'Every manager review is still inside its deadline.',
     nLate: '{n} late',
+    toBeReviewedBy: 'To be reviewed by {name}',
     remindAll: 'Remind all {n}',
     remindSelfAll: 'Remind {n} to self-assess',
     remindNoAccounts: 'None of those managers has an account to notify.',

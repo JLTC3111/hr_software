@@ -108,6 +108,7 @@ export default {
   'personalGoals.managerReviewSaveError': 'Không thể lưu đánh giá của quản lý',
   'personalGoals.needManagerRating': 'Chấm ít nhất một kỹ năng trước khi lưu.',
   'personalGoals.managerAssessmentLead': 'Phần tô là tự đánh giá của họ. Đặt vạch của bạn trên cùng thanh đó.',
+  'personalGoals.lastAdjustedBy': '{name} điều chỉnh lần cuối · {date}',
   'personalGoals.submitForCalibration': 'Gửi để hiệu chỉnh',
   'personalGoals.submittedForCalibration': 'Đã gửi để hiệu chỉnh.',
   'personalGoals.submitCalibrationError': 'Không thể gửi để hiệu chỉnh',

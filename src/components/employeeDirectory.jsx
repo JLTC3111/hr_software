@@ -68,6 +68,7 @@ import { getEmployeePositionI18nKey } from '../utils/employeePositionKey.js';
 import { isEmployeeInactive } from '../utils/employeeStatus.js';
 import { DEPARTMENT_KEYS } from '../utils/departments.js';
 import { formatDate } from '../utils/localeFormat.js';
+import { lastRatingAdjuster, formatLastAdjusted } from '../utils/performanceAssessment.js';
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
 import { Blueprint, Bar, Tag, Btn, Kicker, TickerCell, LiveClock } from './ui/industry.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill.tsx';
@@ -1878,8 +1879,22 @@ const EmployeeDirectory = ({
                     <FactRow
                       ind={ind}
                       label={t('employeeDirectory.managerReview', 'Manager review')}
-                      value={record.review?.reviewer?.name
-                        || (record.review ? t('employeeDirectory.unassignedReviewer', 'No reviewer named') : t('employeeDirectory.notFiled', 'Not filed'))}
+                      value={(() => {
+                        const adjuster = lastRatingAdjuster(record.review);
+                        if (adjuster) {
+                          const date = adjuster.at
+                            ? formatDate(adjuster.at, currentLanguage, { day: 'numeric', month: 'short', year: 'numeric' })
+                            : '';
+                          return formatLastAdjusted(
+                            t('personalGoals.lastAdjustedBy', 'Last adjusted by {name} · {date}'),
+                            { name: adjuster.name, date },
+                          );
+                        }
+                        return record.review?.reviewer?.name
+                          || (record.review
+                            ? t('employeeDirectory.unassignedReviewer', 'No reviewer named')
+                            : t('employeeDirectory.notFiled', 'Not filed'));
+                      })()}
                     />
                     <FactRow
                       ind={ind}

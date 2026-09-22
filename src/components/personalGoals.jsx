@@ -42,6 +42,8 @@ import {
   buildPerformanceAssessment,
   mergeReviewRatingsIntoSkills,
   medianOf,
+  lastRatingAdjuster,
+  formatLastAdjusted,
 } from '../utils/performanceAssessment.js';
 import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
 import { useScreenNavigation } from '../hooks/useScreenNavigation.js';
@@ -630,6 +632,22 @@ const PersonalGoals = ({ employees }) => {
   [skillRows]);
 
   const hasManagerRatings = skillRows.some(r => r.manager != null);
+
+  /** The manager who last saved these marks. A later save overwrites reviewer_id. */
+  const ratingAdjuster = useMemo(() => {
+    const adjuster = lastRatingAdjuster(periodReview);
+    if (!adjuster || !hasManagerRatings) return null;
+    const date = adjuster.at
+      ? formatDate(adjuster.at, currentLanguage, { day: 'numeric', month: 'short', year: 'numeric' })
+      : '';
+    return { name: adjuster.name, date };
+  }, [periodReview, hasManagerRatings, currentLanguage]);
+
+  const lastAdjustedLabel = useCallback((adjuster) => formatLastAdjusted(
+    t('personalGoals.lastAdjustedBy', 'Last adjusted by {name} · {date}'),
+    adjuster,
+  ), [t]);
+
   const canSubmitCalibration = canFileManagerReview
     && Boolean(periodReview?.id)
     && hasManagerRatings
@@ -763,10 +781,12 @@ const PersonalGoals = ({ employees }) => {
       {
         key: 'manager',
         title: t('personalGoals.stepManagerRating', 'Manager rating entered'),
-        meta: [
-          periodReview?.review_date ? formatDate(periodReview.review_date, currentLanguage) : null,
-          periodReview?.reviewer?.name || null,
-        ].filter(Boolean).join(' · ') || t('personalGoals.notYet', 'Not yet'),
+        meta: ratingAdjuster
+          ? lastAdjustedLabel(ratingAdjuster)
+          : ([
+            periodReview?.review_date ? formatDate(periodReview.review_date, currentLanguage) : null,
+            periodReview?.reviewer?.name || null,
+          ].filter(Boolean).join(' · ') || t('personalGoals.notYet', 'Not yet')),
         state: managerDone ? 'done' : 'todo',
       },
       {
@@ -793,7 +813,7 @@ const PersonalGoals = ({ employees }) => {
     const nextIndex = steps.findIndex(s => s.state === 'todo');
     if (nextIndex >= 0) steps[nextIndex].state = 'current';
     return steps;
-  }, [skills, skillRows, hasManagerRatings, periodReview, closeDate, currentLanguage, t]);
+  }, [skills, skillRows, hasManagerRatings, periodReview, closeDate, currentLanguage, t, ratingAdjuster, lastAdjustedLabel]);
 
   const managerNote = useMemo(() => {
     if (!periodReview) return null;
@@ -1552,6 +1572,11 @@ const PersonalGoals = ({ employees }) => {
                         : 'Self-rating as fill, manager as marker, company median dashed.',
                     )}
                   </p>
+                  {ratingAdjuster && (
+                    <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink, marginTop: 4 }}>
+                      {lastAdjustedLabel(ratingAdjuster)}
+                    </p>
+                  )}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, flex: 'none', paddingTop: 2, maxWidth: '100%' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -1560,7 +1585,11 @@ const PersonalGoals = ({ employees }) => {
                   </span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                     <span aria-hidden="true" style={{ width: 2, height: 11, background: heavyInk, flex: 'none' }} />
-                    <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>{t('personalGoals.manager', 'Manager')}</span>
+                    <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>
+                      {ratingAdjuster
+                        ? `${t('personalGoals.manager', 'Manager')} · ${ratingAdjuster.name}`
+                        : t('personalGoals.manager', 'Manager')}
+                    </span>
                   </span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                     <span aria-hidden="true" style={{ width: 1, height: 11, background: ind.inkFaint, flex: 'none' }} />
@@ -1773,8 +1802,19 @@ const PersonalGoals = ({ employees }) => {
                       </span>
                       <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 10 }}>
                         <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>
-                          {review.reviewer?.name || t('personalGoals.reviewer', 'Reviewer')}
-                          {review.review_date ? ` · ${formatDate(review.review_date, currentLanguage)}` : ''}
+                          {(() => {
+                            const adjuster = lastRatingAdjuster(review);
+                            if (adjuster) {
+                              const date = adjuster.at
+                                ? formatDate(adjuster.at, currentLanguage, { day: 'numeric', month: 'short', year: 'numeric' })
+                                : '';
+                              return lastAdjustedLabel({ name: adjuster.name, date });
+                            }
+                            return [
+                              review.reviewer?.name || t('personalGoals.reviewer', 'Reviewer'),
+                              review.review_date ? formatDate(review.review_date, currentLanguage) : null,
+                            ].filter(Boolean).join(' · ');
+                          })()}
                         </span>
                         <span style={figure(16, ind.ink)}>{fmt1(review.overall_rating)}</span>
                       </span>

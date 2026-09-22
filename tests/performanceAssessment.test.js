@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildPerformanceAssessment,
+  formatLastAdjusted,
+  lastRatingAdjuster,
   mergeReviewRatingsIntoSkills
 } from '../src/utils/performanceAssessment.js';
 
@@ -51,6 +53,36 @@ test('a new period falls back to existing assessments and fills missing skills',
 
   assert.deepEqual(merged.map(skill => skill.rating), [0, 4.5, 0, 0, 0]);
   assert.equal(merged.length, 5);
+});
+
+test('the last adjuster is the reviewer on a scored manager review, dated by the last save', () => {
+  const adjuster = lastRatingAdjuster({
+    review_type: 'quarterly',
+    overall_rating: 4.3,
+    review_date: '2026-09-08',
+    updated_at: '2026-09-22T03:06:44.146Z',
+    reviewer: { name: 'Đỗ Bảo Long' },
+  });
+
+  assert.equal(adjuster.name, 'Đỗ Bảo Long');
+  assert.equal(adjuster.at, '2026-09-22T03:06:44.146Z');
+});
+
+test('a self-log and an unscored review name nobody', () => {
+  assert.equal(lastRatingAdjuster({
+    review_type: 'self',
+    overall_rating: 4,
+    reviewer: { name: 'Đỗ Bảo Long' },
+  }), null);
+  assert.equal(lastRatingAdjuster({
+    review_type: 'quarterly',
+    overall_rating: null,
+    reviewer: { name: 'Đỗ Bảo Long' },
+  }), null);
+  assert.equal(formatLastAdjusted('Last adjusted by {name} · {date}', {
+    name: 'Đỗ Bảo Long',
+    date: '',
+  }), 'Last adjusted by Đỗ Bảo Long');
 });
 
 test('overall performance averages assessed ratings and ignores unrated zero values', () => {

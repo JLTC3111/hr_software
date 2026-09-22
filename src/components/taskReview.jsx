@@ -49,6 +49,7 @@ import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 import { isDemoMode, getDemoEmployeeName } from '../utils/demoHelper.js';
 import { filterActiveEmployees } from '../utils/employeeStatus.js';
 import { formatDate } from '../utils/localeFormat.js';
+import { lastRatingAdjuster, formatLastAdjusted } from '../utils/performanceAssessment.js';
 import { TranslatedText } from './ui/translated-text.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
@@ -1720,7 +1721,7 @@ const TaskReview = ({ employees, allEmployees }) => {
                   textAlign: 'left', width: '100%',
                 }}
               >
-                <div className="flex items-baseline justify-between" style={{ gap: 10, marginBottom: 4 }}>
+                <div className="flex items-baseline justify-between" style={{ gap: 10, marginBottom: row.manager ? 0 : 4 }}>
                   <span
                     style={{
                       fontFamily: BODY, fontSize: 12.5, color: ind.ink, minWidth: 0,
@@ -1728,12 +1729,23 @@ const TaskReview = ({ employees, allEmployees }) => {
                     }}
                   >
                     {row.label}
-                    {row.manager ? ` · ${nameOf(row.manager)}` : ''}
                   </span>
                   <span style={{ ...figure(12.5, ind.ink), flex: 'none' }}>
                     {t('taskReview.nLate', '{n} late').replace('{n}', String(row.late))}
                   </span>
                 </div>
+                {row.manager && (
+                  <div
+                    style={{
+                      fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted,
+                      marginTop: 2, marginBottom: 4, lineHeight: 1.35,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {t('taskReview.toBeReviewedBy', 'To be reviewed by {name}')
+                      .replace('{name}', nameOf(row.manager))}
+                  </div>
+                )}
                 <Bar
                   ind={ind}
                   value={stages.overdue > 0 ? row.late / stages.overdue : 0}
@@ -1891,6 +1903,21 @@ function ReviewModal({
               </span>
             )}
           </div>
+          {(() => {
+            const adjuster = lastRatingAdjuster(review);
+            if (!adjuster) return null;
+            const date = adjuster.at
+              ? formatDate(adjuster.at, currentLanguage, { day: 'numeric', month: 'short', year: 'numeric' })
+              : '';
+            return (
+              <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink, margin: 0 }}>
+                {formatLastAdjusted(
+                  t('personalGoals.lastAdjustedBy', 'Last adjusted by {name} · {date}'),
+                  { name: adjuster.name, date },
+                )}
+              </p>
+            );
+          })()}
 
           {row.selfSkipped && !row.selfDone && (
             <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, lineHeight: 1.5 }}>

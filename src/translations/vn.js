@@ -2514,6 +2514,7 @@ export default {
     overdueManagerReviews: 'Đánh giá của quản lý quá hạn',
     noOverdueReviews: 'Mọi đánh giá của quản lý đều còn trong hạn.',
     nLate: '{n} trễ hạn',
+    toBeReviewedBy: '{name} sẽ đánh giá',
     remindAll: 'Nhắc cả {n} người',
     remindSelfAll: 'Nhắc {n} người tự đánh giá',
     remindNoAccounts: 'Không quản lý nào trong số đó có tài khoản để nhận thông báo.',

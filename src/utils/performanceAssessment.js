@@ -74,6 +74,35 @@ export const medianOf = (values = []) => {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 };
 
+/**
+ * Who last wrote the manager marks on this review.
+ * A self-log is the employee's own average, so it has no adjuster.
+ * `updated_at` is the last save; `review_date` is only the day it was first filed.
+ */
+export const lastRatingAdjuster = (review) => {
+  if (!review || String(review.review_type || '') === 'self') return null;
+  const name = review.reviewer?.name;
+  if (!name) return null;
+  const scored = [
+    review.overall_rating,
+    review.technical_skills_rating,
+    review.communication_rating,
+    review.leadership_rating,
+    review.teamwork_rating,
+    review.problem_solving_rating,
+  ].some((value) => Number(value) > 0);
+  if (!scored) return null;
+  return { name, at: review.updated_at || review.review_date || null };
+};
+
+/** Fill `{name}` and `{date}`. An empty date drops a trailing " · ". */
+export const formatLastAdjusted = (template, { name, date } = {}) => {
+  const text = String(template || '')
+    .replace('{name}', name || '')
+    .replace('{date}', date || '');
+  return date ? text : text.replace(/\s*·\s*$/, '').trim();
+};
+
 export const buildPerformanceAssessment = (skills) => {
   const ratings = PERFORMANCE_SKILLS.reduce((result, definition) => {
     const skill = skills.find(item => item.skill_name === definition.skillName);

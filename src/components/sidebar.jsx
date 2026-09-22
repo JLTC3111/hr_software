@@ -16,7 +16,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
-  TrendingUp, Users, Award, FileText, AlarmClock, ChevronDown, ChevronRight,
+  TrendingUp, Users, FileText, AlarmClock, ChevronDown, ChevronRight,
   Bell, Cog, CheckSquare, X, UserPlus, Languages,
 } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext.jsx'
@@ -137,6 +137,7 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
           subItems: [
             { path: '/task-listing', name: t('nav.taskListing', 'Task Listing') },
             { path: '/task-review', name: t('nav.taskReview', 'Performance Review') },
+            { path: '/personal-goals', name: t('nav.personalGoals', 'Personal Goals') },
           ]
         },
         { path: '/recruitment', name: t('nav.recruitment', 'Recruitment'), icon: UserPlus },
@@ -145,7 +146,6 @@ const Sidebar = ({ isMobileMenuOpen, setIsMobileMenuOpen }) => {
     {
       section: t('sidebar.analytics', 'ANALYTICS'),
       items: [
-        { path: '/personal-goals', name: t('nav.personalGoals', 'Personal Goals'), icon: Award },
         { path: '/reports', name: t('nav.reports'), icon: FileText },
       ]
     },
