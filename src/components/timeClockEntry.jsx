@@ -41,10 +41,10 @@ import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts.js';
 import { supabase } from '../config/supabaseClient.js';
 import { isDemoMode, getDemoEmployeeName, addDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper.js';
 import AdminTimeEntry from './AdminTimeEntry.jsx';
-import { motion } from 'framer-motion';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { useSearchParams } from 'react-router-dom';
 import { DatePicker } from './ui/date-picker.jsx';
+import { DocumentLink } from './ui/document-link.jsx';
 import { TimePicker } from './ui/time-picker.jsx';
 import { COL } from '../utils/tableColumns.js';
 import { TableScroll, StackedDetail } from './ui/responsive-table.jsx';
@@ -452,7 +452,7 @@ const TimeClockEntry = () => {
       handleSessionAuthError(error, { silent: true });
       setTimeEntries([]); // Ensure it's an empty array on error
     }
-  }, [canManageTimeTracking, userEmployeeId, withTimeout, normalizeEntries]);
+  }, [canManageTimeTracking, userEmployeeId, withTimeout, normalizeEntries, handleSessionAuthError]);
 
   const fetchAllEmployees = useCallback(async () => {
     try {
@@ -630,7 +630,7 @@ const TimeClockEntry = () => {
         });
       }
     }
-  }, [userId, canManageTimeTracking, fetchTimeEntries, fetchLeaveRequests, fetchAllEmployees, handleSessionAuthError]);
+  }, [userId, canManageTimeTracking, fetchTimeEntries, fetchLeaveRequests, fetchAllEmployees, handleSessionAuthError, t]);
 
   useEffect(() => () => {
     isMounted.current = false;
@@ -873,7 +873,7 @@ const TimeClockEntry = () => {
           lastModified: Date.now()
         });
         
-        const uploadResult = await timeTrackingService.uploadProofFile(file, user?.id);
+        const uploadResult = await timeTrackingService.uploadProofFile(file, user?.employeeId || user?.id);
         if (uploadResult.success) {
           proofFileUrl = uploadResult.url;
           proofFileName = uploadResult.fileName;
@@ -883,7 +883,7 @@ const TimeClockEntry = () => {
       }
       
       // Ensure employee exists in database before creating time entry
-      const employeeCheck = await timeTrackingService.ensureEmployeeExists(user?.id, {
+      const employeeCheck = await timeTrackingService.ensureEmployeeExists(user?.employeeId || user?.id, {
         name: user?.user_metadata?.name || user?.email?.split('@')[0] || 'User',
         email: user?.email,
         position: user?.user_metadata?.position,
@@ -1102,7 +1102,7 @@ const TimeClockEntry = () => {
   };
 
   // Handle uploading proof to existing time entry
-  const handleUploadProof = async (entryId, file) => {
+  const handleUploadProof = async (entryId, file, employeeId) => {
     if (!file) return;
 
     setUploadingProofId(entryId);
@@ -1112,7 +1112,7 @@ const TimeClockEntry = () => {
       const result = await timeTrackingService.updateTimeEntryProof(
         entryId, 
         file, 
-        user?.id,
+        employeeId || user?.employeeId || user?.id,
         (percent) => {
           // Update progress
           setUploadProgress({ [file.name]: percent });
@@ -1317,7 +1317,7 @@ const TimeClockEntry = () => {
           const displayName = req.employee?.name || req.employee_name || fallbackName || t('timeClock.unknownEmployee', 'Unknown');
         return { ...req, displayName };
       });
-        }, [leaveRequests, formData.date, allEmployees, t, userEmployeeId, userId]);
+  }, [leaveRequests, formData.date, allEmployees, t]);
 
   // Sorting function for history table (includes leave rows for selected date)
   const getSortedEntries = useMemo(() => {
@@ -1386,7 +1386,7 @@ const TimeClockEntry = () => {
       return 0;
     });
     return sorted;
-  }, [filteredEntries, onLeaveForSelectedDate, selectedEmployeeFilter, statusFilter, user, sortKey, sortDirection, formData.date]);
+  }, [filteredEntries, onLeaveForSelectedDate, selectedEmployeeFilter, statusFilter, userEmployeeId, userId, sortKey, sortDirection, formData.date]);
 
   // Eight columns do not fit a phone, so Time and Type drop out and reappear as
   // stacked detail under the date. While a row is being edited they are forced
@@ -2365,22 +2365,37 @@ const TimeClockEntry = () => {
                                     isImageFile(entry.proof_file_type, entry.proof_file_url) ? (
                                       <button
                                         type="button"
-                                        onClick={() => setImagePreview({ show: true, url: entry.proof_file_url })}
+                                        onClick={async () => {
+                                          try {
+                                            const result = isDemoMode()
+                                              ? { success: true, url: entry.proof_file_url }
+                                              : await timeTrackingService.getProofFileSignedUrl(entry.proof_file_path || entry.proof_file_url);
+                                            if (!result.success) throw new Error(result.error);
+                                            setImagePreview({ show: true, url: result.url });
+                                          } catch (error) {
+                                            if (!handleSessionAuthError(error)) setErrors({ general: t('timeClock.proofLoadFailed', 'This file could not be displayed.') });
+                                          }
+                                        }}
                                         title={t('timeClock.viewProof', 'View proof image')}
                                         style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: ind.accent }}
                                       >
                                         <FileCheck size={15} strokeWidth={1.5} />
                                       </button>
                                     ) : (
-                                      <a
-                                        href={entry.proof_file_url}
+                                      <DocumentLink
+                                        href={isDemoMode() ? entry.proof_file_url : entry.proof_file_path || entry.proof_file_url}
+                                        local={isDemoMode()}
+                                        fileName={entry.proof_file_name}
+                                        onError={(error) => {
+                                          if (!handleSessionAuthError(error)) setErrors({ general: t('timeClock.proofLoadFailed', 'This file could not be displayed.') });
+                                        }}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         title={t('timeClock.downloadProof', 'Download proof file')}
                                         style={{ color: ind.accent, display: 'inline-flex' }}
                                       >
                                         <FileCheck size={15} strokeWidth={1.5} />
-                                      </a>
+                                      </DocumentLink>
                                     )
                                   ) : isLeaveHistoryRow(entry) ? (
                                     <span style={{ color: ind.inkFaint }}>—</span>
@@ -2411,7 +2426,7 @@ const TimeClockEntry = () => {
                                         onChange={(e) => {
                                           const file = e.target.files?.[0];
                                           if (file) {
-                                            handleUploadProof(entry.id, file);
+                                            handleUploadProof(entry.id, file, entry.employee_id);
                                             e.target.value = '';
                                           }
                                         }}

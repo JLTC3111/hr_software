@@ -223,29 +223,31 @@ test('Task Review can remind employees and continue without a self-assessment', 
   assert.match(performanceService, /if \(updates\.selfAssessmentSkipped !== undefined\)/);
 });
 
-test('Personal Goals holds the person and cycle in the URL', () => {
+test('Personal Goals holds the person in the URL', () => {
   const personalGoals = source('src/components/personalGoals.jsx');
 
   assert.match(personalGoals, /useScreenNavigation\(PERSONAL_GOALS_NAV\)/);
-  assert.match(personalGoals, /edit: \{ key: 'edit', fallback: null, isValid: \(value\) => value === 'manager' \}/);
-  assert.match(personalGoals, /const selectedPeriod = nav\.cycle \?\? getCurrentQuarter\(\)/);
+  assert.match(personalGoals, /employee: \{ key: 'employee', fallback: null \}/);
+  assert.doesNotMatch(personalGoals, /key: 'cycle'/);
+  assert.doesNotMatch(personalGoals, /key: 'edit'/);
   assert.match(personalGoals, /go\(\{ employee: String\(e\.target\.value\) \}\)/);
-  assert.match(personalGoals, /go\(\{ cycle: e\.target\.value \}\)/);
   assert.match(personalGoals, /if \(availableEmployees\.length === 0\) return;/);
   assert.match(personalGoals, /go\(\{ employee: null \}, \{ replace: true \}\)/);
   assert.doesNotMatch(personalGoals, /\bsetSelectedEmployee\b/);
   assert.doesNotMatch(personalGoals, /\bsetSelectedPeriod\b/);
 });
 
-test('Task Review opens Personal Goals on the person in the sheet', () => {
+test('Task Review rates in the sheet', () => {
   const taskReview = source('src/components/taskReview.jsx');
 
-  assert.match(taskReview, /params\.set\('employee', String\(row\.id\)\)/);
-  assert.match(taskReview, /params\.set\('cycle', selectedPeriod\)/);
-  assert.match(taskReview, /params\.set\('edit', 'manager'\)/);
-  assert.match(taskReview, /onOpenGoals=\{\(\) => openPersonalGoals\(openReview\)\}/);
-  // Reminders are for the recipient, so they keep the bare address.
-  assert.match(taskReview, /actionUrl: '\/personal-goals'/);
+  assert.doesNotMatch(taskReview, /params\.set\('edit', 'manager'\)/);
+  assert.doesNotMatch(taskReview, /openPersonalGoals/);
+  assert.doesNotMatch(taskReview, /taskReview\.openPersonalGoals/);
+  assert.match(taskReview, /const canFileManagerReview = canManagePerformance && Boolean\(row\?\.id\) && !viewingSelf/);
+  assert.match(taskReview, /!\(adjusting && canFileManagerReview\)/);
+  // Reminders are for the recipient, so they keep the bare address of the review.
+  assert.match(taskReview, /actionUrl: '\/task-review'/);
+  assert.doesNotMatch(taskReview, /actionUrl: '\/personal-goals'/);
 });
 
 test('a filed manager review is submitted for calibration before sign-off', () => {
@@ -257,13 +259,11 @@ test('a filed manager review is submitted for calibration before sign-off', () =
   assert.match(taskReview, /\{ status: 'submitted' \}/);
   assert.match(taskReview, /taskReview\.submitForCalibration/);
   assert.match(taskReview, /showCalibrationCards = queue\.key === 'calibration'/);
-  assert.match(personalGoals, /updatePerformanceReview\(periodReview\.id, \{\s*status: 'submitted'/);
-  assert.match(personalGoals, /personalGoals\.submitForCalibration/);
+  assert.match(taskReview, /const handleSaveManagerReview = async/);
   assert.match(personalGoals, /performanceReviewsHref/);
   assert.match(personalGoals, /params\.set\('review', String\(employee\)\)/);
-  assert.match(personalGoals, /stage: awaitingSignOff \? 'signed' : null/);
-  assert.match(personalGoals, /personalGoals\.signOffOnReviews/);
   assert.match(personalGoals, /personalGoals\.openPerformanceReviews/);
+  assert.doesNotMatch(personalGoals, /status: 'submitted'/);
   assert.match(performanceService, /if \(updates\.status === 'submitted' && !updates\.submittedAt\)/);
 });
 

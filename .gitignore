@@ -12,6 +12,7 @@ dist
 dist-ssr
 artifacts/
 desktop/app/
+supabase/.temp/
 *.local
 
 # Environment (secrets — never commit)

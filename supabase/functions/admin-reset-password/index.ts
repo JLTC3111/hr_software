@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getActiveHrAdmin, getHrAuthUserIds } from '../_shared/hrAuth.js'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,7 +28,7 @@ serve(async (req) => {
 
     // Get the authorization header from the request
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
+    if (!authHeader?.startsWith('Bearer ')) {
       throw new Error('No authorization header')
     }
 
@@ -44,20 +45,15 @@ serve(async (req) => {
     }
 
     // Check if user is admin
-    const { data: userData, error: roleError } = await supabaseAdmin
-      .from('hr_users')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (roleError || !userData || userData.role !== 'admin') {
+    const userData = await getActiveHrAdmin(supabaseAdmin, user.id)
+    if (!userData) {
       throw new Error('Unauthorized: Admin access required')
     }
 
     // Get the request body
     const { userId, newPassword } = await req.json()
 
-    if (!userId || !newPassword) {
+    if (typeof userId !== 'string' || !userId || typeof newPassword !== 'string' || !newPassword) {
       throw new Error('Missing userId or newPassword')
     }
 
@@ -65,35 +61,25 @@ serve(async (req) => {
       throw new Error('Password must be at least 6 characters')
     }
 
-    // Get the user's auth ID from user_emails table
-    const { data: emailData, error: emailError } = await supabaseAdmin
-      .from('user_emails')
-      .select('auth_user_id')
-      .eq('user_id', userId)
-      .single()
+    const { data: target, error: targetError } = await supabaseAdmin
+      .from('hr_users').select('id').eq('id', userId).maybeSingle()
+    if (targetError) throw targetError
+    if (!target) throw new Error('HR user not found')
 
-    let authUserId = emailData?.auth_user_id
-
-    // If not found in user_emails, use the userId directly (it might be the auth ID)
-    if (!authUserId) {
-      authUserId = userId
-    }
-
-    // Update the user's password using admin API
-    const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      authUserId,
-      { password: newPassword }
-    )
-
-    if (updateError) {
-      throw updateError
+    // A profile can have several login emails, each backed by an Auth account.
+    const authUserIds = await getHrAuthUserIds(supabaseAdmin, userId)
+    for (const authUserId of authUserIds) {
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        authUserId,
+        { password: newPassword }
+      )
+      if (updateError) throw updateError
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Password updated successfully',
-        user: updateData.user 
+        message: 'Password updated successfully'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -104,7 +90,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: error instanceof Error ? error.message : 'Failed to reset password'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -48,6 +48,7 @@ import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessio
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 import { formatDate as formatLocaleDate, groupNumberInput, parseSalaryRange, formatStoredSalaryRange, currencyAffix, currencyForJob } from '../utils/localeFormat.js';
 import { DatePicker } from './ui/date-picker.jsx';
+import { DocumentLink } from './ui/document-link.jsx';
 import { TimePicker } from './ui/time-picker.jsx';
 import { TranslatedText } from './ui/translated-text.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
@@ -1763,7 +1764,8 @@ const ApplicationDetailModal = ({ ind, application, focus, onClose, onUpdate, on
     setSaving(true);
     setError(null);
     try {
-      await updateApplicationRating(application.id, rating, notes);
+      const result = await updateApplicationRating(application.id, rating, notes);
+      if (!result.success) throw new Error(result.error || 'Failed to save application');
       if (status !== application.status && onStatusUpdate) {
         await onStatusUpdate(application.id, status);
       }
@@ -1875,15 +1877,19 @@ const ApplicationDetailModal = ({ ind, application, focus, onClose, onUpdate, on
         {(application.applicant?.resume_url || application.applicant?.linkedin_profile) && (
           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
             {application.applicant?.resume_url && (
-              <a
+              <DocumentLink
                 href={application.applicant.resume_url} target="_blank" rel="noopener noreferrer"
+                local={isDemoMode()}
+                onError={(err) => {
+                  if (!handleSessionAuthError(err)) setError(t('timeClock.proofLoadFailed', 'This file could not be displayed.'));
+                }}
                 style={{
                   fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5, letterSpacing: '.08em',
                   textTransform: 'uppercase', color: ind.accentDeep, textDecoration: 'underline',
                 }}
               >
                 {t('recruitment.viewResume', 'View resume')} →
-              </a>
+              </DocumentLink>
             )}
             {application.applicant?.linkedin_profile && (
               <a

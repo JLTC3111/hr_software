@@ -1,8 +1,9 @@
 import { supabase } from '../config/supabaseClient';
 import { isDemoMode, MOCK_EMPLOYEES, MOCK_TIME_ENTRIES, getDemoLeaveRequests, addDemoLeaveRequest, calculateDaysBetween, getDemoTimeEntries, addDemoTimeEntry, getDemoEmployeeById } from '../utils/demoHelper';
 import { saveDemoBlob } from '../utils/demoStorage';
-import { toExtendedInterval, extendedIntervalsOverlap } from '../utils/timeEntryHelpers.js';
+import { toExtendedInterval, extendedIntervalsOverlap, getMonthDateRange } from '../utils/timeEntryHelpers.js';
 import { workingDateKeys } from '../utils/reportExportHelpers.js';
+import { getDocumentDownloadUrl } from './documentService.js';
 
 const toEmployeeId = (id) => {
   return id ? String(id) : null;
@@ -919,7 +920,7 @@ export const uploadProofFile = async (file, employeeId, onProgress = null) => {
     }
 
     // Upload using XMLHttpRequest with progress tracking
-    return new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('PUT', signedUrlData.signedUrl, true);
       xhr.setRequestHeader('Content-Type', file.type);
@@ -934,18 +935,18 @@ export const uploadProofFile = async (file, employeeId, onProgress = null) => {
 
       xhr.onload = async () => {
         if (xhr.status === 200) {
-          // Get public URL
-          const { data: publicUrlData } = supabase.storage
-            .from('employee-documents')
-            .getPublicUrl(filePath);
-
-          resolve({
-            success: true,
-            url: publicUrlData.publicUrl,
-            fileName: file.name,
-            fileType: file.type,
-            storagePath: filePath
-          });
+          try {
+            const download = await getDocumentDownloadUrl(filePath);
+            resolve({
+              success: true,
+              url: download.url,
+              fileName: file.name,
+              fileType: file.type,
+              storagePath: filePath
+            });
+          } catch (error) {
+            reject(error);
+          }
         } else {
           console.error(`Failed to upload file:`, xhr.responseText);
           reject(new Error('Failed to upload file to storage'));
@@ -969,10 +970,9 @@ export const uploadProofFile = async (file, employeeId, onProgress = null) => {
 };
 
 /**
- * Get public URL for an existing proof file
+ * Get a fresh, short-lived download URL for an existing proof file.
  * @param {string} filePath - Path to file in storage (e.g., 'time-proofs/123_1234567890.jpg')
  * @returns {Promise<{success: boolean, url?: string, error?: string}>}
- * @note Bucket is public, so this returns a permanent public URL
  */
 export const getProofFileSignedUrl = async (filePath) => {
   try {
@@ -980,19 +980,12 @@ export const getProofFileSignedUrl = async (filePath) => {
       throw new Error('File path is required');
     }
 
-    const { data } = supabase.storage
-      .from('employee-documents')
-      .getPublicUrl(filePath);
-
-    return {
-      success: true,
-      url: data.publicUrl
-    };
+    return await getDocumentDownloadUrl(filePath);
   } catch (error) {
-    console.error('Error getting public URL:', error);
+    console.error('Error authorizing proof download:', error);
     return {
       success: false,
-      error: error.message || 'Failed to generate public URL'
+      error: error.message || 'Failed to authorize proof download'
     };
   }
 };
@@ -1346,8 +1339,7 @@ export const getOvertimeLogs = async (employeeId, filters = {}) => {
       query = query.eq('status', filters.status);
     }
     if (filters.month && filters.year) {
-      const startDate = `${filters.year}-${String(filters.month).padStart(2, '0')}-01`;
-      const endDate = new Date(filters.year, filters.month, 0).toISOString().split('T')[0];
+      const { startDate, endDate } = getMonthDateRange(filters.month, filters.year);
       query = query.gte('date', startDate).lte('date', endDate);
     }
 
@@ -1396,8 +1388,7 @@ export const updateOvertimeStatus = async (logId, status, approverId) => {
 const calculateSummaryFromRawData = async (employeeId, month, year) => {
   try {
     if (import.meta.env.DEV) console.log('🔧 [Service] Calculating summary for employee:', employeeId, 'month:', month, 'year:', year);
-    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-    const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+    const { startDate, endDate } = getMonthDateRange(month, year);
     if (import.meta.env.DEV) console.log('🔧 [Service] Date range:', startDate, 'to', endDate);
     
     // Get time entries (INCLUDE PENDING AND APPROVED)
@@ -1417,8 +1408,8 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
       .from('leave_requests')
       .select('*')
       .eq('employee_id', toEmployeeId(employeeId))
-      .gte('start_date', startDate)
-      .lte('end_date', endDate)
+      .lte('start_date', endDate)
+      .gte('end_date', startDate)
       .eq('status', 'approved');
     
     if (leaveError) throw leaveError;
@@ -1656,12 +1647,6 @@ export const updateSummary = async (employeeId, month, year) => {
   }
 };
 
-const getMonthDateRange = (month, year) => {
-  const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-  const endDate = new Date(year, month, 0).toISOString().split('T')[0];
-  return { startDate, endDate };
-};
-
 const emptySummary = (employeeId, month, year) => ({
   employee_id: toEmployeeId(employeeId),
   month,
@@ -1814,8 +1799,8 @@ const calculateAllSummariesFromRawData = async (month, year, employees = []) => 
     supabase
       .from('leave_requests')
       .select('employee_id, start_date, end_date, status')
-      .gte('start_date', startDate)
-      .lte('end_date', endDate)
+      .lte('start_date', endDate)
+      .gte('end_date', startDate)
       .eq('status', 'approved'),
     supabase
       .from('overtime_logs')
@@ -2354,14 +2339,13 @@ export const getWorkDaysForMonth = async (month, employeeId = null) => {
     const year = month.getFullYear();
     const monthIndex = month.getMonth();
 
-    const startDate = new Date(year, monthIndex, 1).toISOString().split('T')[0];
-    const endDate = new Date(year, monthIndex + 1, 0).toISOString().split('T')[0];
+    const { startDate, endDate } = getMonthDateRange(monthIndex + 1, year);
 
     let query = supabase
       .from('time_entries')
       .select(`
         date,
-        total_hours,
+        total_hours:hours,
         hour_type,
         employee_id,
         employees (

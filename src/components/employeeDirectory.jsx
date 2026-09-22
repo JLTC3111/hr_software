@@ -298,6 +298,7 @@ function RatingCell({ ind, rating, width = 56, dash }) {
 
 /** Search input, shared by the filter strip and the record index. */
 function SearchBox({ ind, value, onChange, placeholder, style }) {
+  const { t } = useLanguage();
   return (
     <div
       style={{

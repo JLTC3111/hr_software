@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getActiveHrAdmin } from "../_shared/hrAuth.js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,25 +52,8 @@ serve(async (req) => {
       );
     }
 
-    let hrUserId = user.id;
-    const { data: emailMapping } = await supabaseAdmin
-      .from("user_emails")
-      .select("hr_user_id")
-      .eq("auth_user_id", user.id)
-      .maybeSingle();
-    if (emailMapping?.hr_user_id) {
-      hrUserId = emailMapping.hr_user_id;
-    }
-
-    const { data: hrUser } = await supabaseAdmin
-      .from("hr_users")
-      .select("role")
-      .eq("id", hrUserId)
-      .maybeSingle();
-
-    const role = hrUser?.role ?? user.app_metadata?.role ??
-      user.user_metadata?.role ?? "";
-    if (role !== "admin") {
+    const hrUser = await getActiveHrAdmin(supabaseAdmin, user.id);
+    if (!hrUser) {
       return new Response(
         JSON.stringify({
           success: false,

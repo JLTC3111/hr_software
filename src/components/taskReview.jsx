@@ -12,6 +12,9 @@
  *                   people still outstanding in the selected stage. Stage bars
  *                   and "View pending" open a roster of those people; names
  *                   open the sheet.
+ *   sheet         — that person's skill assessment. Self fill, manager tick,
+ *                   and company median on one track, then rating history, the
+ *                   cycle, the manager note, and the written review.
  *
  * No element repeats a number another element already carries, except the org
  * average, which appears in the ticker, in the histogram caption and as the
@@ -36,8 +39,7 @@
  * weight and rule rather than colour.
  */
 import _React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, AlertCircle, X } from 'lucide-react';
+import { ArrowRight, AlertCircle, X, Save, Download } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
@@ -46,10 +48,17 @@ import { notifyUser } from '../services/notificationService.js';
 import { getAllUsers } from '../services/userService.js';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
-import { isDemoMode, getDemoEmployeeName } from '../utils/demoHelper.js';
+import { isDemoMode, getDemoEmployeeName, getDemoReviewStrengths, getDemoReviewAreasForImprovement } from '../utils/demoHelper.js';
 import { filterActiveEmployees } from '../utils/employeeStatus.js';
 import { formatDate } from '../utils/localeFormat.js';
-import { lastRatingAdjuster, formatLastAdjusted } from '../utils/performanceAssessment.js';
+import {
+  PERFORMANCE_SKILLS,
+  buildPerformanceAssessment,
+  mergeReviewRatingsIntoSkills,
+  medianOf,
+  lastRatingAdjuster,
+  formatLastAdjusted,
+} from '../utils/performanceAssessment.js';
 import { TranslatedText } from './ui/translated-text.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
@@ -524,7 +533,6 @@ const TaskReview = ({ employees, allEmployees }) => {
   const { handleSessionAuthError } = useSessionGuard();
   const { isDarkMode } = useTheme();
   const { t, currentLanguage } = useLanguage();
-  const navigate = useNavigate();
   const ind = getIndustry(isDarkMode);
 
   const [reviews, setReviews] = useState([]);
@@ -567,15 +575,6 @@ const TaskReview = ({ employees, allEmployees }) => {
   const canViewAll = checkPermission('canViewReports');
   const canSignOff = checkPermission('canManagePerformance');
   const viewerEmployeeId = String(user?.employeeId || user?.id || '');
-
-  const openPersonalGoals = useCallback((row) => {
-    const params = new URLSearchParams();
-    if (row?.id) params.set('employee', String(row.id));
-    if (selectedPeriod) params.set('cycle', selectedPeriod);
-    if (row && !row.managerDone && canSignOff) params.set('edit', 'manager');
-    const query = params.toString();
-    navigate(query ? `/personal-goals?${query}` : '/personal-goals');
-  }, [navigate, selectedPeriod, canSignOff]);
 
   const directory = useMemo(
     () => (allEmployees?.length ? allEmployees : employees) || [],
@@ -1151,8 +1150,8 @@ const TaskReview = ({ employees, allEmployees }) => {
         {
           type: 'warning',
           category: 'performance',
-          actionUrl: '/personal-goals',
-          actionLabel: t('taskReview.openPersonalGoals', 'Open Personal Goals'),
+          actionUrl: '/task-review',
+          actionLabel: t('taskReview.review', 'Review'),
         }
       )));
 
@@ -1818,8 +1817,14 @@ const TaskReview = ({ employees, allEmployees }) => {
           onSendBack={() => sendBack(openReview)}
           onSubmitCalibration={() => submitForCalibration(openReview)}
           onSkipSelf={() => skipSelfAssessment(openReview)}
-          onOpenGoals={() => openPersonalGoals(openReview)}
           onClose={() => closeReview()}
+          reviews={reviews}
+          skills={skills}
+          viewerEmployeeId={viewerEmployeeId}
+          canManagePerformance={canSignOff}
+          isDarkMode={isDarkMode}
+          onRefresh={() => fetchAll({ silent: true })}
+          handleSessionAuthError={handleSessionAuthError}
         />
       )}
     </div>
@@ -1827,30 +1832,600 @@ const TaskReview = ({ employees, allEmployees }) => {
 };
 
 /* ------------------------------------------------------------------ *
- * Review detail — the written half of the review, and the two decisions
+ * Review sheet — skill assessment, then the written review
  * ------------------------------------------------------------------ */
 
-const COMPETENCIES = [
-  ['technical_skills_rating', 'Technical'],
-  ['communication_rating', 'Communication'],
-  ['leadership_rating', 'Leadership'],
-  ['teamwork_rating', 'Teamwork'],
-  ['problem_solving_rating', 'Problem solving'],
-];
+/** Below this the fill drops to light steel. */
+const STRONG_RATING = 4;
+/** One click, one key, one notch on the track. */
+const RATING_STEP = 0.1;
+/** Self and manager have to differ by this much before it is worth discussing. */
+const GAP_THRESHOLD = 0.4;
+/** Quarters plotted in the rating history. */
+const HISTORY_QUARTERS = 5;
+/** Marks the employee's one-click acknowledgement inside employee_comments. */
+const ACK_MARKER = '[acknowledged]';
+
+/** The `n` quarters ending at `period`, oldest first. */
+const quartersEndingAt = (period, n) => {
+  const parsed = parsePeriod(period);
+  if (!parsed) return [];
+  const out = [];
+  let { quarter, year } = parsed;
+  for (let i = 0; i < n; i += 1) {
+    out.unshift({ quarter, year, key: formatPeriodKey(quarter, year) });
+    quarter -= 1;
+    if (quarter === 0) { quarter = 4; year -= 1; }
+  }
+  return out;
+};
+
+const csvCell = (value) => {
+  const text = value == null ? '' : String(value);
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+
+/**
+ * One calibrated skill row. The track carries three marks at once:
+ *   - a solid fill for the self-rating (light steel when it is below 4)
+ *   - a dark-steel tick, overshooting the track, for the manager's rating
+ *   - a faint interior hairline for the company median
+ *
+ * When `editable`, the track *is* the control — click, drag, or arrow keys —
+ * so a second native slider (and its round thumb) never appears under the figure.
+ * `edit` chooses which mark moves: the fill (self) or the overshooting tick (manager).
+ */
+function SkillMeter({
+  ind, heavyInk, self, manager, median,
+  editable = false, edit = 'self', onChange, ariaLabel,
+}) {
+  const selfValue = Math.max(0, Math.min(5, Number(self) || 0));
+  const editValue = edit === 'manager'
+    ? Math.max(0, Math.min(5, manager == null ? 0 : Number(manager) || 0))
+    : selfValue;
+  const pct = (value) => `${Math.max(0, Math.min(5, Number(value) || 0)) / 5 * 100}%`;
+  const strong = selfValue >= STRONG_RATING;
+  const showManagerTick = manager != null || (editable && edit === 'manager');
+  const managerMark = manager == null && editable && edit === 'manager' ? editValue : manager;
+  return (
+    <div style={{ position: 'relative', minHeight: 10 }}>
+      <div
+        style={{
+          position: 'relative',
+          height: 10,
+          border: `1px solid ${editable ? ind.ink : ind.hairline}`,
+          borderRadius: 0,
+        }}
+      >
+        <div
+          style={{
+            width: pct(selfValue),
+            height: '100%',
+            background: strong ? ind.accent : ind.ramp[1],
+            transition: editable ? 'none' : 'width .35s ease',
+          }}
+        />
+        {median != null && (
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute', top: 2, bottom: 2, left: pct(median),
+              width: 1, background: ind.inkFaint, pointerEvents: 'none',
+            }}
+          />
+        )}
+        {showManagerTick && managerMark != null && (
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute', top: -4, bottom: -4, left: pct(managerMark),
+              width: 2, marginLeft: -1, background: heavyInk, pointerEvents: 'none',
+            }}
+          />
+        )}
+        {editable && edit === 'self' && (
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute', top: -3, bottom: -3, left: pct(selfValue),
+              width: 2, marginLeft: -1, background: ind.ink, pointerEvents: 'none',
+            }}
+          />
+        )}
+      </div>
+      {editable && onChange && (
+        <input
+          type="range"
+          min="0"
+          max="5"
+          step={RATING_STEP}
+          value={editValue}
+          aria-label={ariaLabel}
+          onChange={(e) => onChange(Number(e.target.value))}
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: -8,
+            bottom: -8,
+            width: '100%',
+            height: 'auto',
+            margin: 0,
+            opacity: 0,
+            cursor: 'pointer',
+            appearance: 'none',
+            WebkitAppearance: 'none',
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function CycleStep({ ind, state, title, meta, last }) {
+  const done = state === 'done';
+  const current = state === 'current';
+  return (
+    <div style={{ display: 'flex', gap: 10 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 'none', width: 9 }}>
+        <span
+          aria-hidden="true"
+          style={{
+            width: 9, height: 9, flex: 'none',
+            background: done ? ind.accent : 'transparent',
+            border: `1px solid ${done || current ? ind.accent : ind.inkFaint}`,
+          }}
+        />
+        {!last && <span aria-hidden="true" style={{ width: 1, flex: 1, minHeight: 22, background: ind.rule }} />}
+      </div>
+      <div style={{ minWidth: 0, paddingBottom: last ? 0 : 12 }}>
+        <div
+          style={{
+            fontFamily: BODY,
+            fontSize: 13,
+            fontWeight: current ? 600 : 400,
+            color: current || done ? ind.ink : ind.inkMuted,
+          }}
+        >
+          {title}
+        </div>
+        {meta && (
+          <div style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, marginTop: 2 }}>{meta}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RatingSpark({ ind, points, emptyLabel, selfLabel = 'self-rated' }) {
+  const W = 320;
+  const H = 96;
+  const PAD_X = 10;
+  const PAD_Y = 12;
+  const rated = points.filter((p) => p.value != null);
+  if (rated.length === 0) {
+    return (
+      <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, padding: '12px 0' }}>{emptyLabel}</p>
+    );
+  }
+  const values = rated.map((p) => p.value);
+  const rawMin = Math.min(...values);
+  const rawMax = Math.max(...values);
+  const min = Math.max(0, rawMin - (rawMax - rawMin < 0.5 ? 0.5 : 0.3));
+  const max = Math.min(5, rawMax + (rawMax - rawMin < 0.5 ? 0.5 : 0.3));
+  const span = max - min || 1;
+  const step = points.length > 1 ? (W - PAD_X * 2) / (points.length - 1) : 0;
+  const xy = points.map((p, i) => ({
+    ...p,
+    x: PAD_X + step * i,
+    y: p.value == null ? null : PAD_Y + (1 - (p.value - min) / span) * (H - PAD_Y * 2),
+  }));
+  const path = xy
+    .filter((p) => p.y != null)
+    .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+    .join(' ');
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} role="img" aria-label={emptyLabel}>
+        <path d={path} fill="none" stroke={ind.accent} strokeWidth={1.5} />
+        {xy.filter((p) => p.y != null).map((p) => (
+          <rect
+            key={p.key}
+            x={p.x - 3.5}
+            y={p.y - 3.5}
+            width={7}
+            height={7}
+            fill={p.selfOnly ? ind.accent : ind.chrome}
+            stroke={ind.accent}
+            strokeWidth={1.5}
+          >
+            <title>{`${p.label} · ${fmt1(p.value)}${p.selfOnly ? ` · ${selfLabel}` : ''}`}</title>
+          </rect>
+        ))}
+      </svg>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+        {points.map((p) => (
+          <span
+            key={p.key}
+            style={{
+              fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.1em',
+              textTransform: 'uppercase', color: ind.inkMuted,
+            }}
+          >
+            {p.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function ReviewModal({
   ind, t, currentLanguage, row, name, departmentLabel, period,
   canSignOff, canSkipSelf, busy, onSignOff, onSendBack, onSubmitCalibration,
-  onSkipSelf, onOpenGoals, onClose,
+  onSkipSelf, onClose,
+  reviews, skills, viewerEmployeeId, canManagePerformance, isDarkMode,
+  onRefresh, handleSessionAuthError,
 }) {
   const review = row.review || {};
+  const heavyInk = isDarkMode ? ind.accentDeeper : ind.tickerBg;
+  const viewingSelf = Boolean(viewerEmployeeId) && String(row.id) === String(viewerEmployeeId);
+  const canFileManagerReview = canManagePerformance && Boolean(row?.id) && !viewingSelf;
+  const canAdjustRatings = viewingSelf || canFileManagerReview;
+
+  const employeeSkills = useMemo(
+    () => (skills || []).filter((skill) => String(skill.employee_id) === String(row.id)),
+    [skills, row.id],
+  );
+  const mergedSkills = useMemo(
+    () => mergeReviewRatingsIntoSkills(employeeSkills, row.review, row.id),
+    [employeeSkills, row.review, row.id],
+  );
+  const [localSkills, setLocalSkills] = useState(mergedSkills);
+  const [assessmentDirty, setAssessmentDirty] = useState(false);
+  const [savingAssessment, setSavingAssessment] = useState(false);
+  const [adjusting, setAdjusting] = useState(false);
+  const [ackBusy, setAckBusy] = useState(false);
+
+  useEffect(() => {
+    setAdjusting(false);
+    setAssessmentDirty(false);
+  }, [row.id, period]);
+
+  useEffect(() => {
+    if (assessmentDirty) return;
+    setLocalSkills(mergedSkills);
+  }, [mergedSkills, assessmentDirty]);
+
+  const periodReview = row.review || null;
+  const skillRows = useMemo(() => {
+    const periodRows = (reviews || []).filter((item) => item.review_period === period);
+    const medians = {};
+    PERFORMANCE_SKILLS.forEach((definition) => {
+      medians[definition.skillName] = medianOf(periodRows.map((item) => Number(item[definition.reviewColumn])));
+    });
+    return PERFORMANCE_SKILLS.map((definition) => {
+      const skill = localSkills.find((item) => item.skill_name === definition.skillName);
+      return {
+        key: definition.key,
+        skillName: definition.skillName,
+        category: definition.category,
+        label: t(`personalGoals.${definition.key}`, definition.skillName),
+        self: Number(skill?.selfRating ?? 0),
+        manager: skill?.managerRating ?? null,
+        median: medians[definition.skillName] ?? null,
+      };
+    });
+  }, [reviews, period, localSkills, t]);
+
+  const skillAverage = useMemo(() => buildPerformanceAssessment(localSkills).overallRating, [localSkills]);
+  const hasManagerRatings = skillRows.some((item) => item.manager != null);
+  const editingManager = adjusting && canFileManagerReview;
+
+  const calibrationGaps = useMemo(() => skillRows
+    .filter((item) => item.manager != null && item.self > 0 && Math.abs(item.manager - item.self) >= GAP_THRESHOLD)
+    .map((item) => ({ label: item.label, direction: item.manager > item.self ? 'above' : 'below' })),
+  [skillRows]);
+
+  const calibrationRead = useMemo(() => {
+    if (!hasManagerRatings) return t('personalGoals.noManagerRatings', 'No manager ratings for this period yet.');
+    if (calibrationGaps.length === 0) {
+      return t('personalGoals.noGaps', 'Self and manager agree within half a point across every skill.');
+    }
+    const list = calibrationGaps
+      .map((gap) => `${gap.label.toLowerCase()} ${gap.direction === 'above'
+        ? t('personalGoals.ratedAboveSelf', 'rated above self')
+        : t('personalGoals.ratedBelowSelf', 'below')}`)
+      .join(', ');
+    return `${t('personalGoals.gapsToDiscuss', '{count} gaps to discuss').replace('{count}', String(calibrationGaps.length))}: ${list}`;
+  }, [calibrationGaps, hasManagerRatings, t]);
+
+  const ratingAdjuster = useMemo(() => {
+    const adjuster = lastRatingAdjuster(periodReview);
+    if (!adjuster || !hasManagerRatings) return null;
+    const date = adjuster.at
+      ? formatDate(adjuster.at, currentLanguage, { day: 'numeric', month: 'short', year: 'numeric' })
+      : '';
+    return { name: adjuster.name, date };
+  }, [periodReview, hasManagerRatings, currentLanguage]);
+
+  const lastAdjustedLabel = useCallback((adjuster) => formatLastAdjusted(
+    t('personalGoals.lastAdjustedBy', 'Last adjusted by {name} · {date}'),
+    adjuster,
+  ), [t]);
+
+  const employeeReviews = useMemo(
+    () => (reviews || []).filter((item) => String(item.employee_id) === String(row.id)),
+    [reviews, row.id],
+  );
+
+  const historyPoints = useMemo(() => {
+    const byPeriod = new Map(employeeReviews.map((item) => [item.review_period, item]));
+    return quartersEndingAt(period, HISTORY_QUARTERS).map((quarter) => {
+      const item = byPeriod.get(quarter.key);
+      const value = Number(item?.overall_rating);
+      return {
+        key: quarter.key,
+        label: `Q${quarter.quarter}'${String(quarter.year).slice(2)}`,
+        value: Number.isFinite(value) && value > 0 ? value : null,
+        selfOnly: isSelfLogged(item),
+      };
+    });
+  }, [employeeReviews, period]);
+
+  const closeDate = useMemo(() => calibrationDate(period), [period]);
+  const daysToClose = closeDate ? daysBetween(new Date(), closeDate) : null;
+
+  const cycleSteps = useMemo(() => {
+    const selfDate = employeeSkills.map((item) => item.assessment_date).filter(Boolean).sort().pop() || null;
+    const selfDone = skillRows.some((item) => item.self > 0) && Boolean(selfDate);
+    const managerDone = hasManagerRatings;
+    const status = periodReview?.status || null;
+    const signedOff = status === 'approved' || status === 'completed';
+    const calibrated = signedOff || status === 'submitted';
+    const steps = [
+      {
+        key: 'self',
+        title: t('personalGoals.stepSelfAssessment', 'Self-assessment submitted'),
+        meta: selfDate ? formatDate(selfDate, currentLanguage) : t('personalGoals.notYet', 'Not yet'),
+        state: selfDone ? 'done' : 'todo',
+      },
+      {
+        key: 'manager',
+        title: t('personalGoals.stepManagerRating', 'Manager rating entered'),
+        meta: ratingAdjuster
+          ? lastAdjustedLabel(ratingAdjuster)
+          : ([
+            periodReview?.review_date ? formatDate(periodReview.review_date, currentLanguage) : null,
+            periodReview?.reviewer?.name || null,
+          ].filter(Boolean).join(' · ') || t('personalGoals.notYet', 'Not yet')),
+        state: managerDone ? 'done' : 'todo',
+      },
+      {
+        key: 'calibration',
+        title: t('personalGoals.stepCalibration', 'Calibration meeting'),
+        meta: calibrated
+          ? (periodReview?.reviewer?.name || t('personalGoals.submittedForCalibration', 'Submitted for calibration.'))
+          : (managerDone
+            ? t('personalGoals.readyToSubmitCalibration', 'Ready to submit')
+            : t('personalGoals.awaitingSchedule', 'Not scheduled')),
+        state: calibrated ? 'done' : 'todo',
+      },
+      {
+        key: 'signoff',
+        title: t('personalGoals.stepSignOff', 'Sign-off & next-quarter goals'),
+        meta: closeDate
+          ? `${t('personalGoals.byDate', 'by')} ${formatDate(closeDate.toISOString().split('T')[0], currentLanguage)}`
+          : '',
+        state: signedOff ? 'done' : 'todo',
+      },
+    ];
+    const nextIndex = steps.findIndex((step) => step.state === 'todo');
+    if (nextIndex >= 0) steps[nextIndex].state = 'current';
+    return steps;
+  }, [employeeSkills, skillRows, hasManagerRatings, periodReview, closeDate, currentLanguage, t, ratingAdjuster, lastAdjustedLabel]);
+
+  const managerNote = useMemo(() => {
+    if (!periodReview) return null;
+    const strengths = isDemoMode() ? getDemoReviewStrengths(periodReview, t) : periodReview.strengths;
+    const areas = isDemoMode() ? getDemoReviewAreasForImprovement(periodReview, t) : periodReview.areas_for_improvement;
+    if (!strengths && !areas) return null;
+    const employeeComment = periodReview.employee_comments || '';
+    return {
+      id: periodReview.id,
+      strengths,
+      areas,
+      author: periodReview.reviewer?.name || t('personalGoals.reviewer', 'Reviewer'),
+      date: periodReview.review_date,
+      acknowledged: employeeComment.startsWith(ACK_MARKER),
+      reply: employeeComment.startsWith(ACK_MARKER)
+        ? employeeComment.slice(ACK_MARKER.length).trim()
+        : employeeComment,
+    };
+  }, [periodReview, t]);
+
+  const handleUpdateSkillRating = (skillName, category, newRating, target = 'self') => {
+    const rounded = Math.max(0, Math.min(5, Math.round(newRating * 10) / 10));
+    setLocalSkills((prev) => prev.map((skill) => {
+      if (skill.skill_name !== skillName) return skill;
+      if (target === 'manager') return { ...skill, managerRating: rounded };
+      return {
+        ...skill,
+        rating: rounded,
+        selfRating: rounded,
+        skill_category: category,
+        proficiency_level: rounded >= 4 ? 'advanced' : rounded >= 3 ? 'intermediate' : 'beginner',
+      };
+    }));
+    setAssessmentDirty(true);
+  };
+
+  const handleSaveSkillAssessment = async () => {
+    if (!viewingSelf || assessmentDirty === false || savingAssessment) return;
+    setSavingAssessment(true);
+    try {
+      const failures = [];
+      for (const definition of PERFORMANCE_SKILLS) {
+        const skill = localSkills.find((item) => item.skill_name === definition.skillName);
+        const rating = Number(skill?.rating || 0);
+        if (rating < 1) continue;
+        const result = await performanceService.upsertSkillAssessment({
+          employeeId: row.id,
+          skillName: definition.skillName,
+          skillCategory: definition.category,
+          rating,
+          proficiencyLevel: rating >= 4 ? 'advanced' : rating >= 3 ? 'intermediate' : 'beginner',
+          assessedBy: viewerEmployeeId || row.id,
+          assessmentDate: new Date().toISOString().split('T')[0],
+        });
+        if (!result.success) failures.push(`${definition.skillName}: ${result.error}`);
+      }
+      if (failures.length > 0) throw new Error(failures.join('; '));
+      /*
+       * skills_assessments keeps only the newest number. The history line reads
+       * performance_reviews.overall_rating, so a first self-save logs that
+       * overall. A review row that already exists is left alone: writing the
+       * overall through an upsert would null the manager's per-skill ratings.
+       */
+      if (!periodReview && skillAverage > 0) {
+        const logged = await performanceService.createPerformanceReview({
+          employeeId: row.id,
+          reviewerId: viewerEmployeeId || row.id,
+          reviewPeriod: period,
+          reviewType: 'self',
+          overallRating: skillAverage,
+          status: 'draft',
+        });
+        if (!logged.success) {
+          console.error('Skill ratings saved, but the period overall was not logged:', logged.error);
+        }
+      }
+      setAssessmentDirty(false);
+      setAdjusting(false);
+      await onRefresh?.();
+      alert(t('personalGoals.ratingUpdated', 'Assessment saved.'));
+    } catch (error) {
+      console.error('Error saving skill assessment:', error);
+      if (handleSessionAuthError?.(error)) return;
+      alert(t('personalGoals.ratingUpdateError', 'Failed to save assessment'));
+    } finally {
+      setSavingAssessment(false);
+    }
+  };
+
+  const handleSaveManagerReview = async () => {
+    if (!canFileManagerReview || !assessmentDirty || savingAssessment) return;
+    const ratingOfSkill = (definition) => {
+      const skill = localSkills.find((item) => item.skill_name === definition.skillName);
+      const value = Number(skill?.managerRating);
+      return Number.isFinite(value) && value > 0 ? value : null;
+    };
+    const rated = PERFORMANCE_SKILLS.map(ratingOfSkill).filter((value) => value != null);
+    if (rated.length === 0) {
+      alert(t('personalGoals.needManagerRating', 'Rate at least one skill before saving.'));
+      return;
+    }
+    const overallRating = Math.round((rated.reduce((sum, value) => sum + value, 0) / rated.length) * 10) / 10;
+    const status = String(periodReview?.status || 'draft');
+    const payload = {
+      reviewType: 'quarterly',
+      reviewerId: viewerEmployeeId,
+      overallRating,
+      status: ['submitted', 'approved', 'acknowledged'].includes(status) ? status : 'draft',
+    };
+    PERFORMANCE_SKILLS.forEach((definition) => {
+      payload[definition.serviceField] = ratingOfSkill(definition);
+    });
+    setSavingAssessment(true);
+    try {
+      const result = periodReview?.id
+        ? await performanceService.updatePerformanceReview(periodReview.id, payload)
+        : await performanceService.createPerformanceReview({
+          employeeId: row.id,
+          reviewPeriod: period,
+          ...payload,
+        });
+      if (!result.success) throw new Error(result.error || 'Failed to save manager review');
+      setAssessmentDirty(false);
+      setAdjusting(false);
+      await onRefresh?.();
+      alert(t('personalGoals.managerReviewSaved', 'Manager review saved.'));
+    } catch (error) {
+      console.error('Error saving manager review:', error);
+      if (handleSessionAuthError?.(error)) return;
+      alert(t('personalGoals.managerReviewSaveError', 'Failed to save manager review'));
+    } finally {
+      setSavingAssessment(false);
+    }
+  };
+
+  const toggleAdjusting = () => {
+    if (adjusting) {
+      setAdjusting(false);
+      setAssessmentDirty(false);
+      setLocalSkills(mergedSkills);
+      return;
+    }
+    setAdjusting(true);
+  };
+
+  const writeEmployeeComment = async (text) => {
+    if (!managerNote?.id || ackBusy) return;
+    setAckBusy(true);
+    try {
+      const result = await performanceService.updatePerformanceReview(managerNote.id, {
+        employeeComments: text,
+      });
+      if (!result.success) throw new Error(result.error || 'Failed to save');
+      await onRefresh?.();
+    } catch (error) {
+      console.error('Error saving employee comment:', error);
+      if (handleSessionAuthError?.(error)) return;
+      alert(t('personalGoals.replyError', 'Could not save your response'));
+    } finally {
+      setAckBusy(false);
+    }
+  };
+
+  const handleAcknowledge = () => writeEmployeeComment(`${ACK_MARKER} ${managerNote?.reply || ''}`.trim());
+
+  const handleReply = () => {
+    const answer = window.prompt(
+      t('personalGoals.replyPrompt', 'Your response to this review:'),
+      managerNote?.reply || '',
+    );
+    if (answer === null) return;
+    const prefix = managerNote?.acknowledged ? `${ACK_MARKER} ` : '';
+    writeEmployeeComment(`${prefix}${answer}`.trim());
+  };
+
+  const handleExportReview = () => {
+    const header = ['Section', 'Item', 'Self', 'Manager', 'Company median'];
+    const body = [
+      ...skillRows.map((item) => [
+        'Skill', item.label, fmt1(item.self),
+        item.manager == null ? '' : fmt1(item.manager),
+        item.median == null ? '' : fmt1(item.median),
+      ]),
+      ['Overall', t('personalGoals.overallPerformance', 'Overall'), fmt1(skillAverage), periodReview?.overall_rating ? fmt1(periodReview.overall_rating) : '', ''],
+    ];
+    const csv = `\uFEFF${[header, ...body].map((line) => line.map(csvCell).join(',')).join('\n')}`;
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `review-${String(name).replace(/\s+/g, '-').toLowerCase()}-${period}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const passages = [
     ['strengths', t('taskReview.strengths', 'Strengths'), review.strengths],
     ['areas', t('taskReview.areasForImprovement', 'Areas for improvement'), review.areas_for_improvement],
     ['achievements', t('taskReview.achievements', 'Achievements'), review.achievements],
     ['comments', t('taskReview.managerComments', 'Manager comments'), review.comments],
     ['employee', t('taskReview.employeeSelfAssessment', 'Employee self-assessment'), review.employee_comments],
-  ].filter(([, , text]) => Boolean(text));
+  ].filter(([, , text]) => Boolean(text))
+    .filter(([key]) => !managerNote || !['strengths', 'areas', 'employee'].includes(key));
   const pending = !row.managerDone;
   const canSubmitCalibration = canSignOff && row.managerDone && !row.calibrated && Boolean(row.review?.id);
   const statusLabel = statusOf(row, t);
@@ -1861,7 +2436,7 @@ function ReviewModal({
       style={{ background: 'rgba(29,31,32,.55)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div style={{ background: ind.ground, border: `1px solid ${ind.ink}`, borderRadius: 0, width: '100%', maxWidth: 560 }}>
+      <div style={{ background: ind.ground, border: `1px solid ${ind.ink}`, borderRadius: 0, width: '100%', maxWidth: 840, maxHeight: 'calc(100vh - 48px)', display: 'flex', flexDirection: 'column' }}>
         <div
           className="flex items-start justify-between"
           style={{ gap: 12, padding: '18px 20px', borderBottom: `1px solid ${ind.hairline}` }}
@@ -1877,17 +2452,23 @@ function ReviewModal({
               ].filter(Boolean).join(' · ')}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t('common.close', 'Close')}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0 }}
-          >
-            <X size={16} strokeWidth={1.5} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 'none' }}>
+            <Btn ind={ind} onClick={handleExportReview} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Download size={13} strokeWidth={1.5} />
+              {t('personalGoals.exportReview', 'Export review')}
+            </Btn>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t('common.close', 'Close')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0 }}
+            >
+              <X size={16} strokeWidth={1.5} />
+            </button>
+          </div>
         </div>
 
-        <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', flex: 1 }}>
           <div className="flex items-end justify-between" style={{ gap: 14 }}>
             <div>
               <Kicker ind={ind}>{t('taskReview.overallRating', 'Overall')}</Kicker>
@@ -1937,25 +2518,199 @@ function ReviewModal({
             </p>
           )}
 
-          {COMPETENCIES.some(([key]) => Number(review[key]) > 0) && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {COMPETENCIES.map(([key, label], index) => {
-                const value = Number(review[key]);
-                if (!Number.isFinite(value) || value <= 0) return null;
+          <div>
+            <Kicker ind={ind}>
+              {`${t('personalGoals.skillsAssessment', 'Skills assessment')} · ${String(period).replace('-', ' ')}`}
+            </Kicker>
+            <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 6 }}>
+              {t(
+                canFileManagerReview ? 'personalGoals.managerAssessmentLead' : 'personalGoals.assessmentLead',
+                canFileManagerReview
+                  ? 'The fill is their self-rating. Place your mark on the same track.'
+                  : 'Self-rating as fill, manager as marker, company median dashed.',
+              )}
+            </p>
+            {ratingAdjuster && (
+              <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink, marginTop: 4 }}>
+                {lastAdjustedLabel(ratingAdjuster)}
+              </p>
+            )}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 10 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span aria-hidden="true" style={{ width: 9, height: 9, background: ind.accent, flex: 'none' }} />
+                <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>{t('personalGoals.self', 'Self')}</span>
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span aria-hidden="true" style={{ width: 2, height: 11, background: heavyInk, flex: 'none' }} />
+                <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>
+                  {ratingAdjuster
+                    ? `${t('personalGoals.manager', 'Manager')} · ${ratingAdjuster.name}`
+                    : t('personalGoals.manager', 'Manager')}
+                </span>
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span aria-hidden="true" style={{ width: 1, height: 11, background: ind.inkFaint, flex: 'none' }} />
+                <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>{t('personalGoals.median', 'Median')}</span>
+              </span>
+            </div>
+            <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {skillRows.map((skillRow) => {
+                const editTarget = editingManager ? 'manager' : 'self';
+                const editValue = editingManager ? (skillRow.manager ?? 0) : skillRow.self;
                 return (
-                  <div key={key}>
-                    <div className="flex items-baseline justify-between" style={{ gap: 10, marginBottom: 3 }}>
-                      <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink }}>
-                        {t(`taskReview.competency.${key}`, label)}
+                  <div key={skillRow.key}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
+                      <span style={{ fontFamily: BODY, fontSize: 13, color: ind.ink }}>{skillRow.label}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
+                        {adjusting && (
+                          <span style={{ display: 'inline-flex', gap: 4 }}>
+                            <button
+                              type="button"
+                              aria-label={`${skillRow.label} − ${RATING_STEP}`}
+                              disabled={editValue <= 0}
+                              onClick={() => handleUpdateSkillRating(skillRow.skillName, skillRow.category, editValue - RATING_STEP, editTarget)}
+                              style={{
+                                width: 22, height: 22, padding: 0, borderRadius: 0,
+                                border: `1px solid ${ind.ink}`, background: 'transparent',
+                                color: ind.ink, fontFamily: DISPLAY, fontSize: 14, lineHeight: 1,
+                                cursor: editValue <= 0 ? 'default' : 'pointer',
+                                opacity: editValue <= 0 ? 0.35 : 1,
+                              }}
+                            >
+                              −
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`${skillRow.label} + ${RATING_STEP}`}
+                              disabled={editValue >= 5}
+                              onClick={() => handleUpdateSkillRating(skillRow.skillName, skillRow.category, editValue + RATING_STEP, editTarget)}
+                              style={{
+                                width: 22, height: 22, padding: 0, borderRadius: 0,
+                                border: `1px solid ${ind.ink}`, background: 'transparent',
+                                color: ind.ink, fontFamily: DISPLAY, fontSize: 14, lineHeight: 1,
+                                cursor: editValue >= 5 ? 'default' : 'pointer',
+                                opacity: editValue >= 5 ? 0.35 : 1,
+                              }}
+                            >
+                              +
+                            </button>
+                          </span>
+                        )}
+                        <span style={figure(15, ind.ink)}>{fmt1(skillRow.self)}</span>
+                        <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>
+                          {skillRow.manager == null
+                            ? ` / ${t('personalGoals.noManagerShort', 'no mgr rating')}`
+                            : ` / ${t('personalGoals.mgrShort', 'mgr')} `}
+                        </span>
+                        {skillRow.manager != null && <span style={figure(15, editingManager ? ind.ink : ind.inkGhost)}>{fmt1(skillRow.manager)}</span>}
                       </span>
-                      <span style={figure(12.5, ind.ink)}>{fmt1(value)}</span>
                     </div>
-                    <Bar ind={ind} value={value / SCORE_MAX} fill={rampAt(ind, Math.floor(index / 2))} height={7} />
+                    <SkillMeter
+                      ind={ind}
+                      heavyInk={heavyInk}
+                      self={skillRow.self}
+                      manager={skillRow.manager}
+                      median={skillRow.median}
+                      editable={adjusting}
+                      edit={editTarget}
+                      ariaLabel={skillRow.label}
+                      onChange={(value) => handleUpdateSkillRating(skillRow.skillName, skillRow.category, value, editTarget)}
+                    />
                   </div>
                 );
               })}
             </div>
-          )}
+            <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 14 }}>{calibrationRead}</p>
+          </div>
+
+          <div>
+            <Kicker ind={ind}>{t('personalGoals.reviewCycle', 'Review cycle')}</Kicker>
+            <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 6, marginBottom: 12 }}>
+              {closeDate
+                ? `${t('personalGoals.closes', 'Closes')} ${formatDate(closeDate.toISOString().split('T')[0], currentLanguage)}`
+                : ''}
+              {daysToClose != null && (
+                daysToClose >= 0
+                  ? ` · ${t('personalGoals.daysLeft', '{n} days left').replace('{n}', String(daysToClose))}`
+                  : ` · ${t('personalGoals.overdueDays', '{n} days overdue').replace('{n}', String(Math.abs(daysToClose)))}`
+              )}
+            </p>
+            {cycleSteps.map((step, index) => (
+              <CycleStep
+                key={step.key}
+                ind={ind}
+                state={step.state}
+                title={step.title}
+                meta={step.meta}
+                last={index === cycleSteps.length - 1}
+              />
+            ))}
+          </div>
+
+          <div>
+            <Kicker ind={ind}>{t('personalGoals.ratingHistory', 'Rating history')}</Kicker>
+            <div style={{ marginTop: 8 }}>
+              <RatingSpark
+                ind={ind}
+                points={historyPoints}
+                emptyLabel={t('personalGoals.noRatingHistory', 'No rated quarters yet.')}
+                selfLabel={t('personalGoals.selfRated', 'self-rated')}
+              />
+            </div>
+          </div>
+
+          <div>
+            <Kicker ind={ind}>{t('personalGoals.managerNote', 'Manager note')}</Kicker>
+            {!managerNote && (
+              <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 8 }}>
+                {t('personalGoals.noManagerNote', 'No written feedback for this period yet.')}
+              </p>
+            )}
+            {managerNote && (
+              <>
+                <blockquote style={{ borderLeft: `2px solid ${ind.accent}`, padding: '2px 0 2px 12px', margin: '10px 0 0' }}>
+                  {managerNote.strengths && (
+                    <p style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, lineHeight: 1.5 }}>
+                      <TranslatedText
+                        text={managerNote.strengths}
+                        record={{ entityType: 'review', entityId: managerNote.id, field: 'strengths' }}
+                      />
+                    </p>
+                  )}
+                  {managerNote.areas && (
+                    <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, lineHeight: 1.5, marginTop: 8 }}>
+                      <TranslatedText
+                        text={managerNote.areas}
+                        record={{ entityType: 'review', entityId: managerNote.id, field: 'areas_for_improvement' }}
+                      />
+                    </p>
+                  )}
+                </blockquote>
+                <p style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted, marginTop: 8 }}>
+                  {managerNote.author}
+                  {managerNote.date ? ` · ${formatDate(managerNote.date, currentLanguage)}` : ''}
+                </p>
+                {managerNote.reply && (
+                  <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink, marginTop: 8 }}>
+                    <span style={{ color: ind.inkMuted }}>{t('personalGoals.yourReply', 'Your reply')}: </span>
+                    {managerNote.reply}
+                  </p>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                  {managerNote.acknowledged ? (
+                    <Tag ind={ind} variant="neutral">{t('personalGoals.acknowledged', 'Acknowledged')}</Tag>
+                  ) : (
+                    <Btn ind={ind} variant="primary" disabled={ackBusy} onClick={handleAcknowledge}>
+                      {t('personalGoals.acknowledge', 'Acknowledge')}
+                    </Btn>
+                  )}
+                  <Btn ind={ind} disabled={ackBusy} onClick={handleReply}>
+                    {t('personalGoals.reply', 'Reply')}
+                  </Btn>
+                </div>
+              </>
+            )}
+          </div>
 
           {passages.length === 0 && !pending && (
             <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted }}>
@@ -1977,13 +2732,39 @@ function ReviewModal({
 
         <div
           className="flex items-center justify-end"
-          style={{ gap: 8, padding: '14px 20px', borderTop: `1px solid ${ind.hairline}`, flexWrap: 'wrap' }}
+          style={{ gap: 8, padding: '14px 20px', borderTop: `1px solid ${ind.hairline}`, flexWrap: 'wrap', flex: 'none' }}
         >
           <Btn ind={ind} onClick={onClose}>{t('taskReview.cancel', 'Cancel')}</Btn>
           {canSkipSelf && (
             <Btn ind={ind} disabled={busy} onClick={onSkipSelf}>
               {t('taskReview.continueWithoutSelf', 'Continue without self-assessment')}
             </Btn>
+          )}
+          {canAdjustRatings && (
+            <>
+              {!(adjusting && canFileManagerReview) && (
+                <Btn ind={ind} onClick={toggleAdjusting}>
+                  {adjusting
+                    ? t('common.done', 'Done')
+                    : (canFileManagerReview
+                      ? t('taskReview.enterManagerRatings', 'Enter manager ratings')
+                      : t('personalGoals.adjustRatings', 'Adjust ratings'))}
+                </Btn>
+              )}
+              <Btn
+                ind={ind}
+                disabled={!assessmentDirty || savingAssessment}
+                onClick={canFileManagerReview ? handleSaveManagerReview : handleSaveSkillAssessment}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              >
+                <Save size={13} strokeWidth={1.5} />
+                {savingAssessment
+                  ? t('common.saving', 'Saving…')
+                  : (canFileManagerReview
+                    ? t('personalGoals.saveManagerReview', 'Save manager review')
+                    : t('personalGoals.saveAssessment', 'Save assessment'))}
+              </Btn>
+            </>
           )}
           {row.awaiting ? (
             <>
@@ -1995,18 +2776,16 @@ function ReviewModal({
               </Btn>
             </>
           ) : (
-            <>
-              {canSubmitCalibration && (
-                <Btn ind={ind} variant="primary" disabled={busy} onClick={onSubmitCalibration}>
-                  {t('taskReview.submitForCalibration', 'Submit for calibration')}
-                </Btn>
-              )}
-              <Btn ind={ind} variant={canSubmitCalibration ? undefined : 'primary'} onClick={onOpenGoals}>
-                {pending && canSignOff
-                  ? t('taskReview.enterManagerRatings', 'Enter manager ratings')
-                  : t('taskReview.openPersonalGoals', 'Open Personal Goals')}
+            canSubmitCalibration && (
+              <Btn
+                ind={ind}
+                variant="primary"
+                disabled={busy || assessmentDirty || savingAssessment}
+                onClick={onSubmitCalibration}
+              >
+                {t('taskReview.submitForCalibration', 'Submit for calibration')}
               </Btn>
-            </>
+            )
           )}
         </div>
       </div>

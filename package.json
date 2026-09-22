@@ -9,6 +9,7 @@
     "build": "node scripts/download-pdf-fonts.mjs && vite build",
     "lint": "eslint .",
     "test": "node --test tests/*.test.js",
+    "test:db": "node scripts/test-hr-database.mjs",
     "preview": "vite preview",
     "desktop:prepare": "node scripts/build-desktop.mjs",
     "desktop:start": "electron .",

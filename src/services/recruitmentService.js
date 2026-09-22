@@ -402,18 +402,16 @@ export const updateApplicationRating = async (applicationId, rating, notes = nul
  */
 export const createInterviewSchedule = async (interviewData) => {
   try {
+    const { scheduled_date, ...fields } = interviewData;
     const { data, error } = await supabase
       .from('interview_schedules')
-      .insert([interviewData])
-      .select()
+      .insert([{ ...fields, scheduled_time: scheduled_date ?? fields.scheduled_time }])
+      .select('*, scheduled_date:scheduled_time')
       .single();
 
     if (error) throw error;
     
-    // Update application status to "interview scheduled"
-    if (interviewData.application_id) {
-      await updateApplicationStatus(interviewData.application_id, 'interview scheduled');
-    }
+    // The database updates the application's stage in the same transaction.
 
     return { success: true, data };
   } catch (error) {
@@ -436,6 +434,7 @@ export const getInterviewsByApplication = async (applicationId) => {
       .from('interview_schedules')
       .select(`
         *,
+        scheduled_date:scheduled_time,
         application:applications(
           *,
           applicant:applicants(*),
@@ -443,7 +442,7 @@ export const getInterviewsByApplication = async (applicationId) => {
         )
       `)
       .eq('application_id', applicationId)
-      .order('scheduled_date', { ascending: true });
+      .order('scheduled_time', { ascending: true });
 
     if (error) throw error;
     return { success: true, data };
@@ -470,15 +469,16 @@ export const getUpcomingInterviews = async () => {
       .from('interview_schedules')
       .select(`
         *,
+        scheduled_date:scheduled_time,
         application:applications(
           *,
           applicant:applicants(*),
           job_posting:job_postings(*)
         )
       `)
-      .gte('scheduled_date', now)
+      .gte('scheduled_time', now)
       .eq('status', 'scheduled')
-      .order('scheduled_date', { ascending: true });
+      .order('scheduled_time', { ascending: true });
 
     if (error) throw error;
     return { success: true, data };
@@ -493,11 +493,13 @@ export const getUpcomingInterviews = async () => {
  */
 export const updateInterviewSchedule = async (interviewId, updates) => {
   try {
+    const { scheduled_date, ...fields } = updates;
+    if (scheduled_date !== undefined) fields.scheduled_time = scheduled_date;
     const { data, error } = await supabase
       .from('interview_schedules')
-      .update(updates)
+      .update(fields)
       .eq('id', interviewId)
-      .select()
+      .select('*, scheduled_date:scheduled_time')
       .single();
 
     if (error) throw error;
@@ -615,12 +617,8 @@ export const uploadResume = async (file, applicantId) => {
 
     if (error) throw error;
 
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('employee-documents')
-      .getPublicUrl(filePath);
-
-    return { success: true, url: publicUrl };
+    // Persist the object reference; downloads authorize the current HR user.
+    return { success: true, url: filePath };
   } catch (error) {
     console.error('Error uploading resume:', error);
     return { success: false, error: error.message };

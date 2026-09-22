@@ -1,16 +1,9 @@
 /**
- * Personal Goals — direction 2c, "Calibrated assessment".
+ * Personal Goals — the person's goals, and nothing else.
  *
- * Three vertical bands, the same grammar as the rest of the console: the app
- * rail (sidebar.jsx) → this main column → a 372px column of three stacked
- * plates, with a 44px steel ticker spanning both.
- *
- * The central idea of this screen: a self-rating on its own says nothing. Every
- * skill row therefore carries three marks on one track — the person's own
- * rating as a fill, the manager's as a tick that overshoots the track, and the
- * company median as a faint interior hairline — so the gap between how someone
- * sees themselves and how they are seen is the thing you actually read. The
- * footer states that read in words.
+ * The list is the screen: title, progress, on track / at risk, due date, and
+ * how far the timeline says the goal should have reached. Skill ratings,
+ * calibration, and the manager note live on the Performance Reviews sheet.
  *
  * Design system: "Industry" (src/theme/industry.js). Radius is 0 everywhere,
  * cards are outlines with four registration corners, status reads through
@@ -18,17 +11,16 @@
  */
 import _React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-  Plus, X, Save, ChevronRight, Download, AlertCircle, Trash2, Edit,
+  Plus, X, Save, ChevronRight, AlertCircle, Trash2, Edit,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  isDemoMode, getDemoGoalTitle, getDemoGoalDescription, getDemoSkills,
-  getDemoReviewStrengths, getDemoReviewAreasForImprovement, getDemoEmployeeName,
+  isDemoMode, getDemoGoalTitle, getDemoGoalDescription, getDemoEmployeeName,
 } from '../utils/demoHelper';
-import { formatDate, localeTag } from '../utils/localeFormat.js';
+import { formatDate } from '../utils/localeFormat.js';
 import * as performanceService from '../services/performanceService';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
@@ -37,97 +29,41 @@ import { TranslatedText } from './ui/translated-text.jsx';
 import { filterActiveEmployees } from '../utils/employeeStatus.js';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill';
 import { useMinWidth } from '../hooks/useMinWidth.js';
-import {
-  PERFORMANCE_SKILLS,
-  buildPerformanceAssessment,
-  mergeReviewRatingsIntoSkills,
-  medianOf,
-  lastRatingAdjuster,
-  formatLastAdjusted,
-} from '../utils/performanceAssessment.js';
 import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
 import { useScreenNavigation } from '../hooks/useScreenNavigation.js';
 import {
-  Blueprint, Bar, Tag, Btn, Seg, Kicker, TickerCell, ColumnHeading, MoreMenu,
+  Blueprint, Bar, Tag, Btn, Kicker, TickerCell, ColumnHeading, MoreMenu,
   LiveClock, FlatListbox,
 } from './ui/industry.jsx';
 
 /* ------------------------------------------------------------------ *
- * Screen constants — the policy this screen reads against
+ * Screen constants
  * ------------------------------------------------------------------ */
 
-/**
- * A quarter's review closes on the 15th of the quarter's middle month, so the
- * cycle runs inside the quarter it assesses rather than trailing it.
- */
-const REVIEW_CLOSE_DAY = 15;
-/** Below this the fill drops to light steel — the score that needs a sentence. */
-const STRONG_RATING = 4;
-/** One click, one key, one notch on the track. */
-const RATING_STEP = 0.1;
-/** Self and manager have to differ by this much before it is worth discussing. */
-const GAP_THRESHOLD = 0.4;
 /** How far behind its own timeline a goal falls before it reads AT RISK. */
 const AT_RISK_SLIP_PP = 15;
-/** Quarters plotted in the rating history. */
-const HISTORY_QUARTERS = 5;
-/** Marks the employee's one-click acknowledgement inside employee_comments. */
-const ACK_MARKER = '[acknowledged]';
 
 const MONO = "'Barlow Condensed', 'Barlow', ui-monospace, monospace";
 
-/* ------------------------------------------------------------------ *
- * Helpers
- * ------------------------------------------------------------------ */
-
-/** 'Q3-2026' → { quarter: 3, year: 2026 }. */
-const parsePeriod = (period) => {
-  const match = /^Q([1-4])-(\d{4})$/.exec(String(period || ''));
-  if (!match) return null;
-  return { quarter: Number(match[1]), year: Number(match[2]) };
-};
-
-/* Which person and which quarter are places, not component state — Back, a
-   reload, and a link from Performance Reviews all have to land on the same
-   record. An unreadable `?employee=` or `?cycle=` reads as absent. */
+/* Which person is a place, not component state — Back, a reload, and a link
+   from Performance Reviews all have to land on the same record. */
 const PERSONAL_GOALS_NAV = {
   employee: { key: 'employee', fallback: null },
-  cycle: { key: 'cycle', fallback: null, isValid: (value) => parsePeriod(value) !== null },
-  edit: { key: 'edit', fallback: null, isValid: (value) => value === 'manager' },
 };
 
-/** Sign-off lives on the review board, so a manager who just filed ratings has to be sent there. */
-const performanceReviewsHref = ({ cycle, employee, stage } = {}) => {
+/** The live quarter, so "Open this review" lands on the cycle in progress. */
+const liveQuarter = (date = new Date()) => {
+  const year = date.getFullYear();
+  const quarter = Math.floor(date.getMonth() / 3) + 1;
+  return `Q${quarter}-${year}`;
+};
+
+const performanceReviewsHref = ({ cycle, employee } = {}) => {
   const params = new URLSearchParams();
   if (cycle) params.set('cycle', cycle);
   if (employee) params.set('review', String(employee));
-  if (stage) params.set('stage', stage);
   const query = params.toString();
   return query ? `/task-review?${query}` : '/task-review';
-};
-
-const formatPeriod = (quarter, year) => `Q${quarter}-${year}`;
-
-/** The `n` quarters ending at `period`, oldest first. */
-const quartersEndingAt = (period, n) => {
-  const parsed = parsePeriod(period);
-  if (!parsed) return [];
-  const out = [];
-  let { quarter, year } = parsed;
-  for (let i = 0; i < n; i += 1) {
-    out.unshift({ quarter, year, key: formatPeriod(quarter, year) });
-    quarter -= 1;
-    if (quarter === 0) { quarter = 4; year -= 1; }
-  }
-  return out;
-};
-
-/** Deadline for the period's review — 15th of its middle month. */
-const reviewCloseDate = (period) => {
-  const parsed = parsePeriod(period);
-  if (!parsed) return null;
-  const middleMonth = (parsed.quarter - 1) * 3 + 1; // 0-indexed: Feb, May, Aug, Nov
-  return new Date(parsed.year, middleMonth, REVIEW_CLOSE_DAY);
 };
 
 const daysBetween = (from, to) => Math.round((to - from) / 86400000);
@@ -139,229 +75,6 @@ const initialsOf = (name) => {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
-
-const round1 = (n) => Math.round((Number(n) || 0) * 10) / 10;
-const fmt1 = (n) => round1(n).toFixed(1);
-
-const csvCell = (value) => {
-  const text = value == null ? '' : String(value);
-  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-};
-
-/* ------------------------------------------------------------------ *
- * Small pieces
- * ------------------------------------------------------------------ */
-
-/**
- * One calibrated skill row. The track carries three marks at once:
- *   - a solid fill for the self-rating (light steel when it is below 4)
- *   - a dark-steel tick, overshooting the track, for the manager's rating
- *   - a faint interior hairline for the company median
- * Manager left of the fill means the person over-rated themselves; right of it,
- * under-rated.
- *
- * When `editable`, the track *is* the control — click, drag, or arrow keys —
- * so a second native slider (and its round thumb) never appears under the figure.
- * `edit` chooses which mark moves: the fill (self) or the overshooting tick (manager).
- */
-function SkillMeter({
-  ind, heavyInk, self, manager, median,
-  editable = false, edit = 'self', onChange, ariaLabel,
-}) {
-  const selfValue = Math.max(0, Math.min(5, Number(self) || 0));
-  const editValue = edit === 'manager'
-    ? Math.max(0, Math.min(5, manager == null ? 0 : Number(manager) || 0))
-    : selfValue;
-  const pct = (value) => `${Math.max(0, Math.min(5, Number(value) || 0)) / 5 * 100}%`;
-  const strong = selfValue >= STRONG_RATING;
-  const showManagerTick = manager != null || (editable && edit === 'manager');
-  const managerMark = manager == null && editable && edit === 'manager' ? editValue : manager;
-  return (
-    <div style={{ position: 'relative', minHeight: 10 }}>
-      <div
-        style={{
-          position: 'relative',
-          height: 10,
-          border: `1px solid ${editable ? ind.ink : ind.hairline}`,
-          borderRadius: 0,
-        }}
-      >
-        <div
-          style={{
-            width: pct(selfValue),
-            height: '100%',
-            background: strong ? ind.accent : ind.ramp[1],
-            transition: editable ? 'none' : 'width .35s ease',
-          }}
-        />
-        {median != null && (
-          <span
-            aria-hidden="true"
-            style={{
-              position: 'absolute', top: 2, bottom: 2, left: pct(median),
-              width: 1, background: ind.inkFaint, pointerEvents: 'none',
-            }}
-          />
-        )}
-        {showManagerTick && managerMark != null && (
-          <span
-            aria-hidden="true"
-            style={{
-              position: 'absolute', top: -4, bottom: -4, left: pct(managerMark),
-              width: 2, marginLeft: -1, background: heavyInk, pointerEvents: 'none',
-            }}
-          />
-        )}
-        {editable && edit === 'self' && (
-          <span
-            aria-hidden="true"
-            style={{
-              position: 'absolute', top: -3, bottom: -3, left: pct(selfValue),
-              width: 2, marginLeft: -1, background: ind.ink, pointerEvents: 'none',
-            }}
-          />
-        )}
-      </div>
-      {editable && onChange && (
-        <input
-          type="range"
-          min="0"
-          max="5"
-          step={RATING_STEP}
-          value={editValue}
-          aria-label={ariaLabel}
-          onChange={(e) => onChange(Number(e.target.value))}
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: -8,
-            bottom: -8,
-            width: '100%',
-            height: 'auto',
-            margin: 0,
-            opacity: 0,
-            cursor: 'pointer',
-            appearance: 'none',
-            WebkitAppearance: 'none',
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-/** One node of the review-cycle timeline. */
-function CycleStep({ ind, state, title, meta, last }) {
-  const done = state === 'done';
-  const current = state === 'current';
-  return (
-    <div style={{ display: 'flex', gap: 10 }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 'none', width: 9 }}>
-        <span
-          aria-hidden="true"
-          style={{
-            width: 9, height: 9, flex: 'none',
-            background: done ? ind.accent : 'transparent',
-            border: `1px solid ${done || current ? ind.accent : ind.inkFaint}`,
-          }}
-        />
-        {!last && <span aria-hidden="true" style={{ width: 1, flex: 1, minHeight: 22, background: ind.rule }} />}
-      </div>
-      <div style={{ minWidth: 0, paddingBottom: last ? 0 : 12 }}>
-        <div
-          style={{
-            fontFamily: BODY,
-            fontSize: 13,
-            fontWeight: current ? 600 : 400,
-            color: current || done ? ind.ink : ind.inkMuted,
-          }}
-        >
-          {title}
-        </div>
-        {meta && (
-          <div style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, marginTop: 2 }}>{meta}</div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/**
- * Quarterly overall rating as a hand-drawn line: accent stroke, open square
- * markers. Recharts is overkill for five points and would not give the open
- * marker the rest of the system uses.
- */
-function RatingSpark({ ind, points, emptyLabel, selfLabel = 'self-rated' }) {
-  const W = 320;
-  const H = 96;
-  const PAD_X = 10;
-  const PAD_Y = 12;
-
-  const rated = points.filter((p) => p.value != null);
-  if (rated.length === 0) {
-    return (
-      <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, padding: '12px 0' }}>{emptyLabel}</p>
-    );
-  }
-
-  const values = rated.map((p) => p.value);
-  const rawMin = Math.min(...values);
-  const rawMax = Math.max(...values);
-  // Pad the domain so a flat-ish run still reads as a line rather than a rule.
-  const min = Math.max(0, rawMin - (rawMax - rawMin < 0.5 ? 0.5 : 0.3));
-  const max = Math.min(5, rawMax + (rawMax - rawMin < 0.5 ? 0.5 : 0.3));
-  const span = max - min || 1;
-
-  const step = points.length > 1 ? (W - PAD_X * 2) / (points.length - 1) : 0;
-  const xy = points.map((p, i) => ({
-    ...p,
-    x: PAD_X + step * i,
-    y: p.value == null ? null : PAD_Y + (1 - (p.value - min) / span) * (H - PAD_Y * 2),
-  }));
-
-  const path = xy
-    .filter((p) => p.y != null)
-    .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
-    .join(' ');
-
-  return (
-    <div>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} role="img" aria-label={emptyLabel}>
-        <path d={path} fill="none" stroke={ind.accent} strokeWidth={1.5} />
-        {xy.filter((p) => p.y != null).map((p) => (
-          <rect
-            key={p.key}
-            x={p.x - 3.5}
-            y={p.y - 3.5}
-            width={7}
-            height={7}
-            // Open square for a calibrated review, filled for a quarter the
-            // employee logged themselves.
-            fill={p.selfOnly ? ind.accent : ind.chrome}
-            stroke={ind.accent}
-            strokeWidth={1.5}
-          >
-            <title>{`${p.label} · ${fmt1(p.value)}${p.selfOnly ? ` · ${selfLabel}` : ''}`}</title>
-          </rect>
-        ))}
-      </svg>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-        {points.map((p) => (
-          <span
-            key={p.key}
-            style={{
-              fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.1em',
-              textTransform: 'uppercase', color: ind.inkMuted,
-            }}
-          >
-            {p.label}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 /* ------------------------------------------------------------------ *
  * Personal Goals
@@ -375,24 +88,12 @@ const PersonalGoals = ({ employees }) => {
   const { handleSessionAuthError } = useSessionGuard();
 
   const ind = getIndustry(isDarkMode);
-  /** The manager's tick has to be the heaviest mark on the track, either theme. */
   const heavyInk = isDarkMode ? ind.accentDeeper : ind.tickerBg;
   const isDesktop = useMinWidth(1024);
   const pagePad = isDesktop ? 24 : 14;
 
-  // Match the review_period format already used by performance reviews, e.g. Q4-2025.
-  const getCurrentQuarter = (date = new Date()) => {
-    const year = date.getFullYear();
-    const quarter = Math.floor(date.getMonth() / 3) + 1;
-    return `Q${quarter}-${year}`;
-  };
-
-  // Check if user can view other employees' performance
   const canViewAllEmployees = checkPermission('canViewReports');
-  const canManagePerformance = checkPermission('canManagePerformance');
 
-  // Memoized: availableEmployees feeds an effect dependency array below, and a
-  // fresh identity every render makes that effect re-run on every render.
   const availableEmployees = useMemo(() => {
     const operational = filterActiveEmployees(employees);
     return canViewAllEmployees
@@ -402,7 +103,6 @@ const PersonalGoals = ({ employees }) => {
 
   const [nav, go] = useScreenNavigation(PERSONAL_GOALS_NAV);
 
-  // Default the selected employee to the logged-in user's employee id (or user id)
   const defaultEmployeeId = user?.employeeId
     ? String(user.employeeId)
     : user?.id
@@ -416,15 +116,11 @@ const PersonalGoals = ({ employees }) => {
     if (!canViewAllEmployees) {
       return selfId && requested === selfId ? requested : defaultEmployeeId;
     }
-    // Roster still empty is "not loaded yet", not "that person is gone" —
-    // clearing here would drop the Performance Reviews deep link.
     if (availableEmployees.length === 0) return requested;
     return availableEmployees.some((emp) => String(emp.id) === requested)
       ? requested
       : defaultEmployeeId;
   }, [nav.employee, canViewAllEmployees, selfId, availableEmployees, defaultEmployeeId]);
-
-  const selectedPeriod = nav.cycle ?? getCurrentQuarter();
 
   useEffect(() => {
     if (!nav.employee) return;
@@ -436,11 +132,6 @@ const PersonalGoals = ({ employees }) => {
     if (!allowed) go({ employee: null }, { replace: true });
   }, [nav.employee, availableEmployees, canViewAllEmployees, selfId, go]);
 
-  const viewingSelf = Boolean(selfId) && String(selectedEmployee) === selfId;
-  const canFileManagerReview = canManagePerformance && Boolean(selectedEmployee) && !viewingSelf;
-  const canAdjustRatings = viewingSelf || canFileManagerReview;
-
-  const [activeTab, setActiveTab] = useState('overview');
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
   const [showEditGoalModal, setShowEditGoalModal] = useState(false);
   const [showViewGoalModal, setShowViewGoalModal] = useState(false);
@@ -449,27 +140,8 @@ const PersonalGoals = ({ employees }) => {
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const [goals, setGoals] = useState([]);
-  /** Every review this employee has, all periods — feeds history and the plates. */
-  const [allReviews, setAllReviews] = useState([]);
-  const [skills, setSkills] = useState([]);
-  /** Company medians per skill for the period. Optional: absent means no mark. */
-  const [companyMedians, setCompanyMedians] = useState({});
-  const [assessmentDirty, setAssessmentDirty] = useState(false);
-  const [savingAssessment, setSavingAssessment] = useState(false);
-  const [adjusting, setAdjusting] = useState(false);
-  const [ackBusy, setAckBusy] = useState(false);
   const fetchRequestIdRef = useRef(0);
 
-  useEffect(() => {
-    if (nav.edit !== 'manager') return;
-    if (canFileManagerReview) {
-      setAdjusting(true);
-      return;
-    }
-    go({ edit: null }, { replace: true });
-  }, [nav.edit, canFileManagerReview, go]);
-
-  // Form state for new goal
   const [goalForm, setGoalForm] = useState({
     title: '',
     description: '',
@@ -483,9 +155,7 @@ const PersonalGoals = ({ employees }) => {
   const translateDepartment = (department) => (department ? t(`departments.${department}`, department) : '');
   const translatePosition = (position) => (position ? t(`employeePosition.${position}`, position) : '');
 
-  // ---------------------------------------------------------------- fetch
-
-  const fetchGoalsAndReviews = useCallback(async (options = {}) => {
+  const fetchGoals = useCallback(async (options = {}) => {
     const { silent = false } = options;
     if (!selectedEmployee) return;
     const requestId = ++fetchRequestIdRef.current;
@@ -498,76 +168,28 @@ const PersonalGoals = ({ employees }) => {
         }
       }
 
-      const [goalsResult, reviewsResult] = await Promise.all([
-        performanceService.getAllPerformanceGoals({ employeeId: selectedEmployee }),
-        // Every period in one read: the selected quarter's review is picked out
-        // of this list, so history and the plates can never disagree.
-        performanceService.getAllPerformanceReviews({ employeeId: selectedEmployee }),
-      ]);
-
-      let skillsData = [];
-      let skillsError = null;
-      if (isDemoMode()) {
-        skillsData = getDemoSkills().filter(skill => String(skill.employee_id) === String(selectedEmployee));
-      } else {
-        const skillsResult = await performanceService.getSkillsByEmployee(selectedEmployee);
-        skillsData = skillsResult.data || [];
-        skillsError = skillsResult.success ? null : skillsResult.error;
-      }
-
+      const goalsResult = await performanceService.getAllPerformanceGoals({ employeeId: selectedEmployee });
       if (requestId !== fetchRequestIdRef.current) return;
-
       if (goalsResult.success) setGoals(goalsResult.data || []);
-      const reviews = reviewsResult.success ? reviewsResult.data || [] : [];
-      setAllReviews(reviews);
-
-      const periodReview = reviews.find(r => r.review_period === selectedPeriod) || null;
-      setSkills(mergeReviewRatingsIntoSkills(skillsError ? [] : skillsData, periodReview, selectedEmployee));
+      else throw new Error(goalsResult.error || 'Failed to load goals');
     } catch (error) {
-      console.error('Error fetching performance data:', error);
+      console.error('Error fetching goals:', error);
       if (handleSessionAuthError(error, { silent, setFetchError })) return;
       if (!silent) setFetchError(t('errors.loadFailed', 'Failed to load data'));
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [selectedEmployee, selectedPeriod, handleSessionAuthError]);
+  }, [selectedEmployee, handleSessionAuthError, t]);
 
   useEffect(() => {
-    setAssessmentDirty(false);
-    setAdjusting(nav.edit === 'manager' && canFileManagerReview);
-    fetchGoalsAndReviews();
-  }, [fetchGoalsAndReviews]);
+    fetchGoals();
+  }, [fetchGoals]);
 
   useAuthenticatedPageRefresh(useCallback(
-    () => fetchGoalsAndReviews({ silent: true }),
-    [fetchGoalsAndReviews]
+    () => fetchGoals({ silent: true }),
+    [fetchGoals]
   ));
 
-  /**
-   * Company medians for the period. Deliberately non-blocking and unguarded by
-   * role: row-level security decides what comes back, and an empty result just
-   * means the median hairline is not drawn.
-   */
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const result = await performanceService.getAllPerformanceReviews({ reviewPeriod: selectedPeriod });
-        if (cancelled || !result?.success) return;
-        const rows = result.data || [];
-        const medians = {};
-        PERFORMANCE_SKILLS.forEach((definition) => {
-          medians[definition.skillName] = medianOf(rows.map((r) => Number(r[definition.reviewColumn])));
-        });
-        setCompanyMedians(medians);
-      } catch {
-        if (!cancelled) setCompanyMedians({}); // the median mark is optional
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [selectedPeriod]);
-
-  // ESC closes whichever modal is open
   useEffect(() => {
     const handleEscKey = (event) => {
       if (event.key !== 'Escape') return;
@@ -578,13 +200,6 @@ const PersonalGoals = ({ employees }) => {
     document.addEventListener('keydown', handleEscKey);
     return () => document.removeEventListener('keydown', handleEscKey);
   }, [showAddGoalModal, showEditGoalModal, showViewGoalModal]);
-
-  // ---------------------------------------------------------------- derive
-
-  const periodReview = useMemo(
-    () => allReviews.find(r => r.review_period === selectedPeriod) || null,
-    [allReviews, selectedPeriod]
-  );
 
   const currentEmployee = availableEmployees.find(emp => String(emp.id) === selectedEmployee) || null;
 
@@ -608,72 +223,9 @@ const PersonalGoals = ({ employees }) => {
       : `${rest}${t('personalGoals.monthsShort', 'm')}`;
   }, [currentEmployee, t]);
 
-  /** The five calibrated rows the assessment figure draws. */
-  const skillRows = useMemo(() => PERFORMANCE_SKILLS.map((definition) => {
-    const skill = skills.find(s => s.skill_name === definition.skillName);
-    return {
-      key: definition.key,
-      skillName: definition.skillName,
-      category: definition.category,
-      label: t(`personalGoals.${definition.key}`, definition.skillName),
-      self: Number(skill?.selfRating ?? 0),
-      manager: skill?.managerRating ?? null,
-      median: companyMedians[definition.skillName] ?? null,
-    };
-  }), [skills, companyMedians, t]);
-
-  /** Average of the rated skills — the same arithmetic the save path uses. */
-  const skillAverage = useMemo(() => buildPerformanceAssessment(skills).overallRating, [skills]);
-
-  /** Gaps worth a conversation, in the words the footer prints. */
-  const calibrationGaps = useMemo(() => skillRows
-    .filter(r => r.manager != null && r.self > 0 && Math.abs(r.manager - r.self) >= GAP_THRESHOLD)
-    .map(r => ({ label: r.label, direction: r.manager > r.self ? 'above' : 'below' })),
-  [skillRows]);
-
-  const hasManagerRatings = skillRows.some(r => r.manager != null);
-
-  /** The manager who last saved these marks. A later save overwrites reviewer_id. */
-  const ratingAdjuster = useMemo(() => {
-    const adjuster = lastRatingAdjuster(periodReview);
-    if (!adjuster || !hasManagerRatings) return null;
-    const date = adjuster.at
-      ? formatDate(adjuster.at, currentLanguage, { day: 'numeric', month: 'short', year: 'numeric' })
-      : '';
-    return { name: adjuster.name, date };
-  }, [periodReview, hasManagerRatings, currentLanguage]);
-
-  const lastAdjustedLabel = useCallback((adjuster) => formatLastAdjusted(
-    t('personalGoals.lastAdjustedBy', 'Last adjusted by {name} · {date}'),
-    adjuster,
-  ), [t]);
-
-  const canSubmitCalibration = canFileManagerReview
-    && Boolean(periodReview?.id)
-    && hasManagerRatings
-    && !['submitted', 'approved', 'acknowledged', 'completed'].includes(String(periodReview?.status || ''));
-  const awaitingSignOff = String(periodReview?.status || '') === 'submitted';
-  const canOpenSignOff = canManagePerformance && awaitingSignOff && Boolean(selectedEmployee);
-
-  const calibrationRead = useMemo(() => {
-    if (!hasManagerRatings) {
-      return t('personalGoals.noManagerRatings', 'No manager ratings for this period yet.');
-    }
-    if (calibrationGaps.length === 0) {
-      return t('personalGoals.noGaps', 'Self and manager agree within half a point across every skill.');
-    }
-    const list = calibrationGaps
-      .map(g => `${g.label.toLowerCase()} ${g.direction === 'above'
-        ? t('personalGoals.ratedAboveSelf', 'rated above self')
-        : t('personalGoals.ratedBelowSelf', 'below')}`)
-      .join(', ');
-    return `${t('personalGoals.gapsToDiscuss', '{count} gaps to discuss').replace('{count}', String(calibrationGaps.length))}: ${list}`;
-  }, [calibrationGaps, hasManagerRatings, t]);
-
   /**
-   * Goals in the shape the blueprint section renders. ON TRACK / AT RISK is a
-   * real calculation, not a stored field: a goal is at risk once it is overdue,
-   * or once its progress has slipped materially behind its own elapsed timeline.
+   * ON TRACK / AT RISK is a calculation, not a stored field: a goal is at risk
+   * once it is overdue, or once its progress has slipped behind its timeline.
    */
   const goalRows = useMemo(() => {
     const today = new Date();
@@ -717,353 +269,29 @@ const PersonalGoals = ({ employees }) => {
   const openGoals = useMemo(() => goalRows.filter(g => !g.complete), [goalRows]);
   const completedGoals = useMemo(() => goalRows.filter(g => g.complete), [goalRows]);
   const inProgressCount = goalRows.filter(g => !g.complete && g.status !== 'pending').length;
+  const atRiskGoals = useMemo(() => goalRows.filter(g => g.state === 'atRisk'), [goalRows]);
 
-  /** Open goals first, in deadline order, then the completed ones. */
   const orderedGoals = useMemo(() => [
     ...openGoals.slice().sort((a, b) => String(a.targetDate || '').localeCompare(String(b.targetDate || ''))),
     ...completedGoals,
   ], [openGoals, completedGoals]);
 
-  const historyPoints = useMemo(() => {
-    const byPeriod = new Map(allReviews.map(r => [r.review_period, r]));
-    return quartersEndingAt(selectedPeriod, HISTORY_QUARTERS).map(q => {
-      const review = byPeriod.get(q.key);
-      const value = Number(review?.overall_rating);
-      return {
-        key: q.key,
-        label: `Q${q.quarter}'${String(q.year).slice(2)}`,
-        value: Number.isFinite(value) && value > 0 ? value : null,
-        // A self-logged quarter is the employee's own average, not a calibrated
-        // review. The marker says so rather than passing it off as a review.
-        selfOnly: review?.review_type === 'self',
-      };
-    });
-  }, [allReviews, selectedPeriod]);
+  const upcomingGoals = useMemo(() => (
+    openGoals
+      .filter((goal) => goal.targetDate)
+      .slice()
+      .sort((a, b) => String(a.targetDate).localeCompare(String(b.targetDate)))
+  ), [openGoals]);
 
-  /** Overall for the period, and the move since the quarter before it. */
-  const overall = useMemo(() => {
-    const current = Number(periodReview?.overall_rating) || skillAverage || 0;
-    const previous = historyPoints.length >= 2 ? historyPoints[historyPoints.length - 2].value : null;
-    const delta = previous != null && current > 0 ? round1(current - previous) : null;
-    return { value: current, delta };
-  }, [periodReview, skillAverage, historyPoints]);
+  const nextDue = upcomingGoals[0]?.targetDate || null;
 
-  const closeDate = useMemo(() => reviewCloseDate(selectedPeriod), [selectedPeriod]);
-  const closeLabel = closeDate
-    ? formatDate(closeDate, currentLanguage, { day: '2-digit', month: 'short' })
-      .toLocaleUpperCase(localeTag(currentLanguage))
-    : '—';
-  const daysToClose = closeDate ? daysBetween(new Date(), closeDate) : null;
-
-  /**
-   * The cycle is derived, not stored: there is no workflow table, so each step
-   * is inferred from the records that would exist if it had happened.
-   */
-  const cycleSteps = useMemo(() => {
-    const selfDate = skills
-      .map(s => s.assessment_date)
-      .filter(Boolean)
-      .sort()
-      .pop() || null;
-    const selfDone = skillRows.some(r => r.self > 0) && Boolean(selfDate);
-    const managerDone = hasManagerRatings;
-    const status = periodReview?.status || null;
-    const signedOff = status === 'approved' || status === 'completed';
-    const calibrated = signedOff || status === 'submitted';
-
-    const steps = [
-      {
-        key: 'self',
-        title: t('personalGoals.stepSelfAssessment', 'Self-assessment submitted'),
-        meta: selfDate ? formatDate(selfDate, currentLanguage) : t('personalGoals.notYet', 'Not yet'),
-        state: selfDone ? 'done' : 'todo',
-      },
-      {
-        key: 'manager',
-        title: t('personalGoals.stepManagerRating', 'Manager rating entered'),
-        meta: ratingAdjuster
-          ? lastAdjustedLabel(ratingAdjuster)
-          : ([
-            periodReview?.review_date ? formatDate(periodReview.review_date, currentLanguage) : null,
-            periodReview?.reviewer?.name || null,
-          ].filter(Boolean).join(' · ') || t('personalGoals.notYet', 'Not yet')),
-        state: managerDone ? 'done' : 'todo',
-      },
-      {
-        key: 'calibration',
-        title: t('personalGoals.stepCalibration', 'Calibration meeting'),
-        meta: calibrated
-          ? (periodReview?.reviewer?.name || t('personalGoals.submittedForCalibration', 'Submitted for calibration.'))
-          : (managerDone
-            ? t('personalGoals.readyToSubmitCalibration', 'Ready to submit')
-            : t('personalGoals.awaitingSchedule', 'Not scheduled')),
-        state: calibrated ? 'done' : 'todo',
-      },
-      {
-        key: 'signoff',
-        title: t('personalGoals.stepSignOff', 'Sign-off & next-quarter goals'),
-        meta: closeDate
-          ? `${t('personalGoals.byDate', 'by')} ${formatDate(closeDate.toISOString().split('T')[0], currentLanguage)}`
-          : '',
-        state: signedOff ? 'done' : 'todo',
-      },
-    ];
-
-    // Exactly one open step is "now" — the first that has not happened.
-    const nextIndex = steps.findIndex(s => s.state === 'todo');
-    if (nextIndex >= 0) steps[nextIndex].state = 'current';
-    return steps;
-  }, [skills, skillRows, hasManagerRatings, periodReview, closeDate, currentLanguage, t, ratingAdjuster, lastAdjustedLabel]);
-
-  const managerNote = useMemo(() => {
-    if (!periodReview) return null;
-    const strengths = isDemoMode()
-      ? getDemoReviewStrengths(periodReview, t)
-      : periodReview.strengths;
-    const areas = isDemoMode()
-      ? getDemoReviewAreasForImprovement(periodReview, t)
-      : periodReview.areas_for_improvement;
-    if (!strengths && !areas) return null;
-    const employeeComment = periodReview.employee_comments || '';
-    return {
-      id: periodReview.id,
-      strengths,
-      areas,
-      author: periodReview.reviewer?.name || t('personalGoals.reviewer', 'Reviewer'),
-      date: periodReview.review_date,
-      acknowledged: employeeComment.startsWith(ACK_MARKER),
-      reply: employeeComment.startsWith(ACK_MARKER)
-        ? employeeComment.slice(ACK_MARKER.length).trim()
-        : employeeComment,
-    };
-  }, [periodReview, t]);
-
-  const currentYear = new Date().getFullYear();
-  const periodOptions = useMemo(() => {
-    const out = [];
-    for (const year of [currentYear - 1, currentYear]) {
-      for (const q of [1, 2, 3, 4]) {
-        out.push({ value: `Q${q}-${year}`, label: `Q${q} ${year}` });
-      }
-    }
-    if (selectedPeriod && !out.some((period) => period.value === selectedPeriod)) {
-      const parsed = parsePeriod(selectedPeriod);
-      if (parsed) out.unshift({ value: selectedPeriod, label: `Q${parsed.quarter} ${parsed.year}` });
-    }
-    return out;
-  }, [currentYear, selectedPeriod]);
-
-  // ---------------------------------------------------------------- actions
-
-  /** Slider movement stays local; the whole assessment saves as one action. */
-  const handleUpdateSkillRating = (skillName, category, newRating, target = 'self') => {
+  const openThisReview = useCallback(() => {
     if (!selectedEmployee) return;
-    const rounded = Math.max(0, Math.min(5, Math.round(newRating * 10) / 10));
-    setSkills(prev => prev.map(skill => {
-      if (skill.skill_name !== skillName) return skill;
-      if (target === 'manager') return { ...skill, managerRating: rounded };
-      return {
-        ...skill,
-        rating: rounded,
-        selfRating: rounded,
-        skill_category: category,
-        proficiency_level: rounded >= 4 ? 'advanced' : rounded >= 3 ? 'intermediate' : 'beginner',
-      };
-    }));
-    setAssessmentDirty(true);
-  };
-
-  /**
-   * Saves the employee's own numbers to skills_assessments — the table that
-   * holds self-ratings. Manager scores for someone else are a different write
-   * (handleSaveManagerReview) onto the period's performance_reviews row.
-   */
-  const handleSaveSkillAssessment = async () => {
-    if (!viewingSelf || !selectedEmployee || !assessmentDirty || savingAssessment) return;
-
-    setSavingAssessment(true);
-    try {
-      const failures = [];
-      for (const definition of PERFORMANCE_SKILLS) {
-        const skill = skills.find(s => s.skill_name === definition.skillName);
-        const rating = Number(skill?.rating || 0);
-        if (rating < 1) continue; // an unrated skill is not an assertion
-        const result = await performanceService.upsertSkillAssessment({
-          employeeId: selectedEmployee,
-          skillName: definition.skillName,
-          skillCategory: definition.category,
-          rating,
-          proficiencyLevel: rating >= 4 ? 'advanced' : rating >= 3 ? 'intermediate' : 'beginner',
-          assessedBy: user?.employeeId || selectedEmployee,
-          assessmentDate: new Date().toISOString().split('T')[0],
-        });
-        if (!result.success) failures.push(`${definition.skillName}: ${result.error}`);
-      }
-
-      if (failures.length > 0) throw new Error(failures.join('; '));
-
-      /*
-       * Log the period's overall so the rating history has a point.
-       *
-       * skills_assessments is upserted per (employee, skill) and holds only the
-       * newest number, so saving there records the current standing but no
-       * history. The history line reads performance_reviews.overall_rating by
-       * quarter, which is why nothing ever appeared for an employee whose
-       * manager had not filed a review.
-       *
-       * Only ever creates. If a review row already exists for this period it is
-       * the manager's, and upsertPerformanceReviewByPeriod writes every rating
-       * column -- calling it with just the overall would null out the manager's
-       * per-skill ratings.
-       */
-      if (!periodReview && skillAverage > 0) {
-        const logged = await performanceService.upsertPerformanceReviewByPeriod({
-          employeeId: selectedEmployee,
-          reviewerId: selectedEmployee,
-          reviewPeriod: selectedPeriod,
-          reviewType: 'self',
-          overallRating: skillAverage,
-          status: 'draft',
-        });
-        if (!logged.success) {
-          console.error('Skill ratings saved, but the period overall was not logged:', logged.error);
-        }
-      }
-
-      setAssessmentDirty(false);
-      setAdjusting(false);
-      await fetchGoalsAndReviews({ silent: true });
-      alert(t('personalGoals.ratingUpdated', 'Assessment saved.'));
-    } catch (error) {
-      console.error('Error saving skill assessment:', error);
-      if (handleSessionAuthError(error)) return;
-      alert(t('personalGoals.ratingUpdateError', 'Failed to save assessment'));
-    } finally {
-      setSavingAssessment(false);
-    }
-  };
-
-  const handleSaveManagerReview = async () => {
-    if (!canFileManagerReview || !selectedEmployee || !assessmentDirty || savingAssessment) return;
-
-    const ratingOf = (definition) => {
-      const skill = skills.find((row) => row.skill_name === definition.skillName);
-      const value = Number(skill?.managerRating);
-    return Number.isFinite(value) && value > 0 ? value : null;
-    };
-    const rated = PERFORMANCE_SKILLS.map(ratingOf).filter((value) => value != null);
-    if (rated.length === 0) {
-      alert(t('personalGoals.needManagerRating', 'Rate at least one skill before saving.'));
-      return;
-    }
-
-    const overallRating = Math.round((rated.reduce((sum, value) => sum + value, 0) / rated.length) * 10) / 10;
-    const status = String(periodReview?.status || 'draft');
-    const payload = {
-      reviewType: 'quarterly',
-      reviewerId: selfId || user?.id,
-      overallRating,
-      status: ['submitted', 'approved', 'acknowledged'].includes(status) ? status : 'draft',
-    };
-    PERFORMANCE_SKILLS.forEach((definition) => {
-      payload[definition.serviceField] = ratingOf(definition);
-    });
-
-    setSavingAssessment(true);
-    try {
-      const result = periodReview?.id
-        ? await performanceService.updatePerformanceReview(periodReview.id, payload)
-        : await performanceService.createPerformanceReview({
-          employeeId: selectedEmployee,
-          reviewPeriod: selectedPeriod,
-          ...payload,
-        });
-      if (!result.success) throw new Error(result.error || 'Failed to save manager review');
-      setAssessmentDirty(false);
-      setAdjusting(false);
-      if (nav.edit === 'manager') go({ edit: null });
-      await fetchGoalsAndReviews({ silent: true });
-      alert(t('personalGoals.managerReviewSaved', 'Manager review saved.'));
-    } catch (error) {
-      console.error('Error saving manager review:', error);
-      if (handleSessionAuthError(error)) return;
-      alert(t('personalGoals.managerReviewSaveError', 'Failed to save manager review'));
-    } finally {
-      setSavingAssessment(false);
-    }
-  };
-
-  const openPerformanceReviews = useCallback(() => {
     navigate(performanceReviewsHref({
-      cycle: selectedPeriod,
+      cycle: liveQuarter(),
       employee: selectedEmployee,
-      stage: awaitingSignOff ? 'signed' : null,
     }));
-  }, [navigate, selectedPeriod, selectedEmployee, awaitingSignOff]);
-
-  const handleSubmitCalibration = async () => {
-    if (!canSubmitCalibration || assessmentDirty || savingAssessment) return;
-    setSavingAssessment(true);
-    try {
-      const result = await performanceService.updatePerformanceReview(periodReview.id, {
-        status: 'submitted',
-      });
-      if (!result.success) throw new Error(result.error || 'Failed to submit for calibration');
-      await fetchGoalsAndReviews({ silent: true });
-      alert(t('personalGoals.submittedForCalibration', 'Submitted for calibration.'));
-    } catch (error) {
-      console.error('Error submitting for calibration:', error);
-      if (handleSessionAuthError(error)) return;
-      alert(t('personalGoals.submitCalibrationError', 'Failed to submit for calibration'));
-    } finally {
-      setSavingAssessment(false);
-    }
-  };
-
-  const toggleAdjusting = () => {
-    if (adjusting) {
-      if (nav.edit === 'manager') go({ edit: null });
-      setAdjusting(false);
-      if (assessmentDirty) fetchGoalsAndReviews({ silent: true });
-      setAssessmentDirty(false);
-      return;
-    }
-    if (canFileManagerReview) go({ edit: 'manager' });
-    setAdjusting(true);
-  };
-
-  const editingManager = adjusting && canFileManagerReview;
-
-  /** Acknowledge and Reply both write the employee's side of the review record. */
-  const writeEmployeeComment = async (text) => {
-    if (!managerNote?.id || ackBusy) return;
-    setAckBusy(true);
-    try {
-      const result = await performanceService.updatePerformanceReview(managerNote.id, {
-        employeeComments: text,
-      });
-      if (!result.success) throw new Error(result.error || 'Failed to save');
-      await fetchGoalsAndReviews({ silent: true });
-    } catch (error) {
-      console.error('Error saving employee comment:', error);
-      if (handleSessionAuthError(error)) return;
-      alert(t('personalGoals.replyError', 'Could not save your response'));
-    } finally {
-      setAckBusy(false);
-    }
-  };
-
-  const handleAcknowledge = () => writeEmployeeComment(`${ACK_MARKER} ${managerNote?.reply || ''}`.trim());
-
-  const handleReply = () => {
-    const answer = window.prompt(
-      t('personalGoals.replyPrompt', 'Your response to this review:'),
-      managerNote?.reply || ''
-    );
-    if (answer === null) return;
-    const prefix = managerNote?.acknowledged ? `${ACK_MARKER} ` : '';
-    writeEmployeeComment(`${prefix}${answer}`.trim());
-  };
+  }, [navigate, selectedEmployee]);
 
   const handleViewGoal = (goal) => {
     setViewingGoal(goal);
@@ -1090,7 +318,7 @@ const PersonalGoals = ({ employees }) => {
 
       if (result.success) {
         setShowAddGoalModal(false);
-        fetchGoalsAndReviews();
+        fetchGoals();
         alert(t('personalGoals.goalCreatedSuccess', 'Goal created successfully!'));
       } else {
         console.error('Failed to create goal:', result.error);
@@ -1133,7 +361,7 @@ const PersonalGoals = ({ employees }) => {
       if (result.success) {
         setShowEditGoalModal(false);
         setEditingGoal(null);
-        fetchGoalsAndReviews();
+        fetchGoals();
         alert(t('personalGoals.goalUpdatedSuccess', 'Goal updated successfully!'));
       } else {
         console.error('Failed to update goal:', result.error);
@@ -1156,7 +384,7 @@ const PersonalGoals = ({ employees }) => {
       if (result.success) {
         setShowViewGoalModal(false);
         setViewingGoal(null);
-        fetchGoalsAndReviews();
+        fetchGoals();
         alert(t('personalGoals.goalDeletedSuccess', 'Goal deleted successfully!'));
       } else {
         console.error('Failed to delete goal:', result.error);
@@ -1170,34 +398,7 @@ const PersonalGoals = ({ employees }) => {
     setLoading(false);
   };
 
-  const handleExportReview = useCallback(() => {
-    const header = ['Section', 'Item', 'Self', 'Manager', 'Company median', 'Detail'];
-    const body = [
-      ...skillRows.map(r => [
-        'Skill', r.label, fmt1(r.self),
-        r.manager == null ? '' : fmt1(r.manager),
-        r.median == null ? '' : fmt1(r.median),
-        '',
-      ]),
-      ['Overall', t('personalGoals.overallPerformance', 'Overall'), fmt1(skillAverage), fmt1(overall.value), '', ''],
-      ...orderedGoals.map(g => [
-        'Goal', g.title, `${g.progress}%`, '', '',
-        `${g.state} · ${g.targetDate || ''}`,
-      ]),
-    ];
-
-    const csv = '﻿' + [header, ...body].map(row => row.map(csvCell).join(',')).join('\n');
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `review-${String(employeeName).replace(/\s+/g, '-').toLowerCase()}-${selectedPeriod}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-  }, [skillRows, orderedGoals, skillAverage, overall.value, employeeName, selectedPeriod, t]);
-
-  // ---------------------------------------------------------------- style
-
-  const hasRealData = goals.length > 0 || allReviews.length > 0 || skillRows.some(r => r.self > 0);
+  const hasRealData = goals.length > 0;
 
   const fieldStyle = {
     width: '100%', padding: '7px 10px', borderRadius: 0,
@@ -1211,29 +412,24 @@ const PersonalGoals = ({ employees }) => {
     complete: t('personalGoals.complete', 'Complete'),
   };
 
-  const tabOptions = [
-    { value: 'overview', label: t('personalGoals.overview', 'Overview') },
-    { value: 'goals', label: t('personalGoals.goalsTab', 'Goals') },
-    { value: 'history', label: t('personalGoals.history', 'History') },
-  ];
+  const goalMeta = (goal) => [
+    goal.targetDate
+      ? `${goal.complete ? t('personalGoals.closed', 'Closed') : t('personalGoals.due', 'Due')} ${formatDate(goal.targetDate, currentLanguage)}`
+      : null,
+    !goal.complete && goal.daysLeft != null
+      ? (goal.daysLeft < 0
+          ? t('personalGoals.overdueDays', '{n} days overdue').replace('{n}', String(Math.abs(goal.daysLeft)))
+          : t('personalGoals.daysLeft', '{n} days left').replace('{n}', String(goal.daysLeft)))
+      : null,
+    !goal.complete && goal.expected != null
+      ? t('personalGoals.expectedBy', 'timeline says {n}%').replace('{n}', String(Math.round(goal.expected)))
+      : null,
+  ].filter(Boolean).join(' · ');
 
-  /* -- goal row, shared by the Overview and Goals tabs ----------------- */
   const renderGoalRow = (goal, index) => {
     const atRisk = goal.state === 'atRisk';
     const fill = goal.complete ? ind.ramp[3] : atRisk ? heavyInk : ind.accent;
-    const meta = [
-      goal.targetDate
-        ? `${goal.complete ? t('personalGoals.closed', 'Closed') : t('personalGoals.due', 'Due')} ${formatDate(goal.targetDate, currentLanguage)}`
-        : null,
-      !goal.complete && goal.daysLeft != null
-        ? (goal.daysLeft < 0
-            ? t('personalGoals.overdueDays', '{n} days overdue').replace('{n}', String(Math.abs(goal.daysLeft)))
-            : t('personalGoals.daysLeft', '{n} days left').replace('{n}', String(goal.daysLeft)))
-        : null,
-      !goal.complete && goal.expected != null
-        ? t('personalGoals.expectedBy', 'timeline says {n}%').replace('{n}', String(Math.round(goal.expected)))
-        : null,
-    ].filter(Boolean).join(' · ');
+    const meta = goalMeta(goal);
 
     return (
       <button
@@ -1248,7 +444,6 @@ const PersonalGoals = ({ employees }) => {
           opacity: goal.complete ? 0.62 : 1,
         }}
       >
-        {/* Blueprint item marker — a drawing reference, not a bullet */}
         <span
           aria-hidden="true"
           style={{
@@ -1287,7 +482,6 @@ const PersonalGoals = ({ employees }) => {
           </span>
         </span>
 
-        {/* Fixed status block so the column stays a straight edge */}
         <span style={{ flex: 'none', width: isDesktop ? 150 : 96, minWidth: 0 }}>
           <span style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
             <span style={figure(14, ind.ink)}>
@@ -1313,33 +507,24 @@ const PersonalGoals = ({ employees }) => {
     );
   };
 
-  const goalsSection = (
-    <Blueprint ind={ind}>
-      <div
-        className="flex flex-wrap items-start justify-between"
-        style={{ gap: 12, padding: '14px 20px', borderBottom: `1px solid ${ind.hairline}` }}
-      >
-        <div style={{ minWidth: 0 }}>
-          <Kicker ind={ind}>{t('personalGoals.currentGoals', 'Current goals')}</Kicker>
-          <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 6 }}>
-            {`${inProgressCount} ${t('personalGoals.inProgressLower', 'in progress')} · ${completedGoals.length} ${t('personalGoals.completedThisYear', 'completed')}`}
-          </p>
-        </div>
-        <Btn ind={ind} onClick={handleAddGoal} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <Plus size={13} strokeWidth={1.5} />
-          {t('personalGoals.addGoal', 'Add goal')}
-        </Btn>
-      </div>
-
-      <div>
-        {orderedGoals.length === 0 && (
-          <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, padding: '18px 20px' }}>
-            {loading ? t('common.loading', 'Loading…') : t('personalGoals.noGoals', 'No goals for this employee yet.')}
-          </p>
-        )}
-        {orderedGoals.map(renderGoalRow)}
-      </div>
-    </Blueprint>
+  const renderPlateGoal = (goal) => (
+    <button
+      key={goal.id}
+      type="button"
+      onClick={() => handleViewGoal(goal)}
+      className="w-full"
+      style={{
+        display: 'block', textAlign: 'left', padding: '10px 0', cursor: 'pointer',
+        background: 'transparent', border: 'none', borderTop: `1px solid ${ind.rule}`,
+      }}
+    >
+      <span style={{ display: 'block', fontFamily: BODY, fontSize: 13, color: ind.ink }}>
+        <TranslatedText text={goal.title} record={{ entityType: 'goal', entityId: goal.id, field: 'title' }} />
+      </span>
+      <span style={{ display: 'block', fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, marginTop: 3 }}>
+        {goalMeta(goal)}
+      </span>
+    </button>
   );
 
   return (
@@ -1353,7 +538,6 @@ const PersonalGoals = ({ employees }) => {
         borderRadius: 0,
       }}
     >
-      {/* ── TICKER — replaces metric cards. Never both. ───────────────── */}
       <div
         style={{
           height: 44,
@@ -1369,14 +553,6 @@ const PersonalGoals = ({ employees }) => {
         <TickerCell ind={ind}>
           <LiveClock ind={ind} live={hasRealData} />
         </TickerCell>
-
-        <TickerCell
-          ind={ind}
-          label={t('personalGoals.overallPerformance', 'Overall')}
-          value={overall.value > 0 ? fmt1(overall.value) : '—'}
-          delta={overall.delta ? Math.abs(overall.delta).toFixed(1) : null}
-          deltaDirection={overall.delta > 0 ? 'up' : 'down'}
-        />
         <TickerCell
           ind={ind}
           label={t('personalGoals.inProgress', 'In progress')}
@@ -1389,21 +565,15 @@ const PersonalGoals = ({ employees }) => {
         />
         <TickerCell
           ind={ind}
-          label={t('personalGoals.avgSkillRating', 'Skill avg')}
-          value={skillAverage > 0 ? fmt1(skillAverage) : '—'}
+          label={t('personalGoals.atRisk', 'At risk')}
+          value={atRiskGoals.length}
         />
         <TickerCell
           ind={ind}
-          label={t('personalGoals.reviewDue', 'Review due')}
-          value={closeLabel}
-          // The deadline is the one figure on the strip that runs out.
-          valueColor={ind.tickerUp}
-          title={daysToClose != null
-            ? t('personalGoals.daysLeft', '{n} days left').replace('{n}', String(daysToClose))
-            : undefined}
+          label={t('personalGoals.nextDue', 'Next due')}
+          value={nextDue ? formatDate(nextDue, currentLanguage, { day: '2-digit', month: 'short' }) : '—'}
         />
 
-        {/* Scope controls — pushed right with flex:1 and a left hairline. */}
         <div
           style={{
             flex: 1,
@@ -1433,26 +603,10 @@ const PersonalGoals = ({ employees }) => {
               ))}
             </FlatListbox>
           )}
-          <FlatListbox
-            ind={ind}
-            onDark
-            value={selectedPeriod}
-            onChange={(e) => go({ cycle: e.target.value })}
-            aria-label={t('personalGoals.period', 'Period')}
-          >
-            {periodOptions.map(period => (
-              <option key={period.value} value={period.value} style={{ color: '#1d1f20' }}>
-                {period.label}
-              </option>
-            ))}
-          </FlatListbox>
         </div>
       </div>
 
-      {/* ── BANDS ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col lg:flex-row items-stretch">
-
-        {/* ── MAIN ───────────────────────────────────────────────────── */}
         <div
           className="flex-1 min-w-0 flex flex-col"
           style={{ padding: pagePad, gap: 18, borderRight: `1px solid ${ind.hairline}` }}
@@ -1465,7 +619,7 @@ const PersonalGoals = ({ employees }) => {
                 <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, marginTop: 4 }}>{fetchError}</p>
                 <button
                   type="button"
-                  onClick={() => { setFetchError(null); fetchGoalsAndReviews(); }}
+                  onClick={() => { setFetchError(null); fetchGoals(); }}
                   style={{
                     marginTop: 8, background: 'none', border: 'none', padding: 0, cursor: 'pointer',
                     fontFamily: DISPLAY, fontWeight: 600, fontSize: 11.5, letterSpacing: '.08em',
@@ -1486,7 +640,6 @@ const PersonalGoals = ({ employees }) => {
             </div>
           )}
 
-          {/* Identity head */}
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div style={{ display: 'flex', gap: 16, minWidth: 0 }}>
               <div
@@ -1524,17 +677,19 @@ const PersonalGoals = ({ employees }) => {
             </div>
 
             <div className="flex flex-wrap items-center gap-3" style={{ minWidth: 0, maxWidth: '100%' }}>
-              <Seg
-                ind={ind}
-                options={tabOptions}
-                value={activeTab}
-                onChange={setActiveTab}
-                ariaLabel={t('personalGoals.view', 'View')}
-              />
+              <Btn ind={ind} onClick={handleAddGoal} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Plus size={13} strokeWidth={1.5} />
+                {t('personalGoals.addGoal', 'Add goal')}
+              </Btn>
               {isDesktop ? (
-                <Btn ind={ind} onClick={handleExportReview} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <Download size={13} strokeWidth={1.5} />
-                  {t('personalGoals.exportReview', 'Export review')}
+                <Btn
+                  ind={ind}
+                  onClick={openThisReview}
+                  disabled={!selectedEmployee}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  {t('personalGoals.openPerformanceReviews', 'Open Performance Reviews')}
+                  <ChevronRight size={13} strokeWidth={1.5} />
                 </Btn>
               ) : (
                 <MoreMenu
@@ -1542,10 +697,10 @@ const PersonalGoals = ({ employees }) => {
                   label={t('header.moreOptions', 'More options')}
                   items={[
                     {
-                      key: 'export',
-                      label: t('personalGoals.exportReview', 'Export review'),
-                      icon: Download,
-                      onClick: handleExportReview,
+                      key: 'review',
+                      label: t('personalGoals.openPerformanceReviews', 'Open Performance Reviews'),
+                      icon: ChevronRight,
+                      onClick: openThisReview,
                     },
                   ]}
                 />
@@ -1553,428 +708,56 @@ const PersonalGoals = ({ employees }) => {
             </div>
           </div>
 
-          {/* Skills assessment — the core figure */}
-          {activeTab === 'overview' && (
-            <Blueprint ind={ind}>
-              <div
-                className="flex flex-wrap items-start justify-between"
-                style={{ gap: 12, padding: '16px 20px 0' }}
-              >
-                <div style={{ minWidth: 0 }}>
-                  <Kicker ind={ind}>
-                    {`${t('personalGoals.skillsAssessment', 'Skills assessment')} · ${selectedPeriod.replace('-', ' ')}`}
-                  </Kicker>
-                  <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 6 }}>
-                    {t(
-                      canFileManagerReview ? 'personalGoals.managerAssessmentLead' : 'personalGoals.assessmentLead',
-                      canFileManagerReview
-                        ? 'The fill is their self-rating. Place your mark on the same track.'
-                        : 'Self-rating as fill, manager as marker, company median dashed.',
-                    )}
-                  </p>
-                  {ratingAdjuster && (
-                    <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink, marginTop: 4 }}>
-                      {lastAdjustedLabel(ratingAdjuster)}
-                    </p>
-                  )}
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, flex: 'none', paddingTop: 2, maxWidth: '100%' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <span aria-hidden="true" style={{ width: 9, height: 9, background: ind.accent, flex: 'none' }} />
-                    <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>{t('personalGoals.self', 'Self')}</span>
-                  </span>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <span aria-hidden="true" style={{ width: 2, height: 11, background: heavyInk, flex: 'none' }} />
-                    <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>
-                      {ratingAdjuster
-                        ? `${t('personalGoals.manager', 'Manager')} · ${ratingAdjuster.name}`
-                        : t('personalGoals.manager', 'Manager')}
-                    </span>
-                  </span>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <span aria-hidden="true" style={{ width: 1, height: 11, background: ind.inkFaint, flex: 'none' }} />
-                    <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>{t('personalGoals.median', 'Median')}</span>
-                  </span>
-                </div>
-              </div>
-
-              <div style={{ padding: '16px 20px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {skillRows.map((row) => {
-                  const editTarget = editingManager ? 'manager' : 'self';
-                  const editValue = editingManager ? (row.manager ?? 0) : row.self;
-                  return (
-                  <div key={row.key}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
-                      <span style={{ fontFamily: BODY, fontSize: 13, color: ind.ink }}>{row.label}</span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
-                        {adjusting && (
-                          <span style={{ display: 'inline-flex', gap: 4 }}>
-                            <button
-                              type="button"
-                              aria-label={`${row.label} − ${RATING_STEP}`}
-                              disabled={editValue <= 0}
-                              onClick={() => handleUpdateSkillRating(row.skillName, row.category, editValue - RATING_STEP, editTarget)}
-                              style={{
-                                width: 22, height: 22, padding: 0, borderRadius: 0,
-                                border: `1px solid ${ind.ink}`, background: 'transparent',
-                                color: ind.ink, fontFamily: DISPLAY, fontSize: 14, lineHeight: 1,
-                                cursor: editValue <= 0 ? 'default' : 'pointer',
-                                opacity: editValue <= 0 ? 0.35 : 1,
-                              }}
-                            >
-                              −
-                            </button>
-                            <button
-                              type="button"
-                              aria-label={`${row.label} + ${RATING_STEP}`}
-                              disabled={editValue >= 5}
-                              onClick={() => handleUpdateSkillRating(row.skillName, row.category, editValue + RATING_STEP, editTarget)}
-                              style={{
-                                width: 22, height: 22, padding: 0, borderRadius: 0,
-                                border: `1px solid ${ind.ink}`, background: 'transparent',
-                                color: ind.ink, fontFamily: DISPLAY, fontSize: 14, lineHeight: 1,
-                                cursor: editValue >= 5 ? 'default' : 'pointer',
-                                opacity: editValue >= 5 ? 0.35 : 1,
-                              }}
-                            >
-                              +
-                            </button>
-                          </span>
-                        )}
-                        <span style={figure(15, ind.ink)}>{fmt1(row.self)}</span>
-                        <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>
-                          {row.manager == null
-                            ? ` / ${t('personalGoals.noManagerShort', 'no mgr rating')}`
-                            : ` / ${t('personalGoals.mgrShort', 'mgr')} `}
-                        </span>
-                        {row.manager != null && <span style={figure(15, editingManager ? ind.ink : ind.inkGhost)}>{fmt1(row.manager)}</span>}
-                      </span>
-                    </div>
-                    <SkillMeter
-                      ind={ind}
-                      heavyInk={heavyInk}
-                      self={row.self}
-                      manager={row.manager}
-                      median={row.median}
-                      editable={adjusting}
-                      edit={editTarget}
-                      ariaLabel={row.label}
-                      onChange={(value) => handleUpdateSkillRating(row.skillName, row.category, value, editTarget)}
-                    />
-                  </div>
-                  );
-                })}
-              </div>
-
-              {/* The read, in words, beside the two actions */}
-              <div
-                className="flex flex-wrap items-center justify-between"
-                style={{ gap: 12, margin: isDesktop ? '18px 20px 0' : '18px 14px 0', padding: '14px 0 16px', borderTop: `1px solid ${ind.hairline}` }}
-              >
-                <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, minWidth: 0, flex: isDesktop ? 1 : '1 1 100%' }}>
-                  {calibrationRead}
+          <Blueprint ind={ind}>
+            <div style={{ padding: '14px 20px', borderBottom: `1px solid ${ind.hairline}` }}>
+              <Kicker ind={ind}>{t('personalGoals.currentGoals', 'Current goals')}</Kicker>
+              <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 6 }}>
+                {`${inProgressCount} ${t('personalGoals.inProgressLower', 'in progress')} · ${completedGoals.length} ${t('personalGoals.completedThisYear', 'completed')}`}
+              </p>
+            </div>
+            <div>
+              {orderedGoals.length === 0 && (
+                <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, padding: '18px 20px' }}>
+                  {loading ? t('common.loading', 'Loading…') : t('personalGoals.noGoals', 'No goals for this employee yet.')}
                 </p>
-                {canAdjustRatings && (isDesktop ? (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, flex: 'none', maxWidth: '100%' }}>
-                    <Btn ind={ind} onClick={toggleAdjusting}>
-                      {adjusting
-                        ? t('common.done', 'Done')
-                        : (canFileManagerReview
-                          ? t('personalGoals.enterManagerRatings', 'Enter manager ratings')
-                          : t('personalGoals.adjustRatings', 'Adjust ratings'))}
-                    </Btn>
-                    <Btn
-                      ind={ind}
-                      variant={canSubmitCalibration && !assessmentDirty ? undefined : 'primary'}
-                      disabled={!assessmentDirty || savingAssessment}
-                      onClick={canFileManagerReview ? handleSaveManagerReview : handleSaveSkillAssessment}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                    >
-                      <Save size={13} strokeWidth={1.5} />
-                      {savingAssessment
-                        ? t('common.saving', 'Saving…')
-                        : (canFileManagerReview
-                          ? t('personalGoals.saveManagerReview', 'Save manager review')
-                          : t('personalGoals.saveAssessment', 'Save assessment'))}
-                    </Btn>
-                    {canSubmitCalibration && (
-                      <Btn
-                        ind={ind}
-                        variant={assessmentDirty ? undefined : 'primary'}
-                        disabled={assessmentDirty || savingAssessment}
-                        onClick={handleSubmitCalibration}
-                      >
-                        {t('personalGoals.submitForCalibration', 'Submit for calibration')}
-                      </Btn>
-                    )}
-                    {canOpenSignOff && (
-                      <Btn
-                        ind={ind}
-                        variant="primary"
-                        onClick={openPerformanceReviews}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                      >
-                        {t('personalGoals.signOffOnReviews', 'Sign off on Performance Reviews')}
-                        <ChevronRight size={13} strokeWidth={1.5} />
-                      </Btn>
-                    )}
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', minWidth: 0 }}>
-                    <Btn
-                      ind={ind}
-                      onClick={toggleAdjusting}
-                      style={{ width: '100%' }}
-                    >
-                      {adjusting
-                        ? t('common.done', 'Done')
-                        : (canFileManagerReview
-                          ? t('personalGoals.enterManagerRatings', 'Enter manager ratings')
-                          : t('personalGoals.adjustRatings', 'Adjust ratings'))}
-                    </Btn>
-                    <Btn
-                      ind={ind}
-                      variant={canSubmitCalibration && !assessmentDirty ? undefined : 'primary'}
-                      disabled={!assessmentDirty || savingAssessment}
-                      onClick={canFileManagerReview ? handleSaveManagerReview : handleSaveSkillAssessment}
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' }}
-                    >
-                      <Save size={13} strokeWidth={1.5} />
-                      {savingAssessment
-                        ? t('common.saving', 'Saving…')
-                        : (canFileManagerReview
-                          ? t('personalGoals.saveManagerReview', 'Save manager review')
-                          : t('personalGoals.saveAssessment', 'Save assessment'))}
-                    </Btn>
-                    {canSubmitCalibration && (
-                      <Btn
-                        ind={ind}
-                        variant={assessmentDirty ? undefined : 'primary'}
-                        disabled={assessmentDirty || savingAssessment}
-                        onClick={handleSubmitCalibration}
-                        style={{ width: '100%' }}
-                      >
-                        {t('personalGoals.submitForCalibration', 'Submit for calibration')}
-                      </Btn>
-                    )}
-                    {canOpenSignOff && (
-                      <Btn
-                        ind={ind}
-                        variant="primary"
-                        onClick={openPerformanceReviews}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' }}
-                      >
-                        {t('personalGoals.signOffOnReviews', 'Sign off on Performance Reviews')}
-                        <ChevronRight size={13} strokeWidth={1.5} />
-                      </Btn>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </Blueprint>
-          )}
-
-          {(activeTab === 'overview' || activeTab === 'goals') && goalsSection}
-
-          {/* History — every review this employee has */}
-          {activeTab === 'history' && (
-            <Blueprint ind={ind}>
-              <div style={{ padding: '14px 20px', borderBottom: `1px solid ${ind.hairline}` }}>
-                <Kicker ind={ind}>{t('personalGoals.performanceReviews', 'Performance reviews')}</Kicker>
-              </div>
-              <div>
-                {allReviews.length === 0 && (
-                  <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, padding: '18px 20px' }}>
-                    {loading ? t('common.loading', 'Loading…') : t('personalGoals.noReviews', 'No reviews recorded yet.')}
-                  </p>
-                )}
-                {allReviews.map((review, i) => (
-                  <div
-                    key={review.id}
-                    style={{ padding: '14px 20px', borderTop: i === 0 ? 'none' : `1px solid ${ind.rule}` }}
-                  >
-                    <div className="flex flex-wrap items-baseline justify-between" style={{ gap: 10 }}>
-                      <span style={{
-                        fontFamily: DISPLAY, fontWeight: 600, fontSize: 14, letterSpacing: '.05em',
-                        textTransform: 'uppercase', color: ind.ink,
-                      }}>
-                        {String(review.review_period || '').replace('-', ' ')}
-                      </span>
-                      <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 10 }}>
-                        <span style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted }}>
-                          {(() => {
-                            const adjuster = lastRatingAdjuster(review);
-                            if (adjuster) {
-                              const date = adjuster.at
-                                ? formatDate(adjuster.at, currentLanguage, { day: 'numeric', month: 'short', year: 'numeric' })
-                                : '';
-                              return lastAdjustedLabel({ name: adjuster.name, date });
-                            }
-                            return [
-                              review.reviewer?.name || t('personalGoals.reviewer', 'Reviewer'),
-                              review.review_date ? formatDate(review.review_date, currentLanguage) : null,
-                            ].filter(Boolean).join(' · ');
-                          })()}
-                        </span>
-                        <span style={figure(16, ind.ink)}>{fmt1(review.overall_rating)}</span>
-                      </span>
-                    </div>
-                    {review.strengths && (
-                      <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 6 }}>
-                        <span style={{ color: ind.ink }}>{t('personalGoals.strengths', 'Strengths')}: </span>
-                        {isDemoMode()
-                          ? getDemoReviewStrengths(review, t)
-                          : <TranslatedText text={review.strengths} record={{ entityType: 'review', entityId: review.id, field: 'strengths' }} />}
-                      </p>
-                    )}
-                    {review.areas_for_improvement && (
-                      <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 3 }}>
-                        <span style={{ color: ind.ink }}>{t('personalGoals.areasForImprovement', 'Areas for improvement')}: </span>
-                        {isDemoMode()
-                          ? getDemoReviewAreasForImprovement(review, t)
-                          : <TranslatedText text={review.areas_for_improvement} record={{ entityType: 'review', entityId: review.id, field: 'areas_for_improvement' }} />}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </Blueprint>
-          )}
+              )}
+              {orderedGoals.map(renderGoalRow)}
+            </div>
+          </Blueprint>
         </div>
 
-        {/* ── RIGHT COLUMN — 372px, three stacked plates ─────────────── */}
         <aside
           className="w-full lg:w-[372px] lg:shrink-0 flex flex-col"
           style={{ background: ind.chrome }}
         >
-          {/* Review cycle */}
           <div style={{ padding: '20px 20px 22px', borderBottom: `1px solid ${ind.hairline}` }}>
-            <div className="flex items-baseline justify-between" style={{ gap: 10 }}>
-              <ColumnHeading ind={ind}>{t('personalGoals.reviewCycle', 'Review cycle')}</ColumnHeading>
-              <span style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted }}>
-                {selectedPeriod.replace('-', ' ')}
-              </span>
-            </div>
-            <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 6, marginBottom: 16 }}>
-              {closeDate
-                ? `${t('personalGoals.closes', 'Closes')} ${formatDate(closeDate.toISOString().split('T')[0], currentLanguage)}`
-                : ''}
-              {daysToClose != null && (
-                daysToClose >= 0
-                  ? ` · ${t('personalGoals.daysLeft', '{n} days left').replace('{n}', String(daysToClose))}`
-                  : ` · ${t('personalGoals.overdueDays', '{n} days overdue').replace('{n}', String(Math.abs(daysToClose)))}`
-              )}
-            </p>
-            {cycleSteps.map((step, i) => (
-              <CycleStep
-                key={step.key}
-                ind={ind}
-                state={step.state}
-                title={step.title}
-                meta={step.meta}
-                last={i === cycleSteps.length - 1}
-              />
-            ))}
-            {canManagePerformance && (
-              <Btn
-                ind={ind}
-                variant={canOpenSignOff ? 'primary' : undefined}
-                onClick={openPerformanceReviews}
-                style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6 }}
-              >
-                {canOpenSignOff
-                  ? t('personalGoals.signOffOnReviews', 'Sign off on Performance Reviews')
-                  : t('personalGoals.openPerformanceReviews', 'Open Performance Reviews')}
-                <ChevronRight size={13} strokeWidth={1.5} />
-              </Btn>
-            )}
-          </div>
-
-          {/* Rating history */}
-          <div style={{ padding: '20px 20px 22px', borderBottom: `1px solid ${ind.hairline}` }}>
-            <ColumnHeading ind={ind} style={{ fontSize: 13 }}>
-              {t('personalGoals.ratingHistory', 'Rating history')}
-            </ColumnHeading>
-            <div style={{ marginTop: 12 }}>
-              <RatingSpark
-                ind={ind}
-                points={historyPoints}
-                emptyLabel={t('personalGoals.noRatingHistory', 'No rated quarters yet.')}
-                selfLabel={t('personalGoals.selfRated', 'self-rated')}
-              />
-            </div>
-          </div>
-
-          {/* Manager note — the one legitimate accent border, because it quotes */}
-          <div style={{ padding: '20px 20px 24px' }}>
-            <ColumnHeading ind={ind} style={{ fontSize: 13 }}>
-              {t('personalGoals.managerNote', 'Manager note')}
-            </ColumnHeading>
-
-            {!managerNote && (
+            <ColumnHeading ind={ind}>{t('personalGoals.upcomingDeadlines', 'Upcoming deadlines')}</ColumnHeading>
+            {upcomingGoals.length === 0 && (
               <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 12 }}>
-                {t('personalGoals.noManagerNote', 'No written feedback for this period yet.')}
+                {t('personalGoals.noUpcomingDeadlines', 'No open goals with a due date.')}
               </p>
             )}
+            <div style={{ marginTop: 8 }}>
+              {upcomingGoals.map(renderPlateGoal)}
+            </div>
+          </div>
 
-            {managerNote && (
-              <>
-                <blockquote
-                  style={{
-                    borderLeft: `2px solid ${ind.accent}`,
-                    padding: '2px 0 2px 12px',
-                    margin: '12px 0 0',
-                  }}
-                >
-                  {managerNote.strengths && (
-                    <p style={{ fontFamily: BODY, fontSize: 13, color: ind.ink, lineHeight: 1.5 }}>
-                      <TranslatedText
-                        text={managerNote.strengths}
-                        record={{ entityType: 'review', entityId: managerNote.id, field: 'strengths' }}
-                      />
-                    </p>
-                  )}
-                  {managerNote.areas && (
-                    <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, lineHeight: 1.5, marginTop: 8 }}>
-                      <TranslatedText
-                        text={managerNote.areas}
-                        record={{ entityType: 'review', entityId: managerNote.id, field: 'areas_for_improvement' }}
-                      />
-                    </p>
-                  )}
-                </blockquote>
-
-                <p style={{ fontFamily: BODY, fontSize: 12, color: ind.inkMuted, marginTop: 10 }}>
-                  {managerNote.author}
-                  {managerNote.date ? ` · ${formatDate(managerNote.date, currentLanguage)}` : ''}
-                </p>
-
-                {managerNote.reply && (
-                  <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.ink, marginTop: 10 }}>
-                    <span style={{ color: ind.inkMuted }}>{t('personalGoals.yourReply', 'Your reply')}: </span>
-                    {managerNote.reply}
-                  </p>
-                )}
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-                  {managerNote.acknowledged ? (
-                    <Tag ind={ind} variant="neutral">{t('personalGoals.acknowledged', 'Acknowledged')}</Tag>
-                  ) : (
-                    <Btn ind={ind} variant="primary" disabled={ackBusy} onClick={handleAcknowledge}>
-                      {t('personalGoals.acknowledge', 'Acknowledge')}
-                    </Btn>
-                  )}
-                  <Btn ind={ind} disabled={ackBusy} onClick={handleReply}>
-                    {t('personalGoals.reply', 'Reply')}
-                  </Btn>
-                </div>
-              </>
+          <div style={{ padding: '20px 20px 24px' }}>
+            <ColumnHeading ind={ind} style={{ fontSize: 13 }}>
+              {t('personalGoals.atRiskGoals', 'At risk')}
+            </ColumnHeading>
+            {atRiskGoals.length === 0 && (
+              <p style={{ fontFamily: BODY, fontSize: 12.5, color: ind.inkMuted, marginTop: 12 }}>
+                {t('personalGoals.noAtRiskGoals', 'No goals are behind their timeline.')}
+              </p>
             )}
+            <div style={{ marginTop: 8 }}>
+              {atRiskGoals.map(renderPlateGoal)}
+            </div>
           </div>
         </aside>
       </div>
 
-      {/* ── Add goal ─────────────────────────────────────────────────── */}
       {showAddGoalModal && (
         <GoalFormModal
           ind={ind}
@@ -1990,7 +773,6 @@ const PersonalGoals = ({ employees }) => {
         />
       )}
 
-      {/* ── Edit goal ────────────────────────────────────────────────── */}
       {showEditGoalModal && (
         <GoalFormModal
           ind={ind}
@@ -2007,7 +789,6 @@ const PersonalGoals = ({ employees }) => {
         />
       )}
 
-      {/* ── View goal ────────────────────────────────────────────────── */}
       {showViewGoalModal && viewingGoal && (
         <div
           className="fixed inset-0 flex items-center justify-center z-50 p-4 overflow-y-auto"
@@ -2139,10 +920,6 @@ const PersonalGoals = ({ employees }) => {
     </div>
   );
 };
-
-/* ------------------------------------------------------------------ *
- * Goal form — add and edit are the same fields, so they are one component
- * ------------------------------------------------------------------ */
 
 function GoalFormModal({ ind, t, title, form, setForm, loading, onSubmit, onClose, fieldStyle, submitLabel, showProgress = false }) {
   return (

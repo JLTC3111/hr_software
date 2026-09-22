@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getActiveHrAdmin, getHrAuthUserIds } from "../_shared/hrAuth.js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -41,12 +42,8 @@ Deno.serve(async (request: Request) => {
       return jsonResponse({ success: false, error: "Invalid authorization" }, 401);
     }
 
-    const { data: requestingProfile, error: profileError } = await adminClient
-      .from("hr_users")
-      .select("role")
-      .eq("id", requestingUser.id)
-      .single();
-    if (profileError || requestingProfile?.role !== "admin") {
+    const requestingProfile = await getActiveHrAdmin(adminClient, requestingUser.id);
+    if (!requestingProfile) {
       return jsonResponse({ success: false, error: "Admin access required" }, 403);
     }
 
@@ -54,7 +51,7 @@ Deno.serve(async (request: Request) => {
     if (!userId || typeof userId !== "string") {
       return jsonResponse({ success: false, error: "A valid userId is required" }, 400);
     }
-    if (userId === requestingUser.id) {
+    if (userId === requestingProfile.id) {
       return jsonResponse({ success: false, error: "Administrators cannot delete their own active account" }, 400);
     }
 
@@ -67,25 +64,25 @@ Deno.serve(async (request: Request) => {
       return jsonResponse({ success: false, error: "User not found" }, 404);
     }
 
-    const { data: emailLink } = await adminClient
-      .from("user_emails")
-      .select("auth_user_id")
-      .eq("hr_user_id", userId)
-      .maybeSingle();
-    const authUserId = emailLink?.auth_user_id || userId;
+    const authUserIds = await getHrAuthUserIds(adminClient, userId);
+    if (authUserIds.includes(requestingUser.id)) {
+      return jsonResponse({ success: false, error: "Administrators cannot delete their own active account" }, 400);
+    }
 
     // These nullable foreign keys do not cascade from auth.users and otherwise
     // prevent the Auth Admin API from deleting the account.
     const referenceUpdates = await Promise.all([
-      adminClient.from("visits").update({ user_id: null }).eq("user_id", authUserId),
-      adminClient.from("phase_milestones").update({ assigned_to: null }).eq("assigned_to", authUserId),
-      adminClient.from("phase_resources").update({ uploaded_by: null }).eq("uploaded_by", authUserId),
+      adminClient.from("visits").update({ user_id: null }).in("user_id", authUserIds),
+      adminClient.from("phase_milestones").update({ assigned_to: null }).in("assigned_to", authUserIds),
+      adminClient.from("phase_resources").update({ uploaded_by: null }).in("uploaded_by", authUserIds),
     ]);
     const referenceError = referenceUpdates.find(result => result.error)?.error;
     if (referenceError) throw referenceError;
 
-    const { error: deleteAuthError } = await adminClient.auth.admin.deleteUser(authUserId);
-    if (deleteAuthError) throw deleteAuthError;
+    for (const authUserId of authUserIds) {
+      const { error: deleteAuthError } = await adminClient.auth.admin.deleteUser(authUserId);
+      if (deleteAuthError) throw deleteAuthError;
+    }
 
     const { error: deleteProfileError } = await adminClient
       .from("hr_users")

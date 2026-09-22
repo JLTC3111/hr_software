@@ -4,6 +4,7 @@ import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts.js';
 import { isDemoMode, MOCK_EMPLOYEES, getDemoEmployees, addDemoEmployee, updateDemoEmployee, deleteDemoEmployee, getDemoEmployeeById } from '../utils/demoHelper.js';
 import { saveDemoPdf, getDemoPdf, deleteDemoPdf, saveDemoBlob, getDemoBlob, deleteDemoBlob } from '../utils/demoStorage.js';
 import { createPdfPreviewUrl } from '../utils/pdfPreviewUrl.js';
+import { getDocumentDownloadUrl } from './documentService.js';
 
 /* Ensure employee ID is a string (supports both integers and UUIDs) */
 const toEmployeeId = (id) => {
@@ -827,17 +828,12 @@ export const uploadEmployeePdf = async (file, employeeId, onProgress = null) => 
 
     console.log('✅ Database updated with path:', filePath);
 
-    // Generate public URL
-    const { data: publicUrlData } = supabase.storage
-      .from('employee-documents')
-      .getPublicUrl(filePath);
-
-    console.log('✅ PDF upload complete! URL:', publicUrlData.publicUrl);
+    const download = await getDocumentDownloadUrl(filePath);
 
     return {
       success: true,
       path: filePath,
-      url: publicUrlData.publicUrl
+      url: download.url
     };
   } catch (error) {
     console.error('❌ Error uploading PDF:', error);
@@ -1066,23 +1062,7 @@ export const getEmployeeRequestDocumentUrl = async (docPath) => {
       return { success: true, url: URL.createObjectURL(blob), type: 'demo' };
     }
 
-    const { data: publicData } = supabase.storage
-      .from('employee-documents')
-      .getPublicUrl(docPath);
-
-    try {
-      const head = await fetch(publicData.publicUrl, { method: 'HEAD' });
-      if (head.ok) return { success: true, url: publicData.publicUrl, type: 'public' };
-    } catch {
-      // ignore and fall back to signed
-    }
-
-    const { data: signedData, error: signedError } = await supabase.storage
-      .from('employee-documents')
-      .createSignedUrl(docPath, 31536000);
-
-    if (signedError) throw signedError;
-    return { success: true, url: signedData.signedUrl, type: 'signed' };
+    return await getDocumentDownloadUrl(docPath);
   } catch (error) {
     console.error('❌ Error getting request document URL:', error);
     return { success: false, error: error.message || 'Failed to get document URL' };
@@ -1171,34 +1151,7 @@ export const getEmployeePdfUrl = async (pdfPath) => {
       }
     }
 
-    // Try public URL first
-    const { data: publicData } = supabase.storage
-      .from('employee-documents')
-      .getPublicUrl(pdfPath);
-
-    // Test if URL is accessible
-    const testResponse = await fetch(publicData.publicUrl, { method: 'HEAD' });
-    
-    if (testResponse.ok) {
-      return {
-        success: true,
-        url: publicData.publicUrl,
-        type: 'public'
-      };
-    }
-
-    // Fallback to signed URL
-    const { data: signedData, error: signedError } = await supabase.storage
-      .from('employee-documents')
-      .createSignedUrl(pdfPath, 31536000);
-
-    if (signedError) throw signedError;
-
-    return {
-      success: true,
-      url: signedData.signedUrl,
-      type: 'signed'
-    };
+    return await getDocumentDownloadUrl(pdfPath);
   } catch (error) {
     console.error('Error getting PDF URL:', error);
     return { success: false, error: error.message };
