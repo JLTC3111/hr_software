@@ -18,3 +18,17 @@ export const DEFAULT_AUTHENTICATED_ROUTE = '/dashboard';
  */
 export const resolvePostLoginRoute = (from) =>
   from && from !== '/login' ? from : DEFAULT_AUTHENTICATED_ROUTE;
+
+/** Web builds can use their own origin; packaged apps need a hosted callback. */
+export const resolvePasswordResetUrl = (configuredUrl, browserOrigin = globalThis.location?.origin) => {
+  let url;
+  try {
+    url = new URL('/reset-password', configuredUrl || browserOrigin);
+  } catch {
+    throw new Error('Missing app base URL for reset link. Set VITE_APP_URL or VITE_SITE_URL.');
+  }
+  if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) {
+    throw new Error('Password reset requires a website URL. Set VITE_APP_URL or VITE_SITE_URL.');
+  }
+  return url.href;
+};

@@ -1,71 +1,42 @@
-# Supabase Authentication Setup for Password Reset
+# HR password recovery
 
-## Critical Configuration Steps
+HR reset emails return to `https://hr.icue.vn/reset-password`.
+Web builds use `VITE_APP_URL`, then `VITE_SITE_URL`, then the current website
+origin. Desktop builds must configure `VITE_APP_URL=https://hr.icue.vn` so
+emails open the hosted reset page instead of the desktop app's custom scheme.
 
-### 1. Enable Implicit Flow in Supabase Dashboard
+## Shared Supabase settings
 
-1. Go to: **Supabase Dashboard** → **Authentication** → **URL Configuration**
-2. Find **"Flow Type"** setting
-3. Change from `pkce` to **`implicit`**
-4. Click **Save**
+HR and Contract Manager share project `idkfmgdfzcsydrqnjcla`.
+In [Authentication → URL Configuration](https://supabase.com/dashboard/project/idkfmgdfzcsydrqnjcla/auth/url-configuration):
 
-### 2. Configure Site URL
+- Keep the Site URL as `https://hr.icue.vn`.
+- The existing `https://hr.icue.vn/**` Redirect URL permits the HR reset page.
+- Preserve the contract app's allowed callbacks when editing this shared list.
+- For a local web callback, allow that origin's exact `/reset-password` URL;
+  alternatively set `VITE_APP_URL=https://hr.icue.vn` to finish on the website.
 
-1. In **URL Configuration** section
-2. Set **Site URL** to: `https://hr.icue.vn`
-   - ⚠️ NO trailing slash
-   - ⚠️ NO path like `/reset-password`
+The Reset Password email template should link to `{{ .ConfirmationURL }}`.
+It must preserve the per-request redirect instead of linking directly to the
+shared Site URL.
 
-### 3. Configure Redirect URLs
+## Recovery behavior
 
-1. In **Redirect URLs** section, add:
-   ```
-   https://hr.icue.vn/**
-   ```
-   - The `**` wildcard allows any path
+`detectSessionInUrl: true` lets the Supabase SDK process recovery links before
+the reset screen reads the session. JavaScript uses the implicit flow by default;
+the flow type is a client option, not a dashboard URL setting. The reset route
+is accessible whether or not the user was already signed in.
 
-### 4. Email Template Configuration
+An invalid or expired link cannot establish a recovery session. Request a new
+email instead of reusing a consumed link. After changing redirect settings,
+request a fresh email because previously sent links retain their destination.
 
-1. Go to: **Authentication** → **Email Templates** → **Reset Password**
-2. Make sure the template uses: `{{ .ConfirmationURL }}`
-3. Example template:
-   ```html
-   <h2>Reset Password</h2>
-   <p>Click the link below to reset your password:</p>
-   <p><a href="{{ .ConfirmationURL }}">Reset Password</a></p>
-   <p>This link expires in 1 hour.</p>
-   ```
+## Verification
 
-### 5. Test the Flow
+Run `node --test tests/passwordReset.test.js tests/routes.test.js tests/desktopPolicy.test.js`.
+The reset request check uses the installed SDK with simulated HTTP responses
+and does not send an email. On the live site, check that the Supabase callback
+stays on `/reset-password` and that a direct request to the route returns the app.
 
-1. **Restart your dev server** after making changes
-2. Request a **NEW password reset email** (old links won't work)
-3. Check the new email link format - should look like:
-   ```
-   https://hr.icue.vn/reset-password#access_token=...&refresh_token=...&type=recovery
-   ```
-4. Click the link within 1 hour
-
-### Troubleshooting
-
-**If you see `?code=...` in the URL:**
-- Supabase is still using PKCE flow
-- Double-check dashboard settings and save again
-
-**If you see `#error=access_denied&error_code=otp_expired`:**
-- The link is expired (> 1 hour old)
-- Request a fresh reset email
-
-**If you see "Auth session missing":**
-- Open browser console (F12) to see detailed logs
-- Check if tokens are in the URL hash
-- Verify `detectSessionInUrl: true` in supabaseClient.js
-
-### Current Frontend Configuration
-
-✅ Frontend is configured for implicit flow
-✅ Supabase client set to `flowType: 'implicit'`
-✅ ResetPassword component handles hash-based tokens
-✅ detectSessionInUrl enabled to auto-process tokens
-
-**Next Step:** Configure Supabase Dashboard to match frontend settings!
+References: [Supabase password recovery](https://supabase.com/docs/guides/auth/passwords#resetting-a-password),
+[redirect configuration](https://supabase.com/docs/guides/auth/redirect-urls).

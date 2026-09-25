@@ -17,6 +17,7 @@ import {
 } from '../utils/activityTracker.js';
 import { withTimeout } from '../utils/supabaseTimeout.js';
 import { isRepeatedSessionSignIn } from '../utils/authEvents.js';
+import { resolvePasswordResetUrl } from '../config/routes.js';
 import { useSessionKeepAlive } from '../hooks/useSessionKeepAlive.js';
 import { useIdleLogout } from '../hooks/useIdleLogout.js';
 import IdleWarningModal from '../components/idleWarningModal.jsx';
@@ -76,12 +77,6 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const appBaseUrl =
-    import.meta.env.VITE_APP_URL ||
-    import.meta.env.VITE_SITE_URL ||
-    (import.meta.env.PROD
-      ? ''
-      : (typeof window !== 'undefined' ? globalThis.location.origin : ''));
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1157,11 +1152,9 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('📧 Sending password reset email to:', email);
 
-      if (!appBaseUrl) {
-        throw new Error('Missing app base URL for reset link. Set VITE_APP_URL or VITE_SITE_URL.');
-      }
-
-      const redirectTo = `${appBaseUrl}/reset-password`;
+      const redirectTo = resolvePasswordResetUrl(
+        import.meta.env.VITE_APP_URL || import.meta.env.VITE_SITE_URL,
+      );
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo,
