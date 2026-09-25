@@ -60,3 +60,23 @@ export const isRejectedByServer = (error) => {
 };
 
 export default isRejectedByServer;
+
+/** Show a safe, translated reason without exposing raw provider diagnostics. */
+export const getPasswordResetErrorKey = (error) => {
+  const code = error?.code;
+  const status = Number(error?.status || 0);
+  const message = String(error?.message || '').toLowerCase();
+  if (code === 'over_email_send_rate_limit' || message.includes('email rate limit')) {
+    return 'login.forgotPasswordModal.emailRateLimitError';
+  }
+  if (status === 429 || code === 'over_request_rate_limit' || message.includes('rate limit')) {
+    return 'login.forgotPasswordModal.rateLimitError';
+  }
+  if (code === 'email_address_invalid') return 'login.forgotPasswordModal.emailInvalid';
+  if (status < 500 && (
+    error?.name === 'AuthRetryableFetchError' || error?.name === 'AbortError' ||
+    message.includes('failed to fetch') || message.includes('network') ||
+    message.includes('timed out') || message.includes('timeout')
+  )) return 'login.forgotPasswordModal.networkError';
+  return 'login.forgotPasswordModal.error';
+};

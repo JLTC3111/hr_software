@@ -20,6 +20,19 @@ The Reset Password email template should link to `{{ .ConfirmationURL }}`.
 It must preserve the per-request redirect instead of linking directly to the
 shared Site URL.
 
+## Email delivery
+
+The built-in Supabase sender allows only two authentication emails per hour
+for the shared project. HR and Contract Manager both use that allowance.
+An `over_email_send_rate_limit` response means no reset email was sent; the HR
+form displays an email sending limit message for this error.
+
+Configure the ICUE mail service under Authentication → Email → SMTP Settings
+to use a production sender. This requires its SMTP host, port, username,
+password, sender address, and display name. Store these in Supabase's server
+configuration, outside the frontend's `VITE_` variables. Supabase's initial
+custom-SMTP allowance is 30 emails per hour.
+
 ## Recovery behavior
 
 `detectSessionInUrl: true` lets the Supabase SDK process recovery links before
@@ -39,4 +52,6 @@ and does not send an email. On the live site, check that the Supabase callback
 stays on `/reset-password` and that a direct request to the route returns the app.
 
 References: [Supabase password recovery](https://supabase.com/docs/guides/auth/passwords#resetting-a-password),
-[redirect configuration](https://supabase.com/docs/guides/auth/redirect-urls).
+[redirect configuration](https://supabase.com/docs/guides/auth/redirect-urls),
+[email rate limits](https://supabase.com/docs/guides/auth/rate-limits),
+[custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp).

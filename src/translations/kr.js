@@ -151,6 +151,7 @@ export default {
       error: '재설정 이메일 전송에 실패했습니다. 다시 시도해주세요.',
       noAccount: '이 이메일 주소로 등록된 계정을 찾을 수 없습니다',
       rateLimitError: '요청이 너무 많습니다. 나중에 다시 시도해주세요',
+      emailRateLimitError: '이메일 전송 한도에 도달했습니다. 잠시 후 다시 시도해 주세요.',
       networkError: '네트워크 오류입니다. 연결을 확인해주세요'
     }
   },

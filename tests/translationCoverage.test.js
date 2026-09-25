@@ -57,6 +57,11 @@ const placeholderTokens = (value) => (
 );
 
 const DYNAMIC_KEYS = [
+  'login.forgotPasswordModal.emailRateLimitError',
+  'login.forgotPasswordModal.rateLimitError',
+  'login.forgotPasswordModal.networkError',
+  'login.forgotPasswordModal.emailInvalid',
+  'login.forgotPasswordModal.error',
   'employeeStatus.onleave',
   'personalGoals.technicalSkills',
   'policyControls.audit.overtimeCapChanged',

@@ -179,6 +179,7 @@ export default {
       error: 'Không thể gửi email đặt lại. Vui lòng thử lại.',
       noAccount: 'Không tìm thấy tài khoản với địa chỉ email này',
       rateLimitError: 'Quá nhiều yêu cầu. Vui lòng thử lại sau',
+      emailRateLimitError: 'Đã đạt giới hạn gửi email. Vui lòng thử lại sau.',
       networkError: 'Lỗi mạng. Vui lòng kiểm tra kết nối của bạn'
     },
     signIn: 'Đăng Nhập',

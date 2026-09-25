@@ -152,6 +152,7 @@ export default {
       error: 'Fehler beim Senden der Zurücksetzungs-E-Mail. Bitte versuchen Sie es erneut.',
       noAccount: 'Kein Konto mit dieser E-Mail-Adresse gefunden',
       rateLimitError: 'Zu viele Anfragen. Bitte versuchen Sie es später erneut',
+      emailRateLimitError: 'Das Limit für den E-Mail-Versand ist erreicht. Bitte versuchen Sie es später erneut.',
       networkError: 'Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung'
     }
   },

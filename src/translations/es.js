@@ -150,6 +150,7 @@ export default {
       error: 'Error al enviar el correo de restablecimiento. Por favor intenta de nuevo.',
       noAccount: 'No se encontró ninguna cuenta con esta dirección de correo electrónico',
       rateLimitError: 'Demasiadas solicitudes. Por favor intenta más tarde',
+      emailRateLimitError: 'Se ha alcanzado el límite de envío de correos. Inténtalo de nuevo más tarde.',
       networkError: 'Error de red. Por favor verifica tu conexión'
     }
   },

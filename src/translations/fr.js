@@ -151,6 +151,7 @@ export default {
       error: 'Échec de l\'envoi de l\'e-mail de réinitialisation. Veuillez réessayer.',
       noAccount: 'Aucun compte trouvé avec cette adresse e-mail',
       rateLimitError: 'Trop de demandes. Veuillez réessayer plus tard',
+      emailRateLimitError: 'La limite d’envoi d’e-mails est atteinte. Veuillez réessayer plus tard.',
       networkError: 'Erreur réseau. Veuillez vérifier votre connexion'
     }
   },

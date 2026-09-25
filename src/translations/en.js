@@ -168,6 +168,7 @@ export default {
       error: 'Failed to send reset email. Please try again.',
       noAccount: 'No account found with this email address',
       rateLimitError: 'Too many requests. Please try again later',
+      emailRateLimitError: 'Email sending limit reached. Please try again later.',
       networkError: 'Network error. Please check your connection'
     }
   },

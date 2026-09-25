@@ -17,6 +17,7 @@ import {
 } from '../utils/activityTracker.js';
 import { withTimeout } from '../utils/supabaseTimeout.js';
 import { isRepeatedSessionSignIn } from '../utils/authEvents.js';
+import { getPasswordResetErrorKey } from '../utils/authErrors.js';
 import { resolvePasswordResetUrl } from '../config/routes.js';
 import { useSessionKeepAlive } from '../hooks/useSessionKeepAlive.js';
 import { useIdleLogout } from '../hooks/useIdleLogout.js';
@@ -1170,17 +1171,7 @@ export const AuthProvider = ({ children }) => {
       };
     } catch (error) {
       console.error('❌ Forgot password error:', error);
-      
-      let errorMessage = error.message;
-      if (error.message?.includes('User not found')) {
-        errorMessage = 'No account found with this email address';
-      } else if (error.message?.includes('rate limit')) {
-        errorMessage = 'Too many requests. Please try again later';
-      } else if (error.message?.includes('network')) {
-        errorMessage = 'Network error. Please check your connection';
-      }
-      
-      return { success: false, error: errorMessage };
+      return { success: false, error: error?.message, t: getPasswordResetErrorKey(error) };
     }
   };
 

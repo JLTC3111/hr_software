@@ -297,7 +297,7 @@ const Login = () => {
       }, 3000);
     } else {
       console.error('Password reset request failed:', result.error);
-      setForgotPasswordError(t('login.forgotPasswordModal.error', 'Failed to send reset email. Please try again.'));
+      setForgotPasswordError(t(result.t || 'login.forgotPasswordModal.error', 'Failed to send reset email. Please try again.'));
     }
   };
 
