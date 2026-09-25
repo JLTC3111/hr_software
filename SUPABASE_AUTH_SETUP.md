@@ -27,11 +27,32 @@ for the shared project. HR and Contract Manager both use that allowance.
 An `over_email_send_rate_limit` response means no reset email was sent; the HR
 form displays an email sending limit message for this error.
 
-Configure the ICUE mail service under Authentication → Email → SMTP Settings
-to use a production sender. This requires its SMTP host, port, username,
-password, sender address, and display name. Store these in Supabase's server
-configuration, outside the frontend's `VITE_` variables. Supabase's initial
-custom-SMTP allowance is 30 emails per hour.
+The shared project now uses the ICUE mail service (configured 2026-09-25):
+
+- SMTP host: `mail90172.maychuemail.com`.
+- Port: `587` with STARTTLS; the certificate and mailbox login were verified.
+- Username and sender address: `dev@icue.vn`; sender name: `ICUE`.
+- Authentication email allowance: 30 per hour; per-user cooldown: 60 seconds.
+
+SMTP credentials belong in Supabase's server configuration, outside the
+frontend's `VITE_` variables. The local copy is in the gitignored `.env.local`
+with owner-only permissions. Never commit credentials or include passwords
+or recovery tokens in logs.
+
+### Remaining SMTP timeout
+
+The provider's initial greeting took about 11 seconds on both ports 587 and
+465. STARTTLS and authentication brought the port 587 check to about 12 seconds.
+The project's Auth request limit is 10 seconds. A request to raise
+`api_max_request_duration` to 30 was rejected because this setting requires
+Supabase Pro or higher; the limit therefore remains 10 seconds.
+
+The live recovery test delivered two messages for one request, with a 504
+timeout followed by a successful retry in the Auth logs. Both email links
+correctly target `https://hr.icue.vn/reset-password`. Delivery is verified,
+but timeout-free sending still needs a faster SMTP greeting from P.A. Việt Nam
+or an approved Supabase plan change that permits a longer request duration.
+Port 587 remains configured because port 465 did not remove the delay.
 
 ## Recovery behavior
 
