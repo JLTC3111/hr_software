@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
   },
   server: {
     port: 5173,
-    strictPort: true,
+    strictPort: false,
   },
   // Libraries (e.g. Recharts) may read process.env.NODE_ENV at runtime
   define: {
