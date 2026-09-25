@@ -32,7 +32,6 @@ const ResetPassword = () => {
     const checkSession = async () => {
       try {
         console.log('🔍 Starting session check...');
-        console.log('Current URL:', window.location.href);
         
         const devMode = new URLSearchParams(window.location.search).get('dev');
 
@@ -44,11 +43,7 @@ const ResetPassword = () => {
           return;
         }
 
-        // Wait a moment for Supabase detectSessionInUrl to process the URL
-        console.log('⏳ Waiting for Supabase to detect and process session from URL...');
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        // Check if session was established
+        // getSession waits for the SDK to finish processing the recovery URL.
         const { data: { session }, error } = await supabase.auth.getSession();
         
         console.log('Session check result:', {

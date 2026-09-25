@@ -1,5 +1,5 @@
 import _React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { supabase, hasPermission, Permissions, customStorage, clearAuthStorage } from '../config/supabaseClient.js';
+import { supabase, hasPermission, Permissions, customStorage, clearAuthStorage, consumeRecoverySession } from '../config/supabaseClient.js';
 import {
   validateAndRefreshSession,
   handleSessionAuthError as handleSessionAuthErrorUtil,
@@ -283,10 +283,25 @@ export const AuthProvider = ({ children }) => {
       setActiveSession(null);
     };
 
+    const acceptRecoverySession = (recoverySession) => {
+      resetActivity();
+      cancelScheduledLogout();
+      setActiveSession(recoverySession);
+      settle();
+    };
+
     const restoreSession = async (initialSession) => {
       if (!initialSession) {
         console.log('✅ No session to restore');
         settle();
+        return;
+      }
+
+      // INITIAL_SESSION can precede PASSWORD_RECOVERY. The SDK has already
+      // verified this URL session; the previous session's idle clock must not
+      // sign it out while the user is opening the password form.
+      if (consumeRecoverySession(initialSession)) {
+        acceptRecoverySession(initialSession);
         return;
       }
 
@@ -518,11 +533,11 @@ export const AuthProvider = ({ children }) => {
         markSessionVerified();
         // Don't reload profile, just update session
       } else if (event === 'PASSWORD_RECOVERY') {
-        // Emitted when detectSessionInUrl consumes a recovery link. The reset
-        // screen drives the rest; all that is needed here is to stop waiting.
+        // Recovery is fresh activity even when this event arrives before
+        // INITIAL_SESSION. The public reset screen drives the rest of the flow.
         console.log('🔑 Password recovery session detected');
-        if (nextSession) setActiveSession(nextSession);
-        settle();
+        if (nextSession) acceptRecoverySession(nextSession);
+        else settle();
       } else if (event === 'USER_UPDATED' && nextSession) {
         console.log('👤 User updated');
         // Check if this is a password change - if so, skip profile reload

@@ -61,6 +61,11 @@ the reset screen reads the session. JavaScript uses the implicit flow by default
 the flow type is a client option, not a dashboard URL setting. The reset route
 is accessible whether or not the user was already signed in.
 
+A matching recovery callback starts a fresh activity window before the normal
+idle check runs. The SDK can emit `INITIAL_SESSION` before `PASSWORD_RECOVERY`;
+applying a previous session's idle timestamp here would immediately sign out
+the newly verified session. Ordinary stored sessions still obey the idle limit.
+
 An invalid or expired link cannot establish a recovery session. Request a new
 email instead of reusing a consumed link. After changing redirect settings,
 request a fresh email because previously sent links retain their destination.
@@ -68,6 +73,9 @@ request a fresh email because previously sent links retain their destination.
 ## Verification
 
 Run `node --test tests/passwordReset.test.js tests/routes.test.js tests/desktopPolicy.test.js`.
+Run `node --test tests/passwordRecoverySession.test.js` to exercise recovery
+startup, stale idle activity, and expired links with the real provider, reset
+screen, and installed SDK using simulated HTTP responses.
 The reset request check uses the installed SDK with simulated HTTP responses
 and does not send an email. On the live site, check that the Supabase callback
 stays on `/reset-password` and that a direct request to the route returns the app.

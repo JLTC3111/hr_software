@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts';
+import { createRecoverySessionConsumer } from '../utils/authEvents.js';
 
 // Supabase configuration
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -97,6 +98,9 @@ export const clearAuthStorage = () => {
     }
   }
 };
+
+// Capture before client initialization removes the recovery credentials from the URL.
+export const consumeRecoverySession = createRecoverySessionConsumer();
 
 // Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
