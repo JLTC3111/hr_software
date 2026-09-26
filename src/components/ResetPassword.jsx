@@ -1,18 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, Loader, Sun, Moon, Languages } from 'lucide-react';
+import { Lock, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '../config/supabaseClient';
+import ThemeToggle from './themeToggle';
+import LanguageSelector from './LanguageSelector';
+import { Blueprint } from './ui/industry.jsx';
+import { getIndustry, solidButtonFill, DISPLAY, BODY } from '../theme/industry.js';
+import { ShimmerButton } from './ui/shimmer-button';
+import { cn } from '@/lib/utils';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
   const { resetPassword } = useAuth();
-  const { isDarkMode, text, toggleTheme } = useTheme();
+  const { isDarkMode } = useTheme();
+  const ind = useMemo(() => getIndustry(isDarkMode), [isDarkMode]);
+  const buttonFill = solidButtonFill(ind);
+  const loginFieldFill = isDarkMode ? '#374151' : '#ffffff';
+  const loginFilledCss = `
+                    transition: background-color 0s !important;
+                    background-color: ${loginFieldFill} !important;
+                    background-image: none !important;
+                    -webkit-box-shadow: 0 0 0 1000px ${loginFieldFill} inset !important;
+                    box-shadow: 0 0 0 1000px ${loginFieldFill} inset !important;
+                    -webkit-text-fill-color: ${ind.ink} !important;
+                    caret-color: ${ind.ink} !important;
+  `;
   // The context publishes `currentLanguage`; destructuring `language` left it
   // undefined, so the picker never marked the active row and the flag never drew.
-  const { currentLanguage: language, changeLanguage, t } = useLanguage();
+  const { t } = useLanguage();
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -21,7 +39,6 @@ const ResetPassword = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [hasValidSession, setHasValidSession] = useState(false);
 
@@ -150,292 +167,307 @@ const ResetPassword = () => {
     }
   };
 
-  const languages = [
-    { code: 'en', name: 'English', flagPath: '/flags/gb.svg' },
-    { code: 'vn', name: 'Tiếng Việt', flagPath: '/flags/vn.svg' },
-    { code: 'de', name: 'Deutsch', flagPath: '/flags/de.svg' },
-    { code: 'es', name: 'Español', flagPath: '/flags/es.svg' },
-    { code: 'fr', name: 'Français', flagPath: '/flags/fr.svg' },
-    { code: 'jp', name: '日本語', flagPath: '/flags/jp.svg' },
-    { code: 'kr', name: '한국어', flagPath: '/flags/kr.svg' },
-    { code: 'ru', name: 'Русский', flagPath: '/flags/ru.svg' },
-    { code: 'th', name: 'ไทย', flagPath: '/flags/th.svg' },
-  ];
+  const fieldClass = (filled) => cn(
+    'industry-login-input w-full border py-3 pl-10 pr-12 outline-none transition-colors placeholder:opacity-60 focus:border-[var(--login-accent)]',
+    filled && 'industry-login-input--filled',
+  );
+
+  const fieldStyle = {
+    background: 'transparent',
+    borderColor: ind.hairline,
+    borderRadius: 0,
+    caretColor: ind.ink,
+    color: ind.ink,
+    fontFamily: BODY,
+  };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} transition-colors duration-200 p-4`}>
-      {/* Theme and Language Switchers - Top Right */}
-      <div className="fixed top-4 right-4 flex items-center gap-2 z-50">
-        {/* Theme Toggle */}
-        <button
-          onClick={toggleTheme}
-          className={`p-2.5 rounded-lg transition-all duration-200 ${
-            isDarkMode
-              ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700'
-              : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
-          }`}
-          aria-label={t('common.toggleTheme', 'Toggle theme')}
+    <div
+      className="relative flex min-h-screen items-center justify-center overflow-hidden transition-colors duration-200"
+      style={{
+        '--login-accent': ind.accent,
+        background: ind.ground,
+        color: ind.ink,
+        fontFamily: BODY,
+      }}
+    >
+      <div
+        className="fixed inset-0 z-0 pointer-events-none"
+        aria-hidden="true"
+        style={{
+          backgroundImage: `
+            linear-gradient(${ind.rule} 1px, transparent 1px),
+            linear-gradient(90deg, ${ind.rule} 1px, transparent 1px)
+          `,
+          backgroundSize: '36px 36px',
+          maskImage: 'linear-gradient(to bottom, black, transparent 78%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black, transparent 78%)',
+        }}
+      />
+
+      <div className="absolute top-4 right-4 z-20">
+        <div className="hidden xl:flex items-center gap-2">
+          <ThemeToggle />
+          <LanguageSelector />
+        </div>
+        <div
+          className="flex xl:hidden items-stretch border overflow-hidden"
+          style={{
+            backgroundColor: ind.chrome,
+            borderColor: ind.hairline,
+            borderRadius: 0,
+          }}
         >
-          {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-        </button>
-
-        {/* Language Selector */}
-        <div className="relative">
-          <button
-            onClick={() => setShowLanguageMenu(!showLanguageMenu)}
-            className={`p-2.5 rounded-lg transition-all duration-200 flex items-center gap-2 ${
-              isDarkMode
-                ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
-            }`}
-            aria-label={t('common.changeLanguage', 'Change language')}
-          >
-            <Languages className="w-5 h-5" />
-            {languages.find(l => l.code === language)?.flagPath && (
-              <img 
-                src={languages.find(l => l.code === language)?.flagPath} 
-                alt="" 
-                className="w-5 h-5 rounded-sm object-cover"
-                onError={(e) => { e.target.style.display = 'none'; }}
-              />
-            )}
-          </button>
-
-          {/* Language Dropdown */}
-          {showLanguageMenu && (
-            <div
-              className={`absolute right-0 mt-2 w-48 rounded-lg shadow-xl overflow-hidden ${
-                isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
-              }`}
-            >
-              {languages.map((lang) => (
-                <button
-                  key={lang.code}
-                  onClick={() => {
-                    changeLanguage(lang.code);
-                    setShowLanguageMenu(false);
-                  }}
-                  className={`w-full px-4 py-2.5 flex items-center gap-3 transition-colors ${
-                    language === lang.code
-                      ? isDarkMode
-                        ? 'bg-blue-900/50 text-blue-300'
-                        : 'bg-blue-50 text-blue-600'
-                      : isDarkMode
-                      ? 'text-gray-300 hover:bg-gray-700'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  {lang.flagPath && (
-                    <img 
-                      src={lang.flagPath} 
-                      alt="" 
-                      className="w-5 h-5 rounded-sm object-cover"
-                      onError={(e) => { e.target.style.display = 'none'; }}
-                    />
-                  )}
-                  <span className="text-sm font-medium">{lang.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          <ThemeToggle variant="integrated" />
+          <div
+            className="w-px self-stretch shrink-0"
+            style={{ backgroundColor: ind.hairline }}
+            aria-hidden
+          />
+          <LanguageSelector variant="integrated" />
         </div>
       </div>
 
-      <div className={`max-w-md w-full ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-8`}>
-        {/* Loading State */}
-        {sessionLoading && (
-          <div className="text-center py-12">
-            <Loader className={`w-12 h-12 animate-spin mx-auto mb-4 ${text.secondary}`} />
-            <p className={`${text.secondary}`}>{t('resetPassword.verifying', 'Verifying reset link...')}</p>
-          </div>
-        )}
-
-        {/* Content - Show only when session is verified */}
-        {!sessionLoading && (
-          <>
-            {/* Header */}
-            <div className="text-center mb-8">
-              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${isDarkMode ? 'bg-blue-900' : 'bg-blue-100'}`}>
-                <Lock className={`w-8 h-8 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-              </div>
-              <h1 className={`text-3xl font-bold ${text.primary} mb-2`}>
-                {t('resetPassword.title', 'Reset Password')}
-              </h1>
-              <p className={`text-sm ${text.secondary}`}>
-                {t('resetPassword.subtitle', 'Enter your new password below')}
+      <div className="relative z-10 w-full max-w-md px-5 py-20 sm:px-6">
+        <Blueprint
+          ind={ind}
+          className="relative overflow-hidden p-6 transition-colors duration-200 sm:p-8"
+          style={{ background: ind.ground }}
+        >
+          {sessionLoading && (
+            <div className="py-12 text-center">
+              <svg className="mx-auto mb-4 h-8 w-8 animate-spin" viewBox="0 0 24 24" style={{ color: ind.inkMuted }}>
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <p className="text-sm" style={{ color: ind.inkMuted }}>
+                {t('resetPassword.verifying', 'Verifying reset link...')}
               </p>
             </div>
+          )}
 
-        {/* Success Message */}
-        {success && (
-          <div className={`mb-6 p-4 rounded-lg flex items-start space-x-3 ${
-            isDarkMode ? 'bg-green-900/20 border border-green-700' : 'bg-green-50 border border-green-200'
-          }`}>
-            <CheckCircle className={`w-5 h-5 ${isDarkMode ? 'text-green-400' : 'text-green-600'} shrink-0 mt-0.5`} />
-            <div>
-              <p className={`text-sm font-medium ${isDarkMode ? 'text-green-400' : 'text-green-800'}`}>
-                {t('resetPassword.success', 'Password reset successfully!')}
-              </p>
-              <p className={`text-sm ${isDarkMode ? 'text-green-300' : 'text-green-700'} mt-1`}>
-                {t('resetPassword.redirecting', 'Redirecting to login...')}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <div className={`mb-6 p-4 rounded-lg flex items-start space-x-3 ${
-            isDarkMode ? 'bg-red-900/20 border border-red-700' : 'bg-red-50 border border-red-200'
-          }`}>
-            <AlertCircle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-600'} shrink-0 mt-0.5`} />
-            <span className={`text-sm ${isDarkMode ? 'text-red-400' : 'text-red-700'}`}>{error}</span>
-          </div>
-        )}
-
-        {/* Form - Only show if we have a valid session */}
-        {!success && hasValidSession && (
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* New Password */}
-            <div>
-              <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                {t('resetPassword.newPassword', 'New Password')}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`} />
-                </div>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={newPassword}
-                  onChange={(e) => {
-                    setNewPassword(e.target.value);
-                    setError('');
-                  }}
-                  className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors ${
-                    isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                  }`}
-                  placeholder={t('resetPassword.newPasswordPlaceholder', 'Enter new password')}
-                  disabled={loading}
-                  autoComplete="new-password"
-                  data-form-type="other"
+          {!sessionLoading && (
+            <>
+              <div className="relative mb-8 text-center">
+                <div
+                  className="mb-4 inline-flex h-14 w-14 items-center justify-center"
                   style={{
-                    WebkitTextSecurity: showPassword ? 'none' : 'disc',
+                    background: ind.tickerBg,
+                    border: `1px solid ${ind.tickerRule}`,
+                    color: ind.tickerInk,
                   }}
-                />
-                <style>{`
-                  input[type="password"]::-ms-reveal,
-                  input[type="password"]::-ms-clear,
-                  input[type="text"]::-ms-reveal,
-                  input[type="text"]::-ms-clear {
-                    display: none;
-                  }
-                  input[type="password"]::-webkit-credentials-auto-fill-button,
-                  input[type="password"]::-webkit-contacts-auto-fill-button,
-                  input[type="text"]::-webkit-credentials-auto-fill-button,
-                  input[type="text"]::-webkit-contacts-auto-fill-button {
-                    visibility: hidden;
-                    pointer-events: none;
-                    position: absolute;
-                    right: 0;
-                  }
-                `}</style>
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  disabled={loading}
                 >
-                  {showPassword ? (
-                    <EyeOff className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`} />
-                  ) : (
-                    <Eye className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`} />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Confirm Password */}
-            <div>
-              <label className={`block text-sm font-medium ${text.primary} mb-2`}>
-                {t('resetPassword.confirmPassword', 'Confirm Password')}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`} />
+                  <Lock className="h-7 w-7" strokeWidth={1.5} />
                 </div>
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => {
-                    setConfirmPassword(e.target.value);
-                    setError('');
-                  }}
-                  className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors ${
-                    isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                  }`}
-                  placeholder={t('resetPassword.confirmPasswordPlaceholder', 'Confirm new password')}
-                  disabled={loading}
-                  autoComplete="new-password"
-                  data-form-type="other"
+                <h1
+                  className="mb-2 text-3xl"
                   style={{
-                    WebkitTextSecurity: showConfirmPassword ? 'none' : 'disc',
+                    color: ind.ink,
+                    fontFamily: BODY,
+                    fontWeight: 400,
+                    letterSpacing: '-0.02em',
                   }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  disabled={loading}
                 >
-                  {showConfirmPassword ? (
-                    <EyeOff className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`} />
-                  ) : (
-                    <Eye className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`} />
-                  )}
-                </button>
+                  {t('resetPassword.title', 'Reset Password')}
+                </h1>
+                <p className="text-sm" style={{ color: ind.inkMuted }}>
+                  {t('resetPassword.subtitle', 'Enter your new password below')}
+                </p>
               </div>
-            </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
-                loading
-                  ? 'bg-blue-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700'
-              } text-white`}
-              disabled={loading}
-            >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <Loader className="animate-spin h-5 w-5 mr-2" />
-                  {t('resetPassword.resetting', 'Resetting...')}
+              {success && (
+                <div
+                  className="mb-6 flex items-start space-x-3 border p-4"
+                  style={{ background: ind.accentWash, borderColor: ind.hairline, color: ind.ink }}
+                  role="status"
+                >
+                  <CheckCircle className="mt-0.5 h-5 w-5 shrink-0" style={{ color: ind.accentDeep }} strokeWidth={1.5} />
+                  <div>
+                    <p className="text-sm font-medium">
+                      {t('resetPassword.success', 'Password reset successfully!')}
+                    </p>
+                    <p className="mt-1 text-sm" style={{ color: ind.inkMuted }}>
+                      {t('resetPassword.redirecting', 'Redirecting to login...')}
+                    </p>
+                  </div>
                 </div>
-              ) : (
-                t('resetPassword.resetButton', 'Reset Password')
               )}
-            </button>
-          </form>
-        )}
 
-        {/* Back to Login */}
-        {!sessionLoading && (
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => navigate('/login')}
-              className={`text-sm ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'} transition-colors`}
-            >
-              {t('resetPassword.backToLogin', 'Back to Login')}
-            </button>
-          </div>
-        )}
-          </>
-        )}
+              {error && (
+                <div
+                  className="mb-6 flex items-start space-x-3 border p-4"
+                  style={{ borderColor: ind.ink, color: ind.ink }}
+                  role="alert"
+                >
+                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" strokeWidth={1.5} />
+                  <span className="text-sm">{error}</span>
+                </div>
+              )}
+
+              {!success && hasValidSession && (
+                <form onSubmit={handleSubmit} className="relative space-y-5">
+                  <style>{`
+                    .industry-login-input {
+                        -webkit-appearance: none;
+                        -moz-appearance: none;
+                        appearance: none;
+                        background-image: none;
+                        color-scheme: ${isDarkMode ? 'dark' : 'light'};
+                    }
+                    .industry-login-input::-ms-reveal,
+                    .industry-login-input::-ms-clear {
+                        display: none;
+                    }
+                    .industry-login-input::-webkit-credentials-auto-fill-button,
+                    .industry-login-input::-webkit-contacts-auto-fill-button,
+                    .industry-login-input::-webkit-caps-lock-indicator {
+                        visibility: hidden;
+                        display: none;
+                        pointer-events: none;
+                        width: 0;
+                        height: 0;
+                        margin: 0;
+                    }
+                    .industry-login-input--filled,
+                    .industry-login-input:not(:placeholder-shown) {
+                        ${loginFilledCss}
+                    }
+                    .industry-login-input:-webkit-autofill,
+                    .industry-login-input:-webkit-autofill:hover,
+                    .industry-login-input:-webkit-autofill:focus,
+                    .industry-login-input:-webkit-autofill:active {
+                        ${loginFilledCss}
+                    }
+                    .industry-login-input:autofill {
+                        ${loginFilledCss}
+                    }
+                    .industry-login-input:-moz-autofill {
+                        ${loginFilledCss}
+                    }
+                  `}</style>
+
+                  <div>
+                    <label
+                      className="mb-2 block text-xs font-semibold uppercase"
+                      style={{ color: ind.inkMuted, fontFamily: DISPLAY, letterSpacing: '.14em' }}
+                    >
+                      {t('resetPassword.newPassword', 'New Password')}
+                    </label>
+                    <div className="relative">
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <Lock className="h-5 w-5" style={{ color: ind.inkFaint }} strokeWidth={1.5} />
+                      </div>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={newPassword}
+                        onChange={(e) => {
+                          setNewPassword(e.target.value);
+                          setError('');
+                        }}
+                        className={fieldClass(Boolean(newPassword))}
+                        style={{
+                          ...fieldStyle,
+                          WebkitTextSecurity: showPassword ? 'none' : 'disc',
+                        }}
+                        placeholder={t('resetPassword.newPasswordPlaceholder', 'Enter new password')}
+                        disabled={loading}
+                        autoComplete="new-password"
+                        data-form-type="other"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 flex items-center pr-3"
+                        style={{ color: ind.inkMuted }}
+                        disabled={loading}
+                        aria-label={showPassword ? t('common.hidePassword', 'Hide password') : t('common.showPassword', 'Show password')}
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      className="mb-2 block text-xs font-semibold uppercase"
+                      style={{ color: ind.inkMuted, fontFamily: DISPLAY, letterSpacing: '.14em' }}
+                    >
+                      {t('resetPassword.confirmPassword', 'Confirm Password')}
+                    </label>
+                    <div className="relative">
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <Lock className="h-5 w-5" style={{ color: ind.inkFaint }} strokeWidth={1.5} />
+                      </div>
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value);
+                          setError('');
+                        }}
+                        className={fieldClass(Boolean(confirmPassword))}
+                        style={{
+                          ...fieldStyle,
+                          WebkitTextSecurity: showConfirmPassword ? 'none' : 'disc',
+                        }}
+                        placeholder={t('resetPassword.confirmPasswordPlaceholder', 'Confirm new password')}
+                        disabled={loading}
+                        autoComplete="new-password"
+                        data-form-type="other"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute inset-y-0 right-0 flex items-center pr-3"
+                        style={{ color: ind.inkMuted }}
+                        disabled={loading}
+                        aria-label={showConfirmPassword ? t('common.hidePassword', 'Hide password') : t('common.showPassword', 'Show password')}
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <ShimmerButton
+                    type="submit"
+                    disabled={loading}
+                    borderRadius="0"
+                    shimmerColor="#ffffff"
+                    background={buttonFill}
+                    className={cn(
+                      'w-full rounded-none px-4 py-3 font-semibold uppercase disabled:cursor-not-allowed disabled:opacity-60',
+                      loading && 'cursor-not-allowed'
+                    )}
+                    style={{ color: ind.accentInk, fontFamily: DISPLAY, letterSpacing: '.08em' }}
+                  >
+                    {loading ? (
+                      <div className="relative z-10 flex items-center justify-center">
+                        <svg className="mr-3 h-5 w-5 animate-spin" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        {t('resetPassword.resetting', 'Resetting...')}
+                      </div>
+                    ) : (
+                      <span className="relative z-10">{t('resetPassword.resetButton', 'Reset Password')}</span>
+                    )}
+                  </ShimmerButton>
+                </form>
+              )}
+
+              <div className="mt-6 text-center">
+                <button
+                  type="button"
+                  onClick={() => navigate('/login')}
+                  className="cursor-pointer text-sm font-semibold uppercase"
+                  style={{ color: ind.accentDeep, fontFamily: DISPLAY, letterSpacing: '.06em' }}
+                >
+                  {t('resetPassword.backToLogin', 'Back to Login')}
+                </button>
+              </div>
+            </>
+          )}
+        </Blueprint>
       </div>
     </div>
   );

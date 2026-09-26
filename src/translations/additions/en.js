@@ -204,4 +204,12 @@ export default {
   'videoPlayer.status.paused': 'Paused',
   'videoPlayer.status.playing': 'Playing',
   'videoPlayer.unsupported': 'Your browser does not support the video tag.',
+  'common.showPassword': 'Show password',
+  'common.hidePassword': 'Hide password',
+  'common.saveChanges': 'Save Changes',
+  'reports.requestDays': "Request days (full range)",
+  'leave.editConflict': "This request changed. Refresh it before trying again.",
+  'leave.restoreIncomplete': "Leave was saved, but some standard hours still need restoration.",
+  'leave.retryRestore': "Retry restoration",
+  'leave.hoursRestored': "{n} standard-hour entries restored.",
 };

@@ -1,3 +1,4 @@
+import { clearEmployeePhotoCache } from '../services/employeeService.js';
 /**
  * Control Panel — the account and system screen, in the industry system.
  *
@@ -852,6 +853,7 @@ const ControlPanel = () => {
              return;
           }
 
+          clearEmployeePhotoCache({ notify: true });
           // Update user profile with avatar data URL
           const { error: updateError } = await supabase
             .from('hr_users')
@@ -872,6 +874,7 @@ const ControlPanel = () => {
             }
           }
 
+          clearEmployeePhotoCache({ notify: true });
           setAvatarUrl(base64Data);
           setAvatarSuccess(t('controlPanel.avatarUpdated', 'Avatar updated successfully!'));
           setUploadingAvatar(false);

@@ -46,7 +46,8 @@ function hooks() {
 function forgotPasswordAction(error) {
   const react = hooks();
   const requests = [];
-  const { AuthProvider } = loadSource('src/contexts/AuthContext.jsx', {
+  const { AuthProvider } = loadSource('src/contexts/AuthProvider.jsx', {
+    './AuthContext.jsx': { AuthContext: react.createContext() },
     react,
     '../config/supabaseClient.js': { supabase: { auth: { async resetPasswordForEmail(email, options) {
       requests.push({ email, options });

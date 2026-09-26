@@ -38,6 +38,7 @@ import { FlubberMorphIcon } from './ui/flubber-morph-icon.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill'
 import { BarChart, Bar as RBar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js'
+import { summarizeAttendance, selectAttendanceTotals } from '../utils/attendanceRules.js'
 import {
   Blueprint, Bar, Tag, Btn, Seg, Kicker, TickerCell, ColumnHeading,
   LiveClock, FlatListbox,
@@ -438,7 +439,7 @@ const TimeTracking = ({ employees: employeesProp }) => {
     }
     try {
       const startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
-      const endDate = new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0];
+      const endDate = iso(new Date(selectedYear, selectedMonth, 0));
 
       const [summaryResult, leaveResult, entriesResult] = await Promise.all([
         withTimeout(
@@ -458,6 +459,9 @@ const TimeTracking = ({ employees: employeesProp }) => {
         ),
       ]);
 
+      for (const result of [summaryResult, leaveResult, entriesResult]) {
+        if (!result.success) throw new Error(result.error);
+      }
       if (summaryResult.success) {
         setSummaryData(summaryResult.data);
       }
@@ -468,20 +472,21 @@ const TimeTracking = ({ employees: employeesProp }) => {
         setTimeEntries(entriesResult.data);
       }
     } catch (error) {
+      setSummaryData(null);
+      setTimeEntries([]);
+      setLeaveRequests([]);
       console.error('Error fetching time tracking data:', error);
 
       if (handleSessionAuthError(error, { silent, setFetchError })) {
         return;
       }
 
-      if (!silent) {
-        setFetchError(t('errors.loadFailed', 'Failed to load data'));
-      }
+      setFetchError(t('errors.loadFailed', 'Failed to load data'));
       setSuccessMessage('');
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [selectedEmployee, selectedMonth, selectedYear, withTimeout, handleSessionAuthError]);
+  }, [selectedEmployee, selectedMonth, selectedYear, withTimeout, handleSessionAuthError, t]);
 
   // Fetch data from Supabase when employee or period changes
   useEffect(() => {
@@ -516,16 +521,18 @@ const TimeTracking = ({ employees: employeesProp }) => {
         selectedYear,
         employees
       );
-      if (!result.success) return;
+      if (!result.success) throw new Error(result.error);
       overviewCacheRef.current = { key: cacheKey, data: result.data };
       setAllEmployeesData(result.data);
     } catch (error) {
+      setAllEmployeesData([]);
+      setFetchError(t('errors.loadFailed', 'Failed to load data'));
       console.error('Error fetching overview data:', error);
       handleSessionAuthError(error, { silent: true });
     } finally {
       setOverviewLoading(false);
     }
-  }, [canViewOverview, employees, selectedMonth, selectedYear, handleSessionAuthError]);
+  }, [canViewOverview, employees, selectedMonth, selectedYear, handleSessionAuthError, t]);
 
   useEffect(() => { fetchOrgSummaries(); }, [fetchOrgSummaries]);
 
@@ -870,7 +877,7 @@ const TimeTracking = ({ employees: employeesProp }) => {
       const d = item.data;
       const regular = d.regular_hours || 0;
       const overtime = (d.overtime_hours || 0) + (d.holiday_overtime_hours || 0);
-      const total = d.total_hours || (regular + overtime);
+      const total = d.total_hours ?? (regular + overtime);
       const department = item.employee.department || '';
       return {
         id: String(item.employee.id),
@@ -1140,71 +1147,17 @@ const TimeTracking = ({ employees: employeesProp }) => {
 
   // -- selected employee (Summary tab) --------------------------------
 
-  const calculatedLeaveDays = useMemo(() => {
-    if (!leaveRequests || leaveRequests.length === 0) return 0;
-
-    return leaveRequests.reduce((total, req) => {
-      // Include pending and approved, exclude rejected
-      if (req.status === 'rejected') return total;
-
-      const startDate = new Date(req.start_date);
-      if (startDate.getFullYear() === selectedYear && startDate.getMonth() + 1 === selectedMonth) {
-        return total + (req.days_count || 0);
-      }
-      return total;
-    }, 0);
-  }, [leaveRequests, selectedMonth, selectedYear]);
-
-  // Prefer live tally from loaded time entries so UI metrics match the table
-  const entryDerivedHours = useMemo(() => {
-    const entries = timeEntries || [];
-    let regular = 0;
-    let overtime = 0;
-    let holidayOvertime = 0;
-    const workDays = new Set();
-
-    entries.forEach((entry) => {
-      const type = entry.hour_type || entry.hourType;
-      const hours = Number(entry.hours) || 0;
-      if (LEAVE_TYPES.has(type)) return;
-      if (entry.date) workDays.add(entry.date);
-
-      if (type === 'regular' || type === 'wfh') regular += hours;
-      else if (type === 'overtime' || type === 'weekend' || type === 'bonus') overtime += hours;
-      else if (type === 'holiday') holidayOvertime += hours;
-      else regular += hours;
-    });
-
-    return {
-      regular_hours: Math.round(regular * 100) / 100,
-      overtime_hours: Math.round(overtime * 100) / 100,
-      holiday_overtime_hours: Math.round(holidayOvertime * 100) / 100,
-      total_hours: Math.round((regular + overtime + holidayOvertime) * 100) / 100,
-      days_worked: workDays.size,
-    };
-  }, [timeEntries]);
-
-  const currentData = {
-    days_worked: 0,
-    overtime_hours: 0,
-    holiday_overtime_hours: 0,
-    regular_hours: 0,
-    total_hours: 0,
-    attendance_rate: 0,
-    ...(summaryData || {}),
-    // Live entries win when present (fixes stale / mis-aggregated overtime)
-    ...(timeEntries?.length
-      ? {
-          regular_hours: entryDerivedHours.regular_hours,
-          overtime_hours: entryDerivedHours.overtime_hours,
-          holiday_overtime_hours: entryDerivedHours.holiday_overtime_hours,
-          total_hours: entryDerivedHours.total_hours,
-          days_worked: entryDerivedHours.days_worked || summaryData?.days_worked || 0,
-        }
-      : {}),
-    // Always use calculated leave (overrides summaryData defaults)
-    leave_days: calculatedLeaveDays,
-  };
+  // The service includes overtime logs as well as entries. Never replace its
+  // complete result (including valid zeros) with an entries-only subtotal.
+  const entryDerivedHours = useMemo(() => summarizeAttendance({
+    timeEntries: timeEntries || [],
+    leaveRequests: leaveRequests || [],
+    startDate: monthStart,
+    endDate: monthEnd,
+    employeeId: selectedEmployee,
+  }), [timeEntries, leaveRequests, monthStart, monthEnd, selectedEmployee]);
+  const currentData = selectAttendanceTotals(summaryData, entryDerivedHours);
+  const calculatedLeaveDays = currentData.leave_days ?? 0;
 
   // Memoized so the export callback below keeps a stable identity.
   const attendanceRecords = useMemo(() => timeEntries || [], [timeEntries]);
@@ -1799,8 +1752,8 @@ const TimeTracking = ({ employees: employeesProp }) => {
                     { label: t('timeTracking.regularHours', 'Regular Hours'), value: fmt1(currentData.regular_hours), unit: 'h' },
                     { label: t('timeTracking.overtimeHours', 'Overtime Hours'), value: fmt1(ownOvertime), unit: 'h' },
                     { label: t('timeTracking.totalHours', 'Total Hours'), value: fmt1(currentData.total_hours), unit: 'h' },
-                    { label: t('timeTracking.workDays', 'Work Days'), value: currentData.days_worked || 0, unit: 'd' },
-                    { label: t('timeTracking.leaveDays', 'Leave Days'), value: fmt1(calculatedLeaveDays), unit: 'd', note: t('timeTracking.includesPending', '*incl. pending') },
+                    { label: t('timeTracking.workDays', 'Work Days'), value: currentData.days_worked ?? 0, unit: 'd' },
+                    { label: t('timeTracking.leaveDays', 'Leave Days'), value: fmt1(calculatedLeaveDays), unit: 'd' },
                     { label: t('timeTracking.load', 'Load'), value: contractHours > 0 ? Math.round(((currentData.total_hours || 0) / contractHours) * 100) : 0, unit: '%' },
                   ].map((item) => (
                     <div key={item.label} style={{ minWidth: 0 }}>

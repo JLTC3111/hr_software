@@ -13,8 +13,8 @@ project remain outside this repository's baseline.
 
 ## Fresh environments
 
-Run the two active migrations in filename order against a new Supabase database.
-Both migrations are required. The baseline reproduces the previous policy state;
+Run the active migrations in filename order against a new Supabase database.
+The baseline, access repair, and attendance migration are required. The baseline reproduces the previous policy state;
 the second migration closes the audited access gaps. Provision HR identities
 through the normal administrative workflow after schema setup.
 
@@ -101,6 +101,36 @@ live sign-in or production write workflow was exercised.
 Dependency upgrades and the broader source lint backlog are separate remaining
 audit work. In particular, the existing jsPDF major upgrade needs PDF export
 verification; `npm audit fix --force` proposes an incompatible ExcelJS downgrade.
-Large raw-row attendance aggregations still need pagination or a server-side read
-path to remove the existing API row-limit risk. No new application dependencies
-were introduced in this repair.
+The attendance follow-up now paginates time entries, leave and overtime sources,
+including report/export reads. Other unrelated large queries still need their
+own pagination review. No new application dependencies were introduced.
+
+## Approved-leave attendance repair (26 September 2026)
+
+`20260925093907_exclude_approved_leave_from_worked_days.sql` replaces the actual
+public summary function. Its takeover audit and regression mapping are in
+[`../Read/ATTENDANCE_TAKEOVER_AUDIT.md`](../Read/ATTENDANCE_TAKEOVER_AUDIT.md).
+
+The production catalog remains INVOKER; the undeployed access-repair wrapper
+retains its existing effective DEFINER boundary when consolidated. The migration
+changes no table policy or existing function ACL. Backfill targets only months
+with approved-request weekdays, captured before exact generated-row cleanup.
+
+For this attendance release, apply that SQL alone in one transaction before
+shipping the revised attendance client: approval cleanup now commits in the
+database trigger. Do not execute the baseline on production or blindly push the
+unreconciled migration directory. This is a release prerequisite, not a record
+of deployment; this audit made no production writes.
+
+The local database runner covers both the captured production catalog and the
+repository access-repair chain, including privileges, targeted backfill, exact
+cleanup near misses, OLD/NEW invalidation, accidental replay, and two-session
+READ COMMITTED approval/fill races.
+
+The follow-up closes the test/lint errors and stale-summary fallback: incomplete
+attendance reads now return an error rather than old totals or fabricated zeros.
+Leave edits compare the previously read employee/range/status/type/reason before
+writing, and partial restoration offers an explicit retry of the released dates.
+The temporary backfill table is dropped after use; separate-transaction and
+same-transaction accidental replays both preserve rows and calculated values.
+See the final follow-up section of the audit for verification results and limits.

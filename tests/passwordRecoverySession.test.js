@@ -6,6 +6,7 @@ import { loadSource } from './helpers/loadSource.js';
 import * as authEvents from '../src/utils/authEvents.js';
 import * as authErrors from '../src/utils/authErrors.js';
 import * as routes from '../src/config/routes.js';
+import * as industry from '../src/theme/industry.js';
 import * as timeouts from '../src/config/requestTimeouts.js';
 
 const recoverySession = { access_token: 'fixture-recovery-token', user: { id: 'fixture-user' } };
@@ -41,7 +42,8 @@ function mountProvider({ client, hash = recoveryHash, timers = false }) {
   let persistedIdleMs = timeouts.IDLE_LOGOUT_TIMEOUT + 60000;
   const stats = { resets: 0, storageClears: 0 };
   const consumeRecoverySession = authEvents.createRecoverySessionConsumer(hash);
-  const { AuthProvider } = loadSource('src/contexts/AuthContext.jsx', {
+  const { AuthProvider } = loadSource('src/contexts/AuthProvider.jsx', {
+    './AuthContext.jsx': { AuthContext: react.createContext() },
     react,
     '../config/supabaseClient.js': { supabase: client, consumeRecoverySession, clearAuthStorage: () => { stats.storageClears++; } },
     '../utils/sessionHelper.js': { cancelScheduledLogout() {}, resetSessionVerification() {}, markSessionVerified() {}, isRejectedByServer: authErrors.isRejectedByServer },
@@ -177,6 +179,12 @@ for (const expired of [false, true]) {
         '../contexts/LanguageContext': { useLanguage: () => ({ currentLanguage: 'en', t: (_key, fallback) => fallback }) },
         'lucide-react': {},
         '../config/supabaseClient': { supabase: client },
+        './themeToggle': { default: 'theme-toggle' },
+        './LanguageSelector': { default: 'language-selector' },
+        './ui/industry.jsx': { Blueprint: 'blueprint' },
+        '../theme/industry.js': industry,
+        './ui/shimmer-button': { ShimmerButton: 'shimmer-button' },
+        '@/lib/utils': { cn: (...values) => values.filter(Boolean).join(' ') },
       }, { window, URLSearchParams, setTimeout, clearTimeout });
       react.render(ResetPassword);
       screenCleanup = react.effects[0]();

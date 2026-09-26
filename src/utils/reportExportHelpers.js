@@ -1,3 +1,6 @@
+import { summarizeAttendance, workingDateKeys } from './attendanceRules.js';
+export { workingDateKeys } from './attendanceRules.js';
+
 export const formatHours = (value, decimals = 1) => {
   const num = Number(value);
   if (!Number.isFinite(num)) return (0).toFixed(decimals);
@@ -61,32 +64,15 @@ export const getTaskDurationDays = (task, now = new Date()) => {
  */
 export const filterExportSnapshotByScope = (scope = {}, snapshot = {}) => ({
   timeEntries: scope.timeEntries ? (snapshot.timeEntries || []) : [],
+  overtimeLogs: scope.timeEntries ? (snapshot.overtimeLogs || []) : [],
   tasks: scope.tasks ? (snapshot.tasks || []) : [],
   goals: scope.goals ? (snapshot.goals || []) : [],
   leave: scope.leave ? (snapshot.leave || []) : [],
+  // Leave still governs the hour totals when its section is unticked: approved
+  // leave weekdays must not count regular hours whatever the file contains.
+  leaveForAttendance: snapshot.leave || [],
   employees: snapshot.employees || [],
 });
-
-/** Local YYYY-MM-DD keys for Mon–Fri in an inclusive range. */
-export const workingDateKeys = (startDate, endDate) => {
-  if (!startDate || !endDate) return [];
-  const start = new Date(`${String(startDate).slice(0, 10)}T00:00:00`);
-  const end = new Date(`${String(endDate).slice(0, 10)}T00:00:00`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return [];
-
-  const keys = [];
-  const cursor = new Date(start);
-  while (cursor <= end) {
-    const day = cursor.getDay();
-    if (day !== 0 && day !== 6) {
-      keys.push(
-        `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`
-      );
-    }
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return keys;
-};
 
 /** Mon–Fri days in an inclusive YYYY-MM-DD range. */
 export const countWorkingDays = (startDate, endDate) => workingDateKeys(startDate, endDate).length;
@@ -126,22 +112,13 @@ export const aggregateCounts = (items, field) => {
   return counts;
 };
 
-export const aggregateHoursByType = (timeEntries) => {
-  const totals = {};
-  (timeEntries || []).forEach((entry) => {
-    const type = entry.hour_type || entry.hourType || 'unknown';
-    totals[type] = (totals[type] || 0) + (Number(entry.hours) || 0);
-  });
-  Object.keys(totals).forEach((type) => {
-    totals[type] = Number(formatHours(totals[type]));
-  });
-  return totals;
-};
+export const aggregateHoursByType = (timeEntries, attendance = {}) =>
+  summarizeAttendance({ ...attendance, timeEntries }).hours_by_type;
 
-export const computeExportStats = (timeEntries = [], tasks = [], goals = [], leave = []) => {
-  const totalHours = timeEntries.reduce((sum, entry) => sum + (Number(entry.hours) || 0), 0);
+export const computeExportStats = (timeEntries = [], tasks = [], goals = [], leave = [], attendance = {}) => {
+  const totalHours = summarizeAttendance({ leaveRequests: leave, ...attendance, timeEntries }).total_hours;
   return {
-    totalRecords: timeEntries.length + tasks.length + goals.length + leave.length,
+    totalRecords: timeEntries.length + (attendance.overtimeLogs?.length ?? 0) + tasks.length + goals.length + leave.length,
     timeEntriesCount: timeEntries.length,
     tasksCount: tasks.length,
     goalsCount: goals.length,
@@ -162,12 +139,12 @@ export const computeExportStats = (timeEntries = [], tasks = [], goals = [], lea
   };
 };
 
-export const computeEmployeePerformance = (employee, timeEntries = [], tasks = [], goals = []) => {
+export const computeEmployeePerformance = (employee, timeEntries = [], tasks = [], goals = [], attendance = {}) => {
   const employeeTimeEntries = timeEntries.filter((entry) => String(entry.employee_id) === String(employee.id));
   const employeeTasks = tasks.filter((task) => String(task.employee_id) === String(employee.id));
   const employeeGoals = goals.filter((goal) => String(goal.employee_id) === String(employee.id));
 
-  const totalHours = employeeTimeEntries.reduce((sum, entry) => sum + (Number(entry.hours) || 0), 0);
+  const totalHours = summarizeAttendance({ ...attendance, timeEntries: employeeTimeEntries, employeeId: employee.id }).total_hours;
   const approvedEntries = employeeTimeEntries.filter((entry) => entry.status === 'approved').length;
   const completedTasks = employeeTasks.filter((task) => task.status === 'completed').length;
   const taskCompletionRate = employeeTasks.length ? (completedTasks / employeeTasks.length) * 100 : 0;

@@ -480,14 +480,14 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                 )
               : t(
                   'adminTimeEntry.bulkStandardHours.noEntriesCreated',
-                  'No entries were created. All employees already have overlapping entries for the selected dates.'
+                  'No entries were created. Every weekday already has an overlapping entry or approved leave.'
                 )
           );
         } else {
           setSuccessMessage(
             t(
               'adminTimeEntry.bulkStandardHours.success',
-              'Created {created} standard hour entries across {dates} weekday(s) for {employees} employee(s). Skipped {skipped} slot(s) with existing entries. Excluded {weekends} weekend day(s).'
+              'Created {created} standard hour entries across {dates} weekday(s) for {employees} employee(s). Skipped {skipped} slot(s) with existing entries or approved leave. Excluded {weekends} weekend day(s).'
             )
               .replace('{created}', String(result.created))
               .replace('{dates}', String(result.datesProcessed))
@@ -1012,7 +1012,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
           <p style={captionStyle}>
             {t(
               'adminTimeEntry.bulkStandardHours.description',
-              'Automatically create 9:00 AM – 5:00 PM regular hour entries for all employees on weekdays only. Saturdays and Sundays are excluded. Existing overlapping entries are skipped.'
+              'Automatically create 9:00 AM – 5:00 PM regular hour entries for all employees on weekdays only. Saturdays and Sundays are excluded. Existing overlapping entries and approved leave are skipped.'
             )}
           </p>
 
@@ -1134,7 +1134,7 @@ const AdminTimeEntry = ({ onEntriesChanged }) => {
                 <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, lineHeight: 1.55, margin: 0 }}>
                   {t(
                     'adminTimeEntry.bulkStandardHours.confirmMessage',
-                    'Create 9 AM – 5 PM regular hour entries for all employees from {start} to {end}? Saturdays and Sundays will be excluded. Employees with overlapping entries will be skipped.'
+                    'Create 9 AM – 5 PM regular hour entries for all employees from {start} to {end}? Saturdays and Sundays will be excluded. Overlapping entries and approved leave will be skipped.'
                   )
                     .replace('{start}', bulkFillData.startDate)
                     .replace('{end}', bulkFillData.endDate)}

@@ -1,3 +1,4 @@
+import { fetchAllRows } from '../utils/fetchAllRows.js';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from 'react-router-dom';
 import { useLanguage, SUPPORTED_LANGUAGES } from "../contexts/LanguageContext";
@@ -43,6 +44,7 @@ import {
   PDF_TOKENS,
   withBarPercents
 } from '../utils/reportExportHelpers.js';
+import { localDateKey, summarizeAttendance } from '../utils/attendanceRules.js';
 import { TranslatedText } from './ui/translated-text.jsx';
 import { translateTexts } from '../services/translateService.js';
 import { SpecularButton } from './ui/specular-button';
@@ -398,8 +400,8 @@ const Reports = () => {
   // 03 · Period
   const [dateRange, setDateRange] = useState('this-month');
   const [filters, setFilters] = useState({
-    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0]
+    startDate: localDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+    endDate: localDateKey(new Date())
   });
 
   // Preview ledger
@@ -421,6 +423,7 @@ const Reports = () => {
   // Data state
   const [reportData, setReportData] = useState({
     timeEntries: [],
+    overtimeLogs: [],
     tasks: [],
     goals: [],
     leave: [],
@@ -490,37 +493,40 @@ const Reports = () => {
   // Update date filters when range changes
   useEffect(() => {
     const today = new Date();
-    let startDate, endDate = today.toISOString().split('T')[0];
+    let startDate, endDate = localDateKey(today);
 
     switch (dateRange) {
       case 'today':
-        startDate = today.toISOString().split('T')[0];
+        startDate = localDateKey(today);
         break;
-      case 'this-week':
+      case 'this-week': {
         const startOfWeek = new Date(today);
         startOfWeek.setDate(today.getDate() - today.getDay());
-        startDate = startOfWeek.toISOString().split('T')[0];
+        startDate = localDateKey(startOfWeek);
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
-        endDate = endOfWeek.toISOString().split('T')[0];
+        endDate = localDateKey(endOfWeek);
         break;
+      }
       case 'this-month':
-        startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+        startDate = localDateKey(new Date(today.getFullYear(), today.getMonth(), 1));
+        endDate = localDateKey(new Date(today.getFullYear(), today.getMonth() + 1, 0));
         break;
-      case 'last-month':
+      case 'last-month': {
         const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        startDate = lastMonth.toISOString().split('T')[0];
-        endDate = new Date(today.getFullYear(), today.getMonth(), 0).toISOString().split('T')[0];
+        startDate = localDateKey(lastMonth);
+        endDate = localDateKey(new Date(today.getFullYear(), today.getMonth(), 0));
         break;
-      case 'this-quarter':
+      }
+      case 'this-quarter': {
         const quarter = Math.floor(today.getMonth() / 3);
-        startDate = new Date(today.getFullYear(), quarter * 3, 1).toISOString().split('T')[0];
-        endDate = new Date(today.getFullYear(), (quarter * 3) + 3, 0).toISOString().split('T')[0];
+        startDate = localDateKey(new Date(today.getFullYear(), quarter * 3, 1));
+        endDate = localDateKey(new Date(today.getFullYear(), (quarter * 3) + 3, 0));
         break;
+      }
       case 'this-year':
-        startDate = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
-        endDate = new Date(today.getFullYear(), 11, 31).toISOString().split('T')[0];
+        startDate = localDateKey(new Date(today.getFullYear(), 0, 1));
+        endDate = localDateKey(new Date(today.getFullYear(), 11, 31));
         break;
       default:
     
@@ -566,16 +572,15 @@ const Reports = () => {
             .sort((a, b) => new Date(b.date) - new Date(a.date));
         } else {
           const result = await withTimeout(
-            supabase
+            fetchAllRows(supabase
               .from('time_entries')
               .select(`
                 *,
                 employee:employees!time_entries_employee_id_fkey(id, name, department, position)
-              `)
+              `, { count: 'exact' })
               .gte('date', startDate)
               .lte('date', endDate)
-              .order('date', { ascending: false })
-              .limit(10000),
+              .order('date', { ascending: false })),
             DEFAULT_REQUEST_TIMEOUT
           );
           allTimeEntries = result.data;
@@ -583,8 +588,7 @@ const Reports = () => {
         }
 
         if (error) {
-          console.error('Error fetching time entries:', error);
-          return [];
+          throw error;
         }
 
         let filteredEntries = allTimeEntries || [];
@@ -617,7 +621,8 @@ const Reports = () => {
       };
 
       const fetchLeave = async () => {
-        const leaveResponse = await timeTrackingService.getAllLeaveRequests({});
+        const leaveResponse = await timeTrackingService.getAllLeaveRequests({ startDate, endDate, ...(employeeId ? { employeeId } : {}) });
+        if (!leaveResponse.success) throw new Error(leaveResponse.error);
         let leaveData = leaveResponse.success ? leaveResponse.data : [];
         if (employeeId) {
           leaveData = leaveData.filter(req => String(req.employee_id) === String(employeeId));
@@ -632,16 +637,19 @@ const Reports = () => {
 
       // All four types are always loaded: scope is a set of tick boxes now, and
       // ticking one must not cost a round trip.
-      const [timeEntries, tasks, goals, leaveData] = await Promise.all([
+      const [timeEntries, tasks, goals, leaveData, overtimeResult] = await Promise.all([
         fetchTimeEntries(),
         fetchTasks(),
         fetchGoals(),
         fetchLeave(),
+        timeTrackingService.getOvertimeLogs(employeeId, { startDate, endDate }),
       ]);
+      if (!overtimeResult.success) throw new Error(overtimeResult.error);
 
       setReportData(prev => ({
         ...prev,
         timeEntries,
+        overtimeLogs: overtimeResult.data || [],
         tasks,
         goals,
         // Leave arrives without its employee joined; the roster already loaded
@@ -659,6 +667,7 @@ const Reports = () => {
         }
       });
     } catch (error) {
+      setReportData(prev => ({ ...prev, timeEntries: [], overtimeLogs: [], tasks: [], goals: [], leave: [] }));
       console.error('Error fetching report data:', error);
 
       if (handleSessionAuthError(error, { silent, setFetchError })) {
@@ -671,7 +680,7 @@ const Reports = () => {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [filters, selectedEmployee, handleSessionAuthError]);
+  }, [filters, selectedEmployee, handleSessionAuthError, t]);
 
   const loadAllReportDataForExport = useCallback(async () => {
     const { startDate, endDate } = filters;
@@ -691,16 +700,15 @@ const Reports = () => {
         .sort((a, b) => new Date(b.date) - new Date(a.date));
     } else {
       const { data, error } = await withTimeout(
-        supabase
+        fetchAllRows(supabase
           .from('time_entries')
           .select(`
             *,
             employee:employees!time_entries_employee_id_fkey(id, name, department, position)
-          `)
+          `, { count: 'exact' })
           .gte('date', startDate)
           .lte('date', endDate)
-          .order('date', { ascending: false })
-          .limit(10000),
+          .order('date', { ascending: false })),
         DEFAULT_REQUEST_TIMEOUT
       );
       if (error) throw error;
@@ -710,6 +718,9 @@ const Reports = () => {
     if (employeeId) {
       allTimeEntries = allTimeEntries.filter((entry) => String(entry.employee_id) === String(employeeId));
     }
+
+    const overtimeResult = await timeTrackingService.getOvertimeLogs(employeeId, { startDate, endDate });
+    if (!overtimeResult.success) throw new Error(overtimeResult.error);
 
     const tasksResponse = await getAllTasks(employeeId ? { employeeId } : {});
     let tasks = tasksResponse.success ? tasksResponse.data || [] : [];
@@ -725,7 +736,8 @@ const Reports = () => {
     }
     goals = goals.filter((goal) => withinRange(goal, startDate, endDate));
 
-    const leaveResponse = await timeTrackingService.getAllLeaveRequests({});
+    const leaveResponse = await timeTrackingService.getAllLeaveRequests({ startDate, endDate, ...(employeeId ? { employeeId } : {}) });
+        if (!leaveResponse.success) throw new Error(leaveResponse.error);
     let leave = leaveResponse.success ? leaveResponse.data || [] : [];
     if (employeeId) {
       leave = leave.filter((req) => String(req.employee_id) === String(employeeId));
@@ -743,10 +755,11 @@ const Reports = () => {
 
     // The screen keeps the unscoped fetch so the figures stay live; the export
     // gets the cohort-narrowed copy so the file matches what 02 · People says.
-    setReportData((prev) => ({ ...prev, timeEntries: allTimeEntries, tasks, goals, leave }));
+    setReportData((prev) => ({ ...prev, timeEntries: allTimeEntries, overtimeLogs: overtimeResult.data || [], tasks, goals, leave }));
 
     return {
       timeEntries: allTimeEntries.filter(inCohort),
+      overtimeLogs: (overtimeResult.data || []).filter(inCohort),
       tasks: tasks.filter(inCohort),
       goals: goals.filter(inCohort),
       leave: leave.filter(inCohort),
@@ -793,14 +806,16 @@ const Reports = () => {
   /** Everything the 02 · People selection allows, before the scope ticks. */
   const cohortData = useMemo(() => ({
     timeEntries: (reportData.timeEntries || []).filter(inCohort),
+    overtimeLogs: (reportData.overtimeLogs || []).filter(inCohort),
     leave: (reportData.leave || []).filter(inCohort),
     tasks: (reportData.tasks || []).filter(inCohort),
     goals: (reportData.goals || []).filter(inCohort),
-  }), [reportData.timeEntries, reportData.leave, reportData.tasks, reportData.goals, inCohort]);
+  }), [reportData.timeEntries, reportData.overtimeLogs, reportData.leave, reportData.tasks, reportData.goals, inCohort]);
 
   /** The export scope proper: the cohort narrowed to the ticked record types. */
   const scopedData = useMemo(() => ({
     timeEntries: scope.timeEntries ? cohortData.timeEntries : [],
+    overtimeLogs: scope.timeEntries ? cohortData.overtimeLogs : [],
     leave: scope.leave ? cohortData.leave : [],
     tasks: scope.tasks ? cohortData.tasks : [],
     goals: scope.goals ? cohortData.goals : [],
@@ -870,7 +885,7 @@ const Reports = () => {
         typeLabel: translateLeaveType(request.leave_type),
         typeVariant: 'neutral',
         amount: Number(request.days_count) || 0,
-        amountText: `${Number(request.days_count) || 0} ${t('reports.daysShort', 'd')}`,
+        amountText: `${Number(request.days_count) || 0} ${t('reports.requestDays', 'request days (full range)')}`,
         approvedBy: nameOfEmployeeId(request.approved_by),
         source: t('reports.sourceLeave', 'Leave management'),
       });
@@ -920,16 +935,26 @@ const Reports = () => {
     [scopedData]
   );
 
-  const totals = useMemo(() => {
-    const hours = scopedData.timeEntries.reduce((sum, entry) => sum + (Number(entry.hours) || 0), 0);
-    return {
-      rows: ledgerRows.length,
-      hours,
-      pending: approvableRows.filter((row) => String(row.status).toLowerCase() === 'pending').length,
-      people: cohort.length,
-      workingDays: countWorkingDays(filters.startDate, filters.endDate),
-    };
-  }, [ledgerRows.length, scopedData.timeEntries, approvableRows, cohort.length, filters.startDate, filters.endDate]);
+  /**
+   * Hour totals under the shared attendance rule: regular hours filed on an
+   * approved-leave weekday do not count, leave-type entries never do, and the
+   * leave requests govern this even when their section is unticked.
+   */
+  const attendanceTotals = useMemo(() => summarizeAttendance({
+    timeEntries: scopedData.timeEntries,
+    leaveRequests: cohortData.leave,
+    overtimeLogs: scopedData.overtimeLogs,
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+  }), [scopedData.timeEntries, scopedData.overtimeLogs, cohortData.leave, filters.startDate, filters.endDate]);
+
+  const totals = useMemo(() => ({
+    rows: ledgerRows.length,
+    hours: attendanceTotals.total_hours,
+    pending: approvableRows.filter((row) => String(row.status).toLowerCase() === 'pending').length,
+    people: cohort.length,
+    workingDays: countWorkingDays(filters.startDate, filters.endDate),
+  }), [ledgerRows.length, attendanceTotals.total_hours, approvableRows, cohort.length, filters.startDate, filters.endDate]);
 
   /** Counts for 01 · RECORDS, including the types that are not ticked. */
   const availableCounts = useMemo(() => ({
@@ -947,9 +972,14 @@ const Reports = () => {
       const buckets = new Map();
       scopedData.timeEntries.forEach((entry) => {
         const key = String(entry.hour_type || 'regular').toLowerCase();
-        const bucket = buckets.get(key) || { count: 0, hours: 0 };
+        const bucket = buckets.get(key) || { count: 0, hours: attendanceTotals.hours_by_type[key] ?? 0 };
         bucket.count += 1;
-        bucket.hours += Number(entry.hours) || 0;
+        buckets.set(key, bucket);
+      });
+      scopedData.overtimeLogs.forEach((log) => {
+        const key = log.overtime_type === 'holiday' ? 'holiday' : 'overtime';
+        const bucket = buckets.get(key) || { count: 0, hours: attendanceTotals.hours_by_type[key] ?? 0 };
+        bucket.count += 1;
         buckets.set(key, bucket);
       });
       buckets.forEach((bucket, key) => {
@@ -970,7 +1000,7 @@ const Reports = () => {
     return rows
       .sort((a, b) => b.count - a.count)
       .map((row) => ({ ...row, pct: total > 0 ? row.count / total : 0 }));
-  }, [scope, scopedData, t]);
+  }, [scope, scopedData, attendanceTotals.hours_by_type, t]);
 
   /** Approval state of everything approvable in scope. */
   const byStatus = useMemo(() => {
@@ -1399,7 +1429,7 @@ const Reports = () => {
       t('employees.department', 'Department'),
       t('reports.leaveType', 'Leave Type'),
       t('reports.dateRange', 'Date Range'),
-      t('reports.days', 'Days'),
+      t('reports.requestDays', 'Request days (full range)'),
       t('reports.status', 'Status'),
       t('timeTracking.notes', 'Notes'),
       t('timeTracking.createdAt', 'Created At')
@@ -1427,7 +1457,8 @@ const Reports = () => {
       // `employees` is already the 02 · People cohort — unit, active-only and
       // single-person selection are resolved before the snapshot gets here.
       const { timeEntries, tasks, goals, leave, employees } = exportData;
-      const exportStats = computeExportStats(timeEntries, tasks, goals, leave);
+      const attendance = { leaveRequests: exportData.leaveForAttendance, overtimeLogs: exportData.overtimeLogs, ...filters };
+      const exportStats = computeExportStats(timeEntries, tasks, goals, leave, attendance);
 
       if (exportStats.totalRecords === 0) {
         alert(t('reports.noData', 'No data available for the selected period'));
@@ -1484,7 +1515,7 @@ const Reports = () => {
       if (selectedEmployee !== 'all') {
         const employee = employees.find((emp) => String(emp.id) === String(selectedEmployee));
         if (employee) {
-          const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals);
+          const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals, attendance);
           sections.push({
             title: t('reports.excel.performance.header', 'EMPLOYEE PERFORMANCE').toUpperCase(),
             headers: [
@@ -1515,7 +1546,7 @@ const Reports = () => {
             t('reports.excel.performance.overallScore', 'Overall Score')
           ],
           rows: employees.map((employee) => {
-            const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals);
+            const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals, attendance);
             return [
               getDemoEmployeeName(employee, t),
               translateDepartment(employee.department),
@@ -1562,8 +1593,9 @@ const Reports = () => {
       const goals = exportSnapshot.goals;
       const leave = exportSnapshot.leave;
       const employees = exportSnapshot.employees;
+      const attendance = { leaveRequests: exportSnapshot.leaveForAttendance, overtimeLogs: exportSnapshot.overtimeLogs, ...filters };
 
-      if (timeEntries.length === 0 && tasks.length === 0 && goals.length === 0 && leave.length === 0) {
+      if (timeEntries.length === 0 && exportSnapshot.overtimeLogs.length === 0 && tasks.length === 0 && goals.length === 0 && leave.length === 0) {
         alert(t('reports.noData', 'No data available for the selected period'));
         return;
       }
@@ -1645,12 +1677,20 @@ const Reports = () => {
       summarySheet.getCell('C2').alignment = { horizontal: 'center' };
       
       // Time Entries Metrics with Styling
-      if (timeEntries.length > 0) {
-        const totalHours = timeEntries.reduce((sum, entry) => sum + (entry.hours || 0), 0);
-        const regularHours = timeEntries.filter(e => e.hour_type === 'regular').reduce((sum, e) => sum + (e.hours || 0), 0);
-        // Include both overtime and bonus as overtime hours
-        const overtimeHours = timeEntries.filter(e => e.hour_type === 'overtime' || e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
-        const wfhHours = timeEntries.filter(e => e.hour_type === 'wfh').reduce((sum, e) => sum + (e.hours || 0), 0);
+      if (timeEntries.length > 0 || exportSnapshot.overtimeLogs.length > 0) {
+        // Same rule as the screen and the monthly summary: approved leave
+        // weekdays drop their regular/WFH hours; overtime on them still counts.
+        const attendanceSummary = summarizeAttendance({
+          timeEntries,
+          leaveRequests: exportSnapshot.leaveForAttendance,
+          overtimeLogs: exportSnapshot.overtimeLogs,
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+        });
+        const totalHours = attendanceSummary.total_hours;
+        const regularHours = attendanceSummary.office_hours;
+        const overtimeHours = attendanceSummary.overtime_hours + attendanceSummary.holiday_overtime_hours;
+        const wfhHours = attendanceSummary.wfh_hours;
         const pendingEntries = timeEntries.filter(e => e.status === 'pending').length;
         const approvedEntries = timeEntries.filter(e => e.status === 'approved').length;
         
@@ -1862,12 +1902,19 @@ const Reports = () => {
           });
           perfRow++;
           
-          // Time Tracking Metrics
-          const totalHours = employeeTimeEntries.reduce((sum, e) => sum + (e.hours || 0), 0);
-          const regularHours = employeeTimeEntries.filter(e => e.hour_type === 'regular').reduce((sum, e) => sum + (e.hours || 0), 0);
-          // Include both overtime and bonus as overtime hours
-          const overtimeHours = employeeTimeEntries.filter(e => e.hour_type === 'overtime' || e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
-          const wfhHours = employeeTimeEntries.filter(e => e.hour_type === 'wfh').reduce((sum, e) => sum + (e.hours || 0), 0);
+          // Time Tracking Metrics — the shared attendance rule, per employee
+          const employeeAttendance = summarizeAttendance({
+            timeEntries: employeeTimeEntries,
+            leaveRequests: exportSnapshot.leaveForAttendance,
+            overtimeLogs: exportSnapshot.overtimeLogs,
+            startDate: filters.startDate,
+            endDate: filters.endDate,
+            employeeId: employee.id,
+          });
+          const totalHours = employeeAttendance.total_hours;
+          const regularHours = employeeAttendance.office_hours;
+          const overtimeHours = employeeAttendance.overtime_hours + employeeAttendance.holiday_overtime_hours;
+          const wfhHours = employeeAttendance.wfh_hours;
           const approvedEntries = employeeTimeEntries.filter(e => e.status === 'approved').length;
 
           const perfLabels = {
@@ -2048,7 +2095,7 @@ const Reports = () => {
         });
 
         employees.forEach((employee, idx) => {
-          const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals);
+          const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals, attendance);
           const rowNum = idx + 2;
           const rowData = [
             getDemoEmployeeName(employee, t),
@@ -2082,13 +2129,13 @@ const Reports = () => {
       }
 
       // ==================== CHARTS SHEET WITH DATA ====================
-      if (timeEntries.length > 0 || tasks.length > 0 || goals.length > 0) {
+      if (timeEntries.length > 0 || exportSnapshot.overtimeLogs.length > 0 || tasks.length > 0 || goals.length > 0) {
         const chartsSheet = workbook.addWorksheet(sheetNames.charts);
         
         let chartRow = 1;
         
         // Hours by Type Chart Data
-        if (timeEntries.length > 0) {
+        if (timeEntries.length > 0 || exportSnapshot.overtimeLogs.length > 0) {
           chartsSheet.getCell(`A${chartRow}`).value = tr('reports.excel.charts.hoursByType', 'Hours by Type').toUpperCase();
           chartsSheet.getCell(`A${chartRow}`).font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
           chartsSheet.getCell(`A${chartRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
@@ -2101,11 +2148,7 @@ const Reports = () => {
           chartsSheet.getRow(chartRow).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } };
           chartRow++;
           
-          const hoursByType = {};
-          timeEntries.forEach(entry => {
-            const type = entry.hour_type || 'unknown';
-            hoursByType[type] = (hoursByType[type] || 0) + (entry.hours || 0);
-          });
+          const hoursByType = aggregateHoursByType(timeEntries, attendance);
           
           Object.entries(hoursByType).forEach(([type, hours]) => {
             chartsSheet.getCell(`A${chartRow}`).value = translateHourType(type) || type;
@@ -2506,7 +2549,7 @@ const Reports = () => {
     
     if (unicodeFont) {
       let cleaned = String(text)
-        .replace(/[\u200B-\u200D\uFEFF\u0000-\u001F\u007F-\u009F]/g, '')
+        .replace(/[\u200B-\u200D\uFEFF\p{Cc}]/gu, '')
         .replace(/\s+/g, ' ')
         .trim();
       return cleaned || 'N/A';
@@ -2574,7 +2617,7 @@ const Reports = () => {
       return base !== match ? base : '?';
     });
     
-    cleaned = cleaned.replace(/[\u200B-\u200D\uFEFF\u0000-\u001F\u007F-\u009F]/g, '');
+    cleaned = cleaned.replace(/[\u200B-\u200D\uFEFF\p{Cc}]/gu, '');
     
     cleaned = cleaned.replace(/\s+/g, ' ').trim();
     
@@ -2633,7 +2676,8 @@ const Reports = () => {
       const goals = exportSnapshot.goals;
       const leave = exportSnapshot.leave;
       const employees = exportSnapshot.employees;
-      const exportStats = computeExportStats(timeEntries, tasks, goals, leave);
+      const attendance = { leaveRequests: exportSnapshot.leaveForAttendance, overtimeLogs: exportSnapshot.overtimeLogs, ...filters };
+      const exportStats = computeExportStats(timeEntries, tasks, goals, leave, attendance);
 
       if (exportStats.totalRecords === 0) {
         alert(t('reports.noData', 'No data available for the selected period'));
@@ -2841,7 +2885,7 @@ const Reports = () => {
         ? employees
         : employees.filter((emp) => String(emp.id) === String(selectedEmployee));
       const employeeScores = scoredEmployees
-        .map((employee) => computeEmployeePerformance(employee, timeEntries, tasks, goals))
+        .map((employee) => computeEmployeePerformance(employee, timeEntries, tasks, goals, attendance))
         .filter((performance) => (
           selectedEmployee !== 'all'
           || performance.timeEntriesCount > 0
@@ -2882,10 +2926,10 @@ const Reports = () => {
           items: toChartItems(aggregateCounts(tasks, 'priority'), translatePriority)
         });
       }
-      if (timeEntries.length > 0) {
+      if (timeEntries.length > 0 || exportSnapshot.overtimeLogs.length > 0) {
         pdfCharts.push({
           title: t('reports.pdf.charts.hoursByType', 'Hours by Type'),
-          items: toChartItems(aggregateHoursByType(timeEntries), translateHourType)
+          items: toChartItems(aggregateHoursByType(timeEntries, attendance), translateHourType)
         });
         pdfCharts.push({
           title: t('reports.pdf.charts.statusDistribution', 'Time Entry Status Distribution'),
@@ -3092,7 +3136,7 @@ const Reports = () => {
             pdfHead('reports.pdf.headers.department', 'Department'),
             pdfHead('reports.leaveType', 'Leave Type'),
             pdfHead('reports.dateRange', 'Date Range'),
-            pdfHead('reports.days', 'Days'),
+            pdfHead('reports.requestDays', 'Request days (full range)'),
             pdfHead('reports.pdf.headers.status', 'Status')
           ],
           leave.map((req) => [
@@ -3124,7 +3168,7 @@ const Reports = () => {
             pdfHead('reports.excel.performance.overallScore', 'Score')
           ],
           employees.map((employee) => {
-            const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals);
+            const performance = computeEmployeePerformance(employee, timeEntries, tasks, goals, attendance);
             return [
               cleanTextForPDF(getDemoEmployeeName(employee, t), unicodeFontLoaded),
               cleanTextForPDF(translateDepartment(employee.department), unicodeFontLoaded),
@@ -3809,12 +3853,11 @@ const Reports = () => {
         {/* ── ONE PERSON — only when the sheet is scoped to one ──────── */}
         {selectedEmployee !== 'all' && cohort.length === 1 && (() => {
           const employee = cohort[0];
-          const entries = scopedData.timeEntries;
-          const hoursOf = (predicate) => entries.filter(predicate).reduce((sum, entry) => sum + (Number(entry.hours) || 0), 0);
-          const regularHours = hoursOf((entry) => entry.hour_type === 'regular');
-          const overtimeHours = hoursOf((entry) => entry.hour_type === 'overtime' || entry.hour_type === 'bonus');
-          const wfhHours = hoursOf((entry) => entry.hour_type === 'wfh');
-          const daysWorked = new Set(entries.map((entry) => entry.date)).size;
+          // attendanceTotals already applies the leave rule to the scoped entries.
+          const regularHours = attendanceTotals.office_hours;
+          const overtimeHours = attendanceTotals.overtime_hours + attendanceTotals.holiday_overtime_hours;
+          const wfhHours = attendanceTotals.wfh_hours;
+          const daysWorked = attendanceTotals.days_worked;
           const completedTasks = scopedData.tasks.filter((task) => task.status === 'completed').length;
           const taskRate = scopedData.tasks.length > 0
             ? Number(((completedTasks / scopedData.tasks.length) * 100).toFixed(1))
@@ -3822,9 +3865,8 @@ const Reports = () => {
           const goalProgress = scopedData.goals.length > 0
             ? Number((scopedData.goals.reduce((sum, goal) => sum + (goal.status === 'completed' ? 100 : (Number(goal.progress) || 0)), 0) / scopedData.goals.length).toFixed(1))
             : 0;
-          const leaveDays = scopedData.leave
-            .filter((request) => request.status === 'approved')
-            .reduce((sum, request) => sum + (Number(request.days_count) || 0), 0);
+          // Distinct approved weekdays clipped to the period, not a sum of days_count.
+          const leaveDays = attendanceTotals.leave_days;
 
           return (
             <Band ind={ind} className="grid-cols-1">

@@ -4,7 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getEmployeePositionI18nKey } from '../utils/employeePositionKey';
 import { useAuth } from '../contexts/AuthContext';
-import { getEmployeeByUserId, updateEmployee } from '../services/employeeService';
+import { getEmployeeByUserId, updateEmployee, clearEmployeePhotoCache } from '../services/employeeService';
 import { supabase } from '../config/supabaseClient';
 import { isDemoMode } from '../utils/demoHelper';
 
@@ -102,6 +102,7 @@ const UserEmployeeCard = ({ style }) => {
                 .eq('id', user.id);
             }
               
+            clearEmployeePhotoCache({ notify: true });
             setPhotoError(false);
             alert(t('employees.photoUpdated', 'Photo updated successfully!'));
           } else {

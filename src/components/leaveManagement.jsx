@@ -41,12 +41,15 @@ import {
   ArrowRight,
   UserPlus,
   ShieldCheck,
+  Pencil,
+  Undo2,
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import * as timeTrackingService from '../services/timeTrackingService';
-import { isDemoMode, getDemoEmployeeName, updateDemoLeaveRequest } from '../utils/demoHelper';
+import { isDemoMode, getDemoEmployeeName } from '../utils/demoHelper';
+import { approvedLeaveDateKeysByEmployee } from '../utils/attendanceRules.js';
 import { useSessionGuard, useAuthenticatedPageRefresh } from '../hooks/useSessionGuard.js';
 import { SlidingNumber } from './motion-primitives';
 import { DatePicker } from './ui/date-picker.jsx';
@@ -112,9 +115,16 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestModalMode, setRequestModalMode] = useState('calendar'); // 'calendar' | 'admin'
   const [rejectTarget, setRejectTarget] = useState(null);
+  const [revertTarget, setRevertTarget] = useState(null);
+  const [editTarget, setEditTarget] = useState(null);
+  /** Stamped into generated standard-hour rows, the same way the bulk fill does. */
+  const adminName = user?.full_name || user?.email || 'Admin';
 
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [restorationQueue, setRestorationQueue] = useState([]);
+  const [retryingRestoration, setRetryingRestoration] = useState(false);
+  const queueRestoration = (job) => { if (job) setRestorationQueue(prev => [...prev, job]); };
 
   const flash = useCallback((setter, message) => {
     setter(message);
@@ -206,8 +216,6 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
     });
     return map;
   }, [visibleRequests]);
-
-  const requestsForDay = useCallback((key) => leaveByDay.get(key) || [], [leaveByDay]);
 
   // ---- Calendar grid (6 weeks) ----
   const weeks = useMemo(() => {
@@ -331,20 +339,21 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
   const stats = useMemo(() => {
     const year = currentMonth.getFullYear();
     let pending = 0;
-    let approvedDays = 0;
     const byType = {};
     visibleRequests.forEach(req => {
       if (req.status === 'pending') pending += 1;
-      const days = Number(req.days_count) || 0;
-      if (req.status === 'approved' && normalize(req.start_date).startsWith(String(year))) {
-        approvedDays += days;
-      }
       byType[req.leave_type] = (byType[req.leave_type] || 0) + 1;
     });
+    // Distinct approved weekdays inside the year: overlapping requests count a
+    // day once and a request that crosses New Year is split, not assigned to
+    // the year it starts in.
+    const approvedDays = [...approvedLeaveDateKeysByEmployee(visibleRequests, `${year}-01-01`, `${year}-12-31`).values()]
+      .reduce((sum, dates) => sum + dates.size, 0);
     return { pending, approvedDays, total: visibleRequests.length, byType };
   }, [visibleRequests, currentMonth]);
 
-  const onLeaveToday = requestsForDay(toKey(new Date())).filter(r => r.status === 'approved').length;
+  const today = toKey(new Date());
+  const onLeaveToday = approvedLeaveDateKeysByEmployee(visibleRequests, today, today).size;
 
   // ---- Admin actions ----
   const refreshAfterMutation = () => {
@@ -352,14 +361,12 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
     fetchData({ silent: true });
   };
 
+  // The service owns the demo branch too, so approving in demo mode also
+  // removes the generated standard hours the way production does.
   const handleApprove = async (req) => {
     try {
-      if (isDemoMode()) {
-        updateDemoLeaveRequest(req.id, { status: 'approved', approved_by: myEmployeeId });
-      } else {
-        const result = await timeTrackingService.updateLeaveRequestStatus(req.id, 'approved', myEmployeeId);
-        if (!result.success) throw new Error(result.error);
-      }
+      const result = await timeTrackingService.updateLeaveRequestStatus(req.id, 'approved', myEmployeeId);
+      if (!result.success) throw new Error(result.error);
       setLeaveRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'approved' } : r));
       flash(setSuccessMessage, t('leave.requestApproved', 'Leave request approved.'));
       refreshAfterMutation();
@@ -372,12 +379,8 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
 
   const handleReject = async (req, reason = '') => {
     try {
-      if (isDemoMode()) {
-        updateDemoLeaveRequest(req.id, { status: 'rejected', approved_by: myEmployeeId, rejection_reason: reason || null });
-      } else {
-        const result = await timeTrackingService.updateLeaveRequestStatus(req.id, 'rejected', myEmployeeId, reason || null);
-        if (!result.success) throw new Error(result.error);
-      }
+      const result = await timeTrackingService.updateLeaveRequestStatus(req.id, 'rejected', myEmployeeId, reason || null);
+      if (!result.success) throw new Error(result.error);
       setLeaveRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'rejected', rejection_reason: reason || null } : r));
       flash(setSuccessMessage, t('leave.requestRejected', 'Leave request rejected.'));
       refreshAfterMutation();
@@ -392,6 +395,63 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
     if (!rejectTarget) return;
     await handleReject(rejectTarget, reason);
     setRejectTarget(null);
+  };
+
+  /**
+   * Un-approve: the request goes back to pending. Whether the generated
+   * 09:00–17:00 hours come back is the approver's explicit choice; hand-entered
+   * attendance and overtime are never touched either way.
+   */
+  const retryRestoration = async () => {
+    if (retryingRestoration || !restorationQueue.length) return;
+    setRetryingRestoration(true);
+    try {
+      const result = await timeTrackingService.retryStandardHoursRestoration(restorationQueue[0], adminName);
+      if (!result.success) throw new Error(result.error);
+      setRestorationQueue(prev => prev.slice(1));
+      flash(setSuccessMessage, t('leave.hoursRestored', '{n} standard-hour entries restored.').replace('{n}', String(result.created ?? 0)));
+      refreshAfterMutation();
+    } catch (error) {
+      flash(setErrorMessage, error.message);
+    } finally {
+      setRetryingRestoration(false);
+    }
+  };
+
+  const confirmRevert = async (restoreStandardHours) => {
+    if (!revertTarget) return;
+    try {
+      const result = await timeTrackingService.revertLeaveApproval(revertTarget.id, myEmployeeId, {
+        restoreStandardHours,
+        adminName,
+        expectedLeave: revertTarget,
+      });
+      if (!result.success) {
+        if (result.code === 'LEAVE_CONFLICT') {
+          refreshAfterMutation();
+          flash(setErrorMessage, t('leave.editConflict', 'This request changed. Refresh it before trying again.'));
+          return;
+        }
+        throw new Error(result.error);
+      }
+      setLeaveRequests(prev => prev.map(r => r.id === revertTarget.id ? { ...r, status: 'pending' } : r));
+      queueRestoration(result.generated?.restoreRetry);
+      const restored = result.generated?.restored;
+      if (result.generated?.warning) flash(setErrorMessage, result.generated.warning);
+      flash(
+        setSuccessMessage,
+        restored?.success
+          ? t('leave.approvalRevertedRestored', 'Approval reverted. {n} standard-hour entries restored.').replace('{n}', String(restored.created ?? 0))
+          : t('leave.approvalReverted', 'Approval reverted; the request is pending again.')
+      );
+      refreshAfterMutation();
+    } catch (error) {
+      console.error('Error reverting leave approval:', error);
+      if (handleSessionAuthError(error)) return;
+      flash(setErrorMessage, t('errors.updateFailed', 'Failed to update status'));
+    } finally {
+      setRevertTarget(null);
+    }
   };
 
   const isAdmin = canManageLeave;
@@ -518,6 +578,15 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
                 <Kicker ind={ind} color={ind.ink}>{t('common.error', 'Error')}</Kicker>
                 <p style={{ ...caption, marginTop: 4 }}>{errorMessage}</p>
               </div>
+            </div>
+          )}
+
+          {restorationQueue.length > 0 && (
+            <div role="status" style={{ border: `1px solid ${ind.hairline}`, padding: 12 }}>
+              <p style={caption}>{t('leave.restoreIncomplete', 'Leave was saved, but some standard hours still need restoration.')}</p>
+              <Btn ind={ind} disabled={retryingRestoration} onClick={retryRestoration}>
+                {t('leave.retryRestore', 'Retry restoration')}
+              </Btn>
             </div>
           )}
 
@@ -881,7 +950,8 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
                 .map((req, index) => {
                   const meta = metaFor(req.leave_type);
                   const Icon = meta.Icon;
-                  const canModerate = isAdmin && scope === 'all' && req.status === 'pending';
+                  const canManageRow = isAdmin && scope === 'all';
+                  const canModerate = canManageRow && req.status === 'pending';
                   const rejected = req.status === 'rejected';
                   return (
                     <div
@@ -947,15 +1017,29 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
                         )}
                       </div>
 
-                      {canModerate && (
+                      {canManageRow && (
                         <div className="flex items-center" style={{ gap: 7, flex: 'none' }}>
-                          <Btn ind={ind} variant="primary" onClick={() => handleApprove(req)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                            <Check size={12} strokeWidth={1.5} />
-                            {t('leave.approve', 'Approve')}
-                          </Btn>
-                          <Btn ind={ind} onClick={() => setRejectTarget(req)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, borderColor: ind.ink }}>
-                            <X size={12} strokeWidth={1.5} />
-                            {t('leave.reject', 'Reject')}
+                          {canModerate && (
+                            <>
+                              <Btn ind={ind} variant="primary" onClick={() => handleApprove(req)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                <Check size={12} strokeWidth={1.5} />
+                                {t('leave.approve', 'Approve')}
+                              </Btn>
+                              <Btn ind={ind} onClick={() => setRejectTarget(req)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, borderColor: ind.ink }}>
+                                <X size={12} strokeWidth={1.5} />
+                                {t('leave.reject', 'Reject')}
+                              </Btn>
+                            </>
+                          )}
+                          {req.status === 'approved' && (
+                            <Btn ind={ind} onClick={() => setRevertTarget(req)} title={t('leave.revertApprovalHint', 'Send the request back to pending')} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                              <Undo2 size={12} strokeWidth={1.5} />
+                              {t('leave.revertApproval', 'Revert')}
+                            </Btn>
+                          )}
+                          <Btn ind={ind} onClick={() => setEditTarget(req)} title={t('leave.editRequest', 'Edit request')} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                            <Pencil size={12} strokeWidth={1.5} />
+                            {t('common.edit', 'Edit')}
                           </Btn>
                         </div>
                       )}
@@ -1136,6 +1220,37 @@ const LeaveManagement = ({ employees = [], allEmployees }) => {
           onConfirm={confirmReject}
         />
       )}
+
+      {revertTarget && (
+        <RevertLeaveModal
+          t={t}
+          ind={ind}
+          request={revertTarget}
+          employeeName={employeeName(revertTarget)}
+          onClose={() => setRevertTarget(null)}
+          onConfirm={confirmRevert}
+        />
+      )}
+
+      {editTarget && (
+        <EditLeaveModal
+          t={t}
+          ind={ind}
+          request={editTarget}
+          onRestoreRetry={queueRestoration}
+          employees={pickerEmployees}
+          leaveTypeMeta={leaveTypeMeta}
+          myEmployeeId={myEmployeeId}
+          adminName={adminName}
+          onClose={() => setEditTarget(null)}
+          onSuccess={(message) => {
+            setEditTarget(null);
+            flash(setSuccessMessage, message);
+            refreshAfterMutation();
+          }}
+          onError={(message) => flash(setErrorMessage, message)}
+        />
+      )}
     </div>
   );
 };
@@ -1260,12 +1375,10 @@ const LeaveRequestModal = ({
       if (form.autoApprove && canManageLeave) {
         for (const row of created) {
           if (!row?.id) continue;
-          if (isDemoMode()) {
-            updateDemoLeaveRequest(row.id, { status: 'approved', approved_by: myEmployeeId });
-          } else {
-            const approveResult = await timeTrackingService.updateLeaveRequestStatus(row.id, 'approved', myEmployeeId);
-            if (!approveResult.success) throw new Error(approveResult.error);
-          }
+          // The service handles demo mode as well, so approval clears generated
+          // standard hours identically in both environments.
+          const approveResult = await timeTrackingService.updateLeaveRequestStatus(row.id, 'approved', myEmployeeId);
+          if (!approveResult.success) throw new Error(approveResult.error);
         }
         onSuccess(
           created.length > 1
@@ -1611,6 +1724,356 @@ const RejectLeaveModal = ({ t, ind, employeeName, onClose, onConfirm }) => {
             >
               {loading && <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />}
               {loading ? t('common.saving', 'Saving...') : t('leave.confirmReject', 'Reject Request')}
+            </Btn>
+          </div>
+        </form>
+      </Blueprint>
+    </div>
+  );
+};
+
+/** Square check with a title and a one-line explanation — the board's toggle. */
+const ChoiceToggle = ({ ind, checked, onToggle, title, hint }) => (
+  <button
+    type="button"
+    onClick={onToggle}
+    aria-pressed={checked}
+    style={{
+      display: 'flex', alignItems: 'flex-start', gap: 10, textAlign: 'left', width: '100%',
+      padding: '10px 12px', borderRadius: 0, cursor: 'pointer',
+      border: `1px solid ${checked ? ind.accent : ind.hairline}`,
+      background: checked ? ind.accentWash : 'transparent',
+    }}
+  >
+    <span
+      style={{
+        width: 15, height: 15, flex: 'none', marginTop: 2, display: 'inline-flex',
+        alignItems: 'center', justifyContent: 'center',
+        border: `1px solid ${checked ? ind.accent : ind.hairline}`,
+        background: checked ? ind.accent : 'transparent',
+        color: ind.accentInk,
+      }}
+    >
+      {checked && <Check size={10} strokeWidth={2} />}
+    </span>
+    <span style={{ minWidth: 0 }}>
+      <span className="block" style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 12, letterSpacing: '.08em', textTransform: 'uppercase', color: ind.ink }}>
+        {title}
+      </span>
+      <span className="block" style={{ fontFamily: BODY, fontSize: 11.5, color: ind.inkMuted, marginTop: 3, lineHeight: 1.45 }}>
+        {hint}
+      </span>
+    </span>
+  </button>
+);
+
+/**
+ * Un-approve an approved request. The approver decides explicitly whether the
+ * generated 09:00–17:00 standard hours removed at approval come back; the
+ * default is to leave attendance alone.
+ */
+const RevertLeaveModal = ({ t, ind, request, employeeName, onClose, onConfirm }) => {
+  const [restore, setRestore] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await onConfirm(restore);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const range = request.start_date === request.end_date || !request.end_date
+    ? request.start_date
+    : `${request.start_date} → ${request.end_date}`;
+
+  return (
+    <div style={overlayStyle} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <Blueprint ind={ind} style={{ background: ind.ground, width: '100%', maxWidth: 440 }}>
+        <form onSubmit={handleSubmit} style={{ padding: '18px 20px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="flex items-start justify-between" style={{ gap: 10 }}>
+            <ColumnHeading ind={ind}>{t('leave.revertTitle', 'Revert Approval')}</ColumnHeading>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t('common.close', 'Close')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0, flex: 'none' }}
+            >
+              <X size={16} strokeWidth={1.5} />
+            </button>
+          </div>
+
+          <p style={{ fontFamily: BODY, fontSize: 13, color: ind.inkMuted, margin: 0, lineHeight: 1.5 }}>
+            {t('leave.revertConfirm', 'Send the approved leave for {{name}} ({{range}}) back to pending?')
+              .replace('{{name}}', employeeName)
+              .replace('{{range}}', range)}
+          </p>
+
+          <ChoiceToggle
+            ind={ind}
+            checked={restore}
+            onToggle={() => setRestore(v => !v)}
+            title={t('leave.restoreStandardHours', 'Restore standard hours')}
+            hint={t('leave.restoreStandardHoursHint', 'Re-create the generated 09:00–17:00 entries on the released weekdays. Hand-entered attendance and overtime are never touched.')}
+          />
+
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end" style={{ gap: 8, paddingTop: 4, borderTop: `1px solid ${ind.rule}` }}>
+            <Btn ind={ind} onClick={onClose}>{t('common.cancel', 'Cancel')}</Btn>
+            <Btn
+              ind={ind}
+              type="submit"
+              disabled={loading}
+              style={{ borderColor: ind.ink, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              {loading && <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />}
+              {loading ? t('common.saving', 'Saving...') : t('leave.confirmRevert', 'Revert to Pending')}
+            </Btn>
+          </div>
+        </form>
+      </Blueprint>
+    </div>
+  );
+};
+
+/**
+ * Edit an existing request: employee, type, dates, status and reason. The
+ * service reconciles generated standard hours against the old and new range;
+ * the database recalculates every month either range touches.
+ */
+const EditLeaveModal = ({ t, ind, request, employees, leaveTypeMeta, myEmployeeId, adminName, onClose, onSuccess, onError, onRestoreRetry }) => {
+  const { handleSessionAuthError } = useSessionGuard();
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    employeeId: String(request.employee_id ?? ''),
+    type: request.leave_type || 'vacation',
+    startDate: String(request.start_date || '').slice(0, 10),
+    endDate: String(request.end_date || request.start_date || '').slice(0, 10),
+    status: request.status || 'pending',
+    reason: request.reason || '',
+    restoreStandardHours: false,
+  });
+  const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+
+  const wasApproved = request.status === 'approved';
+  const rangeChanged = form.startDate !== String(request.start_date || '').slice(0, 10)
+    || form.endDate !== String(request.end_date || request.start_date || '').slice(0, 10)
+    || String(form.employeeId) !== String(request.employee_id ?? '');
+  // Weekdays leave approval, or the approved range moves: some dates are released.
+  const releasesDates = wasApproved && (form.status !== 'approved' || rangeChanged);
+  const dayCount = form.startDate && form.endDate ? countWorkingDays(form.startDate, form.endDate) : 0;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.startDate || !form.endDate) {
+      onError(t('leave.manualDates', 'Enter start and end dates.'));
+      return;
+    }
+    if (form.endDate < form.startDate) {
+      onError(t('leave.invalidRange', 'End date cannot be before start date.'));
+      return;
+    }
+    if (!form.employeeId) {
+      onError(t('leave.selectEmployee', 'Please select an employee.'));
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await timeTrackingService.updateLeaveRequest(request.id, {
+        employeeId: form.employeeId,
+        leaveType: form.type,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        reason: form.reason,
+        status: form.status,
+      }, {
+        approverId: myEmployeeId,
+        adminName,
+        restoreStandardHours: releasesDates && form.restoreStandardHours,
+        expectedLeave: request,
+      });
+      if (!result.success) {
+        if (result.code === 'LEAVE_CONFLICT') {
+          onError(t('leave.editConflict', 'This request changed. Refresh it before trying again.'));
+          return;
+        }
+        throw new Error(result.error);
+      }
+      onRestoreRetry(result.generated?.restoreRetry);
+      onSuccess(t('leave.requestUpdated', 'Leave request updated.'));
+      if (result.generated?.warning) onError(result.generated.warning);
+    } catch (error) {
+      console.error('Error updating leave request:', error);
+      if (handleSessionAuthError(error)) { setLoading(false); return; }
+      onError(t('errors.saveFailed', 'Failed to save changes'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const labelStyle = {
+    fontFamily: DISPLAY, fontWeight: 600, fontSize: 10, letterSpacing: '.14em',
+    textTransform: 'uppercase', color: ind.inkMuted, display: 'block', marginBottom: 4,
+  };
+  const noteStyle = { fontFamily: BODY, fontSize: 11.5, color: ind.inkFaint, margin: '5px 0 0', lineHeight: 1.45 };
+  const statusLabels = {
+    pending: t('leave.pending', 'Pending'),
+    approved: t('leave.approved', 'Approved'),
+    rejected: t('leave.rejected', 'Rejected'),
+  };
+
+  return (
+    <div style={overlayStyle} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <Blueprint ind={ind} style={{ background: ind.ground, width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto' }}>
+        <form onSubmit={handleSubmit} style={{ padding: '18px 20px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="flex items-start justify-between" style={{ gap: 10 }}>
+            <span className="inline-flex items-center" style={{ gap: 8, minWidth: 0 }}>
+              <Pencil size={15} strokeWidth={1.5} style={{ flex: 'none', color: ind.inkMuted }} />
+              <ColumnHeading ind={ind}>{t('leave.editRequest', 'Edit Leave Request')}</ColumnHeading>
+            </span>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t('common.close', 'Close')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: ind.inkMuted, padding: 0, flex: 'none' }}
+            >
+              <X size={16} strokeWidth={1.5} />
+            </button>
+          </div>
+
+          <div>
+            <label htmlFor="edit-leave-employee" style={labelStyle}>{t('leave.employee', 'Employee')}</label>
+            <FlatListbox
+              ind={ind}
+              id="edit-leave-employee"
+              value={form.employeeId}
+              onChange={(e) => handleChange('employeeId', e.target.value)}
+              style={{ width: '100%', textTransform: 'none', letterSpacing: '.02em' }}
+            >
+              {!employees.some(emp => String(emp.id) === form.employeeId) && (
+                <option value={form.employeeId}>{form.employeeId}</option>
+              )}
+              {employees.map(emp => (
+                <option key={emp.id} value={String(emp.id)}>{getDemoEmployeeName(emp, t)}</option>
+              ))}
+            </FlatListbox>
+          </div>
+
+          <div>
+            <span style={labelStyle}>{t('timeTracking.leaveType', 'Leave Type')}</span>
+            <div className="grid grid-cols-3" style={{ gap: 6 }}>
+              {['vacation', 'sick', 'personal'].map(type => {
+                const meta = leaveTypeMeta[type];
+                const Icon = meta.Icon;
+                const active = form.type === type;
+                return (
+                  <button
+                    type="button"
+                    key={type}
+                    aria-pressed={active}
+                    onClick={() => handleChange('type', type)}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                      padding: '10px 6px', borderRadius: 0, cursor: 'pointer',
+                      border: `1px solid ${active ? ind.accent : ind.hairline}`,
+                      borderTop: `3px solid ${meta.tone}`,
+                      background: active ? ind.accentWash : 'transparent',
+                      color: ind.ink,
+                    }}
+                  >
+                    <Icon size={16} strokeWidth={1.5} style={{ color: active ? ind.accentDeep : ind.inkMuted }} />
+                    <span style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 11, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+                      {meta.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 12 }}>
+            <div style={{ minWidth: 0 }}>
+              <label htmlFor="edit-leave-start" style={labelStyle}>{t('leave.rangeStart', 'Start')}</label>
+              <DatePicker
+                flat
+                id="edit-leave-start"
+                value={form.startDate}
+                onChange={(e) => handleChange('startDate', e.target.value)}
+              />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <label htmlFor="edit-leave-end" style={labelStyle}>{t('leave.rangeEnd', 'End')}</label>
+              <DatePicker
+                flat
+                id="edit-leave-end"
+                value={form.endDate}
+                min={form.startDate || undefined}
+                onChange={(e) => handleChange('endDate', e.target.value)}
+              />
+            </div>
+            <p style={{ ...noteStyle, margin: 0 }} className="sm:col-span-2">
+              {dayCount > 0 ? `${dayCount} ${t('leave.days', 'days')}` : t('leave.manualDates', 'Enter start and end dates.')}
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="edit-leave-status" style={labelStyle}>{t('leave.status', 'Status')}</label>
+            <FlatListbox
+              ind={ind}
+              id="edit-leave-status"
+              value={form.status}
+              onChange={(e) => handleChange('status', e.target.value)}
+              style={{ width: '100%' }}
+            >
+              {Object.entries(statusLabels).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </FlatListbox>
+            {form.status === 'approved' && (
+              <p style={noteStyle}>
+                {t('leave.approvedRemovesGenerated', 'Approving removes the generated 09:00–17:00 standard hours on the covered weekdays; hand-entered attendance stays.')}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="edit-leave-reason" style={labelStyle}>{t('leave.reason', 'Reason')}</label>
+            <textarea
+              id="edit-leave-reason"
+              value={form.reason}
+              onChange={(e) => handleChange('reason', e.target.value)}
+              rows={3}
+              style={{
+                width: '100%', padding: '7px 10px', resize: 'vertical',
+                border: `1px solid ${ind.hairline}`, borderRadius: 0,
+                background: 'transparent', color: ind.ink, fontFamily: BODY, fontSize: 12.5,
+              }}
+            />
+          </div>
+
+          {releasesDates && (
+            <ChoiceToggle
+              ind={ind}
+              checked={form.restoreStandardHours}
+              onToggle={() => handleChange('restoreStandardHours', !form.restoreStandardHours)}
+              title={t('leave.restoreStandardHours', 'Restore standard hours')}
+              hint={t('leave.restoreStandardHoursEditHint', 'Re-create the generated 09:00–17:00 entries on weekdays this change releases from approved leave. Hand-entered attendance and overtime are never touched.')}
+            />
+          )}
+
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end" style={{ gap: 8, paddingTop: 4, borderTop: `1px solid ${ind.rule}` }}>
+            <Btn ind={ind} onClick={onClose}>{t('common.cancel', 'Cancel')}</Btn>
+            <Btn
+              ind={ind}
+              variant="primary"
+              type="submit"
+              disabled={loading || dayCount === 0}
+              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              {loading && <Loader2 size={13} strokeWidth={1.5} className="animate-spin" />}
+              {loading ? t('common.saving', 'Saving...') : t('common.saveChanges', 'Save Changes')}
             </Btn>
           </div>
         </form>

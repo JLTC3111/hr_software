@@ -1,8 +1,18 @@
+import { fetchAllRows } from '../utils/fetchAllRows.js';
 import { supabase } from '../config/supabaseClient';
-import { isDemoMode, MOCK_EMPLOYEES, MOCK_TIME_ENTRIES, getDemoLeaveRequests, addDemoLeaveRequest, calculateDaysBetween, getDemoTimeEntries, addDemoTimeEntry, getDemoEmployeeById } from '../utils/demoHelper';
+import { isDemoMode, MOCK_EMPLOYEES, MOCK_TIME_ENTRIES, getDemoLeaveRequests, addDemoLeaveRequest, updateDemoLeaveRequest, calculateDaysBetween, getDemoTimeEntries, addDemoTimeEntry, deleteDemoTimeEntry, getDemoEmployeeById } from '../utils/demoHelper';
 import { saveDemoBlob } from '../utils/demoStorage';
 import { toExtendedInterval, extendedIntervalsOverlap, getMonthDateRange } from '../utils/timeEntryHelpers.js';
-import { workingDateKeys } from '../utils/reportExportHelpers.js';
+import { workingDateKeys, workingDaySegments } from '../utils/reportExportHelpers.js';
+import {
+  approvedLeaveDateKeys,
+  approvedLeaveDateKeysByEmployee,
+  attendancePeriodRange,
+  dateKey,
+  emptyAttendanceTotals,
+  isDateKeyInMonth,
+  summarizeAttendance,
+} from '../utils/attendanceRules.js';
 import { getDocumentDownloadUrl } from './documentService.js';
 
 const toEmployeeId = (id) => {
@@ -171,11 +181,11 @@ export const createBulkTimeEntries = async (timeEntriesData) => {
     }
 
     // Validate all employees exist first
-    const employeeIds = timeEntriesData.map(entry => toEmployeeId(entry.employeeId));
-    const { data: employees, error: employeeError } = await supabase
+    const employeeIds = [...new Set(timeEntriesData.map(entry => toEmployeeId(entry.employeeId)))];
+    const { data: employees, error: employeeError } = await fetchAllRows(supabase
       .from('employees')
-      .select('id')
-      .in('id', employeeIds);
+      .select('id', { count: 'exact' })
+      .in('id', employeeIds));
 
     if (employeeError) {
       console.error('Error checking employees:', employeeError);
@@ -229,7 +239,8 @@ export const createBulkTimeEntries = async (timeEntriesData) => {
     console.error('Error creating bulk time entries:', error);
     return { 
       success: false, 
-      error: error.message || 'Failed to create time entries'
+      error: error.message || 'Failed to create time entries',
+      code: error.code
     };
   }
 };
@@ -238,11 +249,28 @@ const STANDARD_CLOCK_IN = '09:00:00';
 const STANDARD_CLOCK_OUT = '17:00:00';
 const STANDARD_HOURS = 8;
 const MAX_BULK_FILL_DAYS = 366;
+const BULK_STANDARD_NOTE_PREFIX = 'Standard hours filled by admin:';
+
+const bulkStandardNote = (adminName, notes) => {
+  const stamp = `${BULK_STANDARD_NOTE_PREFIX} ${adminName}`;
+  if (!notes) return stamp;
+  if (String(notes).startsWith(BULK_STANDARD_NOTE_PREFIX)) return String(notes);
+  return `${stamp}. ${notes}`;
+};
+
+const isBulkStandardEntry = (entry) => {
+  const hourType = entry?.hour_type || entry?.hourType;
+  const notes = entry?.notes || '';
+  return hourType === 'regular'
+    && String(notes).startsWith(BULK_STANDARD_NOTE_PREFIX)
+    && timeStringToSeconds(entry.clock_in ?? entry.clockIn) === timeStringToSeconds(STANDARD_CLOCK_IN)
+    && timeStringToSeconds(entry.clock_out ?? entry.clockOut) === timeStringToSeconds(STANDARD_CLOCK_OUT);
+};
 
 const timeStringToSeconds = (value) => {
   if (value == null) return null;
   const str = typeof value === 'string' ? value : String(value);
-  const match = str.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  const match = str.match(/^(\d{1,2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?$/);
   if (!match) return null;
   const hours = Number(match[1]);
   const minutes = Number(match[2]);
@@ -312,8 +340,26 @@ const hasOverlappingEntry = (existingEntries, clockInSeconds, clockOutSeconds) =
 };
 
 /**
+ * Approval cleanup. Removes only rows the bulk fill created — same employee,
+ * a Monday–Friday date inside the approved range, hour_type 'regular',
+ * 09:00–17:00 and the bulk note — so hand-entered attendance, overtime and
+ * other hour types stay. Running it again for the same request removes nothing.
+ */
+const removeDemoBulkStandardEntriesForLeave = (leave) => {
+  const dates = workingDateKeys(leave?.start_date, leave?.end_date || leave?.start_date);
+  if (!dates.length || !leave?.employee_id) return { removed: 0 };
+  const ids = getDemoTimeEntries()
+    .filter(entry => String(entry.employee_id) === String(leave.employee_id)
+      && dates.includes(dateKey(entry.date)) && isBulkStandardEntry(entry))
+    .map(entry => entry.id);
+  ids.forEach(id => deleteDemoTimeEntry(id));
+  return { removed: ids.length };
+};
+
+/**
  * Create standard 9 AM – 5 PM regular hour entries for all employees across a date range.
- * Skips employees/dates that already have overlapping entries for the same hour type.
+ * Skips employees/dates that already have overlapping entries,
+ * and weekdays already covered by an approved leave request.
  */
 export const fillStandardHoursForAllEmployees = async ({
   startDate,
@@ -322,7 +368,7 @@ export const fillStandardHoursForAllEmployees = async ({
   hourType = 'regular',
   employeeIds = null,
   notes = null
-}) => {
+}, retryAttempt = 0) => {
   try {
     const { dates, weekendsExcluded, noWeekdaysInRange, error: rangeError } = buildDateRange(startDate, endDate);
     if (rangeError) {
@@ -345,10 +391,10 @@ export const fillStandardHoursForAllEmployees = async ({
     if (isDemoMode()) {
       employees = MOCK_EMPLOYEES.map((emp) => ({ id: emp.id, name: emp.name }));
     } else {
-      const { data, error } = await supabase
+      const { data, error } = await fetchAllRows(supabase
         .from('employees')
-        .select('id, name')
-        .order('name');
+        .select('id, name', { count: 'exact' })
+        .order('name'));
 
       if (error) throw error;
       employees = data || [];
@@ -369,16 +415,14 @@ export const fillStandardHoursForAllEmployees = async ({
     if (isDemoMode()) {
       existingEntries = getDemoTimeEntries().filter((entry) =>
         dates.includes(entry.date) &&
-        employeeIdList.some((id) => String(id) === String(entry.employee_id)) &&
-        entry.hour_type === hourType
+        employeeIdList.some((id) => String(id) === String(entry.employee_id))
       );
     } else {
-      const { data, error } = await supabase
+      const { data, error } = await fetchAllRows(supabase
         .from('time_entries')
-        .select('employee_id, date, hour_type, clock_in, clock_out')
+        .select('employee_id, date, hour_type, clock_in, clock_out', { count: 'exact' })
         .in('employee_id', employeeIdList)
-        .in('date', dates)
-        .eq('hour_type', hourType);
+        .in('date', dates));
 
       if (error) throw error;
       existingEntries = data || [];
@@ -395,16 +439,52 @@ export const fillStandardHoursForAllEmployees = async ({
 
     const newClockInSeconds = timeStringToSeconds(STANDARD_CLOCK_IN);
     const newClockOutSeconds = timeStringToSeconds(STANDARD_CLOCK_OUT);
-    const defaultNotes = notes || `Standard hours filled by admin: ${adminName}`;
+    const defaultNotes = bulkStandardNote(adminName, notes);
     const entriesToCreate = [];
     let skipped = 0;
+    let approvedLeave = [];
+
+    if (isDemoMode()) {
+      const firstDate = dates[0];
+      const lastDate = dates[dates.length - 1];
+      approvedLeave = getDemoLeaveRequests().filter((req) =>
+        String(req.status || '').toLowerCase() === 'approved'
+        && employeeIdList.some((id) => String(id) === String(req.employee_id))
+        && String(req.start_date).slice(0, 10) <= lastDate
+        && String(req.end_date || req.start_date).slice(0, 10) >= firstDate
+      );
+    } else {
+      const { data, error } = await fetchAllRows(supabase
+        .from('leave_requests')
+        .select('employee_id, start_date, end_date, status', { count: 'exact' })
+        .in('employee_id', employeeIdList)
+        .lte('start_date', dates[dates.length - 1])
+        .gte('end_date', dates[0])
+        .eq('status', 'approved'));
+
+      if (error) throw error;
+      approvedLeave = data || [];
+    }
+
+    // Read-then-insert: a request approved between this read and the insert
+    // below is caught by the database (time_entries_skip_bulk_fill_on_leave
+    // drops generated rows that land on an approved-leave weekday), and the
+    // approval itself removes generated rows that were already stored.
+    const coveredByLeave = approvedLeaveDateKeysByEmployee(approvedLeave, dates[0], dates[dates.length - 1]);
 
     for (const date of dates) {
       for (const employee of employees) {
         const key = `${employee.id}-${date}`;
+        if (coveredByLeave.get(String(employee.id))?.has(date)) {
+          skipped += 1;
+          continue;
+        }
         const dayEntries = existingByEmployeeDate.get(key) || [];
 
-        if (hasOverlappingEntry(dayEntries, newClockInSeconds, newClockOutSeconds)) {
+        // The unique key covers every hour type. Also preserve overlapping
+        // manual attendance (including WFH) when restoring regular hours.
+        if (dayEntries.some(entry => timeStringToSeconds(entry.clock_in) === newClockInSeconds)
+            || hasOverlappingEntry(dayEntries, newClockInSeconds, newClockOutSeconds)) {
           skipped += 1;
           continue;
         }
@@ -436,13 +516,22 @@ export const fillStandardHoursForAllEmployees = async ({
 
     const result = await createBulkTimeEntries(entriesToCreate);
     if (!result.success) {
+      // A competing transaction may have filled the same date. Its failed
+      // INSERT is atomic; reread attendance and leave before retrying the batch.
+      if (retryAttempt < 2 && ['23505', '40001', '40P01'].includes(result.code)) {
+        return fillStandardHoursForAllEmployees({ startDate, endDate, adminName, hourType, employeeIds, notes }, retryAttempt + 1);
+      }
       return result;
     }
 
+    // Count what the database stored: its insert guard may have dropped rows
+    // for leave approved after the read above.
+    const created = Array.isArray(result.data) ? result.data.length : entriesToCreate.length;
+
     return {
       success: true,
-      created: entriesToCreate.length,
-      skipped,
+      created,
+      skipped: skipped + (entriesToCreate.length - created),
       datesProcessed: dates.length,
       weekendsExcluded,
       employeesProcessed: employees.length,
@@ -480,7 +569,7 @@ export const getTimeEntries = async (employeeId, filters = {}) => {
   try {
     let query = supabase
       .from('time_entries')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('employee_id', toEmployeeId(employeeId))
       .order('date', { ascending: false });
 
@@ -498,7 +587,7 @@ export const getTimeEntries = async (employeeId, filters = {}) => {
       query = query.eq('hour_type', filters.hourType);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await fetchAllRows(query);
 
     if (error) throw error;
     return { success: true, data };
@@ -522,6 +611,10 @@ export const getAllTimeEntriesDetailed = async (filters = {}) => {
       entries = entries.filter(e => e.date <= filters.endDate);
     }
     
+    if (filters.employeeId) entries = entries.filter(entry => String(entry.employee_id) === String(filters.employeeId));
+    if (filters.status) entries = entries.filter((entry) => entry.status === filters.status);
+    if (filters.hourTypes) entries = entries.filter((entry) => filters.hourTypes.includes(entry.hour_type));
+
     // Sort by date desc
     entries.sort((a, b) => new Date(b.date) - new Date(a.date));
     
@@ -533,12 +626,14 @@ export const getAllTimeEntriesDetailed = async (filters = {}) => {
     
     let query = supabase
       .from('time_entries_detailed')
-      .select('*')
+      .select('*', { count: 'exact' })
       .order('date', { ascending: false });
 
+    if (filters.employeeId) query = query.eq('employee_id', toEmployeeId(filters.employeeId));
     if (filters.status) {
       query = query.eq('status', filters.status);
     }
+    if (filters.hourTypes) query = query.in('hour_type', filters.hourTypes);
     if (filters.startDate) {
       query = query.gte('date', filters.startDate);
     }
@@ -547,7 +642,7 @@ export const getAllTimeEntriesDetailed = async (filters = {}) => {
     }
 
     if (import.meta.env.DEV) console.log('🔧 [Service] Executing query on time_entries_detailed view...');
-    const { data, error } = await query;
+    const { data, error } = await fetchAllRows(query);
 
     if (error) {
       console.error('🔧 [Service] Query error:', {
@@ -1076,6 +1171,9 @@ const LEAVE_LIST_COLUMNS = 'id,employee_id,start_date,end_date,leave_type,status
  * Returns null when the caller asked for no scoping at all.
  */
 const resolveLeaveRange = (filters = {}) => {
+  if (filters.startDate && filters.endDate) {
+    return { start: filters.startDate, end: filters.endDate };
+  }
   if (filters.rangeStart && filters.rangeEnd) {
     return { start: filters.rangeStart, end: filters.rangeEnd };
   }
@@ -1151,7 +1249,7 @@ export const getLeaveRequests = async (employeeId, filters = {}) => {
     }
     query = applyLeaveRangeFilter(query, filters);
 
-    const { data, error } = await query;
+    const { data, error } = await fetchAllRows(query);
 
     if (error) throw error;
     return { success: true, data };
@@ -1167,6 +1265,7 @@ export const getAllLeaveRequests = async (filters = {}) => {
     // Get all leave requests from persistent storage
     let requests = getDemoLeaveRequests();
     
+    if (filters.employeeId) requests = requests.filter(request => String(request.employee_id) === String(filters.employeeId));
     // Filter by status if specified
     if (filters.status) {
       requests = requests.filter(r => r.status === filters.status);
@@ -1187,12 +1286,13 @@ export const getAllLeaveRequests = async (filters = {}) => {
       .select(LEAVE_LIST_COLUMNS)
       .order('submitted_at', { ascending: false });
 
+    if (filters.employeeId) query = query.eq('employee_id', toEmployeeId(filters.employeeId));
     if (filters.status) {
       query = query.eq('status', filters.status);
     }
     query = applyLeaveRangeFilter(query, filters);
 
-    const { data, error } = await query;
+    const { data, error } = await fetchAllRows(query);
     if (error) throw error;
 
     // If no leave requests, return early
@@ -1209,10 +1309,10 @@ export const getAllLeaveRequests = async (filters = {}) => {
 
     let employees = [];
     if (allIds.length > 0) {
-      const { data: empData, error: empError } = await supabase
+      const { data: empData, error: empError } = await fetchAllRows(supabase
         .from('employees')
-        .select('id, name, department, position')
-        .in('id', allIds);
+        .select('id, name, department, position', { count: 'exact' })
+        .in('id', allIds));
 
       if (empError) {
         console.error('Error fetching employees for leave requests:', empError);
@@ -1236,29 +1336,212 @@ export const getAllLeaveRequests = async (filters = {}) => {
   }
 };
 
-/* Update leave request status */
-export const updateLeaveRequestStatus = async (requestId, status, approverId, rejectionReason = null) => {
+/**
+ * Recreate the generated 09:00–17:00 rows for weekdays that stopped being
+ * approved leave. Goes through the Fill Standard Hours helper, so weekends,
+ * hand-entered attendance, existing generated rows, overtime and other
+ * employees are left alone and running it twice adds nothing.
+ */
+const restoreStandardHoursForDates = async (employeeId, dates, adminName = 'Admin') => {
+  const totals = { success: true, created: 0, skipped: 0 };
+  for (const segment of workingDaySegments(dates)) {
+    const result = await fillStandardHoursForAllEmployees({
+      startDate: segment.start,
+      endDate: segment.end,
+      adminName,
+      employeeIds: [employeeId],
+    });
+    if (!result.success) return { ...result, created: totals.created, skipped: totals.skipped };
+    totals.created += result.created ?? 0;
+    totals.skipped += result.skipped ?? 0;
+  }
+  return totals;
+};
+
+export const restoreStandardHoursForLeave = async (leave, adminName = 'Admin') => {
+  if (!leave?.employee_id || !leave?.start_date) {
+    return { success: false, error: 'Leave request is missing its employee or dates' };
+  }
+  const dates = workingDateKeys(dateKey(leave.start_date), dateKey(leave.end_date) || dateKey(leave.start_date));
+  return restoreStandardHoursForDates(leave.employee_id, dates, adminName);
+};
+
+const approvalColumns = (status, approverId, rejectionReason) => (
+  status === 'pending'
+    ? { approved_by: null, approved_at: null, rejection_reason: null }
+    : { approved_by: toEmployeeId(approverId), approved_at: new Date().toISOString(), rejection_reason: rejectionReason }
+);
+
+/**
+ * After a request changes: an approved request removes the generated rows on
+ * its covered weekdays; weekdays that were approved leave before and are not
+ * any more get their standard hours back only when the caller asked for it.
+ */
+const reconcileGeneratedHours = async (previous, current, { restoreStandardHours = false, adminName = 'Admin' } = {}) => {
+  const outcome = { removed: null, restored: null };
+  if (!current) return outcome;
+
+  // Production cleanup belongs to the leave trigger and commits atomically
+  // with approval. A later client DELETE could erase hours restored by a
+  // concurrent unapproval. Demo storage has no triggers, so mirror it here.
+  if (isDemoMode() && String(current.status || '').toLowerCase() === 'approved') {
+    outcome.removed = removeDemoBulkStandardEntriesForLeave(current).removed;
+  }
+
+  if (!restoreStandardHours || !previous || String(previous.status || '').toLowerCase() !== 'approved') return outcome;
+  const stillCovered = String(current.status || '').toLowerCase() === 'approved'
+    && String(current.employee_id) === String(previous.employee_id)
+    ? approvedLeaveDateKeys([current])
+    : new Set();
+  const released = workingDateKeys(dateKey(previous.start_date), dateKey(previous.end_date) || dateKey(previous.start_date))
+    .filter((key) => !stillCovered.has(key));
+  if (released.length) {
+    outcome.restored = await restoreStandardHoursForDates(previous.employee_id, released, adminName);
+    if (!outcome.restored.success) {
+      outcome.restoreRetry = { employeeId: previous.employee_id, dates: released };
+      outcome.warning = `Leave saved; standard-hour restoration failed after ${outcome.restored.created ?? 0} entries: ${outcome.restored.error}`;
+    }
+  }
+  return outcome;
+};
+
+const findDemoLeaveRequest = (requestId) =>
+  getDemoLeaveRequests().find((req) => String(req.id) === String(requestId)) || null;
+
+const leaveConflict = () => ({
+  success: false, code: 'LEAVE_CONFLICT',
+  error: 'This leave request changed. Refresh it before trying again.',
+});
+const LEAVE_EDIT_FIELDS = ['employee_id', 'start_date', 'end_date', 'status', 'leave_type', 'reason'];
+const sameLeaveSnapshot = (left, right) => LEAVE_EDIT_FIELDS.every(key =>
+  (left?.[key] ?? null) === (right?.[key] ?? null));
+const matchPreviousLeave = (query, previous) => {
+  for (const key of LEAVE_EDIT_FIELDS) {
+    query = previous[key] == null ? query.is(key, null) : query.eq(key, previous[key]);
+  }
+  return query;
+};
+
+/** Explicit retry of exactly the released dates, using the ordinary fill checks. */
+export const retryStandardHoursRestoration = ({ employeeId, dates } = {}, adminName = 'Admin') => {
+  if (!employeeId || !Array.isArray(dates) || !dates.length
+      || dates.some(day => workingDateKeys(day, day).length !== 1)) {
+    return Promise.resolve({ success: false, error: 'Invalid restoration dates' });
+  }
+  return restoreStandardHoursForDates(employeeId, dates, adminName);
+};
+
+/**
+ * Update leave request status. `options.restoreStandardHours` recreates the
+ * generated standard hours when an approved request is reverted or rejected.
+ */
+export const updateLeaveRequestStatus = async (requestId, status, approverId, rejectionReason = null, options = {}) => {
   if (isDemoMode()) {
-    return { success: true, data: { id: requestId, status } };
+    const previous = findDemoLeaveRequest(requestId);
+    if (!previous) return { success: false, error: 'Leave request not found' };
+    if (options.expectedLeave && !sameLeaveSnapshot(previous, options.expectedLeave)) return leaveConflict();
+    const data = updateDemoLeaveRequest(requestId, { status, ...approvalColumns(status, approverId, rejectionReason) })
+      || { id: requestId, status };
+    const generated = await reconcileGeneratedHours(previous, data, options);
+    return { success: true, data, generated };
   }
 
   try {
-    const { data, error } = await supabase
+    const { data: previous, error: previousError } = await supabase
       .from('leave_requests')
-      .update({
-        status,
-        approved_by: toEmployeeId(approverId),
-        approved_at: new Date().toISOString(),
-        rejection_reason: rejectionReason
-      })
+      .select('id, employee_id, start_date, end_date, status, leave_type, reason')
       .eq('id', requestId)
+      .maybeSingle();
+    if (previousError) throw previousError;
+    if (!previous) return { success: false, error: 'Leave request not found' };
+    if (options.expectedLeave && !sameLeaveSnapshot(previous, options.expectedLeave)) return leaveConflict();
+
+    const { data, error } = await matchPreviousLeave(supabase
+      .from('leave_requests')
+      .update({ status, ...approvalColumns(status, approverId, rejectionReason) })
+      .eq('id', requestId), previous)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
-    return { success: true, data };
+    if (!data) return leaveConflict();
+    const generated = await reconcileGeneratedHours(previous, data, options);
+    return { success: true, data, generated };
   } catch (error) {
     console.error('Error updating leave request status:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/** Revert an approved request to pending, optionally refilling its standard hours. */
+export const revertLeaveApproval = (requestId, approverId, options = {}) =>
+  updateLeaveRequestStatus(requestId, 'pending', approverId, null, options);
+
+/**
+ * Edit an existing request (employee, type, dates, reason, status). The
+ * database recalculates every month touched by the old and the new range;
+ * generated standard hours are reconciled the same way as a status change.
+ */
+export const updateLeaveRequest = async (requestId, updates = {}, options = {}) => {
+  const { approverId = null, rejectionReason = null } = options;
+  const payload = {};
+  const employeeId = updates.employeeId ?? updates.employee_id;
+  const leaveType = updates.leaveType ?? updates.leave_type;
+  const startDate = updates.startDate ?? updates.start_date;
+  const endDate = updates.endDate ?? updates.end_date;
+  if (employeeId != null && employeeId !== '') payload.employee_id = toEmployeeId(employeeId);
+  if (leaveType) payload.leave_type = leaveType;
+  if (startDate) payload.start_date = dateKey(startDate);
+  if (endDate) payload.end_date = dateKey(endDate);
+  if (updates.reason !== undefined) payload.reason = updates.reason;
+  if (updates.status) Object.assign(payload, { status: updates.status }, approvalColumns(updates.status, approverId, rejectionReason));
+
+  if (payload.start_date && payload.end_date && payload.end_date < payload.start_date) {
+    return { success: false, error: 'End date must be on or after start date' };
+  }
+  if (Object.keys(payload).length === 0) {
+    return { success: false, error: 'Nothing to update' };
+  }
+
+  if (isDemoMode()) {
+    const previous = findDemoLeaveRequest(requestId);
+    if (!previous) return { success: false, error: 'Leave request not found' };
+    if (options.expectedLeave && !sameLeaveSnapshot(previous, options.expectedLeave)) return leaveConflict();
+    const start = payload.start_date || dateKey(previous.start_date);
+    const end = payload.end_date || dateKey(previous.end_date) || start;
+    if (end < start) return { success: false, error: 'End date must be on or after start date' };
+    const data = updateDemoLeaveRequest(requestId, { ...payload, days_count: calculateDaysBetween(start, end) });
+    const generated = await reconcileGeneratedHours(previous, data, options);
+    return { success: true, data, generated };
+  }
+
+  try {
+    const { data: previous, error: previousError } = await supabase
+      .from('leave_requests')
+      .select('id, employee_id, start_date, end_date, status, leave_type, reason')
+      .eq('id', requestId)
+      .maybeSingle();
+    if (previousError) throw previousError;
+    if (!previous) return { success: false, error: 'Leave request not found' };
+    if (options.expectedLeave && !sameLeaveSnapshot(previous, options.expectedLeave)) return leaveConflict();
+
+    const start = payload.start_date || dateKey(previous.start_date);
+    const end = payload.end_date || dateKey(previous.end_date) || start;
+    if (end < start) return { success: false, error: 'End date must be on or after start date' };
+
+    const { data, error } = await matchPreviousLeave(supabase
+      .from('leave_requests')
+      .update(payload)
+      .eq('id', requestId), previous)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return leaveConflict();
+
+    const generated = await reconcileGeneratedHours(previous, data, options);
+    return { success: true, data, generated };
+  } catch (error) {
+    console.error('Error updating leave request:', error);
     return { success: false, error: error.message };
   }
 };
@@ -1331,9 +1614,12 @@ export const getOvertimeLogs = async (employeeId, filters = {}) => {
   try {
     let query = supabase
       .from('overtime_logs')
-      .select('*')
-      .eq('employee_id', toEmployeeId(employeeId))
+      .select('*', { count: 'exact' })
       .order('date', { ascending: false });
+
+    if (employeeId != null) query = query.eq('employee_id', toEmployeeId(employeeId));
+    if (filters.startDate) query = query.gte('date', filters.startDate);
+    if (filters.endDate) query = query.lte('date', filters.endDate);
 
     if (filters.status) {
       query = query.eq('status', filters.status);
@@ -1343,7 +1629,7 @@ export const getOvertimeLogs = async (employeeId, filters = {}) => {
       query = query.gte('date', startDate).lte('date', endDate);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await fetchAllRows(query);
 
     if (error) throw error;
     return { success: true, data };
@@ -1392,138 +1678,44 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
     if (import.meta.env.DEV) console.log('🔧 [Service] Date range:', startDate, 'to', endDate);
     
     // Get time entries (INCLUDE PENDING AND APPROVED)
-    const { data: timeEntries, error: timeError } = await supabase
+    const { data: timeEntries, error: timeError } = await fetchAllRows(supabase
       .from('time_entries')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('employee_id', toEmployeeId(employeeId))
       .gte('date', startDate)
       .lte('date', endDate)
-      .in('status', ['pending', 'approved']);  // CHANGED: include pending
+      .in('status', ['pending', 'approved']));  // CHANGED: include pending
     
     if (import.meta.env.DEV) console.log('🔧 [Service] Time entries found:', timeEntries?.length || 0);
     if (timeError) throw timeError;
     
     // Get leave requests (only approved)
-    const { data: leaveRequests, error: leaveError } = await supabase
+    const { data: leaveRequests, error: leaveError } = await fetchAllRows(supabase
       .from('leave_requests')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('employee_id', toEmployeeId(employeeId))
       .lte('start_date', endDate)
       .gte('end_date', startDate)
-      .eq('status', 'approved');
+      .eq('status', 'approved'));
     
     if (leaveError) throw leaveError;
     
     // Get overtime logs (INCLUDE PENDING AND APPROVED)
-    const { data: overtimeLogs, error: overtimeError } = await supabase
+    const { data: overtimeLogs, error: overtimeError } = await fetchAllRows(supabase
       .from('overtime_logs')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('employee_id', toEmployeeId(employeeId))
       .gte('date', startDate)
       .lte('date', endDate)
-      .in('status', ['pending', 'approved']);  // CHANGED: include pending
+      .in('status', ['pending', 'approved']));  // CHANGED: include pending
     
     if (overtimeError) throw overtimeError;
-    
-    // Calculate metrics by hour type
-    const uniqueDays = new Set();
-    const leaveDates = new Set();
-    let regularHours = 0;
-    let holidayHours = 0;
-    let weekendHours = 0;
-    let bonusHours = 0;
-    let overtimeFromEntries = 0;
-    
-    (timeEntries || []).forEach(entry => {
-      // Only count pending or approved
-      if (entry.status === 'pending' || entry.status === 'approved') {
-        const hours = Math.round(parseFloat(entry.hours || 0) * 100) / 100;
-        
-        // Handle hour types
-        if (entry.hour_type === 'on_leave' || entry.hour_type === 'vacation' || entry.hour_type === 'sick_leave') {
-            leaveDates.add(entry.date);
-        } else {
-            uniqueDays.add(entry.date);
-            
-            switch (entry.hour_type) {
-              case 'regular':
-              case 'wfh':
-                regularHours += hours;
-                break;
-              case 'holiday':
-                holidayHours += hours;
-                break;
-              case 'weekend':
-                weekendHours += hours;
-                break;
-              case 'bonus':
-                bonusHours += hours;
-                break;
-              case 'overtime':
-                overtimeFromEntries += hours;
-                break;
-              default:
-                regularHours += hours;
-            }
-        }
-      }
-    });
 
-    // Remove duplicates between worked days and leave days (if any)
-    // If a day is worked, it shouldn't count as leave? Or vice versa?
-    // Prioritize work? If I worked, I am not on leave.
-    // But maybe I took half day leave. 
-    // For now, let's keep them somewhat separate but ensure on_leave entries don't add to regularHours.
-    
-    const daysWorked = uniqueDays.size;
-    
-    // Leave requests bill weekdays only — same rule as days_count / calculate_working_days.
-    (leaveRequests || []).forEach((req) => {
-      workingDateKeys(req.start_date, req.end_date || req.start_date).forEach((key) => {
-        if (key >= startDate && key <= endDate) leaveDates.add(key);
-      });
-    });
-    
-    const leaveDays = leaveDates.size;
-    
-    // Calculate overtime from overtime_logs
-    let overtimeRegular = overtimeFromEntries;
-    let overtimeHoliday = 0;
-    (overtimeLogs || []).forEach(log => {
-      const hours = Math.round(parseFloat(log.hours || 0) * 100) / 100;
-      if (log.overtime_type === 'holiday') {
-        overtimeHoliday += hours;
-      } else {
-        overtimeRegular += hours;
-      }
-    });
-    
-    // AGGREGATE INTO SUMMARY COLUMNS (matching database logic)
-    // overtime_hours = weekend + bonus + overtime hour_type + overtime_logs.regular
-    const overtimeHours = Math.round((weekendHours + bonusHours + overtimeRegular) * 100) / 100;
-    
-    // holiday_overtime_hours = holiday + overtime_logs.holiday
-    const holidayOvertimeHours = Math.round((holidayHours + overtimeHoliday) * 100) / 100;
-    
-    // total_hours = ALL hours from all sources
-    const totalHours = Math.round((regularHours + weekendHours + holidayHours + 
-                       bonusHours + overtimeRegular + overtimeHoliday) * 100) / 100;
-    
-    const totalDays = daysWorked + leaveDays;
-    const workingDaysInMonth = 22;
-    const attendanceRate = totalDays > 0 ? (totalDays / workingDaysInMonth) * 100 : 0;
-    
     return {
       employee_id: toEmployeeId(employeeId),
       month,
       year,
-      days_worked: daysWorked,
-      leave_days: leaveDays,
-      regular_hours: Math.round(regularHours * 100) / 100,
-      overtime_hours: overtimeHours,
-      holiday_overtime_hours: holidayOvertimeHours,
-      total_hours: totalHours,
-      attendance_rate: Math.round(Math.min(attendanceRate, 100) * 100) / 100
+      ...summarizeAttendance({ timeEntries, leaveRequests, overtimeLogs, startDate, endDate }),
     };
   } catch (error) {
     console.error('Error calculating summary from raw data:', error);
@@ -1531,52 +1723,29 @@ const calculateSummaryFromRawData = async (employeeId, month, year) => {
   }
 };
 
+/** Demo mode reads the same sources from local storage and applies the same rules. */
+const demoAttendanceSummary = (employeeId, month, year) => {
+  const { startDate, endDate } = getMonthDateRange(month, year);
+  return summarizeAttendance({
+    timeEntries: getDemoTimeEntries(),
+    leaveRequests: getDemoLeaveRequests(),
+    startDate,
+    endDate,
+    employeeId,
+  });
+};
+
 /* Get time tracking summary for an employee */
 export const getTimeTrackingSummary = async (employeeId, month, year) => {
   if (isDemoMode()) {
-    // Use both MOCK_TIME_ENTRIES and persisted demo entries
-    const allEntries = getDemoTimeEntries();
-    const entries = allEntries.filter(e => {
-      const d = new Date(e.date);
-      return String(e.employee_id) === String(employeeId) && 
-             d.getMonth() + 1 === parseInt(month) && 
-             d.getFullYear() === parseInt(year);
-    });
-    
-    // Calculate hours by type - matching production logic
-    const regularHours = entries.filter(e => e.hour_type === 'regular').reduce((sum, e) => sum + (e.hours || 0), 0);
-    const wfhHours = entries.filter(e => e.hour_type === 'wfh').reduce((sum, e) => sum + (e.hours || 0), 0);
-    const overtimeRegular = entries.filter(e => e.hour_type === 'overtime').reduce((sum, e) => sum + (e.hours || 0), 0);
-    const weekendHours = entries.filter(e => e.hour_type === 'weekend').reduce((sum, e) => sum + (e.hours || 0), 0);
-    const holidayHours = entries.filter(e => e.hour_type === 'holiday').reduce((sum, e) => sum + (e.hours || 0), 0);
-    const bonusHours = entries.filter(e => e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
-    
-    // Correctly calculate days worked (exclude leave)
-    const workEntries = entries.filter(e => e.hour_type !== 'on_leave' && e.hour_type !== 'vacation' && e.hour_type !== 'sick_leave');
-    const daysWorked = new Set(workEntries.map(e => e.date)).size;
-    
-    // Calculate leave days from entries
-    const leaveEntries = entries.filter(e => e.hour_type === 'on_leave' || e.hour_type === 'vacation' || e.hour_type === 'sick_leave');
-    const leaveDays = new Set(leaveEntries.map(e => e.date)).size;
-    
-    // Match production calculation: overtime_hours = weekend + bonus + overtime_regular
-    const overtimeHours = weekendHours + bonusHours + overtimeRegular;
-    // holiday_overtime_hours = holiday hours
-    const holidayOvertimeHours = holidayHours;
-    // Total regular = regular + wfh
-    const totalRegular = regularHours + wfhHours;
-    const totalHours = totalRegular + overtimeHours + holidayOvertimeHours;
-    
     return {
       success: true,
       data: {
-        regular_hours: Math.round(totalRegular * 100) / 100,
-        overtime_hours: Math.round(overtimeHours * 100) / 100,
-        holiday_overtime_hours: Math.round(holidayOvertimeHours * 100) / 100,
-        total_hours: Math.round(totalHours * 100) / 100,
-        days_worked: daysWorked,
-        leave_days: leaveDays
-      }
+        employee_id: toEmployeeId(employeeId),
+        month,
+        year,
+        ...demoAttendanceSummary(employeeId, month, year),
+      },
     };
   }
 
@@ -1590,38 +1759,9 @@ export const getTimeTrackingSummary = async (employeeId, month, year) => {
     return { success: true, data: calculatedData };
   } catch (error) {
     console.error('🔧 [Service] Error fetching time tracking summary:', error);
-    // Fallback to summary table, then zeros
-    try {
-      const { data, error: summaryError } = await supabase
-        .from('time_tracking_summary')
-        .select('*')
-        .eq('employee_id', toEmployeeId(employeeId))
-        .eq('month', month)
-        .eq('year', year)
-        .maybeSingle();
-      if (!summaryError && data) {
-        return { success: true, data };
-      }
-      const calculatedData = await calculateSummaryFromRawData(employeeId, month, year);
-      return { success: true, data: calculatedData };
-    } catch {
-      // Ultimate fallback - return zeros
-      return { 
-        success: true,
-        data: {
-          employee_id: toEmployeeId(employeeId),
-          month,
-          year,
-          days_worked: 0,
-          leave_days: 0,
-          regular_hours: 0,
-          overtime_hours: 0,
-          holiday_overtime_hours: 0,
-          total_hours: 0,
-          attendance_rate: 0
-        }
-      };
-    }
+    // Old stored rows may predate the attendance rule; never present them or
+    // fabricated zeros as a successful calculation after a source read fails.
+    return { success: false, error: error.message, data: null };
   }
 };
 
@@ -1651,138 +1791,31 @@ const emptySummary = (employeeId, month, year) => ({
   employee_id: toEmployeeId(employeeId),
   month,
   year,
-  days_worked: 0,
-  leave_days: 0,
-  regular_hours: 0,
-  overtime_hours: 0,
-  holiday_overtime_hours: 0,
-  total_hours: 0,
-  attendance_rate: 0,
+  ...emptyAttendanceTotals(),
 });
 
-const summarizeDemoTimeEntries = (entries) => {
-  const regularHours = entries.filter((e) => e.hour_type === 'regular').reduce((sum, e) => sum + (e.hours || 0), 0);
-  const wfhHours = entries.filter((e) => e.hour_type === 'wfh').reduce((sum, e) => sum + (e.hours || 0), 0);
-  const overtimeRegular = entries.filter((e) => e.hour_type === 'overtime').reduce((sum, e) => sum + (e.hours || 0), 0);
-  const weekendHours = entries.filter((e) => e.hour_type === 'weekend').reduce((sum, e) => sum + (e.hours || 0), 0);
-  const holidayHours = entries.filter((e) => e.hour_type === 'holiday').reduce((sum, e) => sum + (e.hours || 0), 0);
-  const bonusHours = entries.filter((e) => e.hour_type === 'bonus').reduce((sum, e) => sum + (e.hours || 0), 0);
-
-  const workEntries = entries.filter((e) => e.hour_type !== 'on_leave' && e.hour_type !== 'vacation' && e.hour_type !== 'sick_leave');
-  const daysWorked = new Set(workEntries.map((e) => e.date)).size;
-
-  const leaveEntries = entries.filter((e) => e.hour_type === 'on_leave' || e.hour_type === 'vacation' || e.hour_type === 'sick_leave');
-  const leaveDays = new Set(leaveEntries.map((e) => e.date)).size;
-
-  const overtimeHours = weekendHours + bonusHours + overtimeRegular;
-  const holidayOvertimeHours = holidayHours;
-  const totalRegular = regularHours + wfhHours;
-  const totalHours = totalRegular + overtimeHours + holidayOvertimeHours;
-
-  return {
-    regular_hours: Math.round(totalRegular * 100) / 100,
-    overtime_hours: Math.round(overtimeHours * 100) / 100,
-    holiday_overtime_hours: Math.round(holidayOvertimeHours * 100) / 100,
-    total_hours: Math.round(totalHours * 100) / 100,
-    days_worked: daysWorked,
-    leave_days: leaveDays,
-  };
-};
-
 const buildDemoOverviewSummaries = (month, year, employees = []) => {
-  const monthInt = parseInt(month, 10);
-  const yearInt = parseInt(year, 10);
-  const allEntries = getDemoTimeEntries();
-  const entriesByEmployee = new Map();
-
-  allEntries.forEach((entry) => {
-    const d = new Date(entry.date);
-    if (d.getMonth() + 1 !== monthInt || d.getFullYear() !== yearInt) return;
-    const employeeId = String(entry.employee_id);
-    if (!entriesByEmployee.has(employeeId)) entriesByEmployee.set(employeeId, []);
-    entriesByEmployee.get(employeeId).push(entry);
-  });
+  const { startDate, endDate } = getMonthDateRange(month, year);
+  const monthEntries = getDemoTimeEntries().filter((entry) => isDateKeyInMonth(entry.date, month, year));
+  const leaveRequests = getDemoLeaveRequests();
 
   return employees.map((employee) => ({
     employee,
-    data: summarizeDemoTimeEntries(entriesByEmployee.get(String(employee.id)) || []),
+    data: summarizeAttendance({
+      timeEntries: monthEntries,
+      leaveRequests,
+      startDate,
+      endDate,
+      employeeId: employee.id,
+    }),
   }));
 };
 
 const aggregateEmployeeSummary = (employeeId, month, year, timeEntries = [], leaveRequests = [], overtimeLogs = []) => {
   const { startDate, endDate } = getMonthDateRange(month, year);
-  const uniqueDays = new Set();
-  const leaveDates = new Set();
-  let regularHours = 0;
-  let holidayHours = 0;
-  let weekendHours = 0;
-  let bonusHours = 0;
-  let overtimeFromEntries = 0;
-
-  timeEntries.forEach((entry) => {
-    if (entry.status !== 'pending' && entry.status !== 'approved') return;
-    const hours = Math.round(parseFloat(entry.hours || 0) * 100) / 100;
-
-    if (entry.hour_type === 'on_leave' || entry.hour_type === 'vacation' || entry.hour_type === 'sick_leave') {
-      leaveDates.add(entry.date);
-      return;
-    }
-
-    uniqueDays.add(entry.date);
-    switch (entry.hour_type) {
-      case 'regular':
-      case 'wfh':
-        regularHours += hours;
-        break;
-      case 'holiday':
-        holidayHours += hours;
-        break;
-      case 'weekend':
-        weekendHours += hours;
-        break;
-      case 'bonus':
-        bonusHours += hours;
-        break;
-      case 'overtime':
-        overtimeFromEntries += hours;
-        break;
-      default:
-        regularHours += hours;
-    }
-  });
-
-  leaveRequests.forEach((req) => {
-    workingDateKeys(req.start_date, req.end_date || req.start_date).forEach((key) => {
-      if (key >= startDate && key <= endDate) leaveDates.add(key);
-    });
-  });
-
-  let overtimeRegular = overtimeFromEntries;
-  let overtimeHoliday = 0;
-  overtimeLogs.forEach((log) => {
-    const hours = Math.round(parseFloat(log.hours || 0) * 100) / 100;
-    if (log.overtime_type === 'holiday') overtimeHoliday += hours;
-    else overtimeRegular += hours;
-  });
-
-  const daysWorked = uniqueDays.size;
-  const leaveDays = leaveDates.size;
-  // overtime_hours = weekend + bonus + overtime hour_type + overtime_logs.regular
-  const overtimeHours = Math.round((weekendHours + bonusHours + overtimeRegular) * 100) / 100;
-  const holidayOvertimeHours = Math.round((holidayHours + overtimeHoliday) * 100) / 100;
-  const totalHours = Math.round((regularHours + weekendHours + holidayHours + bonusHours + overtimeRegular + overtimeHoliday) * 100) / 100;
-  const totalDays = daysWorked + leaveDays;
-  const attendanceRate = totalDays > 0 ? (totalDays / 22) * 100 : 0;
-
   return {
     ...emptySummary(employeeId, month, year),
-    days_worked: daysWorked,
-    leave_days: leaveDays,
-    regular_hours: Math.round(regularHours * 100) / 100,
-    overtime_hours: overtimeHours,
-    holiday_overtime_hours: holidayOvertimeHours,
-    total_hours: totalHours,
-    attendance_rate: Math.round(Math.min(attendanceRate, 100) * 100) / 100,
+    ...summarizeAttendance({ timeEntries, leaveRequests, overtimeLogs, startDate, endDate }),
   };
 };
 
@@ -1790,24 +1823,24 @@ const calculateAllSummariesFromRawData = async (month, year, employees = []) => 
   const { startDate, endDate } = getMonthDateRange(month, year);
 
   const [timeResult, leaveResult, overtimeResult] = await Promise.all([
-    supabase
+    fetchAllRows(supabase
       .from('time_entries')
-      .select('employee_id, date, hours, hour_type, status')
+      .select('employee_id, date, hours, hour_type, status', { count: 'exact' })
       .gte('date', startDate)
       .lte('date', endDate)
-      .in('status', ['pending', 'approved']),
-    supabase
+      .in('status', ['pending', 'approved'])),
+    fetchAllRows(supabase
       .from('leave_requests')
-      .select('employee_id, start_date, end_date, status')
+      .select('employee_id, start_date, end_date, status', { count: 'exact' })
       .lte('start_date', endDate)
       .gte('end_date', startDate)
-      .eq('status', 'approved'),
-    supabase
+      .eq('status', 'approved')),
+    fetchAllRows(supabase
       .from('overtime_logs')
-      .select('employee_id, date, hours, overtime_type, status')
+      .select('employee_id, date, hours, overtime_type, status', { count: 'exact' })
       .gte('date', startDate)
       .lte('date', endDate)
-      .in('status', ['pending', 'approved']),
+      .in('status', ['pending', 'approved'])),
   ]);
 
   if (timeResult.error) throw timeResult.error;
@@ -1852,41 +1885,6 @@ const calculateAllSummariesFromRawData = async (month, year, employees = []) => 
   }));
 };
 
-const mergeSummaryRowsWithEmployees = (rows = [], employees = [], month, year) => {
-  const rowByEmployeeId = new Map(
-    rows.map((row) => [String(row.employee_id || row.employee?.id), row])
-  );
-
-  return employees.map((employee) => {
-    const existing = rowByEmployeeId.get(String(employee.id));
-    if (existing) {
-      return {
-        employee,
-        data: {
-          ...emptySummary(employee.id, month, year),
-          ...existing,
-          employee_id: employee.id,
-        },
-      };
-    }
-    return {
-      employee,
-      data: emptySummary(employee.id, month, year),
-    };
-  });
-};
-
-const summaryRowsHaveUsableData = (rows = [], employeeCount = 0) => {
-  if (!rows.length) return false;
-  const coverage = employeeCount > 0 ? rows.length / employeeCount : 1;
-  const hasMetrics = rows.some((row) =>
-    (row.total_hours || 0) > 0
-    || (row.regular_hours || 0) > 0
-    || (row.days_worked || 0) > 0
-  );
-  return hasMetrics && coverage >= 0.5;
-};
-
 /* Overview tab: one fast path for all employees (demo + production) */
 export const getOverviewEmployeeSummaries = async (month, year, employees = []) => {
   if (isDemoMode()) {
@@ -1907,19 +1905,6 @@ export const getOverviewEmployeeSummaries = async (month, year, employees = []) 
     return { success: true, data: calculated };
   } catch (error) {
     console.error('Error calculating overview summaries from time entries:', error);
-
-    // Degraded fallback: stored summary rows still give days/regular hours.
-    try {
-      const summaryResult = await getAllEmployeesSummary(month, year);
-      if (summaryResult.success && summaryRowsHaveUsableData(summaryResult.data, employees.length)) {
-        return {
-          success: true,
-          data: mergeSummaryRowsWithEmployees(summaryResult.data, employees, month, year),
-        };
-      }
-    } catch (fallbackError) {
-      console.error('Error reading stored summary rows:', fallbackError);
-    }
 
     return { success: false, error: error.message, data: [] };
   }
@@ -1981,48 +1966,21 @@ export const getMonthlyAttendanceSummary = async (filters = {}) => {
 
 /* Calculate totals for different hour types */
 export const calculateHourTotals = async (employeeId, period = 'week') => {
-  if (isDemoMode()) {
-    return { success: true, data: { regular: 40, overtime: 5, holiday: 0, wfh: 8 } };
-  }
-
   try {
-    const now = new Date();
-    let startDate;
-
-    if (period === 'week') {
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay());
-      startDate = startOfWeek.toISOString().split('T')[0];
-    } else if (period === 'month') {
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-    }
-
-    const { data, error } = await supabase
-      .from('time_entries')
-      .select('hours, hour_type')
-      .eq('employee_id', toEmployeeId(employeeId))
-      .eq('status', 'approved')
-      .gte('date', startDate);
-
-    if (error) throw error;
-
-    // Calculate totals by hour type
-    const totals = {
-      regular: 0,
-      holiday: 0,
-      weekend: 0,
-      bonus: 0,
-      total: 0
-    };
-
-    data.forEach(entry => {
-      totals[entry.hour_type] = (totals[entry.hour_type] || 0) + parseFloat(entry.hours);
-      totals.total += parseFloat(entry.hours);
+    const range = attendancePeriodRange(period);
+    const [entries, leave, logs] = await Promise.all([
+      getTimeEntries(employeeId, range),
+      getLeaveRequests(employeeId, { rangeStart: range.startDate, rangeEnd: range.endDate }),
+      getOvertimeLogs(employeeId, range),
+    ]);
+    const failed = [entries, leave, logs].find((result) => !result.success);
+    if (failed) return failed;
+    const totals = summarizeAttendance({
+      timeEntries: entries.data, leaveRequests: leave.data, overtimeLogs: logs.data,
+      ...range, employeeId,
     });
-
-    return { success: true, data: totals };
+    return { success: true, data: { regular: 0, wfh: 0, overtime: 0, holiday: 0, weekend: 0, bonus: 0, ...totals.hours_by_type, total: totals.total_hours } };
   } catch (error) {
-    console.error('Error calculating hour totals:', error);
     return { success: false, error: error.message };
   }
 };
@@ -2336,65 +2294,23 @@ export const getEmployeeById = async (employeeId) => {
 
 export const getWorkDaysForMonth = async (month, employeeId = null) => {
   try {
-    const year = month.getFullYear();
-    const monthIndex = month.getMonth();
-
-    const { startDate, endDate } = getMonthDateRange(monthIndex + 1, year);
-
-    let query = supabase
-      .from('time_entries')
-      .select(`
-        date,
-        total_hours:hours,
-        hour_type,
-        employee_id,
-        employees (
-          id,
-          name,
-          department
-        )
-      `)
-      .gte('date', startDate)
-      .lte('date', endDate)
-      .eq('status', 'approved');
-
-    if (employeeId) {
-      query = query.eq('employee_id', toEmployeeId(employeeId));
-    }
-
-    const { data: entries, error } = await query;
-
-    if (error) throw error;
-
-    const workData = entries.reduce((acc, entry) => {
-      if (!entry.employees) return acc;
-
-      const empId = entry.employees.id;
-      if (!acc[empId]) {
-        acc[empId] = {
-          id: empId,
-          name: entry.employees.name,
-          department: entry.employees.department,
-          workDates: new Set(),
-          totalOvertime: 0,
-        };
-      }
-
-      acc[empId].workDates.add(entry.date);
-      if (entry.hour_type === 'overtime' || entry.hour_type === 'holiday_overtime') {
-        acc[empId].totalOvertime += entry.total_hours;
-      }
-
-      return acc;
-    }, {});
-
-    const result = Object.values(workData).map(item => ({
-      ...item,
-      totalDays: item.workDates.size,
-    }));
-
-    return result;
-
+    const range = getMonthDateRange(month.getMonth() + 1, month.getFullYear());
+    const [entries, leave, overtime] = await Promise.all([
+      getAllTimeEntriesDetailed({ ...range, employeeId }),
+      getAllLeaveRequests({ ...range, employeeId, includeEmployeeDetails: false }),
+      getOvertimeLogs(employeeId, range),
+    ]);
+    for (const result of [entries, leave, overtime]) if (!result.success) throw new Error(result.error);
+    const employees = new Map((entries.data || []).map(entry => [entry.employee_id, entry.employees || entry.employee || { id: entry.employee_id, name: entry.employee_name, department: entry.employee_department }]));
+    return [...employees].map(([id, employee]) => {
+      const totals = summarizeAttendance({ timeEntries: entries.data, leaveRequests: leave.data, overtimeLogs: overtime.data, employeeId: id, ...range });
+      const workDates = new Set((entries.data || []).filter(entry =>
+        String(entry.employee_id) === String(id)
+        && summarizeAttendance({ timeEntries: [entry], leaveRequests: leave.data, employeeId: id, ...range }).days_worked > 0
+      ).map(entry => dateKey(entry.date)));
+      return { id, name: employee.name, department: employee.department, workDates,
+        totalDays: totals.days_worked, totalOvertime: totals.overtime_hours + totals.holiday_overtime_hours };
+    });
   } catch (error) {
     console.error('Error fetching work days for month:', error);
     return [];
@@ -2419,6 +2335,9 @@ export default {
   getLeaveRequests,
   getAllLeaveRequests,
   updateLeaveRequestStatus,
+  updateLeaveRequest,
+  revertLeaveApproval,
+  restoreStandardHoursForLeave,
   
   // Overtime Logs
   createOvertimeLog,

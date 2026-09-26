@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react'
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useTheme } from './contexts/ThemeContext'
@@ -69,38 +69,70 @@ const HRManagementApp = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const rosterGeneration = useRef(0);
+
+  // Portraits are multi-megabyte base64. Load them after the roster is in
+  // state so the overview queries are already on the wire.
+  const scheduleEmployeePhotos = useCallback((generation) => {
+    setTimeout(() => {
+      if (generation !== rosterGeneration.current) return;
+      employeeService.getEmployeePhotos().then((photoResult) => {
+        if (generation !== rosterGeneration.current || !photoResult.success) return;
+        setEmployees((prev) => prev.map((emp) => {
+          const photo = photoResult.data?.[String(emp.id)];
+          if ((photo || null) === (emp.photo || null)) return emp;
+          return { ...emp, photo: photo || null };
+        }));
+      });
+    }, 0);
+  }, []);
+
+  useEffect(() => employeeService.subscribeEmployeePhotoChanges(() => {
+    scheduleEmployeePhotos(rosterGeneration.current);
+  }), [scheduleEmployeePhotos]);
 
   // Fetch employees from Supabase
   const fetchEmployees = useCallback(async () => {
+    const generation = ++rosterGeneration.current;
     setLoading(true);
     setError(null);
     console.log('🔄 [App] Fetching employees, isDemoMode:', isDemoMode());
     const result = await employeeService.getAllEmployees();
     console.log('📊 [App] Employees fetched:', { success: result.success, count: result.data?.length, isDemoMode: isDemoMode() });
+    if (generation !== rosterGeneration.current) return;
     if (result.success) {
       setEmployees(result.data);
+      scheduleEmployeePhotos(generation);
     } else {
       setError(result.error);
       console.error('Error fetching employees:', result.error);
     }
     setLoading(false);
-  }, []);
+  }, [scheduleEmployeePhotos]);
 
   // Fetch employees on mount and when auth changes
   useEffect(() => {
+    employeeService.clearEmployeePhotoCache();
     if (!isAuthenticated && !isDemoMode()) return;
     fetchEmployees();
-  }, [fetchEmployees, isAuthenticated, user]);
+    return () => {
+      rosterGeneration.current += 1;
+      employeeService.clearEmployeePhotoCache();
+    };
+  }, [fetchEmployees, isAuthenticated, user?.id]);
   
   // Refetch employees (expose this to child components)
   const refetchEmployees = useCallback(async () => {
+    const generation = ++rosterGeneration.current;
     const result = await employeeService.getAllEmployees();
+    if (generation !== rosterGeneration.current) return { success: false, error: 'Superseded' };
     if (result.success) {
       setEmployees(result.data);
+      scheduleEmployeePhotos(generation);
       return { success: true };
     }
     return { success: false, error: result.error };
-  }, []);
+  }, [scheduleEmployeePhotos]);
 
   // Fetch applications from Supabase on mount
   useEffect(() => {
@@ -131,7 +163,7 @@ const HRManagementApp = () => {
     };
 
     fetchApplications();
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user?.id]);
 
   const handlePhotoUpdate = useCallback(async (employeeId, photoData, useStorage = false) => {
     try {

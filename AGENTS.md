@@ -19,3 +19,13 @@
 - Make the smallest change necessary.
 - Prefer fixing root causes over adding workarounds.
 - Ask before introducing new dependencies.
+
+# HR Software agent instructions
+
+- Read existing implementation before modifying anything.
+- Preserve existing application behavior unless the task explicitly changes it.
+- After making a change, audit the surrounding feature for regressions.
+- Verify database migrations against application logic.
+- Do not claim a feature works merely because `npm run build` succeeds.
+- Test the actual behavior affected by the task.
+- Do not commit or push unless explicitly requested.

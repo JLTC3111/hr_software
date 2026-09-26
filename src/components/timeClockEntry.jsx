@@ -37,6 +37,7 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import * as timeTrackingService from '../services/timeTrackingService.js';
 import { validateAndRefreshSession } from '../utils/sessionHelper.js';
 import { retryWithBackoff, isRetryableError } from '../utils/retryHelper.js';
+import { attendancePeriodRange, localDateKey, summarizeAttendance } from '../utils/attendanceRules.js';
 import { DEFAULT_REQUEST_TIMEOUT } from '../config/requestTimeouts.js';
 import { supabase } from '../config/supabaseClient.js';
 import { isDemoMode, getDemoEmployeeName, addDemoLeaveRequest, calculateDaysBetween } from '../utils/demoHelper.js';
@@ -200,7 +201,7 @@ const TimeClockEntry = () => {
 
   // Form state
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: localDateKey(new Date()),
     clockIn: '',
     clockOut: '',
     hourType: 'regular',
@@ -210,6 +211,7 @@ const TimeClockEntry = () => {
 
   // Time entries state
   const [timeEntries, setTimeEntries] = useState([]);
+  const [overtimeLogs, setOvertimeLogs] = useState([]);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
@@ -446,6 +448,16 @@ const TimeClockEntry = () => {
           setTimeEntries([]);
         }
       }
+      if (canManageTimeTracking || userEmployeeId) {
+        const week = attendancePeriodRange('week');
+        const month = attendancePeriodRange('month');
+        const logs = await timeTrackingService.getOvertimeLogs(canManageTimeTracking ? null : userEmployeeId, {
+          startDate: week.startDate < month.startDate ? week.startDate : month.startDate,
+          endDate: week.endDate > month.endDate ? week.endDate : month.endDate,
+        });
+        if (!logs.success) throw new Error(logs.error);
+        setOvertimeLogs(logs.data || []);
+      }
     } catch (error) {
       console.error('💥 Exception in fetchTimeEntries:', error);
       console.error('Stack:', error.stack);
@@ -488,19 +500,21 @@ const TimeClockEntry = () => {
 
   const fetchLeaveRequests = useCallback(async ({ year } = {}) => {
     try {
-      if (isDemoMode()) {
-        setLeaveRequests([]);
-        return;
-      }
-
-      if (!userEmployeeId) {
+      if (!canManageTimeTracking && !userEmployeeId) {
         setLeaveRequests([]);
         return;
       }
 
       const currentYear = year || new Date().getFullYear();
+      const week = attendancePeriodRange('week');
+      const range = {
+        rangeStart: week.startDate < `${currentYear}-01-01` ? week.startDate : `${currentYear}-01-01`,
+        rangeEnd: week.endDate > `${currentYear}-12-31` ? week.endDate : `${currentYear}-12-31`,
+      };
       const result = await withTimeout(
-        () => timeTrackingService.getLeaveRequests(userEmployeeId, { year: currentYear }),
+        () => canManageTimeTracking
+          ? timeTrackingService.getAllLeaveRequests({ ...range, includeEmployeeDetails: false })
+          : timeTrackingService.getLeaveRequests(userEmployeeId, range),
         DEFAULT_REQUEST_TIMEOUT,
         'fetch leave requests'
       );
@@ -516,7 +530,7 @@ const TimeClockEntry = () => {
       handleSessionAuthError(error, { silent: true });
       setLeaveRequests([]);
     }
-  }, [userEmployeeId, withTimeout, handleSessionAuthError]);
+  }, [canManageTimeTracking, userEmployeeId, withTimeout, handleSessionAuthError]);
 
   const loadData = useCallback(async ({ silent = false } = {}) => {
     const seq = ++loadSeq.current;
@@ -987,7 +1001,7 @@ const TimeClockEntry = () => {
         
         // Reset form
         setFormData({
-          date: new Date().toISOString().split('T')[0],
+          date: localDateKey(new Date()),
           clockIn: '',
           clockOut: '',
           hourType: 'regular',
@@ -1224,63 +1238,17 @@ const TimeClockEntry = () => {
     }
   };
 
-  // Calculate totals (including pending and approved time entries)
+  const periodAttendance = (period) => summarizeAttendance({
+    timeEntries,
+    overtimeLogs,
+    leaveRequests,
+    ...attendancePeriodRange(period),
+  });
   const calculateTotals = (filterType = 'all', period = 'week') => {
-    if (!Array.isArray(timeEntries)) return 0;
-    
-    const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay());
-    startOfWeek.setHours(0, 0, 0, 0);
-
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    // Count pending and approved entries
-    return timeEntries.reduce((acc, entry) => {
-      const entryDate = new Date(entry.date);
-      
-      // Filter by period
-      if (period === 'week' && entryDate < startOfWeek) return acc;
-      if (period === 'month' && entryDate < startOfMonth) return acc;
-
-      // Include pending and approved entries (not rejected)
-      if (entry.status === 'rejected') return acc;
-
-      // Filter by type (using hour_type from Supabase)
-      const entryType = entry.hour_type || entry.hourType;
-      if (filterType === 'all' || entryType === filterType) {
-        acc += parseFloat(entry.hours || 0);
-      }
-
-      return acc;
-    }, 0);
+    const totals = periodAttendance(period);
+    return filterType === 'all' ? totals.total_hours : (totals.hours_by_type[filterType] ?? 0);
   };
-  
-  // Calculate leave days (including pending and approved)
-  const calculateLeaveDays = (period = 'week') => {
-    if (!Array.isArray(leaveRequests)) return 0;
-    
-    const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay());
-    startOfWeek.setHours(0, 0, 0, 0);
-
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    return leaveRequests.reduce((acc, req) => {
-      const startDate = new Date(req.start_date);
-      
-      // Filter by period
-      if (period === 'week' && startDate < startOfWeek) return acc;
-      if (period === 'month' && startDate < startOfMonth) return acc;
-
-      // Include pending and approved (not rejected)
-      if (req.status === 'rejected') return acc;
-
-      acc += parseFloat(req.days_count || 0);
-      return acc;
-    }, 0);
-  };
+  const calculateLeaveDays = (period = 'week') => periodAttendance(period).leave_days;
 
   // Chip order, not database order: the type you pick nine times out of ten sits
   // first, then the two the system can usually infer, then the exceptions.
@@ -1979,7 +1947,7 @@ const TimeClockEntry = () => {
                             id="date-input"
                             value={formData.date}
                             onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                            max={new Date().toISOString().split('T')[0]}
+                            max={localDateKey(new Date())}
                           />
                           {errors.date && <p style={errorTextStyle}>{errors.date}</p>}
                         </div>

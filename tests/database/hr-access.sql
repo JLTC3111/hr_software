@@ -98,6 +98,23 @@ SELECT audit_test.assert((SELECT leave_days = 2 FROM public.time_tracking_summar
 UPDATE public.leave_requests SET start_date = '2026-09-29', end_date = '2026-10-02' WHERE employee_id = 'employee';
 SELECT audit_test.assert((SELECT leave_days = 0 FROM public.time_tracking_summary WHERE month = 8), 'moving leave clears old start month');
 SELECT audit_test.assert((SELECT leave_days = 2 FROM public.time_tracking_summary WHERE month = 10), 'moving leave recalculates new end month');
+SELECT audit_test.assert((SELECT days_worked = 0 AND regular_hours = 0 AND total_hours = 0 AND leave_days = 2 FROM public.time_tracking_summary WHERE employee_id = 'employee' AND month = 9 AND year = 2026), 'approved leave replaces regular hours on the same September weekdays');
+SELECT audit_test.assert((SELECT days_worked = 0 AND regular_hours = 0 AND total_hours = 0 FROM public.time_tracking_summary WHERE employee_id = 'employee' AND month = 10 AND year = 2026), 'approved leave replaces regular hours on the same October weekdays');
+-- Overlapping approved requests: Thu 10, Fri 11, Mon 14, Tue 15 count once each; Sat 12 and Sun 13 never do.
+INSERT INTO public.leave_requests (employee_id, leave_type, start_date, end_date, status, approved_by, approved_at) VALUES
+  ('manager', 'annual', '2026-09-10', '2026-09-12', 'approved', 'manager', now()),
+  ('manager', 'annual', '2026-09-11', '2026-09-15', 'approved', 'manager', now());
+SELECT audit_test.assert((SELECT leave_days = 4 FROM public.time_tracking_summary WHERE employee_id = 'manager' AND month = 9 AND year = 2026), 'overlapping approved leave counts each weekday once');
+INSERT INTO public.time_entries (employee_id, date, clock_in, clock_out, hours, hour_type, status, notes) VALUES
+  ('manager', '2026-09-14', '09:00', '17:00', 8, 'regular', 'approved', 'Standard hours filled by admin: Manager'),
+  ('manager', '2026-09-14', '09:12', '17:08', 7.9, 'regular', 'approved', 'Came in for a handover'),
+  ('manager', '2026-09-14', '18:00', '20:00', 2, 'overtime', 'approved', 'Release night'),
+  ('manager', '2026-09-16', '09:00', '17:00', 8, 'regular', 'approved', 'Standard hours filled by admin: Manager');
+SELECT audit_test.assert((SELECT count(*) = 3 FROM public.time_entries WHERE employee_id = 'manager'), 'generated standard hours are skipped on an approved-leave weekday and stored elsewhere');
+SELECT audit_test.assert((SELECT count(*) = 0 FROM public.time_entries WHERE employee_id = 'manager' AND date = '2026-09-14' AND clock_in = '09:00'), 'skipped generated row is not stored');
+SELECT audit_test.assert((SELECT days_worked = 1 AND regular_hours = 8 AND overtime_hours = 2 AND total_hours = 10 AND leave_days = 4 FROM public.time_tracking_summary WHERE employee_id = 'manager' AND month = 9 AND year = 2026), 'leave-day attendance keeps overtime and drops regular hours');
+UPDATE public.leave_requests SET status = 'pending', approved_by = NULL, approved_at = NULL WHERE employee_id = 'manager' AND start_date = '2026-09-11';
+SELECT audit_test.assert((SELECT leave_days = 2 AND days_worked = 2 AND regular_hours = 15.9 AND total_hours = 17.9 FROM public.time_tracking_summary WHERE employee_id = 'manager' AND month = 9 AND year = 2026), 'reverting an approval recounts leave and restores the released weekday');
 UPDATE public.performance_reviews SET overall_rating = 4, status = 'approved' WHERE employee_id = 'employee' AND review_period = '2026-Q3';
 SELECT audit_test.assert((SELECT overall_rating = 4 AND status = 'approved' FROM public.performance_reviews WHERE review_period = '2026-Q3'), 'manager can rate and approve scoped review');
 SELECT audit_test.assert((SELECT count(*) = 0 FROM storage.objects WHERE name LIKE '%outside%'), 'manager cannot download another department documents');

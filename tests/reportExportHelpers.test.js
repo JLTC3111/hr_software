@@ -8,9 +8,33 @@ import {
   workingDateKeys,
   workingDaySegments,
   PDF_TOKENS,
+  aggregateHoursByType,
+  computeEmployeePerformance,
+  computeExportStats,
+  filterExportSnapshotByScope,
 } from '../src/utils/reportExportHelpers.js';
 
 const now = new Date(2026, 7, 28); // 28 Aug 2026, local
+
+test('CSV Excel PDF totals and employee figures share employee-specific leave and overtime rules', () => {
+  const snapshot = {
+    timeEntries: [
+      { employee_id: 'a', date: '2026-10-01', hour_type: 'regular', hours: 8, status: 'approved' },
+      { employee_id: 'a', date: '2026-10-01', hour_type: 'wfh', hours: 4, status: 'pending' },
+      { employee_id: 'a', date: '2026-10-01', hour_type: 'overtime', hours: 2, status: 'approved' },
+      { employee_id: 'b', date: '2026-10-01', hour_type: 'regular', hours: 8, status: 'approved' },
+    ],
+    leave: [{ employee_id: 'a', start_date: '2026-09-30', end_date: '2026-10-02', status: 'approved', days_count: 3 }],
+    overtimeLogs: [{ employee_id: 'a', date: '2026-10-01', hours: 3, overtime_type: 'holiday', status: 'approved' }],
+  };
+  const scoped = filterExportSnapshotByScope({ timeEntries: true, leave: false }, snapshot);
+  const attendance = { leaveRequests: scoped.leaveForAttendance, overtimeLogs: scoped.overtimeLogs, startDate: '2026-10-01', endDate: '2026-10-31' };
+  assert.deepEqual(scoped.leave, [], 'hiding leave rows does not remove attendance exclusions');
+  assert.equal(computeExportStats(scoped.timeEntries, [], [], [], attendance).totalHours, '13.0');
+  assert.deepEqual(aggregateHoursByType(scoped.timeEntries, attendance), { regular: 8, wfh: 0, overtime: 2, holiday: 3 });
+  assert.equal(computeEmployeePerformance({ id: 'a' }, scoped.timeEntries, [], [], attendance).totalHours, 5);
+  assert.equal(computeEmployeePerformance({ id: 'b' }, scoped.timeEntries, [], [], attendance).totalHours, 8);
+});
 
 test('countWorkingDays skips Saturday and Sunday', () => {
   assert.equal(countWorkingDays('2026-09-10', '2026-09-14'), 3); // Thu–Mon

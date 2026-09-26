@@ -7,6 +7,7 @@ import * as timeTrackingService from '../services/timeTrackingService';
 import { getIndustry, DISPLAY, BODY, figure } from '../theme/industry.js';
 import { Blueprint, Btn, ColumnHeading } from './ui/industry.jsx';
 import { Spinner } from './ui/Spinner.jsx';
+import { summarizeAttendance, localDateKey } from '../utils/attendanceRules.js';
 
 const WorkDaysModal = ({ isOpen, onClose, employeeId, month }) => {
   const { isDarkMode } = useTheme();
@@ -15,6 +16,7 @@ const WorkDaysModal = ({ isOpen, onClose, employeeId, month }) => {
   const { handleSessionAuthError } = useAuth();
 
   const [timeEntries, setTimeEntries] = useState([]);
+  const [leaveRequests, setLeaveRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'descending' });
@@ -29,12 +31,14 @@ const WorkDaysModal = ({ isOpen, onClose, employeeId, month }) => {
           const year = month.getFullYear();
           const monthNum = month.getMonth() + 1;
           const startDate = `${year}-${String(monthNum).padStart(2, '0')}-01`;
-          const endDate = new Date(year, monthNum, 0).toISOString().split('T')[0];
+          const endDate = localDateKey(new Date(year, monthNum, 0));
           
-          const result = await timeTrackingService.getTimeEntries(employeeId, {
-            startDate: startDate,
-            endDate: endDate
-          });
+          const [result, leave] = await Promise.all([
+            timeTrackingService.getTimeEntries(employeeId, { startDate, endDate }),
+            timeTrackingService.getLeaveRequests(employeeId, { startDate, endDate }),
+          ]);
+          if (!leave.success) throw new Error(leave.error);
+          setLeaveRequests(leave.data || []);
           
           if (result.success) {
             const regularEntries = result.data.filter(entry => 
@@ -99,7 +103,7 @@ const WorkDaysModal = ({ isOpen, onClose, employeeId, month }) => {
     (entry.notes && entry.notes.toLowerCase().includes(searchTerm.toLowerCase()))
   );
   
-  const totalHours = filteredTimeEntries.reduce((sum, entry) => sum + (entry.hours || 0), 0);
+  const totalHours = summarizeAttendance({ timeEntries: filteredTimeEntries, leaveRequests, employeeId }).total_hours;
 
   const requestSort = (key) => {
     let direction = 'ascending';

@@ -128,7 +128,6 @@ const Dashboard = ({ employees, applications }) => {
   const [loading, setLoading] = useState(true);
   const [timeTrackingData, setTimeTrackingData] = useState({});
   const [allEmployeesData, setAllEmployeesData] = useState([]);
-  const [leaveRequestsData, setLeaveRequestsData] = useState({});
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [decidingId, setDecidingId] = useState(null);
@@ -178,44 +177,16 @@ const Dashboard = ({ employees, applications }) => {
 
       // Wrap the fetch logic with retry mechanism
       await retryWithBackoff(async () => {
-        // Two batched calls cover the whole roster. This previously issued one
-        // summary request plus one leave request *per employee* — 2N round trips,
-        // so a 50-person company paid 100 requests on every dashboard load.
-        const [overviewResult, leaveResult] = await withTimeout(
-          Promise.all([
-            timeTrackingService.getOverviewEmployeeSummaries(selectedMonth, selectedYear, employees),
-            timeTrackingService.getAllLeaveRequests({
-              year: selectedYear,
-              includeEmployeeDetails: false,
-            }),
-          ]),
+        // One batched call covers the whole roster. Leave days come from the
+        // same summary as worked days: distinct approved-leave weekdays clipped
+        // to the selected month, so a request spanning two months lands in
+        // both and pending requests add nothing.
+        const overviewResult = await withTimeout(
+          timeTrackingService.getOverviewEmployeeSummaries(selectedMonth, selectedYear, employees),
           DEFAULT_REQUEST_TIMEOUT
         );
 
-        // Calculate leave days from leave_requests (pending + approved),
-        // counted against the month the request starts in.
-        const leaveData = {};
-        employees.forEach(emp => { leaveData[String(emp.id)] = 0; });
-
-        if (leaveResult.success && Array.isArray(leaveResult.data)) {
-          leaveResult.data.forEach(req => {
-            if (req.status === 'rejected') return;
-
-            const empId = String(req.employee_id);
-            if (!(empId in leaveData)) return; // outside the active roster
-
-            const startDate = new Date(req.start_date);
-            const reqMonth = startDate.getMonth() + 1;
-            const reqYear = startDate.getFullYear();
-
-            // Only count if within SELECTED month/year
-            if (reqYear === selectedYear && reqMonth === selectedMonth) {
-              leaveData[empId] += req.days_count || 0;
-            }
-          });
-        }
-
-        setLeaveRequestsData(leaveData);
+        if (!overviewResult.success) throw new Error(overviewResult.error);
 
         // Build timeTrackingData object - use string IDs for consistency with TEXT type
         const summaryByEmployeeId = new Map(
@@ -230,26 +201,15 @@ const Dashboard = ({ employees, applications }) => {
           const empId = String(emp.id); // Ensure ID is string for TEXT type
           const data = summaryByEmployeeId.get(empId) || null;
 
-          trackingData[empId] = data
-            ? {
-              workDays: data.days_worked || 0,
-              leaveDays: Math.max(data.leave_days || 0, leaveData[empId] || 0), // Use max of service calculated (includes Time Entries) or requests
-              overtime: data.overtime_hours || 0,
-              holidayOvertime: data.holiday_overtime_hours || 0,
-              regularHours: data.regular_hours || 0,
-              totalHours: data.total_hours || 0,
-              performance: emp.performance || 4.0
-            }
-            : {
-              // Fallback to defaults if no data
-              workDays: 0,
-              leaveDays: leaveData[empId] || 0, // Use calculated leave days
-              overtime: 0,
-              holidayOvertime: 0,
-              regularHours: 0,
-              totalHours: 0,
-              performance: emp.performance || 4.0
-            };
+          trackingData[empId] = {
+            workDays: data?.days_worked ?? 0,
+            leaveDays: data?.leave_days ?? 0,
+            overtime: data?.overtime_hours ?? 0,
+            holidayOvertime: data?.holiday_overtime_hours ?? 0,
+            regularHours: data?.regular_hours ?? 0,
+            totalHours: data?.total_hours ?? 0,
+            performance: emp.performance || 4.0
+          };
 
           employeesDataArray.push({ employee: emp, data });
         });
@@ -286,6 +246,8 @@ const Dashboard = ({ employees, applications }) => {
 
       setLastUpdatedAt(new Date());
     } catch (error) {
+      setAllEmployeesData([]);
+      setTimeTrackingData({});
       console.error('Error fetching dashboard data:', error);
 
       if (handleSessionAuthError(error, { setFetchError })) {
@@ -297,7 +259,7 @@ const Dashboard = ({ employees, applications }) => {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [employees, selectedMonth, selectedYear, handleSessionAuthError]);
+  }, [employees, selectedMonth, selectedYear, handleSessionAuthError, t]);
 
   // Memoize the silent refresh callback
   const silentRefresh = useCallback(() => {
@@ -309,7 +271,7 @@ const Dashboard = ({ employees, applications }) => {
     if (employees.length > 0) {
       fetchDashboardData();
     }
-  }, [fetchDashboardData]);
+  }, [fetchDashboardData, employees.length]);
 
   // Use visibility refresh hook to reload data when page becomes visible after idle
   useAuthenticatedPageRefresh(silentRefresh);
@@ -410,7 +372,7 @@ const Dashboard = ({ employees, applications }) => {
   }, [scopedEmployees]);
 
   // Check if we have any real data
-  const hasRealData = trackingDataValues.some(emp => emp?.workDays > 0 || emp?.overtime > 0);
+  const hasRealData = trackingDataValues.some(emp => emp?.workDays > 0 || emp?.leaveDays > 0 || emp?.overtime > 0 || emp?.holidayOvertime > 0);
 
   /** Deltas only appear when the prior period actually returned rows. */
   const deltas = useMemo(() => {
@@ -492,10 +454,10 @@ const Dashboard = ({ employees, applications }) => {
       name: getUniqueDisplayName(emp),
       fullName: getDemoEmployeeName(emp, t), // Keep full name for tooltip
       id: emp.id,
-      leaveDays: leaveRequestsData[empId] || timeTrackingData[empId]?.leaveDays || 0,
-      workDays: timeTrackingData[empId]?.workDays || 0,
+      leaveDays: timeTrackingData[empId]?.leaveDays ?? 0,
+      workDays: timeTrackingData[empId]?.workDays ?? 0,
     };
-  }), [scopedEmployees, leaveRequestsData, timeTrackingData, getUniqueDisplayName, t]);
+  }), [scopedEmployees, timeTrackingData, getUniqueDisplayName, t]);
 
   const leaveChartWorkTotal = leaveData.reduce((sum, row) => sum + (row.workDays || 0), 0);
   const leaveChartLeaveTotal = leaveData.reduce((sum, row) => sum + (row.leaveDays || 0), 0);
@@ -629,8 +591,8 @@ const Dashboard = ({ employees, applications }) => {
             employeeName: getDemoEmployeeName(emp, t),
             position: emp.position,
             department: emp.department,
-            leaveDays: leaveRequestsData[empId] || timeTrackingData[empId]?.leaveDays || 0,
-            workDays: timeTrackingData[empId]?.workDays || 0
+            leaveDays: timeTrackingData[empId]?.leaveDays ?? 0,
+            workDays: timeTrackingData[empId]?.workDays ?? 0
           };
         });
         title = t('dashboard.totalLeave');

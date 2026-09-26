@@ -102,6 +102,26 @@ export const getEmployeeByUserId = async (userId) => {
 // EMPLOYEE CRUD OPERATIONS
 // ============================================
 
+// Roster columns only. `photo` is base64 and is several megabytes across the
+// company; selecting it here blocked login until the 30s request ceiling.
+const EMPLOYEE_LIST_COLUMNS = [
+  'id',
+  'name',
+  'position',
+  'department',
+  'email',
+  'dob',
+  'address',
+  'phone',
+  'start_date',
+  'status',
+  'performance',
+  'created_at',
+  'updated_at',
+  'user_id',
+  'pdf_document_url',
+].join(', ');
+
 export const getAllEmployees = async (filters = {}) => {
   if (isDemoMode()) {
     console.log('🧪 Demo Mode: Returning mock employees');
@@ -138,13 +158,7 @@ export const getAllEmployees = async (filters = {}) => {
   try {
     let query = supabase
       .from('employees')
-      .select(`
-        *,
-        hr_user:hr_users!employee_id(
-          avatar_url,
-          id
-        )
-      `)
+      .select(EMPLOYEE_LIST_COLUMNS)
       .order('name');
 
     // Apply filters
@@ -158,24 +172,111 @@ export const getAllEmployees = async (filters = {}) => {
       query = query.eq('position', filters.position);
     }
 
-    const { data, error } = await withTimeout(query, DEFAULT_REQUEST_TIMEOUT).catch((err) => {
-      console.warn('getAllEmployees: initial query timed out, retrying with DEFAULT_REQUEST_TIMEOUT', err);
-      return withTimeout(query, DEFAULT_REQUEST_TIMEOUT);
-    });
+    const { data, error } = await withTimeout(query, DEFAULT_REQUEST_TIMEOUT);
 
     if (error) throw error;
-    
-    // Map avatar_url from hr_users to photo field if available
-    const enrichedData = data.map(emp => ({
-      ...emp,
-      photo: emp.hr_user?.avatar_url || emp.photo || null
-    }));
-    
-    return { success: true, data: enrichedData };
+
+    return {
+      success: true,
+      data: (data || []).map((emp) => ({ ...emp, photo: null })),
+    };
   } catch (error) {
     console.error('Error fetching employees:', error);
     return { success: false, error: error.message };
   }
+};
+
+// One batched request, reused for a few minutes so a roster refresh does not
+// pull every portrait again. This is not a per-employee download.
+const PHOTO_CACHE_MS = 5 * 60 * 1000;
+let photoCache = { at: 0, data: null, inflight: null };
+
+const PHOTO_CHANGE_KEY = 'hr:portrait-change';
+const photoListeners = new Set();
+let photoExpiryTimer;
+
+export const clearEmployeePhotoCache = ({ notify = false } = {}) => {
+  if (photoExpiryTimer != null && typeof window !== 'undefined') window.clearTimeout(photoExpiryTimer);
+  photoExpiryTimer = undefined;
+  // Replacing the object also invalidates an older in-flight response.
+  photoCache = { at: 0, data: null, inflight: null };
+  if (notify) {
+    photoListeners.forEach(listener => listener());
+    try {
+      window.localStorage.setItem(PHOTO_CHANGE_KEY, `${Date.now()}:${Math.random()}`);
+    } catch { /* Storage may be disabled; this tab is already invalidated. */ }
+  }
+};
+
+export const subscribeEmployeePhotoChanges = (listener) => {
+  photoListeners.add(listener);
+  const onStorage = event => {
+    if (event.key !== PHOTO_CHANGE_KEY) return;
+    clearEmployeePhotoCache();
+    listener();
+  };
+  if (typeof window !== 'undefined') window.addEventListener('storage', onStorage);
+  return () => {
+    photoListeners.delete(listener);
+    if (typeof window !== 'undefined') window.removeEventListener('storage', onStorage);
+  };
+};
+
+/**
+ * Portraits, loaded after the roster so Organization Overview is not waiting
+ * on multi-megabyte base64. Prefers the linked HR avatar, then employees.photo.
+ */
+export const getEmployeePhotos = async () => {
+  if (isDemoMode()) {
+    const photos = {};
+    getDemoEmployees().forEach((emp) => {
+      if (emp.photo) photos[String(emp.id)] = emp.photo;
+    });
+    return { success: true, data: photos };
+  }
+
+  const now = Date.now();
+  if (photoCache.data && now - photoCache.at < PHOTO_CACHE_MS) {
+    return { success: true, data: photoCache.data };
+  }
+  if (photoCache.inflight) return photoCache.inflight;
+
+  const cache = photoCache;
+  cache.inflight = (async () => {
+    try {
+      const { data, error } = await withTimeout(supabase
+        .from('employees')
+        .select(`
+          id,
+          photo,
+          hr_user:hr_users!employee_id(avatar_url)
+        `), DEFAULT_REQUEST_TIMEOUT);
+
+      if (error) throw error;
+      if (cache !== photoCache) return { success: false, data: {}, error: 'Portrait request superseded' };
+
+      const photos = {};
+      (data || []).forEach((row) => {
+        const photo = row.hr_user?.avatar_url || row.photo || null;
+        if (photo) photos[String(row.id)] = photo;
+      });
+      cache.at = Date.now();
+      cache.data = photos;
+      if (typeof window !== 'undefined') {
+        photoExpiryTimer = window.setTimeout(() => {
+          if (photoCache === cache) clearEmployeePhotoCache();
+        }, PHOTO_CACHE_MS);
+      }
+      cache.inflight = null;
+      return { success: true, data: photos };
+    } catch (error) {
+      cache.inflight = null;
+      console.error('Error fetching employee photos:', error);
+      return { success: false, error: error.message, data: {} };
+    }
+  })();
+
+  return cache.inflight;
 };
 
 /**
@@ -221,6 +322,7 @@ export const getEmployeeById = async (employeeId) => {
  * Create a new employee
  */
 export const createEmployee = async (employeeData) => {
+  clearEmployeePhotoCache();
   if (isDemoMode()) {
     const newEmployee = {
       id: `demo-emp-${Date.now()}`,
@@ -327,6 +429,7 @@ export const createEmployee = async (employeeData) => {
       }
       throw error;
     }
+    clearEmployeePhotoCache({ notify: true });
     return { success: true, data, droppedColumns };
   } catch (error) {
     console.error('Error creating employee:', error);
@@ -338,6 +441,7 @@ export const createEmployee = async (employeeData) => {
  * Update an existing employee
  */
 export const updateEmployee = async (employeeId, updates) => {
+  if (updates.photo !== undefined) clearEmployeePhotoCache();
   if (isDemoMode()) {
     // Handle photo update
     if (updates.photo && typeof updates.photo === 'string' && updates.photo.startsWith('data:')) {
@@ -420,6 +524,7 @@ export const updateEmployee = async (employeeId, updates) => {
       }
       throw error;
     }
+    if (updates.photo !== undefined) clearEmployeePhotoCache({ notify: true });
     return { success: true, data };
   } catch (error) {
     console.error('Error updating employee:', error);
@@ -433,6 +538,7 @@ export const updateEmployee = async (employeeId, updates) => {
  * Due to CASCADE constraints in the database
  */
 export const deleteEmployee = async (employeeId) => {
+  clearEmployeePhotoCache();
   if (isDemoMode()) {
     const emp = getDemoEmployeeById(employeeId);
     // Clean up stored blobs (photo/pdf) if present
@@ -495,6 +601,7 @@ export const deleteEmployee = async (employeeId) => {
       // Don't fail if this doesn't work
     }
     
+    clearEmployeePhotoCache({ notify: true });
     console.log(`✅ Successfully deleted employee ${id}`);
     return { success: true };
   } catch (error) {
@@ -671,6 +778,7 @@ export const uploadEmployeePhoto = async (fileData, employeeId) => {
  * Delete employee photo from Supabase Storage
  */
 export const deleteEmployeePhoto = async (photoUrl) => {
+  clearEmployeePhotoCache();
   if (isDemoMode()) {
     return { success: true };
   }
@@ -685,6 +793,7 @@ export const deleteEmployeePhoto = async (photoUrl) => {
       .remove([fileName]);
 
     if (error) throw error;
+    clearEmployeePhotoCache({ notify: true });
     return { success: true };
   } catch (error) {
     console.error('Error deleting employee photo:', error);
@@ -1305,6 +1414,8 @@ export default {
   
   // CRUD
   getAllEmployees,
+  getEmployeePhotos,
+  clearEmployeePhotoCache,
   getEmployeeById,
   createEmployee,
   updateEmployee,

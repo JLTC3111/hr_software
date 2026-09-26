@@ -69,6 +69,7 @@ import { isEmployeeInactive } from '../utils/employeeStatus.js';
 import { DEPARTMENT_KEYS } from '../utils/departments.js';
 import { formatDate } from '../utils/localeFormat.js';
 import { lastRatingAdjuster, formatLastAdjusted } from '../utils/performanceAssessment.js';
+import { LEAVE_ENTRY_TYPES, PREMIUM_HOUR_TYPES, summarizeAttendance, isDateKeyInMonth, approvedLeaveDateKeys } from '../utils/attendanceRules.js';
 import { getIndustry, DISPLAY, BODY, figure, rampAt } from '../theme/industry.js';
 import { Blueprint, Bar, Tag, Btn, Kicker, TickerCell, LiveClock } from './ui/industry.jsx';
 import { FetchElapsedPill } from './ui/fetch-elapsed-pill.tsx';
@@ -106,8 +107,8 @@ const RECENT_JOINER_DAYS = 60;
 
 const DAY_MS = 86400000;
 
-/** Hour types that are overtime rather than contracted time. */
-const OVERTIME_TYPES = new Set(['overtime', 'weekend', 'holiday']);
+/** Hour types that are overtime rather than contracted time — the shared attendance rule. */
+const OVERTIME_TYPES = new Set(PREMIUM_HOUR_TYPES);
 /** time_entries stores snake_case; the shared hour-type labels are camelCase. */
 const HOUR_TYPE_KEYS = { on_leave: 'onLeave' };
 /** Task statuses that mean the task is no longer open. */
@@ -135,7 +136,7 @@ const startOfWeek = (date) => {
   return x;
 };
 
-const addDays = (date, days) => new Date(date.getTime() + days * DAY_MS);
+const addDays = (date, days) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
 
 const clampRating = (value) => {
   const n = Number(value);
@@ -932,6 +933,8 @@ const EmployeeDirectory = ({
 
   const [entries, setEntries] = useState([]);
   const [leave, setLeave] = useState([]);
+  const [leaveEntries, setLeaveEntries] = useState([]);
+  const [overtimeLogs, setOvertimeLogs] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [fetching, setFetching] = useState(true);
@@ -946,25 +949,33 @@ const EmployeeDirectory = ({
     setFetching(true);
     setFetchError(null);
     try {
-      const [entryResult, leaveResult, reviewResult, taskResult] = await Promise.all([
+      const [entryResult, leaveResult, reviewResult, taskResult, leaveEntryResult, overtimeResult] = await Promise.all([
         timeTrackingService.getAllTimeEntriesDetailed({
           startDate: isoDay(weekStart),
           endDate: isoDay(weekEnd),
         }),
         timeTrackingService.getAllLeaveRequests({
-          year: now.getFullYear(),
+          rangeStart: isoDay(weekStart) < `${now.getFullYear()}-01-01` ? isoDay(weekStart) : `${now.getFullYear()}-01-01`,
+          rangeEnd: isoDay(weekEnd) > `${now.getFullYear()}-12-31` ? isoDay(weekEnd) : `${now.getFullYear()}-12-31`,
           includeEmployeeDetails: false,
         }),
         performanceService.getAllPerformanceReviews(),
         workloadService.getAllTasks(),
+        timeTrackingService.getAllTimeEntriesDetailed({
+          startDate: `${now.getFullYear()}-01-01`, endDate: `${now.getFullYear()}-12-31`,
+          status: 'approved', hourTypes: LEAVE_ENTRY_TYPES,
+        }),
+        timeTrackingService.getOvertimeLogs(null, { startDate: isoDay(weekStart), endDate: isoDay(weekEnd) }),
       ]);
 
       setEntries(entryResult?.success ? entryResult.data || [] : []);
+      setLeaveEntries(leaveEntryResult?.success ? leaveEntryResult.data || [] : []);
+      setOvertimeLogs(overtimeResult?.success ? overtimeResult.data || [] : []);
       setLeave(leaveResult?.success ? leaveResult.data || [] : []);
       setReviews(reviewResult?.success ? reviewResult.data || [] : []);
       setTasks(taskResult?.success ? taskResult.data || [] : []);
 
-      const failed = [entryResult, leaveResult, reviewResult, taskResult].find((r) => r && !r.success);
+      const failed = [entryResult, leaveResult, reviewResult, taskResult, leaveEntryResult, overtimeResult].find((r) => r && !r.success);
       if (failed) {
         console.error('Failed to load employee directory data:', failed.error);
         setFetchError(t('errors.loadFailed', 'Failed to load data'));
@@ -987,49 +998,48 @@ const EmployeeDirectory = ({
   const leaveToday = useMemo(() => {
     const map = new Map();
     for (const request of leave) {
-      const status = String(request?.status || '').toLowerCase();
-      if (status !== 'approved') continue;
-      const start = String(request.start_date || '').slice(0, 10);
-      const end = String(request.end_date || request.start_date || '').slice(0, 10);
-      if (start <= today && end >= today) map.set(String(request.employee_id), request);
+      if (approvedLeaveDateKeys([request], today, today).has(today)) {
+        map.set(String(request.employee_id), request);
+      }
     }
     return map;
   }, [leave, today]);
 
-  /** Leave days already taken this year, by employee id. */
+  /**
+   * Leave days already taken this year, by employee id: distinct approved
+   * weekdays clipped to the year, so overlapping requests count a day once.
+   */
   const leaveTaken = useMemo(() => {
-    const map = new Map();
-    for (const request of leave) {
-      const status = String(request?.status || '').toLowerCase();
-      if (status !== 'approved') continue;
-      const id = String(request.employee_id);
-      map.set(id, (map.get(id) || 0) + (Number(request.days_count) || 0));
-    }
-    return map;
-  }, [leave]);
+    const year = String(today).slice(0, 4);
+    const ids = new Set([...leave, ...leaveEntries].map((row) => String(row.employee_id)));
+    return new Map([...ids].map((id) => [id, summarizeAttendance({
+      timeEntries: leaveEntries, leaveRequests: leave, employeeId: id,
+      startDate: `${year}-01-01`, endDate: `${year}-12-31`,
+    }).leave_days]));
+  }, [leave, leaveEntries, today]);
 
-  /** This week's hours, split into contracted and overtime, by employee id. */
+  /** Weekly figures share the same status, leave and overtime rules as summaries. */
   const week = useMemo(() => {
-    const map = new Map();
-    for (const entry of entries) {
-      const id = String(entry.employee_id);
-      let bucket = map.get(id);
-      if (!bucket) {
-        bucket = { total: 0, overtime: 0, pending: 0, pendingCount: 0, byType: new Map() };
-        map.set(id, bucket);
-      }
-      const hours = Number(entry.hours) || 0;
-      const type = String(entry.hour_type || 'regular').toLowerCase();
-      bucket.total += hours;
-      if (OVERTIME_TYPES.has(type)) bucket.overtime += hours;
-      if (String(entry.status || '').toLowerCase() === 'pending') {
-        bucket.pending += hours;
-        bucket.pendingCount += 1;
-      }
-      bucket.byType.set(type, (bucket.byType.get(type) || 0) + hours);
-    }
-    return map;
-  }, [entries]);
+    const ids = new Set([...entries, ...overtimeLogs].map((row) => String(row.employee_id)));
+    return new Map([...ids].map((id) => {
+      const options = {
+        timeEntries: entries, leaveRequests: leave, overtimeLogs, employeeId: id,
+        startDate: isoDay(weekStart), endDate: isoDay(weekEnd),
+      };
+      const total = summarizeAttendance(options);
+      const pending = entries.filter((entry) => String(entry.employee_id) === id && entry.status === 'pending');
+      const pendingTotal = summarizeAttendance({
+        ...options, timeEntries: pending, overtimeLogs: overtimeLogs.filter((log) => log.status === 'pending'),
+      });
+      return [id, {
+        total: total.total_hours,
+        overtime: total.overtime_hours + total.holiday_overtime_hours,
+        pending: pendingTotal.total_hours,
+        pendingCount: pending.length,
+        byType: new Map(Object.entries(total.hours_by_type)),
+      }];
+    }));
+  }, [entries, leave, overtimeLogs, weekStart, weekEnd]);
 
   /** Newest review per employee, plus the count still waiting for a signature. */
   const reviewByEmployee = useMemo(() => {
@@ -1217,8 +1227,7 @@ const EmployeeDirectory = ({
     working: activePeople.filter((p) => p.state.key === 'working' || p.state.key === 'pending').length,
     joinedThisMonth: activePeople.filter((p) => {
       if (!p.start) return false;
-      const d = new Date(p.start);
-      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      return isDateKeyInMonth(p.start, now.getMonth() + 1, now.getFullYear());
     }).length,
     missingDocuments: activePeople.filter((p) => !p.documents).length,
   }), [activePeople, people, now]);

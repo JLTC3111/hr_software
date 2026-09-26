@@ -39,6 +39,16 @@ const DeleteEmployeeManager = () => {
     const result = await employeeService.getAllEmployees();
     if (result.success) {
       setEmployees(result.data);
+      setTimeout(() => {
+        employeeService.getEmployeePhotos().then((photoResult) => {
+          if (!photoResult.success) return;
+          setEmployees((prev) => prev.map((emp) => {
+            const photo = photoResult.data?.[String(emp.id)];
+            if (!photo || emp.photo) return emp;
+            return { ...emp, photo };
+          }));
+        });
+      }, 0);
     }
     setLoading(false);
   };

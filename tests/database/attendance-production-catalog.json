@@ -1,0 +1,520 @@
+{
+  "functions": [
+    {
+      "nspname": "private",
+      "proname": "enforce_employee_approval_update",
+      "args": "",
+      "prosecdef": true,
+      "owner": "postgres",
+      "proacl": null,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION private.enforce_employee_approval_update()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  if (select auth.jwt() ->> 'role') = 'service_role'\n    or ((select auth.uid()) is null and session_user in ('postgres', 'supabase_admin'))\n    or private.can_manage_employee(old.employee_id)\n  then\n    return new;\n  end if;\n\n  if old.employee_id <> private.current_employee_id() then\n    raise exception 'Employee record is outside the current user scope';\n  end if;\n\n  if new.employee_id is distinct from old.employee_id\n    or new.status is distinct from old.status\n    or new.approved_by is distinct from old.approved_by\n    or new.approved_at is distinct from old.approved_at\n  then\n    raise exception 'Employees cannot change ownership or approval fields';\n  end if;\n\n  return new;\nend;\n$function$\n"
+    },
+    {
+      "nspname": "public",
+      "proname": "refresh_time_entry_summaries_after_delete",
+      "args": "",
+      "prosecdef": false,
+      "owner": "postgres",
+      "proacl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "proconfig": [
+        "search_path=public, pg_temp"
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION public.refresh_time_entry_summaries_after_delete()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE\n  v_period record;\nBEGIN\n  FOR v_period IN\n    SELECT DISTINCT\n      employee_id,\n      EXTRACT(MONTH FROM date)::integer AS month,\n      EXTRACT(YEAR FROM date)::integer AS year\n    FROM old_time_entries\n  LOOP\n    PERFORM public.update_time_tracking_summary(\n      v_period.employee_id,\n      v_period.month,\n      v_period.year\n    );\n  END LOOP;\n\n  RETURN NULL;\nEND;\n$function$\n"
+    },
+    {
+      "nspname": "public",
+      "proname": "refresh_time_entry_summaries_after_insert",
+      "args": "",
+      "prosecdef": false,
+      "owner": "postgres",
+      "proacl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "proconfig": [
+        "search_path=public, pg_temp"
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION public.refresh_time_entry_summaries_after_insert()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE\n  v_period record;\nBEGIN\n  FOR v_period IN\n    SELECT DISTINCT\n      employee_id,\n      EXTRACT(MONTH FROM date)::integer AS month,\n      EXTRACT(YEAR FROM date)::integer AS year\n    FROM new_time_entries\n  LOOP\n    PERFORM public.update_time_tracking_summary(\n      v_period.employee_id,\n      v_period.month,\n      v_period.year\n    );\n  END LOOP;\n\n  RETURN NULL;\nEND;\n$function$\n"
+    },
+    {
+      "nspname": "public",
+      "proname": "refresh_time_entry_summaries_after_update",
+      "args": "",
+      "prosecdef": false,
+      "owner": "postgres",
+      "proacl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "proconfig": [
+        "search_path=public, pg_temp"
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION public.refresh_time_entry_summaries_after_update()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE\n  v_period record;\nBEGIN\n  FOR v_period IN\n    SELECT DISTINCT affected.employee_id, affected.month, affected.year\n    FROM (\n      SELECT\n        employee_id,\n        EXTRACT(MONTH FROM date)::integer AS month,\n        EXTRACT(YEAR FROM date)::integer AS year\n      FROM old_time_entries\n      UNION\n      SELECT\n        employee_id,\n        EXTRACT(MONTH FROM date)::integer AS month,\n        EXTRACT(YEAR FROM date)::integer AS year\n      FROM new_time_entries\n    ) AS affected\n  LOOP\n    PERFORM public.update_time_tracking_summary(\n      v_period.employee_id,\n      v_period.month,\n      v_period.year\n    );\n  END LOOP;\n\n  RETURN NULL;\nEND;\n$function$\n"
+    },
+    {
+      "nspname": "public",
+      "proname": "trigger_update_summary",
+      "args": "",
+      "prosecdef": false,
+      "owner": "postgres",
+      "proacl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "proconfig": [
+        "search_path=public, pg_temp"
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION public.trigger_update_summary()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE\n    v_date DATE;\nBEGIN\n    -- Determine which date field to use based on the table\n    -- time_entries and overtime_logs use 'date'\n    -- leave_requests uses 'start_date'\n    IF TG_TABLE_NAME = 'leave_requests' THEN\n        v_date := COALESCE(NEW.start_date, OLD.start_date);\n    ELSE\n        v_date := COALESCE(NEW.date, OLD.date);\n    END IF;\n\n    -- Update the summary\n    PERFORM update_time_tracking_summary(\n        COALESCE(NEW.employee_id, OLD.employee_id),\n        EXTRACT(MONTH FROM v_date)::INTEGER,\n        EXTRACT(YEAR FROM v_date)::INTEGER\n    );\n    \n    RETURN NULL;\nEND;\n$function$\n"
+    },
+    {
+      "nspname": "public",
+      "proname": "update_time_tracking_summary",
+      "args": "p_employee_id text, p_month integer, p_year integer",
+      "prosecdef": false,
+      "owner": "postgres",
+      "proacl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "proconfig": [
+        "search_path=public, pg_temp"
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION public.update_time_tracking_summary(p_employee_id text, p_month integer, p_year integer)\n RETURNS void\n LANGUAGE plpgsql\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE\n  v_period_start date := make_date(p_year, p_month, 1);\n  v_period_end date := (v_period_start + interval '1 month')::date;\n  v_days_worked integer := 0;\n  v_leave_days numeric := 0;\n  v_regular_hours numeric := 0;\n  v_overtime_hours numeric := 0;\n  v_holiday_overtime_hours numeric := 0;\n  v_overtime_log_hours numeric := 0;\n  v_holiday_overtime_log_hours numeric := 0;\n  v_total_hours numeric := 0;\n  v_attendance_rate numeric := 0;\n  v_working_days integer := 22;\nBEGIN\n  SELECT\n    COUNT(DISTINCT date) FILTER (\n      WHERE hour_type IS NULL\n        OR hour_type NOT IN ('on_leave', 'vacation', 'sick_leave')\n    ),\n    COALESCE(SUM(hours) FILTER (\n      WHERE hour_type IN ('regular', 'wfh')\n    ), 0),\n    COALESCE(SUM(hours) FILTER (\n      WHERE hour_type IN ('weekend', 'bonus', 'overtime')\n    ), 0),\n    COALESCE(SUM(hours) FILTER (\n      WHERE hour_type = 'holiday'\n    ), 0),\n    COALESCE(SUM(hours) FILTER (\n      WHERE hour_type IS NULL\n        OR hour_type NOT IN ('on_leave', 'vacation', 'sick_leave')\n    ), 0)\n  INTO\n    v_days_worked,\n    v_regular_hours,\n    v_overtime_hours,\n    v_holiday_overtime_hours,\n    v_total_hours\n  FROM public.time_entries\n  WHERE employee_id = p_employee_id\n    AND date >= v_period_start\n    AND date < v_period_end\n    AND status IN ('pending', 'approved');\n\n  SELECT COALESCE(SUM(days_count), 0)\n  INTO v_leave_days\n  FROM public.leave_requests\n  WHERE employee_id = p_employee_id\n    AND start_date >= v_period_start\n    AND start_date < v_period_end\n    AND status = 'approved';\n\n  SELECT\n    COALESCE(SUM(hours) FILTER (\n      WHERE overtime_type IS DISTINCT FROM 'holiday'\n    ), 0),\n    COALESCE(SUM(hours) FILTER (\n      WHERE overtime_type = 'holiday'\n    ), 0)\n  INTO\n    v_overtime_log_hours,\n    v_holiday_overtime_log_hours\n  FROM public.overtime_logs\n  WHERE employee_id = p_employee_id\n    AND date >= v_period_start\n    AND date < v_period_end\n    AND status IN ('pending', 'approved');\n\n  v_overtime_hours := v_overtime_hours + v_overtime_log_hours;\n  v_holiday_overtime_hours :=\n    v_holiday_overtime_hours + v_holiday_overtime_log_hours;\n  v_total_hours :=\n    v_total_hours + v_overtime_log_hours + v_holiday_overtime_log_hours;\n\n  IF v_working_days > 0 THEN\n    v_attendance_rate := LEAST(\n      ((v_days_worked + v_leave_days) / v_working_days::numeric) * 100,\n      100\n    );\n  END IF;\n\n  INSERT INTO public.time_tracking_summary (\n    employee_id,\n    month,\n    year,\n    days_worked,\n    leave_days,\n    regular_hours,\n    overtime_hours,\n    holiday_overtime_hours,\n    total_hours,\n    attendance_rate\n  )\n  VALUES (\n    p_employee_id,\n    p_month,\n    p_year,\n    v_days_worked,\n    v_leave_days,\n    v_regular_hours,\n    v_overtime_hours,\n    v_holiday_overtime_hours,\n    v_total_hours,\n    v_attendance_rate\n  )\n  ON CONFLICT (employee_id, month, year)\n  DO UPDATE SET\n    days_worked = EXCLUDED.days_worked,\n    leave_days = EXCLUDED.leave_days,\n    regular_hours = EXCLUDED.regular_hours,\n    overtime_hours = EXCLUDED.overtime_hours,\n    holiday_overtime_hours = EXCLUDED.holiday_overtime_hours,\n    total_hours = EXCLUDED.total_hours,\n    attendance_rate = EXCLUDED.attendance_rate,\n    updated_at = CURRENT_TIMESTAMP;\nEND;\n$function$\n"
+    }
+  ],
+  "catalog": {
+    "roles": [
+      {
+        "name": "postgres",
+        "inherit": true,
+        "bypassrls": true,
+        "superuser": false
+      },
+      {
+        "name": "authenticated",
+        "inherit": true,
+        "bypassrls": false,
+        "superuser": false
+      },
+      {
+        "name": "anon",
+        "inherit": true,
+        "bypassrls": false,
+        "superuser": false
+      },
+      {
+        "name": "service_role",
+        "inherit": true,
+        "bypassrls": true,
+        "superuser": false
+      },
+      {
+        "name": "supabase_admin",
+        "inherit": true,
+        "bypassrls": true,
+        "superuser": true
+      },
+      {
+        "name": "authenticator",
+        "inherit": false,
+        "bypassrls": false,
+        "superuser": false
+      }
+    ],
+    "tables": [
+      {
+        "acl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=arwdDxtm/postgres",
+          "service_role=arwdDxtm/postgres"
+        ],
+        "rls": true,
+        "name": "employees",
+        "owner": "postgres",
+        "force_rls": false
+      },
+      {
+        "acl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=arwdDxtm/postgres",
+          "service_role=arwdDxtm/postgres"
+        ],
+        "rls": true,
+        "name": "leave_requests",
+        "owner": "postgres",
+        "force_rls": false
+      },
+      {
+        "acl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=arwdDxtm/postgres",
+          "service_role=arwdDxtm/postgres"
+        ],
+        "rls": true,
+        "name": "overtime_logs",
+        "owner": "postgres",
+        "force_rls": false
+      },
+      {
+        "acl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=arwdDxtm/postgres",
+          "service_role=arwdDxtm/postgres"
+        ],
+        "rls": true,
+        "name": "time_entries",
+        "owner": "postgres",
+        "force_rls": false
+      },
+      {
+        "acl": [
+          "postgres=arwdDxtm/postgres",
+          "anon=arwdDxtm/postgres",
+          "authenticated=arwdDxtm/postgres",
+          "service_role=arwdDxtm/postgres"
+        ],
+        "rls": true,
+        "name": "time_tracking_summary",
+        "owner": "postgres",
+        "force_rls": false
+      }
+    ],
+    "helpers": [
+      {
+        "acl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "name": "can_manage_employee",
+        "owner": "postgres",
+        "definition": "CREATE OR REPLACE FUNCTION private.can_manage_employee(target_employee_id text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select exists (\n    select 1\n    from public.hr_users actor\n    where actor.id = private.current_hr_user_id()\n      and actor.is_active is true\n      and lower(coalesce(actor.employment_status, 'active')) not in ('terminated', 'inactive')\n      and (\n        lower(actor.role::text) = 'admin'\n        or (\n          lower(actor.role::text) = 'manager'\n          and exists (\n            select 1\n            from public.hr_users target\n            where target.employee_id = target_employee_id\n              and (\n                target.manager_id = actor.id\n                or (\n                  actor.department is not null\n                  and target.department = actor.department\n                )\n              )\n          )\n        )\n      )\n  );\n$function$\n"
+      },
+      {
+        "acl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "name": "current_employee_id",
+        "owner": "postgres",
+        "definition": "CREATE OR REPLACE FUNCTION private.current_employee_id()\n RETURNS text\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select hu.employee_id\n  from public.hr_users hu\n  where hu.id = private.current_hr_user_id()\n    and hu.is_active is true\n    and lower(coalesce(hu.employment_status, 'active')) not in ('terminated', 'inactive')\n  limit 1;\n$function$\n"
+      },
+      {
+        "acl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "name": "current_hr_user_id",
+        "owner": "postgres",
+        "definition": "CREATE OR REPLACE FUNCTION private.current_hr_user_id()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select coalesce(\n    (\n      select ue.hr_user_id\n      from public.user_emails ue\n      where ue.auth_user_id = (select auth.uid())\n      order by ue.is_primary desc nulls last, ue.id\n      limit 1\n    ),\n    (\n      select hu.id\n      from public.hr_users hu\n      where hu.id = (select auth.uid())\n      limit 1\n    )\n  );\n$function$\n"
+      },
+      {
+        "acl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres"
+        ],
+        "name": "is_hr_admin",
+        "owner": "postgres",
+        "definition": "CREATE OR REPLACE FUNCTION private.is_hr_admin()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select coalesce((select private.current_hr_role()) = 'admin', false)\n$function$\n"
+      }
+    ],
+    "policies": [
+      {
+        "cmd": "DELETE",
+        "qual": "(private.current_hr_role() = 'admin'::text)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "employees",
+        "permissive": "PERMISSIVE",
+        "policyname": "employees_admin_delete",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "employees",
+        "permissive": "PERMISSIVE",
+        "policyname": "employees_manager_insert",
+        "schemaname": "public",
+        "with_check": "(private.current_hr_role() = 'admin'::text)"
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "private.can_manage_employee(id)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "employees",
+        "permissive": "PERMISSIVE",
+        "policyname": "employees_manager_update",
+        "schemaname": "public",
+        "with_check": "private.can_manage_employee(id)"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((id = private.current_employee_id()) OR private.can_manage_employee(id))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "employees",
+        "permissive": "PERMISSIVE",
+        "policyname": "employees_scoped_select",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "DELETE",
+        "qual": "((employee_id = private.current_employee_id()) OR private.can_manage_employee(employee_id))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "leave_requests",
+        "permissive": "PERMISSIVE",
+        "policyname": "leave_requests_scoped_delete",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "leave_requests",
+        "permissive": "PERMISSIVE",
+        "policyname": "leave_requests_scoped_insert",
+        "schemaname": "public",
+        "with_check": "((employee_id = private.current_employee_id()) OR private.can_manage_employee(employee_id))"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((employee_id = private.current_employee_id()) OR private.can_manage_employee(employee_id))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "leave_requests",
+        "permissive": "PERMISSIVE",
+        "policyname": "leave_requests_scoped_select",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "((employee_id = private.current_employee_id()) OR private.can_manage_employee(employee_id))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "leave_requests",
+        "permissive": "PERMISSIVE",
+        "policyname": "leave_requests_scoped_update",
+        "schemaname": "public",
+        "with_check": "((employee_id = private.current_employee_id()) OR private.can_manage_employee(employee_id))"
+      },
+      {
+        "cmd": "DELETE",
+        "qual": "((employee_id = private.current_employee_id()) OR private.can_manage_employee(employee_id))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "overtime_logs",
+        "permissive": "PERMISSIVE",
+        "policyname": "overtime_logs_scoped_delete",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "overtime_logs",
+        "permissive": "PERMISSIVE",
+        "policyname": "overtime_logs_scoped_insert",
+        "schemaname": "public",
+        "with_check": "((employee_id = private.current_employee_id()) OR private.can_manage_employee(employee_id))"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((employee_id = private.current_employee_id()) OR private.can_manage_employee(employee_id))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "overtime_logs",
+        "permissive": "PERMISSIVE",
+        "policyname": "overtime_logs_scoped_select",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "((employee_id = private.current_employee_id()) OR private.can_manage_employee(employee_id))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "overtime_logs",
+        "permissive": "PERMISSIVE",
+        "policyname": "overtime_logs_scoped_update",
+        "schemaname": "public",
+        "with_check": "((employee_id = private.current_employee_id()) OR private.can_manage_employee(employee_id))"
+      },
+      {
+        "cmd": "DELETE",
+        "qual": "((employee_id = private.current_employee_id()) OR private.can_manage_employee(employee_id))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "time_entries",
+        "permissive": "PERMISSIVE",
+        "policyname": "time_entries_scoped_delete",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "time_entries",
+        "permissive": "PERMISSIVE",
+        "policyname": "time_entries_scoped_insert",
+        "schemaname": "public",
+        "with_check": "((employee_id = private.current_employee_id()) OR private.can_manage_employee(employee_id))"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((employee_id = private.current_employee_id()) OR private.can_manage_employee(employee_id))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "time_entries",
+        "permissive": "PERMISSIVE",
+        "policyname": "time_entries_scoped_select",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "((employee_id = private.current_employee_id()) OR private.can_manage_employee(employee_id))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "time_entries",
+        "permissive": "PERMISSIVE",
+        "policyname": "time_entries_scoped_update",
+        "schemaname": "public",
+        "with_check": "((employee_id = private.current_employee_id()) OR private.can_manage_employee(employee_id))"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "true",
+        "roles": [
+          "public"
+        ],
+        "tablename": "time_tracking_summary",
+        "permissive": "PERMISSIVE",
+        "policyname": "Allow all to read summary",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "time_tracking_summary",
+        "permissive": "PERMISSIVE",
+        "policyname": "Allow authenticated to insert summary",
+        "schemaname": "public",
+        "with_check": "true"
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "true",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "time_tracking_summary",
+        "permissive": "PERMISSIVE",
+        "policyname": "Allow authenticated to update summary",
+        "schemaname": "public",
+        "with_check": null
+      },
+      {
+        "cmd": "DELETE",
+        "qual": "true",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "time_tracking_summary",
+        "permissive": "PERMISSIVE",
+        "policyname": "compat_authenticated_delete",
+        "schemaname": "public",
+        "with_check": null
+      }
+    ],
+    "triggers": [
+      {
+        "name": "auto_calculate_leave_days",
+        "table": "leave_requests",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER auto_calculate_leave_days BEFORE INSERT OR UPDATE ON public.leave_requests FOR EACH ROW EXECUTE FUNCTION calculate_leave_days()"
+      },
+      {
+        "name": "employee_approval_update_guard",
+        "table": "leave_requests",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER employee_approval_update_guard BEFORE UPDATE ON public.leave_requests FOR EACH ROW EXECUTE FUNCTION private.enforce_employee_approval_update()"
+      },
+      {
+        "name": "trg_prune_ugc_translations",
+        "table": "leave_requests",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER trg_prune_ugc_translations AFTER DELETE ON public.leave_requests FOR EACH ROW EXECUTE FUNCTION hr_ugc_translations_prune('leave')"
+      },
+      {
+        "name": "update_summary_on_leave",
+        "table": "leave_requests",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER update_summary_on_leave AFTER INSERT OR DELETE OR UPDATE ON public.leave_requests FOR EACH ROW EXECUTE FUNCTION trigger_update_summary()"
+      },
+      {
+        "name": "employee_approval_update_guard",
+        "table": "overtime_logs",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER employee_approval_update_guard BEFORE UPDATE ON public.overtime_logs FOR EACH ROW EXECUTE FUNCTION private.enforce_employee_approval_update()"
+      },
+      {
+        "name": "update_summary_on_overtime",
+        "table": "overtime_logs",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER update_summary_on_overtime AFTER INSERT OR DELETE OR UPDATE ON public.overtime_logs FOR EACH ROW EXECUTE FUNCTION trigger_update_summary()"
+      },
+      {
+        "name": "employee_approval_update_guard",
+        "table": "time_entries",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER employee_approval_update_guard BEFORE UPDATE ON public.time_entries FOR EACH ROW EXECUTE FUNCTION private.enforce_employee_approval_update()"
+      },
+      {
+        "name": "update_summary_on_time_entry_delete",
+        "table": "time_entries",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER update_summary_on_time_entry_delete AFTER DELETE ON public.time_entries REFERENCING OLD TABLE AS old_time_entries FOR EACH STATEMENT EXECUTE FUNCTION refresh_time_entry_summaries_after_delete()"
+      },
+      {
+        "name": "update_summary_on_time_entry_insert",
+        "table": "time_entries",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER update_summary_on_time_entry_insert AFTER INSERT ON public.time_entries REFERENCING NEW TABLE AS new_time_entries FOR EACH STATEMENT EXECUTE FUNCTION refresh_time_entry_summaries_after_insert()"
+      },
+      {
+        "name": "update_summary_on_time_entry_update",
+        "table": "time_entries",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER update_summary_on_time_entry_update AFTER UPDATE ON public.time_entries REFERENCING OLD TABLE AS old_time_entries NEW TABLE AS new_time_entries FOR EACH STATEMENT EXECUTE FUNCTION refresh_time_entry_summaries_after_update()"
+      }
+    ]
+  },
+  "captured_at": "2026-09-26; read-only production catalog, no application data"
+}
