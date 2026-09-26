@@ -1,5 +1,6 @@
 import { fetchAllRows } from '../utils/fetchAllRows.js';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { flushSync } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage, SUPPORTED_LANGUAGES } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
@@ -31,6 +32,7 @@ import {
   aggregateCounts,
   aggregateHoursByType,
   buildCombinedCsvContent,
+  collectExportUgcStrings,
   computeEmployeePerformance,
   computeExportStats,
   countWorkingDays,
@@ -391,6 +393,13 @@ const Reports = () => {
   const [fetchError, setFetchError] = useState(null);
   const [exporting, setExporting] = useState(false);
 
+  const showExportSuccess = (message) => {
+    // Finish the loading indicator before alert blocks the browser. Time spent
+    // dismissing the confirmation is not time spent generating the report.
+    flushSync(() => setExporting(false));
+    alert(message);
+  };
+
   // 01 · Records — which record types the export carries.
   const [scope, setScope] = useState({ timeEntries: true, leave: true, tasks: true, goals: true });
   // 02 · People
@@ -693,51 +702,53 @@ const Reports = () => {
       }
     }
 
-    let allTimeEntries = [];
-    if (isDemoMode()) {
-      allTimeEntries = getDemoTimeEntries()
-        .filter((entry) => entry.date && entry.date >= startDate && entry.date <= endDate)
-        .sort((a, b) => new Date(b.date) - new Date(a.date));
-    } else {
-      const { data, error } = await withTimeout(
-        fetchAllRows(supabase
-          .from('time_entries')
-          .select(`
-            *,
-            employee:employees!time_entries_employee_id_fkey(id, name, department, position)
-          `, { count: 'exact' })
-          .gte('date', startDate)
-          .lte('date', endDate)
-          .order('date', { ascending: false })),
-        DEFAULT_REQUEST_TIMEOUT
-      );
+    const fetchTimeEntries = async () => {
+      if (isDemoMode()) {
+        return getDemoTimeEntries()
+          .filter((entry) => entry.date && entry.date >= startDate && entry.date <= endDate
+            && (!employeeId || String(entry.employee_id) === String(employeeId)))
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+      }
+
+      let query = supabase
+        .from('time_entries')
+        .select(`
+          *,
+          employee:employees!time_entries_employee_id_fkey(id, name, department, position)
+        `, { count: 'exact' })
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date', { ascending: false });
+      if (employeeId) query = query.eq('employee_id', employeeId);
+      const { data, error } = await withTimeout(fetchAllRows(query), DEFAULT_REQUEST_TIMEOUT);
       if (error) throw error;
-      allTimeEntries = data || [];
-    }
+      return data || [];
+    };
 
-    if (employeeId) {
-      allTimeEntries = allTimeEntries.filter((entry) => String(entry.employee_id) === String(employeeId));
-    }
-
-    const overtimeResult = await timeTrackingService.getOvertimeLogs(employeeId, { startDate, endDate });
+    // These sources are independent. Keep a fresh, complete export snapshot,
+    // but pay for the slowest source instead of adding every round trip.
+    const [allTimeEntries, overtimeResult, tasksResponse, goalsResponse, leaveResponse] = await Promise.all([
+      fetchTimeEntries(),
+      timeTrackingService.getOvertimeLogs(employeeId, { startDate, endDate }),
+      getAllTasks(employeeId ? { employeeId } : {}),
+      performanceService.getAllPerformanceGoals(employeeId ? { employeeId } : {}),
+      timeTrackingService.getAllLeaveRequests({ startDate, endDate, ...(employeeId ? { employeeId } : {}) }),
+    ]);
     if (!overtimeResult.success) throw new Error(overtimeResult.error);
 
-    const tasksResponse = await getAllTasks(employeeId ? { employeeId } : {});
     let tasks = tasksResponse.success ? tasksResponse.data || [] : [];
     if (employeeId) {
       tasks = tasks.filter((task) => String(task.employee_id) === String(employeeId));
     }
     tasks = tasks.filter((task) => withinRange(task, startDate, endDate));
 
-    const goalsResponse = await performanceService.getAllPerformanceGoals(employeeId ? { employeeId } : {});
     let goals = goalsResponse.success ? goalsResponse.data || [] : [];
     if (employeeId) {
       goals = goals.filter((goal) => String(goal.employee_id) === String(employeeId));
     }
     goals = goals.filter((goal) => withinRange(goal, startDate, endDate));
 
-    const leaveResponse = await timeTrackingService.getAllLeaveRequests({ startDate, endDate, ...(employeeId ? { employeeId } : {}) });
-        if (!leaveResponse.success) throw new Error(leaveResponse.error);
+    if (!leaveResponse.success) throw new Error(leaveResponse.error);
     let leave = leaveResponse.success ? leaveResponse.data || [] : [];
     if (employeeId) {
       leave = leave.filter((req) => String(req.employee_id) === String(employeeId));
@@ -1466,7 +1477,7 @@ const Reports = () => {
       }
 
       const ugcMap = await buildUgcTranslateMap(
-        collectExportUgcStrings(timeEntries, tasks, goals, leave)
+        collectExportUgcStrings(timeEntries, tasks, goals, leave, { demo: isDemoMode() })
       );
 
       const languageName = SUPPORTED_LANGUAGES[currentLanguage]?.name || 'English';
@@ -1573,7 +1584,7 @@ const Reports = () => {
       URL.revokeObjectURL(url);
 
       rememberExport(filename, exportStats.totalRecords);
-      alert(t('reports.csvExportSuccess', 'CSV report exported successfully with all data types in one file!'));
+      showExportSuccess(t('reports.csvExportSuccess', 'CSV report exported successfully with all data types in one file!'));
     } catch (error) {
       console.error('Error exporting combined CSV:', error);
       if (handleSessionAuthError(error)) return;
@@ -1601,7 +1612,7 @@ const Reports = () => {
       }
 
       const ugcMap = await buildUgcTranslateMap(
-        collectExportUgcStrings(timeEntries, tasks, goals, leave)
+        collectExportUgcStrings(timeEntries, tasks, goals, leave, { demo: isDemoMode() })
       );
 
       // Helpers for safe values and typing
@@ -2534,7 +2545,7 @@ const Reports = () => {
       URL.revokeObjectURL(url);
 
       rememberExport(filename, timeEntries.length + tasks.length + goals.length + leave.length);
-      alert(t('reports.exportSuccess', 'Excel report exported successfully with styled tables, metrics, and chart data!'));
+      showExportSuccess(t('reports.exportSuccess', 'Excel report exported successfully with styled tables, metrics, and chart data!'));
     } catch (error) {
       console.error('Error exporting Excel:', error);
       if (handleSessionAuthError(error)) return;
@@ -2629,31 +2640,6 @@ const Reports = () => {
     return ugcMap?.get(text) ?? text;
   };
 
-  const collectExportUgcStrings = (timeEntries = [], tasks = [], goals = [], leave = []) => {
-    const strings = [];
-    const pushNotesBody = (notes) => {
-      if (!notes) return;
-      const match = String(notes).match(/^Entered by admin:?\s*/i);
-      strings.push(match ? notes.slice(match[0].length) : notes);
-    };
-    timeEntries.forEach((entry) => pushNotesBody(entry.notes));
-    if (!isDemoMode()) {
-      tasks.forEach((task) => {
-        if (task.title) strings.push(task.title);
-        if (task.description) strings.push(task.description);
-      });
-      goals.forEach((goal) => {
-        if (goal.title) strings.push(goal.title);
-        if (goal.description) strings.push(goal.description);
-        if (goal.notes) strings.push(goal.notes);
-      });
-    }
-    leave.forEach((req) => {
-      if (req.reason) strings.push(req.reason);
-    });
-    return strings;
-  };
-
   /**
    * Pre-translates every unique UGC string in an export with the on-device
    * translator. Cache-first, so anything already seen on screen costs nothing;
@@ -2665,6 +2651,23 @@ const Reports = () => {
     const translated = await translateTexts(unique, currentLanguage);
     return new Map(unique.map((s, i) => [s, translated[i] ?? s]));
   };
+
+  // Prepare the selected report while it is being reviewed, rather than
+  // starting every on-device translation only after Export is clicked.
+  // A content key avoids restarting when a refresh returns identical text.
+  const exportTranslationKey = useMemo(() => JSON.stringify([...new Set(
+    collectExportUgcStrings(scopedData.timeEntries, scopedData.tasks, scopedData.goals, scopedData.leave, {
+      format: exportFormat,
+      demo: isDemoMode(),
+    }).filter((text) => typeof text === 'string' && text.trim())
+  )].sort()), [scopedData.timeEntries, scopedData.tasks, scopedData.goals, scopedData.leave, exportFormat]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    translateTexts(JSON.parse(exportTranslationKey), currentLanguage, { signal: controller.signal })
+      .catch((error) => console.warn('Report translation preparation failed:', error));
+    return () => controller.abort();
+  }, [exportTranslationKey, currentLanguage]);
 
   // PDF Export with Charts and Tables
   const exportToPDF = async function() {
@@ -2685,7 +2688,7 @@ const Reports = () => {
       }
 
       const ugcMap = await buildUgcTranslateMap(
-        collectExportUgcStrings(timeEntries, tasks, goals, leave)
+        collectExportUgcStrings(timeEntries, tasks, goals, leave, { format: 'pdf', demo: isDemoMode() })
       );
 
       const [{ jsPDF, autoTable }, companyLogo, profileImage] = await Promise.all([
@@ -3213,7 +3216,7 @@ const Reports = () => {
       doc.save(filename);
 
       rememberExport(filename, exportStats.totalRecords);
-      alert(t('reports.pdfExportSuccess', 'PDF report exported successfully!'));
+      showExportSuccess(t('reports.pdfExportSuccess', 'PDF report exported successfully!'));
     } catch (error) {
       console.error('Error exporting PDF:', error);
       if (handleSessionAuthError(error)) return;

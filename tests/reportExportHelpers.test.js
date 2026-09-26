@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createPdfReportLayout,
+  collectExportUgcStrings,
   getPdfProfileImageSource,
   getTaskDurationDays,
   countWorkingDays,
@@ -15,6 +16,24 @@ import {
 } from '../src/utils/reportExportHelpers.js';
 
 const now = new Date(2026, 7, 28); // 28 Aug 2026, local
+
+test('PDF translates only printed titles; CSV and Excel retain every authored field', () => {
+  const records = [
+    [{ notes: 'Entered by admin: Evening shift' }, { notes: 'Manual entry' }],
+    [{ title: 'Task title', description: 'Task detail' }],
+    [{ title: 'Goal title', description: 'Goal detail', notes: 'Goal notes' }],
+    [{ reason: 'Leave reason' }],
+  ];
+  assert.deepEqual(collectExportUgcStrings(...records, { format: 'pdf' }), ['Task title', 'Goal title']);
+  for (const format of ['csv', 'xlsx']) {
+    assert.deepEqual(collectExportUgcStrings(...records, { format }), [
+      'Evening shift', 'Manual entry', 'Task title', 'Task detail',
+      'Goal title', 'Goal detail', 'Goal notes', 'Leave reason',
+    ]);
+  }
+  assert.deepEqual(collectExportUgcStrings(...records, { format: 'pdf', demo: true }), []);
+  assert.deepEqual(collectExportUgcStrings(...records, { demo: true }), ['Evening shift', 'Manual entry', 'Leave reason']);
+});
 
 test('CSV Excel PDF totals and employee figures share employee-specific leave and overtime rules', () => {
   const snapshot = {

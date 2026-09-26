@@ -1,6 +1,34 @@
 import { summarizeAttendance, workingDateKeys } from './attendanceRules.js';
 export { workingDateKeys } from './attendanceRules.js';
 
+// Only translate authored fields actually written by the selected format.
+// PDF tables omit descriptions, attendance notes and leave reasons; CSV/XLSX
+// include them. Demo task/goal text already comes from the UI translations.
+export const collectExportUgcStrings = (timeEntries = [], tasks = [], goals = [], leave = [], { format = 'csv', demo = false } = {}) => {
+  const strings = [];
+  const includeDetails = format !== 'pdf';
+  if (includeDetails) {
+    timeEntries.forEach(({ notes }) => {
+      if (!notes) return;
+      const match = String(notes).match(/^Entered by admin:?\s*/i);
+      strings.push(match ? notes.slice(match[0].length) : notes);
+    });
+  }
+  if (!demo) {
+    tasks.forEach(({ title, description }) => {
+      if (title) strings.push(title);
+      if (includeDetails && description) strings.push(description);
+    });
+    goals.forEach(({ title, description, notes }) => {
+      if (title) strings.push(title);
+      if (includeDetails && description) strings.push(description);
+      if (includeDetails && notes) strings.push(notes);
+    });
+  }
+  if (includeDetails) leave.forEach(({ reason }) => { if (reason) strings.push(reason); });
+  return strings;
+};
+
 export const formatHours = (value, decimals = 1) => {
   const num = Number(value);
   if (!Number.isFinite(num)) return (0).toFixed(decimals);

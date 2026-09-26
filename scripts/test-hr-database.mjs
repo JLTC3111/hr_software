@@ -21,6 +21,7 @@ let created = false;
 let productionCreated = false;
 const productionDatabase = `${database}_production`;
 const attendanceMigration = '20260925093907_exclude_approved_leave_from_worked_days.sql';
+const timeClockReadMigration = '20260926130934_optimize_time_clock_read_policy.sql';
 const sqlFile = file => readFileSync(path.join(root, file), 'utf8');
 const replayAttendance = db => psql(db, `BEGIN;\n${sqlFile(`supabase/migrations/${attendanceMigration}`)}\nCOMMIT;`);
 const summaryFingerprint = db => psql(db, `SELECT jsonb_agg(to_jsonb(s)-'updated_at' ORDER BY employee_id,year,month) FROM public.time_tracking_summary s;`);
@@ -113,6 +114,7 @@ try {
     console.log(`Replayed ${migration}`);
   }
   console.log(psql(database, readFileSync(path.join(root, 'tests/database/hr-access.sql'), 'utf8')));
+  console.log(psql(database, sqlFile('tests/database/time-clock-read-policy.sql')));
 
   // Separate databases keep the original access regressions independent from
   // attendance fixtures. Production has not received the access-hardening
@@ -137,6 +139,8 @@ try {
   const policies = JSON.parse(psql(productionDatabase, `SELECT json_agg(p) FROM pg_policies p WHERE schemaname='public' AND tablename IN ('employees','time_entries','leave_requests','overtime_logs','time_tracking_summary');`));
   const sorted = rows => JSON.stringify(rows.map(row => JSON.stringify(Object.fromEntries(Object.entries(row).sort()))).sort());
   if (sorted(policies) !== sorted(snapshot.catalog.policies)) throw new Error('Baseline RLS differs from captured production catalog');
+  psql(productionDatabase, sqlFile(`supabase/migrations/${timeClockReadMigration}`));
+  console.log(psql(productionDatabase, sqlFile('tests/database/time-clock-read-policy.sql')));
   psql(productionDatabase, sqlFile('tests/database/attendance-fixture.sql'));
   replayAttendance(productionDatabase);
   if (psql(productionDatabase, `SELECT prosecdef FROM pg_proc WHERE oid='public.update_time_tracking_summary(text,integer,integer)'::regprocedure`) !== 'f') {

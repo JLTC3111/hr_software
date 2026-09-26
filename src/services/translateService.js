@@ -27,6 +27,9 @@ export const TRANSLATE_LANG_MAP = {
 };
 
 const memoryCache = new Map();
+// Preview, report preparation and export can request the same text at once.
+// Share that work, including language detection, until it settles.
+const translationsInFlight = new Map();
 
 /**
  * Hand-authored translations loaded from Supabase (see ugcTranslationService).
@@ -526,6 +529,19 @@ export async function translateWithStatus(text, appLang, record = null) {
   const cached = memoryCache.get(key);
   if (cached != null) return { text: cached, status: 'done' };
 
+  let pending = translationsInFlight.get(key);
+  if (!pending) {
+    pending = translateUncached(original, target, key);
+    translationsInFlight.set(key, pending);
+  }
+  try {
+    return await pending;
+  } finally {
+    if (translationsInFlight.get(key) === pending) translationsInFlight.delete(key);
+  }
+}
+
+async function translateUncached(original, target, key) {
   const source = await detectLanguage(original);
 
   // Undetectable source: keep the original, but do NOT cache that decision —
@@ -563,7 +579,7 @@ export async function translateText(text, appLang, record = null) {
  * Batch helper for the export paths. Sequential on purpose: the on-device model
  * is single-threaded, so parallel calls queue anyway and only add memory churn.
  */
-export async function translateTexts(texts, appLang) {
+export async function translateTexts(texts, appLang, { signal } = {}) {
   const list = Array.isArray(texts) ? texts : [];
   // Manual overrides work with no on-device model at all, so the shortcut only
   // applies when there is nothing of either kind to contribute.
@@ -574,6 +590,9 @@ export async function translateTexts(texts, appLang) {
 
   const out = [];
   for (const text of list) {
+    // A report selection may change while its background preparation runs.
+    // Finish the current shared translation, then stop the obsolete batch.
+    if (signal?.aborted) break;
     out.push(await translateText(text, appLang));
   }
   return out;
